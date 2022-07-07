@@ -21,6 +21,7 @@ package com.hedera.services.bdd.suites.util;
  */
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.transactions.TxnVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -31,18 +32,18 @@ import java.util.Map;
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.randomGenerate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.hapiPrng;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingAllOf;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsd;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsdWithin;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RANDOM_GENERATE_RANGE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PRNG_RANGE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
-public class RandomGenerateSuite extends HapiApiSuite {
-	private static final Logger log = LogManager.getLogger(RandomGenerateSuite.class);
+public class PrngSuite extends HapiApiSuite {
+	private static final Logger log = LogManager.getLogger(PrngSuite.class);
 
 	public static void main(String... args) {
-		new RandomGenerateSuite().runSuiteSync();
+		new PrngSuite().runSuiteSync();
 	}
 
 	@Override
@@ -65,10 +66,10 @@ public class RandomGenerateSuite extends HapiApiSuite {
 		return defaultHapiSpec("featureFlagWorks")
 				.given(
 						overridingAllOf(Map.of(
-								"randomGeneration.isEnabled", "false"
+								"prng.isEnabled", "false"
 						)),
 						cryptoCreate("bob").balance(ONE_HUNDRED_HBARS),
-						randomGenerate()
+						TxnVerbs.hapiPrng()
 								.payingWith("bob")
 								.via("baseTxn")
 								.blankMemo()
@@ -77,7 +78,7 @@ public class RandomGenerateSuite extends HapiApiSuite {
 								.hasNoPseudoRandomData()
 								.logged()
 				).when(
-						randomGenerate(10)
+						hapiPrng(10)
 								.payingWith("bob")
 								.via("plusRangeTxn")
 								.blankMemo()
@@ -93,17 +94,17 @@ public class RandomGenerateSuite extends HapiApiSuite {
 		double baseFee = 0.001;
 		double plusRangeFee = 0.0010010316;
 
-		final var baseTxn = "randomGenerate";
-		final var plusRangeTxn = "randomGenerateWithRange";
+		final var baseTxn = "prng";
+		final var plusRangeTxn = "prngWithRange";
 
 		return defaultHapiSpec("usdFeeAsExpected")
 				.given(
 						overridingAllOf(Map.of(
-								"randomGeneration.isEnabled", "true"
+								"prng.isEnabled", "true"
 						)),
 						cryptoCreate("bob").balance(ONE_HUNDRED_HBARS),
 
-						randomGenerate()
+						TxnVerbs.hapiPrng()
 								.payingWith("bob")
 								.via(baseTxn)
 								.blankMemo()
@@ -113,7 +114,7 @@ public class RandomGenerateSuite extends HapiApiSuite {
 								.logged(),
 						validateChargedUsd(baseTxn, baseFee)
 				).when(
-						randomGenerate(10)
+						hapiPrng(10)
 								.payingWith("bob")
 								.via(plusRangeTxn)
 								.blankMemo()
@@ -130,15 +131,15 @@ public class RandomGenerateSuite extends HapiApiSuite {
 		return defaultHapiSpec("failsInPreCheckForNegativeRange")
 				.given(
 						overridingAllOf(Map.of(
-								"randomGeneration.isEnabled", "true"
+								"prng.isEnabled", "true"
 						)),
 						cryptoCreate("bob").balance(ONE_HUNDRED_HBARS),
-						randomGenerate(-10)
+						hapiPrng(-10)
 								.payingWith("bob")
 								.blankMemo()
-								.hasPrecheck(INVALID_RANDOM_GENERATE_RANGE)
+								.hasPrecheck(INVALID_PRNG_RANGE)
 								.logged(),
-						randomGenerate(0)
+						hapiPrng(0)
 								.payingWith("bob")
 								.blankMemo()
 								.hasPrecheck(OK)
@@ -152,80 +153,80 @@ public class RandomGenerateSuite extends HapiApiSuite {
 		return defaultHapiSpec("happyPathWorksForRangeAndBitString")
 				.given(
 						overridingAllOf(Map.of(
-								"randomGeneration.isEnabled", "true"
+								"prng.isEnabled", "true"
 						)),
 						// running hash is set
 						cryptoCreate("bob").balance(ONE_HUNDRED_HBARS),
 						// n-1 running hash and running has set
-						randomGenerate()
+						TxnVerbs.hapiPrng()
 								.payingWith("bob")
 								.blankMemo()
-								.via("randomGenerate")
+								.via("prng")
 								.logged(),
 						// n-1, n-2 running hash and running has set
-						getTxnRecord("randomGenerate")
+						getTxnRecord("prng")
 								.hasNoPseudoRandomData() // When running this suite in CI this check will fail since it
 								// already has n-3 running hash
 								.logged(),
 						// n-1, n-2, n-3 running hash and running has set
-						randomGenerate(10)
+						hapiPrng(10)
 								.payingWith("bob")
-								.via("randomGenerateWithRange1")
+								.via("prngWithRange1")
 								.blankMemo()
 								.logged(),
-						getTxnRecord("randomGenerateWithRange1")
+						getTxnRecord("prngWithRange1")
 								.hasNoPseudoRandomData() // When running this suite in CI this check will fail since it
 								// already has n-3 running hash
 								.logged(),
-						randomGenerate()
+						TxnVerbs.hapiPrng()
 								.payingWith("bob")
-								.via("randomGenerate2")
+								.via("prng2")
 								.blankMemo()
 								.logged()
 				).when(
 						// should have pseudo random data
-						randomGenerate(10)
+						hapiPrng(10)
 								.payingWith("bob")
-								.via("randomGenerateWithRange")
+								.via("prngWithRange")
 								.blankMemo()
 								.logged(),
-						getTxnRecord("randomGenerateWithRange")
+						getTxnRecord("prngWithRange")
 								.hasOnlyPseudoRandomNumberInRange(10)
 								.logged()
 				).then(
-						randomGenerate()
+						TxnVerbs.hapiPrng()
 								.payingWith("bob")
-								.via("randomGenerateWithoutRange")
+								.via("prngWithoutRange")
 								.blankMemo()
 								.logged(),
-						getTxnRecord("randomGenerateWithoutRange")
+						getTxnRecord("prngWithoutRange")
 								.hasOnlyPseudoRandomBytes()
 								.logged(),
 
-						randomGenerate(0)
+						hapiPrng(0)
 								.payingWith("bob")
-								.via("randomGenerateWithZeroRange")
+								.via("prngWithZeroRange")
 								.blankMemo()
 								.logged(),
-						getTxnRecord("randomGenerateWithZeroRange")
+						getTxnRecord("prngWithZeroRange")
 								.hasOnlyPseudoRandomBytes()
 								.logged(),
 
-						randomGenerate()
+						TxnVerbs.hapiPrng()
 								.range(Integer.MAX_VALUE)
 								.payingWith("bob")
-								.via("randomGenerateWithMaxRange")
+								.via("prngWithMaxRange")
 								.blankMemo()
 								.logged(),
-						getTxnRecord("randomGenerateWithMaxRange")
+						getTxnRecord("prngWithMaxRange")
 								.hasOnlyPseudoRandomNumberInRange(Integer.MAX_VALUE)
 								.logged(),
 
-						randomGenerate()
+						TxnVerbs.hapiPrng()
 								.range(Integer.MIN_VALUE)
 								.blankMemo()
 								.payingWith("bob")
-								.hasPrecheck(INVALID_RANDOM_GENERATE_RANGE)
+								.hasPrecheck(INVALID_PRNG_RANGE)
 				);
 	}
 

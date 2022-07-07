@@ -37,6 +37,7 @@ import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
+import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
@@ -143,8 +144,11 @@ class CallEvmTxProcessorTest {
 		given(globalDynamicProperties.fundingAccount()).willReturn(new Id(0, 0, 1010).asGrpcAccount());
 		given(aliasManager.resolveForEvm(receiverAddress)).willReturn(receiverAddress);
 		given(storageExpiry.hapiCallOracle()).willReturn(oracle);
+		given(globalDynamicProperties.chainIdBytes32()).willReturn(Bytes32.ZERO);
 
 		givenSenderWithBalance(350_000L);
+		callEvmTxProcessor.execute(
+				sender, receiverAddress, 33_333L, 1234L, Bytes.EMPTY, consensusTime);
 		var result = callEvmTxProcessor.execute(
 				sender, receiverAddress, 33_333L, 1234L, Bytes.EMPTY, consensusTime);
 		assertTrue(result.isSuccessful());
@@ -162,6 +166,7 @@ class CallEvmTxProcessorTest {
 		given(updater.getOrCreateSenderAccount(any())).willReturn(evmAccount);
 		var senderMutableAccount = mock(MutableAccount.class);
 		given(evmAccount.getMutable()).willReturn(senderMutableAccount);
+		given(globalDynamicProperties.chainIdBytes32()).willReturn(Bytes32.ZERO);
 
 		givenSenderWithBalance(350_000L);
 		var result = callEvmTxProcessor.executeEth(
@@ -206,6 +211,7 @@ class CallEvmTxProcessorTest {
 		given(globalDynamicProperties.fundingAccount()).willReturn(new Id(0, 0, 1010).asGrpcAccount());
 		given(storageExpiry.hapiCallOracle()).willReturn(oracle);
 		givenSenderWithBalance(350_000L);
+		given(globalDynamicProperties.chainIdBytes32()).willReturn(Bytes32.ZERO);
 		final var receiverAddress = receiver.getId().asEvmAddress();
 		given(aliasManager.resolveForEvm(receiverAddress)).willReturn(receiverAddress);
 		var result = callEvmTxProcessor.execute(
@@ -222,6 +228,7 @@ class CallEvmTxProcessorTest {
 		given(gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, false)).willReturn(INTRINSIC_GAS_COST);
 		given(globalDynamicProperties.fundingAccount()).willReturn(new Id(0, 0, 1010).asGrpcAccount());
 		given(storageExpiry.hapiCallOracle()).willReturn(oracle);
+		given(globalDynamicProperties.chainIdBytes32()).willReturn(Bytes32.ZERO);
 
 		givenSenderWithBalance(350_000L);
 		final var receiverAddress = receiver.getId().asEvmAddress();
@@ -248,6 +255,7 @@ class CallEvmTxProcessorTest {
 				.willReturn(Map.of(Address.fromHexString(contractAddress), Map.of(UInt256.valueOf(slot),
 								Pair.of(UInt256.valueOf(oldSlotValue), UInt256.valueOf(newSlotValue)))));
 		given(storageExpiry.hapiCallOracle()).willReturn(oracle);
+		given(globalDynamicProperties.chainIdBytes32()).willReturn(Bytes32.ZERO);
 
 		final var result = callEvmTxProcessor.execute(
 				sender, receiverAddress, 33_333L, 1234L, Bytes.EMPTY, consensusTime);
@@ -274,6 +282,7 @@ class CallEvmTxProcessorTest {
 		givenSenderWithBalance(350_000L);
 		given(aliasManager.resolveForEvm(receiverAddress)).willReturn(receiverAddress);
 		given(storageExpiry.hapiCallOracle()).willReturn(oracle);
+		given(globalDynamicProperties.chainIdBytes32()).willReturn(Bytes32.ZERO);
 
 		final var result = callEvmTxProcessor.execute(
 				sender, receiverAddress, 33_333L, 1234L, Bytes.EMPTY, consensusTime);
@@ -289,6 +298,7 @@ class CallEvmTxProcessorTest {
 	void throwsWhenSenderCannotCoverUpfrontCost() {
 		givenInvalidMock();
 		givenSenderWithBalance(123);
+		given(globalDynamicProperties.chainIdBytes32()).willReturn(Bytes32.ZERO);
 
 		assertFailsWith(
 				() -> callEvmTxProcessor.execute(
@@ -303,6 +313,7 @@ class CallEvmTxProcessorTest {
 		final var mutableSenderAccount = mock(MutableAccount.class);
 		given(wrappedSenderAccount.getMutable()).willReturn(mutableSenderAccount);
 		given(updater.getOrCreateSenderAccount(sender.getId().asEvmAddress())).willReturn(wrappedSenderAccount);
+		given(globalDynamicProperties.chainIdBytes32()).willReturn(Bytes32.ZERO);
 
 		assertFailsWith(() ->
 						callEvmTxProcessor.execute(
@@ -318,6 +329,7 @@ class CallEvmTxProcessorTest {
 		given(wrappedSenderAccount.getMutable()).willReturn(mutableSenderAccount);
 		given(updater.getOrCreateSenderAccount(sender.getId().asEvmAddress())).willReturn(wrappedSenderAccount);
 		given(gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, false)).willReturn(MAX_GAS_LIMIT + 1L);
+		given(globalDynamicProperties.chainIdBytes32()).willReturn(Bytes32.ZERO);
 
 		assertFailsWith(
 				() -> callEvmTxProcessor
@@ -389,6 +401,7 @@ class CallEvmTxProcessorTest {
 		final long offeredGasPrice = 10L;
 		final long gasLimit = 1000;
 		given(gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, false)).willReturn(gasLimit);
+		given(globalDynamicProperties.chainIdBytes32()).willReturn(Bytes32.ZERO);
 
 		var result = callEvmTxProcessor.executeEth(
 				sender, receiverAddress, gasLimit, 1234L, Bytes.EMPTY, consensusTime,
@@ -428,6 +441,7 @@ class CallEvmTxProcessorTest {
 		given(aliasManager.resolveForEvm(receiverAddress)).willReturn(receiverAddress);
 		final long offeredGasPrice = 10L;
 		final int gasLimit = 1000;
+		given(globalDynamicProperties.chainIdBytes32()).willReturn(Bytes32.ZERO);
 
 		var result = callEvmTxProcessor.executeEth(
 				sender, receiverAddress, gasLimit, 1234L, Bytes.EMPTY, consensusTime,
@@ -467,6 +481,7 @@ class CallEvmTxProcessorTest {
 		given(aliasManager.resolveForEvm(receiverAddress)).willReturn(receiverAddress);
 		final long offeredGasPrice = 10L;
 		final int gasLimit = 1000;
+		given(globalDynamicProperties.chainIdBytes32()).willReturn(Bytes32.ZERO);
 
 		var result = callEvmTxProcessor.executeEth(
 				sender, receiverAddress, gasLimit, 1234L, Bytes.EMPTY, consensusTime,
@@ -506,6 +521,7 @@ class CallEvmTxProcessorTest {
 		final long offeredGasPrice = 10L;
 		final int gasLimit = 1000;
 		final var userOfferedGasPrice = BigInteger.valueOf(offeredGasPrice).multiply(WEIBARS_TO_TINYBARS);
+		given(globalDynamicProperties.chainIdBytes32()).willReturn(Bytes32.ZERO);
 
 		assertThrows(InvalidTransactionException.class, () -> callEvmTxProcessor.executeEth(
 				sender, receiverAddress, gasLimit, 1234L, Bytes.EMPTY, consensusTime,
@@ -536,6 +552,7 @@ class CallEvmTxProcessorTest {
 		final long offeredGasPrice = 10L;
 		final int gasLimit = 1000;
 		final var userOfferedGasPrice = BigInteger.valueOf(offeredGasPrice).multiply(WEIBARS_TO_TINYBARS);
+		given(globalDynamicProperties.chainIdBytes32()).willReturn(Bytes32.ZERO);
 
 		assertThrows(InvalidTransactionException.class, () -> callEvmTxProcessor.executeEth(
 				sender, receiverAddress, gasLimit, 1234L, Bytes.EMPTY, consensusTime,
@@ -567,6 +584,7 @@ class CallEvmTxProcessorTest {
 		final long offeredGasPrice = 10L;
 		final int gasLimit = 1000;
 		final var userOfferedGasPrice = BigInteger.valueOf(offeredGasPrice).multiply(WEIBARS_TO_TINYBARS);
+		given(globalDynamicProperties.chainIdBytes32()).willReturn(Bytes32.ZERO);
 
 		assertThrows(InvalidTransactionException.class, () -> callEvmTxProcessor.executeEth(
 				sender, receiverAddress, gasLimit, 1234L, Bytes.EMPTY, consensusTime,
@@ -595,6 +613,7 @@ class CallEvmTxProcessorTest {
 				.willReturn(gasPrice);
 		final var receiverAddress = receiver.getId().asEvmAddress();
 		given(aliasManager.resolveForEvm(receiverAddress)).willReturn(receiverAddress);
+		given(globalDynamicProperties.chainIdBytes32()).willReturn(Bytes32.ZERO);
 		final long offeredGasPrice = 0L;
 		final long gasLimit = 1000;
 		given(gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, false)).willReturn(gasLimit);
@@ -629,6 +648,7 @@ class CallEvmTxProcessorTest {
 				.willReturn(gasPrice);
 		final var receiverAddress = receiver.getId().asEvmAddress();
 		given(aliasManager.resolveForEvm(receiverAddress)).willReturn(receiverAddress);
+		given(globalDynamicProperties.chainIdBytes32()).willReturn(Bytes32.ZERO);
 		final long offeredGasPrice = 0L;
 		final int gasLimit = 1000;
 		final var userOfferedGasPrice = BigInteger.valueOf(offeredGasPrice).multiply(WEIBARS_TO_TINYBARS);
@@ -661,6 +681,7 @@ class CallEvmTxProcessorTest {
 		final long offeredGasPrice = 0L;
 		final int gasLimit = 1000;
 		final var userOfferedGasPrice = BigInteger.valueOf(offeredGasPrice).multiply(WEIBARS_TO_TINYBARS);
+		given(globalDynamicProperties.chainIdBytes32()).willReturn(Bytes32.ZERO);
 
 		assertThrows(InvalidTransactionException.class, () -> callEvmTxProcessor.executeEth(
 				sender, receiverAddress, gasLimit, 1234L, Bytes.EMPTY, consensusTime,
@@ -691,6 +712,7 @@ class CallEvmTxProcessorTest {
 		final long offeredGasPrice = 50L;
 		final long gasLimit = 1000;
 		given(gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, false)).willReturn(gasLimit);
+		given(globalDynamicProperties.chainIdBytes32()).willReturn(Bytes32.ZERO);
 
 		var result = callEvmTxProcessor.executeEth(
 				sender, receiverAddress, gasLimit, 1234L, Bytes.EMPTY, consensusTime,
@@ -727,6 +749,7 @@ class CallEvmTxProcessorTest {
 		final long offeredGasPrice = 50L;
 		final int gasLimit = 1000;
 		final var userOfferedGasPrice = BigInteger.valueOf(offeredGasPrice).multiply(WEIBARS_TO_TINYBARS);
+		given(globalDynamicProperties.chainIdBytes32()).willReturn(Bytes32.ZERO);
 
 		assertThrows(InvalidTransactionException.class, () -> callEvmTxProcessor.executeEth(
 				sender, receiverAddress, gasLimit, 1234L, Bytes.EMPTY, consensusTime,
@@ -739,6 +762,7 @@ class CallEvmTxProcessorTest {
 		given(globalDynamicProperties.maxGasRefundPercentage()).willReturn(100);
 		given(globalDynamicProperties.fundingAccount()).willReturn(new Id(0, 0, 1010).asGrpcAccount());
 		given(storageExpiry.hapiCallOracle()).willReturn(oracle);
+		given(globalDynamicProperties.chainIdBytes32()).willReturn(Bytes32.ZERO);
 		givenSenderWithBalance(ONE_HBAR * 10);
 		final var receiverAddress = receiver.getId().asEvmAddress();
 		given(aliasManager.resolveForEvm(receiverAddress)).willReturn(receiverAddress);
@@ -824,16 +848,5 @@ class CallEvmTxProcessorTest {
 		given(updater.getOrCreateSenderAccount(sender.getId().asEvmAddress())).willReturn(wrappedSenderAccount);
 
 		given(mutableSenderAccount.getBalance()).willReturn(Wei.of(amount));
-	}
-
-	private void givenRelayerWithBalance(final long amount) {
-		final var wrappedRelayerAccount = mock(EvmAccount.class);
-		final var mutableRelayerAccount = mock(MutableAccount.class);
-		given(wrappedRelayerAccount.getMutable()).willReturn(mutableRelayerAccount);
-		given(updater.getOrCreateSenderAccount(relayer.getId().asEvmAddress())).willReturn(wrappedRelayerAccount);
-
-		given(mutableRelayerAccount.getBalance()).willReturn(Wei.of(amount));
-		given(mutableRelayerAccount.incrementBalance(any())).willCallRealMethod();
-		given(mutableRelayerAccount.decrementBalance(any())).willCallRealMethod();
 	}
 }

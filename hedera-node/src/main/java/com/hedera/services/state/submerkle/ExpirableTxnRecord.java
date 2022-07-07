@@ -632,9 +632,9 @@ public class ExpirableTxnRecord implements FastCopyable, SerializableHashable {
 			grpc.setParentConsensusTimestamp(asTimestamp(packedParentConsensusTime));
 		}
 		if (pseudoRandomNumber >= 0) {
-			grpc.setPseudorandomNumber(pseudoRandomNumber);
+			grpc.setPrngNumber(pseudoRandomNumber);
 		} else if (pseudoRandomBytes.length != 0) {
-			grpc.setPseudorandomBytes(wrapUnsafely(pseudoRandomBytes));
+			grpc.setPrngBytes(wrapUnsafely(pseudoRandomBytes));
 		}
 
 		return grpc.build();
@@ -983,7 +983,7 @@ public class ExpirableTxnRecord implements FastCopyable, SerializableHashable {
 	}
 
 	@VisibleForTesting
-	public void clearRandomGenerateData() {
+	public void clearPrngData() {
 		pseudoRandomBytes = MISSING_PSEUDORANDOM_BYTES;
 		pseudoRandomNumber = MISSING_NUMBER;
 	}

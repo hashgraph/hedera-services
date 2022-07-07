@@ -27,6 +27,8 @@ import com.hedera.services.sysfiles.domain.KnownBlockValues;
 import com.hedera.services.sysfiles.domain.throttling.ThrottleReqOpsScaleFactor;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import org.apache.tuweni.bytes.Bytes;
+import org.apache.tuweni.bytes.Bytes32;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -95,7 +97,7 @@ class GlobalDynamicPropertiesTest {
 		assertTrue(subject.isHTSPrecompileCreateEnabled());
 		assertTrue(subject.areContractAutoAssociationsEnabled());
 		assertTrue(subject.isStakingEnabled());
-		assertTrue(subject.isRandomGenerationEnabled());
+		assertTrue(subject.isPrngEnabled());
 	}
 
 	@Test
@@ -125,8 +127,9 @@ class GlobalDynamicPropertiesTest {
 		assertEquals(10, subject.ratesIntradayChangeLimitPercent());
 		assertEquals(11, subject.balancesExportPeriodSecs());
 		assertEquals(20, subject.minValidityBuffer());
-		assertEquals(22, subject.chainId());
-		assertArrayEquals(Integers.toBytes(22), subject.chainIdBytes());
+		final var chainIdBytes = Integers.toBytes(22);
+		assertArrayEquals(chainIdBytes, subject.chainIdBytes());
+		assertEquals(Bytes32.leftPad(Bytes.of(chainIdBytes)), subject.chainIdBytes32());
 		assertEquals(24, subject.feesTokenTransferUsageMultiplier());
 		assertEquals(26, subject.minAutoRenewDuration());
 		assertEquals(26, subject.typedMinAutoRenewDuration().getSeconds());
@@ -234,7 +237,7 @@ class GlobalDynamicPropertiesTest {
 		assertTrue(subject.schedulingLongTermEnabled());
 		assertFalse(subject.areContractAutoAssociationsEnabled());
 		assertFalse(subject.isStakingEnabled());
-		assertFalse(subject.isRandomGenerationEnabled());
+		assertFalse(subject.isPrngEnabled());
 	}
 
 	@Test
@@ -433,7 +436,7 @@ class GlobalDynamicPropertiesTest {
 		given(properties.getBooleanProperty("staking.isEnabled")).willReturn((i + 73) % 2 == 0);
 		given(properties.getIntProperty("hedera.recordStream.recordFileVersion")).willReturn((i + 77));
 		given(properties.getIntProperty("hedera.recordStream.signatureFileVersion")).willReturn((i + 78));
-		given(properties.getBooleanProperty("randomGeneration.isEnabled")).willReturn((i + 79) % 2 == 0);
+		given(properties.getBooleanProperty("prng.isEnabled")).willReturn((i + 79) % 2 == 0);
 	}
 
 	private Set<EntityType> typesFor(final int i) {

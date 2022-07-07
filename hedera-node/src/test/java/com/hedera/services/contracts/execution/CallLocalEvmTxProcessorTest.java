@@ -31,6 +31,7 @@ import com.hedera.services.store.models.Id;
 import com.hedera.services.txns.contract.helpers.StorageExpiry;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import org.apache.tuweni.bytes.Bytes;
+import org.apache.tuweni.bytes.Bytes32;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.Code;
@@ -124,6 +125,7 @@ class CallLocalEvmTxProcessorTest {
 		given(storageExpiry.hapiStaticCallOracle()).willReturn(oracle);
 		final var receiverAddress = receiver.getId().asEvmAddress();
 		given(aliasManager.resolveForEvm(receiverAddress)).willReturn(receiverAddress);
+		given(globalDynamicProperties.chainIdBytes32()).willReturn(Bytes32.ZERO);
 		var result = callLocalEvmTxProcessor.execute(
 				sender, receiverAddress, 33_333L, 1234L, Bytes.EMPTY, consensusTime);
 		assertTrue(result.isSuccessful());
@@ -153,6 +155,7 @@ class CallLocalEvmTxProcessorTest {
 		given(updater.getSenderAccount(any()).getMutable()).willReturn(senderMutableAccount);
 		given(updater.getOrCreate(any())).willReturn(evmAccount);
 		given(updater.getOrCreate(any()).getMutable()).willReturn(senderMutableAccount);
+		given(globalDynamicProperties.chainIdBytes32()).willReturn(Bytes32.ZERO);
 
 		assertFailsWith(() ->
 						callLocalEvmTxProcessor.execute(

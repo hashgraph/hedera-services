@@ -33,12 +33,12 @@ public class UtilOpsUsage {
 		// Default constructor
 	}
 
-	public void randomGenerateUsage(final SigUsage sigUsage,
+	public void prngUsage(final SigUsage sigUsage,
 			final BaseTransactionMeta baseMeta,
-			final RandomGenerateMeta randomGenerateMeta,
+			final PrngMeta prngMeta,
 			final UsageAccumulator accumulator) {
 		accumulator.resetForTransaction(baseMeta, sigUsage);
-		var baseSize = randomGenerateMeta.getMsgBytesUsed();
+		var baseSize = prngMeta.getMsgBytesUsed();
 		accumulator.addBpt(baseSize);
 	}
 }
