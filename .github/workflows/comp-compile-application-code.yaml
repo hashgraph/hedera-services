@@ -1,0 +1,217 @@
+name: "ZComponent: Compile"
+on:
+  workflow_call:
+    inputs:
+      enable-javadoc:
+        description: "Javadoc Enabled:"
+        type: boolean
+        required: false
+        default: true
+      enable-unit-tests:
+        description: "Unit Testing Enabled:"
+        type: boolean
+        required: false
+        default: false
+      enable-e2e-tests:
+        description: "End to End Testing Enabled:"
+        type: boolean
+        required: false
+        default: false
+      enable-integration-tests:
+        description: "Integration Testing Enabled:"
+        type: boolean
+        required: false
+        default: false
+      enable-sonar-analysis:
+        description: "Sonar Analysis Enabled:"
+        type: boolean
+        required: false
+        default: false
+      java-distribution:
+        description: "Java JDK Distribution:"
+        type: string
+        required: false
+        default: "temurin"
+      java-version:
+        description: "Java JDK Version:"
+        type: string
+        required: false
+        default: "17.0.3"
+      custom-job-label:
+        description: "Custom Job Label:"
+        type: string
+        required: false
+        default: "Compiles"
+
+    secrets:
+      access-token:
+        description: "The Github access token used to checkout the repository, submodules, and make GitHub API calls."
+        required: true
+      sonar-token:
+        description: "The SonarCloud access token used by the SonarQube agent to report an analysis."
+        required: false
+
+defaults:
+  run:
+    shell: bash
+
+permissions:
+  id-token: write
+  actions: write
+  pull-requests: write
+  statuses: write
+  checks: write
+  contents: read
+
+jobs:
+  compile:
+    name: ${{ inputs.custom-job-label || 'Compiles' }}
+    runs-on: [self-hosted, Linux, services, standard, ephemeral]
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v2
+
+      - name: Expand Shallow Clone for SonarQube
+        if: ${{ inputs.enable-sonar-analysis && !cancelled() }}
+        run: |
+          git fetch --unshallow --no-recurse-submodules
+
+      - name: Validate Gradle Wrapper
+        uses: gradle/wrapper-validation-action@v1
+
+      - name: Setup Java
+        uses: actions/setup-java@v2
+        with:
+          distribution: ${{ inputs.java-distribution }}
+          java-version: ${{ inputs.java-version }}
+
+      - name: Compile
+        id: gradle-build
+        uses: gradle/gradle-build-action@v2
+        with:
+          arguments: assemble
+
+      - name: Javadoc
+        uses: gradle/gradle-build-action@v2
+        if: ${{ inputs.enable-javadoc && !cancelled() }}
+        with:
+          arguments: javadoc
+
+      - name: Unit Testing
+        id: gradle-test
+        uses: gradle/gradle-build-action@v2
+        if: ${{ inputs.enable-unit-tests && steps.gradle-build.conclusion == 'success' && !cancelled() }}
+        with:
+          arguments: check
+
+      - name: Publish Unit Test Report
+        uses: mikepenz/action-junit-report@v3
+        if: ${{ inputs.enable-unit-tests && steps.gradle-build.conclusion == 'success' && !cancelled() }}
+        with:
+          check_name: Unit Test Results
+          report_paths: "**/build/test-results/test/TEST-*.xml"
+          require_tests: 'false'
+
+      - name: Build Docker Image # build the image for hedera-node
+        if: ${{ (inputs.enable-integration-tests || inputs.enable-e2e-tests) && steps.gradle-build.conclusion == 'success' && !cancelled() }}
+        run: bash compose-build.sh
+
+      - name: Integration Testing
+        id: gradle-itest
+        uses: gradle/gradle-build-action@v2
+        if: ${{ inputs.enable-integration-tests && steps.gradle-build.conclusion == 'success' && !cancelled() }}
+        with:
+          arguments: itest
+
+      - name: Publish Integration Test Report
+        uses: mikepenz/action-junit-report@v3
+        if: ${{ inputs.enable-integration-tests && steps.gradle-build.conclusion == 'success' && !cancelled() }}
+        with:
+          check_name: Integration Test Results
+          report_paths: "**/build/test-results/itest/TEST-*.xml"
+          require_tests: 'false'
+
+      - name: E2E Testing
+        id: gradle-eet
+        uses: gradle/gradle-build-action@v2
+        if: ${{ inputs.enable-e2e-tests && steps.gradle-build.conclusion == 'success' && !cancelled() }}
+        with:
+          arguments: eet
+
+      - name: Publish E2E Test Report
+        uses: mikepenz/action-junit-report@v3
+        if: ${{ inputs.enable-e2e-tests && steps.gradle-build.conclusion == 'success' && !cancelled() }}
+        with:
+          check_name: E2E Test Results
+          report_paths: "**/build/test-results/eet/TEST-*.xml"
+          require_tests: 'false'
+
+      - name: Jacoco Coverage Report
+        uses: gradle/gradle-build-action@v2
+        if: ${{ inputs.enable-unit-tests && !cancelled() }}
+        with:
+          arguments: jacocoTestReport
+
+      - name: Publish To Codecov
+        if: ${{ inputs.enable-unit-tests && !cancelled() }}
+        uses: codecov/codecov-action@v3
+
+#      - name: Publish Code Coverage Data
+#        uses: actions/upload-artifact@v3
+#        if: ${{ inputs.enable-unit-tests && !cancelled() }}
+#        with:
+#          name: Jacoco Data
+#          path: "**/build/reports/jacoco/test/jacocoTestReport.xml"
+
+      - name: Publish Test Reports
+        uses: actions/upload-artifact@v3
+        if: ${{ inputs.enable-unit-tests && !cancelled() }}
+        with:
+          name: Test Reports
+          path: "**/build/reports/tests/**"
+
+#      - name: Show Integration Test Folder Structures
+#        if: ${{ always() }}
+#        run: |
+#          if ! command -v tree >/dev/null 2>&1; then
+#            echo "::group::Install Tree Command"
+#            sudo apt update
+#            sudo apt install -y tree
+#            echo "::endgroup::"
+#          fi
+#
+#          echo "::group::Show Network Folder Contents"
+#          tree -apshug  "${{ github.workspace }}/test-clients/build/network"
+#          echo "::endgroup::"
+
+      - name: Publish Test Network Logs
+        uses: actions/upload-artifact@v3
+        if: ${{ (inputs.enable-e2e-tests || inputs.enable-integration-test) && !cancelled() }}
+        with:
+          name: Test Network Logs
+          path: |
+            test-clients/build/network/**/output/**
+            test-clients/output/**
+
+      - name: SonarCloud Options
+        id: sonar-cloud
+        env:
+          IS_PULL_REQUEST: ${{ github.event_name == 'pull_request' || github.event_name == 'pull_request_target' }}
+        if: ${{ inputs.enable-sonar-analysis && steps.gradle-build.conclusion == 'success' && !cancelled() }}
+        run: |
+          SONAR_OPTS="-Dsonar.branch.name=${{ github.ref_name }}"
+          if [[ "${IS_PULL_REQUEST}" == true ]]; then
+            SONAR_OPTS=""
+          fi
+          
+          echo "::set-output name=options::${SONAR_OPTS}"
+
+      - name: SonarCloud Scan
+        uses: gradle/gradle-build-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.access-token }}
+          SONAR_TOKEN: ${{ secrets.sonar-token }}
+          SONAR_OPTS: ${{ steps.sonar-cloud.outputs.options }}
+        if: ${{ inputs.enable-sonar-analysis && steps.gradle-build.conclusion == 'success' && !cancelled() }}
+        with:
+          arguments: sonarqube --info

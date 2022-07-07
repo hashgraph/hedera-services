@@ -60,25 +60,13 @@ class StaticBlockMetaSourceTest {
 	}
 
 	@Test
-	void blockValuesAreMixUntilSync() {
-		given(networkCtx.getAlignmentBlockNo()).willReturn(Long.MIN_VALUE);
-		given(networkCtx.firstConsTimeOfCurrentBlock()).willReturn(then);
-
-		final var ans = subject.computeBlockValues(gasLimit);
-
-		assertEquals(gasLimit, ans.getGasLimit());
-		assertEquals(then.getEpochSecond(), ans.getNumber());
-		assertEquals(then.getEpochSecond(), ans.getTimestamp());
-	}
-
-	@Test
 	void usesNowIfFirstConsTimeIsStillSomehowNull() {
-		given(networkCtx.getAlignmentBlockNo()).willReturn(Long.MIN_VALUE);
+		given(networkCtx.getAlignmentBlockNo()).willReturn(someBlockNo);
 
 		final var ans = subject.computeBlockValues(gasLimit);
 
 		assertEquals(gasLimit, ans.getGasLimit());
-		assertNotEquals(0, ans.getNumber());
+		assertEquals(someBlockNo, ans.getNumber());
 		assertNotEquals(0, ans.getTimestamp());
 	}
 

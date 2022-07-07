@@ -110,7 +110,7 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 	private FunctionalityThrottling throttling = null;
 	private DeterministicThrottle.UsageSnapshot gasThrottleUsageSnapshot = NO_GAS_THROTTLE_SNAPSHOT;
 	private DeterministicThrottle.UsageSnapshot[] usageSnapshots = NO_SNAPSHOTS;
-	private long blockNo = Long.MIN_VALUE;
+	private long blockNo = 0L;
 	private Instant firstConsTimeOfCurrentBlock = null;
 	private FCQueue<BytesElement> blockHashes = new FCQueue<>();
 	private boolean stakingRewardsActivated;
@@ -865,7 +865,7 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 	}
 
 	@VisibleForTesting
-	void setBlockNo(final long blockNo) {
+	public void setBlockNo(final long blockNo) {
 		this.blockNo = blockNo;
 	}
 
