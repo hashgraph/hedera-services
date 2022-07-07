@@ -222,6 +222,7 @@ public class GlobalDynamicProperties {
 		exportPrecompileResults = properties.getBooleanProperty("contracts.precompile.exportRecordResults");
 		create2Enabled = properties.getBooleanProperty("contracts.allowCreate2");
 		redirectTokenCalls = properties.getBooleanProperty("contracts.redirectTokenCalls");
+		enabledSidecars = properties.getSidecarsProperty("contracts.sidecars");
 		enableAllowances = properties.getBooleanProperty("hedera.allowances.isEnabled");
 		final var autoRenewTargetTypes = properties.getTypesProperty("autoRenew.targetTypes");
 		expireAccounts = autoRenewTargetTypes.contains(ACCOUNT);
@@ -243,7 +244,6 @@ public class GlobalDynamicProperties {
 		recordFileVersion = properties.getIntProperty("hedera.recordStream.recordFileVersion");
 		recordSignatureFileVersion = properties.getIntProperty("hedera.recordStream.signatureFileVersion");
 		prngEnabled = properties.getBooleanProperty("prng.isEnabled");
-		enabledSidecars = properties.getSidecarsProperty("contracts.sidecars");
 	}
 
 	public int maxTokensPerAccount() {

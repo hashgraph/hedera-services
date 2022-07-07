@@ -57,10 +57,10 @@ public class SidecarUtils {
 			final Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> stateChanges
 	) {
 		final var grpc = ContractStateChanges.newBuilder();
-		stateChanges.forEach((address, slotAccesses) -> {
+		stateChanges.forEach((address, slotAccessPairs) -> {
 			final var builder = ContractStateChange.newBuilder()
 					.setContractId(EntityIdUtils.contractIdFromEvmAddress(address.toArrayUnsafe()));
-			slotAccesses.forEach((slot, access) -> builder.addStorageChanges(trimmedGrpc(slot, access)));
+			slotAccessPairs.forEach((slot, access) -> builder.addStorageChanges(trimmedGrpc(slot, access)));
 			grpc.addContractStateChanges(builder);
 		});
 		return TransactionSidecarRecord.newBuilder().setStateChanges(grpc.build());

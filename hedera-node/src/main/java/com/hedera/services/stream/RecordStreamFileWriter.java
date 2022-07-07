@@ -290,17 +290,15 @@ class RecordStreamFileWriter implements LinkedObjectStream<RecordStreamObject> {
 					createSidecarFile(stateChangesSidecarBuilder, firstTxnInstant, STATE_CHANGES);
 					createSidecarFile(actionsSidecarBuilder, firstTxnInstant, ACTIONS);
 					createSidecarFile(bytecodesSidecarBuilder, firstTxnInstant, BYTECODES);
-				} catch (IOException e) {
+				} catch (IOException | NoSuchAlgorithmException e) {
 					Thread.currentThread().interrupt();
 					LOG.warn(EXCEPTION.getMarker(),
-							"closeCurrentAndSign :: IOException when creating sidecar files", e);
-					return;
-				} catch (NoSuchAlgorithmException e) {
-					Thread.currentThread().interrupt();
-					LOG.warn(EXCEPTION.getMarker(),
-							"closeCurrentAndSign :: NoSuchAlgorithmException when creating sidecar files", e);
+							"closeCurrentAndSign :: {} when creating sidecar files",
+							e.getClass().getSimpleName(), e);
 					return;
 				}
+
+				LOG.debug(OBJECT_STREAM_FILE.getMarker(), "Sidecar files for {} created successfully.", recordFileNameShort);
 
 				// create record file
 				try (FileOutputStream stream = new FileOutputStream(recordFile, false);
@@ -408,8 +406,7 @@ class RecordStreamFileWriter implements LinkedObjectStream<RecordStreamObject> {
 					case STATE_CHANGES -> stateChangesSidecarBuilder.addSidecarRecords(sidecar);
 					case ACTIONS -> actionsSidecarBuilder.addSidecarRecords(sidecar);
 					case BYTECODE -> bytecodesSidecarBuilder.addSidecarRecords(sidecar);
-					case SIDECARRECORDS_NOT_SET -> LOG.warn("A sidecar record without an actual sidecar has been " +
-							"received");
+					default -> LOG.warn("A sidecar record without an actual sidecar has been received");
 				}
 			}
 		}
