@@ -170,7 +170,7 @@ public class ContractMintHTSSuite extends HapiApiSuite {
 						uploadInitCode(HELLO_WORLD_MINT)
 				).when(
 						sourcing(() -> contractCreate(HELLO_WORLD_MINT, Address.wrap(Address.toChecksumAddress(BigInteger.valueOf(fungibleNum.get()))))),
-						contractCall(HELLO_WORLD_MINT, "brrr", amount
+						contractCall(HELLO_WORLD_MINT, "brrr", BigInteger.valueOf(amount)
 						)
 								.via(firstMintTxn)
 								.alsoSigningWithFullPrefix(MULTI_KEY),
@@ -180,7 +180,7 @@ public class ContractMintHTSSuite extends HapiApiSuite {
 						newKeyNamed(CONTRACT_KEY).shape(DELEGATE_CONTRACT.signedWith(HELLO_WORLD_MINT)),
 						tokenUpdate(fungibleToken).supplyKey(CONTRACT_KEY),
 						getTokenInfo(fungibleToken).logged(),
-						contractCall(HELLO_WORLD_MINT, "brrr", amount).via(secondMintTxn),
+						contractCall(HELLO_WORLD_MINT, "brrr", BigInteger.valueOf(amount)).via(secondMintTxn),
 						getTxnRecord(secondMintTxn).andAllChildRecords().logged(),
 						getTokenInfo(fungibleToken).hasTotalSupply(2 * amount)
 				).then(
@@ -222,7 +222,7 @@ public class ContractMintHTSSuite extends HapiApiSuite {
 								.supplyKey(MULTI_KEY)
 								.exposingCreatedIdTo(idLit -> nonFungibleNum.set(asDotDelimitedLongArray(idLit)[2])),
 						uploadInitCode(HELLO_WORLD_MINT),
-						sourcing(() -> contractCreate(HELLO_WORLD_MINT, nonFungibleNum.get()))
+						sourcing(() -> contractCreate(HELLO_WORLD_MINT, Address.wrap(Address.toChecksumAddress(BigInteger.valueOf(nonFungibleNum.get())))))
 				).when(
 						contractCall(HELLO_WORLD_MINT, "mint")
 								.via(firstMintTxn)
@@ -295,9 +295,9 @@ public class ContractMintHTSSuite extends HapiApiSuite {
 								.supplyKey(MULTI_KEY)
 								.exposingCreatedIdTo(idLit -> fungibleNum.set(asDotDelimitedLongArray(idLit)[2])),
 						uploadInitCode(MINT_CONTRACT),
-						sourcing(() -> contractCreate(MINT_CONTRACT, fungibleNum.get()))
+						sourcing(() -> contractCreate(MINT_CONTRACT, Address.wrap(Address.toChecksumAddress(BigInteger.valueOf(fungibleNum.get())))))
 				).when(
-						contractCall(MINT_CONTRACT, "mintFungibleTokenWithEvent", amount
+						contractCall(MINT_CONTRACT, "mintFungibleTokenWithEvent", BigInteger.valueOf(amount)
 						)
 								.via(firstMintTxn)
 								.payingWith(ACCOUNT)
@@ -350,9 +350,10 @@ public class ContractMintHTSSuite extends HapiApiSuite {
 								.supplyKey(MULTI_KEY)
 								.exposingCreatedIdTo(idLit -> nonFungibleNum.set(asDotDelimitedLongArray(idLit)[2])),
 						uploadInitCode(MINT_CONTRACT),
-						sourcing(() -> contractCreate(MINT_CONTRACT, nonFungibleNum.get()))
+						sourcing(() -> contractCreate(MINT_CONTRACT, Address.wrap(Address.toChecksumAddress(BigInteger.valueOf(nonFungibleNum.get())))))
 				).when(
 						contractCall(MINT_CONTRACT, "mintNonFungibleTokenWithEvent",
+								//TODO : Fix this case
 								Arrays.asList("Test metadata 1", "Test metadata 2")
 						)
 								.via(firstMintTxn).payingWith(ACCOUNT)
@@ -426,7 +427,7 @@ public class ContractMintHTSSuite extends HapiApiSuite {
 														"sendNFTAfterMint",
 														asHeadlongAddress(asAddress(spec.registry().getAccountID(TOKEN_TREASURY))),
 														asHeadlongAddress(asAddress(spec.registry().getAccountID(theRecipient))),
-														new String[] {"Test metadata 1"}, 1L)
+														new byte[][] {"Test metadata 1".getBytes()}, 1L)
 														.payingWith(GENESIS)
 														.alsoSigningWithFullPrefix(multiKey)
 														.via(nestedTransferTxn)
@@ -529,7 +530,8 @@ public class ContractMintHTSSuite extends HapiApiSuite {
 												cryptoUpdate(theAccount).key(DELEGATE_KEY),
 												contractCall(contract, "revertMintAfterFailedMint",
 														asHeadlongAddress(asAddress(spec.registry().getAccountID(theAccount))),
-														asHeadlongAddress(asAddress(spec.registry().getAccountID(theRecipient))), 20
+														asHeadlongAddress(asAddress(spec.registry().getAccountID(theRecipient))),
+														20L
 												)
 														.payingWith(GENESIS).alsoSigningWithFullPrefix(multiKey)
 														.via(failedMintTxn)
@@ -595,7 +597,7 @@ public class ContractMintHTSSuite extends HapiApiSuite {
 												cryptoUpdate(theAccount).key(DELEGATE_KEY),
 												contractCall(outerContract, "revertMintAfterFailedAssociate",
 														asHeadlongAddress(asAddress(spec.registry().getAccountID(theAccount))),
-														new String[] {"Test metadata 1"}
+														new byte[][] {"Test metadata 1".getBytes()}
 												)
 														.payingWith(GENESIS).alsoSigningWithFullPrefix(MULTI_KEY)
 														.via(nestedMintTxn)
@@ -625,7 +627,7 @@ public class ContractMintHTSSuite extends HapiApiSuite {
 	private HapiApiSpec fungibleTokenMintFailure() {
 		final var theAccount = "anybody";
 		final var mintContractByteCode = "mintContractByteCode";
-		final var amount = "9223372036854775808";
+		final var amount = new BigInteger("9223372036854775808");
 		final var fungibleToken = "fungibleToken";
 		final var multiKey = "purpose";
 		final var theContract = "MintContract";
@@ -648,8 +650,7 @@ public class ContractMintHTSSuite extends HapiApiSuite {
 								.exposingCreatedIdTo(idLit -> fungibleNum.set(asDotDelimitedLongArray(idLit)[2]))
 				).when(
 						uploadInitCode(theContract),
-						// TODO: Investigate this case - Long to Address
-						sourcing(() -> contractCreate(theContract, fungibleNum.get())
+						sourcing(() -> contractCreate(theContract, Address.wrap(Address.toChecksumAddress(BigInteger.valueOf(fungibleNum.get()))))
 								.payingWith(theAccount)
 								.gas(GAS_TO_OFFER))
 				).then(
@@ -690,12 +691,11 @@ public class ContractMintHTSSuite extends HapiApiSuite {
 								.exposingCreatedIdTo(idLit -> fungibleNum.set(asDotDelimitedLongArray(idLit)[2]))
 				).when(
 						uploadInitCode(theContract),
-						// TODO : Long to Address
-						sourcing(() -> contractCreate(theContract, fungibleNum.get())
+						sourcing(() -> contractCreate(theContract, Address.wrap(Address.toChecksumAddress(BigInteger.valueOf(fungibleNum.get()))))
 								.payingWith(theAccount)
 								.gas(GAS_TO_OFFER))
 				).then(
-						contractCall(theContract, "mintFungibleToken", amount)
+						contractCall(theContract, "mintFungibleToken", BigInteger.valueOf(amount))
 								.via(baselineMintWithEnoughGas)
 								.payingWith(theAccount)
 								.alsoSigningWithFullPrefix(multiKey)
@@ -714,7 +714,7 @@ public class ContractMintHTSSuite extends HapiApiSuite {
 							expectedInsufficientGas.set(baselineGas - expectedPrecompileGas);
 						}),
 						sourcing(() ->
-								contractCall(theContract, "mintFungibleToken", amount)
+								contractCall(theContract, "mintFungibleToken", BigInteger.valueOf(amount))
 										.via(firstMintTxn)
 										.payingWith(theAccount)
 										.alsoSigningWithFullPrefix(multiKey)

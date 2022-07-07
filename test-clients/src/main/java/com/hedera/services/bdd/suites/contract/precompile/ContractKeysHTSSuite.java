@@ -471,7 +471,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
 												newKeyNamed(CONTRACT_KEY).shape(CONTRACT_KEY_SHAPE.signedWith(sigs(ON, outerContract))),
 												tokenUpdate(VANILLA_TOKEN).supplyKey(CONTRACT_KEY),
 												contractCall(outerContract, "burnDelegateCall",
-														asHeadlongAddress(asAddress(vanillaTokenTokenID.get())), 0, new long[] {1L})
+														asHeadlongAddress(asAddress(vanillaTokenTokenID.get())), BigInteger.valueOf(0), new long[] {1L})
 														.payingWith(GENESIS)
 														.via("delegateBurnCallWithContractKeyTxn")
 														.hasKnownStatus(ResponseCodeEnum.CONTRACT_REVERT_EXECUTED)
@@ -523,7 +523,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
 												newKeyNamed(CONTRACT_KEY).shape(CONTRACT_KEY_SHAPE.signedWith(sigs(ON, outerContract))),
 												tokenUpdate(VANILLA_TOKEN).supplyKey(CONTRACT_KEY),
 												contractCall(outerContract, "mintDelegateCall",
-														asHeadlongAddress(asAddress(vanillaTokenTokenID.get())), 1)
+														asHeadlongAddress(asAddress(vanillaTokenTokenID.get())), BigInteger.valueOf(1))
 														.payingWith(GENESIS)
 														.via("delegateBurnCallWithContractKeyTxn")
 														.hasKnownStatus(ResponseCodeEnum.CONTRACT_REVERT_EXECUTED)
@@ -673,7 +673,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
 												newKeyNamed(CONTRACT_KEY).shape(CONTRACT_KEY_SHAPE.signedWith(sigs(ON, outerContract))),
 												tokenUpdate(VANILLA_TOKEN).supplyKey(CONTRACT_KEY),
 												contractCall(outerContract, "burnStaticCall",
-														asHeadlongAddress(asAddress(vanillaTokenTokenID.get())), 0, new long[] {1L}
+														asHeadlongAddress(asAddress(vanillaTokenTokenID.get())), BigInteger.valueOf(0), new long[] {1L}
 												)
 														.payingWith(GENESIS)
 														.via("staticBurnCallWithContractKeyTxn")
@@ -716,7 +716,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
 												tokenUpdate(VANILLA_TOKEN).supplyKey(CONTRACT_KEY),
 
 												contractCall(outerContract, "mintStaticCall",
-														asHeadlongAddress(asAddress(vanillaTokenTokenID.get())), 1)
+														asHeadlongAddress(asAddress(vanillaTokenTokenID.get())), BigInteger.valueOf(1))
 														.payingWith(GENESIS)
 														.via("staticBurnCallWithContractKeyTxn")
 														.hasKnownStatus(CONTRACT_REVERT_EXECUTED)
@@ -813,7 +813,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
 												newKeyNamed(DELEGATE_KEY).shape(DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(ON, outerContract))),
 												tokenUpdate(VANILLA_TOKEN).supplyKey(DELEGATE_KEY),
 												contractCall(outerContract, "burnStaticCall",
-														asHeadlongAddress(asAddress(vanillaTokenTokenID.get())), 0, new long[] {1L}
+														asHeadlongAddress(asAddress(vanillaTokenTokenID.get())), BigInteger.valueOf(0), new long[] {1L}
 												)
 														.payingWith(GENESIS)
 														.via("staticBurnCallWithDelegateContractKeyTxn")
@@ -856,7 +856,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
 												newKeyNamed(DELEGATE_KEY).shape(DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(ON, outerContract))),
 												tokenUpdate(VANILLA_TOKEN).supplyKey(DELEGATE_KEY),
 												contractCall(outerContract, "mintStaticCall",
-														asHeadlongAddress(asAddress(vanillaTokenTokenID.get())), 1
+														asHeadlongAddress(asAddress(vanillaTokenTokenID.get())), BigInteger.valueOf(1)
 												)
 														.payingWith(GENESIS)
 														.via("staticBurnCallWithDelegateContractKeyTxn")

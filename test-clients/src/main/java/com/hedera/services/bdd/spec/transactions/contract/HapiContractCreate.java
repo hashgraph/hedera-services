@@ -20,7 +20,6 @@ package com.hedera.services.bdd.spec.transactions.contract;
  * ‍
  */
 
-import com.esaulpaugh.headlong.abi.Tuple;
 import com.google.common.base.MoreObjects;
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
@@ -43,6 +42,7 @@ import com.hederahashgraph.api.proto.java.TransactionResponse;
 import com.swirlds.common.utility.CommonUtils;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.OptionalLong;
@@ -277,10 +277,12 @@ public class HapiContractCreate extends HapiBaseContractCreate<HapiContractCreat
 		if (explicitHexedParams.isPresent()) {
 			params = explicitHexedParams.map(Supplier::get).map(CommonUtils::unhex);
 		} else {
-			params = abi.isPresent()
-					? Optional.of(com.esaulpaugh.headlong.abi.Function.fromJson(abi.get()).encodeCall(Tuple.of(args.get())).array())
-//					? Optional.of(CallTransaction.Function.fromJsonInterface(abi.get()).encodeArguments(args.get()))
-					: Optional.empty();
+			if (abi.isPresent()){
+				byte[] result = com.esaulpaugh.headlong.abi.Function.fromJson(abi.get()).encodeCallWithArgs(args.get()).array();
+				params = Optional.of(Arrays.copyOfRange(result, 4, result.length));
+			} else {
+				params = Optional.empty();
+			}
 		}
 		FileID bytecodeFileId = TxnUtils.asFileId(bytecodeFile.get(), spec);
 		ContractCreateTransactionBody opBody = spec

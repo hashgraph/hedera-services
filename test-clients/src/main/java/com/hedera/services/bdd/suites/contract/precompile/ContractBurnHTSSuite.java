@@ -33,7 +33,6 @@ import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
 
 import java.math.BigInteger;
-import java.util.ArrayList;
 import java.util.List;
 
 import static com.google.protobuf.ByteString.copyFromUtf8;
@@ -176,7 +175,7 @@ public class ContractBurnHTSSuite extends HapiApiSuite {
 								.shape(DELEGATE_CONTRACT.signedWith(THE_CONTRACT)),
 						tokenUpdate(TOKEN)
 								.supplyKey(CONTRACT_KEY),
-						contractCall(THE_CONTRACT, "burnToken", 1, new ArrayList<Long>()
+						contractCall(THE_CONTRACT, "burnToken", BigInteger.valueOf(1), new long[]{}
 						)
 								.via("burn with contract key")
 								.gas(GAS_TO_OFFER),
@@ -234,11 +233,10 @@ public class ContractBurnHTSSuite extends HapiApiSuite {
 				.when(
 						withOpContext(
 								(spec, opLog) -> {
-									final var serialNumbers = new ArrayList<>();
-									serialNumbers.add(1L);
+									final var serialNumbers = new long[] { 1L };
 									allRunFor(
 											spec,
-											contractCall(THE_CONTRACT, "burnToken", 0, serialNumbers
+											contractCall(THE_CONTRACT, "burnToken", BigInteger.valueOf(0), serialNumbers
 											)
 													.payingWith(ALICE)
 													.alsoSigningWithFullPrefix(MULTI_KEY)
@@ -309,7 +307,7 @@ public class ContractBurnHTSSuite extends HapiApiSuite {
 												tokenUpdate(TOKEN)
 														.supplyKey(CONTRACT_KEY),
 												contractCall(outerContract, "burnAfterNestedMint",
-														1, asAddress(spec.registry().getTokenID(TOKEN)), new ArrayList<>()
+														BigInteger.valueOf(1), asHeadlongAddress(asAddress(spec.registry().getTokenID(TOKEN))), new long[]{}
 												)
 														.payingWith(ALICE)
 														.via("burnAfterNestedMint")
@@ -379,7 +377,7 @@ public class ContractBurnHTSSuite extends HapiApiSuite {
 								(spec, opLog) ->
 										allRunFor(
 												spec,
-												contractCreate(theContract, asAddress(spec.registry().getTokenID(tokenWithHbarFee))
+												contractCreate(theContract, asHeadlongAddress(asAddress(spec.registry().getTokenID(tokenWithHbarFee)))
 												)
 														.payingWith(bob)
 														.gas(GAS_TO_OFFER)
@@ -395,14 +393,15 @@ public class ContractBurnHTSSuite extends HapiApiSuite {
 				.when(
 						withOpContext(
 								(spec, opLog) -> {
-									final var serialNumbers = new ArrayList<>();
-									serialNumbers.add(1L);
+									final var serialNumbers = new long[] { 1L };
 									allRunFor(
 											spec,
 											contractCall(theContract, "transferBurn",
-													asAddress(spec.registry().getAccountID(ALICE)),
-													asAddress(spec.registry().getAccountID(bob)), 0,
-													2L, serialNumbers
+													asHeadlongAddress(asAddress(spec.registry().getAccountID(ALICE))),
+													asHeadlongAddress(asAddress(spec.registry().getAccountID(bob))),
+													BigInteger.valueOf(0),
+													2L,
+													serialNumbers
 											)
 													.alsoSigningWithFullPrefix(ALICE, SUPPLY_KEY)
 													.gas(GAS_TO_OFFER)

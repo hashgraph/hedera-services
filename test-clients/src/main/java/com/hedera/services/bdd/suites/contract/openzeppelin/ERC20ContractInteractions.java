@@ -123,8 +123,7 @@ public class ERC20ContractInteractions extends HapiApiSuite {
 									final var notEnoughBalanceTransfer = contractCall(CONTRACT, "transfer", notEnoughBalanceTransferParams
 									)
 											.payingWith(DEFAULT_CONTRACT_SENDER)
-											// Should return different status - Returns "SUCCESS" insted of "CONTRACT_REVERT_EXECUTED"
-//											.hasKnownStatus(CONTRACT_REVERT_EXECUTED)
+											.hasKnownStatus(CONTRACT_REVERT_EXECUTED)
 											.via(NOT_ENOUGH_BALANCE_TRANSFER_TX)
 											.scrambleTxnBody(tx -> {
 												System.out.println(" tx - " + Bytes.wrap(tx.toByteArray()));
@@ -166,7 +165,7 @@ public class ERC20ContractInteractions extends HapiApiSuite {
 													resultWith().logs(
 															inOrder(
 																	logWith()
-																			.longValue(0)
+																			.longValue(INITIAL_AMOUNT)
 																			.withTopicsInOrder(
 																					List.of(
 																							eventSignatureOf("Transfer(address,address,uint256)"),

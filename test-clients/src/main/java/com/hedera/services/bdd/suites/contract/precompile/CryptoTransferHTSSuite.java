@@ -220,7 +220,9 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
 						withOpContext(
 								(spec, opLog) -> {
 									final var token = spec.registry().getTokenID(FUNGIBLE_TOKEN);
+									//TODO : Needs addresses
 									final var sender = spec.registry().getAccountID(SENDER);
+//									final var sender = asHeadlongAddress(asAddress(spec.registry().getAccountID(SENDER)));
 									final var receiver = spec.registry().getAccountID(RECEIVER);
 									final var amountToBeSent = 50L;
 
