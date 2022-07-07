@@ -26,6 +26,8 @@ import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.models.Token;
 import com.hedera.services.store.models.TokenRelationship;
+import com.hederahashgraph.api.proto.java.NftID;
+import com.hederahashgraph.api.proto.java.TokenID;
 import org.junit.jupiter.api.Test;
 
 import static com.hedera.services.utils.EntityNumPair.MISSING_NUM_PAIR;
@@ -72,6 +74,20 @@ class EntityNumPairTest {
 		final var actual = fromNftId(nftId);
 
 		assertEquals(expected, actual);
+	}
+
+	@Test
+	void grpcNftIdFactoryWorks() {
+		final var notOkId = NftID.newBuilder()
+				.setTokenID(TokenID.newBuilder().setShardNum(1).setTokenNum(1234).build())
+				.setSerialNumber(1)
+				.build();
+		assertSame(MISSING_NUM_PAIR, EntityNumPair.fromGrpcNftId(notOkId));
+		final var okId = NftID.newBuilder()
+				.setTokenID(TokenID.newBuilder().setTokenNum(1234).build())
+				.setSerialNumber(1)
+				.build();
+		assertEquals(EntityNumPair.fromLongs(1234L, 1L), EntityNumPair.fromGrpcNftId(okId));
 	}
 
 	@Test

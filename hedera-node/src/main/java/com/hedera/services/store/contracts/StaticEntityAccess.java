@@ -33,6 +33,7 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
+import com.hedera.services.state.submerkle.FcTokenAllowanceId;
 import com.hedera.services.state.virtual.ContractKey;
 import com.hedera.services.state.virtual.IterableContractValue;
 import com.hedera.services.state.virtual.VirtualBlobKey;
@@ -56,11 +57,13 @@ import java.util.Objects;
 import java.util.function.Function;
 
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
+import static com.hedera.services.exceptions.ValidationUtils.validateTrueOrRevert;
 import static com.hedera.services.state.merkle.internals.BitPackUtils.codeFromNum;
 import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
 import static com.hedera.services.utils.EntityNum.fromAccountId;
 import static com.hedera.services.utils.EntityNumPair.fromAccountTokenRel;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALLOWANCE_OWNER_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -205,10 +208,12 @@ public class StaticEntityAccess implements EntityAccess {
 
 	// We don't put these methods on the EntityAccess interface, because they would never be used when processing
 	// a non-static EVM call; then the WorldLedgers should get all such information from its ledgers
+
 	/**
 	 * Returns the name of the given token.
 	 *
-	 * @param tokenId the token of interest
+	 * @param tokenId
+	 * 		the token of interest
 	 * @return the token's name
 	 */
 	public String nameOf(final TokenID tokenId) {
@@ -219,7 +224,8 @@ public class StaticEntityAccess implements EntityAccess {
 	/**
 	 * Returns the symbol of the given token.
 	 *
-	 * @param tokenId the token of interest
+	 * @param tokenId
+	 * 		the token of interest
 	 * @return the token's symbol
 	 */
 	public String symbolOf(final TokenID tokenId) {
@@ -230,7 +236,8 @@ public class StaticEntityAccess implements EntityAccess {
 	/**
 	 * Returns the supply of the given token.
 	 *
-	 * @param tokenId the token of interest
+	 * @param tokenId
+	 * 		the token of interest
 	 * @return the token's supply
 	 */
 	public long supplyOf(final TokenID tokenId) {
@@ -241,7 +248,8 @@ public class StaticEntityAccess implements EntityAccess {
 	/**
 	 * Returns the decimals of the given token.
 	 *
-	 * @param tokenId the token of interest
+	 * @param tokenId
+	 * 		the token of interest
 	 * @return the token's decimals
 	 */
 	public int decimalsOf(final TokenID tokenId) {
@@ -252,7 +260,8 @@ public class StaticEntityAccess implements EntityAccess {
 	/**
 	 * Returns the type of the given token.
 	 *
-	 * @param tokenId the token of interest
+	 * @param tokenId
+	 * 		the token of interest
 	 * @return the token's type
 	 */
 	public TokenType typeOf(final TokenID tokenId) {
@@ -263,8 +272,10 @@ public class StaticEntityAccess implements EntityAccess {
 	/**
 	 * Returns the balance of the given account for the given token.
 	 *
-	 * @param accountId the account of interest
-	 * @param tokenId the token of interest
+	 * @param accountId
+	 * 		the account of interest
+	 * @param tokenId
+	 * 		the token of interest
 	 * @return the token's supply
 	 */
 	public long balanceOf(final AccountID accountId, final TokenID tokenId) {
@@ -277,9 +288,68 @@ public class StaticEntityAccess implements EntityAccess {
 	}
 
 	/**
-	 * Returns the EVM address of the owner of the given NFT.
+	 * Returns the allowance of the given spender for the given owner for the given token.
 	 *
-	 * @param nftId the NFT of interest
+	 * @param ownerId
+	 * 		the owner account
+	 * @param spenderId
+	 * 		the spender account
+	 * @param tokenId
+	 * 		the token of interest
+	 * @return the token's supply
+	 */
+	public long allowanceOf(final AccountID ownerId, final AccountID spenderId, final TokenID tokenId) {
+		final var ownerNum = EntityNum.fromAccountId(ownerId);
+		final var owner = accounts.get(ownerNum);
+		validateTrueOrRevert(owner != null, INVALID_ALLOWANCE_OWNER_ID);
+		final var allowances = owner.getFungibleTokenAllowances();
+		final var fcTokenAllowanceId = FcTokenAllowanceId.from(tokenId, spenderId);
+		return allowances.getOrDefault(fcTokenAllowanceId, 0L);
+	}
+
+	/**
+	 * Returns the mirror EVM address of the approved spender for the given NFT.
+	 *
+	 * @param nftId
+	 * 		the NFT of interest
+	 * @return the token's supply
+	 */
+	public Address approvedSpenderOf(final NftId nftId) {
+		final var nft = nfts.get(EntityNumPair.fromNftId(nftId));
+		validateTrueOrRevert(nft != null, INVALID_TOKEN_NFT_SERIAL_NUMBER);
+		return nft.getSpender().toEvmAddress();
+	}
+
+	/**
+	 * Indicates if the operator is approved-for-all by the given owner for the given (non-fungible) token type.
+	 *
+	 * @param ownerId
+	 * 		the owner account
+	 * @param operatorId
+	 * 		the putative operator account
+	 * @param tokenId
+	 * 		the token of interest
+	 * @return the token's supply
+	 */
+	public boolean isOperator(final AccountID ownerId, final AccountID operatorId, final TokenID tokenId) {
+		final var owner = accounts.get(EntityNum.fromAccountId(ownerId));
+		if (owner == null) {
+			return false;
+		}
+		final var operatorNum = EntityNum.fromAccountId(operatorId);
+		final var operator = accounts.get(operatorNum);
+		if (operator == null) {
+			return false;
+		}
+		final var approvedForAll = owner.getApproveForAllNfts();
+		return approvedForAll.contains(new FcTokenAllowanceId(EntityNum.fromTokenId(tokenId), operatorNum));
+	}
+
+	/**
+	 * Returns the mirror EVM address of the owner of the given NFT.
+	 *
+	 * @param nftId
+	 * 		the NFT of interest
 	 * @return the owner address
 	 */
 	public Address ownerOf(final NftId nftId) {
@@ -297,7 +367,8 @@ public class StaticEntityAccess implements EntityAccess {
 	/**
 	 * Returns the metadata of a given NFT as a {@code String}.
 	 *
-	 * @param nftId the NFT of interest
+	 * @param nftId
+	 * 		the NFT of interest
 	 * @return the metadata
 	 */
 	public String metadataOf(final NftId nftId) {

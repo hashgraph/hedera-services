@@ -157,6 +157,30 @@ public class WorldLedgers {
 		}
 	}
 
+	public long staticAllowanceOf(final AccountID ownerId, final AccountID spenderId, final TokenID tokenId) {
+		if (staticEntityAccess == null) {
+			throw new IllegalStateException("staticAllowanceOf should only be used with StaticEntityAccess");
+		} else {
+			return staticEntityAccess.allowanceOf(ownerId, spenderId, tokenId);
+		}
+	}
+
+	public Address staticApprovedSpenderOf(final NftId nftId) {
+		if (staticEntityAccess == null) {
+			throw new IllegalStateException("staticApprovedOf should only be used with StaticEntityAccess");
+		} else {
+			return staticEntityAccess.approvedSpenderOf(nftId);
+		}
+	}
+
+	public boolean staticIsOperator(final AccountID ownerId, final AccountID operatorId, final TokenID tokenId) {
+		if (staticEntityAccess == null) {
+			throw new IllegalStateException("staticApprovedOf should only be used with StaticEntityAccess");
+		} else {
+			return staticEntityAccess.isOperator(ownerId, operatorId, tokenId);
+		}
+	}
+
 	@Nullable
 	public EntityId ownerIfPresent(final NftId nftId) {
 		if (!areMutable()) {
