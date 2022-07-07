@@ -1,3 +1,18 @@
+/*
+ * Copyright (C) 2021-2022 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package com.hedera.services.contracts.execution;
 
 /*
@@ -22,6 +37,18 @@ package com.hedera.services.contracts.execution;
  *
  */
 
+import static com.hedera.test.utils.TxnUtils.assertFailsWith;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_GAS;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.store.contracts.CodeCache;
 import com.hedera.services.store.contracts.HederaWorldState;
@@ -30,6 +57,12 @@ import com.hedera.services.store.models.Id;
 import com.hedera.services.txns.contract.helpers.StorageExpiry;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import java.math.BigInteger;
+import java.time.Instant;
+import java.util.Deque;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.hyperledger.besu.datatypes.Address;
@@ -49,338 +82,372 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.math.BigInteger;
-import java.time.Instant;
-import java.util.Deque;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-
-import static com.hedera.test.utils.TxnUtils.assertFailsWith;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_GAS;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-
 @ExtendWith(MockitoExtension.class)
 class CreateEvmTxProcessorTest {
-	private static final int MAX_STACK_SIZE = 1024;
+    private static final int MAX_STACK_SIZE = 1024;
 
-	@Mock
-	private LivePricesSource livePricesSource;
-	@Mock
-	private HederaWorldState worldState;
-	@Mock
-	private CodeCache codeCache;
-	@Mock
-	private GlobalDynamicProperties globalDynamicProperties;
-	@Mock
-	private GasCalculator gasCalculator;
-	@Mock
-	private Set<Operation> operations;
-	@Mock
-	private Transaction transaction;
-	@Mock
-	private HederaWorldState.Updater updater;
-	@Mock
-	private Map<String, PrecompiledContract> precompiledContractMap;
-	@Mock
-	private StorageExpiry storageExpiry;
-	@Mock
-	private StorageExpiry.Oracle oracle;
-	@Mock
-	private InHandleBlockMetaSource blockMetaSource;
-	@Mock
-	private HederaBlockValues hederaBlockValues;
+    @Mock private LivePricesSource livePricesSource;
+    @Mock private HederaWorldState worldState;
+    @Mock private CodeCache codeCache;
+    @Mock private GlobalDynamicProperties globalDynamicProperties;
+    @Mock private GasCalculator gasCalculator;
+    @Mock private Set<Operation> operations;
+    @Mock private Transaction transaction;
+    @Mock private HederaWorldState.Updater updater;
+    @Mock private Map<String, PrecompiledContract> precompiledContractMap;
+    @Mock private StorageExpiry storageExpiry;
+    @Mock private StorageExpiry.Oracle oracle;
+    @Mock private InHandleBlockMetaSource blockMetaSource;
+    @Mock private HederaBlockValues hederaBlockValues;
 
-	private CreateEvmTxProcessor createEvmTxProcessor;
-	private final Account sender = new Account(new Id(0, 0, 1002));
-	private final Account receiver = new Account(new Id(0, 0, 1006));
-	private final Account relayer = new Account(new Id(0, 0, 1007));
-	private final Instant consensusTime = Instant.now();
-	private final long expiry = 123456L;
-	private final int MAX_GAS_LIMIT = 10_000_000;
-	private final int MAX_REFUND_PERCENT = 20;
-	private final long INTRINSIC_GAS_COST = 290_000L;
-	private final long GAS_LIMIT = 300_000L;
+    private CreateEvmTxProcessor createEvmTxProcessor;
+    private final Account sender = new Account(new Id(0, 0, 1002));
+    private final Account receiver = new Account(new Id(0, 0, 1006));
+    private final Account relayer = new Account(new Id(0, 0, 1007));
+    private final Instant consensusTime = Instant.now();
+    private final long expiry = 123456L;
+    private final int MAX_GAS_LIMIT = 10_000_000;
+    private final int MAX_REFUND_PERCENT = 20;
+    private final long INTRINSIC_GAS_COST = 290_000L;
+    private final long GAS_LIMIT = 300_000L;
 
-	@BeforeEach
-	private void setup() {
-		CommonProcessorSetup.setup(gasCalculator);
+    @BeforeEach
+    private void setup() {
+        CommonProcessorSetup.setup(gasCalculator);
 
-		createEvmTxProcessor = new CreateEvmTxProcessor(
-				worldState,
-				livePricesSource, codeCache, globalDynamicProperties,
-				gasCalculator, operations, precompiledContractMap, storageExpiry, blockMetaSource);
-	}
+        createEvmTxProcessor =
+                new CreateEvmTxProcessor(
+                        worldState,
+                        livePricesSource,
+                        codeCache,
+                        globalDynamicProperties,
+                        gasCalculator,
+                        operations,
+                        precompiledContractMap,
+                        storageExpiry,
+                        blockMetaSource);
+    }
 
-	@Test
-	void assertSuccessfulExecution() {
-		givenValidMock(true);
-		givenSenderWithBalance(350_000L);
-		given(storageExpiry.hapiCreationOracle(expiry)).willReturn(oracle);
-		given(globalDynamicProperties.chainIdBytes32()).willReturn(Bytes32.ZERO);
-		var result = createEvmTxProcessor.execute(sender, receiver.getId().asEvmAddress(), 33_333L, 1234L, Bytes.EMPTY,
-				consensusTime, expiry);
-		assertTrue(result.isSuccessful());
-		assertEquals(receiver.getId().asGrpcContract(), result.toGrpc().getContractID());
-		verify(codeCache).invalidate(receiver.getId().asEvmAddress());
-	}
+    @Test
+    void assertSuccessfulExecution() {
+        givenValidMock(true);
+        givenSenderWithBalance(350_000L);
+        given(storageExpiry.hapiCreationOracle(expiry)).willReturn(oracle);
+        given(globalDynamicProperties.chainIdBytes32()).willReturn(Bytes32.ZERO);
+        var result =
+                createEvmTxProcessor.execute(
+                        sender,
+                        receiver.getId().asEvmAddress(),
+                        33_333L,
+                        1234L,
+                        Bytes.EMPTY,
+                        consensusTime,
+                        expiry);
+        assertTrue(result.isSuccessful());
+        assertEquals(receiver.getId().asGrpcContract(), result.toGrpc().getContractID());
+        verify(codeCache).invalidate(receiver.getId().asEvmAddress());
+    }
 
-	@Test
-	void assertSuccessfulExecutionEth() {
-		givenValidMockEth(true);
+    @Test
+    void assertSuccessfulExecutionEth() {
+        givenValidMockEth(true);
 
-		given(storageExpiry.hapiCreationOracle(expiry)).willReturn(oracle);
-		var evmAccount = mock(EvmAccount.class);
-		given(updater.getOrCreateSenderAccount(any())).willReturn(evmAccount);
-		var senderMutableAccount = mock(MutableAccount.class);
-		given(evmAccount.getMutable()).willReturn(senderMutableAccount);
-		given(senderMutableAccount.getBalance()).willReturn(Wei.of(2000L));
-		given(globalDynamicProperties.chainIdBytes32()).willReturn(Bytes32.ZERO);
+        given(storageExpiry.hapiCreationOracle(expiry)).willReturn(oracle);
+        var evmAccount = mock(EvmAccount.class);
+        given(updater.getOrCreateSenderAccount(any())).willReturn(evmAccount);
+        var senderMutableAccount = mock(MutableAccount.class);
+        given(evmAccount.getMutable()).willReturn(senderMutableAccount);
+        given(senderMutableAccount.getBalance()).willReturn(Wei.of(2000L));
+        given(globalDynamicProperties.chainIdBytes32()).willReturn(Bytes32.ZERO);
 
-		var result = createEvmTxProcessor.executeEth(sender, receiver.getId().asEvmAddress(), 33_333L, 1234L, Bytes.EMPTY,
-				consensusTime, expiry,  relayer, BigInteger.valueOf(10_000L) , 55_555L);
-		assertTrue(result.isSuccessful());
-		assertEquals(receiver.getId().asGrpcContract(), result.toGrpc().getContractID());
-		verify(codeCache).invalidate(receiver.getId().asEvmAddress());
-	}
+        var result =
+                createEvmTxProcessor.executeEth(
+                        sender,
+                        receiver.getId().asEvmAddress(),
+                        33_333L,
+                        1234L,
+                        Bytes.EMPTY,
+                        consensusTime,
+                        expiry,
+                        relayer,
+                        BigInteger.valueOf(10_000L),
+                        55_555L);
+        assertTrue(result.isSuccessful());
+        assertEquals(receiver.getId().asGrpcContract(), result.toGrpc().getContractID());
+        verify(codeCache).invalidate(receiver.getId().asEvmAddress());
+    }
 
-	@Test
-	void assertSuccessExecutionChargesCorrectMinimumGas() {
-		givenValidMock(true);
-		given(globalDynamicProperties.maxGasRefundPercentage()).willReturn(MAX_REFUND_PERCENT);
-		givenSenderWithBalance(350_000L);
-		given(globalDynamicProperties.chainIdBytes32()).willReturn(Bytes32.ZERO);
-		given(storageExpiry.hapiCreationOracle(expiry)).willReturn(oracle);
-		var result = createEvmTxProcessor.execute(sender, receiver.getId().asEvmAddress(),
-				GAS_LIMIT, 1234L, Bytes.EMPTY, consensusTime, expiry);
-		assertTrue(result.isSuccessful());
-		assertEquals(result.getGasUsed(), GAS_LIMIT - GAS_LIMIT * MAX_REFUND_PERCENT / 100);
-		assertEquals(receiver.getId().asGrpcContract(), result.toGrpc().getContractID());
-	}
+    @Test
+    void assertSuccessExecutionChargesCorrectMinimumGas() {
+        givenValidMock(true);
+        given(globalDynamicProperties.maxGasRefundPercentage()).willReturn(MAX_REFUND_PERCENT);
+        givenSenderWithBalance(350_000L);
+        given(globalDynamicProperties.chainIdBytes32()).willReturn(Bytes32.ZERO);
+        given(storageExpiry.hapiCreationOracle(expiry)).willReturn(oracle);
+        var result =
+                createEvmTxProcessor.execute(
+                        sender,
+                        receiver.getId().asEvmAddress(),
+                        GAS_LIMIT,
+                        1234L,
+                        Bytes.EMPTY,
+                        consensusTime,
+                        expiry);
+        assertTrue(result.isSuccessful());
+        assertEquals(result.getGasUsed(), GAS_LIMIT - GAS_LIMIT * MAX_REFUND_PERCENT / 100);
+        assertEquals(receiver.getId().asGrpcContract(), result.toGrpc().getContractID());
+    }
 
-	@Test
-	void assertSuccessExecutionChargesCorrectGasWhenGasUsedIsLargerThanMinimum() {
-		givenValidMock(true);
-		given(globalDynamicProperties.maxGasRefundPercentage()).willReturn(5);
-		given(gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, true)).willReturn(INTRINSIC_GAS_COST);
-		givenSenderWithBalance(350_000L);
-		given(storageExpiry.hapiCreationOracle(expiry)).willReturn(oracle);
-		given(globalDynamicProperties.chainIdBytes32()).willReturn(Bytes32.ZERO);
-		var result = createEvmTxProcessor.execute(sender, receiver.getId().asEvmAddress(),
-				GAS_LIMIT, 1234L, Bytes.EMPTY, consensusTime, expiry);
-		assertTrue(result.isSuccessful());
-		assertEquals(INTRINSIC_GAS_COST, result.getGasUsed());
-		assertEquals(receiver.getId().asGrpcContract(), result.toGrpc().getContractID());
-	}
+    @Test
+    void assertSuccessExecutionChargesCorrectGasWhenGasUsedIsLargerThanMinimum() {
+        givenValidMock(true);
+        given(globalDynamicProperties.maxGasRefundPercentage()).willReturn(5);
+        given(gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, true))
+                .willReturn(INTRINSIC_GAS_COST);
+        givenSenderWithBalance(350_000L);
+        given(storageExpiry.hapiCreationOracle(expiry)).willReturn(oracle);
+        given(globalDynamicProperties.chainIdBytes32()).willReturn(Bytes32.ZERO);
+        var result =
+                createEvmTxProcessor.execute(
+                        sender,
+                        receiver.getId().asEvmAddress(),
+                        GAS_LIMIT,
+                        1234L,
+                        Bytes.EMPTY,
+                        consensusTime,
+                        expiry);
+        assertTrue(result.isSuccessful());
+        assertEquals(INTRINSIC_GAS_COST, result.getGasUsed());
+        assertEquals(receiver.getId().asGrpcContract(), result.toGrpc().getContractID());
+    }
 
-	@Test
-	void assertFailedExecution() {
-		givenValidMock(false);
-		// and:
-		given(gasCalculator.mStoreOperationGasCost(any(), anyLong())).willReturn(200L);
-		given(gasCalculator.mLoadOperationGasCost(any(), anyLong())).willReturn(30L);
-		given(gasCalculator.memoryExpansionGasCost(any(), anyLong(), anyLong())).willReturn(5000L);
-		givenSenderWithBalance(350_000L);
-		given(storageExpiry.hapiCreationOracle(expiry)).willReturn(oracle);
-		given(globalDynamicProperties.chainIdBytes32()).willReturn(Bytes32.ZERO);
+    @Test
+    void assertFailedExecution() {
+        givenValidMock(false);
+        // and:
+        given(gasCalculator.mStoreOperationGasCost(any(), anyLong())).willReturn(200L);
+        given(gasCalculator.mLoadOperationGasCost(any(), anyLong())).willReturn(30L);
+        given(gasCalculator.memoryExpansionGasCost(any(), anyLong(), anyLong())).willReturn(5000L);
+        givenSenderWithBalance(350_000L);
+        given(storageExpiry.hapiCreationOracle(expiry)).willReturn(oracle);
+        given(globalDynamicProperties.chainIdBytes32()).willReturn(Bytes32.ZERO);
 
-		// when:
-		var result = createEvmTxProcessor.execute(
-				sender,
-				receiver.getId().asEvmAddress(),
-				33_333L,
-				0,
-				Bytes.fromHexString(
-						"6080604052348015600f57600080fd5b506000604e576040517f08c379a" +
-								"00000000000000000000000000000000000000000000000000000000081" +
-								"526004016045906071565b60405180910390fd5b60c9565b6000605d601" +
-								"183608f565b915060668260a0565b602082019050919050565b60006020" +
-								"8201905081810360008301526088816052565b9050919050565b6000828" +
-								"25260208201905092915050565b7f636f756c64206e6f74206578656375" +
-								"7465000000000000000000000000000000600082015250565b603f80610" +
-								"0d76000396000f3fe6080604052600080fdfea2646970667358221220d8" +
-								"2b5e4f0118f9b6972aae9287dfe93930fdbc1e62ca10ea7ac70bde1c0ad" +
-								"d2464736f6c63430008070033"),
-				consensusTime,
-				expiry);
+        // when:
+        var result =
+                createEvmTxProcessor.execute(
+                        sender,
+                        receiver.getId().asEvmAddress(),
+                        33_333L,
+                        0,
+                        Bytes.fromHexString(
+                                "6080604052348015600f57600080fd5b506000604e576040517f08c379a"
+                                    + "00000000000000000000000000000000000000000000000000000000081"
+                                    + "526004016045906071565b60405180910390fd5b60c9565b6000605d601"
+                                    + "183608f565b915060668260a0565b602082019050919050565b60006020"
+                                    + "8201905081810360008301526088816052565b9050919050565b6000828"
+                                    + "25260208201905092915050565b7f636f756c64206e6f74206578656375"
+                                    + "7465000000000000000000000000000000600082015250565b603f80610"
+                                    + "0d76000396000f3fe6080604052600080fdfea2646970667358221220d8"
+                                    + "2b5e4f0118f9b6972aae9287dfe93930fdbc1e62ca10ea7ac70bde1c0ad"
+                                    + "d2464736f6c63430008070033"),
+                        consensusTime,
+                        expiry);
 
-		// then:
-		assertFalse(result.isSuccessful());
-	}
+        // then:
+        assertFalse(result.isSuccessful());
+    }
 
-	@Test
-	void assertIsContractCallFunctionality() {
-		assertEquals(HederaFunctionality.ContractCreate, createEvmTxProcessor.getFunctionType());
-	}
+    @Test
+    void assertIsContractCallFunctionality() {
+        assertEquals(HederaFunctionality.ContractCreate, createEvmTxProcessor.getFunctionType());
+    }
 
-	@Test
-	void assertTransactionSenderAndValue() {
-		// setup:
-		doReturn(Optional.of(receiver.getId().asEvmAddress())).when(transaction).getTo();
-		given(transaction.getSender()).willReturn(sender.getId().asEvmAddress());
-		given(transaction.getValue()).willReturn(Wei.of(1L));
-		final MessageFrame.Builder commonInitialFrame =
-				MessageFrame.builder()
-						.messageFrameStack(mock(Deque.class))
-						.maxStackSize(MAX_STACK_SIZE)
-						.worldUpdater(mock(WorldUpdater.class))
-						.initialGas(GAS_LIMIT)
-						.originator(sender.getId().asEvmAddress())
-						.gasPrice(Wei.ZERO)
-						.sender(sender.getId().asEvmAddress())
-						.value(Wei.of(transaction.getValue().getAsBigInteger()))
-						.apparentValue(Wei.of(transaction.getValue().getAsBigInteger()))
-						.blockValues(mock(BlockValues.class))
-						.depth(0)
-						.completer(__ -> {
-						})
-						.miningBeneficiary(Address.ZERO)
-						.blockHashLookup(h -> null);
-		//when:
-		MessageFrame buildMessageFrame = createEvmTxProcessor.buildInitialFrame(commonInitialFrame,
-				(Address) transaction.getTo().get(), Bytes.EMPTY, 0L);
+    @Test
+    void assertTransactionSenderAndValue() {
+        // setup:
+        doReturn(Optional.of(receiver.getId().asEvmAddress())).when(transaction).getTo();
+        given(transaction.getSender()).willReturn(sender.getId().asEvmAddress());
+        given(transaction.getValue()).willReturn(Wei.of(1L));
+        final MessageFrame.Builder commonInitialFrame =
+                MessageFrame.builder()
+                        .messageFrameStack(mock(Deque.class))
+                        .maxStackSize(MAX_STACK_SIZE)
+                        .worldUpdater(mock(WorldUpdater.class))
+                        .initialGas(GAS_LIMIT)
+                        .originator(sender.getId().asEvmAddress())
+                        .gasPrice(Wei.ZERO)
+                        .sender(sender.getId().asEvmAddress())
+                        .value(Wei.of(transaction.getValue().getAsBigInteger()))
+                        .apparentValue(Wei.of(transaction.getValue().getAsBigInteger()))
+                        .blockValues(mock(BlockValues.class))
+                        .depth(0)
+                        .completer(__ -> {})
+                        .miningBeneficiary(Address.ZERO)
+                        .blockHashLookup(h -> null);
+        // when:
+        MessageFrame buildMessageFrame =
+                createEvmTxProcessor.buildInitialFrame(
+                        commonInitialFrame, (Address) transaction.getTo().get(), Bytes.EMPTY, 0L);
 
-		//expect:
-		assertEquals(transaction.getSender(), buildMessageFrame.getSenderAddress());
-		assertEquals(transaction.getValue(), buildMessageFrame.getApparentValue());
-	}
+        // expect:
+        assertEquals(transaction.getSender(), buildMessageFrame.getSenderAddress());
+        assertEquals(transaction.getValue(), buildMessageFrame.getApparentValue());
+    }
 
-	@Test
-	void throwsWhenSenderCannotCoverUpfrontCost() {
-		givenInvalidMock();
-		givenSenderWithBalance(123);
-		given(globalDynamicProperties.chainIdBytes32()).willReturn(Bytes32.ZERO);
+    @Test
+    void throwsWhenSenderCannotCoverUpfrontCost() {
+        givenInvalidMock();
+        givenSenderWithBalance(123);
+        given(globalDynamicProperties.chainIdBytes32()).willReturn(Bytes32.ZERO);
 
-		Address receiver = this.receiver.getId().asEvmAddress();
-		assertFailsWith(
-				() -> createEvmTxProcessor
-						.execute(sender, receiver, 333_333L, 1234L, Bytes.EMPTY, consensusTime, expiry),
-				ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE);
-	}
+        Address receiver = this.receiver.getId().asEvmAddress();
+        assertFailsWith(
+                () ->
+                        createEvmTxProcessor.execute(
+                                sender,
+                                receiver,
+                                333_333L,
+                                1234L,
+                                Bytes.EMPTY,
+                                consensusTime,
+                                expiry),
+                ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE);
+    }
 
-	@Test
-	void throwsWhenIntrinsicGasCostExceedsGasLimit() {
-		givenInvalidMock();
-		givenExtantSender();
-		given(globalDynamicProperties.chainIdBytes32()).willReturn(Bytes32.ZERO);
+    @Test
+    void throwsWhenIntrinsicGasCostExceedsGasLimit() {
+        givenInvalidMock();
+        givenExtantSender();
+        given(globalDynamicProperties.chainIdBytes32()).willReturn(Bytes32.ZERO);
 
-		Address receiver = this.receiver.getId().asEvmAddress();
-		assertFailsWith(
-				() -> createEvmTxProcessor
-						.execute(sender, receiver, 33_333L, 1234L, Bytes.EMPTY, consensusTime, expiry),
-				INSUFFICIENT_GAS);
-	}
+        Address receiver = this.receiver.getId().asEvmAddress();
+        assertFailsWith(
+                () ->
+                        createEvmTxProcessor.execute(
+                                sender,
+                                receiver,
+                                33_333L,
+                                1234L,
+                                Bytes.EMPTY,
+                                consensusTime,
+                                expiry),
+                INSUFFICIENT_GAS);
+    }
 
-	@Test
-	void throwsWhenIntrinsicGasCostExceedsGasLimitAndGasLimitIsEqualToMaxGasLimit() {
-		givenInvalidMock();
-		givenExtantSender();
-		given(gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, true)).willReturn(MAX_GAS_LIMIT + 1L);
-		given(globalDynamicProperties.chainIdBytes32()).willReturn(Bytes32.ZERO);
+    @Test
+    void throwsWhenIntrinsicGasCostExceedsGasLimitAndGasLimitIsEqualToMaxGasLimit() {
+        givenInvalidMock();
+        givenExtantSender();
+        given(gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, true))
+                .willReturn(MAX_GAS_LIMIT + 1L);
+        given(globalDynamicProperties.chainIdBytes32()).willReturn(Bytes32.ZERO);
 
-		Address receiver = this.receiver.getId().asEvmAddress();
-		assertFailsWith(
-				() -> createEvmTxProcessor
-						.execute(sender, receiver, 33_333L, 1234L, Bytes.EMPTY, consensusTime, expiry),
-				INSUFFICIENT_GAS);
-	}
+        Address receiver = this.receiver.getId().asEvmAddress();
+        assertFailsWith(
+                () ->
+                        createEvmTxProcessor.execute(
+                                sender,
+                                receiver,
+                                33_333L,
+                                1234L,
+                                Bytes.EMPTY,
+                                consensusTime,
+                                expiry),
+                INSUFFICIENT_GAS);
+    }
 
-	private void givenInvalidMock() {
-		given(worldState.updater()).willReturn(updater);
-		given(gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, true)).willReturn(100_000L);
-	}
+    private void givenInvalidMock() {
+        given(worldState.updater()).willReturn(updater);
+        given(gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, true)).willReturn(100_000L);
+    }
 
-	private void givenValidMock(boolean expectedSuccess) {
-		given(worldState.updater()).willReturn(updater);
-		given(worldState.updater().updater()).willReturn(updater);
-		given(globalDynamicProperties.fundingAccount()).willReturn(new Id(0, 0, 1010).asGrpcAccount());
+    private void givenValidMock(boolean expectedSuccess) {
+        given(worldState.updater()).willReturn(updater);
+        given(worldState.updater().updater()).willReturn(updater);
+        given(globalDynamicProperties.fundingAccount())
+                .willReturn(new Id(0, 0, 1010).asGrpcAccount());
 
-		var evmAccount = mock(EvmAccount.class);
+        var evmAccount = mock(EvmAccount.class);
 
-		given(updater.getOrCreateSenderAccount(sender.getId().asEvmAddress())).willReturn(evmAccount);
-		given(worldState.updater()).willReturn(updater);
+        given(updater.getOrCreateSenderAccount(sender.getId().asEvmAddress()))
+                .willReturn(evmAccount);
+        given(worldState.updater()).willReturn(updater);
 
-		given(gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, true)).willReturn(0L);
+        given(gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, true)).willReturn(0L);
 
-		var senderMutableAccount = mock(MutableAccount.class);
-		given(senderMutableAccount.decrementBalance(any())).willReturn(Wei.of(1234L));
-		given(senderMutableAccount.incrementBalance(any())).willReturn(Wei.of(1500L));
-		given(senderMutableAccount.getNonce()).willReturn(0L);
-		given(senderMutableAccount.getCode()).willReturn(Bytes.EMPTY);
+        var senderMutableAccount = mock(MutableAccount.class);
+        given(senderMutableAccount.decrementBalance(any())).willReturn(Wei.of(1234L));
+        given(senderMutableAccount.incrementBalance(any())).willReturn(Wei.of(1500L));
+        given(senderMutableAccount.getNonce()).willReturn(0L);
+        given(senderMutableAccount.getCode()).willReturn(Bytes.EMPTY);
 
-		if (expectedSuccess) {
-			given(gasCalculator.codeDepositGasCost(0)).willReturn(0L);
-		}
-		given(gasCalculator.getSelfDestructRefundAmount()).willReturn(0L);
-		given(gasCalculator.getMaxRefundQuotient()).willReturn(2L);
+        if (expectedSuccess) {
+            given(gasCalculator.codeDepositGasCost(0)).willReturn(0L);
+        }
+        given(gasCalculator.getSelfDestructRefundAmount()).willReturn(0L);
+        given(gasCalculator.getMaxRefundQuotient()).willReturn(2L);
 
-		given(updater.getSenderAccount(any())).willReturn(evmAccount);
-		given(updater.getSenderAccount(any()).getMutable()).willReturn(senderMutableAccount);
-		given(updater.getOrCreate(any())).willReturn(evmAccount);
-		given(updater.getOrCreate(any()).getMutable()).willReturn(senderMutableAccount);
-		given(updater.getSbhRefund()).willReturn(0L);
+        given(updater.getSenderAccount(any())).willReturn(evmAccount);
+        given(updater.getSenderAccount(any()).getMutable()).willReturn(senderMutableAccount);
+        given(updater.getOrCreate(any())).willReturn(evmAccount);
+        given(updater.getOrCreate(any()).getMutable()).willReturn(senderMutableAccount);
+        given(updater.getSbhRefund()).willReturn(0L);
 
-		given(updater.getSenderAccount(any())).willReturn(evmAccount);
-		given(updater.getSenderAccount(any()).getMutable()).willReturn(senderMutableAccount);
-		given(updater.updater().getOrCreate(any()).getMutable()).willReturn(senderMutableAccount);
-		given(blockMetaSource.computeBlockValues(anyLong())).willReturn(hederaBlockValues);
-	}
+        given(updater.getSenderAccount(any())).willReturn(evmAccount);
+        given(updater.getSenderAccount(any()).getMutable()).willReturn(senderMutableAccount);
+        given(updater.updater().getOrCreate(any()).getMutable()).willReturn(senderMutableAccount);
+        given(blockMetaSource.computeBlockValues(anyLong())).willReturn(hederaBlockValues);
+    }
 
-	private void givenValidMockEth(boolean expectedSuccess) {
-		given(worldState.updater()).willReturn(updater);
-		given(worldState.updater().updater()).willReturn(updater);
-		given(globalDynamicProperties.fundingAccount()).willReturn(new Id(0, 0, 1010).asGrpcAccount());
+    private void givenValidMockEth(boolean expectedSuccess) {
+        given(worldState.updater()).willReturn(updater);
+        given(worldState.updater().updater()).willReturn(updater);
+        given(globalDynamicProperties.fundingAccount())
+                .willReturn(new Id(0, 0, 1010).asGrpcAccount());
 
-		var evmAccount = mock(EvmAccount.class);
+        var evmAccount = mock(EvmAccount.class);
 
-		given(worldState.updater()).willReturn(updater);
+        given(worldState.updater()).willReturn(updater);
 
-		given(gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, true)).willReturn(0L);
+        given(gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, true)).willReturn(0L);
 
-		var senderMutableAccount = mock(MutableAccount.class);
-		given(senderMutableAccount.decrementBalance(any())).willReturn(Wei.of(1234L));
-		given(senderMutableAccount.incrementBalance(any())).willReturn(Wei.of(1500L));
-		given(senderMutableAccount.getNonce()).willReturn(0L);
-		given(senderMutableAccount.getCode()).willReturn(Bytes.EMPTY);
+        var senderMutableAccount = mock(MutableAccount.class);
+        given(senderMutableAccount.decrementBalance(any())).willReturn(Wei.of(1234L));
+        given(senderMutableAccount.incrementBalance(any())).willReturn(Wei.of(1500L));
+        given(senderMutableAccount.getNonce()).willReturn(0L);
+        given(senderMutableAccount.getCode()).willReturn(Bytes.EMPTY);
 
-		if (expectedSuccess) {
-			given(gasCalculator.codeDepositGasCost(0)).willReturn(0L);
-		}
-		given(gasCalculator.getSelfDestructRefundAmount()).willReturn(0L);
-		given(gasCalculator.getMaxRefundQuotient()).willReturn(2L);
+        if (expectedSuccess) {
+            given(gasCalculator.codeDepositGasCost(0)).willReturn(0L);
+        }
+        given(gasCalculator.getSelfDestructRefundAmount()).willReturn(0L);
+        given(gasCalculator.getMaxRefundQuotient()).willReturn(2L);
 
-		given(updater.getSenderAccount(any())).willReturn(evmAccount);
-		given(updater.getSenderAccount(any()).getMutable()).willReturn(senderMutableAccount);
-		given(updater.getOrCreate(any())).willReturn(evmAccount);
-		given(updater.getOrCreate(any()).getMutable()).willReturn(senderMutableAccount);
-		given(updater.getSbhRefund()).willReturn(0L);
+        given(updater.getSenderAccount(any())).willReturn(evmAccount);
+        given(updater.getSenderAccount(any()).getMutable()).willReturn(senderMutableAccount);
+        given(updater.getOrCreate(any())).willReturn(evmAccount);
+        given(updater.getOrCreate(any()).getMutable()).willReturn(senderMutableAccount);
+        given(updater.getSbhRefund()).willReturn(0L);
 
-		given(updater.getSenderAccount(any())).willReturn(evmAccount);
-		given(updater.getSenderAccount(any()).getMutable()).willReturn(senderMutableAccount);
-		given(updater.updater().getOrCreate(any()).getMutable()).willReturn(senderMutableAccount);
-		given(blockMetaSource.computeBlockValues(anyLong())).willReturn(hederaBlockValues);
-	}
+        given(updater.getSenderAccount(any())).willReturn(evmAccount);
+        given(updater.getSenderAccount(any()).getMutable()).willReturn(senderMutableAccount);
+        given(updater.updater().getOrCreate(any()).getMutable()).willReturn(senderMutableAccount);
+        given(blockMetaSource.computeBlockValues(anyLong())).willReturn(hederaBlockValues);
+    }
 
-	private void givenExtantSender() {
-		givenSenderWithBalance(-1L);
-	}
+    private void givenExtantSender() {
+        givenSenderWithBalance(-1L);
+    }
 
-	private void givenSenderWithBalance(final long amount) {
-		final var wrappedSenderAccount = mock(EvmAccount.class);
-		final var mutableSenderAccount = mock(MutableAccount.class);
-		given(wrappedSenderAccount.getMutable()).willReturn(mutableSenderAccount);
-		given(updater.getOrCreateSenderAccount(sender.getId().asEvmAddress())).willReturn(wrappedSenderAccount);
+    private void givenSenderWithBalance(final long amount) {
+        final var wrappedSenderAccount = mock(EvmAccount.class);
+        final var mutableSenderAccount = mock(MutableAccount.class);
+        given(wrappedSenderAccount.getMutable()).willReturn(mutableSenderAccount);
+        given(updater.getOrCreateSenderAccount(sender.getId().asEvmAddress()))
+                .willReturn(wrappedSenderAccount);
 
-		if (amount >= 0) {
-			given(mutableSenderAccount.getBalance()).willReturn(Wei.of(amount));
-		}
-	}
+        if (amount >= 0) {
+            given(mutableSenderAccount.getBalance()).willReturn(Wei.of(amount));
+        }
+    }
 }
