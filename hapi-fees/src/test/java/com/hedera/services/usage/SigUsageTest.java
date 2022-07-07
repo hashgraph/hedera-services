@@ -1,6 +1,11 @@
-/*
- * Copyright (C) 2021 Hedera Hashgraph, LLC
- *
+package com.hedera.services.usage;
+
+/*-
+ * ‌
+ * Hedera Services API Fees
+ * ​
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
+ * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -12,38 +17,39 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ * ‍
  */
-package com.hedera.services.usage;
+
+import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
-import org.junit.jupiter.api.Test;
-
 class SigUsageTest {
-    @Test
-    void gettersWork() {
-        SigUsage one = new SigUsage(3, 256, 2);
-        assertEquals(3, one.numSigs());
-        assertEquals(256, one.sigsSize());
-        assertEquals(2, one.numPayerKeys());
-    }
+	@Test
+	void gettersWork() {
+		SigUsage one = new SigUsage(3, 256, 2);
+		assertEquals(3, one.numSigs());
+		assertEquals(256, one.sigsSize());
+		assertEquals(2, one.numPayerKeys());
+	}
 
-    @Test
-    void sigUsageObjectContractWorks() {
-        SigUsage one = new SigUsage(3, 256, 2);
-        SigUsage two = new SigUsage(3, 256, 2);
-        SigUsage three = new SigUsage(4, 256, 2);
+	@Test
+	void sigUsageObjectContractWorks() {
+		SigUsage one = new SigUsage(3, 256, 2);
+		SigUsage two = new SigUsage(3, 256, 2);
+		SigUsage three = new SigUsage(4, 256, 2);
 
-        assertNotEquals(null, one);
-        assertNotEquals(new Object(), one);
-        assertNotEquals(one, three);
-        assertEquals(one, two);
+		assertNotEquals(null, one);
+		assertNotEquals(new Object(), one);
+		assertNotEquals(one, three);
+		assertEquals(one, two);
 
-        assertEquals(one.hashCode(), two.hashCode());
-        assertNotEquals(one.hashCode(), three.hashCode());
+		assertEquals(one.hashCode(), two.hashCode());
+		assertNotEquals(one.hashCode(), three.hashCode());
 
-        assertEquals(one.toString(), two.toString());
-        assertNotEquals(one.toString(), three.toString());
-    }
+
+		assertEquals(one.toString(), two.toString());
+		assertNotEquals(one.toString(), three.toString());
+	}
 }

@@ -1,6 +1,11 @@
-/*
- * Copyright (C) 2021 Hedera Hashgraph, LLC
- *
+package com.hedera.services.usage.token.meta;
+
+/*-
+ * ‌
+ * Hedera Services API Fees
+ * ​
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
+ * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -12,38 +17,39 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ * ‍
  */
-package com.hedera.services.usage.token.meta;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import org.junit.jupiter.api.Test;
 
+import static com.hederahashgraph.api.proto.java.SubType.TOKEN_NON_FUNGIBLE_UNIQUE;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 class TokenFreezeMetaTest {
-    @Test
-    void getterAndToStringWork() {
-        final var expected = "TokenFreezeMeta{bpt=132}";
+	@Test
+	void getterAndToStringWork() {
+		final var expected = "TokenFreezeMeta{bpt=132}";
 
-        final var subject = new TokenFreezeMeta(132);
-        assertEquals(132, subject.getBpt());
-        assertEquals(expected, subject.toString());
-    }
+		final var subject = new TokenFreezeMeta(132);
+		assertEquals(132, subject.getBpt());
+		assertEquals(expected, subject.toString());
+	}
 
-    @Test
-    void unfreezeBasicsAlso() {
-        final var expected = "TokenUnfreezeMeta{bpt=48}";
+	@Test
+	void unfreezeBasicsAlso() {
+		final var expected = "TokenUnfreezeMeta{bpt=48}";
 
-        final var subject = new TokenUnfreezeMeta(48);
-        assertEquals(48, subject.getBpt());
-        assertEquals(expected, subject.toString());
-    }
+		final var subject = new TokenUnfreezeMeta(48);
+		assertEquals(48, subject.getBpt());
+		assertEquals(expected, subject.toString());
+	}
 
-    @Test
-    void hashCodeAndEqualsWork() {
-        final var meta1 = new TokenFreezeMeta(100);
-        final var meta2 = new TokenFreezeMeta(100);
+	@Test
+	void hashCodeAndEqualsWork() {
+		final var meta1 = new TokenFreezeMeta(100);
+		final var meta2 = new TokenFreezeMeta(100);
 
-        assertEquals(meta1, meta2);
-        assertEquals(meta1.hashCode(), meta1.hashCode());
-    }
+		assertEquals(meta1, meta2);
+		assertEquals(meta1.hashCode(), meta1.hashCode());
+	}
 }

@@ -1,6 +1,11 @@
-/*
- * Copyright (C) 2021-2022 Hedera Hashgraph, LLC
- *
+package com.hedera.services.usage.state;
+
+/*-
+ * ‌
+ * Hedera Services API Fees
+ * ​
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
+ * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -12,17 +17,8 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ * ‍
  */
-package com.hedera.services.usage.state;
-
-import static com.hedera.services.usage.SingletonEstimatorUtils.ESTIMATOR_UTILS;
-import static com.hederahashgraph.fee.FeeBuilder.BASIC_ACCOUNT_AMT_SIZE;
-import static com.hederahashgraph.fee.FeeBuilder.BASIC_RECEIPT_SIZE;
-import static com.hederahashgraph.fee.FeeBuilder.BASIC_TX_BODY_SIZE;
-import static com.hederahashgraph.fee.FeeBuilder.BASIC_TX_RECORD_SIZE;
-import static com.hederahashgraph.fee.FeeBuilder.HRS_DIVISOR;
-import static com.hederahashgraph.fee.FeeBuilder.INT_SIZE;
-import static com.hederahashgraph.fee.FeeBuilder.RECEIPT_STORAGE_TIME_SEC;
 
 import com.google.common.base.MoreObjects;
 import com.hedera.services.pricing.ResourceProvider;
@@ -33,305 +29,309 @@ import com.hederahashgraph.api.proto.java.FeeData;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 
+import static com.hedera.services.usage.SingletonEstimatorUtils.ESTIMATOR_UTILS;
+import static com.hederahashgraph.fee.FeeBuilder.BASIC_ACCOUNT_AMT_SIZE;
+import static com.hederahashgraph.fee.FeeBuilder.BASIC_RECEIPT_SIZE;
+import static com.hederahashgraph.fee.FeeBuilder.BASIC_TX_BODY_SIZE;
+import static com.hederahashgraph.fee.FeeBuilder.BASIC_TX_RECORD_SIZE;
+import static com.hederahashgraph.fee.FeeBuilder.HRS_DIVISOR;
+import static com.hederahashgraph.fee.FeeBuilder.INT_SIZE;
+import static com.hederahashgraph.fee.FeeBuilder.RECEIPT_STORAGE_TIME_SEC;
+
 /**
  * Accumulates an estimate of the resources used by a HAPI operation.
  *
- * <p>Resources are consumed by three service providers,
- *
+ * Resources are consumed by three service providers,
  * <ol>
- *   <li>The network when providing gossip, consensus, and short-term storage of receipts.
- *   <li>The node when communicating with the client, performing prechecks, and submitting to the
- *       network.
- *   <li>The network when performing the logical service itself.
+ * <li>The network when providing gossip, consensus, and short-term storage of receipts.</li>
+ * <li>The node when communicating with the client, performing prechecks, and submitting to the network.</li>
+ * <li>The network when performing the logical service itself.</li>
  * </ol>
  *
- * The key fact is that the estimated resource usage for all three service providers is a pure
- * function of the <b>same</b> base usage estimates, for eight types of resources:
- *
+ * The key fact is that the estimated resource usage for all three service providers
+ * is a pure function of the <b>same</b> base usage estimates, for eight types
+ * of resources:
  * <ol>
- *   <li>Network capacity needed to submit an operation to the network. Units are {@code bpt}
- *       (“bytes per transaction”).
- *   <li>Network capacity needed to return information from memory in response to an operation.
- *       Units are {@code bpr} (“bytes per response).
- *   <li>Network capacity needed to return information from disk in response to an operation. Units
- *       are {@code sbpr} (“storage bytes per response”).
- *   <li>RAM needed to persist an operation’s effects on consensus state, for as long as such
- *       effects are visible. Units are {@code rbh} (“RAM byte-hours”).
- *   <li>Disk space needed to persist the operation’s effect on consensus state, for as long as such
- *       effects are visible. Units are {@code sbh} (“storage byte-hours”).
- *   <li>Computation needed to verify a Ed25519 cryptographic signature. Units are {@code vpt}
- *       (“verifications per transaction”).
- *   <li>Computation needed for incremental execution of a Solidity smart contract. Units are {@code
- *       gas}.
+ * <li>Network capacity needed to submit an operation to the network.
+ * Units are {@code bpt} (“bytes per transaction”).</li>
+ * <li>Network capacity needed to return information from memory in response to an operation.
+ * Units are {@code bpr} (“bytes per response).</li>
+ * <li>Network capacity needed to return information from disk in response to an operation.
+ * Units are {@code sbpr} (“storage bytes per response”).</li>
+ * <li>RAM needed to persist an operation’s effects on consensus state, for as long as such effects are visible.
+ * Units are {@code rbh} (“RAM byte-hours”).</li>
+ * <li>Disk space needed to persist the operation’s effect on consensus state, for as long as such effects are visible.
+ * Units are {@code sbh} (“storage byte-hours”).</li>
+ * <li>Computation needed to verify a Ed25519 cryptographic signature.
+ * Units are {@code vpt} (“verifications per transaction”).</li>
+ * <li>Computation needed for incremental execution of a Solidity smart contract.
+ * Units are {@code gas}.</li>
  * </ol>
  */
 public class UsageAccumulator {
-    private static final long LONG_BASIC_TX_BODY_SIZE = BASIC_TX_BODY_SIZE;
+	private static final long LONG_BASIC_TX_BODY_SIZE = BASIC_TX_BODY_SIZE;
 
-    /* Captures how much signature verification work was done exclusively by the submitting node. */
-    private long numPayerKeys;
+	/* Captures how much signature verification work was done exclusively by the submitting node. */
+	private long numPayerKeys;
 
-    private long bpt;
-    private long bpr;
-    private long sbpr;
-    private long vpt;
-    private long gas;
-    /* For storage resources, we use a finer-grained estimate in
-     * units of seconds rather than hours, since expiration times
-     * are given in seconds since the (consensus) epoch. */
-    private long rbs;
-    private long sbs;
-    private long networkRbs;
+	private long bpt;
+	private long bpr;
+	private long sbpr;
+	private long vpt;
+	private long gas;
+	/* For storage resources, we use a finer-grained estimate in
+	 * units of seconds rather than hours, since expiration times
+	 * are given in seconds since the (consensus) epoch. */
+	private long rbs;
+	private long sbs;
+	private long networkRbs;
 
-    public static UsageAccumulator fromGrpc(FeeData usage) {
-        final var into = new UsageAccumulator();
+	public static UsageAccumulator fromGrpc(FeeData usage) {
+		final var into = new UsageAccumulator();
 
-        /* Network */
-        final var networkUsage = usage.getNetworkdata();
-        into.setUniversalBpt(networkUsage.getBpt());
-        into.setVpt(networkUsage.getVpt());
-        into.setNetworkRbs(networkUsage.getRbh() * HRS_DIVISOR);
+		/* Network */
+		final var networkUsage = usage.getNetworkdata();
+		into.setUniversalBpt(networkUsage.getBpt());
+		into.setVpt(networkUsage.getVpt());
+		into.setNetworkRbs(networkUsage.getRbh() * HRS_DIVISOR);
 
-        /* Node */
-        final var nodeUsage = usage.getNodedata();
-        into.setNumPayerKeys(nodeUsage.getVpt());
-        into.setBpr(nodeUsage.getBpr());
-        into.setSbpr(nodeUsage.getSbpr());
+		/* Node */
+		final var nodeUsage = usage.getNodedata();
+		into.setNumPayerKeys(nodeUsage.getVpt());
+		into.setBpr(nodeUsage.getBpr());
+		into.setSbpr(nodeUsage.getSbpr());
 
-        /* Service */
-        final var serviceUsage = usage.getServicedata();
-        into.setRbs(serviceUsage.getRbh() * HRS_DIVISOR);
-        into.setSbs(serviceUsage.getSbh() * HRS_DIVISOR);
+		/* Service */
+		final var serviceUsage = usage.getServicedata();
+		into.setRbs(serviceUsage.getRbh() * HRS_DIVISOR);
+		into.setSbs(serviceUsage.getSbh() * HRS_DIVISOR);
 
-        return into;
-    }
+		return into;
+	}
 
-    public void resetForTransaction(BaseTransactionMeta baseMeta, SigUsage sigUsage) {
-        final int memoBytes = baseMeta.memoUtf8Bytes();
-        final int numTransfers = baseMeta.numExplicitTransfers();
+	public void resetForTransaction(BaseTransactionMeta baseMeta, SigUsage sigUsage) {
+		final int memoBytes = baseMeta.memoUtf8Bytes();
+		final int numTransfers = baseMeta.numExplicitTransfers();
 
-        gas = sbs = sbpr = 0;
+		gas = sbs = sbpr = 0;
 
-        bpr = INT_SIZE;
-        vpt = sigUsage.numSigs();
-        bpt = LONG_BASIC_TX_BODY_SIZE + memoBytes + sigUsage.sigsSize();
-        rbs =
-                RECEIPT_STORAGE_TIME_SEC
-                        * (BASIC_TX_RECORD_SIZE
-                                + memoBytes
-                                + BASIC_ACCOUNT_AMT_SIZE * numTransfers);
+		bpr = INT_SIZE;
+		vpt = sigUsage.numSigs();
+		bpt = LONG_BASIC_TX_BODY_SIZE + memoBytes + sigUsage.sigsSize();
+		rbs = RECEIPT_STORAGE_TIME_SEC * (BASIC_TX_RECORD_SIZE + memoBytes + BASIC_ACCOUNT_AMT_SIZE * numTransfers);
 
-        networkRbs = RECEIPT_STORAGE_TIME_SEC * BASIC_RECEIPT_SIZE;
-        numPayerKeys = sigUsage.numPayerKeys();
-    }
+		networkRbs = RECEIPT_STORAGE_TIME_SEC * BASIC_RECEIPT_SIZE;
+		numPayerKeys = sigUsage.numPayerKeys();
+	}
 
-    /* Resource accumulator methods */
-    public void addBpt(long amount) {
-        bpt += amount;
-    }
+	/* Resource accumulator methods */
+	public void addBpt(long amount) {
+		bpt += amount;
+	}
 
-    public void addBpr(long amount) {
-        bpr += amount;
-    }
+	public void addBpr(long amount) {
+		bpr += amount;
+	}
 
-    public void addSbpr(long amount) {
-        sbpr += amount;
-    }
+	public void addSbpr(long amount) {
+		sbpr += amount;
+	}
 
-    public void addVpt(long amount) {
-        vpt += amount;
-    }
+	public void addVpt(long amount) {
+		vpt += amount;
+	}
 
-    public void addGas(long amount) {
-        gas += amount;
-    }
+	public void addGas(long amount) {
+		gas += amount;
+	}
 
-    public void addRbs(long amount) {
-        rbs += amount;
-    }
+	public void addRbs(long amount) {
+		rbs += amount;
+	}
 
-    public void addSbs(long amount) {
-        sbs += amount;
-    }
+	public void addSbs(long amount) {
+		sbs += amount;
+	}
 
-    public void addNetworkRbs(long amount) {
-        networkRbs += amount;
-    }
+	public void addNetworkRbs(long amount) {
+		networkRbs += amount;
+	}
 
-    /* Provider-scoped usage estimates (pure functions of the total resource usage) */
-    /* -- NETWORK & NODE -- */
-    public long getUniversalBpt() {
-        return bpt;
-    }
+	/* Provider-scoped usage estimates (pure functions of the total resource usage) */
+	/* -- NETWORK & NODE -- */
+	public long getUniversalBpt() {
+		return bpt;
+	}
 
-    /* -- NETWORK -- */
-    public long getNetworkVpt() {
-        return vpt;
-    }
+	/* -- NETWORK -- */
+	public long getNetworkVpt() {
+		return vpt;
+	}
 
-    public long getNetworkRbh() {
-        return ESTIMATOR_UTILS.nonDegenerateDiv(networkRbs, HRS_DIVISOR);
-    }
+	public long getNetworkRbh() {
+		return ESTIMATOR_UTILS.nonDegenerateDiv(networkRbs, HRS_DIVISOR);
+	}
 
-    /* -- NODE -- */
-    public long getNodeBpr() {
-        return bpr;
-    }
+	/* -- NODE -- */
+	public long getNodeBpr() {
+		return bpr;
+	}
 
-    public long getNodeSbpr() {
-        return sbpr;
-    }
+	public long getNodeSbpr() {
+		return sbpr;
+	}
 
-    public long getNodeVpt() {
-        return numPayerKeys;
-    }
+	public long getNodeVpt() {
+		return numPayerKeys;
+	}
 
-    /* -- SERVICE -- */
-    public long getServiceRbh() {
-        return ESTIMATOR_UTILS.nonDegenerateDiv(rbs, HRS_DIVISOR);
-    }
+	/* -- SERVICE -- */
+	public long getServiceRbh() {
+		return ESTIMATOR_UTILS.nonDegenerateDiv(rbs, HRS_DIVISOR);
+	}
 
-    public long getServiceSbh() {
-        return ESTIMATOR_UTILS.nonDegenerateDiv(sbs, HRS_DIVISOR);
-    }
+	public long getServiceSbh() {
+		return ESTIMATOR_UTILS.nonDegenerateDiv(sbs, HRS_DIVISOR);
+	}
 
-    public long get(ResourceProvider provider, UsableResource resource) {
-        switch (provider) {
-            case NETWORK:
-                switch (resource) {
-                    case BPT:
-                        return getUniversalBpt();
-                    case VPT:
-                        return getNetworkVpt();
-                    case RBH:
-                        return getNetworkRbh();
-                    case CONSTANT:
-                        return 1L;
-                    default:
-                        return 0L;
-                }
-            case NODE:
-                switch (resource) {
-                    case BPT:
-                        return getUniversalBpt();
-                    case BPR:
-                        return getNodeBpr();
-                    case SBPR:
-                        return getNodeSbpr();
-                    case VPT:
-                        return getNodeVpt();
-                    case CONSTANT:
-                        return 1L;
-                    default:
-                        return 0L;
-                }
-            case SERVICE:
-                switch (resource) {
-                    case RBH:
-                        return getServiceRbh();
-                    case SBH:
-                        return getServiceSbh();
-                    case CONSTANT:
-                        return 1L;
-                    default:
-                        return 0L;
-                }
-        }
-        return 0L;
-    }
 
-    @Override
-    public String toString() {
-        return MoreObjects.toStringHelper(this)
-                .add("universalBpt", getUniversalBpt())
-                .add("networkVpt", getNetworkVpt())
-                .add("networkRbh", getNetworkRbh())
-                .add("nodeBpr", getNodeBpr())
-                .add("nodeSbpr", getNodeSbpr())
-                .add("nodeVpt", getNodeVpt())
-                .add("serviceSbh", getServiceSbh())
-                .add("serviceRbh", getServiceRbh())
-                .add("gas", getGas())
-                .add("rbs", getRbs())
-                .toString();
-    }
+	public long get(ResourceProvider provider, UsableResource resource) {
+		switch (provider) {
+			case NETWORK:
+				switch (resource) {
+					case BPT:
+						return getUniversalBpt();
+					case VPT:
+						return getNetworkVpt();
+					case RBH:
+						return getNetworkRbh();
+					case CONSTANT:
+						return 1L;
+					default:
+						return 0L;
+				}
+			case NODE:
+				switch (resource) {
+					case BPT:
+						return getUniversalBpt();
+					case BPR:
+						return getNodeBpr();
+					case SBPR:
+						return getNodeSbpr();
+					case VPT:
+						return getNodeVpt();
+					case CONSTANT:
+						return 1L;
+					default:
+						return 0L;
+				}
+			case SERVICE:
+				switch (resource) {
+					case RBH:
+						return getServiceRbh();
+					case SBH:
+						return getServiceSbh();
+					case CONSTANT:
+						return 1L;
+					default:
+						return 0L;
+				}
+		}
+		return 0L;
+	}
 
-    /* Helpers for test coverage */
-    long getBpt() {
-        return bpt;
-    }
+	@Override
+	public String toString() {
+		return MoreObjects.toStringHelper(this)
+				.add("universalBpt", getUniversalBpt())
+				.add("networkVpt", getNetworkVpt())
+				.add("networkRbh", getNetworkRbh())
+				.add("nodeBpr", getNodeBpr())
+				.add("nodeSbpr", getNodeSbpr())
+				.add("nodeVpt", getNodeVpt())
+				.add("serviceSbh", getServiceSbh())
+				.add("serviceRbh", getServiceRbh())
+				.add("gas", getGas())
+				.add("rbs", getRbs())
+				.toString();
+	}
 
-    long getBpr() {
-        return bpr;
-    }
+	/* Helpers for test coverage */
+	long getBpt() {
+		return bpt;
+	}
 
-    long getSbpr() {
-        return sbpr;
-    }
+	long getBpr() {
+		return bpr;
+	}
 
-    long getVpt() {
-        return vpt;
-    }
+	long getSbpr() {
+		return sbpr;
+	}
 
-    long getGas() {
-        return gas;
-    }
+	long getVpt() {
+		return vpt;
+	}
 
-    long getRbs() {
-        return rbs;
-    }
+	long getGas() {
+		return gas;
+	}
 
-    long getSbs() {
-        return sbs;
-    }
+	long getRbs() {
+		return rbs;
+	}
 
-    long getNetworkRbs() {
-        return networkRbs;
-    }
+	long getSbs() {
+		return sbs;
+	}
 
-    long getNumPayerKeys() {
-        return numPayerKeys;
-    }
+	long getNetworkRbs() {
+		return networkRbs;
+	}
 
-    public void setNumPayerKeys(long numPayerKeys) {
-        this.numPayerKeys = numPayerKeys;
-    }
+	long getNumPayerKeys() {
+		return numPayerKeys;
+	}
 
-    @Override
-    public boolean equals(Object obj) {
-        return EqualsBuilder.reflectionEquals(this, obj);
-    }
+	public void setNumPayerKeys(long numPayerKeys) {
+		this.numPayerKeys = numPayerKeys;
+	}
 
-    @Override
-    public int hashCode() {
-        return HashCodeBuilder.reflectionHashCode(this);
-    }
+	@Override
+	public boolean equals(Object obj) {
+		return EqualsBuilder.reflectionEquals(this, obj);
+	}
 
-    private void setUniversalBpt(long bpt) {
-        this.bpt = bpt;
-    }
+	@Override
+	public int hashCode() {
+		return HashCodeBuilder.reflectionHashCode(this);
+	}
 
-    private void setBpr(long bpr) {
-        this.bpr = bpr;
-    }
+	private void setUniversalBpt(long bpt) {
+		this.bpt = bpt;
+	}
 
-    private void setSbpr(long sbpr) {
-        this.sbpr = sbpr;
-    }
+	private void setBpr(long bpr) {
+		this.bpr = bpr;
+	}
 
-    private void setVpt(long vpt) {
-        this.vpt = vpt;
-    }
+	private void setSbpr(long sbpr) {
+		this.sbpr = sbpr;
+	}
 
-    private void setRbs(long rbs) {
-        this.rbs = rbs;
-    }
+	private void setVpt(long vpt) {
+		this.vpt = vpt;
+	}
 
-    private void setSbs(long sbs) {
-        this.sbs = sbs;
-    }
+	private void setRbs(long rbs) {
+		this.rbs = rbs;
+	}
 
-    private void setNetworkRbs(long networkRbs) {
-        this.networkRbs = networkRbs;
-    }
+	private void setSbs(long sbs) {
+		this.sbs = sbs;
+	}
+
+	private void setNetworkRbs(long networkRbs) {
+		this.networkRbs = networkRbs;
+	}
 }
