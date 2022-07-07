@@ -9,22 +9,20 @@ import com.diffplug.spotless.FormatterStep
 class StripOldLicenseFormatterStep {
     companion object {
         private const val NAME = "StripOldLicense"
-        private const val REGEX = "\\/\\*-.+Copyright \\(C\\).+\\*\\/"
 
         fun create(): FormatterStep {
             return FormatterStep.create(
                 NAME,
-                State(Regex(REGEX, setOf(RegexOption.IGNORE_CASE, RegexOption.DOT_MATCHES_ALL))),
+                State(),
                 State::toFormatter
             )
         }
     }
 
-    private class State(val pattern: Regex) : java.io.Serializable {
+    private class State() : java.io.Serializable {
         companion object {
             private const val serialVersionUID = -113
         }
-
 
         fun toFormatter(): FormatterFunc {
             return FormatterFunc { unixStr ->
