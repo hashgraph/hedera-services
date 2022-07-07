@@ -24,7 +24,6 @@ import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.contracts.sources.EvmSigsVerifier;
 import com.hedera.services.fees.FeeCalculator;
-import com.hedera.services.ledger.accounts.ContractAliases;
 import com.hedera.services.store.contracts.WorldLedgers;
 import com.hedera.services.store.contracts.precompile.InfrastructureFactory;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
@@ -40,7 +39,6 @@ public class MultiAssociatePrecompile extends AbstractAssociatePrecompile {
 	public MultiAssociatePrecompile(
 			final WorldLedgers ledgers,
 			final DecodingFacade decoder,
-			final ContractAliases aliases,
 			final EvmSigsVerifier sigsVerifier,
 			final SideEffectsTracker sideEffects,
 			final SyntheticTxnFactory syntheticTxnFactory,
@@ -49,7 +47,7 @@ public class MultiAssociatePrecompile extends AbstractAssociatePrecompile {
 			final Provider<FeeCalculator> feeCalculator,
 			final StateView currentView
 	) {
-		super(ledgers, decoder, aliases, sigsVerifier, sideEffects, syntheticTxnFactory, infrastructureFactory,
+		super(ledgers, decoder, sigsVerifier, sideEffects, syntheticTxnFactory, infrastructureFactory,
 				pricingUtils, feeCalculator, currentView);
 	}
 

@@ -22,11 +22,15 @@ package com.hedera.services.store.contracts.precompile;
  *
  */
 
+import com.hedera.services.ledger.accounts.ContractAliases;
+import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.log.Log;
+
+import javax.annotation.Nullable;
 
 public record EVMPrecompileInfoProvider(MessageFrame messageFrame) implements PrecompileInfoProvider {
 
@@ -75,5 +79,10 @@ public record EVMPrecompileInfoProvider(MessageFrame messageFrame) implements Pr
 		messageFrame.addLog(log);
 	}
 
-
+	@Nullable
+	@Override
+	public ContractAliases aliases() {
+		final var updater = (HederaStackedWorldStateUpdater) messageFrame.getWorldUpdater();
+		return updater.aliases();
+	}
 }

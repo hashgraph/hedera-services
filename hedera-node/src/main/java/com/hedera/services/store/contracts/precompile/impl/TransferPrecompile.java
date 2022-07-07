@@ -26,13 +26,11 @@ import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.grpc.marshalling.ImpliedTransfers;
 import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;
 import com.hedera.services.ledger.BalanceChange;
-import com.hedera.services.ledger.accounts.ContractAliases;
 import com.hedera.services.state.submerkle.FcAssessedCustomFee;
-import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.services.store.contracts.WorldLedgers;
 import com.hedera.services.store.contracts.precompile.AbiConstants;
-import com.hedera.services.store.contracts.precompile.PrecompileInfoProvider;
 import com.hedera.services.store.contracts.precompile.InfrastructureFactory;
+import com.hedera.services.store.contracts.precompile.PrecompileInfoProvider;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.store.contracts.precompile.codec.DecodingFacade;
 import com.hedera.services.store.contracts.precompile.codec.TokenTransferWrapper;
@@ -53,7 +51,6 @@ import org.hyperledger.besu.datatypes.Address;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.function.UnaryOperator;
 
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
@@ -64,7 +61,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNAT
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 public class TransferPrecompile extends AbstractWritePrecompile {
-	private final HederaStackedWorldStateUpdater updater;
 	private final EvmSigsVerifier sigsVerifier;
 	private final int functionId;
 	private final Address senderAddress;
@@ -78,7 +74,6 @@ public class TransferPrecompile extends AbstractWritePrecompile {
 	public TransferPrecompile(
 			final WorldLedgers ledgers,
 			final DecodingFacade decoder,
-			final HederaStackedWorldStateUpdater updater,
 			final EvmSigsVerifier sigsVerifier,
 			final SideEffectsTracker sideEffects,
 			final SyntheticTxnFactory syntheticTxnFactory,
@@ -89,7 +84,6 @@ public class TransferPrecompile extends AbstractWritePrecompile {
 			final ImpliedTransfersMarshal impliedTransfersMarshal
 	) {
 		super(ledgers, decoder, sideEffects, syntheticTxnFactory, infrastructureFactory, pricingUtils);
-		this.updater = updater;
 		this.sigsVerifier = sigsVerifier;
 		this.functionId = functionId;
 		this.senderAddress = senderAddress;
@@ -132,9 +126,6 @@ public class TransferPrecompile extends AbstractWritePrecompile {
 
 	@Override
 	public void run(final PrecompileInfoProvider provider) {
-		final Optional<ContractAliases> aliases = !provider.isDirectTokenCall() ?
-				Optional.of(updater.aliases()) :
-				Optional.empty();
 		if (impliedValidity == null) {
 			extrapolateDetailsFromSyntheticTxn();
 		}
@@ -163,7 +154,7 @@ public class TransferPrecompile extends AbstractWritePrecompile {
 				}
 				final var hasSenderSig = KeyActivationUtils.validateKey(
 						provider, change.getAccount().asEvmAddress(), sigsVerifier::hasActiveKey, ledgers,
-						aliases);
+						provider.aliases());
 				validateTrue(hasSenderSig, INVALID_SIGNATURE);
 			}
 			if (i < numExplicitChanges) {
@@ -173,11 +164,11 @@ public class TransferPrecompile extends AbstractWritePrecompile {
 					final var counterPartyAddress = asTypedEvmAddress(change.counterPartyAccountId());
 					hasReceiverSigIfReq = KeyActivationUtils.validateKey(
 							provider, counterPartyAddress, sigsVerifier::hasActiveKeyOrNoReceiverSigReq, ledgers,
-							aliases);
+							provider.aliases());
 				} else if (units > 0) {
 					hasReceiverSigIfReq = KeyActivationUtils.validateKey(
 							provider, change.getAccount().asEvmAddress(), sigsVerifier::hasActiveKeyOrNoReceiverSigReq,
-							ledgers, aliases);
+							ledgers, provider.aliases());
 				}
 				validateTrue(hasReceiverSigIfReq, INVALID_SIGNATURE);
 			}

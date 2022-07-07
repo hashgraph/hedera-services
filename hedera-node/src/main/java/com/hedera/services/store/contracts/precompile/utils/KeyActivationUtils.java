@@ -30,9 +30,12 @@ import com.hedera.services.store.contracts.precompile.codec.DecodingFacade;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 
+import javax.annotation.Nullable;
 import java.util.Optional;
 
+import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hedera.services.store.contracts.WorldStateTokenAccount.TOKEN_PROXY_ACCOUNT_NONCE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 
 public final class KeyActivationUtils {
 
@@ -73,17 +76,15 @@ public final class KeyActivationUtils {
 			final Address target,
 			final KeyActivationTest activationTest,
 			final WorldLedgers ledgers,
-			final Optional<ContractAliases> contractAliases
+			@Nullable final ContractAliases contractAliases
 	) {
 		if (precompileInfoProvider.isDirectTokenCall()) {
 			return validateKeyForDirectCall((DirectCallsPrecompileInfoProvider) precompileInfoProvider,
 					target, activationTest, ledgers);
-
-		} else if (contractAliases.isPresent()) {
-			final MessageFrame frame = ((EVMPrecompileInfoProvider) precompileInfoProvider).messageFrame();
-			return validateKeyForCallWithMessageFrame(frame, target, activationTest, ledgers, contractAliases.get());
 		}
-		return false;
+		validateTrue(contractAliases != null, FAIL_INVALID);
+		final MessageFrame frame = ((EVMPrecompileInfoProvider) precompileInfoProvider).messageFrame();
+		return validateKeyForCallWithMessageFrame(frame, target, activationTest, ledgers, contractAliases);
 	}
 
 	private static boolean validateKeyForDirectCall(

@@ -20,11 +20,14 @@ package com.hedera.services.store.contracts.precompile;
  * ‍
  */
 
+import com.hedera.services.ledger.accounts.ContractAliases;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.log.Log;
+
+import javax.annotation.Nullable;
 
 public record DirectCallsPrecompileInfoProvider(PrecompileMessage precompileMessage) implements PrecompileInfoProvider {
 	@Override
@@ -70,5 +73,11 @@ public record DirectCallsPrecompileInfoProvider(PrecompileMessage precompileMess
 	@Override
 	public void addLog(Log log) {
 		precompileMessage.addLog(log);
+	}
+
+	@Nullable
+	@Override
+	public ContractAliases aliases() {
+		return null;
 	}
 }

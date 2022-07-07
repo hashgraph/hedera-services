@@ -26,11 +26,10 @@ import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
-import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.services.store.contracts.WorldLedgers;
 import com.hedera.services.store.contracts.precompile.AbiConstants;
-import com.hedera.services.store.contracts.precompile.PrecompileInfoProvider;
 import com.hedera.services.store.contracts.precompile.InfrastructureFactory;
+import com.hedera.services.store.contracts.precompile.PrecompileInfoProvider;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.store.contracts.precompile.codec.DecodingFacade;
 import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
@@ -64,7 +63,6 @@ public class ERCTransferPrecompile extends TransferPrecompile {
 			final WorldLedgers ledgers,
 			final DecodingFacade decoder,
 			final EncodingFacade encoder,
-			final HederaStackedWorldStateUpdater updater,
 			final EvmSigsVerifier sigsVerifier,
 			final SideEffectsTracker sideEffects,
 			final SyntheticTxnFactory syntheticTxnFactory,
@@ -72,7 +70,7 @@ public class ERCTransferPrecompile extends TransferPrecompile {
 			final PrecompilePricingUtils pricingUtils,
 			final int functionId,
 			final ImpliedTransfersMarshal impliedTransfersMarshal) {
-		super(ledgers, decoder, updater, sigsVerifier, sideEffects, syntheticTxnFactory, infrastructureFactory,
+		super(ledgers, decoder, sigsVerifier, sideEffects, syntheticTxnFactory, infrastructureFactory,
 				pricingUtils,functionId, callerAccount, impliedTransfersMarshal);
 		this.callerAccountID = EntityIdUtils.accountIdFromEvmAddress(callerAccount);
 		this.tokenID = tokenID;

@@ -23,12 +23,11 @@ package com.hedera.services.store.contracts.precompile.impl;
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.contracts.sources.EvmSigsVerifier;
-import com.hedera.services.ledger.accounts.ContractAliases;
 import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.store.contracts.WorldLedgers;
-import com.hedera.services.store.contracts.precompile.PrecompileInfoProvider;
 import com.hedera.services.store.contracts.precompile.InfrastructureFactory;
+import com.hedera.services.store.contracts.precompile.PrecompileInfoProvider;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.store.contracts.precompile.codec.DecodingFacade;
 import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
@@ -45,7 +44,6 @@ import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.function.UnaryOperator;
 
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
@@ -59,7 +57,6 @@ import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 public class MintPrecompile extends AbstractWritePrecompile {
 	private static final List<ByteString> NO_METADATA = Collections.emptyList();
 	private final EncodingFacade encoder;
-	private final ContractAliases aliases;
 	private final EvmSigsVerifier sigsVerifier;
 	private final RecordsHistorian recordsHistorian;
 
@@ -69,7 +66,6 @@ public class MintPrecompile extends AbstractWritePrecompile {
 			final WorldLedgers ledgers,
 			final DecodingFacade decoder,
 			final EncodingFacade encoder,
-			final ContractAliases aliases,
 			final EvmSigsVerifier sigsVerifier,
 			final RecordsHistorian recordsHistorian,
 			final SideEffectsTracker sideEffects,
@@ -79,7 +75,6 @@ public class MintPrecompile extends AbstractWritePrecompile {
 	) {
 		super(ledgers, decoder, sideEffects, syntheticTxnFactory, infrastructureFactory, pricingUtils);
 		this.encoder = encoder;
-		this.aliases = aliases;
 		this.sigsVerifier = sigsVerifier;
 		this.recordsHistorian = recordsHistorian;
 	}
@@ -97,7 +92,7 @@ public class MintPrecompile extends AbstractWritePrecompile {
 		// --- Check required signatures ---
 		final var tokenId = Id.fromGrpcToken(Objects.requireNonNull(mintOp).tokenType());
 		final var hasRequiredSigs = KeyActivationUtils.validateKey(
-				provider, tokenId.asEvmAddress(), sigsVerifier::hasActiveSupplyKey, ledgers, Optional.of(aliases));
+				provider, tokenId.asEvmAddress(), sigsVerifier::hasActiveSupplyKey, ledgers, provider.aliases());
 		validateTrue(hasRequiredSigs, INVALID_SIGNATURE);
 
 		/* --- Build the necessary infrastructure to execute the transaction --- */

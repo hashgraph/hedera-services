@@ -200,7 +200,6 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	@Override
 	public PrecompileContractResult computePrecompile(final Bytes input, @NotNull final MessageFrame frame) {
 		prepareFields(frame);
-		precompileInfoProvider = new EVMPrecompileInfoProvider(frame);
 		prepareComputation(input, updater::unaliased);
 
 		gasRequirement = defaultGas();
@@ -243,6 +242,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		this.updater = (HederaStackedWorldStateUpdater) frame.getWorldUpdater();
 		this.sideEffectsTracker = infrastructureFactory.newSideEffects();
 		this.ledgers = updater.wrappedTrackingLedgers(sideEffectsTracker);
+		this.precompileInfoProvider = new EVMPrecompileInfoProvider(frame);
 
 		final var unaliasedSenderAddress = updater.permissivelyUnaliased(frame.getSenderAddress().toArray());
 		this.senderAddress = Address.wrap(Bytes.of(unaliasedSenderAddress));
@@ -259,28 +259,28 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 							AbiConstants.ABI_ID_TRANSFER_TOKEN,
 							AbiConstants.ABI_ID_TRANSFER_NFTS,
 							AbiConstants.ABI_ID_TRANSFER_NFT -> new TransferPrecompile(
-							ledgers, decoder, updater, sigsVerifier, sideEffectsTracker, syntheticTxnFactory,
+							ledgers, decoder, sigsVerifier, sideEffectsTracker, syntheticTxnFactory,
 							infrastructureFactory, precompilePricingUtils, functionId, senderAddress, impliedTransfersMarshal);
 					case AbiConstants.ABI_ID_MINT_TOKEN -> new MintPrecompile(
-							ledgers, decoder, encoder, updater.aliases(), sigsVerifier, recordsHistorian,
+							ledgers, decoder, encoder, sigsVerifier, recordsHistorian,
 							sideEffectsTracker, syntheticTxnFactory, infrastructureFactory, precompilePricingUtils);
 					case AbiConstants.ABI_ID_BURN_TOKEN -> new BurnPrecompile(
-							ledgers, decoder, encoder, updater.aliases(), sigsVerifier,
+							ledgers, decoder, encoder, sigsVerifier,
 							sideEffectsTracker, syntheticTxnFactory, infrastructureFactory, precompilePricingUtils);
 					case AbiConstants.ABI_ID_ASSOCIATE_TOKENS -> new MultiAssociatePrecompile(
-							ledgers, decoder, updater.aliases(), sigsVerifier,
+							ledgers, decoder, sigsVerifier,
 							sideEffectsTracker, syntheticTxnFactory, infrastructureFactory, precompilePricingUtils,
 							feeCalculator, currentView);
 					case AbiConstants.ABI_ID_ASSOCIATE_TOKEN -> new AssociatePrecompile(
-							ledgers, decoder, updater.aliases(), sigsVerifier,
+							ledgers, decoder, sigsVerifier,
 							sideEffectsTracker, syntheticTxnFactory, infrastructureFactory, precompilePricingUtils,
 							feeCalculator, currentView);
 					case AbiConstants.ABI_ID_DISSOCIATE_TOKENS -> new MultiDissociatePrecompile(
-							ledgers, decoder, updater.aliases(), sigsVerifier,
+							ledgers, decoder, sigsVerifier,
 							sideEffectsTracker, syntheticTxnFactory, infrastructureFactory, precompilePricingUtils,
 							feeCalculator, currentView);
 					case AbiConstants.ABI_ID_DISSOCIATE_TOKEN -> new DissociatePrecompile(
-							ledgers, decoder, updater.aliases(), sigsVerifier,
+							ledgers, decoder, sigsVerifier,
 							sideEffectsTracker, syntheticTxnFactory, infrastructureFactory, precompilePricingUtils,
 							feeCalculator, currentView);
 					case AbiConstants.ABI_ID_REDIRECT_FOR_TOKEN -> tokenRedirectCase(input);
@@ -336,14 +336,14 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 									precompilePricingUtils));
 					case AbiConstants.ABI_ID_ERC_TRANSFER -> checkFungible(isFungibleToken,
 							() -> new ERCTransferPrecompile(tokenId, senderAddress, isFungibleToken,
-									ledgers, decoder, encoder, updater, sigsVerifier, sideEffectsTracker,
+									ledgers, decoder, encoder, sigsVerifier, sideEffectsTracker,
 									syntheticTxnFactory, infrastructureFactory, precompilePricingUtils,
 									functionId,
 									impliedTransfersMarshal));
 					case AbiConstants.ABI_ID_ERC_TRANSFER_FROM ->
 							checkFeatureFlag(dynamicProperties.areAllowancesEnabled(),
 									() -> new ERCTransferPrecompile(tokenId, senderAddress, isFungibleToken,
-											ledgers, decoder, encoder, updater, sigsVerifier,
+											ledgers, decoder, encoder, sigsVerifier,
 											sideEffectsTracker,
 											syntheticTxnFactory, infrastructureFactory, precompilePricingUtils,
 											functionId,

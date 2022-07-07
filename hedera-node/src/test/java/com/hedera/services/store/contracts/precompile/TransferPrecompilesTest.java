@@ -266,7 +266,6 @@ class TransferPrecompilesTest {
 		given(frame.getRemainingGas()).willReturn(100L);
 		given(frame.getValue()).willReturn(Wei.ZERO);
 		given(frame.getInputData()).willReturn(pretendArguments);
-		given(worldUpdater.aliases()).willReturn(aliases);
 
 		// when:
 		subject.prepareFields(frame);
@@ -379,7 +378,6 @@ class TransferPrecompilesTest {
 				.willReturn(1L);
 		given(creator.createUnsuccessfulSyntheticRecord(CUSTOM_FEE_CHARGING_EXCEEDED_MAX_ACCOUNT_AMOUNTS))
 				.willReturn(mockRecordBuilder);
-		given(worldUpdater.aliases()).willReturn(aliases);
 
 		// when:
 		subject.prepareFields(frame);

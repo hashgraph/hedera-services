@@ -20,11 +20,14 @@ package com.hedera.services.store.contracts.precompile;
  * ‍
  */
 
+import com.hedera.services.ledger.accounts.ContractAliases;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.log.Log;
+
+import javax.annotation.Nullable;
 
 public interface PrecompileInfoProvider {
 
@@ -46,4 +49,6 @@ public interface PrecompileInfoProvider {
 
 	void addLog(Log log);
 
+	@Nullable
+	ContractAliases aliases();
 }

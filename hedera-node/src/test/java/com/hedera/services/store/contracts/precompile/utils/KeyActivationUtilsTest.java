@@ -20,6 +20,7 @@ package com.hedera.services.store.contracts.precompile.utils;
  * ‍
  */
 
+import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.services.store.contracts.WorldStateAccount;
 import com.hedera.services.store.contracts.precompile.EVMPrecompileInfoProvider;
@@ -28,8 +29,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-
-import java.util.Optional;
 
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.fungibleTokenAddr;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -73,8 +72,9 @@ class KeyActivationUtilsTest {
 
 	@Test
 	void validateKeysIsFalseWithEmptyAlias() {
-		assertFalse(KeyActivationUtils.validateKey(evmInfoProvider, null,
-				null, null, Optional.empty()));
+		assertThrows(InvalidTransactionException.class, () ->
+				KeyActivationUtils.validateKey(evmInfoProvider, null,
+				null, null, null));
 	}
 
 	@Test
