@@ -1,21 +1,5 @@
 [
   {
-    "constant": false,
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "x",
-        "type": "uint256"
-      }
-    ],
-    "name": "set",
-    "outputs": [],
-    "payable": false,
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "constant": true,
     "inputs": [],
     "name": "get",
     "outputs": [
@@ -25,8 +9,98 @@
         "type": "uint256"
       }
     ],
-    "payable": false,
     "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "getAddress",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "_get",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "getInteger",
+    "outputs": [
+      {
+        "internalType": "uint8",
+        "name": "_get",
+        "type": "uint8"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "getLong",
+    "outputs": [
+      {
+        "internalType": "uint32",
+        "name": "_get",
+        "type": "uint32"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "x",
+        "type": "uint256"
+      }
+    ],
+    "name": "set",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "x",
+        "type": "address"
+      }
+    ],
+    "name": "setAddress",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint8",
+        "name": "x",
+        "type": "uint8"
+      }
+    ],
+    "name": "setInteger",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint32",
+        "name": "x",
+        "type": "uint32"
+      }
+    ],
+    "name": "setLong",
+    "outputs": [],
+    "stateMutability": "nonpayable",
     "type": "function"
   }
 ]
