@@ -1,6 +1,11 @@
-/*
- * Copyright (C) 2020-2021 Hedera Hashgraph, LLC
- *
+package com.hedera.services.sigs.metadata;
+
+/*-
+ * ‌
+ * Hedera Services Node
+ * ​
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
+ * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -12,22 +17,23 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ * ‍
  */
-package com.hedera.services.sigs.metadata;
-
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.legacy.core.jproto.JKey;
-import java.nio.charset.StandardCharsets;
 import org.junit.jupiter.api.Test;
 
-class ContractSigningMetadataTest {
-    private final JKey jkey = new JEd25519Key("jkey".getBytes(StandardCharsets.UTF_8));
-    private ContractSigningMetadata subject = new ContractSigningMetadata(jkey, false);
+import java.nio.charset.StandardCharsets;
 
-    @Test
-    void assertHasAdminKey() {
-        assertTrue(subject.hasAdminKey());
-    }
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+class ContractSigningMetadataTest {
+	private final JKey jkey = new JEd25519Key("jkey".getBytes(StandardCharsets.UTF_8));
+	private ContractSigningMetadata subject = new ContractSigningMetadata(jkey, false);
+
+	@Test
+	void assertHasAdminKey() {
+		assertTrue(subject.hasAdminKey());
+	}
 }

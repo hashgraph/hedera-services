@@ -1,6 +1,11 @@
-/*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
- *
+package com.hedera.services.state.initialization;
+
+/*-
+ * ‌
+ * Hedera Services Node
+ * ​
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
+ * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -12,26 +17,24 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ * ‍
  */
-package com.hedera.services.state.initialization;
 
 import com.hedera.services.ledger.backing.BackingStore;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.Platform;
-import com.swirlds.common.system.address.AddressBook;
 
 public interface SystemAccountsCreator {
-    /**
-     * Called in {@link com.hedera.services.ServicesMain#init(Platform, NodeId)} to ensure the
-     * network has all expected system accounts, especially when starting from genesis; not really a
-     * migration path, may be better placed in {@code
-     * com.hedera.services.ServicesState#internalInit()}.
-     *
-     * @param backingAccounts the ledger accounts
-     * @param addressBook the current address book
-     */
-    void ensureSystemAccounts(
-            BackingStore<AccountID, MerkleAccount> backingAccounts, AddressBook addressBook);
+	/**
+	 * Called in {@link com.hedera.services.ServicesMain#init(Platform, NodeId)} to ensure the network
+	 * has all expected system accounts, especially when starting from genesis; not really a migration
+	 * path, may be better placed in {@code com.hedera.services.ServicesState#internalInit()}.
+	 *
+	 * @param backingAccounts the ledger accounts
+	 * @param addressBook the current address book
+	 */
+	void ensureSystemAccounts(BackingStore<AccountID, MerkleAccount> backingAccounts, AddressBook addressBook);
 }

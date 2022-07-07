@@ -1,6 +1,11 @@
-/*
- * Copyright (C) 2021-2022 Hedera Hashgraph, LLC
- *
+package com.hedera.services.exceptions;
+
+/*-
+ * ‌
+ * Hedera Services Node
+ * ​
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
+ * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -12,8 +17,11 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ * ‍
  */
-package com.hedera.services.exceptions;
+
+import org.apache.tuweni.bytes.Bytes;
+import org.junit.jupiter.api.Test;
 
 import static com.hedera.services.exceptions.ValidationUtils.validateFalse;
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
@@ -27,45 +35,32 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import org.apache.tuweni.bytes.Bytes;
-import org.junit.jupiter.api.Test;
-
 class ValidationUtilsTest {
-    @Test
-    void factoriesWorkAsExpected() {
-        final var falseExCapturedByCode =
-                assertThrows(
-                        InvalidTransactionException.class,
-                        () -> validateTrue(false, MEMO_TOO_LONG));
-        final var falseExCapturedByCodeAndMsg =
-                assertThrows(
-                        InvalidTransactionException.class,
-                        () -> validateTrue(false, INVALID_TOKEN_BURN_AMOUNT, "Should be true!"));
-        final var trueExCapturedByCode =
-                assertThrows(
-                        InvalidTransactionException.class,
-                        () -> validateFalse(true, CANNOT_WIPE_TOKEN_TREASURY_ACCOUNT));
-        final var trueExCapturedByCodeAndMsg =
-                assertThrows(
-                        InvalidTransactionException.class,
-                        () -> validateFalse(true, TOKEN_HAS_NO_SUPPLY_KEY, "Should be false!"));
+	@Test
+	void factoriesWorkAsExpected() {
+		final var falseExCapturedByCode = assertThrows(InvalidTransactionException.class, () ->
+				validateTrue(false, MEMO_TOO_LONG));
+		final var falseExCapturedByCodeAndMsg = assertThrows(InvalidTransactionException.class, () ->
+				validateTrue(false, INVALID_TOKEN_BURN_AMOUNT, "Should be true!"));
+		final var trueExCapturedByCode = assertThrows(InvalidTransactionException.class, () ->
+				validateFalse(true, CANNOT_WIPE_TOKEN_TREASURY_ACCOUNT));
+		final var trueExCapturedByCodeAndMsg = assertThrows(InvalidTransactionException.class, () ->
+				validateFalse(true, TOKEN_HAS_NO_SUPPLY_KEY, "Should be false!"));
 
-        assertEquals(MEMO_TOO_LONG, falseExCapturedByCode.getResponseCode());
-        assertEquals(INVALID_TOKEN_BURN_AMOUNT, falseExCapturedByCodeAndMsg.getResponseCode());
-        assertEquals("Should be true!", falseExCapturedByCodeAndMsg.getMessage());
-        assertEquals(CANNOT_WIPE_TOKEN_TREASURY_ACCOUNT, trueExCapturedByCode.getResponseCode());
-        assertEquals(TOKEN_HAS_NO_SUPPLY_KEY, trueExCapturedByCodeAndMsg.getResponseCode());
-        assertEquals("Should be false!", trueExCapturedByCodeAndMsg.getMessage());
-    }
+		assertEquals(MEMO_TOO_LONG, falseExCapturedByCode.getResponseCode());
+		assertEquals(INVALID_TOKEN_BURN_AMOUNT, falseExCapturedByCodeAndMsg.getResponseCode());
+		assertEquals("Should be true!", falseExCapturedByCodeAndMsg.getMessage());
+		assertEquals(CANNOT_WIPE_TOKEN_TREASURY_ACCOUNT, trueExCapturedByCode.getResponseCode());
+		assertEquals(TOKEN_HAS_NO_SUPPLY_KEY, trueExCapturedByCodeAndMsg.getResponseCode());
+		assertEquals("Should be false!", trueExCapturedByCodeAndMsg.getMessage());
+	}
 
-    @Test
-    void validatesWithRevertingReason() {
-        final var capturedEx =
-                assertThrows(
-                        InvalidTransactionException.class,
-                        () -> validateTrueOrRevert(false, INVALID_ALLOWANCE_OWNER_ID));
-        assertTrue(capturedEx.isReverting());
-        final var reason = Bytes.of(INVALID_ALLOWANCE_OWNER_ID.name().getBytes());
-        assertEquals(reason, capturedEx.getRevertReason());
-    }
+	@Test
+	void validatesWithRevertingReason() {
+		final var capturedEx = assertThrows(InvalidTransactionException.class, () ->
+				validateTrueOrRevert(false, INVALID_ALLOWANCE_OWNER_ID));
+		assertTrue(capturedEx.isReverting());
+		final var reason = Bytes.of(INVALID_ALLOWANCE_OWNER_ID.name().getBytes());
+		assertEquals(reason, capturedEx.getRevertReason());
+	}
 }

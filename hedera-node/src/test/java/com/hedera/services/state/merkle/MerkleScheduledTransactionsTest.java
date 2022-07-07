@@ -1,6 +1,11 @@
-/*
- * Copyright (C) 2022 Hedera Hashgraph, LLC
- *
+package com.hedera.services.state.merkle;
+
+/*-
+ * ‌
+ * Hedera Services Node
+ * ​
+ * Copyright (C) 2018 - 2022 Hedera Hashgraph, LLC
+ * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -12,8 +17,20 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ * ‍
  */
-package com.hedera.services.state.merkle;
+
+import com.hedera.services.state.virtual.EntityNumVirtualKey;
+import com.hedera.services.state.virtual.schedule.ScheduleEqualityVirtualKey;
+import com.hedera.services.state.virtual.schedule.ScheduleEqualityVirtualValue;
+import com.hedera.services.state.virtual.schedule.ScheduleSecondVirtualValue;
+import com.hedera.services.state.virtual.schedule.ScheduleVirtualValue;
+import com.hedera.services.state.virtual.temporal.SecondSinceEpocVirtualKey;
+import com.swirlds.merkle.map.MerkleMap;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -25,178 +42,164 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.verify;
 
-import com.hedera.services.state.virtual.EntityNumVirtualKey;
-import com.hedera.services.state.virtual.schedule.ScheduleEqualityVirtualKey;
-import com.hedera.services.state.virtual.schedule.ScheduleEqualityVirtualValue;
-import com.hedera.services.state.virtual.schedule.ScheduleSecondVirtualValue;
-import com.hedera.services.state.virtual.schedule.ScheduleVirtualValue;
-import com.hedera.services.state.virtual.temporal.SecondSinceEpocVirtualKey;
-import com.swirlds.merkle.map.MerkleMap;
-import java.util.List;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-
 class MerkleScheduledTransactionsTest {
-    private static final long currentMinSecond = 23;
+	private static final long currentMinSecond = 23;
 
-    private MerkleScheduledTransactionsState state;
+	private MerkleScheduledTransactionsState state;
 
-    private MerkleMap<ScheduleEqualityVirtualKey, ScheduleEqualityVirtualValue> byEquality;
-    private MerkleMap<SecondSinceEpocVirtualKey, ScheduleSecondVirtualValue> byExpirationSecond;
-    private MerkleMap<EntityNumVirtualKey, ScheduleVirtualValue> byId;
+	private MerkleMap<ScheduleEqualityVirtualKey, ScheduleEqualityVirtualValue> byEquality;
+	private MerkleMap<SecondSinceEpocVirtualKey, ScheduleSecondVirtualValue> byExpirationSecond;
+	private MerkleMap<EntityNumVirtualKey, ScheduleVirtualValue> byId;
 
-    private MerkleScheduledTransactions subject;
+	private MerkleScheduledTransactions subject;
 
-    @BeforeEach
-    void setup() {
-        byEquality = mock(MerkleMap.class);
-        given(byEquality.copy()).willReturn(byEquality);
+	@BeforeEach
+	void setup() {
+		byEquality = mock(MerkleMap.class);
+		given(byEquality.copy()).willReturn(byEquality);
 
-        byExpirationSecond = mock(MerkleMap.class);
-        given(byExpirationSecond.copy()).willReturn(byExpirationSecond);
+		byExpirationSecond = mock(MerkleMap.class);
+		given(byExpirationSecond.copy()).willReturn(byExpirationSecond);
 
-        byId = mock(MerkleMap.class);
-        given(byId.copy()).willReturn(byId);
+		byId = mock(MerkleMap.class);
+		given(byId.copy()).willReturn(byId);
 
-        state = mock(MerkleScheduledTransactionsState.class);
-        given(state.currentMinSecond()).willReturn(currentMinSecond);
-        given(state.copy()).willReturn(state);
-        given(state.toString()).willReturn("MerkleScheduledTransactionsState");
+		state = mock(MerkleScheduledTransactionsState.class);
+		given(state.currentMinSecond()).willReturn(currentMinSecond);
+		given(state.copy()).willReturn(state);
+		given(state.toString()).willReturn("MerkleScheduledTransactionsState");
 
-        subject =
-                new MerkleScheduledTransactions(
-                        List.of(state, byId, byExpirationSecond, byEquality));
-    }
+		subject = new MerkleScheduledTransactions(List.of(state, byId, byExpirationSecond, byEquality));
+	}
 
-    @Test
-    void equalsIncorporatesRecords() {
-        final var otherByExpirationSecond = mock(MerkleMap.class);
+	@Test
+	void equalsIncorporatesRecords() {
+		final var otherByExpirationSecond = mock(MerkleMap.class);
 
-        final var otherSubject =
-                new MerkleScheduledTransactions(
-                        List.of(state, byId, otherByExpirationSecond, byEquality));
+		final var otherSubject = new MerkleScheduledTransactions(List.of(state, byId,
+				otherByExpirationSecond, byEquality));
 
-        assertNotEquals(otherSubject, subject);
-    }
+		assertNotEquals(otherSubject, subject);
+	}
 
-    @Test
-    void returnsExpectedChildren() {
-        assertEquals(byId, subject.byId());
-        assertEquals(byExpirationSecond, subject.byExpirationSecond());
-        assertEquals(byEquality, subject.byEquality());
-        assertEquals(state, subject.state());
-    }
 
-    @Test
-    @SuppressWarnings("unchecked")
-    void returnsExpectedCurrentMinSecond() {
-        assertSame(currentMinSecond, subject.getCurrentMinSecond());
-    }
+	@Test
+	void returnsExpectedChildren() {
+		assertEquals(byId, subject.byId());
+		assertEquals(byExpirationSecond, subject.byExpirationSecond());
+		assertEquals(byEquality, subject.byEquality());
+		assertEquals(state, subject.state());
+	}
 
-    @Test
-    void immutableMerkleScheduledTransactionsThrowsIse() {
-        MerkleScheduledTransactions.stackDump = () -> {};
-        final var original = new MerkleScheduledTransactions();
+	@Test
+	@SuppressWarnings("unchecked")
+	void returnsExpectedCurrentMinSecond() {
+		assertSame(currentMinSecond, subject.getCurrentMinSecond());
+	}
 
-        original.copy();
+	@Test
+	void immutableMerkleScheduledTransactionsThrowsIse() {
+		MerkleScheduledTransactions.stackDump = () -> {
+		};
+		final var original = new MerkleScheduledTransactions();
 
-        assertThrows(IllegalStateException.class, () -> original.copy());
+		original.copy();
 
-        MerkleScheduledTransactions.stackDump = Thread::dumpStack;
-    }
+		assertThrows(IllegalStateException.class, () -> original.copy());
 
-    @Test
-    void merkleMethodsWork() {
-        assertEquals(
-                MerkleScheduledTransactions.ChildIndices.NUM_0270_CHILDREN,
-                subject.getMinimumChildCount(MerkleScheduledTransactions.CURRENT_VERSION));
-        assertEquals(MerkleScheduledTransactions.CURRENT_VERSION, subject.getVersion());
-        assertEquals(MerkleScheduledTransactions.RUNTIME_CONSTRUCTABLE_ID, subject.getClassId());
-        assertFalse(subject.isLeaf());
-    }
+		MerkleScheduledTransactions.stackDump = Thread::dumpStack;
+	}
 
-    @Test
-    void toStringWorks() {
-        assertEquals(
-                "MerkleScheduledTransactions{state=MerkleScheduledTransactionsState, "
-                        + "# schedules=0, # seconds=0, # equalities=0}",
-                subject.toString());
-    }
+	@Test
+	void merkleMethodsWork() {
+		assertEquals(
+				MerkleScheduledTransactions.ChildIndices.NUM_0270_CHILDREN,
+				subject.getMinimumChildCount(MerkleScheduledTransactions.CURRENT_VERSION));
+		assertEquals(MerkleScheduledTransactions.CURRENT_VERSION, subject.getVersion());
+		assertEquals(MerkleScheduledTransactions.RUNTIME_CONSTRUCTABLE_ID, subject.getClassId());
+		assertFalse(subject.isLeaf());
+	}
 
-    @Test
-    void gettersDelegate() {
-        // expect:
-        assertEquals(state.currentMinSecond(), subject.getCurrentMinSecond());
-    }
+	@Test
+	void toStringWorks() {
+		assertEquals(
+				"MerkleScheduledTransactions{state=MerkleScheduledTransactionsState, " +
+						"# schedules=0, # seconds=0, # equalities=0}",
+				subject.toString());
+	}
 
-    @Test
-    void settersDelegate() {
-        subject.setCurrentMinSecond(2);
-        verify(state).setCurrentMinSecond(2);
-    }
+	@Test
+	void gettersDelegate() {
+		// expect:
+		assertEquals(state.currentMinSecond(), subject.getCurrentMinSecond());
+	}
 
-    @Test
-    void copyConstructorFastCopiesMutableFcqs() {
-        given(byId.isImmutable()).willReturn(false);
+	@Test
+	void settersDelegate() {
+		subject.setCurrentMinSecond(2);
+		verify(state).setCurrentMinSecond(2);
+	}
 
-        final var copy = subject.copy();
+	@Test
+	void copyConstructorFastCopiesMutableFcqs() {
+		given(byId.isImmutable()).willReturn(false);
 
-        verify(state).copy();
-        assertEquals(state, copy.state());
-        verify(byId).copy();
-        assertEquals(byId, copy.byId());
-        verify(byExpirationSecond).copy();
-        assertEquals(byExpirationSecond, copy.byExpirationSecond());
-        verify(byEquality).copy();
-        assertEquals(byEquality, copy.byEquality());
-    }
+		final var copy = subject.copy();
 
-    @Test
-    void isMutableAfterCopy() {
-        subject.copy();
+		verify(state).copy();
+		assertEquals(state, copy.state());
+		verify(byId).copy();
+		assertEquals(byId, copy.byId());
+		verify(byExpirationSecond).copy();
+		assertEquals(byExpirationSecond, copy.byExpirationSecond());
+		verify(byEquality).copy();
+		assertEquals(byEquality, copy.byEquality());
+	}
 
-        assertTrue(subject.isImmutable());
-    }
+	@Test
+	void isMutableAfterCopy() {
+		subject.copy();
 
-    @Test
-    void equalsWorksWithExtremes() {
-        final var sameButDifferent = subject;
-        assertEquals(subject, sameButDifferent);
-        assertNotEquals(null, subject);
-        assertNotEquals(subject, new Object());
-    }
+		assertTrue(subject.isImmutable());
+	}
 
-    @Test
-    void originalIsMutable() {
-        assertFalse(subject.isImmutable());
-    }
+	@Test
+	void equalsWorksWithExtremes() {
+		final var sameButDifferent = subject;
+		assertEquals(subject, sameButDifferent);
+		assertNotEquals(null, subject);
+		assertNotEquals(subject, new Object());
+	}
 
-    @Test
-    void childIndicesConstructorThrows() {
-        assertThrows(
-                UnsupportedOperationException.class,
-                () -> new MerkleScheduledTransactions.ChildIndices());
-    }
+	@Test
+	void originalIsMutable() {
+		assertFalse(subject.isImmutable());
+	}
 
-    @Test
-    void delegatesDelete() {
-        subject.release();
+	@Test
+	void childIndicesConstructorThrows() {
+		assertThrows(UnsupportedOperationException.class, () -> new MerkleScheduledTransactions.ChildIndices());
+	}
 
-        verify(byId).decrementReferenceCount();
-        verify(byExpirationSecond).decrementReferenceCount();
-        verify(byEquality).decrementReferenceCount();
-    }
+	@Test
+	void delegatesDelete() {
+		subject.release();
 
-    @Test
-    void pendingMigrationSizeWorks() {
-        subject = new MerkleScheduledTransactions(5);
+		verify(byId).decrementReferenceCount();
+		verify(byExpirationSecond).decrementReferenceCount();
+		verify(byEquality).decrementReferenceCount();
+	}
 
-        subject.setChild(MerkleScheduledTransactions.ChildIndices.BY_ID, byId);
+	@Test
+	void pendingMigrationSizeWorks() {
+		subject = new MerkleScheduledTransactions(5);
 
-        assertEquals(5L, subject.getNumSchedules());
+		subject.setChild(MerkleScheduledTransactions.ChildIndices.BY_ID, byId);
 
-        given(byId.size()).willReturn(4);
+		assertEquals(5L, subject.getNumSchedules());
 
-        assertEquals(4L, subject.getNumSchedules());
-    }
+		given(byId.size()).willReturn(4);
+
+		assertEquals(4L, subject.getNumSchedules());
+	}
 }

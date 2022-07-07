@@ -1,6 +1,11 @@
-/*
- * Copyright (C) 2022 Hedera Hashgraph, LLC
- *
+package com.hedera.services.utils;
+
+/*-
+ * ‌
+ * Hedera Services Node
+ * ​
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
+ * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -12,12 +17,13 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ * ‍
  */
-package com.hedera.services.utils;
 
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
+
 import java.io.IOException;
 import java.util.Collections;
 import java.util.Map;
@@ -26,81 +32,81 @@ import java.util.TreeMap;
 import java.util.TreeSet;
 
 public final class SerializationUtils {
-    private SerializationUtils() {
-        throw new UnsupportedOperationException("Utility Class");
-    }
+	private SerializationUtils() {
+		throw new UnsupportedOperationException("Utility Class");
+	}
 
-    public static void serializeCryptoAllowances(
-            SerializableDataOutputStream out, final Map<EntityNum, Long> cryptoAllowances)
-            throws IOException {
-        out.writeInt(cryptoAllowances.size());
-        for (Map.Entry<EntityNum, Long> entry : cryptoAllowances.entrySet()) {
-            out.writeLong(entry.getKey().longValue());
-            out.writeLong(entry.getValue());
-        }
-    }
+	public static void serializeCryptoAllowances(
+			SerializableDataOutputStream out,
+			final Map<EntityNum, Long> cryptoAllowances) throws IOException {
+		out.writeInt(cryptoAllowances.size());
+		for (Map.Entry<EntityNum, Long> entry : cryptoAllowances.entrySet()) {
+			out.writeLong(entry.getKey().longValue());
+			out.writeLong(entry.getValue());
+		}
+	}
 
-    public static void serializeTokenAllowances(
-            final SerializableDataOutputStream out,
-            final Map<FcTokenAllowanceId, Long> fungibleTokenAllowances)
-            throws IOException {
-        out.writeInt(fungibleTokenAllowances.size());
-        for (Map.Entry<FcTokenAllowanceId, Long> entry : fungibleTokenAllowances.entrySet()) {
-            out.writeSerializable(entry.getKey(), true);
-            out.writeLong(entry.getValue());
-        }
-    }
+	public static void serializeTokenAllowances(
+			final SerializableDataOutputStream out,
+			final Map<FcTokenAllowanceId, Long> fungibleTokenAllowances
+	) throws IOException {
+		out.writeInt(fungibleTokenAllowances.size());
+		for (Map.Entry<FcTokenAllowanceId, Long> entry : fungibleTokenAllowances.entrySet()) {
+			out.writeSerializable(entry.getKey(), true);
+			out.writeLong(entry.getValue());
+		}
+	}
 
-    public static Map<FcTokenAllowanceId, Long> deserializeFungibleTokenAllowances(
-            final SerializableDataInputStream in) throws IOException {
-        var numFungibleTokenAllowances = in.readInt();
-        if (numFungibleTokenAllowances == 0) {
-            return Collections.emptyMap();
-        }
-        final Map<FcTokenAllowanceId, Long> fungibleTokenAllowances = new TreeMap<>();
-        while (numFungibleTokenAllowances-- > 0) {
-            final FcTokenAllowanceId fungibleAllowanceId = in.readSerializable();
-            final Long value = in.readLong();
-            fungibleTokenAllowances.put(fungibleAllowanceId, value);
-        }
-        return fungibleTokenAllowances;
-    }
+	public static Map<FcTokenAllowanceId, Long> deserializeFungibleTokenAllowances(
+			final SerializableDataInputStream in
+	) throws IOException {
+		var numFungibleTokenAllowances = in.readInt();
+		if (numFungibleTokenAllowances == 0) {
+			return Collections.emptyMap();
+		}
+		final Map<FcTokenAllowanceId, Long> fungibleTokenAllowances = new TreeMap<>();
+		while (numFungibleTokenAllowances-- > 0) {
+			final FcTokenAllowanceId fungibleAllowanceId = in.readSerializable();
+			final Long value = in.readLong();
+			fungibleTokenAllowances.put(fungibleAllowanceId, value);
+		}
+		return fungibleTokenAllowances;
+	}
 
-    public static void serializeApproveForAllNftsAllowances(
-            SerializableDataOutputStream out, final Set<FcTokenAllowanceId> approveForAllNfts)
-            throws IOException {
-        out.writeInt(approveForAllNfts.size());
-        for (final var allowanceId : approveForAllNfts) {
-            out.writeSerializable(allowanceId, true);
-        }
-    }
+	public static void serializeApproveForAllNftsAllowances(
+			SerializableDataOutputStream out, final Set<FcTokenAllowanceId> approveForAllNfts) throws IOException {
+		out.writeInt(approveForAllNfts.size());
+		for (final var allowanceId : approveForAllNfts) {
+			out.writeSerializable(allowanceId, true);
+		}
+	}
 
-    public static Map<EntityNum, Long> deserializeCryptoAllowances(
-            final SerializableDataInputStream in) throws IOException {
-        var numCryptoAllowances = in.readInt();
-        if (numCryptoAllowances == 0) {
-            return Collections.emptyMap();
-        }
-        final Map<EntityNum, Long> cryptoAllowances = new TreeMap<>();
-        while (numCryptoAllowances-- > 0) {
-            final var entityNum = EntityNum.fromLong(in.readLong());
-            final var allowance = in.readLong();
-            cryptoAllowances.put(entityNum, allowance);
-        }
-        return cryptoAllowances;
-    }
+	public static Map<EntityNum, Long> deserializeCryptoAllowances(
+			final SerializableDataInputStream in) throws IOException {
+		var numCryptoAllowances = in.readInt();
+		if (numCryptoAllowances == 0) {
+			return Collections.emptyMap();
+		}
+		final Map<EntityNum, Long> cryptoAllowances = new TreeMap<>();
+		while (numCryptoAllowances-- > 0) {
+			final var entityNum = EntityNum.fromLong(in.readLong());
+			final var allowance = in.readLong();
+			cryptoAllowances.put(entityNum, allowance);
+		}
+		return cryptoAllowances;
+	}
 
-    public static Set<FcTokenAllowanceId> deserializeApproveForAllNftsAllowances(
-            final SerializableDataInputStream in) throws IOException {
-        var numApproveForAllNftsAllowances = in.readInt();
-        if (numApproveForAllNftsAllowances == 0) {
-            return Collections.emptySet();
-        }
-        final Set<FcTokenAllowanceId> approveForAllNftsAllowances = new TreeSet<>();
-        while (numApproveForAllNftsAllowances-- > 0) {
-            final FcTokenAllowanceId allowanceId = in.readSerializable();
-            approveForAllNftsAllowances.add(allowanceId);
-        }
-        return approveForAllNftsAllowances;
-    }
+	public static Set<FcTokenAllowanceId> deserializeApproveForAllNftsAllowances(
+			final SerializableDataInputStream in) throws IOException {
+		var numApproveForAllNftsAllowances = in.readInt();
+		if (numApproveForAllNftsAllowances == 0) {
+			return Collections.emptySet();
+		}
+		final Set<FcTokenAllowanceId> approveForAllNftsAllowances = new TreeSet<>();
+		while (numApproveForAllNftsAllowances-- > 0) {
+			final FcTokenAllowanceId allowanceId = in.readSerializable();
+			approveForAllNftsAllowances.add(allowanceId);
+		}
+		return approveForAllNftsAllowances;
+	}
 }

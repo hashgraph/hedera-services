@@ -1,6 +1,11 @@
-/*
- * Copyright (C) 2021-2022 Hedera Hashgraph, LLC
- *
+package com.hedera.services.state.virtual.schedule;
+
+/*-
+ * ‌
+ * Hedera Services Node
+ * ​
+ * Copyright (C) 2018 - 2022 Hedera Hashgraph, LLC
+ * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -12,41 +17,41 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ * ‍
  */
-package com.hedera.services.state.virtual.schedule;
+
+import java.io.IOException;
 
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.jasperdb.SelfSerializableSupplier;
-import java.io.IOException;
 
-public class ScheduleSecondVirtualValueSupplier
-        implements SelfSerializableSupplier<ScheduleSecondVirtualValue> {
-    static final long CLASS_ID = 0x218245c13df4e2bfL;
-    static final int CURRENT_VERSION = 1;
+public class ScheduleSecondVirtualValueSupplier implements SelfSerializableSupplier<ScheduleSecondVirtualValue> {
+	static final long CLASS_ID = 0x218245c13df4e2bfL;
+	static final int CURRENT_VERSION = 1;
 
-    @Override
-    public void deserialize(SerializableDataInputStream in, int version) throws IOException {
-        /* No-op */
-    }
+	@Override
+	public void deserialize(SerializableDataInputStream in, int version) throws IOException {
+		/* No-op */
+	}
 
-    @Override
-    public void serialize(SerializableDataOutputStream out) throws IOException {
-        /* No-op */
-    }
+	@Override
+	public void serialize(SerializableDataOutputStream out) throws IOException {
+		/* No-op */
+	}
 
-    @Override
-    public long getClassId() {
-        return CLASS_ID;
-    }
+	@Override
+	public long getClassId() {
+		return CLASS_ID;
+	}
 
-    @Override
-    public int getVersion() {
-        return CURRENT_VERSION;
-    }
+	@Override
+	public int getVersion() {
+		return CURRENT_VERSION;
+	}
 
-    @Override
-    public ScheduleSecondVirtualValue get() {
-        return new ScheduleSecondVirtualValue();
-    }
+	@Override
+	public ScheduleSecondVirtualValue get() {
+		return new ScheduleSecondVirtualValue();
+	}
 }

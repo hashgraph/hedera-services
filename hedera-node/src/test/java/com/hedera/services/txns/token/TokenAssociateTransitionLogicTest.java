@@ -1,6 +1,11 @@
-/*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
- *
+package com.hedera.services.txns.token;
+
+/*-
+ * ‌
+ * Hedera Services Node
+ * ​
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
+ * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -12,18 +17,8 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ * ‍
  */
-package com.hedera.services.txns.token;
-
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ID_REPEATED_IN_TOKEN_LIST;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
 
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
@@ -36,108 +31,118 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenAssociateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.List;
+
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ID_REPEATED_IN_TOKEN_LIST;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+
 @ExtendWith(MockitoExtension.class)
 class TokenAssociateTransitionLogicTest {
-    private final AccountID account = IdUtils.asAccount("0.0.2");
-    private final TokenID firstToken = IdUtils.asToken("1.2.3");
-    private final TokenID secondToken = IdUtils.asToken("2.3.4");
-    private TransactionBody tokenAssociateTxn;
+	private final AccountID account = IdUtils.asAccount("0.0.2");
+	private final TokenID firstToken = IdUtils.asToken("1.2.3");
+	private final TokenID secondToken = IdUtils.asToken("2.3.4");
+	private TransactionBody tokenAssociateTxn;
 
-    private AssociateLogic associateLogic;
-    private TokenAssociateTransitionLogic subject;
+	private AssociateLogic associateLogic;
+	private TokenAssociateTransitionLogic subject;
 
-    @Mock private TypedTokenStore tokenStore;
-    @Mock private AccountStore accountStore;
-    @Mock private TransactionContext txnCtx;
-    @Mock private TxnAccessor accessor;
-    @Mock private GlobalDynamicProperties dynamicProperties;
+	@Mock
+	private TypedTokenStore tokenStore;
+	@Mock
+	private AccountStore accountStore;
+	@Mock
+	private TransactionContext txnCtx;
+	@Mock
+	private TxnAccessor accessor;
+	@Mock
+	private GlobalDynamicProperties dynamicProperties;
 
-    @BeforeEach
-    private void setup() {
-        associateLogic = new AssociateLogic(tokenStore, accountStore, dynamicProperties);
-        subject = new TokenAssociateTransitionLogic(txnCtx, associateLogic);
-    }
+	@BeforeEach
+	private void setup() {
+		associateLogic = new AssociateLogic(tokenStore, accountStore, dynamicProperties);
+		subject = new TokenAssociateTransitionLogic(txnCtx, associateLogic);
+	}
 
-    @Test
-    void hasCorrectApplicability() {
-        givenValidTxn();
+	@Test
+	void hasCorrectApplicability() {
+		givenValidTxn();
 
-        // expect:
-        assertTrue(subject.applicability().test(tokenAssociateTxn));
-        assertFalse(subject.applicability().test(TransactionBody.getDefaultInstance()));
-    }
+		// expect:
+		assertTrue(subject.applicability().test(tokenAssociateTxn));
+		assertFalse(subject.applicability().test(TransactionBody.getDefaultInstance()));
+	}
 
-    @Test
-    void happyPathWorks() {
-        givenValidTxn();
-        given(txnCtx.accessor()).willReturn(accessor);
-        given(accessor.getTxn()).willReturn(tokenAssociateTxn);
-        associateLogic = mock(AssociateLogic.class);
-        subject = new TokenAssociateTransitionLogic(txnCtx, associateLogic);
+	@Test
+	void happyPathWorks() {
+		givenValidTxn();
+		given(txnCtx.accessor()).willReturn(accessor);
+		given(accessor.getTxn()).willReturn(tokenAssociateTxn);
+		associateLogic = mock(AssociateLogic.class);
+		subject = new TokenAssociateTransitionLogic(txnCtx, associateLogic);
 
-        subject.doStateTransition();
+		subject.doStateTransition();
 
-        verify(associateLogic)
-                .associate(Id.fromGrpcAccount(account), List.of(firstToken, secondToken));
-    }
+		verify(associateLogic).associate(
+				Id.fromGrpcAccount(account), List.of(firstToken, secondToken));
+	}
 
-    @Test
-    void acceptsValidTxn() {
-        givenValidTxn();
+	@Test
+	void acceptsValidTxn() {
+		givenValidTxn();
 
-        // expect:
-        assertEquals(OK, subject.semanticCheck().apply(tokenAssociateTxn));
-    }
+		// expect:
+		assertEquals(OK, subject.semanticCheck().apply(tokenAssociateTxn));
+	}
 
-    @Test
-    void rejectsMissingAccount() {
-        givenMissingAccount();
+	@Test
+	void rejectsMissingAccount() {
+		givenMissingAccount();
 
-        // expect:
-        assertEquals(INVALID_ACCOUNT_ID, subject.semanticCheck().apply(tokenAssociateTxn));
-    }
+		// expect:
+		assertEquals(INVALID_ACCOUNT_ID, subject.semanticCheck().apply(tokenAssociateTxn));
+	}
 
-    @Test
-    void rejectsDuplicateTokens() {
-        givenDuplicateTokens();
+	@Test
+	void rejectsDuplicateTokens() {
+		givenDuplicateTokens();
 
-        // expect:
-        assertEquals(
-                TOKEN_ID_REPEATED_IN_TOKEN_LIST, subject.semanticCheck().apply(tokenAssociateTxn));
-    }
+		// expect:
+		assertEquals(TOKEN_ID_REPEATED_IN_TOKEN_LIST, subject.semanticCheck().apply(tokenAssociateTxn));
+	}
 
-    private void givenValidTxn() {
-        tokenAssociateTxn =
-                TransactionBody.newBuilder()
-                        .setTokenAssociate(
-                                TokenAssociateTransactionBody.newBuilder()
-                                        .setAccount(account)
-                                        .addAllTokens(List.of(firstToken, secondToken)))
-                        .build();
-    }
+	private void givenValidTxn() {
+		tokenAssociateTxn = TransactionBody.newBuilder()
+				.setTokenAssociate(TokenAssociateTransactionBody.newBuilder()
+						.setAccount(account)
+						.addAllTokens(List.of(firstToken, secondToken)))
+				.build();
+	}
 
-    private void givenMissingAccount() {
-        tokenAssociateTxn =
-                TransactionBody.newBuilder()
-                        .setTokenAssociate(TokenAssociateTransactionBody.newBuilder())
-                        .build();
-    }
+	private void givenMissingAccount() {
+		tokenAssociateTxn = TransactionBody.newBuilder()
+				.setTokenAssociate(TokenAssociateTransactionBody.newBuilder())
+				.build();
+	}
 
-    private void givenDuplicateTokens() {
-        tokenAssociateTxn =
-                TransactionBody.newBuilder()
-                        .setTokenAssociate(
-                                TokenAssociateTransactionBody.newBuilder()
-                                        .setAccount(account)
-                                        .addTokens(firstToken)
-                                        .addTokens(firstToken))
-                        .build();
-    }
+	private void givenDuplicateTokens() {
+		tokenAssociateTxn = TransactionBody.newBuilder()
+				.setTokenAssociate(TokenAssociateTransactionBody.newBuilder()
+						.setAccount(account)
+						.addTokens(firstToken)
+						.addTokens(firstToken))
+				.build();
+	}
 }

@@ -1,6 +1,11 @@
-/*
- * Copyright (C) 2020-2021 Hedera Hashgraph, LLC
- *
+package com.hedera.services.queries.token;
+
+/*-
+ * ‌
+ * Hedera Services Node
+ * ​
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
+ * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -12,44 +17,45 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ * ‍
  */
-package com.hedera.services.queries.token;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
 @Singleton
 public class TokenAnswers {
-    private final GetTokenInfoAnswer tokenInfo;
-    private final GetTokenNftInfoAnswer nftInfo;
-    private final GetTokenNftInfosAnswer tokenNftInfos;
-    private final GetAccountNftInfosAnswer accountNftInfos;
+	private final GetTokenInfoAnswer tokenInfo;
+	private final GetTokenNftInfoAnswer nftInfo;
+	private final GetTokenNftInfosAnswer tokenNftInfos;
+	private final GetAccountNftInfosAnswer accountNftInfos;
 
-    @Inject
-    public TokenAnswers(
-            GetTokenInfoAnswer tokenInfo,
-            GetTokenNftInfoAnswer nftInfo,
-            GetTokenNftInfosAnswer tokenNftInfos,
-            GetAccountNftInfosAnswer accountNftInfos) {
-        this.tokenInfo = tokenInfo;
-        this.nftInfo = nftInfo;
-        this.tokenNftInfos = tokenNftInfos;
-        this.accountNftInfos = accountNftInfos;
-    }
+	@Inject
+	public TokenAnswers(
+			GetTokenInfoAnswer tokenInfo,
+			GetTokenNftInfoAnswer nftInfo,
+			GetTokenNftInfosAnswer tokenNftInfos,
+			GetAccountNftInfosAnswer accountNftInfos
+	) {
+		this.tokenInfo = tokenInfo;
+		this.nftInfo = nftInfo;
+		this.tokenNftInfos = tokenNftInfos;
+		this.accountNftInfos = accountNftInfos;
+	}
 
-    public GetTokenInfoAnswer getTokenInfo() {
-        return tokenInfo;
-    }
+	public GetTokenInfoAnswer getTokenInfo() {
+		return tokenInfo;
+	}
 
-    public GetTokenNftInfoAnswer getNftInfoAnswer() {
-        return nftInfo;
-    }
+	public GetTokenNftInfoAnswer getNftInfoAnswer() {
+		return nftInfo;
+	}
 
-    public GetTokenNftInfosAnswer getTokenNftInfosAnswer() {
-        return tokenNftInfos;
-    }
+	public GetTokenNftInfosAnswer getTokenNftInfosAnswer() {
+		return tokenNftInfos;
+	}
 
-    public GetAccountNftInfosAnswer getAccountNftInfosAnswer() {
-        return accountNftInfos;
-    }
+	public GetAccountNftInfosAnswer getAccountNftInfosAnswer() {
+		return accountNftInfos;
+	}
 }

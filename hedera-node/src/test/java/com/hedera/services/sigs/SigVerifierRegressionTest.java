@@ -1,6 +1,11 @@
-/*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
- *
+package com.hedera.services.sigs;
+
+/*-
+ * ‌
+ * Hedera Services Node
+ * ​
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
+ * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -12,25 +17,8 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ * ‍
  */
-package com.hedera.services.sigs;
-
-import static com.hedera.services.sigs.metadata.DelegatingSigMetadataLookup.defaultLookupsFor;
-import static com.hedera.test.factories.scenarios.BadPayerScenarios.INVALID_PAYER_ID_SCENARIO;
-import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.CRYPTO_TRANSFER_RECEIVER_SIG_SCENARIO;
-import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.QUERY_PAYMENT_INVALID_SENDER_SCENARIO;
-import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.QUERY_PAYMENT_MISSING_SIGS_SCENARIO;
-import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.VALID_QUERY_PAYMENT_SCENARIO;
-import static com.hedera.test.factories.scenarios.SystemDeleteScenarios.AMBIGUOUS_SIG_MAP_SCENARIO;
-import static com.hedera.test.factories.scenarios.SystemDeleteScenarios.FULL_PAYER_SIGS_VIA_MAP_SCENARIO;
-import static com.hedera.test.factories.scenarios.SystemDeleteScenarios.INVALID_PAYER_SIGS_VIA_MAP_SCENARIO;
-import static com.hedera.test.factories.scenarios.SystemDeleteScenarios.MISSING_PAYER_SIGS_VIA_MAP_SCENARIO;
-import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_NODE;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.BDDMockito.mock;
 
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
@@ -57,141 +45,149 @@ import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.swirlds.common.crypto.engine.CryptoEngine;
 import com.swirlds.merkle.map.MerkleMap;
-import java.util.function.Predicate;
 import org.junit.jupiter.api.Test;
 
+import java.util.function.Predicate;
+
+import static com.hedera.services.sigs.metadata.DelegatingSigMetadataLookup.defaultLookupsFor;
+import static com.hedera.test.factories.scenarios.BadPayerScenarios.INVALID_PAYER_ID_SCENARIO;
+import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.CRYPTO_TRANSFER_RECEIVER_SIG_SCENARIO;
+import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.QUERY_PAYMENT_INVALID_SENDER_SCENARIO;
+import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.QUERY_PAYMENT_MISSING_SIGS_SCENARIO;
+import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.VALID_QUERY_PAYMENT_SCENARIO;
+import static com.hedera.test.factories.scenarios.SystemDeleteScenarios.AMBIGUOUS_SIG_MAP_SCENARIO;
+import static com.hedera.test.factories.scenarios.SystemDeleteScenarios.FULL_PAYER_SIGS_VIA_MAP_SCENARIO;
+import static com.hedera.test.factories.scenarios.SystemDeleteScenarios.INVALID_PAYER_SIGS_VIA_MAP_SCENARIO;
+import static com.hedera.test.factories.scenarios.SystemDeleteScenarios.MISSING_PAYER_SIGS_VIA_MAP_SCENARIO;
+import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_NODE;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.mock;
+
 class SigVerifierRegressionTest {
-    private PrecheckKeyReqs precheckKeyReqs;
-    private PrecheckVerifier precheckVerifier;
-    private SigRequirements keyOrder;
-    private Predicate<TransactionBody> isQueryPayment;
-    private PlatformTxnAccessor platformTxn;
-    private MerkleMap<EntityNum, MerkleAccount> accounts;
-    private AliasManager aliasManager;
+	private PrecheckKeyReqs precheckKeyReqs;
+	private PrecheckVerifier precheckVerifier;
+	private SigRequirements keyOrder;
+	private Predicate<TransactionBody> isQueryPayment;
+	private PlatformTxnAccessor platformTxn;
+	private MerkleMap<EntityNum, MerkleAccount> accounts;
+	private AliasManager aliasManager;
 
-    private EntityNumbers mockEntityNumbers = new MockEntityNumbers();
-    private SystemOpPolicies mockSystemOpPolicies = new SystemOpPolicies(mockEntityNumbers);
-    private SignatureWaivers mockSignatureWaivers =
-            new PolicyBasedSigWaivers(mockEntityNumbers, mockSystemOpPolicies);
+	private EntityNumbers mockEntityNumbers = new MockEntityNumbers();
+	private SystemOpPolicies mockSystemOpPolicies = new SystemOpPolicies(mockEntityNumbers);
+	private SignatureWaivers mockSignatureWaivers = new PolicyBasedSigWaivers(mockEntityNumbers, mockSystemOpPolicies);
 
-    @Test
-    void rejectsInvalidTxn() throws Throwable {
-        // given:
-        Transaction invalidSignedTxn =
-                Transaction.newBuilder()
-                        .setBodyBytes(ByteString.copyFrom("NONSENSE".getBytes()))
-                        .build();
+	@Test
+	void rejectsInvalidTxn() throws Throwable {
+		// given:
+		Transaction invalidSignedTxn = Transaction.newBuilder()
+				.setBodyBytes(ByteString.copyFrom("NONSENSE".getBytes()))
+				.build();
 
-        // expect:
-        assertFalse(sigVerifies(invalidSignedTxn));
-    }
+		// expect:
+		assertFalse(sigVerifies(invalidSignedTxn));
+	}
 
-    @Test
-    void acceptsValidNonCryptoTransferPayerSig() throws Throwable {
-        setupFor(FULL_PAYER_SIGS_VIA_MAP_SCENARIO);
+	@Test
+	void acceptsValidNonCryptoTransferPayerSig() throws Throwable {
+		setupFor(FULL_PAYER_SIGS_VIA_MAP_SCENARIO);
 
-        // expect:
-        assertTrue(sigVerifies(platformTxn.getSignedTxnWrapper()));
-    }
+		// expect:
+		assertTrue(sigVerifies(platformTxn.getSignedTxnWrapper()));
+	}
 
-    @Test
-    void rejectsIncompleteNonCryptoTransferPayerSig() throws Throwable {
-        setupFor(MISSING_PAYER_SIGS_VIA_MAP_SCENARIO);
+	@Test
+	void rejectsIncompleteNonCryptoTransferPayerSig() throws Throwable {
+		setupFor(MISSING_PAYER_SIGS_VIA_MAP_SCENARIO);
 
-        // expect:
-        assertFalse(sigVerifies(platformTxn.getSignedTxnWrapper()));
-    }
+		// expect:
+		assertFalse(sigVerifies(platformTxn.getSignedTxnWrapper()));
+	}
 
-    @Test
-    void rejectsInvalidNonCryptoTransferPayerSig() throws Throwable {
-        setupFor(INVALID_PAYER_SIGS_VIA_MAP_SCENARIO);
+	@Test
+	void rejectsInvalidNonCryptoTransferPayerSig() throws Throwable {
+		setupFor(INVALID_PAYER_SIGS_VIA_MAP_SCENARIO);
 
-        // expect:
-        assertFalse(sigVerifies(platformTxn.getSignedTxnWrapper()));
-    }
+		// expect:
+		assertFalse(sigVerifies(platformTxn.getSignedTxnWrapper()));
+	}
 
-    @Test
-    void acceptsNonQueryPaymentTransfer() throws Throwable {
-        setupFor(CRYPTO_TRANSFER_RECEIVER_SIG_SCENARIO);
+	@Test
+	void acceptsNonQueryPaymentTransfer() throws Throwable {
+		setupFor(CRYPTO_TRANSFER_RECEIVER_SIG_SCENARIO);
 
-        // expect:
-        assertTrue(sigVerifies(platformTxn.getSignedTxnWrapper()));
-    }
+		// expect:
+		assertTrue(sigVerifies(platformTxn.getSignedTxnWrapper()));
+	}
 
-    @Test
-    void acceptsQueryPaymentTransfer() throws Throwable {
-        setupFor(VALID_QUERY_PAYMENT_SCENARIO);
+	@Test
+	void acceptsQueryPaymentTransfer() throws Throwable {
+		setupFor(VALID_QUERY_PAYMENT_SCENARIO);
 
-        // expect:
-        assertTrue(sigVerifies(platformTxn.getSignedTxnWrapper()));
-    }
+		// expect:
+		assertTrue(sigVerifies(platformTxn.getSignedTxnWrapper()));
+	}
 
-    @Test
-    void rejectsInvalidPayerAccount() throws Throwable {
-        setupFor(INVALID_PAYER_ID_SCENARIO);
+	@Test
+	void rejectsInvalidPayerAccount() throws Throwable {
+		setupFor(INVALID_PAYER_ID_SCENARIO);
 
-        // expect:
-        assertFalse(sigVerifies(platformTxn.getSignedTxnWrapper()));
-    }
+		// expect:
+		assertFalse(sigVerifies(platformTxn.getSignedTxnWrapper()));
+	}
 
-    @Test
-    void throwsOnInvalidSenderAccount() throws Throwable {
-        // given:
-        setupFor(QUERY_PAYMENT_INVALID_SENDER_SCENARIO);
+	@Test
+	void throwsOnInvalidSenderAccount() throws Throwable {
+		// given:
+		setupFor(QUERY_PAYMENT_INVALID_SENDER_SCENARIO);
 
-        // expect:
-        assertThrows(
-                InvalidAccountIDException.class,
-                () -> sigVerifies(platformTxn.getSignedTxnWrapper()));
-    }
+		// expect:
+		assertThrows(InvalidAccountIDException.class,
+				() -> sigVerifies(platformTxn.getSignedTxnWrapper()));
+	}
 
-    @Test
-    void throwsOnInvalidSigMap() throws Throwable {
-        // given:
-        setupFor(AMBIGUOUS_SIG_MAP_SCENARIO);
+	@Test
+	void throwsOnInvalidSigMap() throws Throwable {
+		// given:
+		setupFor(AMBIGUOUS_SIG_MAP_SCENARIO);
 
-        // expect:
-        assertThrows(
-                KeyPrefixMismatchException.class,
-                () -> sigVerifies(platformTxn.getSignedTxnWrapper()));
-    }
+		// expect:
+		assertThrows(KeyPrefixMismatchException.class,
+				() -> sigVerifies(platformTxn.getSignedTxnWrapper()));
+	}
 
-    @Test
-    void rejectsQueryPaymentTransferWithMissingSigs() throws Throwable {
-        setupFor(QUERY_PAYMENT_MISSING_SIGS_SCENARIO);
+	@Test
+	void rejectsQueryPaymentTransferWithMissingSigs() throws Throwable {
+		setupFor(QUERY_PAYMENT_MISSING_SIGS_SCENARIO);
 
-        // expect:
-        assertFalse(sigVerifies(platformTxn.getSignedTxnWrapper()));
-    }
+		// expect:
+		assertFalse(sigVerifies(platformTxn.getSignedTxnWrapper()));
+	}
 
-    private boolean sigVerifies(Transaction signedTxn) throws Exception {
-        try {
-            SignedTxnAccessor accessor = new SignedTxnAccessor(signedTxn);
-            return precheckVerifier.hasNecessarySignatures(accessor);
-        } catch (InvalidProtocolBufferException ignore) {
-            return false;
-        }
-    }
+	private boolean sigVerifies(Transaction signedTxn) throws Exception {
+		try {
+			SignedTxnAccessor accessor = new SignedTxnAccessor(signedTxn);
+			return precheckVerifier.hasNecessarySignatures(accessor);
+		} catch (InvalidProtocolBufferException ignore) {
+			return false;
+		}
+	}
 
-    private void setupFor(TxnHandlingScenario scenario) throws Throwable {
-        accounts = scenario.accounts();
-        platformTxn = scenario.platformTxn();
-        aliasManager = mock(AliasManager.class);
-        keyOrder =
-                new SigRequirements(
-                        defaultLookupsFor(
-                                aliasManager,
-                                null,
-                                () -> accounts,
-                                () -> null,
-                                ref -> null,
-                                ref -> null),
-                        mockSignatureWaivers);
-        final var nodeInfo = mock(NodeInfo.class);
-        given(nodeInfo.selfAccount()).willReturn(DEFAULT_NODE);
-        isQueryPayment = PrecheckUtils.queryPaymentTestFor(nodeInfo);
-        SyncVerifier syncVerifier = new CryptoEngine()::verifySync;
-        precheckKeyReqs = new PrecheckKeyReqs(keyOrder, isQueryPayment);
-        precheckVerifier = new PrecheckVerifier(syncVerifier, precheckKeyReqs);
-    }
+	private void setupFor(TxnHandlingScenario scenario) throws Throwable {
+		accounts = scenario.accounts();
+		platformTxn = scenario.platformTxn();
+		aliasManager = mock(AliasManager.class);
+		keyOrder = new SigRequirements(
+				defaultLookupsFor(aliasManager, null, () -> accounts, () -> null, ref -> null, ref -> null),
+				mockSignatureWaivers);
+		final var nodeInfo = mock(NodeInfo.class);
+		given(nodeInfo.selfAccount()).willReturn(DEFAULT_NODE);
+		isQueryPayment = PrecheckUtils.queryPaymentTestFor(nodeInfo);
+		SyncVerifier syncVerifier = new CryptoEngine()::verifySync;
+		precheckKeyReqs = new PrecheckKeyReqs(keyOrder, isQueryPayment);
+		precheckVerifier = new PrecheckVerifier(syncVerifier, precheckKeyReqs);
+	}
 }
+

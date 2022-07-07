@@ -1,6 +1,11 @@
-/*
- * Copyright (C) 2021-2022 Hedera Hashgraph, LLC
- *
+package com.hedera.services.store.contracts;
+
+/*-
+ * ‌
+ * Hedera Services Node
+ * ​
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
+ * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -12,23 +17,8 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ * ‍
  */
-package com.hedera.services.store.contracts;
-
-import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.fungibleTokenAddr;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCreate;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.EthereumTransaction;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenMint;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.TransactionContext;
@@ -54,7 +44,6 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.swirlds.virtualmap.VirtualMap;
-import java.util.function.Supplier;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.units.bigints.UInt256;
@@ -64,264 +53,285 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.function.Supplier;
+
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.fungibleTokenAddr;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCreate;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.EthereumTransaction;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenMint;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+
 @ExtendWith(MockitoExtension.class)
 class MutableEntityAccessTest {
-    @Mock private HederaLedger ledger;
-    @Mock private Supplier<VirtualMap<VirtualBlobKey, VirtualBlobValue>> supplierBytecode;
-    @Mock private VirtualMap<VirtualBlobKey, VirtualBlobValue> bytecodeStorage;
+	@Mock
+	private HederaLedger ledger;
+	@Mock
+	private Supplier<VirtualMap<VirtualBlobKey, VirtualBlobValue>> supplierBytecode;
+	@Mock
+	private VirtualMap<VirtualBlobKey, VirtualBlobValue> bytecodeStorage;
+	@Mock
+	private TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus> tokenRelsLedger;
+	@Mock
+	private TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
+	@Mock
+	private TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger;
+	@Mock
+	private TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokensLedger;
+	@Mock
+	private TransactionContext txnCtx;
+	@Mock
+	private SignedTxnAccessor accessor;
+	@Mock
+	private SizeLimitedStorage storage;
+	@Mock
+	private AliasManager aliasManager;
 
-    @Mock
-    private TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus>
-            tokenRelsLedger;
+	private MutableEntityAccess subject;
 
-    @Mock private TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
-    @Mock private TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger;
-    @Mock private TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokensLedger;
-    @Mock private TransactionContext txnCtx;
-    @Mock private SignedTxnAccessor accessor;
-    @Mock private SizeLimitedStorage storage;
-    @Mock private AliasManager aliasManager;
+	private final AccountID id = IdUtils.asAccount("0.0.1234");
+	private final long balance = 1234L;
 
-    private MutableEntityAccess subject;
+	private final UInt256 contractStorageKey = UInt256.ONE;
+	private final UInt256 contractStorageValue = UInt256.MAX_VALUE;
 
-    private final AccountID id = IdUtils.asAccount("0.0.1234");
-    private final long balance = 1234L;
+	private final Bytes bytecode = Bytes.of("contract-code".getBytes());
+	private final VirtualBlobKey expectedBytecodeKey = new VirtualBlobKey(VirtualBlobKey.Type.CONTRACT_BYTECODE,
+			(int) id.getAccountNum());
+	private final VirtualBlobValue expectedBytecodeValue = new VirtualBlobValue(bytecode.toArray());
 
-    private final UInt256 contractStorageKey = UInt256.ONE;
-    private final UInt256 contractStorageValue = UInt256.MAX_VALUE;
+	@BeforeEach
+	void setUp() {
+		given(ledger.getTokenRelsLedger()).willReturn(tokenRelsLedger);
+		given(ledger.getAccountsLedger()).willReturn(accountsLedger);
+		given(ledger.getNftsLedger()).willReturn(nftsLedger);
 
-    private final Bytes bytecode = Bytes.of("contract-code".getBytes());
-    private final VirtualBlobKey expectedBytecodeKey =
-            new VirtualBlobKey(VirtualBlobKey.Type.CONTRACT_BYTECODE, (int) id.getAccountNum());
-    private final VirtualBlobValue expectedBytecodeValue = new VirtualBlobValue(bytecode.toArray());
+		subject = new MutableEntityAccess(ledger, aliasManager, txnCtx, storage, tokensLedger, supplierBytecode);
+	}
 
-    @BeforeEach
-    void setUp() {
-        given(ledger.getTokenRelsLedger()).willReturn(tokenRelsLedger);
-        given(ledger.getAccountsLedger()).willReturn(accountsLedger);
-        given(ledger.getNftsLedger()).willReturn(nftsLedger);
+	@Test
+	void recordsViaSizeLimitedStorage() {
+		subject.recordNewKvUsageTo(accountsLedger);
 
-        subject =
-                new MutableEntityAccess(
-                        ledger, aliasManager, txnCtx, storage, tokensLedger, supplierBytecode);
-    }
+		verify(storage).recordNewKvUsageTo(accountsLedger);
+	}
 
-    @Test
-    void recordsViaSizeLimitedStorage() {
-        subject.recordNewKvUsageTo(accountsLedger);
+	@Test
+	void flushesAsExpected() {
+		subject.flushStorage();
 
-        verify(storage).recordNewKvUsageTo(accountsLedger);
-    }
+		verify(storage).validateAndCommit();
+	}
 
-    @Test
-    void flushesAsExpected() {
-        subject.flushStorage();
+	@Test
+	void setsSelfInLedger() {
+		verify(ledger).setMutableEntityAccess(subject);
+	}
 
-        verify(storage).validateAndCommit();
-    }
+	@Test
+	void returnsTokensLedgerChangeSetForManagedChanges() {
+		final var mockChanges = "N?A";
+		given(tokensLedger.changeSetSoFar()).willReturn(mockChanges);
+		assertEquals(mockChanges, subject.currentManagedChangeSet());
+	}
 
-    @Test
-    void setsSelfInLedger() {
-        verify(ledger).setMutableEntityAccess(subject);
-    }
+	@Test
+	void commitsIfContractOpActive() {
+		givenActive(ContractCall);
+		subject.commit();
+		verify(tokensLedger).commit();
+	}
 
-    @Test
-    void returnsTokensLedgerChangeSetForManagedChanges() {
-        final var mockChanges = "N?A";
-        given(tokensLedger.changeSetSoFar()).willReturn(mockChanges);
-        assertEquals(mockChanges, subject.currentManagedChangeSet());
-    }
+	@Test
+	void commitsIfEthOpActive() {
+		givenActive(EthereumTransaction);
+		subject.commit();
+		verify(tokensLedger).commit();
+	}
 
-    @Test
-    void commitsIfContractOpActive() {
-        givenActive(ContractCall);
-        subject.commit();
-        verify(tokensLedger).commit();
-    }
+	@Test
+	void doesntCommitIfNonContractOpActive() {
+		givenActive(TokenMint);
+		subject.commit();
+		verify(tokensLedger, never()).commit();
+	}
 
-    @Test
-    void commitsIfEthOpActive() {
-        givenActive(EthereumTransaction);
-        subject.commit();
-        verify(tokensLedger).commit();
-    }
+	@Test
+	void rollbackIfNonContractOpActive() {
+		givenActive(TokenMint);
+		subject.rollback();
+		verify(tokensLedger, never()).rollback();
+	}
 
-    @Test
-    void doesntCommitIfNonContractOpActive() {
-        givenActive(TokenMint);
-        subject.commit();
-        verify(tokensLedger, never()).commit();
-    }
+	@Test
+	void doesntRollbackIfNonContractOpActive() {
+		givenActive(TokenMint);
+		subject.rollback();
+		verify(tokensLedger, never()).rollback();
+	}
 
-    @Test
-    void rollbackIfNonContractOpActive() {
-        givenActive(TokenMint);
-        subject.rollback();
-        verify(tokensLedger, never()).rollback();
-    }
+	@Test
+	void beginsLedgerTxnIfContractCreateIsActive() {
+		givenActive(ContractCreate);
+		subject.begin();
+		verify(tokensLedger).begin();
+	}
 
-    @Test
-    void doesntRollbackIfNonContractOpActive() {
-        givenActive(TokenMint);
-        subject.rollback();
-        verify(tokensLedger, never()).rollback();
-    }
+	@Test
+	void beginsLedgerTxnIfContractCallIsActive() {
+		givenActive(ContractCall);
+		subject.begin();
+		verify(tokensLedger).begin();
+	}
 
-    @Test
-    void beginsLedgerTxnIfContractCreateIsActive() {
-        givenActive(ContractCreate);
-        subject.begin();
-        verify(tokensLedger).begin();
-    }
+	@Test
+	void doesntBeginLedgerTxnIfNonContractOpIsActive() {
+		givenActive(HederaFunctionality.TokenMint);
+		subject.begin();
+		verify(tokensLedger, never()).begin();
+	}
 
-    @Test
-    void beginsLedgerTxnIfContractCallIsActive() {
-        givenActive(ContractCall);
-        subject.begin();
-        verify(tokensLedger).begin();
-    }
+	@Test
+	void delegatesLedgerAccess() {
+		final var worldLedgers = subject.worldLedgers();
 
-    @Test
-    void doesntBeginLedgerTxnIfNonContractOpIsActive() {
-        givenActive(HederaFunctionality.TokenMint);
-        subject.begin();
-        verify(tokensLedger, never()).begin();
-    }
+		assertSame(tokenRelsLedger, worldLedgers.tokenRels());
+		assertSame(accountsLedger, worldLedgers.accounts());
+		assertSame(nftsLedger, worldLedgers.nfts());
+	}
 
-    @Test
-    void delegatesLedgerAccess() {
-        final var worldLedgers = subject.worldLedgers();
+	@Test
+	void customizesAccount() {
+		// when:
+		subject.customize(id, new HederaAccountCustomizer());
 
-        assertSame(tokenRelsLedger, worldLedgers.tokenRels());
-        assertSame(accountsLedger, worldLedgers.accounts());
-        assertSame(nftsLedger, worldLedgers.nfts());
-    }
+		// then:
+		verify(ledger).customizePotentiallyDeleted(eq(id), any());
+	}
 
-    @Test
-    void customizesAccount() {
-        // when:
-        subject.customize(id, new HederaAccountCustomizer());
+	@Test
+	void delegatesDetachmentTest() {
+		given(ledger.isDetached(id)).willReturn(true);
 
-        // then:
-        verify(ledger).customizePotentiallyDeleted(eq(id), any());
-    }
+		assertTrue(subject.isDetached(id));
+	}
 
-    @Test
-    void delegatesDetachmentTest() {
-        given(ledger.isDetached(id)).willReturn(true);
+	@Test
+	void delegatesAlias() {
+		final var pretend = ByteString.copyFromUtf8("YAWN");
+		given(ledger.alias(id)).willReturn(pretend);
+		assertSame(pretend, subject.alias(id));
+	}
 
-        assertTrue(subject.isDetached(id));
-    }
+	@Test
+	void getsBalance() {
+		// given:
+		given(ledger.getBalance(id)).willReturn(balance);
 
-    @Test
-    void delegatesAlias() {
-        final var pretend = ByteString.copyFromUtf8("YAWN");
-        given(ledger.alias(id)).willReturn(pretend);
-        assertSame(pretend, subject.alias(id));
-    }
+		// when:
+		final var result = subject.getBalance(id);
 
-    @Test
-    void getsBalance() {
-        // given:
-        given(ledger.getBalance(id)).willReturn(balance);
+		//then:
+		assertEquals(balance, result);
+		// and:
+		verify(ledger).getBalance(id);
+	}
 
-        // when:
-        final var result = subject.getBalance(id);
+	@Test
+	void checksIfDeleted() {
+		// given:
+		given(ledger.isDeleted(id)).willReturn(true);
 
-        // then:
-        assertEquals(balance, result);
-        // and:
-        verify(ledger).getBalance(id);
-    }
+		// when:
+		assertTrue(subject.isDeleted(id));
 
-    @Test
-    void checksIfDeleted() {
-        // given:
-        given(ledger.isDeleted(id)).willReturn(true);
+		// and:
+		verify(ledger).isDeleted(id);
+	}
 
-        // when:
-        assertTrue(subject.isDeleted(id));
+	@Test
+	void checksIfExtant() {
+		// given:
+		given(ledger.exists(id)).willReturn(true);
 
-        // and:
-        verify(ledger).isDeleted(id);
-    }
+		// when:
+		assertTrue(subject.isExtant(id));
 
-    @Test
-    void checksIfExtant() {
-        // given:
-        given(ledger.exists(id)).willReturn(true);
+		// and:
+		verify(ledger).exists(id);
+	}
 
-        // when:
-        assertTrue(subject.isExtant(id));
+	@Test
+	void checksIfTokenAccount() {
+		// given:
+		given(tokensLedger.exists(EntityIdUtils.tokenIdFromEvmAddress(fungibleTokenAddr))).willReturn(true);
 
-        // and:
-        verify(ledger).exists(id);
-    }
+		// when:
+		assertTrue(subject.isTokenAccount(fungibleTokenAddr));
 
-    @Test
-    void checksIfTokenAccount() {
-        // given:
-        given(tokensLedger.exists(EntityIdUtils.tokenIdFromEvmAddress(fungibleTokenAddr)))
-                .willReturn(true);
+		// and:
+		verify(tokensLedger).exists(EntityIdUtils.tokenIdFromEvmAddress(fungibleTokenAddr));
+	}
 
-        // when:
-        assertTrue(subject.isTokenAccount(fungibleTokenAddr));
+	@Test
+	void putsNonZeroContractStorageValue() {
+		subject.putStorage(id, contractStorageKey, contractStorageValue);
 
-        // and:
-        verify(tokensLedger).exists(EntityIdUtils.tokenIdFromEvmAddress(fungibleTokenAddr));
-    }
+		verify(storage).putStorage(id, contractStorageKey, contractStorageValue);
+	}
 
-    @Test
-    void putsNonZeroContractStorageValue() {
-        subject.putStorage(id, contractStorageKey, contractStorageValue);
+	@Test
+	void getsExpectedContractStorageValue() {
+		// and:
+		given(storage.getStorage(id, contractStorageKey)).willReturn(UInt256.MAX_VALUE);
 
-        verify(storage).putStorage(id, contractStorageKey, contractStorageValue);
-    }
+		// when:
+		final var result = subject.getStorage(id, contractStorageKey);
 
-    @Test
-    void getsExpectedContractStorageValue() {
-        // and:
-        given(storage.getStorage(id, contractStorageKey)).willReturn(UInt256.MAX_VALUE);
+		// then:
+		assertEquals(UInt256.MAX_VALUE, result);
+	}
 
-        // when:
-        final var result = subject.getStorage(id, contractStorageKey);
+	@Test
+	void storesBlob() {
+		// given:
+		given(supplierBytecode.get()).willReturn(bytecodeStorage);
 
-        // then:
-        assertEquals(UInt256.MAX_VALUE, result);
-    }
+		// when:
+		subject.storeCode(id, bytecode);
 
-    @Test
-    void storesBlob() {
-        // given:
-        given(supplierBytecode.get()).willReturn(bytecodeStorage);
+		// then:
+		verify(bytecodeStorage).put(expectedBytecodeKey, expectedBytecodeValue);
+	}
 
-        // when:
-        subject.storeCode(id, bytecode);
+	@Test
+	void fetchesEmptyBytecode() {
+		given(supplierBytecode.get()).willReturn(bytecodeStorage);
 
-        // then:
-        verify(bytecodeStorage).put(expectedBytecodeKey, expectedBytecodeValue);
-    }
+		assertNull(subject.fetchCodeIfPresent(id));
+	}
 
-    @Test
-    void fetchesEmptyBytecode() {
-        given(supplierBytecode.get()).willReturn(bytecodeStorage);
+	@Test
+	void fetchesBytecode() {
+		given(supplierBytecode.get()).willReturn(bytecodeStorage);
+		given(bytecodeStorage.get(expectedBytecodeKey)).willReturn(expectedBytecodeValue);
 
-        assertNull(subject.fetchCodeIfPresent(id));
-    }
+		final var result = subject.fetchCodeIfPresent(id);
 
-    @Test
-    void fetchesBytecode() {
-        given(supplierBytecode.get()).willReturn(bytecodeStorage);
-        given(bytecodeStorage.get(expectedBytecodeKey)).willReturn(expectedBytecodeValue);
+		assertEquals(bytecode, result);
+		verify(bytecodeStorage).get(expectedBytecodeKey);
+	}
 
-        final var result = subject.fetchCodeIfPresent(id);
-
-        assertEquals(bytecode, result);
-        verify(bytecodeStorage).get(expectedBytecodeKey);
-    }
-
-    private void givenActive(final HederaFunctionality function) {
-        given(accessor.getFunction()).willReturn(function);
-        given(txnCtx.accessor()).willReturn(accessor);
-    }
+	private void givenActive(final HederaFunctionality function) {
+		given(accessor.getFunction()).willReturn(function);
+		given(txnCtx.accessor()).willReturn(accessor);
+	}
 }

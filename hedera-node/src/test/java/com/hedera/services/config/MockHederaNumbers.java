@@ -1,6 +1,11 @@
-/*
- * Copyright (C) 2020-2021 Hedera Hashgraph, LLC
- *
+package com.hedera.services.config;
+
+/*-
+ * ‌
+ * Hedera Services Node
+ * ​
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
+ * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -12,26 +17,26 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ * ‍
  */
-package com.hedera.services.config;
 
 public class MockHederaNumbers extends HederaNumbers {
-    public MockHederaNumbers() {
-        super(null);
-    }
+	public MockHederaNumbers() {
+		super(null);
+	}
 
-    @Override
-    public long realm() {
-        return 0L;
-    }
+	@Override
+	public long realm() {
+		return 0L;
+	}
 
-    @Override
-    public long shard() {
-        return 0L;
-    }
+	@Override
+	public long shard() {
+		return 0L;
+	}
 
-    @Override
-    public long numReservedSystemEntities() {
-        return 1_000L;
-    }
+	@Override
+	public long numReservedSystemEntities() {
+		return 1_000L;
+	}
 }

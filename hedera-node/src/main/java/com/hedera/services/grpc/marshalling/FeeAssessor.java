@@ -1,6 +1,11 @@
-/*
- * Copyright (C) 2021 Hedera Hashgraph, LLC
- *
+package com.hedera.services.grpc.marshalling;
+
+/*-
+ * ‌
+ * Hedera Services Node
+ * ​
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
+ * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -12,8 +17,18 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ * ‍
  */
-package com.hedera.services.grpc.marshalling;
+
+import com.hedera.services.ledger.BalanceChange;
+import com.hedera.services.state.submerkle.FcAssessedCustomFee;
+import com.hedera.services.state.submerkle.FcCustomFee;
+import com.hedera.services.store.models.Id;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+
+import javax.inject.Inject;
+import javax.inject.Singleton;
+import java.util.List;
 
 import static com.hedera.services.grpc.marshalling.FixedFeeResult.ASSESSMENT_FAILED_WITH_TOO_MANY_ADJUSTMENTS_REQUIRED;
 import static com.hedera.services.grpc.marshalling.FixedFeeResult.ASSESSMENT_FINISHED;
@@ -25,108 +40,98 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_CHA
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_CHARGING_EXCEEDED_MAX_RECURSION_DEPTH;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
-import com.hedera.services.ledger.BalanceChange;
-import com.hedera.services.state.submerkle.FcAssessedCustomFee;
-import com.hedera.services.state.submerkle.FcCustomFee;
-import com.hedera.services.store.models.Id;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import java.util.List;
-import javax.inject.Inject;
-import javax.inject.Singleton;
-
 @Singleton
 public class FeeAssessor {
-    private final FixedFeeAssessor fixedFeeAssessor;
-    private final RoyaltyFeeAssessor royaltyFeeAssessor;
-    private final FractionalFeeAssessor fractionalFeeAssessor;
+	private final FixedFeeAssessor fixedFeeAssessor;
+	private final RoyaltyFeeAssessor royaltyFeeAssessor;
+	private final FractionalFeeAssessor fractionalFeeAssessor;
 
-    @Inject
-    public FeeAssessor(
-            FixedFeeAssessor fixedFeeAssessor,
-            RoyaltyFeeAssessor royaltyFeeAssessor,
-            FractionalFeeAssessor fractionalFeeAssessor) {
-        this.fixedFeeAssessor = fixedFeeAssessor;
-        this.royaltyFeeAssessor = royaltyFeeAssessor;
-        this.fractionalFeeAssessor = fractionalFeeAssessor;
-    }
+	@Inject
+	public FeeAssessor(
+			FixedFeeAssessor fixedFeeAssessor,
+			RoyaltyFeeAssessor royaltyFeeAssessor,
+			FractionalFeeAssessor fractionalFeeAssessor
+	) {
+		this.fixedFeeAssessor = fixedFeeAssessor;
+		this.royaltyFeeAssessor = royaltyFeeAssessor;
+		this.fractionalFeeAssessor = fractionalFeeAssessor;
+	}
 
-    public ResponseCodeEnum assess(
-            BalanceChange change,
-            CustomSchedulesManager customSchedulesManager,
-            BalanceChangeManager changeManager,
-            List<FcAssessedCustomFee> accumulator,
-            ImpliedTransfersMeta.ValidationProps props) {
-        if (changeManager.getLevelNo() > props.maxNestedCustomFees()) {
-            return CUSTOM_FEE_CHARGING_EXCEEDED_MAX_RECURSION_DEPTH;
-        }
-        final var chargingToken = change.getToken();
+	public ResponseCodeEnum assess(
+			BalanceChange change,
+			CustomSchedulesManager customSchedulesManager,
+			BalanceChangeManager changeManager,
+			List<FcAssessedCustomFee> accumulator,
+			ImpliedTransfersMeta.ValidationProps props
+	) {
+		if (changeManager.getLevelNo() > props.maxNestedCustomFees()) {
+			return CUSTOM_FEE_CHARGING_EXCEEDED_MAX_RECURSION_DEPTH;
+		}
+		final var chargingToken = change.getToken();
 
-        final var feeMeta = customSchedulesManager.managedSchedulesFor(chargingToken);
-        final var payer = change.getAccount();
-        final var fees = feeMeta.customFees();
-        /* Token treasuries are exempt from all custom fees */
-        if (fees.isEmpty() || feeMeta.treasuryId().equals(payer)) {
-            return OK;
-        }
+		final var feeMeta = customSchedulesManager.managedSchedulesFor(chargingToken);
+		final var payer = change.getAccount();
+		final var fees = feeMeta.customFees();
+		/* Token treasuries are exempt from all custom fees */
+		if (fees.isEmpty() || feeMeta.treasuryId().equals(payer)) {
+			return OK;
+		}
 
-        final var maxBalanceChanges = props.maxXferBalanceChanges();
-        final var fixedFeeResult =
-                assessFixedFees(
-                        chargingToken, fees, payer, changeManager, accumulator, maxBalanceChanges);
-        if (fixedFeeResult == ASSESSMENT_FAILED_WITH_TOO_MANY_ADJUSTMENTS_REQUIRED) {
-            return CUSTOM_FEE_CHARGING_EXCEEDED_MAX_ACCOUNT_AMOUNTS;
-        }
+		final var maxBalanceChanges = props.maxXferBalanceChanges();
+		final var fixedFeeResult =
+				assessFixedFees(chargingToken, fees, payer, changeManager, accumulator, maxBalanceChanges);
+		if (fixedFeeResult == ASSESSMENT_FAILED_WITH_TOO_MANY_ADJUSTMENTS_REQUIRED) {
+			return CUSTOM_FEE_CHARGING_EXCEEDED_MAX_ACCOUNT_AMOUNTS;
+		}
 
-        /* A COMMON_FUNGIBLE token can have fractional fees but not royalty fees;
-        and a NONFUNGIBLE_UNIQUE token can have royalty fees but not fractional fees.
-        So these two if clauses are mutually exclusive. */
-        if (fixedFeeResult == FRACTIONAL_FEE_ASSESSMENT_PENDING) {
-            final var fractionalValidity =
-                    fractionalFeeAssessor.assessAllFractional(
-                            change, fees, changeManager, accumulator);
-            if (fractionalValidity != OK) {
-                return fractionalValidity;
-            }
-        } else if (fixedFeeResult == ROYALTY_FEE_ASSESSMENT_PENDING) {
-            final var royaltyValidity =
-                    royaltyFeeAssessor.assessAllRoyalties(change, fees, changeManager, accumulator);
-            if (royaltyValidity != OK) {
-                return royaltyValidity;
-            }
-        }
+		/* A COMMON_FUNGIBLE token can have fractional fees but not royalty fees;
+		and a NONFUNGIBLE_UNIQUE token can have royalty fees but not fractional fees.
+		So these two if clauses are mutually exclusive. */
+		if (fixedFeeResult == FRACTIONAL_FEE_ASSESSMENT_PENDING) {
+			final var fractionalValidity =
+					fractionalFeeAssessor.assessAllFractional(change, fees, changeManager, accumulator);
+			if (fractionalValidity != OK) {
+				return fractionalValidity;
+			}
+		} else if (fixedFeeResult == ROYALTY_FEE_ASSESSMENT_PENDING) {
+			final var royaltyValidity =
+					royaltyFeeAssessor.assessAllRoyalties(change, fees, changeManager, accumulator);
+			if (royaltyValidity != OK) {
+				return royaltyValidity;
+			}
+		}
 
-        return (changeManager.numChangesSoFar() > maxBalanceChanges)
-                ? CUSTOM_FEE_CHARGING_EXCEEDED_MAX_ACCOUNT_AMOUNTS
-                : OK;
-    }
+		return (changeManager.numChangesSoFar() > maxBalanceChanges)
+				? CUSTOM_FEE_CHARGING_EXCEEDED_MAX_ACCOUNT_AMOUNTS : OK;
+	}
 
-    private FixedFeeResult assessFixedFees(
-            Id chargingToken,
-            List<FcCustomFee> fees,
-            Id payer,
-            BalanceChangeManager balanceChangeManager,
-            List<FcAssessedCustomFee> accumulator,
-            int maxBalanceChanges) {
-        var result = ASSESSMENT_FINISHED;
-        for (var fee : fees) {
-            final var collector = fee.getFeeCollectorAsId();
-            if (payer.equals(collector)) {
-                continue;
-            }
-            if (fee.getFeeType() == FIXED_FEE) {
-                fixedFeeAssessor.assess(
-                        payer, chargingToken, fee, balanceChangeManager, accumulator);
-                if (balanceChangeManager.numChangesSoFar() > maxBalanceChanges) {
-                    return ASSESSMENT_FAILED_WITH_TOO_MANY_ADJUSTMENTS_REQUIRED;
-                }
-            } else {
-                if (fee.getFeeType() == FRACTIONAL_FEE) {
-                    result = FRACTIONAL_FEE_ASSESSMENT_PENDING;
-                } else {
-                    result = ROYALTY_FEE_ASSESSMENT_PENDING;
-                }
-            }
-        }
-        return result;
-    }
+	private FixedFeeResult assessFixedFees(
+			Id chargingToken,
+			List<FcCustomFee> fees,
+			Id payer,
+			BalanceChangeManager balanceChangeManager,
+			List<FcAssessedCustomFee> accumulator,
+			int maxBalanceChanges
+	) {
+		var result = ASSESSMENT_FINISHED;
+		for (var fee : fees) {
+			final var collector = fee.getFeeCollectorAsId();
+			if (payer.equals(collector)) {
+				continue;
+			}
+			if (fee.getFeeType() == FIXED_FEE) {
+				fixedFeeAssessor.assess(payer, chargingToken, fee, balanceChangeManager, accumulator);
+				if (balanceChangeManager.numChangesSoFar() > maxBalanceChanges) {
+					return ASSESSMENT_FAILED_WITH_TOO_MANY_ADJUSTMENTS_REQUIRED;
+				}
+			} else {
+				if (fee.getFeeType() == FRACTIONAL_FEE) {
+					result = FRACTIONAL_FEE_ASSESSMENT_PENDING;
+				} else {
+					result = ROYALTY_FEE_ASSESSMENT_PENDING;
+				}
+			}
+		}
+		return result;
+	}
 }

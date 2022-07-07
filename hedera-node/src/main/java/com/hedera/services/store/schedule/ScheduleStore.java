@@ -1,6 +1,11 @@
-/*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
- *
+package com.hedera.services.store.schedule;
+
+/*-
+ * ‌
+ * Hedera Services Node
+ * ​
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
+ * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -12,8 +17,8 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ * ‍
  */
-package com.hedera.services.store.schedule;
 
 import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.state.virtual.schedule.ScheduleSecondVirtualValue;
@@ -22,42 +27,41 @@ import com.hedera.services.store.CreationResult;
 import com.hedera.services.store.Store;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ScheduleID;
+import org.apache.commons.lang3.tuple.Pair;
+
 import java.time.Instant;
 import java.util.List;
 import java.util.function.Consumer;
+
 import javax.annotation.Nullable;
-import org.apache.commons.lang3.tuple.Pair;
 
-/** Defines a type able to manage Scheduled entities. */
+/**
+ * Defines a type able to manage Scheduled entities.
+ */
 public interface ScheduleStore extends Store<ScheduleID, ScheduleVirtualValue> {
-    ScheduleID MISSING_SCHEDULE = ScheduleID.getDefaultInstance();
+	ScheduleID MISSING_SCHEDULE = ScheduleID.getDefaultInstance();
 
-    void apply(ScheduleID id, Consumer<ScheduleVirtualValue> change);
+	void apply(ScheduleID id, Consumer<ScheduleVirtualValue> change);
+	ResponseCodeEnum deleteAt(ScheduleID id, Instant consensusTime);
 
-    ResponseCodeEnum deleteAt(ScheduleID id, Instant consensusTime);
+	CreationResult<ScheduleID> createProvisionally(ScheduleVirtualValue candidate, RichInstant consensusTime);
 
-    CreationResult<ScheduleID> createProvisionally(
-            ScheduleVirtualValue candidate, RichInstant consensusTime);
+	Pair<ScheduleID, ScheduleVirtualValue> lookupSchedule(byte[] bodyBytes);
+	ResponseCodeEnum preMarkAsExecuted(ScheduleID id);
+	ResponseCodeEnum markAsExecuted(ScheduleID id, Instant consensusTime);
+	void expire(ScheduleID id);
 
-    Pair<ScheduleID, ScheduleVirtualValue> lookupSchedule(byte[] bodyBytes);
+	default ScheduleID resolve(ScheduleID id) {
+		return exists(id) ? id : MISSING_SCHEDULE;
+	}
 
-    ResponseCodeEnum preMarkAsExecuted(ScheduleID id);
+	ScheduleVirtualValue getNoError(ScheduleID id);
 
-    ResponseCodeEnum markAsExecuted(ScheduleID id, Instant consensusTime);
+	List<ScheduleID> nextSchedulesToExpire(Instant consensusTime);
 
-    void expire(ScheduleID id);
+	@Nullable
+	ScheduleID nextScheduleToEvaluate(Instant consensusTime);
 
-    default ScheduleID resolve(ScheduleID id) {
-        return exists(id) ? id : MISSING_SCHEDULE;
-    }
-
-    ScheduleVirtualValue getNoError(ScheduleID id);
-
-    List<ScheduleID> nextSchedulesToExpire(Instant consensusTime);
-
-    @Nullable
-    ScheduleID nextScheduleToEvaluate(Instant consensusTime);
-
-    @Nullable
-    ScheduleSecondVirtualValue getBySecond(long second);
+	@Nullable
+	ScheduleSecondVirtualValue getBySecond(long second);
 }

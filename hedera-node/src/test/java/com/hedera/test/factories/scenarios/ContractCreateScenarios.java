@@ -1,6 +1,11 @@
-/*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
- *
+package com.hedera.test.factories.scenarios;
+
+/*-
+ * ‌
+ * Hedera Services Node
+ * ​
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
+ * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -12,41 +17,41 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ * ‍
  */
-package com.hedera.test.factories.scenarios;
+
+import com.hedera.services.utils.accessors.PlatformTxnAccessor;
 
 import static com.hedera.test.factories.txns.ContractCreateFactory.newSignedContractCreate;
 import static com.hedera.test.factories.txns.PlatformTxnFactory.from;
 
-import com.hedera.services.utils.accessors.PlatformTxnAccessor;
-
 public enum ContractCreateScenarios implements TxnHandlingScenario {
-    CONTRACT_CREATE_WITH_ADMIN_KEY {
-        public PlatformTxnAccessor platformTxn() throws Throwable {
-            return PlatformTxnAccessor.from(
-                    from(newSignedContractCreate().useAdminKey(true).get()));
-        }
-    },
-    CONTRACT_CREATE_NO_ADMIN_KEY {
-        public PlatformTxnAccessor platformTxn() throws Throwable {
-            return PlatformTxnAccessor.from(
-                    from(newSignedContractCreate().useAdminKey(false).get()));
-        }
-    },
-    CONTRACT_CREATE_DEPRECATED_CID_ADMIN_KEY {
-        public PlatformTxnAccessor platformTxn() throws Throwable {
-            return PlatformTxnAccessor.from(
-                    from(newSignedContractCreate().useDeprecatedAdminKey(true).get()));
-        }
-    },
-    CONTRACT_CREATE_WITH_AUTO_RENEW_ACCOUNT {
-        public PlatformTxnAccessor platformTxn() throws Throwable {
-            return PlatformTxnAccessor.from(
-                    from(
-                            newSignedContractCreate()
-                                    .useAdminKey(false)
-                                    .useAutoRenewAccount(true)
-                                    .get()));
-        }
-    }
+	CONTRACT_CREATE_WITH_ADMIN_KEY {
+		public PlatformTxnAccessor platformTxn() throws Throwable {
+			return PlatformTxnAccessor.from(from(
+					newSignedContractCreate().useAdminKey(true).get()
+			));
+		}
+	},
+	CONTRACT_CREATE_NO_ADMIN_KEY {
+		public PlatformTxnAccessor platformTxn() throws Throwable {
+			return PlatformTxnAccessor.from(from(
+					newSignedContractCreate().useAdminKey(false).get()
+			));
+		}
+	},
+	CONTRACT_CREATE_DEPRECATED_CID_ADMIN_KEY {
+		public PlatformTxnAccessor platformTxn() throws Throwable {
+			return PlatformTxnAccessor.from(from(
+					newSignedContractCreate().useDeprecatedAdminKey(true).get()
+			));
+		}
+	},
+	CONTRACT_CREATE_WITH_AUTO_RENEW_ACCOUNT {
+		public PlatformTxnAccessor platformTxn() throws Throwable {
+			return PlatformTxnAccessor.from(from(
+					newSignedContractCreate().useAdminKey(false).useAutoRenewAccount(true).get()
+			));
+		}
+	}
 }

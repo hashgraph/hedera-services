@@ -1,6 +1,11 @@
-/*
- * Copyright (C) 2021-2022 Hedera Hashgraph, LLC
- *
+package com.hedera.services.utils;
+
+/*-
+ * ‌
+ * Hedera Services Node
+ * ​
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
+ * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -12,8 +17,8 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ * ‍
  */
-package com.hedera.services.utils;
 
 import com.hedera.services.context.domain.security.PermissionFileUtils;
 import com.hedera.services.context.properties.PropUtils;
@@ -82,123 +87,121 @@ import com.hedera.services.txns.util.UtilLogicModule;
 import com.hedera.services.txns.validation.PureValidation;
 import com.hedera.services.txns.validation.TokenListChecks;
 import com.hedera.services.txns.validation.TransferListChecks;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
+
 import java.lang.reflect.InvocationTargetException;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Test;
 
 class UtilsConstructorTest {
-    private static final Set<Class<?>> toBeTested =
-            new HashSet<>(
-                    Arrays.asList(
-                            AbiConstants.class,
-                            Units.class,
-                            AbiConstants.class,
-                            MapValueListUtils.class,
-                            HFileMetaSerde.class,
-                            IoUtils.class,
-                            DescriptorUtils.class,
-                            TokenMetaUtils.class,
-                            MiscCryptoUtils.class,
-                            NewRels.class,
-                            PermissionFileUtils.class,
-                            PropUtils.class,
-                            AddressKeyedMapFactory.class,
-                            ValidationUtils.class,
-                            FeeCalcUtils.class,
-                            FixedUsageEstimates.class,
-                            AdjustmentUtils.class,
-                            HederaKeyActivation.class,
-                            HederaKeyTraversal.class,
-                            RevocationServiceCharacteristics.class,
-                            HederaToPlatformSigOps.class,
-                            PlatformSigOps.class,
-                            PlatformSigFactory.class,
-                            ImmutableKeyUtils.class,
-                            PrecheckUtils.class,
-                            MerkleAccount.ChildIndices.class,
-                            BitPackUtils.class,
-                            LegacyStateChildIndices.class,
-                            ReleaseTwentySixMigration.class,
-                            StateChildIndices.class,
-                            StateVersions.class,
-                            MiscRunningAvgs.Names.class,
-                            MiscRunningAvgs.Descriptions.class,
-                            MiscSpeedometers.Names.class,
-                            MiscSpeedometers.Descriptions.class,
-                            ServicesStatsConfig.class,
-                            PresolvencyFlaws.class,
-                            PureValidation.class,
-                            TokenListChecks.class,
-                            TransferListChecks.class,
-                            EntityIdUtils.class,
-                            HederaDateTimeFormatter.class,
-                            TokenTypesMapper.class,
-                            UnzipUtility.class,
-                            MiscUtils.class,
-                            MetadataMapFactory.class,
-                            TokenOpsValidator.class,
-                            SubmissionModule.class,
-                            ConsensusFeesModule.class,
-                            ContractFeesModule.class,
-                            EthereumFeesModule.class,
-                            CryptoFeesModule.class,
-                            FileFeesModule.class,
-                            ScheduleFeesModule.class,
-                            TokenFeesModule.class,
-                            KeysModule.class,
-                            QueriesModule.class,
-                            StatsModule.class,
-                            ThrottlingModule.class,
-                            ConsensusLogicModule.class,
-                            ContractLogicModule.class,
-                            CryptoLogicModule.class,
-                            FileLogicModule.class,
-                            NetworkLogicModule.class,
-                            ScheduleLogicModule.class,
-                            TokenLogicModule.class,
-                            TopicConversion.class,
-                            CallLocalExecutor.class,
-                            HederaOperationUtil.class,
-                            GasCalculatorHederaUtil.class,
-                            SerializationUtils.class,
-                            KeyPackingUtils.class,
-                            IterableStorageUtils.class,
-                            EthereumLogicModule.class,
-                            ReleaseTwentySevenMigration.class,
-                            ByteUtils.class,
-                            Units.class,
-                            StakingUtils.class,
-                            UtilLogicModule.class));
+	private static final Set<Class<?>> toBeTested = new HashSet<>(Arrays.asList(
+			AbiConstants.class,
+			Units.class,
+			AbiConstants.class,
+			MapValueListUtils.class,
+			HFileMetaSerde.class,
+			IoUtils.class,
+			DescriptorUtils.class,
+			TokenMetaUtils.class,
+			MiscCryptoUtils.class,
+			NewRels.class,
+			PermissionFileUtils.class,
+			PropUtils.class,
+			AddressKeyedMapFactory.class,
+			ValidationUtils.class,
+			FeeCalcUtils.class,
+			FixedUsageEstimates.class,
+			AdjustmentUtils.class,
+			HederaKeyActivation.class,
+			HederaKeyTraversal.class,
+			RevocationServiceCharacteristics.class,
+			HederaToPlatformSigOps.class,
+			PlatformSigOps.class,
+			PlatformSigFactory.class,
+			ImmutableKeyUtils.class,
+			PrecheckUtils.class,
+			MerkleAccount.ChildIndices.class,
+			BitPackUtils.class,
+			LegacyStateChildIndices.class,
+			ReleaseTwentySixMigration.class,
+			StateChildIndices.class,
+			StateVersions.class,
+			MiscRunningAvgs.Names.class,
+			MiscRunningAvgs.Descriptions.class,
+			MiscSpeedometers.Names.class,
+			MiscSpeedometers.Descriptions.class,
+			ServicesStatsConfig.class,
+			PresolvencyFlaws.class,
+			PureValidation.class,
+			TokenListChecks.class,
+			TransferListChecks.class,
+			EntityIdUtils.class,
+			HederaDateTimeFormatter.class,
+			TokenTypesMapper.class,
+			UnzipUtility.class,
+			MiscUtils.class,
+			MetadataMapFactory.class,
+			TokenOpsValidator.class,
+			SubmissionModule.class,
+			ConsensusFeesModule.class,
+			ContractFeesModule.class,
+			EthereumFeesModule.class,
+			CryptoFeesModule.class,
+			FileFeesModule.class,
+			ScheduleFeesModule.class,
+			TokenFeesModule.class,
+			KeysModule.class,
+			QueriesModule.class,
+			StatsModule.class,
+			ThrottlingModule.class,
+			ConsensusLogicModule.class,
+			ContractLogicModule.class,
+			CryptoLogicModule.class,
+			FileLogicModule.class,
+			NetworkLogicModule.class,
+			ScheduleLogicModule.class,
+			TokenLogicModule.class,
+			TopicConversion.class,
+			CallLocalExecutor.class,
+			HederaOperationUtil.class,
+			GasCalculatorHederaUtil.class,
+			SerializationUtils.class,
+			KeyPackingUtils.class,
+			IterableStorageUtils.class,
+			EthereumLogicModule.class,
+			ReleaseTwentySevenMigration.class,
+			ByteUtils.class,
+			Units.class,
+			StakingUtils.class,
+			UtilLogicModule.class
+	));
 
-    @Test
-    void throwsInConstructor() {
-        for (final var clazz : toBeTested) {
-            assertFor(clazz);
-        }
-    }
+	@Test
+	void throwsInConstructor() {
+		for (final var clazz : toBeTested) {
+			assertFor(clazz);
+		}
+	}
 
-    private static final String UNEXPECTED_THROW =
-            "Unexpected `%s` was thrown in `%s` constructor!";
-    private static final String NO_THROW = "No exception was thrown in `%s` constructor!";
+	private static final String UNEXPECTED_THROW = "Unexpected `%s` was thrown in `%s` constructor!";
+	private static final String NO_THROW = "No exception was thrown in `%s` constructor!";
 
-    private void assertFor(final Class<?> clazz) {
-        try {
-            final var constructor = clazz.getDeclaredConstructor();
-            constructor.setAccessible(true);
+	private void assertFor(final Class<?> clazz) {
+		try {
+			final var constructor = clazz.getDeclaredConstructor();
+			constructor.setAccessible(true);
 
-            constructor.newInstance();
-        } catch (final InvocationTargetException expected) {
-            final var cause = expected.getCause();
-            Assertions.assertTrue(
-                    cause instanceof UnsupportedOperationException,
-                    String.format(UNEXPECTED_THROW, cause, clazz));
-            return;
-        } catch (final Exception e) {
-            Assertions.fail(String.format(UNEXPECTED_THROW, e, clazz));
-        }
-        Assertions.fail(String.format(NO_THROW, clazz));
-    }
+			constructor.newInstance();
+		} catch (final InvocationTargetException expected) {
+			final var cause = expected.getCause();
+			Assertions.assertTrue(cause instanceof UnsupportedOperationException,
+					String.format(UNEXPECTED_THROW, cause, clazz));
+			return;
+		} catch (final Exception e) {
+			Assertions.fail(String.format(UNEXPECTED_THROW, e, clazz));
+		}
+		Assertions.fail(String.format(NO_THROW, clazz));
+	}
 }

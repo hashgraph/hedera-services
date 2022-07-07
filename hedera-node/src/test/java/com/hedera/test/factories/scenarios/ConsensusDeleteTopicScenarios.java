@@ -1,6 +1,11 @@
-/*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
- *
+package com.hedera.test.factories.scenarios;
+
+/*-
+ * ‌
+ * Hedera Services Node
+ * ​
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
+ * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -12,25 +17,27 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ * ‍
  */
-package com.hedera.test.factories.scenarios;
+
+import com.hedera.services.utils.accessors.PlatformTxnAccessor;
 
 import static com.hedera.test.factories.txns.ConsensusDeleteTopicFactory.newSignedConsensusDeleteTopic;
 import static com.hedera.test.factories.txns.PlatformTxnFactory.from;
 
-import com.hedera.services.utils.accessors.PlatformTxnAccessor;
-
 public enum ConsensusDeleteTopicScenarios implements TxnHandlingScenario {
-    CONSENSUS_DELETE_TOPIC_SCENARIO {
-        public PlatformTxnAccessor platformTxn() throws Throwable {
-            return PlatformTxnAccessor.from(
-                    from(newSignedConsensusDeleteTopic(EXISTING_TOPIC_ID).get()));
-        }
-    },
-    CONSENSUS_DELETE_TOPIC_MISSING_TOPIC_SCENARIO {
-        public PlatformTxnAccessor platformTxn() throws Throwable {
-            return PlatformTxnAccessor.from(
-                    from(newSignedConsensusDeleteTopic(MISSING_TOPIC_ID).get()));
-        }
-    }
+	CONSENSUS_DELETE_TOPIC_SCENARIO {
+		public PlatformTxnAccessor platformTxn() throws Throwable {
+			return PlatformTxnAccessor.from(from(
+					newSignedConsensusDeleteTopic(EXISTING_TOPIC_ID).get()
+			));
+		}
+	},
+	CONSENSUS_DELETE_TOPIC_MISSING_TOPIC_SCENARIO {
+		public PlatformTxnAccessor platformTxn() throws Throwable {
+			return PlatformTxnAccessor.from(from(
+					newSignedConsensusDeleteTopic(MISSING_TOPIC_ID).get()
+			));
+		}
+	}
 }

@@ -1,6 +1,11 @@
-/*
- * Copyright (C) 2020-2021 Hedera Hashgraph, LLC
- *
+package com.hedera.services.stats;
+
+/*-
+ * ‌
+ * Hedera Services Node
+ * ​
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
+ * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -12,25 +17,25 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ * ‍
  */
-package com.hedera.services.stats;
 
 import com.swirlds.common.statistics.StatEntry;
 import com.swirlds.common.statistics.StatsSpeedometer;
 
 public interface SpeedometerFactory {
-    default StatEntry from(String name, String desc, StatsSpeedometer speedometer) {
-        return new StatEntry(
-                "app",
-                name,
-                desc,
-                "%,13.2f",
-                speedometer,
-                newHalfLife -> {
-                    speedometer.reset(newHalfLife);
-                    return speedometer;
-                },
-                speedometer::reset,
-                speedometer::getCyclesPerSecond);
-    }
+	default StatEntry from(String name, String desc, StatsSpeedometer speedometer) {
+		return new StatEntry(
+				"app",
+				name,
+				desc,
+				"%,13.2f",
+				speedometer,
+				newHalfLife -> {
+					speedometer.reset(newHalfLife);
+					return speedometer;
+				},
+				speedometer::reset,
+				speedometer::getCyclesPerSecond);
+	}
 }
