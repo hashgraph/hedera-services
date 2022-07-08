@@ -24,6 +24,7 @@ import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.SubType;
 import com.hederahashgraph.api.proto.java.TimestampSeconds;
 import com.hederahashgraph.api.proto.java.TransactionFeeSchedule;
+import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -52,7 +53,8 @@ public class FeesJsonToProtoSerde {
     }
 
     public static CurrentAndNextFeeSchedule loadFeeScheduleFromJson(String jsonResource)
-            throws Exception {
+            throws IOException, InvocationTargetException, NoSuchMethodException,
+                    IllegalAccessException {
         return buildFrom(
                 om ->
                         om.readValue(
@@ -63,16 +65,20 @@ public class FeesJsonToProtoSerde {
     }
 
     public static CurrentAndNextFeeSchedule loadFeeScheduleFromStream(InputStream in)
-            throws Exception {
+            throws IOException, InvocationTargetException, NoSuchMethodException,
+                    IllegalAccessException {
         return buildFrom(om -> om.readValue(in, List.class));
     }
 
     public static CurrentAndNextFeeSchedule parseFeeScheduleFromJson(String literal)
-            throws Exception {
+            throws IOException, InvocationTargetException, NoSuchMethodException,
+                    IllegalAccessException {
         return buildFrom(om -> om.readValue(literal, List.class));
     }
 
-    private static CurrentAndNextFeeSchedule buildFrom(ThrowingReader reader) throws Exception {
+    private static CurrentAndNextFeeSchedule buildFrom(ThrowingReader reader)
+            throws IOException, InvocationTargetException, NoSuchMethodException,
+                    IllegalAccessException {
         final var feeSchedules = CurrentAndNextFeeSchedule.newBuilder();
 
         final var om = new ObjectMapper();
@@ -83,12 +89,12 @@ public class FeesJsonToProtoSerde {
     }
 
     interface ThrowingReader {
-        List<Map<String, Object>> readValueWith(ObjectMapper om) throws Exception;
+        List<Map<String, Object>> readValueWith(ObjectMapper om) throws IOException;
     }
 
     private static void constructWithBuilder(
             CurrentAndNextFeeSchedule.Builder builder, List<Map<String, Object>> rawFeeSchedules)
-            throws Exception {
+            throws InvocationTargetException, NoSuchMethodException, IllegalAccessException {
         int i = 0;
         for (String rawFeeSchedule : FEE_SCHEDULE_KEYS) {
             set(
@@ -103,7 +109,7 @@ public class FeesJsonToProtoSerde {
     }
 
     private static FeeSchedule bindFeeScheduleFrom(List<Map<String, Object>> rawFeeSchedule)
-            throws Exception {
+            throws InvocationTargetException, NoSuchMethodException, IllegalAccessException {
         FeeSchedule.Builder feeSchedule = FeeSchedule.newBuilder();
 
         for (Map<String, Object> part : rawFeeSchedule) {
@@ -121,7 +127,8 @@ public class FeesJsonToProtoSerde {
     }
 
     private static TransactionFeeSchedule bindTxnFeeScheduleFrom(
-            Map<String, Object> rawTxnFeeSchedule) throws Exception {
+            Map<String, Object> rawTxnFeeSchedule)
+            throws InvocationTargetException, NoSuchMethodException, IllegalAccessException {
         final var txnFeeSchedule = TransactionFeeSchedule.newBuilder();
         var key = translateClaimFunction((String) rawTxnFeeSchedule.get(HEDERA_FUNCTION_KEY));
         txnFeeSchedule.setHederaFunctionality(HederaFunctionality.valueOf(key));
@@ -146,7 +153,8 @@ public class FeesJsonToProtoSerde {
         }
     }
 
-    private static FeeData bindFeeDataFrom(Map<String, Object> rawFeeData) throws Exception {
+    private static FeeData bindFeeDataFrom(Map<String, Object> rawFeeData)
+            throws InvocationTargetException, NoSuchMethodException, IllegalAccessException {
         FeeData.Builder feeData = FeeData.newBuilder();
 
         if (rawFeeData.get("subType") == null) {
