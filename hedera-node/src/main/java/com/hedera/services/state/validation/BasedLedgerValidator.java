@@ -21,7 +21,6 @@ package com.hedera.services.state.validation;
  */
 
 import com.hedera.services.context.annotations.CompositeProps;
-import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.utils.EntityNum;
@@ -37,16 +36,9 @@ import java.util.concurrent.atomic.AtomicReference;
 public class BasedLedgerValidator implements LedgerValidator {
 	private final long expectedFloat;
 
-	private final GlobalDynamicProperties dynamicProperties;
-
 	@Inject
-	public BasedLedgerValidator(
-			@CompositeProps PropertySource properties,
-			GlobalDynamicProperties dynamicProperties
-	) {
+	public BasedLedgerValidator(final @CompositeProps PropertySource properties) {
 		this.expectedFloat = properties.getLongProperty("ledger.totalTinyBarFloat");
-
-		this.dynamicProperties = dynamicProperties;
 	}
 
 	@Override
@@ -54,7 +46,7 @@ public class BasedLedgerValidator implements LedgerValidator {
 		var totalFloat = new AtomicReference<>(BigInteger.ZERO);
 		MiscUtils.forEach(accounts, (id, account) -> {
 			final var num = id.longValue();
-			if (num < 1 || num > dynamicProperties.maxAccountNum()) {
+			if (num < 1) {
 				throw new IllegalStateException(String.format("Invalid num in account %s", id.toIdString()));
 			}
 			totalFloat.set(totalFloat.get().add(BigInteger.valueOf(account.getBalance())));

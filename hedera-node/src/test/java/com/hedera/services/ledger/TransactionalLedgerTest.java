@@ -134,6 +134,7 @@ class TransactionalLedgerTest {
 		testLedger.commit();
 
 		verify(backingTestAccounts, never()).put(eq(2L), any());
+		verify(testInterceptor).postCommit();
 	}
 
 	@Test

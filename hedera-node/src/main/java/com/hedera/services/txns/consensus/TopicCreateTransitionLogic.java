@@ -23,6 +23,7 @@ package com.hedera.services.txns.consensus;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.ids.EntityIdSource;
+import com.hedera.services.state.validation.UsageLimits;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.TopicStore;
 import com.hedera.services.store.models.Account;
@@ -53,6 +54,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
  */
 @Singleton
 public final class TopicCreateTransitionLogic implements TransitionLogic {
+	private final UsageLimits usageLimits;
 	private final AccountStore accountStore;
 	private final TopicStore topicStore;
 	private final EntityIdSource entityIdSource;
@@ -62,6 +64,7 @@ public final class TopicCreateTransitionLogic implements TransitionLogic {
 
 	@Inject
 	public TopicCreateTransitionLogic(
+			final UsageLimits usageLimits,
 			final TopicStore topicStore,
 			final EntityIdSource entityIdSource,
 			final OptionValidator validator,
@@ -69,6 +72,7 @@ public final class TopicCreateTransitionLogic implements TransitionLogic {
 			final TransactionContext transactionContext,
 			final AccountStore accountStore
 	) {
+		this.usageLimits = usageLimits;
 		this.accountStore = accountStore;
 		this.topicStore = topicStore;
 		this.entityIdSource = entityIdSource;
@@ -89,6 +93,7 @@ public final class TopicCreateTransitionLogic implements TransitionLogic {
 		final var autoRenewAccountId = Id.fromGrpcAccount(op.getAutoRenewAccount());
 
 		/* --- Validate --- */
+		usageLimits.assertCreatableTopics(1);
 		final var memoValidationResult = validator.memoCheck(memo);
 		validateTrue(OK == memoValidationResult, memoValidationResult);
 		validateTrue(op.hasAutoRenewPeriod(), INVALID_RENEWAL_PERIOD);
@@ -115,6 +120,7 @@ public final class TopicCreateTransitionLogic implements TransitionLogic {
 		/* --- Persist the topic --- */
 		topicStore.persistNew(topic);
 		sigImpactHistorian.markEntityChanged(topicId.getTopicNum());
+		usageLimits.refreshTopics();
 	}
 
 	@Override

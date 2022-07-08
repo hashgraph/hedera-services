@@ -170,6 +170,7 @@ class GlobalDynamicPropertiesTest {
 		assertEquals(55, subject.maxNumQueryableRecords());
 		assertEquals(63, subject.getMaxPurgedKvPairsPerTouch());
 		assertEquals(64, subject.getMaxReturnedNftsPerTouch());
+		assertEquals(86, subject.maxNumTokenRels());
 	}
 
 	@Test
@@ -180,7 +181,6 @@ class GlobalDynamicPropertiesTest {
 		subject = new GlobalDynamicProperties(numbers, properties);
 
 		// then:
-		assertEquals(3L, subject.maxAccountNum());
 		assertEquals(13L, subject.nodeBalanceWarningThreshold());
 		assertEquals(18L, subject.maxTxnDuration());
 		assertEquals(19L, subject.minTxnDuration());
@@ -301,7 +301,6 @@ class GlobalDynamicPropertiesTest {
 		subject = new GlobalDynamicProperties(numbers, properties);
 
 		// then:
-		assertEquals(4L, subject.maxAccountNum());
 		assertEquals(14L, subject.nodeBalanceWarningThreshold());
 		assertEquals(19L, subject.maxTxnDuration());
 		assertEquals(20L, subject.minTxnDuration());
@@ -318,6 +317,12 @@ class GlobalDynamicPropertiesTest {
 		assertEquals(71L, subject.maxFollowingRecords());
 		assertEquals(76L, subject.getStakingRewardRate());
 		assertEquals(77L, subject.maxDailyStakeRewardThPerH());
+		assertEquals(81L, subject.maxNumAccounts());
+		assertEquals(82L, subject.maxNumContracts());
+		assertEquals(83L, subject.maxNumFiles());
+		assertEquals(84L, subject.maxNumTokens());
+		assertEquals(85L, subject.maxNumTopics());
+		assertEquals(86L, subject.maxNumSchedules());
 	}
 
 	@Test
@@ -343,7 +348,6 @@ class GlobalDynamicPropertiesTest {
 		given(properties.getIntProperty("tokens.maxPerAccount")).willReturn(i);
 		given(properties.getIntProperty("tokens.maxSymbolUtf8Bytes")).willReturn(i + 1);
 		given(properties.getBooleanProperty("ledger.keepRecordsInState")).willReturn((i % 2) == 0);
-		given(properties.getLongProperty("ledger.maxAccountNum")).willReturn((long) i + 2);
 		given(properties.getIntProperty("files.maxSizeKb")).willReturn(i + 5);
 		given(properties.getLongProperty("ledger.fundingAccount")).willReturn((long) i + 6);
 		given(properties.getIntProperty("cache.records.ttl")).willReturn(i + 7);
@@ -436,6 +440,13 @@ class GlobalDynamicPropertiesTest {
 		given(properties.getBooleanProperty("staking.isEnabled")).willReturn((i + 73) % 2 == 0);
 		given(properties.getIntProperty("hedera.recordStream.recordFileVersion")).willReturn((i + 77));
 		given(properties.getIntProperty("hedera.recordStream.signatureFileVersion")).willReturn((i + 78));
+		given(properties.getLongProperty("accounts.maxNumber")).willReturn(i + 79L);
+		given(properties.getLongProperty("contracts.maxNumber")).willReturn(i + 80L);
+		given(properties.getLongProperty("files.maxNumber")).willReturn(i + 81L);
+		given(properties.getLongProperty("tokens.maxNumber")).willReturn(i + 82L);
+		given(properties.getLongProperty("topics.maxNumber")).willReturn(i + 83L);
+		given(properties.getLongProperty("scheduling.maxNumber")).willReturn(i + 84L);
+		given(properties.getLongProperty("tokens.maxAggregateRels")).willReturn(i + 85L);
 		given(properties.getBooleanProperty("prng.isEnabled")).willReturn((i + 79) % 2 == 0);
 	}
 

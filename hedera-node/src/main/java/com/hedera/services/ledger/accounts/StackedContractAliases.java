@@ -21,8 +21,8 @@ package com.hedera.services.ledger.accounts;
  */
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.protobuf.ByteString;
 import com.hedera.services.ledger.SigImpactHistorian;
+import com.hedera.services.legacy.proto.utils.ByteStringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.hyperledger.besu.datatypes.Address;
@@ -69,7 +69,7 @@ public class StackedContractAliases extends AbstractContractAliases {
 			removedLinks.forEach(alias -> {
 				wrappedAliases.unlink(alias);
 				if (observer != null) {
-					observer.markAliasChanged(ByteString.copyFrom(alias.toArrayUnsafe()));
+					observer.markAliasChanged(ByteStringUtils.wrapUnsafely(alias.toArrayUnsafe()));
 				}
 				log.debug("Committing deletion of CREATE2 address {}", alias);
 			});
@@ -79,7 +79,7 @@ public class StackedContractAliases extends AbstractContractAliases {
 				wrappedAliases.link(alias, address);
 				log.debug("Committing (re-)creation of CREATE2 address {} @ {}", alias, address);
 				if (observer != null) {
-					observer.markAliasChanged(ByteString.copyFrom(alias.toArrayUnsafe()));
+					observer.markAliasChanged(ByteStringUtils.wrapUnsafely(alias.toArrayUnsafe()));
 				}
 			});
 		}

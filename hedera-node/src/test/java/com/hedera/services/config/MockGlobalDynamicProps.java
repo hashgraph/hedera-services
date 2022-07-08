@@ -64,11 +64,6 @@ public class MockGlobalDynamicProps extends GlobalDynamicProperties {
 	}
 
 	@Override
-	public long maxAccountNum() {
-		return 100_000_000L;
-	}
-
-	@Override
 	public int maxFileSizeKb() {
 		return 1024;
 	}

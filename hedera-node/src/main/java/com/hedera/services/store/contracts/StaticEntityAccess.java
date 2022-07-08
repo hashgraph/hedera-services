@@ -96,18 +96,8 @@ public class StaticEntityAccess implements EntityAccess {
 	}
 
 	@Override
-	public void begin() {
-		throw new UnsupportedOperationException();
-	}
-
-	@Override
-	public void commit() {
-		throw new UnsupportedOperationException();
-	}
-
-	@Override
-	public void rollback() {
-		throw new UnsupportedOperationException();
+	public void startAccess() {
+		// No-op
 	}
 
 	@Override

@@ -25,6 +25,7 @@ import com.hedera.services.context.TransactionContext;
 import com.hedera.services.ledger.EntityChangeSet;
 import com.hedera.services.ledger.properties.TokenRelProperty;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
+import com.hedera.services.state.validation.UsageLimits;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
 import com.hedera.services.utils.accessors.TxnAccessor;
@@ -52,6 +53,8 @@ import static org.mockito.Mockito.verifyNoInteractions;
 @ExtendWith(MockitoExtension.class)
 class LinkAwareTokenRelsCommitInterceptorTest {
 	@Mock
+	private UsageLimits usageLimits;
+	@Mock
 	private TxnAccessor accessor;
 	@Mock
 	private TransactionContext txnCtx;
@@ -64,7 +67,7 @@ class LinkAwareTokenRelsCommitInterceptorTest {
 
 	@BeforeEach
 	void setUp() {
-		subject = new LinkAwareTokenRelsCommitInterceptor(txnCtx, sideEffectsTracker, relsLinkManager);
+		subject = new LinkAwareTokenRelsCommitInterceptor(usageLimits, txnCtx, sideEffectsTracker, relsLinkManager);
 	}
 
 	@Test
@@ -118,6 +121,9 @@ class LinkAwareTokenRelsCommitInterceptorTest {
 		assertNotNull(changes.entity(1));
 
 		verify(relsLinkManager).updateLinks(accountNum, List.of(tbdTokenNum), List.of(expectedNewRel));
+
+		subject.postCommit();
+		verify(usageLimits).refreshTokenRels();
 	}
 
 	private EntityChangeSet<Pair<AccountID, TokenID>, MerkleTokenRelStatus, TokenRelProperty> someChanges() {

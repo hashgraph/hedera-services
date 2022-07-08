@@ -31,8 +31,8 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.time.Instant;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Stream;
@@ -52,6 +52,7 @@ public interface PropertySource {
 	Function<String, Object> AS_STRING = s -> s;
 	Function<String, Object> AS_PROFILE = v -> Profile.valueOf(v.toUpperCase());
 	Function<String, Object> AS_BOOLEAN = Boolean::valueOf;
+	Function<String, Object> AS_CS_STRINGS = s -> Arrays.stream(s.split(",")).toList();
 	Function<String, Object> AS_FUNCTIONS = s -> Arrays.stream(s.split(","))
 			.map(HederaFunctionality::valueOf)
 			.collect(toSet());
@@ -60,7 +61,6 @@ public interface PropertySource {
 	Function<String, Object> AS_THROTTLE_SCALE_FACTOR = ThrottleReqOpsScaleFactor::from;
 	Function<String, Object> AS_ENTITY_NUM_RANGE = EntityIdUtils::parseEntityNumRange;
 	Function<String, Object> AS_ENTITY_TYPES = EntityType::csvTypeSet;
-	Function<String, Object> AS_INSTANT = Instant::parse;
 
 	boolean containsProperty(String name);
 
@@ -105,6 +105,12 @@ public interface PropertySource {
 
 	default int getIntProperty(String name) {
 		return getTypedProperty(Integer.class, name);
+	}
+
+
+	@SuppressWarnings("unchecked")
+	default List<String> getStringsProperty(final String name) {
+		return getTypedProperty(List.class, name);
 	}
 
 	default double getDoubleProperty(String name) {

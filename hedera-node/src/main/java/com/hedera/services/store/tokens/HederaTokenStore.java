@@ -35,6 +35,7 @@ import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.state.validation.UsageLimits;
 import com.hedera.services.store.HederaStore;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.txns.validation.OptionValidator;
@@ -85,6 +86,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRA
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NFT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RENEWAL_PERIOD;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NO_REMAINING_AUTOMATIC_ASSOCIATIONS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SENDER_DOES_NOT_OWN_NFT_SERIAL_NO;
@@ -111,6 +113,7 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 
 	private static final Predicate<Key> REMOVES_ADMIN_KEY = ImmutableKeyUtils::signalsKeyRemoval;
 
+	private final UsageLimits usageLimits;
 	private final OptionValidator validator;
 	private final GlobalDynamicProperties properties;
 	private final SideEffectsTracker sideEffectsTracker;
@@ -127,6 +130,7 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 	@Inject
 	public HederaTokenStore(
 			final EntityIdSource ids,
+			final UsageLimits usageLimits,
 			final OptionValidator validator,
 			final SideEffectsTracker sideEffectsTracker,
 			final GlobalDynamicProperties properties,
@@ -138,6 +142,7 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 		this.validator = validator;
 		this.properties = properties;
 		this.nftsLedger = nftsLedger;
+		this.usageLimits = usageLimits;
 		this.backingTokens = backingTokens;
 		this.tokenRelsLedger = tokenRelsLedger;
 		this.sideEffectsTracker = sideEffectsTracker;
@@ -174,6 +179,9 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 		return fullySanityChecked(aId, tId, (accountId, tokenId) -> {
 			if (tokenRelsLedger.contains(Pair.of(aId, tId))) {
 				return TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT;
+			}
+			if (!usageLimits.areCreatableTokenRels(1)) {
+				return MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED;
 			}
 			var numAssociations = (int) accountsLedger.get(aId, NUM_ASSOCIATIONS);
 
@@ -243,8 +251,9 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 		final var token = backingTokens.getRef(key.toGrpcTokenId());
 		try {
 			change.accept(token);
+			backingTokens.put(id, token);
 		} catch (Exception internal) {
-			throw new IllegalArgumentException("Token change failed unexpectedly!", internal);
+			throw new IllegalArgumentException("Token change failed unexpectedly", internal);
 		}
 	}
 

@@ -304,28 +304,6 @@ public enum AccountProperty implements BeanProperty<MerkleAccount> {
 			return MerkleAccount::getAutoRenewAccount;
 		}
 	},
-	HEAD_NFT_ID {
-		@Override
-		public BiConsumer<MerkleAccount, Object> setter() {
-			return (a, t) -> a.setHeadNftId((long) t);
-		}
-
-		@Override
-		public Function<MerkleAccount, Object> getter() {
-			return MerkleAccount::getHeadNftId;
-		}
-	},
-	HEAD_NFT_SERIAL_NUM {
-		@Override
-		public BiConsumer<MerkleAccount, Object> setter() {
-			return (a, t) -> a.setHeadNftSerialNum((long) t);
-		}
-
-		@Override
-		public Function<MerkleAccount, Object> getter() {
-			return MerkleAccount::getHeadNftSerialNum;
-		}
-	},
 	DECLINE_REWARD {
 		@Override
 		public BiConsumer<MerkleAccount, Object> setter() {

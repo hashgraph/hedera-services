@@ -24,6 +24,7 @@ import com.hedera.services.ledger.EntityChangeSet;
 import com.hedera.services.ledger.properties.NftProperty;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.state.validation.UsageLimits;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
@@ -46,13 +47,15 @@ import static org.mockito.Mockito.verifyNoInteractions;
 @ExtendWith(MockitoExtension.class)
 class LinkAwareUniqueTokensCommitInterceptorTest {
 	@Mock
+	private UsageLimits usageLimits;
+	@Mock
 	private UniqueTokensLinkManager uniqueTokensLinkManager;
 
 	private LinkAwareUniqueTokensCommitInterceptor subject;
 
 	@BeforeEach
 	void setUp() {
-		subject = new LinkAwareUniqueTokensCommitInterceptor(uniqueTokensLinkManager);
+		subject = new LinkAwareUniqueTokensCommitInterceptor(usageLimits, uniqueTokensLinkManager);
 	}
 
 	@Test
@@ -65,6 +68,7 @@ class LinkAwareUniqueTokensCommitInterceptorTest {
 	}
 
 	@Test
+	@SuppressWarnings("unchecked")
 	void zombieCommitIsNoOp() {
 		var changes = (EntityChangeSet<NftId, MerkleUniqueToken, NftProperty>) mock(EntityChangeSet.class);
 		given(changes.size()).willReturn(1);
@@ -221,6 +225,27 @@ class LinkAwareUniqueTokensCommitInterceptorTest {
 	}
 
 	@Test
+	void postCommitIsNoopIfNothingMintedOrBurned() {
+		subject.preview(pendingChanges(false, false));
+		subject.postCommit();
+		verifyNoInteractions(usageLimits);
+	}
+
+	@Test
+	void postCommitRefreshesCountOnMint() {
+		subject.preview(pendingChanges(true, false));
+		subject.postCommit();
+		verify(usageLimits).refreshNfts();
+	}
+
+	@Test
+	void postCommitRefreshesCountOnBurn() {
+		subject.preview(pendingChanges(false, true));
+		subject.postCommit();
+		verify(usageLimits).refreshNfts();
+	}
+
+	@Test
 	@SuppressWarnings("unchecked")
 	void doesntTriggerUpdateLinkOnNormalTreasuryMint() {
 		final var changes = (EntityChangeSet<NftId, MerkleUniqueToken, NftProperty>) mock(EntityChangeSet.class);
@@ -236,5 +261,29 @@ class LinkAwareUniqueTokensCommitInterceptorTest {
 		subject.preview(changes);
 
 		verifyNoInteractions(uniqueTokensLinkManager);
+	}
+
+	private EntityChangeSet<NftId, MerkleUniqueToken, NftProperty> pendingChanges(
+			final boolean includeMint,
+			final boolean includeBurn
+	) {
+		final EntityChangeSet<NftId, MerkleUniqueToken, NftProperty> pendingChanges = new EntityChangeSet<>();
+		if (includeBurn) {
+			pendingChanges.include(
+					new NftId(0, 0, 1234, 5678),
+					new MerkleUniqueToken(),
+					null);
+		}
+		if (includeMint) {
+			pendingChanges.include(
+					new NftId(0, 0, 1234, 5679),
+					null,
+					Map.of(NftProperty.OWNER, EntityId.MISSING_ENTITY_ID));
+		}
+		pendingChanges.include(
+				new NftId(0, 0, 1234, 5680),
+				new MerkleUniqueToken(),
+				Map.of());
+		return pendingChanges;
 	}
 }

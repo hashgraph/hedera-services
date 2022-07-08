@@ -27,6 +27,7 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
+import com.hedera.services.state.validation.UsageLimits;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.store.tokens.TokenStore;
@@ -44,6 +45,7 @@ public class StoreInitializationFlow {
 	private static final Logger log = LogManager.getLogger(StoreInitializationFlow.class);
 
 	private final TokenStore tokenStore;
+	private final UsageLimits usageLimits;
 	private final AliasManager aliasManager;
 	private final ScheduleStore scheduleStore;
 	private final MutableStateChildren workingState;
@@ -55,6 +57,7 @@ public class StoreInitializationFlow {
 	@Inject
 	public StoreInitializationFlow(
 			final TokenStore tokenStore,
+			final UsageLimits usageLimits,
 			final ScheduleStore scheduleStore,
 			final AliasManager aliasManager,
 			final MutableStateChildren workingState,
@@ -63,6 +66,7 @@ public class StoreInitializationFlow {
 			final BackingStore<NftId, MerkleUniqueToken> backingNfts,
 			final BackingStore<Pair<AccountID, TokenID>, MerkleTokenRelStatus> backingTokenRels
 	) {
+		this.usageLimits = usageLimits;
 		this.tokenStore = tokenStore;
 		this.scheduleStore = scheduleStore;
 		this.backingAccounts = backingAccounts;
@@ -84,7 +88,11 @@ public class StoreInitializationFlow {
 		scheduleStore.rebuildViews();
 		log.info("Store internal views rebuilt");
 
-		aliasManager.rebuildAliasesMap(workingState.accounts());
+		aliasManager.rebuildAliasesMap(workingState.accounts(), (num, account) -> {
+			if (account.isSmartContract()) {
+				usageLimits.recordContracts(1);
+			}
+		});
 		log.info("Account aliases map rebuilt");
 	}
 }

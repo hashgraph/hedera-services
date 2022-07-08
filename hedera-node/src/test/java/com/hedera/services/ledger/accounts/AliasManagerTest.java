@@ -41,6 +41,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.Collections;
 import java.util.Map;
+import java.util.function.BiConsumer;
 
 import static com.swirlds.common.utility.CommonUtils.unhex;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -49,6 +50,10 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 
 class AliasManagerTest {
 	private static final ByteString alias = ByteString.copyFromUtf8("aaaa");
@@ -184,6 +189,7 @@ class AliasManagerTest {
 	}
 
 	@Test
+	@SuppressWarnings("unchecked")
 	void rebuildsFromMap() throws ConstructableRegistryException {
 		ConstructableRegistry.registerConstructable(
 				new ClassConstructorPair(MerkleAccount.class, MerkleAccount::new));
@@ -201,6 +207,7 @@ class AliasManagerTest {
 		final var contractAlias = ByteString.copyFrom(rawNonMirrorAddress);
 		final var susAlias = ByteString.copyFromUtf8("012345678901234567891");
 		final var notQuiteEcdsaAlias = ByteString.copyFrom(notQuiteEcdsaPublicKey);
+		final var mockObserver = mock(BiConsumer.class);
 
 		final var accountWithAlias = new MerkleAccount();
 		accountWithAlias.setAlias(upToDateAlias);
@@ -224,7 +231,7 @@ class AliasManagerTest {
 		liveAccounts.put(notQuiteEcdsaNum, notQuiteEcdsaAccount);
 
 		subject.getAliases().put(expiredAlias, withoutNum);
-		subject.rebuildAliasesMap(liveAccounts);
+		subject.rebuildAliasesMap(liveAccounts, (BiConsumer<EntityNum, MerkleAccount>) mockObserver);
 
 		final var finalMap = subject.getAliases();
 		assertEquals(6, finalMap.size());
@@ -245,5 +252,6 @@ class AliasManagerTest {
 		assertEquals(3, subject.getAliases().size());
 		subject.forgetEvmAddress(ByteString.copyFromUtf8("This is not a valid alias"));
 		assertEquals(3, subject.getAliases().size());
+		verify(mockObserver, times(6)).accept(any(), any());
 	}
 }

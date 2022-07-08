@@ -26,6 +26,7 @@ import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.state.submerkle.FcTokenAssociation;
+import com.hedera.services.state.validation.UsageLimits;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.store.models.Id;
@@ -98,6 +99,9 @@ class TokenCreateTransitionLogicTest {
 	private Creation creation;
 	@Mock
 	private AccountStore accountStore;
+
+	@Mock
+	private UsageLimits usageLimits;
 	@Mock
 	private EntityIdSource ids;
 	@Mock
@@ -122,7 +126,8 @@ class TokenCreateTransitionLogicTest {
 	@BeforeEach
 	private void setup() {
 		createLogic = new CreateLogic(
-				accountStore, tokenStore, dynamicProperties, sigImpactHistorian, ids, validator);
+				usageLimits, accountStore, tokenStore,
+				dynamicProperties, sigImpactHistorian, ids, validator);
 		createChecks = new CreateChecks(dynamicProperties, validator);
 		subject = new TokenCreateTransitionLogic(txnCtx, createLogic,  createChecks);
 	}
@@ -148,6 +153,7 @@ class TokenCreateTransitionLogicTest {
 
 		subject.doStateTransition();
 
+		verify(usageLimits).assertCreatableTokens(1);
 		verify(creation).loadModelsWith(payer, ids, validator);
 		verify(creation).doProvisionallyWith(now.getEpochSecond(), MODEL_FACTORY, RELS_LISTING);
 		verify(creation).persist();

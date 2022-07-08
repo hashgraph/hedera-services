@@ -24,6 +24,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.ids.EntityIdSource;
+import com.hedera.services.state.validation.UsageLimits;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.store.models.Token;
@@ -42,6 +43,7 @@ public class CreateLogic {
 	static final Creation.TokenModelFactory MODEL_FACTORY = Token::fromGrpcOpAndMeta;
 	private Creation.CreationFactory creationFactory = Creation::new;
 
+	private final UsageLimits usageLimits;
 	private final AccountStore accountStore;
 	private final TypedTokenStore tokenStore;
 	private final GlobalDynamicProperties dynamicProperties;
@@ -51,6 +53,7 @@ public class CreateLogic {
 
 	@Inject
 	public CreateLogic(
+			final UsageLimits usageLimits,
 			final AccountStore accountStore,
 			final TypedTokenStore tokenStore,
 			final GlobalDynamicProperties dynamicProperties,
@@ -58,6 +61,7 @@ public class CreateLogic {
 			final EntityIdSource entityIdSource,
 			final OptionValidator validator
 	) {
+		this.usageLimits = usageLimits;
 		this.accountStore = accountStore;
 		this.tokenStore = tokenStore;
 		this.dynamicProperties = dynamicProperties;
@@ -67,6 +71,8 @@ public class CreateLogic {
 	}
 
 	public void create(final long now, final AccountID activePayer, final TokenCreateTransactionBody op) {
+		usageLimits.assertCreatableTokens(1);
+
 		final var creation = creationFactory.processFrom(accountStore, tokenStore, dynamicProperties, op);
 
 		// --- Create the model objects ---

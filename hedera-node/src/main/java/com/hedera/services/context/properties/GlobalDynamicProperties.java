@@ -59,7 +59,6 @@ public class GlobalDynamicProperties {
 	private int cacheRecordsTtl;
 	private int balancesExportPeriodSecs;
 	private int ratesIntradayChangeLimitPercent;
-	private long maxAccountNum;
 	private long nodeBalanceWarningThreshold;
 	private String pathToBalancesExportDir;
 	private boolean shouldExportBalances;
@@ -134,6 +133,13 @@ public class GlobalDynamicProperties {
 	private long maxDailyStakeRewardThPerH;
 	private int recordFileVersion;
 	private int recordSignatureFileVersion;
+	private long maxNumAccounts;
+	private long maxNumContracts;
+	private long maxNumFiles;
+	private long maxNumTokens;
+	private long maxNumTokenRels;
+	private long maxNumTopics;
+	private long maxNumSchedules;
 	private boolean prngEnabled;
 
 	@Inject
@@ -157,7 +163,6 @@ public class GlobalDynamicProperties {
 		maxTokenRelsPerInfoQuery = properties.getIntProperty("tokens.maxRelsPerInfoQuery");
 		maxTokenSymbolUtf8Bytes = properties.getIntProperty("tokens.maxSymbolUtf8Bytes");
 		maxTokenNameUtf8Bytes = properties.getIntProperty("tokens.maxTokenNameUtf8Bytes");
-		maxAccountNum = properties.getLongProperty("ledger.maxAccountNum");
 		maxFileSizeKb = properties.getIntProperty("files.maxSizeKb");
 		fundingAccount = AccountID.newBuilder()
 				.setShardNum(hederaNums.shard())
@@ -245,6 +250,13 @@ public class GlobalDynamicProperties {
 		stakingEnabled = properties.getBooleanProperty("staking.isEnabled");
 		recordFileVersion = properties.getIntProperty("hedera.recordStream.recordFileVersion");
 		recordSignatureFileVersion = properties.getIntProperty("hedera.recordStream.signatureFileVersion");
+		maxNumAccounts = properties.getLongProperty("accounts.maxNumber");
+		maxNumContracts = properties.getLongProperty("contracts.maxNumber");
+		maxNumFiles = properties.getLongProperty("files.maxNumber");
+		maxNumSchedules = properties.getLongProperty("scheduling.maxNumber");
+		maxNumTokens = properties.getLongProperty("tokens.maxNumber");
+		maxNumTokenRels = properties.getLongProperty("tokens.maxAggregateRels");
+		maxNumTopics = properties.getLongProperty("topics.maxNumber");
 		prngEnabled = properties.getBooleanProperty("prng.isEnabled");
 	}
 
@@ -286,10 +298,6 @@ public class GlobalDynamicProperties {
 
 	public int maxTokenSymbolUtf8Bytes() {
 		return maxTokenSymbolUtf8Bytes;
-	}
-
-	public long maxAccountNum() {
-		return maxAccountNum;
 	}
 
 	public int maxTokenNameUtf8Bytes() {
@@ -607,7 +615,35 @@ public class GlobalDynamicProperties {
 		return recordSignatureFileVersion;
 	}
 
+	public long maxNumAccounts() {
+		return maxNumAccounts;
+	}
+
+	public long maxNumContracts() {
+		return maxNumContracts;
+	}
+
+	public long maxNumFiles() {
+		return maxNumFiles;
+	}
+
+	public long maxNumTokens() {
+		return maxNumTokens;
+	}
+
+	public long maxNumTopics() {
+		return maxNumTopics;
+	}
+
+	public long maxNumSchedules() {
+		return maxNumSchedules;
+        }
+
 	public boolean isPrngEnabled() {
 		return prngEnabled;
+	}
+
+	public long maxNumTokenRels() {
+		return maxNumTokenRels;
 	}
 }

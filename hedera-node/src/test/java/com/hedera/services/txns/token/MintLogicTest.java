@@ -23,8 +23,10 @@ package com.hedera.services.txns.token;
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.state.submerkle.RichInstant;
+import com.hedera.services.state.validation.UsageLimits;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.store.models.Account;
@@ -52,6 +54,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_NFTS_IN_PR
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.willThrow;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
@@ -77,6 +80,9 @@ class MintLogicTest {
 	@Mock
 	private GlobalDynamicProperties dynamicProperties;
 
+	@Mock
+	private UsageLimits usageLimits;
+
 	private TokenRelationship treasuryRel;
 	private TransactionBody tokenMintTxn;
 
@@ -84,23 +90,19 @@ class MintLogicTest {
 
 	@BeforeEach
 	private void setup() {
-		subject = new MintLogic(validator, store, accountStore, dynamicProperties);
+		subject = new MintLogic(usageLimits, validator, store, accountStore, dynamicProperties);
 	}
 
 	@Test
 	void validatesMintCap() {
-		// setup:
-		final long curTotal = 100L;
-		final long unacceptableTotal = 101L;
-
 		givenValidUniqueTxnCtx();
 		given(accessor.getTxn()).willReturn(tokenMintTxn);
 		given(txnCtx.accessor()).willReturn(accessor);
 		given(token.getType()).willReturn(TokenType.NON_FUNGIBLE_UNIQUE);
-		given(store.currentMintedNfts()).willReturn(curTotal);
 		given(token.getId()).willReturn(id);
 		given(store.loadToken(id)).willReturn(token);
-		given(validator.isPermissibleTotalNfts(unacceptableTotal)).willReturn(false);
+		willThrow(new InvalidTransactionException(MAX_NFTS_IN_PRICE_REGIME_HAVE_BEEN_MINTED))
+				.given(usageLimits).assertMintableNfts(1);
 
 		// expect:
 		assertFailsWith(() -> subject.mint(
@@ -141,9 +143,6 @@ class MintLogicTest {
 
 	@Test
 	void followsUniqueHappyPath() {
-		// setup:
-		final long curTotal = 99L;
-		final long acceptableTotal = 100L;
 		treasuryRel = new TokenRelationship(token, treasury);
 
 		givenValidUniqueTxnCtx();
@@ -154,8 +153,6 @@ class MintLogicTest {
 		given(token.getId()).willReturn(id);
 		given(store.loadTokenRelationship(token, treasury)).willReturn(treasuryRel);
 		given(token.getType()).willReturn(TokenType.NON_FUNGIBLE_UNIQUE);
-		given(store.currentMintedNfts()).willReturn(curTotal);
-		given(validator.isPermissibleTotalNfts(acceptableTotal)).willReturn(true);
 		// when:
 		subject.mint(token.getId(),
 				txnCtx.accessor().getTxn().getTokenMint().getMetadataCount(),

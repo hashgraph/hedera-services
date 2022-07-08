@@ -35,6 +35,7 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
+import com.hedera.services.state.validation.UsageLimits;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
@@ -72,6 +73,8 @@ import static org.mockito.BDDMockito.given;
 
 @ExtendWith(MockitoExtension.class)
 class InfrastructureFactoryTest {
+	@Mock
+	private UsageLimits usageLimits;
 	@Mock
 	private EntityIdSource ids;
 	@Mock
@@ -112,7 +115,7 @@ class InfrastructureFactoryTest {
 	@BeforeEach
 	void setUp() {
 		subject = new InfrastructureFactory(
-				ids,
+				usageLimits, ids,
 				encoder, decoder, validator,
 				recordsHistorian, sigImpactHistorian, dissociationFactory, dynamicProperties);
 	}

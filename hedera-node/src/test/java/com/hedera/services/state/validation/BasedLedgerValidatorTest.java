@@ -21,8 +21,6 @@ package com.hedera.services.state.validation;
  */
 
 import com.hedera.services.config.HederaNumbers;
-import com.hedera.services.config.MockGlobalDynamicProps;
-import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.exceptions.NegativeAccountBalanceException;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
@@ -39,14 +37,13 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 
 class BasedLedgerValidatorTest {
-	private long shard = 1;
-	private long realm = 2;
+	private final long shard = 1;
+	private final long realm = 2;
 
 	MerkleMap<EntityNum, MerkleAccount> accounts = new MerkleMap<>();
 
 	HederaNumbers hederaNums;
 	PropertySource properties;
-	GlobalDynamicProperties dynamicProperties = new MockGlobalDynamicProps();
 
 	BasedLedgerValidator subject;
 
@@ -59,7 +56,7 @@ class BasedLedgerValidatorTest {
 		properties = mock(PropertySource.class);
 		given(properties.getLongProperty("ledger.totalTinyBarFloat")).willReturn(100L);
 
-		subject = new BasedLedgerValidator(properties, dynamicProperties);
+		subject = new BasedLedgerValidator(properties);
 	}
 
 	@Test
@@ -105,15 +102,6 @@ class BasedLedgerValidatorTest {
 	void throwsOnIdWithNumTooSmall() throws NegativeAccountBalanceException {
 		// given:
 		accounts.put(EntityNum.fromLong(0L), expectedWith(100L));
-
-		// expect:
-		assertThrows(IllegalStateException.class, () -> subject.validate(accounts));
-	}
-
-	@Test
-	void throwsOnIdWithNumTooLarge() throws NegativeAccountBalanceException {
-		// given:
-		accounts.put(EntityNum.fromLong(dynamicProperties.maxAccountNum() + 1), expectedWith(100L));
 
 		// expect:
 		assertThrows(IllegalStateException.class, () -> subject.validate(accounts));

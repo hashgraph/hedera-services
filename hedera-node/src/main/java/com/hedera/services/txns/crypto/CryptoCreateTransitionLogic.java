@@ -29,6 +29,7 @@ import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.validation.UsageLimits;
 import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.EntityNum;
@@ -59,6 +60,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RENEWA
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SEND_RECORD_THRESHOLD;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_STAKING_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.KEY_REQUIRED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PROXY_ACCOUNT_ID_FIELD_IS_DEPRECATED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT;
@@ -76,6 +78,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 public class CryptoCreateTransitionLogic implements TransitionLogic {
 	private static final Logger log = LogManager.getLogger(CryptoCreateTransitionLogic.class);
 
+	private final UsageLimits usageLimits;
 	private final HederaLedger ledger;
 	private final OptionValidator validator;
 	private final SigImpactHistorian sigImpactHistorian;
@@ -86,6 +89,7 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
 
 	@Inject
 	public CryptoCreateTransitionLogic(
+			final UsageLimits usageLimits,
 			final HederaLedger ledger,
 			final OptionValidator validator,
 			final SigImpactHistorian sigImpactHistorian,
@@ -96,6 +100,7 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
 	) {
 		this.ledger = ledger;
 		this.txnCtx = txnCtx;
+		this.usageLimits = usageLimits;
 		this.validator = validator;
 		this.sigImpactHistorian = sigImpactHistorian;
 		this.dynamicProperties = dynamicProperties;
@@ -105,6 +110,10 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
 
 	@Override
 	public void doStateTransition() {
+		if (!usageLimits.areCreatableAccounts(1)) {
+			txnCtx.setStatus(MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED);
+			return;
+		}
 		try {
 			TransactionBody cryptoCreateTxn = txnCtx.accessor().getTxn();
 			AccountID sponsor = txnCtx.activePayer();

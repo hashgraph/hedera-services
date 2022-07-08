@@ -97,16 +97,6 @@ class ScreenedSysFilePropsTest {
 	}
 
 	@Test
-	void incorporatesLegacyGlobalDynamic() {
-		subject.screenNew(withJust("configAccountNum", "42"));
-
-		assertEquals(1, subject.from121.size());
-		assertEquals(42L, subject.from121.get("ledger.maxAccountNum"));
-		assertThat(logCaptor.warnLogs(), contains(
-				String.format(DEPRECATED_PROP_TPL, "configAccountNum", "ledger.maxAccountNum")));
-	}
-
-	@Test
 	void incorporatesLegacyGlobalDynamicWithTransform() {
 		subject.screenNew(withJust("defaultFeeCollectionAccount", "0.0.98"));
 

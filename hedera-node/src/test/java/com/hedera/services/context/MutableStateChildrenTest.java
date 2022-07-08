@@ -105,6 +105,31 @@ class MutableStateChildrenTest {
 		assertEquals(signedAt, subject.signedAt());
 	}
 
+	@Test
+	void getsSizes() {
+		givenStateWithMockChildren();
+		given(state.isInitialized()).willReturn(true);
+		subject.updateFromSigned(state, signedAt);
+
+		given(accounts.size()).willReturn(1);
+		given(storage.size()).willReturn(2L);
+		given(contractStorage.size()).willReturn(3L);
+		given(scheduleTxs.getNumSchedules()).willReturn(4L);
+		given(tokens.size()).willReturn(5);
+		given(tokenAssociations.size()).willReturn(6);
+		given(topics.size()).willReturn(7);
+		given(uniqueTokens.size()).willReturn(8);
+
+		assertEquals(1L, subject.numAccountAndContracts());
+		assertEquals(2L, subject.numBlobs());
+		assertEquals(3L, subject.numStorageSlots());
+		assertEquals(4L, subject.numSchedules());
+		assertEquals(5L, subject.numTokens());
+		assertEquals(6L, subject.numTokenRels());
+		assertEquals(7L, subject.numTopics());
+		assertEquals(8L, subject.numNfts());
+	}
+
 	private void givenStateWithMockChildren() {
 		given(state.accounts()).willReturn(accounts);
 		given(state.storage()).willReturn(storage);

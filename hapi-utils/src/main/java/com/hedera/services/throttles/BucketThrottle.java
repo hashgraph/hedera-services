@@ -122,12 +122,7 @@ public class BucketThrottle {
 	}
 
 	boolean allow(int n, long elapsedNanos) {
-		long leakedUnits;
-		if (productWouldOverflow(elapsedNanos, mtps)) {
-			leakedUnits = bucket.totalCapacity();
-		} else {
-			leakedUnits = elapsedNanos * mtps;
-		}
+		final var leakedUnits = effectiveLeak(elapsedNanos);
 		bucket.leak(leakedUnits);
 
 		if (productWouldOverflow(n, CAPACITY_UNITS_PER_TXN)) {
@@ -141,6 +136,22 @@ public class BucketThrottle {
 		bucket.useCapacity(requiredUnits);
 		lastAllowedUnits += requiredUnits;
 		return true;
+	}
+
+	/**
+	 * Returns the percent of the throttle bucket's capacity that is used, given some number
+	 * of nanoseconds have elapsed since the last capacity test.
+	 *
+	 * @param givenElapsedNanos time since last test
+	 * @return the percent of the bucket that is used
+	 */
+	double percentUsed(final long givenElapsedNanos) {
+		final var used = bucket.capacityUsed();
+		return 100.0 * (used - Math.min(used, effectiveLeak(givenElapsedNanos))) / bucket.totalCapacity();
+	}
+
+	private long effectiveLeak(final long elapsedNanos) {
+		return productWouldOverflow(elapsedNanos, mtps) ? bucket.totalCapacity() : elapsedNanos * mtps;
 	}
 
 	void resetLastAllowedUse() {

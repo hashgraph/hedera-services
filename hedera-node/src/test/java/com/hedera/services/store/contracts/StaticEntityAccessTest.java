@@ -74,6 +74,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.swirlds.common.utility.CommonUtils.unhex;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -197,10 +198,8 @@ class StaticEntityAccessTest {
 		assertThrows(UnsupportedOperationException.class, () -> subject.storeCode(id, bytesKey));
 		assertThrows(UnsupportedOperationException.class, () -> subject.currentManagedChangeSet());
 		assertThrows(UnsupportedOperationException.class, () -> subject.recordNewKvUsageTo(null));
-		assertThrows(UnsupportedOperationException.class, () -> subject.begin());
-		assertThrows(UnsupportedOperationException.class, () -> subject.commit());
-		assertThrows(UnsupportedOperationException.class, () -> subject.rollback());
 		assertThrows(UnsupportedOperationException.class, subject::flushStorage);
+		assertDoesNotThrow(subject::startAccess);
 	}
 
 	@Test

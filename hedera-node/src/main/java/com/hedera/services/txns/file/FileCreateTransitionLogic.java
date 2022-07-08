@@ -26,6 +26,7 @@ import com.hedera.services.files.HFileMeta;
 import com.hedera.services.files.HederaFs;
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.legacy.core.jproto.JKey;
+import com.hedera.services.state.validation.UsageLimits;
 import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.Duration;
@@ -47,6 +48,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURA
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FILE_WACL;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
@@ -55,6 +57,7 @@ public class FileCreateTransitionLogic implements TransitionLogic {
 	private static final Logger log = LogManager.getLogger(FileCreateTransitionLogic.class);
 
 	private final HederaFs hfs;
+	private final UsageLimits usageLimits;
 	private final OptionValidator validator;
 	private final SigImpactHistorian sigImpactHistorian;
 	private final TransactionContext txnCtx;
@@ -62,6 +65,7 @@ public class FileCreateTransitionLogic implements TransitionLogic {
 	@Inject
 	public FileCreateTransitionLogic(
 			final HederaFs hfs,
+			final UsageLimits usageLimits,
 			final OptionValidator validator,
 			final SigImpactHistorian sigImpactHistorian,
 			final TransactionContext txnCtx
@@ -69,6 +73,7 @@ public class FileCreateTransitionLogic implements TransitionLogic {
 		this.hfs = hfs;
 		this.validator = validator;
 		this.txnCtx = txnCtx;
+		this.usageLimits = usageLimits;
 		this.sigImpactHistorian = sigImpactHistorian;
 	}
 
@@ -90,6 +95,7 @@ public class FileCreateTransitionLogic implements TransitionLogic {
 			txnCtx.setCreated(created);
 			txnCtx.setStatus(SUCCESS);
 			sigImpactHistorian.markEntityChanged(created.getFileNum());
+			usageLimits.refreshFiles();
 		} catch (IllegalArgumentException iae) {
 			mapToStatus(iae, txnCtx);
 		} catch (Exception unknown) {
@@ -108,7 +114,10 @@ public class FileCreateTransitionLogic implements TransitionLogic {
 		return this::validate;
 	}
 
-	private ResponseCodeEnum assessedValidity(FileCreateTransactionBody op) {
+	private ResponseCodeEnum assessedValidity(final FileCreateTransactionBody op) {
+		if (!usageLimits.areCreatableFiles(1)) {
+			return MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED;
+		}
 		if (op.hasKeys() && !validator.hasGoodEncoding(wrapped(op.getKeys()))) {
 			return INVALID_FILE_WACL;
 		}

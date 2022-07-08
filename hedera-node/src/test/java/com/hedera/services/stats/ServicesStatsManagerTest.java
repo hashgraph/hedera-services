@@ -45,12 +45,15 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.verify;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
 
 
 @ExtendWith(MockitoExtension.class)
 class ServicesStatsManagerTest {
-	private final long updateIntervalMs = 1_234;
+	private final long opsUpdateIntervalMs = 1_000;
 
+	private final long throttleGaugesUpdateIntervalMs = 2_000;
+	private final long entityUtilGaugesUpdateIntervalMs = 3_000;
 	@Mock
 	private Pause pause;
 	@Mock
@@ -71,6 +74,10 @@ class ServicesStatsManagerTest {
 	private VirtualMap<ContractKey, IterableContractValue> storage;
 	@Mock
 	private VirtualMap<VirtualBlobKey, VirtualBlobValue> bytecode;
+	@Mock
+	private ThrottleGauges throttleGauges;
+	@Mock
+	private EntityUtilGauges entityUtilGauges;
 
 	ServicesStatsManager subject;
 
@@ -80,12 +87,13 @@ class ServicesStatsManagerTest {
 		ServicesStatsManager.pause = pause;
 
 		given(platform.getSelfId()).willReturn(new NodeId(false, 123L));
-		given(properties.statsHapiOpsSpeedometerUpdateIntervalMs()).willReturn(updateIntervalMs);
+		given(properties.hapiOpsStatsUpdateIntervalMs()).willReturn(opsUpdateIntervalMs);
+		given(properties.entityUtilStatsUpdateIntervalMs()).willReturn(entityUtilGaugesUpdateIntervalMs);
+		given(properties.throttleUtilStatsUpdateIntervalMs()).willReturn(throttleGaugesUpdateIntervalMs);
 
 		subject = new ServicesStatsManager(
-				counters, runningAvgs, miscSpeedometers, speedometers,
-				properties,
-				() -> storage, () -> bytecode);
+				counters, throttleGauges, runningAvgs,
+				entityUtilGauges, miscSpeedometers, speedometers, properties, () -> storage, () -> bytecode);
 	}
 
 
@@ -116,16 +124,22 @@ class ServicesStatsManagerTest {
 		verify(speedometers).registerWith(platform);
 		verify(miscSpeedometers).registerWith(platform);
 		verify(runningAvgs).registerWith(platform);
+		verify(throttleGauges).registerWith(platform);
+		verify(entityUtilGauges).registerWith(platform);
+		verify(storage).registerStatistics(any());
+		verify(bytecode).registerStatistics(any());
 		verify(platform).appStatInit();
 		// and:
 		verify(thread).start();
-		verify(thread).setName(String.format(ServicesStatsManager.SPEEDOMETER_UPDATE_THREAD_NAME_TPL, 123L));
+		verify(thread).setName(String.format(ServicesStatsManager.STATS_UPDATE_THREAD_NAME_TPL, 123L));
 		// and when:
-		captor.getValue().run();
+		for (int i = 0; i < 6; i++) {
+			captor.getValue().run();
+		}
 		// then:
-		verify(pause).forMs(updateIntervalMs);
-		verify(speedometers).updateAll();
-		verify(storage).registerStatistics(any());
-		verify(bytecode).registerStatistics(any());
+		verify(pause, times(6)).forMs(1_000L);
+		verify(speedometers, times(6)).updateAll();
+		verify(throttleGauges, times(3)).updateAll();
+		verify(entityUtilGauges, times(2)).updateAll();
 	}
 }

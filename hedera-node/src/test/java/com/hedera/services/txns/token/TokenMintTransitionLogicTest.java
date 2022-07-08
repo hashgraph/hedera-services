@@ -23,6 +23,7 @@ package com.hedera.services.txns.token;
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.state.validation.UsageLimits;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.store.models.Id;
@@ -72,6 +73,8 @@ class TokenMintTransitionLogicTest {
 	@Mock
 	private OptionValidator validator;
 	@Mock
+	private UsageLimits usageLimits;
+	@Mock
 	private GlobalDynamicProperties dynamicProperties;
 	@Mock
 	private TypedTokenStore tokenStore;
@@ -85,7 +88,7 @@ class TokenMintTransitionLogicTest {
 
 	@BeforeEach
 	private void setup() {
-		mintLogic = new MintLogic(validator, tokenStore, accountStore, dynamicProperties);
+		mintLogic = new MintLogic(usageLimits, validator, tokenStore, accountStore, dynamicProperties);
 		subject = new TokenMintTransitionLogic(txnCtx, mintLogic);
 	}
 

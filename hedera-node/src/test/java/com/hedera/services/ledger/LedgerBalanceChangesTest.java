@@ -36,6 +36,7 @@ import com.hedera.services.ledger.interceptors.LinkAwareUniqueTokensCommitInterc
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.ChangeSummaryManager;
 import com.hedera.services.ledger.properties.NftProperty;
+import com.hedera.services.ledger.properties.TokenProperty;
 import com.hedera.services.ledger.properties.TokenRelProperty;
 import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.state.EntityCreator;
@@ -45,6 +46,7 @@ import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.state.validation.UsageLimits;
 import com.hedera.services.store.contracts.MutableEntityAccess;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.NftId;
@@ -58,7 +60,6 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
-import com.swirlds.common.constructable.ConstructableRegistryException;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -92,10 +93,11 @@ import static org.mockito.BDDMockito.given;
 class LedgerBalanceChangesTest {
 	private final BackingStore<NftId, MerkleUniqueToken> backingNfts = new HashMapBackingNfts();
 	private final BackingStore<AccountID, MerkleAccount> backingAccounts = new HashMapBackingAccounts();
+	private final BackingStore<TokenID, MerkleToken> backingTokens = new HashMapBackingTokens();
 	private final BackingStore<Pair<AccountID, TokenID>, MerkleTokenRelStatus> backingRels =
 			new HashMapBackingTokenRels();
-	private BackingStore<TokenID, MerkleToken> backingTokens = new HashMapBackingTokens();
 	private HederaTokenStore tokenStore;
+	private TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokensLedger;
 	private TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
 	private TransactionalLedger<
 			Pair<AccountID, TokenID>,
@@ -106,6 +108,8 @@ class LedgerBalanceChangesTest {
 
 	@Mock
 	private EntityIdSource ids;
+	@Mock
+	private UsageLimits usageLimits;
 	@Mock
 	private EntityCreator creator;
 	@Mock
@@ -128,7 +132,7 @@ class LedgerBalanceChangesTest {
 	private HederaLedger subject;
 
 	@BeforeEach
-	void setUp() throws ConstructableRegistryException {
+	void setUp() {
 		MockitoAnnotations.initMocks(this);
 		accountsLedger = new TransactionalLedger<>(
 				AccountProperty.class, MerkleAccount::new, backingAccounts, new ChangeSummaryManager<>());
@@ -138,6 +142,8 @@ class LedgerBalanceChangesTest {
 		nftsLedger = new TransactionalLedger<>(
 				NftProperty.class, MerkleUniqueToken::new, backingNfts, new ChangeSummaryManager<>());
 		nftsLedger.setCommitInterceptor(linkAwareUniqueTokensCommitInterceptor);
+		tokensLedger = new TransactionalLedger<>(
+				TokenProperty.class, MerkleToken::new, backingTokens, new ChangeSummaryManager<>());
 
 		tokenRelsLedger.setKeyToString(BackingTokenRels::readableTokenRel);
 		tokenRelsLedger.setCommitInterceptor(autoAssocTokenRelsCommitInterceptor);
@@ -151,6 +157,7 @@ class LedgerBalanceChangesTest {
 		final var sideEffectsTracker = new SideEffectsTracker();
 		tokenStore = new HederaTokenStore(
 				ids,
+				usageLimits,
 				validator,
 				sideEffectsTracker,
 				dynamicProperties,
@@ -164,8 +171,8 @@ class LedgerBalanceChangesTest {
 		tokenStore.rebuildViews();
 
 		subject = new HederaLedger(
-				tokenStore, ids, creator, validator, sideEffectsTracker, historian,
-				accountsLedger, transferLogic, autoCreationLogic);
+				tokenStore, ids, creator, validator, sideEffectsTracker,
+				historian, tokensLedger, accountsLedger, transferLogic, autoCreationLogic);
 		subject.setMutableEntityAccess(mutableEntityAccess);
 		subject.setTokenRelsLedger(tokenRelsLedger);
 	}
@@ -243,13 +250,11 @@ class LedgerBalanceChangesTest {
 
 	@Test
 	void rejectsMissingToken() {
-		// setup:
-		backingTokens = new HashMapBackingTokens();
-		backingTokens.put(anotherTokenKey.toGrpcTokenId(), fungibleTokenWithTreasury(aModel));
-		backingTokens.put(yetAnotherTokenKey.toGrpcTokenId(), fungibleTokenWithTreasury(aModel));
+		backingTokens.remove(bNft.asGrpcToken());
 		final var sideEffectsTracker = new SideEffectsTracker();
 		tokenStore = new HederaTokenStore(
 				ids,
+				usageLimits,
 				validator,
 				sideEffectsTracker,
 				dynamicProperties,
@@ -261,8 +266,8 @@ class LedgerBalanceChangesTest {
 				accountsLedger, nftsLedger, tokenRelsLedger, tokenStore,
 				sideEffectsTracker, dynamicProperties, validator, autoCreationLogic, historian);
 		subject = new HederaLedger(
-				tokenStore, ids, creator, validator, sideEffectsTracker, historian,
-				accountsLedger, transferLogic, autoCreationLogic);
+				tokenStore, ids, creator, validator, sideEffectsTracker,
+				historian, tokensLedger, accountsLedger, transferLogic, autoCreationLogic);
 		subject.setTokenRelsLedger(tokenRelsLedger);
 		subject.setMutableEntityAccess(mutableEntityAccess);
 		tokenStore.rebuildViews();

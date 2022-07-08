@@ -20,19 +20,24 @@ package com.hedera.services.ledger.interceptors;
  * ‍
  */
 
-import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.ledger.CommitInterceptor;
 import com.hedera.services.ledger.EntityChangeSet;
 import com.hedera.services.ledger.properties.TokenProperty;
 import com.hedera.services.state.merkle.MerkleToken;
+import com.hedera.services.state.validation.UsageLimits;
 import com.hederahashgraph.api.proto.java.TokenID;
 
 /**
- * Placeholder for upcoming work.
+ * Minimal interceptor to update token utilization statistics when a token is created.
+ * (Expired tokens are removed directly from the backing map, not as part of a ledger
+ * transaction.)
  */
 public class TokensCommitInterceptor implements CommitInterceptor<TokenID, MerkleToken, TokenProperty> {
-	public TokensCommitInterceptor(final SideEffectsTracker sideEffectsTracker) {
-		// No-op
+	private final UsageLimits usageLimits;
+	private boolean creation;
+
+	public TokensCommitInterceptor(UsageLimits usageLimits) {
+		this.usageLimits = usageLimits;
 	}
 
 	/**
@@ -40,6 +45,23 @@ public class TokensCommitInterceptor implements CommitInterceptor<TokenID, Merkl
 	 */
 	@Override
 	public void preview(final EntityChangeSet<TokenID, MerkleToken, TokenProperty> pendingChanges) {
-		// No-op
+		creation = false;
+		final var n = pendingChanges.size();
+		if (n == 0) {
+			return;
+		}
+		for (int i = 0; i < n; i++) {
+			if (pendingChanges.entity(i) == null) {
+				creation = true;
+				break;
+			}
+		}
+	}
+
+	@Override
+	public void postCommit() {
+		if (creation) {
+			usageLimits.refreshTokens();
+		}
 	}
 }

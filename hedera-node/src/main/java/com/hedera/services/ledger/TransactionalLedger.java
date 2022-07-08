@@ -276,6 +276,9 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A> impl
 			}
 
 			isInTransaction = false;
+			if (commitInterceptor != null) {
+				commitInterceptor.postCommit();
+			}
 		} catch (Exception e) {
 			String changeDesc = "<N/A>";
 			try {

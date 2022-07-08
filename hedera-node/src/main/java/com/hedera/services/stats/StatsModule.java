@@ -22,6 +22,9 @@ package com.hedera.services.stats;
 
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.NodeLocalProperties;
+import com.hedera.services.throttling.FunctionalityThrottling;
+import com.hedera.services.throttling.annotations.HandleThrottle;
+import com.hedera.services.throttling.annotations.HapiThrottle;
 import com.hedera.services.utils.MiscUtils;
 import dagger.Module;
 import dagger.Provides;
@@ -34,6 +37,16 @@ public final class StatsModule {
 	@Singleton
 	public static MiscRunningAvgs provideMiscRunningAvgs(final NodeLocalProperties nodeLocalProperties) {
 		return new MiscRunningAvgs(nodeLocalProperties.statsRunningAvgHalfLifeSecs());
+	}
+
+	@Provides
+	@Singleton
+	public static ThrottleGauges provideThrottleUtilizations(
+			final @HandleThrottle FunctionalityThrottling handleThrottling,
+			final @HapiThrottle FunctionalityThrottling hapiThrottling,
+			final NodeLocalProperties nodeProperties
+	) {
+		return new ThrottleGauges(handleThrottling, hapiThrottling, nodeProperties);
 	}
 
 	@Provides

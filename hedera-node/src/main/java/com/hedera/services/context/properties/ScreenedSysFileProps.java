@@ -55,7 +55,6 @@ public final class ScreenedSysFileProps implements PropertySource {
 			"ignored!";
 
 	private static final Map<String, String> STANDARDIZED_NAMES = Map.ofEntries(
-			entry("configAccountNum", "ledger.maxAccountNum"),
 			entry("defaultContractDurationSec", "contracts.defaultLifetime"),
 			entry("maxGasLimit", "contracts.maxGasPerSec"),
 			entry("maxFileSize", "files.maxSizeKb"),

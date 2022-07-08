@@ -21,6 +21,7 @@ package com.hedera.services.txns.token;
  */
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.state.validation.UsageLimits;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.store.models.Id;
@@ -39,21 +40,26 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ID_REPEA
 
 @Singleton
 public class AssociateLogic {
+	private final UsageLimits usageLimits;
 	private final TypedTokenStore tokenStore;
 	private final AccountStore accountStore;
 	private final GlobalDynamicProperties dynamicProperties;
 
 	@Inject
 	public AssociateLogic(
+			final UsageLimits usageLimits,
 			final TypedTokenStore tokenStore,
 			final AccountStore accountStore,
-			final GlobalDynamicProperties dynamicProperties) {
+			final GlobalDynamicProperties dynamicProperties
+	) {
 		this.tokenStore = tokenStore;
+		this.usageLimits = usageLimits;
 		this.accountStore = accountStore;
 		this.dynamicProperties = dynamicProperties;
 	}
 
 	public void associate(final Id accountId, final List<TokenID> tokensList) {
+		usageLimits.assertCreatableTokenRels(tokensList.size());
 		final var tokenIds = tokensList.stream().map(Id::fromGrpcToken).toList();
 
 		/* Load the models */

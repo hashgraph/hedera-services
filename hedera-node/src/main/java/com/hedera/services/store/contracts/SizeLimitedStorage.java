@@ -25,6 +25,7 @@ import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.validation.UsageLimits;
 import com.hedera.services.state.virtual.ContractKey;
 import com.hedera.services.state.virtual.IterableContractValue;
 import com.hedera.services.utils.EntityNum;
@@ -44,12 +45,9 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 
 import static com.hedera.services.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
-import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hedera.services.ledger.properties.AccountProperty.FIRST_CONTRACT_STORAGE_KEY;
 import static com.hedera.services.ledger.properties.AccountProperty.NUM_CONTRACT_KV_PAIRS;
 import static com.hedera.services.utils.EntityNum.fromLong;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_CONTRACT_STORAGE_EXCEEDED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_STORAGE_IN_PRICE_REGIME_HAS_BEEN_USED;
 import static org.apache.tuweni.units.bigints.UInt256.ZERO;
 
 /**
@@ -65,12 +63,13 @@ import static org.apache.tuweni.units.bigints.UInt256.ZERO;
 public class SizeLimitedStorage {
 	public static final IterableContractValue ZERO_VALUE = IterableContractValue.from(ZERO);
 
+	private final UsageLimits usageLimits;
+
 	// Used to upsert to a contract's doubly-linked list of storage mappings
 	private final IterableStorageUpserter storageUpserter;
 	// Used to remove from a contract's doubly-linked list of storage mappings
 	private final IterableStorageRemover storageRemover;
-	// Used to get the key/value storage limits
-	private final GlobalDynamicProperties dynamicProperties;
+
 	// Used to look up the initial key/value counts for the contracts involved in a change set
 	private final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts;
 	// Used to both read and write key/value pairs throughout the lifecycle of a change set
@@ -86,15 +85,15 @@ public class SizeLimitedStorage {
 
 	@Inject
 	public SizeLimitedStorage(
+			final UsageLimits usageLimits,
 			final IterableStorageUpserter storageUpserter,
 			final IterableStorageRemover storageRemover,
-			final GlobalDynamicProperties dynamicProperties,
 			final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts,
 			final Supplier<VirtualMap<ContractKey, IterableContractValue>> storage
 	) {
-		this.dynamicProperties = dynamicProperties;
 		this.storageRemover = storageRemover;
 		this.storageUpserter = storageUpserter;
+		this.usageLimits = usageLimits;
 		this.accounts = accounts;
 		this.storage = storage;
 	}
@@ -124,6 +123,10 @@ public class SizeLimitedStorage {
 
 		commitPendingRemovals();
 		commitPendingUpdates();
+
+		if (!newUsages.isEmpty()) {
+			usageLimits.refreshStorageSlots();
+		}
 	}
 
 	/**
@@ -330,14 +333,8 @@ public class SizeLimitedStorage {
 	}
 
 	private void validatePendingSizeChanges() {
-		validateTrue(
-				totalKvPairs <= dynamicProperties.maxAggregateContractKvPairs(),
-				MAX_STORAGE_IN_PRICE_REGIME_HAS_BEEN_USED);
-		final var perContractMax = dynamicProperties.maxIndividualContractKvPairs();
-		newUsages.forEach((id, newKvPairs) ->
-				validateTrue(
-						newKvPairs.get() <= perContractMax,
-						MAX_CONTRACT_STORAGE_EXCEEDED));
+		usageLimits.assertUsableTotalSlots(totalKvPairs);
+		newUsages.forEach((id, newKvPairs) -> usageLimits.assertUsableContractSlots(newKvPairs.get()));
 	}
 
 	private void commitPendingUpdates() {

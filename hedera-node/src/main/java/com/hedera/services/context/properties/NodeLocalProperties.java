@@ -24,6 +24,7 @@ import com.hedera.services.context.annotations.CompositeProps;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import java.util.List;
 
 @Singleton
 public class NodeLocalProperties {
@@ -31,7 +32,9 @@ public class NodeLocalProperties {
 
 	private int port;
 	private int tlsPort;
-	private long statsHapiOpsSpeedometerUpdateIntervalMs;
+	private long hapiOpStatsUpdateIntervalMs;
+	private long entityUtilStatsUpdateIntervalMs;
+	private long throttleUtilStatsUpdateIntervalMs;
 	private Profile activeProfile;
 	private double statsSpeedometerHalfLifeSecs;
 	private double statsRunningAvgHalfLifeSecs;
@@ -62,6 +65,8 @@ public class NodeLocalProperties {
 	private int prefetchQueueCapacity;
 	private int prefetchThreadPoolSize;
 	private int prefetchCodeCacheTtlSecs;
+	private List<String> consThrottlesToSample;
+	private List<String> hapiThrottlesToSample;
 
 	@Inject
 	public NodeLocalProperties(@CompositeProps PropertySource properties) {
@@ -74,7 +79,7 @@ public class NodeLocalProperties {
 		port = properties.getIntProperty("grpc.port");
 		tlsPort = properties.getIntProperty("grpc.tlsPort");
 		activeProfile = properties.getProfileProperty("hedera.profiles.active");
-		statsHapiOpsSpeedometerUpdateIntervalMs = properties.getLongProperty("stats.hapiOps.speedometerUpdateIntervalMs");
+		hapiOpStatsUpdateIntervalMs = properties.getLongProperty("stats.hapiOps.speedometerUpdateIntervalMs");
 		statsSpeedometerHalfLifeSecs = properties.getDoubleProperty("stats.speedometerHalfLifeSecs");
 		statsRunningAvgHalfLifeSecs = properties.getDoubleProperty("stats.runningAvgHalfLifeSecs");
 		recordLogDir = properties.getStringProperty("hedera.recordStream.logDir");
@@ -104,6 +109,10 @@ public class NodeLocalProperties {
 		prefetchQueueCapacity = properties.getIntProperty("hedera.prefetch.queueCapacity");
 		prefetchThreadPoolSize = properties.getIntProperty("hedera.prefetch.threadPoolSize");
 		prefetchCodeCacheTtlSecs = properties.getIntProperty("hedera.prefetch.codeCacheTtlSecs");
+		consThrottlesToSample = properties.getStringsProperty("stats.consThrottlesToSample");
+		hapiThrottlesToSample = properties.getStringsProperty("stats.hapiThrottlesToSample");
+		entityUtilStatsUpdateIntervalMs = properties.getLongProperty("stats.entityUtils.gaugeUpdateIntervalMs");
+		throttleUtilStatsUpdateIntervalMs = properties.getLongProperty("stats.throttleUtils.gaugeUpdateIntervalMs");
 	}
 
 	public int port() {
@@ -118,8 +127,8 @@ public class NodeLocalProperties {
 		return activeProfile;
 	}
 
-	public long statsHapiOpsSpeedometerUpdateIntervalMs() {
-		return statsHapiOpsSpeedometerUpdateIntervalMs;
+	public long hapiOpsStatsUpdateIntervalMs() {
+		return hapiOpStatsUpdateIntervalMs;
 	}
 
 	public double statsSpeedometerHalfLifeSecs() {
@@ -231,4 +240,20 @@ public class NodeLocalProperties {
 	public int prefetchThreadPoolSize() { return prefetchThreadPoolSize; }
 
 	public int prefetchCodeCacheTtlSecs() { return prefetchCodeCacheTtlSecs; }
+
+	public List<String> consThrottlesToSample() {
+		return consThrottlesToSample;
+	}
+
+	public List<String> hapiThrottlesToSample() {
+		return hapiThrottlesToSample;
+	}
+
+	public long entityUtilStatsUpdateIntervalMs() {
+		return entityUtilStatsUpdateIntervalMs;
+	}
+
+	public long throttleUtilStatsUpdateIntervalMs() {
+		return throttleUtilStatsUpdateIntervalMs;
+	}
 }

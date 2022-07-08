@@ -21,6 +21,7 @@ package com.hedera.services.throttling;
  */
 
 import com.hedera.services.sysfiles.domain.throttling.ThrottleDefinitions;
+import com.hedera.services.throttles.GasLimitDeterministicThrottle;
 import com.hedera.services.utils.accessors.SignedTxnAccessor;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Transaction;
@@ -30,7 +31,10 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.List;
+
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCallLocal;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -101,7 +105,6 @@ class HapiThrottlingTest {
 	void unsupportedMethodsThrow() {
 		// expect:
 		assertThrows(UnsupportedOperationException.class, () -> subject.activeThrottlesFor(null));
-		assertThrows(UnsupportedOperationException.class, () -> subject.allActiveThrottles());
 		assertThrows(UnsupportedOperationException.class, () -> subject.wasLastTxnGasThrottled());
 	}
 
@@ -142,8 +145,11 @@ class HapiThrottlingTest {
 	}
 
 	@Test
-	void gasLimitThrottleThrows() {
-		assertThrows(UnsupportedOperationException.class, () -> subject.gasLimitThrottle());
+	void throttlesAvailableToUsageStats() {
+		given(delegate.allActiveThrottles()).willReturn(List.of());
+		given(delegate.gasLimitThrottle()).willReturn(new GasLimitDeterministicThrottle(123));
+		assertTrue(subject.allActiveThrottles().isEmpty());
+		assertEquals(123, subject.gasLimitThrottle().getCapacity());
 	}
 
 	@Test

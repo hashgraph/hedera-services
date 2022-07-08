@@ -29,6 +29,7 @@ import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.sigs.utils.ImmutableKeyUtils;
 import com.hedera.services.state.submerkle.RichInstant;
+import com.hedera.services.state.validation.UsageLimits;
 import com.hedera.services.state.virtual.schedule.ScheduleVirtualValue;
 import com.hedera.services.store.CreationResult;
 import com.hedera.services.store.schedule.ScheduleStore;
@@ -59,6 +60,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.IDENTICAL_SCHEDULE_ALREADY_CREATED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ADMIN_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NO_NEW_VALID_SIGNATURES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_FUTURE_GAS_LIMIT_EXCEEDED;
@@ -110,6 +112,7 @@ class ScheduleCreateTransitionLogicTest {
 	private boolean adminKeyActuallySkipped = false;
 	private boolean invalidAdminKeyIsSentinelKeyList = false;
 
+	private UsageLimits usageLimits;
 	private OptionValidator validator;
 	private ScheduleStore store;
 	private ScheduleVirtualValue scheduleValue;
@@ -138,6 +141,7 @@ class ScheduleCreateTransitionLogicTest {
 		sigImpactHistorian = mock(SigImpactHistorian.class);
 		properties = mock(GlobalDynamicProperties.class);
 		scheduleProcessing = mock(ScheduleProcessing.class);
+		usageLimits = mock(UsageLimits.class);
 		given(accessor.getTxnBytes()).willReturn(bodyBytes);
 
 		classifier = mock(SigMapScheduleClassifier.class);
@@ -151,7 +155,7 @@ class ScheduleCreateTransitionLogicTest {
 		given(txnCtx.activePayer()).willReturn(payer);
 		given(txnCtx.activePayerKey()).willReturn(payerKey);
 
-		subject = new ScheduleCreateTransitionLogic(properties,
+		subject = new ScheduleCreateTransitionLogic(usageLimits, properties,
 				store, txnCtx, activationHelper, validator, executor, sigImpactHistorian, scheduleProcessing);
 
 		subject.signingsWitness = replSigningWitness;
@@ -168,6 +172,7 @@ class ScheduleCreateTransitionLogicTest {
 
 	@Test
 	void followsHappyPath() throws InvalidProtocolBufferException {
+		given(usageLimits.areCreatableSchedules(1)).willReturn(true);
 		given(scheduleValue.scheduledTransactionId()).willReturn(scheduledTxnId);
 		given(scheduleValue.calculatedExpirationTime()).willReturn(RichInstant.fromJava(now));
 		given(scheduleProcessing.checkFutureThrottlesForCreate(schedule, scheduleValue)).willReturn(OK);
@@ -185,6 +190,7 @@ class ScheduleCreateTransitionLogicTest {
 		verify(txnCtx).setScheduledTxnId(scheduledTxnId);
 		verify(sigImpactHistorian).markEntityChanged(schedule.getScheduleNum());
 		verify(executor).processImmediateExecution(schedule, store, txnCtx);
+		verify(usageLimits).refreshSchedules();
 	}
 
 	@Test
@@ -196,6 +202,7 @@ class ScheduleCreateTransitionLogicTest {
 		given(scheduleValue.adminKey()).willReturn(jAdminKey);
 		given(replSigningWitness.observeInScope(schedule, store, validScheduleKeys, activationHelper, false))
 				.willReturn(Pair.of(NO_NEW_VALID_SIGNATURES, false));
+		given(usageLimits.areCreatableSchedules(1)).willReturn(true);
 
 		subject.doStateTransition();
 
@@ -211,6 +218,7 @@ class ScheduleCreateTransitionLogicTest {
 		given(scheduleValue.scheduledTransactionId()).willReturn(scheduledTxnId);
 		given(scheduleValue.calculatedExpirationTime()).willReturn(RichInstant.fromJava(now));
 		given(scheduleProcessing.checkFutureThrottlesForCreate(schedule, scheduleValue)).willReturn(OK);
+		given(usageLimits.areCreatableSchedules(1)).willReturn(true);
 		givenValidTxnCtx();
 		given(scheduleValue.adminKey()).willReturn(jAdminKey);
 		given(scheduleValue.calculatedWaitForExpiry()).willReturn(true);
@@ -240,6 +248,7 @@ class ScheduleCreateTransitionLogicTest {
 		given(scheduleProcessing.checkFutureThrottlesForCreate(schedule, scheduleValue)).willReturn(OK);
 		givenValidTxnCtx();
 		given(scheduleValue.adminKey()).willReturn(jAdminKey);
+		given(usageLimits.areCreatableSchedules(1)).willReturn(true);
 
 		subject.doStateTransition();
 
@@ -253,6 +262,16 @@ class ScheduleCreateTransitionLogicTest {
 		verify(txnCtx).setScheduledTxnId(scheduledTxnId);
 		verify(sigImpactHistorian).markEntityChanged(schedule.getScheduleNum());
 		verify(executor).processImmediateExecution(schedule, store, txnCtx);
+	}
+	@Test
+	void checksUsageLimits() {
+		givenValidTxnCtx();
+
+		subject.doStateTransition();
+
+		verify(store).lookupSchedule(bodyBytes);
+		verify(txnCtx, never()).addExpiringEntities(any());
+		verify(txnCtx).setStatus(MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED);
 	}
 
 	@Test
@@ -278,6 +297,7 @@ class ScheduleCreateTransitionLogicTest {
 		given(scheduleProcessing.checkFutureThrottlesForCreate(schedule, scheduleValue)).willReturn(OK);
 		given(replSigningWitness.observeInScope(schedule, store, validScheduleKeys, activationHelper, false))
 				.willReturn(Pair.of(SOME_SIGNATURES_WERE_INVALID, true));
+		given(usageLimits.areCreatableSchedules(1)).willReturn(true);
 
 		subject.doStateTransition();
 
@@ -304,6 +324,7 @@ class ScheduleCreateTransitionLogicTest {
 	void capturesFailingThrottleCheck() throws InvalidProtocolBufferException {
 		givenValidTxnCtx();
 		given(scheduleProcessing.checkFutureThrottlesForCreate(schedule, scheduleValue)).willReturn(SCHEDULE_FUTURE_GAS_LIMIT_EXCEEDED);
+		given(usageLimits.areCreatableSchedules(1)).willReturn(true);
 
 		subject.doStateTransition();
 

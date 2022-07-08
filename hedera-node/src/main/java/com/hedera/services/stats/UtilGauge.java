@@ -1,3 +1,5 @@
+package com.hedera.services.stats;
+
 /*-
  * ‌
  * Hedera Services Node
@@ -17,3 +19,10 @@
  * limitations under the License.
  * ‍
  */
+
+import com.swirlds.common.metrics.DoubleGauge;
+
+import java.util.function.DoubleSupplier;
+
+public record UtilGauge(DoubleSupplier valueSource, DoubleGauge gauge) {
+}

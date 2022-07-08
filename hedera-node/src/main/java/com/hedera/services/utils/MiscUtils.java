@@ -212,6 +212,7 @@ import static java.util.stream.Collectors.toSet;
 
 public final class MiscUtils {
 	private static final long ONE_SEC_IN_NANOS = 1_000_000_000;
+	public static final long SIZE_MASK = 0xffffffffL;
 
 	private MiscUtils() {
 		throw new UnsupportedOperationException("Utility Class");

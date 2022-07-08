@@ -32,6 +32,7 @@ import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.state.validation.UsageLimits;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.accessors.SignedTxnAccessor;
@@ -70,6 +71,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RENEWA
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SEND_RECORD_THRESHOLD;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_STAKING_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.KEY_REQUIRED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MEMO_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PROXY_ACCOUNT_ID_FIELD_IS_DEPRECATED;
@@ -103,6 +105,7 @@ class CryptoCreateTransitionLogicTest {
 	private static final AccountID CREATED = AccountID.newBuilder().setAccountNum(9_999L).build();
 	private static final AccountID STAKED_ACCOUNT_ID = AccountID.newBuilder().setAccountNum(1000L).build();
 	private static final Instant consensusTime = Instant.now();
+	private static final long pretendMaxAccounts = 10;
 
 	private HederaLedger ledger;
 	private OptionValidator validator;
@@ -114,10 +117,12 @@ class CryptoCreateTransitionLogicTest {
 	private CryptoCreateTransitionLogic subject;
 	private MerkleMap<EntityNum, MerkleAccount> accounts;
 	private NodeInfo nodeInfo;
+	private UsageLimits usageLimits;
 
 	@BeforeEach
 	private void setup() {
 		txnCtx = mock(TransactionContext.class);
+		usageLimits = mock(UsageLimits.class);
 		given(txnCtx.consensusTime()).willReturn(consensusTime);
 		ledger = mock(HederaLedger.class);
 		accessor = mock(SignedTxnAccessor.class);
@@ -129,8 +134,9 @@ class CryptoCreateTransitionLogicTest {
 		given(dynamicProperties.maxTokensPerAccount()).willReturn(MAX_TOKEN_ASSOCIATIONS);
 		withRubberstampingValidator();
 
-		subject = new CryptoCreateTransitionLogic(ledger, validator, sigImpactHistorian, txnCtx, dynamicProperties,
-				() -> accounts, nodeInfo);
+		subject = new CryptoCreateTransitionLogic(
+				usageLimits, ledger, validator, sigImpactHistorian,
+				txnCtx, dynamicProperties, () -> accounts, nodeInfo);
 	}
 
 	@Test
@@ -242,6 +248,7 @@ class CryptoCreateTransitionLogicTest {
 		givenValidTxnCtx();
 		given(ledger.create(any(), anyLong(), any())).willReturn(CREATED);
 		given(validator.isValidStakedId(any(), any(), anyLong(), any(), any())).willReturn(true);
+		given(usageLimits.areCreatableAccounts(1)).willReturn(true);
 
 		subject.doStateTransition();
 
@@ -264,8 +271,20 @@ class CryptoCreateTransitionLogicTest {
 	}
 
 	@Test
+	void failsIfMaxAccountsReached() {
+		givenValidTxnCtx();
+		given(dynamicProperties.maxNumAccounts()).willReturn(pretendMaxAccounts);
+		given(accounts.size()).willReturn((int)pretendMaxAccounts + 1);
+
+		subject.doStateTransition();
+
+		verify(txnCtx).setStatus(MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED);
+	}
+
+	@Test
 	void translatesInsufficientPayerBalance() {
 		givenValidTxnCtx();
+		given(usageLimits.areCreatableAccounts(1)).willReturn(true);
 		given(ledger.create(any(), anyLong(), any())).willThrow(InsufficientFundsException.class);
 
 		subject.doStateTransition();
@@ -276,6 +295,7 @@ class CryptoCreateTransitionLogicTest {
 	@Test
 	void translatesUnknownException() {
 		givenValidTxnCtx();
+		given(usageLimits.areCreatableAccounts(1)).willReturn(true);
 		cryptoCreateTxn = cryptoCreateTxn.toBuilder()
 				.setCryptoCreateAccount(cryptoCreateTxn.getCryptoCreateAccount().toBuilder().setKey(unmappableKey()))
 				.build();
