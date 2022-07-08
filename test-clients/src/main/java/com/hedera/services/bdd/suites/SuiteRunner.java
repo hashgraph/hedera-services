@@ -15,15 +15,6 @@
  */
 package com.hedera.services.bdd.suites;
 
-import static com.hedera.services.bdd.spec.HapiSpecSetup.NodeSelection.FIXED;
-import static com.hedera.services.bdd.spec.HapiSpecSetup.TlsConfig.OFF;
-import static com.hedera.services.bdd.spec.transactions.TxnUtils.isIdLiteral;
-import static com.hedera.services.bdd.suites.HapiApiSuite.FinalOutcome;
-import static java.util.concurrent.CompletableFuture.runAsync;
-import static java.util.stream.Collectors.groupingBy;
-import static java.util.stream.Collectors.joining;
-import static java.util.stream.Collectors.toMap;
-
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.infrastructure.HapiApiClients;
@@ -197,6 +188,10 @@ import com.hedera.services.bdd.suites.token.TokenManagementSpecsStateful;
 import com.hedera.services.bdd.suites.token.TokenPauseSpecs;
 import com.hedera.services.bdd.suites.token.TokenTransactSpecs;
 import com.hedera.services.bdd.suites.token.TokenUpdateSpecs;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -213,9 +208,14 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
-import org.apache.commons.lang3.StringUtils;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+
+import static com.hedera.services.bdd.spec.HapiSpecSetup.NodeSelection.FIXED;
+import static com.hedera.services.bdd.spec.HapiSpecSetup.TlsConfig.OFF;
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.isIdLiteral;
+import static java.util.concurrent.CompletableFuture.runAsync;
+import static java.util.stream.Collectors.groupingBy;
+import static java.util.stream.Collectors.joining;
+import static java.util.stream.Collectors.toMap;
 
 public class SuiteRunner {
     @SuppressWarnings("java:S2245")
@@ -558,7 +558,7 @@ public class SuiteRunner {
     @SuppressWarnings("java:S2440")
     public static void main(String... args) throws Exception {
         /* Has a static initializer whose behavior seems influenced by initialization of ForkJoinPool#commonPool. */
-        new org.ethereum.crypto.HashUtil();
+//        new org.ethereum.crypto.HashUtil();
 
         String[] effArgs = trueArgs(args);
         log.info("Effective args :: {}", List.of(effArgs));
@@ -751,10 +751,10 @@ public class SuiteRunner {
     }
 
     private static CategoryResult runSuitesAsync(String category, HapiApiSuite[] suites) {
-        List<FinalOutcome> outcomes = accumulateAsync(suites, HapiApiSuite::runSuiteAsync);
+        List<HapiApiSuite.FinalOutcome> outcomes = accumulateAsync(suites, HapiApiSuite::runSuiteAsync);
         List<HapiApiSuite> failed =
                 IntStream.range(0, suites.length)
-                        .filter(i -> outcomes.get(i) != FinalOutcome.SUITE_PASSED)
+                        .filter(i -> outcomes.get(i) != HapiApiSuite.FinalOutcome.SUITE_PASSED)
                         .mapToObj(i -> suites[i])
                         .toList();
         return summaryOf(category, suites, failed);
@@ -763,7 +763,7 @@ public class SuiteRunner {
     private static CategoryResult runSuitesSync(String category, HapiApiSuite[] suites) {
         List<HapiApiSuite> failed =
                 Stream.of(suites)
-                        .filter(suite -> suite.runSuiteSync() != FinalOutcome.SUITE_PASSED)
+                        .filter(suite -> suite.runSuiteSync() != HapiApiSuite.FinalOutcome.SUITE_PASSED)
                         .toList();
         return summaryOf(category, suites, failed);
     }
