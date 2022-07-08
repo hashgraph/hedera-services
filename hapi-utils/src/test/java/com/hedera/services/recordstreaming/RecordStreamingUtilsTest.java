@@ -40,7 +40,7 @@ class RecordStreamingUtilsTest {
 	private static final String V5_RECORD_SIGNATURE_FILE = "V5_2022-05-27T08_27_14.157194938Z.rcd_sig";
 
 	@Test
-	void parsingV6RecordFilesSucceeds() {
+	void parsingV6RecordFilesSucceeds() throws IOException {
 		final var recordFilePath = Path.of(PATH_TO_FILES, V6_RECORD_FILE);
 
 		final var recordFilePair = RecordStreamingUtils.readRecordStreamFile(recordFilePath.toString());
@@ -50,7 +50,7 @@ class RecordStreamingUtilsTest {
 	}
 
 	@Test
-	void parsingV6SignatureRecordFilesSucceeds()  {
+	void parsingV6SignatureRecordFilesSucceeds() throws IOException {
 		final var signatureFilePath = Path.of(PATH_TO_FILES, V6_RECORD_SIGNATURE_FILE);
 
 		final var signatureFilePair = RecordStreamingUtils.readSignatureFile(signatureFilePath.toString());
@@ -60,7 +60,7 @@ class RecordStreamingUtilsTest {
 	}
 
 	@Test
-	void parsingV6SidecarRecordFilesSucceeds() {
+	void parsingV6SidecarRecordFilesSucceeds() throws IOException {
 		final var sidecarFilePath = Path.of(PATH_TO_FILES, V6_SIDECAR_FILE);
 
 		final var sidecarFileOptional = RecordStreamingUtils.readSidecarFile(sidecarFilePath.toString());
@@ -72,28 +72,20 @@ class RecordStreamingUtilsTest {
 	void parsingUnknownRecordFilesReturnsEmptyPair()  {
 		final var recordFilePath = Path.of(PATH_TO_FILES, V5_RECORD_FILE);
 
-		final var recordFilePair = RecordStreamingUtils.readRecordStreamFile(recordFilePath.toString());
-
-		assertEquals(-1, recordFilePair.getLeft());
-		assertFalse(recordFilePair.getRight().isPresent());
+		assertThrows(IOException.class, () -> RecordStreamingUtils.readRecordStreamFile(recordFilePath.toString()));
 	}
 
 	@Test
 	void parsingUnknownSignatureRecordFilesReturnsEmptyPair()  {
 		final var signatureFilePath = Path.of(PATH_TO_FILES, V5_RECORD_SIGNATURE_FILE);
 
-		final var signatureFilePair = RecordStreamingUtils.readSignatureFile(signatureFilePath.toString());
-
-		assertEquals(-1, signatureFilePair.getLeft());
-		assertFalse(signatureFilePair.getRight().isPresent());
+		assertThrows(IOException.class, () -> RecordStreamingUtils.readSignatureFile(signatureFilePath.toString()));
 	}
 
 	@Test
 	void parsingUnknownSidecarFileReturnsEmptyOptional()  {
 		final var notSidecarFilePath = Path.of(PATH_TO_FILES, V5_RECORD_SIGNATURE_FILE);
 
-		final var sidecarOptional = RecordStreamingUtils.readSidecarFile(notSidecarFilePath.toString());
-
-		assertTrue(sidecarOptional.isEmpty());
+		assertThrows(IOException.class, () -> RecordStreamingUtils.readSidecarFile(notSidecarFilePath.toString()));
 	}
 }
