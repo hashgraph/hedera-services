@@ -113,7 +113,7 @@ dependencyResolutionManagement {
         // The libs of this catalog can be used for test or build uses.
         create("testLibs") {
             version("awaitility-version", "4.2.0")
-            version("besu-internal-version", "22.1.1")
+            version("besu-internal-version", "22.4.1")
             version("commons-collections4-version", "4.4")
             version("ethereumj-version", "1.12.0-v0.5.0")
             version("hamcrest-version", "2.2")
