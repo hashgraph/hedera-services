@@ -38,7 +38,7 @@ import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Assertions;
 
 public class HapiGetFileInfo extends HapiQueryOp<HapiGetFileInfo> {
-    static final Logger log = LogManager.getLogger(HapiGetFileInfo.class);
+    private static final Logger LOG = LogManager.getLogger(HapiGetFileInfo.class);
 
     private static final String MISSING_FILE = "<n/a>";
 
@@ -127,7 +127,7 @@ public class HapiGetFileInfo extends HapiQueryOp<HapiGetFileInfo> {
         Query query = getFileInfoQuery(spec, payment, false);
         response = spec.clients().getFileSvcStub(targetNodeFor(spec), useTls).getFileInfo(query);
         if (verboseLoggingOn) {
-            log.info("Info for file '{}': {}", file, response.getFileGetInfo());
+            LOG.info("Info for file '{}': {}", file, response.getFileGetInfo());
         }
         if (saveFileInfoToReg.isPresent()) {
             spec.registry()
