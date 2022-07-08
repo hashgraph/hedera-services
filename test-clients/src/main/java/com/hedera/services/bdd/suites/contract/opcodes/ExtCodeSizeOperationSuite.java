@@ -42,7 +42,7 @@ import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Assertions;
 
 public class ExtCodeSizeOperationSuite extends HapiApiSuite {
-    private static final Logger log = LogManager.getLogger(ExtCodeSizeOperationSuite.class);
+    private static final Logger LOG = LogManager.getLogger(ExtCodeSizeOperationSuite.class);
 
     public static void main(String[] args) {
         new ExtCodeSizeOperationSuite().runSuiteAsync();
@@ -149,6 +149,6 @@ public class ExtCodeSizeOperationSuite extends HapiApiSuite {
 
     @Override
     protected Logger getResultsLogger() {
-        return log;
+        return LOG;
     }
 }
