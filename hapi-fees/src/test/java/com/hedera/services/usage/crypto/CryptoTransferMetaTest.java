@@ -1,11 +1,6 @@
-package com.hedera.services.usage.crypto;
-
-/*-
- * ‌
- * Hedera Services API Fees
- * ​
- * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2021-2022 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,63 +12,63 @@ package com.hedera.services.usage.crypto;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+package com.hedera.services.usage.crypto;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 import com.hederahashgraph.api.proto.java.SubType;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.*;
-
 class CryptoTransferMetaTest {
 
-	@Test
-	void setterWith4ParamsWorks() {
-		final var subject = new CryptoTransferMeta(1, 2, 3, 4);
+    @Test
+    void setterWith4ParamsWorks() {
+        final var subject = new CryptoTransferMeta(1, 2, 3, 4);
 
-		// when:
-		subject.setCustomFeeHbarTransfers(10);
-		subject.setCustomFeeTokenTransfers(5);
-		subject.setCustomFeeTokensInvolved(2);
+        // when:
+        subject.setCustomFeeHbarTransfers(10);
+        subject.setCustomFeeTokenTransfers(5);
+        subject.setCustomFeeTokensInvolved(2);
 
-		// then:
-		assertEquals(1, subject.getTokenMultiplier());
-		assertEquals(3, subject.getNumFungibleTokenTransfers());
-		assertEquals(2, subject.getNumTokensInvolved());
-		assertEquals(4, subject.getNumNftOwnershipChanges());
-		assertEquals(2, subject.getCustomFeeTokensInvolved());
-		assertEquals(5, subject.getCustomFeeTokenTransfers());
-		assertEquals(10, subject.getCustomFeeHbarTransfers());
-	}
+        // then:
+        assertEquals(1, subject.getTokenMultiplier());
+        assertEquals(3, subject.getNumFungibleTokenTransfers());
+        assertEquals(2, subject.getNumTokensInvolved());
+        assertEquals(4, subject.getNumNftOwnershipChanges());
+        assertEquals(2, subject.getCustomFeeTokensInvolved());
+        assertEquals(5, subject.getCustomFeeTokenTransfers());
+        assertEquals(10, subject.getCustomFeeHbarTransfers());
+    }
 
-	@Test
-	void getSubTypePrioritizesNFT() {
-		var subject = new CryptoTransferMeta(1, 2, 3, 4);
+    @Test
+    void getSubTypePrioritizesNFT() {
+        var subject = new CryptoTransferMeta(1, 2, 3, 4);
 
-		assertEquals(SubType.TOKEN_NON_FUNGIBLE_UNIQUE, subject.getSubType());
+        assertEquals(SubType.TOKEN_NON_FUNGIBLE_UNIQUE, subject.getSubType());
 
-		subject.setCustomFeeHbarTransfers(0);
-		subject.setCustomFeeTokenTransfers(5);
-		assertEquals(SubType.TOKEN_NON_FUNGIBLE_UNIQUE_WITH_CUSTOM_FEES, subject.getSubType());
+        subject.setCustomFeeHbarTransfers(0);
+        subject.setCustomFeeTokenTransfers(5);
+        assertEquals(SubType.TOKEN_NON_FUNGIBLE_UNIQUE_WITH_CUSTOM_FEES, subject.getSubType());
 
-		subject.setCustomFeeHbarTransfers(10);
-		subject.setCustomFeeTokenTransfers(0);
-		assertEquals(SubType.TOKEN_NON_FUNGIBLE_UNIQUE_WITH_CUSTOM_FEES, subject.getSubType());
+        subject.setCustomFeeHbarTransfers(10);
+        subject.setCustomFeeTokenTransfers(0);
+        assertEquals(SubType.TOKEN_NON_FUNGIBLE_UNIQUE_WITH_CUSTOM_FEES, subject.getSubType());
 
-		subject = new CryptoTransferMeta(1, 2, 3, 0);
+        subject = new CryptoTransferMeta(1, 2, 3, 0);
 
-		assertEquals(SubType.TOKEN_FUNGIBLE_COMMON, subject.getSubType());
+        assertEquals(SubType.TOKEN_FUNGIBLE_COMMON, subject.getSubType());
 
-		subject.setCustomFeeHbarTransfers(0);
-		subject.setCustomFeeTokenTransfers(5);
-		assertEquals(SubType.TOKEN_FUNGIBLE_COMMON_WITH_CUSTOM_FEES, subject.getSubType());
+        subject.setCustomFeeHbarTransfers(0);
+        subject.setCustomFeeTokenTransfers(5);
+        assertEquals(SubType.TOKEN_FUNGIBLE_COMMON_WITH_CUSTOM_FEES, subject.getSubType());
 
-		subject.setCustomFeeHbarTransfers(10);
-		subject.setCustomFeeTokenTransfers(0);
-		assertEquals(SubType.TOKEN_FUNGIBLE_COMMON_WITH_CUSTOM_FEES, subject.getSubType());
+        subject.setCustomFeeHbarTransfers(10);
+        subject.setCustomFeeTokenTransfers(0);
+        assertEquals(SubType.TOKEN_FUNGIBLE_COMMON_WITH_CUSTOM_FEES, subject.getSubType());
 
-		subject = new CryptoTransferMeta(1, 0, 0, 0);
+        subject = new CryptoTransferMeta(1, 0, 0, 0);
 
-		assertEquals(SubType.DEFAULT, subject.getSubType());
-	}
+        assertEquals(SubType.DEFAULT, subject.getSubType());
+    }
 }
