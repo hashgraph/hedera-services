@@ -23,7 +23,6 @@ package com.hedera.services.state;
 import com.hedera.services.config.NetworkInfo;
 import com.hedera.services.context.MutableStateChildren;
 import com.hedera.services.context.properties.PropertySource;
-import com.hedera.services.keys.LegacyEd25519KeyReader;
 import com.hedera.services.store.schedule.ScheduleStore;
 import com.swirlds.common.utility.CommonUtils;
 import org.junit.jupiter.api.Test;
@@ -47,8 +46,6 @@ class StateModuleTest {
 	private ScheduleStore scheduleStore;
 	@Mock
 	private MutableStateChildren workingState;
-	@Mock
-	private LegacyEd25519KeyReader b64KeyReader;
 	@Mock
 	private PropertySource properties;
 	@Mock
