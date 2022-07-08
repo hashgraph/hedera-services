@@ -34,12 +34,9 @@ import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.fee.FeeBuilder;
 import java.util.Optional;
 import java.util.function.Consumer;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Assertions;
 
 public class HapiGetContractBytecode extends HapiQueryOp<HapiGetContractBytecode> {
-    static final Logger log = LogManager.getLogger(HapiGetContractBytecode.class);
     private final String contract;
     private Optional<byte[]> expected = Optional.empty();
     private Optional<Consumer<byte[]>> bytecodeObs = Optional.empty();
