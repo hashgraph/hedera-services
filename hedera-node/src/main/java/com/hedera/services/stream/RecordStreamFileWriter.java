@@ -29,11 +29,13 @@ import com.hedera.services.stream.proto.HashObject;
 import com.hedera.services.stream.proto.RecordStreamFile;
 import com.hedera.services.stream.proto.RecordStreamItem;
 import com.hedera.services.stream.proto.SidecarFile;
+import com.hedera.services.stream.proto.SidecarFile.Builder;
 import com.hedera.services.stream.proto.SidecarMetadata;
 import com.hedera.services.stream.proto.SidecarType;
 import com.hedera.services.stream.proto.SignatureFile;
 import com.hedera.services.stream.proto.SignatureObject;
 import com.hedera.services.stream.proto.SignatureType;
+import com.hedera.services.stream.proto.TransactionSidecarRecord.SidecarRecordsCase;
 import com.hederahashgraph.api.proto.java.SemanticVersion;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
@@ -45,6 +47,7 @@ import com.swirlds.common.stream.LinkedObjectStreamUtilities;
 import com.swirlds.common.stream.Signer;
 import com.swirlds.common.stream.StreamAligned;
 import com.swirlds.logging.LogMarker;
+import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -57,7 +60,6 @@ import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
 import java.util.concurrent.ExecutionException;
 
-import static com.hedera.services.stream.RecordStreamType.SidecarType.*;
 import static com.swirlds.common.stream.LinkedObjectStreamUtilities.convertInstantToStringWithPadding;
 import static com.swirlds.common.stream.LinkedObjectStreamUtilities.generateSigFilePath;
 import static com.swirlds.common.stream.LinkedObjectStreamUtilities.generateStreamFileNameFromInstant;
@@ -144,9 +146,7 @@ class RecordStreamFileWriter implements LinkedObjectStream<RecordStreamObject> {
 
 	private int recordFileVersion;
 	private RecordStreamFile.Builder recordStreamFileBuilder;
-	private SidecarFile.Builder stateChangesSidecarBuilder;
-	private SidecarFile.Builder actionsSidecarBuilder;
-	private SidecarFile.Builder bytecodesSidecarBuilder;
+	private SidecarFile.Builder sidecarFileBuilder;
 
 	public RecordStreamFileWriter(
 			final String dirPath,
@@ -285,20 +285,25 @@ class RecordStreamFileWriter implements LinkedObjectStream<RecordStreamObject> {
 					return;
 				}
 
-				// create sidecar files (only the ones needed) and add the SidecarMetadata to RecordStreamFile
-				try {
-					createSidecarFile(stateChangesSidecarBuilder, firstTxnInstant, STATE_CHANGES);
-					createSidecarFile(actionsSidecarBuilder, firstTxnInstant, ACTIONS);
-					createSidecarFile(bytecodesSidecarBuilder, firstTxnInstant, BYTECODES);
-				} catch (IOException | NoSuchAlgorithmException e) {
-					Thread.currentThread().interrupt();
-					LOG.warn(EXCEPTION.getMarker(),
-							"closeCurrentAndSign :: {} when creating sidecar files",
-							e.getClass().getSimpleName(), e);
-					return;
+				// create sidecar file and add the SidecarMetadata to RecordStreamFile
+				// only if there are any sidecar records for the current period
+				if (sidecarFileBuilder.getSidecarRecordsCount() > 0) {
+					try {
+						final var sidecarFile = new File(generateSidecarFilePath(firstTxnInstant, 1));
+						createSidecarFile(sidecarFileBuilder, sidecarFile);
+						recordStreamFileBuilder.addSidecars(createSidecarMetadata(sidecarFile, 1, List.of(
+										SidecarType.CONTRACT_STATE_CHANGE,
+										SidecarType.CONTRACT_BYTECODE,
+										SidecarType.CONTRACT_ACTION))
+						);
+					} catch (IOException | NoSuchAlgorithmException e) {
+						Thread.currentThread().interrupt();
+						LOG.warn(EXCEPTION.getMarker(),
+								"closeCurrentAndSign :: {} when creating sidecar files",
+								e.getClass().getSimpleName(), e);
+						return;
+					}
 				}
-
-				LOG.debug(OBJECT_STREAM_FILE.getMarker(), "Sidecar files for {} created successfully.", recordFileNameShort);
 
 				// create record file
 				try (FileOutputStream stream = new FileOutputStream(recordFile, false);
@@ -348,10 +353,8 @@ class RecordStreamFileWriter implements LinkedObjectStream<RecordStreamObject> {
 		// the record file version in it, save the version and
 		// perform the whole file creation in {@link #closeCurrentAndSign()} method
 		recordFileVersion = fileHeader[0];
-		// reinitialize sidecars
-		stateChangesSidecarBuilder = SidecarFile.newBuilder();
-		actionsSidecarBuilder = SidecarFile.newBuilder();
-		bytecodesSidecarBuilder = SidecarFile.newBuilder();
+		// reinitialize sidecar builder
+		sidecarFileBuilder = SidecarFile.newBuilder();
 		// add known values to recordStreamFile proto
 		recordStreamFileBuilder = RecordStreamFile.newBuilder().setBlockNumber(object.getStreamAlignment());
 		recordStreamFileBuilder.setHapiProtoVersion(SemanticVersion.newBuilder()
@@ -402,11 +405,12 @@ class RecordStreamFileWriter implements LinkedObjectStream<RecordStreamObject> {
 		final var sidecars = object.getSidecars();
 		if (isNotEmpty(sidecars)) {
 			for (final var sidecar : sidecars) {
-				switch (sidecar.getSidecarRecordsCase()) {
-					case STATE_CHANGES -> stateChangesSidecarBuilder.addSidecarRecords(sidecar);
-					case ACTIONS -> actionsSidecarBuilder.addSidecarRecords(sidecar);
-					case BYTECODE -> bytecodesSidecarBuilder.addSidecarRecords(sidecar);
-					default -> LOG.warn("A sidecar record without an actual sidecar has been received");
+				if (sidecar.getSidecarRecordsCase() == SidecarRecordsCase.STATE_CHANGES
+						|| sidecar.getSidecarRecordsCase() == SidecarRecordsCase.ACTIONS
+						|| sidecar.getSidecarRecordsCase() == SidecarRecordsCase.BYTECODE) {
+					sidecarFileBuilder.addSidecarRecords(sidecar);
+				} else {
+					LOG.warn("A sidecar record without an actual sidecar has been received");
 				}
 			}
 		}
@@ -542,13 +546,9 @@ class RecordStreamFileWriter implements LinkedObjectStream<RecordStreamObject> {
 	}
 
 	private void createSidecarFile(
-			final SidecarFile.Builder sidecarFileBuilder,
-			final Instant firstTxnInstant,
-			final RecordStreamType.SidecarType sidecarType
-	) throws IOException, NoSuchAlgorithmException {
-		// create a file only if there are any sidecar records of this type for the current period
-		if (sidecarFileBuilder.getSidecarRecordsCount() > 0) {
-			final var sidecarFile = new File(generateSidecarFilePath(firstTxnInstant, sidecarType.getSidecarId()));
+			final Builder sidecarFileBuilder,
+			final File sidecarFile
+	) throws IOException {
 			try (FileOutputStream stream = new FileOutputStream(sidecarFile, false);
 				 SerializableDataOutputStream dos = new SerializableDataOutputStream(new BufferedOutputStream(stream))
 			) {
@@ -563,28 +563,19 @@ class RecordStreamFileWriter implements LinkedObjectStream<RecordStreamObject> {
 				stream.getFD().sync();
 
 				LOG.debug(OBJECT_STREAM_FILE.getMarker(),
-						"Sidecar sidecarFilePath written successfully {}", sidecarFile.getName());
-				recordStreamFileBuilder.addSidecars(createSidecarMetadata(sidecarFile, sidecarType));
+						"Sidecar file created successfully {}", sidecarFile.getName());
 			}
-		}
 	}
 
 	private SidecarMetadata.Builder createSidecarMetadata(
 			final File sidecarFile,
-			final RecordStreamType.SidecarType sidecarType
-	) throws IOException, NoSuchAlgorithmException, IllegalStateException {
+			final int sidecarId,
+			final List<SidecarType> sidecarTypes
+	) throws IOException, NoSuchAlgorithmException {
 		return SidecarMetadata.newBuilder()
 				.setHash(toProto(LinkedObjectStreamUtilities.computeEntireHash(sidecarFile).getValue()))
-				.setId(sidecarType.getSidecarId())
-				.addTypes(toProto(sidecarType));
-	}
-
-	private SidecarType toProto(final RecordStreamType.SidecarType sidecarType) {
-		return switch (sidecarType) {
-			case STATE_CHANGES -> SidecarType.CONTRACT_STATE_CHANGE;
-			case ACTIONS -> SidecarType.CONTRACT_ACTION;
-			case BYTECODES -> SidecarType.CONTRACT_BYTECODE;
-		};
+				.setId(sidecarId)
+				.addAllTypes(sidecarTypes);
 	}
 
 	@VisibleForTesting

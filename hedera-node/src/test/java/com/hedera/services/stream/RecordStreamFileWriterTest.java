@@ -14,10 +14,10 @@ import com.hedera.services.stream.proto.HashAlgorithm;
 import com.hedera.services.stream.proto.HashObject;
 import com.hedera.services.stream.proto.RecordStreamFile;
 import com.hedera.services.stream.proto.SidecarFile;
-import com.hedera.services.stream.proto.SidecarType;
 import com.hedera.services.stream.proto.SignatureType;
 import com.hedera.services.stream.proto.StorageChange;
 import com.hedera.services.stream.proto.TransactionSidecarRecord;
+import com.hedera.services.stream.proto.TransactionSidecarRecord.Builder;
 import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
 import com.hedera.test.extensions.LoggingSubject;
@@ -27,7 +27,6 @@ import com.hedera.test.utils.TestFileUtils;
 import com.hederahashgraph.api.proto.java.SemanticVersion;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.Transaction;
-import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.HashingOutputStream;
@@ -63,7 +62,6 @@ import java.util.stream.Stream;
 import static com.swirlds.common.stream.LinkedObjectStreamUtilities.generateSigFilePath;
 import static com.swirlds.common.stream.LinkedObjectStreamUtilities.generateStreamFileNameFromInstant;
 import static com.swirlds.common.stream.StreamAligned.NO_ALIGNMENT;
-import static org.apache.commons.collections4.CollectionUtils.isNotEmpty;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
@@ -404,56 +402,35 @@ class RecordStreamFileWriterTest {
 		// assert sidecar metadata
 		final var sidecarMetadataList = recordStreamFile.getSidecarsList();
 		for (final var sidecarMetadata : sidecarMetadataList) {
-			assertEquals(1, sidecarMetadata.getTypesCount());
-			final var sidecarType = sidecarMetadata.getTypesList().get(0);
-			String pathToSidecarFile = null;
+			assertEquals(3, sidecarMetadata.getTypesCount());
 			final var firstTxnTimestamp = blockRSOs.get(0).getTimestamp();
 			final var firstTxnInstant =
 					Instant.ofEpochSecond(firstTxnTimestamp.getEpochSecond(), firstTxnTimestamp.getNano());
-			if (sidecarType.equals(SidecarType.CONTRACT_STATE_CHANGE)) {
-				pathToSidecarFile = subject.generateSidecarFilePath(firstTxnInstant,
-						RecordStreamType.SidecarType.STATE_CHANGES.getSidecarId());
-			} else if (sidecarType.equals(SidecarType.CONTRACT_ACTION)) {
-				pathToSidecarFile = subject.generateSidecarFilePath(firstTxnInstant,
-						RecordStreamType.SidecarType.ACTIONS.getSidecarId());
-			} else if (sidecarType.equals(SidecarType.CONTRACT_BYTECODE)) {
-				pathToSidecarFile = subject.generateSidecarFilePath(firstTxnInstant,
-						RecordStreamType.SidecarType.BYTECODES.getSidecarId());
-			}
-			assertNotNull(pathToSidecarFile);
+			final var pathToSidecarFile = subject.generateSidecarFilePath(firstTxnInstant, 1);
 			final var sidecarFileOptional = RecordStreamingUtils.readSidecarFile(pathToSidecarFile);
 			assertTrue(sidecarFileOptional.isPresent());
-			assertAllExpectedSidecarsAreInFile(sidecarFileOptional.get(), blockRSOs, sidecarType);
+			assertAllSidecarsAreInFile(sidecarFileOptional.get(), blockRSOs);
+			final var sidecarFile = new File(pathToSidecarFile);
 			final var expectedSidecarHash =
-					LinkedObjectStreamUtilities.computeEntireHash(new File(pathToSidecarFile));
+					LinkedObjectStreamUtilities.computeEntireHash(sidecarFile);
 			final var actualSidecarHash = sidecarMetadata.getHash();
 			assertEquals(HashAlgorithm.SHA_384, actualSidecarHash.getAlgorithm());
 			assertEquals(expectedSidecarHash.getDigestType().digestLength(), actualSidecarHash.getLength());
 			assertArrayEquals(expectedSidecarHash.getValue(), actualSidecarHash.getHash().toByteArray());
+			assertTrue(logCaptor.debugLogs().contains("Sidecar file created successfully " + sidecarFile.getName()));
 		}
 
 		assertTrue(logCaptor.debugLogs().contains("Stream file written successfully " + recordFile.getName()));
 	}
 
-	private void assertAllExpectedSidecarsAreInFile(
+	private void assertAllSidecarsAreInFile(
 			final SidecarFile sidecarFile,
-			final List<RecordStreamObject> blockRSOs,
-			final SidecarType sidecarType
+			final List<RecordStreamObject> blockRSOs
 	) {
 		final var actualSidecarRecordsList = sidecarFile.getSidecarRecordsList();
 		final var expectedSidecarRecordsList = new ArrayList<>();
 		for (final var rso : blockRSOs) {
-			if (isNotEmpty(rso.getSidecars())) {
-				for (final var tsr : rso.getSidecars()) {
-					if (tsr.hasActions() && sidecarType.equals(SidecarType.CONTRACT_ACTION)) {
-						expectedSidecarRecordsList.add(tsr.build());
-					} else if (tsr.hasStateChanges() && sidecarType.equals(SidecarType.CONTRACT_STATE_CHANGE)) {
-						expectedSidecarRecordsList.add(tsr.build());
-					} else if (tsr.hasBytecode() && sidecarType.equals(SidecarType.CONTRACT_BYTECODE)) {
-						expectedSidecarRecordsList.add(tsr.build());
-					}
-				}
-			}
+			expectedSidecarRecordsList.addAll(rso.getSidecars().stream().map(Builder::build).toList());
 		}
 		assertEquals(expectedSidecarRecordsList, actualSidecarRecordsList);
 	}
