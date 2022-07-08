@@ -43,7 +43,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
@@ -137,25 +136,6 @@ class BlockManagerTest {
 		final var someHash = new RunningHash();
 		subject.updateCurrentBlockHash(someHash);
 		verify(runningHashLeaf).setRunningHash(someHash);
-	}
-
-	@Test
-	void keeps025BehaviorIfManagedBlockNumberStillNegative() {
-		given(networkContext.firstConsTimeOfCurrentBlock()).willReturn(aTime);
-		given(networkContext.getAlignmentBlockNo()).willReturn(Long.MIN_VALUE);
-
-		final var firstValues = subject.computeBlockValues(someTime, gasLimit);
-		final var secondValues = subject.computeBlockValues(someTime, gasLimit);
-
-		assertEquals(gasLimit, firstValues.getGasLimit());
-		assertEquals(someTime.getEpochSecond(), firstValues.getNumber());
-		assertEquals(someTime.getEpochSecond(), firstValues.getTimestamp());
-		// and:
-		assertEquals(gasLimit, secondValues.getGasLimit());
-		assertEquals(someTime.getEpochSecond(), secondValues.getNumber());
-		assertEquals(someTime.getEpochSecond(), secondValues.getTimestamp());
-		// and:
-		verify(networkContext, times(1)).getAlignmentBlockNo();
 	}
 
 	@Test

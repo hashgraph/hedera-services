@@ -92,6 +92,7 @@ import static com.hedera.services.state.migration.StateVersions.FIRST_026X_VERSI
 import static com.hedera.services.state.migration.StateVersions.FIRST_027X_VERSION;
 import static com.hedera.services.state.migration.StateVersions.FIRST_028X_VERSION;
 import static com.hedera.services.state.migration.StateVersions.MINIMUM_SUPPORTED_VERSION;
+import static com.hedera.services.state.migration.StateVersions.RELEASE_0270_VERSION;
 import static com.hedera.services.state.migration.StateVersions.lastSoftwareVersionOf;
 import static com.hedera.services.utils.EntityIdUtils.parseAccount;
 import static com.swirlds.common.system.InitTrigger.GENESIS;

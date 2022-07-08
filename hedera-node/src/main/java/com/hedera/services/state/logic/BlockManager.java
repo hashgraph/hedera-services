@@ -132,11 +132,7 @@ public class BlockManager {
 	 */
 	public HederaBlockValues computeBlockValues(@NotNull final Instant now, final long gasLimit) {
 		ensureProvisionalBlockMeta(now);
-		if (provisionalBlockNo < 0) {
-			// Must be after 0.26 upgrade, but before the first block re-numbering
-			final var thisSecond = now.getEpochSecond();
-			return new HederaBlockValues(gasLimit, thisSecond, Instant.ofEpochSecond(thisSecond));
-		} else if (provisionalBlockIsNew) {
+		if (provisionalBlockIsNew) {
 			return new HederaBlockValues(gasLimit, provisionalBlockNo, Instant.ofEpochSecond(now.getEpochSecond()));
 		} else {
 			return new HederaBlockValues(gasLimit, provisionalBlockNo, networkCtx.get().firstConsTimeOfCurrentBlock());

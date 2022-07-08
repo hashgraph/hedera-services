@@ -24,9 +24,7 @@ import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.ethereum.EthTxData;
 import com.hedera.services.exceptions.UnknownHederaFunctionality;
-import com.hedera.services.keys.LegacyEd25519KeyReader;
 import com.hedera.services.ledger.HederaLedger;
-import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.state.submerkle.RichInstant;
@@ -47,7 +45,6 @@ import com.hederahashgraph.api.proto.java.TransferList;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.utility.Keyed;
 import com.swirlds.common.system.address.AddressBook;
-import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.fcqueue.FCQueue;
 import com.swirlds.merkle.map.MerkleMap;
 import org.apache.commons.codec.DecoderException;
@@ -431,20 +428,6 @@ public final class MiscUtils {
 						EntityIdUtils.readableId(nftTransfer.getReceiverAccountID())))
 				.toList()
 				.toString();
-	}
-
-	public static JKey lookupInCustomStore(
-			final LegacyEd25519KeyReader b64Reader,
-			final String storeLoc,
-			final String kpId
-	) {
-		try {
-			return new JEd25519Key(CommonUtils.unhex(b64Reader.hexedABytesFrom(storeLoc, kpId)));
-		} catch (IllegalArgumentException e) {
-			final var msg = String.format(
-					"Arguments 'storeLoc=%s' and 'kpId=%s' did not denote a valid key!", storeLoc, kpId);
-			throw new IllegalArgumentException(msg, e);
-		}
 	}
 
 	public static String readableProperty(final Object o) {

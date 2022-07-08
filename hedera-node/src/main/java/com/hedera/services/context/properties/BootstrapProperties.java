@@ -157,10 +157,7 @@ public final class BootstrapProperties implements PropertySource {
 
 	private static final Set<String> BOOTSTRAP_PROPS = Set.of(
 			"bootstrap.feeSchedulesJson.resource",
-			"bootstrap.genesisB64Keystore.keyName",
-			"bootstrap.genesisB64Keystore.path",
-			"bootstrap.genesisPemPassphrase.path",
-			"bootstrap.genesisPem.path",
+			"bootstrap.genesisPublicKey",
 			"bootstrap.hapiPermissions.path",
 			"bootstrap.networkProperties.path",
 			"bootstrap.rates.currentHbarEquiv",

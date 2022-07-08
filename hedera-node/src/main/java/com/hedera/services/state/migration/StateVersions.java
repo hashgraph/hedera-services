@@ -56,6 +56,7 @@ public final class StateVersions {
 	public static final SerializableSemVers FIRST_026X_VERSION = forHapiAndHedera("0.26.0", "0.26.0");
 	public static final SerializableSemVers LAST_026X_VERSION = forHapiAndHedera("0.26.0", "0.26.3");
 	public static final SerializableSemVers FIRST_027X_VERSION = forHapiAndHedera("0.27.0", "0.27.0");
+	public static final SerializableSemVers LAST_027X_VERSION = forHapiAndHedera("0.27.0", "0.27.3");
 	public static final SerializableSemVers FIRST_028X_VERSION = forHapiAndHedera("0.28.0", "0.28.0");
 
 	public static final int MINIMUM_SUPPORTED_VERSION = RELEASE_025X_VERSION;
@@ -66,6 +67,7 @@ public final class StateVersions {
 		return switch (stateVersion) {
 			case RELEASE_025X_VERSION -> LAST_025X_VERSION;
 			case RELEASE_0260_VERSION -> LAST_026X_VERSION;
+			case RELEASE_0270_VERSION -> LAST_027X_VERSION;
 			default -> null;
 		};
 	}

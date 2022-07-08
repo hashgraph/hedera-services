@@ -153,7 +153,7 @@ public class ConfigUtils {
 		return config;
 	}
 
-	private static void setLogLevels(Level logLevel) {
+	public static void setLogLevels(Level logLevel) {
 		List.of(
 				BalanceSuite.class,
 				RekeySuite.class,
