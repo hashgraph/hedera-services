@@ -48,17 +48,6 @@ dependencies {
     implementation(testLibs.besu.internal)
     implementation(testLibs.commons.collections4)
     implementation(libs.commons.io)
-    implementation(testLibs.ethereumj) {
-        exclude("", "junit")
-        exclude("com.cedarsoftware")
-        exclude("com.googlecode.json-simple")
-        exclude("io.netty")
-        exclude("org.apache.logging.log4j")
-        exclude("org.ethereum")
-        exclude("org.iq80.leveldb")
-        exclude("org.slf4j")
-        exclude("org.xerial.snappy")
-    }
     implementation(libs.guava)
     implementation(libs.hapi)
     implementation(libs.headlong)
