@@ -9,9 +9,9 @@ package com.hedera.services.bdd.suites.utils.contracts;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
+ * 
  *      http://www.apache.org/licenses/LICENSE-2.0
- *
+ * 
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -20,27 +20,28 @@ package com.hedera.services.bdd.suites.utils.contracts;
  * ‍
  */
 
+import com.esaulpaugh.headlong.abi.Address;
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.esaulpaugh.headlong.abi.TupleType;
 import org.apache.tuweni.bytes.Bytes;
 
-import java.math.BigInteger;
+import static com.esaulpaugh.headlong.abi.Address.toChecksumAddress;
 
-public class SimpleBytesResult implements ContractCallResult {
-	BigInteger exists;
+public class AddressResult implements ContractCallResult {
+	final String hexedAddress;
 
-	private SimpleBytesResult(long result) {
-		this.exists = BigInteger.valueOf(result);
+	public AddressResult(final String hexedAddress) {
+		this.hexedAddress = hexedAddress;
 	}
 
-	public static SimpleBytesResult bigIntResult(long result) {
-		return new SimpleBytesResult(result);
+	public static AddressResult hexedAddress(final String hexedAddress) {
+		return new AddressResult("0x" + hexedAddress);
 	}
 
 	@Override
 	public Bytes getBytes() {
-		final var intType = TupleType.parse("(int)");
-		final var result = Tuple.of(exists);
-		return Bytes.wrap(intType.encode(result).array());
+		final var addressType = TupleType.parse("(address)");
+		final var result = Tuple.of(Address.wrap(toChecksumAddress(hexedAddress)));
+		return Bytes.wrap(addressType.encode(result).array());
 	}
 }
