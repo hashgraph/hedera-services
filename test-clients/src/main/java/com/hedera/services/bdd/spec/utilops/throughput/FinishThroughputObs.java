@@ -29,7 +29,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 public class FinishThroughputObs extends UtilOp {
-    static final Logger LOG = LogManager.getLogger(FinishThroughputObs.class);
+    private static final Logger LOG = LogManager.getLogger(FinishThroughputObs.class);
 
     private final String name;
     Optional<Long> sleepMs = Optional.empty();
