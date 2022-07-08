@@ -47,7 +47,7 @@ import org.apache.logging.log4j.Logger;
 import org.ethereum.core.CallTransaction;
 
 public class HapiContractCallLocal extends HapiQueryOp<HapiContractCallLocal> {
-    private static final Logger log = LogManager.getLogger(HapiContractCallLocal.class);
+    private static final Logger LOG = LogManager.getLogger(HapiContractCallLocal.class);
 
     private static final String FALLBACK_ABI = "<empty>";
     private String abi;
@@ -122,11 +122,11 @@ public class HapiContractCallLocal extends HapiQueryOp<HapiContractCallLocal> {
             ContractFunctionResult actual = response.getContractCallLocal().getFunctionResult();
             if (!loggingOff) {
                 final String hex = CommonUtils.hex(actual.getContractCallResult().toByteArray());
-                log.info(hex);
+                LOG.info(hex);
             }
             ErroringAsserts<ContractFunctionResult> asserts = expectations.get().assertsFor(spec);
             List<Throwable> errors = asserts.errorsIn(actual);
-            rethrowSummaryError(log, "Bad local call result!", errors);
+            rethrowSummaryError(LOG, "Bad local call result!", errors);
         }
     }
 
@@ -143,7 +143,7 @@ public class HapiContractCallLocal extends HapiQueryOp<HapiContractCallLocal> {
                         .getScSvcStub(targetNodeFor(spec), useTls)
                         .contractCallLocalMethod(query);
         if (verboseLoggingOn) {
-            log.info(
+            LOG.info(
                     "{}{} result = {}",
                     spec::logPrefix,
                     () -> this,
