@@ -9,9 +9,9 @@ package com.hedera.services.store.contracts.precompile.proxy;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -21,19 +21,21 @@ package com.hedera.services.store.contracts.precompile.proxy;
  */
 
 import com.esaulpaugh.headlong.util.Integers;
+import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.services.store.contracts.WorldLedgers;
 import com.hedera.services.store.contracts.precompile.codec.BalanceOfWrapper;
 import com.hedera.services.store.contracts.precompile.codec.DecodingFacade;
 import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
+import com.hedera.services.store.contracts.precompile.codec.GetApprovedWrapper;
+import com.hedera.services.store.contracts.precompile.codec.IsApproveForAllWrapper;
 import com.hedera.services.store.contracts.precompile.codec.OwnerOfAndTokenURIWrapper;
+import com.hedera.services.store.contracts.precompile.codec.TokenAllowanceWrapper;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.NftId;
 import com.hedera.test.utils.IdUtils;
-import com.hedera.test.utils.TxnUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenID;
 import org.apache.commons.lang3.tuple.Pair;
@@ -46,19 +48,25 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_ERC_ALLOWANCE;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_ERC_BALANCE_OF_TOKEN;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_ERC_DECIMALS;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_ERC_GET_APPROVED;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_ERC_IS_APPROVED_FOR_ALL;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_ERC_NAME;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_ERC_OWNER_OF_NFT;
-import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_REDIRECT_FOR_TOKEN;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_ERC_SYMBOL;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_ERC_TOKEN_URI_NFT;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_ERC_TOTAL_SUPPLY_TOKEN;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_REDIRECT_FOR_TOKEN;
 import static com.hedera.services.store.contracts.precompile.proxy.RedirectViewExecutor.MINIMUM_TINYBARS_COST;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALLOWANCE_OWNER_ID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 class RedirectViewExecutorTest {
@@ -82,6 +90,7 @@ class RedirectViewExecutorTest {
 	private OwnerOfAndTokenURIWrapper ownerOfAndTokenURIWrapper;
 
 	public static final AccountID account = IdUtils.asAccount("0.0.777");
+	public static final AccountID spender = IdUtils.asAccount("0.0.888");
 	public static final TokenID fungible = IdUtils.asToken("0.0.888");
 	public static final TokenID nonfungibletoken = IdUtils.asToken("0.0.999");
 	public static final NftId nonfungible = new NftId(0, 0, 999, 1);
@@ -119,6 +128,59 @@ class RedirectViewExecutorTest {
 		given(encodingFacade.encodeSymbol(result)).willReturn(answer);
 
 		assertEquals(Pair.of(gas, answer), subject.computeCosted());
+	}
+
+	@Test
+	void computeAllowanceOf() {
+		final var nestedInput = prerequisites(ABI_ID_ERC_ALLOWANCE, fungibleTokenAddress);
+
+		final var allowanceWrapper = new TokenAllowanceWrapper(account, spender);
+		given(decodingFacade.decodeTokenAllowance(eq(nestedInput), any()))
+				.willReturn(allowanceWrapper);
+		given(worldLedgers.staticAllowanceOf(account, spender, fungible)).willReturn(123L);
+		given(encodingFacade.encodeAllowance(123L)).willReturn(answer);
+
+		assertEquals(Pair.of(gas, answer), subject.computeCosted());
+	}
+
+	@Test
+	void computeApprovedSpenderOf() {
+		final var nestedInput = prerequisites(ABI_ID_ERC_GET_APPROVED, nonfungibleTokenAddress);
+
+		final var getApprovedWrapper = new GetApprovedWrapper(123L);
+		given(decodingFacade.decodeGetApproved(nestedInput)).willReturn(getApprovedWrapper);
+		given(worldLedgers.staticApprovedSpenderOf(NftId.fromGrpc(nonfungibletoken, 123L)))
+				.willReturn(Address.ALTBN128_ADD);
+		given(worldLedgers.canonicalAddress(Address.ALTBN128_ADD)).willReturn(Address.ALTBN128_ADD);
+		given(encodingFacade.encodeGetApproved(Address.ALTBN128_ADD)).willReturn(answer);
+
+		assertEquals(Pair.of(gas, answer), subject.computeCosted());
+	}
+
+	@Test
+	void computeOperatorCheck() {
+		final var nestedInput = prerequisites(ABI_ID_ERC_IS_APPROVED_FOR_ALL, nonfungibleTokenAddress);
+
+		final var isApproveForAll= new IsApproveForAllWrapper(account, spender);
+		given(decodingFacade.decodeIsApprovedForAll(eq(nestedInput), any())).willReturn(isApproveForAll);
+		given(worldLedgers.staticIsOperator(account, spender, nonfungibletoken)).willReturn(true);
+		given(encodingFacade.encodeIsApprovedForAll(true)).willReturn(answer);
+
+		assertEquals(Pair.of(gas, answer), subject.computeCosted());
+	}
+
+	@Test
+	void revertsFrameAndReturnsNullOnRevertingException() {
+		final var nestedInput = prerequisites(ABI_ID_ERC_ALLOWANCE, fungibleTokenAddress);
+
+		final var allowanceWrapper = new TokenAllowanceWrapper(account, spender);
+		given(decodingFacade.decodeTokenAllowance(eq(nestedInput), any()))
+				.willReturn(allowanceWrapper);
+		given(worldLedgers.staticAllowanceOf(account, spender, fungible))
+				.willThrow(new InvalidTransactionException(INVALID_ALLOWANCE_OWNER_ID, true));
+
+		assertEquals(Pair.of(gas, null), subject.computeCosted());
+		verify(frame).setState(MessageFrame.State.REVERT);
 	}
 
 	@Test
@@ -194,17 +256,15 @@ class RedirectViewExecutorTest {
 	@Test
 	void computeCostedNOT_SUPPORTED() {
 		prerequisites(0xffffffff, fungibleTokenAddress);
-		TxnUtils.assertFailsWith(() -> subject.computeCosted(), ResponseCodeEnum.NOT_SUPPORTED);
+		assertNull(subject.computeCosted().getRight());
 	}
 
-	Bytes prerequisites(int descriptor, Bytes tokenAddress) {
+	Bytes prerequisites(final int descriptor, final Bytes tokenAddress) {
 		given(frame.getWorldUpdater()).willReturn(stackedWorldStateUpdater);
 		given(stackedWorldStateUpdater.trackingLedgers()).willReturn(worldLedgers);
 		Bytes nestedInput = Bytes.of(Integers.toBytes(descriptor));
 		Bytes input = Bytes.concatenate(
-				Bytes.of(Integers.toBytes(ABI_ID_REDIRECT_FOR_TOKEN)),
-				tokenAddress,
-				nestedInput);
+				Bytes.of(Integers.toBytes(ABI_ID_REDIRECT_FOR_TOKEN)), tokenAddress, nestedInput);
 		given(frame.getBlockValues()).willReturn(blockValues);
 		given(blockValues.getTimestamp()).willReturn(timestamp);
 		given(redirectGasCalculator.compute(resultingTimestamp, MINIMUM_TINYBARS_COST)).willReturn(gas);

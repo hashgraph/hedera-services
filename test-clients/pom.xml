@@ -292,6 +292,16 @@
       <artifactId>json</artifactId>
       <version>20210307</version>
     </dependency>
+    <dependency>
+      <groupId>org.testcontainers</groupId>
+      <artifactId>testcontainers</artifactId>
+      <version>1.17.2</version>
+    </dependency>
+    <dependency>
+      <groupId>org.testcontainers</groupId>
+      <artifactId>junit-jupiter</artifactId>
+      <version>1.17.2</version>
+    </dependency>
   </dependencies>
   <profiles>
     <profile>
