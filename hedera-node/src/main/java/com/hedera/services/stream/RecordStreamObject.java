@@ -60,7 +60,7 @@ public class RecordStreamObject
 	/* The gRPC transaction and records for the record stream file */
 	private Transaction transaction;
 	private TransactionRecord transactionRecord;
-	private List<TransactionSidecarRecord> sidecars;
+	private List<TransactionSidecarRecord.Builder> sidecars;
 	/* The fast-copyable equivalent of the gRPC transaction record for the record stream file */
 	private ExpirableTxnRecord fcTransactionRecord;
 
@@ -87,7 +87,7 @@ public class RecordStreamObject
 			final ExpirableTxnRecord fcTransactionRecord,
 			final Transaction transaction,
 			final Instant consensusTimestamp,
-			final List<TransactionSidecarRecord> sidecars
+			final List<TransactionSidecarRecord.Builder> sidecars
 	) {
 		this.transaction = transaction;
 		this.consensusTimestamp = consensusTimestamp;
@@ -213,7 +213,7 @@ public class RecordStreamObject
 		return transactionRecord;
 	}
 
-	public List<TransactionSidecarRecord> getSidecars() {
+	public List<TransactionSidecarRecord.Builder> getSidecars() {
 		return this.sidecars;
 	}
 

@@ -49,7 +49,6 @@ import static com.hedera.services.legacy.proto.utils.CommonUtils.noThrowSha384Ha
 import static com.hedera.services.state.submerkle.TxnId.USER_TRANSACTION_NONCE;
 import static com.hedera.services.utils.MiscUtils.nonNegativeNanosOffset;
 import static com.hedera.services.utils.MiscUtils.synthFromBody;
-import static org.apache.commons.collections4.CollectionUtils.isNotEmpty;
 
 /**
  * Provides a {@link RecordsHistorian} using the natural collaborators.
@@ -109,13 +108,15 @@ public class TxnAwareRecordsHistorian implements RecordsHistorian {
 		final var consensusNow = txnCtx.consensusTime();
 		final var topLevel = txnCtx.recordSoFar();
 		final var accessor = txnCtx.accessor();
+		final var sidecars = txnCtx.sidecars();
+		timestampSidecars(sidecars, consensusNow);
 		final var numChildren = (short) (precedingChildRecords.size() + followingChildRecords.size());
 
 		finalizeChildRecords(consensusNow, topLevel);
 		final var topLevelRecord = topLevel.setNumChildRecords(numChildren).build();
 		topLevelStreamObj =
 				new RecordStreamObject(topLevelRecord, accessor.getSignedTxnWrapper(), consensusNow,
-						getTimestampedSidecars(txnCtx.sidecars(), consensusNow));
+						sidecars);
 
 		final var effPayer = txnCtx.effectivePayer();
 		final var submittingMember = txnCtx.submittingSwirldsMember();
@@ -265,9 +266,10 @@ public class TxnAwareRecordsHistorian implements RecordsHistorian {
 			final var synthTxn = synthFrom(inProgress.syntheticBody(), child);
 			final var synthHash = noThrowSha384HashOf(synthTxn.getSignedTransactionBytes().toByteArray());
 			child.setTxnHash(synthHash);
+			final var sidecars = inProgress.sidecars();
+			timestampSidecars(sidecars, childConsTime);
 			if (sigNum > 0) {
-				recordObjs.add(new RecordStreamObject(child.build(), synthTxn, childConsTime,
-						getTimestampedSidecars(inProgress.sidecars(), childConsTime)));
+				recordObjs.add(new RecordStreamObject(child.build(), synthTxn, childConsTime, sidecars));
 			} else {
 				// With multiple preceding child records, we add them to the stream in reverse order of
 				// creation so that their consensus timestamps will appear in chronological order
@@ -309,15 +311,12 @@ public class TxnAwareRecordsHistorian implements RecordsHistorian {
 	}
 
 
-	private List<TransactionSidecarRecord> getTimestampedSidecars(
+	private void timestampSidecars(
 			final List<TransactionSidecarRecord.Builder> sidecars,
 			final Instant txnTimestamp
 	) {
-		if (isNotEmpty(sidecars)) {
-			return sidecars.stream()
-					.map(sidecar -> sidecar.setConsensusTimestamp(MiscUtils.asTimestamp(txnTimestamp)).build())
-					.toList();
+		for (final var sidecar : sidecars) {
+			sidecar.setConsensusTimestamp(MiscUtils.asTimestamp(txnTimestamp));
 		}
-		return Collections.emptyList();
 	}
 }

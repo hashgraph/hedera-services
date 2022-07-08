@@ -341,8 +341,7 @@ class TxnAwareRecordsHistorianTest {
 		assertEquals(expectedFollowSynth, followSynth);
 		assertEquals(bytecodeSidecar.setConsensusTimestamp(Timestamp.newBuilder()
 						.setSeconds(expectedFollowTime.getEpochSecond())
-						.setNanos(expectedFollowTime.getNano()).build())
-						.build(), followRso.getSidecars().get(0));
+						.setNanos(expectedFollowTime.getNano()).build()), followRso.getSidecars().get(0));
 
 		verify(creator).saveExpiringRecord(effPayer, mockPrecedingRecord, precedingChildNows, submittingMember);
 		verify(creator).saveExpiringRecord(effPayer, mockTopLevelRecord, nows, submittingMember);

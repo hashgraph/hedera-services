@@ -283,7 +283,7 @@ class RecordStreamFileWriterTest {
 					Transaction.newBuilder()
 							.setSignedTransactionBytes(ByteString.copyFrom(
 									("block #" + blockNumber + ", transaction #" + i).getBytes(StandardCharsets.UTF_8)));
-			List<TransactionSidecarRecord> sidecars;
+			List<TransactionSidecarRecord.Builder> sidecars;
 			if (addSidecars) {
 				final var stateChangeSidecar = TransactionSidecarRecord.newBuilder()
 						.setStateChanges(ContractStateChanges.newBuilder()
@@ -292,23 +292,19 @@ class RecordStreamFileWriterTest {
 									.addStorageChanges(StorageChange.newBuilder()
 										.setSlot(ByteString.copyFrom(new byte[]{(byte) i}))
 										.setValueRead(ByteString.copyFrom(new byte[]{(byte) i}))
-										.build())
-								.build())
-						).build();
+										.build())));
 				final var contractActionSidecar =
 						TransactionSidecarRecord.newBuilder()
 								.setActions(ContractActions.newBuilder()
 										.addContractActions(ContractAction.newBuilder()
 											.setInput(ByteString.copyFrom("input" + (blockNumber + i),
 													StandardCharsets.UTF_8))
-											.build()))
-								.build();
+											.build()));
 				final var bytecodeSidecar = TransactionSidecarRecord.newBuilder().setBytecode(
 						ContractBytecode.newBuilder()
 								.setContractId(IdUtils.asContract("0.0." + (blockNumber + i)))
 								.setInitcode(ByteString.copyFrom("initCode", StandardCharsets.UTF_8))
-								.build())
-						.build();
+								.build());
 				sidecars = List.of(stateChangeSidecar, contractActionSidecar, bytecodeSidecar);
 			} else {
 				sidecars = List.of();
@@ -450,11 +446,11 @@ class RecordStreamFileWriterTest {
 			if (isNotEmpty(rso.getSidecars())) {
 				for (final var tsr : rso.getSidecars()) {
 					if (tsr.hasActions() && sidecarType.equals(SidecarType.CONTRACT_ACTION)) {
-						expectedSidecarRecordsList.add(tsr);
+						expectedSidecarRecordsList.add(tsr.build());
 					} else if (tsr.hasStateChanges() && sidecarType.equals(SidecarType.CONTRACT_STATE_CHANGE)) {
-						expectedSidecarRecordsList.add(tsr);
+						expectedSidecarRecordsList.add(tsr.build());
 					} else if (tsr.hasBytecode() && sidecarType.equals(SidecarType.CONTRACT_BYTECODE)) {
-						expectedSidecarRecordsList.add(tsr);
+						expectedSidecarRecordsList.add(tsr.build());
 					}
 				}
 			}
@@ -824,7 +820,7 @@ class RecordStreamFileWriterTest {
 				ExpirableTxnRecord.newBuilder().build(),
 				Transaction.getDefaultInstance(),
 				firstTransactionInstant,
-				List.of(TransactionSidecarRecord.newBuilder().build())
+				List.of(TransactionSidecarRecord.newBuilder())
 		);
 		subject.addObject(faultyRSO);
 

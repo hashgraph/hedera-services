@@ -222,11 +222,10 @@ public interface TransactionContext {
 	 * Record that the current transaction produced sidecar records which will
 	 * be externalized in sidecar files in the record stream.
 	 *
-	 * @param sidecars
-	 * 		the list of all sidecar records for the current top-level txn
+	 * @param sidecar
+	 * 		a single sidecar record associated with the current top-level txn
 	 */
-	void setSidecarRecords(List<TransactionSidecarRecord.Builder> sidecars);
-
+	void addSidecarRecord(TransactionSidecarRecord.Builder sidecar);
 
 	/**
 	 * Add call context information to an already set call result

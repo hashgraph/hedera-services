@@ -20,37 +20,6 @@ package com.hedera.services.records;
  * ‍
  */
 
-import com.hedera.services.context.BasicTransactionContext;
-import com.hedera.services.contracts.execution.TransactionProcessingResult;
-import com.hedera.services.contracts.operation.HederaExceptionalHaltReason;
-import com.hedera.services.ethereum.EthTxData;
-import com.hedera.services.state.submerkle.EntityId;
-import com.hedera.services.state.submerkle.EvmFnResult;
-import com.hedera.services.store.models.Id;
-import com.hedera.services.store.models.Topic;
-import com.hedera.services.utils.EntityNum;
-import com.hedera.services.utils.ResponseCodeUtil;
-import com.hedera.services.utils.SidecarUtils;
-import com.hedera.test.utils.IdUtils;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import org.apache.commons.lang3.tuple.Pair;
-import org.apache.tuweni.bytes.Bytes;
-import org.hyperledger.besu.datatypes.Address;
-import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
-
-import javax.annotation.Nullable;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.TreeMap;
-
 import static com.hedera.services.contracts.operation.HederaExceptionalHaltReason.INVALID_SIGNATURE;
 import static com.hedera.services.contracts.operation.HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS;
 import static com.hedera.services.contracts.operation.HederaExceptionalHaltReason.SELF_DESTRUCT_TO_SELF;
@@ -61,9 +30,40 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.doCallRealMethod;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+
+import com.hedera.services.context.TransactionContext;
+import com.hedera.services.contracts.execution.TransactionProcessingResult;
+import com.hedera.services.contracts.operation.HederaExceptionalHaltReason;
+import com.hedera.services.ethereum.EthTxData;
+import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.state.submerkle.EvmFnResult;
+import com.hedera.services.store.models.Id;
+import com.hedera.services.store.models.Topic;
+import com.hedera.services.stream.proto.TransactionSidecarRecord;
+import com.hedera.services.utils.EntityNum;
+import com.hedera.services.utils.ResponseCodeUtil;
+import com.hedera.services.utils.SidecarUtils;
+import com.hedera.test.utils.IdUtils;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import java.util.Collections;
+import java.util.Map;
+import java.util.Optional;
+import java.util.TreeMap;
+import javax.annotation.Nullable;
+import org.apache.commons.lang3.tuple.Pair;
+import org.apache.tuweni.bytes.Bytes;
+import org.hyperledger.besu.datatypes.Address;
+import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Mock;
+import org.mockito.Mockito;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class TransactionRecordServiceTest {
@@ -74,7 +74,7 @@ class TransactionRecordServiceTest {
 			new TreeMap<>(Map.of(Address.fromHexString("0x9"), Map.of(Bytes.of(10), Pair.of(Bytes.of(11), Bytes.of(12)))));
 
 	@Mock
-	private BasicTransactionContext txnCtx;
+	private TransactionContext txnCtx;
 	@Mock
 	private TransactionProcessingResult processingResult;
 	@Mock
@@ -100,8 +100,6 @@ class TransactionRecordServiceTest {
 		given(processingResult.getGasUsed()).willReturn(GAS_USED);
 		given(processingResult.getRecipient()).willReturn(recipient);
 		given(processingResult.getOutput()).willReturn(Bytes.fromHexStringLenient("0xabcd"));
-		doCallRealMethod().when(txnCtx).setSidecarRecords(any(List.class));
-		doCallRealMethod().when(txnCtx).sidecars();
 		// when:
 		subject.externalizeSuccessfulEvmCreate(processingResult, mockAddr);
 		// then:
@@ -109,12 +107,13 @@ class TransactionRecordServiceTest {
 		verify(txnCtx).setCreateResult(captor.capture());
 		verify(txnCtx).addNonThresholdFeeChargedToPayer(NON_THRESHOLD_FEE);
 		assertArrayEquals(mockAddr, captor.getValue().getEvmAddress());
-		assertEquals(0, txnCtx.sidecars().size());
+		verify(txnCtx, Mockito.never()).addSidecarRecord(any(TransactionSidecarRecord.Builder.class));
 	}
 
 	@Test
 	void externalisesEvmCreateTransactionWithSidecarsWithSuccess() {
 		final var captor = ArgumentCaptor.forClass(EvmFnResult.class);
+		final var contextCaptor = ArgumentCaptor.forClass(TransactionSidecarRecord.Builder.class);
 		final var recipient = Optional.of(EntityNum.fromLong(1234).toEvmAddress());
 		final var mockAddr = Address.ALTBN128_ADD.toArrayUnsafe();
 		given(processingResult.isSuccessful()).willReturn(true);
@@ -124,8 +123,6 @@ class TransactionRecordServiceTest {
 		given(processingResult.getRecipient()).willReturn(recipient);
 		given(processingResult.getOutput()).willReturn(Bytes.fromHexStringLenient("0xabcd"));
 		given(processingResult.getStateChanges()).willReturn(stateChanges);
-		doCallRealMethod().when(txnCtx).setSidecarRecords(any(List.class));
-		doCallRealMethod().when(txnCtx).sidecars();
 		final var contractBytecodeSidecar =
 				SidecarUtils.createContractBytecodeSidecarFrom(IdUtils.asContract("0.0.5"),
 				"initCode".getBytes(), "runtimeCode".getBytes());
@@ -138,7 +135,8 @@ class TransactionRecordServiceTest {
 		verify(txnCtx).setCreateResult(captor.capture());
 		verify(txnCtx).addNonThresholdFeeChargedToPayer(NON_THRESHOLD_FEE);
 		assertArrayEquals(mockAddr, captor.getValue().getEvmAddress());
-		final var sidecars = txnCtx.sidecars();
+		verify(txnCtx, times(2)).addSidecarRecord(contextCaptor.capture());
+		final var sidecars = contextCaptor.getAllValues();
 		assertEquals(2, sidecars.size());
 		assertEquals(SidecarUtils.createStateChangesSidecarFrom(stateChanges).build(), sidecars.get(0).build());
 		assertEquals(contractBytecodeSidecar.build(), sidecars.get(1).build());
@@ -152,8 +150,7 @@ class TransactionRecordServiceTest {
 		given(processingResult.getRecipient()).willReturn(recipient);
 		given(processingResult.getOutput()).willReturn(Bytes.fromHexStringLenient("0xabcd"));
 		given(processingResult.getStateChanges()).willReturn(stateChanges);
-		doCallRealMethod().when(txnCtx).setSidecarRecords(any(List.class));
-		doCallRealMethod().when(txnCtx).sidecars();
+		final var contextCaptor = ArgumentCaptor.forClass(TransactionSidecarRecord.Builder.class);
 
 		// when:
 		subject.externaliseEvmCallTransaction(processingResult);
@@ -161,7 +158,8 @@ class TransactionRecordServiceTest {
 		verify(txnCtx).setStatus(SUCCESS);
 		verify(txnCtx).setCallResult(any());
 		verify(txnCtx).addNonThresholdFeeChargedToPayer(NON_THRESHOLD_FEE);
-		final var sidecars = txnCtx.sidecars();
+		verify(txnCtx).addSidecarRecord(contextCaptor.capture());
+		final var sidecars = contextCaptor.getAllValues();
 		assertEquals(1, sidecars.size());
 		assertEquals(SidecarUtils.createStateChangesSidecarFrom(stateChanges).build(), sidecars.get(0).build());
 	}
@@ -181,7 +179,7 @@ class TransactionRecordServiceTest {
 		verify(txnCtx).setStatus(SUCCESS);
 		verify(txnCtx).setCallResult(any());
 		verify(txnCtx).addNonThresholdFeeChargedToPayer(NON_THRESHOLD_FEE);
-		verify(txnCtx).setSidecarRecords(Collections.emptyList());
+		verify(txnCtx, Mockito.never()).addSidecarRecord(any(TransactionSidecarRecord.Builder.class));
 	}
 
 	@Test

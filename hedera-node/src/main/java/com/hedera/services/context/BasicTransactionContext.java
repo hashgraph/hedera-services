@@ -101,7 +101,7 @@ public class BasicTransactionContext implements TransactionContext {
 	private Map<Long, Long> deletedBeneficiaries;
 	private ResponseCodeEnum statusSoFar;
 	private ExpirableTxnRecord.Builder recordSoFar = ExpirableTxnRecord.newBuilder();
-	private List<TransactionSidecarRecord.Builder> sidecarRecords = new ArrayList<>();
+	private final List<TransactionSidecarRecord.Builder> sidecarRecords = new ArrayList<>();
 	private Consumer<TxnReceipt.Builder> receiptConfig = noopReceiptConfig;
 	private Consumer<ExpirableTxnRecord.Builder> recordConfig = noopRecordConfig;
 	private List<FcAssessedCustomFee> assessedCustomFees;
@@ -336,8 +336,8 @@ public class BasicTransactionContext implements TransactionContext {
 	}
 
 	@Override
-	public void setSidecarRecords(final List<TransactionSidecarRecord.Builder> sidecars) {
-		this.sidecarRecords = sidecars;
+	public void addSidecarRecord(final TransactionSidecarRecord.Builder sidecar) {
+		this.sidecarRecords.add(sidecar);
 	}
 
 	@Override

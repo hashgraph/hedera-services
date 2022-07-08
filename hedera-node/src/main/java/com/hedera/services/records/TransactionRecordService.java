@@ -32,9 +32,6 @@ import com.hedera.services.utils.SidecarUtils;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import static com.hedera.services.utils.ResponseCodeUtil.getStatus;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
@@ -82,11 +79,10 @@ public class TransactionRecordService {
 			final TransactionSidecarRecord.Builder contractBytecodeSidecarRecord
 	) {
 		txnCtx.setCreateResult(EvmFnResult.fromCreate(result, evmAddress));
-		final var sidecars = extractSidecarsFrom(result);
+		addAllSidecarsToTxnContextFrom(result);
 		if (contractBytecodeSidecarRecord != null) {
-			sidecars.add(contractBytecodeSidecarRecord);
+			txnCtx.addSidecarRecord(contractBytecodeSidecarRecord);
 		}
-		txnCtx.setSidecarRecords(sidecars);
 		externalizeGenericEvmCreate(result);
 	}
 
@@ -106,16 +102,14 @@ public class TransactionRecordService {
 		txnCtx.setStatus(getStatus(result, SUCCESS));
 		txnCtx.setCallResult(EvmFnResult.fromCall(result));
 		txnCtx.addNonThresholdFeeChargedToPayer(result.getGasPrice() * (result.getGasUsed() - result.getSbhRefund()));
-		txnCtx.setSidecarRecords(extractSidecarsFrom(result));
+		addAllSidecarsToTxnContextFrom(result);
 	}
 
-	private List<TransactionSidecarRecord.Builder> extractSidecarsFrom(final TransactionProcessingResult result) {
-		final List<TransactionSidecarRecord.Builder> sidecars = new ArrayList<>();
+	private void addAllSidecarsToTxnContextFrom(final TransactionProcessingResult result) {
 		if (!result.getStateChanges().isEmpty()) {
-			sidecars.add(SidecarUtils.createStateChangesSidecarFrom(result.getStateChanges()));
+			txnCtx.addSidecarRecord(SidecarUtils.createStateChangesSidecarFrom(result.getStateChanges()));
 		}
 		// FUTURE WORK - we should put the actions in the list here as well when they are added
-		return sidecars;
 	}
 
 	public void updateForEvmCall(EthTxData callContext, EntityId senderId) {
