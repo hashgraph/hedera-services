@@ -130,12 +130,12 @@ public class RecordStreamManager {
 			final GlobalDynamicProperties globalDynamicProperties
 	) throws NoSuchAlgorithmException, IOException {
 		final var nodeScopedRecordLogDir = effLogDir(nodeLocalProperties.recordLogDir(), accountMemo);
-		final var nodeScopedSidecarRecordLogDir =
-				effSidecarLogDir(nodeScopedRecordLogDir, nodeLocalProperties.sidecarRecordLogDir());
+		final var nodeScopedSidecarDir =
+				effSidecarDir(nodeScopedRecordLogDir, nodeLocalProperties.sidecarDir());
 		if (nodeLocalProperties.isRecordStreamEnabled()) {
 			// the directory to which record stream files are written
 			Files.createDirectories(Paths.get(nodeScopedRecordLogDir));
-			Files.createDirectories(Paths.get(nodeScopedSidecarRecordLogDir));
+			Files.createDirectories(Paths.get(nodeScopedSidecarDir));
 			if (globalDynamicProperties.recordFileVersion() >= 6) {
 				protobufStreamFileWriter = new RecordStreamFileWriter(
 						nodeScopedRecordLogDir,
@@ -143,7 +143,7 @@ public class RecordStreamManager {
 						platform,
 						startWriteAtCompleteWindow,
 						streamType,
-						nodeScopedSidecarRecordLogDir
+						nodeScopedSidecarDir
 				);
 			} else {
 				v5StreamFileWriter = new TimestampStreamFileWriter<>(
@@ -194,7 +194,7 @@ public class RecordStreamManager {
 						"initialHash: {}",
 				nodeLocalProperties::isRecordStreamEnabled,
 				() -> nodeScopedRecordLogDir,
-				() -> nodeScopedSidecarRecordLogDir,
+				() -> nodeScopedSidecarDir,
 				nodeLocalProperties::recordLogPeriod,
 				nodeLocalProperties::recordStreamQueueCapacity,
 				() -> initialHash);
@@ -292,7 +292,7 @@ public class RecordStreamManager {
 		return baseDir + "record" + accountMemo;
 	}
 
-	public static String effSidecarLogDir(String baseRecordFileDir, final String sidecarDir) {
+	public static String effSidecarDir(String baseRecordFileDir, final String sidecarDir) {
 		if (!baseRecordFileDir.endsWith(File.separator)) {
 			baseRecordFileDir += File.separator;
 		}

@@ -232,11 +232,14 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
 		if (result.isSuccessful()) {
 			final var newEvmAddress = newContractAddress.toArrayUnsafe();
 			final var newContractId = contractIdFromEvmAddress(newEvmAddress);
-			final var contractBytecodeSidecar = SidecarUtils.createContractBytecodeSidecarFrom(
-					newContractId,
-					(op.getInitcodeSourceCase() != INITCODE ? codeWithConstructorArgs.toArrayUnsafe() : new byte[0]),
-					result.getOutput().toArrayUnsafe()
-			);
+			final var contractBytecodeSidecar =
+							op.getInitcodeSourceCase() != INITCODE
+											? SidecarUtils.createContractBytecodeSidecarFrom(
+															newContractId,
+															codeWithConstructorArgs.toArrayUnsafe(),
+															result.getOutput().toArrayUnsafe())
+											: SidecarUtils.createContractBytecodeSidecarFrom(
+															newContractId, result.getOutput().toArrayUnsafe());
 			if (createSyntheticRecord) {
 				recordSyntheticOperation(newContractId, newEvmAddress, hapiSenderCustomizer, contractBytecodeSidecar);
 				// bytecode sidecar is already externalized if needed in {@link #recordSyntheticOperation}

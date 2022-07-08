@@ -70,7 +70,7 @@ public class RecordStreamManagerTest {
 	private static final long recordsLogPeriod = 5;
 	private static final int recordStreamQueueCapacity = 100;
 	private static final String baseLogDir = "recordStreamTest/";
-	private static final String sidecarLogDir = "sidecarDir";
+	private static final String sidecarDir = "sidecarDir";
 	private static final String recordMemo = "0.0.3";
 
 	private static final String INITIALIZE_NOT_NULL = "after initialization, the instance should not be null";
@@ -141,7 +141,7 @@ public class RecordStreamManagerTest {
 		given(props.recordLogDir()).willReturn(baseLogDir);
 		given(props.recordLogPeriod()).willReturn(recordsLogPeriod);
 		given(props.recordStreamQueueCapacity()).willReturn(recordStreamQueueCapacity);
-		given(props.sidecarRecordLogDir()).willReturn(sidecarLogDir);
+		given(props.sidecarDir()).willReturn(sidecarDir);
 	}
 
 	@Test
@@ -304,20 +304,20 @@ public class RecordStreamManagerTest {
 		final var withSeparatorSuffix = "somewhere/else/";
 
 		var expected = withoutSeparatorSuffix + File.separator;
-		var actual = RecordStreamManager.effSidecarLogDir(withoutSeparatorSuffix, "");
+		var actual = RecordStreamManager.effSidecarDir(withoutSeparatorSuffix, "");
 		assertEquals(expected, actual);
 
 		expected = withSeparatorSuffix;
-		actual = RecordStreamManager.effSidecarLogDir(withSeparatorSuffix, "");
+		actual = RecordStreamManager.effSidecarDir(withSeparatorSuffix, "");
 		assertEquals(expected, actual);
 
 		final var sidecarFolder = "sidecars";
 		expected = withoutSeparatorSuffix + File.separator + sidecarFolder;
-		actual = RecordStreamManager.effSidecarLogDir(withoutSeparatorSuffix, sidecarFolder);
+		actual = RecordStreamManager.effSidecarDir(withoutSeparatorSuffix, sidecarFolder);
 		assertEquals(expected, actual);
 
 		expected = withSeparatorSuffix + sidecarFolder;
-		actual = RecordStreamManager.effSidecarLogDir(withSeparatorSuffix, sidecarFolder);
+		actual = RecordStreamManager.effSidecarDir(withSeparatorSuffix, sidecarFolder);
 		assertEquals(expected, actual);
 	}
 

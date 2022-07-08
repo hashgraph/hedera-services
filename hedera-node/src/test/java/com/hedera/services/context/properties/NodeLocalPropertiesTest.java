@@ -92,7 +92,7 @@ class NodeLocalPropertiesTest {
 		assertEquals(Profile.PROD, subject.nettyMode());
 		assertEquals(24L, subject.nettyStartRetryIntervalMs());
 		assertTrue(subject.shouldDumpFcmsOnIss());
-		assertEquals(logDir(31), subject.sidecarRecordLogDir());
+		assertEquals(logDir(31), subject.sidecarDir());
 	}
 
 	@Test
@@ -117,7 +117,7 @@ class NodeLocalPropertiesTest {
 		assertEquals(29, subject.prefetchQueueCapacity());
 		assertEquals(30, subject.prefetchThreadPoolSize());
 		assertEquals(31, subject.prefetchCodeCacheTtlSecs());
-		assertEquals(logDir(32), subject.sidecarRecordLogDir());
+		assertEquals(logDir(32), subject.sidecarDir());
 	}
 
 	@Test
@@ -149,7 +149,7 @@ class NodeLocalPropertiesTest {
 		assertEquals(Profile.TEST, subject.nettyMode());
 		assertEquals(25L, subject.nettyStartRetryIntervalMs());
 		assertFalse(subject.shouldDumpFcmsOnIss());
-		assertEquals(logDir(32), subject.sidecarRecordLogDir());
+		assertEquals(logDir(32), subject.sidecarDir());
 	}
 
 	private void givenPropsWithSeed(int i) {
@@ -190,7 +190,7 @@ class NodeLocalPropertiesTest {
 		given(properties.getIntProperty("hedera.prefetch.queueCapacity")).willReturn(i + 27);
 		given(properties.getIntProperty("hedera.prefetch.threadPoolSize")).willReturn(i + 28);
 		given(properties.getIntProperty("hedera.prefetch.codeCacheTtlSecs")).willReturn(i + 29);
-		given(properties.getStringProperty("hedera.recordStream.sidecarLogDir")).willReturn(logDir(i + 30));
+		given(properties.getStringProperty("hedera.recordStream.sidecarDir")).willReturn(logDir(i + 30));
 	}
 
 	static String logDir(int num) {

@@ -756,7 +756,7 @@ class ContractCreateTransitionLogicTest {
 				.setConsensusTimestamp(Timestamp.newBuilder().setSeconds(666L).build());
 		final var sidecarUtilsMockedStatic = mockStatic(SidecarUtils.class);
 		sidecarUtilsMockedStatic.when(() -> SidecarUtils.createContractBytecodeSidecarFrom(
-						contractAccount.getId().asGrpcContract(), new byte[0], output.toArrayUnsafe()))
+						contractAccount.getId().asGrpcContract(), output.toArrayUnsafe()))
 				.thenReturn(sidecarRecord);
 
 		// when:
@@ -776,7 +776,6 @@ class ContractCreateTransitionLogicTest {
 		verify(accountStore).loadAccountOrFailWith(Id.fromGrpcAccount(autoRenewAccount), INVALID_AUTORENEW_ACCOUNT);
 		sidecarUtilsMockedStatic.verify(() -> SidecarUtils.createContractBytecodeSidecarFrom(
 				contractAccount.getId().asGrpcContract(),
-				new byte[0],
 				output.toArrayUnsafe()
 		));
 		// and:

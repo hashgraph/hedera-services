@@ -142,7 +142,7 @@ class BootstrapPropertiesTest {
 			entry("hedera.profiles.active", Profile.PROD),
 			entry("hedera.realm", 0L),
 			entry("hedera.recordStream.logDir", "/opt/hgcapp/recordStreams"),
-			entry("hedera.recordStream.sidecarLogDir", ""),
+			entry("hedera.recordStream.sidecarDir", ""),
 			entry("hedera.recordStream.logPeriod", 2L),
 			entry("hedera.recordStream.isEnabled", true),
 			entry("hedera.recordStream.queueCapacity", 5000),

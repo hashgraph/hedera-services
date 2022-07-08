@@ -63,6 +63,26 @@ class SidecarUtilsTest {
 	}
 
 	@Test
+	void contractBytecodesWithoutInitCodeAreCreatedAsExpected() {
+		// given
+		final var contract = IdUtils.asContract("0.0.6");
+		final var runtimeCode = "runtimeCode".getBytes();
+
+		// when
+		final var bytecodeSidecar = SidecarUtils.createContractBytecodeSidecarFrom(contract, runtimeCode).build();
+
+		// then
+		final var expectedBytecodes = ContractBytecode.newBuilder()
+				.setContractId(contract)
+				.setRuntimeBytecode(ByteString.copyFrom(runtimeCode))
+				.build();
+		final var expectedTransactionSidecarRecord = TransactionSidecarRecord.newBuilder()
+				.setBytecode(expectedBytecodes)
+				.build();
+		assertEquals(expectedTransactionSidecarRecord, bytecodeSidecar);
+	}
+
+	@Test
 	void stateChangesAreCreatedAsExpected() {
 		// given
 		final Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> stateChanges = new TreeMap<>();

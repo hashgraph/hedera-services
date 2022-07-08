@@ -63,7 +63,7 @@ public class NodeLocalProperties {
 	private int prefetchQueueCapacity;
 	private int prefetchThreadPoolSize;
 	private int prefetchCodeCacheTtlSecs;
-	private String sidecarRecordLogDir;
+	private String sidecarDir;
 
 	@Inject
 	public NodeLocalProperties(@CompositeProps PropertySource properties) {
@@ -80,7 +80,7 @@ public class NodeLocalProperties {
 		statsSpeedometerHalfLifeSecs = properties.getDoubleProperty("stats.speedometerHalfLifeSecs");
 		statsRunningAvgHalfLifeSecs = properties.getDoubleProperty("stats.runningAvgHalfLifeSecs");
 		recordLogDir = properties.getStringProperty("hedera.recordStream.logDir");
-		sidecarRecordLogDir = properties.getStringProperty("hedera.recordStream.sidecarLogDir");
+		sidecarDir = properties.getStringProperty("hedera.recordStream.sidecarDir");
 		recordLogPeriod = properties.getLongProperty("hedera.recordStream.logPeriod");
 		recordStreamEnabled = properties.getBooleanProperty("hedera.recordStream.isEnabled");
 		recordStreamQueueCapacity = properties.getIntProperty("hedera.recordStream.queueCapacity");
@@ -138,8 +138,8 @@ public class NodeLocalProperties {
 		return recordLogDir;
 	}
 
-	public String sidecarRecordLogDir() {
-		return sidecarRecordLogDir;
+	public String sidecarDir() {
+		return sidecarDir;
 	}
 
 	public long recordLogPeriod() {

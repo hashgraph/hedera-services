@@ -309,7 +309,7 @@ public final class BootstrapProperties implements PropertySource {
 			"hedera.profiles.active",
 			"hedera.recordStream.isEnabled",
 			"hedera.recordStream.logDir",
-			"hedera.recordStream.sidecarLogDir",
+      "hedera.recordStream.sidecarDir",
 			"hedera.recordStream.logPeriod",
 			"hedera.recordStream.queueCapacity",
 			"iss.dumpFcms",
