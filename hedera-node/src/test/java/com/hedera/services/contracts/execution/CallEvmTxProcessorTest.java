@@ -33,6 +33,7 @@ import com.hedera.services.stream.proto.SidecarType;
 import com.hedera.services.txns.contract.helpers.StorageExpiry;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import java.util.EnumSet;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.units.bigints.UInt256;
@@ -236,7 +237,7 @@ class CallEvmTxProcessorTest {
 	void assertSuccessExecutionPopulatesStateChanges() {
 		givenValidMock();
 		given(globalDynamicProperties.fundingAccount()).willReturn(new Id(0, 0, 1010).asGrpcAccount());
-		given(globalDynamicProperties.enabledSidecars()).willReturn(Set.of(SidecarType.CONTRACT_STATE_CHANGE));
+		given(globalDynamicProperties.enabledSidecars()).willReturn(EnumSet.of(SidecarType.CONTRACT_STATE_CHANGE));
 		givenSenderWithBalance(350_000L);
 		given(aliasManager.resolveForEvm(receiverAddress)).willReturn(receiverAddress);
 		final var contractAddress = "0xffff";

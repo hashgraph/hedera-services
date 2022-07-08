@@ -21,6 +21,7 @@ package com.hedera.services.context.properties;
  */
 
 import com.hedera.services.fees.calculation.CongestionMultipliers;
+import com.hedera.services.stream.proto.SidecarType;
 import com.hedera.services.sysfiles.domain.throttling.ThrottleReqOpsScaleFactor;
 import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
@@ -239,7 +240,7 @@ class BootstrapPropertiesTest {
 			entry("hedera.recordStream.recordFileVersion", 5),
 			entry("hedera.recordStream.signatureFileVersion", 5),
 			entry("prng.isEnabled", true),
-			entry("contracts.sidecars", Set.of())
+			entry("contracts.sidecars", EnumSet.noneOf(SidecarType.class))
 	);
 
 	@Test
@@ -306,7 +307,7 @@ class BootstrapPropertiesTest {
 
 		assertEquals(30, subject.getProperty("tokens.maxRelsPerInfoQuery"));
 		assertEquals(30, subject.getProperty("tokens.maxPerAccount"));
-		assertEquals(Set.of(CONTRACT_STATE_CHANGE, CONTRACT_ACTION, CONTRACT_BYTECODE),
+		assertEquals(EnumSet.of(CONTRACT_STATE_CHANGE, CONTRACT_ACTION, CONTRACT_BYTECODE),
 				subject.getProperty("contracts.sidecars"));
 	}
 

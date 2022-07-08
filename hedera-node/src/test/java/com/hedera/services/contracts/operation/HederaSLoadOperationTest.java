@@ -24,6 +24,7 @@ import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.services.store.contracts.HederaWorldState;
 import com.hedera.services.stream.proto.SidecarType;
+import java.util.EnumSet;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.units.bigints.UInt256;
@@ -96,7 +97,7 @@ class HederaSLoadOperationTest {
 		given(messageFrame.warmUpStorage(any(), any())).willReturn(true);
 		given(messageFrame.getRemainingGas()).willReturn(300L);
 		given(messageFrame.warmUpStorage(any(), any())).willReturn(false);
-		given(dynamicProperties.enabledSidecars()).willReturn(Set.of());
+		given(dynamicProperties.enabledSidecars()).willReturn(EnumSet.noneOf(SidecarType.class));
 
 		final var coldResult = subject.execute(messageFrame, evm);
 
@@ -112,7 +113,7 @@ class HederaSLoadOperationTest {
 		givenAdditionalContext(keyBytesMock, valueBytesMock);
 		given(messageFrame.warmUpStorage(any(), any())).willReturn(true);
 		given(messageFrame.getRemainingGas()).willReturn(300L);
-		given(dynamicProperties.enabledSidecars()).willReturn(Set.of(SidecarType.CONTRACT_STATE_CHANGE));
+		given(dynamicProperties.enabledSidecars()).willReturn(EnumSet.of(SidecarType.CONTRACT_STATE_CHANGE));
 		final var frameStack = new ArrayDeque<MessageFrame>();
 		frameStack.add(messageFrame);
 		given(messageFrame.getMessageFrameStack()).willReturn(frameStack);
@@ -164,7 +165,7 @@ class HederaSLoadOperationTest {
 		givenAdditionalContext(keyBytesMock, valueBytesMock);
 		given(messageFrame.warmUpStorage(any(), any())).willReturn(true);
 		given(messageFrame.getRemainingGas()).willReturn(300L);
-		given(dynamicProperties.enabledSidecars()).willReturn(Set.of(SidecarType.CONTRACT_STATE_CHANGE));
+		given(dynamicProperties.enabledSidecars()).willReturn(EnumSet.of(SidecarType.CONTRACT_STATE_CHANGE));
 		var frameStack = new ArrayDeque<MessageFrame>();
 		frameStack.add(messageFrame);
 

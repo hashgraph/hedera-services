@@ -25,6 +25,7 @@ import com.hedera.services.contracts.gascalculator.StorageGasCalculator;
 import com.hedera.services.store.contracts.HederaWorldState;
 import com.hedera.services.store.contracts.HederaWorldUpdater;
 import com.hedera.services.stream.proto.SidecarType;
+import java.util.EnumSet;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.units.bigints.UInt256;
@@ -90,7 +91,7 @@ class HederaSStoreOperationTest {
 	@Test
 	void executesCorrectly() {
 		givenValidContext(keyBytesMock, valueBytesMock);
-		given(dynamicProperties.enabledSidecars()).willReturn(Set.of(SidecarType.CONTRACT_STATE_CHANGE));
+		given(dynamicProperties.enabledSidecars()).willReturn(EnumSet.of(SidecarType.CONTRACT_STATE_CHANGE));
 		var frameStack = new ArrayDeque<MessageFrame>();
 		frameStack.add(messageFrame);
 		given(messageFrame.getMessageFrameStack()).willReturn(frameStack);

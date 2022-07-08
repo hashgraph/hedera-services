@@ -61,6 +61,7 @@ import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.builder.RequestBuilder;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.common.utility.CommonUtils;
+import java.util.EnumSet;
 import org.apache.tuweni.bytes.Bytes;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -679,7 +680,7 @@ class ContractCreateTransitionLogicTest {
 				txnCtx.consensusTime(),
 				expiry))
 				.willReturn(result);
-		given(properties.enabledSidecars()).willReturn(Set.of(SidecarType.CONTRACT_BYTECODE));
+		given(properties.enabledSidecars()).willReturn(EnumSet.of(SidecarType.CONTRACT_BYTECODE));
 		final var sidecarRecord = TransactionSidecarRecord.newBuilder()
 				.setConsensusTimestamp(Timestamp.newBuilder().setSeconds(666L).build());
 		final var sidecarUtilsMockedStatic = mockStatic(SidecarUtils.class);
@@ -750,7 +751,7 @@ class ContractCreateTransitionLogicTest {
 				txnCtx.consensusTime(),
 				expiry))
 				.willReturn(result);
-		given(properties.enabledSidecars()).willReturn(Set.of(SidecarType.CONTRACT_BYTECODE));
+		given(properties.enabledSidecars()).willReturn(EnumSet.of(SidecarType.CONTRACT_BYTECODE));
 		final var sidecarRecord = TransactionSidecarRecord.newBuilder()
 				.setConsensusTimestamp(Timestamp.newBuilder().setSeconds(666L).build());
 		final var sidecarUtilsMockedStatic = mockStatic(SidecarUtils.class);
@@ -897,7 +898,7 @@ class ContractCreateTransitionLogicTest {
 				maxGas)
 		).willReturn(result);
 		given(properties.areContractAutoAssociationsEnabled()).willReturn(true);
-		given(properties.enabledSidecars()).willReturn(Set.of(SidecarType.CONTRACT_BYTECODE));
+		given(properties.enabledSidecars()).willReturn(EnumSet.of(SidecarType.CONTRACT_BYTECODE));
 		final var sidecarRecord = TransactionSidecarRecord.newBuilder()
 				.setConsensusTimestamp(Timestamp.newBuilder().setSeconds(666L).build());
 		final var sidecarUtilsMockedStatic = mockStatic(SidecarUtils.class);
