@@ -50,7 +50,7 @@ import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Assertions;
 
 public class HapiGetContractInfo extends HapiQueryOp<HapiGetContractInfo> {
-    private static final Logger log = LogManager.getLogger(HapiGetContractInfo.class);
+    private static final Logger LOG = LogManager.getLogger(HapiGetContractInfo.class);
 
     private final String contract;
     private boolean getPredefinedId = false;
@@ -122,7 +122,7 @@ public class HapiGetContractInfo extends HapiQueryOp<HapiGetContractInfo> {
         if (expectations.isPresent()) {
             ErroringAsserts<ContractInfo> asserts = expectations.get().assertsFor(spec);
             List<Throwable> errors = asserts.errorsIn(actualInfo);
-            rethrowSummaryError(log, "Bad contract info!", errors);
+            rethrowSummaryError(LOG, "Bad contract info!", errors);
         }
         var actualTokenRels = actualInfo.getTokenRelationshipsList();
         assertExpectedRels(contract, relationships, actualTokenRels, spec);
@@ -137,7 +137,7 @@ public class HapiGetContractInfo extends HapiQueryOp<HapiGetContractInfo> {
         response = spec.clients().getScSvcStub(targetNodeFor(spec), useTls).getContractInfo(query);
         ContractInfo contractInfo = response.getContractGetInfo().getContractInfo();
         if (verboseLoggingOn) {
-            log.info("Info: {}", contractInfo);
+            LOG.info("Info: {}", contractInfo);
         }
         if (contractInfoPath.isPresent()) {
             saveContractInfo(spec, contractInfo);
@@ -178,13 +178,13 @@ public class HapiGetContractInfo extends HapiQueryOp<HapiGetContractInfo> {
             byteSinkInfo.write(contractInfo.toByteArray());
 
             if (verboseLoggingOn) {
-                log.info(
+                LOG.info(
                         "Saved contractInfo of {} to {}",
                         contractInfo.getContractID(),
                         snapshotDir);
             }
         } catch (Exception e) {
-            log.error("Couldn't save contractInfo of {}", contractInfo.getContractID(), e);
+            LOG.error("Couldn't save contractInfo of {}", contractInfo.getContractID(), e);
         }
     }
 
@@ -197,7 +197,7 @@ public class HapiGetContractInfo extends HapiQueryOp<HapiGetContractInfo> {
             ByteSource byteSourceInfo = Files.asByteSource(contractInfoFile);
             ContractInfo savedContractInfo = ContractInfo.parseFrom(byteSourceInfo.read());
             if (verboseLoggingOn) {
-                log.info("Info: {}", contractInfo);
+                LOG.info("Info: {}", contractInfo);
             }
             Assertions.assertEquals(
                     contractInfo.getAccountID().getAccountNum(),
@@ -205,7 +205,7 @@ public class HapiGetContractInfo extends HapiQueryOp<HapiGetContractInfo> {
             Assertions.assertEquals(contractInfo.getStorage(), savedContractInfo.getStorage());
             Assertions.assertEquals(contractInfo.getBalance(), savedContractInfo.getBalance());
         } catch (Exception e) {
-            log.error("Something amiss with the expected records...", e);
+            LOG.error("Something amiss with the expected records...", e);
             Assertions.fail("Impossible to meet expectations (on records)!");
         }
     }
@@ -218,7 +218,7 @@ public class HapiGetContractInfo extends HapiQueryOp<HapiGetContractInfo> {
             ByteSource contractIdByteSource = Files.asByteSource(contractIdFile);
             return ContractID.parseFrom(contractIdByteSource.read());
         } catch (Exception e) {
-            log.error("Something wrong with the expected ContractInfo file", e);
+            LOG.error("Something wrong with the expected ContractInfo file", e);
             return null;
         }
     }
@@ -237,7 +237,7 @@ public class HapiGetContractInfo extends HapiQueryOp<HapiGetContractInfo> {
                                 .setContractID(contractID)
                                 .build();
             } else {
-                log.error("Couldn't read contractID from saved file");
+                LOG.error("Couldn't read contractID from saved file");
                 return null;
             }
         } else {
