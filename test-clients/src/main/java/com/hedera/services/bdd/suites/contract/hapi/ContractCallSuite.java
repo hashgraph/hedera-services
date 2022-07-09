@@ -118,15 +118,15 @@ import org.ethereum.core.CallTransaction;
 import org.junit.jupiter.api.Assertions;
 
 public class ContractCallSuite extends HapiApiSuite {
+    private static final Logger LOG = LogManager.getLogger(ContractCallSuite.class);
 
-    public static final String LEDGER_AUTO_RENEW_PERIOD_MAX_DURATION =
+    private static final String ALICE = "Alice";
+
+    private static final String LEDGER_AUTO_RENEW_PERIOD_MAX_DURATION =
             "ledger.autoRenewPeriod.maxDuration";
-    public static final String ALICE = "Alice";
-    public static final String RECEIVER_2 = "receiver2";
     private static final String DEFAULT_MAX_AUTO_RENEW_PERIOD =
             HapiSpecSetup.getDefaultNodeProps().get(LEDGER_AUTO_RENEW_PERIOD_MAX_DURATION);
 
-    private static final Logger log = LogManager.getLogger(ContractCallSuite.class);
     private static final long DEPOSIT_AMOUNT = 1000;
     private static final long GAS_TO_OFFER = 2_000_000L;
 
@@ -176,8 +176,9 @@ public class ContractCallSuite extends HapiApiSuite {
     private static final String NESTED_TRANSFER_CONTRACT = "NestedTransferContract";
     private static final String NESTED_TRANSFERRING_CONTRACT = "NestedTransferringContract";
     private static final String ACC_INFO = "accInfo";
-    private static final String RECEIVER_3 = "receiver3";
     private static final String RECEIVER_1 = "receiver1";
+    private static final String RECEIVER_2 = "receiver2";
+    private static final String RECEIVER_3 = "receiver3";
     private static final String RECEIVER_1_INFO = "receiver1Info";
     private static final String RECEIVER_2_INFO = "receiver2Info";
     private static final String RECEIVER_3_INFO = "receiver3Info";
@@ -660,7 +661,7 @@ public class ContractCallSuite extends HapiApiSuite {
                                 .via(ticketTaking)
                                 .exposingResultTo(
                                         result -> {
-                                            log.info("Explicit mint result is {}", result);
+                                            LOG.info("Explicit mint result is {}", result);
                                             ticketSerialNo.set(
                                                     ((BigInteger) result[0]).longValueExact());
                                         }),
@@ -779,7 +780,7 @@ public class ContractCallSuite extends HapiApiSuite {
                                                     * TINY_PARTS_PER_WHOLE
                                                     * rates.getHbarEquiv()
                                                     / rates.getCentEquiv());
-                                    log.info(
+                                    LOG.info(
                                             "Requires {} tinybar of value to access the method",
                                             minValueToAccessGatedMethodAtCurrentRate::get);
                                 }))
@@ -2199,7 +2200,7 @@ public class ContractCallSuite extends HapiApiSuite {
                         cryptoCreate(RECEIVER_1).balance(10_000L),
                         cryptoCreate(RECEIVER_2).balance(10_000L),
                         cryptoCreate(RECEIVER_3).balance(10_000L),
-                        uploadInitCode(),
+                        uploadInitCode(TRANSFERRING_CONTRACT),
                         contractCreate(TRANSFERRING_CONTRACT).balance(10_000L).payingWith(ACCOUNT),
                         getAccountInfo(RECEIVER_1).savingSnapshot(RECEIVER_1_INFO),
                         getAccountInfo(RECEIVER_2).savingSnapshot(RECEIVER_2_INFO),
@@ -2757,7 +2758,7 @@ public class ContractCallSuite extends HapiApiSuite {
 
     @Override
     protected Logger getResultsLogger() {
-        return log;
+        return LOG;
     }
 
     private ByteString bookInterpolated(
@@ -2776,8 +2777,8 @@ public class ContractCallSuite extends HapiApiSuite {
             "da71addf000000000000000000000000%s";
     private static final String EXPLICIT_JURISDICTIONS_ADD_PARAMS =
             "218c66ea0000000000000000000000000000000000000000000000000000000000000080000000000000000000000000"
-                + "0000000000000000000000000000000000000339000000000000000000000000123456789012345678901234"
-                + "5678901234567890000000000000000000000000123456789012345678901234567890123456789000000000"
-                + "000000000000000000000000000000000000000000000000000000026e790000000000000000000000000000"
-                + "00000000000000000000000000000000";
+                    + "0000000000000000000000000000000000000339000000000000000000000000123456789012345678901234"
+                    + "5678901234567890000000000000000000000000123456789012345678901234567890123456789000000000"
+                    + "000000000000000000000000000000000000000000000000000000026e790000000000000000000000000000"
+                    + "00000000000000000000000000000000";
 }
