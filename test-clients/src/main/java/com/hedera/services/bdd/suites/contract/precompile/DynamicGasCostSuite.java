@@ -118,7 +118,7 @@ import org.apache.logging.log4j.Logger;
 
 public class DynamicGasCostSuite extends HapiApiSuite {
 
-    private static final Logger log = LogManager.getLogger(DynamicGasCostSuite.class);
+    private static final Logger LOG = LogManager.getLogger(DynamicGasCostSuite.class);
 
     private static final String ACCOUNT = "anybody";
     private static final String SECOND_ACCOUNT = "anybody2";
@@ -131,18 +131,22 @@ public class DynamicGasCostSuite extends HapiApiSuite {
     private static final String MAX_REFUND_PERCENT_OF_GAS_LIMIT =
             "contracts.maxRefundPercentOfGasLimit";
     private static final String SAFE_OPERATIONS_CONTRACT = "SafeOperations";
-    public static final String CREATION = "creation";
-    public static final String CONTRACTS_THROTTLE_THROTTLE_BY_GAS =
+    private static final String CREATION = "creation";
+    private static final String CONTRACTS_THROTTLE_THROTTLE_BY_GAS =
             "contracts.throttle.throttleByGas";
-    public static final String FALSE = "false";
-    public static final String GET_BYTECODE = "getBytecode";
-    public static final String DEPLOY = "deploy";
-    public static final String CREATE_2_TXN = "create2Txn";
-    public static final String SWISS = "swiss";
-    public static final String SALT =
+    private static final String FALSE = "false";
+    private static final String GET_BYTECODE = "getBytecode";
+    private static final String DEPLOY = "deploy";
+    private static final String CREATE_2_TXN = "create2Txn";
+    private static final String SWISS = "swiss";
+    private static final String SALT =
             "aabbccddeeff0011aabbccddeeff0011aabbccddeeff0011aabbccddeeff0011";
-    public static final String RETURNER = "Returner";
-    public static final String CALL_RETURNER = "callReturner";
+    private static final String RETURNER = "Returner";
+    private static final String CALL_RETURNER = "callReturner";
+    private static final String RETURNER_REPORTED_LOG_MESSAGE =
+            "Returner reported {} when called with mirror address";
+    private static final String CONTRACT_REPORTED_LOG_MESSAGE =
+            "Contract reported TestContract initcode is {} bytes";
 
     public static void main(String... args) {
         new DynamicGasCostSuite().runSuiteSync();
@@ -150,7 +154,7 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 
     @Override
     protected Logger getResultsLogger() {
-        return log;
+        return LOG;
     }
 
     @Override
@@ -283,9 +287,8 @@ public class DynamicGasCostSuite extends HapiApiSuite {
                                                             final var tcInitcode =
                                                                     (byte[]) results[0];
                                                             testContractInitcode.set(tcInitcode);
-                                                            log.info(
-                                                                    "Contract reported TestContract"
-                                                                        + " initcode is {} bytes",
+                                                            LOG.info(
+                                                                    CONTRACT_REPORTED_LOG_MESSAGE,
                                                                     tcInitcode.length);
                                                         })
                                                 .payingWith(GENESIS)
@@ -313,7 +316,7 @@ public class DynamicGasCostSuite extends HapiApiSuite {
                                         cryptoCreate("nextUp")
                                                 .exposingCreatedIdTo(
                                                         id ->
-                                                                log.info(
+                                                                LOG.info(
                                                                         "Next entity num was {}"
                                                                             + " instead of expected"
                                                                             + " {}",
@@ -360,7 +363,7 @@ public class DynamicGasCostSuite extends HapiApiSuite {
                                                             final var tcInitcode =
                                                                     (byte[]) results[0];
                                                             testContractInitcode.set(tcInitcode);
-                                                            log.info(
+                                                            LOG.info(
                                                                     "Contract reported TestContract"
                                                                         + " initcode is {} bytes",
                                                                     tcInitcode.length);
@@ -389,7 +392,7 @@ public class DynamicGasCostSuite extends HapiApiSuite {
                                         cryptoCreate("nextUp")
                                                 .exposingCreatedIdTo(
                                                         id ->
-                                                                log.info(
+                                                                LOG.info(
                                                                         "Next entity num was {}"
                                                                             + " instead of expected"
                                                                             + " {}",
@@ -401,7 +404,6 @@ public class DynamicGasCostSuite extends HapiApiSuite {
     private HapiApiSpec canAssociateInConstructor() {
         final var token = "token";
         final var contract = "SelfAssociating";
-        final var creation = CREATION;
         final AtomicReference<String> tokenMirrorAddr = new AtomicReference<>();
 
         return defaultHapiSpec("CanAssociateInConstructor")
@@ -422,7 +424,7 @@ public class DynamicGasCostSuite extends HapiApiSuite {
                                                 .payingWith(GENESIS)
                                                 .omitAdminKey()
                                                 .gas(4_000_000)
-                                                .via(creation)))
+                                                .via(CREATION)))
                 .then(
                         //						tokenDissociate(contract, token)
                         getContractInfo(contract).logged());
@@ -491,7 +493,7 @@ public class DynamicGasCostSuite extends HapiApiSuite {
                                                             final var tcInitcode =
                                                                     (byte[]) results[0];
                                                             testContractInitcode.set(tcInitcode);
-                                                            log.info(
+                                                            LOG.info(
                                                                     "Contract reported TestContract"
                                                                         + " initcode is {} bytes",
                                                                     tcInitcode.length);
@@ -507,7 +509,7 @@ public class DynamicGasCostSuite extends HapiApiSuite {
                                                         salt)
                                                 .exposingTypedResultsTo(
                                                         results -> {
-                                                            log.info(
+                                                            LOG.info(
                                                                     "Contract reported address"
                                                                             + " results {}",
                                                                     results);
@@ -515,7 +517,7 @@ public class DynamicGasCostSuite extends HapiApiSuite {
                                                                     (byte[]) results[0];
                                                             final var hexedAddress =
                                                                     hex(expectedAddrBytes);
-                                                            log.info(
+                                                            LOG.info(
                                                                     "  --> Expected CREATE2 address"
                                                                             + " is {}",
                                                                     hexedAddress);
@@ -1407,10 +1409,8 @@ public class DynamicGasCostSuite extends HapiApiSuite {
                                                 .payingWith(GENESIS)
                                                 .exposingTypedResultsTo(
                                                         results -> {
-                                                            log.info(
-                                                                    "Returner reported {} when"
-                                                                            + " called with mirror"
-                                                                            + " address",
+                                                            LOG.info(
+                                                                    RETURNER_REPORTED_LOG_MESSAGE,
                                                                     results);
                                                             staticCallMirrorAns.set(
                                                                     (BigInteger) results[0]);
@@ -1423,7 +1423,7 @@ public class DynamicGasCostSuite extends HapiApiSuite {
                                                 .payingWith(GENESIS)
                                                 .exposingTypedResultsTo(
                                                         results -> {
-                                                            log.info(
+                                                            LOG.info(
                                                                     "Returner reported {} when"
                                                                             + " called with alias"
                                                                             + " address",
@@ -1490,10 +1490,8 @@ public class DynamicGasCostSuite extends HapiApiSuite {
                                                 .payingWith(GENESIS)
                                                 .exposingTypedResultsTo(
                                                         results -> {
-                                                            log.info(
-                                                                    "Returner reported {} when"
-                                                                            + " called with mirror"
-                                                                            + " address",
+                                                            LOG.info(
+                                                                    RETURNER_REPORTED_LOG_MESSAGE,
                                                                     results);
                                                             staticCallMirrorAns.set(
                                                                     (BigInteger) results[0]);
@@ -1504,7 +1502,7 @@ public class DynamicGasCostSuite extends HapiApiSuite {
                                                 .payingWith(GENESIS)
                                                 .exposingTypedResultsTo(
                                                         results -> {
-                                                            log.info(
+                                                            LOG.info(
                                                                     "Returner reported {} when"
                                                                             + " called with alias"
                                                                             + " address",
