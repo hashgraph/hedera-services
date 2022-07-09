@@ -43,7 +43,7 @@ import org.junit.jupiter.api.Assertions;
 public class CryptoCreateForSuiteRunner extends HapiApiSuite {
     private static final Logger log = LogManager.getLogger(CryptoCreateForSuiteRunner.class);
     private final String nodes;
-    private String defaultNode;
+    private final String defaultNode;
 
     // Use more initialBalance for this account as it is used as payer for the performance tests
     private static final long INITIAL_BALANCE = 5L * LoadTest.initialBalance.getAsLong();
