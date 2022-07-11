@@ -13,19 +13,19 @@ public class SolidityAction {
     private static final byte[] MISSING_BYTES = new byte[0];
 
     private ContractActionType callType;
-    private EntityId callingAccount;
-    private EntityId callingContract;
-    private long gas;
-    private byte[] input = MISSING_BYTES;
+    private final EntityId callingAccount;
+    private final EntityId callingContract;
+    private final long gas;
+    private final byte[] input;
     private EntityId recipientAccount;
     private EntityId recipientContract;
     private byte[] invalidSolidityAddress;
-    private long value;
+    private final long value;
     private long gasUsed;
     private byte[] output;
     private byte[] revertReason;
     private byte[] error;
-    private int callDepth;
+    private final int callDepth;
 
     public SolidityAction(
             final ContractActionType callType,
@@ -35,12 +35,7 @@ public class SolidityAction {
             final byte[] input,
             final EntityId recipientAccount,
             final EntityId recipientContract,
-            final byte[] invalidSolidityAddress,
             final long value,
-            final long gasUsed,
-            final byte[] output,
-            final byte[] revertReason,
-            final byte[] error,
             final int callDepth) {
         this.callType = callType;
         this.callingAccount = callingAccount;
@@ -49,12 +44,7 @@ public class SolidityAction {
         this.input = input == null ? MISSING_BYTES : input;
         this.recipientAccount = recipientAccount;
         this.recipientContract = recipientContract;
-        this.invalidSolidityAddress = invalidSolidityAddress;
         this.value = value;
-        this.gasUsed = gasUsed;
-        this.output = output;
-        this.revertReason = revertReason;
-        this.error = error;
         this.callDepth = callDepth;
     }
 
@@ -135,10 +125,6 @@ public class SolidityAction {
         return input;
     }
 
-    public byte[] getInvalidSolidityAddress() {
-        return invalidSolidityAddress;
-    }
-
     public long getValue() {
         return value;
     }
@@ -167,39 +153,57 @@ public class SolidityAction {
         this.error = error;
     }
 
+    public void setInvalidSolidityAddress(byte[] invalidSolidityAddress) {
+        this.invalidSolidityAddress = invalidSolidityAddress;
+    }
+
+    public void setRecipientAccount(EntityId recipientAccount) {
+        this.recipientAccount = recipientAccount;
+    }
+
+    public void setCallType(ContractActionType callType) {
+        this.callType = callType;
+    }
+
+    public void setRecipientContract(EntityId recipientContract) {
+        this.recipientContract = recipientContract;
+    }
+
+    public EntityId getRecipientAccount() {
+        return recipientAccount;
+    }
+
+    public EntityId getRecipientContract() {
+        return recipientContract;
+    }
+
     public ContractAction toGrpc() {
         var grpc = ContractAction.newBuilder();
         grpc.setCallType(com.hedera.services.stream.proto.ContractActionType.forNumber(callType.ordinal()));
         if (callingAccount != null) {
             grpc.setCallingAccount(callingAccount.toGrpcAccountId());
-        }
-        if (callingContract != null) {
+        } else if (callingContract != null) {
             grpc.setCallingContract(callingContract.toGrpcContractId());
         }
         grpc.setGas(gas);
         grpc.setInput(ByteString.copyFrom(input));
         if (recipientAccount != null) {
             grpc.setRecipientAccount(recipientAccount.toGrpcAccountId());
-        }
-        if (recipientContract != null) {
+        } else if (recipientContract != null) {
             grpc.setRecipientContract(recipientContract.toGrpcContractId());
-        }
-        if (invalidSolidityAddress != null) {
+        } else if (invalidSolidityAddress != null) {
             grpc.setInvalidSolidityAddress(ByteString.copyFrom(invalidSolidityAddress));
         }
         grpc.setValue(value);
         grpc.setGasUsed(gasUsed);
         if (output != null) {
             grpc.setOutput(ByteString.copyFrom(output));
-        }
-        if (revertReason != null) {
+        } else if  (revertReason != null) {
             grpc.setRevertReason(ByteString.copyFrom(revertReason));
-        }
-        if (error != null){
+        } else if (error != null){
             grpc.setError(ByteString.copyFrom(error));
         }
         grpc.setCallDepth(callDepth);
         return grpc.build();
     }
-
 }

@@ -23,134 +23,145 @@ package com.hedera.services.contracts.execution;
  */
 
 
-import com.google.common.primitives.Bytes;
+import static com.hedera.services.contracts.operation.HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS;
+import static com.hedera.services.state.enums.ContractActionType.CALL;
+import static com.hedera.services.state.enums.ContractActionType.CREATE;
+import static com.hedera.services.state.enums.ContractActionType.PRECOMPILE;
+import static com.hedera.services.state.enums.ContractActionType.SYSTEM;
+
 import com.hedera.services.state.enums.ContractActionType;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.SolidityAction;
-import com.hedera.services.utils.EntityIdUtils;
-import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
-import org.hyperledger.besu.evm.frame.MessageFrame;
-import org.hyperledger.besu.evm.tracing.OperationTracer;
-import org.hyperledger.besu.plugin.data.Address;
-
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
 import java.util.List;
 import java.util.Optional;
-
-import static com.hedera.services.state.enums.ContractActionType.CALL;
-import static com.hedera.services.state.enums.ContractActionType.CREATE;
+import org.apache.tuweni.bytes.Bytes;
+import org.hyperledger.besu.evm.Code;
+import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
+import org.hyperledger.besu.evm.frame.MessageFrame;
+import org.hyperledger.besu.evm.frame.MessageFrame.State;
+import org.hyperledger.besu.evm.precompile.PrecompileContractRegistry;
+import org.hyperledger.besu.evm.tracing.OperationTracer;
 
 /**
  * Custom {@link OperationTracer} that populates exceptional halt reasons in the {@link MessageFrame}
  */
 public class HederaTracer implements OperationTracer {
 
-	Deque<SolidityAction> actionStack = new ArrayDeque<>();
-	List<SolidityAction> actions = new ArrayList<>();
+	private final PrecompileContractRegistry precompiledContractRegistry;
+	private final List<SolidityAction> allActions;
+	private final Deque<SolidityAction> currentActionsStack;
 
-
-	ContractActionType toContractActionType(MessageFrame.Type type) {
-		switch (type) {
-			case CONTRACT_CREATION:
-				return CREATE;
-			case MESSAGE_CALL:
-				return CALL;
-			default:
-				return ContractActionType.NO_ACTION;
-		}
+	public HederaTracer(final PrecompileContractRegistry precompileContractRegistry) {
+		this.precompiledContractRegistry = precompileContractRegistry;
+		this.currentActionsStack = new ArrayDeque<>();
+		this.allActions = new ArrayList<>();
 	}
 
 	@Override
 	public void traceExecution(MessageFrame frame, ExecuteOperation executeOperation) {
-		int callStackHeight = frame.getMessageFrameStack().size();
-		int currentHeight = actionStack.size();
-
-		//TODO: distinguish recipient contract from recipient account from invalid solidity address call
-		if (currentHeight == 0) {
-			var action = new SolidityAction(
-					toContractActionType(frame.getType()),
-					EntityId.fromAddress(frame.getOriginatorAddress()),
-					null,
-					frame.getRemainingGas(),
-					frame.getInputData().toArray(),
-					null,
-					EntityId.fromAddress(frame.getContractAddress()),
-					null,
-					frame.getValue().toLong(),
-					0,
-					null,
-					null,
-					null,
-					0);
-			actions.add(action);
-			actionStack.push(action);
+		if (currentActionsStack.isEmpty()) {
+			trackAction(frame, 0);
 		}
 
 		executeOperation.execute();
 
-		MessageFrame.State frameState = frame.getState();
-		Optional<ExceptionalHaltReason> exceptionalHaltReason = frame.getExceptionalHaltReason();
-
-		if (frameState == MessageFrame.State.CODE_SUSPENDED) {
-			MessageFrame nextFrame = frame.getMessageFrameStack().peek();
-			if (nextFrame != frame) {
-				// create a new action
-				var action = new SolidityAction(
-						toContractActionType(nextFrame.getType()),
-						null,
-						EntityId.fromAddress(nextFrame.getSenderAddress()),
-						nextFrame.getRemainingGas(),
-						nextFrame.getInputData().toArray(),
-						null,
-						EntityId.fromAddress(nextFrame.getContractAddress()),
-						null,
-						nextFrame.getValue().toLong(),
-						0,
-						null,
-						null,
-						null,
-						callStackHeight);
-				actions.add(action);
-				actionStack.push(action);
-			}
-		} else if (frameState == MessageFrame.State.CODE_SUCCESS) {
-			// finish off old action
-			var lastAction = actionStack.pop();
-			lastAction.setGasUsed(lastAction.getGas() - frame.getRemainingGas());
-//			lastAction.setSuccess(true);
-			lastAction.setOutput(
-					lastAction.getCallType() == CREATE ? new byte[0] : frame.getOutputData().toArrayUnsafe());
-		} else if (frameState != MessageFrame.State.CODE_EXECUTING) {
-			// failing exit
-			var lastAction = actionStack.pop();
-//			lastAction.setSuccess(false);
-			if (exceptionalHaltReason.isPresent()) {
-				// exceptional exits always burn all gas
-				lastAction.setGasUsed(lastAction.getGas());
-				lastAction.setError(
-						exceptionalHaltReason.get().getDescription().getBytes(StandardCharsets.UTF_8));
-			} else {
-				// deliberate failures do not burn extra gas
-				lastAction.setGasUsed(lastAction.getGas() - frame.getRemainingGas());
-				if (frameState == MessageFrame.State.REVERT) {
-//					lastAction.setRevertReason(frame.getRevertReason().map(Bytes::toArray).orElse(new byte[0]));
+		final var frameState = frame.getState();
+		if (frameState != State.CODE_EXECUTING) {
+			if (frameState == State.CODE_SUSPENDED) {
+				final var nextFrame = frame.getMessageFrameStack().peek();
+				if (nextFrame != frame) {
+					trackAction(nextFrame, nextFrame.getMessageFrameStack().size() - 1);
 				}
+			} else {
+				finalizeActionFor(frame, frameState);
 			}
 		}
-
-
 	}
 
 	@Override
-	public void traceAccountCreationResult(
-			final MessageFrame frame, final Optional<ExceptionalHaltReason> haltReason) {
+	public void tracePrecompileCall(MessageFrame frame, long gasRequirement, Bytes output) {
+		final var lastAction = currentActionsStack.pop();
+		// specialize the call type - precompile or system (Hedera precompile contracts)
+		lastAction.setCallType(
+				precompiledContractRegistry.get(frame.getContractAddress()) != null ? PRECOMPILE : SYSTEM);
+		// we have to null out recipient account and set recipient contract
+		lastAction.setRecipientAccount(null);
+		lastAction.setRecipientContract(EntityId.fromAddress(frame.getContractAddress()));
+		finalizeActionFor(frame, frame.getState());
+	}
+
+	private void trackAction(final MessageFrame frame, final int callDepth) {
+		// frame code can be empty when calling precompiles also, but we handle
+		// that in tracePrecompileCall, after precompile execution is completed
+		final var isCallToAccount = Code.EMPTY.equals(frame.getCode());
+		final var isTopLevelEVMTransaction = callDepth == 0;
+		final var action = new SolidityAction(
+				toContractActionType(frame.getType()),
+				isTopLevelEVMTransaction ? EntityId.fromAddress(frame.getOriginatorAddress()) : null,
+				!isTopLevelEVMTransaction ? EntityId.fromAddress(frame.getSenderAddress()) : null,
+				frame.getRemainingGas(),
+				frame.getInputData().toArray(),
+				isCallToAccount ? EntityId.fromAddress(frame.getContractAddress()) : null,
+				!isCallToAccount ? EntityId.fromAddress(frame.getContractAddress()) : null,
+				frame.getValue().toLong(),
+				callDepth);
+		allActions.add(action);
+		currentActionsStack.push(action);
+	}
+
+	private void finalizeActionFor(MessageFrame frame, State frameState) {
+		if (frameState == State.CODE_SUCCESS) {
+			final var lastAction = currentActionsStack.pop();
+			lastAction.setGasUsed(lastAction.getGas() - frame.getRemainingGas());
+			// We do not set output data for create? Because it is externalized anyway in contract
+			// bytecode sidecar?
+			lastAction.setOutput(
+					lastAction.getCallType() == CREATE ? new byte[0] : frame.getOutputData().toArrayUnsafe());
+		} else if (frameState == State.REVERT) {
+			final var lastAction = currentActionsStack.pop();
+			// deliberate failures do not burn extra gas
+			lastAction.setGasUsed(lastAction.getGas() - frame.getRemainingGas());
+			// set the revert reason in the action
+			lastAction.setRevertReason(frame.getRevertReason().orElse(Bytes.EMPTY).toArrayUnsafe());
+		} else if (frameState == State.EXCEPTIONAL_HALT) {
+			final var lastAction = currentActionsStack.pop();
+			// exceptional exits always burn all gas
+			lastAction.setGasUsed(lastAction.getGas());
+			// exceptional halt state always has an exceptional halt reason set //TODO: true?
+			final var exceptionalHaltReason = frame.getExceptionalHaltReason().get();
+			// set the result as error
+			lastAction.setError(exceptionalHaltReason.getDescription().getBytes(StandardCharsets.UTF_8));
+			// if receiver was an invalid address, clear currently set receiver
+			// and set invalid solidity address field
+			if (exceptionalHaltReason.equals(INVALID_SOLIDITY_ADDRESS)) {
+				if (lastAction.getRecipientAccount() != null) {
+					lastAction.setInvalidSolidityAddress(lastAction.getRecipientAccount().toEvmAddress().toArrayUnsafe());
+					lastAction.setRecipientAccount(null);
+				} else {
+					lastAction.setInvalidSolidityAddress(lastAction.getRecipientContract().toEvmAddress().toArrayUnsafe());
+					lastAction.setRecipientContract(null);
+				}
+			}
+		}
+	}
+
+	@Override
+	public void traceAccountCreationResult(final MessageFrame frame, final Optional<ExceptionalHaltReason> haltReason) {
 		frame.setExceptionalHaltReason(haltReason);
 	}
 
+	private ContractActionType toContractActionType(final MessageFrame.Type type) {
+		return switch (type) {
+			case CONTRACT_CREATION -> CREATE;
+			case MESSAGE_CALL -> CALL;
+		};
+	}
+
 	public List<SolidityAction> getActions() {
-		return actions;
+		return allActions;
 	}
 }

@@ -23,6 +23,7 @@ package com.hedera.services.contracts.execution;
  */
 
 import org.hyperledger.besu.evm.frame.MessageFrame;
+import org.hyperledger.besu.evm.precompile.PrecompileContractRegistry;
 import org.hyperledger.besu.evm.tracing.OperationTracer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -45,14 +46,18 @@ class HederaTracerTest {
     @Mock
     private OperationTracer.ExecuteOperation eo;
 
+    @Mock
+    private PrecompileContractRegistry precompileContractRegistry;
+
     @BeforeEach
     void setUp() {
-        subject = new HederaTracer();
+        subject = new HederaTracer(precompileContractRegistry);
     }
 
 //    @Test
 //    void traceExecution() {
 //        subject.traceExecution(mf, eo);
+//
 //        verify(eo).execute();
 //    }
 

@@ -80,6 +80,7 @@ abstract class EvmTxProcessor {
 
 	public static final String SBH_CONTEXT_KEY = "sbh";
 	public static final String EXPIRY_ORACLE_CONTEXT_KEY = "expiryOracle";
+	private final PrecompileContractRegistry precompileContractRegistry;
 
 	private BlockMetaSource blockMetaSource;
 	private HederaMutableWorldState worldState;
@@ -134,7 +135,7 @@ abstract class EvmTxProcessor {
 		hederaOperations.forEach(operationRegistry::put);
 
 		final var evm = new EVM(operationRegistry, gasCalculator, EvmConfiguration.DEFAULT);
-		final var precompileContractRegistry = new PrecompileContractRegistry();
+		precompileContractRegistry = new PrecompileContractRegistry();
 		MainnetPrecompiledContracts.populateForIstanbul(precompileContractRegistry, this.gasCalculator);
 
 		this.messageCallProcessor = new HederaMessageCallProcessor(
@@ -276,7 +277,7 @@ abstract class EvmTxProcessor {
 		final MessageFrame initialFrame = buildInitialFrame(commonInitialFrame, receiver, payload, value);
 		messageFrameStack.addFirst(initialFrame);
 
-		HederaTracer hederaTracer = new HederaTracer();
+		final var hederaTracer = new HederaTracer(precompileContractRegistry);
 		while (!messageFrameStack.isEmpty()) {
 			process(messageFrameStack.peekFirst(), hederaTracer);
 		}

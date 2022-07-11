@@ -78,26 +78,25 @@ public class HederaMessageCallProcessor extends MessageCallProcessor {
 		final Bytes output;
 		if (contract instanceof HTSPrecompiledContract htsPrecompile) {
 			final var costedResult = htsPrecompile.computeCosted(frame.getInputData(), frame);
-			if (frame.getState() == REVERT) {
-				return;
-			}
 			output = costedResult.getValue();
 			gasRequirement = costedResult.getKey();
 		} else {
 			output = contract.computePrecompile(frame.getInputData(), frame).getOutput();
 			gasRequirement = contract.gasRequirement(frame.getInputData());
 		}
-		operationTracer.tracePrecompileCall(frame, gasRequirement, output);
-		if (frame.getRemainingGas() < gasRequirement) {
-			frame.decrementRemainingGas(frame.getRemainingGas());
-			frame.setExceptionalHaltReason(Optional.of(INSUFFICIENT_GAS));
-			frame.setState(EXCEPTIONAL_HALT);
-		} else if (output != null) {
-			frame.decrementRemainingGas(gasRequirement);
-			frame.setOutputData(output);
-			frame.setState(COMPLETED_SUCCESS);
-		} else {
-			frame.setState(EXCEPTIONAL_HALT);
+		if (frame.getState() != REVERT) {
+			if (frame.getRemainingGas() < gasRequirement) {
+				frame.decrementRemainingGas(frame.getRemainingGas());
+				frame.setExceptionalHaltReason(Optional.of(INSUFFICIENT_GAS));
+				frame.setState(EXCEPTIONAL_HALT);
+			} else if (output != null) {
+				frame.decrementRemainingGas(gasRequirement);
+				frame.setOutputData(output);
+				frame.setState(COMPLETED_SUCCESS);
+			} else {
+				frame.setState(EXCEPTIONAL_HALT);
+			}
 		}
+		operationTracer.tracePrecompileCall(frame, gasRequirement, output);
 	}
 }
