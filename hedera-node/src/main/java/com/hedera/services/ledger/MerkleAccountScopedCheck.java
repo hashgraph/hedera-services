@@ -159,6 +159,7 @@ public class MerkleAccountScopedCheck implements LedgerCheck<MerkleAccount, Acco
 		return OK;
 	}
 
+	@SuppressWarnings("unchecked")
 	public ResponseCodeEnum validateNftAllowance(
 			@Nullable final MerkleAccount account,
 			@Nullable final Function<AccountProperty, Object> extantProps,
@@ -200,6 +201,8 @@ public class MerkleAccountScopedCheck implements LedgerCheck<MerkleAccount, Acco
 		return OK;
 	}
 
+
+	@SuppressWarnings("unchecked")
 	public ResponseCodeEnum validateFungibleTokenAllowance(
 			@Nullable final MerkleAccount account,
 			@Nullable final Function<AccountProperty, Object> extantProps,

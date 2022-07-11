@@ -1,11 +1,6 @@
-package com.hedera.services.usage.token.meta;
-
-/*-
- * ‌
- * Hedera Services API Fees
- * ​
- * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2021-2022 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,31 +12,30 @@ package com.hedera.services.usage.token.meta;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
-
-
-import org.junit.jupiter.api.Test;
+package com.hedera.services.usage.token.meta;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import org.junit.jupiter.api.Test;
+
 class TokenUnpauseMetaTest {
 
-	@Test
-	void getterAndToStringWork() {
-		final var expected = "TokenUnpauseMeta{bpt=56}";
+    @Test
+    void getterAndToStringWork() {
+        final var expected = "TokenUnpauseMeta{bpt=56}";
 
-		final var subject = new TokenUnpauseMeta(56);
-		assertEquals(56, subject.getBpt());
-		assertEquals(expected, subject.toString());
-	}
+        final var subject = new TokenUnpauseMeta(56);
+        assertEquals(56, subject.getBpt());
+        assertEquals(expected, subject.toString());
+    }
 
-	@Test
-	void hashCodeAndEqualsWork() {
-		final var meta1 = new TokenUnpauseMeta(32);
-		final var meta2 = new TokenUnpauseMeta(32);
+    @Test
+    void hashCodeAndEqualsWork() {
+        final var meta1 = new TokenUnpauseMeta(32);
+        final var meta2 = new TokenUnpauseMeta(32);
 
-		assertEquals(meta1, meta2);
-		assertEquals(meta1.hashCode(), meta1.hashCode());
-	}
+        assertEquals(meta1, meta2);
+        assertEquals(meta1.hashCode(), meta1.hashCode());
+    }
 }

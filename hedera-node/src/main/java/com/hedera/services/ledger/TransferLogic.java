@@ -187,10 +187,11 @@ public class TransferLogic {
 		sideEffectsTracker.resetTrackedTokenChanges();
 	}
 
+
+	@SuppressWarnings("unchecked")
 	private void adjustCryptoAllowance(BalanceChange change, AccountID ownerID) {
 		final var payerNum = EntityNum.fromAccountId(change.getPayerID());
-		final var hbarAllowances =  new TreeMap<>(
-				(Map<EntityNum, Long>) accountsLedger.get(ownerID, CRYPTO_ALLOWANCES));
+		final var hbarAllowances =  new TreeMap<>((Map<EntityNum, Long>) accountsLedger.get(ownerID, CRYPTO_ALLOWANCES));
 		final var currentAllowance = hbarAllowances.get(payerNum);
 		final var newAllowance = currentAllowance + change.getAllowanceUnits();
 		if (newAllowance != 0) {
@@ -201,6 +202,7 @@ public class TransferLogic {
 		accountsLedger.set(ownerID, CRYPTO_ALLOWANCES, hbarAllowances);
 	}
 
+	@SuppressWarnings("unchecked")
 	private void adjustFungibleTokenAllowance(final BalanceChange change, final AccountID ownerID) {
 		final var allowanceId = FcTokenAllowanceId.from(
 				change.getToken().asEntityNum(), EntityNum.fromAccountId(change.getPayerID()));
