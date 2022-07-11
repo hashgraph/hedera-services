@@ -69,6 +69,8 @@ public class NewPemCommand implements Callable<Integer> {
 		final var pubKey = privateKey.getAbyte();
 		COMMON_MESSAGES.info("Generating a new key @ " + loc);
 		final var hexedPubKey = CommonUtils.hex(pubKey);
+		final var pubKeyLoc = loc.replace(".pem", ".pubkey");
+		Files.writeString(Paths.get(pubKeyLoc), hexedPubKey + "\n");
 		COMMON_MESSAGES.info(" - The public key is: " + hexedPubKey);
 		if (passphrase == null) {
 			passphrase = TxnUtils.randomAlphaNumeric(12);
