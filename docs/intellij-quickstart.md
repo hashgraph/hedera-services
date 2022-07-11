@@ -59,6 +59,9 @@ Add a new Gradle configuration, set the `hedera-node:run` task in the `Run` fiel
 
 ![Hedera node run](./assets/gradle-run-configuration.png)
 
+Note: subsequent runs will start from the last saved state of the network.
+You can also use the `hedera-node:cleanRun` task to always start from a clean state.
+
 ### Maven
 
 Open the Maven tool window, and run `mvn install -PdevSetup` in the root project:
@@ -162,7 +165,8 @@ by submitting a `Freeze` transaction; e.g. via the
 client.
 
 :information_source:&nbsp; In case of an unclean shutdown, or unwanted
-accumulation of logs and audit data in the local workspace, use the
-Maven `antrun:run@app-clean` goal in the `hedera-node` project to get
-a clean state. (Or simply delete _rm -rf hedera-node/data/saved_ for a
-quick reset.)
+accumulation of logs and audit data in the local workspace, you can restore
+a clean state using one of the following method:
+- running the Gradle `hedera-node:clean` task
+- running the Maven `antrun:run@app-clean` goal in the `hedera-node` project
+- deleting the `hedera-node/data/saved`
