@@ -67,145 +67,160 @@ import static com.hederahashgraph.api.proto.java.SubType.TOKEN_NON_FUNGIBLE_UNIQ
 import static com.hederahashgraph.api.proto.java.SubType.TOKEN_NON_FUNGIBLE_UNIQUE_WITH_CUSTOM_FEES;
 
 public class PrecompilePricingUtils {
-	static class CanonicalOperationsUnloadableException extends RuntimeException {
-		public CanonicalOperationsUnloadableException(Exception e) {
-			super("Canonical prices for precompiles are not available", e);
-		}
-	}
+    static class CanonicalOperationsUnloadableException extends RuntimeException {
+        public CanonicalOperationsUnloadableException(Exception e) {
+            super("Canonical prices for precompiles are not available", e);
+        }
+    }
 
-	/**
-	 * If we lack an entry (because of a bad data load), return a value that cannot reasonably be paid.
-	 * In this case $1 Million Dollars.
-	 */
-	static final long COST_PROHIBITIVE = 1_000_000L * 10_000_000_000L;
-	private static final Query SYNTHETIC_REDIRECT_QUERY = Query.newBuilder()
-			.setTransactionGetRecord(TransactionGetRecordQuery.newBuilder().build())
-			.build();
-	private final HbarCentExchange exchange;
-	private final Provider<FeeCalculator> feeCalculator;
-	private final UsagePricesProvider resourceCosts;
-	private final StateView currentView;
-	Map<GasCostType, Long> canonicalOperationCostsInTinyCents;
+    /**
+     * If we lack an entry (because of a bad data load), return a value that cannot reasonably be
+     * paid. In this case $1 Million Dollars.
+     */
+    static final long COST_PROHIBITIVE = 1_000_000L * 10_000_000_000L;
 
-	@Inject
-	public PrecompilePricingUtils(
-			AssetsLoader assetsLoader,
-			final HbarCentExchange exchange,
-			final Provider<FeeCalculator> feeCalculator,
-			final UsagePricesProvider resourceCosts,
-			final StateView currentView) {
-		this.exchange = exchange;
-		this.feeCalculator = feeCalculator;
-		this.resourceCosts = resourceCosts;
-		this.currentView = currentView;
+    private static final Query SYNTHETIC_REDIRECT_QUERY =
+            Query.newBuilder()
+                    .setTransactionGetRecord(TransactionGetRecordQuery.newBuilder().build())
+                    .build();
+    private final HbarCentExchange exchange;
+    private final Provider<FeeCalculator> feeCalculator;
+    private final UsagePricesProvider resourceCosts;
+    private final StateView currentView;
+    Map<GasCostType, Long> canonicalOperationCostsInTinyCents;
 
-		canonicalOperationCostsInTinyCents = new EnumMap<>(GasCostType.class);
-		Map<HederaFunctionality, Map<SubType, BigDecimal>> canonicalPrices;
-		try {
-			canonicalPrices = assetsLoader.loadCanonicalPrices();
-		} catch (IOException e) {
-			throw new CanonicalOperationsUnloadableException(e);
-		}
-		for (var costType : GasCostType.values()) {
-			if (canonicalPrices.containsKey(costType.functionality)) {
-				BigDecimal costInUSD = canonicalPrices.get(costType.functionality).get(costType.subtype);
-				if (costInUSD != null) {
-					canonicalOperationCostsInTinyCents.put(costType,
-							costInUSD.multiply(USD_TO_TINYCENTS).longValue());
-				}
-			}
-		}
-	}
+    @Inject
+    public PrecompilePricingUtils(
+            AssetsLoader assetsLoader,
+            final HbarCentExchange exchange,
+            final Provider<FeeCalculator> feeCalculator,
+            final UsagePricesProvider resourceCosts,
+            final StateView currentView) {
+        this.exchange = exchange;
+        this.feeCalculator = feeCalculator;
+        this.resourceCosts = resourceCosts;
+        this.currentView = currentView;
 
-	private long getCanonicalPriceInTinyCents(GasCostType gasCostType) {
-		return canonicalOperationCostsInTinyCents.getOrDefault(gasCostType, COST_PROHIBITIVE);
-	}
+        canonicalOperationCostsInTinyCents = new EnumMap<>(GasCostType.class);
+        Map<HederaFunctionality, Map<SubType, BigDecimal>> canonicalPrices;
+        try {
+            canonicalPrices = assetsLoader.loadCanonicalPrices();
+        } catch (IOException e) {
+            throw new CanonicalOperationsUnloadableException(e);
+        }
+        for (var costType : GasCostType.values()) {
+            if (canonicalPrices.containsKey(costType.functionality)) {
+                BigDecimal costInUSD =
+                        canonicalPrices.get(costType.functionality).get(costType.subtype);
+                if (costInUSD != null) {
+                    canonicalOperationCostsInTinyCents.put(
+                            costType, costInUSD.multiply(USD_TO_TINYCENTS).longValue());
+                }
+            }
+        }
+    }
 
-	public long getMinimumPriceInTinybars(GasCostType gasCostType, Timestamp timestamp) {
-		return FeeBuilder.getTinybarsFromTinyCents(exchange.rate(timestamp),
-				getCanonicalPriceInTinyCents(gasCostType));
-	}
+    private long getCanonicalPriceInTinyCents(GasCostType gasCostType) {
+        return canonicalOperationCostsInTinyCents.getOrDefault(gasCostType, COST_PROHIBITIVE);
+    }
 
-	public long gasFeeInTinybars(final TransactionBody.Builder txBody,
-								 final Instant consensusTime,
-								 final Precompile precompile) {
-		final var signedTxn = SignedTransaction.newBuilder()
-				.setBodyBytes(txBody.build().toByteString())
-				.setSigMap(SignatureMap.getDefaultInstance())
-				.build();
-		final var txn = Transaction.newBuilder()
-				.setSignedTransactionBytes(signedTxn.toByteString())
-				.build();
+    public long getMinimumPriceInTinybars(GasCostType gasCostType, Timestamp timestamp) {
+        return FeeBuilder.getTinybarsFromTinyCents(
+                exchange.rate(timestamp), getCanonicalPriceInTinyCents(gasCostType));
+    }
 
-		final var accessor = SignedTxnAccessor.uncheckedFrom(txn);
-		precompile.addImplicitCostsIn(accessor);
-		final var fees = feeCalculator.get().computeFee(accessor, EMPTY_KEY, currentView, consensusTime);
-		return fees.getServiceFee() + fees.getNetworkFee() + fees.getNodeFee();
-	}
+    public long gasFeeInTinybars(
+            final TransactionBody.Builder txBody,
+            final Instant consensusTime,
+            final Precompile precompile) {
+        final var signedTxn =
+                SignedTransaction.newBuilder()
+                        .setBodyBytes(txBody.build().toByteString())
+                        .setSigMap(SignatureMap.getDefaultInstance())
+                        .build();
+        final var txn =
+                Transaction.newBuilder()
+                        .setSignedTransactionBytes(signedTxn.toByteString())
+                        .build();
 
-	public long computeViewFunctionGas(final Timestamp now, final long minimumTinybarCost) {
-		final var calculator = feeCalculator.get();
-		final var usagePrices = resourceCosts.defaultPricesGiven(TokenGetInfo, now);
-		final var fees = calculator.estimatePayment(
-				SYNTHETIC_REDIRECT_QUERY, usagePrices, currentView, now, ANSWER_ONLY);
+        final var accessor = SignedTxnAccessor.uncheckedFrom(txn);
+        precompile.addImplicitCostsIn(accessor);
+        final var fees =
+                feeCalculator.get().computeFee(accessor, EMPTY_KEY, currentView, consensusTime);
+        return fees.getServiceFee() + fees.getNetworkFee() + fees.getNodeFee();
+    }
 
-		final long gasPriceInTinybars = calculator.estimatedGasPriceInTinybars(ContractCall, now);
-		final long calculatedFeeInTinybars = fees.getNetworkFee() + fees.getNodeFee() + fees.getServiceFee();
-		final long actualFeeInTinybars = Math.max(minimumTinybarCost, calculatedFeeInTinybars);
+    public long computeViewFunctionGas(final Timestamp now, final long minimumTinybarCost) {
+        final var calculator = feeCalculator.get();
+        final var usagePrices = resourceCosts.defaultPricesGiven(TokenGetInfo, now);
+        final var fees =
+                calculator.estimatePayment(
+                        SYNTHETIC_REDIRECT_QUERY, usagePrices, currentView, now, ANSWER_ONLY);
 
-		// convert to gas cost
-		final long baseGasCost = (actualFeeInTinybars + gasPriceInTinybars - 1L) / gasPriceInTinybars;
+        final long gasPriceInTinybars = calculator.estimatedGasPriceInTinybars(ContractCall, now);
+        final long calculatedFeeInTinybars =
+                fees.getNetworkFee() + fees.getNodeFee() + fees.getServiceFee();
+        final long actualFeeInTinybars = Math.max(minimumTinybarCost, calculatedFeeInTinybars);
 
-		// charge premium
-		return baseGasCost + (baseGasCost / 5L);
-	}
+        // convert to gas cost
+        final long baseGasCost =
+                (actualFeeInTinybars + gasPriceInTinybars - 1L) / gasPriceInTinybars;
 
-	public long computeGasRequirement(final long blockTimestamp,
-									  final Precompile precompile,
-									  final TransactionBody.Builder transactionBody) {
-		final Timestamp timestamp = Timestamp.newBuilder().setSeconds(
-				blockTimestamp).build();
-		final long gasPriceInTinybars = feeCalculator.get().estimatedGasPriceInTinybars(ContractCall, timestamp);
+        // charge premium
+        return baseGasCost + (baseGasCost / 5L);
+    }
 
-		final long calculatedFeeInTinybars = gasFeeInTinybars(
-				transactionBody.setTransactionID(TransactionID.newBuilder().setTransactionValidStart(
-						timestamp).build()),
-				Instant.ofEpochSecond(blockTimestamp),
-				precompile);
+    public long computeGasRequirement(
+            final long blockTimestamp,
+            final Precompile precompile,
+            final TransactionBody.Builder transactionBody) {
+        final Timestamp timestamp = Timestamp.newBuilder().setSeconds(blockTimestamp).build();
+        final long gasPriceInTinybars =
+                feeCalculator.get().estimatedGasPriceInTinybars(ContractCall, timestamp);
 
-		final long minimumFeeInTinybars = precompile.getMinimumFeeInTinybars(timestamp);
-		final long actualFeeInTinybars = Math.max(minimumFeeInTinybars, calculatedFeeInTinybars);
+        final long calculatedFeeInTinybars =
+                gasFeeInTinybars(
+                        transactionBody.setTransactionID(
+                                TransactionID.newBuilder()
+                                        .setTransactionValidStart(timestamp)
+                                        .build()),
+                        Instant.ofEpochSecond(blockTimestamp),
+                        precompile);
 
-		// convert to gas cost
-		final long baseGasCost = (actualFeeInTinybars + gasPriceInTinybars - 1L) / gasPriceInTinybars;
+        final long minimumFeeInTinybars = precompile.getMinimumFeeInTinybars(timestamp);
+        final long actualFeeInTinybars = Math.max(minimumFeeInTinybars, calculatedFeeInTinybars);
 
-		// charge premium
-		return baseGasCost + (baseGasCost / 5L);
-	}
+        // convert to gas cost
+        final long baseGasCost =
+                (actualFeeInTinybars + gasPriceInTinybars - 1L) / gasPriceInTinybars;
 
-	public enum GasCostType {
-		UNRECOGNIZED(HederaFunctionality.UNRECOGNIZED, SubType.UNRECOGNIZED),
-		TRANSFER_FUNGIBLE(CryptoTransfer, TOKEN_FUNGIBLE_COMMON),
-		TRANSFER_NFT(CryptoTransfer, TOKEN_NON_FUNGIBLE_UNIQUE),
-		TRANSFER_FUNGIBLE_CUSTOM_FEES(CryptoTransfer, TOKEN_FUNGIBLE_COMMON_WITH_CUSTOM_FEES),
-		TRANSFER_NFT_CUSTOM_FEES(CryptoTransfer, TOKEN_NON_FUNGIBLE_UNIQUE_WITH_CUSTOM_FEES),
-		MINT_FUNGIBLE(TokenMint, TOKEN_FUNGIBLE_COMMON),
-		MINT_NFT(TokenMint, TOKEN_NON_FUNGIBLE_UNIQUE),
-		BURN_FUNGIBLE(TokenBurn, TOKEN_FUNGIBLE_COMMON),
-		BURN_NFT(TokenBurn, TOKEN_NON_FUNGIBLE_UNIQUE),
-		ASSOCIATE(TokenAssociateToAccount, DEFAULT),
-		DISSOCIATE(TokenDissociateFromAccount, DEFAULT),
-		APPROVE(CryptoApproveAllowance, DEFAULT),
-		DELETE_NFT_APPROVE(CryptoDeleteAllowance, DEFAULT),
-		WIPE_FUNGIBLE(TokenAccountWipe, TOKEN_FUNGIBLE_COMMON),
-		WIPE_NFT(TokenAccountWipe, TOKEN_NON_FUNGIBLE_UNIQUE);
+        // charge premium
+        return baseGasCost + (baseGasCost / 5L);
+    }
 
-		final HederaFunctionality functionality;
-		final SubType subtype;
+    public enum GasCostType {
+        UNRECOGNIZED(HederaFunctionality.UNRECOGNIZED, SubType.UNRECOGNIZED),
+        TRANSFER_FUNGIBLE(CryptoTransfer, TOKEN_FUNGIBLE_COMMON),
+        TRANSFER_NFT(CryptoTransfer, TOKEN_NON_FUNGIBLE_UNIQUE),
+        TRANSFER_FUNGIBLE_CUSTOM_FEES(CryptoTransfer, TOKEN_FUNGIBLE_COMMON_WITH_CUSTOM_FEES),
+        TRANSFER_NFT_CUSTOM_FEES(CryptoTransfer, TOKEN_NON_FUNGIBLE_UNIQUE_WITH_CUSTOM_FEES),
+        MINT_FUNGIBLE(TokenMint, TOKEN_FUNGIBLE_COMMON),
+        MINT_NFT(TokenMint, TOKEN_NON_FUNGIBLE_UNIQUE),
+        BURN_FUNGIBLE(TokenBurn, TOKEN_FUNGIBLE_COMMON),
+        BURN_NFT(TokenBurn, TOKEN_NON_FUNGIBLE_UNIQUE),
+        ASSOCIATE(TokenAssociateToAccount, DEFAULT),
+        DISSOCIATE(TokenDissociateFromAccount, DEFAULT),
+        APPROVE(CryptoApproveAllowance, DEFAULT),
+        DELETE_NFT_APPROVE(CryptoDeleteAllowance, DEFAULT),
+        WIPE_FUNGIBLE(TokenAccountWipe, TOKEN_FUNGIBLE_COMMON),
+        WIPE_NFT(TokenAccountWipe, TOKEN_NON_FUNGIBLE_UNIQUE);
 
-		GasCostType(HederaFunctionality functionality, SubType subtype) {
-			this.functionality = functionality;
-			this.subtype = subtype;
-		}
-	}
+        final HederaFunctionality functionality;
+        final SubType subtype;
+
+        GasCostType(HederaFunctionality functionality, SubType subtype) {
+            this.functionality = functionality;
+            this.subtype = subtype;
+        }
+    }
 }

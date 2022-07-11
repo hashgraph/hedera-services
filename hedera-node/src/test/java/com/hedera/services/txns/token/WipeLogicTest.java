@@ -52,87 +52,88 @@ import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 class WipeLogicTest {
-	private final AccountID accountID = IdUtils.asAccount("1.2.4");
-	private final TokenID id = IdUtils.asToken("1.2.3");
-	private final Id idOfToken = new Id(1, 2, 3);
-	private final Id idOfAccount = new Id(1, 2, 4);
-	private final long wipeAmount = 100;
+    private final AccountID accountID = IdUtils.asAccount("1.2.4");
+    private final TokenID id = IdUtils.asToken("1.2.3");
+    private final Id idOfToken = new Id(1, 2, 3);
+    private final Id idOfAccount = new Id(1, 2, 4);
+    private final long wipeAmount = 100;
 
-	private TransactionBody tokenWipeTxn;
-	private Account account;
+    private TransactionBody tokenWipeTxn;
+    private Account account;
 
-	@Mock
-	private Token token;
-	@Mock
-	private TypedTokenStore typedTokenStore;
-	@Mock
-	private AccountStore accountStore;
-	@Mock
-	private OptionValidator validator;
-	@Mock
-	private GlobalDynamicProperties dynamicProperties;
+    @Mock private Token token;
+    @Mock private TypedTokenStore typedTokenStore;
+    @Mock private AccountStore accountStore;
+    @Mock private OptionValidator validator;
+    @Mock private GlobalDynamicProperties dynamicProperties;
 
-	private  WipeLogic subject;
+    private WipeLogic subject;
 
-	@BeforeEach
-	private void setup() {
-		subject = new WipeLogic(validator, typedTokenStore, accountStore, dynamicProperties);
-	}
+    @BeforeEach
+    private void setup() {
+        subject = new WipeLogic(validator, typedTokenStore, accountStore, dynamicProperties);
+    }
 
-	@Test
-	void followsHappyPathForCommon() {
-		givenValidCommonTxnCtx();
+    @Test
+    void followsHappyPathForCommon() {
+        givenValidCommonTxnCtx();
 
-		// when:
-		subject.wipe(idOfToken, idOfAccount, wipeAmount, anyList());
+        // when:
+        subject.wipe(idOfToken, idOfAccount, wipeAmount, anyList());
 
-		// then:
-		verify(token).wipe(any(), anyLong());
-		verify(typedTokenStore).commitToken(token);
-	}
+        // then:
+        verify(token).wipe(any(), anyLong());
+        verify(typedTokenStore).commitToken(token);
+    }
 
-	@Test
-	void followsHappyPathForUnique() {
-		givenValidUniqueTxnCtx();
-		// needed only in the context of this test
-		Account acc = mock(Account.class);
-		TokenRelationship accRel = mock(TokenRelationship.class);
-		given(accountStore.loadAccount(any())).willReturn(acc);
-		given(typedTokenStore.loadTokenRelationship(token, acc)).willReturn(accRel);
+    @Test
+    void followsHappyPathForUnique() {
+        givenValidUniqueTxnCtx();
+        // needed only in the context of this test
+        Account acc = mock(Account.class);
+        TokenRelationship accRel = mock(TokenRelationship.class);
+        given(accountStore.loadAccount(any())).willReturn(acc);
+        given(typedTokenStore.loadTokenRelationship(token, acc)).willReturn(accRel);
 
-		// when:
-		subject.wipe(idOfToken, idOfAccount, wipeAmount, List.of(1L, 2L, 3L));
+        // when:
+        subject.wipe(idOfToken, idOfAccount, wipeAmount, List.of(1L, 2L, 3L));
 
-		// then:
-		verify(token).wipe(any(OwnershipTracker.class), any(TokenRelationship.class), anyList());
-		verify(token).getType();
-		verify(typedTokenStore).loadUniqueTokens(token, tokenWipeTxn.getTokenWipe().getSerialNumbersList());
-		verify(typedTokenStore).commitToken(token);
-		verify(typedTokenStore).commitTrackers(any(OwnershipTracker.class));
-		verify(accountStore).commitAccount(any(Account.class));
-	}
+        // then:
+        verify(token).wipe(any(OwnershipTracker.class), any(TokenRelationship.class), anyList());
+        verify(token).getType();
+        verify(typedTokenStore)
+                .loadUniqueTokens(token, tokenWipeTxn.getTokenWipe().getSerialNumbersList());
+        verify(typedTokenStore).commitToken(token);
+        verify(typedTokenStore).commitTrackers(any(OwnershipTracker.class));
+        verify(accountStore).commitAccount(any(Account.class));
+    }
 
-	private void givenValidCommonTxnCtx() {
-		tokenWipeTxn = TransactionBody.newBuilder()
-				.setTokenWipe(TokenWipeAccountTransactionBody.newBuilder()
-						.setToken(id)
-						.setAccount(accountID)
-						.setAmount(wipeAmount))
-				.build();
-		given(typedTokenStore.loadToken(any())).willReturn(token);
-		given(token.getType()).willReturn(TokenType.FUNGIBLE_COMMON);
-		given(accountStore.loadAccount(any())).willReturn(account);
-		given(typedTokenStore.loadTokenRelationship(token, account)).willReturn(new TokenRelationship(token, account));
-	}
+    private void givenValidCommonTxnCtx() {
+        tokenWipeTxn =
+                TransactionBody.newBuilder()
+                        .setTokenWipe(
+                                TokenWipeAccountTransactionBody.newBuilder()
+                                        .setToken(id)
+                                        .setAccount(accountID)
+                                        .setAmount(wipeAmount))
+                        .build();
+        given(typedTokenStore.loadToken(any())).willReturn(token);
+        given(token.getType()).willReturn(TokenType.FUNGIBLE_COMMON);
+        given(accountStore.loadAccount(any())).willReturn(account);
+        given(typedTokenStore.loadTokenRelationship(token, account))
+                .willReturn(new TokenRelationship(token, account));
+    }
 
-	private void givenValidUniqueTxnCtx() {
-		tokenWipeTxn = TransactionBody.newBuilder()
-				.setTokenWipe(TokenWipeAccountTransactionBody.newBuilder()
-						.setToken(id)
-						.setAccount(accountID)
-						.addAllSerialNumbers(List.of(1L, 2L, 3L)))
-				.build();
-		given(typedTokenStore.loadToken(any())).willReturn(token);
-		given(token.getType()).willReturn(TokenType.NON_FUNGIBLE_UNIQUE);
-	}
+    private void givenValidUniqueTxnCtx() {
+        tokenWipeTxn =
+                TransactionBody.newBuilder()
+                        .setTokenWipe(
+                                TokenWipeAccountTransactionBody.newBuilder()
+                                        .setToken(id)
+                                        .setAccount(accountID)
+                                        .addAllSerialNumbers(List.of(1L, 2L, 3L)))
+                        .build();
+        given(typedTokenStore.loadToken(any())).willReturn(token);
+        given(token.getType()).willReturn(TokenType.NON_FUNGIBLE_UNIQUE);
+    }
 }

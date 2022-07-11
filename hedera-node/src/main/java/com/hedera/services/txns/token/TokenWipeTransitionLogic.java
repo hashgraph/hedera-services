@@ -31,44 +31,41 @@ import javax.inject.Singleton;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
-/**
- * Provides the state transition for wiping [part of] a token balance.
- */
+/** Provides the state transition for wiping [part of] a token balance. */
 @Singleton
 public class TokenWipeTransitionLogic implements TransitionLogic {
-	private final TransactionContext txnCtx;
-	private final WipeLogic wipeLogic;
+    private final TransactionContext txnCtx;
+    private final WipeLogic wipeLogic;
 
-	@Inject
-	public TokenWipeTransitionLogic(
-			final TransactionContext txnCtx,
-			final WipeLogic wipeLogic
-	) {
-		this.txnCtx = txnCtx;
-		this.wipeLogic = wipeLogic;
-	}
+    @Inject
+    public TokenWipeTransitionLogic(final TransactionContext txnCtx, final WipeLogic wipeLogic) {
+        this.txnCtx = txnCtx;
+        this.wipeLogic = wipeLogic;
+    }
 
-	@Override
-	public void doStateTransition() {
-		/* --- Translate from gRPC types --- */
-		final var op = txnCtx.accessor().getTxn().getTokenWipe();
-		final var targetTokenId = Id.fromGrpcToken(op.getToken());
-		final var targetAccountId = Id.fromGrpcAccount(op.getAccount());
-		final var amount = op.getAmount();
-		final var serialNumbersList = op.getSerialNumbersList();
+    @Override
+    public void doStateTransition() {
+        /* --- Translate from gRPC types --- */
+        final var op = txnCtx.accessor().getTxn().getTokenWipe();
+        final var targetTokenId = Id.fromGrpcToken(op.getToken());
+        final var targetAccountId = Id.fromGrpcAccount(op.getAccount());
+        final var amount = op.getAmount();
+        final var serialNumbersList = op.getSerialNumbersList();
 
-		wipeLogic.wipe(targetTokenId, targetAccountId, amount, serialNumbersList);
-	}
+        wipeLogic.wipe(targetTokenId, targetAccountId, amount, serialNumbersList);
+    }
 
-	@Override
-	public Predicate<TransactionBody> applicability() {
-		return TransactionBody::hasTokenWipe;
-	}
+    @Override
+    public Predicate<TransactionBody> applicability() {
+        return TransactionBody::hasTokenWipe;
+    }
 
-	@Override
-	public Function<TransactionBody, ResponseCodeEnum> semanticCheck() {
-		return this::validate;
-	}
+    @Override
+    public Function<TransactionBody, ResponseCodeEnum> semanticCheck() {
+        return this::validate;
+    }
 
-	public ResponseCodeEnum validate(TransactionBody txnBody) { return wipeLogic.validateSyntax(txnBody); }
+    public ResponseCodeEnum validate(TransactionBody txnBody) {
+        return wipeLogic.validateSyntax(txnBody);
+    }
 }

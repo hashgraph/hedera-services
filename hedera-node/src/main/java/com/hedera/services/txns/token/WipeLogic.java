@@ -42,71 +42,66 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_WIPING
 
 @Singleton
 public class WipeLogic {
-	private final OptionValidator validator;
-	private final TypedTokenStore tokenStore;
-	private final AccountStore accountStore;
-	private final GlobalDynamicProperties dynamicProperties;
+    private final OptionValidator validator;
+    private final TypedTokenStore tokenStore;
+    private final AccountStore accountStore;
+    private final GlobalDynamicProperties dynamicProperties;
 
-	@Inject
-	public WipeLogic(
-			final OptionValidator validator,
-			final TypedTokenStore tokenStore,
-			final AccountStore accountStore,
-			final GlobalDynamicProperties dynamicProperties
-	) {
-		this.validator = validator;
-		this.tokenStore = tokenStore;
-		this.accountStore = accountStore;
-		this.dynamicProperties = dynamicProperties;
-	}
+    @Inject
+    public WipeLogic(
+            final OptionValidator validator,
+            final TypedTokenStore tokenStore,
+            final AccountStore accountStore,
+            final GlobalDynamicProperties dynamicProperties) {
+        this.validator = validator;
+        this.tokenStore = tokenStore;
+        this.accountStore = accountStore;
+        this.dynamicProperties = dynamicProperties;
+    }
 
+    public void wipe(
+            final Id targetTokenId,
+            final Id targetAccountId,
+            final long amount,
+            final List<Long> serialNumbersList) {
+        /* --- Load the model objects --- */
+        final var token = tokenStore.loadToken(targetTokenId);
+        final var account = accountStore.loadAccount(targetAccountId);
+        final var accountRel = tokenStore.loadTokenRelationship(token, account);
 
-	public void wipe(
-			final Id targetTokenId,
-			final Id targetAccountId,
-			final long amount,
-			final List<Long> serialNumbersList
-	) {
-		/* --- Load the model objects --- */
-		final var token = tokenStore.loadToken(targetTokenId);
-		final var account = accountStore.loadAccount(targetAccountId);
-		final var accountRel = tokenStore.loadTokenRelationship(token, account);
+        /* --- Instantiate change trackers --- */
+        final var ownershipTracker = new OwnershipTracker();
 
-		/* --- Instantiate change trackers --- */
-		final var ownershipTracker = new OwnershipTracker();
+        /* --- Do the business logic --- */
+        if (token.getType().equals(TokenType.FUNGIBLE_COMMON)) {
+            token.wipe(accountRel, amount);
+        } else {
+            tokenStore.loadUniqueTokens(token, serialNumbersList);
+            token.wipe(ownershipTracker, accountRel, serialNumbersList);
+        }
+        /* --- Persist the updated models --- */
+        tokenStore.commitToken(token);
+        tokenStore.commitTokenRelationships(List.of(accountRel));
+        tokenStore.commitTrackers(ownershipTracker);
+        accountStore.commitAccount(account);
+    }
 
-		/* --- Do the business logic --- */
-		if (token.getType().equals(TokenType.FUNGIBLE_COMMON)) {
-			token.wipe(accountRel, amount);
-		} else {
-			tokenStore.loadUniqueTokens(token, serialNumbersList);
-			token.wipe(ownershipTracker, accountRel, serialNumbersList);
-		}
-		/* --- Persist the updated models --- */
-		tokenStore.commitToken(token);
-		tokenStore.commitTokenRelationships(List.of(accountRel));
-		tokenStore.commitTrackers(ownershipTracker);
-		accountStore.commitAccount(account);
+    public ResponseCodeEnum validateSyntax(final TransactionBody txn) {
+        TokenWipeAccountTransactionBody op = txn.getTokenWipe();
 
-	}
+        if (!op.hasToken()) {
+            return INVALID_TOKEN_ID;
+        }
 
-	public ResponseCodeEnum validateSyntax(final TransactionBody txn) {
-		TokenWipeAccountTransactionBody op = txn.getTokenWipe();
-
-		if (!op.hasToken()) {
-			return INVALID_TOKEN_ID;
-		}
-
-		if (!op.hasAccount()) {
-			return INVALID_ACCOUNT_ID;
-		}
-		return validateTokenOpsWith(
-				op.getSerialNumbersCount(),
-				op.getAmount(),
-				dynamicProperties.areNftsEnabled(),
-				INVALID_WIPING_AMOUNT,
-				op.getSerialNumbersList(),
-				validator::maxBatchSizeWipeCheck
-		);
-	}
+        if (!op.hasAccount()) {
+            return INVALID_ACCOUNT_ID;
+        }
+        return validateTokenOpsWith(
+                op.getSerialNumbersCount(),
+                op.getAmount(),
+                dynamicProperties.areNftsEnabled(),
+                INVALID_WIPING_AMOUNT,
+                op.getSerialNumbersList(),
+                validator::maxBatchSizeWipeCheck);
+    }
 }
