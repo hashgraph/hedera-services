@@ -207,6 +207,33 @@ abstract contract HederaTokenService is HederaResponseCodes {
         (responseCode, tokenAddress) = success ? abi.decode(result, (int32, address)) : (HederaResponseCodes.UNKNOWN, address(0));
     }
 
+    /// Retrieves fungible specific token info for a fungible token
+    /// @param token The ID of the token as a solidity address
+    function getFungibleTokenInfo(address token) internal returns (int responseCode, IHederaTokenService.FungibleTokenInfo memory tokenInfo) {
+        (bool success, bytes memory result) = precompileAddress.call(
+            abi.encodeWithSelector(IHederaTokenService.getFungibleTokenInfo.selector, token));
+        IHederaTokenService.FungibleTokenInfo memory defaultTokenInfo;
+        (responseCode, tokenInfo) = success ? abi.decode(result, (int32, IHederaTokenService.FungibleTokenInfo)) : (HederaResponseCodes.UNKNOWN, defaultTokenInfo);
+    }
+
+    /// Retrieves general token info for a given token
+    /// @param token The ID of the token as a solidity address
+    function getTokenInfo(address token) internal returns (int responseCode, IHederaTokenService.TokenInfo memory tokenInfo) {
+        (bool success, bytes memory result) = precompileAddress.call(
+            abi.encodeWithSelector(IHederaTokenService.getTokenInfo.selector, token));
+        IHederaTokenService.TokenInfo memory defaultTokenInfo;
+        (responseCode, tokenInfo) = success ? abi.decode(result, (int32, IHederaTokenService.TokenInfo)) : (HederaResponseCodes.UNKNOWN, defaultTokenInfo);
+    }
+
+    /// Retrieves non-fungible specific token info for a given NFT
+    /// @param token The ID of the token as a solidity address
+    function getNonFungibleTokenInfo(address token, int64 serialNumber) internal returns (int responseCode, IHederaTokenService.NonFungibleTokenInfo memory tokenInfo) {
+        (bool success, bytes memory result) = precompileAddress.call(
+            abi.encodeWithSelector(IHederaTokenService.getNonFungibleTokenInfo.selector, token, serialNumber));
+        IHederaTokenService.NonFungibleTokenInfo memory defaultTokenInfo;
+        (responseCode, tokenInfo) = success ? abi.decode(result, (int32, IHederaTokenService.NonFungibleTokenInfo)) : (HederaResponseCodes.UNKNOWN, defaultTokenInfo);
+    }
+
     /**********************
      * ABI v1 calls       *
      **********************/
