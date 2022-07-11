@@ -123,9 +123,9 @@ class MutableEntityAccessTest {
 
 	@Test
 	void flushesAsExpected() {
-		subject.flushStorage();
+		subject.flushStorage(accountsLedger);
 
-		verify(storage).validateAndCommit();
+		verify(storage).validateAndCommit(accountsLedger);
 	}
 
 	@Test
@@ -256,15 +256,11 @@ class MutableEntityAccessTest {
 	}
 
 	@Test
-	void storesBlob() {
-		// given:
-		given(supplierBytecode.get()).willReturn(bytecodeStorage);
-
-		// when:
+	void delegatesBlobStorage() {
 		subject.storeCode(id, bytecode);
 
 		// then:
-		verify(bytecodeStorage).put(expectedBytecodeKey, expectedBytecodeValue);
+		verify(storage).storeCode(id, bytecode);
 	}
 
 	@Test

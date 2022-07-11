@@ -185,7 +185,7 @@ public class ContractUpdateSuite extends HapiApiSuite {
 						contractCreate(contract).via(creationTxn)
 				).when(
 						captureChildCreate2MetaFor(
-								2, 0,
+								3, 0,
 								"setup", creationTxn, childMirror, childEip1014)
 				).then(
 						contractCall(contract, "makeNormalCall").via(callTxn),

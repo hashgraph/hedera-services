@@ -22,7 +22,6 @@ package com.hedera.services.store.contracts;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.SideEffectsTracker;
-import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.accounts.ContractAliases;
 import com.hedera.services.ledger.accounts.ContractCustomizer;
@@ -139,8 +138,6 @@ class AbstractLedgerWorldUpdaterTest {
 	private MerkleNetworkContext networkCtx;
 	@Mock
 	private MerkleMap<EntityNum, MerkleStakingInfo> stakingInfo;
-	@Mock
-	private GlobalDynamicProperties dynamicProperties;
 	@Mock
 	private RewardCalculator rewardCalculator;
 	@Mock

@@ -198,7 +198,7 @@ class StaticEntityAccessTest {
 		assertThrows(UnsupportedOperationException.class, () -> subject.storeCode(id, bytesKey));
 		assertThrows(UnsupportedOperationException.class, () -> subject.currentManagedChangeSet());
 		assertThrows(UnsupportedOperationException.class, () -> subject.recordNewKvUsageTo(null));
-		assertThrows(UnsupportedOperationException.class, subject::flushStorage);
+		assertThrows(UnsupportedOperationException.class, () -> subject.flushStorage(null));
 		assertDoesNotThrow(subject::startAccess);
 	}
 

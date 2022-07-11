@@ -31,7 +31,6 @@ import com.hedera.services.store.contracts.CodeCache;
 import com.hedera.services.store.contracts.HederaWorldState;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
-import com.hedera.services.txns.contract.helpers.StorageExpiry;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -106,10 +105,6 @@ class CallEvmTxProcessorTest {
 	@Mock
 	private Map<String, PrecompiledContract> precompiledContractMap;
 	@Mock
-	private StorageExpiry storageExpiry;
-	@Mock
-	private StorageExpiry.Oracle oracle;
-	@Mock
 	private HederaBlockValues hederaBlockValues;
 	@Mock
 	private BlockValues blockValues;
@@ -135,7 +130,7 @@ class CallEvmTxProcessorTest {
 		callEvmTxProcessor = new CallEvmTxProcessor(
 				worldState, livePricesSource,
 				codeCache, globalDynamicProperties, gasCalculator,
-				operations, precompiledContractMap, aliasManager, storageExpiry, blockMetaSource);
+				operations, precompiledContractMap, aliasManager, blockMetaSource);
 	}
 
 	@Test
@@ -143,7 +138,6 @@ class CallEvmTxProcessorTest {
 		givenValidMock();
 		given(globalDynamicProperties.fundingAccount()).willReturn(new Id(0, 0, 1010).asGrpcAccount());
 		given(aliasManager.resolveForEvm(receiverAddress)).willReturn(receiverAddress);
-		given(storageExpiry.hapiCallOracle()).willReturn(oracle);
 		given(globalDynamicProperties.chainIdBytes32()).willReturn(Bytes32.ZERO);
 
 		givenSenderWithBalance(350_000L);
@@ -161,7 +155,6 @@ class CallEvmTxProcessorTest {
 
 		given(globalDynamicProperties.fundingAccount()).willReturn(new Id(0, 0, 1010).asGrpcAccount());
 		given(aliasManager.resolveForEvm(receiverAddress)).willReturn(receiverAddress);
-		given(storageExpiry.hapiCallOracle()).willReturn(oracle);
 		var evmAccount = mock(EvmAccount.class);
 		given(updater.getOrCreateSenderAccount(any())).willReturn(evmAccount);
 		var senderMutableAccount = mock(MutableAccount.class);
@@ -209,7 +202,6 @@ class CallEvmTxProcessorTest {
 		givenValidMock();
 		given(globalDynamicProperties.maxGasRefundPercentage()).willReturn(MAX_REFUND_PERCENT);
 		given(globalDynamicProperties.fundingAccount()).willReturn(new Id(0, 0, 1010).asGrpcAccount());
-		given(storageExpiry.hapiCallOracle()).willReturn(oracle);
 		givenSenderWithBalance(350_000L);
 		given(globalDynamicProperties.chainIdBytes32()).willReturn(Bytes32.ZERO);
 		final var receiverAddress = receiver.getId().asEvmAddress();
@@ -227,7 +219,6 @@ class CallEvmTxProcessorTest {
 		given(globalDynamicProperties.maxGasRefundPercentage()).willReturn(MAX_REFUND_PERCENT);
 		given(gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, false)).willReturn(INTRINSIC_GAS_COST);
 		given(globalDynamicProperties.fundingAccount()).willReturn(new Id(0, 0, 1010).asGrpcAccount());
-		given(storageExpiry.hapiCallOracle()).willReturn(oracle);
 		given(globalDynamicProperties.chainIdBytes32()).willReturn(Bytes32.ZERO);
 
 		givenSenderWithBalance(350_000L);
@@ -254,7 +245,6 @@ class CallEvmTxProcessorTest {
 		given(updater.getFinalStateChanges())
 				.willReturn(Map.of(Address.fromHexString(contractAddress), Map.of(UInt256.valueOf(slot),
 								Pair.of(UInt256.valueOf(oldSlotValue), UInt256.valueOf(newSlotValue)))));
-		given(storageExpiry.hapiCallOracle()).willReturn(oracle);
 		given(globalDynamicProperties.chainIdBytes32()).willReturn(Bytes32.ZERO);
 
 		final var result = callEvmTxProcessor.execute(
@@ -281,7 +271,6 @@ class CallEvmTxProcessorTest {
 		given(globalDynamicProperties.shouldEnableTraceability()).willReturn(false);
 		givenSenderWithBalance(350_000L);
 		given(aliasManager.resolveForEvm(receiverAddress)).willReturn(receiverAddress);
-		given(storageExpiry.hapiCallOracle()).willReturn(oracle);
 		given(globalDynamicProperties.chainIdBytes32()).willReturn(Bytes32.ZERO);
 
 		final var result = callEvmTxProcessor.execute(
@@ -382,7 +371,6 @@ class CallEvmTxProcessorTest {
 		final var MAX_REFUND_PERCENTAGE = 100;
 		given(globalDynamicProperties.maxGasRefundPercentage()).willReturn(MAX_REFUND_PERCENTAGE);
 		given(globalDynamicProperties.fundingAccount()).willReturn(new Id(0, 0, 1010).asGrpcAccount());
-		given(storageExpiry.hapiCallOracle()).willReturn(oracle);
 		final var wrappedSenderAccount = mock(EvmAccount.class);
 		final var mutableSenderAccount = mock(MutableAccount.class);
 		given(wrappedSenderAccount.getMutable()).willReturn(mutableSenderAccount);
@@ -423,7 +411,6 @@ class CallEvmTxProcessorTest {
 		final var MAX_REFUND_PERCENTAGE = 100;
 		given(globalDynamicProperties.maxGasRefundPercentage()).willReturn(MAX_REFUND_PERCENTAGE);
 		given(globalDynamicProperties.fundingAccount()).willReturn(new Id(0, 0, 1010).asGrpcAccount());
-		given(storageExpiry.hapiCallOracle()).willReturn(oracle);
 		final var wrappedSenderAccount = mock(EvmAccount.class);
 		final var mutableSenderAccount = mock(MutableAccount.class);
 		given(wrappedSenderAccount.getMutable()).willReturn(mutableSenderAccount);
@@ -463,7 +450,6 @@ class CallEvmTxProcessorTest {
 		final var MAX_REFUND_PERCENTAGE = 1;
 		given(globalDynamicProperties.maxGasRefundPercentage()).willReturn(MAX_REFUND_PERCENTAGE);
 		given(globalDynamicProperties.fundingAccount()).willReturn(new Id(0, 0, 1010).asGrpcAccount());
-		given(storageExpiry.hapiCallOracle()).willReturn(oracle);
 		final var wrappedSenderAccount = mock(EvmAccount.class);
 		final var mutableSenderAccount = mock(MutableAccount.class);
 		given(wrappedSenderAccount.getMutable()).willReturn(mutableSenderAccount);
@@ -503,7 +489,6 @@ class CallEvmTxProcessorTest {
 		given(worldState.updater()).willReturn(updater);;
 		given(gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, false)).willReturn(0L);
 		given(worldState.updater()).willReturn(updater);
-		given(storageExpiry.hapiCallOracle()).willReturn(oracle);
 		final var wrappedSenderAccount = mock(EvmAccount.class);
 		final var mutableSenderAccount = mock(MutableAccount.class);
 		given(wrappedSenderAccount.getMutable()).willReturn(mutableSenderAccount);
@@ -534,7 +519,6 @@ class CallEvmTxProcessorTest {
 		given(worldState.updater()).willReturn(updater);;
 		given(gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, false)).willReturn(0L);
 		given(worldState.updater()).willReturn(updater);
-		given(storageExpiry.hapiCallOracle()).willReturn(oracle);
 		final var wrappedSenderAccount = mock(EvmAccount.class);
 		final var mutableSenderAccount = mock(MutableAccount.class);
 		given(wrappedSenderAccount.getMutable()).willReturn(mutableSenderAccount);
@@ -565,7 +549,6 @@ class CallEvmTxProcessorTest {
 		given(worldState.updater()).willReturn(updater);;
 		given(gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, false)).willReturn(0L);
 		given(worldState.updater()).willReturn(updater);
-		given(storageExpiry.hapiCallOracle()).willReturn(oracle);
 		final var wrappedSenderAccount = mock(EvmAccount.class);
 		final var mutableSenderAccount = mock(MutableAccount.class);
 		given(wrappedSenderAccount.getMutable()).willReturn(mutableSenderAccount);
@@ -597,7 +580,6 @@ class CallEvmTxProcessorTest {
 		final var MAX_REFUND_PERCENTAGE = 100;
 		given(globalDynamicProperties.maxGasRefundPercentage()).willReturn(MAX_REFUND_PERCENTAGE);
 		given(globalDynamicProperties.fundingAccount()).willReturn(new Id(0, 0, 1010).asGrpcAccount());
-		given(storageExpiry.hapiCallOracle()).willReturn(oracle);
 		final var wrappedSenderAccount = mock(EvmAccount.class);
 		final var mutableSenderAccount = mock(MutableAccount.class);
 		given(wrappedSenderAccount.getMutable()).willReturn(mutableSenderAccount);
@@ -634,7 +616,6 @@ class CallEvmTxProcessorTest {
 		given(worldState.updater()).willReturn(updater);;
 		given(gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, false)).willReturn(0L);
 		given(worldState.updater()).willReturn(updater);
-		given(storageExpiry.hapiCallOracle()).willReturn(oracle);
 		final var wrappedSenderAccount = mock(EvmAccount.class);
 		final var mutableSenderAccount = mock(MutableAccount.class);
 		given(wrappedSenderAccount.getMutable()).willReturn(mutableSenderAccount);
@@ -663,7 +644,6 @@ class CallEvmTxProcessorTest {
 		given(worldState.updater()).willReturn(updater);;
 		given(gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, false)).willReturn(0L);
 		given(worldState.updater()).willReturn(updater);
-		given(storageExpiry.hapiCallOracle()).willReturn(oracle);
 		final var wrappedSenderAccount = mock(EvmAccount.class);
 		final var mutableSenderAccount = mock(MutableAccount.class);
 		given(wrappedSenderAccount.getMutable()).willReturn(mutableSenderAccount);
@@ -694,7 +674,6 @@ class CallEvmTxProcessorTest {
 		final var MAX_REFUND_PERCENTAGE = 100;
 		given(globalDynamicProperties.maxGasRefundPercentage()).willReturn(MAX_REFUND_PERCENTAGE);
 		given(globalDynamicProperties.fundingAccount()).willReturn(new Id(0, 0, 1010).asGrpcAccount());
-		given(storageExpiry.hapiCallOracle()).willReturn(oracle);
 		final var wrappedSenderAccount = mock(EvmAccount.class);
 		final var mutableSenderAccount = mock(MutableAccount.class);
 		given(wrappedSenderAccount.getMutable()).willReturn(mutableSenderAccount);
@@ -731,7 +710,6 @@ class CallEvmTxProcessorTest {
 		given(worldState.updater()).willReturn(updater);;
 		given(gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, false)).willReturn(0L);
 		given(worldState.updater()).willReturn(updater);
-		given(storageExpiry.hapiCallOracle()).willReturn(oracle);
 		final var wrappedSenderAccount = mock(EvmAccount.class);
 		final var mutableSenderAccount = mock(MutableAccount.class);
 		given(wrappedSenderAccount.getMutable()).willReturn(mutableSenderAccount);
@@ -761,7 +739,6 @@ class CallEvmTxProcessorTest {
 		givenValidMock();
 		given(globalDynamicProperties.maxGasRefundPercentage()).willReturn(100);
 		given(globalDynamicProperties.fundingAccount()).willReturn(new Id(0, 0, 1010).asGrpcAccount());
-		given(storageExpiry.hapiCallOracle()).willReturn(oracle);
 		given(globalDynamicProperties.chainIdBytes32()).willReturn(Bytes32.ZERO);
 		givenSenderWithBalance(ONE_HBAR * 10);
 		final var receiverAddress = receiver.getId().asEvmAddress();

@@ -28,7 +28,6 @@ import com.hedera.services.store.contracts.HederaMutableWorldState;
 import com.hedera.services.store.contracts.HederaWorldState;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
-import com.hedera.services.txns.contract.helpers.StorageExpiry;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
@@ -72,8 +71,8 @@ import static org.hyperledger.besu.evm.MainnetEVMs.registerLondonOperations;
 /**
  * Abstract processor of EVM transactions that prepares the {@link EVM} and all of the peripherals upon
  * instantiation. Provides a base
- * {@link EvmTxProcessor#execute(Account, Address, long, long, long, Bytes, boolean, Instant, boolean,
- * StorageExpiry.Oracle, Address, BigInteger, long, Account)}
+ * {@link EvmTxProcessor#execute(Account, Address, long, long, long, Bytes, boolean, Instant, boolean, 
+ * Address, BigInteger, long, Account)}
  * method that handles the end-to-end execution of a EVM transaction.
  */
 abstract class EvmTxProcessor {
@@ -81,9 +80,6 @@ abstract class EvmTxProcessor {
 	private static final int MAX_CODE_SIZE = 0x6000;
 	private static final List<ContractValidationRule> VALIDATION_RULES =
 			List.of(MaxCodeSizeRule.of(MAX_CODE_SIZE), PrefixCodeRule.of());
-
-	public static final String SBH_CONTEXT_KEY = "sbh";
-	public static final String EXPIRY_ORACLE_CONTEXT_KEY = "expiryOracle";
 
 	private BlockMetaSource blockMetaSource;
 	private HederaMutableWorldState worldState;
@@ -173,9 +169,7 @@ abstract class EvmTxProcessor {
 	 * @param consensusTime
 	 * 		Current consensus time
 	 * @param isStatic
-	 * 		Whether the execution is static
-	 * @param expiryOracle
-	 * 		the oracle to use when determining the expiry of newly allocated storage
+	 * 		Whether or not the execution is static
 	 * @param mirrorReceiver
 	 * 		the mirror form of the receiving {@link Address}; or the newly created address
 	 * @return the result of the EVM execution returned as {@link TransactionProcessingResult}
@@ -190,7 +184,6 @@ abstract class EvmTxProcessor {
 			final boolean contractCreation,
 			final Instant consensusTime,
 			final boolean isStatic,
-			final StorageExpiry.Oracle expiryOracle,
 			final Address mirrorReceiver,
 			final BigInteger userOfferedGasPrice,
 			final long maxGasAllowanceInTinybars,
@@ -278,10 +271,7 @@ abstract class EvmTxProcessor {
 						.isStatic(isStatic)
 						.miningBeneficiary(coinbase)
 						.blockHashLookup(blockMetaSource::getBlockHash)
-						.contextVariables(Map.of(
-								"sbh", storageByteHoursTinyBarsGiven(consensusTime),
-								"HederaFunctionality", getFunctionType(),
-								EXPIRY_ORACLE_CONTEXT_KEY, expiryOracle));
+						.contextVariables(Map.of("HederaFunctionality", getFunctionType()));
 
 		final MessageFrame initialFrame = buildInitialFrame(commonInitialFrame, receiver, payload, value);
 		messageFrameStack.addFirst(initialFrame);

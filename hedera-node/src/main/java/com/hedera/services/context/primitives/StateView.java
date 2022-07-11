@@ -583,19 +583,20 @@ public class StateView {
 			final int maxTokensForAccountInfo,
 			final RewardCalculator rewardCalculator
 	) {
-		final var contractId = unaliased(id, aliasManager);
-		final var contract = contracts().get(contractId);
+		final var contractNum = unaliased(id, aliasManager);
+		final var contract = contracts().get(contractNum);
 		if (contract == null) {
 			return Optional.empty();
 		}
 
-		final var mirrorId = contractId.toGrpcAccountId();
-		final var storageSize = contract.getNumContractKvPairs() * BYTES_PER_EVM_KEY_VALUE_PAIR;
+		final var mirrorId = contractNum.toGrpcAccountId();
+		final var bytecodeSize = bytecodeOf(contractNum).map(b -> b.length).orElse(0);
+		final var storageSize = contract.getNumContractKvPairs() * BYTES_PER_EVM_KEY_VALUE_PAIR + bytecodeSize;
 		final var info = ContractGetInfoResponse.ContractInfo.newBuilder()
 				.setLedgerId(networkInfo.ledgerId())
 				.setAccountID(mirrorId)
 				.setDeleted(contract.isDeleted())
-				.setContractID(contractId.toGrpcContractID())
+				.setContractID(contractNum.toGrpcContractID())
 				.setMemo(contract.getMemo())
 				.setStorage(storageSize)
 				.setAutoRenewPeriod(Duration.newBuilder().setSeconds(contract.getAutoRenewSecs()))

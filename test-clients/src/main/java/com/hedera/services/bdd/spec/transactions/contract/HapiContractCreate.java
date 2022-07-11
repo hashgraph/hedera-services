@@ -305,7 +305,11 @@ public class HapiContractCreate extends HapiBaseContractCreate<HapiContractCreat
 							gas.ifPresent(b::setGas);
 							proxy.ifPresent(p -> b.setProxyAccountID(asId(p, spec)));
 							params.ifPresent(bytes -> b.setConstructorParameters(ByteString.copyFrom(bytes)));
-							autoRenewAccount.ifPresent(p -> b.setAutoRenewAccountId(asId(p, spec)));
+							if (autoRenewAccount.isPresent()) {
+								b.setAutoRenewAccountId(asId(autoRenewAccount.get(), spec));
+							} else {
+								payer.ifPresent(s -> b.setAutoRenewAccountId(asId(s, spec)));
+							}
 							maxAutomaticTokenAssociations.ifPresent(b::setMaxAutomaticTokenAssociations);
 
 							if (stakedAccountId.isPresent()) {

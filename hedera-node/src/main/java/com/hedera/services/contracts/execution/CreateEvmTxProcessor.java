@@ -26,7 +26,6 @@ import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.store.contracts.CodeCache;
 import com.hedera.services.store.contracts.HederaMutableWorldState;
 import com.hedera.services.store.models.Account;
-import com.hedera.services.txns.contract.helpers.StorageExpiry;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
@@ -51,7 +50,6 @@ import java.util.Set;
 @Singleton
 public class CreateEvmTxProcessor extends EvmTxProcessor {
 	private final CodeCache codeCache;
-	private final StorageExpiry storageExpiry;
 
 	@Inject
 	public CreateEvmTxProcessor(
@@ -62,7 +60,6 @@ public class CreateEvmTxProcessor extends EvmTxProcessor {
 			final GasCalculator gasCalculator,
 			final Set<Operation> hederaOperations,
 			final Map<String, PrecompiledContract> precompiledContractMap,
-			final StorageExpiry storageExpiry,
 			final InHandleBlockMetaSource blockMetaSource
 	) {
 		super(
@@ -74,7 +71,6 @@ public class CreateEvmTxProcessor extends EvmTxProcessor {
 				precompiledContractMap,
 				blockMetaSource);
 		this.codeCache = codeCache;
-		this.storageExpiry = storageExpiry;
 	}
 
 	public TransactionProcessingResult execute(
@@ -83,8 +79,7 @@ public class CreateEvmTxProcessor extends EvmTxProcessor {
 			final long providedGasLimit,
 			final long value,
 			final Bytes code,
-			final Instant consensusTime,
-			final long hapiExpiry
+			final Instant consensusTime
 	) {
 		final long gasPrice = gasPriceTinyBarsGiven(consensusTime, false);
 
@@ -98,7 +93,6 @@ public class CreateEvmTxProcessor extends EvmTxProcessor {
 				true,
 				consensusTime,
 				false,
-				storageExpiry.hapiCreationOracle(hapiExpiry),
 				receiver,
 				null,
 				0,
@@ -112,7 +106,6 @@ public class CreateEvmTxProcessor extends EvmTxProcessor {
 			final long value,
 			final Bytes code,
 			final Instant consensusTime,
-			final long hapiExpiry,
 			final Account relayer,
 			final BigInteger providedMaxGasPrice,
 			final long maxGasAllowance
@@ -129,7 +122,6 @@ public class CreateEvmTxProcessor extends EvmTxProcessor {
 				true,
 				consensusTime,
 				false,
-				storageExpiry.hapiCreationOracle(hapiExpiry),
 				receiver,
 				providedMaxGasPrice,
 				maxGasAllowance,

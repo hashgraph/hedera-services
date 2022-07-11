@@ -308,6 +308,7 @@ public class TxnFactory {
 	public Consumer<ContractCreateTransactionBody.Builder> defaultDef_ContractCreateTransactionBody() {
 		return builder -> builder
 				.setAutoRenewPeriod(setup.defaultAutoRenewPeriod())
+				.setAutoRenewAccountId(setup.defaultPayer())
 				.setGas(setup.defaultCreateGas())
 				.setInitialBalance(setup.defaultContractBalance())
 				.setMemo(setup.defaultMemo())

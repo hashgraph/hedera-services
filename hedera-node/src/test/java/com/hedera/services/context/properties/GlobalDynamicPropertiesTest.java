@@ -22,6 +22,7 @@ package com.hedera.services.context.properties;
 
 import com.esaulpaugh.headlong.util.Integers;
 import com.hedera.services.config.HederaNumbers;
+import com.hedera.services.fees.ContractStoragePriceTiers;
 import com.hedera.services.fees.calculation.CongestionMultipliers;
 import com.hedera.services.sysfiles.domain.KnownBlockValues;
 import com.hedera.services.sysfiles.domain.throttling.ThrottleReqOpsScaleFactor;
@@ -56,6 +57,8 @@ class GlobalDynamicPropertiesTest {
 	private static final String literalBlockValues =
 			"c9e37a7a454638ca62662bd1a06de49ef40b3444203fe329bbc81363604ea7f8@666";
 	private static final KnownBlockValues blockValues = KnownBlockValues.from(literalBlockValues);
+	private static final ContractStoragePriceTiers canonicalTiers = ContractStoragePriceTiers.from(
+			"10@50M,50@100M,100@150M,200@200M,500@250M,700@300M,1000@350M,2000@400M,5000@450M,10000@500M");
 
 	private PropertySource properties;
 
@@ -92,6 +95,7 @@ class GlobalDynamicPropertiesTest {
 		assertTrue(subject.shouldExportPrecompileResults());
 		assertFalse(subject.isCreate2Enabled());
 		assertTrue(subject.isRedirectTokenCallsEnabled());
+		assertFalse(subject.shouldItemizeStorageFees());
 		assertFalse(subject.areAllowancesEnabled());
 		assertFalse(subject.areTokenAssociationsLimited());
 		assertTrue(subject.isHTSPrecompileCreateEnabled());
@@ -308,6 +312,7 @@ class GlobalDynamicPropertiesTest {
 		assertEquals(35L, subject.autoRenewGracePeriod());
 		assertEquals(45L, subject.maxNftMints());
 		assertEquals(54L, subject.htsDefaultGasCost());
+		assertEquals(65L, subject.storageSlotLifetime());
 		assertEquals(72L, subject.getStakingStartThreshold());
 		assertEquals(67L, subject.schedulingMaxTxnPerSecond());
 		assertEquals(68L, subject.scheduleThrottleMaxGasLimit());
@@ -340,6 +345,7 @@ class GlobalDynamicPropertiesTest {
 		assertEquals(evenFactor, subject.nftMintScaleFactor());
 		assertEquals(upgradeArtifactLocs[0], subject.upgradeArtifactsLoc());
 		assertEquals(blockValues, subject.knownBlockValues());
+		assertEquals(canonicalTiers, subject.storagePriceTiers());
 		assertEquals(66L, subject.exchangeRateGasReq());
 	}
 
@@ -424,6 +430,11 @@ class GlobalDynamicPropertiesTest {
 		given(properties.getIntProperty("autoRemove.maxPurgedKvPairsPerTouch")).willReturn(i + 62);
 		given(properties.getIntProperty("autoRemove.maxReturnedNftsPerTouch")).willReturn(i + 63);
 		given(properties.getBlockValuesProperty("contracts.knownBlockHash")).willReturn(blockValues);
+		given(properties.getLongProperty("contract.storageSlotLifetime")).willReturn(i + 63L);
+		given(properties.getContractStoragePriceTiers("contract.storageSlotPriceTiers"))
+				.willReturn(canonicalTiers);
+		given(properties.getBooleanProperty("contracts.itemizeStorageFees"))
+				.willReturn((i + 64) % 2 == 0);
 		given(properties.getLongProperty("contracts.precompile.exchangeRateGasCost")).willReturn(i + 64L);
 		given(properties.getLongProperty("scheduling.maxTxnPerSecond")).willReturn(i + 65L);
 		given(properties.getLongProperty("contracts.scheduleThrottleMaxGasLimit")).willReturn(i + 66L);

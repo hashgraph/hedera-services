@@ -23,6 +23,7 @@ package com.hedera.services.context.properties;
 import com.esaulpaugh.headlong.util.Integers;
 import com.hedera.services.config.HederaNumbers;
 import com.hedera.services.context.annotations.CompositeProps;
+import com.hedera.services.fees.ContractStoragePriceTiers;
 import com.hedera.services.fees.calculation.CongestionMultipliers;
 import com.hedera.services.sysfiles.domain.KnownBlockValues;
 import com.hedera.services.sysfiles.domain.throttling.ThrottleReqOpsScaleFactor;
@@ -122,6 +123,9 @@ public class GlobalDynamicProperties {
 	private boolean enableHTSPrecompileCreate;
 	private int maxPurgedKvPairsPerTouch;
 	private KnownBlockValues knownBlockValues;
+	private long storageSlotLifetime;
+	private ContractStoragePriceTiers storagePriceTiers;
+	private boolean itemizeStorageFees;
 	private int maxReturnedNftsPerTouch;
 	private long exchangeRateGasReq;
 	private long stakingRewardRate;
@@ -240,6 +244,9 @@ public class GlobalDynamicProperties {
 		maxPurgedKvPairsPerTouch = properties.getIntProperty("autoRemove.maxPurgedKvPairsPerTouch");
 		maxReturnedNftsPerTouch = properties.getIntProperty("autoRemove.maxReturnedNftsPerTouch");
 		knownBlockValues = properties.getBlockValuesProperty("contracts.knownBlockHash");
+		storageSlotLifetime = properties.getLongProperty("contract.storageSlotLifetime");
+		storagePriceTiers = properties.getContractStoragePriceTiers("contract.storageSlotPriceTiers");
+		itemizeStorageFees = properties.getBooleanProperty("contracts.itemizeStorageFees");
 		exchangeRateGasReq = properties.getLongProperty("contracts.precompile.exchangeRateGasCost");
 		stakingRewardRate = properties.getLongProperty("staking.rewardRate");
 		stakingStartThreshold = properties.getLongProperty("staking.startThreshold");
@@ -570,6 +577,18 @@ public class GlobalDynamicProperties {
 	public KnownBlockValues knownBlockValues() {
 		return knownBlockValues;
 	}
+
+	public ContractStoragePriceTiers storagePriceTiers() {
+		return storagePriceTiers;
+	}
+
+	public long storageSlotLifetime() {
+		return storageSlotLifetime;
+	}
+
+	public boolean shouldItemizeStorageFees() {
+		return itemizeStorageFees;
+        }
 
 	public int getMaxReturnedNftsPerTouch() {
 		return maxReturnedNftsPerTouch;

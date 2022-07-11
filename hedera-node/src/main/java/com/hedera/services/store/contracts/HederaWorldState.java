@@ -286,7 +286,7 @@ public class HederaWorldState implements HederaMutableWorldState {
 
 		@Override
 		public void commit() {
-			final HederaWorldState wrapped = (HederaWorldState) wrappedWorldView();
+			final var wrapped = (HederaWorldState) wrappedWorldView();
 			final var entityAccess = wrapped.entityAccess;
 			final var impactHistorian = wrapped.sigImpactHistorian;
 			final var updatedAccounts = getUpdatedAccounts();
@@ -300,7 +300,8 @@ public class HederaWorldState implements HederaMutableWorldState {
 			if (!wrapped.provisionalContractCreations.isEmpty()) {
 				wrapped.usageLimits.assertCreatableContracts(wrapped.provisionalContractCreations.size());
 			}
-			commitSizeLimitedStorageTo(entityAccess, updatedAccounts);
+			// Throws an ITE if any storage limit is exceeded, or if storage fees cannot be paid
+			commitSizeLimitedStorage(entityAccess, updatedAccounts);
 			entityAccess.recordNewKvUsageTo(trackingAccounts());
 
 			// Because we have tracked all account creations, deletions, and balance changes in the ledgers,
@@ -341,26 +342,23 @@ public class HederaWorldState implements HederaMutableWorldState {
 			}
 		}
 
-		private void commitSizeLimitedStorageTo(
+		private void commitSizeLimitedStorage(
 				final EntityAccess entityAccess,
 				final Collection<UpdateTrackingLedgerAccount<Account>> updatedAccounts
 		) {
 			for (final var updatedAccount : updatedAccounts) {
+				// We don't check updatedAccount.getStorageWasCleared(), because we only purge storage
+				// slots when a contract has expired and is being permanently removed from state
 				final var accountId = updatedAccount.getAccountId();
-				// Note that we don't have the equivalent of an account-scoped storage trie, so we can't
-				// do anything in particular when updated.getStorageWasCleared() is true. (We will address
-				// this in our global state expiration implementation.)
 				final var kvUpdates = updatedAccount.getUpdatedStorage();
 				if (!kvUpdates.isEmpty()) {
 					kvUpdates.forEach((key, value) -> entityAccess.putStorage(accountId, key, value));
 				}
-			}
-			entityAccess.flushStorage();
-			for (final var updatedAccount : updatedAccounts) {
 				if (updatedAccount.codeWasUpdated()) {
-					entityAccess.storeCode(updatedAccount.getAccountId(), updatedAccount.getCode());
+					entityAccess.storeCode(accountId, updatedAccount.getCode());
 				}
 			}
+			entityAccess.flushStorage(trackingAccounts());
 		}
 
 		@Override

@@ -175,7 +175,6 @@ class HederaSLoadOperationTest {
 
 		given(messageFrame.popStackItem()).willReturn(keyBytes).willReturn(valueBytes);
 		given(worldUpdater.get(recipientAccount)).willReturn(evmAccount);
-		given(evmAccount.getAddress()).willReturn(Address.fromHexString("0x123"));
 	}
 
 	private void givenValidContext() {

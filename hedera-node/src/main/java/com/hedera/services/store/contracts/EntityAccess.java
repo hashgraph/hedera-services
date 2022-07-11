@@ -68,7 +68,7 @@ public interface EntityAccess {
 
 	UInt256 getStorage(AccountID id, UInt256 key);
 
-	void flushStorage();
+	void flushStorage(TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger);
 
 	/* --- Bytecode access --- */
 	void storeCode(AccountID id, Bytes code);

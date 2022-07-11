@@ -34,8 +34,6 @@ import com.hederahashgraph.api.proto.java.ContractGetInfoResponse;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.Transaction;
-import com.hederahashgraph.api.proto.java.TransactionResponse;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -55,7 +53,6 @@ import static com.hedera.services.bdd.spec.transactions.contract.HapiContractCal
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 public abstract class HapiBaseContractCreate <T extends HapiTxnOp<T>> extends HapiTxnOp<T> {
-
     static final Key MISSING_ADMIN_KEY = Key.getDefaultInstance();
     static final Logger log = LogManager.getLogger(HapiContractCreate.class);
 

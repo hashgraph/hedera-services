@@ -22,10 +22,13 @@ package com.hedera.services.store.contracts;
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.SigImpactHistorian;
+import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.accounts.ContractAliases;
 import com.hedera.services.ledger.accounts.ContractCustomizer;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.state.validation.UsageLimits;
+import com.hedera.services.ledger.properties.AccountProperty;
+import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.EntityNum;
@@ -85,6 +88,8 @@ class HederaWorldStateTest {
 	private ContractCustomizer customizer;
 	@Mock
 	private UsageLimits usageLimits;
+	@Mock
+	private TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
 
 	private CodeCache codeCache;
 
@@ -444,6 +449,7 @@ class HederaWorldStateTest {
 		givenNonNullWorldLedgers();
 		final var tbdAddress = contract.asEvmAddress();
 		given(worldLedgers.aliases()).willReturn(aliases);
+		given(worldLedgers.accounts()).willReturn(accountsLedger);
 		given(aliases.resolveForEvm(tbdAddress)).willReturn(tbdAddress);
 
 		final var updater = subject.updater();
@@ -453,7 +459,7 @@ class HederaWorldStateTest {
 		updater.commit();
 
 		// then:
-		verify(entityAccess).flushStorage();
+		verify(entityAccess).flushStorage(accountsLedger);
 		verify(usageLimits).assertCreatableContracts(1);
 		verify(worldLedgers).commit(sigImpactHistorian);
 		verify(entityAccess).recordNewKvUsageTo(any());

@@ -21,6 +21,7 @@ package com.hedera.services.contracts;
  */
 
 import com.hedera.services.context.TransactionContext;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.contracts.annotations.BytecodeSource;
 import com.hedera.services.contracts.annotations.StorageSource;
 import com.hedera.services.contracts.gascalculator.GasCalculatorHederaV22;
@@ -75,6 +76,7 @@ import java.util.function.BiPredicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
+import static com.hedera.services.contracts.operation.HederaSStoreOperation.FRONTIER_MINIMUM;
 import static com.hedera.services.contracts.sources.AddressKeyedMapFactory.bytecodeMapFrom;
 import static com.hedera.services.contracts.sources.AddressKeyedMapFactory.storageMapFrom;
 import static com.hedera.services.files.EntityExpiryMapFactory.entityExpiryMapFrom;
@@ -223,10 +225,15 @@ public interface ContractsModule {
 	@IntoSet
 	Operation bindSelfDestructOperation(HederaSelfDestructOperation selfDestruct);
 
-	@Binds
+	@Provides
 	@Singleton
 	@IntoSet
-	Operation bindSStoreOperation(HederaSStoreOperation sstore);
+	static Operation bindSStoreOperation(
+			final GasCalculator gasCalculator,
+			final GlobalDynamicProperties dynamicProperties
+	) {
+		return new HederaSStoreOperation(FRONTIER_MINIMUM, gasCalculator, dynamicProperties);
+	}
 
 	@Binds
 	@Singleton

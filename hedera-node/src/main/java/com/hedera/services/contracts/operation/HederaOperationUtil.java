@@ -161,7 +161,11 @@ public final class HederaOperationUtil {
 			final UInt256 storageValue
 	) {
 		// Store the read if it is the first read for the slot/address
-		var updater = frame.getMessageFrameStack().getLast().getWorldUpdater().parentUpdater().orElse(null);
+		final var updater = frame.getMessageFrameStack()
+				.getLast()
+				.getWorldUpdater()
+				.parentUpdater()
+				.orElse(null);
 		if (updater != null) {
 			final var addressSlots =
 					((HederaWorldState.Updater) updater).getStateChanges()

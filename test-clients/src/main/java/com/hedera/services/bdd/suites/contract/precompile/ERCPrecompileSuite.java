@@ -735,7 +735,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 						)
 				).when(
 						captureChildCreate2MetaFor(
-								2, 0,
+								3, 0,
 								"setup", create2Txn, childMirror, childEip1014),
 						withOpContext(
 								(spec, opLog) -> allRunFor(

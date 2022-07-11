@@ -443,7 +443,7 @@ public class UtilVerbs {
 							getTxnRecord(parentTxnId)
 									.andAllChildRecords()
 									.hasPriority(recordWith().status(parentalStatus).txnId(parentId))
-									.hasChildRecords(parentId, childRecordAsserts)
+									.hasChildRecords(childRecordAsserts)
 									.logged());
 				});
 	}

@@ -70,6 +70,7 @@ import java.util.function.Consumer;
 import java.util.function.LongConsumer;
 
 import static com.hedera.services.bdd.spec.assertions.AssertUtils.rethrowSummaryError;
+import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.queries.QueryUtils.answerCostHeader;
 import static com.hedera.services.bdd.spec.queries.QueryUtils.answerHeader;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.asDebits;
@@ -89,6 +90,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 	private static final Logger log = LogManager.getLogger(HapiGetTxnRecord.class);
 
+	private static final String STORAGE_FEES_MEMO = "Contract storage fees";
 	private static final TransactionID defaultTxnId = TransactionID.getDefaultInstance();
 	public static final int MAX_PSEUDORANDOM_BYTES_LENGTH = 48;
 
@@ -309,13 +311,12 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 		return this;
 	}
 
-
 	public HapiGetTxnRecord hasChildRecords(TransactionRecordAsserts... providers) {
 		childRecordsExpectations = Optional.of(Arrays.asList(providers));
 		return this;
 	}
 
-	public HapiGetTxnRecord hasChildRecords(TransactionID parentId, TransactionRecordAsserts... providers) {
+	public HapiGetTxnRecord hasSeqIdChildRecords(TransactionID parentId, TransactionRecordAsserts... providers) {
 		expectedParentId = Optional.of(parentId);
 		childRecordsExpectations = Optional.of(Arrays.asList(providers));
 		return this;
@@ -412,7 +413,18 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 			if (!actualRecords.isEmpty() && isEndOfStakingPeriodRecord(actualRecords.get(0))) {
 				numStakingRecords++;
 			}
-			final var expectedChildRecords = childRecordsExpectations.get();
+			var expectedChildRecords = childRecordsExpectations.get();
+			final var numActual = actualRecords.size();
+			var numExpectations = expectedChildRecords.size();
+			// Allow child record checks to not assert anything about storage fees
+			if (numExpectations == numActual - 1) {
+				final var lastRecord = actualRecords.get(numActual - 1);
+				if (STORAGE_FEES_MEMO.equals(lastRecord.getMemo())) {
+					expectedChildRecords = new ArrayList<>(expectedChildRecords);
+					expectedChildRecords.add(recordWith());
+					numExpectations++;
+				}
+			}
 			if (expectedParentId.isPresent()) {
 				final var sequentialId = new SequentialID(expectedParentId.get());
 				for (int i = 0; i < numStakingRecords; i++) {

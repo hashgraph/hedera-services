@@ -148,15 +148,13 @@ public class MutableEntityAccess implements EntityAccess {
 	}
 
 	@Override
-	public void flushStorage() {
-		sizeLimitedStorage.validateAndCommit();
+	public void flushStorage(final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger) {
+		sizeLimitedStorage.validateAndCommit(accountsLedger);
 	}
 
 	@Override
 	public void storeCode(final AccountID id, final Bytes code) {
-		final var key = new VirtualBlobKey(VirtualBlobKey.Type.CONTRACT_BYTECODE, (int) id.getAccountNum());
-		final var value = new VirtualBlobValue(code.toArray());
-		bytecode.get().put(key, value);
+		sizeLimitedStorage.storeCode(id, code);
 	}
 
 	@Override

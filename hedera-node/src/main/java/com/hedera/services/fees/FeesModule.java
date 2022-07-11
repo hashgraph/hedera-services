@@ -43,6 +43,8 @@ import com.hedera.services.fees.calculation.system.txns.UncheckedSubmitResourceU
 import com.hedera.services.fees.calculation.token.TokenFeesModule;
 import com.hedera.services.fees.charging.NarratedCharging;
 import com.hedera.services.fees.charging.NarratedLedgerCharging;
+import com.hedera.services.fees.charging.RecordedStorageFeeCharging;
+import com.hedera.services.fees.charging.StorageFeeCharging;
 import dagger.Binds;
 import dagger.Module;
 import dagger.Provides;
@@ -68,6 +70,10 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.UncheckedSu
 		ConsensusFeesModule.class,
 })
 public interface FeesModule {
+	@Binds
+	@Singleton
+	StorageFeeCharging bindStorageFeeCharging(RecordedStorageFeeCharging recordedStorageFeeCharging);
+
 	@Binds
 	@Singleton
 	FeeCalculator bindFeeCalculator(UsageBasedFeeCalculator usageBasedFeeCalculator);

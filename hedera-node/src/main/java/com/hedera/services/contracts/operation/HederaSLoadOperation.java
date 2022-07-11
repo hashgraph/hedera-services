@@ -26,7 +26,6 @@ import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.units.bigints.UInt256;
-import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.EVM;
 import org.hyperledger.besu.evm.account.Account;
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
@@ -39,6 +38,8 @@ import org.hyperledger.besu.evm.operation.AbstractOperation;
 import javax.inject.Inject;
 import java.util.Optional;
 import java.util.OptionalLong;
+
+import static com.hedera.services.contracts.operation.HederaOperationUtil.cacheExistingValue;
 
 /**
  * Hedera adapted version of the {@link org.hyperledger.besu.evm.operation.SLoadOperation}.
@@ -69,10 +70,9 @@ public class HederaSLoadOperation extends AbstractOperation {
 	@Override
 	public OperationResult execute(final MessageFrame frame, final EVM evm) {
 		try {
-			final var addressOrAlias = frame.getRecipientAddress();
+			final var address = frame.getRecipientAddress();
 			final var worldUpdater = (HederaStackedWorldStateUpdater) frame.getWorldUpdater();
-			final Account account = worldUpdater.get(addressOrAlias);
-			final Address address = account.getAddress();
+			final Account account = worldUpdater.get(address);
 			final Bytes32 key = UInt256.fromBytes(frame.popStackItem());
 			final boolean slotIsWarm = frame.warmUpStorage(address, key);
 			final OptionalLong optionalCost = slotIsWarm ? warmCost : coldCost;
@@ -82,7 +82,7 @@ public class HederaSLoadOperation extends AbstractOperation {
 			} else {
 				UInt256 storageValue = account.getStorageValue(UInt256.fromBytes(key));
 				if (dynamicProperties.shouldEnableTraceability()) {
-					HederaOperationUtil.cacheExistingValue(frame, address, key, storageValue);
+					cacheExistingValue(frame, address, key, storageValue);
 				}
 
 				frame.pushStackItem(storageValue);

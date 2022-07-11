@@ -116,6 +116,7 @@ public class HederaStackedWorldStateUpdater
 	public byte[] permissivelyUnaliased(final byte[] evmAddress) {
 		return aliases().resolveForEvm(Address.wrap(Bytes.wrap(evmAddress))).toArrayUnsafe();
 	}
+
 	/**
 	 * Returns the underlying entity id of the last allocated EVM address.
 	 *

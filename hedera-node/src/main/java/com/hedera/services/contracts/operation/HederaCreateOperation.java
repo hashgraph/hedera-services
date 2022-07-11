@@ -22,7 +22,6 @@ package com.hedera.services.contracts.operation;
  *
  */
 
-import com.hedera.services.contracts.gascalculator.StorageGasCalculator;
 import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.state.EntityCreator;
 import com.hedera.services.store.contracts.HederaWorldUpdater;
@@ -37,19 +36,14 @@ import javax.inject.Inject;
  * Hedera adapted version of the {@link org.hyperledger.besu.evm.operation.CreateOperation}.
  *
  * Addresses are allocated through {@link HederaWorldUpdater#newContractAddress(Address)}
- *
- * Gas costs are based on the expiry of the parent and the provided storage bytes per hour variable
  */
 public class HederaCreateOperation extends AbstractRecordingCreateOperation {
-	private final StorageGasCalculator storageGasCalculator;
-
 	@Inject
 	public HederaCreateOperation(
 			final GasCalculator gasCalculator,
 			final EntityCreator creator,
 			final SyntheticTxnFactory syntheticTxnFactory,
-			final RecordsHistorian recordsHistorian,
-			final StorageGasCalculator storageGasCalculator
+			final RecordsHistorian recordsHistorian
 	) {
 		super(
 				0xF0,
@@ -61,13 +55,11 @@ public class HederaCreateOperation extends AbstractRecordingCreateOperation {
 				creator,
 				syntheticTxnFactory,
 				recordsHistorian);
-		this.storageGasCalculator = storageGasCalculator;
 	}
 
 	@Override
 	public long cost(final MessageFrame frame) {
-		final var calculator = gasCalculator();
-		return calculator.createOperationGasCost(frame) + storageGasCalculator.creationGasCost(frame, calculator);
+		return gasCalculator().createOperationGasCost(frame);
 	}
 
 	@Override

@@ -41,6 +41,8 @@ import com.hedera.services.utils.accessors.TxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -63,6 +65,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.WRONG_NONCE;
 
 @Singleton
 public class EthereumTransitionLogic implements PreFetchableTransition {
+	private static final Logger log = LogManager.getLogger(EthereumTransitionLogic.class);
 	private static final TransactionBody INVALID_SYNTH_BODY = TransactionBody.getDefaultInstance();
 
 	private final AliasManager aliasManager;
@@ -167,7 +170,11 @@ public class EthereumTransitionLogic implements PreFetchableTransition {
 
 	@Override
 	public void preFetch(final TxnAccessor accessor) {
-		spanMapManager.expandEthereumSpan(accessor);
+		try {
+			spanMapManager.expandEthereumSpan(accessor);
+		} catch (Exception e) {
+			log.warn("Pre-fetch failed for {}", accessor.getSignedTxnWrapper(), e);
+		}
 	}
 
 	@Override

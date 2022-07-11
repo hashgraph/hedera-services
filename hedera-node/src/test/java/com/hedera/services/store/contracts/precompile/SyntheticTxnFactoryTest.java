@@ -25,6 +25,8 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ethereum.EthTxData;
 import com.hedera.services.ledger.accounts.ContractCustomizer;
+import com.hedera.services.state.submerkle.CurrencyAdjustments;
+import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.store.contracts.precompile.codec.ApproveWrapper;
 import com.hedera.services.store.contracts.precompile.codec.Association;
 import com.hedera.services.store.contracts.precompile.codec.BurnWrapper;
@@ -33,7 +35,6 @@ import com.hedera.services.store.contracts.precompile.codec.MintWrapper;
 import com.hedera.services.store.contracts.precompile.codec.SetApprovalForAllWrapper;
 import com.hedera.services.store.contracts.precompile.codec.TokenCreateWrapper;
 import com.hedera.services.store.contracts.precompile.codec.TokenTransferWrapper;
-import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.test.factories.keys.KeyFactory;
@@ -41,12 +42,14 @@ import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
+import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.NodeStake;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import com.hederahashgraph.api.proto.java.TokenType;
+import com.hederahashgraph.api.proto.java.TransferList;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.api.BeforeEach;
@@ -102,6 +105,21 @@ class SyntheticTxnFactoryTest {
 		subject = new SyntheticTxnFactory(dynamicProperties);
 	}
 
+	@Test
+	void synthesizesExpectedCryptoTransfer() {
+		final var adjustments = new CurrencyAdjustments(new long[] { -123, 123 }, new long[] { 2, 98 });
+		final var expected = CryptoTransferTransactionBody.newBuilder()
+				.setTransfers(TransferList.newBuilder()
+						.addAccountAmounts(aaWith(2, -123))
+						.addAccountAmounts(aaWith(98, +123))
+						.build())
+				.build();
+
+		final var txn = subject.synthCryptoTransfer(adjustments).build();
+		final var op = txn.getCryptoTransfer();
+
+		assertEquals(op, expected);
+	}
 	@Test
 	void synthesizesPrecheckCallFromEthDataWithFnParams() {
 		given(ethTxData.hasToAddress()).willReturn(true);
@@ -780,6 +798,13 @@ class SyntheticTxnFactoryTest {
 		assertFalse(SyntheticTxnFactory.areSameBuilder(subject, differentSerialNo.asGrpc().toBuilder()));
 		assertFalse(SyntheticTxnFactory.areSameBuilder(subject, differentReceiver.asGrpc().toBuilder()));
 		assertFalse(SyntheticTxnFactory.areSameBuilder(subject, differentSender.asGrpc().toBuilder()));
+	}
+
+	private AccountAmount aaWith(final long num, final long amount) {
+		return AccountAmount.newBuilder()
+				.setAccountID(AccountID.newBuilder().setAccountNum(num).build())
+				.setAmount(amount)
+				.build();
 	}
 
 	private AccountAmount aaWith(final AccountID account, final long amount) {

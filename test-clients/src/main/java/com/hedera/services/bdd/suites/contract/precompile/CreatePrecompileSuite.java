@@ -82,7 +82,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_MUS
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CUSTOM_FEE_COLLECTOR;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RENEWAL_PERIOD;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MISSING_TOKEN_SYMBOL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
@@ -988,9 +988,9 @@ public class CreatePrecompileSuite extends HapiApiSuite {
 						getContractInfo(TOKEN_CREATE_CONTRACT).logged(),
 						childRecordsCheck(FIRST_CREATE_TXN, ResponseCodeEnum.CONTRACT_REVERT_EXECUTED,
 								TransactionRecordAsserts.recordWith()
-										.status(INVALID_EXPIRATION_TIME)
+										.status(INVALID_RENEWAL_PERIOD)
 										.contractCallResult(ContractFnResultAsserts.resultWith()
-												.error(INVALID_EXPIRATION_TIME.name())))
+												.error(INVALID_RENEWAL_PERIOD.name())))
 				);
 	}
 
