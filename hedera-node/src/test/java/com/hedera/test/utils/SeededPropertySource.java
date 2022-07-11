@@ -23,6 +23,7 @@ package com.hedera.test.utils;
 import com.google.common.primitives.Longs;
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.properties.EntityType;
+import com.hedera.services.context.properties.SerializableSemVers;
 import com.hedera.services.legacy.core.jproto.JContractIDKey;
 import com.hedera.services.legacy.core.jproto.JDelegatableContractAliasKey;
 import com.hedera.services.legacy.core.jproto.JECDSASecp256k1Key;
@@ -77,6 +78,7 @@ import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.SchedulableTransactionBody;
 import com.hederahashgraph.api.proto.java.ScheduleCreateTransactionBody;
+import com.hederahashgraph.api.proto.java.SemanticVersion;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.RunningHash;
@@ -275,7 +277,7 @@ public class SeededPropertySource {
 		final var next = NftNumPair.fromLongs(SEEDED_RANDOM.nextLong(1234), SEEDED_RANDOM.nextLong(1234));
 
 		final var subject = new MerkleUniqueToken(ownerCode, metadata, packedCreationTime, numbers);
-		subject.setSpender(new EntityId(0,0, spenderCode));
+		subject.setSpender(new EntityId(0, 0, spenderCode));
 		subject.setPrev(prev);
 		subject.setNext(next);
 		return subject;
@@ -472,6 +474,12 @@ public class SeededPropertySource {
 		if (seeded.getContractCreateResult() != null && nextBoolean()) {
 			seeded.getContractCreateResult().setSenderId(nextEntityId());
 		}
+		// added in 0.28
+		if (nextBoolean()) {
+			seeded.setPseudoRandomNumber(nextUnsignedInt());
+		} else if (nextBoolean()) {
+			seeded.setPseudoRandomBytes(nextBytes(48));
+		}
 		return seeded;
 	}
 
@@ -492,6 +500,7 @@ public class SeededPropertySource {
 	public MerkleNetworkContext next0260NetworkContext() {
 		final var numThrottles = 5;
 		final var seeded = new MerkleNetworkContext();
+		seeded.setBlockNo(Long.MIN_VALUE);
 		seeded.setConsensusTimeOfLastHandledTxn(nextNullableInstant());
 		seeded.setSeqNo(nextSeqNo());
 		seeded.updateLastScannedEntity(nextInRangeLong());
@@ -510,12 +519,18 @@ public class SeededPropertySource {
 		for (int i = 0; i < numBlocks; i++) {
 			seeded.finishBlock(nextEthHash(), anInstant.plusSeconds(2L * i));
 		}
+		seeded.setStakingRewardsActivated(nextBoolean());
+		seeded.setTotalStakedRewardStart(nextLong());
+		seeded.setTotalStakedStart(nextLong());
+		seeded.setTotalStakedStart(nextLong());
+		seeded.setPendingRewards(nextLong());
 		return seeded;
 	}
 
 	public MerkleNetworkContext next0270NetworkContext() {
 		final var numThrottles = 5;
 		final var seeded = new MerkleNetworkContext();
+		seeded.setBlockNo(Long.MIN_VALUE);
 		seeded.setConsensusTimeOfLastHandledTxn(nextNullableInstant());
 		seeded.setSeqNo(nextSeqNo());
 		seeded.updateLastScannedEntity(nextInRangeLong());
@@ -1075,6 +1090,24 @@ public class SeededPropertySource {
 		return new MerkleAccountTokens(
 				new CopyOnWriteIds(nextInRangeLongs(3 * nextNonZeroInt(10)))
 		);
+	}
+
+	public SerializableSemVers nextSerializableSemVers() {
+		return new SerializableSemVers(nextSemVer(), nextSemVer());
+	}
+
+	private SemanticVersion nextSemVer() {
+		final var ans = SemanticVersion.newBuilder();
+		ans.setMajor(nextUnsignedInt())
+				.setMinor(nextUnsignedInt())
+				.setPatch(nextUnsignedInt());
+		if (nextBoolean()) {
+			ans.setPre(nextString(8));
+		}
+		if (nextBoolean()) {
+			ans.setBuild(nextString(8));
+		}
+		return ans.build();
 	}
 
 	public ContractKey nextContractKey() {

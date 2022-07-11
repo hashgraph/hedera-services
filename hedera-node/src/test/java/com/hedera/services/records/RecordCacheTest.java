@@ -266,7 +266,7 @@ class RecordCacheTest {
 		final var platformTxn = new SwirldTransaction(signedTxn.toByteArray());
 		final var effectivePayer = IdUtils.asAccount("0.0.3");
 		given(histories.computeIfAbsent(argThat(txnId::equals), any())).willReturn(recentHistory);
-		final var accessor = PlatformTxnAccessor.from(SignedTxnAccessor.from(platformTxn.getContentsDirect()),
+		final var accessor = PlatformTxnAccessor.from(SignedTxnAccessor.from(platformTxn.getContents()),
 				platformTxn);
 
 		final var expirableTxnRecordBuilder = ExpirableTxnRecord.newBuilder()

@@ -160,8 +160,8 @@ public class ContractCreateSuite extends HapiApiSuite {
 						contractWithAutoRenewNeedSignatures(),
 						autoAssociationSlotsAppearsInInfo(),
 						getsInsufficientPayerBalanceIfSendingAccountCanPayEverythingButServiceFee(),
-						canCallPendingContractSafely(),
 						createContractWithStakingFields()
+//						canCallPendingContractSafely(),
 				}
 		);
 	}

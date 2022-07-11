@@ -1013,6 +1013,29 @@ workflows:
             - attach_workspace:
                 at: /
 
+  GCP-Daily-Services-Update-Abort-4N-2C:
+    triggers:
+      - schedule:
+          cron: "15 22 * * *"
+          filters:
+            branches:
+              only:
+                - master
+    jobs:
+      - build-platform-and-services
+      - jrs-regression:
+          context: Slack
+          regression_path: /swirlds-platform/regression/assets
+          result_path: assets/results/4N_2C/Update
+          config_type: "daily"
+          workflow-name: "GCP-Daily-Services-Crypto-Update-Abort-4N-2C"
+          requires:
+            - build-platform-and-services
+          pre-steps:
+            - install-tools
+            - attach_workspace:
+                at: /
+
   GCP-Daily-Services-Comp-Update-DisPreUpdate-4N-2C:
     triggers:
       - schedule:
@@ -1417,24 +1440,24 @@ workflows:
                 ignore:
                   - NONE
             workflow-name: "Continuous-integration"
-        - sonar-check:
-            context: SonarCloud
-            requires:
-              - artifact-build
-            workflow-name: "Continuous-integration-GCP"
+#        - sonar-check:
+#            context: SonarCloud
+#            requires:
+#              - artifact-build
+#            workflow-name: "Continuous-integration-GCP"
 
         - build-platform-and-services:
             context: SonarCloud
             requires:
               - artifact-build
             workflow-name: "Continuous-integration-GCP"
-        - javadoc-generation:
-            context: Slack
-            requires:
-              - build-platform-and-services
-            pre-steps:
-              - attach_workspace:
-                  at: /
+#        - javadoc-generation:
+#            context: Slack
+#            requires:
+#              - build-platform-and-services
+#            pre-steps:
+#              - attach_workspace:
+#                  at: /
         - jrs-regression:
             context: Slack
             regression_path: /swirlds-platform/regression/assets
@@ -1446,7 +1469,7 @@ workflows:
             slack_results_channel: "hedera-cicd"
             slack_summary_channel: "hedera-cicd"
             requires:
-              - javadoc-generation
+              - build-platform-and-services
             pre-steps:
               - install-tools
               - attach_workspace:
@@ -1478,7 +1501,7 @@ jobs:
           name: mvn install
           # use double quote otherwise the backslash of line continuation will be treated as part of mvn parameter
           command: |
-            mvn --no-transfer-progress -Dsonar.branch.name=${CIRCLE_BRANCH} -Dsonar.login=${SONAR_TOKEN} clean install sonar:sonar \
+            mvn --no-transfer-progress clean install \
               | tee /repo/test-clients/output/hapi-client.log
       - run:
           name: Save Unit Test Results
@@ -1496,12 +1519,12 @@ jobs:
       - store_artifacts:
           path: ~/junit
 
-      - run:
-          name: Upload codecov
-          command: |
-            apt update -y
-            apt install -y curl
-            bash <(wget -O - https://codecov.io/bash)
+#      - run:
+#          name: Upload codecov
+#          command: |
+#            apt update -y
+#            apt install -y curl
+#            bash <(wget -O - https://codecov.io/bash)
       - persist_to_workspace:
           root: /
           paths:

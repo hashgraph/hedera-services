@@ -24,9 +24,7 @@ import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.ethereum.EthTxData;
 import com.hedera.services.exceptions.UnknownHederaFunctionality;
-import com.hedera.services.keys.LegacyEd25519KeyReader;
 import com.hedera.services.ledger.HederaLedger;
-import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.state.submerkle.RichInstant;
@@ -44,10 +42,9 @@ import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransferList;
-import com.swirlds.common.system.AddressBook;
-import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.utility.Keyed;
+import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.fcqueue.FCQueue;
 import com.swirlds.merkle.map.MerkleMap;
 import org.apache.commons.codec.DecoderException;
@@ -154,6 +151,7 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.GetBySolidi
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.GetVersionInfo;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.NONE;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.NetworkGetExecutionTime;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.PRNG;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ScheduleCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ScheduleDelete;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ScheduleGetInfo;
@@ -280,6 +278,7 @@ public final class MiscUtils {
 	static final String SCHEDULE_DELETE_METRIC = "deleteSchedule";
 	static final String SCHEDULE_SIGN_METRIC = "signSchedule";
 	static final String SCHEDULE_GET_INFO_METRIC = "getScheduleInfo";
+	static final String PRNG_METRIC = "prng";
 
 	private static final Map<Query.QueryCase, HederaFunctionality> queryFunctions =
 			new EnumMap<>(Query.QueryCase.class);
@@ -356,6 +355,7 @@ public final class MiscUtils {
 		BASE_STAT_NAMES.put(Freeze, FREEZE_METRIC);
 		BASE_STAT_NAMES.put(SystemDelete, SYSTEM_DELETE_METRIC);
 		BASE_STAT_NAMES.put(SystemUndelete, SYSTEM_UNDELETE_METRIC);
+		BASE_STAT_NAMES.put(PRNG, PRNG_METRIC);
 		/* Queries */
 		BASE_STAT_NAMES.put(ConsensusGetTopicInfo, GET_TOPIC_INFO_METRIC);
 		BASE_STAT_NAMES.put(GetBySolidityID, GET_SOLIDITY_ADDRESS_INFO_METRIC);
@@ -427,20 +427,6 @@ public final class MiscUtils {
 						EntityIdUtils.readableId(nftTransfer.getReceiverAccountID())))
 				.toList()
 				.toString();
-	}
-
-	public static JKey lookupInCustomStore(
-			final LegacyEd25519KeyReader b64Reader,
-			final String storeLoc,
-			final String kpId
-	) {
-		try {
-			return new JEd25519Key(CommonUtils.unhex(b64Reader.hexedABytesFrom(storeLoc, kpId)));
-		} catch (IllegalArgumentException e) {
-			final var msg = String.format(
-					"Arguments 'storeLoc=%s' and 'kpId=%s' did not denote a valid key!", storeLoc, kpId);
-			throw new IllegalArgumentException(msg, e);
-		}
 	}
 
 	public static String readableProperty(final Object o) {
@@ -713,6 +699,9 @@ public final class MiscUtils {
 		if (txn.hasEthereumTransaction()) {
 			return EthereumTransaction;
 		}
+		if (txn.hasPrng()) {
+			return PRNG;
+		}
 		throw new UnknownHederaFunctionality();
 	}
 
@@ -815,17 +804,20 @@ public final class MiscUtils {
 			ordinary.setTokenPause(scheduledTxn.getTokenPause());
 		} else if (scheduledTxn.hasTokenUnpause()) {
 			ordinary.setTokenUnpause(scheduledTxn.getTokenUnpause());
+		} else if (scheduledTxn.hasPrng()) {
+			ordinary.setPrng(scheduledTxn.getPrng());
 		}
 		return ordinary.build();
 	}
 
 
 	/**
-	 * @param functionality any {@link HederaFunctionality}
+	 * @param functionality
+	 * 		any {@link HederaFunctionality}
 	 * @return true if the functionality could possibly be allowed to be scheduled.
-	 * Some functionally may not be in {@link SchedulableTransactionBody} yet but could be in the future.
-	 * The scheduling.whitelist configuration property is separate from this and provides the final list
-	 * of functionality that can be scheduled.
+	 * 		Some functionally may not be in {@link SchedulableTransactionBody} yet but could be in the future.
+	 * 		The scheduling.whitelist configuration property is separate from this and provides the final list
+	 * 		of functionality that can be scheduled.
 	 */
 	public static boolean isSchedulable(final HederaFunctionality functionality) {
 		if (functionality == null) {

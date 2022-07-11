@@ -62,5 +62,6 @@
   "TransactionGetReceipt": 0.2,
   "TransactionGetRecord": 0.2,
   "SystemDelete": 0.2,
-  "SystemUndelete": 0.2
+  "SystemUndelete": 0.2,
+  "PRNG": 0.2
 }

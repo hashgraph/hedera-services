@@ -26,10 +26,12 @@ import com.hedera.services.files.HFileMeta;
 import com.hedera.services.files.SysFileCallbacks;
 import com.hedera.services.files.TieredHederaFs;
 import com.hedera.services.files.interceptors.MockFileNumbers;
+import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleSpecialFiles;
 import com.hedera.services.sysfiles.serdes.FeesJsonToProtoSerde;
 import com.hedera.services.utils.EntityIdUtils;
+import com.hedera.services.utils.MiscUtils;
 import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
 import com.hedera.test.extensions.LoggingSubject;
@@ -50,8 +52,8 @@ import com.hederahashgraph.api.proto.java.ServicesConfigurationList;
 import com.hederahashgraph.api.proto.java.Setting;
 import com.hederahashgraph.api.proto.java.ThrottleDefinitions;
 import com.hederahashgraph.api.proto.java.TimestampSeconds;
-import com.swirlds.common.system.Address;
-import com.swirlds.common.system.AddressBook;
+import com.swirlds.common.system.address.Address;
+import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.utility.CommonUtils;
 import org.apache.commons.codec.DecoderException;
 import org.junit.jupiter.api.BeforeEach;
@@ -124,7 +126,7 @@ class HfsSystemFilesManagerTest {
 			.build();
 	private Map<FileID, byte[]> data;
 	private Map<FileID, HFileMeta> metadata;
-	private JKey masterKey;
+	private JEd25519Key masterKey;
 	private static final byte[] aKeyEncoding = "not-really-A-key".getBytes();
 	private static final byte[] bKeyEncoding = "not-really-B-key".getBytes();
 	private AddressBook currentBook;
@@ -149,12 +151,13 @@ class HfsSystemFilesManagerTest {
 	@BeforeEach
 	@SuppressWarnings("unchecked")
 	void setup() throws DecoderException {
-		masterKey = TxnHandlingScenario.COMPLEX_KEY_ACCOUNT_KT.asJKey();
+		final var keyBytes = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".getBytes();
+		masterKey = new JEd25519Key(keyBytes);
 		expectedInfo = new HFileMeta(
 				false,
 				JKey.mapKey(Key.newBuilder()
 						.setKeyList(KeyList.newBuilder()
-								.addKeys(TxnHandlingScenario.COMPLEX_KEY_ACCOUNT_KT.asKey())).build()),
+								.addKeys(MiscUtils.asKeyUnchecked(masterKey))).build()),
 				expiry);
 
 		final var keyA = mock(PublicKey.class);
@@ -216,8 +219,8 @@ class HfsSystemFilesManagerTest {
 
 		callbacks = mock(SysFileCallbacks.class);
 
-		subject = new HfsSystemFilesManager(() -> currentBook, fileNumbers, properties, hfs, () -> masterKey,
-				callbacks);
+		subject = new HfsSystemFilesManager(() -> currentBook, fileNumbers, properties,
+				hfs, () -> masterKey, callbacks);
 	}
 
 	@Test

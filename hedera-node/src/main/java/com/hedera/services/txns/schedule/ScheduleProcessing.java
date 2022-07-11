@@ -8,9 +8,9 @@ package com.hedera.services.txns.schedule;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *	 http://www.apache.org/licenses/LICENSE-2.0
- *
+ * 
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ * 
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -106,7 +106,8 @@ public class ScheduleProcessing {
 			}
 		}
 
-		log.error("maxProcessingLoopIterations reached in expire, we should never get here!");
+		log.warn("maxProcessingLoopIterations reached in expire. " +
+				"Waiting for next call to continue. Scheduled Transaction expiration may be delayed.");
 	}
 
 	/**
@@ -201,7 +202,8 @@ public class ScheduleProcessing {
 
 		}
 
-		log.error("maxProcessingLoopIterations reached in triggerNextTransactionExpiringAsNeeded, we should never get here!");
+		log.warn("maxProcessingLoopIterations reached in triggerNextTransactionExpiringAsNeeded. " +
+				"Waiting for next call to continue. Scheduled Transaction expiration may be delayed.");
 
 		return null;
 	}
@@ -280,7 +282,7 @@ public class ScheduleProcessing {
 	 * @return the max number of iterations of any loop calling triggerNextTransactionExpiringAsNeeded.
 	 */
 	public long getMaxProcessingLoopIterations() {
-		return dynamicProperties.schedulingMaxTxnPerSecond() * 2;
+		return dynamicProperties.schedulingMaxTxnPerSecond() * 10;
 	}
 
 	private TxnAccessor getTxnAccessorForThrottleCheck(final ScheduleID scheduleId,

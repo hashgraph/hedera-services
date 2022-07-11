@@ -20,32 +20,32 @@ package com.hedera.services.state.initialization;
  * ‍
  */
 
-import com.google.protobuf.ByteString;
 import com.hedera.services.config.AccountNumbers;
 import com.hedera.services.context.annotations.CompositeProps;
 import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.exceptions.NegativeAccountBalanceException;
-import com.hedera.services.keys.LegacyEd25519KeyReader;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.ledger.backing.BackingStore;
+import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleAccountTokens;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
-import com.swirlds.common.system.AddressBook;
-import com.swirlds.common.utility.CommonUtils;
+import com.swirlds.common.system.address.AddressBook;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.util.List;
+import java.util.function.Supplier;
 
 import static com.hedera.services.context.BasicTransactionContext.EMPTY_KEY;
 import static com.hedera.services.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
 import static com.hedera.services.utils.MiscUtils.asFcKeyUnchecked;
+import static com.hedera.services.utils.MiscUtils.asKeyUnchecked;
 
 @Singleton
 public class BackedSystemAccountsCreator implements SystemAccountsCreator {
@@ -55,20 +55,19 @@ public class BackedSystemAccountsCreator implements SystemAccountsCreator {
 
 	private final AccountNumbers accountNums;
 	private final PropertySource properties;
-	private final LegacyEd25519KeyReader b64KeyReader;
+	private final Supplier<JEd25519Key> genesisKeySource;
 
 	private JKey genesisKey;
-	private String hexedABytes;
 
 	@Inject
 	public BackedSystemAccountsCreator(
-			AccountNumbers accountNums,
-			@CompositeProps PropertySource properties,
-			LegacyEd25519KeyReader b64KeyReader
+			final AccountNumbers accountNums,
+			final @CompositeProps PropertySource properties,
+			final Supplier<JEd25519Key> genesisKeySource
 	) {
 		this.accountNums = accountNums;
 		this.properties = properties;
-		this.b64KeyReader = b64KeyReader;
+		this.genesisKeySource = genesisKeySource;
 	}
 
 	/**
@@ -149,25 +148,11 @@ public class BackedSystemAccountsCreator implements SystemAccountsCreator {
 
 	private JKey getGenesisKey() {
 		if (genesisKey == null) {
-			try {
-				genesisKey = asFcKeyUnchecked(Key.newBuilder()
-						.setKeyList(KeyList.newBuilder()
-								.addKeys(Key.newBuilder()
-										.setEd25519(ByteString.copyFrom(CommonUtils.unhex(getHexedABytes())))))
-						.build());
-			} catch (IllegalArgumentException e) {
-				throw new IllegalStateException("Could not construct genesis key!", e);
-			}
+			// Traditionally the genesis key has been a key list, keep that way to avoid breaking any clients
+			genesisKey = asFcKeyUnchecked(Key.newBuilder()
+					.setKeyList(KeyList.newBuilder().addKeys(asKeyUnchecked(genesisKeySource.get())))
+					.build());
 		}
 		return genesisKey;
-	}
-
-	private String getHexedABytes() {
-		if (hexedABytes == null) {
-			hexedABytes = b64KeyReader.hexedABytesFrom(
-					properties.getStringProperty("bootstrap.genesisB64Keystore.path"),
-					properties.getStringProperty("bootstrap.genesisB64Keystore.keyName"));
-		}
-		return hexedABytes;
 	}
 }

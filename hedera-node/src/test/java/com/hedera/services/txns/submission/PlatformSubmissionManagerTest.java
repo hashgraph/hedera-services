@@ -96,8 +96,8 @@ class PlatformSubmissionManagerTest {
 	@Test
 	void updatesRecordCacheWhenTxnIsCreated() {
 		// setup:
-		ArgumentCaptor<SwirldTransaction> captor =
-				ArgumentCaptor.forClass(SwirldTransaction.class);
+		ArgumentCaptor<byte[]> captor =
+				ArgumentCaptor.forClass(byte[].class);
 
 		given(platform.createTransaction(captor.capture())).willReturn(true);
 
@@ -105,7 +105,7 @@ class PlatformSubmissionManagerTest {
 		var result = subject.trySubmission(accessor);
 
 		// then:
-		assertArrayEquals(signedTxn.toByteArray(), captor.getValue().getContents());
+		assertArrayEquals(signedTxn.toByteArray(), captor.getValue());
 		assertEquals(OK, result);
 		// and:
 		verify(recordCache).addPreConsensus(accessor.getTxnId());
@@ -128,8 +128,8 @@ class PlatformSubmissionManagerTest {
 	@Test
 	void submitsChildInsteadOfParentForUnchecked() {
 		// setup:
-		ArgumentCaptor<SwirldTransaction> captor =
-				ArgumentCaptor.forClass(SwirldTransaction.class);
+		ArgumentCaptor<byte[]> captor =
+				ArgumentCaptor.forClass(byte[].class);
 
 		given(platform.createTransaction(captor.capture())).willReturn(true);
 
@@ -137,7 +137,7 @@ class PlatformSubmissionManagerTest {
 		var result = subject.trySubmission(uncheckedAccessor);
 
 		// then:
-		assertArrayEquals(signedTxn.toByteArray(), captor.getValue().getContents());
+		assertArrayEquals(signedTxn.toByteArray(), captor.getValue());
 		assertEquals(OK, result);
 		// and:
 		verify(recordCache).addPreConsensus(accessor.getTxnId());

@@ -28,6 +28,7 @@ import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.files.HFileMeta;
 import com.hedera.services.files.SysFileCallbacks;
 import com.hedera.services.files.TieredHederaFs;
+import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.core.jproto.JKeyList;
 import com.hedera.services.sysfiles.serdes.ThrottlesJsonToProtoSerde;
@@ -41,8 +42,8 @@ import com.hederahashgraph.api.proto.java.ServicesConfigurationList;
 import com.hederahashgraph.api.proto.java.Setting;
 import com.hederahashgraph.api.proto.java.ThrottleDefinitions;
 import com.hederahashgraph.api.proto.java.TimestampSeconds;
-import com.swirlds.common.system.Address;
-import com.swirlds.common.system.AddressBook;
+import com.swirlds.common.system.address.Address;
+import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.utility.CommonUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -64,7 +65,7 @@ import java.util.stream.LongStream;
 import static com.google.protobuf.TextFormat.escapeBytes;
 import static com.hedera.services.sysfiles.serdes.FeesJsonToProtoSerde.loadFeeScheduleFromStream;
 import static com.hedera.services.utils.EntityIdUtils.parseAccount;
-import static com.swirlds.common.system.Address.ipString;
+import static com.swirlds.common.system.address.Address.ipString;
 
 @Singleton
 public final class HfsSystemFilesManager implements SystemFilesManager {
@@ -83,7 +84,7 @@ public final class HfsSystemFilesManager implements SystemFilesManager {
 	private final FileNumbers fileNumbers;
 	private final PropertySource properties;
 	private final TieredHederaFs hfs;
-	private final Supplier<JKey> keySupplier;
+	private final Supplier<JEd25519Key> keySupplier;
 	private final Supplier<AddressBook> bookSupplier;
 	private final SysFileCallbacks callbacks;
 
@@ -93,7 +94,7 @@ public final class HfsSystemFilesManager implements SystemFilesManager {
 			final FileNumbers fileNumbers,
 			@CompositeProps final PropertySource properties,
 			final TieredHederaFs hfs,
-			final Supplier<JKey> keySupplier,
+			final Supplier<JEd25519Key> keySupplier,
 			final SysFileCallbacks callbacks
 	) {
 		this.hfs = hfs;

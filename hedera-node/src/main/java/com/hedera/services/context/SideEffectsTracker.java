@@ -4,7 +4,7 @@ package com.hedera.services.context;
  * ‌
  * Hedera Services Node
  * ​
- * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
+ * Copyright (C) 2018 - 2022 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -58,9 +58,10 @@ import static com.hedera.services.ledger.HederaLedger.TOKEN_ID_COMPARATOR;
 @Singleton
 public class SideEffectsTracker {
 	private static final long INAPPLICABLE_NEW_SUPPLY = -1;
+	public static final int MISSING_NUMBER = -1;
 	private static final int MAX_TOKENS_TOUCHED = 1_000;
 	private static final int MAX_BALANCE_CHANGES = 2048;
-
+	public static final int MAX_PSEUDORANDOM_BYTES_LENGTH = 48;
 	private final TokenID[] tokensTouched = new TokenID[MAX_TOKENS_TOUCHED];
 	private final long[] changedAccounts = new long[MAX_BALANCE_CHANGES];
 	private final long[] balanceChanges = new long[MAX_BALANCE_CHANGES];
@@ -82,6 +83,9 @@ public class SideEffectsTracker {
 	// Either the key-derived alias for an auto-created account, or the EVM address of a created contract
 	private ByteString newEntityAlias = ByteString.EMPTY;
 	private List<TokenTransferList> explicitNetTokenUnitOrOwnershipChanges = null;
+
+	private byte[] pseudorandomBytes = null;
+	private int pseudorandomNumber = MISSING_NUMBER;
 
 	@Inject
 	public SideEffectsTracker() {
@@ -424,6 +428,26 @@ public class SideEffectsTracker {
 		return all;
 	}
 
+	public void trackRandomBytes(final byte[] bytes) {
+		this.pseudorandomBytes = bytes;
+	}
+
+	public void trackRandomNumber(final int pseudoRandomNumber) {
+		this.pseudorandomNumber = pseudoRandomNumber;
+	}
+
+	public byte[] getPseudorandomBytes() {
+		return pseudorandomBytes;
+	}
+
+	public int getPseudorandomNumber() {
+		return pseudorandomNumber;
+	}
+
+	public boolean hasTrackedRandomData() {
+		return pseudorandomNumber >= 0 || (pseudorandomBytes != null && pseudorandomBytes.length > 0);
+	}
+
 	/**
 	 * Clears all side effects tracked since the last call to this method.
 	 */
@@ -435,6 +459,8 @@ public class SideEffectsTracker {
 		newAccountId = null;
 		newContractId = null;
 		newEntityAlias = ByteString.EMPTY;
+		pseudorandomNumber = MISSING_NUMBER;
+		pseudorandomBytes = null;
 	}
 
 	/**
