@@ -1,0 +1,16 @@
+checkSignedStateFromDisk,                      1
+csvFileName,                                   MainNetStats
+csvOutputFolder,                               data/stats
+loadKeysFromPfxFiles,                          0
+doUpnp,                                        false
+maxOutgoingSyncs,                              1
+reconnect.active,                              1
+reconnect.asyncStreamTimeoutMilliseconds,      60000
+reconnect.reconnectWindowSeconds,              -1
+showInternalStats,                             1
+state.roundsExpired,                           500
+state.saveStatePeriod,                         300
+useLoopbackIp,                                 false
+waitAtStartup,                                 false
+jasperDb.storagePath,                          /opt/hedera/services/data/saved
+jasperDb.iteratorInputBufferBytes,             16777216

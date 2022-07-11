@@ -24,9 +24,11 @@ import org.junit.jupiter.api.Test;
 
 import static com.hedera.services.state.migration.StateVersions.LAST_025X_VERSION;
 import static com.hedera.services.state.migration.StateVersions.LAST_026X_VERSION;
+import static com.hedera.services.state.migration.StateVersions.LAST_027X_VERSION;
 import static com.hedera.services.state.migration.StateVersions.RELEASE_025X_VERSION;
 import static com.hedera.services.state.migration.StateVersions.RELEASE_0260_VERSION;
 import static com.hedera.services.state.migration.StateVersions.RELEASE_0270_VERSION;
+import static com.hedera.services.state.migration.StateVersions.RELEASE_0280_VERSION;
 import static com.hedera.services.state.migration.StateVersions.lastSoftwareVersionOf;
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -35,6 +37,7 @@ class StateVersionsTest {
 	void getsExpectedLastVersionsForSupportedMigrationsOnly() {
 		assertSame(LAST_025X_VERSION, lastSoftwareVersionOf(RELEASE_025X_VERSION));
 		assertSame(LAST_026X_VERSION, lastSoftwareVersionOf(RELEASE_0260_VERSION));
-		assertNull(lastSoftwareVersionOf(RELEASE_0270_VERSION));
+		assertSame(LAST_027X_VERSION, lastSoftwareVersionOf(RELEASE_0270_VERSION));
+		assertNull(lastSoftwareVersionOf(RELEASE_0280_VERSION));
 	}
 }

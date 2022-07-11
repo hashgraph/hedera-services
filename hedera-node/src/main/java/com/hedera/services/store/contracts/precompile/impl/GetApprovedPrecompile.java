@@ -65,6 +65,7 @@ public class GetApprovedPrecompile extends AbstractReadOnlyPrecompile {
 		final var nftId = NftId.fromGrpc(tokenId, getApprovedWrapper.serialNo());
 		validateTrueOrRevert(nftsLedger.contains(nftId), INVALID_TOKEN_NFT_SERIAL_NUMBER);
 		final var spender = (EntityId) nftsLedger.get(nftId, SPENDER);
-		return encoder.encodeGetApproved(spender.toEvmAddress());
+		final var canonicalSpender = ledgers.canonicalAddress(spender.toEvmAddress());
+		return encoder.encodeGetApproved(canonicalSpender);
 	}
 }
