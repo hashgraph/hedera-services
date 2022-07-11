@@ -144,6 +144,20 @@ public class DecodingFacade {
 	private static final Bytes ERC_TRANSFER_SELECTOR = Bytes.wrap(ERC_TRANSFER_FUNCTION.selector());
 	private static final ABIType<Tuple> ERC_TRANSFER_DECODER = TypeFactory.create("(bytes32,uint256)");
 
+	private static final Function WIPE_TOKEN_ACCOUNT_FUNCTION =
+			new Function("wipeTokenAccount(address, address, uint32)", INT_OUTPUT);
+
+	private static final Bytes WIPE_TOKEN_ACCOUNT_SELECTOR = Bytes.wrap(WIPE_TOKEN_ACCOUNT_FUNCTION.selector());
+
+	private static final ABIType<Tuple> WIPE_TOKEN_ACCOUNT_DECODER = TypeFactory.create("(bytes32,bytes32,uint32)");
+
+	private static final Function WIPE_TOKEN_ACCOUNT_NFT_FUNCTION =
+			new Function("wipeTokenAccount(address, address, uint64[])", INT_OUTPUT);
+
+	private static final Bytes WIPE_TOKEN_ACCOUNT_NFT_SELECTOR = Bytes.wrap(WIPE_TOKEN_ACCOUNT_NFT_FUNCTION.selector());
+
+	private static final ABIType<Tuple> WIPE_TOKEN_ACCOUNT_NFT_DECODER = TypeFactory.create("(bytes32,bytes32,uint32[])");
+
 	private static final Function ERC_TRANSFER_FROM_FUNCTION =
 			new Function("transferFrom(address,address,uint256)");
 	private static final Bytes ERC_TRANSFER_FROM_SELECTOR = Bytes.wrap(ERC_TRANSFER_FROM_FUNCTION.selector());
@@ -580,6 +594,26 @@ public class DecodingFacade {
 		tokenCreateWrapper.setRoyaltyFees(royaltyFees);
 
 		return tokenCreateWrapper;
+	}
+
+	public WipeWrapper decodeWipe(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
+		final Tuple decodedArguments = decodeFunctionCall(input, WIPE_TOKEN_ACCOUNT_SELECTOR, WIPE_TOKEN_ACCOUNT_DECODER);
+
+		final var tokenID = convertAddressBytesToTokenID(decodedArguments.get(0));
+		final var accountID = convertLeftPaddedAddressToAccountId(decodedArguments.get(1), aliasResolver);
+		final var fungibleAmount = (long) decodedArguments.get(2);
+
+		return WipeWrapper.forFungible(tokenID, accountID, fungibleAmount);
+	}
+
+	public WipeWrapper decodeWipeNFT(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
+		final Tuple decodedArguments = decodeFunctionCall(input, WIPE_TOKEN_ACCOUNT_NFT_SELECTOR, WIPE_TOKEN_ACCOUNT_NFT_DECODER);
+
+		final var tokenID = convertAddressBytesToTokenID(decodedArguments.get(0));
+		final var accountID = convertLeftPaddedAddressToAccountId(decodedArguments.get(1), aliasResolver);
+		final var serialNumbers = ((long[]) decodedArguments.get(2));
+
+		return WipeWrapper.forNonFungible(tokenID, accountID, Arrays.stream(serialNumbers).boxed().toList());
 	}
 
 	private TokenCreateWrapper decodeTokenCreateWithoutFees(
