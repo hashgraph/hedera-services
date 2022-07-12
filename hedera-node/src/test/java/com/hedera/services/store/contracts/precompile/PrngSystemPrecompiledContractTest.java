@@ -23,6 +23,7 @@ package com.hedera.services.store.contracts.precompile;
 import com.google.common.primitives.Longs;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.contracts.execution.HederaBlockValues;
 import com.hedera.services.contracts.execution.LivePricesSource;
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.records.RecordsHistorian;
@@ -56,10 +57,9 @@ import static com.hedera.services.store.contracts.precompile.PrngSystemPrecompil
 import static com.hedera.services.store.contracts.precompile.PrngSystemPrecompiledContract.PSEUDORANDOM_SEED_GENERATOR_SELECTOR;
 import static com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils.GasCostType.PRNG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_GAS;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PRNG_RANGE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static org.hyperledger.besu.datatypes.Address.ALTBN128_ADD;
+import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.INVALID_OPERATION;
+import static org.hyperledger.besu.evm.frame.MessageFrame.State.COMPLETED_SUCCESS;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -108,7 +108,7 @@ class PrngSystemPrecompiledContractTest {
 	void setUp() {
 		logic = new PrngLogic(dynamicProperties, () -> runningHashLeaf, sideEffectsTracker);
 		subject = new PrngSystemPrecompiledContract(gasCalculator, logic, creator, tracker, recordsHistorian,
-				pricingUtils, () -> consensusNow, livePricesSource, dynamicProperties);
+				pricingUtils, livePricesSource, dynamicProperties);
 	}
 
 	@Test
@@ -137,9 +137,8 @@ class PrngSystemPrecompiledContractTest {
 
 	@Test
 	void inputRangeCannotBeNegative() {
-		final var input =randomNumberGeneratorInput(-10);
-		assertThrows(InvalidTransactionException.class,
-				() -> subject.generatePseudoRandomData(input));
+		final var input = randomNumberGeneratorInput(-10);
+		assertThrows(InvalidTransactionException.class, () -> subject.generatePseudoRandomData(input));
 	}
 
 	@Test
@@ -147,9 +146,16 @@ class PrngSystemPrecompiledContractTest {
 		final var input = randomNumberGeneratorInput(-10);
 		initialSetUp();
 		given(creator.createUnsuccessfulSyntheticRecord(any())).willReturn(childRecord);
-		final var result = subject.computePrecompile(input, frame);
+		given(frame.getBlockValues()).willReturn(new HederaBlockValues(10L, 123L, consensusNow));
 
-		assertEquals(INVALID_PRNG_RANGE.getNumber(), result.getOutput().toInt());
+		final var response = subject.computePrngResult(10L, input, frame);
+		assertEquals(INVALID_OPERATION, response.getLeft().getHaltReason().get());
+		assertTrue(response.getRight().getMessage().contains("INVALID_PRNG_RANGE"));
+
+		final var result = subject.computePrecompile(input, frame);
+		assertEquals(null, result.getOutput());
+		assertEquals(INVALID_OPERATION, result.getHaltReason().get());
+		assertEquals(MessageFrame.State.EXCEPTIONAL_HALT, result.getState());
 	}
 
 	@Test
@@ -157,7 +163,7 @@ class PrngSystemPrecompiledContractTest {
 		given(pricingUtils.getCanonicalPriceInTinyCents(PRNG)).willReturn(100000000L);
 		given(livePricesSource.currentGasPriceInTinycents(consensusNow, HederaFunctionality.ContractCall))
 				.willReturn(800L);
-		assertEquals(100000000L / 800L, subject.calculateGas());
+		assertEquals(100000000L / 800L, subject.calculateGas(consensusNow));
 	}
 
 	@Test
@@ -166,9 +172,14 @@ class PrngSystemPrecompiledContractTest {
 		initialSetUp();
 		given(creator.createUnsuccessfulSyntheticRecord(any())).willReturn(childRecord);
 		given(frame.getRemainingGas()).willReturn(0L);
-		final var result = subject.computePrecompile(input, frame);
+		given(frame.getBlockValues()).willReturn(new HederaBlockValues(10L, 123L, consensusNow));
 
-		assertEquals(INSUFFICIENT_GAS.getNumber(), result.getOutput().toInt());
+		final var response = subject.computePrngResult(10L, input, frame);
+		assertEquals(INVALID_OPERATION, response.getLeft().getHaltReason().get());
+		assertTrue(response.getRight().getMessage().contains("INSUFFICIENT_GAS"));
+
+		final var result = subject.computePrecompile(input, frame);
+		assertEquals(null, result.getOutput());
 	}
 
 	@Test
@@ -177,10 +188,16 @@ class PrngSystemPrecompiledContractTest {
 		initialSetUp();
 		given(creator.createSuccessfulSyntheticRecord(anyList(), any(), anyString())).willReturn(childRecord);
 		given(runningHashLeaf.nMinusThreeRunningHash()).willReturn(new Hash(TxnUtils.randomUtf8Bytes(48)));
+		given(frame.getBlockValues()).willReturn(new HederaBlockValues(10L, 123L, consensusNow));
+
+		final var response = subject.computePrngResult(10L, input, frame);
+		assertEquals(Optional.empty(), response.getLeft().getHaltReason());
+		assertEquals(COMPLETED_SUCCESS, response.getLeft().getState());
+		assertEquals(null, response.getRight());
 
 		final var result = subject.computePrecompile(input, frame);
-
-		assertEquals(SUCCESS.getNumber(), result.getOutput().toInt());
+		assertNotNull(result.getOutput());
+		assertTrue(result.getOutput().toBigInteger().intValue() < 10);
 	}
 
 	@Test
@@ -189,22 +206,33 @@ class PrngSystemPrecompiledContractTest {
 		initialSetUp();
 		given(creator.createSuccessfulSyntheticRecord(anyList(), any(), anyString())).willReturn(childRecord);
 		given(runningHashLeaf.nMinusThreeRunningHash()).willReturn(new Hash(TxnUtils.randomUtf8Bytes(48)));
+		given(frame.getBlockValues()).willReturn(new HederaBlockValues(10L, 123L, consensusNow));
+
+		final var response = subject.computePrngResult(10L, input, frame);
+		assertEquals(Optional.empty(), response.getLeft().getHaltReason());
+		assertEquals(COMPLETED_SUCCESS, response.getLeft().getState());
+		assertEquals(null, response.getRight());
 
 		final var result = subject.computePrecompile(input, frame);
-
-		assertEquals(SUCCESS.getNumber(), result.getOutput().toInt());
+		assertNotNull(result.getOutput());
+		assertEquals(32, result.getOutput().toArray().length);
 	}
 
 	@Test
-	void unknownExceptionFailsTheCall() throws InterruptedException {
+	void unknownExceptionFailsTheCall() {
 		final var input = random256BitGeneratorInput();
 		initialSetUp();
-		given(creator.createSuccessfulSyntheticRecord(anyList(), any(), anyString())).willThrow(IndexOutOfBoundsException.class);
-		given(runningHashLeaf.nMinusThreeRunningHash()).willReturn(new Hash(TxnUtils.randomUtf8Bytes(48)));
+		given(frame.getBlockValues()).willReturn(new HederaBlockValues(10L, 123L, consensusNow));
+		final var logic = mock(PrngLogic.class);
+		subject = new PrngSystemPrecompiledContract(gasCalculator, logic, creator, tracker, recordsHistorian,
+				pricingUtils, livePricesSource, dynamicProperties);
+		given(logic.getNMinus3RunningHashBytes()).willThrow(IndexOutOfBoundsException.class);
+
+		final var response = subject.computePrngResult(10L, input, frame);
+		assertEquals(INVALID_OPERATION, response.getLeft().getHaltReason().get());
 
 		final var result = subject.computePrecompile(input, frame);
-
-		assertEquals(FAIL_INVALID.getNumber(), result.getOutput().toInt());
+		assertEquals(null, result.getOutput());
 	}
 
 	@Test
@@ -282,8 +310,8 @@ class PrngSystemPrecompiledContractTest {
 	void failedChildRecordHasExpectations() {
 		setUpForChildRecord();
 		given(creator.createUnsuccessfulSyntheticRecord(any())).willReturn(childRecord);
-		final var childRecord = subject.createUnsuccessfulChildRecord(FAIL_INVALID,
-				frame, randomNumberGeneratorInput(10));
+		final var childRecord = subject.createFailedChildRecord(FAIL_INVALID,
+				frame);
 
 		assertNotNull(childRecord);
 		assertArrayEquals(new byte[0], childRecord.getPseudoRandomBytes());
@@ -299,6 +327,7 @@ class PrngSystemPrecompiledContractTest {
 		initialSetUp();
 		given(updater.parentUpdater()).willReturn(Optional.empty());
 		given(creator.createSuccessfulSyntheticRecord(anyList(), any(), anyString())).willReturn(childRecord);
+		given(frame.getBlockValues()).willReturn(new HederaBlockValues(10L, 123L, consensusNow));
 		given(runningHashLeaf.nMinusThreeRunningHash()).willReturn(new Hash(TxnUtils.randomUtf8Bytes(48)));
 
 		final var msg = assertThrows(InvalidTransactionException.class, () -> subject.computePrecompile(input, frame));
@@ -307,14 +336,17 @@ class PrngSystemPrecompiledContractTest {
 	}
 
 	@Test
-	void testOutsideRangeValues() throws InterruptedException {
+	void testOutsideRangeValues() {
 		final var input = input(PSEUDORANDOM_NUM_IN_RANGE_GENERATOR_SELECTOR,
 				Bytes32.leftPad(Bytes.wrap(ByteBuffer.allocate(8).putLong(Long.MAX_VALUE).array())));
 		initialSetUp();
+		given(frame.getBlockValues()).willReturn(new HederaBlockValues(10L, 123L, consensusNow));
+		final var response = subject.computePrngResult(10L, input, frame);
+
+		assertEquals(INVALID_OPERATION, response.getLeft().getHaltReason().get());
 
 		final var result = subject.computePrecompile(input, frame);
-
-		assertEquals(INVALID_PRNG_RANGE.getNumber(), result.getOutput().toInt());
+		assertEquals(null, result.getOutput());
 	}
 
 	private static Bytes random256BitGeneratorInput() {

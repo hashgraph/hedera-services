@@ -40,6 +40,7 @@ import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.PrngTransactionBody;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes;
@@ -60,8 +61,6 @@ import java.util.function.Supplier;
 
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hedera.services.state.EntityCreator.EMPTY_MEMO;
-import static com.hedera.services.store.contracts.precompile.codec.EncodingFacade.SUCCESS_RESULT;
-import static com.hedera.services.store.contracts.precompile.codec.EncodingFacade.resultFrom;
 import static com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils.GasCostType.PRNG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_GAS;
@@ -89,7 +88,6 @@ public class PrngSystemPrecompiledContract extends AbstractPrecompiledContract {
 	private HederaStackedWorldStateUpdater updater;
 	private final RecordsHistorian recordsHistorian;
 	private final PrecompilePricingUtils pricingUtils;
-	private final Supplier<Instant> consensusNow;
 	private final LivePricesSource livePricesSource;
 	private final GlobalDynamicProperties properties;
 	private long gasRequirement;
@@ -102,7 +100,6 @@ public class PrngSystemPrecompiledContract extends AbstractPrecompiledContract {
 			final SideEffectsTracker tracker,
 			final RecordsHistorian recordsHistorian,
 			final PrecompilePricingUtils pricingUtils,
-			final Supplier<Instant> consensusNow,
 			final LivePricesSource livePricesSource,
 			final GlobalDynamicProperties properties) {
 		super(PRECOMPILE_NAME, gasCalculator);
@@ -111,7 +108,6 @@ public class PrngSystemPrecompiledContract extends AbstractPrecompiledContract {
 		this.tracker = tracker;
 		this.recordsHistorian = recordsHistorian;
 		this.pricingUtils = pricingUtils;
-		this.consensusNow = consensusNow;
 		this.livePricesSource = livePricesSource;
 		this.properties = properties;
 	}
@@ -123,44 +119,21 @@ public class PrngSystemPrecompiledContract extends AbstractPrecompiledContract {
 
 	@Override
 	public PrecompileContractResult computePrecompile(final Bytes input, final MessageFrame frame) {
-		ExpirableTxnRecord.Builder childRecord;
-		Bytes result;
-		Bytes randomNum = Bytes.EMPTY;
+		final var gasNeeded = calculateGas(Instant.ofEpochSecond(frame.getBlockValues().getTimestamp()));
+		final var result = computePrngResult(gasNeeded, input, frame);
 
 		if (frame.isStatic()) {
-			// All queries are static calls; but it's possible for a contract transaction to use
-			// a static call, so double-check that it truly doesn't have mutable ledgers---which
-			// are unique to transactions
 			final var proxyUpdater = (HederaStackedWorldStateUpdater) frame.getWorldUpdater();
-			if (!proxyUpdater.hasMutableLedgers()) {
-				return PrecompiledContract.PrecompileContractResult.halt(
-						null,
-						Optional.of(ExceptionalHaltReason.ILLEGAL_STATE_CHANGE));
+			if (!proxyUpdater.isInTransaction()) {
+				// This thread is answering a ContractCallLocal query; don't create a record or change
+				// instance fields, just return the gas required and output for the given input
+				return result.getLeft();
 			}
 		}
-
-		try {
-			gasRequirement = calculateGas();
-			validateTrue(frame.getRemainingGas() >= gasRequirement, INSUFFICIENT_GAS);
-
-			randomNum = generatePseudoRandomData(input);
-
-			childRecord = createSuccessfulChildRecord(randomNum, frame, input);
-			result = SUCCESS_RESULT;
-
-		} catch (InvalidTransactionException e) {
-			childRecord = createUnsuccessfulChildRecord(e.getResponseCode(), frame,
-					e.isReverting() ? e.getRevertReason() : Bytes.EMPTY);
-			result = resultFrom(e.getResponseCode());
-		} catch (IllegalArgumentException e) {
-			// if the range value provided is not in integer range, an IllegalArgumentException in thrown
-			childRecord = createUnsuccessfulChildRecord(INVALID_PRNG_RANGE, frame, Bytes.EMPTY);
-			result = resultFrom(INVALID_PRNG_RANGE);
-		} catch (Exception e) {
-			log.warn("Internal precompile failure", e);
-			childRecord = createUnsuccessfulChildRecord(FAIL_INVALID, frame, Bytes.EMPTY);
-			result = resultFrom(FAIL_INVALID);
-		}
+		final var randomNum = result.getLeft().getOutput();
+		final var childRecord = result.getRight() == null ?
+				createSuccessfulChildRecord(randomNum, frame, input) :
+				createUnsuccessfulChildRecord(result, frame);
 
 		final var parentUpdater = updater.parentUpdater();
 		if (parentUpdater.isPresent()) {
@@ -170,9 +143,25 @@ public class PrngSystemPrecompiledContract extends AbstractPrecompiledContract {
 			throw new InvalidTransactionException("PRNG precompile frame had no parent updater", FAIL_INVALID);
 		}
 
-		return result == null ?
-				PrecompiledContract.PrecompileContractResult.halt(null, Optional.of(ExceptionalHaltReason.NONE))
-				: PrecompiledContract.PrecompileContractResult.success(result);
+		return result.getLeft();
+	}
+
+	Pair<PrecompileContractResult, Exception> computePrngResult(
+			final long gasNeeded,
+			final Bytes input,
+			final MessageFrame frame) {
+		try {
+			validateTrue(frame.getRemainingGas() >= gasNeeded, INSUFFICIENT_GAS);
+			final var randomNum = generatePseudoRandomData(input);
+			return Pair.of(PrecompiledContract.PrecompileContractResult.success(randomNum), null);
+		} catch (InvalidTransactionException | IllegalArgumentException e) {
+			return Pair.of(PrecompiledContract.PrecompileContractResult.halt(null,
+					Optional.ofNullable(ExceptionalHaltReason.INVALID_OPERATION)), e);
+		} catch (Exception e) {
+			log.warn("Internal precompile failure", e);
+			return Pair.of(PrecompiledContract.PrecompileContractResult.halt(null,
+					Optional.ofNullable(ExceptionalHaltReason.INVALID_OPERATION)), e);
+		}
 	}
 
 	Bytes generatePseudoRandomData(final Bytes input) {
@@ -210,23 +199,27 @@ public class PrngSystemPrecompiledContract extends AbstractPrecompiledContract {
 		return hashBytes == null || hashBytes.length == 0;
 	}
 
-	long calculateGas() {
+	long calculateGas(final Instant now) {
 		final var feesInTinyCents = pricingUtils.getCanonicalPriceInTinyCents(PRNG);
-		final var currentGasPriceInTinyCents = livePricesSource.currentGasPriceInTinycents(consensusNow.get(),
+		final var currentGasPriceInTinyCents = livePricesSource.currentGasPriceInTinycents(now,
 				HederaFunctionality.ContractCall);
 		return feesInTinyCents / currentGasPriceInTinyCents;
 	}
 
 	ExpirableTxnRecord.Builder createUnsuccessfulChildRecord(
+			final Pair<PrecompileContractResult, Exception> result, final MessageFrame frame) {
+		var response = FAIL_INVALID;
+		if (result.getRight() instanceof InvalidTransactionException) {
+			response = ((InvalidTransactionException) result.getRight()).getResponseCode();
+		}
+		return createFailedChildRecord(response, frame);
+	}
+
+	ExpirableTxnRecord.Builder createFailedChildRecord(
 			final ResponseCodeEnum status,
-			final MessageFrame frame,
-			final Bytes revertReason) {
+			final MessageFrame frame) {
 		final var childRecord = creator.createUnsuccessfulSyntheticRecord(status);
 		addContractCallResultToRecord(childRecord, null, Optional.of(status), frame);
-		if (!revertReason.isEmpty()) {
-			frame.setState(MessageFrame.State.REVERT);
-			frame.setRevertReason(revertReason);
-		}
 		return childRecord;
 	}
 

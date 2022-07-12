@@ -176,7 +176,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 				return Pair.of(defaultGas(), null);
 			} else {
 				final var proxyUpdater = (HederaStackedWorldStateUpdater) frame.getWorldUpdater();
-				if (!proxyUpdater.hasMutableLedgers()) {
+				if (!proxyUpdater.isInTransaction()) {
 					final var executor = infrastructureFactory.newRedirectExecutor(
 							input, frame, precompilePricingUtils::computeViewFunctionGas);
 					return executor.computeCosted();
