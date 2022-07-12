@@ -47,7 +47,7 @@ dependencyResolutionManagement {
             version("guava-version", "31.1-jre")
             version("hapi-version", "0.28.0-random-SNAPSHOT")
             version("headlong-version", "6.1.1")
-            version("jackson-version", "2.12.6.1")
+            version("jackson-version", "2.13.3")
             version("javax-annotation-version", "1.3.2")
             version("javax-inject-version", "1")
             version("jetbrains-annotation-version", "16.0.2")

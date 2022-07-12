@@ -24,7 +24,6 @@ import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
-import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hedera.services.bdd.suites.utils.sysfiles.serdes.StandardSerdes;
 import com.hederahashgraph.api.proto.java.AccountAmount;
@@ -41,6 +40,7 @@ import org.apache.logging.log4j.Logger;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.math.BigInteger;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.List;
@@ -102,7 +102,7 @@ public class RecordCreationSuite extends HapiApiSuite {
 	public List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(
 				new HapiApiSpec[] {
-						ensureSystemStateAsExpected(),
+						ensureSystemStateAsExpected(), // TODO : Investigate
 						confirmNftToggleIsWorksThenReenable(),
 						payerRecordCreationSanityChecks(),
 						accountsGetPayerRecordsIfSoConfigured(),
@@ -546,7 +546,7 @@ public class RecordCreationSuite extends HapiApiSuite {
 				).when(
 						contractCreate("PayReceivable").via("createTxn")
 				).then(
-						contractCall("PayReceivable", "deposit", 1_000L)
+						contractCall("PayReceivable", "deposit", BigInteger.valueOf(1_000))
 								.via("callTxn")
 								.sending(1_000L)
 				);

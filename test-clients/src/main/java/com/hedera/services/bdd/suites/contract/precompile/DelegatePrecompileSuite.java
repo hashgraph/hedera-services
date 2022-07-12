@@ -32,6 +32,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
 
+import java.math.BigInteger;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -61,6 +62,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
+import static com.hedera.services.bdd.suites.contract.Utils.asHeadlongAddress;
 import static com.hedera.services.bdd.suites.token.TokenAssociationSpecs.VANILLA_TOKEN;
 import static com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult.htsPrecompileResult;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
@@ -148,8 +150,10 @@ public class DelegatePrecompileSuite extends HapiApiSuite {
 												newKeyNamed(SIMPLE_AND_DELEGATE_KEY_NAME).shape(SIMPLE_AND_DELEGATE_KEY_SHAPE.signedWith(sigs(ON, OUTER_CONTRACT))),
 												cryptoUpdate(ACCOUNT).key(SIMPLE_AND_DELEGATE_KEY_NAME),
 												contractCall(OUTER_CONTRACT, "transferDelegateCall",
-														asAddress(vanillaTokenTokenID.get()), asAddress(accountID.get()),
-														asAddress(receiverID.get()), 1L
+														asHeadlongAddress(asAddress(vanillaTokenTokenID.get())),
+														asHeadlongAddress(asAddress(accountID.get())),
+														asHeadlongAddress(asAddress(receiverID.get()))
+														, 1L
 												)
 														.payingWith(GENESIS)
 														.via("delegateTransferCallWithDelegateContractKeyTxn")
@@ -198,7 +202,7 @@ public class DelegatePrecompileSuite extends HapiApiSuite {
 												newKeyNamed(DELEGATE_KEY).shape(DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(OUTER_CONTRACT))),
 												tokenUpdate(VANILLA_TOKEN).supplyKey(DELEGATE_KEY),
 												contractCall(OUTER_CONTRACT, "burnDelegateCall",
-														asAddress(vanillaTokenTokenID.get()), 0, List.of(1L)
+														asHeadlongAddress(asAddress(vanillaTokenTokenID.get())), BigInteger.valueOf(0), new long[] {1L}
 												)
 														.payingWith(GENESIS)
 														.via("delegateBurnCallWithDelegateContractKeyTxn")
@@ -245,7 +249,7 @@ public class DelegatePrecompileSuite extends HapiApiSuite {
 												newKeyNamed(DELEGATE_KEY).shape(DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(OUTER_CONTRACT))),
 												tokenUpdate(VANILLA_TOKEN).supplyKey(DELEGATE_KEY),
 												contractCall(OUTER_CONTRACT, "mintDelegateCall",
-														asAddress(vanillaTokenTokenID.get()), 1
+														asHeadlongAddress(asAddress(vanillaTokenTokenID.get())), BigInteger.valueOf(1)
 												)
 														.payingWith(GENESIS)
 														.via("delegateBurnCallWithDelegateContractKeyTxn")

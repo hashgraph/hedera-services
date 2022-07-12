@@ -27,6 +27,7 @@ import com.hedera.services.bdd.suites.perf.PerfTestLoadSettings;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.math.BigInteger;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
@@ -100,7 +101,7 @@ public class SStoreOperationLoadTest extends LoadTest {
 						getContractInfo(contract).hasExpectedInfo().logged(),
 
 						// Initialize storage size
-						contractCall(contract, "setSize", size)
+						contractCall(contract, "setSize", BigInteger.valueOf(size))
 								.hasRetryPrecheckFrom(BUSY, DUPLICATE_TRANSACTION, PLATFORM_TRANSACTION_NOT_CREATED)
 								.gas(300_000)
 				).then(

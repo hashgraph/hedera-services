@@ -29,6 +29,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Assertions;
 
+import java.math.BigInteger;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -494,7 +495,7 @@ public class ScheduleLongTermExecutionSpecs extends HapiApiSuite {
 				).when(
 						scheduleCreate(
 								"basicXfer",
-								contractCall("SimpleUpdate", "set", 5, 42)
+								contractCall("SimpleUpdate", "set", BigInteger.valueOf(5), BigInteger.valueOf(42))
 										.gas(300000L)
 						)
 								.waitForExpiry()

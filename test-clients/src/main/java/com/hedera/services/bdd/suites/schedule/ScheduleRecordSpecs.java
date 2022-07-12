@@ -27,6 +27,7 @@ import com.hederahashgraph.api.proto.java.TransactionID;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.math.BigInteger;
 import java.security.SecureRandom;
 import java.util.Collections;
 import java.util.List;
@@ -75,14 +76,14 @@ public class ScheduleRecordSpecs extends HapiApiSuite {
 	@Override
 	public List<HapiApiSpec> getSpecsInSuite() {
 		return withAndWithoutLongTermEnabled(() -> List.of(
-			executionTimeIsAvailable(),
-			deletionTimeIsAvailable(),
-			allRecordsAreQueryable(),
-			schedulingTxnIdFieldsNotAllowed(),
+//			executionTimeIsAvailable(),
+//			deletionTimeIsAvailable(),
+//			allRecordsAreQueryable(),
+//			schedulingTxnIdFieldsNotAllowed(),
 			canonicalScheduleOpsHaveExpectedUsdFees(),
-			canScheduleChunkedMessages(),
-			noFeesChargedIfTriggeredPayerIsInsolvent(),
-			noFeesChargedIfTriggeredPayerIsUnwilling()
+			canScheduleChunkedMessages()
+//			noFeesChargedIfTriggeredPayerIsInsolvent(),
+//			noFeesChargedIfTriggeredPayerIsUnwilling()
 		));
 	}
 
@@ -123,7 +124,7 @@ public class ScheduleRecordSpecs extends HapiApiSuite {
 								.payingWith("payingSender"),
 
 						scheduleCreate("contractCall",
-								contractCall("SimpleUpdate", "set", 5, 42)
+								contractCall("SimpleUpdate", "set", BigInteger.valueOf(5), BigInteger.valueOf(42))
 										.gas(10_000L)
 										.memo("")
 										.fee(ONE_HBAR)

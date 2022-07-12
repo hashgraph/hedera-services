@@ -56,7 +56,8 @@ public class SubmitMessagePerfSuite extends HapiApiSuite {
 	}
 
 	private HapiApiSpec submitMessagePerf() {
-		final int NUM_SUBMISSIONS = 100_000;
+		final int NUM_SUBMISSIONS = 100000;
+		// If NUM_SUBMISSIONS = 10000 -> Success
 
 		return defaultHapiSpec("submitMessagePerf")
 				.given(

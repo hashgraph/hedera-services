@@ -104,7 +104,7 @@ public class UniqueTokenManagementSpecs extends HapiApiSuite {
 				mintFailsWithDeletedToken(),
 				mintUniqueTokenWorksWithRepeatedMetadata(),
 				mintDistinguishesFeeSubTypes(),
-				mintUniqueTokenReceiptCheck(),
+				mintUniqueTokenReceiptCheck(), // Failing on 'master'
 				populatingMetadataForFungibleDoesNotWork(),
 				populatingAmountForNonFungibleDoesNotWork(),
 				finiteNftReachesMaxSupplyProperly(),
