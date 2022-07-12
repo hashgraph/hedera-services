@@ -171,7 +171,7 @@ class HederaStackedWorldStateUpdaterTest {
 	void detectsMutableLedgers() {
 		given(trackingLedgers.areMutable()).willReturn(true);
 
-		assertTrue(subject.hasMutableLedgers());
+		assertTrue(subject.isInTransaction());
 	}
 
 	@Test
