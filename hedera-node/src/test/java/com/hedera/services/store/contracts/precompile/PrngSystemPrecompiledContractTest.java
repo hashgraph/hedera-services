@@ -57,6 +57,8 @@ import static com.hedera.services.store.contracts.precompile.PrngSystemPrecompil
 import static com.hedera.services.store.contracts.precompile.PrngSystemPrecompiledContract.PSEUDORANDOM_SEED_GENERATOR_SELECTOR;
 import static com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils.GasCostType.PRNG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_GAS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PRNG_RANGE;
 import static org.hyperledger.besu.datatypes.Address.ALTBN128_ADD;
 import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.INVALID_OPERATION;
 import static org.hyperledger.besu.evm.frame.MessageFrame.State.COMPLETED_SUCCESS;
@@ -150,7 +152,7 @@ class PrngSystemPrecompiledContractTest {
 
 		final var response = subject.computePrngResult(10L, input, frame);
 		assertEquals(INVALID_OPERATION, response.getLeft().getHaltReason().get());
-		assertTrue(response.getRight().getMessage().contains("INVALID_PRNG_RANGE"));
+		assertEquals(INVALID_PRNG_RANGE, response.getRight());
 
 		final var result = subject.computePrecompile(input, frame);
 		assertEquals(null, result.getOutput());
@@ -176,7 +178,7 @@ class PrngSystemPrecompiledContractTest {
 
 		final var response = subject.computePrngResult(10L, input, frame);
 		assertEquals(INVALID_OPERATION, response.getLeft().getHaltReason().get());
-		assertTrue(response.getRight().getMessage().contains("INSUFFICIENT_GAS"));
+		assertEquals(INSUFFICIENT_GAS, response.getRight());
 
 		final var result = subject.computePrecompile(input, frame);
 		assertEquals(null, result.getOutput());
@@ -310,7 +312,7 @@ class PrngSystemPrecompiledContractTest {
 	void failedChildRecordHasExpectations() {
 		setUpForChildRecord();
 		given(creator.createUnsuccessfulSyntheticRecord(any())).willReturn(childRecord);
-		final var childRecord = subject.createFailedChildRecord(FAIL_INVALID,
+		final var childRecord = subject.createUnsuccessfulChildRecord(FAIL_INVALID,
 				frame);
 
 		assertNotNull(childRecord);

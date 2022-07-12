@@ -82,10 +82,10 @@ public class TransactionRecordAsserts extends BaseErroringAssertsProvider<Transa
 	}
 
 	public TransactionRecordAsserts pseudoRandomBytes() {
-		this.<byte[]>registerTypedProvider("pseudoRandomBytes", spec -> prngBytes -> {
+		this.<ByteString>registerTypedProvider("prngBytes", spec -> prngBytes -> {
 			try {
-				Assertions.assertNotNull(prngBytes, "Null pseudoRandomBytes!");
-				Assertions.assertEquals(256, prngBytes.length, "Wrong pseudoRandomBytes!");
+				Assertions.assertNotNull(prngBytes, "Null prngBytes!");
+				Assertions.assertEquals(32, prngBytes.size(), "Wrong prngBytes!");
 			} catch (Throwable t) {
 				return List.of(t);
 			}
@@ -95,9 +95,9 @@ public class TransactionRecordAsserts extends BaseErroringAssertsProvider<Transa
 	}
 
 	public TransactionRecordAsserts pseudoRandomNumber(final int range) {
-		this.<Integer>registerTypedProvider("pseudoRandomNumber", spec -> prngNumber -> {
+		this.<Integer>registerTypedProvider("prngNumber", spec -> prngNumber -> {
 			try {
-				Assertions.assertTrue(prngNumber >= 0 && prngNumber < range, "Wrong pseudoRandomNumber!");
+				Assertions.assertTrue(prngNumber >= 0 && prngNumber < range, "Wrong prngNumber!");
 			} catch (Throwable t) {
 				return List.of(t);
 			}
