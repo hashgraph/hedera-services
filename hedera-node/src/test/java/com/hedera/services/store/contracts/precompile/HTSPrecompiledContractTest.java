@@ -20,7 +20,50 @@ package com.hedera.services.store.contracts.precompile;
  * ‍
  */
 
+import static com.hedera.services.contracts.execution.HederaMessageCallProcessor.INVALID_TRANSFER;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_ASSOCIATE_TOKEN;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_ASSOCIATE_TOKENS;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_BURN_TOKEN;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_CREATE_FUNGIBLE_TOKEN;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_CREATE_FUNGIBLE_TOKEN_WITH_FEES;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_CREATE_NON_FUNGIBLE_TOKEN;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_CREATE_NON_FUNGIBLE_TOKEN_WITH_FEES;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_CRYPTO_TRANSFER;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_DISSOCIATE_TOKEN;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_DISSOCIATE_TOKENS;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_ERC_NAME;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_MINT_TOKEN;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_REDIRECT_FOR_TOKEN;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_TRANSFER_NFT;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_TRANSFER_NFTS;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_TRANSFER_TOKEN;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_TRANSFER_TOKENS;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.TEST_CONSENSUS_TIME;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.associateOp;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.contractAddress;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.createTokenCreateWrapperWithKeys;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.dissociateToken;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.fungible;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.fungibleBurn;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.fungibleMint;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.fungibleMintAmountOversize;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.multiDissociateOp;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.timestamp;
+import static org.hyperledger.besu.evm.frame.MessageFrame.State.REVERT;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+
 import com.esaulpaugh.headlong.util.Integers;
+import com.hedera.services.config.NetworkInfo;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.contracts.sources.TxnAwareEvmSigsVerifier;
@@ -65,6 +108,8 @@ import com.hederahashgraph.api.proto.java.TokenDissociateTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.fee.FeeObject;
+import java.io.IOException;
+import java.util.Collections;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
@@ -76,51 +121,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-
-import java.io.IOException;
-import java.util.Collections;
-
-import static com.hedera.services.contracts.execution.HederaMessageCallProcessor.INVALID_TRANSFER;
-import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_ASSOCIATE_TOKEN;
-import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_ASSOCIATE_TOKENS;
-import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_BURN_TOKEN;
-import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_CREATE_FUNGIBLE_TOKEN;
-import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_CREATE_FUNGIBLE_TOKEN_WITH_FEES;
-import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_CREATE_NON_FUNGIBLE_TOKEN;
-import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_CREATE_NON_FUNGIBLE_TOKEN_WITH_FEES;
-import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_CRYPTO_TRANSFER;
-import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_DISSOCIATE_TOKEN;
-import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_DISSOCIATE_TOKENS;
-import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_MINT_TOKEN;
-import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_ERC_NAME;
-import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_REDIRECT_FOR_TOKEN;
-import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_TRANSFER_NFT;
-import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_TRANSFER_NFTS;
-import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_TRANSFER_TOKEN;
-import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_TRANSFER_TOKENS;
-import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.TEST_CONSENSUS_TIME;
-import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.associateOp;
-import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.contractAddress;
-import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.createTokenCreateWrapperWithKeys;
-import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.dissociateToken;
-import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.fungible;
-import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.fungibleBurn;
-import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.fungibleMint;
-import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.fungibleMintAmountOversize;
-import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.multiDissociateOp;
-import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.timestamp;
-import static org.hyperledger.besu.evm.frame.MessageFrame.State.REVERT;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 class HTSPrecompiledContractTest {
@@ -174,6 +174,8 @@ class HTSPrecompiledContractTest {
 	private PrecompilePricingUtils precompilePricingUtils;
 	@Mock
 	private AssetsLoader assetLoader;
+	@Mock
+	private NetworkInfo networkInfo;
 
 	private static final long viewTimestamp = 10L;
 	private static final int CENTS_RATE = 12;
@@ -188,7 +190,7 @@ class HTSPrecompiledContractTest {
 		precompilePricingUtils = new PrecompilePricingUtils(assetLoader, exchange, () -> feeCalculator, resourceCosts, stateView);
 		subject = new HTSPrecompiledContract(
 				dynamicProperties, gasCalculator, recordsHistorian, sigsVerifier, decoder, encoder, syntheticTxnFactory,
-				creator, impliedTransfers, () -> feeCalculator, stateView, precompilePricingUtils, infrastructureFactory);
+				creator, impliedTransfers, () -> feeCalculator, stateView, precompilePricingUtils, infrastructureFactory, networkInfo);
 	}
 
 	@Test

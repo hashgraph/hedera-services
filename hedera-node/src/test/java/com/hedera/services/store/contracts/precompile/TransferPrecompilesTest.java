@@ -20,7 +20,50 @@ package com.hedera.services.store.contracts.precompile;
  * ‍
  */
 
+import static com.hedera.services.state.EntityCreator.EMPTY_MEMO;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_CRYPTO_TRANSFER;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_TRANSFER_NFT;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_TRANSFER_NFTS;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_TRANSFER_TOKEN;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_TRANSFER_TOKENS;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.DEFAULT_GAS_PRICE;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.TEST_CONSENSUS_TIME;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.TOKEN_TRANSFER_WRAPPER;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.contractAddr;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.contractAddress;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.feeCollector;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.nftTransferChanges;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.nftTransferList;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.nftsTransferChanges;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.nftsTransferList;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.parentContractAddress;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.receiver;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.sender;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.successResult;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.timestamp;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.tokenTransferChanges;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.tokensTransferChanges;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.tokensTransferChangesSenderOnly;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.tokensTransferList;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.tokensTransferListReceiverOnly;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.tokensTransferListSenderOnly;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_CHARGING_EXCEEDED_MAX_ACCOUNT_AMOUNTS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+
 import com.esaulpaugh.headlong.util.Integers;
+import com.hedera.services.config.NetworkInfo;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
@@ -67,6 +110,10 @@ import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.fee.FeeObject;
+import java.util.Collections;
+import java.util.Deque;
+import java.util.Iterator;
+import java.util.Optional;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.units.bigints.UInt256;
@@ -82,53 +129,6 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
-
-import java.util.Collections;
-import java.util.Deque;
-import java.util.Iterator;
-import java.util.Optional;
-
-import static com.hedera.services.state.EntityCreator.EMPTY_MEMO;
-import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_CRYPTO_TRANSFER;
-import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_TRANSFER_NFT;
-import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_TRANSFER_NFTS;
-import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_TRANSFER_TOKEN;
-import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_TRANSFER_TOKENS;
-import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.DEFAULT_GAS_PRICE;
-import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.TEST_CONSENSUS_TIME;
-import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.TOKEN_TRANSFER_WRAPPER;
-import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.contractAddr;
-import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.contractAddress;
-import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.feeCollector;
-import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.nftTransferChanges;
-import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.nftTransferList;
-import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.nftsTransferChanges;
-import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.nftsTransferList;
-import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.parentContractAddress;
-import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.receiver;
-import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.sender;
-import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.successResult;
-import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.timestamp;
-import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.tokenTransferChanges;
-import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.tokensTransferChanges;
-import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.tokensTransferChangesSenderOnly;
-import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.tokensTransferList;
-import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.tokensTransferListReceiverOnly;
-import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.tokensTransferListSenderOnly;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_CHARGING_EXCEEDED_MAX_ACCOUNT_AMOUNTS;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN;
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 class TransferPrecompilesTest {
@@ -204,6 +204,8 @@ class TransferPrecompilesTest {
 	private HbarCentExchange exchange;
 	@Mock
 	private ExchangeRate exchangeRate;
+	@Mock
+	private NetworkInfo networkInfo;
 
 	private static final long TEST_SERVICE_FEE = 5_000_000;
 	private static final long TEST_NETWORK_FEE = 400_000;
@@ -221,7 +223,7 @@ class TransferPrecompilesTest {
 		subject = new HTSPrecompiledContract(
 				dynamicProperties, gasCalculator, recordsHistorian, sigsVerifier, decoder, encoder, syntheticTxnFactory,
 				creator, impliedTransfersMarshal, () -> feeCalculator, stateView, precompilePricingUtils,
-				infrastructureFactory);
+				infrastructureFactory, networkInfo);
 		given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
 		given(worldUpdater.permissivelyUnaliased(any())).willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 	}
