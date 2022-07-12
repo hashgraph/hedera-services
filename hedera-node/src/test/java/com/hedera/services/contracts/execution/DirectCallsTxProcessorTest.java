@@ -161,6 +161,8 @@ class DirectCallsTxProcessorTest {
 		given(dynamicProperties.fundingAccount()).willReturn(new Id(0, 0, 1010).asGrpcAccount());
 		given(worldLedgers.wrapped(sideEffects)).willReturn(worldLedgers);
 		given(worldLedgers.typeOf(any())).willReturn(TokenType.FUNGIBLE_COMMON);
+		given(worldLedgers.nameOf(any())).willReturn("token");
+		given(encoder.encodeName("token")).willReturn(Bytes.EMPTY);
 		given(feeCalculator.estimatePayment(any(), any(), any(), any(), any())).willReturn(mockFeeObject);
 		given(feeCalculator.estimatedGasPriceInTinybars(HederaFunctionality.ContractCall, timestamp))
 				.willReturn(1L);
@@ -175,7 +177,7 @@ class DirectCallsTxProcessorTest {
 		var result = directCallsTxProcessor.execute(
 				sender,
 				GAS_LIMIT,
-				1234L,
+				0L,
 				precompileCallData,
 				consensusTime,
 				receiverAddress,
@@ -196,6 +198,8 @@ class DirectCallsTxProcessorTest {
 		given(dynamicProperties.fundingAccount()).willReturn(new Id(0, 0, 1010).asGrpcAccount());
 		given(worldLedgers.wrapped(sideEffects)).willReturn(worldLedgers);
 		given(worldLedgers.typeOf(any())).willReturn(TokenType.FUNGIBLE_COMMON);
+		given(worldLedgers.nameOf(any())).willReturn("token");
+		given(encoder.encodeName("token")).willReturn(Bytes.EMPTY);
 		var evmAccount = mock(EvmAccount.class);
 		given(updater.getOrCreateSenderAccount(any())).willReturn(evmAccount);
 		var senderMutableAccount = mock(MutableAccount.class);
@@ -215,7 +219,7 @@ class DirectCallsTxProcessorTest {
 		var result = directCallsTxProcessor.execute(
 				sender,
 				GAS_LIMIT,
-				1234L,
+				0L,
 				precompileCallData,
 				consensusTime,
 				receiverAddress,
@@ -237,6 +241,8 @@ class DirectCallsTxProcessorTest {
 		given(dynamicProperties.fundingAccount()).willReturn(new Id(0, 0, 1010).asGrpcAccount());
 		given(worldLedgers.wrapped(sideEffects)).willReturn(worldLedgers);
 		given(worldLedgers.typeOf(any())).willReturn(TokenType.FUNGIBLE_COMMON);
+		given(worldLedgers.nameOf(any())).willReturn("token");
+		given(encoder.encodeName("token")).willReturn(Bytes.EMPTY);
 		//fees
 		given(feeCalculator.estimatePayment(any(), any(), any(), any(), any())).willReturn(mockFeeObject);
 		given(feeCalculator.estimatedGasPriceInTinybars(HederaFunctionality.ContractCall, timestamp))
@@ -255,7 +261,7 @@ class DirectCallsTxProcessorTest {
 		var result = directCallsTxProcessor.execute(
 				sender,
 				GAS_LIMIT,
-				1234L,
+				0L,
 				precompileCallData,
 				consensusTime,
 				receiverAddress,
@@ -278,6 +284,8 @@ class DirectCallsTxProcessorTest {
 		given(dynamicProperties.fundingAccount()).willReturn(new Id(0, 0, 1010).asGrpcAccount());
 		given(worldLedgers.wrapped(sideEffects)).willReturn(worldLedgers);
 		given(worldLedgers.typeOf(any())).willReturn(TokenType.FUNGIBLE_COMMON);
+		given(worldLedgers.nameOf(any())).willReturn("token");
+		given(encoder.encodeName("token")).willReturn(Bytes.EMPTY);
 		//fees
 		given(feeCalculator.estimatePayment(any(), any(), any(), any(), any())).willReturn(mockFeeObject);
 		given(feeCalculator.estimatedGasPriceInTinybars(HederaFunctionality.ContractCall, timestamp))
@@ -301,7 +309,7 @@ class DirectCallsTxProcessorTest {
 		var result = directCallsTxProcessor.execute(
 				sender,
 				GAS_LIMIT,
-				1234L,
+				0L,
 				precompileCallData,
 				consensusTime,
 				receiverAddress,
@@ -491,6 +499,8 @@ class DirectCallsTxProcessorTest {
 		givenValidMockEth();
 		final var MAX_REFUND_PERCENTAGE = 100;
 		given(worldLedgers.wrapped(sideEffects)).willReturn(worldLedgers);
+		given(worldLedgers.nameOf(any())).willReturn("token");
+		given(encoder.encodeName("token")).willReturn(Bytes.EMPTY);
 		given(worldLedgers.typeOf(any())).willReturn(TokenType.FUNGIBLE_COMMON);
 		given(dynamicProperties.maxGasRefundPercentage()).willReturn(MAX_REFUND_PERCENTAGE);
 		given(dynamicProperties.fundingAccount()).willReturn(new Id(0, 0, 1010).asGrpcAccount());
@@ -525,7 +535,7 @@ class DirectCallsTxProcessorTest {
 		var result = directCallsTxProcessor.execute(
 				sender,
 				gasLimit,
-				1234L,
+				0L,
 				precompileCallData,
 				consensusTime,
 				receiverAddress,

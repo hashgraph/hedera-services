@@ -47,6 +47,7 @@ import java.util.Optional;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_GAS;
 import static org.hyperledger.besu.evm.frame.MessageFrame.State.COMPLETED_SUCCESS;
 import static org.hyperledger.besu.evm.frame.MessageFrame.State.EXCEPTIONAL_HALT;
+import static org.hyperledger.besu.evm.frame.MessageFrame.State.REVERT;
 
 @Singleton
 public class DirectCallsTxProcessor {
@@ -143,6 +144,9 @@ public class DirectCallsTxProcessor {
 	private void callHtsPrecompile(PrecompileMessage message) {
 		htsPrecompiledContract.callHtsPrecompileDirectly(message);
 		final var gasRequirement = message.getGasRequired();
+		if(message.getState() == REVERT){
+			return;
+		}
 
 		if (message.getGasRemaining() < gasRequirement) {
 			message.decrementRemainingGas(message.getGasRemaining());
