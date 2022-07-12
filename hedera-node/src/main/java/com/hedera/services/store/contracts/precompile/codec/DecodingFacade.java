@@ -20,6 +20,8 @@ package com.hedera.services.store.contracts.precompile.codec;
  * ‍
  */
 
+import static com.hedera.services.utils.EntityIdUtils.accountIdFromEvmAddress;
+
 import com.esaulpaugh.headlong.abi.ABIType;
 import com.esaulpaugh.headlong.abi.Function;
 import com.esaulpaugh.headlong.abi.Tuple;
@@ -38,19 +40,16 @@ import com.hedera.services.store.models.NftId;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
-import org.apache.tuweni.bytes.Bytes;
-import org.hyperledger.besu.datatypes.Address;
-
-import javax.inject.Inject;
-import javax.inject.Singleton;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.function.UnaryOperator;
-
-import static com.hedera.services.utils.EntityIdUtils.accountIdFromEvmAddress;
+import javax.inject.Inject;
+import javax.inject.Singleton;
+import org.apache.tuweni.bytes.Bytes;
+import org.hyperledger.besu.datatypes.Address;
 
 @Singleton
 public class DecodingFacade {
@@ -61,6 +60,7 @@ public class DecodingFacade {
 	private static final String INT_OUTPUT = "(int)";
 	private static final String BOOL_OUTPUT = "(bool)";
 	private static final String STRING_OUTPUT = "(string)";
+	private static final String ADDRESS_OUTPUT = "(bytes32)";
 	private static final String ADDRESS_PAIR_RAW_TYPE = "(bytes32,bytes32)";
 	public static final String UINT256_RAW_TYPE = "(uint256)";
 
@@ -228,6 +228,21 @@ public class DecodingFacade {
 			new Function("approve(address,uint256)", BOOL_OUTPUT);
 	private static final Bytes TOKEN_APPROVE_SELECTOR = Bytes.wrap(TOKEN_APPROVE_FUNCTION.selector());
 	private static final ABIType<Tuple> TOKEN_APPROVE_DECODER = TypeFactory.create("(bytes32,uint256)");
+
+	private static final Function GET_TOKEN_INFO_FUNCTION =
+			new Function("getTokenInfo(address)");
+	private static final Bytes GET_TOKEN_INFO_SELECTOR = Bytes.wrap(GET_TOKEN_INFO_FUNCTION.selector());
+	private static final ABIType<Tuple> GET_TOKEN_INFO_DECODER = TypeFactory.create(ADDRESS_OUTPUT);
+
+	private static final Function GET_FUNGIBLE_TOKEN_INFO_FUNCTION =
+			new Function("getFungibleTokenInfo(address)");
+	private static final Bytes GET_FUNGIBLE_TOKEN_INFO_SELECTOR = Bytes.wrap(GET_FUNGIBLE_TOKEN_INFO_FUNCTION.selector());
+	private static final ABIType<Tuple> GET_FUNGIBLE_TOKEN_INFO_DECODER = TypeFactory.create(ADDRESS_OUTPUT);
+
+	private static final Function GET_NON_FUNGIBLE_TOKEN_INFO_FUNCTION =
+			new Function("getFungibleTokenInfo(address,int64)");
+	private static final Bytes GET_NON_FUNGIBLE_TOKEN_INFO_SELECTOR = Bytes.wrap(GET_NON_FUNGIBLE_TOKEN_INFO_FUNCTION.selector());
+	private static final ABIType<Tuple> GET_NON_FUNGIBLE_TOKEN_INFO_DECODER = TypeFactory.create("(bytes32,int64)");
 
 	@Inject
 	public DecodingFacade() {
@@ -580,6 +595,28 @@ public class DecodingFacade {
 		tokenCreateWrapper.setRoyaltyFees(royaltyFees);
 
 		return tokenCreateWrapper;
+	}
+
+	public TokenInfoWrapper decodeGetTokenInfo(final Bytes input) {
+		final Tuple decodedArguments = decodeFunctionCall(input, GET_TOKEN_INFO_SELECTOR, GET_TOKEN_INFO_DECODER);
+
+		final var tokenID = convertAddressBytesToTokenID(decodedArguments.get(0));
+		return TokenInfoWrapper.forToken(tokenID);
+	}
+
+	public TokenInfoWrapper decodeGetFungibleTokenInfo(final Bytes input) {
+		final Tuple decodedArguments = decodeFunctionCall(input, GET_FUNGIBLE_TOKEN_INFO_SELECTOR, GET_FUNGIBLE_TOKEN_INFO_DECODER);
+
+		final var tokenID = convertAddressBytesToTokenID(decodedArguments.get(0));
+		return TokenInfoWrapper.forToken(tokenID);
+	}
+
+	public TokenInfoWrapper decodeGetNonFungibleTokenInfo(final Bytes input) {
+		final Tuple decodedArguments = decodeFunctionCall(input, GET_NON_FUNGIBLE_TOKEN_INFO_SELECTOR, GET_NON_FUNGIBLE_TOKEN_INFO_DECODER);
+
+		final var tokenID = convertAddressBytesToTokenID(decodedArguments.get(0));
+		final var serialNumber = (long) decodedArguments.get(1);
+		return TokenInfoWrapper.forNonFungibleToken(tokenID, serialNumber);
 	}
 
 	private TokenCreateWrapper decodeTokenCreateWithoutFees(

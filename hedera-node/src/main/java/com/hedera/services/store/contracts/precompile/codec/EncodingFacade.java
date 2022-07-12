@@ -20,23 +20,24 @@ package com.hedera.services.store.contracts.precompile.codec;
  * ‍
  */
 
+import static com.hedera.services.store.contracts.precompile.codec.EncodingFacade.FunctionType.MINT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
+
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.esaulpaugh.headlong.abi.TupleType;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import java.math.BigInteger;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Objects;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.log.Log;
 import org.hyperledger.besu.evm.log.LogTopic;
-
-import javax.inject.Inject;
-import javax.inject.Singleton;
-import java.math.BigInteger;
-import java.util.ArrayList;
-import java.util.List;
-
-import static com.hedera.services.store.contracts.precompile.codec.EncodingFacade.FunctionType.MINT;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 @Singleton
 public class EncodingFacade {
@@ -45,6 +46,15 @@ public class EncodingFacade {
 	private static final String STRING_RETURN_TYPE = "(string)";
 	public static final String UINT256_RETURN_TYPE = "(uint256)";
 	public static final String BOOL_RETURN_TYPE = "(bool)";
+	private static final String KEY_VALUE = "(bool,address,bytes,bytes,address)";
+	private static final String TOKEN_KEY = "(uint256," + KEY_VALUE + ")";
+	private static final String EXPIRY = "(uint32,address,uint32)";
+	private static final String HEDERA_TOKEN = "(string,string,address,string,bool,uint32,bool,"
+			+ TOKEN_KEY + "[]," + EXPIRY + ")";
+	private static final String TOKEN_INFO = "(" + HEDERA_TOKEN + ",uint64,bool,bool,bool" + ")";
+	private static final String FUNGIBLE_TOKEN_INFO = "(" + TOKEN_INFO + ",uint32," + ")";
+	private static final String NON_FUNGIBLE_TOKEN_INFO = "(" + TOKEN_INFO + ",int64,address,uint32,bytes,address" + ")";
+
 	private static final TupleType mintReturnType = TupleType.parse("(int32,uint64,int64[])");
 	private static final TupleType burnReturnType = TupleType.parse("(int32,uint64)");
 	private static final TupleType createReturnType = TupleType.parse("(int32,address)");
@@ -60,6 +70,9 @@ public class EncodingFacade {
 	private static final TupleType tokenUriType = TupleType.parse(STRING_RETURN_TYPE);
 	private static final TupleType ercTransferType = TupleType.parse(BOOL_RETURN_TYPE);
 	private static final TupleType isApprovedForAllType = TupleType.parse(BOOL_RETURN_TYPE);
+	private static final TupleType getTokenInfoType = TupleType.parse(TOKEN_INFO);
+	private static final TupleType getFungibleTokenInfoType = TupleType.parse(FUNGIBLE_TOKEN_INFO);
+	private static final TupleType getNonFungibleTokenInfoType = TupleType.parse(NON_FUNGIBLE_TOKEN_INFO);
 
 	@Inject
 	public EncodingFacade() {
@@ -205,7 +218,8 @@ public class EncodingFacade {
 	}
 
 	protected enum FunctionType {
-		CREATE, MINT, BURN, TOTAL_SUPPLY, DECIMALS, BALANCE, OWNER, TOKEN_URI, NAME, SYMBOL, ERC_TRANSFER, ALLOWANCE, APPROVE, GET_APPROVED, IS_APPROVED_FOR_ALL
+		CREATE, MINT, BURN, TOTAL_SUPPLY, DECIMALS, BALANCE, OWNER, TOKEN_URI, NAME, SYMBOL, ERC_TRANSFER, ALLOWANCE, APPROVE, GET_APPROVED, IS_APPROVED_FOR_ALL,
+		GET_TOKEN_INFO, GET_FUNGIBLE_TOKEN_INFO, GET_NON_FUNGIBLE_TOKEN_INFO
 	}
 
 	private FunctionResultBuilder functionResultBuilder() {
@@ -230,6 +244,9 @@ public class EncodingFacade {
 		private String name;
 		private String symbol;
 		private String metadata;
+		private TokenInfo tokenInfo;
+		private FungibleTokenInfo fungibleTokenInfo;
+		private NonFungibleTokenInfo nonFungibleTokenInfo;
 
 		private FunctionResultBuilder forFunction(final FunctionType functionType) {
 			this.tupleType = switch (functionType) {
@@ -248,6 +265,9 @@ public class EncodingFacade {
 				case APPROVE -> approveOfType;
 				case GET_APPROVED -> getApprovedType;
 				case IS_APPROVED_FOR_ALL -> isApprovedForAllType;
+				case GET_TOKEN_INFO -> getTokenInfoType;
+				case GET_FUNGIBLE_TOKEN_INFO -> getFungibleTokenInfoType;
+				case GET_NON_FUNGIBLE_TOKEN_INFO -> getNonFungibleTokenInfoType;
 			};
 
 			this.functionType = functionType;
@@ -329,6 +349,21 @@ public class EncodingFacade {
 			return this;
 		}
 
+		private FunctionResultBuilder withTokenInfo(final TokenInfo tokenInfo) {
+			this.tokenInfo = tokenInfo;
+			return this;
+		}
+
+		private FunctionResultBuilder withFungibleTokenInfo(final FungibleTokenInfo fungibleTokenInfo) {
+			this.fungibleTokenInfo = fungibleTokenInfo;
+			return this;
+		}
+
+		private FunctionResultBuilder withNonFungibleTokenInfo(final NonFungibleTokenInfo nonFungibleTokenInfo) {
+			this.nonFungibleTokenInfo = nonFungibleTokenInfo;
+			return this;
+		}
+
 		private Bytes build() {
 			final var result = switch (functionType) {
 				case CREATE -> Tuple.of(status, convertBesuAddressToHeadlongAddress(newTokenAddress));
@@ -346,6 +381,9 @@ public class EncodingFacade {
 				case APPROVE -> Tuple.of(approve);
 				case GET_APPROVED -> Tuple.of(convertBesuAddressToHeadlongAddress(approved));
 				case IS_APPROVED_FOR_ALL -> Tuple.of(isApprovedForAllStatus);
+				case GET_TOKEN_INFO ->  Tuple.of(tokenInfo);
+				case GET_FUNGIBLE_TOKEN_INFO -> Tuple.of(fungibleTokenInfo);
+				case GET_NON_FUNGIBLE_TOKEN_INFO -> Tuple.of(nonFungibleTokenInfo);
 			};
 
 			return Bytes.wrap(tupleType.encode(result).array());
@@ -437,6 +475,91 @@ public class EncodingFacade {
 
 			System.arraycopy(bytesToExpand, 0, expandedArray, expandedArray.length - bytesToExpand.length, bytesToExpand.length);
 			return expandedArray;
+		}
+	}
+
+	public record KeyValue(boolean inheritAccountKey, Address contractId, byte[] ed25519, byte[] ECDSA_secp256k1, Address delegatableContractId) {
+
+		@Override
+		public boolean equals(Object o) {
+			if (this == o) {
+				return true;
+			}
+			if (o == null || getClass() != o.getClass()) {
+				return false;
+			}
+			KeyValue keyValue = (KeyValue) o;
+			return inheritAccountKey == keyValue.inheritAccountKey && Objects.equals(contractId,
+					keyValue.contractId) && Arrays.equals(ed25519, keyValue.ed25519)
+					&& Arrays.equals(ECDSA_secp256k1, keyValue.ECDSA_secp256k1)
+					&& Objects.equals(delegatableContractId, keyValue.delegatableContractId);
+		}
+
+		@Override
+		public int hashCode() {
+			int result = Objects.hash(inheritAccountKey, contractId, delegatableContractId);
+			result = 31 * result + Arrays.hashCode(ed25519);
+			result = 31 * result + Arrays.hashCode(ECDSA_secp256k1);
+			return result;
+		}
+
+		@Override
+		public String toString() {
+			return "KeyValue{" +
+					"inheritAccountKey=" + inheritAccountKey +
+					", contractId=" + contractId +
+					", ed25519=" + Arrays.toString(ed25519) +
+					", ECDSA_secp256k1=" + Arrays.toString(ECDSA_secp256k1) +
+					", delegatableContractId=" + delegatableContractId +
+					'}';
+		}
+	}
+
+	public record TokenKey(int keyType, KeyValue key) {}
+
+	public record Expiry(long second, Address autoRenewAccount, long autoRenewPeriod) {}
+
+	public record HederaToken(String name, String symbol, Address treasury, String memo, boolean tokenSupplyType, long maxSupply,
+														 boolean freezeDefault, List<TokenKey> tokenKeys, Expiry expiry) {}
+
+	public record TokenInfo(HederaToken token, BigInteger totalSupply, boolean deleted, boolean defaultKycStatus, boolean pauseStatus, String ledgerId) {}
+
+	public record FungibleTokenInfo(TokenInfo tokenInfo, long decimals) {}
+
+	public record NonFungibleTokenInfo(TokenInfo tokenInfo, long serialNumber, Address ownerId, long creationTime, byte[] metadata, Address spenderId) {
+
+		@Override
+		public boolean equals(Object o) {
+			if (this == o) {
+				return true;
+			}
+			if (o == null || getClass() != o.getClass()) {
+				return false;
+			}
+			NonFungibleTokenInfo that = (NonFungibleTokenInfo) o;
+			return serialNumber == that.serialNumber && creationTime == that.creationTime
+					&& tokenInfo.equals(
+					that.tokenInfo) && ownerId.equals(that.ownerId) && Arrays.equals(metadata,
+					that.metadata) && spenderId.equals(that.spenderId);
+		}
+
+		@Override
+		public int hashCode() {
+			int result = Objects.hash(tokenInfo, serialNumber, ownerId, creationTime, spenderId);
+			result = 31 * result + Arrays.hashCode(metadata);
+			return result;
+		}
+
+		@Override
+		public String toString() {
+			return "NonFungibleTokenInfo{" +
+					"tokenInfo=" + tokenInfo +
+					", serialNumber=" + serialNumber +
+					", ownerId=" + ownerId +
+					", creationTime=" + creationTime +
+					", metadata=" + Arrays.toString(metadata) +
+					", spenderId=" + spenderId +
+					'}';
 		}
 	}
 
