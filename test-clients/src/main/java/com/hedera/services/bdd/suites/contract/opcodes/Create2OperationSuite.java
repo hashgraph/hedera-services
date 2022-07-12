@@ -15,27 +15,6 @@
  */
 package com.hedera.services.bdd.suites.contract.opcodes;
 
-import com.google.protobuf.ByteString;
-import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.spec.HapiPropertySource;
-import com.hedera.services.bdd.spec.HapiSpecOperation;
-import com.hedera.services.bdd.spec.transactions.TxnUtils;
-import com.hedera.services.bdd.suites.HapiApiSuite;
-import com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult;
-import com.hederahashgraph.api.proto.java.ContractID;
-import com.hederahashgraph.api.proto.java.NftTransfer;
-import com.hederahashgraph.api.proto.java.TokenTransferList;
-import com.hederahashgraph.api.proto.java.TransferList;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
-import java.math.BigInteger;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.stream.IntStream;
-
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiPropertySource.accountIdFromHexedMirrorAddress;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asContractString;
@@ -105,6 +84,26 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import com.google.protobuf.ByteString;
+import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiPropertySource;
+import com.hedera.services.bdd.spec.HapiSpecOperation;
+import com.hedera.services.bdd.spec.transactions.TxnUtils;
+import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult;
+import com.hederahashgraph.api.proto.java.ContractID;
+import com.hederahashgraph.api.proto.java.NftTransfer;
+import com.hederahashgraph.api.proto.java.TokenTransferList;
+import com.hederahashgraph.api.proto.java.TransferList;
+import java.math.BigInteger;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.IntStream;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 public class Create2OperationSuite extends HapiApiSuite {
 
@@ -276,8 +275,8 @@ public class Create2OperationSuite extends HapiApiSuite {
                                                         id ->
                                                                 LOG.info(
                                                                         "Next entity num was {}"
-                                                                                + " instead of expected"
-                                                                                + " {}",
+                                                                            + " instead of expected"
+                                                                            + " {}",
                                                                         id.getAccountNum(),
                                                                         factoryEntityNum.get()
                                                                                 + 1))));
@@ -323,7 +322,7 @@ public class Create2OperationSuite extends HapiApiSuite {
                                                             testContractInitcode.set(tcInitcode);
                                                             LOG.info(
                                                                     "Contract reported TestContract"
-                                                                            + " initcode is {} bytes",
+                                                                        + " initcode is {} bytes",
                                                                     tcInitcode.length);
                                                         })
                                                 .payingWith(GENESIS)
@@ -352,8 +351,8 @@ public class Create2OperationSuite extends HapiApiSuite {
                                                         id ->
                                                                 LOG.info(
                                                                         "Next entity num was {}"
-                                                                                + " instead of expected"
-                                                                                + " {}",
+                                                                            + " instead of expected"
+                                                                            + " {}",
                                                                         id.getAccountNum(),
                                                                         factoryEntityNum.get()
                                                                                 + 1))));
@@ -453,7 +452,7 @@ public class Create2OperationSuite extends HapiApiSuite {
                                                             testContractInitcode.set(tcInitcode);
                                                             LOG.info(
                                                                     "Contract reported TestContract"
-                                                                            + " initcode is {} bytes",
+                                                                        + " initcode is {} bytes",
                                                                     tcInitcode.length);
                                                         })
                                                 .payingWith(GENESIS)
