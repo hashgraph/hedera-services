@@ -116,4 +116,12 @@ public final class AbiConstants {
 	//  FixedFee[] memory fixedFees,
 	//  RoyaltyFee[] memory royaltyFees)
 	public static final int ABI_ID_CREATE_NON_FUNGIBLE_TOKEN_WITH_FEES = 0x5bc7c0e6;
+
+	// **** HIP-514 function selectors ****
+	//getFungibleTokenInfo(address token)
+	public static final int ABI_ID_GET_FUNGIBLE_TOKEN_INFO = 0x3f28a19b;
+	//getTokenInfo(address token)
+	public static final int ABI_ID_GET_TOKEN_INFO = 0x1f69565f;
+	//getNonFungibleTokenInfo(address token, int64 serialNumber)
+	public static final int ABI_ID_GET_NON_FUNGIBLE_TOKEN_INFO = 0x287e1da8;
 }

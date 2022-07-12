@@ -217,6 +217,13 @@ public class EncodingFacade {
 				.build();
 	}
 
+	public Bytes encodeGetTokenInfo(final TokenInfo tokenInfo) {
+		return functionResultBuilder()
+				.forFunction(FunctionType.GET_TOKEN_INFO)
+				.withTokenInfo(tokenInfo)
+				.build();
+	}
+
 	protected enum FunctionType {
 		CREATE, MINT, BURN, TOTAL_SUPPLY, DECIMALS, BALANCE, OWNER, TOKEN_URI, NAME, SYMBOL, ERC_TRANSFER, ALLOWANCE, APPROVE, GET_APPROVED, IS_APPROVED_FOR_ALL,
 		GET_TOKEN_INFO, GET_FUNGIBLE_TOKEN_INFO, GET_NON_FUNGIBLE_TOKEN_INFO
@@ -522,7 +529,7 @@ public class EncodingFacade {
 	public record HederaToken(String name, String symbol, Address treasury, String memo, boolean tokenSupplyType, long maxSupply,
 														 boolean freezeDefault, List<TokenKey> tokenKeys, Expiry expiry) {}
 
-	public record TokenInfo(HederaToken token, BigInteger totalSupply, boolean deleted, boolean defaultKycStatus, boolean pauseStatus, String ledgerId) {}
+	public record TokenInfo(HederaToken token, long totalSupply, boolean deleted, boolean defaultKycStatus, boolean pauseStatus, String ledgerId) {}
 
 	public record FungibleTokenInfo(TokenInfo tokenInfo, long decimals) {}
 

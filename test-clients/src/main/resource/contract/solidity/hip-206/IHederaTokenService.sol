@@ -251,7 +251,7 @@ interface IHederaTokenService {
         //The shared hedera token info
         TokenInfo tokenInfo;
         //The serial number of the NFT
-        uint64 serialNumber;
+        int64 serialNumber;
         //The account id specifying the owner of the NFT
         address ownerId;
         //The epoch second at which the NFT was created

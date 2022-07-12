@@ -22,7 +22,17 @@ package com.hedera.services.store.contracts.precompile;
  *
  */
 
+import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
+import static com.hedera.services.state.EntityCreator.EMPTY_MEMO;
+import static com.hedera.services.store.contracts.precompile.utils.DescriptorUtils.isTokenProxyRedirect;
+import static com.hedera.services.utils.EntityIdUtils.contractIdFromEvmAddress;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_GAS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
+
 import com.google.common.annotations.VisibleForTesting;
+import com.hedera.services.config.NetworkInfo;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
@@ -61,6 +71,7 @@ import com.hedera.services.store.contracts.precompile.impl.OwnerOfPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.SetApprovalForAllPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.SymbolPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.TokenCreatePrecompile;
+import com.hedera.services.store.contracts.precompile.impl.TokenInfoPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.TokenURIPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.TotalSupplyPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.TransferPrecompile;
@@ -69,6 +80,13 @@ import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUti
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import java.util.Collections;
+import java.util.Optional;
+import java.util.function.Supplier;
+import java.util.function.UnaryOperator;
+import javax.inject.Inject;
+import javax.inject.Provider;
+import javax.inject.Singleton;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -80,23 +98,6 @@ import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.precompile.AbstractPrecompiledContract;
 import org.hyperledger.besu.evm.precompile.PrecompiledContract;
 import org.jetbrains.annotations.NotNull;
-
-import javax.inject.Inject;
-import javax.inject.Provider;
-import javax.inject.Singleton;
-import java.util.Collections;
-import java.util.Optional;
-import java.util.function.Supplier;
-import java.util.function.UnaryOperator;
-
-import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
-import static com.hedera.services.state.EntityCreator.EMPTY_MEMO;
-import static com.hedera.services.store.contracts.precompile.utils.DescriptorUtils.isTokenProxyRedirect;
-import static com.hedera.services.utils.EntityIdUtils.contractIdFromEvmAddress;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_GAS;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 
 @Singleton
 public class HTSPrecompiledContract extends AbstractPrecompiledContract {
@@ -127,6 +128,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	private final SyntheticTxnFactory syntheticTxnFactory;
 	private final InfrastructureFactory infrastructureFactory;
 	private final ImpliedTransfersMarshal impliedTransfersMarshal;
+	private final NetworkInfo networkInfo;
 
 	private Precompile precompile;
 	private TransactionBody.Builder transactionBody;
@@ -153,7 +155,8 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			final Provider<FeeCalculator> feeCalculator,
 			final StateView currentView,
 			final PrecompilePricingUtils precompilePricingUtils,
-			final InfrastructureFactory infrastructureFactory
+			final InfrastructureFactory infrastructureFactory,
+			final NetworkInfo networkInfo
 	) {
 		super("HTS", gasCalculator);
 		this.decoder = decoder;
@@ -168,6 +171,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		this.currentView = currentView;
 		this.precompilePricingUtils = precompilePricingUtils;
 		this.infrastructureFactory = infrastructureFactory;
+		this.networkInfo = networkInfo;
 	}
 
 	public Pair<Long, Bytes> computeCosted(final Bytes input, final MessageFrame frame) {
@@ -342,6 +346,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 									senderAddress,
 									dynamicProperties.fundingAccount(), feeCalculator, precompilePricingUtils)
 									: null;
+					case AbiConstants.ABI_ID_GET_TOKEN_INFO -> new TokenInfoPrecompile(null, syntheticTxnFactory, ledgers, encoder, decoder, precompilePricingUtils, networkInfo);
 					default -> null;
 				};
 		if (precompile != null) {
