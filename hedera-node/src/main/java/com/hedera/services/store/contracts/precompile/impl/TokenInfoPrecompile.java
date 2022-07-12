@@ -30,7 +30,7 @@ import org.apache.tuweni.bytes.Bytes;
 
 public class TokenInfoPrecompile extends AbstractReadOnlyPrecompile {
 
-  private NetworkInfo networkInfo;
+  private final NetworkInfo networkInfo;
 
   public TokenInfoPrecompile(
       final TokenID tokenId,
@@ -41,6 +41,7 @@ public class TokenInfoPrecompile extends AbstractReadOnlyPrecompile {
       final PrecompilePricingUtils pricingUtils,
       final NetworkInfo networkInfo) {
     super(tokenId, syntheticTxnFactory, ledgers, encoder, decoder, pricingUtils);
+    this.networkInfo = networkInfo;
   }
 
   @Override

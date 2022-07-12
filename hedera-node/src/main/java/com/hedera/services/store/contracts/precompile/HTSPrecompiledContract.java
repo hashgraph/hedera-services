@@ -346,7 +346,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 									senderAddress,
 									dynamicProperties.fundingAccount(), feeCalculator, precompilePricingUtils)
 									: null;
-					case AbiConstants.ABI_ID_GET_TOKEN_INFO -> new TokenInfoPrecompile(null, syntheticTxnFactory, ledgers, encoder, decoder, precompilePricingUtils, networkInfo);
+					case AbiConstants.ABI_ID_GET_TOKEN_INFO -> new TokenInfoPrecompile(null, syntheticTxnFactory, updater.trackingLedgers(), encoder, decoder, precompilePricingUtils, networkInfo);
 					default -> null;
 				};
 		if (precompile != null) {
