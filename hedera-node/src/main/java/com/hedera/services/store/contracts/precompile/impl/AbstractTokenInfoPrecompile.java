@@ -1,12 +1,12 @@
 package com.hedera.services.store.contracts.precompile.impl;
 
-import static com.hedera.services.store.contracts.precompile.KeyTypeConstants.ADMIN_KEY;
-import static com.hedera.services.store.contracts.precompile.KeyTypeConstants.FEE_SCHEDULE_KEY;
-import static com.hedera.services.store.contracts.precompile.KeyTypeConstants.FREEZE_KEY;
-import static com.hedera.services.store.contracts.precompile.KeyTypeConstants.KYC_KEY;
-import static com.hedera.services.store.contracts.precompile.KeyTypeConstants.PAUSE_KEY;
-import static com.hedera.services.store.contracts.precompile.KeyTypeConstants.SUPPLY_KEY;
-import static com.hedera.services.store.contracts.precompile.KeyTypeConstants.WIPE_KEY;
+import static com.hedera.services.store.contracts.precompile.TokenKeyType.ADMIN_KEY;
+import static com.hedera.services.store.contracts.precompile.TokenKeyType.FEE_SCHEDULE_KEY;
+import static com.hedera.services.store.contracts.precompile.TokenKeyType.FREEZE_KEY;
+import static com.hedera.services.store.contracts.precompile.TokenKeyType.KYC_KEY;
+import static com.hedera.services.store.contracts.precompile.TokenKeyType.PAUSE_KEY;
+import static com.hedera.services.store.contracts.precompile.TokenKeyType.SUPPLY_KEY;
+import static com.hedera.services.store.contracts.precompile.TokenKeyType.WIPE_KEY;
 
 import com.hedera.services.config.NetworkInfo;
 import com.hedera.services.legacy.core.jproto.JKey;
@@ -15,6 +15,7 @@ import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.submerkle.FcCustomFee;
 import com.hedera.services.store.contracts.WorldLedgers;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
+import com.hedera.services.store.contracts.precompile.TokenKeyType;
 import com.hedera.services.store.contracts.precompile.codec.DecodingFacade;
 import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
 import com.hedera.services.store.contracts.precompile.codec.Expiry;
@@ -134,28 +135,28 @@ public abstract class AbstractTokenInfoPrecompile extends AbstractReadOnlyPrecom
   }
 
   private List<TokenKey> getTokenKeys(final MerkleToken token) {
-    final List<TokenKey> tokenKeys = new ArrayList<>(7);
+    final List<TokenKey> tokenKeys = new ArrayList<>(TokenKeyType.values().length);
 
     if (token.getAdminKey() != null) {
-      tokenKeys.add(getTokenKey(token.getAdminKey(), ADMIN_KEY));
+      tokenKeys.add(getTokenKey(token.getAdminKey(), ADMIN_KEY.value()));
     }
     if (token.getKycKey() != null) {
-      tokenKeys.add(getTokenKey(token.getKycKey(), KYC_KEY));
+      tokenKeys.add(getTokenKey(token.getKycKey(), KYC_KEY.value()));
     }
     if (token.getFreezeKey() != null) {
-      tokenKeys.add(getTokenKey(token.getFreezeKey(), FREEZE_KEY));
+      tokenKeys.add(getTokenKey(token.getFreezeKey(), FREEZE_KEY.value()));
     }
     if (token.getWipeKey() != null) {
-      tokenKeys.add(getTokenKey(token.getWipeKey(), WIPE_KEY));
+      tokenKeys.add(getTokenKey(token.getWipeKey(), WIPE_KEY.value()));
     }
     if (token.getSupplyKey() != null) {
-      tokenKeys.add(getTokenKey(token.getSupplyKey(), SUPPLY_KEY));
+      tokenKeys.add(getTokenKey(token.getSupplyKey(), SUPPLY_KEY.value()));
     }
     if (token.getFeeScheduleKey() != null) {
-      tokenKeys.add(getTokenKey(token.getFeeScheduleKey(), FEE_SCHEDULE_KEY));
+      tokenKeys.add(getTokenKey(token.getFeeScheduleKey(), FEE_SCHEDULE_KEY.value()));
     }
     if (token.getPauseKey() != null) {
-      tokenKeys.add(getTokenKey(token.getPauseKey(), PAUSE_KEY));
+      tokenKeys.add(getTokenKey(token.getPauseKey(), PAUSE_KEY.value()));
     }
 
     return tokenKeys;
