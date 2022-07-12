@@ -61,12 +61,14 @@ import com.hedera.services.store.contracts.precompile.impl.BurnPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.DecimalsPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.DissociatePrecompile;
 import com.hedera.services.store.contracts.precompile.impl.ERCTransferPrecompile;
+import com.hedera.services.store.contracts.precompile.impl.FungibleTokenInfoPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.GetApprovedPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.IsApprovedForAllPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.MintPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.MultiAssociatePrecompile;
 import com.hedera.services.store.contracts.precompile.impl.MultiDissociatePrecompile;
 import com.hedera.services.store.contracts.precompile.impl.NamePrecompile;
+import com.hedera.services.store.contracts.precompile.impl.NonFungibleTokenInfoPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.OwnerOfPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.SetApprovalForAllPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.SymbolPrecompile;
@@ -347,6 +349,8 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 									dynamicProperties.fundingAccount(), feeCalculator, precompilePricingUtils)
 									: null;
 					case AbiConstants.ABI_ID_GET_TOKEN_INFO -> new TokenInfoPrecompile(null, syntheticTxnFactory, updater.trackingLedgers(), encoder, decoder, precompilePricingUtils, networkInfo);
+					case AbiConstants.ABI_ID_GET_FUNGIBLE_TOKEN_INFO -> new FungibleTokenInfoPrecompile(null, syntheticTxnFactory, updater.trackingLedgers(), encoder, decoder, precompilePricingUtils, networkInfo);
+					case AbiConstants.ABI_ID_GET_NON_FUNGIBLE_TOKEN_INFO -> new NonFungibleTokenInfoPrecompile(null, syntheticTxnFactory, updater.trackingLedgers(), encoder, decoder, precompilePricingUtils, networkInfo);
 					default -> null;
 				};
 		if (precompile != null) {

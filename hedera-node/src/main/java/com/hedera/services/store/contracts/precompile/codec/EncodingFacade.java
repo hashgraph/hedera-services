@@ -229,6 +229,20 @@ public class EncodingFacade {
 				.build();
 	}
 
+	public Bytes encodeGetFungibleTokenInfo(final FungibleTokenInfo fungibleTokenInfo) {
+		return functionResultBuilder()
+				.forFunction(FunctionType.GET_FUNGIBLE_TOKEN_INFO)
+				.withFungibleTokenInfo(fungibleTokenInfo)
+				.build();
+	}
+
+	public Bytes encodeGetNonFungibleTokenInfo(final NonFungibleTokenInfo nonFungibleTokenInfo) {
+		return functionResultBuilder()
+				.forFunction(FunctionType.GET_NON_FUNGIBLE_TOKEN_INFO)
+				.withNonFungibleTokenInfo(nonFungibleTokenInfo)
+				.build();
+	}
+
 	protected enum FunctionType {
 		CREATE, MINT, BURN, TOTAL_SUPPLY, DECIMALS, BALANCE, OWNER, TOKEN_URI, NAME, SYMBOL, ERC_TRANSFER, ALLOWANCE, APPROVE, GET_APPROVED, IS_APPROVED_FOR_ALL,
 		GET_TOKEN_INFO, GET_FUNGIBLE_TOKEN_INFO, GET_NON_FUNGIBLE_TOKEN_INFO

@@ -26,34 +26,46 @@ import com.hedera.services.store.contracts.WorldLedgers;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.store.contracts.precompile.codec.DecodingFacade;
 import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
+import com.hedera.services.store.contracts.precompile.codec.NonFungibleTokenInfo;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
+import com.hedera.services.store.models.NftId;
+import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionBody.Builder;
 import java.util.function.UnaryOperator;
 import org.apache.tuweni.bytes.Bytes;
 
-public class TokenInfoPrecompile extends AbstractTokenInfoPrecompile {
+public class NonFungibleTokenInfoPrecompile extends AbstractTokenInfoPrecompile {
+  private long serialNumber;
 
-  public TokenInfoPrecompile(
-      final TokenID tokenId,
-      final SyntheticTxnFactory syntheticTxnFactory,
-      final WorldLedgers ledgers,
-      final EncodingFacade encoder,
-      final DecodingFacade decoder,
-      final PrecompilePricingUtils pricingUtils,
-      final NetworkInfo networkInfo) {
+  public NonFungibleTokenInfoPrecompile(TokenID tokenId,
+      SyntheticTxnFactory syntheticTxnFactory,
+      WorldLedgers ledgers,
+      EncodingFacade encoder,
+      DecodingFacade decoder,
+      PrecompilePricingUtils pricingUtils,
+      NetworkInfo networkInfo) {
     super(tokenId, syntheticTxnFactory, ledgers, encoder, decoder, pricingUtils, networkInfo);
   }
 
   @Override
   public Builder body(Bytes input, UnaryOperator<byte[]> aliasResolver) {
-    final var tokenInfoWrapper = decoder.decodeGetTokenInfo(input);
+    final var tokenInfoWrapper = decoder.decodeGetNonFungibleTokenInfo(input);
     tokenId = tokenInfoWrapper.tokenID();
+    serialNumber = tokenInfoWrapper.serialNumber();
     return super.body(input, aliasResolver);
   }
 
   @Override
   public Bytes getSuccessResultFor(final ExpirableTxnRecord.Builder childRecord) {
-    return encoder.encodeGetTokenInfo(super.getTokenInfo());
+    final var uniqueToken = ledgers.nfts().getImmutableRef(NftId.fromGrpc(tokenId, serialNumber));
+
+    final var tokenInfo = super.getTokenInfo();
+    final var ownerId = EntityIdUtils.asTypedEvmAddress(uniqueToken.getOwner());
+    final var creationTime = uniqueToken.getPackedCreationTime();
+    final var metadata = uniqueToken.getMetadata();
+    final var spenderId = EntityIdUtils.asTypedEvmAddress(uniqueToken.getSpender());
+    return encoder.encodeGetNonFungibleTokenInfo(new NonFungibleTokenInfo(tokenInfo, serialNumber, ownerId, creationTime,
+        metadata, spenderId));
   }
 }

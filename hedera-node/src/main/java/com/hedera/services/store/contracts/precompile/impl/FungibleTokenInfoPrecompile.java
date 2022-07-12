@@ -26,34 +26,38 @@ import com.hedera.services.store.contracts.WorldLedgers;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.store.contracts.precompile.codec.DecodingFacade;
 import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
+import com.hedera.services.store.contracts.precompile.codec.FungibleTokenInfo;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionBody.Builder;
 import java.util.function.UnaryOperator;
 import org.apache.tuweni.bytes.Bytes;
 
-public class TokenInfoPrecompile extends AbstractTokenInfoPrecompile {
+public class FungibleTokenInfoPrecompile extends AbstractTokenInfoPrecompile {
 
-  public TokenInfoPrecompile(
-      final TokenID tokenId,
-      final SyntheticTxnFactory syntheticTxnFactory,
-      final WorldLedgers ledgers,
-      final EncodingFacade encoder,
-      final DecodingFacade decoder,
-      final PrecompilePricingUtils pricingUtils,
-      final NetworkInfo networkInfo) {
+  public FungibleTokenInfoPrecompile(TokenID tokenId,
+      SyntheticTxnFactory syntheticTxnFactory,
+      WorldLedgers ledgers,
+      EncodingFacade encoder,
+      DecodingFacade decoder,
+      PrecompilePricingUtils pricingUtils,
+      NetworkInfo networkInfo) {
     super(tokenId, syntheticTxnFactory, ledgers, encoder, decoder, pricingUtils, networkInfo);
   }
 
   @Override
   public Builder body(Bytes input, UnaryOperator<byte[]> aliasResolver) {
-    final var tokenInfoWrapper = decoder.decodeGetTokenInfo(input);
+    final var tokenInfoWrapper = decoder.decodeGetFungibleTokenInfo(input);
     tokenId = tokenInfoWrapper.tokenID();
     return super.body(input, aliasResolver);
   }
 
   @Override
   public Bytes getSuccessResultFor(final ExpirableTxnRecord.Builder childRecord) {
-    return encoder.encodeGetTokenInfo(super.getTokenInfo());
+    final var token = ledgers.tokens().getImmutableRef(tokenId);
+
+    final var tokenInfo = super.getTokenInfo();
+    final var decimals = token.decimals();
+    return encoder.encodeGetFungibleTokenInfo(new FungibleTokenInfo(tokenInfo, decimals));
   }
 }
