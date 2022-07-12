@@ -21,7 +21,6 @@ package com.hedera.services.bdd.suites.util;
  */
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.spec.transactions.TxnVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -69,7 +68,7 @@ public class PrngSuite extends HapiApiSuite {
 								"prng.isEnabled", "false"
 						)),
 						cryptoCreate("bob").balance(ONE_HUNDRED_HBARS),
-						TxnVerbs.hapiPrng()
+						hapiPrng()
 								.payingWith("bob")
 								.via("baseTxn")
 								.blankMemo()
@@ -104,7 +103,7 @@ public class PrngSuite extends HapiApiSuite {
 						)),
 						cryptoCreate("bob").balance(ONE_HUNDRED_HBARS),
 
-						TxnVerbs.hapiPrng()
+						hapiPrng()
 								.payingWith("bob")
 								.via(baseTxn)
 								.blankMemo()
@@ -158,7 +157,7 @@ public class PrngSuite extends HapiApiSuite {
 						// running hash is set
 						cryptoCreate("bob").balance(ONE_HUNDRED_HBARS),
 						// n-1 running hash and running has set
-						TxnVerbs.hapiPrng()
+						hapiPrng()
 								.payingWith("bob")
 								.blankMemo()
 								.via("prng")
@@ -178,7 +177,7 @@ public class PrngSuite extends HapiApiSuite {
 								.hasNoPseudoRandomData() // When running this suite in CI this check will fail since it
 								// already has n-3 running hash
 								.logged(),
-						TxnVerbs.hapiPrng()
+						hapiPrng()
 								.payingWith("bob")
 								.via("prng2")
 								.blankMemo()
@@ -194,7 +193,7 @@ public class PrngSuite extends HapiApiSuite {
 								.hasOnlyPseudoRandomNumberInRange(10)
 								.logged()
 				).then(
-						TxnVerbs.hapiPrng()
+						hapiPrng()
 								.payingWith("bob")
 								.via("prngWithoutRange")
 								.blankMemo()
@@ -212,7 +211,7 @@ public class PrngSuite extends HapiApiSuite {
 								.hasOnlyPseudoRandomBytes()
 								.logged(),
 
-						TxnVerbs.hapiPrng()
+						hapiPrng()
 								.range(Integer.MAX_VALUE)
 								.payingWith("bob")
 								.via("prngWithMaxRange")
@@ -222,7 +221,7 @@ public class PrngSuite extends HapiApiSuite {
 								.hasOnlyPseudoRandomNumberInRange(Integer.MAX_VALUE)
 								.logged(),
 
-						TxnVerbs.hapiPrng()
+						hapiPrng()
 								.range(Integer.MIN_VALUE)
 								.blankMemo()
 								.payingWith("bob")
