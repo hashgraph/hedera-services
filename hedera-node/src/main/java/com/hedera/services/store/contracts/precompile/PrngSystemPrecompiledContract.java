@@ -57,7 +57,6 @@ import javax.inject.Singleton;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.Optional;
-import java.util.function.Supplier;
 
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hedera.services.state.EntityCreator.EMPTY_MEMO;
