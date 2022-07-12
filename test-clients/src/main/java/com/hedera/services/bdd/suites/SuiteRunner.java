@@ -472,7 +472,6 @@ public class SuiteRunner {
                     put("CryptoTransferHTSSuite", aof(CryptoTransferHTSSuite::new));
                     put("DelegatePrecompileSuite", aof(DelegatePrecompileSuite::new));
                     put("DissociatePrecompileSuite", aof(DissociatePrecompileSuite::new));
-                    put("DynamicGasCostSuite", aof(DynamicGasCostSuite::new));
                     put("MixedHTSPrecompileTestsSuite", aof(MixedHTSPrecompileTestsSuite::new));
                     /* Functional tests - AUTORENEW */
                     put("AccountAutoRenewalSuite", aof(AccountAutoRenewalSuite::new));
