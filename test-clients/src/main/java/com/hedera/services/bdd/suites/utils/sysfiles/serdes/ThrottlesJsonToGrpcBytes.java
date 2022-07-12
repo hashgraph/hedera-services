@@ -28,11 +28,15 @@ import com.hederahashgraph.api.proto.java.ThrottleDefinitions;
 public class ThrottlesJsonToGrpcBytes implements SysFileSerde<String> {
 	private static final int MINIMUM_NETWORK_SIZE = 1;
 
-	private final int believedNetworkSize;
+	private int believedNetworkSize;
 	private final ObjectMapper mapper = new ObjectMapper();
 
 	public ThrottlesJsonToGrpcBytes() {
 		this.believedNetworkSize = MINIMUM_NETWORK_SIZE;
+	}
+
+	public void setBelievedNetworkSize(int believedNetworkSize) {
+		this.believedNetworkSize = believedNetworkSize;
 	}
 
 	public ThrottlesJsonToGrpcBytes(int believedNetworkSize) {

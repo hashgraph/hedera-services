@@ -74,7 +74,8 @@ public class ConfigManager {
 	public Map<String, String> asSpecConfig() {
 		assertNoMissingDefaults();
 
-		StandardSerdes.SYS_FILE_SERDES.put(123L, new ThrottlesJsonToGrpcBytes(targetNet.getNodes().size()));
+		((ThrottlesJsonToGrpcBytes) StandardSerdes.SYS_FILE_SERDES.get(123L))
+				.setBelievedNetworkSize(targetNet.getNodes().size());
 
 		var specConfig = targetNet.toSpecProperties();
 		if (useFixedFee()) {
