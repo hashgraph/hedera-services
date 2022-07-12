@@ -31,6 +31,7 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
+import com.hedera.services.state.submerkle.FcTokenAllowanceId;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.state.virtual.ContractKey;
 import com.hedera.services.state.virtual.IterableContractValue;
@@ -56,14 +57,19 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
+import java.util.Set;
+import java.util.SortedMap;
+import java.util.TreeMap;
 
 import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
 import static com.hedera.services.state.virtual.VirtualBlobKey.Type.CONTRACT_BYTECODE;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.fungible;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.fungibleTokenAddr;
+import static com.hedera.test.utils.TxnUtils.assertFailsRevertingWith;
 import static com.hedera.test.utils.TxnUtils.assertFailsWith;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALLOWANCE_OWNER_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -189,11 +195,11 @@ class StaticEntityAccessTest {
 		assertThrows(UnsupportedOperationException.class, () -> subject.customize(id, customizer));
 		assertThrows(UnsupportedOperationException.class, () -> subject.putStorage(id, uint256Key, uint256Key));
 		assertThrows(UnsupportedOperationException.class, () -> subject.storeCode(id, bytesKey));
+		assertThrows(UnsupportedOperationException.class, () -> subject.currentManagedChangeSet());
+		assertThrows(UnsupportedOperationException.class, () -> subject.recordNewKvUsageTo(null));
 		assertThrows(UnsupportedOperationException.class, () -> subject.begin());
 		assertThrows(UnsupportedOperationException.class, () -> subject.commit());
 		assertThrows(UnsupportedOperationException.class, () -> subject.rollback());
-		assertThrows(UnsupportedOperationException.class, () -> subject.currentManagedChangeSet());
-		assertThrows(UnsupportedOperationException.class, () -> subject.recordNewKvUsageTo(null));
 		assertThrows(UnsupportedOperationException.class, subject::flushStorage);
 	}
 
@@ -293,6 +299,51 @@ class StaticEntityAccessTest {
 	}
 
 	@Test
+	void failsIfNftIdNotPresent() {
+		assertFailsRevertingWith(() -> subject.approvedSpenderOf(nft), INVALID_TOKEN_NFT_SERIAL_NUMBER);
+	}
+
+	@Test
+	void returnsApprovedAddressIfPresent() {
+		given(nfts.get(nftKey)).willReturn(withApprovedSpender);
+		final var expected = withApprovedSpender.getSpender().toEvmAddress();
+		final var actual = subject.approvedSpenderOf(nft);
+		assertEquals(expected, actual);
+	}
+
+	@Test
+	void returnsFalseIfOwnerDoesntExist() {
+		assertFalse(subject.isOperator(accountId, spenderId, tokenId));
+	}
+
+	@Test
+	void returnsFalseIfOperatorDoesntExist() {
+		final var owner = new MerkleAccount();
+		given(accounts.get(accountNum)).willReturn(owner);
+		assertFalse(subject.isOperator(accountId, spenderId, tokenId));
+	}
+
+	@Test
+	void returnsFalseIfOperatorNotApproved() {
+		final var owner = new MerkleAccount();
+		final var operator = new MerkleAccount();
+		given(accounts.get(accountNum)).willReturn(owner);
+		given(accounts.get(spenderNum)).willReturn(operator);
+		owner.setApproveForAllNfts(Set.of(new FcTokenAllowanceId(tokenNum, treasuryNum)));
+		assertFalse(subject.isOperator(accountId, spenderId, tokenId));
+	}
+
+	@Test
+	void returnsTrueIfOperatorApproved() {
+		final var owner = new MerkleAccount();
+		final var operator = new MerkleAccount();
+		given(accounts.get(accountNum)).willReturn(owner);
+		given(accounts.get(spenderNum)).willReturn(operator);
+		owner.setApproveForAllNfts(Set.of(new FcTokenAllowanceId(tokenNum, spenderNum)));
+		assertTrue(subject.isOperator(accountId, spenderId, tokenId));
+	}
+
+	@Test
 	void ownerOfThrowsForMissingNft() {
 		assertFailsWith(() -> subject.ownerOf(nft), INVALID_TOKEN_NFT_SERIAL_NUMBER);
 	}
@@ -314,8 +365,32 @@ class StaticEntityAccessTest {
 		assertEquals(expected, actual);
 	}
 
+	@Test
+	void allowanceOfThrowsRevertingOnMissingOwner() {
+		assertFailsRevertingWith(() -> subject.allowanceOf(accountId, spenderId, tokenId), INVALID_ALLOWANCE_OWNER_ID);
+	}
+
+	@Test
+	void allowanceOfReturnsZeroForNoAllowance() {
+		final var owner = new MerkleAccount();
+		given(accounts.get(accountNum)).willReturn(owner);
+		assertEquals(0L, subject.allowanceOf(accountId, spenderId, tokenId));
+	}
+
+	@Test
+	void allowanceOfReturnsKnownAllowanceIfPresent() {
+		final var fcTokenAllowanceId = FcTokenAllowanceId.from(tokenId, spenderId);
+		final var owner = new MerkleAccount();
+		final SortedMap<FcTokenAllowanceId, Long> allowances = new TreeMap<>();
+		allowances.put(fcTokenAllowanceId, 123L);
+		owner.setFungibleTokenAllowances(allowances);
+		given(accounts.get(accountNum)).willReturn(owner);
+		assertEquals(123L, subject.allowanceOf(accountId, spenderId, tokenId));
+	}
+
 	private static final NftId nft = new NftId(0, 0, 123, 456);
 	private static final EntityNumPair nftKey = EntityNumPair.fromNftId(nft);
+
 	private static final MerkleUniqueToken treasuryOwned = new MerkleUniqueToken(
 			MISSING_ENTITY_ID, "There, the eyes are".getBytes(StandardCharsets.UTF_8),
 			new RichInstant(1, 2));
@@ -329,12 +404,21 @@ class StaticEntityAccessTest {
 	private static final EntityNum tokenNum = EntityNum.fromLong(666);
 	private static final EntityNum accountNum = EntityNum.fromLong(888);
 	private static final EntityNum treasuryNum = EntityNum.fromLong(999);
+	private static final EntityNum spenderNum = EntityNum.fromLong(111);
 	private static final MerkleUniqueToken accountOwned = new MerkleUniqueToken(
 			accountNum.toEntityId(), "There, is a tree swinging".getBytes(StandardCharsets.UTF_8),
 			new RichInstant(2, 3));
+
+	private static final MerkleUniqueToken withApprovedSpender = new MerkleUniqueToken(
+			accountNum.toEntityId(), "And voices are".getBytes(StandardCharsets.UTF_8),
+			new RichInstant(1, 2));
+	static {
+		withApprovedSpender.setSpender(spenderNum.toEntityId());
+	}
 	private static final Address treasuryAddress = treasuryNum.toEvmAddress();
 	private static final TokenID tokenId = tokenNum.toGrpcTokenId();
 	private static final AccountID accountId = accountNum.toGrpcAccountId();
+	private static final AccountID spenderId = spenderNum.toGrpcAccountId();
 	private static final MerkleToken token = new MerkleToken(
 			someExpiry,
 			totalSupply,
@@ -344,6 +428,7 @@ class StaticEntityAccessTest {
 			false,
 			true,
 			treasuryNum.toEntityId());
+
 	{
 		token.setTokenType(type);
 	}

@@ -1,5 +1,9 @@
-[![CircleCI](https://circleci.com/gh/hashgraph/hedera-services/tree/master.svg?style=shield&circle-token=6628b37c62b2e1f8f7bf1274bee204dc9bc9292b)](https://circleci.com/gh/hashgraph/hedera-services/tree/master)
-[![codecov](https://codecov.io/github/hashgraph/hedera-services/coverage.svg?branch=master&token=ZPMV8C93DV)](https://codecov.io/gh/hashgraph/hedera-services)
+[![Continuous Build](https://github.com/hashgraph/hedera-services/actions/workflows/continuous.yml/badge.svg)](.github/workflows/continuous.yml)
+[![codecov](https://codecov.io/github/hashgraph/hedera-services/coverage.svg?branch=master&token=ZPMV8C93DV)](README.md)
+[![Latest Version](https://img.shields.io/github/v/tag/hashgraph/hedera-services?sort=semver&label=version)](README.md)
+[![Made With](https://img.shields.io/badge/made_with-java-blue)](https://github.com/hashgraph/hedera-services/)
+[![Development Branch](https://img.shields.io/badge/docs-quickstart-green.svg)](docs/gradle-quickstart.md)
+[![License](https://img.shields.io/badge/license-apache2-blue.svg)](LICENSE)
 
 # Hedera Services 
 
