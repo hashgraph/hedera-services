@@ -20,7 +20,6 @@ package com.hedera.services.utils;
  * ‍
  */
 
-import com.google.common.io.Files;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.GeneratedMessageV3;
 import com.hedera.services.ethereum.EthTxData;
@@ -31,9 +30,6 @@ import com.hedera.services.grpc.controllers.ContractController;
 import com.hedera.services.grpc.controllers.CryptoController;
 import com.hedera.services.grpc.controllers.FileController;
 import com.hedera.services.grpc.controllers.FreezeController;
-import com.hedera.services.keys.LegacyEd25519KeyReader;
-import com.hedera.services.legacy.core.AccountKeyListObj;
-import com.hedera.services.legacy.core.KeyPairObj;
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.proto.utils.CommonUtils;
@@ -85,9 +81,9 @@ import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
 import com.hederahashgraph.api.proto.java.NetworkGetExecutionTimeQuery;
 import com.hederahashgraph.api.proto.java.NetworkGetVersionInfoQuery;
+import com.hederahashgraph.api.proto.java.PrngTransactionBody;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.QueryHeader;
-import com.hederahashgraph.api.proto.java.RandomGenerateTransactionBody;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.SchedulableTransactionBody;
 import com.hederahashgraph.api.proto.java.ScheduleCreateTransactionBody;
@@ -130,22 +126,15 @@ import com.swirlds.common.system.address.Address;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.fcqueue.FCQueue;
 import com.swirlds.merkle.map.MerkleMap;
-import net.i2p.crypto.eddsa.EdDSAPublicKey;
-import net.i2p.crypto.eddsa.KeyPairGenerator;
 import org.apache.commons.codec.DecoderException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.BDDMockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.IOException;
-import java.io.ObjectOutputStream;
 import java.lang.reflect.Method;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
-import java.security.KeyPair;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -157,8 +146,8 @@ import java.util.stream.Stream;
 
 import static com.hedera.services.state.submerkle.ExpirableTxnRecordTestHelper.fromGprc;
 import static com.hedera.services.txns.ethereum.TestingConstants.TRUFFLE0_PRIVATE_ECDSA_KEY;
+import static com.hedera.services.utils.MiscUtils.PRNG_METRIC;
 import static com.hedera.services.utils.MiscUtils.QUERY_FUNCTIONS;
-import static com.hedera.services.utils.MiscUtils.RANDOM_GENERATE_METRIC;
 import static com.hedera.services.utils.MiscUtils.SCHEDULE_CREATE_METRIC;
 import static com.hedera.services.utils.MiscUtils.SCHEDULE_DELETE_METRIC;
 import static com.hedera.services.utils.MiscUtils.SCHEDULE_SIGN_METRIC;
@@ -189,7 +178,6 @@ import static com.hedera.services.utils.MiscUtils.functionalityOfQuery;
 import static com.hedera.services.utils.MiscUtils.getTxnStat;
 import static com.hedera.services.utils.MiscUtils.isGasThrottled;
 import static com.hedera.services.utils.MiscUtils.isSchedulable;
-import static com.hedera.services.utils.MiscUtils.lookupInCustomStore;
 import static com.hedera.services.utils.MiscUtils.nonNegativeNanosOffset;
 import static com.hedera.services.utils.MiscUtils.perm64;
 import static com.hedera.services.utils.MiscUtils.readableNftTransferList;
@@ -235,7 +223,7 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.GetByKey;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.GetBySolidityID;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.GetVersionInfo;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.NetworkGetExecutionTime;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.RandomGenerate;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.PRNG;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ScheduleCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ScheduleDelete;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ScheduleGetInfo;
@@ -374,32 +362,6 @@ class MiscUtilsTest {
 		final var expected = new JEd25519Key(fakePrivateKey);
 
 		assertTrue(JKey.equalUpToDecodability(expected, MiscUtils.asFcKeyUnchecked(matchingKey)));
-	}
-
-	@Test
-	void translatesDecoderException() {
-		final String tmpLoc = "src/test/resources/PretendKeystore.txt";
-		final var reader = new LegacyEd25519KeyReader() {
-			@Override
-			public String hexedABytesFrom(String b64EncodedKeyPairLoc, String keyPairId) {
-				return "This is not actually hex!";
-			}
-		};
-
-		assertThrows(IllegalArgumentException.class, () -> lookupInCustomStore(reader, tmpLoc, "START_ACCOUNT"));
-	}
-
-	@Test
-	void recoversKeypair() throws Exception {
-		final String tmpLoc = "src/test/resources/PretendKeystore.txt";
-		final var kp = new KeyPairGenerator().generateKeyPair();
-		final var expected = ((EdDSAPublicKey) kp.getPublic()).getAbyte();
-		writeB64EncodedKeyPair(new File(tmpLoc), kp);
-
-		final var masterKey = lookupInCustomStore(new LegacyEd25519KeyReader(), tmpLoc, "START_ACCOUNT");
-
-		assertArrayEquals(expected, masterKey.getEd25519());
-		(new File(tmpLoc)).delete();
 	}
 
 	@Test
@@ -565,7 +527,7 @@ class MiscUtilsTest {
 			put("TokenUnpause", new BodySetter<>(TokenUnpauseTransactionBody.class));
 			put("TokenPause", new BodySetter<>(TokenPauseTransactionBody.class));
 			put("ScheduleDelete", new BodySetter<>(ScheduleDeleteTransactionBody.class));
-			put("RandomGenerate", new BodySetter<>(RandomGenerateTransactionBody.class));
+			put("Prng", new BodySetter<>(PrngTransactionBody.class));
 		}};
 
 		setters.forEach((bodyType, setter) -> {
@@ -644,7 +606,7 @@ class MiscUtilsTest {
 			put(SCHEDULE_CREATE_METRIC, new BodySetter<>(ScheduleCreateTransactionBody.class));
 			put(SCHEDULE_SIGN_METRIC, new BodySetter<>(ScheduleSignTransactionBody.class));
 			put(SCHEDULE_DELETE_METRIC, new BodySetter<>(ScheduleDeleteTransactionBody.class));
-			put(RANDOM_GENERATE_METRIC, new BodySetter<>(RandomGenerateTransactionBody.class));
+			put(PRNG_METRIC, new BodySetter<>(PrngTransactionBody.class));
 		}};
 
 		setters.forEach((stat, setter) -> {
@@ -781,7 +743,7 @@ class MiscUtilsTest {
 			put(ConsensusSubmitMessage, new BodySetter<>(ConsensusSubmitMessageTransactionBody.class));
 			put(UncheckedSubmit, new BodySetter<>(UncheckedSubmitBody.class));
 			put(TokenFeeScheduleUpdate, new BodySetter<>(TokenFeeScheduleUpdateTransactionBody.class));
-			put(RandomGenerate, new BodySetter<>(RandomGenerateTransactionBody.class));
+			put(PRNG, new BodySetter<>(PrngTransactionBody.class));
 		}};
 
 		setters.forEach((function, setter) -> {
@@ -1005,19 +967,5 @@ class MiscUtilsTest {
 					.findFirst()
 					.get();
 		}
-	}
-
-	private static void writeB64EncodedKeyPair(final File file, final KeyPair keyPair) throws IOException {
-		final var hexPublicKey = com.swirlds.common.utility.CommonUtils.hex(keyPair.getPublic().getEncoded());
-		final var keyPairObj = new KeyPairObj(hexPublicKey);
-		final var keys = new AccountKeyListObj(asAccount("0.0.2"), List.of(keyPairObj));
-
-		final var baos = new ByteArrayOutputStream();
-		final var oos = new ObjectOutputStream(baos);
-		oos.writeObject(Map.of("START_ACCOUNT", List.of(keys)));
-		oos.close();
-
-		final var byteSink = Files.asByteSink(file);
-		byteSink.write(CommonUtils.base64encode(baos.toByteArray()).getBytes());
 	}
 }

@@ -38,7 +38,7 @@ import com.hedera.services.usage.crypto.CryptoTransferMeta;
 import com.hedera.services.usage.crypto.CryptoUpdateMeta;
 import com.hedera.services.usage.token.TokenOpsUsage;
 import com.hedera.services.usage.token.meta.FeeScheduleUpdateMeta;
-import com.hedera.services.usage.util.RandomGenerateMeta;
+import com.hedera.services.usage.util.PrngMeta;
 import com.hedera.services.utils.MiscUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
@@ -70,7 +70,7 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoDelet
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoUpdate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.EthereumTransaction;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.RandomGenerate;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.PRNG;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAccountWipe;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenBurn;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenCreate;
@@ -452,8 +452,8 @@ public class SignedTxnAccessor implements TxnAccessor {
 			setCryptoDeleteAllowanceUsageMeta();
 		} else if (function == EthereumTransaction) {
 			setEthTxDataMeta();
-		} else if (function == RandomGenerate) {
-			setRandomGenerateUsageMeta();
+		} else if (function == PRNG) {
+			setPrngUsageMeta();
 		}
 	}
 
@@ -541,9 +541,9 @@ public class SignedTxnAccessor implements TxnAccessor {
 		SPAN_MAP_ACCESSOR.setCryptoDeleteAllowanceMeta(this, cryptoDeleteAllowanceMeta);
 	}
 
-	private void setRandomGenerateUsageMeta() {
-		final var randomGenerateUsageMeta = new RandomGenerateMeta(txn.getRandomGenerate());
-		SPAN_MAP_ACCESSOR.setRandomGenerateMeta(this, randomGenerateUsageMeta);
+	private void setPrngUsageMeta() {
+		final var prngUsageMeta = new PrngMeta(txn.getPrng());
+		SPAN_MAP_ACCESSOR.setPrngMeta(this, prngUsageMeta);
 	}
 
 	private void setEthTxDataMeta() {

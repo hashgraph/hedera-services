@@ -1,12 +1,6 @@
-package com.hedera.services.pricing;
-
-
-/*-
- * ‌
- * Hedera Services API Fees
- * ​
- * Copyright (C) 2018 - 2022 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2021-2022 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -18,20 +12,18 @@ package com.hedera.services.pricing;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+package com.hedera.services.pricing;
 
-
-import org.junit.jupiter.api.Test;
-
-import java.io.IOException;
-
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.RandomGenerate;
 import static com.hederahashgraph.api.proto.java.SubType.DEFAULT;
 
-class UtilOpsSchedulesTest extends FeeSchedulesTestHelper{
-	@Test
-	void computesExpectedPriceForRandomGenerate() throws IOException {
-		testCanonicalPriceFor(RandomGenerate, DEFAULT);
-	}
+import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import java.io.IOException;
+import org.junit.jupiter.api.Test;
+
+class UtilOpsSchedulesTest extends FeeSchedulesTestHelper {
+    @Test
+    void computesExpectedPriceForPrng() throws IOException {
+        testCanonicalPriceFor(HederaFunctionality.PRNG, DEFAULT);
+    }
 }

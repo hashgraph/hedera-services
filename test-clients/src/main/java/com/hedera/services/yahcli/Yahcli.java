@@ -23,6 +23,7 @@ package com.hedera.services.yahcli;
 import com.hedera.services.yahcli.commands.accounts.AccountsCommand;
 import com.hedera.services.yahcli.commands.fees.FeesCommand;
 import com.hedera.services.yahcli.commands.files.SysFilesCommand;
+import com.hedera.services.yahcli.commands.keys.KeysCommand;
 import com.hedera.services.yahcli.commands.system.FreezeAbortCommand;
 import com.hedera.services.yahcli.commands.system.FreezeOnlyCommand;
 import com.hedera.services.yahcli.commands.system.FreezeUpgradeCommand;
@@ -39,13 +40,13 @@ import picocli.CommandLine.Option;
 import picocli.CommandLine.ParameterException;
 import picocli.CommandLine.Spec;
 
-import java.util.Arrays;
 import java.util.concurrent.Callable;
 
 @Command(
 		name = "yahcli",
 		subcommands = {
 				HelpCommand.class,
+				KeysCommand.class,
 				AccountsCommand.class,
 				SysFilesCommand.class,
 				ValidationCommand.class,

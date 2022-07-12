@@ -157,10 +157,7 @@ public final class BootstrapProperties implements PropertySource {
 
 	private static final Set<String> BOOTSTRAP_PROPS = Set.of(
 			"bootstrap.feeSchedulesJson.resource",
-			"bootstrap.genesisB64Keystore.keyName",
-			"bootstrap.genesisB64Keystore.path",
-			"bootstrap.genesisPemPassphrase.path",
-			"bootstrap.genesisPem.path",
+			"bootstrap.genesisPublicKey",
 			"bootstrap.hapiPermissions.path",
 			"bootstrap.networkProperties.path",
 			"bootstrap.rates.currentHbarEquiv",
@@ -293,7 +290,7 @@ public final class BootstrapProperties implements PropertySource {
 			"hedera.allowances.maxAccountLimit",
 			"hedera.allowances.isEnabled",
 			"entities.limitTokenAssociations",
-			"randomGeneration.isEnabled"
+			"prng.isEnabled"
 	);
 
 	static final Set<String> NODE_PROPS = Set.of(
@@ -492,6 +489,6 @@ public final class BootstrapProperties implements PropertySource {
 			entry("hedera.allowances.maxAccountLimit", AS_INT),
 			entry("hedera.allowances.isEnabled", AS_BOOLEAN),
 			entry("entities.limitTokenAssociations", AS_BOOLEAN),
-			entry("randomGeneration.isEnabled", AS_BOOLEAN)
+			entry("prng.isEnabled", AS_BOOLEAN)
 	);
 }

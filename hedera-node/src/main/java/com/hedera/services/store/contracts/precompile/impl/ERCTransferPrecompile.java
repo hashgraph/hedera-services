@@ -48,7 +48,6 @@ import java.math.BigInteger;
 import java.util.function.UnaryOperator;
 
 import static com.hedera.services.exceptions.ValidationUtils.validateTrueOrRevert;
-import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.HTS_PRECOMPILED_CONTRACT_ADDRESS;
 import static com.hedera.services.utils.EntityIdUtils.asTypedEvmAddress;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER;
 
@@ -115,12 +114,10 @@ public class ERCTransferPrecompile extends TransferPrecompile {
 			throw new InvalidTransactionException(e.getResponseCode(), true);
 		}
 
-		final var precompileAddress = Address.fromHexString(HTS_PRECOMPILED_CONTRACT_ADDRESS);
-
 		if (isFungible) {
-			frame.addLog(getLogForFungibleTransfer(precompileAddress));
+			frame.addLog(getLogForFungibleTransfer(asTypedEvmAddress(tokenID)));
 		} else {
-			frame.addLog(getLogForNftExchange(precompileAddress));
+			frame.addLog(getLogForNftExchange(asTypedEvmAddress(tokenID)));
 		}
 	}
 
@@ -131,10 +128,10 @@ public class ERCTransferPrecompile extends TransferPrecompile {
 		BigInteger amount = BigInteger.ZERO;
 		for (final var fungibleTransfer : fungibleTransfers) {
 			if (fungibleTransfer.sender() != null) {
-				sender = asTypedEvmAddress(fungibleTransfer.sender());
+				sender = super.ledgers.canonicalAddress(asTypedEvmAddress(fungibleTransfer.sender()));
 			}
 			if (fungibleTransfer.receiver() != null) {
-				receiver = asTypedEvmAddress(fungibleTransfer.receiver());
+				receiver = super.ledgers.canonicalAddress(asTypedEvmAddress(fungibleTransfer.receiver()));
 				amount = BigInteger.valueOf(fungibleTransfer.amount());
 			}
 		}
@@ -149,8 +146,8 @@ public class ERCTransferPrecompile extends TransferPrecompile {
 	private Log getLogForNftExchange(final Address logger) {
 		final var nftExchanges = transferOp.get(0).nftExchanges();
 		final var nftExchange = nftExchanges.get(0).asGrpc();
-		final var sender = asTypedEvmAddress(nftExchange.getSenderAccountID());
-		final var receiver = asTypedEvmAddress(nftExchange.getReceiverAccountID());
+		final var sender = super.ledgers.canonicalAddress(asTypedEvmAddress(nftExchange.getSenderAccountID()));
+		final var receiver = super.ledgers.canonicalAddress(asTypedEvmAddress(nftExchange.getReceiverAccountID()));
 		final var serialNumber = nftExchange.getSerialNumber();
 
 		return EncodingFacade.LogBuilder.logBuilder().forLogger(logger)

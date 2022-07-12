@@ -147,6 +147,7 @@ import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.serial
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.successResult;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.timestamp;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.token;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.tokenAddress;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.tokenTransferChanges;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALLOWANCE_OWNER_ID;
@@ -267,6 +268,7 @@ class ERC721PrecompilesTest {
         entityIdUtils.when(() -> EntityIdUtils.contractIdFromEvmAddress(Address.fromHexString(HTS_PRECOMPILED_CONTRACT_ADDRESS).toArray()))
                 .thenReturn(precompiledContract);
         entityIdUtils.when(() -> EntityIdUtils.accountIdFromEvmAddress(senderAddress)).thenReturn(sender);
+		entityIdUtils.when(() -> EntityIdUtils.asTypedEvmAddress(token)).thenReturn(tokenAddress);
         entityIdUtils.when(() -> EntityIdUtils.asTypedEvmAddress(sender)).thenReturn(senderAddress);
         entityIdUtils.when(() -> EntityIdUtils.asTypedEvmAddress(receiver)).thenReturn(recipientAddress);
 		entityIdUtils.when(() -> EntityIdUtils.asEvmAddress(0, 0, 3)).thenReturn(RIPEMD160.toArray());
@@ -891,6 +893,7 @@ class ERC721PrecompilesTest {
 
 		given(encoder.encodeGetApproved(RIPEMD160)).willReturn(successResult);
 		given(decoder.decodeGetApproved(nestedPretendArguments)).willReturn(GET_APPROVED_WRAPPER);
+		given(wrappedLedgers.canonicalAddress(any())).willReturn(RIPEMD160);
 
 		// when:
 		subject.prepareFields(frame);
@@ -1043,7 +1046,6 @@ class ERC721PrecompilesTest {
 		given(impliedTransfersMarshal.validityWithCurrentProps(cryptoTransferTransactionBody)).willReturn(OK);
 		given(sigsVerifier.hasActiveKey(Mockito.anyBoolean(), any(), any(), any())).willReturn(true);
 		given(dynamicProperties.areAllowancesEnabled()).willReturn(true);
-
 		given(infrastructureFactory.newHederaTokenStore(sideEffects, tokens, nfts, tokenRels)).willReturn(hederaTokenStore);
 
 		given(infrastructureFactory.newTransferLogic(
@@ -1069,10 +1071,19 @@ class ERC721PrecompilesTest {
 				.willReturn(Collections.singletonList(TOKEN_TRANSFER_WRAPPER));
 		final var nftId = NftId.fromGrpc(token, serialNumber);
 		given(wrappedLedgers.nfts()).willReturn(nfts);
+		given(wrappedLedgers.canonicalAddress(recipientAddress)).willReturn(recipientAddress);
+		given(wrappedLedgers.canonicalAddress(senderAddress)).willReturn(senderAddress);
 		given(nfts.contains(nftId)).willReturn(true);
 
 		given(aliases.resolveForEvm(any())).willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 		given(worldUpdater.aliases()).willReturn(aliases);
+
+		final var log = EncodingFacade.LogBuilder.logBuilder().forLogger(tokenAddress)
+				.forEventSignature(AbiConstants.TRANSFER_EVENT)
+				.forIndexedArgument(senderAddress)
+				.forIndexedArgument(recipientAddress)
+				.forIndexedArgument(serialNumber)
+				.build();
 
 		// when:
 		subject.prepareFields(frame);
@@ -1087,6 +1098,7 @@ class ERC721PrecompilesTest {
 		verify(transferLogic).doZeroSum(tokenTransferChanges);
 		verify(wrappedLedgers).commit();
 		verify(worldUpdater).manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
+		verify(frame).addLog(log);
 	}
 
 	@Test

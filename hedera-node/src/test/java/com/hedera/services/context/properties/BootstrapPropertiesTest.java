@@ -67,10 +67,7 @@ class BootstrapPropertiesTest {
 
 	private static final Map<String, Object> expectedProps = Map.ofEntries(
 			entry("bootstrap.feeSchedulesJson.resource", "feeSchedules.json"),
-			entry("bootstrap.genesisB64Keystore.keyName", "START_ACCOUNT"),
-			entry("bootstrap.genesisB64Keystore.path", "data/onboard/StartUpAccount.txt"),
-			entry("bootstrap.genesisPemPassphrase.path", "TBD"),
-			entry("bootstrap.genesisPem.path", "TBD"),
+			entry("bootstrap.genesisPublicKey", "0aa8e21064c61eab86e2a9c164565b4e7a9a4146106e0a6cd03a8c395a110e92"),
 			entry("bootstrap.hapiPermissions.path", "data/config/api-permission.properties"),
 			entry("bootstrap.networkProperties.path", "data/config/application.properties"),
 			entry("bootstrap.rates.currentHbarEquiv", 1),
@@ -235,7 +232,7 @@ class BootstrapPropertiesTest {
 			entry("entities.limitTokenAssociations", false),
 			entry("hedera.recordStream.recordFileVersion", 5),
 			entry("hedera.recordStream.signatureFileVersion", 5),
-			entry("randomGeneration.isEnabled", true)
+			entry("prng.isEnabled", true)
 	);
 
 	@Test
