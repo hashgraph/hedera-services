@@ -21,16 +21,16 @@ package com.hedera.services.state.initialization;
  */
 
 
-import com.google.protobuf.ByteString;
 import com.hedera.services.config.AccountNumbers;
 import com.hedera.services.config.HederaNumbers;
 import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.exceptions.NegativeAccountBalanceException;
-import com.hedera.services.keys.LegacyEd25519KeyReader;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.ledger.backing.BackingStore;
+import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.utils.MiscUtils;
 import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
 import com.hedera.test.extensions.LoggingSubject;
@@ -41,7 +41,6 @@ import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
 import com.swirlds.common.system.address.Address;
 import com.swirlds.common.system.address.AddressBook;
-import com.swirlds.common.utility.CommonUtils;
 import org.apache.commons.codec.DecoderException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -65,23 +64,17 @@ import static org.mockito.Mockito.verify;
 
 @ExtendWith(LogCaptureExtension.class)
 class BackedSystemAccountsCreatorTest {
-	private long shard = 0;
-	private long realm = 0;
-	private long totalBalance = 100l;
-	private long expiry = Instant.now().getEpochSecond() + 1_234_567L;
-	private int numAccounts = 4;
-	private String b64Loc = "somewhere";
-	private String legacyId = "CURSED";
-	private String hexedABytes = "447dc6bdbfc64eb894851825194744662afcb70efb8b23a6a24af98f0c1fd8ad";
+	private final long shard = 0;
+	private final long realm = 0;
+	private final long totalBalance = 100l;
+	private final long expiry = Instant.now().getEpochSecond() + 1_234_567L;
+	private final int numAccounts = 4;
+	private final JEd25519Key pretendKey = new JEd25519Key("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".getBytes());
+
 	private JKey genesisKey;
-
-	HederaNumbers hederaNums;
-	AccountNumbers accountNums;
-	PropertySource properties;
-	LegacyEd25519KeyReader legacyReader;
-
-	AddressBook book;
-	BackingStore<AccountID, MerkleAccount> backingAccounts;
+	private PropertySource properties;
+	private AddressBook book;
+	private BackingStore<AccountID, MerkleAccount> backingAccounts;
 
 	@LoggingTarget
 	private LogCaptor logCaptor;
@@ -92,28 +85,21 @@ class BackedSystemAccountsCreatorTest {
 	void setup() throws DecoderException, NegativeAccountBalanceException, IllegalArgumentException {
 		genesisKey = JKey.mapKey(Key.newBuilder()
 				.setKeyList(KeyList.newBuilder()
-						.addKeys(Key.newBuilder()
-										.setEd25519(ByteString.copyFrom(CommonUtils.unhex(hexedABytes)))
-						)).build());
+						.addKeys(MiscUtils.asKeyUnchecked(pretendKey))).build());
 
-		hederaNums = mock(HederaNumbers.class);
+		HederaNumbers hederaNums = mock(HederaNumbers.class);
 		given(hederaNums.realm()).willReturn(realm);
 		given(hederaNums.shard()).willReturn(shard);
-		accountNums = mock(AccountNumbers.class);
+		AccountNumbers accountNums = mock(AccountNumbers.class);
 		given(accountNums.treasury()).willReturn(2L);
 		given(accountNums.stakingRewardAccount()).willReturn(800L);
 		given(accountNums.nodeRewardAccount()).willReturn(801L);
 		properties = mock(PropertySource.class);
-		legacyReader = mock(LegacyEd25519KeyReader.class);
 
 		given(properties.getIntProperty("ledger.numSystemAccounts"))
 				.willReturn(numAccounts);
 		given(properties.getLongProperty("ledger.totalTinyBarFloat"))
 				.willReturn(totalBalance);
-		given(properties.getStringProperty("bootstrap.genesisB64Keystore.keyName"))
-				.willReturn(legacyId);
-		given(properties.getStringProperty("bootstrap.genesisB64Keystore.path"))
-				.willReturn(b64Loc);
 		given(properties.getLongProperty("bootstrap.system.entityExpiry"))
 				.willReturn(expiry);
 
@@ -123,7 +109,7 @@ class BackedSystemAccountsCreatorTest {
 		given(book.getSize()).willReturn(1);
 		given(book.getAddress(0L)).willReturn(address);
 
-		backingAccounts = (BackingStore<AccountID, MerkleAccount>)mock(BackingStore.class);
+		backingAccounts = (BackingStore<AccountID, MerkleAccount>) mock(BackingStore.class);
 		given(backingAccounts.idSet()).willReturn(Set.of(
 				accountWith(1),
 				accountWith(2),
@@ -134,40 +120,13 @@ class BackedSystemAccountsCreatorTest {
 		given(backingAccounts.getImmutableRef(accountWith(3))).willReturn(withExpectedBalance(0));
 		given(backingAccounts.getImmutableRef(accountWith(4))).willReturn(withExpectedBalance(0));
 
-		subject = new BackedSystemAccountsCreator(
-				accountNums,
-				properties,
-				legacyReader);
+		subject = new BackedSystemAccountsCreator(accountNums, properties, () -> pretendKey);
 	}
 
 	@Test
 	void throwsOnNegativeBalance() {
 		givenMissingTreasury();
-		// and:
-		given(legacyReader.hexedABytesFrom(b64Loc, legacyId)).willReturn(hexedABytes);
-		// and:
-		given(properties.getLongProperty("ledger.totalTinyBarFloat"))
-				.willReturn(-100L);
-
-		// expect:
-		assertThrows(IllegalStateException.class, () -> subject.ensureSystemAccounts(backingAccounts, book));
-	}
-
-	@Test
-	void throwsOnUndecodableGenesisKeyIfCreating() {
-		givenMissingTreasury();
-		// and:
-		given(legacyReader.hexedABytesFrom(b64Loc, legacyId)).willReturn("This isn't hex!");
-
-		// expect:
-		assertThrows(IllegalStateException.class, () -> subject.ensureSystemAccounts(backingAccounts, book));
-	}
-
-	@Test
-	void throwsOnUnavailableGenesisKeyIfCreating() {
-		givenMissingTreasury();
-		// and:
-		given(legacyReader.hexedABytesFrom(b64Loc, legacyId)).willThrow(IllegalStateException.class);
+		given(properties.getLongProperty("ledger.totalTinyBarFloat")).willReturn(-100L);
 
 		// expect:
 		assertThrows(IllegalStateException.class, () -> subject.ensureSystemAccounts(backingAccounts, book));
@@ -176,8 +135,6 @@ class BackedSystemAccountsCreatorTest {
 	@Test
 	void createsMissingNode() throws NegativeAccountBalanceException {
 		givenMissingNode();
-		// and:
-		given(legacyReader.hexedABytesFrom(b64Loc, legacyId)).willReturn(hexedABytes);
 
 		// when:
 		subject.ensureSystemAccounts(backingAccounts, book);
@@ -189,8 +146,6 @@ class BackedSystemAccountsCreatorTest {
 	@Test
 	void createsMissingSystemAccount() throws NegativeAccountBalanceException {
 		givenMissingSystemAccount();
-		// and:
-		given(legacyReader.hexedABytesFrom(b64Loc, legacyId)).willReturn(hexedABytes);
 
 		// when:
 		subject.ensureSystemAccounts(backingAccounts, book);
@@ -202,8 +157,6 @@ class BackedSystemAccountsCreatorTest {
 	@Test
 	void createsMissingTreasury() throws NegativeAccountBalanceException {
 		givenMissingTreasury();
-		// and:
-		given(legacyReader.hexedABytesFrom(b64Loc, legacyId)).willReturn(hexedABytes);
 
 		// when:
 		subject.ensureSystemAccounts(backingAccounts, book);
@@ -213,9 +166,8 @@ class BackedSystemAccountsCreatorTest {
 	}
 
 	@Test
-	void createsMissingSpecialAccounts() throws NegativeAccountBalanceException{
+	void createsMissingSpecialAccounts() throws NegativeAccountBalanceException {
 		givenMissingSpecialAccounts();
-		given(legacyReader.hexedABytesFrom(b64Loc, legacyId)).willReturn(hexedABytes);
 
 		subject.ensureSystemAccounts(backingAccounts, book);
 

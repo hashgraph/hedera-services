@@ -1,11 +1,6 @@
-package com.hedera.services.sysfiles.validation;
-
-/*-
- * ‌
- * Hedera Services API Utilities
- * ​
- * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2021-2022 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,10 +12,8 @@ package com.hedera.services.sysfiles.validation;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
-
-import org.junit.jupiter.api.Test;
+package com.hedera.services.sysfiles.validation;
 
 import static com.hedera.services.sysfiles.validation.ExpectedCustomThrottles.ACTIVE_OPS;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusCreateTopic;
@@ -81,66 +74,76 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.Transaction
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-class ExpectedCustomThrottlesTest {
-	@Test
-	void releaseTwentyHasExpected() {
-		assertEquals(56, ACTIVE_OPS.size());
+import org.junit.jupiter.api.Test;
 
-		assertTrue(ACTIVE_OPS.contains(CryptoCreate), "Missing CryptoCreate!");
-		assertTrue(ACTIVE_OPS.contains(CryptoTransfer), "Missing CryptoTransfer!");
-		assertTrue(ACTIVE_OPS.contains(CryptoUpdate), "Missing CryptoUpdate!");
-		assertTrue(ACTIVE_OPS.contains(CryptoDelete), "Missing CryptoDelete!");
-		assertTrue(ACTIVE_OPS.contains(CryptoApproveAllowance), "Missing CryptoApproveAllowance!");
-		assertTrue(ACTIVE_OPS.contains(CryptoDeleteAllowance), "Missing CryptoDeleteAllowance!");
-		assertTrue(ACTIVE_OPS.contains(FileCreate), "Missing FileCreate!");
-		assertTrue(ACTIVE_OPS.contains(FileUpdate), "Missing FileUpdate!");
-		assertTrue(ACTIVE_OPS.contains(FileDelete), "Missing FileDelete!");
-		assertTrue(ACTIVE_OPS.contains(FileAppend), "Missing FileAppend!");
-		assertTrue(ACTIVE_OPS.contains(ContractCreate), "Missing ContractCreate!");
-		assertTrue(ACTIVE_OPS.contains(ContractUpdate), "Missing ContractUpdate!");
-		assertTrue(ACTIVE_OPS.contains(ContractCreate), "Missing ContractCreate!");
-		assertTrue(ACTIVE_OPS.contains(ContractDelete), "Missing ContractDelete!");
-		assertTrue(ACTIVE_OPS.contains(ConsensusCreateTopic), "Missing ConsensusCreateTopic!");
-		assertTrue(ACTIVE_OPS.contains(ConsensusUpdateTopic), "Missing ConsensusUpdateTopic!");
-		assertTrue(ACTIVE_OPS.contains(ConsensusDeleteTopic), "Missing ConsensusDeleteTopic!");
-		assertTrue(ACTIVE_OPS.contains(ConsensusSubmitMessage), "Missing ConsensusSubmitMessage!");
-		assertTrue(ACTIVE_OPS.contains(TokenCreate), "Missing TokenCreate!");
-		assertTrue(ACTIVE_OPS.contains(TokenFreezeAccount), "Missing TokenFreezeAccount!");
-		assertTrue(ACTIVE_OPS.contains(TokenGetNftInfo), "Missing TokenGetNftInfo!");
-		assertTrue(ACTIVE_OPS.contains(TokenGetAccountNftInfos), "Missing TokenGetAccountNftInfos!");
-		assertTrue(ACTIVE_OPS.contains(TokenGetNftInfos), "Missing TokenGetNftInfos!");
-		assertTrue(ACTIVE_OPS.contains(TokenUnfreezeAccount), "Missing TokenUnfreezeAccount!");
-		assertTrue(ACTIVE_OPS.contains(TokenPause), "Missing TokenPause!");
-		assertTrue(ACTIVE_OPS.contains(TokenUnpause), "Missing TokenUnpause!");
-		assertTrue(ACTIVE_OPS.contains(TokenGrantKycToAccount), "Missing TokenGrantKycToAccount!");
-		assertTrue(ACTIVE_OPS.contains(TokenRevokeKycFromAccount), "Missing TokenRevokeKycFromAccount!");
-		assertTrue(ACTIVE_OPS.contains(TokenDelete), "Missing TokenDelete!");
-		assertTrue(ACTIVE_OPS.contains(TokenMint), "Missing TokenMint!");
-		assertTrue(ACTIVE_OPS.contains(TokenBurn), "Missing TokenBurn!");
-		assertTrue(ACTIVE_OPS.contains(TokenAccountWipe), "Missing TokenAccountWipe!");
-		assertTrue(ACTIVE_OPS.contains(TokenUpdate), "Missing TokenUpdate!");
-		assertTrue(ACTIVE_OPS.contains(TokenAssociateToAccount), "Missing TokenAssociateToAccount!");
-		assertTrue(ACTIVE_OPS.contains(TokenDissociateFromAccount), "Missing TokenDissociateFromAccount!");
-		assertTrue(ACTIVE_OPS.contains(TokenFeeScheduleUpdate), "Missing TokenFeeScheduleUpdate!");
-		assertTrue(ACTIVE_OPS.contains(ScheduleCreate), "Missing ScheduleCreate!");
-		assertTrue(ACTIVE_OPS.contains(ScheduleSign), "Missing ScheduleSign!");
-		assertTrue(ACTIVE_OPS.contains(ScheduleDelete), "Missing ScheduleDelete!");
-		assertTrue(ACTIVE_OPS.contains(ConsensusGetTopicInfo), "Missing ConsensusGetTopicInfo!");
-		assertTrue(ACTIVE_OPS.contains(ContractCallLocal), "Missing ContractCallLocal!");
-		assertTrue(ACTIVE_OPS.contains(ContractGetInfo), "Missing ContractGetInfo!");
-		assertTrue(ACTIVE_OPS.contains(ContractGetBytecode), "Missing ContractGetBytecode!");
-		assertTrue(ACTIVE_OPS.contains(ContractGetRecords), "Missing ContractGetRecords!");
-		assertTrue(ACTIVE_OPS.contains(CryptoGetAccountBalance), "Missing CryptoGetAccountBalance!");
-		assertTrue(ACTIVE_OPS.contains(CryptoGetAccountRecords), "Missing CryptoGetAccountRecords!");
-		assertTrue(ACTIVE_OPS.contains(CryptoGetInfo), "Missing CryptoGetInfo!");
-		assertTrue(ACTIVE_OPS.contains(FileGetContents), "Missing FileGetContents!");
-		assertTrue(ACTIVE_OPS.contains(FileGetInfo), "Missing FileGetInfo!");
-		assertTrue(ACTIVE_OPS.contains(TransactionGetReceipt), "Missing TransactionGetReceipt!");
-		assertTrue(ACTIVE_OPS.contains(TransactionGetRecord), "Missing TransactionGetRecord!");
-		assertTrue(ACTIVE_OPS.contains(GetVersionInfo), "Missing GetVersionInfo!");
-		assertTrue(ACTIVE_OPS.contains(TokenGetInfo), "Missing TokenGetInfo!");
-		assertTrue(ACTIVE_OPS.contains(ScheduleGetInfo), "Missing ScheduleGetInfo!");
-		assertTrue(ACTIVE_OPS.contains(EthereumTransaction), "Missing EthereumTransaction!");
-		assertTrue(ACTIVE_OPS.contains(PRNG), "Missing PRNG!");
-	}
+class ExpectedCustomThrottlesTest {
+    @Test
+    void releaseTwentyHasExpected() {
+        assertEquals(56, ACTIVE_OPS.size());
+
+        assertTrue(ACTIVE_OPS.contains(CryptoCreate), "Missing CryptoCreate!");
+        assertTrue(ACTIVE_OPS.contains(CryptoTransfer), "Missing CryptoTransfer!");
+        assertTrue(ACTIVE_OPS.contains(CryptoUpdate), "Missing CryptoUpdate!");
+        assertTrue(ACTIVE_OPS.contains(CryptoDelete), "Missing CryptoDelete!");
+        assertTrue(ACTIVE_OPS.contains(CryptoApproveAllowance), "Missing CryptoApproveAllowance!");
+        assertTrue(ACTIVE_OPS.contains(CryptoDeleteAllowance), "Missing CryptoDeleteAllowance!");
+        assertTrue(ACTIVE_OPS.contains(FileCreate), "Missing FileCreate!");
+        assertTrue(ACTIVE_OPS.contains(FileUpdate), "Missing FileUpdate!");
+        assertTrue(ACTIVE_OPS.contains(FileDelete), "Missing FileDelete!");
+        assertTrue(ACTIVE_OPS.contains(FileAppend), "Missing FileAppend!");
+        assertTrue(ACTIVE_OPS.contains(ContractCreate), "Missing ContractCreate!");
+        assertTrue(ACTIVE_OPS.contains(ContractUpdate), "Missing ContractUpdate!");
+        assertTrue(ACTIVE_OPS.contains(ContractCreate), "Missing ContractCreate!");
+        assertTrue(ACTIVE_OPS.contains(ContractDelete), "Missing ContractDelete!");
+        assertTrue(ACTIVE_OPS.contains(ConsensusCreateTopic), "Missing ConsensusCreateTopic!");
+        assertTrue(ACTIVE_OPS.contains(ConsensusUpdateTopic), "Missing ConsensusUpdateTopic!");
+        assertTrue(ACTIVE_OPS.contains(ConsensusDeleteTopic), "Missing ConsensusDeleteTopic!");
+        assertTrue(ACTIVE_OPS.contains(ConsensusSubmitMessage), "Missing ConsensusSubmitMessage!");
+        assertTrue(ACTIVE_OPS.contains(TokenCreate), "Missing TokenCreate!");
+        assertTrue(ACTIVE_OPS.contains(TokenFreezeAccount), "Missing TokenFreezeAccount!");
+        assertTrue(ACTIVE_OPS.contains(TokenGetNftInfo), "Missing TokenGetNftInfo!");
+        assertTrue(
+                ACTIVE_OPS.contains(TokenGetAccountNftInfos), "Missing TokenGetAccountNftInfos!");
+        assertTrue(ACTIVE_OPS.contains(TokenGetNftInfos), "Missing TokenGetNftInfos!");
+        assertTrue(ACTIVE_OPS.contains(TokenUnfreezeAccount), "Missing TokenUnfreezeAccount!");
+        assertTrue(ACTIVE_OPS.contains(TokenPause), "Missing TokenPause!");
+        assertTrue(ACTIVE_OPS.contains(TokenUnpause), "Missing TokenUnpause!");
+        assertTrue(ACTIVE_OPS.contains(TokenGrantKycToAccount), "Missing TokenGrantKycToAccount!");
+        assertTrue(
+                ACTIVE_OPS.contains(TokenRevokeKycFromAccount),
+                "Missing TokenRevokeKycFromAccount!");
+        assertTrue(ACTIVE_OPS.contains(TokenDelete), "Missing TokenDelete!");
+        assertTrue(ACTIVE_OPS.contains(TokenMint), "Missing TokenMint!");
+        assertTrue(ACTIVE_OPS.contains(TokenBurn), "Missing TokenBurn!");
+        assertTrue(ACTIVE_OPS.contains(TokenAccountWipe), "Missing TokenAccountWipe!");
+        assertTrue(ACTIVE_OPS.contains(TokenUpdate), "Missing TokenUpdate!");
+        assertTrue(
+                ACTIVE_OPS.contains(TokenAssociateToAccount), "Missing TokenAssociateToAccount!");
+        assertTrue(
+                ACTIVE_OPS.contains(TokenDissociateFromAccount),
+                "Missing TokenDissociateFromAccount!");
+        assertTrue(ACTIVE_OPS.contains(TokenFeeScheduleUpdate), "Missing TokenFeeScheduleUpdate!");
+        assertTrue(ACTIVE_OPS.contains(ScheduleCreate), "Missing ScheduleCreate!");
+        assertTrue(ACTIVE_OPS.contains(ScheduleSign), "Missing ScheduleSign!");
+        assertTrue(ACTIVE_OPS.contains(ScheduleDelete), "Missing ScheduleDelete!");
+        assertTrue(ACTIVE_OPS.contains(ConsensusGetTopicInfo), "Missing ConsensusGetTopicInfo!");
+        assertTrue(ACTIVE_OPS.contains(ContractCallLocal), "Missing ContractCallLocal!");
+        assertTrue(ACTIVE_OPS.contains(ContractGetInfo), "Missing ContractGetInfo!");
+        assertTrue(ACTIVE_OPS.contains(ContractGetBytecode), "Missing ContractGetBytecode!");
+        assertTrue(ACTIVE_OPS.contains(ContractGetRecords), "Missing ContractGetRecords!");
+        assertTrue(
+                ACTIVE_OPS.contains(CryptoGetAccountBalance), "Missing CryptoGetAccountBalance!");
+        assertTrue(
+                ACTIVE_OPS.contains(CryptoGetAccountRecords), "Missing CryptoGetAccountRecords!");
+        assertTrue(ACTIVE_OPS.contains(CryptoGetInfo), "Missing CryptoGetInfo!");
+        assertTrue(ACTIVE_OPS.contains(FileGetContents), "Missing FileGetContents!");
+        assertTrue(ACTIVE_OPS.contains(FileGetInfo), "Missing FileGetInfo!");
+        assertTrue(ACTIVE_OPS.contains(TransactionGetReceipt), "Missing TransactionGetReceipt!");
+        assertTrue(ACTIVE_OPS.contains(TransactionGetRecord), "Missing TransactionGetRecord!");
+        assertTrue(ACTIVE_OPS.contains(GetVersionInfo), "Missing GetVersionInfo!");
+        assertTrue(ACTIVE_OPS.contains(TokenGetInfo), "Missing TokenGetInfo!");
+        assertTrue(ACTIVE_OPS.contains(ScheduleGetInfo), "Missing ScheduleGetInfo!");
+        assertTrue(ACTIVE_OPS.contains(EthereumTransaction), "Missing EthereumTransaction!");
+        assertTrue(ACTIVE_OPS.contains(PRNG), "Missing PRNG!");
+    }
 }

@@ -28,6 +28,7 @@ import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.files.HFileMeta;
 import com.hedera.services.files.SysFileCallbacks;
 import com.hedera.services.files.TieredHederaFs;
+import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.core.jproto.JKeyList;
 import com.hedera.services.sysfiles.serdes.ThrottlesJsonToProtoSerde;
@@ -83,7 +84,7 @@ public final class HfsSystemFilesManager implements SystemFilesManager {
 	private final FileNumbers fileNumbers;
 	private final PropertySource properties;
 	private final TieredHederaFs hfs;
-	private final Supplier<JKey> keySupplier;
+	private final Supplier<JEd25519Key> keySupplier;
 	private final Supplier<AddressBook> bookSupplier;
 	private final SysFileCallbacks callbacks;
 
@@ -93,7 +94,7 @@ public final class HfsSystemFilesManager implements SystemFilesManager {
 			final FileNumbers fileNumbers,
 			@CompositeProps final PropertySource properties,
 			final TieredHederaFs hfs,
-			final Supplier<JKey> keySupplier,
+			final Supplier<JEd25519Key> keySupplier,
 			final SysFileCallbacks callbacks
 	) {
 		this.hfs = hfs;
