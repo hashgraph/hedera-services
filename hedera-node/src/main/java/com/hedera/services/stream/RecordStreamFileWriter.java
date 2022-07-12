@@ -20,6 +20,15 @@ package com.hedera.services.stream;
  * ‍
  */
 
+import static com.swirlds.common.stream.LinkedObjectStreamUtilities.convertInstantToStringWithPadding;
+import static com.swirlds.common.stream.LinkedObjectStreamUtilities.generateSigFilePath;
+import static com.swirlds.common.stream.LinkedObjectStreamUtilities.generateStreamFileNameFromInstant;
+import static com.swirlds.common.stream.LinkedObjectStreamUtilities.getPeriod;
+import static com.swirlds.common.stream.StreamAligned.NO_ALIGNMENT;
+import static com.swirlds.logging.LogMarker.EXCEPTION;
+import static com.swirlds.logging.LogMarker.OBJECT_STREAM;
+import static com.swirlds.logging.LogMarker.OBJECT_STREAM_FILE;
+
 import com.google.common.annotations.VisibleForTesting;
 import com.google.protobuf.CodedOutputStream;
 import com.google.protobuf.Message;
@@ -43,14 +52,9 @@ import com.swirlds.common.crypto.HashingOutputStream;
 import com.swirlds.common.crypto.RunningHash;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.stream.LinkedObjectStream;
-import com.swirlds.common.stream.LinkedObjectStreamUtilities;
 import com.swirlds.common.stream.Signer;
 import com.swirlds.common.stream.StreamAligned;
 import com.swirlds.logging.LogMarker;
-import java.util.List;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
 import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -58,17 +62,10 @@ import java.io.IOException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
+import java.util.EnumSet;
 import java.util.concurrent.ExecutionException;
-
-import static com.swirlds.common.stream.LinkedObjectStreamUtilities.convertInstantToStringWithPadding;
-import static com.swirlds.common.stream.LinkedObjectStreamUtilities.generateSigFilePath;
-import static com.swirlds.common.stream.LinkedObjectStreamUtilities.generateStreamFileNameFromInstant;
-import static com.swirlds.common.stream.LinkedObjectStreamUtilities.getPeriod;
-import static com.swirlds.common.stream.StreamAligned.NO_ALIGNMENT;
-import static com.swirlds.logging.LogMarker.EXCEPTION;
-import static com.swirlds.logging.LogMarker.OBJECT_STREAM;
-import static com.swirlds.logging.LogMarker.OBJECT_STREAM_FILE;
-import static org.apache.commons.collections4.CollectionUtils.isNotEmpty;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 class RecordStreamFileWriter implements LinkedObjectStream<RecordStreamObject> {
 	private static final Logger LOG = LogManager.getLogger(RecordStreamFileWriter.class);
@@ -93,6 +90,11 @@ class RecordStreamFileWriter implements LinkedObjectStream<RecordStreamObject> {
 	 * || denotes concatenation
 	 */
 	private final MessageDigest metadataStreamDigest;
+
+	/**
+	 * a messageDigest object for digesting sidecar files and generating sidecar file hash
+	 */
+	private final MessageDigest sidecarStreamDigest;
 
 	/**
 	 * Output stream for digesting metaData. Metadata should be written to this stream. Any data written to this
@@ -147,6 +149,8 @@ class RecordStreamFileWriter implements LinkedObjectStream<RecordStreamObject> {
 	private int recordFileVersion;
 	private RecordStreamFile.Builder recordStreamFileBuilder;
 	private SidecarFile.Builder sidecarFileBuilder;
+	private final EnumSet<SidecarType> sidecarTypesInCurrentSidecar;
+	private int sidecarFileId = 1;
 
 	public RecordStreamFileWriter(
 			final String dirPath,
@@ -163,7 +167,9 @@ class RecordStreamFileWriter implements LinkedObjectStream<RecordStreamObject> {
 		this.streamType = streamType;
 		this.streamDigest = MessageDigest.getInstance(currentDigestType.algorithmName());
 		this.metadataStreamDigest = MessageDigest.getInstance(currentDigestType.algorithmName());
+		this.sidecarStreamDigest = MessageDigest.getInstance(currentDigestType.algorithmName());
 		this.sidecarDirPath = sidecarDirPath;
+		this.sidecarTypesInCurrentSidecar = EnumSet.noneOf(SidecarType.class);
 	}
 
 	@Override
@@ -286,17 +292,13 @@ class RecordStreamFileWriter implements LinkedObjectStream<RecordStreamObject> {
 				}
 
 				// create sidecar file and add the SidecarMetadata to RecordStreamFile
-				// only if there are any sidecar records for the current period
+				// only if there have been any sidecar records for the current period
 				if (sidecarFileBuilder.getSidecarRecordsCount() > 0) {
 					try {
-						final var sidecarFile = new File(generateSidecarFilePath(firstTxnInstant, 1));
+						final var sidecarFile = new File(generateSidecarFilePath(firstTxnInstant, sidecarFileId));
 						createSidecarFile(sidecarFileBuilder, sidecarFile);
-						recordStreamFileBuilder.addSidecars(createSidecarMetadata(sidecarFile, 1, List.of(
-										SidecarType.CONTRACT_STATE_CHANGE,
-										SidecarType.CONTRACT_BYTECODE,
-										SidecarType.CONTRACT_ACTION))
-						);
-					} catch (IOException | NoSuchAlgorithmException e) {
+						recordStreamFileBuilder.addSidecars(createSidecarMetadata(sidecarFileId));
+					} catch (IOException e) {
 						Thread.currentThread().interrupt();
 						LOG.warn(EXCEPTION.getMarker(),
 								"closeCurrentAndSign :: {} when creating sidecar files",
@@ -355,6 +357,7 @@ class RecordStreamFileWriter implements LinkedObjectStream<RecordStreamObject> {
 		recordFileVersion = fileHeader[0];
 		// reinitialize sidecar builder
 		sidecarFileBuilder = SidecarFile.newBuilder();
+		sidecarTypesInCurrentSidecar.clear();
 		// add known values to recordStreamFile proto
 		recordStreamFileBuilder = RecordStreamFile.newBuilder().setBlockNumber(object.getStreamAlignment());
 		recordStreamFileBuilder.setHapiProtoVersion(SemanticVersion.newBuilder()
@@ -403,11 +406,16 @@ class RecordStreamFileWriter implements LinkedObjectStream<RecordStreamObject> {
 		);
 
 		final var sidecars = object.getSidecars();
-		if (isNotEmpty(sidecars)) {
+		if (!sidecars.isEmpty()) {
 			for (final var sidecar : sidecars) {
-				if (sidecar.getSidecarRecordsCase() == SidecarRecordsCase.STATE_CHANGES
-						|| sidecar.getSidecarRecordsCase() == SidecarRecordsCase.ACTIONS
-						|| sidecar.getSidecarRecordsCase() == SidecarRecordsCase.BYTECODE) {
+				if (sidecar.getSidecarRecordsCase() != SidecarRecordsCase.SIDECARRECORDS_NOT_SET) {
+					if (sidecar.getSidecarRecordsCase() == SidecarRecordsCase.STATE_CHANGES) {
+						sidecarTypesInCurrentSidecar.add(SidecarType.CONTRACT_STATE_CHANGE);
+					} else if (sidecar.getSidecarRecordsCase() == SidecarRecordsCase.ACTIONS) {
+						sidecarTypesInCurrentSidecar.add(SidecarType.CONTRACT_ACTION);
+					} else if (sidecar.getSidecarRecordsCase() == SidecarRecordsCase.BYTECODE) {
+						sidecarTypesInCurrentSidecar.add(SidecarType.CONTRACT_BYTECODE);
+					}
 					sidecarFileBuilder.addSidecarRecords(sidecar);
 				} else {
 					LOG.warn("A sidecar record without an actual sidecar has been received");
@@ -550,7 +558,8 @@ class RecordStreamFileWriter implements LinkedObjectStream<RecordStreamObject> {
 			final File sidecarFile
 	) throws IOException {
 			try (FileOutputStream stream = new FileOutputStream(sidecarFile, false);
-				 SerializableDataOutputStream dos = new SerializableDataOutputStream(new BufferedOutputStream(stream))
+				 SerializableDataOutputStream dos = new SerializableDataOutputStream
+						 (new BufferedOutputStream(new HashingOutputStream(sidecarStreamDigest, stream)))
 			) {
 				// write contents of sidecar
 				dos.write(serialize(sidecarFileBuilder));
@@ -567,15 +576,11 @@ class RecordStreamFileWriter implements LinkedObjectStream<RecordStreamObject> {
 			}
 	}
 
-	private SidecarMetadata.Builder createSidecarMetadata(
-			final File sidecarFile,
-			final int sidecarId,
-			final List<SidecarType> sidecarTypes
-	) throws IOException, NoSuchAlgorithmException {
-		return SidecarMetadata.newBuilder()
-				.setHash(toProto(LinkedObjectStreamUtilities.computeEntireHash(sidecarFile).getValue()))
-				.setId(sidecarId)
-				.addAllTypes(sidecarTypes);
+	private SidecarMetadata.Builder createSidecarMetadata(final int sidecarId) {
+			return SidecarMetadata.newBuilder()
+							.setHash(toProto(sidecarStreamDigest.digest()))
+							.setId(sidecarId)
+							.addAllTypes(sidecarTypesInCurrentSidecar);
 	}
 
 	@VisibleForTesting

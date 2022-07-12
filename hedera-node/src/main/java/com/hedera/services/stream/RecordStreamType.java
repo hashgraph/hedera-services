@@ -34,21 +34,6 @@ public interface RecordStreamType extends StreamType {
 	String RECORD_SIG_EXTENSION = "rcd_sig";
 	String SIDECAR_RECORD_EXTENSION = "rcd";
 
-	enum SidecarType {
-		STATE_CHANGES(1),
-		ACTIONS(2),
-		BYTECODES(3);
-
-		private final int sidecarId;
-
-		SidecarType(final int sidecarId) {
-			this.sidecarId = sidecarId;
-		}
-
-		public int getSidecarId() {
-			return sidecarId;
-		}
-	}
 	/**
 	 * {@inheritDoc}
 	 */
