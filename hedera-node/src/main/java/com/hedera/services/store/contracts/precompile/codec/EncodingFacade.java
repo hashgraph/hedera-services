@@ -20,6 +20,17 @@ package com.hedera.services.store.contracts.precompile.codec;
  * ‍
  */
 
+import static com.hedera.services.store.contracts.precompile.ParsingConstants.ADDRESS;
+import static com.hedera.services.store.contracts.precompile.ParsingConstants.ARRAY_BRACKETS;
+import static com.hedera.services.store.contracts.precompile.ParsingConstants.BOOL;
+import static com.hedera.services.store.contracts.precompile.ParsingConstants.EXPIRY;
+import static com.hedera.services.store.contracts.precompile.ParsingConstants.FIXED_FEE;
+import static com.hedera.services.store.contracts.precompile.ParsingConstants.FRACTIONAL_FEE;
+import static com.hedera.services.store.contracts.precompile.ParsingConstants.ROYALTY_FEE;
+import static com.hedera.services.store.contracts.precompile.ParsingConstants.STRING;
+import static com.hedera.services.store.contracts.precompile.ParsingConstants.TOKEN_KEY;
+import static com.hedera.services.store.contracts.precompile.ParsingConstants.UINT256;
+import static com.hedera.services.store.contracts.precompile.ParsingConstants.UINT8;
 import static com.hedera.services.store.contracts.precompile.codec.EncodingFacade.FunctionType.MINT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
@@ -41,18 +52,9 @@ import org.hyperledger.besu.evm.log.LogTopic;
 public class EncodingFacade {
 	public static final Bytes SUCCESS_RESULT = resultFrom(SUCCESS);
 	private static final long[] NO_MINTED_SERIAL_NUMBERS = new long[0];
-	private static final String ARRAY_BRACKETS = "[]";
-	private static final String STRING_RETURN_TYPE = "(string)";
-	public static final String UINT256_RETURN_TYPE = "(uint256)";
-	public static final String BOOL_RETURN_TYPE = "(bool)";
-	private static final String KEY_VALUE = "(bool,address,bytes,bytes,address)";
-	private static final String TOKEN_KEY = "(uint256," + KEY_VALUE + ")";
-	private static final String EXPIRY = "(uint32,address,uint32)";
+
 	private static final String HEDERA_TOKEN = "(string,string,address,string,bool,uint32,bool,"
-			+ TOKEN_KEY + "[]," + EXPIRY + ")";
-	private static final String FIXED_FEE = "(uint32,address,bool,bool,address)";
-	private static final String FRACTIONAL_FEE = "(uint32,uint32,uint32,uint32,bool,address)";
-	private static final String ROYALTY_FEE = "(uint32,uint32,uint32,address,bool,address)";
+			+ TOKEN_KEY + ARRAY_BRACKETS + "," + EXPIRY + ")";
 	private static final String TOKEN_INFO = "(" + HEDERA_TOKEN + ",uint64,bool,bool,bool," + FIXED_FEE + ARRAY_BRACKETS + ","
 			+ FRACTIONAL_FEE + ARRAY_BRACKETS + "," + ROYALTY_FEE + ARRAY_BRACKETS + ",string)";
 	private static final String FUNGIBLE_TOKEN_INFO = "(" + TOKEN_INFO + ",uint32," + ")";
@@ -61,18 +63,18 @@ public class EncodingFacade {
 	private static final TupleType mintReturnType = TupleType.parse("(int32,uint64,int64[])");
 	private static final TupleType burnReturnType = TupleType.parse("(int32,uint64)");
 	private static final TupleType createReturnType = TupleType.parse("(int32,address)");
-	private static final TupleType totalSupplyType = TupleType.parse(UINT256_RETURN_TYPE);
-	private static final TupleType balanceOfType = TupleType.parse(UINT256_RETURN_TYPE);
-	private static final TupleType allowanceOfType = TupleType.parse(UINT256_RETURN_TYPE);
-	private static final TupleType approveOfType = TupleType.parse(BOOL_RETURN_TYPE);
-	private static final TupleType decimalsType = TupleType.parse("(uint8)");
-	private static final TupleType ownerOfType = TupleType.parse("(address)");
-	private static final TupleType getApprovedType = TupleType.parse("(address)");
-	private static final TupleType nameType = TupleType.parse(STRING_RETURN_TYPE);
-	private static final TupleType symbolType = TupleType.parse(STRING_RETURN_TYPE);
-	private static final TupleType tokenUriType = TupleType.parse(STRING_RETURN_TYPE);
-	private static final TupleType ercTransferType = TupleType.parse(BOOL_RETURN_TYPE);
-	private static final TupleType isApprovedForAllType = TupleType.parse(BOOL_RETURN_TYPE);
+	private static final TupleType totalSupplyType = TupleType.parse(UINT256);
+	private static final TupleType balanceOfType = TupleType.parse(UINT256);
+	private static final TupleType allowanceOfType = TupleType.parse(UINT256);
+	private static final TupleType approveOfType = TupleType.parse(BOOL);
+	private static final TupleType decimalsType = TupleType.parse(UINT8);
+	private static final TupleType ownerOfType = TupleType.parse(ADDRESS);
+	private static final TupleType getApprovedType = TupleType.parse(ADDRESS);
+	private static final TupleType nameType = TupleType.parse(STRING);
+	private static final TupleType symbolType = TupleType.parse(STRING);
+	private static final TupleType tokenUriType = TupleType.parse(STRING);
+	private static final TupleType ercTransferType = TupleType.parse(BOOL);
+	private static final TupleType isApprovedForAllType = TupleType.parse(BOOL);
 	private static final TupleType getTokenInfoType = TupleType.parse(TOKEN_INFO);
 	private static final TupleType getFungibleTokenInfoType = TupleType.parse(FUNGIBLE_TOKEN_INFO);
 	private static final TupleType getNonFungibleTokenInfoType = TupleType.parse(NON_FUNGIBLE_TOKEN_INFO);
