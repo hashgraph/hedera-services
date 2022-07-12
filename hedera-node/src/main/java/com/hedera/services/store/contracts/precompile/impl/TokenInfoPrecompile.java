@@ -33,13 +33,17 @@ import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.enums.TokenSupplyType;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
+import com.hedera.services.state.submerkle.FcCustomFee;
 import com.hedera.services.store.contracts.WorldLedgers;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.store.contracts.precompile.codec.DecodingFacade;
 import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
 import com.hedera.services.store.contracts.precompile.codec.Expiry;
+import com.hedera.services.store.contracts.precompile.codec.FixedFee;
+import com.hedera.services.store.contracts.precompile.codec.FractionalFee;
 import com.hedera.services.store.contracts.precompile.codec.HederaToken;
 import com.hedera.services.store.contracts.precompile.codec.KeyValue;
+import com.hedera.services.store.contracts.precompile.codec.RoyaltyFee;
 import com.hedera.services.store.contracts.precompile.codec.TokenInfo;
 import com.hedera.services.store.contracts.precompile.codec.TokenKey;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
@@ -50,6 +54,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.UnaryOperator;
 import org.apache.tuweni.bytes.Bytes;
+import org.hyperledger.besu.datatypes.Address;
 
 public class TokenInfoPrecompile extends AbstractReadOnlyPrecompile {
 
@@ -91,15 +96,74 @@ public class TokenInfoPrecompile extends AbstractReadOnlyPrecompile {
             token.expiry(),
             EntityIdUtils.asTypedEvmAddress(token.autoRenewAccount()),
             token.autoRenewPeriod());
-    final var hederaToken = new HederaToken(name, symbol, treasury, memo, tokenSupplyType, maxSupply, freezeDefault, tokenKeys, expiry);
+    final var hederaToken =
+        new HederaToken(
+            name,
+            symbol,
+            treasury,
+            memo,
+            tokenSupplyType,
+            maxSupply,
+            freezeDefault,
+            tokenKeys,
+            expiry);
 
     final var totalSupply = token.totalSupply();
     final var deleted = token.isDeleted();
     final var defaultKycStatus = token.accountsKycGrantedByDefault();
     final var pauseStatus = token.isPaused();
     final var ledgerId = networkInfo.ledgerId().toString();
-    final var tokenInfo = new TokenInfo(hederaToken, totalSupply, deleted, defaultKycStatus, pauseStatus, ledgerId);
+
+    final var fixedFees = new ArrayList<FixedFee>();
+    final var fractionalFees = new ArrayList<FractionalFee>();
+    final var royaltyFees = new ArrayList<RoyaltyFee>();
+
+    for(final var fee : token.customFeeSchedule()) {
+      final var feeCollector = EntityIdUtils.asTypedEvmAddress(fee.getFeeCollector());
+      switch(fee.getFeeType()) {
+        case FIXED_FEE -> fixedFees.add(getFixedFee(fee, feeCollector));
+        case FRACTIONAL_FEE -> fractionalFees.add(getFractionalFee(fee, feeCollector));
+        case ROYALTY_FEE -> royaltyFees.add(getRoyaltyFee(fee, feeCollector));
+      }
+    }
+
+    final var tokenInfo =
+        new TokenInfo(
+            hederaToken,
+            totalSupply,
+            deleted,
+            defaultKycStatus,
+            pauseStatus,
+            fixedFees,
+            fractionalFees,
+            royaltyFees,
+            ledgerId);
     return encoder.encodeGetTokenInfo(tokenInfo);
+  }
+
+  private FixedFee getFixedFee(final FcCustomFee fee, final Address feeCollector) {
+    final var fixedFeeSpec = fee.getFixedFeeSpec();
+    return new FixedFee(fixedFeeSpec.getUnitsToCollect(), EntityIdUtils.asTypedEvmAddress(fixedFeeSpec.getTokenDenomination()),
+        fixedFeeSpec.getTokenDenomination()==null, false, feeCollector);
+  }
+
+  private FractionalFee getFractionalFee(final FcCustomFee fee, final Address feeCollector) {
+    final var fractionalFeeSpec = fee.getFractionalFeeSpec();
+    return new FractionalFee(fractionalFeeSpec.getNumerator(), fractionalFeeSpec.getDenominator(),
+        fractionalFeeSpec.getMinimumAmount(), fractionalFeeSpec.getMaximumUnitsToCollect(), fractionalFeeSpec.isNetOfTransfers(), feeCollector);
+  }
+
+  private RoyaltyFee getRoyaltyFee(final FcCustomFee fee, final Address feeCollector) {
+    final var royaltyFeeSpec = fee.getRoyaltyFeeSpec();
+    RoyaltyFee royaltyFee;
+    if(royaltyFeeSpec.hasFallbackFee()) {
+      final var fallbackFee = royaltyFeeSpec.fallbackFee();
+      royaltyFee = new RoyaltyFee(royaltyFeeSpec.numerator(), royaltyFeeSpec.denominator(), fallbackFee.getUnitsToCollect(),
+          EntityIdUtils.asTypedEvmAddress(fallbackFee.getTokenDenomination()), fallbackFee.getTokenDenomination() == null, feeCollector);
+    } else {
+      royaltyFee = new RoyaltyFee(royaltyFeeSpec.numerator(), royaltyFeeSpec.denominator(), 0L, null, false, feeCollector);
+    }
+    return royaltyFee;
   }
 
   private List<TokenKey> getTokenKeys(final MerkleToken token) {

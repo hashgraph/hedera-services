@@ -41,6 +41,7 @@ import org.hyperledger.besu.evm.log.LogTopic;
 public class EncodingFacade {
 	public static final Bytes SUCCESS_RESULT = resultFrom(SUCCESS);
 	private static final long[] NO_MINTED_SERIAL_NUMBERS = new long[0];
+	private static final String ARRAY_BRACKETS = "[]";
 	private static final String STRING_RETURN_TYPE = "(string)";
 	public static final String UINT256_RETURN_TYPE = "(uint256)";
 	public static final String BOOL_RETURN_TYPE = "(bool)";
@@ -49,7 +50,11 @@ public class EncodingFacade {
 	private static final String EXPIRY = "(uint32,address,uint32)";
 	private static final String HEDERA_TOKEN = "(string,string,address,string,bool,uint32,bool,"
 			+ TOKEN_KEY + "[]," + EXPIRY + ")";
-	private static final String TOKEN_INFO = "(" + HEDERA_TOKEN + ",uint64,bool,bool,bool" + ")";
+	private static final String FIXED_FEE = "(uint32,address,bool,bool,address)";
+	private static final String FRACTIONAL_FEE = "(uint32,uint32,uint32,uint32,bool,address)";
+	private static final String ROYALTY_FEE = "(uint32,uint32,uint32,address,bool,address)";
+	private static final String TOKEN_INFO = "(" + HEDERA_TOKEN + ",uint64,bool,bool,bool," + FIXED_FEE + ARRAY_BRACKETS + ","
+			+ FRACTIONAL_FEE + ARRAY_BRACKETS + "," + ROYALTY_FEE + ARRAY_BRACKETS + ",string)";
 	private static final String FUNGIBLE_TOKEN_INFO = "(" + TOKEN_INFO + ",uint32," + ")";
 	private static final String NON_FUNGIBLE_TOKEN_INFO = "(" + TOKEN_INFO + ",int64,address,uint32,bytes,address" + ")";
 

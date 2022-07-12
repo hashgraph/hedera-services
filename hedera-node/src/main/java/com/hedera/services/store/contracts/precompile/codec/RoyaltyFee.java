@@ -20,7 +20,9 @@ package com.hedera.services.store.contracts.precompile.codec;
  * ‍
  */
 
-import java.util.List;
+import org.hyperledger.besu.datatypes.Address;
 
-public record TokenInfo(HederaToken token, long totalSupply, boolean deleted, boolean defaultKycStatus, boolean pauseStatus,
-                        List<FixedFee> fixedFees, List<FractionalFee> fractionalFees, List<RoyaltyFee> royaltyFees, String ledgerId) {}
+public record RoyaltyFee(long numerator, long denominator, long amount, Address tokenId, boolean useHbarsForPayment,
+                         Address feeCollector) {
+
+}

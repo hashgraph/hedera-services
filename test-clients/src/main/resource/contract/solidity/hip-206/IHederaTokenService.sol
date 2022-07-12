@@ -232,8 +232,12 @@ interface IHederaTokenService {
         bool defaultKycStatus;
         //Specifies whether the token is currently paused or not
         bool pauseStatus;
-        //The custom fees collected when transferring the token
-        CustomFee[] customFees;
+        //The fixed fees collected when transferring the token
+        FixedFee[] fixedFees;
+        //The fractional fees collected when transferring the token
+        FractionalFee[] fractionalFees;
+        //The royalty fees collected when transferring the token
+        RoyaltyFee[] royaltyFees;
         //The ID of the network ledger
         string ledgerId;
     }
