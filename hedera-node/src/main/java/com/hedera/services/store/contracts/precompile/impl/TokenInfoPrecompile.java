@@ -1,5 +1,25 @@
 package com.hedera.services.store.contracts.precompile.impl;
 
+/*-
+ * ‌
+ * Hedera Services Node
+ * ​
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
+ * ​
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * ‍
+ */
+
 import static com.hedera.services.store.contracts.precompile.KeyTypeConstants.ADMIN_KEY;
 import static com.hedera.services.store.contracts.precompile.KeyTypeConstants.FEE_SCHEDULE_KEY;
 import static com.hedera.services.store.contracts.precompile.KeyTypeConstants.FREEZE_KEY;
@@ -17,8 +37,11 @@ import com.hedera.services.store.contracts.WorldLedgers;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.store.contracts.precompile.codec.DecodingFacade;
 import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
-import com.hedera.services.store.contracts.precompile.codec.EncodingFacade.KeyValue;
-import com.hedera.services.store.contracts.precompile.codec.EncodingFacade.TokenKey;
+import com.hedera.services.store.contracts.precompile.codec.Expiry;
+import com.hedera.services.store.contracts.precompile.codec.HederaToken;
+import com.hedera.services.store.contracts.precompile.codec.KeyValue;
+import com.hedera.services.store.contracts.precompile.codec.TokenInfo;
+import com.hedera.services.store.contracts.precompile.codec.TokenKey;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -64,18 +87,18 @@ public class TokenInfoPrecompile extends AbstractReadOnlyPrecompile {
     final var freezeDefault = token.hasFreezeKey();
     final var tokenKeys = getTokenKeys(token);
     final var expiry =
-        new EncodingFacade.Expiry(
+        new Expiry(
             token.expiry(),
             EntityIdUtils.asTypedEvmAddress(token.autoRenewAccount()),
             token.autoRenewPeriod());
-    final var hederaToken = new EncodingFacade.HederaToken(name, symbol, treasury, memo, tokenSupplyType, maxSupply, freezeDefault, tokenKeys, expiry);
+    final var hederaToken = new HederaToken(name, symbol, treasury, memo, tokenSupplyType, maxSupply, freezeDefault, tokenKeys, expiry);
 
     final var totalSupply = token.totalSupply();
     final var deleted = token.isDeleted();
     final var defaultKycStatus = token.accountsKycGrantedByDefault();
     final var pauseStatus = token.isPaused();
     final var ledgerId = networkInfo.ledgerId().toString();
-    final var tokenInfo = new EncodingFacade.TokenInfo(hederaToken, totalSupply, deleted, defaultKycStatus, pauseStatus, ledgerId);
+    final var tokenInfo = new TokenInfo(hederaToken, totalSupply, deleted, defaultKycStatus, pauseStatus, ledgerId);
     return encoder.encodeGetTokenInfo(tokenInfo);
   }
 
@@ -109,11 +132,11 @@ public class TokenInfoPrecompile extends AbstractReadOnlyPrecompile {
 
   private TokenKey getTokenKey(final JKey key, final int keyType) {
     final var keyValue = getKeyValue(key);
-    return new EncodingFacade.TokenKey(keyType, keyValue);
+    return new TokenKey(keyType, keyValue);
   }
 
   private KeyValue getKeyValue(final JKey key) {
-    return new EncodingFacade.KeyValue(
+    return new KeyValue(
         false,
         EntityIdUtils.asTypedEvmAddress(key.getContractIDKey().getContractID()),
         key.getEd25519(),

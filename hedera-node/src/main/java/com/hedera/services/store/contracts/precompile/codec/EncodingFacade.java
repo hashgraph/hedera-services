@@ -28,9 +28,7 @@ import com.esaulpaugh.headlong.abi.TupleType;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.math.BigInteger;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
-import java.util.Objects;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.tuweni.bytes.Bytes;
@@ -482,91 +480,6 @@ public class EncodingFacade {
 
 			System.arraycopy(bytesToExpand, 0, expandedArray, expandedArray.length - bytesToExpand.length, bytesToExpand.length);
 			return expandedArray;
-		}
-	}
-
-	public record KeyValue(boolean inheritAccountKey, Address contractId, byte[] ed25519, byte[] ECDSA_secp256k1, Address delegatableContractId) {
-
-		@Override
-		public boolean equals(Object o) {
-			if (this == o) {
-				return true;
-			}
-			if (o == null || getClass() != o.getClass()) {
-				return false;
-			}
-			KeyValue keyValue = (KeyValue) o;
-			return inheritAccountKey == keyValue.inheritAccountKey && Objects.equals(contractId,
-					keyValue.contractId) && Arrays.equals(ed25519, keyValue.ed25519)
-					&& Arrays.equals(ECDSA_secp256k1, keyValue.ECDSA_secp256k1)
-					&& Objects.equals(delegatableContractId, keyValue.delegatableContractId);
-		}
-
-		@Override
-		public int hashCode() {
-			int result = Objects.hash(inheritAccountKey, contractId, delegatableContractId);
-			result = 31 * result + Arrays.hashCode(ed25519);
-			result = 31 * result + Arrays.hashCode(ECDSA_secp256k1);
-			return result;
-		}
-
-		@Override
-		public String toString() {
-			return "KeyValue{" +
-					"inheritAccountKey=" + inheritAccountKey +
-					", contractId=" + contractId +
-					", ed25519=" + Arrays.toString(ed25519) +
-					", ECDSA_secp256k1=" + Arrays.toString(ECDSA_secp256k1) +
-					", delegatableContractId=" + delegatableContractId +
-					'}';
-		}
-	}
-
-	public record TokenKey(int keyType, KeyValue key) {}
-
-	public record Expiry(long second, Address autoRenewAccount, long autoRenewPeriod) {}
-
-	public record HederaToken(String name, String symbol, Address treasury, String memo, boolean tokenSupplyType, long maxSupply,
-														 boolean freezeDefault, List<TokenKey> tokenKeys, Expiry expiry) {}
-
-	public record TokenInfo(HederaToken token, long totalSupply, boolean deleted, boolean defaultKycStatus, boolean pauseStatus, String ledgerId) {}
-
-	public record FungibleTokenInfo(TokenInfo tokenInfo, long decimals) {}
-
-	public record NonFungibleTokenInfo(TokenInfo tokenInfo, long serialNumber, Address ownerId, long creationTime, byte[] metadata, Address spenderId) {
-
-		@Override
-		public boolean equals(Object o) {
-			if (this == o) {
-				return true;
-			}
-			if (o == null || getClass() != o.getClass()) {
-				return false;
-			}
-			NonFungibleTokenInfo that = (NonFungibleTokenInfo) o;
-			return serialNumber == that.serialNumber && creationTime == that.creationTime
-					&& tokenInfo.equals(
-					that.tokenInfo) && ownerId.equals(that.ownerId) && Arrays.equals(metadata,
-					that.metadata) && spenderId.equals(that.spenderId);
-		}
-
-		@Override
-		public int hashCode() {
-			int result = Objects.hash(tokenInfo, serialNumber, ownerId, creationTime, spenderId);
-			result = 31 * result + Arrays.hashCode(metadata);
-			return result;
-		}
-
-		@Override
-		public String toString() {
-			return "NonFungibleTokenInfo{" +
-					"tokenInfo=" + tokenInfo +
-					", serialNumber=" + serialNumber +
-					", ownerId=" + ownerId +
-					", creationTime=" + creationTime +
-					", metadata=" + Arrays.toString(metadata) +
-					", spenderId=" + spenderId +
-					'}';
 		}
 	}
 
