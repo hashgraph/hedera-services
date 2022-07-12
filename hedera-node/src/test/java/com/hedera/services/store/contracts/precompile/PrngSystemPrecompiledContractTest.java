@@ -114,19 +114,15 @@ class PrngSystemPrecompiledContractTest {
 	@Test
 	void generatesRandom256BitNumber() throws InterruptedException {
 		given(runningHashLeaf.nMinusThreeRunningHash()).willReturn(new Hash(TxnUtils.randomUtf8Bytes(48)));
-
-		final var result = subject.generatePseudoRandomData(PSEUDORANDOM_SEED_GENERATOR_SELECTOR,
-				random256BitGeneratorInput());
+		final var result = subject.generatePseudoRandomData(random256BitGeneratorInput());
 		assertEquals(32, result.toArray().length);
 	}
 
 	@Test
 	void generatesRandomNumber() throws InterruptedException {
 		given(runningHashLeaf.nMinusThreeRunningHash()).willReturn(new Hash(TxnUtils.randomUtf8Bytes(48)));
-
 		final var range = r.nextInt(0, Integer.MAX_VALUE);
-		final var result = subject.generatePseudoRandomData(PSEUDORANDOM_NUM_IN_RANGE_GENERATOR_SELECTOR,
-				randomNumberGeneratorInput(range));
+		final var result = subject.generatePseudoRandomData(randomNumberGeneratorInput(range));
 		final var randomNumber = result.toBigInteger().intValue();
 		assertTrue(randomNumber >= 0 && randomNumber < range);
 	}
@@ -141,14 +137,13 @@ class PrngSystemPrecompiledContractTest {
 
 	@Test
 	void inputRangeCannotBeNegative() {
-		final var input = randomNumberGeneratorInput(-10);
+		final var input =randomNumberGeneratorInput(-10);
 		assertThrows(InvalidTransactionException.class,
-				() -> subject.generatePseudoRandomData(PSEUDORANDOM_NUM_IN_RANGE_GENERATOR_SELECTOR,
-						input));
+				() -> subject.generatePseudoRandomData(input));
 	}
 
 	@Test
-	void computePrecompileForNegativeRangeFails() throws InterruptedException {
+	void computePrecompileForNegativeRangeFails() {
 		final var input = randomNumberGeneratorInput(-10);
 		initialSetUp();
 		given(creator.createUnsuccessfulSyntheticRecord(any())).willReturn(childRecord);
@@ -166,7 +161,7 @@ class PrngSystemPrecompiledContractTest {
 	}
 
 	@Test
-	void insufficientGasThrows() throws InterruptedException {
+	void insufficientGasThrows() {
 		final var input = randomNumberGeneratorInput(10);
 		initialSetUp();
 		given(creator.createUnsuccessfulSyntheticRecord(any())).willReturn(childRecord);
@@ -213,36 +208,27 @@ class PrngSystemPrecompiledContractTest {
 	}
 
 	@Test
-	void selectorMustBeFullyPresent() {
-		final var fragmentSelector = Bytes.of(0xab);
-		assertNull(subject.generatePseudoRandomData(fragmentSelector.toInt(), null));
-	}
-
-	@Test
 	void selectorMustBeRecognized() {
 		final var fragmentSelector = Bytes.of((byte) 0xab, (byte) 0xab, (byte) 0xab, (byte) 0xab);
 		final var input = Bytes.concatenate(fragmentSelector, Bytes32.ZERO);
-		assertNull(subject.generatePseudoRandomData(fragmentSelector.toInt(), input));
+		assertNull(subject.generatePseudoRandomData(input));
 	}
 
 	@Test
 	void invalidHashReturnsSentinelOutputs() throws InterruptedException {
 		given(runningHashLeaf.nMinusThreeRunningHash()).willReturn(new Hash(TxnUtils.randomUtf8Bytes(48)));
 
-		var result = subject.generatePseudoRandomData(PSEUDORANDOM_SEED_GENERATOR_SELECTOR,
-				random256BitGeneratorInput());
+		var result = subject.generatePseudoRandomData(random256BitGeneratorInput());
 		assertEquals(32, result.toArray().length);
 
 		// hash is null
 		given(runningHashLeaf.nMinusThreeRunningHash()).willReturn(null);
 
-		result = subject.generatePseudoRandomData(PSEUDORANDOM_SEED_GENERATOR_SELECTOR,
-				random256BitGeneratorInput());
+		result = subject.generatePseudoRandomData(random256BitGeneratorInput());
 		assertNull(result);
 
 		final var range = r.nextInt(0, Integer.MAX_VALUE);
-		result = subject.generatePseudoRandomData(PSEUDORANDOM_NUM_IN_RANGE_GENERATOR_SELECTOR,
-				randomNumberGeneratorInput(range));
+		result = subject.generatePseudoRandomData(randomNumberGeneratorInput(range));
 		final var randomNumberBytes = result;
 		assertNull(randomNumberBytes);
 	}
@@ -252,13 +238,11 @@ class PrngSystemPrecompiledContractTest {
 		final var runningHash = mock(Hash.class);
 		given(runningHashLeaf.nMinusThreeRunningHash()).willReturn(runningHash);
 
-		var result = subject.generatePseudoRandomData(PSEUDORANDOM_SEED_GENERATOR_SELECTOR,
-				random256BitGeneratorInput());
+		var result = subject.generatePseudoRandomData(random256BitGeneratorInput());
 		assertNull(result);
 
 		final var range = r.nextInt(0, Integer.MAX_VALUE);
-		result = subject.generatePseudoRandomData(PSEUDORANDOM_NUM_IN_RANGE_GENERATOR_SELECTOR,
-				randomNumberGeneratorInput(range));
+		result = subject.generatePseudoRandomData(randomNumberGeneratorInput(range));
 		assertNull(result);
 	}
 
@@ -320,6 +304,17 @@ class PrngSystemPrecompiledContractTest {
 		final var msg = assertThrows(InvalidTransactionException.class, () -> subject.computePrecompile(input, frame));
 
 		assertTrue(msg.getMessage().contains("PRNG precompile frame had no parent updater"));
+	}
+
+	@Test
+	void testOutsideRangeValues() throws InterruptedException {
+		final var input = input(PSEUDORANDOM_NUM_IN_RANGE_GENERATOR_SELECTOR,
+				Bytes32.leftPad(Bytes.wrap(ByteBuffer.allocate(8).putLong(Long.MAX_VALUE).array())));
+		initialSetUp();
+
+		final var result = subject.computePrecompile(input, frame);
+
+		assertEquals(INVALID_PRNG_RANGE.getNumber(), result.getOutput().toInt());
 	}
 
 	private static Bytes random256BitGeneratorInput() {

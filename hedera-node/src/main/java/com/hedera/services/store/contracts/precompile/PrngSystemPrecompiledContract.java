@@ -127,12 +127,23 @@ public class PrngSystemPrecompiledContract extends AbstractPrecompiledContract {
 		Bytes result;
 		Bytes randomNum = Bytes.EMPTY;
 
+		if (frame.isStatic()) {
+			// All queries are static calls; but it's possible for a contract transaction to use
+			// a static call, so double-check that it truly doesn't have mutable ledgers---which
+			// are unique to transactions
+			final var proxyUpdater = (HederaStackedWorldStateUpdater) frame.getWorldUpdater();
+			if (!proxyUpdater.hasMutableLedgers()) {
+				return PrecompiledContract.PrecompileContractResult.halt(
+						null,
+						Optional.of(ExceptionalHaltReason.ILLEGAL_STATE_CHANGE));
+			}
+		}
+
 		try {
 			gasRequirement = calculateGas();
 			validateTrue(frame.getRemainingGas() >= gasRequirement, INSUFFICIENT_GAS);
 
-			final var selector = input.getInt(0);
-			randomNum = generatePseudoRandomData(selector, input);
+			randomNum = generatePseudoRandomData(input);
 
 			childRecord = createSuccessfulChildRecord(randomNum, frame, input);
 			result = SUCCESS_RESULT;
@@ -141,6 +152,10 @@ public class PrngSystemPrecompiledContract extends AbstractPrecompiledContract {
 			childRecord = createUnsuccessfulChildRecord(e.getResponseCode(), frame,
 					e.isReverting() ? e.getRevertReason() : Bytes.EMPTY);
 			result = resultFrom(e.getResponseCode());
+		} catch (IllegalArgumentException e) {
+			// if the range value provided is not in integer range, an IllegalArgumentException in thrown
+			childRecord = createUnsuccessfulChildRecord(INVALID_PRNG_RANGE, frame, Bytes.EMPTY);
+			result = resultFrom(INVALID_PRNG_RANGE);
 		} catch (Exception e) {
 			log.warn("Internal precompile failure", e);
 			childRecord = createUnsuccessfulChildRecord(FAIL_INVALID, frame, Bytes.EMPTY);
@@ -160,7 +175,8 @@ public class PrngSystemPrecompiledContract extends AbstractPrecompiledContract {
 				: PrecompiledContract.PrecompileContractResult.success(result);
 	}
 
-	Bytes generatePseudoRandomData(final int selector, final Bytes input) {
+	Bytes generatePseudoRandomData(final Bytes input) {
+		final var selector = input.getInt(0);
 		return switch (selector) {
 			case PSEUDORANDOM_SEED_GENERATOR_SELECTOR -> random256BitGenerator();
 			case PSEUDORANDOM_NUM_IN_RANGE_GENERATOR_SELECTOR -> randomNumberGeneratorInRange(input);
