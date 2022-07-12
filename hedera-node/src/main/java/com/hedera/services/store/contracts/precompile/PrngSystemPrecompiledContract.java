@@ -132,7 +132,7 @@ public class PrngSystemPrecompiledContract extends AbstractPrecompiledContract {
 		final var randomNum = result.getLeft().getOutput();
 		final var childRecord = result.getRight() == null ?
 				createSuccessfulChildRecord(randomNum, frame, input) :
-				createUnsuccessfulChildRecord(result, frame);
+				createUnsuccessfulChildRecord(result.getRight(), frame);
 
 		final var parentUpdater = updater.parentUpdater();
 		if (parentUpdater.isPresent()) {
@@ -145,7 +145,7 @@ public class PrngSystemPrecompiledContract extends AbstractPrecompiledContract {
 		return result.getLeft();
 	}
 
-	Pair<PrecompileContractResult, Exception> computePrngResult(
+	Pair<PrecompileContractResult, ResponseCodeEnum> computePrngResult(
 			final long gasNeeded,
 			final Bytes input,
 			final MessageFrame frame) {
@@ -153,13 +153,16 @@ public class PrngSystemPrecompiledContract extends AbstractPrecompiledContract {
 			validateTrue(frame.getRemainingGas() >= gasNeeded, INSUFFICIENT_GAS);
 			final var randomNum = generatePseudoRandomData(input);
 			return Pair.of(PrecompiledContract.PrecompileContractResult.success(randomNum), null);
-		} catch (InvalidTransactionException | IllegalArgumentException e) {
+		} catch (InvalidTransactionException e) {
 			return Pair.of(PrecompiledContract.PrecompileContractResult.halt(null,
-					Optional.ofNullable(ExceptionalHaltReason.INVALID_OPERATION)), e);
+					Optional.ofNullable(ExceptionalHaltReason.INVALID_OPERATION)), e.getResponseCode());
+		} catch (IllegalArgumentException e) {
+			return Pair.of(PrecompiledContract.PrecompileContractResult.halt(null,
+					Optional.ofNullable(ExceptionalHaltReason.INVALID_OPERATION)), INVALID_PRNG_RANGE);
 		} catch (Exception e) {
 			log.warn("Internal precompile failure", e);
 			return Pair.of(PrecompiledContract.PrecompileContractResult.halt(null,
-					Optional.ofNullable(ExceptionalHaltReason.INVALID_OPERATION)), e);
+					Optional.ofNullable(ExceptionalHaltReason.INVALID_OPERATION)), FAIL_INVALID);
 		}
 	}
 
@@ -206,15 +209,6 @@ public class PrngSystemPrecompiledContract extends AbstractPrecompiledContract {
 	}
 
 	ExpirableTxnRecord.Builder createUnsuccessfulChildRecord(
-			final Pair<PrecompileContractResult, Exception> result, final MessageFrame frame) {
-		var response = FAIL_INVALID;
-		if (result.getRight() instanceof InvalidTransactionException) {
-			response = ((InvalidTransactionException) result.getRight()).getResponseCode();
-		}
-		return createFailedChildRecord(response, frame);
-	}
-
-	ExpirableTxnRecord.Builder createFailedChildRecord(
 			final ResponseCodeEnum status,
 			final MessageFrame frame) {
 		final var childRecord = creator.createUnsuccessfulSyntheticRecord(status);

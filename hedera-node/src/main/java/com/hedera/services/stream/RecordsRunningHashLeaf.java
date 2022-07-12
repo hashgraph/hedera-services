@@ -32,6 +32,8 @@ import java.io.IOException;
 import java.util.Objects;
 import java.util.concurrent.ExecutionException;
 
+import static com.hedera.services.ServicesState.EMPTY_HASH;
+
 /**
  * Contains current {@code com.swirlds.common.crypto.RunningHash} which contains a Hash which is a running
  * Hash calculated from all {@link RecordStreamObject} in history
@@ -60,9 +62,9 @@ public class RecordsRunningHashLeaf extends AbstractMerkleLeaf {
 
 	public RecordsRunningHashLeaf(final RunningHash runningHash) {
 		this.runningHash = runningHash;
-		this.nMinus1RunningHash = new RunningHash();
-		this.nMinus2RunningHash = new RunningHash();
-		this.nMinus3RunningHash = new RunningHash();
+		this.nMinus1RunningHash = new RunningHash(EMPTY_HASH);
+		this.nMinus2RunningHash = new RunningHash(EMPTY_HASH);
+		this.nMinus3RunningHash = new RunningHash(EMPTY_HASH);
 	}
 
 	private RecordsRunningHashLeaf(final RecordsRunningHashLeaf runningHashLeaf) {
@@ -97,9 +99,9 @@ public class RecordsRunningHashLeaf extends AbstractMerkleLeaf {
 		runningHash = new RunningHash();
 		runningHash.setHash(in.readSerializable());
 
-		nMinus1RunningHash = new RunningHash();
-		nMinus2RunningHash = new RunningHash();
-		nMinus3RunningHash = new RunningHash();
+		nMinus1RunningHash = new RunningHash(EMPTY_HASH);
+		nMinus2RunningHash = new RunningHash(EMPTY_HASH);
+		nMinus3RunningHash = new RunningHash(EMPTY_HASH);
 		if (version >= RELEASE_0280_VERSION) {
 			nMinus1RunningHash.setHash(in.readSerializable());
 			nMinus2RunningHash.setHash(in.readSerializable());
