@@ -150,7 +150,7 @@ class RecordStreamFileWriter implements LinkedObjectStream<RecordStreamObject> {
 	private RecordStreamFile.Builder recordStreamFileBuilder;
 	private SidecarFile.Builder sidecarFileBuilder;
 	private final EnumSet<SidecarType> sidecarTypesInCurrentSidecar;
-	private int sidecarFileId = 1;
+	private int sidecarFileId;
 
 	public RecordStreamFileWriter(
 			final String dirPath,
@@ -170,6 +170,7 @@ class RecordStreamFileWriter implements LinkedObjectStream<RecordStreamObject> {
 		this.sidecarStreamDigest = MessageDigest.getInstance(currentDigestType.algorithmName());
 		this.sidecarDirPath = sidecarDirPath;
 		this.sidecarTypesInCurrentSidecar = EnumSet.noneOf(SidecarType.class);
+		this.sidecarFileId = 1;
 	}
 
 	@Override

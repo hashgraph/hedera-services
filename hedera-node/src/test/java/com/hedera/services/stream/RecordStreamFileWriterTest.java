@@ -877,8 +877,7 @@ class RecordStreamFileWriterTest {
 			SidecarType.CONTRACT_BYTECODE, SidecarType.CONTRACT_ACTION);
 	public static final EnumSet<SidecarType> someSidecarTypes = EnumSet.of(
 			SidecarType.CONTRACT_BYTECODE, SidecarType.CONTRACT_ACTION);
-	public static final EnumSet<SidecarType> noneSidecars = EnumSet.noneOf(
-			SidecarType.class);
+	public static final EnumSet<SidecarType> noneSidecars = EnumSet.noneOf(SidecarType.class);
 
 	@Mock
 	private RecordStreamType streamType;

@@ -294,8 +294,8 @@ public class RecordStreamManagerTest {
 		final var withSeparatorSuffix = "somewhere/else/";
 		final var expected = "somewhere/else/record0.0.3";
 
-		assertEquals(expected, RecordStreamManager.effLogDir(withSeparatorSuffix, memo));
-		assertEquals(expected, RecordStreamManager.effLogDir(withoutSeparatorSuffix, memo));
+		assertEquals(expected, RecordStreamManager.effectiveLogDir(withSeparatorSuffix, memo));
+		assertEquals(expected, RecordStreamManager.effectiveLogDir(withoutSeparatorSuffix, memo));
 	}
 
 	@Test
@@ -304,20 +304,20 @@ public class RecordStreamManagerTest {
 		final var withSeparatorSuffix = "somewhere/else/";
 
 		var expected = withoutSeparatorSuffix + File.separator;
-		var actual = RecordStreamManager.effSidecarDir(withoutSeparatorSuffix, "");
+		var actual = RecordStreamManager.effectiveSidecarDir(withoutSeparatorSuffix, "");
 		assertEquals(expected, actual);
 
 		expected = withSeparatorSuffix;
-		actual = RecordStreamManager.effSidecarDir(withSeparatorSuffix, "");
+		actual = RecordStreamManager.effectiveSidecarDir(withSeparatorSuffix, "");
 		assertEquals(expected, actual);
 
 		final var sidecarFolder = "sidecars";
 		expected = withoutSeparatorSuffix + File.separator + sidecarFolder;
-		actual = RecordStreamManager.effSidecarDir(withoutSeparatorSuffix, sidecarFolder);
+		actual = RecordStreamManager.effectiveSidecarDir(withoutSeparatorSuffix, sidecarFolder);
 		assertEquals(expected, actual);
 
 		expected = withSeparatorSuffix + sidecarFolder;
-		actual = RecordStreamManager.effSidecarDir(withSeparatorSuffix, sidecarFolder);
+		actual = RecordStreamManager.effectiveSidecarDir(withSeparatorSuffix, sidecarFolder);
 		assertEquals(expected, actual);
 	}
 
