@@ -84,6 +84,8 @@ import static com.hedera.services.bdd.suites.contract.Utils.eventSignatureOf;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
 import static com.hedera.services.bdd.suites.contract.Utils.parsedToByteString;
 import static com.hedera.services.bdd.suites.contract.precompile.DynamicGasCostSuite.captureChildCreate2MetaFor;
+import static com.hedera.services.bdd.suites.utils.contracts.AddressResult.hexedAddress;
+import static com.hedera.services.bdd.suites.utils.contracts.BoolResult.flag;
 import static com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult.htsPrecompileResult;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AMOUNT_EXCEEDS_ALLOWANCE;
@@ -2281,6 +2283,9 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 								tokenMirrorAddr.get(), contractMirrorAddr.get(), aCivilianMirrorAddr.get()
 						)
 								.via("ALLOWANCE_TXN").gas(4_000_000).hasKnownStatus(SUCCESS)),
+						sourcing(() -> contractCallLocal(
+								someERC20Scenarios, "getAllowance",
+								tokenMirrorAddr.get(), contractMirrorAddr.get(), aCivilianMirrorAddr.get())),
 						sourcing(() -> contractCall(
 								someERC20Scenarios, "doSpecificApproval",
 								tokenMirrorAddr.get(), aCivilianMirrorAddr.get(), 0L
@@ -2719,12 +2724,20 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 								someERC721Scenarios, "getApproved",
 								tokenMirrorAddr.get(), 1L
 						)
-								.via("WITH_SPENDER").gas(4_000_000).hasKnownStatus(SUCCESS))
-				).then(
-						withOpContext(
-								(spec, opLog) ->
-										allRunFor(
-												spec,
+								.via("WITH_SPENDER").gas(4_000_000).hasKnownStatus(SUCCESS)),
+						getTxnRecord("WITH_SPENDER").andAllChildRecords().logged(),
+						sourcing(() -> contractCallLocal(
+								someERC721Scenarios, "getApproved",
+								tokenMirrorAddr.get(), 1L
+						)
+								.logged()
+								.gas(4_000_000).has(resultWith()
+										.contractCallResult(hexedAddress(aCivilianMirrorAddr.get()))))
+						).then(
+								withOpContext(
+										(spec, opLog) ->
+												allRunFor(
+														spec,
 												childRecordsCheck("MISSING_SPENDER", SUCCESS,
 														recordWith()
 																.status(SUCCESS)
@@ -3023,7 +3036,12 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 								someERC721Scenarios, "isApprovedForAll",
 								tokenMirrorAddr.get(), aCivilianMirrorAddr.get(), contractMirrorAddr.get()
 						)
-								.via("OPERATOR_IS_APPROVED_FOR_ALL").gas(4_000_000).hasKnownStatus(SUCCESS))
+								.via("OPERATOR_IS_APPROVED_FOR_ALL").gas(4_000_000).hasKnownStatus(SUCCESS)),
+						sourcing(() -> contractCallLocal(
+								someERC721Scenarios, "isApprovedForAll",
+								tokenMirrorAddr.get(), aCivilianMirrorAddr.get(), contractMirrorAddr.get()
+						)
+								.gas(4_000_000).has(resultWith().contractCallResult(flag(true))))
 
 				).then(
 						withOpContext(

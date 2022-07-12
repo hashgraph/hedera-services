@@ -1,11 +1,6 @@
-package com.hedera.services.usage.token.entities;
-
-/*-
- * ‌
- * Hedera Services API Fees
- * ​
- * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,20 +12,18 @@ package com.hedera.services.usage.token.entities;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+package com.hedera.services.usage.token.entities;
 
 import static com.hederahashgraph.fee.FeeBuilder.BASIC_ENTITY_ID_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.BASIC_RICH_INSTANT_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.LONG_SIZE;
 
 public enum NftEntitySizes {
-	NFT_ENTITY_SIZES;
+    NFT_ENTITY_SIZES;
 
-	public long fixedBytesInNftRepr() {
-		/* { creation time, tokenId, accountId, serialNum } */
-		return BASIC_RICH_INSTANT_SIZE
-				+ 2 * BASIC_ENTITY_ID_SIZE
-				+ LONG_SIZE;
-	}
+    public long fixedBytesInNftRepr() {
+        /* { creation time, tokenId, accountId, serialNum } */
+        return BASIC_RICH_INSTANT_SIZE + 2 * BASIC_ENTITY_ID_SIZE + LONG_SIZE;
+    }
 }

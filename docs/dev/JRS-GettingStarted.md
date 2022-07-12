@@ -27,7 +27,6 @@ The Java Regression Suite (JRS) runs on a remote machine. It relies on two types
      - `experiments` experiments to run.
      - `slack` slack details needed to post the results. Use `hedera-regression-test` channel for testing. `hedera-regression`/`hedera-regression-summary` channel needs to be used exclusively for nightly regression results.
      - `result` results folder in the local machine to download the logs after test.  
-     -  `db` postgres information 
      - other minor details.
     
 2. _Experiment configuration JSON :_ It holds specific information on the set up of the experiment and validations to be done to tell if it passed.  It majorly includes 
@@ -154,7 +153,7 @@ Any new naming conventions need to be added to the file if required, after seeki
 
 # **Services Nightly Regression**
 
-Current Services nightly regression runs the following tests based on the cron timings defined in [config.yml](https://github.com/hashgraph/hedera-services/blob/master/.circleci/config.yml).
+Current Services nightly regression runs the following tests based on the cron timings:
 - _Performance :_ Test performance of the system for all services and mixed operations.
 - _Restart :_ Nodes enter freeze and restarted in middle of the test.
 - _State Recovery :_ Events are replayed on a node.
