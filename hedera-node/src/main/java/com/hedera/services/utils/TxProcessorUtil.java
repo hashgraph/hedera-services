@@ -203,6 +203,6 @@ public class TxProcessorUtil {
 	}
 
 	private TxProcessorUtil() {
-		throw new IllegalStateException("Utility class");
+		throw new UnsupportedOperationException("Utility class");
 	}
 }

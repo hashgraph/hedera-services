@@ -35,6 +35,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+import static org.hyperledger.besu.evm.frame.MessageFrame.State;
+
 public class PrecompileMessage {
 
 	private final WorldLedgers ledgers;
@@ -210,20 +212,6 @@ public class PrecompileMessage {
 		public PrecompileMessage build() {
 			return new PrecompileMessage(this.ledgers, this.senderAddress, this.value, this.consensusTime,
 					this.gasRemaining, this.inputData, this.tokenID);
-		}
-	}
-
-	public enum State {
-		NOT_STARTED,
-		CODE_EXECUTING,
-		CODE_SUCCESS,
-		CODE_SUSPENDED,
-		EXCEPTIONAL_HALT,
-		REVERT,
-		COMPLETED_FAILED,
-		COMPLETED_SUCCESS;
-
-		State() {
 		}
 	}
 }

@@ -44,9 +44,9 @@ import java.time.Instant;
 import java.util.Map;
 import java.util.Optional;
 
-import static com.hedera.services.store.contracts.precompile.PrecompileMessage.State.COMPLETED_SUCCESS;
-import static com.hedera.services.store.contracts.precompile.PrecompileMessage.State.EXCEPTIONAL_HALT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_GAS;
+import static org.hyperledger.besu.evm.frame.MessageFrame.State.COMPLETED_SUCCESS;
+import static org.hyperledger.besu.evm.frame.MessageFrame.State.EXCEPTIONAL_HALT;
 
 @Singleton
 public class DirectCallsTxProcessor {

@@ -175,7 +175,8 @@ class UtilsConstructorTest {
 			ByteUtils.class,
 			Units.class,
 			StakingUtils.class,
-			UtilLogicModule.class
+			UtilLogicModule.class,
+			TxProcessorUtil.class
 	));
 
 	@Test

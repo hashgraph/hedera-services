@@ -62,7 +62,7 @@ public record DirectCallsPrecompileInfoProvider(PrecompileMessage precompileMess
 
 	@Override
 	public void setState(MessageFrame.State state) {
-		precompileMessage.setState(PrecompileMessage.State.valueOf(state.name()));
+		precompileMessage.setState(state);
 	}
 
 	@Override
