@@ -28,8 +28,8 @@ import com.hedera.services.utils.accessors.SwirldsTxnAccessor;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.swirlds.common.crypto.Signature;
-
-import java.time.Instant;
+import com.swirlds.common.system.Round;
+import com.swirlds.common.system.SwirldDualState;
 
 /**
  * Provides an "expand" operation that acts in-place on the {@link com.swirlds.common.crypto.TransactionSignature}
@@ -45,7 +45,7 @@ import java.time.Instant;
  * and creates the cryptographic signatures at the bases of the signing hierarchies
  * for these keys. This implicitly requests the Platform to verify these cryptographic
  * signatures, by setting them in the sigs list of the platform txn, <b>before</b>
- * {@link com.hedera.services.ServicesState#handleTransaction(long, boolean, Instant, Instant, Transaction, SwirldDualState)}
+ * {@link com.hedera.services.ServicesState#handleConsensusRound(Round, SwirldDualState)}
  * is called with {@code isConsensus=true}.
  */
 public final class HederaToPlatformSigOps {
