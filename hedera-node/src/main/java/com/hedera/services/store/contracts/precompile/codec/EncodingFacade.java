@@ -49,7 +49,7 @@ public class EncodingFacade {
     private static final long[] NO_MINTED_SERIAL_NUMBERS = new long[0];
 
     private static final String HEDERA_TOKEN =
-            "(string,string,address,string,bool,uint32,bool,"
+            "(string,string,address,string,bool,int64,bool,"
                     + TOKEN_KEY
                     + ARRAY_BRACKETS
                     + ","
@@ -58,7 +58,7 @@ public class EncodingFacade {
     private static final String TOKEN_INFO =
             "("
                     + HEDERA_TOKEN
-                    + ",uint64,bool,bool,bool,"
+                    + ",int64,bool,bool,bool,"
                     + FIXED_FEE
                     + ARRAY_BRACKETS
                     + ","
@@ -68,9 +68,9 @@ public class EncodingFacade {
                     + ROYALTY_FEE
                     + ARRAY_BRACKETS
                     + ",string)";
-    private static final String FUNGIBLE_TOKEN_INFO = "(" + TOKEN_INFO + ",uint32," + ")";
+    private static final String FUNGIBLE_TOKEN_INFO = "(" + TOKEN_INFO + ",int32" + ")";
     private static final String NON_FUNGIBLE_TOKEN_INFO =
-            "(" + TOKEN_INFO + ",int64,address,uint32,bytes,address" + ")";
+            "(" + TOKEN_INFO + ",int64,address,int32,bytes,address" + ")";
 
     private static final TupleType mintReturnType = TupleType.parse("(int32,uint64,int64[])");
     private static final TupleType burnReturnType = TupleType.parse("(int32,uint64)");
