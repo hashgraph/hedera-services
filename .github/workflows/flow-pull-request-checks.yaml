@@ -18,6 +18,7 @@ jobs:
     uses: ./.github/workflows/comp-compile-application-code.yaml
     with:
       enable-fossa-scan: true
+      enable-fossa-test: false
     secrets:
       access-token: ${{ secrets.GITHUB_TOKEN }}
       fossa-api-token: ${{ secrets.FOSSA_API_TOKEN }}
