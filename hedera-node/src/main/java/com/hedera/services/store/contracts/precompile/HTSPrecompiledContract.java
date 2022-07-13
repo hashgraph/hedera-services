@@ -58,12 +58,14 @@ import com.hedera.services.store.contracts.precompile.impl.MultiAssociatePrecomp
 import com.hedera.services.store.contracts.precompile.impl.MultiDissociatePrecompile;
 import com.hedera.services.store.contracts.precompile.impl.NamePrecompile;
 import com.hedera.services.store.contracts.precompile.impl.OwnerOfPrecompile;
+import com.hedera.services.store.contracts.precompile.impl.PausePrecompile;
 import com.hedera.services.store.contracts.precompile.impl.SetApprovalForAllPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.SymbolPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.TokenCreatePrecompile;
 import com.hedera.services.store.contracts.precompile.impl.TokenURIPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.TotalSupplyPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.TransferPrecompile;
+import com.hedera.services.store.contracts.precompile.impl.UnpausePrecompile;
 import com.hedera.services.store.contracts.precompile.utils.DescriptorUtils;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -260,6 +262,12 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 							ledgers, decoder, updater.aliases(), sigsVerifier,
 							sideEffectsTracker, syntheticTxnFactory, infrastructureFactory, precompilePricingUtils,
 							feeCalculator, currentView);
+					case AbiConstants.ABI_PAUSE_TOKEN -> new PausePrecompile(
+							ledgers, decoder, updater.aliases(), sigsVerifier, sideEffectsTracker, syntheticTxnFactory,
+							infrastructureFactory, precompilePricingUtils);
+					case AbiConstants.ABI_UNPAUSE_TOKEN -> new UnpausePrecompile(
+							ledgers, decoder, updater.aliases(), sigsVerifier, sideEffectsTracker, syntheticTxnFactory,
+							infrastructureFactory, precompilePricingUtils);
 					case AbiConstants.ABI_ID_REDIRECT_FOR_TOKEN -> {
 						final var target = DescriptorUtils.getRedirectTarget(input);
 						final var tokenId = target.tokenId();

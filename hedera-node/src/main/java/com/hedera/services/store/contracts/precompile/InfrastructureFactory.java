@@ -52,6 +52,8 @@ import com.hedera.services.txns.token.BurnLogic;
 import com.hedera.services.txns.token.CreateLogic;
 import com.hedera.services.txns.token.DissociateLogic;
 import com.hedera.services.txns.token.MintLogic;
+import com.hedera.services.txns.token.PauseLogic;
+import com.hedera.services.txns.token.UnpauseLogic;
 import com.hedera.services.txns.token.process.DissociationFactory;
 import com.hedera.services.txns.token.validators.CreateChecks;
 import com.hedera.services.txns.validation.OptionValidator;
@@ -189,6 +191,14 @@ public class InfrastructureFactory {
 			final TypedTokenStore tokenStore
 	) {
 		return new DeleteAllowanceLogic(accountStore, tokenStore);
+	}
+
+	public PauseLogic newPauseLogic(final TypedTokenStore tokenStore) {
+		return new PauseLogic(tokenStore);
+	}
+
+	public UnpauseLogic newUnpauseLogic(final TypedTokenStore tokenStore) {
+		return new UnpauseLogic(tokenStore);
 	}
 
 	public CreateChecks newCreateChecks() {

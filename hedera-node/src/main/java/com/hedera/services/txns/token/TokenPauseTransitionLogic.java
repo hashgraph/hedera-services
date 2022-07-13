@@ -21,11 +21,9 @@ package com.hedera.services.txns.token;
  */
 
 import com.hedera.services.context.TransactionContext;
-import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.txns.TransitionLogic;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.TokenPauseTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
 import javax.inject.Inject;
@@ -33,24 +31,23 @@ import javax.inject.Singleton;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-
 /**
  * Provides the state transition for pausing the Token.
  */
 @Singleton
 public class TokenPauseTransitionLogic implements TransitionLogic {
-	private final TypedTokenStore tokenStore;
 	private final TransactionContext txnCtx;
+
+	private final PauseLogic pauseLogic;
 
 	@Inject
 	public TokenPauseTransitionLogic(
-			final TypedTokenStore tokenStore,
-			final TransactionContext txnCtx
+
+			final TransactionContext txnCtx,
+			final PauseLogic pauseLogic
 	) {
 		this.txnCtx = txnCtx;
-		this.tokenStore = tokenStore;
+		this.pauseLogic = pauseLogic;
 	}
 
 	@Override
@@ -60,14 +57,7 @@ public class TokenPauseTransitionLogic implements TransitionLogic {
 		var grpcTokenId = op.getToken();
 		var targetTokenId = Id.fromGrpcToken(grpcTokenId);
 
-		/* --- Load the model objects --- */
-		var token = tokenStore.loadPossiblyPausedToken(targetTokenId);
-
-		/* --- Do the business logic --- */
-		token.changePauseStatus(true);
-
-		/* --- Persist the updated models --- */
-		tokenStore.commitToken(token);
+		pauseLogic.pause(targetTokenId);
 	}
 
 	@Override
@@ -80,13 +70,6 @@ public class TokenPauseTransitionLogic implements TransitionLogic {
 		return this::validate;
 	}
 
-	public ResponseCodeEnum validate(TransactionBody txnBody) {
-		TokenPauseTransactionBody op = txnBody.getTokenPause();
+	public ResponseCodeEnum validate(TransactionBody txnBody) { return pauseLogic.validateSyntax(txnBody); }
 
-		if (!op.hasToken()) {
-			return INVALID_TOKEN_ID;
-		}
-
-		return OK;
-	}
 }

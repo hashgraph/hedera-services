@@ -149,6 +149,20 @@ public class DecodingFacade {
 	private static final Bytes ERC_TRANSFER_FROM_SELECTOR = Bytes.wrap(ERC_TRANSFER_FROM_FUNCTION.selector());
 	private static final ABIType<Tuple> ERC_TRANSFER_FROM_DECODER = TypeFactory.create("(bytes32,bytes32,uint256)");
 
+	private static final Function PAUSE_TOKEN_FUNCTION =
+			new Function("pauseToken(address)", INT_OUTPUT);
+
+	private static final Bytes PAUSE_TOKEN_SELECTOR = Bytes.wrap(PAUSE_TOKEN_FUNCTION.selector());
+
+	private static final ABIType<Tuple> PAUSE_TOKEN_DECODER = TypeFactory.create("(bytes32)");
+
+	private static final Function UNPAUSE_TOKEN_FUNCTION =
+			new Function("unpauseToken(address)", INT_OUTPUT);
+
+	private static final Bytes UNPAUSE_TOKEN_SELECTOR = Bytes.wrap(UNPAUSE_TOKEN_FUNCTION.selector());
+
+	private static final ABIType<Tuple> UNPAUSE_TOKEN_DECODER = TypeFactory.create("(bytes32)");
+
 	/* --- Token Create Structs --- */
 	private static final String KEY_VALUE = "(bool,address,bytes,bytes,address)";
 	private static final String KEY_VALUE_DECODER = "(bool,bytes32,bytes,bytes,bytes32)";
@@ -702,6 +716,22 @@ public class DecodingFacade {
 					feeCollector.getAccountNum() != 0 ? feeCollector : null));
 		}
 		return decodedRoyaltyFees;
+	}
+
+	public PauseWrapper decodePause(final Bytes input) {
+		final Tuple decodedArguments = decodeFunctionCall(input, PAUSE_TOKEN_SELECTOR, PAUSE_TOKEN_DECODER);
+
+		final var tokenID = convertAddressBytesToTokenID(decodedArguments.get(0));
+
+		return PauseWrapper.pause(tokenID);
+	}
+
+	public UnpauseWrapper decodeUnpause(final Bytes input) {
+		final Tuple decodedArguments = decodeFunctionCall(input, UNPAUSE_TOKEN_SELECTOR, UNPAUSE_TOKEN_DECODER);
+
+		final var tokenID = convertAddressBytesToTokenID(decodedArguments.get(0));
+
+		return UnpauseWrapper.unpause(tokenID);
 	}
 
 	private Tuple decodeFunctionCall(final Bytes input, final Bytes selector, final ABIType<Tuple> decoder) {

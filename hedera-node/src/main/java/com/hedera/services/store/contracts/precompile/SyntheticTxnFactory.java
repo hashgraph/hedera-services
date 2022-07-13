@@ -32,9 +32,11 @@ import com.hedera.services.store.contracts.precompile.codec.Association;
 import com.hedera.services.store.contracts.precompile.codec.BurnWrapper;
 import com.hedera.services.store.contracts.precompile.codec.Dissociation;
 import com.hedera.services.store.contracts.precompile.codec.MintWrapper;
+import com.hedera.services.store.contracts.precompile.codec.PauseWrapper;
 import com.hedera.services.store.contracts.precompile.codec.SetApprovalForAllWrapper;
 import com.hedera.services.store.contracts.precompile.codec.TokenCreateWrapper;
 import com.hedera.services.store.contracts.precompile.codec.TokenTransferWrapper;
+import com.hedera.services.store.contracts.precompile.codec.UnpauseWrapper;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.MiscUtils;
 import com.hederahashgraph.api.proto.java.AccountAmount;
@@ -65,9 +67,11 @@ import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenDissociateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenMintTransactionBody;
+import com.hederahashgraph.api.proto.java.TokenPauseTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TokenType;
+import com.hederahashgraph.api.proto.java.TokenUnpauseTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import org.apache.tuweni.bytes.Bytes;
@@ -397,6 +401,21 @@ public class SyntheticTxnFactory {
 		return TransactionBody.newBuilder().setNodeStakeUpdate(txnBody);
 	}
 
+	public TransactionBody.Builder createPause(final PauseWrapper pauseWrapper) {
+		final var builder = TokenPauseTransactionBody.newBuilder();
+
+		builder.setToken(pauseWrapper.token());
+
+		return TransactionBody.newBuilder().setTokenPause(builder);
+	}
+
+	public TransactionBody.Builder createUnpause(final UnpauseWrapper unpauseWrapper) {
+		final var builder = TokenUnpauseTransactionBody.newBuilder();
+
+		builder.setToken(unpauseWrapper.token());
+
+		return TransactionBody.newBuilder().setTokenUnpause(builder);
+	}
 	public static class HbarTransfer {
 		protected final long amount;
 		protected final AccountID sender;

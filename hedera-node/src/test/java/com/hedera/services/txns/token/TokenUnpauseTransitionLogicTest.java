@@ -68,7 +68,8 @@ class TokenUnpauseTransitionLogicTest {
 
 		txnCtx = mock(TransactionContext.class);
 
-		subject = new TokenUnpauseTransitionLogic(tokenStore, txnCtx);
+		UnpauseLogic unpauseLogic = new UnpauseLogic(tokenStore);
+		subject = new TokenUnpauseTransitionLogic(txnCtx, unpauseLogic);
 	}
 
 	@Test

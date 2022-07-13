@@ -87,6 +87,13 @@ public final class AbiConstants {
 	public static final int ABI_ID_ERC_OWNER_OF_NFT = 0x6352211e;
 	//tokenURI(uint256 tokenId)
 	public static final int ABI_ID_ERC_TOKEN_URI_NFT = 0xc87b56dd;
+
+	//pauseToken(address)
+	public static final int ABI_PAUSE_TOKEN = 0x7c41ad2c;
+
+	//unpauseToken(address)
+	public static final int ABI_UNPAUSE_TOKEN = 0x3b3bff0f;
+
 	//Transfer(address indexed from, address indexed to, uint256 indexed tokenId)
 	//Transfer(address indexed from, address indexed to, uint256 value)
 	public static final Bytes TRANSFER_EVENT = Bytes.fromHexString(

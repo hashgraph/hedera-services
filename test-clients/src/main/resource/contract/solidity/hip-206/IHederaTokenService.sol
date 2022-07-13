@@ -392,4 +392,14 @@ interface IHederaTokenService {
     /// @param serialNumber The serial number of the NFT to transfer.
     function transferNFT(address token,  address sender, address recipient, int64 serialNumber) external
     returns (int responseCode);
+
+    /// Operation to pause token
+    /// @param token The token address to be paused
+    /// @return responseCode The response code for the status of the request. SUCCESS is 22.
+    function pauseToken(address token) external returns (int responseCode);
+
+    /// Operation to unpause token
+    /// @param token The token address to be unpaused
+    /// @return responseCode The response code for the status of the request. SUCCESS is 22.
+    function unpauseToken(address token) external returns (int responseCode);
 }
