@@ -277,6 +277,9 @@ class MerkleStakingInfoTest {
 	void cannotUnclaimMoreThanStakedRewardStart() {
 		subject.increaseUnclaimedStakeRewardStart(stakeRewardStart - unclaimedStakeRewardStart + 1);
 		assertEquals(stakeRewardStart, subject.getUnclaimedStakeRewardStart());
+		assertEquals(
+				"Asked to release 1112 more rewards for node34 (now 1235), but only 1234 was staked",
+				logCaptor.warnLogs().get(0));
 	}
 
 	@Test

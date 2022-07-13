@@ -248,6 +248,23 @@ class StakingAccountsCommitInterceptorTest {
 	}
 
 	@Test
+	void anAccountDoesNotUnclaimRewardsIfStakingNotActivated() {
+		given(dynamicProperties.isStakingEnabled()).willReturn(true);
+		final var changes = new EntityChangeSet<AccountID, MerkleAccount, AccountProperty>();
+		final var node0Info = stakingInfo.get(node0Id);
+		node0Info.setStakeRewardStart(2 * counterpartyBalance);
+
+		final Map<AccountProperty, Object> nodeChange = Map.of(AccountProperty.STAKED_ID, -2L);
+		changes.include(counterpartyId, counterparty, nodeChange);
+		counterparty.setStakePeriodStart(stakePeriodStart);
+		counterparty.setStakeAtStartOfLastRewardedPeriod(counterpartyBalance / 5);
+
+		subject.preview(changes);
+
+		assertEquals(0, node0Info.getUnclaimedStakeRewardStart());
+	}
+
+	@Test
 	void anAccountThatStartedStakingAtCurrentPeriodDoesntUnclaimStakeWhenChangingElection() {
 		given(dynamicProperties.isStakingEnabled()).willReturn(true);
 		final var changes = new EntityChangeSet<AccountID, MerkleAccount, AccountProperty>();

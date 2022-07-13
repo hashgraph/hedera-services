@@ -172,8 +172,8 @@ public class MerkleStakingInfo extends PartialMerkleLeaf implements Keyed<Entity
 	public void increaseUnclaimedStakeRewardStart(final long amount) {
 		unclaimedStakeRewardStart += amount;
 		if (unclaimedStakeRewardStart > stakeRewardStart) {
-			log.warn("Asked to release {} stake reward start for node{}, but only {} was staked",
-					number, unclaimedStakeRewardStart, stakeRewardStart);
+			log.warn("Asked to release {} more rewards for node{} (now {}), but only {} was staked",
+					amount, number, unclaimedStakeRewardStart, stakeRewardStart);
 			unclaimedStakeRewardStart = stakeRewardStart;
 		}
 	}
