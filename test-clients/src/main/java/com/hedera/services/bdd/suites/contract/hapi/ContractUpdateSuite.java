@@ -37,8 +37,8 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingAllOf;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
+import static com.hedera.services.bdd.suites.contract.Utils.captureChildCreate2MetaFor;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
-import static com.hedera.services.bdd.suites.contract.opcodes.Create2OperationSuite.captureChildCreate2MetaFor;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EXPIRATION_REDUCTION_NOT_ALLOWED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ADMIN_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
@@ -83,21 +83,19 @@ public class ContractUpdateSuite extends HapiApiSuite {
     @Override
     public List<HapiApiSpec> getSpecsInSuite() {
         return List.of(
-                new HapiApiSpec[] {
-                    updateWithBothMemoSettersWorks(),
-                    updatingExpiryWorks(),
-                    rejectsExpiryTooFarInTheFuture(),
-                    updateAutoRenewWorks(),
-                    updateAdminKeyWorks(),
-                    canMakeContractImmutableWithEmptyKeyList(),
-                    givenAdminKeyMustBeValid(),
-                    fridayThe13thSpec(),
-                    updateDoesNotChangeBytecode(),
-                    eip1014AddressAlwaysHasPriority(),
-                    immutableContractKeyFormIsStandard(),
-                    updateAutoRenewAccountWorks(),
-                    updateStakingFieldsWorks()
-                });
+                updateWithBothMemoSettersWorks(),
+                updatingExpiryWorks(),
+                rejectsExpiryTooFarInTheFuture(),
+                updateAutoRenewWorks(),
+                updateAdminKeyWorks(),
+                canMakeContractImmutableWithEmptyKeyList(),
+                givenAdminKeyMustBeValid(),
+                fridayThe13thSpec(),
+                updateDoesNotChangeBytecode(),
+                eip1014AddressAlwaysHasPriority(),
+                immutableContractKeyFormIsStandard(),
+                updateAutoRenewAccountWorks(),
+                updateStakingFieldsWorks());
     }
 
     private HapiApiSpec updateStakingFieldsWorks() {
@@ -423,91 +421,92 @@ public class ContractUpdateSuite extends HapiApiSuite {
         final var BETTER_MEMO = "This was Mr. Bleaney's room...";
         final var initialKeyShape = KeyShape.SIMPLE;
         final var newKeyShape = listOf(3);
+        final var payer = "payer";
 
         return defaultHapiSpec("FridayThe13thSpec")
                 .given(
                         newKeyNamed("initialAdminKey").shape(initialKeyShape),
                         newKeyNamed("newAdminKey").shape(newKeyShape),
-                        cryptoCreate("payer").balance(10 * ONE_HUNDRED_HBARS),
+                        cryptoCreate(payer).balance(10 * ONE_HUNDRED_HBARS),
                         uploadInitCode(contract))
                 .when(
-                        contractCreate(contract).payingWith("payer").omitAdminKey(),
+                        contractCreate(contract).payingWith(payer).omitAdminKey(),
                         contractCustomCreate(contract, suffix)
-                                .payingWith("payer")
+                                .payingWith(payer)
                                 .adminKey("initialAdminKey")
                                 .entityMemo(INITIAL_MEMO),
                         getContractInfo(contract + suffix)
-                                .payingWith("payer")
+                                .payingWith(payer)
                                 .logged()
                                 .has(contractWith().memo(INITIAL_MEMO).adminKey("initialAdminKey")))
                 .then(
                         contractUpdate(contract + suffix)
-                                .payingWith("payer")
+                                .payingWith(payer)
                                 .newKey("newAdminKey")
-                                .signedBy("payer", "initialAdminKey")
+                                .signedBy(payer, "initialAdminKey")
                                 .hasKnownStatus(INVALID_SIGNATURE),
                         contractUpdate(contract + suffix)
-                                .payingWith("payer")
+                                .payingWith(payer)
                                 .newKey("newAdminKey")
-                                .signedBy("payer", "newAdminKey")
+                                .signedBy(payer, "newAdminKey")
                                 .hasKnownStatus(INVALID_SIGNATURE),
-                        contractUpdate(contract + suffix).payingWith("payer").newKey("newAdminKey"),
+                        contractUpdate(contract + suffix).payingWith(payer).newKey("newAdminKey"),
                         contractUpdate(contract + suffix)
-                                .payingWith("payer")
+                                .payingWith(payer)
                                 .newExpirySecs(newExpiry)
                                 .newMemo(NEW_MEMO),
                         getContractInfo(contract + suffix)
-                                .payingWith("payer")
+                                .payingWith(payer)
                                 .logged()
                                 .has(
                                         contractWith()
                                                 .solidityAddress(contract + suffix)
                                                 .memo(NEW_MEMO)
                                                 .expiry(newExpiry)),
-                        contractUpdate(contract + suffix).payingWith("payer").newMemo(BETTER_MEMO),
+                        contractUpdate(contract + suffix).payingWith(payer).newMemo(BETTER_MEMO),
                         getContractInfo(contract + suffix)
-                                .payingWith("payer")
+                                .payingWith(payer)
                                 .logged()
                                 .has(contractWith().memo(BETTER_MEMO).expiry(newExpiry)),
                         contractUpdate(contract + suffix)
-                                .payingWith("payer")
+                                .payingWith(payer)
                                 .newExpirySecs(betterExpiry),
                         getContractInfo(contract + suffix)
-                                .payingWith("payer")
+                                .payingWith(payer)
                                 .logged()
                                 .has(contractWith().memo(BETTER_MEMO).expiry(betterExpiry)),
                         contractUpdate(contract + suffix)
-                                .payingWith("payer")
-                                .signedBy("payer")
+                                .payingWith(payer)
+                                .signedBy(payer)
                                 .newExpirySecs(newExpiry)
                                 .hasKnownStatus(EXPIRATION_REDUCTION_NOT_ALLOWED),
                         contractUpdate(contract + suffix)
-                                .payingWith("payer")
-                                .signedBy("payer")
+                                .payingWith(payer)
+                                .signedBy(payer)
                                 .newMemo(NEW_MEMO)
                                 .hasKnownStatus(INVALID_SIGNATURE),
                         contractUpdate(contract + suffix)
-                                .payingWith("payer")
-                                .signedBy("payer", "initialAdminKey")
+                                .payingWith(payer)
+                                .signedBy(payer, "initialAdminKey")
                                 .hasKnownStatus(INVALID_SIGNATURE),
                         contractUpdate(contract)
-                                .payingWith("payer")
+                                .payingWith(payer)
                                 .newMemo(BETTER_MEMO)
                                 .hasKnownStatus(MODIFYING_IMMUTABLE_CONTRACT),
                         contractDelete(contract)
-                                .payingWith("payer")
+                                .payingWith(payer)
                                 .hasKnownStatus(MODIFYING_IMMUTABLE_CONTRACT),
-                        contractUpdate(contract).payingWith("payer").newExpirySecs(betterExpiry),
+                        contractUpdate(contract).payingWith(payer).newExpirySecs(betterExpiry),
                         contractDelete(contract + suffix)
-                                .payingWith("payer")
-                                .signedBy("payer", "initialAdminKey")
+                                .payingWith(payer)
+                                .signedBy(payer, "initialAdminKey")
                                 .hasKnownStatus(INVALID_SIGNATURE),
                         contractDelete(contract + suffix)
-                                .payingWith("payer")
-                                .signedBy("payer")
+                                .payingWith(payer)
+                                .signedBy(payer)
                                 .hasKnownStatus(INVALID_SIGNATURE),
                         contractDelete(contract + suffix)
-                                .payingWith("payer")
+                                .payingWith(payer)
                                 .hasKnownStatus(SUCCESS));
     }
 

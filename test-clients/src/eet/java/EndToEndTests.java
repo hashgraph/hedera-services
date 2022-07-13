@@ -78,7 +78,7 @@ class EndToEndTests extends E2ETestBase {
 
     // These tests need to run first since they are hyper-sensitive to the tests in the
     // contractPrecompile group.
-    // Running these after the the contractPrecompile group will cause the
+    // Running these after the contractPrecompile group will cause the
     // GasLimitOverMaxGasLimitFailsPrecheck &
     // KvLimitsEnforced tests to fail.
     @Order(0)
@@ -306,7 +306,7 @@ class EndToEndTests extends E2ETestBase {
                     //				extractSpecsFromSuiteForEth(ContractGetBytecodeSuite::new),
                     //				extractSpecsFromSuiteForEth(ContractGetInfoSuite::new),
                     //				extractSpecsFromSuiteForEth(ContractMusicalChairsSuite::new),
-                    //				extractSpecsFromSuiteForEth(ContractUpdateSuite::new)
+                    //                    				extractSpecsFromSuiteForEth(ContractUpdateSuite::new)
                 });
     }
 
