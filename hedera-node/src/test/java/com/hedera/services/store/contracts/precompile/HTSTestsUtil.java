@@ -32,8 +32,10 @@ import com.hedera.services.store.contracts.precompile.codec.MintWrapper;
 import com.hedera.services.store.contracts.precompile.codec.OwnerOfAndTokenURIWrapper;
 import com.hedera.services.store.contracts.precompile.codec.TokenCreateWrapper;
 import com.hedera.services.store.contracts.precompile.codec.TokenExpiryWrapper;
+import com.hedera.services.store.contracts.precompile.codec.TokenInfoWrapper;
 import com.hedera.services.store.contracts.precompile.codec.TokenTransferWrapper;
 import com.hedera.services.store.models.Id;
+import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -42,14 +44,13 @@ import com.hederahashgraph.api.proto.java.NftTransfer;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenID;
-import org.apache.tuweni.bytes.Bytes;
-import org.apache.tuweni.units.bigints.UInt256;
-import org.hyperledger.besu.datatypes.Address;
-
 import java.math.BigInteger;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import org.apache.tuweni.bytes.Bytes;
+import org.apache.tuweni.units.bigints.UInt256;
+import org.hyperledger.besu.datatypes.Address;
 
 public class HTSTestsUtil {
 
@@ -59,7 +60,10 @@ public class HTSTestsUtil {
 	public static final TokenID token = IdUtils.asToken("0.0.1");
 	public static final AccountID payer = IdUtils.asAccount("0.0.12345");
 	public static final AccountID sender = IdUtils.asAccount("0.0.2");
+	public static final EntityId payerId = EntityId.fromGrpcAccountId(payer);
 	public static final EntityId senderId = EntityId.fromGrpcAccountId(sender);
+	public static final Address payerIdConvertedToAddress = EntityIdUtils.asTypedEvmAddress(payerId);
+	public static final Address senderIdConvertedToAddress = EntityIdUtils.asTypedEvmAddress(senderId);
 	public static final AccountID receiver = IdUtils.asAccount("0.0.3");
 	public static final AccountID feeCollector = IdUtils.asAccount("0.0.4");
 	public static final AccountID account = IdUtils.asAccount("0.0.3");
@@ -67,12 +71,14 @@ public class HTSTestsUtil {
 	public static final ContractID precompiledContract = IdUtils.asContract("0.0.359");
 	public static final TokenID nonFungible = IdUtils.asToken("0.0.777");
 	public static final TokenID tokenMerkleId = IdUtils.asToken("0.0.777");
+	public static final Address tokenMerkleAddress = EntityIdUtils.asTypedEvmAddress(tokenMerkleId);
 	public static final Id accountId = Id.fromGrpcAccount(account);
 	public static final Address recipientAddr = Address.ALTBN128_ADD;
 	public static final Address tokenAddress = Address.ECREC;
 	public static final Address contractAddr = Address.ALTBN128_MUL;
 	public static final Address senderAddress = Address.ALTBN128_PAIRING;
 	public static final Address parentContractAddress = Address.BLAKE2B_F_COMPRESSION;
+	public static final ContractID parentContractAddressConvertedToContractId = EntityIdUtils.contractIdFromEvmAddress(parentContractAddress);
 	public static final Address parentRecipientAddress = Address.BLS12_G1ADD;
 	public static final Dissociation dissociateToken =
 			Dissociation.singleDissociation(account, nonFungible);
@@ -108,6 +114,7 @@ public class HTSTestsUtil {
 			Association.singleAssociation(accountMerkleId, tokenMerkleId);
 	public static final Address recipientAddress = Address.ALTBN128_ADD;
 	public static final Address contractAddress = Address.ALTBN128_MUL;
+	public static final ContractID contractId = EntityIdUtils.contractIdFromEvmAddress(contractAddress);
 
 	public static final BurnWrapper nonFungibleBurn =
 			BurnWrapper.forNonFungible(nonFungible, targetSerialNos);
@@ -343,6 +350,14 @@ public class HTSTestsUtil {
 				keys,
 				new TokenExpiryWrapper(0L, null, 0L)
 		);
+	}
+
+	public static TokenInfoWrapper createTokenInfoWrapperForToken(final TokenID tokenId) {
+		return TokenInfoWrapper.forToken(tokenId);
+	}
+
+	public static TokenInfoWrapper createTokenInfoWrapperForNonFungibleToken(final TokenID tokenId, final long serialNumber) {
+		return TokenInfoWrapper.forNonFungibleToken(tokenId, serialNumber);
 	}
 
 	public static final TokenCreateWrapper.FixedFeeWrapper fixedFee =

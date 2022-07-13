@@ -44,6 +44,7 @@ import com.hedera.services.store.contracts.precompile.codec.TokenKey;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.TokenID;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import org.hyperledger.besu.datatypes.Address;
@@ -96,7 +97,7 @@ public abstract class AbstractTokenInfoPrecompile extends AbstractReadOnlyPrecom
         final var deleted = token.isDeleted();
         final var defaultKycStatus = token.accountsKycGrantedByDefault();
         final var pauseStatus = token.isPaused();
-        final var ledgerId = networkInfo.ledgerId().toString();
+        final var ledgerId = networkInfo.ledgerId().toString(StandardCharsets.UTF_8);
 
         final var fixedFees = new ArrayList<FixedFee>();
         final var fractionalFees = new ArrayList<FractionalFee>();
