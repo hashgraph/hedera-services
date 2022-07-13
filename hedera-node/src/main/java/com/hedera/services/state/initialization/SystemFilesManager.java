@@ -23,6 +23,7 @@ package com.hedera.services.state.initialization;
 public interface SystemFilesManager {
 	void createAddressBookIfMissing();
 	void createNodeDetailsIfMissing();
+	void updateStakeDetails();
 	void createUpdateFilesIfMissing();
 
 	default void createManagedFilesIfMissing() {

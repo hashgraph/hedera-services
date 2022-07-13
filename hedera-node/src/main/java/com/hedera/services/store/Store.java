@@ -41,10 +41,6 @@ public interface Store<T, K> {
     void setHederaLedger(HederaLedger ledger);
     void setAccountsLedger(TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger);
 
-    default void rebuildViews() {
-        // No-op
-    }
-
     void commitCreation();
     void rollbackCreation();
     boolean isCreationPending();

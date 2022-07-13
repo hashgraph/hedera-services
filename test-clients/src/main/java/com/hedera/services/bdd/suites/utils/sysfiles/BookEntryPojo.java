@@ -22,13 +22,14 @@ import com.hedera.services.legacy.proto.utils.CommonUtils;
 import com.hedera.services.yahcli.commands.files.SysFileUploadCommand;
 import com.hederahashgraph.api.proto.java.NodeAddress;
 import com.hederahashgraph.api.proto.java.ServiceEndpoint;
+import org.junit.jupiter.api.Assertions;
+
 import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Stream;
-import org.junit.jupiter.api.Assertions;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class BookEntryPojo {
@@ -181,12 +182,23 @@ public class BookEntryPojo {
         if (description != null) {
             grpc.setDescription(description);
         }
+        if (stake != null) {
+            grpc.setStake(stake);
+        }
 
         return Stream.of(grpc.build());
     }
 
     private static void mapEndpoints(NodeAddress from, BookEntryPojo to) {
         to.endpoints = from.getServiceEndpointList().stream().map(EndpointPojo::fromGrpc).toList();
+    }
+
+    public Long getStake() {
+        return stake;
+    }
+
+    public void setStake(Long stake) {
+        this.stake = stake;
     }
 
     public String getDeprecatedIp() {
