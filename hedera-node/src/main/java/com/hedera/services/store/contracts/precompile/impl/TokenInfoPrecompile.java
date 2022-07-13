@@ -1,11 +1,6 @@
-package com.hedera.services.store.contracts.precompile.impl;
-
-/*-
- * ‌
- * Hedera Services Node
- * ​
- * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2022 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,8 +12,8 @@ package com.hedera.services.store.contracts.precompile.impl;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+package com.hedera.services.store.contracts.precompile.impl;
 
 import com.hedera.services.config.NetworkInfo;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
@@ -34,26 +29,26 @@ import org.apache.tuweni.bytes.Bytes;
 
 public class TokenInfoPrecompile extends AbstractTokenInfoPrecompile {
 
-  public TokenInfoPrecompile(
-      final TokenID tokenId,
-      final SyntheticTxnFactory syntheticTxnFactory,
-      final WorldLedgers ledgers,
-      final EncodingFacade encoder,
-      final DecodingFacade decoder,
-      final PrecompilePricingUtils pricingUtils,
-      final NetworkInfo networkInfo) {
-    super(tokenId, syntheticTxnFactory, ledgers, encoder, decoder, pricingUtils, networkInfo);
-  }
+    public TokenInfoPrecompile(
+            final TokenID tokenId,
+            final SyntheticTxnFactory syntheticTxnFactory,
+            final WorldLedgers ledgers,
+            final EncodingFacade encoder,
+            final DecodingFacade decoder,
+            final PrecompilePricingUtils pricingUtils,
+            final NetworkInfo networkInfo) {
+        super(tokenId, syntheticTxnFactory, ledgers, encoder, decoder, pricingUtils, networkInfo);
+    }
 
-  @Override
-  public Builder body(Bytes input, UnaryOperator<byte[]> aliasResolver) {
-    final var tokenInfoWrapper = decoder.decodeGetTokenInfo(input);
-    tokenId = tokenInfoWrapper.tokenID();
-    return super.body(input, aliasResolver);
-  }
+    @Override
+    public Builder body(Bytes input, UnaryOperator<byte[]> aliasResolver) {
+        final var tokenInfoWrapper = decoder.decodeGetTokenInfo(input);
+        tokenId = tokenInfoWrapper.tokenID();
+        return super.body(input, aliasResolver);
+    }
 
-  @Override
-  public Bytes getSuccessResultFor(final ExpirableTxnRecord.Builder childRecord) {
-    return encoder.encodeGetTokenInfo(super.getTokenInfo());
-  }
+    @Override
+    public Bytes getSuccessResultFor(final ExpirableTxnRecord.Builder childRecord) {
+        return encoder.encodeGetTokenInfo(super.getTokenInfo());
+    }
 }

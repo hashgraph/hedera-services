@@ -1,11 +1,6 @@
-package com.hedera.services.store.contracts.precompile.impl;
-
-/*-
- * ‌
- * Hedera Services Node
- * ​
- * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2022 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,8 +12,8 @@ package com.hedera.services.store.contracts.precompile.impl;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+package com.hedera.services.store.contracts.precompile.impl;
 
 import com.hedera.services.config.NetworkInfo;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
@@ -36,36 +31,39 @@ import java.util.function.UnaryOperator;
 import org.apache.tuweni.bytes.Bytes;
 
 public class NonFungibleTokenInfoPrecompile extends AbstractTokenInfoPrecompile {
-  private long serialNumber;
+    private long serialNumber;
 
-  public NonFungibleTokenInfoPrecompile(TokenID tokenId,
-      SyntheticTxnFactory syntheticTxnFactory,
-      WorldLedgers ledgers,
-      EncodingFacade encoder,
-      DecodingFacade decoder,
-      PrecompilePricingUtils pricingUtils,
-      NetworkInfo networkInfo) {
-    super(tokenId, syntheticTxnFactory, ledgers, encoder, decoder, pricingUtils, networkInfo);
-  }
+    public NonFungibleTokenInfoPrecompile(
+            TokenID tokenId,
+            SyntheticTxnFactory syntheticTxnFactory,
+            WorldLedgers ledgers,
+            EncodingFacade encoder,
+            DecodingFacade decoder,
+            PrecompilePricingUtils pricingUtils,
+            NetworkInfo networkInfo) {
+        super(tokenId, syntheticTxnFactory, ledgers, encoder, decoder, pricingUtils, networkInfo);
+    }
 
-  @Override
-  public Builder body(Bytes input, UnaryOperator<byte[]> aliasResolver) {
-    final var tokenInfoWrapper = decoder.decodeGetNonFungibleTokenInfo(input);
-    tokenId = tokenInfoWrapper.tokenID();
-    serialNumber = tokenInfoWrapper.serialNumber();
-    return super.body(input, aliasResolver);
-  }
+    @Override
+    public Builder body(Bytes input, UnaryOperator<byte[]> aliasResolver) {
+        final var tokenInfoWrapper = decoder.decodeGetNonFungibleTokenInfo(input);
+        tokenId = tokenInfoWrapper.tokenID();
+        serialNumber = tokenInfoWrapper.serialNumber();
+        return super.body(input, aliasResolver);
+    }
 
-  @Override
-  public Bytes getSuccessResultFor(final ExpirableTxnRecord.Builder childRecord) {
-    final var uniqueToken = ledgers.nfts().getImmutableRef(NftId.fromGrpc(tokenId, serialNumber));
+    @Override
+    public Bytes getSuccessResultFor(final ExpirableTxnRecord.Builder childRecord) {
+        final var uniqueToken =
+                ledgers.nfts().getImmutableRef(NftId.fromGrpc(tokenId, serialNumber));
 
-    final var tokenInfo = super.getTokenInfo();
-    final var ownerId = EntityIdUtils.asTypedEvmAddress(uniqueToken.getOwner());
-    final var creationTime = uniqueToken.getPackedCreationTime();
-    final var metadata = uniqueToken.getMetadata();
-    final var spenderId = EntityIdUtils.asTypedEvmAddress(uniqueToken.getSpender());
-    return encoder.encodeGetNonFungibleTokenInfo(new NonFungibleTokenInfo(tokenInfo, serialNumber, ownerId, creationTime,
-        metadata, spenderId));
-  }
+        final var tokenInfo = super.getTokenInfo();
+        final var ownerId = EntityIdUtils.asTypedEvmAddress(uniqueToken.getOwner());
+        final var creationTime = uniqueToken.getPackedCreationTime();
+        final var metadata = uniqueToken.getMetadata();
+        final var spenderId = EntityIdUtils.asTypedEvmAddress(uniqueToken.getSpender());
+        return encoder.encodeGetNonFungibleTokenInfo(
+                new NonFungibleTokenInfo(
+                        tokenInfo, serialNumber, ownerId, creationTime, metadata, spenderId));
+    }
 }
