@@ -64,7 +64,8 @@ import com.hedera.services.store.contracts.precompile.impl.TokenCreatePrecompile
 import com.hedera.services.store.contracts.precompile.impl.TokenURIPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.TotalSupplyPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.TransferPrecompile;
-import com.hedera.services.store.contracts.precompile.impl.WipePrecompile;
+import com.hedera.services.store.contracts.precompile.impl.WipeFungiblePrecompile;
+import com.hedera.services.store.contracts.precompile.impl.WipeNonFungiblePrecompile;
 import com.hedera.services.store.contracts.precompile.utils.DescriptorUtils;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -261,10 +262,10 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 							ledgers, decoder, updater.aliases(), sigsVerifier,
 							sideEffectsTracker, syntheticTxnFactory, infrastructureFactory, precompilePricingUtils,
 							feeCalculator, currentView);
-					case AbiConstants.ABI_WIPE_TOKEN_ACCOUNT_FUNGIBLE -> new WipePrecompile(
+					case AbiConstants.ABI_WIPE_TOKEN_ACCOUNT_FUNGIBLE -> new WipeFungiblePrecompile(
 							ledgers, decoder, updater.aliases(), sigsVerifier, sideEffectsTracker, syntheticTxnFactory,
 							infrastructureFactory, precompilePricingUtils);
-					case AbiConstants.ABI_WIPE_TOKEN_ACCOUNT_NFT -> new WipePrecompile(
+					case AbiConstants.ABI_WIPE_TOKEN_ACCOUNT_NFT -> new WipeNonFungiblePrecompile(
 							ledgers, decoder, updater.aliases(), sigsVerifier, sideEffectsTracker, syntheticTxnFactory,
 							infrastructureFactory, precompilePricingUtils);
 					case AbiConstants.ABI_ID_REDIRECT_FOR_TOKEN -> {

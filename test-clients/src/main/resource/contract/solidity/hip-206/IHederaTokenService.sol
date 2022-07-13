@@ -390,6 +390,21 @@ interface IHederaTokenService {
     /// @param sender The sender for the transaction
     /// @param recipient The receiver of the transaction
     /// @param serialNumber The serial number of the NFT to transfer.
-    function transferNFT(address token,  address sender, address recipient, int64 serialNumber) external
+    function transferNFT(address token, address sender, address recipient, int64 serialNumber) external
+    returns (int responseCode);
+
+    /// Operation to wipe fungible tokens from account
+    /// @param token The token address
+    /// @param account The account address to revoke kyc
+    /// @param amount The number of tokens to wipe
+    /// @return responseCode The response code for the status of the request. SUCCESS is 22.
+    function wipeTokenAccount(address token, address account, uint32 amount) external returns (int responseCode);
+
+    /// Operation to wipe non fungible tokens from account
+    /// @param token The token address
+    /// @param account The account address to revoke kyc
+    /// @param  serialNumbers The serial numbers of token to wipe
+    /// @return responseCode The response code for the status of the request. SUCCESS is 22.
+    function wipeTokenAccountNFT(address token, address account, int64[] memory serialNumbers) external
     returns (int responseCode);
 }

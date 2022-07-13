@@ -179,13 +179,13 @@ public class DecodingFacade {
             TypeFactory.create("(bytes32,bytes32,uint32)");
 
     private static final Function WIPE_TOKEN_ACCOUNT_NFT_FUNCTION =
-            new Function("wipeTokenAccount(address,address,uint64[])", INT_OUTPUT);
+            new Function("wipeTokenAccountNFT(address,address,int64[])", INT_OUTPUT);
 
     private static final Bytes WIPE_TOKEN_ACCOUNT_NFT_SELECTOR =
             Bytes.wrap(WIPE_TOKEN_ACCOUNT_NFT_FUNCTION.selector());
 
     private static final ABIType<Tuple> WIPE_TOKEN_ACCOUNT_NFT_DECODER =
-            TypeFactory.create("(bytes32,bytes32,uint32[])");
+            TypeFactory.create("(bytes32,bytes32,int64[])");
 
     private static final Function ERC_TRANSFER_FROM_FUNCTION =
             new Function("transferFrom(address,address,uint256)");

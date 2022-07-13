@@ -42,19 +42,18 @@ import java.util.Objects;
 import java.util.function.UnaryOperator;
 
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
-import static com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils.GasCostType.WIPE_FUNGIBLE;
-import static com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils.GasCostType.WIPE_NFT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
-public class WipePrecompile extends AbstractWritePrecompile {
-    private static final List<Long> NO_SERIAL_NOS = Collections.emptyList();
-    private final ContractAliases aliases;
-    private final EvmSigsVerifier sigsVerifier;
-    private WipeWrapper wipeOp;
+public class AbstractWipePrecompile extends AbstractWritePrecompile {
 
-    public WipePrecompile(
+    protected final ContractAliases aliases;
+    protected final EvmSigsVerifier sigsVerifier;
+    protected WipeWrapper wipeOp;
+    private static final List<Long> NO_SERIAL_NOS = Collections.emptyList();
+
+    public AbstractWipePrecompile(
             WorldLedgers ledgers,
             DecodingFacade decoder,
             final ContractAliases aliases,
@@ -76,16 +75,12 @@ public class WipePrecompile extends AbstractWritePrecompile {
 
     @Override
     public TransactionBody.Builder body(Bytes input, UnaryOperator<byte[]> aliasResolver) {
-        wipeOp = decoder.decodeWipe(input, aliasResolver);
-        transactionBody = syntheticTxnFactory.createWipe(wipeOp);
-        return transactionBody;
+        return null;
     }
 
     @Override
     public long getMinimumFeeInTinybars(Timestamp consensusTime) {
-        Objects.requireNonNull(wipeOp);
-        return pricingUtils.getMinimumPriceInTinybars(
-                (wipeOp.type() == NON_FUNGIBLE_UNIQUE) ? WIPE_NFT : WIPE_FUNGIBLE, consensusTime);
+        return 0;
     }
 
     @Override
@@ -94,23 +89,15 @@ public class WipePrecompile extends AbstractWritePrecompile {
 
         /* --- Check required signatures --- */
         final var tokenId = Id.fromGrpcToken(wipeOp.token());
-        final var hasRequiredSigs =
-                KeyActivationUtils.validateKey(
-                        frame,
-                        tokenId.asEvmAddress(),
-                        sigsVerifier::hasActiveSupplyKey,
-                        ledgers,
-                        aliases);
-        validateTrue(hasRequiredSigs, INVALID_SIGNATURE);
         final var accountId = Id.fromGrpcAccount(wipeOp.account());
-        final var hasAccountRequiredSigs =
+        final var hasRequiredSigs =
                 KeyActivationUtils.validateKey(
                         frame,
                         accountId.asEvmAddress(),
                         sigsVerifier::hasActiveKey,
                         ledgers,
                         aliases);
-        validateTrue(hasAccountRequiredSigs, INVALID_SIGNATURE);
+        validateTrue(hasRequiredSigs, INVALID_SIGNATURE);
 
         /* --- Build the necessary infrastructure to execute the transaction --- */
         final var accountStore = infrastructureFactory.newAccountStore(ledgers.accounts());
