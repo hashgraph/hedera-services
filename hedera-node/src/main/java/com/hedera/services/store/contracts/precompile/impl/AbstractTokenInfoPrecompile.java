@@ -15,6 +15,7 @@
  */
 package com.hedera.services.store.contracts.precompile.impl;
 
+import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hedera.services.store.contracts.precompile.TokenKeyType.ADMIN_KEY;
 import static com.hedera.services.store.contracts.precompile.TokenKeyType.FEE_SCHEDULE_KEY;
 import static com.hedera.services.store.contracts.precompile.TokenKeyType.FREEZE_KEY;
@@ -43,6 +44,7 @@ import com.hedera.services.store.contracts.precompile.codec.TokenInfo;
 import com.hedera.services.store.contracts.precompile.codec.TokenKey;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.services.utils.EntityIdUtils;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -67,6 +69,7 @@ public abstract class AbstractTokenInfoPrecompile extends AbstractReadOnlyPrecom
 
     protected TokenInfo getTokenInfo() {
         final var token = ledgers.tokens().getImmutableRef(tokenId);
+        validateTrue(!token.isDeleted(), ResponseCodeEnum.TOKEN_WAS_DELETED);
 
         final var name = token.name();
         final var symbol = token.symbol();
