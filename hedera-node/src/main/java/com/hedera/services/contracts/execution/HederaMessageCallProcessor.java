@@ -20,25 +20,26 @@ package com.hedera.services.contracts.execution;
  * ‍
  */
 
-import com.hedera.services.store.contracts.precompile.HTSPrecompiledContract;
-import org.apache.tuweni.bytes.Bytes;
-import org.hyperledger.besu.datatypes.Address;
-import org.hyperledger.besu.evm.EVM;
-import org.hyperledger.besu.evm.frame.MessageFrame;
-import org.hyperledger.besu.evm.precompile.PrecompileContractRegistry;
-import org.hyperledger.besu.evm.precompile.PrecompiledContract;
-import org.hyperledger.besu.evm.processor.MessageCallProcessor;
-import org.hyperledger.besu.evm.tracing.OperationTracer;
-
-import java.nio.charset.StandardCharsets;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
-
 import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.INSUFFICIENT_GAS;
 import static org.hyperledger.besu.evm.frame.MessageFrame.State.COMPLETED_SUCCESS;
 import static org.hyperledger.besu.evm.frame.MessageFrame.State.EXCEPTIONAL_HALT;
 import static org.hyperledger.besu.evm.frame.MessageFrame.State.REVERT;
+
+import com.hedera.services.state.enums.ContractActionType;
+import com.hedera.services.store.contracts.precompile.HTSPrecompiledContract;
+import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Optional;
+import org.apache.tuweni.bytes.Bytes;
+import org.hyperledger.besu.datatypes.Address;
+import org.hyperledger.besu.evm.EVM;
+import org.hyperledger.besu.evm.frame.MessageFrame;
+import org.hyperledger.besu.evm.frame.MessageFrame.State;
+import org.hyperledger.besu.evm.precompile.PrecompileContractRegistry;
+import org.hyperledger.besu.evm.precompile.PrecompiledContract;
+import org.hyperledger.besu.evm.processor.MessageCallProcessor;
+import org.hyperledger.besu.evm.tracing.OperationTracer;
 
 /**
  * Overrides Besu precompiler handling, so we can break model layers in Precompile execution
@@ -64,8 +65,13 @@ public class HederaMessageCallProcessor extends MessageCallProcessor {
 		final var hederaPrecompile = hederaPrecompiles.get(frame.getContractAddress());
 		if (hederaPrecompile != null) {
 			executeHederaPrecompile(hederaPrecompile, frame, operationTracer);
+			((HederaTracer) operationTracer).tracePrecompileResult(frame, ContractActionType.SYSTEM);
 		} else {
 			super.start(frame, operationTracer);
+			if (frame.getState() != State.CODE_EXECUTING) {
+				// only a precompile execution will not set the state to CODE_EXECUTING after start()
+				((HederaTracer) operationTracer).tracePrecompileResult(frame, ContractActionType.PRECOMPILE);
+			}
 		}
 	}
 
@@ -84,6 +90,7 @@ public class HederaMessageCallProcessor extends MessageCallProcessor {
 			output = contract.computePrecompile(frame.getInputData(), frame).getOutput();
 			gasRequirement = contract.gasRequirement(frame.getInputData());
 		}
+		operationTracer.tracePrecompileCall(frame, gasRequirement, output);
 		if (frame.getState() != REVERT) {
 			if (frame.getRemainingGas() < gasRequirement) {
 				frame.decrementRemainingGas(frame.getRemainingGas());
@@ -97,6 +104,5 @@ public class HederaMessageCallProcessor extends MessageCallProcessor {
 				frame.setState(EXCEPTIONAL_HALT);
 			}
 		}
-		operationTracer.tracePrecompileCall(frame, gasRequirement, output);
 	}
 }

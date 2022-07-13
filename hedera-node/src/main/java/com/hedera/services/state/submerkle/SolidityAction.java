@@ -177,6 +177,30 @@ public class SolidityAction {
         return recipientContract;
     }
 
+    public EntityId getCallingAccount() {
+        return callingAccount;
+    }
+
+    public EntityId getCallingContract() {
+        return callingContract;
+    }
+
+    public byte[] getInvalidSolidityAddress() {
+        return invalidSolidityAddress;
+    }
+
+    public long getGasUsed() {
+        return gasUsed;
+    }
+
+    public byte[] getRevertReason() {
+        return revertReason;
+    }
+
+    public int getCallDepth() {
+        return callDepth;
+    }
+
     public ContractAction toGrpc() {
         var grpc = ContractAction.newBuilder();
         grpc.setCallType(com.hedera.services.stream.proto.ContractActionType.forNumber(callType.ordinal()));
