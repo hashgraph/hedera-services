@@ -76,6 +76,8 @@ public class HTSTestsUtil {
     public static final Address contractAddr = Address.ALTBN128_MUL;
     public static final Address senderAddress = Address.ALTBN128_PAIRING;
     public static final Address parentContractAddress = Address.BLAKE2B_F_COMPRESSION;
+    public static final EntityId tokenAddressConvertedToEntityId =
+            EntityId.fromAddress(tokenAddress);
     public static final ContractID parentContractAddressConvertedToContractId =
             EntityIdUtils.contractIdFromEvmAddress(parentContractAddress);
     public static final Address parentRecipientAddress = Address.BLS12_G1ADD;
