@@ -21,6 +21,7 @@ package com.hedera.services.context.properties;
  */
 
 import com.hedera.services.fees.calculation.CongestionMultipliers;
+import com.hedera.services.stream.proto.SidecarType;
 import com.hedera.services.sysfiles.domain.throttling.ThrottleReqOpsScaleFactor;
 import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
@@ -37,6 +38,9 @@ import java.util.EnumSet;
 import java.util.Map;
 import java.util.Set;
 
+import static com.hedera.services.stream.proto.SidecarType.CONTRACT_ACTION;
+import static com.hedera.services.stream.proto.SidecarType.CONTRACT_BYTECODE;
+import static com.hedera.services.stream.proto.SidecarType.CONTRACT_STATE_CHANGE;
 import static com.hedera.services.sysfiles.domain.KnownBlockValues.MISSING_BLOCK_VALUES;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusSubmitMessage;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
@@ -101,7 +105,6 @@ class BootstrapPropertiesTest {
 			entry("contracts.maxKvPairs.aggregate", 500_000_000L),
 			entry("contracts.maxKvPairs.individual", 163_840),
 			entry("contracts.chainId", 1),
-			entry("contracts.enableTraceability", true),
 			entry("contracts.throttle.throttleByGas", true),
 			entry("contracts.knownBlockHash", MISSING_BLOCK_VALUES),
 			entry("contracts.maxRefundPercentOfGasLimit", 20),
@@ -136,6 +139,7 @@ class BootstrapPropertiesTest {
 			entry("hedera.profiles.active", Profile.PROD),
 			entry("hedera.realm", 0L),
 			entry("hedera.recordStream.logDir", "/opt/hgcapp/recordStreams"),
+			entry("hedera.recordStream.sidecarDir", ""),
 			entry("hedera.recordStream.logPeriod", 2L),
 			entry("hedera.recordStream.isEnabled", true),
 			entry("hedera.recordStream.queueCapacity", 5000),
@@ -232,7 +236,8 @@ class BootstrapPropertiesTest {
 			entry("entities.limitTokenAssociations", false),
 			entry("hedera.recordStream.recordFileVersion", 5),
 			entry("hedera.recordStream.signatureFileVersion", 5),
-			entry("prng.isEnabled", true)
+			entry("prng.isEnabled", true),
+			entry("contracts.sidecars", EnumSet.noneOf(SidecarType.class))
 	);
 
 	@Test
@@ -299,6 +304,8 @@ class BootstrapPropertiesTest {
 
 		assertEquals(30, subject.getProperty("tokens.maxRelsPerInfoQuery"));
 		assertEquals(30, subject.getProperty("tokens.maxPerAccount"));
+		assertEquals(EnumSet.of(CONTRACT_STATE_CHANGE, CONTRACT_ACTION, CONTRACT_BYTECODE),
+				subject.getProperty("contracts.sidecars"));
 	}
 
 	@Test

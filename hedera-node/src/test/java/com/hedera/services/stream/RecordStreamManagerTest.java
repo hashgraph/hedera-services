@@ -27,13 +27,13 @@ import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
 import com.hedera.test.extensions.LoggingSubject;
 import com.hedera.test.extensions.LoggingTarget;
-import com.swirlds.common.system.NodeId;
-import com.swirlds.common.system.Platform;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.RunningHash;
 import com.swirlds.common.stream.MultiStream;
 import com.swirlds.common.stream.QueueThreadObjectStream;
+import com.swirlds.common.system.NodeId;
+import com.swirlds.common.system.Platform;
 import org.apache.commons.lang3.RandomUtils;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeAll;
@@ -42,6 +42,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
+import java.io.File;
 import java.util.Queue;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -69,6 +70,7 @@ public class RecordStreamManagerTest {
 	private static final long recordsLogPeriod = 5;
 	private static final int recordStreamQueueCapacity = 100;
 	private static final String baseLogDir = "recordStreamTest/";
+	private static final String sidecarDir = "sidecarDir";
 	private static final String recordMemo = "0.0.3";
 
 	private static final String INITIALIZE_NOT_NULL = "after initialization, the instance should not be null";
@@ -139,6 +141,7 @@ public class RecordStreamManagerTest {
 		given(props.recordLogDir()).willReturn(baseLogDir);
 		given(props.recordLogPeriod()).willReturn(recordsLogPeriod);
 		given(props.recordStreamQueueCapacity()).willReturn(recordStreamQueueCapacity);
+		given(props.sidecarDir()).willReturn(sidecarDir);
 	}
 
 	@Test
@@ -291,8 +294,31 @@ public class RecordStreamManagerTest {
 		final var withSeparatorSuffix = "somewhere/else/";
 		final var expected = "somewhere/else/record0.0.3";
 
-		assertEquals(expected, RecordStreamManager.effLogDir(withSeparatorSuffix, memo));
-		assertEquals(expected, RecordStreamManager.effLogDir(withoutSeparatorSuffix, memo));
+		assertEquals(expected, RecordStreamManager.effectiveLogDir(withSeparatorSuffix, memo));
+		assertEquals(expected, RecordStreamManager.effectiveLogDir(withoutSeparatorSuffix, memo));
+	}
+
+	@Test
+	void computesExpectedSidecarLogDirs() {
+		final var withoutSeparatorSuffix = "somewhere/else";
+		final var withSeparatorSuffix = "somewhere/else/";
+
+		var expected = withoutSeparatorSuffix + File.separator;
+		var actual = RecordStreamManager.effectiveSidecarDir(withoutSeparatorSuffix, "");
+		assertEquals(expected, actual);
+
+		expected = withSeparatorSuffix;
+		actual = RecordStreamManager.effectiveSidecarDir(withSeparatorSuffix, "");
+		assertEquals(expected, actual);
+
+		final var sidecarFolder = "sidecars";
+		expected = withoutSeparatorSuffix + File.separator + sidecarFolder;
+		actual = RecordStreamManager.effectiveSidecarDir(withoutSeparatorSuffix, sidecarFolder);
+		assertEquals(expected, actual);
+
+		expected = withSeparatorSuffix + sidecarFolder;
+		actual = RecordStreamManager.effectiveSidecarDir(withSeparatorSuffix, sidecarFolder);
+		assertEquals(expected, actual);
 	}
 
 	// For ease of testing, we will assume that a new block contains a single RecordStreamObject.

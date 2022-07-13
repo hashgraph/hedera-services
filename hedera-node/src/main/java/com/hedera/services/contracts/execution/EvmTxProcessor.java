@@ -28,6 +28,7 @@ import com.hedera.services.store.contracts.HederaMutableWorldState;
 import com.hedera.services.store.contracts.HederaWorldState;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
+import com.hedera.services.stream.proto.SidecarType;
 import com.hedera.services.txns.contract.helpers.StorageExpiry;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import org.apache.commons.lang3.tuple.Pair;
@@ -313,7 +314,7 @@ abstract class EvmTxProcessor {
 			mutableCoinbase.incrementBalance(Wei.of(coinbaseFee * gasPrice));
 			initialFrame.getSelfDestructs().forEach(updater::deleteAccount);
 
-			if (dynamicProperties.shouldEnableTraceability()) {
+			if (dynamicProperties.enabledSidecars().contains(SidecarType.CONTRACT_STATE_CHANGE)) {
 				stateChanges = updater.getFinalStateChanges();
 			} else {
 				stateChanges = Map.of();

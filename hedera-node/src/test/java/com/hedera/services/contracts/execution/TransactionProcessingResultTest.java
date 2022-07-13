@@ -23,19 +23,12 @@ package com.hedera.services.contracts.execution;
  */
 
 import com.google.protobuf.ByteString;
-import com.google.protobuf.BytesValue;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
-import com.hedera.services.stream.proto.ContractStateChange;
-import com.hedera.services.stream.proto.StorageChange;
-import com.hedera.services.utils.BytesComparator;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
-import org.apache.commons.lang3.tuple.ImmutablePair;
-import org.apache.commons.lang3.tuple.Pair;
+import java.util.Collections;
 import org.apache.tuweni.bytes.Bytes;
-import org.apache.tuweni.units.bigints.UInt256;
-import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 import org.hyperledger.besu.evm.log.Log;
 import org.hyperledger.besu.evm.log.LogTopic;
@@ -48,7 +41,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.TreeMap;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -94,17 +86,6 @@ class TransactionProcessingResultTest {
 		));
 		final var logList = List.of(log);
 
-		final var firstContractChanges = new TreeMap<Bytes, Pair<Bytes, Bytes>>(BytesComparator.INSTANCE);
-		firstContractChanges.put(UInt256.valueOf(1L), new ImmutablePair<>(UInt256.valueOf(1L), null));
-		final var secondContractChanges = new TreeMap<Bytes, Pair<Bytes, Bytes>>(BytesComparator.INSTANCE);
-		secondContractChanges.put(UInt256.valueOf(1L), new ImmutablePair<>(UInt256.valueOf(1L), UInt256.valueOf(2L)));
-		secondContractChanges.put(UInt256.valueOf(2L), new ImmutablePair<>(UInt256.valueOf(55L),
-				UInt256.valueOf(255L)));
-		final Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> contractStateChanges =
-				new TreeMap<>(BytesComparator.INSTANCE);
-		contractStateChanges.put(firstContract.getId().asEvmAddress(), firstContractChanges);
-		contractStateChanges.put(secondContract.getId().asEvmAddress(), secondContractChanges);
-
 		final var expect = ContractFunctionResult.newBuilder()
 				.setGasUsed(GAS_USAGE)
 				.setBloom(ByteString.copyFrom(LogsBloomFilter.builder().insertLogs(logList).build().toArray()));
@@ -113,28 +94,6 @@ class TransactionProcessingResultTest {
 		expect.setContractID(EntityIdUtils.contractIdFromEvmAddress(recipient.getId().asEvmAddress().toArray()));
 		expect.addAllCreatedContractIDs(listOfCreatedContracts);
 
-		final var firstContractChangesRpc = ContractStateChange.newBuilder()
-				.setContractId(firstContract.getId().asGrpcContract())
-				.addStorageChanges(StorageChange.newBuilder()
-						.setSlot(ByteString.copyFrom(UInt256.valueOf(1L).trimLeadingZeros().toArrayUnsafe()))
-						.setValueRead(ByteString.copyFrom(UInt256.valueOf(1L).trimLeadingZeros().toArrayUnsafe()))
-						.build())
-				.build();
-		final var secondContractChangesRpc = ContractStateChange.newBuilder()
-				.setContractId(secondContract.getId().asGrpcContract())
-				.addStorageChanges(StorageChange.newBuilder()
-						.setSlot(ByteString.copyFrom(UInt256.valueOf(1L).trimLeadingZeros().toArrayUnsafe()))
-						.setValueRead(ByteString.copyFrom(UInt256.valueOf(1L).trimLeadingZeros().toArrayUnsafe()))
-						.setValueWritten(BytesValue.newBuilder().setValue(ByteString.copyFrom(UInt256.valueOf(2L).trimLeadingZeros().toArrayUnsafe())))
-						.build())
-				.addStorageChanges(StorageChange.newBuilder()
-						.setSlot(ByteString.copyFrom(UInt256.valueOf(2L).trimLeadingZeros().toArrayUnsafe()))
-						.setValueRead(ByteString.copyFrom(UInt256.valueOf(55L).trimLeadingZeros().toArrayUnsafe()))
-						.setValueWritten(BytesValue.newBuilder().setValue(ByteString.copyFrom(UInt256.valueOf(255L).trimLeadingZeros().toArrayUnsafe())))
-						.build())
-				.build();
-//		expect.addAllStateChanges(List.of(firstContractChangesRpc, secondContractChangesRpc));
-
 		var result = TransactionProcessingResult.successful(
 				logList,
 				GAS_USAGE,
@@ -142,8 +101,8 @@ class TransactionProcessingResultTest {
 				1234L,
 				Bytes.EMPTY,
 				recipient.getId().asEvmAddress(),
-				contractStateChanges,
-				new ArrayList<>());
+				Collections.emptyMap(),
+				Collections.emptyList());
 		result.setCreatedContracts(listOfCreatedContracts);
 
 		assertEquals(expect.getGasUsed(), result.getGasUsed());
@@ -249,4 +208,5 @@ class TransactionProcessingResultTest {
 
 		assertTrue(result.isSuccessful());
 	}
+
 }

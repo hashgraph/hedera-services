@@ -22,6 +22,10 @@ package com.hedera.services.contracts.operation;
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
+import com.hedera.services.store.contracts.HederaWorldState;
+import com.hedera.services.stream.proto.SidecarType;
+import java.util.EnumSet;
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
@@ -39,8 +43,11 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.ArrayDeque;
+import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalLong;
+import java.util.Set;
+import java.util.TreeMap;
 
 import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.INSUFFICIENT_STACK_ITEMS;
 import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.TOO_MANY_STACK_ITEMS;
@@ -49,6 +56,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
 
 @ExtendWith(MockitoExtension.class)
 class HederaSLoadOperationTest {
@@ -89,12 +97,8 @@ class HederaSLoadOperationTest {
 		given(messageFrame.warmUpStorage(any(), any())).willReturn(true);
 		given(messageFrame.getRemainingGas()).willReturn(300L);
 		given(messageFrame.warmUpStorage(any(), any())).willReturn(false);
-		given(dynamicProperties.shouldEnableTraceability()).willReturn(true);
+		given(dynamicProperties.enabledSidecars()).willReturn(EnumSet.noneOf(SidecarType.class));
 
-		var frameStack = new ArrayDeque<MessageFrame>();
-		frameStack.add(messageFrame);
-
-		given(messageFrame.getMessageFrameStack()).willReturn(frameStack);
 		final var coldResult = subject.execute(messageFrame, evm);
 
 		final var expectedColdResult = new Operation.OperationResult(OptionalLong.of(20L), Optional.empty());
@@ -102,8 +106,6 @@ class HederaSLoadOperationTest {
 		assertEquals(expectedColdResult.getGasCost(), coldResult.getGasCost());
 		assertEquals(expectedColdResult.getHaltReason(), coldResult.getHaltReason());
 		assertEquals(expectedColdResult.getPcIncrement(), coldResult.getPcIncrement());
-
-		// TODO: add verify statements
 	}
 
 	@Test
@@ -111,20 +113,26 @@ class HederaSLoadOperationTest {
 		givenAdditionalContext(keyBytesMock, valueBytesMock);
 		given(messageFrame.warmUpStorage(any(), any())).willReturn(true);
 		given(messageFrame.getRemainingGas()).willReturn(300L);
-		given(dynamicProperties.shouldEnableTraceability()).willReturn(true);
-		var frameStack = new ArrayDeque<MessageFrame>();
+		given(dynamicProperties.enabledSidecars()).willReturn(EnumSet.of(SidecarType.CONTRACT_STATE_CHANGE));
+		final var frameStack = new ArrayDeque<MessageFrame>();
 		frameStack.add(messageFrame);
-
 		given(messageFrame.getMessageFrameStack()).willReturn(frameStack);
+		given(evmAccount.getStorageValue(UInt256.fromBytes(UInt256.fromBytes(keyBytesMock))))
+				.willReturn(UInt256.fromBytes(valueBytesMock));
+		given(messageFrame.getWorldUpdater()).willReturn(worldUpdater);
+		final var parentUpdater = mock(HederaWorldState.Updater.class);
+		given(worldUpdater.parentUpdater()).willReturn(Optional.of(parentUpdater));
+		final var stateChanges = new TreeMap<Address, Map<Bytes, Pair<Bytes, Bytes>>>();
+		given(parentUpdater.getStateChanges()).willReturn(stateChanges);
+
 		final var warmResult = subject.execute(messageFrame, evm);
 
 		final var expectedWarmResult = new Operation.OperationResult(OptionalLong.of(30L), Optional.empty());
-
 		assertEquals(expectedWarmResult.getGasCost(), warmResult.getGasCost());
 		assertEquals(expectedWarmResult.getHaltReason(), warmResult.getHaltReason());
 		assertEquals(expectedWarmResult.getPcIncrement(), warmResult.getPcIncrement());
-
-		// TODO: add verify statements
+		final var slotMap = stateChanges.get(evmAccount.getAddress());
+		assertEquals(UInt256.fromBytes(valueBytesMock), slotMap.get(UInt256.fromBytes(keyBytesMock)).getLeft());
 	}
 
 	@Test
@@ -157,7 +165,7 @@ class HederaSLoadOperationTest {
 		givenAdditionalContext(keyBytesMock, valueBytesMock);
 		given(messageFrame.warmUpStorage(any(), any())).willReturn(true);
 		given(messageFrame.getRemainingGas()).willReturn(300L);
-		given(dynamicProperties.shouldEnableTraceability()).willReturn(true);
+		given(dynamicProperties.enabledSidecars()).willReturn(EnumSet.of(SidecarType.CONTRACT_STATE_CHANGE));
 		var frameStack = new ArrayDeque<MessageFrame>();
 		frameStack.add(messageFrame);
 

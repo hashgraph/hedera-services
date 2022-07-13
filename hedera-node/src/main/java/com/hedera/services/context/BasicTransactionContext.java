@@ -35,6 +35,7 @@ import com.hedera.services.state.submerkle.EvmFnResult;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.state.submerkle.FcAssessedCustomFee;
 import com.hedera.services.state.submerkle.TxnId;
+import com.hedera.services.stream.proto.TransactionSidecarRecord;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.accessors.SwirldsTxnAccessor;
 import com.hedera.services.utils.accessors.TxnAccessor;
@@ -100,6 +101,7 @@ public class BasicTransactionContext implements TransactionContext {
 	private Map<Long, Long> deletedBeneficiaries;
 	private ResponseCodeEnum statusSoFar;
 	private ExpirableTxnRecord.Builder recordSoFar = ExpirableTxnRecord.newBuilder();
+	private final List<TransactionSidecarRecord.Builder> sidecarRecords = new ArrayList<>();
 	private Consumer<TxnReceipt.Builder> receiptConfig = noopReceiptConfig;
 	private Consumer<ExpirableTxnRecord.Builder> recordConfig = noopRecordConfig;
 	private List<FcAssessedCustomFee> assessedCustomFees;
@@ -145,6 +147,7 @@ public class BasicTransactionContext implements TransactionContext {
 		hash = accessor.getHash();
 		statusSoFar = UNKNOWN;
 		recordConfig = noopRecordConfig;
+		sidecarRecords.clear();
 		receiptConfig = noopReceiptConfig;
 		isPayerSigKnownActive = false;
 		assessedCustomFees = null;
@@ -330,6 +333,16 @@ public class BasicTransactionContext implements TransactionContext {
 	public void setCreateResult(final EvmFnResult result) {
 		this.evmFnResult = result;
 		recordConfig = expiringRecord -> expiringRecord.setContractCreateResult(result);
+	}
+
+	@Override
+	public void addSidecarRecord(final TransactionSidecarRecord.Builder sidecar) {
+		this.sidecarRecords.add(sidecar);
+	}
+
+	@Override
+	public List<TransactionSidecarRecord.Builder> sidecars() {
+		return this.sidecarRecords;
 	}
 
 	@Override

@@ -24,6 +24,7 @@ package com.hedera.services.contracts.operation;
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
+import com.hedera.services.stream.proto.SidecarType;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
@@ -81,7 +82,7 @@ public class HederaSLoadOperation extends AbstractOperation {
 						optionalCost, Optional.of(ExceptionalHaltReason.INSUFFICIENT_GAS));
 			} else {
 				UInt256 storageValue = account.getStorageValue(UInt256.fromBytes(key));
-				if (dynamicProperties.shouldEnableTraceability()) {
+				if (dynamicProperties.enabledSidecars().contains(SidecarType.CONTRACT_STATE_CHANGE)) {
 					HederaOperationUtil.cacheExistingValue(frame, address, key, storageValue);
 				}
 

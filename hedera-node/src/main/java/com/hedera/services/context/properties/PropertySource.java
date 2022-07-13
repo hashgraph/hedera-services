@@ -22,11 +22,15 @@ package com.hedera.services.context.properties;
 
 import com.hedera.services.exceptions.UnparseablePropertyException;
 import com.hedera.services.fees.calculation.CongestionMultipliers;
+import com.hedera.services.stream.proto.SidecarType;
 import com.hedera.services.sysfiles.domain.KnownBlockValues;
 import com.hedera.services.sysfiles.domain.throttling.ThrottleReqOpsScaleFactor;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import java.util.Collections;
+import java.util.EnumSet;
+import java.util.stream.Collectors;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -55,6 +59,12 @@ public interface PropertySource {
 	Function<String, Object> AS_FUNCTIONS = s -> Arrays.stream(s.split(","))
 			.map(HederaFunctionality::valueOf)
 			.collect(toSet());
+	Function<String, Object> AS_SIDECARS =
+      s -> s.isEmpty()
+          ? Collections.emptySet()
+          : Arrays.stream(s.split(","))
+              .map(SidecarType::valueOf)
+              .collect(Collectors.toCollection(() -> EnumSet.noneOf(SidecarType.class)));
 	Function<String, Object> AS_CONGESTION_MULTIPLIERS = CongestionMultipliers::from;
 	Function<String, Object> AS_KNOWN_BLOCK_VALUES = KnownBlockValues::from;
 	Function<String, Object> AS_THROTTLE_SCALE_FACTOR = ThrottleReqOpsScaleFactor::from;
@@ -82,6 +92,11 @@ public interface PropertySource {
 
 	@SuppressWarnings("unchecked")
 	default Set<HederaFunctionality> getFunctionsProperty(String name) {
+		return getTypedProperty(Set.class, name);
+	}
+
+	@SuppressWarnings("unchecked")
+	default Set<SidecarType> getSidecarsProperty(String name) {
 		return getTypedProperty(Set.class, name);
 	}
 

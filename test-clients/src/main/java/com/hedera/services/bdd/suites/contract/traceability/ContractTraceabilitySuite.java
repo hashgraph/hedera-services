@@ -74,17 +74,17 @@ public class ContractTraceabilitySuite extends HapiApiSuite {
 	@Override
 	public List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(
-				traceabilityE2EScenario1(),
-				traceabilityE2EScenario2(),
-				traceabilityE2EScenario3(),
-				traceabilityE2EScenario4(),
-				traceabilityE2EScenario5(),
-				traceabilityE2EScenario6(),
-				traceabilityE2EScenario7(),
-				traceabilityE2EScenario8(),
-				traceabilityE2EScenario9(),
-				traceabilityE2EScenario10(),
-				traceabilityE2EScenario11()
+//				traceabilityE2EScenario1(),
+//				traceabilityE2EScenario2(),
+//				traceabilityE2EScenario3(),
+//				traceabilityE2EScenario4(),
+//				traceabilityE2EScenario5(),
+//				traceabilityE2EScenario6(),
+//				traceabilityE2EScenario7(),
+//				traceabilityE2EScenario8(),
+//				traceabilityE2EScenario9(),
+//				traceabilityE2EScenario10(),
+//				traceabilityE2EScenario11()
 		);
 	}
 
@@ -555,7 +555,7 @@ public class ContractTraceabilitySuite extends HapiApiSuite {
 									  final HapiContractCreate contractB,
 									  final HapiContractCreate contractC) {
 		return new HapiSpecOperation[]{
-				UtilVerbs.overriding("contracts.enableTraceability", "true"),
+//				UtilVerbs.overriding("contracts.enableTraceability", "true"),
 				uploadInitCode(contract),
 				contractA,
 				contractB,
@@ -564,7 +564,8 @@ public class ContractTraceabilitySuite extends HapiApiSuite {
 	}
 
 	private HapiSpecOperation tearDown() {
-		return UtilVerbs.resetToDefault("contracts.enableTraceability");
+		return null;
+//		return UtilVerbs.resetToDefault("contracts.enableTraceability");
 	}
 
 	private HapiContractCreate createContractWithSlotValues(final String contract,

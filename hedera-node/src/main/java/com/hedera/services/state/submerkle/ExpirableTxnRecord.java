@@ -74,7 +74,6 @@ public class ExpirableTxnRecord implements FCQueueElement {
 	static final int RELEASE_0250_VERSION = 8;
 	static final int RELEASE_0260_VERSION = 9;
 	static final int RELEASE_0270_VERSION = 10;
-
 	static final int RELEASE_0280_VERSION = 11;
 	static final int CURRENT_VERSION = RELEASE_0280_VERSION;
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0x8b9ede7ca8d8db93L;
@@ -985,5 +984,14 @@ public class ExpirableTxnRecord implements FCQueueElement {
 	public void clearPrngData() {
 		pseudoRandomBytes = MISSING_PSEUDORANDOM_BYTES;
 		pseudoRandomNumber = MISSING_NUMBER;
+	}
+
+	@VisibleForTesting
+	void clearStateChanges() {
+		if (this.contractCreateResult != null) {
+			this.contractCreateResult.setStateChanges(Collections.emptyMap());
+		} else if (this.contractCallResult != null) {
+			this.contractCallResult.setStateChanges(Collections.emptyMap());
+		}
 	}
 }

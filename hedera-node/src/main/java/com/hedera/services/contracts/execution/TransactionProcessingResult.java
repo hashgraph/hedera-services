@@ -220,10 +220,6 @@ public class TransactionProcessingResult {
 		return EvmFnResult.fromCall(this).toGrpc();
 	}
 
-	public ContractStateChanges toContractStateChangesGrpc() {
-		return EvmFnResult.fromCall(this).toContractStateChangesGrpc();
-	}
-
 	public ContractActions toContractActionsGrpc() {
 		ContractActions.Builder contractActions = ContractActions.newBuilder();
 

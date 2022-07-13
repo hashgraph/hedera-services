@@ -31,6 +31,8 @@ import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.state.submerkle.TxnId;
 import com.hedera.services.stream.RecordStreamObject;
+import com.hedera.services.stream.proto.TransactionSidecarRecord;
+import com.hedera.services.utils.SidecarUtils;
 import com.hedera.services.utils.accessors.TxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -54,6 +56,7 @@ import java.util.function.Consumer;
 
 import static com.hedera.services.legacy.proto.utils.CommonUtils.noThrowSha384HashOf;
 import static com.hedera.test.utils.IdUtils.asAccount;
+import static com.hedera.test.utils.IdUtils.asContract;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CHUNK_NUMBER;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
@@ -168,8 +171,10 @@ class TxnAwareRecordsHistorianTest {
 		final var precedingRecordFrom1 = mock(ExpirableTxnRecord.Builder.class);
 		final var precedingRecordFrom2 = mock(ExpirableTxnRecord.Builder.class);
 
-		subject.trackFollowingChildRecord(1, TransactionBody.newBuilder(), followingRecordFrom1);
-		subject.trackFollowingChildRecord(2, TransactionBody.newBuilder(), followingRecordFrom2);
+		subject.trackFollowingChildRecord(1, TransactionBody.newBuilder(), followingRecordFrom1,
+				List.of(TransactionSidecarRecord.newBuilder()));
+		subject.trackFollowingChildRecord(2, TransactionBody.newBuilder(), followingRecordFrom2,
+				List.of(TransactionSidecarRecord.newBuilder()));
 		subject.trackPrecedingChildRecord(1, TransactionBody.newBuilder(), precedingRecordFrom1);
 		subject.trackPrecedingChildRecord(2, TransactionBody.newBuilder(), precedingRecordFrom2);
 		subject.revertChildRecordsFromSource(2);
@@ -203,7 +208,8 @@ class TxnAwareRecordsHistorianTest {
 
 		final var followSynthBody = aBuilderWith("FOLLOW");
 		assertEquals(topLevelNow.plusNanos(1), subject.nextFollowingChildConsensusTime());
-		subject.trackFollowingChildRecord(1, followSynthBody, followingBuilder);
+		subject.trackFollowingChildRecord(1, followSynthBody, followingBuilder,
+				List.of(TransactionSidecarRecord.newBuilder()));
 		given(followingBuilder.shouldNotBeExternalized()).willReturn(true);
 		given(txnCtx.accessor()).willReturn(accessor);
 
@@ -221,7 +227,8 @@ class TxnAwareRecordsHistorianTest {
 
 		final var followSynthBody = aBuilderWith("FOLLOW");
 		assertEquals(topLevelNow.plusNanos(1), subject.nextFollowingChildConsensusTime());
-		subject.trackFollowingChildRecord(1, followSynthBody, followingBuilder);
+		subject.trackFollowingChildRecord(1, followSynthBody, followingBuilder,
+				List.of(TransactionSidecarRecord.newBuilder()));
 
 		final var n = (short) 123;
 		subject.customizeSuccessor(any -> false, childRecord -> {
@@ -293,7 +300,9 @@ class TxnAwareRecordsHistorianTest {
 		final var followSynthBody = aBuilderWith("FOLLOW");
 		final var precedeSynthBody = aBuilderWith("PRECEDE");
 		assertEquals(topLevelNow.plusNanos(1), subject.nextFollowingChildConsensusTime());
-		subject.trackFollowingChildRecord(1, followSynthBody, followingBuilder);
+		final var bytecodeSidecar =
+				SidecarUtils.createContractBytecodeSidecarFrom(asContract("0.0.1024"), "byte".getBytes(), "secondByte".getBytes());
+		subject.trackFollowingChildRecord(1, followSynthBody, followingBuilder, List.of(bytecodeSidecar));
 		assertEquals(topLevelNow.plusNanos(2), subject.nextFollowingChildConsensusTime());
 		subject.trackPrecedingChildRecord(1, precedeSynthBody, precedingBuilder);
 
@@ -330,6 +339,9 @@ class TxnAwareRecordsHistorianTest {
 						.setTransactionID(expFollowId)
 						.build());
 		assertEquals(expectedFollowSynth, followSynth);
+		assertEquals(bytecodeSidecar.setConsensusTimestamp(Timestamp.newBuilder()
+						.setSeconds(expectedFollowTime.getEpochSecond())
+						.setNanos(expectedFollowTime.getNano()).build()), followRso.getSidecars().get(0));
 
 		verify(creator).saveExpiringRecord(effPayer, mockPrecedingRecord, precedingChildNows, submittingMember);
 		verify(creator).saveExpiringRecord(effPayer, mockTopLevelRecord, nows, submittingMember);
@@ -384,7 +396,8 @@ class TxnAwareRecordsHistorianTest {
 		given(consensusTimeTracker.isAllowableFollowingOffset(1)).willReturn(true);
 		given(consensusTimeTracker.isAllowablePrecedingOffset(1)).willReturn(true);
 
-		subject.trackFollowingChildRecord(1, TransactionBody.newBuilder(), ExpirableTxnRecord.newBuilder());
+		subject.trackFollowingChildRecord(1, TransactionBody.newBuilder(), ExpirableTxnRecord.newBuilder(),
+				List.of(TransactionSidecarRecord.newBuilder()));
 		subject.trackPrecedingChildRecord(1, TransactionBody.newBuilder(), ExpirableTxnRecord.newBuilder());
 
 		assertFalse(subject.hasFollowingChildRecords());
@@ -457,9 +470,10 @@ class TxnAwareRecordsHistorianTest {
 
 		final var txn = TransactionBody.newBuilder();
 		final var rec = ExpirableTxnRecord.newBuilder();
+		final var sidecars = List.of(TransactionSidecarRecord.newBuilder());
 
 		assertThrows(IllegalStateException.class, () ->
-				subject.trackFollowingChildRecord(1, txn, rec));
+				subject.trackFollowingChildRecord(1, txn, rec, sidecars));
 		assertThrows(IllegalStateException.class, () ->
 				subject.trackPrecedingChildRecord(1, txn, rec));
 

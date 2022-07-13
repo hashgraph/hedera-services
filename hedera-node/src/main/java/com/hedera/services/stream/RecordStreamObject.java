@@ -21,6 +21,7 @@ package com.hedera.services.stream;
  */
 
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
+import com.hedera.services.stream.proto.TransactionSidecarRecord;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.swirlds.common.crypto.AbstractSerializableHashable;
@@ -38,9 +39,11 @@ import org.apache.commons.lang3.builder.ToStringStyle;
 
 import java.io.IOException;
 import java.time.Instant;
+import java.util.Collections;
+import java.util.List;
 
 /**
- * Contains a TransactionRecord, its related Transaction, and consensus Timestamp of the Transaction.
+ * Contains a TransactionRecord, its related Transaction, consensus Timestamp of the Transaction and sidecar records.
  * Is used for record streaming
  */
 public class RecordStreamObject
@@ -54,9 +57,10 @@ public class RecordStreamObject
 
 	// The number of the ETH JSON-RPC bridge block containing this record
 	private long blockNumber = StreamAligned.NO_ALIGNMENT;
-	/* The gRPC transaction for the record stream file */
+	/* The gRPC transaction and records for the record stream file */
 	private Transaction transaction;
 	private TransactionRecord transactionRecord;
+	private List<TransactionSidecarRecord.Builder> sidecars;
 	/* The fast-copyable equivalent of the gRPC transaction record for the record stream file */
 	private ExpirableTxnRecord fcTransactionRecord;
 
@@ -76,9 +80,19 @@ public class RecordStreamObject
 			final Transaction transaction,
 			final Instant consensusTimestamp
 	) {
+		this(fcTransactionRecord, transaction, consensusTimestamp, Collections.emptyList());
+	}
+
+	public RecordStreamObject(
+			final ExpirableTxnRecord fcTransactionRecord,
+			final Transaction transaction,
+			final Instant consensusTimestamp,
+			final List<TransactionSidecarRecord.Builder> sidecars
+	) {
 		this.transaction = transaction;
 		this.consensusTimestamp = consensusTimestamp;
 		this.fcTransactionRecord = fcTransactionRecord;
+		this.sidecars = sidecars;
 
 		runningHash = new RunningHash();
 	}
@@ -197,6 +211,10 @@ public class RecordStreamObject
 	public TransactionRecord getTransactionRecord() {
 		ensureNonNullGrpcRecord();
 		return transactionRecord;
+	}
+
+	public List<TransactionSidecarRecord.Builder> getSidecars() {
+		return this.sidecars;
 	}
 
 	private void ensureNonNullGrpcRecord() {

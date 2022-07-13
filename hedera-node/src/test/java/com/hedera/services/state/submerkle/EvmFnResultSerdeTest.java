@@ -23,6 +23,8 @@ package com.hedera.services.state.submerkle;
 import com.hedera.test.serde.SelfSerializableDataTest;
 import com.hedera.test.utils.SeededPropertySource;
 
+import java.util.Collections;
+
 public class EvmFnResultSerdeTest extends SelfSerializableDataTest<EvmFnResult> {
 	public static final int NUM_TEST_CASES = 2 * MIN_TEST_CASES_PER_VERSION;
 
@@ -48,6 +50,9 @@ public class EvmFnResultSerdeTest extends SelfSerializableDataTest<EvmFnResult> 
 		if (version < EvmFnResult.RELEASE_0260_VERSION) {
 			// Always empty before 0.26
 			seeded.setSenderId(null);
+		}
+		if (version >= EvmFnResult.RELEASE_0280_VERSION) {
+			seeded.setStateChanges(Collections.emptyMap());
 		}
 		return seeded;
 	}

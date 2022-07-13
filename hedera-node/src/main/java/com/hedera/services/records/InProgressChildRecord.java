@@ -21,9 +21,13 @@ package com.hedera.services.records;
  */
 
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
+import com.hedera.services.stream.proto.TransactionSidecarRecord;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+
+import java.util.List;
 
 public record InProgressChildRecord(int sourceId,
 									TransactionBody.Builder syntheticBody,
-									ExpirableTxnRecord.Builder recordBuilder) {
+									ExpirableTxnRecord.Builder recordBuilder,
+									List<TransactionSidecarRecord.Builder> sidecars) {
 }

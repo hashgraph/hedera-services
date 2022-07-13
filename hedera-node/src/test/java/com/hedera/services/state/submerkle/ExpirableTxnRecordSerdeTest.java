@@ -66,6 +66,9 @@ public class ExpirableTxnRecordSerdeTest extends SelfSerializableDataTest<Expira
 		if (version < RELEASE_0280_VERSION) {
 			seeded.clearPrngData();
 		}
+		if (version >= RELEASE_0280_VERSION) {
+			seeded.clearStateChanges();
+		}
 		return seeded;
 	}
 

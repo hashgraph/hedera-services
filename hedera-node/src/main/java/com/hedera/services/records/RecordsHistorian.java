@@ -23,6 +23,7 @@ package com.hedera.services.records;
 import com.hedera.services.state.EntityCreator;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.stream.RecordStreamObject;
+import com.hedera.services.stream.proto.TransactionSidecarRecord;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.swirlds.common.crypto.RunningHash;
 
@@ -116,8 +117,13 @@ public interface RecordsHistorian {
 	 * @param sourceId the id of the child record source
 	 * @param recordSoFar the in-progress child record
 	 * @param syntheticBody the synthetic body for the child record
+	 * @param sidecars the sidecar records associated with this child transaction
 	 */
-	void trackFollowingChildRecord(int sourceId, TransactionBody.Builder syntheticBody, ExpirableTxnRecord.Builder recordSoFar);
+	void trackFollowingChildRecord(
+			int sourceId,
+			TransactionBody.Builder syntheticBody,
+			ExpirableTxnRecord.Builder recordSoFar,
+			List<TransactionSidecarRecord.Builder> sidecars);
 
 	/**
 	 * Adds the given in-progress child record to the active transaction, where its synthetic consensus

@@ -26,6 +26,8 @@ import com.hedera.services.state.expiry.ExpiryManager;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.stream.RecordStreamObject;
+import com.hedera.services.stream.proto.TransactionSidecarRecord;
+import com.hedera.services.utils.MiscUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -38,6 +40,7 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
@@ -81,7 +84,6 @@ public class TxnAwareRecordsHistorian implements RecordsHistorian {
 
 	@Override
 	public Instant nextFollowingChildConsensusTime() {
-
 		if (!consensusTimeTracker.isAllowableFollowingOffset(1L + followingChildRecords.size())) {
 			log.error("Cannot create more following child consensus times! currentCount={} consensusTimeTracker={}",
 					followingChildRecords.size(), consensusTimeTracker);
@@ -106,11 +108,15 @@ public class TxnAwareRecordsHistorian implements RecordsHistorian {
 		final var consensusNow = txnCtx.consensusTime();
 		final var topLevel = txnCtx.recordSoFar();
 		final var accessor = txnCtx.accessor();
+		final var sidecars = txnCtx.sidecars();
+		timestampSidecars(sidecars, consensusNow);
 		final var numChildren = (short) (precedingChildRecords.size() + followingChildRecords.size());
 
 		finalizeChildRecords(consensusNow, topLevel);
 		final var topLevelRecord = topLevel.setNumChildRecords(numChildren).build();
-		topLevelStreamObj = new RecordStreamObject(topLevelRecord, accessor.getSignedTxnWrapper(), consensusNow);
+		topLevelStreamObj =
+				new RecordStreamObject(topLevelRecord, accessor.getSignedTxnWrapper(), consensusNow,
+						sidecars);
 
 		final var effPayer = txnCtx.effectivePayer();
 		final var submittingMember = txnCtx.submittingSwirldsMember();
@@ -160,7 +166,8 @@ public class TxnAwareRecordsHistorian implements RecordsHistorian {
 	public void trackFollowingChildRecord(
 			final int sourceId,
 			final TransactionBody.Builder syntheticBody,
-			final ExpirableTxnRecord.Builder recordSoFar
+			final ExpirableTxnRecord.Builder recordSoFar,
+			final List<TransactionSidecarRecord.Builder> sidecars
 	) {
 		if (!consensusTimeTracker.isAllowableFollowingOffset(followingChildRecords.size() + 1L)) {
 			log.error("Cannot create more following records! currentCount={} consensusTimeTracker={}",
@@ -168,7 +175,7 @@ public class TxnAwareRecordsHistorian implements RecordsHistorian {
 			throw new IllegalStateException("Cannot create more following records!");
 		}
 
-		final var inProgress = new InProgressChildRecord(sourceId, syntheticBody, recordSoFar);
+		final var inProgress = new InProgressChildRecord(sourceId, syntheticBody, recordSoFar, sidecars);
 		followingChildRecords.add(inProgress);
 	}
 
@@ -184,7 +191,7 @@ public class TxnAwareRecordsHistorian implements RecordsHistorian {
 			throw new IllegalStateException("Cannot create more preceding records!");
 		}
 
-		final var inProgress = new InProgressChildRecord(sourceId, syntheticTxn, recordSoFar);
+		final var inProgress = new InProgressChildRecord(sourceId, syntheticTxn, recordSoFar, Collections.emptyList());
 		precedingChildRecords.add(inProgress);
 	}
 
@@ -259,8 +266,10 @@ public class TxnAwareRecordsHistorian implements RecordsHistorian {
 			final var synthTxn = synthFrom(inProgress.syntheticBody(), child);
 			final var synthHash = noThrowSha384HashOf(synthTxn.getSignedTransactionBytes().toByteArray());
 			child.setTxnHash(synthHash);
+			final var sidecars = inProgress.sidecars();
+			timestampSidecars(sidecars, childConsTime);
 			if (sigNum > 0) {
-				recordObjs.add(new RecordStreamObject(child.build(), synthTxn, childConsTime));
+				recordObjs.add(new RecordStreamObject(child.build(), synthTxn, childConsTime, sidecars));
 			} else {
 				// With multiple preceding child records, we add them to the stream in reverse order of
 				// creation so that their consensus timestamps will appear in chronological order
@@ -299,5 +308,15 @@ public class TxnAwareRecordsHistorian implements RecordsHistorian {
 		final var expiringRecord = creator.saveExpiringRecord(
 				effPayer, baseRecord, consensusSecond, submittingMember);
 		recordCache.setPostConsensus(txnId, baseRecord.getEnumStatus(), expiringRecord);
+	}
+
+
+	private void timestampSidecars(
+			final List<TransactionSidecarRecord.Builder> sidecars,
+			final Instant txnTimestamp
+	) {
+		for (final var sidecar : sidecars) {
+			sidecar.setConsensusTimestamp(MiscUtils.asTimestamp(txnTimestamp));
+		}
 	}
 }
