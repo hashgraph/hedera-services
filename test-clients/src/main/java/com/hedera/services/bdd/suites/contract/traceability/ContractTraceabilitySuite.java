@@ -23,12 +23,12 @@ import org.apache.logging.log4j.Logger;
 
 public class ContractTraceabilitySuite extends HapiApiSuite {
     private static final Logger log = LogManager.getLogger(ContractTraceabilitySuite.class);
-//    private static final String TRACEABILITY = "Traceability";
-//    private static final String TRACEABILITY_CALLCODE = "TraceabilityCallcode";
-//    private static final String FIRST = EMPTY;
-//    private static final String SECOND = "B";
-//    private static final String THIRD = "C";
-//    private final String traceabilityTxn = "nestedtxn";
+    //    private static final String TRACEABILITY = "Traceability";
+    //    private static final String TRACEABILITY_CALLCODE = "TraceabilityCallcode";
+    //    private static final String FIRST = EMPTY;
+    //    private static final String SECOND = "B";
+    //    private static final String THIRD = "C";
+    //    private final String traceabilityTxn = "nestedtxn";
 
     public static void main(String... args) {
         new ContractTraceabilitySuite().runSuiteSync();
@@ -444,74 +444,78 @@ public class ContractTraceabilitySuite extends HapiApiSuite {
     //                        tearDown());
     //    }
 
-//    private HapiSpecOperation[] setup(
-//            final String contract,
-//            final HapiContractCreate contractA,
-//            final HapiContractCreate contractB,
-//            final HapiContractCreate contractC) {
-//        return new HapiSpecOperation[] {
-//            UtilVerbs.overriding("contracts.enableTraceability", "true"),
-//            uploadInitCode(contract),
-//            contractA,
-//            contractB,
-//            contractC
-//        };
-//    }
-//
-//    private HapiSpecOperation tearDown() {
-//        return UtilVerbs.resetToDefault("contracts.enableTraceability");
-//    }
-//
-//    private HapiContractCreate createContractWithSlotValues(
-//            final String contract,
-//            final String suffix,
-//            final int slot0,
-//            final int slot1,
-//            final int slot2) {
-//        if (suffix.equals(FIRST)) return contractCreate(contract, slot0, slot1, slot2).gas(300_000);
-//        return contractCustomCreate(contract, suffix, slot0, slot1, slot2).gas(300_000);
-//    }
-//
-//    private HapiSpecOperation executeScenario(
-//            final String contract,
-//            final String scenario,
-//            final ResponseCodeEnum expectedExecutionStatus) {
-//        return withOpContext(
-//                (spec, opLog) ->
-//                        allRunFor(
-//                                spec,
-//                                contractCall(
-//                                                contract,
-//                                                scenario,
-//                                                AssociatePrecompileSuite.getNestedContractAddress(
-//                                                        contract + "B", spec),
-//                                                AssociatePrecompileSuite.getNestedContractAddress(
-//                                                        contract + "C", spec))
-//                                        .gas(1000000)
-//                                        .via(traceabilityTxn)
-//                                        .hasKnownStatus(expectedExecutionStatus)));
-//    }
-//
-//    private CustomSpecAssert assertStateChanges(final StateChange... stateChanges) {
-//        return withOpContext(
-//                (spec, opLog) ->
-//                        allRunFor(
-//                                spec,
-//                                getTxnRecord(traceabilityTxn)
-//                                        .hasPriority(
-//                                                recordWith()
-//                                                        .contractCallResult(
-//                                                                resultWith()
-//                                                                        .stateChanges(
-//                                                                                stateChanges)))
-//                                        .logged()));
-//    }
-//
-//    @NotNull
-//    private ByteString formattedAssertionValue(long value) {
-//        return ByteString.copyFrom(
-//                Bytes.wrap(UInt256.valueOf(value)).trimLeadingZeros().toArrayUnsafe());
-//    }
+    //    private HapiSpecOperation[] setup(
+    //            final String contract,
+    //            final HapiContractCreate contractA,
+    //            final HapiContractCreate contractB,
+    //            final HapiContractCreate contractC) {
+    //        return new HapiSpecOperation[] {
+    //            UtilVerbs.overriding("contracts.enableTraceability", "true"),
+    //            uploadInitCode(contract),
+    //            contractA,
+    //            contractB,
+    //            contractC
+    //        };
+    //    }
+    //
+    //    private HapiSpecOperation tearDown() {
+    //        return UtilVerbs.resetToDefault("contracts.enableTraceability");
+    //    }
+    //
+    //    private HapiContractCreate createContractWithSlotValues(
+    //            final String contract,
+    //            final String suffix,
+    //            final int slot0,
+    //            final int slot1,
+    //            final int slot2) {
+    //        if (suffix.equals(FIRST)) return contractCreate(contract, slot0, slot1,
+    // slot2).gas(300_000);
+    //        return contractCustomCreate(contract, suffix, slot0, slot1, slot2).gas(300_000);
+    //    }
+    //
+    //    private HapiSpecOperation executeScenario(
+    //            final String contract,
+    //            final String scenario,
+    //            final ResponseCodeEnum expectedExecutionStatus) {
+    //        return withOpContext(
+    //                (spec, opLog) ->
+    //                        allRunFor(
+    //                                spec,
+    //                                contractCall(
+    //                                                contract,
+    //                                                scenario,
+    //
+    // AssociatePrecompileSuite.getNestedContractAddress(
+    //                                                        contract + "B", spec),
+    //
+    // AssociatePrecompileSuite.getNestedContractAddress(
+    //                                                        contract + "C", spec))
+    //                                        .gas(1000000)
+    //                                        .via(traceabilityTxn)
+    //                                        .hasKnownStatus(expectedExecutionStatus)));
+    //    }
+    //
+    //    private CustomSpecAssert assertStateChanges(final StateChange... stateChanges) {
+    //        return withOpContext(
+    //                (spec, opLog) ->
+    //                        allRunFor(
+    //                                spec,
+    //                                getTxnRecord(traceabilityTxn)
+    //                                        .hasPriority(
+    //                                                recordWith()
+    //                                                        .contractCallResult(
+    //                                                                resultWith()
+    //                                                                        .stateChanges(
+    //
+    // stateChanges)))
+    //                                        .logged()));
+    //    }
+    //
+    //    @NotNull
+    //    private ByteString formattedAssertionValue(long value) {
+    //        return ByteString.copyFrom(
+    //                Bytes.wrap(UInt256.valueOf(value)).trimLeadingZeros().toArrayUnsafe());
+    //    }
 
     @Override
     protected Logger getResultsLogger() {
