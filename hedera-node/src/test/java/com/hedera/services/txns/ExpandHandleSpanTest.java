@@ -30,6 +30,7 @@ import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
+import com.swirlds.common.system.transaction.internal.SwirldTransaction;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -40,7 +41,6 @@ import java.util.concurrent.TimeUnit;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
@@ -49,12 +49,8 @@ class ExpandHandleSpanTest {
 	private SpanMapManager handleSpanMap;
 	@Mock
 	private AliasManager aliasManager;
-	@Mock
-	private com.swirlds.common.system.transaction.Transaction validTxn;
-	@Mock
-	private com.swirlds.common.system.transaction.Transaction invalidTxn;
 
-	private AccessorFactory accessorFactory = new AccessorFactory(aliasManager);
+	private final AccessorFactory accessorFactory = new AccessorFactory(aliasManager);
 
 	private final long duration = 20;
 	private final TimeUnit testUnit = TimeUnit.MILLISECONDS;
@@ -69,6 +65,10 @@ class ExpandHandleSpanTest {
 					.build()
 					.toByteString())
 			.build().toByteArray();
+	private final com.swirlds.common.system.transaction.Transaction validTxn =
+			new SwirldTransaction(validTxnBytes);
+	private final com.swirlds.common.system.transaction.Transaction invalidTxn =
+			new SwirldTransaction("NONSENSE".getBytes());
 
 	private ExpandHandleSpan subject;
 
@@ -79,7 +79,6 @@ class ExpandHandleSpanTest {
 
 	@Test
 	void propagatesIpbe() {
-		given(invalidTxn.getContents()).willReturn("NONSENSE".getBytes());
 		// expect:
 		assertThrows(InvalidProtocolBufferException.class, () -> subject.track(invalidTxn));
 		assertThrows(InvalidProtocolBufferException.class, () -> subject.accessorFor(invalidTxn));
@@ -87,15 +86,12 @@ class ExpandHandleSpanTest {
 
 	@Test
 	void expandsOnTracking() {
-		given(validTxn.getContents()).willReturn(validTxnBytes);
 		assertDoesNotThrow(() -> subject.track(validTxn));
 		assertDoesNotThrow(() -> subject.accessorFor(validTxn));
 	}
 
 	@Test
 	void reExpandsIfNotCached() throws InvalidProtocolBufferException {
-		given(validTxn.getContents()).willReturn(validTxnBytes);
-
 		final var endAccessor = subject.accessorFor(validTxn);
 
 		verify(handleSpanMap).expandSpan(endAccessor.getDelegate());

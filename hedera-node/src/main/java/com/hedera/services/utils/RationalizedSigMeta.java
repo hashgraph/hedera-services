@@ -24,10 +24,7 @@ import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.txns.span.ExpandHandleSpanMapAccessor;
 import com.hedera.services.utils.accessors.TxnAccessor;
 import com.swirlds.common.crypto.TransactionSignature;
-import com.swirlds.common.system.SwirldDualState;
-import com.swirlds.common.system.transaction.Transaction;
 
-import java.time.Instant;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
@@ -56,8 +53,7 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.EthereumTra
  * {@link RationalizedSigMeta#forPayerOnly(JKey, List, TxnAccessor)}, and
  * {@link RationalizedSigMeta#forPayerAndOthers(JKey, List, List, TxnAccessor)}.
  * (There is no factory for just other-party signatures, because without a payer signature
- * {@link com.hedera.services.ServicesState#handleTransaction(long, boolean, Instant, Instant, Transaction, SwirldDualState)}
- * will abort almost immediately.)
+ * a logical {@code handleTransaction} operation will abort almost immediately.)
  *
  * Note that the mapping from public key to verified {@link TransactionSignature} is equivalent
  * to just the list of verified {@link TransactionSignature}s, since each {@link TransactionSignature}

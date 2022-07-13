@@ -22,7 +22,6 @@ package com.hedera.services;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.protobuf.ByteString;
-import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.properties.BootstrapProperties;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
@@ -51,6 +50,7 @@ import com.hedera.services.stream.RecordsRunningHashLeaf;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.swirlds.common.crypto.CryptoFactory;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.ImmutableHash;
 import com.swirlds.common.crypto.RunningHash;
@@ -66,7 +66,6 @@ import com.swirlds.common.system.SwirldDualState;
 import com.swirlds.common.system.SwirldState2;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.events.Event;
-import com.swirlds.common.system.transaction.Transaction;
 import com.swirlds.fchashmap.FCHashMap;
 import com.swirlds.jasperdb.JasperDbBuilder;
 import com.swirlds.merkle.map.MerkleMap;
@@ -229,13 +228,16 @@ public class ServicesState extends PartialNaryMerkleInternal implements MerkleIn
 	}
 
 	@Override
-	public void handleConsensusRound(Round round, SwirldDualState swirldDualState) {
-		throw new AssertionError("Not implemented");
+	public void handleConsensusRound(final Round round, final SwirldDualState dualState) {
+		throwIfImmutable();
+		final var app = metadata.app();
+		app.dualStateAccessor().setDualState(dualState);
+		app.logic().incorporateConsensus(round);
 	}
 
 	@Override
-	public void preHandle(Event event) {
-		throw new AssertionError("Not implemented");
+	public void preHandle(final Event event) {
+		metadata.app().eventExpansion().expandAllSigs(event);
 	}
 
 	private void deserializedInit(
@@ -289,6 +291,7 @@ public class ServicesState extends PartialNaryMerkleInternal implements MerkleIn
 					.bootstrapProps(bootstrapProps)
 					.initialHash(initialHash)
 					.platform(platform)
+					.crypto(CryptoFactory.getInstance())
 					.selfId(selfId)
 					.build();
 			APPS.save(selfId, app);
@@ -347,37 +350,6 @@ public class ServicesState extends PartialNaryMerkleInternal implements MerkleIn
 	@Override
 	public AddressBook getAddressBookCopy() {
 		return addressBook().copy();
-	}
-
-	public synchronized void handleTransaction(
-			long submittingMember,
-			boolean isConsensus,
-			Instant creationTime,
-			Instant consensusTime,
-			Transaction transaction,
-			SwirldDualState dualState
-	) {
-		if (isConsensus) {
-			final var app = metadata.app();
-			app.dualStateAccessor().setDualState(dualState);
-			app.logic().incorporateConsensusTxn(transaction, consensusTime, submittingMember);
-		}
-	}
-
-	public void expandSignatures(final Transaction platformTxn) {
-		try {
-			final var app = metadata.app();
-			final var accessor = app.expandHandleSpan().track(platformTxn);
-			// Submit the transaction for any prepare stage processing that can be performed
-			// such as pre-fetching of contract bytecode. This step is performed asynchronously
-			// so get this step started before synchronous signature expansion.
-			app.prefetchProcessor().submit(accessor);
-			app.sigReqsManager().expandSigsInto(accessor);
-		} catch (InvalidProtocolBufferException e) {
-			log.warn("Method expandSignatures called with non-gRPC txn", e);
-		} catch (Exception race) {
-			log.warn("Unable to expand signatures, will be verified synchronously in handleTransaction", race);
-		}
 	}
 
 	/* --- FastCopyable --- */

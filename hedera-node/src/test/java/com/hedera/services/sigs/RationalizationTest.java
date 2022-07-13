@@ -37,6 +37,7 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.swirlds.common.system.transaction.Transaction;
 import com.swirlds.common.crypto.TransactionSignature;
+import com.swirlds.common.system.transaction.internal.SwirldTransaction;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -68,8 +69,6 @@ class RationalizationTest {
 	private final SigningOrderResult<ResponseCodeEnum> othersError = CODE_ORDER_RESULT_FACTORY.forImmutableContract();
 
 	@Mock
-	private Transaction swirldsTxn;
-	@Mock
 	private PlatformTxnAccessor txnAccessor;
 	@Mock
 	private SyncVerifier syncVerifier;
@@ -88,6 +87,8 @@ class RationalizationTest {
 	@Mock
 	private LinkedRefs linkedRefs;
 
+	private Transaction swirldsTxn = new SwirldTransaction();
+
 	private Rationalization subject;
 
 	@BeforeEach
@@ -105,7 +106,6 @@ class RationalizationTest {
 		subject = new Rationalization(syncVerifier, keyOrderer, sigFactory);
 
 		given(txnAccessor.getPkToSigsFn()).willReturn(pkToSigFn);
-		given(swirldsTxn.getSignatures()).willReturn(mockSigs);
 		// and:
 		subject.getRealPayerSigs().add(null);
 		subject.getRealOtherPartySigs().add(null);
@@ -123,7 +123,7 @@ class RationalizationTest {
 		assertSame(syncVerifier, subject.getSyncVerifier());
 		assertSame(keyOrderer, subject.getSigReqs());
 		assertSame(pkToSigFn, subject.getPkToSigFn());
-		assertSame(mockSigs, subject.getTxnSigs());
+		assertEquals(mockSigs, subject.getTxnSigs());
 		// and:
 		assertTrue(subject.getRealPayerSigs().isEmpty());
 		assertTrue(subject.getRealOtherPartySigs().isEmpty());

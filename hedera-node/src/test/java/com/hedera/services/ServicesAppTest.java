@@ -33,7 +33,7 @@ import com.hedera.services.context.properties.ScreenedNodeFileProps;
 import com.hedera.services.grpc.GrpcStarter;
 import com.hedera.services.grpc.NettyGrpcServerManager;
 import com.hedera.services.ledger.backing.BackingAccounts;
-import com.hedera.services.sigs.order.SigReqsManager;
+import com.hedera.services.sigs.EventExpansion;
 import com.hedera.services.state.DualStateAccessor;
 import com.hedera.services.state.exports.SignedStateBalancesExporter;
 import com.hedera.services.state.exports.ToStringAccountsExporter;
@@ -50,7 +50,6 @@ import com.hedera.services.stats.ServicesStatsManager;
 import com.hedera.services.stream.RecordStreamManager;
 import com.hedera.services.txns.network.UpgradeActions;
 import com.hedera.services.txns.prefetch.PrefetchProcessor;
-import com.hedera.services.txns.span.ExpandHandleSpan;
 import com.hedera.services.utils.JvmSystemExits;
 import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.system.NodeId;
@@ -107,16 +106,17 @@ class ServicesAppTest {
 				.bootstrapProps(props)
 				.initialHash(EMPTY_HASH)
 				.platform(platform)
+				.crypto(cryptography)
 				.selfId(selfId)
 				.build();
 	}
 
 	@Test
 	void objectGraphRootsAreAvailable() {
+		assertThat(subject.eventExpansion(), instanceOf(EventExpansion.class));
 		assertThat(subject.logic(), instanceOf(StandardProcessLogic.class));
 		assertThat(subject.hashLogger(), instanceOf(HashLogger.class));
 		assertThat(subject.workingState(), instanceOf(MutableStateChildren.class));
-		assertThat(subject.expandHandleSpan(), instanceOf(ExpandHandleSpan.class));
 		assertThat(subject.dualStateAccessor(), instanceOf(DualStateAccessor.class));
 		assertThat(subject.initializationFlow(), instanceOf(ServicesInitFlow.class));
 		assertThat(subject.nodeLocalProperties(), instanceOf(NodeLocalProperties.class));
@@ -141,7 +141,6 @@ class ServicesAppTest {
 		assertThat(subject.upgradeActions(), instanceOf(UpgradeActions.class));
 		assertThat(subject.virtualMapFactory(), instanceOf(VirtualMapFactory.class));
 		assertThat(subject.prefetchProcessor(), instanceOf(PrefetchProcessor.class));
-		assertThat(subject.sigReqsManager(), instanceOf(SigReqsManager.class));
 		assertSame(subject.nodeId(), selfNodeId);
 		assertSame(subject.pause(), SLEEPING_PAUSE);
 		assertTrue(subject.consoleOut().isEmpty());

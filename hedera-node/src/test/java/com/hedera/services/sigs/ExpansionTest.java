@@ -9,9 +9,9 @@ package com.hedera.services.sigs;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -35,6 +35,7 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.swirlds.common.system.transaction.Transaction;
 import com.swirlds.common.crypto.TransactionSignature;
+import com.swirlds.common.system.transaction.internal.SwirldTransaction;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -47,6 +48,7 @@ import java.util.List;
 
 import static com.hedera.services.sigs.order.CodeOrderResultFactory.CODE_ORDER_RESULT_FACTORY;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
@@ -65,8 +67,6 @@ class ExpansionTest {
 	@Mock
 	private TxnScopedPlatformSigFactory sigFactory;
 	@Mock
-	private Transaction Transaction;
-	@Mock
 	private TransactionSignature ed25519Sig;
 	@Mock
 	private TransactionSignature secp256k1Sig;
@@ -74,6 +74,8 @@ class ExpansionTest {
 	private AccountID payer;
 	@Mock
 	private Expansion.CryptoSigsCreation cryptoSigsCreation;
+
+	private Transaction txn = new SwirldTransaction();
 
 	private Expansion subject;
 
@@ -101,7 +103,7 @@ class ExpansionTest {
 						});
 		given(txnAccessor.getPayer()).willReturn(payer);
 		given(txnAccessor.getTxn()).willReturn(mockTxn);
-		given(txnAccessor.getPlatformTxn()).willReturn(Transaction);
+		given(txnAccessor.getPlatformTxn()).willReturn(new SwirldTransaction());
 
 		subject.execute();
 
@@ -143,8 +145,8 @@ class ExpansionTest {
 
 		subject.execute();
 
-		final var allSigs = new TransactionSignature[] { ed25519Sig, secp256k1Sig };
-		verify(Transaction).addAll(allSigs);
+		final var allSigs = List.of(ed25519Sig, secp256k1Sig);
+		assertEquals(allSigs, txn.getSignatures());
 	}
 
 	private void setupDegenerateMocks() {
@@ -154,7 +156,7 @@ class ExpansionTest {
 				.willReturn(mockPayerResponse);
 		given(sigReqs.keysForOtherParties(eq(degenTxnBody), eq(CODE_ORDER_RESULT_FACTORY), any(), eq(payer)))
 				.willReturn(mockOtherPartiesResponse);
-		given(txnAccessor.getPlatformTxn()).willReturn(Transaction);
+		given(txnAccessor.getPlatformTxn()).willReturn(txn);
 		given(txnAccessor.getPayer()).willReturn(payer);
 	}
 

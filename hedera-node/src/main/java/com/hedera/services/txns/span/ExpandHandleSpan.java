@@ -23,22 +23,21 @@ package com.hedera.services.txns.span;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.protobuf.InvalidProtocolBufferException;
-import com.swirlds.common.system.SwirldDualState;
-import com.swirlds.common.system.transaction.Transaction;
 import com.hedera.services.utils.accessors.AccessorFactory;
 import com.hedera.services.utils.accessors.PlatformTxnAccessor;
 import com.hedera.services.utils.accessors.SwirldsTxnAccessor;
+import com.swirlds.common.system.Round;
+import com.swirlds.common.system.SwirldDualState;
+import com.swirlds.common.system.events.Event;
+import com.swirlds.common.system.transaction.Transaction;
 
-
-import java.time.Instant;
 import java.util.concurrent.TimeUnit;
 
 /**
  * Encapsulates a "span" that tracks our contact with a given {@link Transaction}
- * between the {@link com.hedera.services.ServicesState#expandSignatures(Transaction)}
- * and {@link com.hedera.services.ServicesState#handleTransaction(long, boolean, Instant, Instant, Transaction,
- * SwirldDualState)}
- * Platform callbacks.
+ * between the {@link com.hedera.services.sigs.EventExpansion#expandAllSigs(Event)}
+ * and {@link com.hedera.services.ServicesState#handleConsensusRound(Round, SwirldDualState)}
+ * platform callbacks.
  *
  * At first this span only tracks the {@link PlatformTxnAccessor} parsed from the
  * transaction contents in an expiring cache. Since the parsing is a pure function

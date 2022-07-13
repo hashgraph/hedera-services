@@ -42,6 +42,7 @@ import com.hedera.services.ledger.LedgerModule;
 import com.hedera.services.ledger.backing.BackingStore;
 import com.hedera.services.queries.QueriesModule;
 import com.hedera.services.records.RecordsModule;
+import com.hedera.services.sigs.EventExpansion;
 import com.hedera.services.sigs.SigsModule;
 import com.hedera.services.sigs.order.SigReqsManager;
 import com.hedera.services.state.DualStateAccessor;
@@ -64,19 +65,19 @@ import com.hedera.services.txns.ProcessLogic;
 import com.hedera.services.txns.TransactionsModule;
 import com.hedera.services.txns.network.UpgradeActions;
 import com.hedera.services.txns.prefetch.PrefetchProcessor;
-import com.hedera.services.txns.span.ExpandHandleSpan;
 import com.hedera.services.txns.submission.SubmissionModule;
 import com.hedera.services.utils.NamedDigestFactory;
 import com.hedera.services.utils.Pause;
 import com.hedera.services.utils.SystemExits;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.swirlds.common.InvalidSignedStateListener;
-import com.swirlds.common.system.NodeId;
-import com.swirlds.common.system.Platform;
+import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.notification.listeners.ReconnectCompleteListener;
 import com.swirlds.common.notification.listeners.StateWriteToDiskCompleteListener;
+import com.swirlds.common.system.NodeId;
+import com.swirlds.common.system.Platform;
 import dagger.BindsInstance;
 import dagger.Component;
 
@@ -113,7 +114,7 @@ public interface ServicesApp {
 	/* Needed by ServicesState */
 	HashLogger hashLogger();
 	ProcessLogic logic();
-	ExpandHandleSpan expandHandleSpan();
+	EventExpansion eventExpansion();
 	ServicesInitFlow initializationFlow();
 	DualStateAccessor dualStateAccessor();
 	VirtualMapFactory virtualMapFactory();
@@ -152,6 +153,8 @@ public interface ServicesApp {
 
 	@Component.Builder
 	interface Builder {
+		@BindsInstance
+		Builder crypto(Cryptography engine);
 		@BindsInstance
 		Builder initialHash(Hash initialHash);
 		@BindsInstance
