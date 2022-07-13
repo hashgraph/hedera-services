@@ -36,7 +36,6 @@ import com.hedera.services.state.EntityCreator;
 import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.state.expiry.ExpiringCreations;
 import com.hedera.services.state.submerkle.EntityId;
-import com.hedera.services.state.submerkle.EvmFnResult;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.store.contracts.AbstractLedgerWorldUpdater;
 import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
@@ -66,6 +65,7 @@ import com.hedera.services.store.contracts.precompile.impl.TotalSupplyPrecompile
 import com.hedera.services.store.contracts.precompile.impl.TransferPrecompile;
 import com.hedera.services.store.contracts.precompile.utils.DescriptorUtils;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
+import com.hedera.services.store.contracts.precompile.utils.PrecompileUtils;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -84,7 +84,6 @@ import org.jetbrains.annotations.NotNull;
 import javax.inject.Inject;
 import javax.inject.Provider;
 import javax.inject.Singleton;
-import java.util.Collections;
 import java.util.Optional;
 import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
@@ -177,7 +176,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 				return Pair.of(defaultGas(), null);
 			} else {
 				final var proxyUpdater = (HederaStackedWorldStateUpdater) frame.getWorldUpdater();
-				if (!proxyUpdater.hasMutableLedgers()) {
+				if (!proxyUpdater.isInTransaction()) {
 					final var executor = infrastructureFactory.newRedirectExecutor(
 							input, frame, precompilePricingUtils::computeViewFunctionGas);
 					return executor.computeCosted();
@@ -236,8 +235,9 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 							AbiConstants.ABI_ID_TRANSFER_TOKEN,
 							AbiConstants.ABI_ID_TRANSFER_NFTS,
 							AbiConstants.ABI_ID_TRANSFER_NFT -> new TransferPrecompile(
-									ledgers, decoder, updater, sigsVerifier, sideEffectsTracker, syntheticTxnFactory,
-									infrastructureFactory, precompilePricingUtils, functionId, senderAddress, impliedTransfersMarshal);
+							ledgers, decoder, updater, sigsVerifier, sideEffectsTracker, syntheticTxnFactory,
+							infrastructureFactory, precompilePricingUtils, functionId, senderAddress,
+							impliedTransfersMarshal);
 					case AbiConstants.ABI_ID_MINT_TOKEN -> new MintPrecompile(
 							ledgers, decoder, encoder, updater.aliases(), sigsVerifier, recordsHistorian,
 							sideEffectsTracker, syntheticTxnFactory, infrastructureFactory, precompilePricingUtils);
@@ -460,7 +460,6 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
 		return result;
 	}
-
 	private void addContractCallResultToRecord(
 			final ExpirableTxnRecord.Builder childRecord,
 			final Bytes result,
@@ -468,22 +467,15 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			final MessageFrame messageFrame
 	) {
 		if (dynamicProperties.shouldExportPrecompileResults()) {
-			final var traceabilityOn = precompile.shouldAddTraceabilityFieldsToRecord();
-			final var evmFnResult = new EvmFnResult(
-					HTS_PRECOMPILE_MIRROR_ENTITY_ID,
-					result != null ? result.toArrayUnsafe() : EvmFnResult.EMPTY,
-					errorStatus.map(ResponseCodeEnum::name).orElse(null),
-					EvmFnResult.EMPTY,
+			PrecompileUtils.addContractCallResultToRecord(
 					this.gasRequirement,
-					Collections.emptyList(),
-					Collections.emptyList(),
-					EvmFnResult.EMPTY,
-					Collections.emptyMap(),
-					traceabilityOn ? messageFrame.getRemainingGas() : 0L,
-					traceabilityOn ? messageFrame.getValue().toLong() : 0L,
-					traceabilityOn ? messageFrame.getInputData().toArrayUnsafe() : EvmFnResult.EMPTY,
-					EntityId.fromAddress(senderAddress));
-			childRecord.setContractCallResult(evmFnResult);
+					childRecord,
+					result,
+					errorStatus,
+					messageFrame,
+					dynamicProperties.shouldExportPrecompileResults(),
+					precompile.shouldAddTraceabilityFieldsToRecord(),
+					senderAddress);
 		}
 	}
 

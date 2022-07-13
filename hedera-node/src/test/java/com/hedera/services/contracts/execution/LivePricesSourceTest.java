@@ -9,9 +9,9 @@ package com.hedera.services.contracts.execution;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -37,6 +37,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.Instant;
+import java.util.function.ToLongFunction;
 
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
 import static com.hederahashgraph.fee.FeeBuilder.getTinybarsFromTinyCents;
@@ -80,7 +81,6 @@ class LivePricesSourceTest {
 
 	@BeforeEach
 	void setUp() {
-		given(txnCtx.accessor()).willReturn(accessor);
 		subject = new LivePricesSource(exchange, usagePrices, feeMultiplierSource, txnCtx);
 	}
 
@@ -92,6 +92,17 @@ class LivePricesSourceTest {
 
 		assertEquals(expected, subject.currentGasPrice(now, ContractCall));
 	}
+
+	@Test
+	void getsCurrentGasPriceInTinyCents() {
+		given(usagePrices.defaultPricesGiven(ContractCall, timeNow)).willReturn(providerPrices);
+
+		ToLongFunction<FeeComponents> resourcePriceFn = FeeComponents::getGas;
+		final var expected = resourcePriceFn.applyAsLong(providerPrices.getServicedata()) / 1000;
+
+		assertEquals(expected, subject.currentGasPriceInTinycents(now, ContractCall));
+	}
+
 
 	@Test
 	void getsExpectedSbhPriceWithReasonableMultiplier() {
@@ -113,5 +124,6 @@ class LivePricesSourceTest {
 		given(exchange.rate(timeNow)).willReturn(activeRate);
 		given(usagePrices.defaultPricesGiven(ContractCall, timeNow)).willReturn(providerPrices);
 		given(feeMultiplierSource.currentMultiplier(accessor)).willReturn(multiplier);
+		given(txnCtx.accessor()).willReturn(accessor);
 	}
 }
