@@ -145,6 +145,7 @@ public class GlobalDynamicProperties {
 		reload();
 	}
 
+
 	public void reload() {
 		maxNftMetadataBytes = properties.getIntProperty("tokens.nfts.maxMetadataBytes");
 		maxBatchSizeBurn = properties.getIntProperty("tokens.nfts.maxBatchSizeBurn");

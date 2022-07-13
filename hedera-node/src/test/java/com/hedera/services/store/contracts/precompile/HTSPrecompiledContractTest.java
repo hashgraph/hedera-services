@@ -220,7 +220,7 @@ class HTSPrecompiledContractTest {
 		Bytes input = prerequisites(ABI_ID_ERC_NAME);
 		given(messageFrame.isStatic()).willReturn(true);
 		given(messageFrame.getWorldUpdater()).willReturn(worldUpdater);
-		given(worldUpdater.hasMutableLedgers()).willReturn(false);
+		given(worldUpdater.isInTransaction()).willReturn(false);
 
 		final var redirectViewExecutor = new RedirectViewExecutor
 				(input, messageFrame, encoder, decoder, precompilePricingUtils::computeViewFunctionGas);
