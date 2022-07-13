@@ -93,9 +93,9 @@ public class Utils {
     public static Byte[] asSolidityAddress(final int shard, final long realm, final long num) {
         final Byte[] solidityAddress = new Byte[20];
 
-        arraycopy(Ints.toByteArray(shard), 0, solidityAddress, 0, 4);
-        arraycopy(Longs.toByteArray(realm), 0, solidityAddress, 4, 8);
-        arraycopy(Longs.toByteArray(num), 0, solidityAddress, 12, 8);
+        arraycopy(ArrayUtils.toObject(Ints.toByteArray(shard)), 0, solidityAddress, 0, 4);
+        arraycopy(ArrayUtils.toObject(Longs.toByteArray(realm)), 0, solidityAddress, 4, 8);
+        arraycopy(ArrayUtils.toObject(Longs.toByteArray(num)), 0, solidityAddress, 12, 8);
 
         return solidityAddress;
     }
