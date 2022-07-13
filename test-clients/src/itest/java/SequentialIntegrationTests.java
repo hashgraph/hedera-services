@@ -16,9 +16,9 @@
 import com.hedera.services.bdd.suites.autorenew.GracePeriodRestrictionsSuite;
 import com.hedera.services.bdd.suites.consensus.TopicGetInfoSuite;
 import com.hedera.services.bdd.suites.contract.hapi.ContractCallSuite;
+import com.hedera.services.bdd.suites.contract.opcodes.Create2OperationSuite;
 import com.hedera.services.bdd.suites.contract.precompile.AssociatePrecompileSuite;
 import com.hedera.services.bdd.suites.contract.precompile.DelegatePrecompileSuite;
-import com.hedera.services.bdd.suites.contract.precompile.DynamicGasCostSuite;
 import com.hedera.services.bdd.suites.crypto.AutoAccountUpdateSuite;
 import com.hedera.services.bdd.suites.crypto.CryptoApproveAllowanceSuite;
 import com.hedera.services.bdd.suites.crypto.CryptoCreateSuite;
@@ -84,6 +84,6 @@ public class SequentialIntegrationTests extends IntegrationTestBase {
                 extractSpecsFromSuite(ScheduleSignSpecs::new),
                 extractSpecsFromSuite(AssociatePrecompileSuite::new),
                 extractSpecsFromSuite(DelegatePrecompileSuite::new),
-                extractSpecsFromSuite(DynamicGasCostSuite::new));
+                extractSpecsFromSuite(Create2OperationSuite::new));
     }
 }

@@ -55,6 +55,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
+import static com.hedera.services.bdd.suites.contract.Utils.asByteAddress;
 import static com.hedera.services.bdd.suites.contract.Utils.asToken;
 import static com.hedera.services.bdd.suites.contract.Utils.captureChildCreate2MetaFor;
 import static com.hedera.services.bdd.suites.contract.Utils.eventSignatureOf;
@@ -121,6 +122,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
     private static final String MULTI_KEY = "purpose";
     private static final String ERC_20_CONTRACT_NAME = "erc20Contract";
     private static final String SOME_ERC20_SCENARIOS = "SomeERC20Scenarios";
+    private static final String SOME_ERC721_SCENARIOS = "SomeERC721Scenarios";
     private static final String MISSING_FROM = "MISSING_FROM";
     private static final String MISSING_TO = "MISSING_TO";
     private static final String MSG_SENDER_IS_THE_SAME_AS_FROM = "MSG_SENDER_IS_THE_SAME_AS_FROM";
@@ -247,7 +249,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 ERC_20_CONTRACT,
                                                                 "name",
-                                                                asAddress(
+                                                                asByteAddress(
                                                                         spec.registry()
                                                                                 .getTokenID(
                                                                                         FUNGIBLE_TOKEN)))
@@ -305,7 +307,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 ERC_20_CONTRACT,
                                                                 SYMBOL,
-                                                                asAddress(
+                                                                asByteAddress(
                                                                         spec.registry()
                                                                                 .getTokenID(
                                                                                         FUNGIBLE_TOKEN)))
@@ -366,7 +368,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 ERC_20_CONTRACT,
                                                                 DECIMALS,
-                                                                asAddress(
+                                                                asByteAddress(
                                                                         spec.registry()
                                                                                 .getTokenID(
                                                                                         FUNGIBLE_TOKEN)))
@@ -426,7 +428,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 ERC_20_CONTRACT,
                                                                 TOTAL_SUPPLY,
-                                                                asAddress(
+                                                                asByteAddress(
                                                                         spec.registry()
                                                                                 .getTokenID(
                                                                                         FUNGIBLE_TOKEN)))
@@ -927,7 +929,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 ALIASED_TRANSFER,
                                                                 "deployWithCREATE2",
-                                                                asAddress(
+                                                                asByteAddress(
                                                                         spec.registry()
                                                                                 .getTokenID(
                                                                                         TOKEN_A)))
@@ -1610,7 +1612,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 ERC_20_CONTRACT,
                                                                 DECIMALS,
-                                                                asAddress(
+                                                                asByteAddress(
                                                                         spec.registry()
                                                                                 .getTokenID(
                                                                                         NON_FUNGIBLE_TOKEN)))
@@ -1697,7 +1699,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 ERC_721_CONTRACT,
                                                                 "name",
-                                                                asAddress(
+                                                                asByteAddress(
                                                                         spec.registry()
                                                                                 .getTokenID(
                                                                                         NON_FUNGIBLE_TOKEN)))
@@ -1749,7 +1751,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 ERC_721_CONTRACT,
                                                                 SYMBOL,
-                                                                asAddress(
+                                                                asByteAddress(
                                                                         spec.registry()
                                                                                 .getTokenID(
                                                                                         NON_FUNGIBLE_TOKEN)))
@@ -1881,7 +1883,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 ERC_721_CONTRACT,
                                                                 TOTAL_SUPPLY,
-                                                                asAddress(
+                                                                asByteAddress(
                                                                         spec.registry()
                                                                                 .getTokenID(
                                                                                         NON_FUNGIBLE_TOKEN)))
@@ -2614,7 +2616,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
         final var multiKey = "multiKey";
         final var aCivilian = "aCivilian";
         final var bCivilian = "bCivilian";
-        final var someERC721Scenarios = "SomeERC721Scenarios";
+        final var someERC721Scenarios = SOME_ERC721_SCENARIOS;
 
         return defaultHapiSpec("SomeERC721NegativeTransferFromScenariosPass")
                 .given(
@@ -2765,7 +2767,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
         final var multiKey = "multiKey";
         final var aCivilian = "aCivilian";
         final var bCivilian = "bCivilian";
-        final var someERC721Scenarios = "SomeERC721Scenarios";
+        final var someERC721Scenarios = SOME_ERC721_SCENARIOS;
 
         return defaultHapiSpec("SomeERC721ApproveAndRemoveScenariosPass")
                 .given(
@@ -3621,7 +3623,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
         final var nfToken = "nfToken";
         final var multiKey = "multiKey";
         final var aCivilian = "aCivilian";
-        final var someERC721Scenarios = "SomeERC721Scenarios";
+        final var someERC721Scenarios = SOME_ERC721_SCENARIOS;
 
         return defaultHapiSpec("someERC721GetApprovedScenariosPass")
                 .given(
@@ -3774,7 +3776,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
         final var multiKey = "multiKey";
         final var aCivilian = "aCivilian";
         final var bCivilian = "bCivilian";
-        final var someERC721Scenarios = "SomeERC721Scenarios";
+        final var someERC721Scenarios = SOME_ERC721_SCENARIOS;
 
         return defaultHapiSpec("someERC721BalanceOfScenariosPass")
                 .given(
@@ -3884,7 +3886,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
         final var nfToken = "nfToken";
         final var multiKey = "multiKey";
         final var aCivilian = "aCivilian";
-        final var someERC721Scenarios = "SomeERC721Scenarios";
+        final var someERC721Scenarios = SOME_ERC721_SCENARIOS;
 
         return defaultHapiSpec("someERC721OwnerOfScenariosPass")
                 .given(
@@ -4011,7 +4013,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
         final var nfToken = "nfToken";
         final var multiKey = "multiKey";
         final var aCivilian = "aCivilian";
-        final var someERC721Scenarios = "SomeERC721Scenarios";
+        final var someERC721Scenarios = SOME_ERC721_SCENARIOS;
 
         return defaultHapiSpec("someERC721IsApprovedForAllScenariosPass")
                 .given(
@@ -4184,7 +4186,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
         final var nfToken = "nfToken";
         final var multiKey = "multiKey";
         final var aCivilian = "aCivilian";
-        final var someERC721Scenarios = "SomeERC721Scenarios";
+        final var someERC721Scenarios = SOME_ERC721_SCENARIOS;
 
         return defaultHapiSpec("someERC721SetApprovedForAllScenariosPass")
                 .given(

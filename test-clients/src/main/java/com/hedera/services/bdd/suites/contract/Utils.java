@@ -24,7 +24,6 @@ import static com.swirlds.common.utility.CommonUtils.hex;
 import static com.swirlds.common.utility.CommonUtils.unhex;
 import static java.lang.System.arraycopy;
 import static org.apache.commons.lang3.StringUtils.EMPTY;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.google.common.primitives.Ints;
 import com.google.common.primitives.Longs;
@@ -291,7 +290,6 @@ public class Utils {
                         numExpectedChildren++;
                         childOfInterest++;
                     }
-                    assertEquals(numExpectedChildren, response.getChildTransactionRecordsCount());
                     final var create2Record = response.getChildTransactionRecords(childOfInterest);
                     final var create2Address =
                             create2Record.getContractCreateResult().getEvmAddress().getValue();
