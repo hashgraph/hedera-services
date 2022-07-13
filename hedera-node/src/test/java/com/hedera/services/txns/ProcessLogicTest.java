@@ -66,9 +66,9 @@ class ProcessLogicTest {
 			final var observer = (BiConsumer<ConsensusEvent, ConsensusTransaction>)invocationOnMock.getArgument(0);
 			for (int i = 0; i < metadata.length; i++) {
 				final var event = mock(ConsensusEvent.class);
-				given(event.getConsensusTimestamp()).willReturn(metadata[i].getLeft());
 				given(event.getCreatorId()).willReturn(metadata[i].getRight());
 				final var txn = new SwirldTransaction();
+				txn.setConsensusTimestamp(metadata[i].getLeft());
 				mockTxns.add(txn);
 				observer.accept(event, txn);
 			}

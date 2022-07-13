@@ -43,7 +43,7 @@ public interface ProcessLogic {
 	 * 		a round of consensus transactions
 	 */
 	default void incorporateConsensus(final Round round) {
-		round.forEachEventTransaction((e, t) -> incorporateConsensusTxn(t, e.getConsensusTimestamp(), e.getCreatorId()));
+		round.forEachEventTransaction((e, t) -> incorporateConsensusTxn(t, t.getConsensusTimestamp(), e.getCreatorId()));
 	}
 
 	/**
