@@ -97,7 +97,6 @@ import com.hederahashgraph.api.proto.java.TokenType;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
-import org.apache.commons.lang3.ArrayUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -2043,10 +2042,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                 .then(
                         withOpContext(
                                 (spec, opLog) -> {
-                                    ownerAddr.set(
-                                            ArrayUtils.toPrimitive(
-                                                    asAddress(
-                                                            spec.registry().getAccountID(OWNER))));
+                                    ownerAddr.set(asAddress(spec.registry().getAccountID(OWNER)));
                                     allRunFor(
                                             spec,
                                             childRecordsCheck(
@@ -3612,12 +3608,10 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                                                                                 .FunctionType
                                                                                                                 .OWNER)
                                                                                                 .withOwner(
-                                                                                                        ArrayUtils
-                                                                                                                .toPrimitive(
-                                                                                                                        asAddress(
-                                                                                                                                spec.registry()
-                                                                                                                                        .getAccountID(
-                                                                                                                                                ACCOUNT))))))))));
+                                                                                                        asAddress(
+                                                                                                                spec.registry()
+                                                                                                                        .getAccountID(
+                                                                                                                                ACCOUNT)))))))));
     }
 
     private HapiApiSpec someERC721GetApprovedScenariosPass() {
@@ -3765,12 +3759,10 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                                                                                 .FunctionType
                                                                                                                 .GET_APPROVED)
                                                                                                 .withApproved(
-                                                                                                        ArrayUtils
-                                                                                                                .toPrimitive(
-                                                                                                                        asAddress(
-                                                                                                                                spec.registry()
-                                                                                                                                        .getAccountID(
-                                                                                                                                                aCivilian))))))))));
+                                                                                                        asAddress(
+                                                                                                                spec.registry()
+                                                                                                                        .getAccountID(
+                                                                                                                                aCivilian)))))))));
     }
 
     private HapiApiSpec someERC721BalanceOfScenariosPass() {
@@ -3987,12 +3979,10 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                                                                                 .FunctionType
                                                                                                                 .OWNER)
                                                                                                 .withOwner(
-                                                                                                        ArrayUtils
-                                                                                                                .toPrimitive(
-                                                                                                                        asAddress(
-                                                                                                                                spec.registry()
-                                                                                                                                        .getAccountID(
-                                                                                                                                                someERC721Scenarios))))))),
+                                                                                                        asAddress(
+                                                                                                                spec.registry()
+                                                                                                                        .getAccountID(
+                                                                                                                                someERC721Scenarios)))))),
                                                 childRecordsCheck(
                                                         "CIVILIAN_OWNER",
                                                         SUCCESS,
@@ -4007,12 +3997,10 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                                                                                 .FunctionType
                                                                                                                 .GET_APPROVED)
                                                                                                 .withApproved(
-                                                                                                        ArrayUtils
-                                                                                                                .toPrimitive(
-                                                                                                                        asAddress(
-                                                                                                                                spec.registry()
-                                                                                                                                        .getAccountID(
-                                                                                                                                                aCivilian))))))))));
+                                                                                                        asAddress(
+                                                                                                                spec.registry()
+                                                                                                                        .getAccountID(
+                                                                                                                                aCivilian)))))))));
     }
 
     private HapiApiSpec someERC721IsApprovedForAllScenariosPass() {
@@ -4602,12 +4590,10 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                                                                                 .FunctionType
                                                                                                                 .GET_APPROVED)
                                                                                                 .withApproved(
-                                                                                                        ArrayUtils
-                                                                                                                .toPrimitive(
-                                                                                                                        asAddress(
-                                                                                                                                spec.registry()
-                                                                                                                                        .getAccountID(
-                                                                                                                                                theSpender))))))))),
+                                                                                                        asAddress(
+                                                                                                                spec.registry()
+                                                                                                                        .getAccountID(
+                                                                                                                                theSpender)))))))),
                         getTxnRecord(allowanceTxn).andAllChildRecords().logged(),
                         UtilVerbs.resetToDefault(
                                 "contracts.redirectTokenCalls",
