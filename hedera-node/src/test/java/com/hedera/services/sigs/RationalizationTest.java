@@ -35,7 +35,7 @@ import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.swirlds.common.system.transaction.SwirldTransaction;
+import com.swirlds.common.system.transaction.Transaction;
 import com.swirlds.common.crypto.TransactionSignature;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -68,7 +68,7 @@ class RationalizationTest {
 	private final SigningOrderResult<ResponseCodeEnum> othersError = CODE_ORDER_RESULT_FACTORY.forImmutableContract();
 
 	@Mock
-	private SwirldTransaction swirldsTxn;
+	private Transaction swirldsTxn;
 	@Mock
 	private PlatformTxnAccessor txnAccessor;
 	@Mock

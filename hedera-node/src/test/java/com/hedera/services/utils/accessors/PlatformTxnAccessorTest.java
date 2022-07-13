@@ -38,7 +38,7 @@ import com.hederahashgraph.api.proto.java.SubType;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
-import com.swirlds.common.system.transaction.SwirldTransaction;
+import com.swirlds.common.system.transaction.internal.SwirldTransaction;
 import org.apache.commons.codec.binary.StringUtils;
 import org.junit.jupiter.api.Test;
 
@@ -91,8 +91,7 @@ class PlatformTxnAccessorTest {
 		Transaction signedTxnWithBody = Transaction.newBuilder()
 				.setBodyBytes(someTxn.toByteString())
 				.build();
-		SwirldTransaction platformTxn =
-				new SwirldTransaction(signedTxnWithBody.toByteArray());
+		final var platformTxn = new SwirldTransaction(signedTxnWithBody.toByteArray());
 
 		// given:
 		PlatformTxnAccessor subject = new PlatformTxnAccessor(SignedTxnAccessor.from(platformTxn.getContents()),
@@ -108,8 +107,7 @@ class PlatformTxnAccessorTest {
 		Transaction signedTxnWithBody = Transaction.newBuilder()
 				.setBodyBytes(someTxn.toByteString())
 				.build();
-		SwirldTransaction platformTxn =
-				new SwirldTransaction(signedTxnWithBody.toByteArray());
+		final var platformTxn = new SwirldTransaction(signedTxnWithBody.toByteArray());
 
 		// given:
 		PlatformTxnAccessor subject = new PlatformTxnAccessor(SignedTxnAccessor.from(platformTxn.getContents()),
@@ -205,8 +203,7 @@ class PlatformTxnAccessorTest {
 
 	@Test
 	void failsOnInvalidSignedTxn() {
-		// given:
-		SwirldTransaction platformTxn = new SwirldTransaction(NONSENSE);
+		final var platformTxn = new SwirldTransaction(NONSENSE);
 
 		// expect:
 		assertThrows(InvalidProtocolBufferException.class,
@@ -220,11 +217,10 @@ class PlatformTxnAccessorTest {
 				.setBodyBytes(ByteString.copyFrom(NONSENSE))
 				.build();
 		// and:
-		SwirldTransaction platformTxn =
-				new SwirldTransaction(signedNonsenseTxn.toByteArray());
+		final var platformTxn = new SwirldTransaction(signedNonsenseTxn.toByteArray());
 
 		// then:
-		assertThrows(InvalidProtocolBufferException.class,() ->
+		assertThrows(InvalidProtocolBufferException.class, () ->
 				PlatformTxnAccessor.from(SignedTxnAccessor.from(platformTxn.getContents()), platformTxn));
 	}
 
@@ -234,8 +230,7 @@ class PlatformTxnAccessorTest {
 		Transaction signedTxnWithBody = Transaction.newBuilder()
 				.setBodyBytes(someTxn.toByteString())
 				.build();
-		SwirldTransaction platformTxn =
-				new SwirldTransaction(signedTxnWithBody.toByteArray());
+		final var platformTxn = new SwirldTransaction(signedTxnWithBody.toByteArray());
 
 		// when:
 		PlatformTxnAccessor subject = new PlatformTxnAccessor(
@@ -255,8 +250,7 @@ class PlatformTxnAccessorTest {
 								.setPubKeyPrefix(ByteString.copyFrom("UNREAL".getBytes()))
 								.setEd25519(ByteString.copyFrom("FAKE".getBytes()))
 				)).build();
-		SwirldTransaction platformTxn =
-				new SwirldTransaction(signedTxnWithBody.toByteArray());
+		final var platformTxn = new SwirldTransaction(signedTxnWithBody.toByteArray());
 
 		// when:
 		PlatformTxnAccessor subject = new PlatformTxnAccessor(
@@ -283,8 +277,7 @@ class PlatformTxnAccessorTest {
 		Transaction txn = Transaction.newBuilder().
 				setSignedTransactionBytes(signedTxn.toByteString()).build();
 
-		SwirldTransaction platformTxn =
-				new SwirldTransaction(txn.toByteArray());
+		final var platformTxn = new SwirldTransaction(txn.toByteArray());
 
 		// when:
 		PlatformTxnAccessor subject = new PlatformTxnAccessor(
@@ -309,8 +302,7 @@ class PlatformTxnAccessorTest {
 		Transaction signedTxnWithBody = Transaction.newBuilder()
 				.setBodyBytes(someTxn.toByteString())
 				.build();
-		SwirldTransaction platformTxn =
-				new SwirldTransaction(signedTxnWithBody.toByteArray());
+		final var platformTxn = new SwirldTransaction(signedTxnWithBody.toByteArray());
 
 		// when:
 		PlatformTxnAccessor subject = new PlatformTxnAccessor(
@@ -330,7 +322,8 @@ class PlatformTxnAccessorTest {
 				.setConsensusSubmitMessage(
 						ConsensusSubmitMessageTransactionBody.newBuilder().setTopicID(asTopic("0.0.10")).build()
 				).build();
-		final ByteString canonicalSig = ByteString.copyFromUtf8("0123456789012345678901234567890123456789012345678901234567890123");
+		final ByteString canonicalSig = ByteString.copyFromUtf8(
+				"0123456789012345678901234567890123456789012345678901234567890123");
 		final SignatureMap onePairSigMap = SignatureMap.newBuilder()
 				.addSigPair(SignaturePair.newBuilder()
 						.setPubKeyPrefix(ByteString.copyFromUtf8("a"))
@@ -340,7 +333,7 @@ class PlatformTxnAccessorTest {
 				.setBodyBytes(someTxn.toByteString())
 				.setSigMap(onePairSigMap)
 				.build();
-		SwirldTransaction platformTxn = new SwirldTransaction(signedTxnWithBody.toByteArray());
+		final var platformTxn = new SwirldTransaction(signedTxnWithBody.toByteArray());
 		final var aliasManager = mock(AliasManager.class);
 
 		var signedAccessor = SignedTxnAccessor.from(platformTxn.getContents());
@@ -407,7 +400,8 @@ class PlatformTxnAccessorTest {
 		assertEquals(delegate.getMemoUtf8Bytes().length, subject.baseUsageMeta().memoUtf8Bytes());
 
 		assertEquals(delegate.availSubmitUsageMeta(), subject.availSubmitUsageMeta());
-		assertEquals(someTxn.getConsensusSubmitMessage().getMessage().size(), subject.availSubmitUsageMeta().numMsgBytes());
+		assertEquals(someTxn.getConsensusSubmitMessage().getMessage().size(),
+				subject.availSubmitUsageMeta().numMsgBytes());
 
 		assertEquals(delegate, subject.castToSpecialized());
 
@@ -429,7 +423,8 @@ class PlatformTxnAccessorTest {
 				.setConsensusSubmitMessage(
 						ConsensusSubmitMessageTransactionBody.newBuilder().setTopicID(asTopic("0.0.10")).build()
 				).build();
-		final ByteString canonicalSig = ByteString.copyFromUtf8("0123456789012345678901234567890123456789012345678901234567890123");
+		final ByteString canonicalSig = ByteString.copyFromUtf8(
+				"0123456789012345678901234567890123456789012345678901234567890123");
 		final SignatureMap onePairSigMap = SignatureMap.newBuilder()
 				.addSigPair(SignaturePair.newBuilder()
 						.setPubKeyPrefix(ByteString.copyFromUtf8("a"))
@@ -457,8 +452,10 @@ class PlatformTxnAccessorTest {
 				"}\n" +
 				"bodyBytes: \"\\n\\004\\022\\002\\030\\002\\030\\n2\\003Hi!\\332\\001\\004\\n\\002\\030\\n\"\n" +
 				", hash=[111, -123, -70, 79, 75, -80, -114, -49, 88, -76, -82, -23, 43, 103, -21, 52, -31, -60, 98, " +
-				"-55, -26, -18, -101, -108, -51, 24, 49, 72, 18, -69, 21, -84, -68, -118, 31, -53, 91, -61, -71, -56, " +
-				"100, -52, -104, 87, -85, -33, -73, -124], txnBytes=[10, 4, 18, 2, 24, 2, 24, 10, 50, 3, 72, 105, 33, " +
+				"-55, -26, -18, -101, -108, -51, 24, 49, 72, 18, -69, 21, -84, -68, -118, 31, -53, 91, -61, -71, -56," +
+				" " +
+				"100, -52, -104, 87, -85, -33, -73, -124], txnBytes=[10, 4, 18, 2, 24, 2, 24, 10, 50, 3, 72, 105, 33," +
+				" " +
 				"-38, 1, 4, 10, 2, 24, 10], sigMap=sigPair {\n" +
 				"  pubKeyPrefix: \"a\"\n" +
 				"  ed25519: \"0123456789012345678901234567890123456789012345678901234567890123\"\n" +
@@ -481,17 +478,22 @@ class PlatformTxnAccessorTest {
 				", submitMessageMeta=SubmitMessageMeta[numMsgBytes=0], xferUsageMeta=null, " +
 				"txnUsageMeta=BaseTransactionMeta[memoUtf8Bytes=3, numExplicitTransfers=0], " +
 				"function=ConsensusSubmitMessage, pubKeyToSigBytes=PojoSigMapPubKeyToSigBytes{pojoSigMap=PojoSigMap" +
-				"{keyTypes=[ED25519], rawMap=[[[97], [48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 48, 49, 50, 51, 52, 53, " +
+				"{keyTypes=[ED25519], rawMap=[[[97], [48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 48, 49, 50, 51, 52, 53," +
+				" " +
 				"54, 55, 56, 57, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 48, " +
 				"49, 50, 51, 52, 53, 54, 55, 56, 57, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 48, 49, 50, 51]]]}, " +
 				"used=[false]}, payer=accountNum: 2\n" +
-				", scheduleRef=null}, platformTxn=Transaction{contents=[26, 71, 10, 69, 10, 1, 97, 26, 64, 48, 49, 50, " +
+				", scheduleRef=null}, platformTxn=Transaction{contents=[26, 71, 10, 69, 10, 1, 97, 26, 64, 48, 49, 50," +
+				" " +
 				"51, 52, 53, 54, 55, 56, 57, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 48, 49, 50, 51, 52, 53, 54, 55, " +
 				"56, 57, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 48, 49, 50, " +
-				"51, 52, 53, 54, 55, 56, 57, 48, 49, 50, 51, 34, 20, 10, 4, 18, 2, 24, 2, 24, 10, 50, 3, 72, 105, 33, " +
+				"51, 52, 53, 54, 55, 56, 57, 48, 49, 50, 51, 34, 20, 10, 4, 18, 2, 24, 2, 24, 10, 50, 3, 72, 105, 33," +
+				" " +
 				"-38, 1, 4, 10, 2, 24, 10], signatures=null}, linkedRefs=null, expandedSigStatus=null, " +
-				"pubKeyToSigBytes=PojoSigMapPubKeyToSigBytes{pojoSigMap=PojoSigMap{keyTypes=[ED25519], rawMap=[[[97], " +
-				"[48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 48, 49, 50, 51, 52, " +
+				"pubKeyToSigBytes=PojoSigMapPubKeyToSigBytes{pojoSigMap=PojoSigMap{keyTypes=[ED25519], rawMap=[[[97]," +
+				" " +
+				"[48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 48, 49, 50, 51, 52," +
+				" " +
 				"53, 54, 55, 56, 57, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, " +
 				"48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 48, 49, 50, 51]]]}, used=[false]}, sigMeta=null}";
 

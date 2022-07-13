@@ -60,11 +60,13 @@ import com.swirlds.common.merkle.impl.PartialNaryMerkleInternal;
 import com.swirlds.common.system.InitTrigger;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.Platform;
+import com.swirlds.common.system.Round;
 import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.SwirldDualState;
-import com.swirlds.common.system.SwirldState;
+import com.swirlds.common.system.SwirldState2;
 import com.swirlds.common.system.address.AddressBook;
-import com.swirlds.common.system.transaction.SwirldTransaction;
+import com.swirlds.common.system.events.Event;
+import com.swirlds.common.system.transaction.Transaction;
 import com.swirlds.fchashmap.FCHashMap;
 import com.swirlds.jasperdb.JasperDbBuilder;
 import com.swirlds.merkle.map.MerkleMap;
@@ -101,7 +103,7 @@ import static com.swirlds.common.system.InitTrigger.RESTART;
 /**
  * The Merkle tree root of the Hedera Services world state.
  */
-public class ServicesState extends PartialNaryMerkleInternal implements MerkleInternal, SwirldState.SwirldState2 {
+public class ServicesState extends PartialNaryMerkleInternal implements MerkleInternal, SwirldState2 {
 	private static final Logger log = LogManager.getLogger(ServicesState.class);
 
 	private static final long RUNTIME_CONSTRUCTABLE_ID = 0x8e300b0dfdafbb1aL;
@@ -173,7 +175,7 @@ public class ServicesState extends PartialNaryMerkleInternal implements MerkleIn
 				contractStorage().size());
 	}
 
-	/* --- MerkleInternal --- */
+	// --- MerkleInternal ---
 	@Override
 	public long getClassId() {
 		return RUNTIME_CONSTRUCTABLE_ID;
@@ -199,6 +201,8 @@ public class ServicesState extends PartialNaryMerkleInternal implements MerkleIn
 		super.addDeserializedChildren(children, version);
 		deserializedStateVersion = version;
 	}
+
+	// --- SwirldState ---
 	@Override
 	public void init(
 			final Platform platform,
@@ -224,7 +228,16 @@ public class ServicesState extends PartialNaryMerkleInternal implements MerkleIn
 		}
 	}
 
-	/* --- SwirldState --- */
+	@Override
+	public void handleConsensusRound(Round round, SwirldDualState swirldDualState) {
+		throw new AssertionError("Not implemented");
+	}
+
+	@Override
+	public void preHandle(Event event) {
+		throw new AssertionError("Not implemented");
+	}
+
 	private void deserializedInit(
 			final Platform platform,
 			final AddressBook addressBook,
@@ -336,13 +349,12 @@ public class ServicesState extends PartialNaryMerkleInternal implements MerkleIn
 		return addressBook().copy();
 	}
 
-	@Override
 	public synchronized void handleTransaction(
 			long submittingMember,
 			boolean isConsensus,
 			Instant creationTime,
 			Instant consensusTime,
-			SwirldTransaction transaction,
+			Transaction transaction,
 			SwirldDualState dualState
 	) {
 		if (isConsensus) {
@@ -352,8 +364,7 @@ public class ServicesState extends PartialNaryMerkleInternal implements MerkleIn
 		}
 	}
 
-	@Override
-	public void expandSignatures(final SwirldTransaction platformTxn) {
+	public void expandSignatures(final Transaction platformTxn) {
 		try {
 			final var app = metadata.app();
 			final var accessor = app.expandHandleSpan().track(platformTxn);

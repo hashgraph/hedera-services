@@ -24,7 +24,7 @@ import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.swirlds.common.system.SwirldDualState;
-import com.swirlds.common.system.transaction.SwirldTransaction;
+import com.swirlds.common.system.transaction.Transaction;
 import com.hedera.services.utils.accessors.AccessorFactory;
 import com.hedera.services.utils.accessors.PlatformTxnAccessor;
 import com.hedera.services.utils.accessors.SwirldsTxnAccessor;
@@ -34,9 +34,9 @@ import java.time.Instant;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Encapsulates a "span" that tracks our contact with a given {@link SwirldTransaction}
- * between the {@link com.hedera.services.ServicesState#expandSignatures(SwirldTransaction)}
- * and {@link com.hedera.services.ServicesState#handleTransaction(long, boolean, Instant, Instant, SwirldTransaction,
+ * Encapsulates a "span" that tracks our contact with a given {@link Transaction}
+ * between the {@link com.hedera.services.ServicesState#expandSignatures(Transaction)}
+ * and {@link com.hedera.services.ServicesState#handleTransaction(long, boolean, Instant, Instant, Transaction,
  * SwirldDualState)}
  * Platform callbacks.
  *
@@ -57,7 +57,7 @@ import java.util.concurrent.TimeUnit;
  */
 public class ExpandHandleSpan {
 	private final SpanMapManager spanMapManager;
-	private final Cache<SwirldTransaction, SwirldsTxnAccessor> accessorCache;
+	private final Cache<Transaction, SwirldsTxnAccessor> accessorCache;
 	private final AccessorFactory factory;
 
 	public ExpandHandleSpan(
@@ -73,13 +73,15 @@ public class ExpandHandleSpan {
 		this.factory = factory;
 	}
 
-	public SwirldsTxnAccessor track(SwirldTransaction transaction) throws InvalidProtocolBufferException {
+	public SwirldsTxnAccessor track(Transaction transaction) throws InvalidProtocolBufferException {
 		final var accessor = spanAccessorFor(transaction);
 		accessorCache.put(transaction, accessor);
 		return accessor;
 	}
 
-	public SwirldsTxnAccessor accessorFor(SwirldTransaction transaction) throws InvalidProtocolBufferException {
+	public SwirldsTxnAccessor accessorFor(
+			final com.swirlds.common.system.transaction.Transaction transaction
+	) throws InvalidProtocolBufferException {
 		final var cachedAccessor = accessorCache.getIfPresent(transaction);
 		if (cachedAccessor != null) {
 			spanMapManager.rationalizeSpan(cachedAccessor);
@@ -89,7 +91,7 @@ public class ExpandHandleSpan {
 		}
 	}
 
-	private SwirldsTxnAccessor spanAccessorFor(SwirldTransaction transaction) throws InvalidProtocolBufferException {
+	private SwirldsTxnAccessor spanAccessorFor(final Transaction transaction) throws InvalidProtocolBufferException {
 		final var accessor = factory.nonTriggeredTxn(transaction.getContents());
 		spanMapManager.expandSpan(accessor);
 		return PlatformTxnAccessor.from(accessor, transaction);

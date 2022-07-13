@@ -1438,7 +1438,7 @@ workflows:
             filters:
               branches:
                 ignore:
-                  - NONE
+                  - main-029x
             workflow-name: "Continuous-integration"
 #        - sonar-check:
 #            context: SonarCloud

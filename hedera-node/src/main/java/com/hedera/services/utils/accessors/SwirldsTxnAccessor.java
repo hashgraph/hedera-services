@@ -24,7 +24,7 @@ import com.hedera.services.sigs.order.LinkedRefs;
 import com.hedera.services.sigs.sourcing.PubKeyToSigBytes;
 import com.hedera.services.utils.RationalizedSigMeta;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.swirlds.common.system.transaction.SwirldTransaction;
+import com.swirlds.common.system.transaction.Transaction;
 import com.swirlds.common.crypto.TransactionSignature;
 
 import java.util.function.Function;
@@ -37,7 +37,7 @@ public interface SwirldsTxnAccessor extends TxnAccessor {
 
 	PubKeyToSigBytes getPkToSigsFn();
 
-	SwirldTransaction getPlatformTxn();
+	Transaction getPlatformTxn();
 
 	/* --- Used to track entities with keys linked to a transaction --- */
 	void setLinkedRefs(LinkedRefs linkedRefs);

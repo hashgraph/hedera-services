@@ -33,7 +33,7 @@ import java.time.Instant;
 
 /**
  * Provides an "expand" operation that acts in-place on the {@link com.swirlds.common.crypto.TransactionSignature}
- * list of a {@link com.swirlds.common.system.transaction.SwirldTransaction} whose contents are known to be a valid
+ * list of a {@link com.swirlds.common.system.transaction.Transaction} whose contents are known to be a valid
  * Hedera gRPC {@link Transaction}.
  *
  * <p>This operation allows Hedera Services to use the Platform to efficiently
@@ -45,7 +45,7 @@ import java.time.Instant;
  * and creates the cryptographic signatures at the bases of the signing hierarchies
  * for these keys. This implicitly requests the Platform to verify these cryptographic
  * signatures, by setting them in the sigs list of the platform txn, <b>before</b>
- * {@link com.hedera.services.ServicesState#handleTransaction(long, boolean, Instant, Instant, SwirldTransaction, SwirldDualState)}
+ * {@link com.hedera.services.ServicesState#handleTransaction(long, boolean, Instant, Instant, Transaction, SwirldDualState)}
  * is called with {@code isConsensus=true}.
  */
 public final class HederaToPlatformSigOps {

@@ -34,7 +34,7 @@ import com.hedera.services.sigs.metadata.TokenMetaUtils;
 import com.hedera.services.sigs.metadata.TokenSigningMetadata;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.swirlds.common.system.Platform;
-import com.swirlds.common.system.transaction.SwirldTransaction;
+import com.swirlds.common.system.transaction.Transaction;
 import com.hedera.services.utils.accessors.SwirldsTxnAccessor;
 
 import javax.inject.Inject;
@@ -42,7 +42,7 @@ import javax.inject.Singleton;
 import java.util.function.Function;
 
 /**
- * Used by {@link com.hedera.services.ServicesState#expandSignatures(SwirldTransaction)} to expand the
+ * Used by {@link com.hedera.services.ServicesState#expandSignatures(Transaction)} to expand the
  * cryptographic signatures <i>linked</i> to a given transaction. Linked signatures are derived from
  * two pieces of information:
  * <ol>

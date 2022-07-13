@@ -35,7 +35,7 @@ import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
 import com.hedera.test.extensions.LoggingSubject;
 import com.hedera.test.extensions.LoggingTarget;
-import com.swirlds.common.system.transaction.SwirldTransaction;
+import com.swirlds.common.system.transaction.Transaction;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -81,7 +81,7 @@ class StandardProcessLogicTest {
 	@Mock
 	private TxnAccessor triggeredAccessor;
 	@Mock
-	private SwirldTransaction swirldTransaction;
+	private Transaction Transaction;
 	@Mock
 	private ExecutionTimeTracker executionTimeTracker;
 	@Mock
@@ -112,14 +112,14 @@ class StandardProcessLogicTest {
 		final InOrder inOrder = inOrder(consensusTimeTracker, scheduleProcessing,
 				expiries, executionTimeTracker, txnManager, autoRenewal, sigImpactHistorian, recordStreaming);
 
-		given(expandHandleSpan.accessorFor(swirldTransaction)).willReturn(accessor);
+		given(expandHandleSpan.accessorFor(Transaction)).willReturn(accessor);
 		given(invariantChecks.holdFor(accessor, consensusNow, member)).willReturn(true);
 		given(consensusTimeTracker.firstTransactionTime()).willReturn(consensusNow);
 		given(scheduleProcessing.shouldProcessScheduledTransactions(consensusNow)).willReturn(true);
 		given(scheduleProcessing.getMaxProcessingLoopIterations()).willReturn(10L);
 
 		// when:
-		subject.incorporateConsensusTxn(swirldTransaction, consensusNow, member);
+		subject.incorporateConsensusTxn(Transaction, consensusNow, member);
 
 		// then:
 		inOrder.verify(consensusTimeTracker).reset(consensusNow);
@@ -141,12 +141,12 @@ class StandardProcessLogicTest {
 		final InOrder inOrder = inOrder(consensusTimeTracker, scheduleProcessing,
 				expiries, executionTimeTracker, txnManager, autoRenewal, sigImpactHistorian, recordStreaming);
 
-		given(expandHandleSpan.accessorFor(swirldTransaction)).willReturn(accessor);
+		given(expandHandleSpan.accessorFor(Transaction)).willReturn(accessor);
 		given(invariantChecks.holdFor(accessor, consensusNow, member)).willReturn(true);
 		given(consensusTimeTracker.firstTransactionTime()).willReturn(consensusNow);
 
 		// when:
-		subject.incorporateConsensusTxn(swirldTransaction, consensusNow, member);
+		subject.incorporateConsensusTxn(Transaction, consensusNow, member);
 
 		// then:
 		inOrder.verify(consensusTimeTracker).reset(consensusNow);
@@ -167,10 +167,10 @@ class StandardProcessLogicTest {
 
 	@Test
 	void abortsOnFailedInvariantCheck() throws InvalidProtocolBufferException {
-		given(expandHandleSpan.accessorFor(swirldTransaction)).willReturn(accessor);
+		given(expandHandleSpan.accessorFor(Transaction)).willReturn(accessor);
 
 		// when:
-		subject.incorporateConsensusTxn(swirldTransaction, consensusNow, member);
+		subject.incorporateConsensusTxn(Transaction, consensusNow, member);
 
 		// then:
 		verifyNoInteractions(expiries, txnManager, autoRenewal);
@@ -180,13 +180,13 @@ class StandardProcessLogicTest {
 	void happyPathFlowsForTriggered() throws InvalidProtocolBufferException {
 		given(consensusTimeTracker.firstTransactionTime()).willReturn(consensusNow);
 		given(consensusTimeTracker.nextTransactionTime(false)).willReturn(triggeredConsensusNow);
-		given(expandHandleSpan.accessorFor(swirldTransaction)).willReturn(accessor);
+		given(expandHandleSpan.accessorFor(Transaction)).willReturn(accessor);
 		given(invariantChecks.holdFor(accessor, consensusNow, member)).willReturn(true);
 		given(txnCtx.triggeredTxn()).willReturn(triggeredAccessor);
 		given(scheduleProcessing.shouldProcessScheduledTransactions(consensusNow)).willReturn(true);
 		given(scheduleProcessing.getMaxProcessingLoopIterations()).willReturn(10L);
 
-		subject.incorporateConsensusTxn(swirldTransaction, consensusNow, member);
+		subject.incorporateConsensusTxn(Transaction, consensusNow, member);
 
 		verify(expiries).purge(consensusNow.getEpochSecond());
 		verify(txnManager).process(accessor, consensusNow, member);
@@ -201,32 +201,32 @@ class StandardProcessLogicTest {
 
 	@Test
 	void warnsOnNonGrpc() throws InvalidProtocolBufferException {
-		given(expandHandleSpan.accessorFor(swirldTransaction)).willThrow(InvalidProtocolBufferException.class);
+		given(expandHandleSpan.accessorFor(Transaction)).willThrow(InvalidProtocolBufferException.class);
 
-		subject.incorporateConsensusTxn(swirldTransaction, consensusNow, member);
+		subject.incorporateConsensusTxn(Transaction, consensusNow, member);
 
 		assertThat(logCaptor.warnLogs(), contains(Matchers.startsWith("Consensus platform txn was not gRPC!")));
 	}
 
 	@Test
 	void logsAtErrorForUnhandledInternalProcessFailure() throws InvalidProtocolBufferException {
-		given(expandHandleSpan.accessorFor(swirldTransaction)).willThrow(IllegalStateException.class);
+		given(expandHandleSpan.accessorFor(Transaction)).willThrow(IllegalStateException.class);
 
-		subject.incorporateConsensusTxn(swirldTransaction, consensusNow, member);
+		subject.incorporateConsensusTxn(Transaction, consensusNow, member);
 
 		assertThat(logCaptor.errorLogs(), contains(Matchers.startsWith("Unhandled internal process failure")));
 	}
 
 	@Test
 	void usesNextTransactionTimeIfFirstUsed() throws InvalidProtocolBufferException {
-		given(expandHandleSpan.accessorFor(swirldTransaction)).willReturn(accessor);
+		given(expandHandleSpan.accessorFor(Transaction)).willReturn(accessor);
 		given(invariantChecks.holdFor(accessor, consensusNow, member)).willReturn(true);
 		given(consensusTimeTracker.nextTransactionTime(true)).willReturn(consensusNow);
 		given(consensusTimeTracker.isFirstUsed()).willReturn(true);
 		given(scheduleProcessing.shouldProcessScheduledTransactions(consensusNow)).willReturn(true);
 		given(scheduleProcessing.getMaxProcessingLoopIterations()).willReturn(10L);
 
-		subject.incorporateConsensusTxn(swirldTransaction, consensusNow, member);
+		subject.incorporateConsensusTxn(Transaction, consensusNow, member);
 
 		verify(consensusTimeTracker).reset(consensusNow);
 		verify(consensusTimeTracker).isFirstUsed();
@@ -244,7 +244,7 @@ class StandardProcessLogicTest {
 		given(consensusTimeTracker.firstTransactionTime()).willReturn(consensusNow);
 		given(consensusTimeTracker.hasMoreTransactionTime(false)).willReturn(true, false);
 		given(consensusTimeTracker.nextTransactionTime(false)).willReturn(triggeredConsensusNow);
-		given(expandHandleSpan.accessorFor(swirldTransaction)).willReturn(accessor);
+		given(expandHandleSpan.accessorFor(Transaction)).willReturn(accessor);
 		given(invariantChecks.holdFor(accessor, consensusNow, member)).willReturn(true);
 		given(scheduleProcessing.triggerNextTransactionExpiringAsNeeded(consensusNow, null, false))
 				.willReturn(triggeredAccessor);
@@ -254,7 +254,7 @@ class StandardProcessLogicTest {
 		given(scheduleProcessing.shouldProcessScheduledTransactions(consensusNow)).willReturn(true);
 		given(scheduleProcessing.getMaxProcessingLoopIterations()).willReturn(10L);
 
-		subject.incorporateConsensusTxn(swirldTransaction, consensusNow, member);
+		subject.incorporateConsensusTxn(Transaction, consensusNow, member);
 
 		inOrder.verify(consensusTimeTracker).reset(consensusNow);
 		inOrder.verify(expiries).purge(consensusNow.getEpochSecond());
@@ -280,7 +280,7 @@ class StandardProcessLogicTest {
 		given(consensusTimeTracker.firstTransactionTime()).willReturn(consensusNow);
 		given(consensusTimeTracker.hasMoreTransactionTime(false)).willReturn(true);
 		given(consensusTimeTracker.nextTransactionTime(false)).willReturn(triggeredConsensusNow);
-		given(expandHandleSpan.accessorFor(swirldTransaction)).willReturn(accessor);
+		given(expandHandleSpan.accessorFor(Transaction)).willReturn(accessor);
 		given(invariantChecks.holdFor(accessor, consensusNow, member)).willReturn(true);
 		given(scheduleProcessing.triggerNextTransactionExpiringAsNeeded(consensusNow, null, false))
 				.willReturn(triggeredAccessor);
@@ -290,7 +290,7 @@ class StandardProcessLogicTest {
 		given(scheduleProcessing.shouldProcessScheduledTransactions(consensusNow)).willReturn(true);
 		given(scheduleProcessing.getMaxProcessingLoopIterations()).willReturn(4L);
 
-		subject.incorporateConsensusTxn(swirldTransaction, consensusNow, member);
+		subject.incorporateConsensusTxn(Transaction, consensusNow, member);
 
 		inOrder.verify(consensusTimeTracker).reset(consensusNow);
 		inOrder.verify(expiries).purge(consensusNow.getEpochSecond());

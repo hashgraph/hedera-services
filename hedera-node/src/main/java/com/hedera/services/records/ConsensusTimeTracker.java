@@ -30,7 +30,7 @@ import javax.inject.Singleton;
 import java.time.Instant;
 import java.util.function.Supplier;
 
-import static com.swirlds.platform.EventImpl.MIN_TRANS_TIMESTAMP_INCR_NANOS;
+import static com.hedera.services.utils.Units.MIN_TRANS_TIMESTAMP_INCR_NANOS;
 
 /**
  * Provides a tracker of the usable consensus time space during a

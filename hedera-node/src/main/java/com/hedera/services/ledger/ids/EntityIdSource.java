@@ -27,7 +27,7 @@ import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.swirlds.common.system.SwirldDualState;
-import com.swirlds.common.system.transaction.SwirldTransaction;
+import com.swirlds.common.system.transaction.Transaction;
 
 import java.time.Instant;
 
@@ -90,13 +90,13 @@ public interface EntityIdSource {
 
 	/**
 	 * Reclaims the IDs issued during one
-	 * {@link com.hedera.services.ServicesState#handleTransaction(long, boolean, Instant, Instant, SwirldTransaction, SwirldDualState)} transition
+	 * {@link com.hedera.services.ServicesState#handleTransaction(long, boolean, Instant, Instant, Transaction, SwirldDualState)} transition
 	 */
 	void reclaimProvisionalIds();
 
 	/**
 	 * Resets the provisional ids created during one
-	 * {@link com.hedera.services.ServicesState#handleTransaction(long, boolean, Instant, Instant, SwirldTransaction, SwirldDualState)} transition
+	 * {@link com.hedera.services.ServicesState#handleTransaction(long, boolean, Instant, Instant, Transaction, SwirldDualState)} transition
 	 */
 	void resetProvisionalIds();
 }

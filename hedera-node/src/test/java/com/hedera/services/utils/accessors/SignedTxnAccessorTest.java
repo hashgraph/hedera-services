@@ -78,9 +78,8 @@ import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransferList;
 import com.hederahashgraph.builder.RequestBuilder;
 import com.hederahashgraph.fee.FeeBuilder;
-import com.swirlds.common.system.transaction.SwirldTransaction;
 import com.swirlds.common.crypto.TransactionSignature;
-import org.bouncycastle.util.encoders.Hex;
+import com.swirlds.common.system.transaction.internal.SwirldTransaction;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigInteger;
@@ -835,7 +834,8 @@ class SignedTxnAccessorTest {
 		final var expectedString = "SignedTxnAccessor{sigMapSize=71, numSigPairs=1, numAutoCreations=-1, hash=[111, " +
 				"-123, -70, 79, 75, -80, -114, -49, 88, -76, -82, -23, 43, 103, -21, 52, -31, -60, 98, -55, -26, -18," +
 				" " +
-				"-101, -108, -51, 24, 49, 72, 18, -69, 21, -84, -68, -118, 31, -53, 91, -61, -71, -56, 100, -52, -104," +
+				"-101, -108, -51, 24, 49, 72, 18, -69, 21, -84, -68, -118, 31, -53, 91, -61, -71, -56, 100, -52, " +
+				"-104," +
 				" " +
 				"87, -85, -33, -73, -124], txnBytes=[10, 4, 18, 2, 24, 2, 24, 10, 50, 3, 72, 105, 33, -38, 1, 4, 10, " +
 				"2," +
@@ -960,7 +960,7 @@ class SignedTxnAccessorTest {
 
 	private TransactionBody ethereumTransactionOp() {
 		final var op = EthereumTransactionBody.newBuilder()
-				.setEthereumData(ByteString.copyFrom(Hex.decode(
+				.setEthereumData(ByteString.copyFrom(com.swirlds.common.utility.CommonUtils.unhex(
 						"f864012f83018000947e3a9eaf9bcc39e2ffa38eb30bf7a93feacbc18180827653820277a0f9fbff985d374be4a55f296915002eec11ac96f1ce2df183adf992baa9390b2fa00c1e867cc960d9c74ec2e6a662b7908ec4c8cc9f3091e886bcefbeb2290fb792")))
 				.build();
 		return TransactionBody.newBuilder()

@@ -72,12 +72,12 @@ import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.SwirldDualState;
 import com.swirlds.common.system.address.Address;
 import com.swirlds.common.system.address.AddressBook;
-import com.swirlds.common.system.transaction.SwirldTransaction;
+import com.swirlds.common.system.transaction.Transaction;
 import com.swirlds.fchashmap.FCHashMap;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.platform.state.DualStateImpl;
 import com.swirlds.platform.state.signed.SignedState;
-import com.swirlds.platform.state.signed.SignedStateFileManager;
+import com.swirlds.platform.state.signed.SignedStateFileReader;
 import com.swirlds.virtualmap.VirtualMap;
 import org.apache.commons.io.FileUtils;
 import org.hamcrest.Matchers;
@@ -91,6 +91,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Paths;
 import java.security.PublicKey;
 import java.time.Instant;
 import java.util.ConcurrentModificationException;
@@ -155,7 +156,7 @@ class ServicesStateTest {
 	@Mock
 	private MerkleNetworkContext networkContext;
 	@Mock
-	private SwirldTransaction transaction;
+	private Transaction transaction;
 	@Mock
 	private SwirldDualState dualState;
 	@Mock
@@ -916,7 +917,7 @@ class ServicesStateTest {
 		return platform;
 	}
 	private static SignedState loadSignedState(final String path) throws IOException {
-		var signedPair = SignedStateFileManager.readSignedStateFromFile(new File(path));
+		var signedPair = SignedStateFileReader.readStateFile(Paths.get(path));
 		// Because it's possible we are loading old data, we cannot check equivalence of the hash.
 		Assertions.assertNotNull(signedPair.signedState());
 		return signedPair.signedState();

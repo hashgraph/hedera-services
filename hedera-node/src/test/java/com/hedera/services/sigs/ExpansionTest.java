@@ -33,7 +33,7 @@ import com.hedera.services.utils.accessors.PlatformTxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.swirlds.common.system.transaction.SwirldTransaction;
+import com.swirlds.common.system.transaction.Transaction;
 import com.swirlds.common.crypto.TransactionSignature;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -65,7 +65,7 @@ class ExpansionTest {
 	@Mock
 	private TxnScopedPlatformSigFactory sigFactory;
 	@Mock
-	private SwirldTransaction swirldTransaction;
+	private Transaction Transaction;
 	@Mock
 	private TransactionSignature ed25519Sig;
 	@Mock
@@ -101,7 +101,7 @@ class ExpansionTest {
 						});
 		given(txnAccessor.getPayer()).willReturn(payer);
 		given(txnAccessor.getTxn()).willReturn(mockTxn);
-		given(txnAccessor.getPlatformTxn()).willReturn(swirldTransaction);
+		given(txnAccessor.getPlatformTxn()).willReturn(Transaction);
 
 		subject.execute();
 
@@ -144,7 +144,7 @@ class ExpansionTest {
 		subject.execute();
 
 		final var allSigs = new TransactionSignature[] { ed25519Sig, secp256k1Sig };
-		verify(swirldTransaction).addAll(allSigs);
+		verify(Transaction).addAll(allSigs);
 	}
 
 	private void setupDegenerateMocks() {
@@ -154,7 +154,7 @@ class ExpansionTest {
 				.willReturn(mockPayerResponse);
 		given(sigReqs.keysForOtherParties(eq(degenTxnBody), eq(CODE_ORDER_RESULT_FACTORY), any(), eq(payer)))
 				.willReturn(mockOtherPartiesResponse);
-		given(txnAccessor.getPlatformTxn()).willReturn(swirldTransaction);
+		given(txnAccessor.getPlatformTxn()).willReturn(Transaction);
 		given(txnAccessor.getPayer()).willReturn(payer);
 	}
 

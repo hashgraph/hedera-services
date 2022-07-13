@@ -29,7 +29,7 @@ import com.hederahashgraph.api.proto.java.TokenWipeAccountTransactionBody;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
-import com.swirlds.common.system.transaction.SwirldTransaction;
+import com.swirlds.common.system.transaction.internal.SwirldTransaction;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -67,13 +67,13 @@ class AccessorFactoryTest {
 
 	@Test
 	void constructsCorrectly() throws InvalidProtocolBufferException {
-		SwirldTransaction platformTxn =
+		com.swirlds.common.system.transaction.Transaction platformTxn =
 				new SwirldTransaction(Transaction.newBuilder()
 						.setBodyBytes(someTxn.toByteString())
 						.build().toByteArray());
 		assertTrue(subject.nonTriggeredTxn(platformTxn.getContents()) instanceof SignedTxnAccessor);
 
-		SwirldTransaction wipeTxn = new SwirldTransaction(Transaction.newBuilder()
+		com.swirlds.common.system.transaction.Transaction wipeTxn = new SwirldTransaction(Transaction.newBuilder()
 				.setBodyBytes(tokenWipeTxn.toByteString())
 				.build().toByteArray());
 		assertTrue(subject.nonTriggeredTxn(wipeTxn.getContents()) instanceof SignedTxnAccessor);
@@ -81,13 +81,13 @@ class AccessorFactoryTest {
 
 	@Test
 	void constructsTriggeredCorrectly() throws InvalidProtocolBufferException {
-		SwirldTransaction platformTxn =
+		com.swirlds.common.system.transaction.Transaction platformTxn =
 				new SwirldTransaction(Transaction.newBuilder()
 						.setBodyBytes(someTxn.toByteString())
 						.build().toByteArray());
 		assertTrue(subject.nonTriggeredTxn(platformTxn.getContents()) instanceof SignedTxnAccessor);
 
-		SwirldTransaction wipeTxn = new SwirldTransaction(Transaction.newBuilder()
+		com.swirlds.common.system.transaction.Transaction wipeTxn = new SwirldTransaction(Transaction.newBuilder()
 				.setBodyBytes(tokenWipeTxn.toByteString())
 				.build().toByteArray());
 

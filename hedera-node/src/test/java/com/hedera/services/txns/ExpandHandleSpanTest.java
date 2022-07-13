@@ -25,13 +25,11 @@ import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.txns.span.ExpandHandleSpan;
 import com.hedera.services.txns.span.SpanMapManager;
 import com.hedera.services.utils.accessors.AccessorFactory;
-import com.hedera.services.utils.accessors.SignedTxnAccessor;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
-import com.swirlds.common.system.transaction.SwirldTransaction;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -42,7 +40,7 @@ import java.util.concurrent.TimeUnit;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.Mockito.mock;
+import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
@@ -51,6 +49,10 @@ class ExpandHandleSpanTest {
 	private SpanMapManager handleSpanMap;
 	@Mock
 	private AliasManager aliasManager;
+	@Mock
+	private com.swirlds.common.system.transaction.Transaction validTxn;
+	@Mock
+	private com.swirlds.common.system.transaction.Transaction invalidTxn;
 
 	private AccessorFactory accessorFactory = new AccessorFactory(aliasManager);
 
@@ -68,9 +70,6 @@ class ExpandHandleSpanTest {
 					.toByteString())
 			.build().toByteArray();
 
-	private final SwirldTransaction validTxn = new SwirldTransaction(validTxnBytes);
-	private final SwirldTransaction invalidTxn = new SwirldTransaction("NONSENSE".getBytes());
-
 	private ExpandHandleSpan subject;
 
 	@BeforeEach
@@ -80,7 +79,7 @@ class ExpandHandleSpanTest {
 
 	@Test
 	void propagatesIpbe() {
-		final var accessor = mock(SignedTxnAccessor.class);
+		given(invalidTxn.getContents()).willReturn("NONSENSE".getBytes());
 		// expect:
 		assertThrows(InvalidProtocolBufferException.class, () -> subject.track(invalidTxn));
 		assertThrows(InvalidProtocolBufferException.class, () -> subject.accessorFor(invalidTxn));
@@ -88,13 +87,15 @@ class ExpandHandleSpanTest {
 
 	@Test
 	void expandsOnTracking() {
+		given(validTxn.getContents()).willReturn(validTxnBytes);
 		assertDoesNotThrow(() -> subject.track(validTxn));
 		assertDoesNotThrow(() -> subject.accessorFor(validTxn));
 	}
 
 	@Test
 	void reExpandsIfNotCached() throws InvalidProtocolBufferException {
-		// when:
+		given(validTxn.getContents()).willReturn(validTxnBytes);
+
 		final var endAccessor = subject.accessorFor(validTxn);
 
 		verify(handleSpanMap).expandSpan(endAccessor.getDelegate());

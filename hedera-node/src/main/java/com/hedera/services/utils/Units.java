@@ -39,4 +39,9 @@ public final class Units {
 	 * Conversion factor from minutes to milliseconds
 	 */
 	public static final long MINUTES_TO_MILLISECONDS = 60_000L;
+
+	/**
+	 * Minimum size of a consensus time increment in nanoseconds
+	 */
+	public static final long MIN_TRANS_TIMESTAMP_INCR_NANOS = 1_000;
 }
