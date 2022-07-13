@@ -116,7 +116,7 @@ public class PrecompilePricingUtils {
 		}
 	}
 
-	private long getCanonicalPriceInTinyCents(GasCostType gasCostType) {
+	public long getCanonicalPriceInTinyCents(GasCostType gasCostType) {
 		return canonicalOperationCostsInTinyCents.getOrDefault(gasCostType, COST_PROHIBITIVE);
 	}
 
@@ -195,7 +195,9 @@ public class PrecompilePricingUtils {
 		ASSOCIATE(TokenAssociateToAccount, DEFAULT),
 		DISSOCIATE(TokenDissociateFromAccount, DEFAULT),
 		APPROVE(CryptoApproveAllowance, DEFAULT),
-		DELETE_NFT_APPROVE(CryptoDeleteAllowance, DEFAULT);
+		DELETE_NFT_APPROVE(CryptoDeleteAllowance, DEFAULT),
+
+		PRNG(HederaFunctionality.PRNG, DEFAULT);
 
 		final HederaFunctionality functionality;
 		final SubType subtype;
