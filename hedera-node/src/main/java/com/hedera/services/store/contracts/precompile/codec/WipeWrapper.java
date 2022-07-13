@@ -1,10 +1,5 @@
-package com.hedera.services.store.contracts.precompile.codec;
-
-/*-
- * ‌
- * Hedera Services Node
- *
- * Copyright (C) 2018 - 2022 Hedera Hashgraph, LLC
+/*
+ * Copyright (C) 2021-2022 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,33 +12,34 @@ package com.hedera.services.store.contracts.precompile.codec;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
-
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.TokenID;
-import com.hederahashgraph.api.proto.java.TokenType;
-
-import java.util.Collections;
-import java.util.List;
+package com.hedera.services.store.contracts.precompile.codec;
 
 import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
+import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.TokenID;
+import com.hederahashgraph.api.proto.java.TokenType;
+import java.util.Collections;
+import java.util.List;
+
 public record WipeWrapper(TokenID token, AccountID account, long amount, List<Long> serialNos) {
 
-	private static final long NONFUNGIBLE_WIPE_AMOUNT = -1;
-	private static final List<Long> FUNGIBLE_WIPE_SERIAL_NOS = Collections.emptyList();
+    private static final long NONFUNGIBLE_WIPE_AMOUNT = -1;
+    private static final List<Long> FUNGIBLE_WIPE_SERIAL_NOS = Collections.emptyList();
 
-	public static WipeWrapper forNonFungible(final TokenID token, final AccountID account, final List<Long> serialNos) {
-		return new WipeWrapper(token, account, NONFUNGIBLE_WIPE_AMOUNT, serialNos);
-	}
+    public static WipeWrapper forNonFungible(
+            final TokenID token, final AccountID account, final List<Long> serialNos) {
+        return new WipeWrapper(token, account, NONFUNGIBLE_WIPE_AMOUNT, serialNos);
+    }
 
-	public static WipeWrapper forFungible(final TokenID token, final AccountID account, final long amount) {
-		return new WipeWrapper(token, account, amount, FUNGIBLE_WIPE_SERIAL_NOS);
-	}
+    public static WipeWrapper forFungible(
+            final TokenID token, final AccountID account, final long amount) {
+        return new WipeWrapper(token, account, amount, FUNGIBLE_WIPE_SERIAL_NOS);
+    }
 
-	public TokenType type() {
-		return (amount == NONFUNGIBLE_WIPE_AMOUNT) ? NON_FUNGIBLE_UNIQUE : FUNGIBLE_COMMON;
-	}
+    public TokenType type() {
+        return (amount == NONFUNGIBLE_WIPE_AMOUNT) ? NON_FUNGIBLE_UNIQUE : FUNGIBLE_COMMON;
+    }
 }
