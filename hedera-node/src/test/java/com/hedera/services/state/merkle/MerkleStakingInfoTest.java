@@ -37,6 +37,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.math.BigInteger;
 
 import static com.hedera.services.ServicesState.EMPTY_HASH;
 import static com.hedera.services.state.merkle.internals.ByteUtils.getHashBytes;
@@ -222,6 +223,22 @@ class MerkleStakingInfoTest {
 
 		assertArrayEquals(new long[] { 500_002L, 2L, 1L }, subject.getRewardSumHistory());
 		assertEquals(500_000L, pendingRewardRate);
+	}
+
+	@Test
+	void usesBiArithmeticForRewardRateDownScaling() {
+		final var excessStake = 2 * subject.getMaxStake();
+		final var rewardRate = Long.MAX_VALUE / (maxStake - 1);
+		final var expectedScaledRate = BigInteger.valueOf(rewardRate)
+				.multiply(BigInteger.valueOf(maxStake))
+				.divide(BigInteger.valueOf(excessStake))
+				.longValueExact();
+
+		subject.setStakeRewardStart(excessStake);
+		final var pendingRewardRate = subject.updateRewardSumHistory(rewardRate, Long.MAX_VALUE);
+
+		assertArrayEquals(new long[] { expectedScaledRate + 2L, 2L, 1L }, subject.getRewardSumHistory());
+		assertEquals(expectedScaledRate, pendingRewardRate);
 	}
 
 	@Test

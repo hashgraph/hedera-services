@@ -140,7 +140,6 @@ public final class HfsSystemFilesManager implements SystemFilesManager {
 				log.info("Updated node{} stake to {}", nodeId, stake);
 			}
 			final var replacement = newBuilder.build();
-			System.out.println(replacement);
 			hfs.getData().put(detailsFid, replacement.toByteArray());
 		} catch (Exception e) {
 			log.error("Existing address book was missing or corrupt", e);
