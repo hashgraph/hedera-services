@@ -43,6 +43,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Objects;
 import java.util.concurrent.ExecutionException;
 
+import static com.hedera.services.ServicesState.EMPTY_HASH;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -173,9 +174,9 @@ class RecordsRunningHashLeafTest {
 		// initializes a leaf with a RunningHash
 		final var leafForTestingRunningHash = new RecordsRunningHashLeaf(runningHash1);
 		CryptoFactory.getInstance().digestSync(leafForTestingRunningHash, DigestType.SHA_384);
-		assertEquals(null, leafForTestingRunningHash.getNMinus3RunningHash().getHash());
-		assertEquals(null, leafForTestingRunningHash.getNMinus2RunningHash().getHash());
-		assertEquals(null, leafForTestingRunningHash.getNMinus1RunningHash().getHash());
+		assertEquals(EMPTY_HASH, leafForTestingRunningHash.getNMinus3RunningHash().getHash());
+		assertEquals(EMPTY_HASH, leafForTestingRunningHash.getNMinus2RunningHash().getHash());
+		assertEquals(EMPTY_HASH, leafForTestingRunningHash.getNMinus1RunningHash().getHash());
 		assertEquals(runningHash1.getHash(), leafForTestingRunningHash.getRunningHash().getHash());
 
 		// update runningHash object
@@ -184,8 +185,8 @@ class RecordsRunningHashLeafTest {
 
 		leafForTestingRunningHash.setRunningHash(runningHash2);
 		CryptoFactory.getInstance().digestSync(leafForTestingRunningHash, DigestType.SHA_384);
-		assertEquals(null, leafForTestingRunningHash.getNMinus3RunningHash().getHash());
-		assertEquals(null, leafForTestingRunningHash.getNMinus2RunningHash().getHash());
+		assertEquals(EMPTY_HASH, leafForTestingRunningHash.getNMinus3RunningHash().getHash());
+		assertEquals(EMPTY_HASH, leafForTestingRunningHash.getNMinus2RunningHash().getHash());
 		assertEquals(runningHash1.getHash(), leafForTestingRunningHash.getNMinus1RunningHash().getHash());
 		assertEquals(runningHash2.getHash(), leafForTestingRunningHash.getRunningHash().getHash());
 
@@ -195,7 +196,7 @@ class RecordsRunningHashLeafTest {
 
 		leafForTestingRunningHash.setRunningHash(runningHash3);
 		CryptoFactory.getInstance().digestSync(leafForTestingRunningHash, DigestType.SHA_384);
-		assertEquals(null, leafForTestingRunningHash.getNMinus3RunningHash().getHash());
+		assertEquals(EMPTY_HASH, leafForTestingRunningHash.getNMinus3RunningHash().getHash());
 		assertEquals(runningHash1.getHash(), leafForTestingRunningHash.getNMinus2RunningHash().getHash());
 		assertEquals(runningHash2.getHash(), leafForTestingRunningHash.getNMinus1RunningHash().getHash());
 		assertEquals(runningHash3.getHash(), leafForTestingRunningHash.getRunningHash().getHash());

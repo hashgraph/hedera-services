@@ -69,6 +69,7 @@ import com.hedera.services.stats.ServicesStatsConfig;
 import com.hedera.services.stats.StatsModule;
 import com.hedera.services.store.contracts.precompile.AbiConstants;
 import com.hedera.services.store.contracts.precompile.utils.DescriptorUtils;
+import com.hedera.services.store.contracts.precompile.utils.PrecompileUtils;
 import com.hedera.services.store.models.TopicConversion;
 import com.hedera.services.throttling.ThrottlingModule;
 import com.hedera.services.txns.consensus.ConsensusLogicModule;
@@ -175,7 +176,8 @@ class UtilsConstructorTest {
 			ByteUtils.class,
 			Units.class,
 			StakingUtils.class,
-			UtilLogicModule.class
+			UtilLogicModule.class,
+			PrecompileUtils.class
 	));
 
 	@Test
