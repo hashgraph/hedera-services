@@ -20,5 +20,7 @@ package com.hedera.services.store.contracts.precompile.codec;
  * ‍
  */
 
-public record GetApprovedWrapper(long serialNo) {
+import com.hederahashgraph.api.proto.java.TokenID;
+
+public record GetApprovedWrapper(TokenID tokenId, long serialNo) {
 }

@@ -21,6 +21,7 @@ package com.hedera.services.store.contracts.precompile.codec;
  */
 
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.TokenID;
 
-public record IsApproveForAllWrapper(AccountID owner, AccountID operator) {
+public record IsApproveForAllWrapper(TokenID tokenId, AccountID owner, AccountID operator) {
 }
