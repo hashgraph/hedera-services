@@ -70,7 +70,7 @@ public class HederaStackedWorldStateUpdater
 		this.dynamicProperties = dynamicProperties;
 	}
 
-	public boolean hasMutableLedgers() {
+	public boolean isInTransaction() {
 		return trackingLedgers().areMutable();
 	}
 
