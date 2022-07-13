@@ -48,6 +48,7 @@ import java.nio.file.Path;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.IntStream;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang3.ArrayUtils;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.hyperledger.besu.crypto.Hash;
@@ -66,16 +67,28 @@ public class Utils {
         return ByteString.copyFrom(Bytes32.fromHexStringLenient(Long.toHexString(n)).toArray());
     }
 
-    public static Byte[] asAddress(final TokenID id) {
+    public static Byte[] asByteAddress(final TokenID id) {
         return asSolidityAddress((int) id.getShardNum(), id.getRealmNum(), id.getTokenNum());
     }
 
-    public static Byte[] asAddress(final AccountID id) {
+    public static byte[] asAddress(final TokenID id) {
+        return ArrayUtils.toPrimitive(asByteAddress(id));
+    }
+
+    public static Byte[] asByteAddress(final AccountID id) {
         return asSolidityAddress((int) id.getShardNum(), id.getRealmNum(), id.getAccountNum());
     }
 
-    public static Byte[] asAddress(final ContractID id) {
+    public static byte[] asAddress(final AccountID id) {
+        return ArrayUtils.toPrimitive(asByteAddress(id));
+    }
+
+    public static Byte[] asByteAddress(final ContractID id) {
         return asSolidityAddress((int) id.getShardNum(), id.getRealmNum(), id.getContractNum());
+    }
+
+    public static byte[] asAddress(final ContractID id) {
+        return ArrayUtils.toPrimitive(asByteAddress(id));
     }
 
     public static Byte[] asSolidityAddress(final int shard, final long realm, final long num) {
