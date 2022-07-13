@@ -64,10 +64,12 @@ public class OnlyIfSigVerifiableValid implements BiPredicate<JKey, TransactionSi
 		} else if (status == INVALID) {
 			return false;
 		} else {
-			/* Somehow handleTransaction() was called with a sig with UNKNOWN status; should happen almost never */
+			// This case happens when we expanded a signature during preHandle() using a key no longer
+			// linked to the transaction (e.g. the key of an account that did a key rotation earlier in
+			// this round)---we have no choice but to verify the signature synchronously
 			try {
 				syncVerifier.verifySync(List.of(sig));
-				/* Only try one sync verification */
+				// Only try one sync verification
 				return sig.getSignatureStatus() == VALID;
 			} catch (CryptographyException ignore) {
 				return false;
