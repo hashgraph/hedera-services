@@ -24,14 +24,19 @@ import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.sigs.verification.SyncVerifier;
 import com.swirlds.common.crypto.CryptographyException;
 import com.swirlds.common.crypto.TransactionSignature;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.util.List;
+import java.util.concurrent.ExecutionException;
 import java.util.function.BiPredicate;
 
 import static com.swirlds.common.crypto.VerificationStatus.INVALID;
 import static com.swirlds.common.crypto.VerificationStatus.VALID;
 
 public class OnlyIfSigVerifiableValid implements BiPredicate<JKey, TransactionSignature> {
+	private static final Logger log = LogManager.getLogger(OnlyIfSigVerifiableValid.class);
+
 	private final SyncVerifier syncVerifier;
 
 	public OnlyIfSigVerifiableValid(SyncVerifier syncVerifier) {
@@ -39,7 +44,20 @@ public class OnlyIfSigVerifiableValid implements BiPredicate<JKey, TransactionSi
 	}
 
 	@Override
-	public boolean test(JKey ignoredKey, TransactionSignature sig) {
+	public boolean test(final JKey ignoredKey, final TransactionSignature sig) {
+		var statusUnknown = true;
+		try {
+			sig.waitForFuture().get();
+			statusUnknown = false;
+		} catch (final InterruptedException ignore) {
+			log.warn("Interrupted while validating signature, this will be fatal outside reconnect");
+			Thread.currentThread().interrupt();
+		} catch (final ExecutionException e) {
+			log.error("Erred while validating signature, this is likely fatal", e);
+		}
+		if (statusUnknown) {
+			return false;
+		}
 		var status = sig.getSignatureStatus();
 		if (status == VALID) {
 			return true;
