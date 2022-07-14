@@ -35,4 +35,12 @@
     "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
     "stateMutability": "view", "type": "function", "constant": true
   },
+  {
+    "inputs":[{"name":"from","type":"address"},{"name":"to","type":"address"},{"name":"tokenId","type":"uint256"}],
+    "name":"transferFrom",
+    "outputs":[{
+      "name": "",
+      "type": "bool"
+    }],
+    "stateMutability":"nonpayable","type":"function"}
 ]
