@@ -23,7 +23,6 @@ package com.hedera.services.contracts.execution;
  */
 
 import com.hedera.services.state.submerkle.EvmFnResult;
-import com.hedera.services.stream.proto.ContractActions;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import com.hederahashgraph.api.proto.java.ContractID;
 import java.util.Collections;

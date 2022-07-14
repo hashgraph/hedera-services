@@ -90,14 +90,16 @@ public class HederaTracer implements HederaOperationTracer {
 
 	@Override
 	public void tracePrecompileResult(final MessageFrame frame, final ContractActionType type) {
-		final var lastAction = currentActionsStack.pop();
-		// specialize the call type - precompile or system (Hedera precompile contracts)
-		lastAction.setCallType(type);
-		// we have to null out recipient account and set recipient contract
-		lastAction.setRecipientAccount(null);
-		lastAction.setRecipientContract(EntityId.fromAddress(frame.getContractAddress()));
+		if (areActionSidecarsEnabled) {
+			final var lastAction = currentActionsStack.pop();
+			// specialize the call type - precompile or system (Hedera precompile contracts)
+			lastAction.setCallType(type);
+			// we have to null out recipient account and set recipient contract
+			lastAction.setRecipientAccount(null);
+			lastAction.setRecipientContract(EntityId.fromAddress(frame.getContractAddress()));
 
-		finalizeActionFor(lastAction, frame, frame.getState());
+			finalizeActionFor(lastAction, frame, frame.getState());
+		}
 	}
 
 	private void trackActionFor(final MessageFrame frame, final int callDepth) {

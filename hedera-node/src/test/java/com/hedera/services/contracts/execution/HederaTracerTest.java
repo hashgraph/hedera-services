@@ -367,6 +367,17 @@ class HederaTracerTest {
     }
 
     @Test
+    void finalizesSystemPrecompileCallAsExpectedWhenActionsNotEnabled() {
+        // given
+        subject.reset(false);
+        // when
+        subject.traceExecution(messageFrame, eo);
+        subject.tracePrecompileResult(messageFrame, ContractActionType.SYSTEM);
+        // then
+        assertTrue(subject.getFinalizedActions().isEmpty());
+    }
+
+    @Test
     void traceAccountCreationResult() {
         final var haltReason = Optional.of(INVALID_SOLIDITY_ADDRESS);
 
