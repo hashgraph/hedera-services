@@ -20,26 +20,32 @@ package com.hedera.services.contracts.operation;
  * ‍
  */
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
 @ExtendWith(MockitoExtension.class)
 class HederaExceptionalHaltReasonTest {
-	HederaExceptionalHaltReason subject;
+    HederaExceptionalHaltReason subject;
 
-	@BeforeEach
-	void setUp() {
-		subject = new HederaExceptionalHaltReason();
-	}
+    @BeforeEach
+    void setUp() {
+        subject = new HederaExceptionalHaltReason();
+    }
 
-	@Test
-	void instance() {
-		assertEquals("Invalid account reference", HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS.getDescription());
-		assertEquals("Self destruct to the same address", HederaExceptionalHaltReason.SELF_DESTRUCT_TO_SELF.getDescription());
-		assertEquals("Invalid signature", HederaExceptionalHaltReason.INVALID_SIGNATURE.getDescription());
-	}
+    @Test
+    void instance() {
+        assertEquals(
+                "Invalid account reference",
+                HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS.getDescription());
+        assertEquals(
+                "Self destruct to the same address",
+                HederaExceptionalHaltReason.SELF_DESTRUCT_TO_SELF.getDescription());
+        assertEquals(
+                "Invalid signature",
+                HederaExceptionalHaltReason.INVALID_SIGNATURE.getDescription());
+    }
 }

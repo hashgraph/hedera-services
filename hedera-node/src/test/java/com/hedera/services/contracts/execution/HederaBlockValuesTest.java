@@ -23,6 +23,8 @@ package com.hedera.services.contracts.execution;
  */
 
 import com.hedera.services.state.merkle.MerkleNetworkContext;
+import java.time.Instant;
+import java.util.Optional;
 import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Wei;
 import org.junit.jupiter.api.Assertions;
@@ -31,15 +33,11 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.time.Instant;
-import java.util.Optional;
-
 @ExtendWith(MockitoExtension.class)
 class HederaBlockValuesTest {
     HederaBlockValues subject;
 
-    @Mock
-    private MerkleNetworkContext merkleNetworkContext;
+    @Mock private MerkleNetworkContext merkleNetworkContext;
 
     @Test
     void instancing() {

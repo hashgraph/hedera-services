@@ -22,26 +22,25 @@ package com.hedera.services.contracts.execution;
  *
  */
 
-
+import java.util.Optional;
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.tracing.OperationTracer;
 
-import java.util.Optional;
-
 /**
- * Custom {@link OperationTracer} that populates exceptional halt reasons in the {@link MessageFrame}
+ * Custom {@link OperationTracer} that populates exceptional halt reasons in the {@link
+ * MessageFrame}
  */
 public class HederaTracer implements OperationTracer {
 
-	@Override
-	public void traceExecution(MessageFrame frame, ExecuteOperation executeOperation) {
-		executeOperation.execute();
-	}
+    @Override
+    public void traceExecution(MessageFrame frame, ExecuteOperation executeOperation) {
+        executeOperation.execute();
+    }
 
-	@Override
-	public void traceAccountCreationResult(
-			final MessageFrame frame, final Optional<ExceptionalHaltReason> haltReason) {
-		frame.setExceptionalHaltReason(haltReason);
-	}
+    @Override
+    public void traceAccountCreationResult(
+            final MessageFrame frame, final Optional<ExceptionalHaltReason> haltReason) {
+        frame.setExceptionalHaltReason(haltReason);
+    }
 }

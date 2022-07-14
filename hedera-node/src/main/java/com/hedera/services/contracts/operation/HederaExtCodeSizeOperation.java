@@ -22,39 +22,38 @@ package com.hedera.services.contracts.operation;
  *
  */
 
+import java.util.function.BiPredicate;
+import javax.inject.Inject;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.EVM;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.operation.ExtCodeSizeOperation;
 
-import javax.inject.Inject;
-import java.util.function.BiPredicate;
-
 /**
  * Hedera adapted version of the {@link ExtCodeSizeOperation}.
  *
- * Performs an existence check on the requested {@link Address}
- * Halts the execution of the EVM transaction with {@link HederaExceptionalHaltReason#INVALID_SOLIDITY_ADDRESS} if
- * the account does not exist or it is deleted.
+ * <p>Performs an existence check on the requested {@link Address} Halts the execution of the EVM
+ * transaction with {@link HederaExceptionalHaltReason#INVALID_SOLIDITY_ADDRESS} if the account does
+ * not exist or it is deleted.
  */
 public class HederaExtCodeSizeOperation extends ExtCodeSizeOperation {
-	private final BiPredicate<Address, MessageFrame> addressValidator;
+    private final BiPredicate<Address, MessageFrame> addressValidator;
 
-	@Inject
-	public HederaExtCodeSizeOperation(GasCalculator gasCalculator,
-									  BiPredicate<Address, MessageFrame> addressValidator) {
-		super(gasCalculator);
-		this.addressValidator = addressValidator;
-	}
+    @Inject
+    public HederaExtCodeSizeOperation(
+            GasCalculator gasCalculator, BiPredicate<Address, MessageFrame> addressValidator) {
+        super(gasCalculator);
+        this.addressValidator = addressValidator;
+    }
 
-	@Override
-	public OperationResult execute(MessageFrame frame, EVM evm) {
-		return HederaOperationUtil.addressCheckExecution(
-				frame,
-				() -> frame.getStackItem(0),
-				() -> cost(true),
-				() -> super.execute(frame, evm),
-				addressValidator);
-	}
+    @Override
+    public OperationResult execute(MessageFrame frame, EVM evm) {
+        return HederaOperationUtil.addressCheckExecution(
+                frame,
+                () -> frame.getStackItem(0),
+                () -> cost(true),
+                () -> super.execute(frame, evm),
+                addressValidator);
+    }
 }

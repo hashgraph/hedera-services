@@ -22,6 +22,9 @@ package com.hedera.services.contracts.execution;
  *
  */
 
+import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
+
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.store.contracts.CodeCache;
@@ -29,6 +32,11 @@ import com.hedera.services.store.contracts.HederaMutableWorldState;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.txns.contract.helpers.StorageExpiry;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import java.time.Instant;
+import java.util.Map;
+import java.util.Set;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.frame.MessageFrame;
@@ -36,109 +44,97 @@ import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.operation.Operation;
 import org.hyperledger.besu.evm.precompile.PrecompiledContract;
 
-import javax.inject.Inject;
-import javax.inject.Singleton;
-import java.time.Instant;
-import java.util.Map;
-import java.util.Set;
-
-import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
-
 /**
- * Extension of the base {@link EvmTxProcessor} that provides interface for
- * executing {@link com.hederahashgraph.api.proto.java.ContractCallLocal} queries
+ * Extension of the base {@link EvmTxProcessor} that provides interface for executing {@link
+ * com.hederahashgraph.api.proto.java.ContractCallLocal} queries
  */
 @Singleton
 public class CallLocalEvmTxProcessor extends EvmTxProcessor {
-	private final CodeCache codeCache;
-	private final AliasManager aliasManager;
-	private final StorageExpiry storageExpiry;
+    private final CodeCache codeCache;
+    private final AliasManager aliasManager;
+    private final StorageExpiry storageExpiry;
 
-	@Inject
-	public CallLocalEvmTxProcessor(
-			final CodeCache codeCache,
-			final LivePricesSource livePricesSource,
-			final GlobalDynamicProperties dynamicProperties,
-			final GasCalculator gasCalculator,
-			final Set<Operation> hederaOperations,
-			final Map<String, PrecompiledContract> precompiledContractMap,
-			final AliasManager aliasManager,
-			final StorageExpiry storageExpiry
-	) {
-		super(
-				livePricesSource,
-				dynamicProperties,
-				gasCalculator,
-				hederaOperations,
-				precompiledContractMap);
-		this.codeCache = codeCache;
-		this.aliasManager = aliasManager;
-		this.storageExpiry = storageExpiry;
-	}
+    @Inject
+    public CallLocalEvmTxProcessor(
+            final CodeCache codeCache,
+            final LivePricesSource livePricesSource,
+            final GlobalDynamicProperties dynamicProperties,
+            final GasCalculator gasCalculator,
+            final Set<Operation> hederaOperations,
+            final Map<String, PrecompiledContract> precompiledContractMap,
+            final AliasManager aliasManager,
+            final StorageExpiry storageExpiry) {
+        super(
+                livePricesSource,
+                dynamicProperties,
+                gasCalculator,
+                hederaOperations,
+                precompiledContractMap);
+        this.codeCache = codeCache;
+        this.aliasManager = aliasManager;
+        this.storageExpiry = storageExpiry;
+    }
 
-	@Override
-	public void setWorldState(final HederaMutableWorldState worldState) {
-		super.setWorldState(worldState);
-	}
+    @Override
+    public void setWorldState(final HederaMutableWorldState worldState) {
+        super.setWorldState(worldState);
+    }
 
-	@Override
-	public void setBlockMetaSource(BlockMetaSource blockMetaSource) {
-		super.setBlockMetaSource(blockMetaSource);
-	}
+    @Override
+    public void setBlockMetaSource(BlockMetaSource blockMetaSource) {
+        super.setBlockMetaSource(blockMetaSource);
+    }
 
-	@Override
-	protected HederaFunctionality getFunctionType() {
-		return HederaFunctionality.ContractCallLocal;
-	}
+    @Override
+    protected HederaFunctionality getFunctionType() {
+        return HederaFunctionality.ContractCallLocal;
+    }
 
-	public TransactionProcessingResult execute(
-			final Account sender,
-			final Address receiver,
-			final long providedGasLimit,
-			final long value,
-			final Bytes callData,
-			final Instant consensusTime
-	) {
-		final long gasPrice = 1;
+    public TransactionProcessingResult execute(
+            final Account sender,
+            final Address receiver,
+            final long providedGasLimit,
+            final long value,
+            final Bytes callData,
+            final Instant consensusTime) {
+        final long gasPrice = 1;
 
-		return super.execute(
-				sender,
-				receiver,
-				gasPrice,
-				providedGasLimit,
-				value,
-				callData,
-				false,
-				consensusTime,
-				true,
-				storageExpiry.hapiStaticCallOracle(),
-				aliasManager.resolveForEvm(receiver),
-				null,
-				0,
-				null);
-	}
+        return super.execute(
+                sender,
+                receiver,
+                gasPrice,
+                providedGasLimit,
+                value,
+                callData,
+                false,
+                consensusTime,
+                true,
+                storageExpiry.hapiStaticCallOracle(),
+                aliasManager.resolveForEvm(receiver),
+                null,
+                0,
+                null);
+    }
 
-	@Override
-	protected MessageFrame buildInitialFrame(
-			final MessageFrame.Builder baseInitialFrame,
-			final Address to,
-			final Bytes payload,
-			final long value
-	) {
-		final var code = codeCache.getIfPresent(aliasManager.resolveForEvm(to));
-		/* It's possible we are racing the handleTransaction() thread, and the target contract's
-		 * _account_ has been created, but not yet its _bytecode_. So if `code` is null here,
-		 * it doesn't mean a system invariant has been violated (FAIL_INVALID); instead it means
-		 * the target contract is not yet in a valid state to be queried (INVALID_CONTRACT_ID). */
-		validateTrue(code != null, INVALID_CONTRACT_ID);
+    @Override
+    protected MessageFrame buildInitialFrame(
+            final MessageFrame.Builder baseInitialFrame,
+            final Address to,
+            final Bytes payload,
+            final long value) {
+        final var code = codeCache.getIfPresent(aliasManager.resolveForEvm(to));
+        /* It's possible we are racing the handleTransaction() thread, and the target contract's
+         * _account_ has been created, but not yet its _bytecode_. So if `code` is null here,
+         * it doesn't mean a system invariant has been violated (FAIL_INVALID); instead it means
+         * the target contract is not yet in a valid state to be queried (INVALID_CONTRACT_ID). */
+        validateTrue(code != null, INVALID_CONTRACT_ID);
 
-		return baseInitialFrame
-				.type(MessageFrame.Type.MESSAGE_CALL)
-				.address(to)
-				.contract(to)
-				.inputData(payload)
-				.code(code)
-				.build();
-	}
+        return baseInitialFrame
+                .type(MessageFrame.Type.MESSAGE_CALL)
+                .address(to)
+                .contract(to)
+                .inputData(payload)
+                .code(code)
+                .build();
+    }
 }

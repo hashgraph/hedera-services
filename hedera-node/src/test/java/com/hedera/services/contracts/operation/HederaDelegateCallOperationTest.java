@@ -22,6 +22,17 @@ package com.hedera.services.contracts.operation;
  *
  */
 
+import static com.hedera.services.contracts.operation.CommonCallSetup.commonSetup;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.lenient;
+
+import java.util.Optional;
+import java.util.function.BiPredicate;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
@@ -36,88 +47,72 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.util.Optional;
-import java.util.function.BiPredicate;
-
-import static com.hedera.services.contracts.operation.CommonCallSetup.commonSetup;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyBoolean;
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.lenient;
-
 @ExtendWith(MockitoExtension.class)
 class HederaDelegateCallOperationTest {
 
-	@Mock
-	private GasCalculator calc;
-	@Mock
-	private MessageFrame evmMsgFrame;
-	@Mock
-	private EVM evm;
-	@Mock
-	private WorldUpdater worldUpdater;
-	@Mock
-	private Account acc;
-	@Mock
-	private BiPredicate<Address, MessageFrame> addressValidator;
+    @Mock private GasCalculator calc;
+    @Mock private MessageFrame evmMsgFrame;
+    @Mock private EVM evm;
+    @Mock private WorldUpdater worldUpdater;
+    @Mock private Account acc;
+    @Mock private BiPredicate<Address, MessageFrame> addressValidator;
 
-	private final long cost = 100L;
-	
-	private HederaDelegateCallOperation subject;
+    private final long cost = 100L;
 
-	@BeforeEach
-	void setup() {
-		subject = new HederaDelegateCallOperation(calc, addressValidator);
-		commonSetup(evmMsgFrame, worldUpdater, acc);
-	}
+    private HederaDelegateCallOperation subject;
 
-	@Test
-	void haltWithInvalidAddr() {
-		given(worldUpdater.get(any())).willReturn(null);
-		given(calc.callOperationGasCost(
-				any(), anyLong(), anyLong(),
-				anyLong(), anyLong(), anyLong(),
-				any(), any(), any())
-		).willReturn(cost);
-		given(evmMsgFrame.getStackItem(0)).willReturn(Bytes.EMPTY);
-		given(evmMsgFrame.getStackItem(1)).willReturn(Bytes.EMPTY);
-		given(evmMsgFrame.getStackItem(2)).willReturn(Bytes.EMPTY);
-		given(evmMsgFrame.getStackItem(3)).willReturn(Bytes.EMPTY);
-		given(evmMsgFrame.getStackItem(4)).willReturn(Bytes.EMPTY);
-		given(evmMsgFrame.getStackItem(5)).willReturn(Bytes.EMPTY);
-		given(addressValidator.test(any(), any())).willReturn(false);
+    @BeforeEach
+    void setup() {
+        subject = new HederaDelegateCallOperation(calc, addressValidator);
+        commonSetup(evmMsgFrame, worldUpdater, acc);
+    }
 
-		var opRes = subject.execute(evmMsgFrame, evm);
+    @Test
+    void haltWithInvalidAddr() {
+        given(worldUpdater.get(any())).willReturn(null);
+        given(
+                        calc.callOperationGasCost(
+                                any(), anyLong(), anyLong(), anyLong(), anyLong(), anyLong(), any(),
+                                any(), any()))
+                .willReturn(cost);
+        given(evmMsgFrame.getStackItem(0)).willReturn(Bytes.EMPTY);
+        given(evmMsgFrame.getStackItem(1)).willReturn(Bytes.EMPTY);
+        given(evmMsgFrame.getStackItem(2)).willReturn(Bytes.EMPTY);
+        given(evmMsgFrame.getStackItem(3)).willReturn(Bytes.EMPTY);
+        given(evmMsgFrame.getStackItem(4)).willReturn(Bytes.EMPTY);
+        given(evmMsgFrame.getStackItem(5)).willReturn(Bytes.EMPTY);
+        given(addressValidator.test(any(), any())).willReturn(false);
 
-		assertEquals(opRes.getHaltReason(), Optional.of(HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS));
-		assertTrue(opRes.getGasCost().isPresent());
-		assertEquals(opRes.getGasCost().getAsLong(), cost);
-	}
+        var opRes = subject.execute(evmMsgFrame, evm);
 
-	@Test
-	void executesAsExpected() {
-		given(calc.callOperationGasCost(
-				any(), anyLong(), anyLong(),
-				anyLong(), anyLong(), anyLong(),
-				any(), any(), any())
-		).willReturn(cost);
-		for (int i = 0; i < 10; i++) {
-			lenient().when(evmMsgFrame.getStackItem(i)).thenReturn(Bytes.ofUnsignedInt(10));
-		}
-		given(evmMsgFrame.stackSize()).willReturn(20);
-		given(evmMsgFrame.getRemainingGas()).willReturn(cost);
-		given(evmMsgFrame.getMessageStackDepth()).willReturn(1025);
-		given(worldUpdater.get(any())).willReturn(acc);
-		given(acc.getBalance()).willReturn(Wei.of(100));
-		given(calc.gasAvailableForChildCall(any(), anyLong(), anyBoolean())).willReturn(10L);
-		given(addressValidator.test(any(), any())).willReturn(true);
+        assertEquals(
+                opRes.getHaltReason(),
+                Optional.of(HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS));
+        assertTrue(opRes.getGasCost().isPresent());
+        assertEquals(opRes.getGasCost().getAsLong(), cost);
+    }
 
-		var opRes = subject.execute(evmMsgFrame, evm);
-		assertEquals(Optional.empty(), opRes.getHaltReason());
-		assertTrue(opRes.getGasCost().isPresent());
-		assertEquals(opRes.getGasCost().getAsLong(), cost);
-	}
+    @Test
+    void executesAsExpected() {
+        given(
+                        calc.callOperationGasCost(
+                                any(), anyLong(), anyLong(), anyLong(), anyLong(), anyLong(), any(),
+                                any(), any()))
+                .willReturn(cost);
+        for (int i = 0; i < 10; i++) {
+            lenient().when(evmMsgFrame.getStackItem(i)).thenReturn(Bytes.ofUnsignedInt(10));
+        }
+        given(evmMsgFrame.stackSize()).willReturn(20);
+        given(evmMsgFrame.getRemainingGas()).willReturn(cost);
+        given(evmMsgFrame.getMessageStackDepth()).willReturn(1025);
+        given(worldUpdater.get(any())).willReturn(acc);
+        given(acc.getBalance()).willReturn(Wei.of(100));
+        given(calc.gasAvailableForChildCall(any(), anyLong(), anyBoolean())).willReturn(10L);
+        given(addressValidator.test(any(), any())).willReturn(true);
+
+        var opRes = subject.execute(evmMsgFrame, evm);
+        assertEquals(Optional.empty(), opRes.getHaltReason());
+        assertTrue(opRes.getGasCost().isPresent());
+        assertEquals(opRes.getGasCost().getAsLong(), cost);
+    }
 }

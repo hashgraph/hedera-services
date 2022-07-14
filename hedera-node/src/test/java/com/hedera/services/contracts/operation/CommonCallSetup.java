@@ -22,20 +22,16 @@ package com.hedera.services.contracts.operation;
  *
  */
 
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.BDDMockito.given;
+
 import org.hyperledger.besu.evm.account.Account;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.worldstate.WorldUpdater;
 
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.BDDMockito.given;
-
 public class CommonCallSetup {
-	static void commonSetup(
-			MessageFrame evmMsgFrame,
-			WorldUpdater worldUpdater,
-			Account acc
-	) {
-		given(evmMsgFrame.getWorldUpdater()).willReturn(worldUpdater);
-		given(worldUpdater.get(any())).willReturn(acc);
-	}
+    static void commonSetup(MessageFrame evmMsgFrame, WorldUpdater worldUpdater, Account acc) {
+        given(evmMsgFrame.getWorldUpdater()).willReturn(worldUpdater);
+        given(worldUpdater.get(any())).willReturn(acc);
+    }
 }

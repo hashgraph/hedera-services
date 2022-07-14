@@ -22,6 +22,8 @@ package com.hedera.services.contracts.gascalculator;
  *
  */
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.fees.calculation.UsagePricesProvider;
@@ -32,42 +34,41 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
 @ExtendWith(MockitoExtension.class)
 class GasCalculatorHederaV22Test {
     GasCalculatorHederaV22 subject;
 
-    @Mock
-    GlobalDynamicProperties globalDynamicProperties;
+    @Mock GlobalDynamicProperties globalDynamicProperties;
 
-    @Mock
-    UsagePricesProvider usagePricesProvider;
+    @Mock UsagePricesProvider usagePricesProvider;
 
-    @Mock
-    HbarCentExchange hbarCentExchange;
+    @Mock HbarCentExchange hbarCentExchange;
 
     @BeforeEach
     void setUp() {
-        subject = new GasCalculatorHederaV22(globalDynamicProperties, usagePricesProvider, hbarCentExchange);
+        subject =
+                new GasCalculatorHederaV22(
+                        globalDynamicProperties, usagePricesProvider, hbarCentExchange);
     }
 
     @Test
     void gasDepositCost() {
-//        assertEquals(200 * 37, subject.codeDepositGasCost(37));
+        //        assertEquals(200 * 37, subject.codeDepositGasCost(37));
         assertEquals(0L, subject.codeDepositGasCost(37));
     }
 
     @Test
     void transactionIntrinsicGasCost() {
-        assertEquals(4 * 2 +  // zero byte cost
-                     16 * 3 +  // non-zero byte cost
-                     21_000L,   // base TX cost
+        assertEquals(
+                4 * 2 + // zero byte cost
+                        16 * 3 + // non-zero byte cost
+                        21_000L, // base TX cost
                 subject.transactionIntrinsicGasCost(Bytes.of(0, 1, 2, 3, 0), false));
-        assertEquals(4 * 3 +  // zero byte cost
-                     16 * 2 +  // non-zero byte cost
-                     21_000L + // base TX cost
-                     32_000L,   // contract creation base cost
+        assertEquals(
+                4 * 3 + // zero byte cost
+                        16 * 2 + // non-zero byte cost
+                        21_000L + // base TX cost
+                        32_000L, // contract creation base cost
                 subject.transactionIntrinsicGasCost(Bytes.of(0, 1, 0, 3, 0), true));
     }
 }

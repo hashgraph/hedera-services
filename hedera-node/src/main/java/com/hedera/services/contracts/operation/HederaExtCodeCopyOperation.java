@@ -22,47 +22,44 @@ package com.hedera.services.contracts.operation;
  *
  */
 
+import static org.hyperledger.besu.evm.internal.Words.clampedToLong;
+
+import java.util.function.BiPredicate;
+import javax.inject.Inject;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.EVM;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.operation.ExtCodeCopyOperation;
 
-import javax.inject.Inject;
-import java.util.function.BiPredicate;
-
-import static org.hyperledger.besu.evm.internal.Words.clampedToLong;
-
 /**
  * Hedera adapted version of the {@link ExtCodeCopyOperation}.
  *
- * Performs an existence check on the requested {@link Address}
- * Halts the execution of the EVM transaction with {@link HederaExceptionalHaltReason#INVALID_SOLIDITY_ADDRESS} if
- * the account does not exist or it is deleted.
- *
+ * <p>Performs an existence check on the requested {@link Address} Halts the execution of the EVM
+ * transaction with {@link HederaExceptionalHaltReason#INVALID_SOLIDITY_ADDRESS} if the account does
+ * not exist or it is deleted.
  */
 public class HederaExtCodeCopyOperation extends ExtCodeCopyOperation {
 
-	private final BiPredicate<Address, MessageFrame> addressValidator;
+    private final BiPredicate<Address, MessageFrame> addressValidator;
 
-	@Inject
-	public HederaExtCodeCopyOperation(GasCalculator gasCalculator,
-									  BiPredicate<Address, MessageFrame> addressValidator) {
-		super(gasCalculator);
-		this.addressValidator = addressValidator;
-	}
+    @Inject
+    public HederaExtCodeCopyOperation(
+            GasCalculator gasCalculator, BiPredicate<Address, MessageFrame> addressValidator) {
+        super(gasCalculator);
+        this.addressValidator = addressValidator;
+    }
 
-	@Override
-	public OperationResult execute(MessageFrame frame, EVM evm) {
-		final long memOffset = clampedToLong(frame.getStackItem(1));
-		final long numBytes = clampedToLong(frame.getStackItem(3));
+    @Override
+    public OperationResult execute(MessageFrame frame, EVM evm) {
+        final long memOffset = clampedToLong(frame.getStackItem(1));
+        final long numBytes = clampedToLong(frame.getStackItem(3));
 
-		return HederaOperationUtil.addressCheckExecution(
-				frame,
-				() -> frame.getStackItem(0),
-				() -> cost(frame, memOffset, numBytes, true),
-				() -> super.execute(frame, evm),
-				addressValidator
-		);
-	}
+        return HederaOperationUtil.addressCheckExecution(
+                frame,
+                () -> frame.getStackItem(0),
+                () -> cost(frame, memOffset, numBytes, true),
+                () -> super.execute(frame, evm),
+                addressValidator);
+    }
 }

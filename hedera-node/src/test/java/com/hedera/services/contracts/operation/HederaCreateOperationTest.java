@@ -22,6 +22,8 @@ package com.hedera.services.contracts.operation;
  *
  */
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.BDDMockito.given;
 
 import com.hedera.services.contracts.gascalculator.StorageGasCalculator;
 import com.hedera.services.records.RecordsHistorian;
@@ -38,60 +40,56 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.BDDMockito.given;
-
 @ExtendWith(MockitoExtension.class)
 class HederaCreateOperationTest {
-	private static final long baseGas = 100L;
-	private static final long extraGas = 101L;
-	
-	private final Address recipientAddr = Address.fromHexString("0x0102030405060708090a0b0c0d0e0f1011121314");
+    private static final long baseGas = 100L;
+    private static final long extraGas = 101L;
 
-	@Mock
-	private MessageFrame frame;
-	@Mock
-	private GasCalculator gasCalculator;
-	@Mock
-	private HederaWorldUpdater hederaWorldUpdater;
-	@Mock
-	private SyntheticTxnFactory syntheticTxnFactory;
-	@Mock
-	private EntityCreator creator;
-	@Mock
-	private RecordsHistorian recordsHistorian;
-	@Mock
-	private StorageGasCalculator storageGasCalculator;
+    private final Address recipientAddr =
+            Address.fromHexString("0x0102030405060708090a0b0c0d0e0f1011121314");
 
-	private HederaCreateOperation subject;
+    @Mock private MessageFrame frame;
+    @Mock private GasCalculator gasCalculator;
+    @Mock private HederaWorldUpdater hederaWorldUpdater;
+    @Mock private SyntheticTxnFactory syntheticTxnFactory;
+    @Mock private EntityCreator creator;
+    @Mock private RecordsHistorian recordsHistorian;
+    @Mock private StorageGasCalculator storageGasCalculator;
 
-	@BeforeEach
-	void setup() {
-		subject = new HederaCreateOperation(
-				gasCalculator, creator, syntheticTxnFactory, recordsHistorian, storageGasCalculator);
-	}
+    private HederaCreateOperation subject;
 
-	@Test
-	void isAlwaysEnabled() {
-		Assertions.assertTrue(subject.isEnabled());
-	}
+    @BeforeEach
+    void setup() {
+        subject =
+                new HederaCreateOperation(
+                        gasCalculator,
+                        creator,
+                        syntheticTxnFactory,
+                        recordsHistorian,
+                        storageGasCalculator);
+    }
 
-	@Test
-	void computesExpectedCost() {
-		given(gasCalculator.createOperationGasCost(frame)).willReturn(baseGas);
-		given(storageGasCalculator.creationGasCost(frame, gasCalculator)).willReturn(extraGas);
+    @Test
+    void isAlwaysEnabled() {
+        Assertions.assertTrue(subject.isEnabled());
+    }
 
-		var actualGas = subject.cost(frame);
+    @Test
+    void computesExpectedCost() {
+        given(gasCalculator.createOperationGasCost(frame)).willReturn(baseGas);
+        given(storageGasCalculator.creationGasCost(frame, gasCalculator)).willReturn(extraGas);
 
-		assertEquals(baseGas + extraGas, actualGas);
-	}
+        var actualGas = subject.cost(frame);
 
-	@Test
-	void computesExpectedTargetAddress() {
-		given(frame.getWorldUpdater()).willReturn(hederaWorldUpdater);
-		given(frame.getRecipientAddress()).willReturn(recipientAddr);
-		given(hederaWorldUpdater.newContractAddress(recipientAddr)).willReturn(Address.ZERO);
-		var targetAddr = subject.targetContractAddress(frame);
-		assertEquals(Address.ZERO, targetAddr);
-	}
+        assertEquals(baseGas + extraGas, actualGas);
+    }
+
+    @Test
+    void computesExpectedTargetAddress() {
+        given(frame.getWorldUpdater()).willReturn(hederaWorldUpdater);
+        given(frame.getRecipientAddress()).willReturn(recipientAddr);
+        given(hederaWorldUpdater.newContractAddress(recipientAddr)).willReturn(Address.ZERO);
+        var targetAddr = subject.targetContractAddress(frame);
+        assertEquals(Address.ZERO, targetAddr);
+    }
 }

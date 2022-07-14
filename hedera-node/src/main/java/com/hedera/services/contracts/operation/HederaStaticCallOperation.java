@@ -23,6 +23,9 @@ package com.hedera.services.contracts.operation;
  */
 
 import com.hedera.services.contracts.sources.EvmSigsVerifier;
+import java.util.Map;
+import java.util.function.BiPredicate;
+import javax.inject.Inject;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.EVM;
 import org.hyperledger.besu.evm.frame.MessageFrame;
@@ -30,43 +33,39 @@ import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.operation.StaticCallOperation;
 import org.hyperledger.besu.evm.precompile.PrecompiledContract;
 
-import javax.inject.Inject;
-import java.util.Map;
-import java.util.function.BiPredicate;
-
 /**
  * Hedera adapted version of the {@link StaticCallOperation}.
  *
- * Performs an existence check on the {@link Address} to be called
- * Halts the execution of the EVM transaction with {@link HederaExceptionalHaltReason#INVALID_SOLIDITY_ADDRESS} if
- * the account does not exist or it is deleted.
+ * <p>Performs an existence check on the {@link Address} to be called Halts the execution of the EVM
+ * transaction with {@link HederaExceptionalHaltReason#INVALID_SOLIDITY_ADDRESS} if the account does
+ * not exist or it is deleted.
  */
 public class HederaStaticCallOperation extends StaticCallOperation {
-	private final EvmSigsVerifier sigsVerifier;
-	private final BiPredicate<Address, MessageFrame> addressValidator;
-	private final Map<String, PrecompiledContract> precompiledContractMap;
+    private final EvmSigsVerifier sigsVerifier;
+    private final BiPredicate<Address, MessageFrame> addressValidator;
+    private final Map<String, PrecompiledContract> precompiledContractMap;
 
-	@Inject
-	public HederaStaticCallOperation(
-			final GasCalculator gasCalculator,
-			final EvmSigsVerifier sigsVerifier,
-			final BiPredicate<Address, MessageFrame> addressValidator,
-			final Map<String, PrecompiledContract> precompiledContractMap
-	) {
-		super(gasCalculator);
-		this.sigsVerifier = sigsVerifier;
-		this.addressValidator = addressValidator;
-		this.precompiledContractMap = precompiledContractMap;
-	}
+    @Inject
+    public HederaStaticCallOperation(
+            final GasCalculator gasCalculator,
+            final EvmSigsVerifier sigsVerifier,
+            final BiPredicate<Address, MessageFrame> addressValidator,
+            final Map<String, PrecompiledContract> precompiledContractMap) {
+        super(gasCalculator);
+        this.sigsVerifier = sigsVerifier;
+        this.addressValidator = addressValidator;
+        this.precompiledContractMap = precompiledContractMap;
+    }
 
-	@Override
-	public OperationResult execute(final MessageFrame frame, final EVM evm) {
-		return HederaOperationUtil.addressSignatureCheckExecution(
-				sigsVerifier,
-				frame,
-				to(frame),
-				() -> cost(frame),
-				() -> super.execute(frame, evm),
-				addressValidator, precompiledContractMap);
-	}
+    @Override
+    public OperationResult execute(final MessageFrame frame, final EVM evm) {
+        return HederaOperationUtil.addressSignatureCheckExecution(
+                sigsVerifier,
+                frame,
+                to(frame),
+                () -> cost(frame),
+                () -> super.execute(frame, evm),
+                addressValidator,
+                precompiledContractMap);
+    }
 }

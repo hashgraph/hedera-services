@@ -20,6 +20,18 @@ package com.hedera.services.contracts.execution;
  * ‍
  */
 
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.LOCAL_CALL_MODIFICATION_EXCEPTION;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseType.ANSWER_ONLY;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.verifyNoInteractions;
+
 import com.google.protobuf.ByteString;
 import com.hedera.services.contracts.operation.HederaExceptionalHaltReason;
 import com.hedera.services.exceptions.InvalidTransactionException;
@@ -39,6 +51,10 @@ import com.hederahashgraph.api.proto.java.ResponseHeader;
 import com.hederahashgraph.api.proto.java.ResponseType;
 import com.hederahashgraph.builder.RequestBuilder;
 import com.swirlds.common.utility.CommonUtils;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Optional;
+import java.util.TreeMap;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 import org.junit.jupiter.api.BeforeEach;
@@ -47,255 +63,281 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Optional;
-import java.util.TreeMap;
-
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.LOCAL_CALL_MODIFICATION_EXCEPTION;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static com.hederahashgraph.api.proto.java.ResponseType.ANSWER_ONLY;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.verifyNoInteractions;
-
 @ExtendWith(MockitoExtension.class)
 class CallLocalExecutorTest {
-	int gas = 1_234;
-	ByteString params = ByteString.copyFrom("Hungry, and...".getBytes());
-	Id callerID = new Id(0, 0, 123);
-	Id contractID = new Id(0, 0, 456);
-	Id senderID = new Id(0, 0, 789);
-	
-	ContractCallLocalQuery query;
+    int gas = 1_234;
+    ByteString params = ByteString.copyFrom("Hungry, and...".getBytes());
+    Id callerID = new Id(0, 0, 123);
+    Id contractID = new Id(0, 0, 456);
+    Id senderID = new Id(0, 0, 789);
 
-	@Mock
-	private AccountStore accountStore;
-	@Mock
-	private CallLocalEvmTxProcessor evmTxProcessor;
-	@Mock
-	private AliasManager aliasManager;
-	@Mock
-	private EntityAccess entityAccess;
+    ContractCallLocalQuery query;
 
-	@BeforeEach
-	private void setup() {
-		query = localCallQuery(contractID.asGrpcContract(), ANSWER_ONLY);
-	}
+    @Mock private AccountStore accountStore;
+    @Mock private CallLocalEvmTxProcessor evmTxProcessor;
+    @Mock private AliasManager aliasManager;
+    @Mock private EntityAccess entityAccess;
 
-	@Test
-	void processingSuccessfulWithAlias() {
-		// setup:
-		final var targetAlias = CommonUtils.unhex("6aea3773ea468a814d954e6dec795bfee7d76e25");
-		final var target = ContractID.newBuilder()
-				.setEvmAddress(ByteString.copyFrom(targetAlias))
-				.build();
-		query = localCallQuery(target, ANSWER_ONLY);
-		given(aliasManager.lookupIdBy(target.getEvmAddress())).willReturn(EntityNum.fromLong(contractID.num()));
+    @BeforeEach
+    private void setup() {
+        query = localCallQuery(contractID.asGrpcContract(), ANSWER_ONLY);
+    }
 
-		final var transactionProcessingResult = TransactionProcessingResult
-				.successful(new ArrayList<>(), 0, 0, 1, Bytes.EMPTY,
-						callerID.asEvmAddress(), new TreeMap<>());
-		final var expected = response(OK, transactionProcessingResult);
+    @Test
+    void processingSuccessfulWithAlias() {
+        // setup:
+        final var targetAlias = CommonUtils.unhex("6aea3773ea468a814d954e6dec795bfee7d76e25");
+        final var target =
+                ContractID.newBuilder().setEvmAddress(ByteString.copyFrom(targetAlias)).build();
+        query = localCallQuery(target, ANSWER_ONLY);
+        given(aliasManager.lookupIdBy(target.getEvmAddress()))
+                .willReturn(EntityNum.fromLong(contractID.num()));
 
-		given(accountStore.loadAccount(any())).willReturn(new Account(callerID));
-		given(accountStore.loadContract(contractID)).willReturn(new Account(contractID));
-		given(evmTxProcessor.execute(any(), any(), anyLong(), anyLong(), any(), any()))
-				.willReturn(transactionProcessingResult);
+        final var transactionProcessingResult =
+                TransactionProcessingResult.successful(
+                        new ArrayList<>(),
+                        0,
+                        0,
+                        1,
+                        Bytes.EMPTY,
+                        callerID.asEvmAddress(),
+                        new TreeMap<>());
+        final var expected = response(OK, transactionProcessingResult);
 
-		// when:
-		final var result =
-				CallLocalExecutor.execute(accountStore, evmTxProcessor, query, aliasManager, entityAccess);
+        given(accountStore.loadAccount(any())).willReturn(new Account(callerID));
+        given(accountStore.loadContract(contractID)).willReturn(new Account(contractID));
+        given(evmTxProcessor.execute(any(), any(), anyLong(), anyLong(), any(), any()))
+                .willReturn(transactionProcessingResult);
 
-		// then:
-		assertEquals(expected, result);
-	}
+        // when:
+        final var result =
+                CallLocalExecutor.execute(
+                        accountStore, evmTxProcessor, query, aliasManager, entityAccess);
 
-	@Test
-	void processingSuccessfulWithAccountAlias() {
-		// setup:
-		final var senderAlias = CommonUtils.unhex("6aea3773ea468a814d954e6dec795bfee7d76e25");
-		final var sender = AccountID.newBuilder()
-				.setAlias(ByteString.copyFrom(senderAlias))
-				.build();
-		query = localCallQuery(contractID.asGrpcContract(), sender, ANSWER_ONLY);
-		given(aliasManager.lookupIdBy(sender.getAlias())).willReturn(EntityNum.fromLong(senderID.num()));
+        // then:
+        assertEquals(expected, result);
+    }
 
-		final var transactionProcessingResult = TransactionProcessingResult
-				.successful(new ArrayList<>(), 0, 0, 1, Bytes.EMPTY,
-						callerID.asEvmAddress(), new TreeMap<>());
-		final var expected = response(OK,transactionProcessingResult);
+    @Test
+    void processingSuccessfulWithAccountAlias() {
+        // setup:
+        final var senderAlias = CommonUtils.unhex("6aea3773ea468a814d954e6dec795bfee7d76e25");
+        final var sender =
+                AccountID.newBuilder().setAlias(ByteString.copyFrom(senderAlias)).build();
+        query = localCallQuery(contractID.asGrpcContract(), sender, ANSWER_ONLY);
+        given(aliasManager.lookupIdBy(sender.getAlias()))
+                .willReturn(EntityNum.fromLong(senderID.num()));
 
-		given(accountStore.loadAccount(any())).willReturn(new Account(callerID));
-		given(accountStore.loadContract(contractID)).willReturn(new Account(contractID));
-		given(evmTxProcessor.execute(any(), any(), anyLong(), anyLong(), any(), any()))
-				.willReturn(transactionProcessingResult);
+        final var transactionProcessingResult =
+                TransactionProcessingResult.successful(
+                        new ArrayList<>(),
+                        0,
+                        0,
+                        1,
+                        Bytes.EMPTY,
+                        callerID.asEvmAddress(),
+                        new TreeMap<>());
+        final var expected = response(OK, transactionProcessingResult);
 
-		// when:
-		final var result =
-				CallLocalExecutor.execute(accountStore, evmTxProcessor, query, aliasManager, entityAccess);
+        given(accountStore.loadAccount(any())).willReturn(new Account(callerID));
+        given(accountStore.loadContract(contractID)).willReturn(new Account(contractID));
+        given(evmTxProcessor.execute(any(), any(), anyLong(), anyLong(), any(), any()))
+                .willReturn(transactionProcessingResult);
 
-		// then:
-		assertEquals(expected, result);
-	}
+        // when:
+        final var result =
+                CallLocalExecutor.execute(
+                        accountStore, evmTxProcessor, query, aliasManager, entityAccess);
 
-	@Test
-	void processingSuccessful() {
-		// setup:
-		final var transactionProcessingResult = TransactionProcessingResult
-				.successful(new ArrayList<>(), 0, 0, 1, Bytes.EMPTY, callerID.asEvmAddress(),
-						Collections.emptyMap());
-		final var expected = response(OK, transactionProcessingResult);
+        // then:
+        assertEquals(expected, result);
+    }
 
-		given(accountStore.loadAccount(any())).willReturn(new Account(callerID));
-		given(accountStore.loadContract(any())).willReturn(new Account(contractID));
-		given(evmTxProcessor.execute(any(), any(), anyLong(), anyLong(), any(), any()))
-				.willReturn(transactionProcessingResult);
+    @Test
+    void processingSuccessful() {
+        // setup:
+        final var transactionProcessingResult =
+                TransactionProcessingResult.successful(
+                        new ArrayList<>(),
+                        0,
+                        0,
+                        1,
+                        Bytes.EMPTY,
+                        callerID.asEvmAddress(),
+                        Collections.emptyMap());
+        final var expected = response(OK, transactionProcessingResult);
 
-		// when:
-		final var result =
-				CallLocalExecutor.execute(accountStore, evmTxProcessor, query, aliasManager, entityAccess);
+        given(accountStore.loadAccount(any())).willReturn(new Account(callerID));
+        given(accountStore.loadContract(any())).willReturn(new Account(contractID));
+        given(evmTxProcessor.execute(any(), any(), anyLong(), anyLong(), any(), any()))
+                .willReturn(transactionProcessingResult);
 
-		// then:
-		assertEquals(expected, result);
-	}
+        // when:
+        final var result =
+                CallLocalExecutor.execute(
+                        accountStore, evmTxProcessor, query, aliasManager, entityAccess);
 
-	@Test
-	void processingSuccessfulCallingToken() {
-		// setup:
-		final var transactionProcessingResult = TransactionProcessingResult
-				.successful(new ArrayList<>(), 0, 0, 1, Bytes.EMPTY, callerID.asEvmAddress(),
-						Collections.emptyMap());
-		final var expected = response(OK, transactionProcessingResult);
+        // then:
+        assertEquals(expected, result);
+    }
 
-		given(entityAccess.isTokenAccount(any())).willReturn(true);
-		given(evmTxProcessor.execute(any(), any(), anyLong(), anyLong(), any(), any()))
-				.willReturn(transactionProcessingResult);
+    @Test
+    void processingSuccessfulCallingToken() {
+        // setup:
+        final var transactionProcessingResult =
+                TransactionProcessingResult.successful(
+                        new ArrayList<>(),
+                        0,
+                        0,
+                        1,
+                        Bytes.EMPTY,
+                        callerID.asEvmAddress(),
+                        Collections.emptyMap());
+        final var expected = response(OK, transactionProcessingResult);
 
-		// when:
-		final var result =
-				CallLocalExecutor.execute(accountStore, evmTxProcessor, query, aliasManager, entityAccess);
+        given(entityAccess.isTokenAccount(any())).willReturn(true);
+        given(evmTxProcessor.execute(any(), any(), anyLong(), anyLong(), any(), any()))
+                .willReturn(transactionProcessingResult);
 
-		// then:
-		assertEquals(expected, result);
-	}
+        // when:
+        final var result =
+                CallLocalExecutor.execute(
+                        accountStore, evmTxProcessor, query, aliasManager, entityAccess);
 
-	@Test
-	void processingReturnsModificationHaltReason() {
-		// setup:
-		final var transactionProcessingResult = TransactionProcessingResult
-				.failed(0, 0, 1, Optional.empty(),
-						Optional.of(ExceptionalHaltReason.ILLEGAL_STATE_CHANGE), Collections.emptyMap());
-		final var expected = response(LOCAL_CALL_MODIFICATION_EXCEPTION, transactionProcessingResult);
+        // then:
+        assertEquals(expected, result);
+    }
 
-		given(accountStore.loadAccount(any())).willReturn(new Account(callerID));
-		given(accountStore.loadContract(any())).willReturn(new Account(contractID));
-		given(evmTxProcessor.execute(any(), any(), anyLong(), anyLong(), any(), any()))
-				.willReturn(transactionProcessingResult);
+    @Test
+    void processingReturnsModificationHaltReason() {
+        // setup:
+        final var transactionProcessingResult =
+                TransactionProcessingResult.failed(
+                        0,
+                        0,
+                        1,
+                        Optional.empty(),
+                        Optional.of(ExceptionalHaltReason.ILLEGAL_STATE_CHANGE),
+                        Collections.emptyMap());
+        final var expected =
+                response(LOCAL_CALL_MODIFICATION_EXCEPTION, transactionProcessingResult);
 
-		// when:
-		final var result =
-				CallLocalExecutor.execute(accountStore, evmTxProcessor, query, aliasManager, entityAccess);
+        given(accountStore.loadAccount(any())).willReturn(new Account(callerID));
+        given(accountStore.loadContract(any())).willReturn(new Account(contractID));
+        given(evmTxProcessor.execute(any(), any(), anyLong(), anyLong(), any(), any()))
+                .willReturn(transactionProcessingResult);
 
-		// then:
-		assertEquals(expected, result);
-	}
+        // when:
+        final var result =
+                CallLocalExecutor.execute(
+                        accountStore, evmTxProcessor, query, aliasManager, entityAccess);
 
-	@Test
-	void processingReturnsInvalidSolidityAddressHaltReason() {
-		// setup:
-		final var transactionProcessingResult = TransactionProcessingResult
-				.failed(0, 0, 1, Optional.empty(),
-						Optional.of(HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS), Collections.emptyMap());
-		final var expected = response(INVALID_SOLIDITY_ADDRESS, transactionProcessingResult);
+        // then:
+        assertEquals(expected, result);
+    }
 
-		given(accountStore.loadAccount(any())).willReturn(new Account(callerID));
-		given(accountStore.loadContract(any())).willReturn(new Account(contractID));
-		given(evmTxProcessor.execute(any(), any(), anyLong(), anyLong(), any(), any()))
-				.willReturn(transactionProcessingResult);
+    @Test
+    void processingReturnsInvalidSolidityAddressHaltReason() {
+        // setup:
+        final var transactionProcessingResult =
+                TransactionProcessingResult.failed(
+                        0,
+                        0,
+                        1,
+                        Optional.empty(),
+                        Optional.of(HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS),
+                        Collections.emptyMap());
+        final var expected = response(INVALID_SOLIDITY_ADDRESS, transactionProcessingResult);
 
-		// when:
-		final var result =
-				CallLocalExecutor.execute(accountStore, evmTxProcessor, query, aliasManager, entityAccess);
+        given(accountStore.loadAccount(any())).willReturn(new Account(callerID));
+        given(accountStore.loadContract(any())).willReturn(new Account(contractID));
+        given(evmTxProcessor.execute(any(), any(), anyLong(), anyLong(), any(), any()))
+                .willReturn(transactionProcessingResult);
 
-		// then:
-		assertEquals(expected, result);
-	}
+        // when:
+        final var result =
+                CallLocalExecutor.execute(
+                        accountStore, evmTxProcessor, query, aliasManager, entityAccess);
 
-	@Test
-	void processingReturnsRevertReason() {
-		// setup:
-		final var transactionProcessingResult = TransactionProcessingResult
-				.failed(0, 0, 1, Optional.of(Bytes.of("out of gas".getBytes())),
-						Optional.empty(), Collections.emptyMap());
-		final var expected = response(CONTRACT_REVERT_EXECUTED, transactionProcessingResult);
+        // then:
+        assertEquals(expected, result);
+    }
 
-		given(accountStore.loadAccount(any())).willReturn(new Account(callerID));
-		given(accountStore.loadContract(any())).willReturn(new Account(contractID));
-		given(evmTxProcessor.execute(any(), any(), anyLong(), anyLong(), any(), any()))
-				.willReturn(transactionProcessingResult);
+    @Test
+    void processingReturnsRevertReason() {
+        // setup:
+        final var transactionProcessingResult =
+                TransactionProcessingResult.failed(
+                        0,
+                        0,
+                        1,
+                        Optional.of(Bytes.of("out of gas".getBytes())),
+                        Optional.empty(),
+                        Collections.emptyMap());
+        final var expected = response(CONTRACT_REVERT_EXECUTED, transactionProcessingResult);
 
-		// when:
-		final var result =
-				CallLocalExecutor.execute(accountStore, evmTxProcessor, query, aliasManager, entityAccess);
+        given(accountStore.loadAccount(any())).willReturn(new Account(callerID));
+        given(accountStore.loadContract(any())).willReturn(new Account(contractID));
+        given(evmTxProcessor.execute(any(), any(), anyLong(), anyLong(), any(), any()))
+                .willReturn(transactionProcessingResult);
 
-		// then:
-		assertEquals(expected, result);
-	}
+        // when:
+        final var result =
+                CallLocalExecutor.execute(
+                        accountStore, evmTxProcessor, query, aliasManager, entityAccess);
 
-	@Test
-	void catchesInvalidTransactionException() {
-		// setup:
-		given(accountStore.loadAccount(any())).willThrow(new InvalidTransactionException(INVALID_ACCOUNT_ID));
+        // then:
+        assertEquals(expected, result);
+    }
 
-		// when:
-		final var result =
-				CallLocalExecutor.execute(accountStore, evmTxProcessor, query, aliasManager, entityAccess);
+    @Test
+    void catchesInvalidTransactionException() {
+        // setup:
+        given(accountStore.loadAccount(any()))
+                .willThrow(new InvalidTransactionException(INVALID_ACCOUNT_ID));
 
-		assertEquals(failedResponse(INVALID_ACCOUNT_ID), result);
-		// and:
-		verifyNoInteractions(evmTxProcessor);
-	}
+        // when:
+        final var result =
+                CallLocalExecutor.execute(
+                        accountStore, evmTxProcessor, query, aliasManager, entityAccess);
 
-	private ContractCallLocalResponse response(ResponseCodeEnum status, TransactionProcessingResult result) {
-		return ContractCallLocalResponse.newBuilder()
-				.setHeader(ResponseHeader.newBuilder().setNodeTransactionPrecheckCode(status))
-				.setFunctionResult(result.toGrpc())
-				.build();
-	}
+        assertEquals(failedResponse(INVALID_ACCOUNT_ID), result);
+        // and:
+        verifyNoInteractions(evmTxProcessor);
+    }
 
-	private ContractCallLocalResponse failedResponse(ResponseCodeEnum status) {
-		return ContractCallLocalResponse.newBuilder()
-				.setHeader(RequestBuilder.getResponseHeader(status, 0l,
-						ANSWER_ONLY, ByteString.EMPTY))
-				.build();
-	}
+    private ContractCallLocalResponse response(
+            ResponseCodeEnum status, TransactionProcessingResult result) {
+        return ContractCallLocalResponse.newBuilder()
+                .setHeader(ResponseHeader.newBuilder().setNodeTransactionPrecheckCode(status))
+                .setFunctionResult(result.toGrpc())
+                .build();
+    }
 
-	private ContractCallLocalQuery localCallQuery(ContractID id, ResponseType type) {
-		return ContractCallLocalQuery.newBuilder()
-				.setContractID(id)
-				.setGas(gas)
-				.setFunctionParameters(params)
-				.setHeader(QueryHeader.newBuilder()
-						.setResponseType(type)
-						.build())
-				.build();
-	}
+    private ContractCallLocalResponse failedResponse(ResponseCodeEnum status) {
+        return ContractCallLocalResponse.newBuilder()
+                .setHeader(
+                        RequestBuilder.getResponseHeader(status, 0l, ANSWER_ONLY, ByteString.EMPTY))
+                .build();
+    }
 
-	private ContractCallLocalQuery localCallQuery(ContractID id, AccountID sender, ResponseType type) {
-		return ContractCallLocalQuery.newBuilder()
-				.setContractID(id)
-				.setGas(gas)
-				.setFunctionParameters(params)
-				.setHeader(QueryHeader.newBuilder()
-						.setResponseType(type)
-						.build())
-				.setSenderId(sender)
-				.build();
-	}
+    private ContractCallLocalQuery localCallQuery(ContractID id, ResponseType type) {
+        return ContractCallLocalQuery.newBuilder()
+                .setContractID(id)
+                .setGas(gas)
+                .setFunctionParameters(params)
+                .setHeader(QueryHeader.newBuilder().setResponseType(type).build())
+                .build();
+    }
+
+    private ContractCallLocalQuery localCallQuery(
+            ContractID id, AccountID sender, ResponseType type) {
+        return ContractCallLocalQuery.newBuilder()
+                .setContractID(id)
+                .setGas(gas)
+                .setFunctionParameters(params)
+                .setHeader(QueryHeader.newBuilder().setResponseType(type).build())
+                .setSenderId(sender)
+                .build();
+    }
 }

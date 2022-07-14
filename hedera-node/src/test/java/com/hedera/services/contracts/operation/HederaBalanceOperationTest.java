@@ -20,6 +20,18 @@ package com.hedera.services.contracts.operation;
  * ‍
  */
 
+import static com.hedera.services.contracts.operation.HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS;
+import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.INSUFFICIENT_GAS;
+import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.INSUFFICIENT_STACK_ITEMS;
+import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.TOO_MANY_STACK_ITEMS;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.mockStatic;
+
+import java.util.function.BiPredicate;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.EVM;
@@ -37,109 +49,90 @@ import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.util.function.BiPredicate;
-
-import static com.hedera.services.contracts.operation.HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS;
-import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.INSUFFICIENT_GAS;
-import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.INSUFFICIENT_STACK_ITEMS;
-import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.TOO_MANY_STACK_ITEMS;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.mockStatic;
-
 @ExtendWith(MockitoExtension.class)
 class HederaBalanceOperationTest {
 
-	@Mock
-	private GasCalculator gasCalculator;
-	@Mock
-	private MessageFrame frame;
-	@Mock
-	private EVM evm;
-	@Mock
-	private WorldUpdater worldUpdater;
-	@Mock
-	private Account account;
-	@Mock
-	private BiPredicate<Address, MessageFrame> addressValidator;
-	
-	private final long gas = 100L; 
+    @Mock private GasCalculator gasCalculator;
+    @Mock private MessageFrame frame;
+    @Mock private EVM evm;
+    @Mock private WorldUpdater worldUpdater;
+    @Mock private Account account;
+    @Mock private BiPredicate<Address, MessageFrame> addressValidator;
 
-	private HederaBalanceOperation subject;
+    private final long gas = 100L;
 
-	@BeforeEach
-	void setUp() {
-		subject = new HederaBalanceOperation(gasCalculator, addressValidator);
-		givenAddress();
-		given(gasCalculator.getWarmStorageReadCost()).willReturn(1600L);
-		given(gasCalculator.getBalanceOperationGasCost()).willReturn(100L);
-	}
+    private HederaBalanceOperation subject;
 
-	@Test
-	void haltsWithInsufficientStackItemsOperationResultWhenGetsStackItem() {
-		given(frame.getStackItem(anyInt())).willThrow(new FixedStack.UnderflowException());
-		thenOperationWillFailWithReason(INSUFFICIENT_STACK_ITEMS);
-	}
+    @BeforeEach
+    void setUp() {
+        subject = new HederaBalanceOperation(gasCalculator, addressValidator);
+        givenAddress();
+        given(gasCalculator.getWarmStorageReadCost()).willReturn(1600L);
+        given(gasCalculator.getBalanceOperationGasCost()).willReturn(100L);
+    }
 
-	@Test
-	void haltsWithInsufficientStackItemsWhenPopsStackItem() {
-		given(frame.popStackItem()).willThrow(new FixedStack.UnderflowException());
-		given(addressValidator.test(any(), any())).willReturn(true);
+    @Test
+    void haltsWithInsufficientStackItemsOperationResultWhenGetsStackItem() {
+        given(frame.getStackItem(anyInt())).willThrow(new FixedStack.UnderflowException());
+        thenOperationWillFailWithReason(INSUFFICIENT_STACK_ITEMS);
+    }
 
-		thenOperationWillFailWithReason(INSUFFICIENT_STACK_ITEMS);
-	}
+    @Test
+    void haltsWithInsufficientStackItemsWhenPopsStackItem() {
+        given(frame.popStackItem()).willThrow(new FixedStack.UnderflowException());
+        given(addressValidator.test(any(), any())).willReturn(true);
 
-	@Test
-	void haltsWithTooManyStackItemsWhenPopsStackItem() {
-		given(frame.popStackItem()).willThrow(new FixedStack.OverflowException());
-		given(addressValidator.test(any(), any())).willReturn(true);
+        thenOperationWillFailWithReason(INSUFFICIENT_STACK_ITEMS);
+    }
 
-		thenOperationWillFailWithReason(TOO_MANY_STACK_ITEMS);
-	}
+    @Test
+    void haltsWithTooManyStackItemsWhenPopsStackItem() {
+        given(frame.popStackItem()).willThrow(new FixedStack.OverflowException());
+        given(addressValidator.test(any(), any())).willReturn(true);
 
-	@Test
-	void haltsWithInvalidSolidityAddressOperationResult() {
-		given(addressValidator.test(any(), any())).willReturn(false);
+        thenOperationWillFailWithReason(TOO_MANY_STACK_ITEMS);
+    }
 
-		thenOperationWillFailWithReason(INVALID_SOLIDITY_ADDRESS);
-	}
+    @Test
+    void haltsWithInvalidSolidityAddressOperationResult() {
+        given(addressValidator.test(any(), any())).willReturn(false);
 
-	@Test
-	void haltsWithInsufficientGasOperationResult() {
-		given(frame.popStackItem()).willReturn(Bytes.EMPTY);
-		given(frame.warmUpAddress(any())).willReturn(true);
-		given(frame.getRemainingGas()).willReturn(0L);
-		given(addressValidator.test(any(), any())).willReturn(true);
+        thenOperationWillFailWithReason(INVALID_SOLIDITY_ADDRESS);
+    }
 
-		thenOperationWillFailWithReason(INSUFFICIENT_GAS);
-	}
+    @Test
+    void haltsWithInsufficientGasOperationResult() {
+        given(frame.popStackItem()).willReturn(Bytes.EMPTY);
+        given(frame.warmUpAddress(any())).willReturn(true);
+        given(frame.getRemainingGas()).willReturn(0L);
+        given(addressValidator.test(any(), any())).willReturn(true);
 
-	@Test
-	void returnsOperationResultWithoutException() {
-		given(worldUpdater.get(any())).willReturn(account);
-		given(frame.getWorldUpdater()).willReturn(worldUpdater);
-		given(frame.popStackItem()).willReturn(Bytes.EMPTY);
-		given(frame.warmUpAddress(any())).willReturn(true);
-		given(frame.getRemainingGas()).willReturn(10_000L);
-		given(addressValidator.test(any(), any())).willReturn(true);
+        thenOperationWillFailWithReason(INSUFFICIENT_GAS);
+    }
 
-		final var result = subject.execute(frame, evm);
+    @Test
+    void returnsOperationResultWithoutException() {
+        given(worldUpdater.get(any())).willReturn(account);
+        given(frame.getWorldUpdater()).willReturn(worldUpdater);
+        given(frame.popStackItem()).willReturn(Bytes.EMPTY);
+        given(frame.warmUpAddress(any())).willReturn(true);
+        given(frame.getRemainingGas()).willReturn(10_000L);
+        given(addressValidator.test(any(), any())).willReturn(true);
 
-		assertTrue(result.getHaltReason().isEmpty());
-	}
+        final var result = subject.execute(frame, evm);
 
-	private void givenAddress() {
-		given(frame.getStackItem(anyInt())).willReturn(Bytes.EMPTY);
-		try (MockedStatic<Words> theMock = mockStatic(Words.class)) {
-			theMock.when(() -> Words.toAddress(Bytes.EMPTY)).thenReturn(Address.ZERO);
-		}
-	}
+        assertTrue(result.getHaltReason().isEmpty());
+    }
 
-	private void thenOperationWillFailWithReason(ExceptionalHaltReason reason) {
-		final var result = subject.execute(frame, evm);
-		assertEquals(reason, result.getHaltReason().get());
-	}
+    private void givenAddress() {
+        given(frame.getStackItem(anyInt())).willReturn(Bytes.EMPTY);
+        try (MockedStatic<Words> theMock = mockStatic(Words.class)) {
+            theMock.when(() -> Words.toAddress(Bytes.EMPTY)).thenReturn(Address.ZERO);
+        }
+    }
+
+    private void thenOperationWillFailWithReason(ExceptionalHaltReason reason) {
+        final var result = subject.execute(frame, evm);
+        assertEquals(reason, result.getHaltReason().get());
+    }
 }

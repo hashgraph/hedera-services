@@ -20,6 +20,14 @@ package com.hedera.services.contracts.operation;
  * ‍
  */
 
+import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.INSUFFICIENT_STACK_ITEMS;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.BDDMockito.given;
+
+import java.util.Optional;
+import java.util.OptionalLong;
+import java.util.function.BiPredicate;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.EVM;
@@ -35,84 +43,72 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.util.Optional;
-import java.util.OptionalLong;
-import java.util.function.BiPredicate;
-
-import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.INSUFFICIENT_STACK_ITEMS;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.BDDMockito.given;
-
 @ExtendWith(MockitoExtension.class)
 class HederaExtCodeSizeOperationTest {
-	final private String ethAddress = "0xc257274276a4e539741ca11b590b9447b26a8051";
-	final private Address ethAddressInstance = Address.fromHexString(ethAddress);
-	final private Account account = new SimpleAccount(ethAddressInstance, 0, Wei.ONE);
+    private final String ethAddress = "0xc257274276a4e539741ca11b590b9447b26a8051";
+    private final Address ethAddressInstance = Address.fromHexString(ethAddress);
+    private final Account account = new SimpleAccount(ethAddressInstance, 0, Wei.ONE);
 
-	@Mock
-	WorldUpdater worldUpdater;
+    @Mock WorldUpdater worldUpdater;
 
-	@Mock
-	GasCalculator gasCalculator;
+    @Mock GasCalculator gasCalculator;
 
-	@Mock
-	MessageFrame mf;
+    @Mock MessageFrame mf;
 
-	@Mock
-	EVM evm;
-	@Mock
-	private BiPredicate<Address, MessageFrame> addressValidator;
+    @Mock EVM evm;
+    @Mock private BiPredicate<Address, MessageFrame> addressValidator;
 
-	HederaExtCodeSizeOperation subject;
+    HederaExtCodeSizeOperation subject;
 
-	@BeforeEach
-	void setUp() {
-		given(gasCalculator.getExtCodeSizeOperationGasCost()).willReturn(10L);
-		given(gasCalculator.getWarmStorageReadCost()).willReturn(2L);
+    @BeforeEach
+    void setUp() {
+        given(gasCalculator.getExtCodeSizeOperationGasCost()).willReturn(10L);
+        given(gasCalculator.getWarmStorageReadCost()).willReturn(2L);
 
-		subject = new HederaExtCodeSizeOperation(gasCalculator, addressValidator);
-	}
+        subject = new HederaExtCodeSizeOperation(gasCalculator, addressValidator);
+    }
 
-	@Test
-	void executeWorldUpdaterResolvesToNull() {
-		given(mf.getStackItem(0)).willReturn(ethAddressInstance);
-		given(addressValidator.test(any(), any())).willReturn(false);
+    @Test
+    void executeWorldUpdaterResolvesToNull() {
+        given(mf.getStackItem(0)).willReturn(ethAddressInstance);
+        given(addressValidator.test(any(), any())).willReturn(false);
 
-		var opResult = subject.execute(mf, evm);
+        var opResult = subject.execute(mf, evm);
 
-		assertEquals(Optional.of(HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS), opResult.getHaltReason());
-		assertEquals(OptionalLong.of(12L), opResult.getGasCost());
-	}
+        assertEquals(
+                Optional.of(HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS),
+                opResult.getHaltReason());
+        assertEquals(OptionalLong.of(12L), opResult.getGasCost());
+    }
 
-	@Test
-	void executeThrows() {
-		given(mf.getStackItem(0)).willThrow(FixedStack.UnderflowException.class);
+    @Test
+    void executeThrows() {
+        given(mf.getStackItem(0)).willThrow(FixedStack.UnderflowException.class);
 
-		var opResult = subject.execute(mf, evm);
+        var opResult = subject.execute(mf, evm);
 
-		assertEquals(Optional.of(INSUFFICIENT_STACK_ITEMS), opResult.getHaltReason());
-		assertEquals(OptionalLong.of(12L), opResult.getGasCost());
-	}
+        assertEquals(Optional.of(INSUFFICIENT_STACK_ITEMS), opResult.getHaltReason());
+        assertEquals(OptionalLong.of(12L), opResult.getGasCost());
+    }
 
-	@Test
-	void successfulExecution() {
-		// given:
-		given(mf.getStackItem(0)).willReturn(ethAddressInstance);
-		given(mf.getWorldUpdater()).willReturn(worldUpdater);
-		// and:
-		given(worldUpdater.get(ethAddressInstance)).willReturn(account);
-		// and:
-		given(mf.popStackItem()).willReturn(ethAddressInstance);
-		given(mf.warmUpAddress(ethAddressInstance)).willReturn(true);
-		given(mf.getRemainingGas()).willReturn(100L);
-		given(addressValidator.test(any(), any())).willReturn(true);
+    @Test
+    void successfulExecution() {
+        // given:
+        given(mf.getStackItem(0)).willReturn(ethAddressInstance);
+        given(mf.getWorldUpdater()).willReturn(worldUpdater);
+        // and:
+        given(worldUpdater.get(ethAddressInstance)).willReturn(account);
+        // and:
+        given(mf.popStackItem()).willReturn(ethAddressInstance);
+        given(mf.warmUpAddress(ethAddressInstance)).willReturn(true);
+        given(mf.getRemainingGas()).willReturn(100L);
+        given(addressValidator.test(any(), any())).willReturn(true);
 
-		// when:
-		var opResult = subject.execute(mf, evm);
+        // when:
+        var opResult = subject.execute(mf, evm);
 
-		// then:
-		assertEquals(Optional.empty(), opResult.getHaltReason());
-		assertEquals(OptionalLong.of(12L), opResult.getGasCost());
-	}
+        // then:
+        assertEquals(Optional.empty(), opResult.getHaltReason());
+        assertEquals(OptionalLong.of(12L), opResult.getGasCost());
+    }
 }

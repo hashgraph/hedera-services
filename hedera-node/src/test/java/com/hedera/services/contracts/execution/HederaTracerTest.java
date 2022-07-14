@@ -22,6 +22,10 @@ package com.hedera.services.contracts.execution;
  *
  */
 
+import static com.hedera.services.contracts.operation.HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS;
+import static org.mockito.Mockito.verify;
+
+import java.util.Optional;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.tracing.OperationTracer;
 import org.junit.jupiter.api.BeforeEach;
@@ -30,20 +34,13 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.util.Optional;
-
-import static com.hedera.services.contracts.operation.HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS;
-import static org.mockito.Mockito.verify;
-
 @ExtendWith(MockitoExtension.class)
 class HederaTracerTest {
     private HederaTracer subject;
 
-    @Mock
-    private MessageFrame mf;
+    @Mock private MessageFrame mf;
 
-    @Mock
-    private OperationTracer.ExecuteOperation eo;
+    @Mock private OperationTracer.ExecuteOperation eo;
 
     @BeforeEach
     void setUp() {
