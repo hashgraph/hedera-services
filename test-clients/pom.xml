@@ -14,7 +14,7 @@
   </parent>
 
   <properties>
-    <maven-assembly.version>3.3.0</maven-assembly.version>
+    <maven-assembly.version>3.4.1</maven-assembly.version>
 
     <bouncycastle.version>1.70</bouncycastle.version>
     <BIP39.version>2019.01.27</BIP39.version>
