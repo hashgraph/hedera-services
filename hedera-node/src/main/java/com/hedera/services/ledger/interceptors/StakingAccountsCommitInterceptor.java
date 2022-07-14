@@ -248,7 +248,7 @@ public class StakingAccountsCommitInterceptor extends AccountsCommitInterceptor 
 	}
 
 	private long rewardableStartStakeFor(final MerkleAccount account) {
-		if (account.isDeclinedReward()) {
+		if (!rewardsActivated || account.isDeclinedReward()) {
 			return 0;
 		}
 		final var startPeriod = account.getStakePeriodStart();

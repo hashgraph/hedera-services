@@ -40,6 +40,7 @@ import javax.annotation.Nullable;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.Objects;
 
@@ -138,9 +139,13 @@ public class MerkleStakingInfo extends PartialMerkleLeaf implements Keyed<Entity
 			perHbarRateThisNode = perHbarRate;
 			// But if the node had more the maximum stakeRewardStart, "down-scale" its reward rate to
 			// ensure the accounts staking to this node will receive a fraction of the total rewards that
-			// does not exceed node.stakedRewardStart / totalStakedRewardedStart
+			// does not exceed node.stakedRewardStart / totalStakedRewardedStart; use arbitrary-precision
+			// arithmetic because there is no inherent bound on (maxStake * perHbarRateThisNode)
 			if (stakeRewardStart > maxStake) {
-				perHbarRateThisNode = (perHbarRateThisNode * maxStake) / stakeRewardStart;
+				perHbarRateThisNode = BigInteger.valueOf(perHbarRateThisNode)
+						.multiply(BigInteger.valueOf(maxStake))
+						.divide(BigInteger.valueOf(stakeRewardStart))
+						.longValueExact();
 			}
 		}
 		perHbarRateThisNode = Math.min(perHbarRateThisNode, maxPerHbarRate);
@@ -172,8 +177,8 @@ public class MerkleStakingInfo extends PartialMerkleLeaf implements Keyed<Entity
 	public void increaseUnclaimedStakeRewardStart(final long amount) {
 		unclaimedStakeRewardStart += amount;
 		if (unclaimedStakeRewardStart > stakeRewardStart) {
-			log.warn("Asked to release {} stake reward start for node{}, but only {} was staked",
-					number, unclaimedStakeRewardStart, stakeRewardStart);
+			log.warn("Asked to release {} more rewards for node{} (now {}), but only {} was staked",
+					amount, number, unclaimedStakeRewardStart, stakeRewardStart);
 			unclaimedStakeRewardStart = stakeRewardStart;
 		}
 	}

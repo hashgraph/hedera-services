@@ -84,10 +84,6 @@ public class StoreInitializationFlow {
 		backingNfts.rebuildFromSources();
 		log.info("Backing stores rebuilt");
 
-		tokenStore.rebuildViews();
-		scheduleStore.rebuildViews();
-		log.info("Store internal views rebuilt");
-
 		aliasManager.rebuildAliasesMap(workingState.accounts(), (num, account) -> {
 			if (account.isSmartContract()) {
 				usageLimits.recordContracts(1);

@@ -92,10 +92,10 @@ import static com.hedera.services.state.migration.StateVersions.FIRST_026X_VERSI
 import static com.hedera.services.state.migration.StateVersions.FIRST_027X_VERSION;
 import static com.hedera.services.state.migration.StateVersions.FIRST_028X_VERSION;
 import static com.hedera.services.state.migration.StateVersions.MINIMUM_SUPPORTED_VERSION;
-import static com.hedera.services.state.migration.StateVersions.RELEASE_0270_VERSION;
 import static com.hedera.services.state.migration.StateVersions.lastSoftwareVersionOf;
 import static com.hedera.services.utils.EntityIdUtils.parseAccount;
 import static com.swirlds.common.system.InitTrigger.GENESIS;
+import static com.swirlds.common.system.InitTrigger.RECONNECT;
 import static com.swirlds.common.system.InitTrigger.RESTART;
 
 /**
@@ -323,6 +323,10 @@ public class ServicesState extends PartialNaryMerkleInternal implements MerkleIn
 			if (trigger == GENESIS) {
 				app.sysAccountsCreator().ensureSystemAccounts(app.backingAccounts(), app.workingState().addressBook());
 				app.sysFilesManager().createManagedFilesIfMissing();
+			}
+			if (trigger != RECONNECT) {
+				// Once we have a dynamic address book, this will run unconditionally
+				app.sysFilesManager().updateStakeDetails();
 			}
 		}
 	}

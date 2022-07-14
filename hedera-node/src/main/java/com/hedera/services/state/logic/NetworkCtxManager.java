@@ -119,7 +119,7 @@ public class NetworkCtxManager {
 	public void loadObservableSysFilesIfNeeded() {
 		if (!systemFilesManager.areObservableFilesLoaded()) {
 			var networkCtxNow = networkCtx.get();
-			log.info("Observable files not yet loaded, doing now.");
+			log.info("Observable files not yet loaded, doing now");
 			systemFilesManager.loadObservableSystemFiles();
 			log.info("Loaded observable files");
 			networkCtxNow.resetThrottlingFromSavedSnapshots(handleThrottling);
