@@ -152,6 +152,8 @@ class PrngSystemPrecompiledContractTest {
 		initialSetUp();
 		given(creator.createUnsuccessfulSyntheticRecord(any())).willReturn(childRecord);
 		given(frame.getBlockValues()).willReturn(new HederaBlockValues(10L, 123L, consensusNow));
+		given(frame.getValue()).willReturn(Wei.ZERO);
+		given(frame.getInputData()).willReturn(Bytes.EMPTY);
 
 		final var response = subject.computePrngResult(10L, input, frame);
 		assertEquals(INVALID_OPERATION, response.getLeft().getHaltReason().get());
@@ -178,7 +180,8 @@ class PrngSystemPrecompiledContractTest {
 		given(creator.createUnsuccessfulSyntheticRecord(any())).willReturn(childRecord);
 		given(frame.getRemainingGas()).willReturn(0L);
 		given(frame.getBlockValues()).willReturn(new HederaBlockValues(10L, 123L, consensusNow));
-
+		given(frame.getValue()).willReturn(Wei.ZERO);
+		given(frame.getInputData()).willReturn(Bytes.EMPTY);
 		final var response = subject.computePrngResult(10L, input, frame);
 		assertEquals(INVALID_OPERATION, response.getLeft().getHaltReason().get());
 		assertEquals(INSUFFICIENT_GAS, response.getRight());
@@ -196,6 +199,8 @@ class PrngSystemPrecompiledContractTest {
 		given(creator.createSuccessfulSyntheticRecord(anyList(), captor.capture(), anyString())).willReturn(childRecord);
 		given(runningHashLeaf.nMinusThreeRunningHash()).willReturn(WELL_KNOWN_HASH);
 		given(frame.getBlockValues()).willReturn(new HederaBlockValues(10L, 123L, consensusNow));
+		given(frame.getValue()).willReturn(Wei.ZERO);
+		given(frame.getInputData()).willReturn(Bytes.EMPTY);
 
 		final var response = subject.computePrngResult(10L, input, frame);
 		assertEquals(Optional.empty(), response.getLeft().getHaltReason());
@@ -219,6 +224,8 @@ class PrngSystemPrecompiledContractTest {
 		given(creator.createSuccessfulSyntheticRecord(anyList(), captor.capture(), anyString())).willReturn(childRecord);
 		given(runningHashLeaf.nMinusThreeRunningHash()).willReturn(WELL_KNOWN_HASH);
 		given(frame.getBlockValues()).willReturn(new HederaBlockValues(10L, 123L, consensusNow));
+		given(frame.getValue()).willReturn(Wei.ZERO);
+		given(frame.getInputData()).willReturn(Bytes.EMPTY);
 
 		final var response = subject.computePrngResult(10L, input, frame);
 		assertEquals(Optional.empty(), response.getLeft().getHaltReason());
@@ -240,6 +247,8 @@ class PrngSystemPrecompiledContractTest {
 		final var input = random256BitGeneratorInput();
 		initialSetUp();
 		given(frame.getBlockValues()).willReturn(new HederaBlockValues(10L, 123L, consensusNow));
+		given(frame.getValue()).willReturn(Wei.ZERO);
+		given(frame.getInputData()).willReturn(Bytes.EMPTY);
 		final var logic = mock(PrngLogic.class);
 		subject = new PrngSystemPrecompiledContract(gasCalculator, logic, creator, recordsHistorian,
 				pricingUtils, livePricesSource, dynamicProperties);
@@ -342,6 +351,8 @@ class PrngSystemPrecompiledContractTest {
 		given(updater.parentUpdater()).willReturn(Optional.empty());
 		given(creator.createSuccessfulSyntheticRecord(anyList(), any(), anyString())).willReturn(childRecord);
 		given(frame.getBlockValues()).willReturn(new HederaBlockValues(10L, 123L, consensusNow));
+		given(frame.getValue()).willReturn(Wei.ZERO);
+		given(frame.getInputData()).willReturn(Bytes.EMPTY);
 		given(runningHashLeaf.nMinusThreeRunningHash()).willReturn(new Hash(TxnUtils.randomUtf8Bytes(48)));
 
 		final var msg = assertThrows(InvalidTransactionException.class, () -> subject.computePrecompile(input, frame));
@@ -355,6 +366,8 @@ class PrngSystemPrecompiledContractTest {
 				Bytes32.leftPad(Bytes.wrap(ByteBuffer.allocate(8).putLong(Long.MAX_VALUE).array())));
 		initialSetUp();
 		given(frame.getBlockValues()).willReturn(new HederaBlockValues(10L, 123L, consensusNow));
+		given(frame.getValue()).willReturn(Wei.ZERO);
+		given(frame.getInputData()).willReturn(Bytes.EMPTY);
 		final var response = subject.computePrngResult(10L, input, frame);
 
 		assertEquals(INVALID_OPERATION, response.getLeft().getHaltReason().get());

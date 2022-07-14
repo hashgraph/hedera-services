@@ -486,10 +486,12 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 					childRecord,
 					result,
 					errorStatus,
-					messageFrame,
 					dynamicProperties.shouldExportPrecompileResults(),
 					precompile.shouldAddTraceabilityFieldsToRecord(),
-					senderAddress);
+					senderAddress,
+					provider.getRemainingGas(),
+					provider.getValue().toLong(),
+					provider.getInputData().toArrayUnsafe());
 		}
 	}
 

@@ -78,6 +78,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
@@ -127,6 +128,8 @@ class DirectCallsTxProcessorTest {
 	private HbarCentExchange exchange;
 	@Mock
 	private ContractAliases aliases;
+	@Mock
+	private PrecompileMessage precompileMessage;
 
 
 	private final Account sender = new Account(new Id(0, 0, 1002));
@@ -140,7 +143,6 @@ class DirectCallsTxProcessorTest {
 	private final Address alias = Address.fromHexString("0xabcdefabcdefabcdefbabcdefabcdefabcdefbbb");
 
 	private DirectCallsTxProcessor directCallsTxProcessor;
-	private PrecompileMessage precompileMessage;
 
 	@BeforeEach
 	private void setup() {
@@ -569,6 +571,14 @@ class DirectCallsTxProcessorTest {
 
 		final var resolved = precompileMessage.unaliased(alias.toArrayUnsafe());
 		assertArrayEquals(receiverAddress.toArrayUnsafe(), resolved);
+	}
+
+	@Test
+	void testVoidMethodsOfPrecompileMessage() {
+		precompileMessage.setRevertReason(Bytes.EMPTY);
+		precompileMessage.addLog(null);
+		verify(precompileMessage, times(1)).addLog(null);
+		verify(precompileMessage, times(1)).setRevertReason(Bytes.EMPTY);
 	}
 
 	//Helpers

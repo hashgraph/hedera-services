@@ -26,7 +26,6 @@ import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
-import org.hyperledger.besu.evm.frame.MessageFrame;
 
 import java.util.Collections;
 import java.util.Optional;
@@ -42,11 +41,10 @@ public class PrecompileUtils {
 			final ExpirableTxnRecord.Builder childRecord,
 			final Bytes result,
 			final Optional<ResponseCodeEnum> errorStatus,
-			final MessageFrame messageFrame,
 			final boolean shouldExportPrecompileResults,
 			final boolean traceabilityOn,
-			final Address senderAddress
-	) {
+			final Address senderAddress,
+			long remainingGas, long value, byte[] inputData) {
 		if (shouldExportPrecompileResults) {
 			final var evmFnResult = new EvmFnResult(
 					HTS_PRECOMPILE_MIRROR_ENTITY_ID,
@@ -58,9 +56,9 @@ public class PrecompileUtils {
 					Collections.emptyList(),
 					EvmFnResult.EMPTY,
 					Collections.emptyMap(),
-					traceabilityOn ? messageFrame.getRemainingGas() : 0L,
-					traceabilityOn ? messageFrame.getValue().toLong() : 0L,
-					traceabilityOn ? messageFrame.getInputData().toArrayUnsafe() : EvmFnResult.EMPTY,
+					traceabilityOn ? remainingGas : 0L,
+					traceabilityOn ? value : 0L,
+					traceabilityOn ? inputData : EvmFnResult.EMPTY,
 					EntityId.fromAddress(senderAddress));
 			childRecord.setContractCallResult(evmFnResult);
 		}

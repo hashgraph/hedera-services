@@ -46,10 +46,12 @@ class PrecompileUtilsTest {
 				childRecord,
 				Bytes.ofUnsignedInt(10),
 				Optional.of(ResponseCodeEnum.FAIL_INVALID),
-				frame,
 				true,
 				true,
-				ALTBN128_ADD
+				ALTBN128_ADD,
+				frame.getRemainingGas(),
+				frame.getValue().toLong(),
+				frame.getInputData().toArrayUnsafe()
 		);
 		assertEquals("FAIL_INVALID", childRecord.getContractCallResult().getError());
 		assertEquals(10, Bytes.wrap(childRecord.getContractCallResult().getResult()).toInt());

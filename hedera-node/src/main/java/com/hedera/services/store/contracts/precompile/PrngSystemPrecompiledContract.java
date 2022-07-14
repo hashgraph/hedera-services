@@ -50,6 +50,7 @@ import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.precompile.AbstractPrecompiledContract;
 import org.hyperledger.besu.evm.precompile.PrecompiledContract;
+import org.jetbrains.annotations.NotNull;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -113,6 +114,7 @@ public class PrngSystemPrecompiledContract extends AbstractPrecompiledContract {
 		return gasRequirement;
 	}
 
+	@NotNull
 	@Override
 	@SuppressWarnings("rawtypes")
 	public PrecompileContractResult computePrecompile(final Bytes input, final MessageFrame frame) {
@@ -279,10 +281,12 @@ public class PrngSystemPrecompiledContract extends AbstractPrecompiledContract {
 				childRecord,
 				result,
 				errorStatus,
-				frame,
 				properties.shouldExportPrecompileResults(),
 				true,
-				senderAddress);
+				senderAddress,
+				frame.getRemainingGas(),
+				frame.getValue().toLong(),
+				frame.getInputData().toArrayUnsafe());
 	}
 
 	@VisibleForTesting
