@@ -36,7 +36,7 @@ import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.apache.tuweni.bytes.Bytes;
 
-import java.util.TreeMap;
+import java.util.Map;
 import java.util.function.UnaryOperator;
 
 import static com.hedera.services.exceptions.ValidationUtils.validateTrueOrRevert;
@@ -68,7 +68,7 @@ public class AllowancePrecompile extends AbstractReadOnlyPrecompile {
 	public Bytes getSuccessResultFor(final ExpirableTxnRecord.Builder childRecord) {
 		final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger = ledgers.accounts();
 		validateTrueOrRevert(accountsLedger.contains(allowanceWrapper.owner()), INVALID_ALLOWANCE_OWNER_ID);
-		final var allowances = (TreeMap<FcTokenAllowanceId, Long>) accountsLedger.get(
+		final var allowances = (Map<FcTokenAllowanceId, Long>) accountsLedger.get(
 				allowanceWrapper.owner(), FUNGIBLE_TOKEN_ALLOWANCES);
 		final var fcTokenAllowanceId = FcTokenAllowanceId.from(tokenId, allowanceWrapper.spender());
 		final var value = allowances.getOrDefault(fcTokenAllowanceId, 0L);

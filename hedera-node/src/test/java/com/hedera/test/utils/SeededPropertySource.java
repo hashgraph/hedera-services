@@ -500,6 +500,7 @@ public class SeededPropertySource {
 	public MerkleNetworkContext next0260NetworkContext() {
 		final var numThrottles = 5;
 		final var seeded = new MerkleNetworkContext();
+		seeded.setBlockNo(Long.MIN_VALUE);
 		seeded.setConsensusTimeOfLastHandledTxn(nextNullableInstant());
 		seeded.setSeqNo(nextSeqNo());
 		seeded.updateLastScannedEntity(nextInRangeLong());
@@ -529,6 +530,7 @@ public class SeededPropertySource {
 	public MerkleNetworkContext next0270NetworkContext() {
 		final var numThrottles = 5;
 		final var seeded = new MerkleNetworkContext();
+		seeded.setBlockNo(Long.MIN_VALUE);
 		seeded.setConsensusTimeOfLastHandledTxn(nextNullableInstant());
 		seeded.setSeqNo(nextSeqNo());
 		seeded.updateLastScannedEntity(nextInRangeLong());

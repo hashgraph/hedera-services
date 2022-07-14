@@ -34,8 +34,8 @@ contract SomeERC721Scenarios is HederaTokenService {
     function getApproved(
         address token,
         uint256 serialNo
-    ) external view {
-        IERC721(token).getApproved(serialNo);
+    ) external view returns (address) {
+        return IERC721(token).getApproved(serialNo);
     }
 
     function getBalanceOf(
@@ -56,8 +56,8 @@ contract SomeERC721Scenarios is HederaTokenService {
         address token,
         address owner,
         address operator
-    ) external view {
-        IERC721(token).isApprovedForAll(owner, operator);
+    ) external view returns (bool) {
+        return IERC721(token).isApprovedForAll(owner, operator);
     }
 
     function setApprovalForAll(
