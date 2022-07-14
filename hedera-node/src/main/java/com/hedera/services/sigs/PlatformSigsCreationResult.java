@@ -37,7 +37,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
  * associated to those keys.
  */
 public class PlatformSigsCreationResult {
-	private List<TransactionSignature> platformSigs = new ArrayList<>();
+	private final List<TransactionSignature> platformSigs = new ArrayList<>();
 	private Optional<Exception> terminatingEx = Optional.empty();
 
 	public List<TransactionSignature> getPlatformSigs() {

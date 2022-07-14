@@ -26,6 +26,7 @@ import com.hedera.services.legacy.core.jproto.JThresholdKey;
 import com.hedera.services.utils.accessors.SwirldsTxnAccessor;
 import com.swirlds.common.crypto.TransactionSignature;
 import com.swirlds.common.crypto.VerificationStatus;
+import com.swirlds.common.threading.futures.StandardFuture;
 
 import java.util.Arrays;
 import java.util.List;
@@ -182,6 +183,9 @@ public final class HederaKeyActivation {
 
 		private InvalidSignature() {
 			super(MEANINGLESS_BYTE, 0, 0, 0, 0, 0, 0);
+			final StandardFuture<Void> alreadyOver = new StandardFuture<>();
+			alreadyOver.complete(null);
+			setFuture(alreadyOver);
 		}
 
 		@Override
@@ -197,6 +201,9 @@ public final class HederaKeyActivation {
 
 		private ValidSignature() {
 			super(MEANINGLESS_BYTE, 0, 0, 0, 0, 0, 0);
+			final StandardFuture<Void> alreadyOver = new StandardFuture<>();
+			alreadyOver.complete(null);
+			setFuture(alreadyOver);
 		}
 
 		@Override
