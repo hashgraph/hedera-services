@@ -9,9 +9,9 @@ package com.hedera.services.store.contracts.precompile;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -33,17 +33,16 @@ import static org.mockito.Mockito.verifyNoInteractions;
 
 @ExtendWith(MockitoExtension.class)
 class PrecompileDefaultsTest {
-	@Mock
-	private WorldLedgers worldLedgers;
+    @Mock private WorldLedgers worldLedgers;
 
-	@Test
-	void customizationIsNoop() {
-		final var subject = mock(Precompile.class);
+    @Test
+    void customizationIsNoop() {
+        final var subject = mock(Precompile.class);
 
-		doCallRealMethod().when(subject).customizeTrackingLedgers(worldLedgers);
+        doCallRealMethod().when(subject).customizeTrackingLedgers(worldLedgers);
 
-		assertDoesNotThrow(() -> subject.customizeTrackingLedgers(worldLedgers));
+        assertDoesNotThrow(() -> subject.customizeTrackingLedgers(worldLedgers));
 
-		verifyNoInteractions(worldLedgers);
-	}
+        verifyNoInteractions(worldLedgers);
+    }
 }

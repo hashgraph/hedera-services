@@ -33,40 +33,40 @@ import java.util.Optional;
 
 import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.HTS_PRECOMPILE_MIRROR_ENTITY_ID;
 
-/**
- * Utility class for Precompile contracts
- */
+/** Utility class for Precompile contracts */
 public class PrecompileUtils {
-	public static void addContractCallResultToRecord(
-			final long gasRequirement,
-			final ExpirableTxnRecord.Builder childRecord,
-			final Bytes result,
-			final Optional<ResponseCodeEnum> errorStatus,
-			final MessageFrame messageFrame,
-			final boolean shouldExportPrecompileResults,
-			final boolean traceabilityOn,
-			final Address senderAddress
-	) {
-		if (shouldExportPrecompileResults) {
-			final var evmFnResult = new EvmFnResult(
-					HTS_PRECOMPILE_MIRROR_ENTITY_ID,
-					result != null ? result.toArrayUnsafe() : EvmFnResult.EMPTY,
-					errorStatus.map(ResponseCodeEnum::name).orElse(null),
-					EvmFnResult.EMPTY,
-					gasRequirement,
-					Collections.emptyList(),
-					Collections.emptyList(),
-					EvmFnResult.EMPTY,
-					Collections.emptyMap(),
-					traceabilityOn ? messageFrame.getRemainingGas() : 0L,
-					traceabilityOn ? messageFrame.getValue().toLong() : 0L,
-					traceabilityOn ? messageFrame.getInputData().toArrayUnsafe() : EvmFnResult.EMPTY,
-					EntityId.fromAddress(senderAddress));
-			childRecord.setContractCallResult(evmFnResult);
-		}
-	}
+    public static void addContractCallResultToRecord(
+            final long gasRequirement,
+            final ExpirableTxnRecord.Builder childRecord,
+            final Bytes result,
+            final Optional<ResponseCodeEnum> errorStatus,
+            final MessageFrame messageFrame,
+            final boolean shouldExportPrecompileResults,
+            final boolean traceabilityOn,
+            final Address senderAddress) {
+        if (shouldExportPrecompileResults) {
+            final var evmFnResult =
+                    new EvmFnResult(
+                            HTS_PRECOMPILE_MIRROR_ENTITY_ID,
+                            result != null ? result.toArrayUnsafe() : EvmFnResult.EMPTY,
+                            errorStatus.map(ResponseCodeEnum::name).orElse(null),
+                            EvmFnResult.EMPTY,
+                            gasRequirement,
+                            Collections.emptyList(),
+                            Collections.emptyList(),
+                            EvmFnResult.EMPTY,
+                            Collections.emptyMap(),
+                            traceabilityOn ? messageFrame.getRemainingGas() : 0L,
+                            traceabilityOn ? messageFrame.getValue().toLong() : 0L,
+                            traceabilityOn
+                                    ? messageFrame.getInputData().toArrayUnsafe()
+                                    : EvmFnResult.EMPTY,
+                            EntityId.fromAddress(senderAddress));
+            childRecord.setContractCallResult(evmFnResult);
+        }
+    }
 
-	private PrecompileUtils() {
-		throw new UnsupportedOperationException("Utility Class");
-	}
+    private PrecompileUtils() {
+        throw new UnsupportedOperationException("Utility Class");
+    }
 }

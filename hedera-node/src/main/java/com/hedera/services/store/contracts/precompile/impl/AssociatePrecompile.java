@@ -37,31 +37,40 @@ import javax.inject.Provider;
 import java.util.function.UnaryOperator;
 
 public class AssociatePrecompile extends AbstractAssociatePrecompile {
-	public AssociatePrecompile(
-			final WorldLedgers ledgers,
-			final DecodingFacade decoder,
-			final ContractAliases aliases,
-			final EvmSigsVerifier sigsVerifier,
-			final SideEffectsTracker sideEffects,
-			final SyntheticTxnFactory syntheticTxnFactory,
-			final InfrastructureFactory infrastructureFactory,
-			final PrecompilePricingUtils pricingUtils,
-			final Provider<FeeCalculator> feeCalculator,
-			final StateView currentView
-	) {
-		super(ledgers, decoder, aliases, sigsVerifier, sideEffects, syntheticTxnFactory, infrastructureFactory,
-				pricingUtils, feeCalculator, currentView);
-	}
+    public AssociatePrecompile(
+            final WorldLedgers ledgers,
+            final DecodingFacade decoder,
+            final ContractAliases aliases,
+            final EvmSigsVerifier sigsVerifier,
+            final SideEffectsTracker sideEffects,
+            final SyntheticTxnFactory syntheticTxnFactory,
+            final InfrastructureFactory infrastructureFactory,
+            final PrecompilePricingUtils pricingUtils,
+            final Provider<FeeCalculator> feeCalculator,
+            final StateView currentView) {
+        super(
+                ledgers,
+                decoder,
+                aliases,
+                sigsVerifier,
+                sideEffects,
+                syntheticTxnFactory,
+                infrastructureFactory,
+                pricingUtils,
+                feeCalculator,
+                currentView);
+    }
 
-	@Override
-	public TransactionBody.Builder body(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
-		associateOp = decoder.decodeAssociation(input, aliasResolver);
-		transactionBody = syntheticTxnFactory.createAssociate(associateOp);
-		return transactionBody;
-	}
+    @Override
+    public TransactionBody.Builder body(
+            final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
+        associateOp = decoder.decodeAssociation(input, aliasResolver);
+        transactionBody = syntheticTxnFactory.createAssociate(associateOp);
+        return transactionBody;
+    }
 
-	@Override
-	public long getGasRequirement(long blockTimestamp) {
-		return pricingUtils.computeGasRequirement(blockTimestamp,this, transactionBody);
-	}
+    @Override
+    public long getGasRequirement(long blockTimestamp) {
+        return pricingUtils.computeGasRequirement(blockTimestamp, this, transactionBody);
+    }
 }

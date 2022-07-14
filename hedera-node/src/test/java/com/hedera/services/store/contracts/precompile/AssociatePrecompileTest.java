@@ -116,549 +116,608 @@ import static org.mockito.Mockito.verify;
 @ExtendWith(MockitoExtension.class)
 @SuppressWarnings("rawtypes")
 class AssociatePrecompileTest {
-	@Mock
-	private GlobalDynamicProperties dynamicProperties;
-	@Mock
-	private GasCalculator gasCalculator;
-	@Mock
-	private RecordsHistorian recordsHistorian;
-	@Mock
-	private TxnAwareEvmSigsVerifier sigsVerifier;
-	@Mock
-	private DecodingFacade decoder;
-	@Mock
-	private EncodingFacade encoder;
-	@Mock
-	private SyntheticTxnFactory syntheticTxnFactory;
-	@Mock
-	private ExpiringCreations creator;
-	@Mock
-	private AccountStore accountStore;
-	@Mock
-	private TypedTokenStore tokenStore;
-	@Mock
-	private AssociateLogic associateLogic;
-	@Mock
-	private SideEffectsTracker sideEffects;
-	@Mock
-	private MessageFrame frame;
-	@Mock
-	private MessageFrame parentFrame;
-	@Mock
-	private Deque<MessageFrame> frameDeque;
-	@Mock
-	private Iterator<MessageFrame> dequeIterator;
-	@Mock
-	private HederaStackedWorldStateUpdater worldUpdater;
-	@Mock
-	private WorldLedgers wrappedLedgers;
-	@Mock
-	private TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accounts;
-	@Mock
-	private TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus> tokenRels;
-	@Mock
-	private TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nfts;
-	@Mock
-	private TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokens;
-	@Mock
-	private TransactionBody.Builder mockSynthBodyBuilder;
-	@Mock
-	private ExpirableTxnRecord.Builder mockRecordBuilder;
-	@Mock
-	private ImpliedTransfersMarshal impliedTransfersMarshal;
-	@Mock
-	private FeeCalculator feeCalculator;
-	@Mock
-	private FeeObject mockFeeObject;
-	@Mock
-	private StateView stateView;
-	@Mock
-	private ContractAliases aliases;
-	@Mock
-	private UsagePricesProvider resourceCosts;
-	@Mock
-	private InfrastructureFactory infrastructureFactory;
-	@Mock
-	private AssetsLoader assetLoader;
-	@Mock
-	private HbarCentExchange exchange;
-	@Mock
-	private ExchangeRate exchangeRate;
+    @Mock private GlobalDynamicProperties dynamicProperties;
+    @Mock private GasCalculator gasCalculator;
+    @Mock private RecordsHistorian recordsHistorian;
+    @Mock private TxnAwareEvmSigsVerifier sigsVerifier;
+    @Mock private DecodingFacade decoder;
+    @Mock private EncodingFacade encoder;
+    @Mock private SyntheticTxnFactory syntheticTxnFactory;
+    @Mock private ExpiringCreations creator;
+    @Mock private AccountStore accountStore;
+    @Mock private TypedTokenStore tokenStore;
+    @Mock private AssociateLogic associateLogic;
+    @Mock private SideEffectsTracker sideEffects;
+    @Mock private MessageFrame frame;
+    @Mock private MessageFrame parentFrame;
+    @Mock private Deque<MessageFrame> frameDeque;
+    @Mock private Iterator<MessageFrame> dequeIterator;
+    @Mock private HederaStackedWorldStateUpdater worldUpdater;
+    @Mock private WorldLedgers wrappedLedgers;
+    @Mock private TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accounts;
 
-	private static final long TEST_SERVICE_FEE = 5_000_000;
-	private static final long TEST_NETWORK_FEE = 400_000;
-	private static final long TEST_NODE_FEE = 300_000;
-	private static final int CENTS_RATE = 12;
-	private static final int HBAR_RATE = 1;
-	private static final long EXPECTED_GAS_PRICE =
-			(TEST_SERVICE_FEE + TEST_NETWORK_FEE + TEST_NODE_FEE) / DEFAULT_GAS_PRICE * 6 / 5;
+    @Mock
+    private TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus>
+            tokenRels;
 
-	private HTSPrecompiledContract subject;
+    @Mock private TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nfts;
+    @Mock private TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokens;
+    @Mock private TransactionBody.Builder mockSynthBodyBuilder;
+    @Mock private ExpirableTxnRecord.Builder mockRecordBuilder;
+    @Mock private ImpliedTransfersMarshal impliedTransfersMarshal;
+    @Mock private FeeCalculator feeCalculator;
+    @Mock private FeeObject mockFeeObject;
+    @Mock private StateView stateView;
+    @Mock private ContractAliases aliases;
+    @Mock private UsagePricesProvider resourceCosts;
+    @Mock private InfrastructureFactory infrastructureFactory;
+    @Mock private AssetsLoader assetLoader;
+    @Mock private HbarCentExchange exchange;
+    @Mock private ExchangeRate exchangeRate;
 
-	@BeforeEach
-	void setUp() throws IOException {
-		Map<HederaFunctionality, Map<SubType, BigDecimal>> canonicalPrices = new HashMap<>();
-		canonicalPrices.put(HederaFunctionality.TokenAssociateToAccount, Map.of(SubType.DEFAULT, BigDecimal.valueOf(0)));
-		given(assetLoader.loadCanonicalPrices()).willReturn(canonicalPrices);
-		PrecompilePricingUtils precompilePricingUtils = new PrecompilePricingUtils(assetLoader, exchange, () -> feeCalculator, resourceCosts, stateView);
-		subject = new HTSPrecompiledContract(
-				dynamicProperties, gasCalculator, recordsHistorian, sigsVerifier, decoder, encoder, syntheticTxnFactory,
-				creator, impliedTransfersMarshal, () -> feeCalculator, stateView, precompilePricingUtils,
-				infrastructureFactory);
+    private static final long TEST_SERVICE_FEE = 5_000_000;
+    private static final long TEST_NETWORK_FEE = 400_000;
+    private static final long TEST_NODE_FEE = 300_000;
+    private static final int CENTS_RATE = 12;
+    private static final int HBAR_RATE = 1;
+    private static final long EXPECTED_GAS_PRICE =
+            (TEST_SERVICE_FEE + TEST_NETWORK_FEE + TEST_NODE_FEE) / DEFAULT_GAS_PRICE * 6 / 5;
 
-		given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
-		given(worldUpdater.permissivelyUnaliased(any())).willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
-	}
+    private HTSPrecompiledContract subject;
 
-	@Test
-	void computeAssociateTokenFailurePathWorks() {
-		// given:
-		givenCommonFrameContext();
-		givenPricingUtilsContext();
-		Bytes pretendArguments = Bytes.ofUnsignedInt(ABI_ID_ASSOCIATE_TOKEN);
-		given(decoder.decodeAssociation(eq(pretendArguments), any())).willReturn(associateOp);
-		given(syntheticTxnFactory.createAssociate(associateOp)).willReturn(mockSynthBodyBuilder);
-		given(sigsVerifier.hasActiveKey(false,
-				Id.fromGrpcAccount(accountMerkleId).asEvmAddress(), senderAddress,
-				wrappedLedgers))
-				.willReturn(false);
-		given(feeCalculator.estimatedGasPriceInTinybars(HederaFunctionality.ContractCall, timestamp))
-				.willReturn(1L);
-		given(mockSynthBodyBuilder.build()).
-				willReturn(TransactionBody.newBuilder().build());
-		given(mockSynthBodyBuilder.setTransactionID(any(TransactionID.class)))
-				.willReturn(mockSynthBodyBuilder);
-		given(feeCalculator.computeFee(any(), any(), any(), any()))
-				.willReturn(mockFeeObject);
-		given(mockFeeObject.getServiceFee())
-				.willReturn(1L);
-		given(creator.createUnsuccessfulSyntheticRecord(INVALID_SIGNATURE)).willReturn(mockRecordBuilder);
+    @BeforeEach
+    void setUp() throws IOException {
+        Map<HederaFunctionality, Map<SubType, BigDecimal>> canonicalPrices = new HashMap<>();
+        canonicalPrices.put(
+                HederaFunctionality.TokenAssociateToAccount,
+                Map.of(SubType.DEFAULT, BigDecimal.valueOf(0)));
+        given(assetLoader.loadCanonicalPrices()).willReturn(canonicalPrices);
+        PrecompilePricingUtils precompilePricingUtils =
+                new PrecompilePricingUtils(
+                        assetLoader, exchange, () -> feeCalculator, resourceCosts, stateView);
+        subject =
+                new HTSPrecompiledContract(
+                        dynamicProperties,
+                        gasCalculator,
+                        recordsHistorian,
+                        sigsVerifier,
+                        decoder,
+                        encoder,
+                        syntheticTxnFactory,
+                        creator,
+                        impliedTransfersMarshal,
+                        () -> feeCalculator,
+                        stateView,
+                        precompilePricingUtils,
+                        infrastructureFactory);
 
-		// when:
-		subject.prepareFields(frame);
-		subject.prepareComputation(pretendArguments, a -> a);
-		subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
-		final var result = subject.computeInternal(frame);
+        given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
+        given(worldUpdater.permissivelyUnaliased(any()))
+                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+    }
 
-		// then:
-		assertEquals(invalidSigResult, result);
-		verify(worldUpdater).manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
-	}
+    @Test
+    void computeAssociateTokenFailurePathWorks() {
+        // given:
+        givenCommonFrameContext();
+        givenPricingUtilsContext();
+        Bytes pretendArguments = Bytes.ofUnsignedInt(ABI_ID_ASSOCIATE_TOKEN);
+        given(decoder.decodeAssociation(eq(pretendArguments), any())).willReturn(associateOp);
+        given(syntheticTxnFactory.createAssociate(associateOp)).willReturn(mockSynthBodyBuilder);
+        given(
+                        sigsVerifier.hasActiveKey(
+                                false,
+                                Id.fromGrpcAccount(accountMerkleId).asEvmAddress(),
+                                senderAddress,
+                                wrappedLedgers))
+                .willReturn(false);
+        given(
+                        feeCalculator.estimatedGasPriceInTinybars(
+                                HederaFunctionality.ContractCall, timestamp))
+                .willReturn(1L);
+        given(mockSynthBodyBuilder.build()).willReturn(TransactionBody.newBuilder().build());
+        given(mockSynthBodyBuilder.setTransactionID(any(TransactionID.class)))
+                .willReturn(mockSynthBodyBuilder);
+        given(feeCalculator.computeFee(any(), any(), any(), any())).willReturn(mockFeeObject);
+        given(mockFeeObject.getServiceFee()).willReturn(1L);
+        given(creator.createUnsuccessfulSyntheticRecord(INVALID_SIGNATURE))
+                .willReturn(mockRecordBuilder);
 
-	@Test
-	void computeAssociateTokenFailurePathWorksWithNullLedgers() {
-		// given:
-		givenFrameContextWithDelegateCallFromParent();
-		givenPricingUtilsContext();
-		Bytes pretendArguments = Bytes.ofUnsignedInt(ABI_ID_ASSOCIATE_TOKEN);
-		given(decoder.decodeAssociation(eq(pretendArguments), any())).willReturn(associateOp);
-		given(syntheticTxnFactory.createAssociate(associateOp)).willReturn(mockSynthBodyBuilder);
-		given(sigsVerifier.hasActiveKey(false,
-				Id.fromGrpcAccount(accountMerkleId).asEvmAddress(), senderAddress,
-				null))
-				.willThrow(new NullPointerException());
-		given(feeCalculator.estimatedGasPriceInTinybars(HederaFunctionality.ContractCall, timestamp))
-				.willReturn(1L);
-		given(mockSynthBodyBuilder.build()).
-				willReturn(TransactionBody.newBuilder().build());
-		given(mockSynthBodyBuilder.setTransactionID(any(TransactionID.class)))
-				.willReturn(mockSynthBodyBuilder);
-		given(feeCalculator.computeFee(any(), any(), any(), any()))
-				.willReturn(mockFeeObject);
-		given(mockFeeObject.getServiceFee())
-				.willReturn(1L);
-		given(creator.createUnsuccessfulSyntheticRecord(FAIL_INVALID)).willReturn(mockRecordBuilder);
+        // when:
+        subject.prepareFields(frame);
+        subject.prepareComputation(pretendArguments, a -> a);
+        subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
+        final var result = subject.computeInternal(frame);
 
-		// when:
-		subject.prepareFields(frame);
-		subject.prepareComputation(pretendArguments, a -> a);
-		subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
-		final var result = subject.computeInternal(frame);
+        // then:
+        assertEquals(invalidSigResult, result);
+        verify(worldUpdater)
+                .manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
+    }
 
-		// then:
-		assertEquals(failInvalidResult, result);
-		verify(worldUpdater).manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
-	}
+    @Test
+    void computeAssociateTokenFailurePathWorksWithNullLedgers() {
+        // given:
+        givenFrameContextWithDelegateCallFromParent();
+        givenPricingUtilsContext();
+        Bytes pretendArguments = Bytes.ofUnsignedInt(ABI_ID_ASSOCIATE_TOKEN);
+        given(decoder.decodeAssociation(eq(pretendArguments), any())).willReturn(associateOp);
+        given(syntheticTxnFactory.createAssociate(associateOp)).willReturn(mockSynthBodyBuilder);
+        given(
+                        sigsVerifier.hasActiveKey(
+                                false,
+                                Id.fromGrpcAccount(accountMerkleId).asEvmAddress(),
+                                senderAddress,
+                                null))
+                .willThrow(new NullPointerException());
+        given(
+                        feeCalculator.estimatedGasPriceInTinybars(
+                                HederaFunctionality.ContractCall, timestamp))
+                .willReturn(1L);
+        given(mockSynthBodyBuilder.build()).willReturn(TransactionBody.newBuilder().build());
+        given(mockSynthBodyBuilder.setTransactionID(any(TransactionID.class)))
+                .willReturn(mockSynthBodyBuilder);
+        given(feeCalculator.computeFee(any(), any(), any(), any())).willReturn(mockFeeObject);
+        given(mockFeeObject.getServiceFee()).willReturn(1L);
+        given(creator.createUnsuccessfulSyntheticRecord(FAIL_INVALID))
+                .willReturn(mockRecordBuilder);
 
-	@Test
-	void computeAssociateTokenHappyPathWorksWithDelegateCall() {
-		givenPricingUtilsContext();
-		given(frame.getContractAddress()).willReturn(contractAddress);
-		given(frame.getRecipientAddress()).willReturn(contractAddress);
-		given(frame.getSenderAddress()).willReturn(senderAddress);
-		given(frame.getWorldUpdater()).willReturn(worldUpdater);
-		given(frame.getRemainingGas()).willReturn(300L);
-		given(frame.getValue()).willReturn(Wei.ZERO);
-		Optional<WorldUpdater> parent = Optional.of(worldUpdater);
-		given(worldUpdater.parentUpdater()).willReturn(parent);
-		given(worldUpdater.wrappedTrackingLedgers(any())).willReturn(wrappedLedgers);
-		given(frame.getRecipientAddress()).willReturn(recipientAddress);
-		givenLedgers();
-		Bytes pretendArguments = Bytes.ofUnsignedInt(ABI_ID_ASSOCIATE_TOKEN);
-		given(decoder.decodeAssociation(eq(pretendArguments), any()))
-				.willReturn(associateOp);
-		given(syntheticTxnFactory.createAssociate(associateOp))
-				.willReturn(mockSynthBodyBuilder);
-		given(sigsVerifier.hasActiveKey(true,
-				Id.fromGrpcAccount(accountMerkleId).asEvmAddress(), recipientAddress,
-				wrappedLedgers))
-				.willReturn(true);
-		given(infrastructureFactory.newAccountStore(accounts)).willReturn(accountStore);
-		given(infrastructureFactory.newTokenStore(accountStore, sideEffects, tokens, nfts, tokenRels))
-				.willReturn(tokenStore);
-		given(infrastructureFactory.newAssociateLogic(accountStore, tokenStore)).willReturn(associateLogic);
-		given(feeCalculator.estimatedGasPriceInTinybars(HederaFunctionality.ContractCall, timestamp))
-				.willReturn(1L);
-		given(mockSynthBodyBuilder.build()).
-				willReturn(TransactionBody.newBuilder().build());
-		given(mockSynthBodyBuilder.setTransactionID(any(TransactionID.class)))
-				.willReturn(mockSynthBodyBuilder);
-		given(feeCalculator.computeFee(any(), any(), any(), any()))
-				.willReturn(mockFeeObject);
-		given(mockFeeObject.getServiceFee())
-				.willReturn(1L);
-		given(creator.createSuccessfulSyntheticRecord(Collections.emptyList(), sideEffects, EMPTY_MEMO))
-				.willReturn(mockRecordBuilder);
-		given(worldUpdater.aliases()).willReturn(aliases);
-		given(aliases.resolveForEvm(any())).willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
-		given(associateLogic.validateSyntax(any())).willReturn(OK);
+        // when:
+        subject.prepareFields(frame);
+        subject.prepareComputation(pretendArguments, a -> a);
+        subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
+        final var result = subject.computeInternal(frame);
 
-		// when:
-		subject.prepareFields(frame);
-		subject.prepareComputation(pretendArguments, a -> a);
-		subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
-		final var result = subject.computeInternal(frame);
+        // then:
+        assertEquals(failInvalidResult, result);
+        verify(worldUpdater)
+                .manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
+    }
 
-		// then:
-		assertEquals(successResult, result);
-		verify(associateLogic).associate(Id.fromGrpcAccount(accountMerkleId), Collections.singletonList(tokenMerkleId));
-		verify(wrappedLedgers).commit();
-		verify(worldUpdater).manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
-	}
+    @Test
+    void computeAssociateTokenHappyPathWorksWithDelegateCall() {
+        givenPricingUtilsContext();
+        given(frame.getContractAddress()).willReturn(contractAddress);
+        given(frame.getRecipientAddress()).willReturn(contractAddress);
+        given(frame.getSenderAddress()).willReturn(senderAddress);
+        given(frame.getWorldUpdater()).willReturn(worldUpdater);
+        given(frame.getRemainingGas()).willReturn(300L);
+        given(frame.getValue()).willReturn(Wei.ZERO);
+        Optional<WorldUpdater> parent = Optional.of(worldUpdater);
+        given(worldUpdater.parentUpdater()).willReturn(parent);
+        given(worldUpdater.wrappedTrackingLedgers(any())).willReturn(wrappedLedgers);
+        given(frame.getRecipientAddress()).willReturn(recipientAddress);
+        givenLedgers();
+        Bytes pretendArguments = Bytes.ofUnsignedInt(ABI_ID_ASSOCIATE_TOKEN);
+        given(decoder.decodeAssociation(eq(pretendArguments), any())).willReturn(associateOp);
+        given(syntheticTxnFactory.createAssociate(associateOp)).willReturn(mockSynthBodyBuilder);
+        given(
+                        sigsVerifier.hasActiveKey(
+                                true,
+                                Id.fromGrpcAccount(accountMerkleId).asEvmAddress(),
+                                recipientAddress,
+                                wrappedLedgers))
+                .willReturn(true);
+        given(infrastructureFactory.newAccountStore(accounts)).willReturn(accountStore);
+        given(
+                        infrastructureFactory.newTokenStore(
+                                accountStore, sideEffects, tokens, nfts, tokenRels))
+                .willReturn(tokenStore);
+        given(infrastructureFactory.newAssociateLogic(accountStore, tokenStore))
+                .willReturn(associateLogic);
+        given(
+                        feeCalculator.estimatedGasPriceInTinybars(
+                                HederaFunctionality.ContractCall, timestamp))
+                .willReturn(1L);
+        given(mockSynthBodyBuilder.build()).willReturn(TransactionBody.newBuilder().build());
+        given(mockSynthBodyBuilder.setTransactionID(any(TransactionID.class)))
+                .willReturn(mockSynthBodyBuilder);
+        given(feeCalculator.computeFee(any(), any(), any(), any())).willReturn(mockFeeObject);
+        given(mockFeeObject.getServiceFee()).willReturn(1L);
+        given(
+                        creator.createSuccessfulSyntheticRecord(
+                                Collections.emptyList(), sideEffects, EMPTY_MEMO))
+                .willReturn(mockRecordBuilder);
+        given(worldUpdater.aliases()).willReturn(aliases);
+        given(aliases.resolveForEvm(any()))
+                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+        given(associateLogic.validateSyntax(any())).willReturn(OK);
 
-	@Test
-	void computeAssociateTokenBadSyntax() {
-		givenPricingUtilsContext();
-		given(frame.getContractAddress()).willReturn(contractAddress);
-		given(frame.getRecipientAddress()).willReturn(contractAddress);
-		given(frame.getSenderAddress()).willReturn(senderAddress);
-		given(frame.getWorldUpdater()).willReturn(worldUpdater);
-		given(frame.getRemainingGas()).willReturn(300L);
-		given(frame.getValue()).willReturn(Wei.ZERO);
-		Optional<WorldUpdater> parent = Optional.of(worldUpdater);
-		given(worldUpdater.parentUpdater()).willReturn(parent);
-		given(worldUpdater.wrappedTrackingLedgers(any())).willReturn(wrappedLedgers);
-		given(frame.getRecipientAddress()).willReturn(recipientAddress);
-		givenLedgers();
-		Bytes pretendArguments = Bytes.ofUnsignedInt(ABI_ID_ASSOCIATE_TOKEN);
-		given(decoder.decodeAssociation(eq(pretendArguments), any()))
-				.willReturn(associateOp);
-		given(syntheticTxnFactory.createAssociate(associateOp))
-				.willReturn(mockSynthBodyBuilder);
-		given(sigsVerifier.hasActiveKey(true,
-				Id.fromGrpcAccount(accountMerkleId).asEvmAddress(), recipientAddress,
-				wrappedLedgers))
-				.willReturn(true);
-		given(infrastructureFactory.newAccountStore(accounts)).willReturn(accountStore);
-		given(infrastructureFactory.newTokenStore(accountStore, sideEffects, tokens, nfts, tokenRels))
-				.willReturn(tokenStore);
-		given(infrastructureFactory.newAssociateLogic(accountStore, tokenStore)).willReturn(associateLogic);
-		given(feeCalculator.estimatedGasPriceInTinybars(HederaFunctionality.ContractCall, timestamp))
-				.willReturn(1L);
-		given(mockSynthBodyBuilder.build()).
-				willReturn(TransactionBody.newBuilder().build());
-		given(mockSynthBodyBuilder.setTransactionID(any(TransactionID.class)))
-				.willReturn(mockSynthBodyBuilder);
-		given(feeCalculator.computeFee(any(), any(), any(), any()))
-				.willReturn(mockFeeObject);
-		given(mockFeeObject.getServiceFee())
-				.willReturn(1L);
-		given(worldUpdater.aliases()).willReturn(aliases);
-		given(aliases.resolveForEvm(any())).willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
-		given(associateLogic.validateSyntax(any())).willReturn(TOKEN_ID_REPEATED_IN_TOKEN_LIST);
-		given(creator.createUnsuccessfulSyntheticRecord(TOKEN_ID_REPEATED_IN_TOKEN_LIST)).willReturn(mockRecordBuilder);
+        // when:
+        subject.prepareFields(frame);
+        subject.prepareComputation(pretendArguments, a -> a);
+        subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
+        final var result = subject.computeInternal(frame);
 
-		// when:
-		subject.prepareFields(frame);
-		subject.prepareComputation(pretendArguments, a -> a);
-		subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
-		subject.computeInternal(frame);
+        // then:
+        assertEquals(successResult, result);
+        verify(associateLogic)
+                .associate(
+                        Id.fromGrpcAccount(accountMerkleId),
+                        Collections.singletonList(tokenMerkleId));
+        verify(wrappedLedgers).commit();
+        verify(worldUpdater)
+                .manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
+    }
 
-		verify(wrappedLedgers, never()).commit();
-	}
+    @Test
+    void computeAssociateTokenBadSyntax() {
+        givenPricingUtilsContext();
+        given(frame.getContractAddress()).willReturn(contractAddress);
+        given(frame.getRecipientAddress()).willReturn(contractAddress);
+        given(frame.getSenderAddress()).willReturn(senderAddress);
+        given(frame.getWorldUpdater()).willReturn(worldUpdater);
+        given(frame.getRemainingGas()).willReturn(300L);
+        given(frame.getValue()).willReturn(Wei.ZERO);
+        Optional<WorldUpdater> parent = Optional.of(worldUpdater);
+        given(worldUpdater.parentUpdater()).willReturn(parent);
+        given(worldUpdater.wrappedTrackingLedgers(any())).willReturn(wrappedLedgers);
+        given(frame.getRecipientAddress()).willReturn(recipientAddress);
+        givenLedgers();
+        Bytes pretendArguments = Bytes.ofUnsignedInt(ABI_ID_ASSOCIATE_TOKEN);
+        given(decoder.decodeAssociation(eq(pretendArguments), any())).willReturn(associateOp);
+        given(syntheticTxnFactory.createAssociate(associateOp)).willReturn(mockSynthBodyBuilder);
+        given(
+                        sigsVerifier.hasActiveKey(
+                                true,
+                                Id.fromGrpcAccount(accountMerkleId).asEvmAddress(),
+                                recipientAddress,
+                                wrappedLedgers))
+                .willReturn(true);
+        given(infrastructureFactory.newAccountStore(accounts)).willReturn(accountStore);
+        given(
+                        infrastructureFactory.newTokenStore(
+                                accountStore, sideEffects, tokens, nfts, tokenRels))
+                .willReturn(tokenStore);
+        given(infrastructureFactory.newAssociateLogic(accountStore, tokenStore))
+                .willReturn(associateLogic);
+        given(
+                        feeCalculator.estimatedGasPriceInTinybars(
+                                HederaFunctionality.ContractCall, timestamp))
+                .willReturn(1L);
+        given(mockSynthBodyBuilder.build()).willReturn(TransactionBody.newBuilder().build());
+        given(mockSynthBodyBuilder.setTransactionID(any(TransactionID.class)))
+                .willReturn(mockSynthBodyBuilder);
+        given(feeCalculator.computeFee(any(), any(), any(), any())).willReturn(mockFeeObject);
+        given(mockFeeObject.getServiceFee()).willReturn(1L);
+        given(worldUpdater.aliases()).willReturn(aliases);
+        given(aliases.resolveForEvm(any()))
+                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+        given(associateLogic.validateSyntax(any())).willReturn(TOKEN_ID_REPEATED_IN_TOKEN_LIST);
+        given(creator.createUnsuccessfulSyntheticRecord(TOKEN_ID_REPEATED_IN_TOKEN_LIST))
+                .willReturn(mockRecordBuilder);
 
-	@Test
-	void computeAssociateTokenHappyPathWorksWithDelegateCallFromParentFrame() {
-		givenFrameContextWithDelegateCallFromParent();
-		givenLedgers();
-		givenPricingUtilsContext();
-		Bytes pretendArguments = Bytes.ofUnsignedInt(ABI_ID_ASSOCIATE_TOKEN);
-		given(decoder.decodeAssociation(eq(pretendArguments), any()))
-				.willReturn(associateOp);
-		given(syntheticTxnFactory.createAssociate(associateOp))
-				.willReturn(mockSynthBodyBuilder);
-		given(sigsVerifier.hasActiveKey(true, Id.fromGrpcAccount(accountMerkleId).asEvmAddress(),
-				senderAddress, wrappedLedgers))
-				.willReturn(true);
-		given(infrastructureFactory.newAccountStore(accounts)).willReturn(accountStore);
-		given(infrastructureFactory.newTokenStore(accountStore, sideEffects, tokens, nfts, tokenRels))
-				.willReturn(tokenStore);
-		given(infrastructureFactory.newAssociateLogic(accountStore, tokenStore)).willReturn(associateLogic);
-		given(associateLogic.validateSyntax(any())).willReturn(OK);
-		given(feeCalculator.estimatedGasPriceInTinybars(HederaFunctionality.ContractCall, timestamp)).willReturn(1L);
-		given(mockSynthBodyBuilder.build()).willReturn(TransactionBody.newBuilder().build());
-		given(mockSynthBodyBuilder.setTransactionID(any(TransactionID.class))).willReturn(mockSynthBodyBuilder);
-		given(feeCalculator.computeFee(any(), any(), any(), any())).willReturn(mockFeeObject);
-		given(mockFeeObject.getServiceFee()).willReturn(1L);
-		given(creator.createSuccessfulSyntheticRecord(Collections.emptyList(), sideEffects, EMPTY_MEMO))
-				.willReturn(mockRecordBuilder);
+        // when:
+        subject.prepareFields(frame);
+        subject.prepareComputation(pretendArguments, a -> a);
+        subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
+        subject.computeInternal(frame);
 
-		// when:
-		subject.prepareFields(frame);
-		subject.prepareComputation(pretendArguments, a -> a);
-		subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
-		final var result = subject.computeInternal(frame);
+        verify(wrappedLedgers, never()).commit();
+    }
 
-		// then:
-		assertEquals(successResult, result);
-		verify(associateLogic).associate(Id.fromGrpcAccount(accountMerkleId), Collections.singletonList(tokenMerkleId));
-		verify(wrappedLedgers).commit();
-		verify(worldUpdater).manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
-	}
+    @Test
+    void computeAssociateTokenHappyPathWorksWithDelegateCallFromParentFrame() {
+        givenFrameContextWithDelegateCallFromParent();
+        givenLedgers();
+        givenPricingUtilsContext();
+        Bytes pretendArguments = Bytes.ofUnsignedInt(ABI_ID_ASSOCIATE_TOKEN);
+        given(decoder.decodeAssociation(eq(pretendArguments), any())).willReturn(associateOp);
+        given(syntheticTxnFactory.createAssociate(associateOp)).willReturn(mockSynthBodyBuilder);
+        given(
+                        sigsVerifier.hasActiveKey(
+                                true,
+                                Id.fromGrpcAccount(accountMerkleId).asEvmAddress(),
+                                senderAddress,
+                                wrappedLedgers))
+                .willReturn(true);
+        given(infrastructureFactory.newAccountStore(accounts)).willReturn(accountStore);
+        given(
+                        infrastructureFactory.newTokenStore(
+                                accountStore, sideEffects, tokens, nfts, tokenRels))
+                .willReturn(tokenStore);
+        given(infrastructureFactory.newAssociateLogic(accountStore, tokenStore))
+                .willReturn(associateLogic);
+        given(associateLogic.validateSyntax(any())).willReturn(OK);
+        given(
+                        feeCalculator.estimatedGasPriceInTinybars(
+                                HederaFunctionality.ContractCall, timestamp))
+                .willReturn(1L);
+        given(mockSynthBodyBuilder.build()).willReturn(TransactionBody.newBuilder().build());
+        given(mockSynthBodyBuilder.setTransactionID(any(TransactionID.class)))
+                .willReturn(mockSynthBodyBuilder);
+        given(feeCalculator.computeFee(any(), any(), any(), any())).willReturn(mockFeeObject);
+        given(mockFeeObject.getServiceFee()).willReturn(1L);
+        given(
+                        creator.createSuccessfulSyntheticRecord(
+                                Collections.emptyList(), sideEffects, EMPTY_MEMO))
+                .willReturn(mockRecordBuilder);
 
-	@Test
-	void computeAssociateTokenHappyPathWorksWithEmptyMessageFrameStack() {
-		givenFrameContextWithEmptyMessageFrameStack();
-		givenLedgers();
-		givenPricingUtilsContext();
-		Bytes pretendArguments = Bytes.ofUnsignedInt(ABI_ID_ASSOCIATE_TOKEN);
-		given(decoder.decodeAssociation(eq(pretendArguments), any()))
-				.willReturn(associateOp);
-		given(syntheticTxnFactory.createAssociate(associateOp))
-				.willReturn(mockSynthBodyBuilder);
-		given(sigsVerifier.hasActiveKey(false, Id.fromGrpcAccount(accountMerkleId).asEvmAddress(),
-				senderAddress, wrappedLedgers))
-				.willReturn(true);
-		given(infrastructureFactory.newAccountStore(accounts)).willReturn(accountStore);
-		given(infrastructureFactory.newTokenStore(accountStore, sideEffects, tokens, nfts, tokenRels))
-				.willReturn(tokenStore);
-		given(infrastructureFactory.newAssociateLogic(accountStore, tokenStore)).willReturn(associateLogic);
-		given(associateLogic.validateSyntax(any())).willReturn(OK);
-		given(feeCalculator.estimatedGasPriceInTinybars(HederaFunctionality.ContractCall, timestamp))
-				.willReturn(1L);
-		given(mockSynthBodyBuilder.build()).
-				willReturn(TransactionBody.newBuilder().build());
-		given(mockSynthBodyBuilder.setTransactionID(any(TransactionID.class)))
-				.willReturn(mockSynthBodyBuilder);
-		given(feeCalculator.computeFee(any(), any(), any(), any()))
-				.willReturn(mockFeeObject);
-		given(mockFeeObject.getServiceFee())
-				.willReturn(1L);
-		given(creator.createSuccessfulSyntheticRecord(Collections.emptyList(), sideEffects, EMPTY_MEMO))
-				.willReturn(mockRecordBuilder);
+        // when:
+        subject.prepareFields(frame);
+        subject.prepareComputation(pretendArguments, a -> a);
+        subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
+        final var result = subject.computeInternal(frame);
 
-		// when:
-		subject.prepareFields(frame);
-		subject.prepareComputation(pretendArguments, a -> a);
-		subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
-		final var result = subject.computeInternal(frame);
+        // then:
+        assertEquals(successResult, result);
+        verify(associateLogic)
+                .associate(
+                        Id.fromGrpcAccount(accountMerkleId),
+                        Collections.singletonList(tokenMerkleId));
+        verify(wrappedLedgers).commit();
+        verify(worldUpdater)
+                .manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
+    }
 
-		// then:
-		assertEquals(successResult, result);
-		verify(associateLogic).associate(Id.fromGrpcAccount(accountMerkleId), Collections.singletonList(tokenMerkleId));
-		verify(wrappedLedgers).commit();
-		verify(worldUpdater).manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
-	}
+    @Test
+    void computeAssociateTokenHappyPathWorksWithEmptyMessageFrameStack() {
+        givenFrameContextWithEmptyMessageFrameStack();
+        givenLedgers();
+        givenPricingUtilsContext();
+        Bytes pretendArguments = Bytes.ofUnsignedInt(ABI_ID_ASSOCIATE_TOKEN);
+        given(decoder.decodeAssociation(eq(pretendArguments), any())).willReturn(associateOp);
+        given(syntheticTxnFactory.createAssociate(associateOp)).willReturn(mockSynthBodyBuilder);
+        given(
+                        sigsVerifier.hasActiveKey(
+                                false,
+                                Id.fromGrpcAccount(accountMerkleId).asEvmAddress(),
+                                senderAddress,
+                                wrappedLedgers))
+                .willReturn(true);
+        given(infrastructureFactory.newAccountStore(accounts)).willReturn(accountStore);
+        given(
+                        infrastructureFactory.newTokenStore(
+                                accountStore, sideEffects, tokens, nfts, tokenRels))
+                .willReturn(tokenStore);
+        given(infrastructureFactory.newAssociateLogic(accountStore, tokenStore))
+                .willReturn(associateLogic);
+        given(associateLogic.validateSyntax(any())).willReturn(OK);
+        given(
+                        feeCalculator.estimatedGasPriceInTinybars(
+                                HederaFunctionality.ContractCall, timestamp))
+                .willReturn(1L);
+        given(mockSynthBodyBuilder.build()).willReturn(TransactionBody.newBuilder().build());
+        given(mockSynthBodyBuilder.setTransactionID(any(TransactionID.class)))
+                .willReturn(mockSynthBodyBuilder);
+        given(feeCalculator.computeFee(any(), any(), any(), any())).willReturn(mockFeeObject);
+        given(mockFeeObject.getServiceFee()).willReturn(1L);
+        given(
+                        creator.createSuccessfulSyntheticRecord(
+                                Collections.emptyList(), sideEffects, EMPTY_MEMO))
+                .willReturn(mockRecordBuilder);
 
-	@Test
-	void computeAssociateTokenHappyPathWorksWithoutParentFrame() {
-		givenFrameContextWithoutParentFrame();
-		givenLedgers();
-		givenPricingUtilsContext();
-		Bytes pretendArguments = Bytes.ofUnsignedInt(ABI_ID_ASSOCIATE_TOKEN);
-		given(decoder.decodeAssociation(eq(pretendArguments), any()))
-				.willReturn(associateOp);
-		given(syntheticTxnFactory.createAssociate(associateOp))
-				.willReturn(mockSynthBodyBuilder);
-		given(sigsVerifier.hasActiveKey(false, Id.fromGrpcAccount(accountMerkleId).asEvmAddress(), senderAddress,
-				wrappedLedgers))
-				.willReturn(true);
-		given(infrastructureFactory.newAccountStore(accounts)).willReturn(accountStore);
-		given(infrastructureFactory.newTokenStore(accountStore, sideEffects, tokens, nfts, tokenRels))
-				.willReturn(tokenStore);
-		given(infrastructureFactory.newAssociateLogic(accountStore, tokenStore)).willReturn(associateLogic);
-		given(associateLogic.validateSyntax(any())).willReturn(OK);
-		given(feeCalculator.estimatedGasPriceInTinybars(HederaFunctionality.ContractCall, timestamp))
-				.willReturn(1L);
-		given(mockSynthBodyBuilder.build()).
-				willReturn(TransactionBody.newBuilder().build());
-		given(mockSynthBodyBuilder.setTransactionID(any(TransactionID.class)))
-				.willReturn(mockSynthBodyBuilder);
-		given(feeCalculator.computeFee(any(), any(), any(), any()))
-				.willReturn(mockFeeObject);
-		given(mockFeeObject.getServiceFee())
-				.willReturn(1L);
-		given(creator.createSuccessfulSyntheticRecord(Collections.emptyList(), sideEffects, EMPTY_MEMO))
-				.willReturn(mockRecordBuilder);
+        // when:
+        subject.prepareFields(frame);
+        subject.prepareComputation(pretendArguments, a -> a);
+        subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
+        final var result = subject.computeInternal(frame);
 
-		// when:
-		subject.prepareFields(frame);
-		subject.prepareComputation(pretendArguments, a -> a);
-		subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
-		final var result = subject.computeInternal(frame);
+        // then:
+        assertEquals(successResult, result);
+        verify(associateLogic)
+                .associate(
+                        Id.fromGrpcAccount(accountMerkleId),
+                        Collections.singletonList(tokenMerkleId));
+        verify(wrappedLedgers).commit();
+        verify(worldUpdater)
+                .manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
+    }
 
-		// then:
-		assertEquals(successResult, result);
-		verify(associateLogic).associate(Id.fromGrpcAccount(accountMerkleId), Collections.singletonList(tokenMerkleId));
-		verify(wrappedLedgers).commit();
-		verify(worldUpdater).manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
-	}
+    @Test
+    void computeAssociateTokenHappyPathWorksWithoutParentFrame() {
+        givenFrameContextWithoutParentFrame();
+        givenLedgers();
+        givenPricingUtilsContext();
+        Bytes pretendArguments = Bytes.ofUnsignedInt(ABI_ID_ASSOCIATE_TOKEN);
+        given(decoder.decodeAssociation(eq(pretendArguments), any())).willReturn(associateOp);
+        given(syntheticTxnFactory.createAssociate(associateOp)).willReturn(mockSynthBodyBuilder);
+        given(
+                        sigsVerifier.hasActiveKey(
+                                false,
+                                Id.fromGrpcAccount(accountMerkleId).asEvmAddress(),
+                                senderAddress,
+                                wrappedLedgers))
+                .willReturn(true);
+        given(infrastructureFactory.newAccountStore(accounts)).willReturn(accountStore);
+        given(
+                        infrastructureFactory.newTokenStore(
+                                accountStore, sideEffects, tokens, nfts, tokenRels))
+                .willReturn(tokenStore);
+        given(infrastructureFactory.newAssociateLogic(accountStore, tokenStore))
+                .willReturn(associateLogic);
+        given(associateLogic.validateSyntax(any())).willReturn(OK);
+        given(
+                        feeCalculator.estimatedGasPriceInTinybars(
+                                HederaFunctionality.ContractCall, timestamp))
+                .willReturn(1L);
+        given(mockSynthBodyBuilder.build()).willReturn(TransactionBody.newBuilder().build());
+        given(mockSynthBodyBuilder.setTransactionID(any(TransactionID.class)))
+                .willReturn(mockSynthBodyBuilder);
+        given(feeCalculator.computeFee(any(), any(), any(), any())).willReturn(mockFeeObject);
+        given(mockFeeObject.getServiceFee()).willReturn(1L);
+        given(
+                        creator.createSuccessfulSyntheticRecord(
+                                Collections.emptyList(), sideEffects, EMPTY_MEMO))
+                .willReturn(mockRecordBuilder);
 
-	@Test
-	void computeMultiAssociateTokenHappyPathWorks() {
-		givenCommonFrameContext();
-		givenLedgers();
-		givenPricingUtilsContext();
-		Bytes pretendArguments = Bytes.ofUnsignedInt(ABI_ID_ASSOCIATE_TOKENS);
-		given(decoder.decodeMultipleAssociations(eq(pretendArguments), any()))
-				.willReturn(multiAssociateOp);
-		given(syntheticTxnFactory.createAssociate(multiAssociateOp))
-				.willReturn(mockSynthBodyBuilder);
-		given(sigsVerifier.hasActiveKey(false,
-				Id.fromGrpcAccount(accountMerkleId).asEvmAddress(), senderAddress, wrappedLedgers))
-				.willReturn(true);
-		given(infrastructureFactory.newAccountStore(accounts)).willReturn(accountStore);
-		given(infrastructureFactory.newTokenStore(accountStore, sideEffects, tokens, nfts, tokenRels))
-				.willReturn(tokenStore);
-		given(infrastructureFactory.newAssociateLogic(accountStore, tokenStore)).willReturn(associateLogic);
-		given(associateLogic.validateSyntax(any())).willReturn(OK);
-		given(feeCalculator.estimatedGasPriceInTinybars(HederaFunctionality.ContractCall, timestamp))
-				.willReturn(1L);
-		given(mockSynthBodyBuilder.build()).
-				willReturn(TransactionBody.newBuilder().build());
-		given(mockSynthBodyBuilder.setTransactionID(any(TransactionID.class)))
-				.willReturn(mockSynthBodyBuilder);
-		given(feeCalculator.computeFee(any(), any(), any(), any()))
-				.willReturn(mockFeeObject);
-		given(mockFeeObject.getServiceFee())
-				.willReturn(1L);
-		given(creator.createSuccessfulSyntheticRecord(Collections.emptyList(), sideEffects, EMPTY_MEMO))
-				.willReturn(mockRecordBuilder);
+        // when:
+        subject.prepareFields(frame);
+        subject.prepareComputation(pretendArguments, a -> a);
+        subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
+        final var result = subject.computeInternal(frame);
 
-		// when:
-		subject.prepareFields(frame);
-		subject.prepareComputation(pretendArguments, a -> a);
-		subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
-		final var result = subject.computeInternal(frame);
+        // then:
+        assertEquals(successResult, result);
+        verify(associateLogic)
+                .associate(
+                        Id.fromGrpcAccount(accountMerkleId),
+                        Collections.singletonList(tokenMerkleId));
+        verify(wrappedLedgers).commit();
+        verify(worldUpdater)
+                .manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
+    }
 
-		// then:
-		assertEquals(successResult, result);
-		verify(associateLogic).associate(Id.fromGrpcAccount(accountMerkleId), multiAssociateOp.tokenIds());
-		verify(wrappedLedgers).commit();
-		verify(worldUpdater).manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
-	}
+    @Test
+    void computeMultiAssociateTokenHappyPathWorks() {
+        givenCommonFrameContext();
+        givenLedgers();
+        givenPricingUtilsContext();
+        Bytes pretendArguments = Bytes.ofUnsignedInt(ABI_ID_ASSOCIATE_TOKENS);
+        given(decoder.decodeMultipleAssociations(eq(pretendArguments), any()))
+                .willReturn(multiAssociateOp);
+        given(syntheticTxnFactory.createAssociate(multiAssociateOp))
+                .willReturn(mockSynthBodyBuilder);
+        given(
+                        sigsVerifier.hasActiveKey(
+                                false,
+                                Id.fromGrpcAccount(accountMerkleId).asEvmAddress(),
+                                senderAddress,
+                                wrappedLedgers))
+                .willReturn(true);
+        given(infrastructureFactory.newAccountStore(accounts)).willReturn(accountStore);
+        given(
+                        infrastructureFactory.newTokenStore(
+                                accountStore, sideEffects, tokens, nfts, tokenRels))
+                .willReturn(tokenStore);
+        given(infrastructureFactory.newAssociateLogic(accountStore, tokenStore))
+                .willReturn(associateLogic);
+        given(associateLogic.validateSyntax(any())).willReturn(OK);
+        given(
+                        feeCalculator.estimatedGasPriceInTinybars(
+                                HederaFunctionality.ContractCall, timestamp))
+                .willReturn(1L);
+        given(mockSynthBodyBuilder.build()).willReturn(TransactionBody.newBuilder().build());
+        given(mockSynthBodyBuilder.setTransactionID(any(TransactionID.class)))
+                .willReturn(mockSynthBodyBuilder);
+        given(feeCalculator.computeFee(any(), any(), any(), any())).willReturn(mockFeeObject);
+        given(mockFeeObject.getServiceFee()).willReturn(1L);
+        given(
+                        creator.createSuccessfulSyntheticRecord(
+                                Collections.emptyList(), sideEffects, EMPTY_MEMO))
+                .willReturn(mockRecordBuilder);
 
-	@Test
-	void gasRequirementReturnsCorrectValueForAssociateTokens() {
-		// given
-		givenFrameContext();
-		givenPricingUtilsContext();
-		Bytes input = Bytes.of(Integers.toBytes(ABI_ID_ASSOCIATE_TOKENS));
-		given(decoder.decodeMultipleAssociations(any(), any())).willReturn(associateOp);
-		final var builder = TokenAssociateTransactionBody.newBuilder();
-		builder.setAccount(multiDissociateOp.accountId());
-		builder.addAllTokens(multiDissociateOp.tokenIds());
-		given(syntheticTxnFactory.createAssociate(any()))
-				.willReturn(TransactionBody.newBuilder().setTokenAssociate(builder));
-		given(feeCalculator.computeFee(any(), any(), any(), any())).willReturn(
-				new FeeObject(TEST_NODE_FEE, TEST_NETWORK_FEE, TEST_SERVICE_FEE));
-		given(feeCalculator.estimatedGasPriceInTinybars(any(), any())).willReturn(DEFAULT_GAS_PRICE);
-		given(worldUpdater.permissivelyUnaliased(any())).willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+        // when:
+        subject.prepareFields(frame);
+        subject.prepareComputation(pretendArguments, a -> a);
+        subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
+        final var result = subject.computeInternal(frame);
 
-		subject.prepareFields(frame);
-		subject.prepareComputation(input, a -> a);
-		long result = subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
+        // then:
+        assertEquals(successResult, result);
+        verify(associateLogic)
+                .associate(Id.fromGrpcAccount(accountMerkleId), multiAssociateOp.tokenIds());
+        verify(wrappedLedgers).commit();
+        verify(worldUpdater)
+                .manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
+    }
 
-		// then
-		assertEquals(EXPECTED_GAS_PRICE, result);
-	}
+    @Test
+    void gasRequirementReturnsCorrectValueForAssociateTokens() {
+        // given
+        givenFrameContext();
+        givenPricingUtilsContext();
+        Bytes input = Bytes.of(Integers.toBytes(ABI_ID_ASSOCIATE_TOKENS));
+        given(decoder.decodeMultipleAssociations(any(), any())).willReturn(associateOp);
+        final var builder = TokenAssociateTransactionBody.newBuilder();
+        builder.setAccount(multiDissociateOp.accountId());
+        builder.addAllTokens(multiDissociateOp.tokenIds());
+        given(syntheticTxnFactory.createAssociate(any()))
+                .willReturn(TransactionBody.newBuilder().setTokenAssociate(builder));
+        given(feeCalculator.computeFee(any(), any(), any(), any()))
+                .willReturn(new FeeObject(TEST_NODE_FEE, TEST_NETWORK_FEE, TEST_SERVICE_FEE));
+        given(feeCalculator.estimatedGasPriceInTinybars(any(), any()))
+                .willReturn(DEFAULT_GAS_PRICE);
+        given(worldUpdater.permissivelyUnaliased(any()))
+                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
-	@Test
-	void gasRequirementReturnsCorrectValueForAssociateToken() {
-		// given
-		givenFrameContext();
-		givenPricingUtilsContext();
-		Bytes input = Bytes.of(Integers.toBytes(ABI_ID_ASSOCIATE_TOKEN));
-		given(decoder.decodeAssociation(any(), any())).willReturn(associateOp);
-		final var builder = TokenAssociateTransactionBody.newBuilder();
-		builder.setAccount(associateOp.accountId());
-		builder.addAllTokens(associateOp.tokenIds());
-		given(syntheticTxnFactory.createAssociate(any()))
-				.willReturn(TransactionBody.newBuilder().setTokenAssociate(builder));
-		given(feeCalculator.computeFee(any(), any(), any(), any())).willReturn(
-				new FeeObject(TEST_NODE_FEE, TEST_NETWORK_FEE, TEST_SERVICE_FEE));
-		given(feeCalculator.estimatedGasPriceInTinybars(any(), any())).willReturn(DEFAULT_GAS_PRICE);
-		given(worldUpdater.permissivelyUnaliased(any())).willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+        subject.prepareFields(frame);
+        subject.prepareComputation(input, a -> a);
+        long result = subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
 
-		subject.prepareFields(frame);
-		subject.prepareComputation(input, a -> a);
-		long result = subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
+        // then
+        assertEquals(EXPECTED_GAS_PRICE, result);
+    }
 
-		// then
-		assertEquals(EXPECTED_GAS_PRICE, result);
-	}
+    @Test
+    void gasRequirementReturnsCorrectValueForAssociateToken() {
+        // given
+        givenFrameContext();
+        givenPricingUtilsContext();
+        Bytes input = Bytes.of(Integers.toBytes(ABI_ID_ASSOCIATE_TOKEN));
+        given(decoder.decodeAssociation(any(), any())).willReturn(associateOp);
+        final var builder = TokenAssociateTransactionBody.newBuilder();
+        builder.setAccount(associateOp.accountId());
+        builder.addAllTokens(associateOp.tokenIds());
+        given(syntheticTxnFactory.createAssociate(any()))
+                .willReturn(TransactionBody.newBuilder().setTokenAssociate(builder));
+        given(feeCalculator.computeFee(any(), any(), any(), any()))
+                .willReturn(new FeeObject(TEST_NODE_FEE, TEST_NETWORK_FEE, TEST_SERVICE_FEE));
+        given(feeCalculator.estimatedGasPriceInTinybars(any(), any()))
+                .willReturn(DEFAULT_GAS_PRICE);
+        given(worldUpdater.permissivelyUnaliased(any()))
+                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
-	private void givenFrameContextWithDelegateCallFromParent() {
-		given(parentFrame.getContractAddress()).willReturn(parentContractAddress);
-		given(parentFrame.getRecipientAddress()).willReturn(parentRecipientAddress);
-		givenCommonFrameContext();
-		given(frame.getMessageFrameStack().descendingIterator().hasNext()).willReturn(true);
-		given(frame.getMessageFrameStack().descendingIterator().next()).willReturn(parentFrame);
-	}
+        subject.prepareFields(frame);
+        subject.prepareComputation(input, a -> a);
+        long result = subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
 
-	private void givenFrameContextWithEmptyMessageFrameStack() {
-		givenCommonFrameContext();
-		given(frame.getMessageFrameStack().descendingIterator().hasNext()).willReturn(false);
-	}
+        // then
+        assertEquals(EXPECTED_GAS_PRICE, result);
+    }
 
-	private void givenFrameContextWithoutParentFrame() {
-		givenCommonFrameContext();
-		given(frame.getMessageFrameStack().descendingIterator().hasNext()).willReturn(true, false);
-	}
+    private void givenFrameContextWithDelegateCallFromParent() {
+        given(parentFrame.getContractAddress()).willReturn(parentContractAddress);
+        given(parentFrame.getRecipientAddress()).willReturn(parentRecipientAddress);
+        givenCommonFrameContext();
+        given(frame.getMessageFrameStack().descendingIterator().hasNext()).willReturn(true);
+        given(frame.getMessageFrameStack().descendingIterator().next()).willReturn(parentFrame);
+    }
 
-	private void givenCommonFrameContext() {
-		given(frame.getContractAddress()).willReturn(contractAddress);
-		given(frame.getRecipientAddress()).willReturn(contractAddress);
-		given(frame.getSenderAddress()).willReturn(senderAddress);
-		given(frame.getMessageFrameStack()).willReturn(frameDeque);
-		given(frame.getMessageFrameStack().descendingIterator()).willReturn(dequeIterator);
-		given(frame.getWorldUpdater()).willReturn(worldUpdater);
-		given(frame.getRemainingGas()).willReturn(300L);
-		given(frame.getValue()).willReturn(Wei.ZERO);
-		given(worldUpdater.aliases()).willReturn(aliases);
-		given(aliases.resolveForEvm(any())).willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
-		given(worldUpdater.aliases()).willReturn(aliases);
-		Optional<WorldUpdater> parent = Optional.of(worldUpdater);
-		given(worldUpdater.parentUpdater()).willReturn(parent);
-		given(worldUpdater.wrappedTrackingLedgers(any())).willReturn(wrappedLedgers);
-	}
+    private void givenFrameContextWithEmptyMessageFrameStack() {
+        givenCommonFrameContext();
+        given(frame.getMessageFrameStack().descendingIterator().hasNext()).willReturn(false);
+    }
 
-	private void givenLedgers() {
-		given(wrappedLedgers.accounts()).willReturn(accounts);
-		given(wrappedLedgers.tokenRels()).willReturn(tokenRels);
-		given(wrappedLedgers.nfts()).willReturn(nfts);
-		given(wrappedLedgers.tokens()).willReturn(tokens);
-	}
+    private void givenFrameContextWithoutParentFrame() {
+        givenCommonFrameContext();
+        given(frame.getMessageFrameStack().descendingIterator().hasNext()).willReturn(true, false);
+    }
 
-	private void givenPricingUtilsContext() {
-		given(exchange.rate(any())).willReturn(exchangeRate);
-		given(exchangeRate.getCentEquiv()).willReturn(CENTS_RATE);
-		given(exchangeRate.getHbarEquiv()).willReturn(HBAR_RATE);
-	}
+    private void givenCommonFrameContext() {
+        given(frame.getContractAddress()).willReturn(contractAddress);
+        given(frame.getRecipientAddress()).willReturn(contractAddress);
+        given(frame.getSenderAddress()).willReturn(senderAddress);
+        given(frame.getMessageFrameStack()).willReturn(frameDeque);
+        given(frame.getMessageFrameStack().descendingIterator()).willReturn(dequeIterator);
+        given(frame.getWorldUpdater()).willReturn(worldUpdater);
+        given(frame.getRemainingGas()).willReturn(300L);
+        given(frame.getValue()).willReturn(Wei.ZERO);
+        given(worldUpdater.aliases()).willReturn(aliases);
+        given(aliases.resolveForEvm(any()))
+                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+        given(worldUpdater.aliases()).willReturn(aliases);
+        Optional<WorldUpdater> parent = Optional.of(worldUpdater);
+        given(worldUpdater.parentUpdater()).willReturn(parent);
+        given(worldUpdater.wrappedTrackingLedgers(any())).willReturn(wrappedLedgers);
+    }
 
-	private void givenFrameContext() {
-		given(frame.getSenderAddress()).willReturn(contractAddress);
-		given(frame.getWorldUpdater()).willReturn(worldUpdater);
-		given(worldUpdater.wrappedTrackingLedgers(any())).willReturn(wrappedLedgers);
-	}
+    private void givenLedgers() {
+        given(wrappedLedgers.accounts()).willReturn(accounts);
+        given(wrappedLedgers.tokenRels()).willReturn(tokenRels);
+        given(wrappedLedgers.nfts()).willReturn(nfts);
+        given(wrappedLedgers.tokens()).willReturn(tokens);
+    }
+
+    private void givenPricingUtilsContext() {
+        given(exchange.rate(any())).willReturn(exchangeRate);
+        given(exchangeRate.getCentEquiv()).willReturn(CENTS_RATE);
+        given(exchangeRate.getHbarEquiv()).willReturn(HBAR_RATE);
+    }
+
+    private void givenFrameContext() {
+        given(frame.getSenderAddress()).willReturn(contractAddress);
+        given(frame.getWorldUpdater()).willReturn(worldUpdater);
+        given(worldUpdater.wrappedTrackingLedgers(any())).willReturn(wrappedLedgers);
+    }
 }

@@ -35,23 +35,23 @@ import static org.mockito.Mockito.mock;
 
 class PrecompileUtilsTest {
 
-	@Test
-	void addsContractCallResultToRecord() {
-		final var childRecord = ExpirableTxnRecord.newBuilder();
-		final var frame = mock(MessageFrame.class);
-		given(frame.getValue()).willReturn(Wei.of(100L));
-		given(frame.getInputData()).willReturn(Bytes.EMPTY);
+    @Test
+    void addsContractCallResultToRecord() {
+        final var childRecord = ExpirableTxnRecord.newBuilder();
+        final var frame = mock(MessageFrame.class);
+        given(frame.getValue()).willReturn(Wei.of(100L));
+        given(frame.getInputData()).willReturn(Bytes.EMPTY);
 
-		PrecompileUtils.addContractCallResultToRecord(1000L,
-				childRecord,
-				Bytes.ofUnsignedInt(10),
-				Optional.of(ResponseCodeEnum.FAIL_INVALID),
-				frame,
-				true,
-				true,
-				ALTBN128_ADD
-		);
-		assertEquals("FAIL_INVALID", childRecord.getContractCallResult().getError());
-		assertEquals(10, Bytes.wrap(childRecord.getContractCallResult().getResult()).toInt());
-	}
+        PrecompileUtils.addContractCallResultToRecord(
+                1000L,
+                childRecord,
+                Bytes.ofUnsignedInt(10),
+                Optional.of(ResponseCodeEnum.FAIL_INVALID),
+                frame,
+                true,
+                true,
+                ALTBN128_ADD);
+        assertEquals("FAIL_INVALID", childRecord.getContractCallResult().getError());
+        assertEquals(10, Bytes.wrap(childRecord.getContractCallResult().getResult()).toInt());
+    }
 }

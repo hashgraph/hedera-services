@@ -37,32 +37,40 @@ import javax.inject.Provider;
 import java.util.function.UnaryOperator;
 
 public class DissociatePrecompile extends AbstractDissociatePrecompile {
-	public DissociatePrecompile(
-			final WorldLedgers ledgers,
-			final DecodingFacade decoder,
-			final ContractAliases aliases,
-			final EvmSigsVerifier sigsVerifier,
-			final SideEffectsTracker sideEffects,
-			final SyntheticTxnFactory syntheticTxnFactory,
-			final InfrastructureFactory infrastructureFactory,
-			final PrecompilePricingUtils pricingUtils,
-			final Provider<FeeCalculator> feeCalculator,
-			final StateView currentView
-	) {
-		super(
-				ledgers, decoder, aliases, sigsVerifier, sideEffects, syntheticTxnFactory, infrastructureFactory,
-				pricingUtils, feeCalculator, currentView);
-	}
+    public DissociatePrecompile(
+            final WorldLedgers ledgers,
+            final DecodingFacade decoder,
+            final ContractAliases aliases,
+            final EvmSigsVerifier sigsVerifier,
+            final SideEffectsTracker sideEffects,
+            final SyntheticTxnFactory syntheticTxnFactory,
+            final InfrastructureFactory infrastructureFactory,
+            final PrecompilePricingUtils pricingUtils,
+            final Provider<FeeCalculator> feeCalculator,
+            final StateView currentView) {
+        super(
+                ledgers,
+                decoder,
+                aliases,
+                sigsVerifier,
+                sideEffects,
+                syntheticTxnFactory,
+                infrastructureFactory,
+                pricingUtils,
+                feeCalculator,
+                currentView);
+    }
 
-	@Override
-	public TransactionBody.Builder body(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
-		dissociateOp = decoder.decodeDissociate(input, aliasResolver);
-		transactionBody = syntheticTxnFactory.createDissociate(dissociateOp);
-		return transactionBody;
-	}
+    @Override
+    public TransactionBody.Builder body(
+            final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
+        dissociateOp = decoder.decodeDissociate(input, aliasResolver);
+        transactionBody = syntheticTxnFactory.createDissociate(dissociateOp);
+        return transactionBody;
+    }
 
-	@Override
-	public long getGasRequirement(long blockTimestamp) {
-		return pricingUtils.computeGasRequirement(blockTimestamp,this, transactionBody);
-	}
+    @Override
+    public long getGasRequirement(long blockTimestamp) {
+        return pricingUtils.computeGasRequirement(blockTimestamp, this, transactionBody);
+    }
 }

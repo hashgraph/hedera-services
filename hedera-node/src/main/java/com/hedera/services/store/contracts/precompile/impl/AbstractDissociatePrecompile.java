@@ -47,69 +47,77 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNAT
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 public abstract class AbstractDissociatePrecompile implements Precompile {
-	private final WorldLedgers ledgers;
-	private final ContractAliases aliases;
-	private final EvmSigsVerifier sigsVerifier;
-	private final SideEffectsTracker sideEffects;
-	private final InfrastructureFactory infrastructureFactory;
-	protected final PrecompilePricingUtils pricingUtils;
-	protected TransactionBody.Builder transactionBody;
-	protected Dissociation dissociateOp;
-	protected final DecodingFacade decoder;
-	protected final SyntheticTxnFactory syntheticTxnFactory;
-	protected final Provider<FeeCalculator> feeCalculator;
-	protected final StateView currentView;
+    private final WorldLedgers ledgers;
+    private final ContractAliases aliases;
+    private final EvmSigsVerifier sigsVerifier;
+    private final SideEffectsTracker sideEffects;
+    private final InfrastructureFactory infrastructureFactory;
+    protected final PrecompilePricingUtils pricingUtils;
+    protected TransactionBody.Builder transactionBody;
+    protected Dissociation dissociateOp;
+    protected final DecodingFacade decoder;
+    protected final SyntheticTxnFactory syntheticTxnFactory;
+    protected final Provider<FeeCalculator> feeCalculator;
+    protected final StateView currentView;
 
-	protected AbstractDissociatePrecompile(
-			final WorldLedgers ledgers,
-			final DecodingFacade decoder,
-			final ContractAliases aliases,
-			final EvmSigsVerifier sigsVerifier,
-			final SideEffectsTracker sideEffects,
-			final SyntheticTxnFactory syntheticTxnFactory,
-			final InfrastructureFactory infrastructureFactory,
-			final PrecompilePricingUtils pricingUtils,
-			final Provider<FeeCalculator> feeCalculator,
-			final StateView currentView
-	) {
-		this.ledgers = ledgers;
-		this.aliases = aliases;
-		this.sigsVerifier = sigsVerifier;
-		this.sideEffects = sideEffects;
-		this.infrastructureFactory = infrastructureFactory;
-		this.pricingUtils = pricingUtils;
-		this.decoder = decoder;
-		this.syntheticTxnFactory = syntheticTxnFactory;
-		this.feeCalculator = feeCalculator;
-		this.currentView = currentView;
-	}
+    protected AbstractDissociatePrecompile(
+            final WorldLedgers ledgers,
+            final DecodingFacade decoder,
+            final ContractAliases aliases,
+            final EvmSigsVerifier sigsVerifier,
+            final SideEffectsTracker sideEffects,
+            final SyntheticTxnFactory syntheticTxnFactory,
+            final InfrastructureFactory infrastructureFactory,
+            final PrecompilePricingUtils pricingUtils,
+            final Provider<FeeCalculator> feeCalculator,
+            final StateView currentView) {
+        this.ledgers = ledgers;
+        this.aliases = aliases;
+        this.sigsVerifier = sigsVerifier;
+        this.sideEffects = sideEffects;
+        this.infrastructureFactory = infrastructureFactory;
+        this.pricingUtils = pricingUtils;
+        this.decoder = decoder;
+        this.syntheticTxnFactory = syntheticTxnFactory;
+        this.feeCalculator = feeCalculator;
+        this.currentView = currentView;
+    }
 
-	@Override
-	public void run(
-			final MessageFrame frame
-	) {
-		Objects.requireNonNull(dissociateOp);
+    @Override
+    public void run(final MessageFrame frame) {
+        Objects.requireNonNull(dissociateOp);
 
-		/* --- Check required signatures --- */
-		final var accountId = Id.fromGrpcAccount(dissociateOp.accountId());
-		final var hasRequiredSigs = KeyActivationUtils.validateKey(
-				frame, accountId.asEvmAddress(), sigsVerifier::hasActiveKey, ledgers, aliases);
-		validateTrue(hasRequiredSigs, INVALID_SIGNATURE);
+        /* --- Check required signatures --- */
+        final var accountId = Id.fromGrpcAccount(dissociateOp.accountId());
+        final var hasRequiredSigs =
+                KeyActivationUtils.validateKey(
+                        frame,
+                        accountId.asEvmAddress(),
+                        sigsVerifier::hasActiveKey,
+                        ledgers,
+                        aliases);
+        validateTrue(hasRequiredSigs, INVALID_SIGNATURE);
 
-		/* --- Build the necessary infrastructure to execute the transaction --- */
-		final var accountStore = infrastructureFactory.newAccountStore(ledgers.accounts());
-		final var tokenStore = infrastructureFactory.newTokenStore(
-				accountStore, sideEffects, ledgers.tokens(), ledgers.nfts(), ledgers.tokenRels());
+        /* --- Build the necessary infrastructure to execute the transaction --- */
+        final var accountStore = infrastructureFactory.newAccountStore(ledgers.accounts());
+        final var tokenStore =
+                infrastructureFactory.newTokenStore(
+                        accountStore,
+                        sideEffects,
+                        ledgers.tokens(),
+                        ledgers.nfts(),
+                        ledgers.tokenRels());
 
-		/* --- Execute the transaction and capture its results --- */
-		final var dissociateLogic = infrastructureFactory.newDissociateLogic(accountStore, tokenStore);
-		final var validity = dissociateLogic.validateSyntax(transactionBody.build());
-		validateTrue(validity == OK, validity);
-		dissociateLogic.dissociate(accountId, dissociateOp.tokenIds());
-	}
+        /* --- Execute the transaction and capture its results --- */
+        final var dissociateLogic =
+                infrastructureFactory.newDissociateLogic(accountStore, tokenStore);
+        final var validity = dissociateLogic.validateSyntax(transactionBody.build());
+        validateTrue(validity == OK, validity);
+        dissociateLogic.dissociate(accountId, dissociateOp.tokenIds());
+    }
 
-	@Override
-	public long getMinimumFeeInTinybars(final Timestamp consensusTime) {
-		return pricingUtils.getMinimumPriceInTinybars(DISSOCIATE, consensusTime);
-	}
+    @Override
+    public long getMinimumFeeInTinybars(final Timestamp consensusTime) {
+        return pricingUtils.getMinimumPriceInTinybars(DISSOCIATE, consensusTime);
+    }
 }

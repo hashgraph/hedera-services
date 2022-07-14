@@ -31,59 +31,61 @@ import org.hyperledger.besu.evm.worldstate.WorldView;
 import java.util.List;
 
 /**
- * Hedera adapted interface for a view over the accounts of the world state and methods for persisting state changes
+ * Hedera adapted interface for a view over the accounts of the world state and methods for
+ * persisting state changes
  */
 public interface HederaMutableWorldState extends WorldState, WorldView {
-	/**
-	 * Given a the EVM address of a sponsoring account, returns an EVM address appropriate for a new contract.
-	 *
-	 * <b>Important: </b>Since the new contract will <i>also</i> be a Hedera entity that has a {@code 0.0.X} id,
-	 * allocating a new contract address must imply reserving a Hedera entity number. Implementations must be
-	 * able to return their last reserved number on receiving a {@link HederaMutableWorldState#reclaimContractId()} call.
-	 *
-	 * @param sponsor the address of the sponsor of a new contract
-	 * @return an appropriate EVM address for the new contract
-	 */
-	Address newContractAddress(Address sponsor);
+    /**
+     * Given a the EVM address of a sponsoring account, returns an EVM address appropriate for a new
+     * contract.
+     *
+     * <p><b>Important: </b>Since the new contract will <i>also</i> be a Hedera entity that has a
+     * {@code 0.0.X} id, allocating a new contract address must imply reserving a Hedera entity
+     * number. Implementations must be able to return their last reserved number on receiving a
+     * {@link HederaMutableWorldState#reclaimContractId()} call.
+     *
+     * @param sponsor the address of the sponsor of a new contract
+     * @return an appropriate EVM address for the new contract
+     */
+    Address newContractAddress(Address sponsor);
 
-	/**
-	 * Reclaims the last Hedera entity number reserved on behalf of a new contract. (Note that entity numbers are
-	 * shared across all entity types; so even though here are reclaiming a "contract id", the underlying
-	 * implementation will not be contract-specific.
-	 */
-	void reclaimContractId();
+    /**
+     * Reclaims the last Hedera entity number reserved on behalf of a new contract. (Note that
+     * entity numbers are shared across all entity types; so even though here are reclaiming a
+     * "contract id", the underlying implementation will not be contract-specific.
+     */
+    void reclaimContractId();
 
-	/**
-	 * Creates an updater for this mutable world view.
-	 *
-	 * @return a new updater for this mutable world view. On commit, change made to this updater will
-	 * become visible on this view.
-	 */
-	HederaWorldUpdater updater();
+    /**
+     * Creates an updater for this mutable world view.
+     *
+     * @return a new updater for this mutable world view. On commit, change made to this updater
+     *     will become visible on this view.
+     */
+    HederaWorldUpdater updater();
 
-	/**
-	 * Returns the list of contract ids created by the current transaction.
-	 *
-	 * @return the list of ids created by this transaction.
-	 */
-	List<ContractID> getCreatedContractIds();
+    /**
+     * Returns the list of contract ids created by the current transaction.
+     *
+     * @return the list of ids created by this transaction.
+     */
+    List<ContractID> getCreatedContractIds();
 
-	/**
-	 * Returns the contract customizations requested by the sender of a top-level HAPI contractCreate.
-	 *
-	 * @return the sender customizations
-	 */
-	ContractCustomizer hapiSenderCustomizer();
+    /**
+     * Returns the contract customizations requested by the sender of a top-level HAPI
+     * contractCreate.
+     *
+     * @return the sender customizations
+     */
+    ContractCustomizer hapiSenderCustomizer();
 
-	/**
-	 * Sets the customizations requested by the sender of a top-level HAPI contractCreate.
-	 *
-	 * @param customizer the sender customizations
-	 */
-	void setHapiSenderCustomizer(ContractCustomizer customizer);
+    /**
+     * Sets the customizations requested by the sender of a top-level HAPI contractCreate.
+     *
+     * @param customizer the sender customizations
+     */
+    void setHapiSenderCustomizer(ContractCustomizer customizer);
 
-	/**
-	 * Clears the customizations requested by the sender of a top-level HAPI contractCreate.
-	 */
-	void resetHapiSenderCustomizer();
+    /** Clears the customizations requested by the sender of a top-level HAPI contractCreate. */
+    void resetHapiSenderCustomizer();
 }

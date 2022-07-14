@@ -36,14 +36,14 @@ import static com.hedera.services.store.contracts.WorldStateTokenAccount.proxyBy
 import static com.hedera.services.utils.EntityIdUtils.accountIdFromEvmAddress;
 
 /**
- * Weak reference cache with expiration TTL for EVM bytecode. This cache is primarily used
- * to store bytecode pre-fetched during prepare phase (aka expand signatures) to be used
- * later on during the handle phase (aka handle transaction). The cache also has the side
- * effect of eliminating bytecode reads from the underlying store if the contract is called
- * repeatedly during a short period of time.
- * <p>
- * This cache assumes that the bytecode values are immutable, hence no logic to determine
- * whether a value is stale is present.
+ * Weak reference cache with expiration TTL for EVM bytecode. This cache is primarily used to store
+ * bytecode pre-fetched during prepare phase (aka expand signatures) to be used later on during the
+ * handle phase (aka handle transaction). The cache also has the side effect of eliminating bytecode
+ * reads from the underlying store if the contract is called repeatedly during a short period of
+ * time.
+ *
+ * <p>This cache assumes that the bytecode values are immutable, hence no logic to determine whether
+ * a value is stale is present.
  */
 @Singleton
 public class CodeCache {
@@ -57,10 +57,11 @@ public class CodeCache {
 
     public CodeCache(final int cacheTTL, final EntityAccess entityAccess) {
         this.entityAccess = entityAccess;
-        this.cache = Caffeine.newBuilder()
-                .expireAfterAccess(cacheTTL, TimeUnit.SECONDS)
-                .softValues()
-                .build();
+        this.cache =
+                Caffeine.newBuilder()
+                        .expireAfterAccess(cacheTTL, TimeUnit.SECONDS)
+                        .softValues()
+                        .build();
     }
 
     public Code getIfPresent(final Address address) {
@@ -81,7 +82,7 @@ public class CodeCache {
 
         final var bytecode = entityAccess.fetchCodeIfPresent(accountIdFromEvmAddress(address));
         if (bytecode != null) {
-                code = Code.createLegacyCode(bytecode, Hash.hash(bytecode));
+            code = Code.createLegacyCode(bytecode, Hash.hash(bytecode));
             cache.put(cacheKey, code);
         }
 
@@ -92,7 +93,9 @@ public class CodeCache {
         cache.invalidate(new BytesKey(address.toArray()));
     }
 
-    public long size() { return cache.estimatedSize(); }
+    public long size() {
+        return cache.estimatedSize();
+    }
 
     /* --- Only used by unit tests --- */
     Cache<BytesKey, Code> getCache() {

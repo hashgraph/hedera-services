@@ -9,9 +9,9 @@ package com.hedera.services.store.contracts.precompile.impl;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -30,31 +30,31 @@ import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUti
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
 public abstract class AbstractWritePrecompile implements Precompile {
-	protected final WorldLedgers ledgers;
-	protected final DecodingFacade decoder;
-	protected final SideEffectsTracker sideEffects;
-	protected final SyntheticTxnFactory syntheticTxnFactory;
-	protected final InfrastructureFactory infrastructureFactory;
-	protected final PrecompilePricingUtils pricingUtils;
-	protected TransactionBody.Builder transactionBody;
+    protected final WorldLedgers ledgers;
+    protected final DecodingFacade decoder;
+    protected final SideEffectsTracker sideEffects;
+    protected final SyntheticTxnFactory syntheticTxnFactory;
+    protected final InfrastructureFactory infrastructureFactory;
+    protected final PrecompilePricingUtils pricingUtils;
+    protected TransactionBody.Builder transactionBody;
 
-	protected AbstractWritePrecompile(
-			final WorldLedgers ledgers,
-			final DecodingFacade decoder,
-			final SideEffectsTracker sideEffects,
-			final SyntheticTxnFactory syntheticTxnFactory,
-			final InfrastructureFactory infrastructureFactory,
-			final PrecompilePricingUtils pricingUtils) {
-		this.ledgers = ledgers;
-		this.decoder = decoder;
-		this.sideEffects = sideEffects;
-		this.syntheticTxnFactory = syntheticTxnFactory;
-		this.infrastructureFactory = infrastructureFactory;
-		this.pricingUtils = pricingUtils;
-	}
+    protected AbstractWritePrecompile(
+            final WorldLedgers ledgers,
+            final DecodingFacade decoder,
+            final SideEffectsTracker sideEffects,
+            final SyntheticTxnFactory syntheticTxnFactory,
+            final InfrastructureFactory infrastructureFactory,
+            final PrecompilePricingUtils pricingUtils) {
+        this.ledgers = ledgers;
+        this.decoder = decoder;
+        this.sideEffects = sideEffects;
+        this.syntheticTxnFactory = syntheticTxnFactory;
+        this.infrastructureFactory = infrastructureFactory;
+        this.pricingUtils = pricingUtils;
+    }
 
-	@Override
-	public long getGasRequirement(long blockTimestamp) {
-		return pricingUtils.computeGasRequirement(blockTimestamp,this, transactionBody);
-	}
+    @Override
+    public long getGasRequirement(long blockTimestamp) {
+        return pricingUtils.computeGasRequirement(blockTimestamp, this, transactionBody);
+    }
 }

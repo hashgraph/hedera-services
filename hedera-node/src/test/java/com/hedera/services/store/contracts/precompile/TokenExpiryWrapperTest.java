@@ -31,42 +31,44 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
 class TokenExpiryWrapperTest {
 
-	private TokenExpiryWrapper wrapper;
+    private TokenExpiryWrapper wrapper;
 
-	@BeforeEach
-	public void setUp(){
-		wrapper = createTokenExpiryWrapper();
-	}
+    @BeforeEach
+    public void setUp() {
+        wrapper = createTokenExpiryWrapper();
+    }
 
-	@Test
-	void autoRenewAccountIsCheckedAsExpected() {
-		assertEquals(payer, wrapper.autoRenewAccount());
-		assertEquals(442L, wrapper.second());
-		assertEquals(555L, wrapper.autoRenewPeriod());
-		wrapper.setAutoRenewAccount(EntityId.fromIdentityCode(10).toGrpcAccountId());
-		assertEquals(EntityId.fromIdentityCode(10).toGrpcAccountId(), wrapper.autoRenewAccount());
-	}
+    @Test
+    void autoRenewAccountIsCheckedAsExpected() {
+        assertEquals(payer, wrapper.autoRenewAccount());
+        assertEquals(442L, wrapper.second());
+        assertEquals(555L, wrapper.autoRenewPeriod());
+        wrapper.setAutoRenewAccount(EntityId.fromIdentityCode(10).toGrpcAccountId());
+        assertEquals(EntityId.fromIdentityCode(10).toGrpcAccountId(), wrapper.autoRenewAccount());
+    }
 
-	@Test
-	void objectContractWorks() {
-		final var one = wrapper;
-		final var two = createTokenExpiryWrapper();
-		final var three = createTokenExpiryWrapper();
-		three.setAutoRenewAccount(EntityId.fromIdentityCode(10).toGrpcAccountId());
+    @Test
+    void objectContractWorks() {
+        final var one = wrapper;
+        final var two = createTokenExpiryWrapper();
+        final var three = createTokenExpiryWrapper();
+        three.setAutoRenewAccount(EntityId.fromIdentityCode(10).toGrpcAccountId());
 
-		assertNotEquals(null, one);
-		assertNotEquals(new Object(), one);
-		assertEquals(one, two);
-		assertNotEquals(one, three);
+        assertNotEquals(null, one);
+        assertNotEquals(new Object(), one);
+        assertEquals(one, two);
+        assertNotEquals(one, three);
 
-		assertNotEquals(one.hashCode(), three.hashCode());
-		assertEquals(one.hashCode(), two.hashCode());
+        assertNotEquals(one.hashCode(), three.hashCode());
+        assertEquals(one.hashCode(), two.hashCode());
 
-		assertEquals("TokenExpiryWrapper{second=442, autoRenewAccount=accountNum: 12345\n" +
-				", autoRenewPeriod=555}", wrapper.toString());
-	}
+        assertEquals(
+                "TokenExpiryWrapper{second=442, autoRenewAccount=accountNum: 12345\n"
+                        + ", autoRenewPeriod=555}",
+                wrapper.toString());
+    }
 
-	public static TokenExpiryWrapper createTokenExpiryWrapper() {
-		return new TokenExpiryWrapper(442L, payer, 555L);
-	}
+    public static TokenExpiryWrapper createTokenExpiryWrapper() {
+        return new TokenExpiryWrapper(442L, payer, 555L);
+    }
 }

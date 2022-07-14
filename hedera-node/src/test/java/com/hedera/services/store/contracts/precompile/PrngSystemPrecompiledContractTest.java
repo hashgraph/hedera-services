@@ -79,326 +79,366 @@ import static org.mockito.Mockito.mock;
 
 @ExtendWith(MockitoExtension.class)
 class PrngSystemPrecompiledContractTest {
-	private static final Hash WELL_KNOWN_HASH =
-			new Hash(CommonUtils.unhex(
-					"65386630386164632d356537632d343964342d623437372d62636134346538386338373133633038316162372d616300"));
-	@Mock
-	private MessageFrame frame;
-	@Mock
-	private GasCalculator gasCalculator;
-	@Mock
-	private GlobalDynamicProperties dynamicProperties;
-	@Mock
-	private RecordsRunningHashLeaf runningHashLeaf;
-	@Mock
-	private SideEffectsTracker sideEffectsTracker;
-	@Mock
-	private ExpiringCreations creator;
-	@Mock
-	private RecordsHistorian recordsHistorian;
-	@Mock
-	private PrecompilePricingUtils pricingUtils;
-	private final Instant consensusNow = Instant.ofEpochSecond(123456789L);
-	@Mock
-	private LivePricesSource livePricesSource;
-	@Mock
-	private HederaStackedWorldStateUpdater updater;
+    private static final Hash WELL_KNOWN_HASH =
+            new Hash(
+                    CommonUtils.unhex(
+                            "65386630386164632d356537632d343964342d623437372d62636134346538386338373133633038316162372d616300"));
+    @Mock private MessageFrame frame;
+    @Mock private GasCalculator gasCalculator;
+    @Mock private GlobalDynamicProperties dynamicProperties;
+    @Mock private RecordsRunningHashLeaf runningHashLeaf;
+    @Mock private SideEffectsTracker sideEffectsTracker;
+    @Mock private ExpiringCreations creator;
+    @Mock private RecordsHistorian recordsHistorian;
+    @Mock private PrecompilePricingUtils pricingUtils;
+    private final Instant consensusNow = Instant.ofEpochSecond(123456789L);
+    @Mock private LivePricesSource livePricesSource;
+    @Mock private HederaStackedWorldStateUpdater updater;
 
-	private PrngSystemPrecompiledContract subject;
-	private final Random r = new Random();
+    private PrngSystemPrecompiledContract subject;
+    private final Random r = new Random();
 
-	private final ExpirableTxnRecord.Builder childRecord = ExpirableTxnRecord.newBuilder();
+    private final ExpirableTxnRecord.Builder childRecord = ExpirableTxnRecord.newBuilder();
 
-	@BeforeEach
-	void setUp() {
-		final var logic = new PrngLogic(dynamicProperties, () -> runningHashLeaf, sideEffectsTracker);
-		subject = new PrngSystemPrecompiledContract(gasCalculator, logic, creator, recordsHistorian,
-				pricingUtils, livePricesSource, dynamicProperties);
-	}
+    @BeforeEach
+    void setUp() {
+        final var logic =
+                new PrngLogic(dynamicProperties, () -> runningHashLeaf, sideEffectsTracker);
+        subject =
+                new PrngSystemPrecompiledContract(
+                        gasCalculator,
+                        logic,
+                        creator,
+                        recordsHistorian,
+                        pricingUtils,
+                        livePricesSource,
+                        dynamicProperties);
+    }
 
-	@Test
-	void generatesRandom256BitNumber() throws InterruptedException {
-		given(runningHashLeaf.nMinusThreeRunningHash()).willReturn(new Hash(TxnUtils.randomUtf8Bytes(48)));
-		final var result = subject.generatePseudoRandomData(random256BitGeneratorInput());
-		assertEquals(32, result.toArray().length);
-	}
+    @Test
+    void generatesRandom256BitNumber() throws InterruptedException {
+        given(runningHashLeaf.nMinusThreeRunningHash())
+                .willReturn(new Hash(TxnUtils.randomUtf8Bytes(48)));
+        final var result = subject.generatePseudoRandomData(random256BitGeneratorInput());
+        assertEquals(32, result.toArray().length);
+    }
 
-	@Test
-	void generatesRandomNumber() throws InterruptedException {
-		given(runningHashLeaf.nMinusThreeRunningHash()).willReturn(new Hash(TxnUtils.randomUtf8Bytes(48)));
-		final var range = r.nextInt(0, Integer.MAX_VALUE);
-		final var result = subject.generatePseudoRandomData(randomNumberGeneratorInput(range));
-		final var randomNumber = result.toBigInteger().intValue();
-		assertTrue(randomNumber >= 0 && randomNumber < range);
-	}
+    @Test
+    void generatesRandomNumber() throws InterruptedException {
+        given(runningHashLeaf.nMinusThreeRunningHash())
+                .willReturn(new Hash(TxnUtils.randomUtf8Bytes(48)));
+        final var range = r.nextInt(0, Integer.MAX_VALUE);
+        final var result = subject.generatePseudoRandomData(randomNumberGeneratorInput(range));
+        final var randomNumber = result.toBigInteger().intValue();
+        assertTrue(randomNumber >= 0 && randomNumber < range);
+    }
 
-	@Test
-	void hasExpectedGasRequirement() {
-		assertEquals(0, subject.gasRequirement(argOf(123)));
+    @Test
+    void hasExpectedGasRequirement() {
+        assertEquals(0, subject.gasRequirement(argOf(123)));
 
-		subject.setGasRequirement(100);
-		assertEquals(100, subject.gasRequirement(argOf(123)));
-	}
+        subject.setGasRequirement(100);
+        assertEquals(100, subject.gasRequirement(argOf(123)));
+    }
 
-	@Test
-	void inputRangeCannotBeNegative() {
-		final var input = randomNumberGeneratorInput(-10);
-		assertThrows(InvalidTransactionException.class, () -> subject.generatePseudoRandomData(input));
-	}
+    @Test
+    void inputRangeCannotBeNegative() {
+        final var input = randomNumberGeneratorInput(-10);
+        assertThrows(
+                InvalidTransactionException.class, () -> subject.generatePseudoRandomData(input));
+    }
 
-	@Test
-	void computePrecompileForNegativeRangeFails() {
-		final var input = randomNumberGeneratorInput(-10);
-		initialSetUp();
-		given(creator.createUnsuccessfulSyntheticRecord(any())).willReturn(childRecord);
-		given(frame.getBlockValues()).willReturn(new HederaBlockValues(10L, 123L, consensusNow));
+    @Test
+    void computePrecompileForNegativeRangeFails() {
+        final var input = randomNumberGeneratorInput(-10);
+        initialSetUp();
+        given(creator.createUnsuccessfulSyntheticRecord(any())).willReturn(childRecord);
+        given(frame.getBlockValues()).willReturn(new HederaBlockValues(10L, 123L, consensusNow));
 
-		final var response = subject.computePrngResult(10L, input, frame);
-		assertEquals(INVALID_OPERATION, response.getLeft().getHaltReason().get());
-		assertEquals(INVALID_PRNG_RANGE, response.getRight());
+        final var response = subject.computePrngResult(10L, input, frame);
+        assertEquals(INVALID_OPERATION, response.getLeft().getHaltReason().get());
+        assertEquals(INVALID_PRNG_RANGE, response.getRight());
 
-		final var result = subject.computePrecompile(input, frame);
-		assertNull(result.getOutput());
-		assertEquals(INVALID_OPERATION, result.getHaltReason().get());
-		assertEquals(MessageFrame.State.EXCEPTIONAL_HALT, result.getState());
-	}
+        final var result = subject.computePrecompile(input, frame);
+        assertNull(result.getOutput());
+        assertEquals(INVALID_OPERATION, result.getHaltReason().get());
+        assertEquals(MessageFrame.State.EXCEPTIONAL_HALT, result.getState());
+    }
 
-	@Test
-	void calculatesGasCorrectly() {
-		given(pricingUtils.getCanonicalPriceInTinyCents(PRNG)).willReturn(100000000L);
-		given(livePricesSource.currentGasPriceInTinycents(consensusNow, HederaFunctionality.ContractCall))
-				.willReturn(800L);
-		assertEquals(100000000L / 800L, subject.calculateGas(consensusNow));
-	}
+    @Test
+    void calculatesGasCorrectly() {
+        given(pricingUtils.getCanonicalPriceInTinyCents(PRNG)).willReturn(100000000L);
+        given(
+                        livePricesSource.currentGasPriceInTinycents(
+                                consensusNow, HederaFunctionality.ContractCall))
+                .willReturn(800L);
+        assertEquals(100000000L / 800L, subject.calculateGas(consensusNow));
+    }
 
-	@Test
-	void insufficientGasThrows() {
-		final var input = randomNumberGeneratorInput(10);
-		initialSetUp();
-		given(creator.createUnsuccessfulSyntheticRecord(any())).willReturn(childRecord);
-		given(frame.getRemainingGas()).willReturn(0L);
-		given(frame.getBlockValues()).willReturn(new HederaBlockValues(10L, 123L, consensusNow));
+    @Test
+    void insufficientGasThrows() {
+        final var input = randomNumberGeneratorInput(10);
+        initialSetUp();
+        given(creator.createUnsuccessfulSyntheticRecord(any())).willReturn(childRecord);
+        given(frame.getRemainingGas()).willReturn(0L);
+        given(frame.getBlockValues()).willReturn(new HederaBlockValues(10L, 123L, consensusNow));
 
-		final var response = subject.computePrngResult(10L, input, frame);
-		assertEquals(INVALID_OPERATION, response.getLeft().getHaltReason().get());
-		assertEquals(INSUFFICIENT_GAS, response.getRight());
+        final var response = subject.computePrngResult(10L, input, frame);
+        assertEquals(INVALID_OPERATION, response.getLeft().getHaltReason().get());
+        assertEquals(INSUFFICIENT_GAS, response.getRight());
 
-		final var result = subject.computePrecompile(input, frame);
-		assertNull(result.getOutput());
-	}
+        final var result = subject.computePrecompile(input, frame);
+        assertNull(result.getOutput());
+    }
 
-	@Test
-	void happyPathWithRandomNumberGeneratedWorks() throws InterruptedException {
-		final ArgumentCaptor<SideEffectsTracker> captor = ArgumentCaptor.forClass(SideEffectsTracker.class);
+    @Test
+    void happyPathWithRandomNumberGeneratedWorks() throws InterruptedException {
+        final ArgumentCaptor<SideEffectsTracker> captor =
+                ArgumentCaptor.forClass(SideEffectsTracker.class);
 
-		final var input = randomNumberGeneratorInput(10);
-		initialSetUp();
-		given(creator.createSuccessfulSyntheticRecord(anyList(), captor.capture(), anyString())).willReturn(childRecord);
-		given(runningHashLeaf.nMinusThreeRunningHash()).willReturn(WELL_KNOWN_HASH);
-		given(frame.getBlockValues()).willReturn(new HederaBlockValues(10L, 123L, consensusNow));
+        final var input = randomNumberGeneratorInput(10);
+        initialSetUp();
+        given(creator.createSuccessfulSyntheticRecord(anyList(), captor.capture(), anyString()))
+                .willReturn(childRecord);
+        given(runningHashLeaf.nMinusThreeRunningHash()).willReturn(WELL_KNOWN_HASH);
+        given(frame.getBlockValues()).willReturn(new HederaBlockValues(10L, 123L, consensusNow));
 
-		final var response = subject.computePrngResult(10L, input, frame);
-		assertEquals(Optional.empty(), response.getLeft().getHaltReason());
-		assertEquals(COMPLETED_SUCCESS, response.getLeft().getState());
-		assertNull(response.getRight());
+        final var response = subject.computePrngResult(10L, input, frame);
+        assertEquals(Optional.empty(), response.getLeft().getHaltReason());
+        assertEquals(COMPLETED_SUCCESS, response.getLeft().getState());
+        assertNull(response.getRight());
 
-		final var result = subject.computePrecompile(input, frame);
-		assertNotNull(result.getOutput());
-		assertTrue(result.getOutput().toBigInteger().intValue() < 10);
-		// and:
-		final var effectsTracker = captor.getValue();
-		assertEquals(2, effectsTracker.getPseudorandomNumber());
-	}
+        final var result = subject.computePrecompile(input, frame);
+        assertNotNull(result.getOutput());
+        assertTrue(result.getOutput().toBigInteger().intValue() < 10);
+        // and:
+        final var effectsTracker = captor.getValue();
+        assertEquals(2, effectsTracker.getPseudorandomNumber());
+    }
 
-	@Test
-	void happyPathWithRandomSeedGeneratedWorks() throws InterruptedException {
-		final ArgumentCaptor<SideEffectsTracker> captor = ArgumentCaptor.forClass(SideEffectsTracker.class);
+    @Test
+    void happyPathWithRandomSeedGeneratedWorks() throws InterruptedException {
+        final ArgumentCaptor<SideEffectsTracker> captor =
+                ArgumentCaptor.forClass(SideEffectsTracker.class);
 
-		final var input = random256BitGeneratorInput();
-		initialSetUp();
-		given(creator.createSuccessfulSyntheticRecord(anyList(), captor.capture(), anyString())).willReturn(childRecord);
-		given(runningHashLeaf.nMinusThreeRunningHash()).willReturn(WELL_KNOWN_HASH);
-		given(frame.getBlockValues()).willReturn(new HederaBlockValues(10L, 123L, consensusNow));
+        final var input = random256BitGeneratorInput();
+        initialSetUp();
+        given(creator.createSuccessfulSyntheticRecord(anyList(), captor.capture(), anyString()))
+                .willReturn(childRecord);
+        given(runningHashLeaf.nMinusThreeRunningHash()).willReturn(WELL_KNOWN_HASH);
+        given(frame.getBlockValues()).willReturn(new HederaBlockValues(10L, 123L, consensusNow));
 
-		final var response = subject.computePrngResult(10L, input, frame);
-		assertEquals(Optional.empty(), response.getLeft().getHaltReason());
-		assertEquals(COMPLETED_SUCCESS, response.getLeft().getState());
-		assertNull(response.getRight());
+        final var response = subject.computePrngResult(10L, input, frame);
+        assertEquals(Optional.empty(), response.getLeft().getHaltReason());
+        assertEquals(COMPLETED_SUCCESS, response.getLeft().getState());
+        assertNull(response.getRight());
 
-		final var result = subject.computePrecompile(input, frame);
-		assertNotNull(result.getOutput());
+        final var result = subject.computePrecompile(input, frame);
+        assertNotNull(result.getOutput());
 
-		// and:
-		final var effectsTracker = captor.getValue();
-		assertArrayEquals(
-				Arrays.copyOfRange(WELL_KNOWN_HASH.getValue(), 0, 32),
-				effectsTracker.getPseudorandomBytes());
-	}
+        // and:
+        final var effectsTracker = captor.getValue();
+        assertArrayEquals(
+                Arrays.copyOfRange(WELL_KNOWN_HASH.getValue(), 0, 32),
+                effectsTracker.getPseudorandomBytes());
+    }
 
-	@Test
-	void unknownExceptionFailsTheCall() {
-		final var input = random256BitGeneratorInput();
-		initialSetUp();
-		given(frame.getBlockValues()).willReturn(new HederaBlockValues(10L, 123L, consensusNow));
-		final var logic = mock(PrngLogic.class);
-		subject = new PrngSystemPrecompiledContract(gasCalculator, logic, creator, recordsHistorian,
-				pricingUtils, livePricesSource, dynamicProperties);
-		given(logic.getNMinus3RunningHashBytes()).willThrow(IndexOutOfBoundsException.class);
+    @Test
+    void unknownExceptionFailsTheCall() {
+        final var input = random256BitGeneratorInput();
+        initialSetUp();
+        given(frame.getBlockValues()).willReturn(new HederaBlockValues(10L, 123L, consensusNow));
+        final var logic = mock(PrngLogic.class);
+        subject =
+                new PrngSystemPrecompiledContract(
+                        gasCalculator,
+                        logic,
+                        creator,
+                        recordsHistorian,
+                        pricingUtils,
+                        livePricesSource,
+                        dynamicProperties);
+        given(logic.getNMinus3RunningHashBytes()).willThrow(IndexOutOfBoundsException.class);
 
-		final var response = subject.computePrngResult(10L, input, frame);
-		assertEquals(INVALID_OPERATION, response.getLeft().getHaltReason().get());
+        final var response = subject.computePrngResult(10L, input, frame);
+        assertEquals(INVALID_OPERATION, response.getLeft().getHaltReason().get());
 
-		final var result = subject.computePrecompile(input, frame);
-		assertNull(result.getOutput());
-	}
+        final var result = subject.computePrecompile(input, frame);
+        assertNull(result.getOutput());
+    }
 
-	@Test
-	void selectorMustBeRecognized() {
-		final var fragmentSelector = Bytes.of((byte) 0xab, (byte) 0xab, (byte) 0xab, (byte) 0xab);
-		final var input = Bytes.concatenate(fragmentSelector, Bytes32.ZERO);
-		assertNull(subject.generatePseudoRandomData(input));
-	}
+    @Test
+    void selectorMustBeRecognized() {
+        final var fragmentSelector = Bytes.of((byte) 0xab, (byte) 0xab, (byte) 0xab, (byte) 0xab);
+        final var input = Bytes.concatenate(fragmentSelector, Bytes32.ZERO);
+        assertNull(subject.generatePseudoRandomData(input));
+    }
 
-	@Test
-	void invalidHashReturnsSentinelOutputs() throws InterruptedException {
-		given(runningHashLeaf.nMinusThreeRunningHash()).willReturn(new Hash(TxnUtils.randomUtf8Bytes(48)));
+    @Test
+    void invalidHashReturnsSentinelOutputs() throws InterruptedException {
+        given(runningHashLeaf.nMinusThreeRunningHash())
+                .willReturn(new Hash(TxnUtils.randomUtf8Bytes(48)));
 
-		var result = subject.generatePseudoRandomData(random256BitGeneratorInput());
-		assertEquals(32, result.toArray().length);
+        var result = subject.generatePseudoRandomData(random256BitGeneratorInput());
+        assertEquals(32, result.toArray().length);
 
-		// hash is null
-		given(runningHashLeaf.nMinusThreeRunningHash()).willReturn(null);
+        // hash is null
+        given(runningHashLeaf.nMinusThreeRunningHash()).willReturn(null);
 
-		result = subject.generatePseudoRandomData(random256BitGeneratorInput());
-		assertNull(result);
+        result = subject.generatePseudoRandomData(random256BitGeneratorInput());
+        assertNull(result);
 
-		final var range = r.nextInt(0, Integer.MAX_VALUE);
-		result = subject.generatePseudoRandomData(randomNumberGeneratorInput(range));
-		final var randomNumberBytes = result;
-		assertNull(randomNumberBytes);
-	}
+        final var range = r.nextInt(0, Integer.MAX_VALUE);
+        result = subject.generatePseudoRandomData(randomNumberGeneratorInput(range));
+        final var randomNumberBytes = result;
+        assertNull(randomNumberBytes);
+    }
 
-	@Test
-	void interruptedExceptionReturnsNull() throws InterruptedException {
-		final var runningHash = mock(Hash.class);
-		given(runningHashLeaf.nMinusThreeRunningHash()).willReturn(runningHash);
+    @Test
+    void interruptedExceptionReturnsNull() throws InterruptedException {
+        final var runningHash = mock(Hash.class);
+        given(runningHashLeaf.nMinusThreeRunningHash()).willReturn(runningHash);
 
-		var result = subject.generatePseudoRandomData(random256BitGeneratorInput());
-		assertNull(result);
+        var result = subject.generatePseudoRandomData(random256BitGeneratorInput());
+        assertNull(result);
 
-		final var range = r.nextInt(0, Integer.MAX_VALUE);
-		result = subject.generatePseudoRandomData(randomNumberGeneratorInput(range));
-		assertNull(result);
-	}
+        final var range = r.nextInt(0, Integer.MAX_VALUE);
+        result = subject.generatePseudoRandomData(randomNumberGeneratorInput(range));
+        assertNull(result);
+    }
 
-	@Test
-	void childRecordHasExpectations() {
-		final var randomNum = 10L;
-		setUpForChildRecord();
-		given(creator.createSuccessfulSyntheticRecord(anyList(), any(), anyString())).willReturn(childRecord);
-		final var childRecord = subject.createSuccessfulChildRecord(Bytes.ofUnsignedInt(randomNum),
-				frame, randomNumberGeneratorInput(10));
+    @Test
+    void childRecordHasExpectations() {
+        final var randomNum = 10L;
+        setUpForChildRecord();
+        given(creator.createSuccessfulSyntheticRecord(anyList(), any(), anyString()))
+                .willReturn(childRecord);
+        final var childRecord =
+                subject.createSuccessfulChildRecord(
+                        Bytes.ofUnsignedInt(randomNum), frame, randomNumberGeneratorInput(10));
 
-		assertNotNull(childRecord);
-		assertEquals(EntityId.fromAddress(ALTBN128_ADD), childRecord.getContractCallResult().getSenderId());
-		assertEquals(randomNum, Bytes.wrap(childRecord.getContractCallResult().getResult()).toInt());
-		assertNull(childRecord.getContractCallResult().getError());
-	}
+        assertNotNull(childRecord);
+        assertEquals(
+                EntityId.fromAddress(ALTBN128_ADD),
+                childRecord.getContractCallResult().getSenderId());
+        assertEquals(
+                randomNum, Bytes.wrap(childRecord.getContractCallResult().getResult()).toInt());
+        assertNull(childRecord.getContractCallResult().getError());
+    }
 
-	@Test
-	void childRecordHasExpectationsForRandomSeed() {
-		final var randomBytes = Bytes.wrap(TxnUtils.randomUtf8Bytes(32));
+    @Test
+    void childRecordHasExpectationsForRandomSeed() {
+        final var randomBytes = Bytes.wrap(TxnUtils.randomUtf8Bytes(32));
 
-		setUpForChildRecord();
-		given(creator.createSuccessfulSyntheticRecord(anyList(), any(), anyString())).willReturn(childRecord);
-		final var childRecord = subject.createSuccessfulChildRecord(randomBytes,
-				frame, random256BitGeneratorInput());
+        setUpForChildRecord();
+        given(creator.createSuccessfulSyntheticRecord(anyList(), any(), anyString()))
+                .willReturn(childRecord);
+        final var childRecord =
+                subject.createSuccessfulChildRecord(
+                        randomBytes, frame, random256BitGeneratorInput());
 
-		assertNotNull(childRecord);
-		assertEquals(EntityId.fromAddress(ALTBN128_ADD), childRecord.getContractCallResult().getSenderId());
-		assertArrayEquals(randomBytes.toArray(), Bytes.wrap(childRecord.getContractCallResult().getResult()).toArray());
-		assertNull(childRecord.getContractCallResult().getError());
-	}
+        assertNotNull(childRecord);
+        assertEquals(
+                EntityId.fromAddress(ALTBN128_ADD),
+                childRecord.getContractCallResult().getSenderId());
+        assertArrayEquals(
+                randomBytes.toArray(),
+                Bytes.wrap(childRecord.getContractCallResult().getResult()).toArray());
+        assertNull(childRecord.getContractCallResult().getError());
+    }
 
-	@Test
-	void failedChildRecordHasExpectations() {
-		setUpForChildRecord();
-		given(creator.createUnsuccessfulSyntheticRecord(any())).willReturn(childRecord);
-		final var childRecord = subject.createUnsuccessfulChildRecord(FAIL_INVALID,
-				frame);
+    @Test
+    void failedChildRecordHasExpectations() {
+        setUpForChildRecord();
+        given(creator.createUnsuccessfulSyntheticRecord(any())).willReturn(childRecord);
+        final var childRecord = subject.createUnsuccessfulChildRecord(FAIL_INVALID, frame);
 
-		assertNotNull(childRecord);
-		assertArrayEquals(new byte[0], childRecord.getPseudoRandomBytes());
-		assertEquals(-1, childRecord.getPseudoRandomNumber());
-		assertEquals(EntityId.fromAddress(ALTBN128_ADD), childRecord.getContractCallResult().getSenderId());
-		assertEquals(0, Bytes.wrap(childRecord.getContractCallResult().getResult()).toInt());
-		assertEquals("FAIL_INVALID", childRecord.getContractCallResult().getError());
-	}
+        assertNotNull(childRecord);
+        assertArrayEquals(new byte[0], childRecord.getPseudoRandomBytes());
+        assertEquals(-1, childRecord.getPseudoRandomNumber());
+        assertEquals(
+                EntityId.fromAddress(ALTBN128_ADD),
+                childRecord.getContractCallResult().getSenderId());
+        assertEquals(0, Bytes.wrap(childRecord.getContractCallResult().getResult()).toInt());
+        assertEquals("FAIL_INVALID", childRecord.getContractCallResult().getError());
+    }
 
-	@Test
-	void parentUpdaterMissingFails() throws InterruptedException {
-		final var input = randomNumberGeneratorInput(10);
-		initialSetUp();
-		given(updater.parentUpdater()).willReturn(Optional.empty());
-		given(creator.createSuccessfulSyntheticRecord(anyList(), any(), anyString())).willReturn(childRecord);
-		given(frame.getBlockValues()).willReturn(new HederaBlockValues(10L, 123L, consensusNow));
-		given(runningHashLeaf.nMinusThreeRunningHash()).willReturn(new Hash(TxnUtils.randomUtf8Bytes(48)));
+    @Test
+    void parentUpdaterMissingFails() throws InterruptedException {
+        final var input = randomNumberGeneratorInput(10);
+        initialSetUp();
+        given(updater.parentUpdater()).willReturn(Optional.empty());
+        given(creator.createSuccessfulSyntheticRecord(anyList(), any(), anyString()))
+                .willReturn(childRecord);
+        given(frame.getBlockValues()).willReturn(new HederaBlockValues(10L, 123L, consensusNow));
+        given(runningHashLeaf.nMinusThreeRunningHash())
+                .willReturn(new Hash(TxnUtils.randomUtf8Bytes(48)));
 
-		final var msg = assertThrows(InvalidTransactionException.class, () -> subject.computePrecompile(input, frame));
+        final var msg =
+                assertThrows(
+                        InvalidTransactionException.class,
+                        () -> subject.computePrecompile(input, frame));
 
-		assertTrue(msg.getMessage().contains("PRNG precompile frame had no parent updater"));
-	}
+        assertTrue(msg.getMessage().contains("PRNG precompile frame had no parent updater"));
+    }
 
-	@Test
-	void testOutsideRangeValues() {
-		final var input = input(PSEUDORANDOM_NUM_IN_RANGE_GENERATOR_SELECTOR,
-				Bytes32.leftPad(Bytes.wrap(ByteBuffer.allocate(8).putLong(Long.MAX_VALUE).array())));
-		initialSetUp();
-		given(frame.getBlockValues()).willReturn(new HederaBlockValues(10L, 123L, consensusNow));
-		final var response = subject.computePrngResult(10L, input, frame);
+    @Test
+    void testOutsideRangeValues() {
+        final var input =
+                input(
+                        PSEUDORANDOM_NUM_IN_RANGE_GENERATOR_SELECTOR,
+                        Bytes32.leftPad(
+                                Bytes.wrap(
+                                        ByteBuffer.allocate(8).putLong(Long.MAX_VALUE).array())));
+        initialSetUp();
+        given(frame.getBlockValues()).willReturn(new HederaBlockValues(10L, 123L, consensusNow));
+        final var response = subject.computePrngResult(10L, input, frame);
 
-		assertEquals(INVALID_OPERATION, response.getLeft().getHaltReason().get());
+        assertEquals(INVALID_OPERATION, response.getLeft().getHaltReason().get());
 
-		final var result = subject.computePrecompile(input, frame);
-		assertNull(result.getOutput());
-	}
+        final var result = subject.computePrecompile(input, frame);
+        assertNull(result.getOutput());
+    }
 
-	private static Bytes random256BitGeneratorInput() {
-		return input(PSEUDORANDOM_SEED_GENERATOR_SELECTOR, Bytes.EMPTY);
-	}
+    private static Bytes random256BitGeneratorInput() {
+        return input(PSEUDORANDOM_SEED_GENERATOR_SELECTOR, Bytes.EMPTY);
+    }
 
-	private static Bytes randomNumberGeneratorInput(final int range) {
-		return input(PSEUDORANDOM_NUM_IN_RANGE_GENERATOR_SELECTOR,
-				Bytes32.leftPad(Bytes.wrap(ByteBuffer.allocate(4).putInt(range).array())));
-	}
+    private static Bytes randomNumberGeneratorInput(final int range) {
+        return input(
+                PSEUDORANDOM_NUM_IN_RANGE_GENERATOR_SELECTOR,
+                Bytes32.leftPad(Bytes.wrap(ByteBuffer.allocate(4).putInt(range).array())));
+    }
 
-	private static Bytes input(final int selector, final Bytes wordInput) {
-		return Bytes.concatenate(Bytes.ofUnsignedInt(selector & 0xffffffffL), wordInput);
-	}
+    private static Bytes input(final int selector, final Bytes wordInput) {
+        return Bytes.concatenate(Bytes.ofUnsignedInt(selector & 0xffffffffL), wordInput);
+    }
 
-	private static Bytes argOf(final long amount) {
-		return Bytes.wrap(Longs.toByteArray(amount));
-	}
+    private static Bytes argOf(final long amount) {
+        return Bytes.wrap(Longs.toByteArray(amount));
+    }
 
-	private void initialSetUp() {
-		given(frame.getSenderAddress()).willReturn(ALTBN128_ADD);
-		given(frame.getWorldUpdater()).willReturn(updater);
-		given(updater.permissivelyUnaliased(frame.getSenderAddress().toArray())).willReturn(
-				ALTBN128_ADD.toArray());
-		given(pricingUtils.getCanonicalPriceInTinyCents(PRNG)).willReturn(100000000L);
-		given(livePricesSource.currentGasPriceInTinycents(consensusNow, HederaFunctionality.ContractCall))
-				.willReturn(830L);
-		given(frame.getRemainingGas()).willReturn(400_000L);
-		given(updater.parentUpdater()).willReturn(Optional.of(updater));
-	}
+    private void initialSetUp() {
+        given(frame.getSenderAddress()).willReturn(ALTBN128_ADD);
+        given(frame.getWorldUpdater()).willReturn(updater);
+        given(updater.permissivelyUnaliased(frame.getSenderAddress().toArray()))
+                .willReturn(ALTBN128_ADD.toArray());
+        given(pricingUtils.getCanonicalPriceInTinyCents(PRNG)).willReturn(100000000L);
+        given(
+                        livePricesSource.currentGasPriceInTinycents(
+                                consensusNow, HederaFunctionality.ContractCall))
+                .willReturn(830L);
+        given(frame.getRemainingGas()).willReturn(400_000L);
+        given(updater.parentUpdater()).willReturn(Optional.of(updater));
+    }
 
-	private void setUpForChildRecord() {
-		given(frame.getSenderAddress()).willReturn(ALTBN128_ADD);
-		given(frame.getWorldUpdater()).willReturn(updater);
-		given(updater.permissivelyUnaliased(frame.getSenderAddress().toArray())).willReturn(
-				ALTBN128_ADD.toArray());
-		given(dynamicProperties.shouldExportPrecompileResults()).willReturn(true);
-		given(frame.getValue()).willReturn(Wei.of(100L));
-		given(frame.getInputData()).willReturn(Bytes.EMPTY);
-	}
+    private void setUpForChildRecord() {
+        given(frame.getSenderAddress()).willReturn(ALTBN128_ADD);
+        given(frame.getWorldUpdater()).willReturn(updater);
+        given(updater.permissivelyUnaliased(frame.getSenderAddress().toArray()))
+                .willReturn(ALTBN128_ADD.toArray());
+        given(dynamicProperties.shouldExportPrecompileResults()).willReturn(true);
+        given(frame.getValue()).willReturn(Wei.of(100L));
+        given(frame.getInputData()).willReturn(Bytes.EMPTY);
+    }
 }

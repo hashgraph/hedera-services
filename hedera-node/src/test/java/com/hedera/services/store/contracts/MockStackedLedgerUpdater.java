@@ -26,29 +26,28 @@ import org.hyperledger.besu.evm.account.Account;
 import org.hyperledger.besu.evm.worldstate.WorldUpdater;
 
 public class MockStackedLedgerUpdater
-		extends AbstractStackedLedgerUpdater<HederaWorldState, Account> {
-	private final ContractCustomizer customizer;
+        extends AbstractStackedLedgerUpdater<HederaWorldState, Account> {
+    private final ContractCustomizer customizer;
 
-	public MockStackedLedgerUpdater(
-			final AbstractLedgerWorldUpdater<HederaWorldState, Account> world,
-			final WorldLedgers trackingLedgers,
-			final ContractCustomizer customizer
-	) {
-		super(world, trackingLedgers);
-		this.customizer = customizer;
-	}
+    public MockStackedLedgerUpdater(
+            final AbstractLedgerWorldUpdater<HederaWorldState, Account> world,
+            final WorldLedgers trackingLedgers,
+            final ContractCustomizer customizer) {
+        super(world, trackingLedgers);
+        this.customizer = customizer;
+    }
 
-	@Override
-	public ContractCustomizer customizerForPendingCreation() {
-		return customizer;
-	}
+    @Override
+    public ContractCustomizer customizerForPendingCreation() {
+        return customizer;
+    }
 
-	@Override
-	@SuppressWarnings({ "unchecked", "rawtypes" })
-	public WorldUpdater updater() {
-		return new MockStackedLedgerUpdater(
-				(AbstractLedgerWorldUpdater) this,
-				trackingLedgers().wrapped(new SideEffectsTracker()),
-				customizer);
-	}
+    @Override
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    public WorldUpdater updater() {
+        return new MockStackedLedgerUpdater(
+                (AbstractLedgerWorldUpdater) this,
+                trackingLedgers().wrapped(new SideEffectsTracker()),
+                customizer);
+    }
 }

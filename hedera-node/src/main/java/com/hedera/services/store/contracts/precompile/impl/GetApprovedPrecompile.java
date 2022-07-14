@@ -9,9 +9,9 @@ package com.hedera.services.store.contracts.precompile.impl;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -40,32 +40,33 @@ import static com.hedera.services.ledger.properties.NftProperty.SPENDER;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER;
 
 public class GetApprovedPrecompile extends AbstractReadOnlyPrecompile {
-	GetApprovedWrapper getApprovedWrapper;
+    GetApprovedWrapper getApprovedWrapper;
 
-	public GetApprovedPrecompile(
-			final TokenID tokenId,
-			final SyntheticTxnFactory syntheticTxnFactory,
-			final WorldLedgers ledgers,
-			final EncodingFacade encoder,
-			final DecodingFacade decoder,
-			final PrecompilePricingUtils pricingUtils) {
-		super(tokenId, syntheticTxnFactory, ledgers, encoder, decoder, pricingUtils);
-	}
+    public GetApprovedPrecompile(
+            final TokenID tokenId,
+            final SyntheticTxnFactory syntheticTxnFactory,
+            final WorldLedgers ledgers,
+            final EncodingFacade encoder,
+            final DecodingFacade decoder,
+            final PrecompilePricingUtils pricingUtils) {
+        super(tokenId, syntheticTxnFactory, ledgers, encoder, decoder, pricingUtils);
+    }
 
-	@Override
-	public TransactionBody.Builder body(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
-		final var nestedInput = input.slice(24);
-		getApprovedWrapper = decoder.decodeGetApproved(nestedInput);
-		return super.body(input, aliasResolver);
-	}
+    @Override
+    public TransactionBody.Builder body(
+            final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
+        final var nestedInput = input.slice(24);
+        getApprovedWrapper = decoder.decodeGetApproved(nestedInput);
+        return super.body(input, aliasResolver);
+    }
 
-	@Override
-	public Bytes getSuccessResultFor(final ExpirableTxnRecord.Builder childRecord) {
-		final var nftsLedger = ledgers.nfts();
-		final var nftId = NftId.fromGrpc(tokenId, getApprovedWrapper.serialNo());
-		validateTrueOrRevert(nftsLedger.contains(nftId), INVALID_TOKEN_NFT_SERIAL_NUMBER);
-		final var spender = (EntityId) nftsLedger.get(nftId, SPENDER);
-		final var canonicalSpender = ledgers.canonicalAddress(spender.toEvmAddress());
-		return encoder.encodeGetApproved(canonicalSpender);
-	}
+    @Override
+    public Bytes getSuccessResultFor(final ExpirableTxnRecord.Builder childRecord) {
+        final var nftsLedger = ledgers.nfts();
+        final var nftId = NftId.fromGrpc(tokenId, getApprovedWrapper.serialNo());
+        validateTrueOrRevert(nftsLedger.contains(nftId), INVALID_TOKEN_NFT_SERIAL_NUMBER);
+        final var spender = (EntityId) nftsLedger.get(nftId, SPENDER);
+        final var canonicalSpender = ledgers.canonicalAddress(spender.toEvmAddress());
+        return encoder.encodeGetApproved(canonicalSpender);
+    }
 }

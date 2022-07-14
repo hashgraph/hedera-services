@@ -48,65 +48,75 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 /* --- Constructor functional interfaces for mocking --- */
 public abstract class AbstractAssociatePrecompile implements Precompile {
-	private final WorldLedgers ledgers;
-	private final ContractAliases aliases;
-	private final EvmSigsVerifier sigsVerifier;
-	private final SideEffectsTracker sideEffects;
-	private final InfrastructureFactory infrastructureFactory;
-	protected final PrecompilePricingUtils pricingUtils;
-	protected TransactionBody.Builder transactionBody;
-	protected Association associateOp;
-	protected final DecodingFacade decoder;
-	protected final SyntheticTxnFactory syntheticTxnFactory;
-	protected final Provider<FeeCalculator> feeCalculator;
-	protected final StateView currentView;
+    private final WorldLedgers ledgers;
+    private final ContractAliases aliases;
+    private final EvmSigsVerifier sigsVerifier;
+    private final SideEffectsTracker sideEffects;
+    private final InfrastructureFactory infrastructureFactory;
+    protected final PrecompilePricingUtils pricingUtils;
+    protected TransactionBody.Builder transactionBody;
+    protected Association associateOp;
+    protected final DecodingFacade decoder;
+    protected final SyntheticTxnFactory syntheticTxnFactory;
+    protected final Provider<FeeCalculator> feeCalculator;
+    protected final StateView currentView;
 
-	protected AbstractAssociatePrecompile(
-			final WorldLedgers ledgers,
-			final DecodingFacade decoder,
-			final ContractAliases aliases,
-			final EvmSigsVerifier sigsVerifier,
-			final SideEffectsTracker sideEffects,
-			final SyntheticTxnFactory syntheticTxnFactory,
-			final InfrastructureFactory infrastructureFactory,
-			final PrecompilePricingUtils pricingUtils,
-			final Provider<FeeCalculator> feeCalculator,
-			final StateView currentView
-	) {
-		this.decoder = decoder;
-		this.ledgers = ledgers;
-		this.aliases = aliases;
-		this.sigsVerifier = sigsVerifier;
-		this.sideEffects = sideEffects;
-		this.pricingUtils = pricingUtils;
-		this.syntheticTxnFactory = syntheticTxnFactory;
-		this.infrastructureFactory = infrastructureFactory;
-		this.feeCalculator = feeCalculator;
-		this.currentView = currentView;
-	}
+    protected AbstractAssociatePrecompile(
+            final WorldLedgers ledgers,
+            final DecodingFacade decoder,
+            final ContractAliases aliases,
+            final EvmSigsVerifier sigsVerifier,
+            final SideEffectsTracker sideEffects,
+            final SyntheticTxnFactory syntheticTxnFactory,
+            final InfrastructureFactory infrastructureFactory,
+            final PrecompilePricingUtils pricingUtils,
+            final Provider<FeeCalculator> feeCalculator,
+            final StateView currentView) {
+        this.decoder = decoder;
+        this.ledgers = ledgers;
+        this.aliases = aliases;
+        this.sigsVerifier = sigsVerifier;
+        this.sideEffects = sideEffects;
+        this.pricingUtils = pricingUtils;
+        this.syntheticTxnFactory = syntheticTxnFactory;
+        this.infrastructureFactory = infrastructureFactory;
+        this.feeCalculator = feeCalculator;
+        this.currentView = currentView;
+    }
 
-	@Override
-	public void run(final MessageFrame frame) {
-		// --- Check required signatures ---
-		final var accountId = Id.fromGrpcAccount(Objects.requireNonNull(associateOp).accountId());
-		final var hasRequiredSigs = KeyActivationUtils.validateKey(
-				frame, accountId.asEvmAddress(), sigsVerifier::hasActiveKey, ledgers, aliases);
-		validateTrue(hasRequiredSigs, INVALID_SIGNATURE);
+    @Override
+    public void run(final MessageFrame frame) {
+        // --- Check required signatures ---
+        final var accountId = Id.fromGrpcAccount(Objects.requireNonNull(associateOp).accountId());
+        final var hasRequiredSigs =
+                KeyActivationUtils.validateKey(
+                        frame,
+                        accountId.asEvmAddress(),
+                        sigsVerifier::hasActiveKey,
+                        ledgers,
+                        aliases);
+        validateTrue(hasRequiredSigs, INVALID_SIGNATURE);
 
-		// --- Build the necessary infrastructure to execute the transaction ---
-		final var accountStore = infrastructureFactory.newAccountStore(ledgers.accounts());
-		final var tokenStore = infrastructureFactory.newTokenStore(
-				accountStore, sideEffects, ledgers.tokens(), ledgers.nfts(), ledgers.tokenRels());
+        // --- Build the necessary infrastructure to execute the transaction ---
+        final var accountStore = infrastructureFactory.newAccountStore(ledgers.accounts());
+        final var tokenStore =
+                infrastructureFactory.newTokenStore(
+                        accountStore,
+                        sideEffects,
+                        ledgers.tokens(),
+                        ledgers.nfts(),
+                        ledgers.tokenRels());
 
-		// --- Execute the transaction and capture its results ---
-		final var associateLogic = infrastructureFactory.newAssociateLogic(accountStore, tokenStore);
-		final var validity = associateLogic.validateSyntax(transactionBody.build());
-		validateTrue(validity == OK, validity);
-		associateLogic.associate(accountId, associateOp.tokenIds());
-	}
+        // --- Execute the transaction and capture its results ---
+        final var associateLogic =
+                infrastructureFactory.newAssociateLogic(accountStore, tokenStore);
+        final var validity = associateLogic.validateSyntax(transactionBody.build());
+        validateTrue(validity == OK, validity);
+        associateLogic.associate(accountId, associateOp.tokenIds());
+    }
 
-	@Override
-	public long getMinimumFeeInTinybars(final Timestamp consensusTime) {
-		return pricingUtils.getMinimumPriceInTinybars(ASSOCIATE, consensusTime);
-	}
+    @Override
+    public long getMinimumFeeInTinybars(final Timestamp consensusTime) {
+        return pricingUtils.getMinimumPriceInTinybars(ASSOCIATE, consensusTime);
+    }
 }
