@@ -20,16 +20,6 @@ package com.hedera.services.bdd.suites.contract.openzeppelin;
  * ‍
  */
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.spec.HapiSpecOperation;
-import com.hedera.services.bdd.suites.HapiApiSuite;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
-import java.util.ArrayList;
-import java.util.List;
-
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
@@ -42,78 +32,104 @@ import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.swirlds.common.utility.CommonUtils.unhex;
 
+import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpecOperation;
+import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import java.util.ArrayList;
+import java.util.List;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 public class ERC1155ContractInteractions extends HapiApiSuite {
-	private static final Logger log = LogManager.getLogger(ERC1155ContractInteractions.class);
-	private static final String ACCOUNT1 = "acc1";
-	private static final String CONTRACT = "GameItems";
+    private static final Logger log = LogManager.getLogger(ERC1155ContractInteractions.class);
+    private static final String ACCOUNT1 = "acc1";
+    private static final String CONTRACT = "GameItems";
 
-	public static void main(String... args) {
-		new ERC1155ContractInteractions().runSuiteSync();
-	}
+    public static void main(String... args) {
+        new ERC1155ContractInteractions().runSuiteSync();
+    }
 
-	@Override
-	public List<HapiApiSpec> getSpecsInSuite() {
-		return List.of(
-				erc1155()
-		);
-	}
+    @Override
+    public List<HapiApiSpec> getSpecsInSuite() {
+        return List.of(erc1155());
+    }
 
-	private HapiApiSpec erc1155() {
-		return defaultHapiSpec("ERC-1155")
-				.given(
-						cryptoCreate(ACCOUNT1),
-						uploadInitCode(CONTRACT)
-				)
-				.when()
-				.then(
-						contractCreate(CONTRACT).via("contractCreate").payingWith(DEFAULT_CONTRACT_SENDER),
-						getTxnRecord("contractCreate").logged(),
-						getAccountBalance(DEFAULT_CONTRACT_SENDER).logged(),
-						getAccountInfo(ACCOUNT1).savingSnapshot(ACCOUNT1 + "Info"),
-						getAccountInfo(DEFAULT_CONTRACT_SENDER).savingSnapshot(DEFAULT_CONTRACT_SENDER + "Info"),
-						withOpContext((spec, log) -> {
-							final var accountOneAddress = spec.registry().getAccountInfo(ACCOUNT1 + "Info").getContractAccountID();
-							final var senderAddress = spec.registry().getAccountInfo(DEFAULT_CONTRACT_SENDER + "Info").getContractAccountID();
+    private HapiApiSpec erc1155() {
+        return defaultHapiSpec("ERC-1155")
+                .given(cryptoCreate(ACCOUNT1), uploadInitCode(CONTRACT))
+                .when()
+                .then(
+                        contractCreate(CONTRACT)
+                                .via("contractCreate")
+                                .payingWith(DEFAULT_CONTRACT_SENDER),
+                        getTxnRecord("contractCreate").logged(),
+                        getAccountBalance(DEFAULT_CONTRACT_SENDER).logged(),
+                        getAccountInfo(ACCOUNT1).savingSnapshot(ACCOUNT1 + "Info"),
+                        getAccountInfo(DEFAULT_CONTRACT_SENDER)
+                                .savingSnapshot(DEFAULT_CONTRACT_SENDER + "Info"),
+                        withOpContext(
+                                (spec, log) -> {
+                                    final var accountOneAddress =
+                                            spec.registry()
+                                                    .getAccountInfo(ACCOUNT1 + "Info")
+                                                    .getContractAccountID();
+                                    final var senderAddress =
+                                            spec.registry()
+                                                    .getAccountInfo(
+                                                            DEFAULT_CONTRACT_SENDER + "Info")
+                                                    .getContractAccountID();
 
-							final var ops = new ArrayList<HapiSpecOperation>();
+                                    final var ops = new ArrayList<HapiSpecOperation>();
 
-							/* approve for other accounts */
-							final var approveCall = contractCall(CONTRACT, "setApprovalForAll",
-									unhex(accountOneAddress), true
-							)
-									.via("acc1ApproveCall")
-									.payingWith(DEFAULT_CONTRACT_SENDER)
-									.hasKnownStatus(ResponseCodeEnum.SUCCESS);
-							ops.add(approveCall);
+                                    /* approve for other accounts */
+                                    final var approveCall =
+                                            contractCall(
+                                                            CONTRACT,
+                                                            "setApprovalForAll",
+                                                            unhex(accountOneAddress),
+                                                            true)
+                                                    .via("acc1ApproveCall")
+                                                    .payingWith(DEFAULT_CONTRACT_SENDER)
+                                                    .hasKnownStatus(ResponseCodeEnum.SUCCESS);
+                                    ops.add(approveCall);
 
-							/* mint to the contract owner */
-							final var mintCall = contractCall(CONTRACT, "mintToken",
-									0, 10, unhex(senderAddress)
-							)
-									.via("contractMintCall")
-									.payingWith(DEFAULT_CONTRACT_SENDER)
-									.hasKnownStatus(ResponseCodeEnum.SUCCESS);
-							ops.add(mintCall);
+                                    /* mint to the contract owner */
+                                    final var mintCall =
+                                            contractCall(
+                                                            CONTRACT,
+                                                            "mintToken",
+                                                            0,
+                                                            10,
+                                                            unhex(senderAddress))
+                                                    .via("contractMintCall")
+                                                    .payingWith(DEFAULT_CONTRACT_SENDER)
+                                                    .hasKnownStatus(ResponseCodeEnum.SUCCESS);
+                                    ops.add(mintCall);
 
-							/* transfer from - account to account */
-							final var transferCall = contractCall(CONTRACT, "safeTransferFrom",
-									senderAddress, accountOneAddress,
-									0, // token id 
-									1, // amount 
-									"0x0"
-							).via("contractTransferFromCall").payingWith(ACCOUNT1)
-									.hasKnownStatus(ResponseCodeEnum.SUCCESS);
-							ops.add(transferCall);
-							allRunFor(spec, ops);
-						}),
-						getTxnRecord("contractMintCall").logged(),
-						getTxnRecord("acc1ApproveCall").logged(),
-						getTxnRecord("contractTransferFromCall").logged()
-				);
-	}
+                                    /* transfer from - account to account */
+                                    final var transferCall =
+                                            contractCall(
+                                                            CONTRACT,
+                                                            "safeTransferFrom",
+                                                            senderAddress,
+                                                            accountOneAddress,
+                                                            0, // token id
+                                                            1, // amount
+                                                            "0x0")
+                                                    .via("contractTransferFromCall")
+                                                    .payingWith(ACCOUNT1)
+                                                    .hasKnownStatus(ResponseCodeEnum.SUCCESS);
+                                    ops.add(transferCall);
+                                    allRunFor(spec, ops);
+                                }),
+                        getTxnRecord("contractMintCall").logged(),
+                        getTxnRecord("acc1ApproveCall").logged(),
+                        getTxnRecord("contractTransferFromCall").logged());
+    }
 
-	@Override
-	protected Logger getResultsLogger() {
-		return log;
-	}
+    @Override
+    protected Logger getResultsLogger() {
+        return log;
+    }
 }

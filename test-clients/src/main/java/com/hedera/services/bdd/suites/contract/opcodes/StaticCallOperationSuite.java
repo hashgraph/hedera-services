@@ -20,14 +20,6 @@ package com.hedera.services.bdd.suites.contract.opcodes;
  * ‍
  */
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.spec.HapiPropertySource;
-import com.hedera.services.bdd.suites.HapiApiSuite;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
-import java.util.List;
-
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocal;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
@@ -38,50 +30,55 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
+import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiPropertySource;
+import com.hedera.services.bdd.suites.HapiApiSuite;
+import java.util.List;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 public class StaticCallOperationSuite extends HapiApiSuite {
-	private static final Logger log = LogManager.getLogger(StaticCallOperationSuite.class);
+    private static final Logger log = LogManager.getLogger(StaticCallOperationSuite.class);
 
-	public static void main(String[] args) {
-		new StaticCallOperationSuite().runSuiteAsync();
-	}
+    public static void main(String[] args) {
+        new StaticCallOperationSuite().runSuiteAsync();
+    }
 
-	@Override
-	public List<HapiApiSpec> getSpecsInSuite() {
-		return List.of(new HapiApiSpec[]{
-				verifiesExistence()
-		});
-	}
+    @Override
+    public List<HapiApiSpec> getSpecsInSuite() {
+        return List.of(new HapiApiSpec[] {verifiesExistence()});
+    }
 
-	HapiApiSpec verifiesExistence() {
-		final var contract = "CallOperationsChecker";
-		final var INVALID_ADDRESS = "0x0000000000000000000000000000000000123456";
+    HapiApiSpec verifiesExistence() {
+        final var contract = "CallOperationsChecker";
+        final var INVALID_ADDRESS = "0x0000000000000000000000000000000000123456";
 
-		return defaultHapiSpec("VerifiesExistence")
-				.given(
-						uploadInitCode(contract),
-						contractCreate(contract)
-				).when(
-				).then(
-						contractCall(contract, "staticcall", INVALID_ADDRESS)
-								.hasKnownStatus(INVALID_SOLIDITY_ADDRESS),
-						withOpContext((spec, opLog) -> {
-							final var id = spec.registry().getAccountID(DEFAULT_PAYER);
-							final var solidityAddress = HapiPropertySource.asHexedSolidityAddress(id);
+        return defaultHapiSpec("VerifiesExistence")
+                .given(uploadInitCode(contract), contractCreate(contract))
+                .when()
+                .then(
+                        contractCall(contract, "staticcall", INVALID_ADDRESS)
+                                .hasKnownStatus(INVALID_SOLIDITY_ADDRESS),
+                        withOpContext(
+                                (spec, opLog) -> {
+                                    final var id = spec.registry().getAccountID(DEFAULT_PAYER);
+                                    final var solidityAddress =
+                                            HapiPropertySource.asHexedSolidityAddress(id);
 
-							final var contractCall = contractCall(contract, "staticcall",
-									solidityAddress)
-									.hasKnownStatus(SUCCESS);
+                                    final var contractCall =
+                                            contractCall(contract, "staticcall", solidityAddress)
+                                                    .hasKnownStatus(SUCCESS);
 
-							final var contractCallLocal = contractCallLocal(contract, "staticcall",
-									solidityAddress);
+                                    final var contractCallLocal =
+                                            contractCallLocal(
+                                                    contract, "staticcall", solidityAddress);
 
-							allRunFor(spec, contractCall, contractCallLocal);
-						})
-				);
-	}
+                                    allRunFor(spec, contractCall, contractCallLocal);
+                                }));
+    }
 
-	@Override
-	protected Logger getResultsLogger() {
-		return log;
-	}
+    @Override
+    protected Logger getResultsLogger() {
+        return log;
+    }
 }

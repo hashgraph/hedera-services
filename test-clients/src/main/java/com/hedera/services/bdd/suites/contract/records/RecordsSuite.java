@@ -20,117 +20,135 @@ package com.hedera.services.bdd.suites.contract.records;
  * ‍
  */
 
+import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.assertionsHold;
+
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.utilops.CustomSpecAssert;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
+import java.util.ArrayList;
+import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Assertions;
 
-import java.util.ArrayList;
-import java.util.List;
-
-import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.assertionsHold;
-
 public class RecordsSuite extends HapiApiSuite {
-	private static final Logger log = LogManager.getLogger(RecordsSuite.class);
+    private static final Logger log = LogManager.getLogger(RecordsSuite.class);
 
-	public static void main(String... args) {
-		new RecordsSuite().runSuiteSync();
-	}
+    public static void main(String... args) {
+        new RecordsSuite().runSuiteSync();
+    }
 
-	@Override
-	public List<HapiApiSpec> getSpecsInSuite() {
-		return List.of(new HapiApiSpec[]{
-				bigCall(),
-				txRecordsContainValidTransfers()
-		});
-	}
+    @Override
+    public List<HapiApiSpec> getSpecsInSuite() {
+        return List.of(new HapiApiSpec[] {bigCall(), txRecordsContainValidTransfers()});
+    }
 
-	HapiApiSpec bigCall() {
-		final var contract = "BigBig";
-		final int byteArraySize = (int) (87.5 * 1_024);
+    HapiApiSpec bigCall() {
+        final var contract = "BigBig";
+        final int byteArraySize = (int) (87.5 * 1_024);
 
-		return defaultHapiSpec("BigRecord")
-				.given(
-						cryptoCreate("payer").balance(10 * ONE_HUNDRED_HBARS),
-						uploadInitCode(contract),
-						contractCreate(contract)
-				).when(
-						contractCall(contract, "pick", byteArraySize
-						)
-								.payingWith("payer")
-								.gas(400_000L)
-								.via("bigCall")
-				).then(
-						getTxnRecord("bigCall")
-				);
-	}
+        return defaultHapiSpec("BigRecord")
+                .given(
+                        cryptoCreate("payer").balance(10 * ONE_HUNDRED_HBARS),
+                        uploadInitCode(contract),
+                        contractCreate(contract))
+                .when(
+                        contractCall(contract, "pick", byteArraySize)
+                                .payingWith("payer")
+                                .gas(400_000L)
+                                .via("bigCall"))
+                .then(getTxnRecord("bigCall"));
+    }
 
-	HapiApiSpec txRecordsContainValidTransfers() {
-		final var contract = "ParentChildTransfer";
+    HapiApiSpec txRecordsContainValidTransfers() {
+        final var contract = "ParentChildTransfer";
 
-		return defaultHapiSpec("TXRecordsContainValidTransfers")
-				.given(
-						uploadInitCode(contract),
-						contractCreate(contract).balance(10_000L).via("createTx")
-				).when(
-						contractCall(contract, "transferToChild", 10_000).via("transferTx")
-				).then(
-						assertionsHold(
-								(spec, ctxLog) -> {
-									final var subop01 = getTxnRecord("createTx")
-											.saveTxnRecordToRegistry("createTxRec");
-									final var subop02 = getTxnRecord("transferTx")
-											.saveTxnRecordToRegistry("transferTxRec");
-									CustomSpecAssert.allRunFor(spec, subop01, subop02);
+        return defaultHapiSpec("TXRecordsContainValidTransfers")
+                .given(
+                        uploadInitCode(contract),
+                        contractCreate(contract).balance(10_000L).via("createTx"))
+                .when(contractCall(contract, "transferToChild", 10_000).via("transferTx"))
+                .then(
+                        assertionsHold(
+                                (spec, ctxLog) -> {
+                                    final var subop01 =
+                                            getTxnRecord("createTx")
+                                                    .saveTxnRecordToRegistry("createTxRec");
+                                    final var subop02 =
+                                            getTxnRecord("transferTx")
+                                                    .saveTxnRecordToRegistry("transferTxRec");
+                                    CustomSpecAssert.allRunFor(spec, subop01, subop02);
 
-									final var createRecord = spec.registry().getTransactionRecord("createTxRec");
-									final var parent = createRecord.getContractCreateResult().getCreatedContractIDs(0);
-									final var child = createRecord.getContractCreateResult().getCreatedContractIDs(1);
+                                    final var createRecord =
+                                            spec.registry().getTransactionRecord("createTxRec");
+                                    final var parent =
+                                            createRecord
+                                                    .getContractCreateResult()
+                                                    .getCreatedContractIDs(0);
+                                    final var child =
+                                            createRecord
+                                                    .getContractCreateResult()
+                                                    .getCreatedContractIDs(1);
 
-									// validate transfer list
-									final List<AccountAmount> expectedTransfers = new ArrayList<>(2);
-									final var receiverTransfer = AccountAmount.newBuilder().setAccountID(
-													AccountID.newBuilder().setAccountNum(parent.getContractNum()).build())
-											.setAmount(-10_000L).build();
-									expectedTransfers.add(receiverTransfer);
-									final var contractTransfer = AccountAmount.newBuilder().setAccountID(
-													AccountID.newBuilder().setAccountNum(child.getContractNum()).build())
-											.setAmount(10_000L).build();
-									expectedTransfers.add(contractTransfer);
+                                    // validate transfer list
+                                    final List<AccountAmount> expectedTransfers =
+                                            new ArrayList<>(2);
+                                    final var receiverTransfer =
+                                            AccountAmount.newBuilder()
+                                                    .setAccountID(
+                                                            AccountID.newBuilder()
+                                                                    .setAccountNum(
+                                                                            parent.getContractNum())
+                                                                    .build())
+                                                    .setAmount(-10_000L)
+                                                    .build();
+                                    expectedTransfers.add(receiverTransfer);
+                                    final var contractTransfer =
+                                            AccountAmount.newBuilder()
+                                                    .setAccountID(
+                                                            AccountID.newBuilder()
+                                                                    .setAccountNum(
+                                                                            child.getContractNum())
+                                                                    .build())
+                                                    .setAmount(10_000L)
+                                                    .build();
+                                    expectedTransfers.add(contractTransfer);
 
-									final var transferRecord = spec.registry().getTransactionRecord("transferTxRec");
+                                    final var transferRecord =
+                                            spec.registry().getTransactionRecord("transferTxRec");
 
-									final var transferList = transferRecord.getTransferList();
-									Assertions.assertNotNull(transferList);
-									Assertions.assertNotNull(transferList.getAccountAmountsList());
-									Assertions.assertTrue(transferList.getAccountAmountsList().containsAll(expectedTransfers));
-									final var amountSum = sumAmountsInTransferList(transferList.getAccountAmountsList());
-									Assertions.assertEquals(0, amountSum);
-								}
-						)
-				);
-	}
+                                    final var transferList = transferRecord.getTransferList();
+                                    Assertions.assertNotNull(transferList);
+                                    Assertions.assertNotNull(transferList.getAccountAmountsList());
+                                    Assertions.assertTrue(
+                                            transferList
+                                                    .getAccountAmountsList()
+                                                    .containsAll(expectedTransfers));
+                                    final var amountSum =
+                                            sumAmountsInTransferList(
+                                                    transferList.getAccountAmountsList());
+                                    Assertions.assertEquals(0, amountSum);
+                                }));
+    }
 
-	private long sumAmountsInTransferList(List<AccountAmount> transferList) {
-		var sumToReturn = 0L;
-		for (AccountAmount currAccAmount : transferList) {
-			sumToReturn += currAccAmount.getAmount();
-		}
-		return sumToReturn;
-	}
+    private long sumAmountsInTransferList(List<AccountAmount> transferList) {
+        var sumToReturn = 0L;
+        for (AccountAmount currAccAmount : transferList) {
+            sumToReturn += currAccAmount.getAmount();
+        }
+        return sumToReturn;
+    }
 
-	@Override
-	protected Logger getResultsLogger() {
-		return log;
-	}
+    @Override
+    protected Logger getResultsLogger() {
+        return log;
+    }
 }

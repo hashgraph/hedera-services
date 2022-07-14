@@ -24,9 +24,8 @@ import com.esaulpaugh.headlong.abi.Tuple;
 import com.esaulpaugh.headlong.abi.TupleType;
 import com.hedera.services.bdd.suites.utils.contracts.ContractCallResult;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import org.apache.tuweni.bytes.Bytes;
-
 import java.math.BigInteger;
+import org.apache.tuweni.bytes.Bytes;
 
 public class HTSPrecompileResult implements ContractCallResult {
 	private HTSPrecompileResult() {
