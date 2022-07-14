@@ -65,12 +65,12 @@ public class HederaMessageCallProcessor extends MessageCallProcessor {
 		final var hederaPrecompile = hederaPrecompiles.get(frame.getContractAddress());
 		if (hederaPrecompile != null) {
 			executeHederaPrecompile(hederaPrecompile, frame, operationTracer);
-			((HederaTracer) operationTracer).tracePrecompileResult(frame, ContractActionType.SYSTEM);
+			((HederaOperationTracer) operationTracer).tracePrecompileResult(frame, ContractActionType.SYSTEM);
 		} else {
 			super.start(frame, operationTracer);
 			if (frame.getState() != State.CODE_EXECUTING) {
 				// only a precompile execution will not set the state to CODE_EXECUTING after start()
-				((HederaTracer) operationTracer).tracePrecompileResult(frame, ContractActionType.PRECOMPILE);
+				((HederaOperationTracer) operationTracer).tracePrecompileResult(frame, ContractActionType.PRECOMPILE);
 			}
 		}
 	}
