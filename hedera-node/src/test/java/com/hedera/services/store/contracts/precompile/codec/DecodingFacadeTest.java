@@ -195,7 +195,7 @@ class DecodingFacadeTest {
                     "0x095ea7b300000000000000000000000000000000000000000000000000000000000003ea0000000000000000000000000000000000000000000000000000000000000001");
     private static final Bytes APPROVE_NFT_INPUT_HAPI =
             Bytes.fromHexString(
-                    "0xe1f21c67000000000000000000000000000000000000000000000000000000000000123400000000000000000000000000000000000000000000000000000000000003ea0000000000000000000000000000000000000000000000000000000000000001");
+                    "0x7336aaf0000000000000000000000000000000000000000000000000000000000000123400000000000000000000000000000000000000000000000000000000000003ea0000000000000000000000000000000000000000000000000000000000000001");
 
     public static final Bytes APPROVE_TOKEN_INPUT_ERC =
             Bytes.fromHexString(
@@ -354,6 +354,7 @@ class DecodingFacadeTest {
 
     @Test
     void decodeApproveForTokenERC() {
+        given(ledgers.typeOf(any())).willReturn(TokenType.FUNGIBLE_COMMON);
         final var decodedInput =
                 subject.decodeTokenApprove(
                         APPROVE_TOKEN_INPUT_ERC, TOKEN_ID, true, identity(), ledgers);
@@ -372,13 +373,6 @@ class DecodingFacadeTest {
         assertEquals(ACCOUNT_NUM_SPENDER_NFT, decodedInput.spender().getAccountNum());
         assertEquals(TOKEN_NUM_HAPI_TOKEN, decodedInput.tokenId().getTokenNum());
         assertEquals(BigInteger.ONE, decodedInput.serialNumber());
-
-        final var decodedInput2 =
-                subject.decodeTokenApprove(APPROVE_NFT_INPUT_HAPI, null, true, identity(), ledgers);
-
-        assertEquals(ACCOUNT_NUM_SPENDER_NFT, decodedInput2.spender().getAccountNum());
-        assertEquals(TOKEN_NUM_HAPI_TOKEN, decodedInput2.tokenId().getTokenNum());
-        assertEquals(BigInteger.ONE, decodedInput2.serialNumber());
     }
 
     @Test
@@ -392,14 +386,6 @@ class DecodingFacadeTest {
         assertEquals(ACCOUNT_NUM_SPENDER, decodedInput.spender().getAccountNum());
         assertEquals(TOKEN_NUM_HAPI_TOKEN, decodedInput.tokenId().getTokenNum());
         assertEquals(BigInteger.TEN, decodedInput.amount());
-
-        final var decodedInput2 =
-                subject.decodeTokenApprove(
-                        APPROVE_TOKEN_INPUT_HAPI, null, false, identity(), ledgers);
-
-        assertEquals(ACCOUNT_NUM_SPENDER, decodedInput2.spender().getAccountNum());
-        assertEquals(TOKEN_NUM_HAPI_TOKEN, decodedInput2.tokenId().getTokenNum());
-        assertEquals(BigInteger.TEN, decodedInput2.amount());
     }
 
     @Test
