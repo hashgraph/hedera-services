@@ -20,12 +20,23 @@ package com.hedera.services.contracts.operation;
  * ‍
  */
 
+import static com.hedera.services.state.EntityCreator.EMPTY_MEMO;
+import static com.hedera.services.state.EntityCreator.NO_CUSTOM_FEES;
+import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.ILLEGAL_STATE_CHANGE;
+import static org.hyperledger.besu.evm.internal.Words.clampedToLong;
+
 import com.hedera.services.context.SideEffectsTracker;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.state.EntityCreator;
 import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
+import com.hedera.services.stream.proto.SidecarType;
 import com.hedera.services.utils.SidecarUtils;
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
+import java.util.OptionalLong;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
@@ -41,15 +52,6 @@ import org.hyperledger.besu.evm.internal.Words;
 import org.hyperledger.besu.evm.operation.AbstractOperation;
 import org.hyperledger.besu.evm.operation.Operation;
 
-import java.util.List;
-import java.util.Optional;
-import java.util.OptionalLong;
-
-import static com.hedera.services.state.EntityCreator.EMPTY_MEMO;
-import static com.hedera.services.state.EntityCreator.NO_CUSTOM_FEES;
-import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.ILLEGAL_STATE_CHANGE;
-import static org.hyperledger.besu.evm.internal.Words.clampedToLong;
-
 public abstract class AbstractRecordingCreateOperation extends AbstractOperation {
 	private static final int MAX_STACK_DEPTH = 1024;
 
@@ -59,6 +61,7 @@ public abstract class AbstractRecordingCreateOperation extends AbstractOperation
 			new Operation.OperationResult(
 					OptionalLong.empty(), Optional.of(ExceptionalHaltReason.INSUFFICIENT_STACK_ITEMS));
 
+	protected final GlobalDynamicProperties dynamicProperties;
 	private final EntityCreator creator;
 	private final SyntheticTxnFactory syntheticTxnFactory;
 	private final RecordsHistorian recordsHistorian;
@@ -72,12 +75,14 @@ public abstract class AbstractRecordingCreateOperation extends AbstractOperation
 			final GasCalculator gasCalculator,
 			final EntityCreator creator,
 			final SyntheticTxnFactory syntheticTxnFactory,
-			final RecordsHistorian recordsHistorian
+			final RecordsHistorian recordsHistorian,
+			final GlobalDynamicProperties dynamicProperties
 	) {
 		super(opcode, name, stackItemsConsumed, stackItemsProduced, opSize, gasCalculator);
 		this.creator = creator;
 		this.recordsHistorian = recordsHistorian;
 		this.syntheticTxnFactory = syntheticTxnFactory;
+		this.dynamicProperties = dynamicProperties;
 	}
 
 	@Override
@@ -207,12 +212,26 @@ public abstract class AbstractRecordingCreateOperation extends AbstractOperation
 			childRecord.onlyExternalizeIfSuccessful();
 			final var opCustomizer = updater.customizerForPendingCreation();
 			final var syntheticOp = syntheticTxnFactory.contractCreation(opCustomizer);
-			final var contractBytecodeSidecar = SidecarUtils.createContractBytecodeSidecarFrom(
-					updater.idOfLastNewAddress(),
-					childFrame.getCode().getBytes().toArrayUnsafe(),
-					updater.get(childFrame.getContractAddress()).getCode().toArrayUnsafe()
-			);
-			updater.manageInProgressRecord(recordsHistorian, childRecord, syntheticOp, List.of(contractBytecodeSidecar));
+			if (dynamicProperties.enabledSidecars().contains(SidecarType.CONTRACT_BYTECODE)) {
+					final var contractBytecodeSidecar =
+									SidecarUtils.createContractBytecodeSidecarFrom(
+													updater.idOfLastNewAddress(),
+													childFrame.getCode().getBytes().toArrayUnsafe(),
+													updater.get(childFrame.getContractAddress())
+																	.getCode()
+																	.toArrayUnsafe());
+					updater.manageInProgressRecord(
+									recordsHistorian,
+									childRecord,
+									syntheticOp,
+									List.of(contractBytecodeSidecar));
+			} else {
+				updater.manageInProgressRecord(
+						recordsHistorian,
+						childRecord,
+						syntheticOp,
+						Collections.emptyList());
+			}
 		} else {
 			frame.setReturnData(childFrame.getOutputData());
 			frame.pushStackItem(UInt256.ZERO);

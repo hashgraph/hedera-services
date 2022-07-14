@@ -22,6 +22,7 @@ package com.hedera.services.contracts.operation;
  *
  */
 
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.contracts.gascalculator.StorageGasCalculator;
 import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.state.EntityCreator;
@@ -49,7 +50,8 @@ public class HederaCreateOperation extends AbstractRecordingCreateOperation {
 			final EntityCreator creator,
 			final SyntheticTxnFactory syntheticTxnFactory,
 			final RecordsHistorian recordsHistorian,
-			final StorageGasCalculator storageGasCalculator
+			final StorageGasCalculator storageGasCalculator,
+			final GlobalDynamicProperties dynamicProperties
 	) {
 		super(
 				0xF0,
@@ -60,7 +62,8 @@ public class HederaCreateOperation extends AbstractRecordingCreateOperation {
 				gasCalculator,
 				creator,
 				syntheticTxnFactory,
-				recordsHistorian);
+				recordsHistorian,
+				dynamicProperties);
 		this.storageGasCalculator = storageGasCalculator;
 	}
 
