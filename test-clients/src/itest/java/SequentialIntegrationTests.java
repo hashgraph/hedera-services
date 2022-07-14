@@ -23,6 +23,7 @@ import com.hedera.services.bdd.suites.crypto.AutoAccountUpdateSuite;
 import com.hedera.services.bdd.suites.crypto.CryptoApproveAllowanceSuite;
 import com.hedera.services.bdd.suites.crypto.CryptoCreateSuite;
 import com.hedera.services.bdd.suites.crypto.CryptoUpdateSuite;
+import com.hedera.services.bdd.suites.ethereum.EthereumSuite;
 import com.hedera.services.bdd.suites.fees.CongestionPricingSuite;
 import com.hedera.services.bdd.suites.fees.SpecialAccountsAreExempted;
 import com.hedera.services.bdd.suites.file.ExchangeRateControlSuite;
@@ -84,6 +85,7 @@ public class SequentialIntegrationTests extends IntegrationTestBase {
                 extractSpecsFromSuite(ScheduleSignSpecs::new),
                 extractSpecsFromSuite(AssociatePrecompileSuite::new),
                 extractSpecsFromSuite(DelegatePrecompileSuite::new),
-                extractSpecsFromSuite(Create2OperationSuite::new));
+                extractSpecsFromSuite(Create2OperationSuite::new),
+                extractSpecsFromSuite(EthereumSuite::new));
     }
 }

@@ -21,16 +21,22 @@ import com.hedera.services.bdd.suites.consensus.TopicGetInfoSuite;
 import com.hedera.services.bdd.suites.consensus.TopicUpdateSuite;
 import com.hedera.services.bdd.suites.contract.hapi.ContractGetBytecodeSuite;
 import com.hedera.services.bdd.suites.contract.hapi.ContractUpdateSuite;
+import com.hedera.services.bdd.suites.contract.openzeppelin.ERC1155ContractInteractions;
+import com.hedera.services.bdd.suites.contract.openzeppelin.ERC20ContractInteractions;
+import com.hedera.services.bdd.suites.contract.openzeppelin.ERC721ContractInteractions;
 import com.hedera.services.bdd.suites.contract.precompile.AssociatePrecompileSuite;
 import com.hedera.services.bdd.suites.contract.precompile.ContractBurnHTSSuite;
 import com.hedera.services.bdd.suites.contract.precompile.ContractHTSSuite;
 import com.hedera.services.bdd.suites.contract.precompile.ContractKeysHTSSuite;
 import com.hedera.services.bdd.suites.contract.precompile.ContractMintHTSSuite;
+import com.hedera.services.bdd.suites.contract.records.LogsSuite;
+import com.hedera.services.bdd.suites.contract.records.RecordsSuite;
 import com.hedera.services.bdd.suites.crypto.CryptoApproveAllowanceSuite;
 import com.hedera.services.bdd.suites.crypto.CryptoCreateSuite;
 import com.hedera.services.bdd.suites.crypto.CryptoDeleteAllowanceSuite;
 import com.hedera.services.bdd.suites.crypto.CryptoTransferSuite;
 import com.hedera.services.bdd.suites.crypto.CryptoUpdateSuite;
+import com.hedera.services.bdd.suites.ethereum.EthereumSuite;
 import com.hedera.services.bdd.suites.fees.CongestionPricingSuite;
 import com.hedera.services.bdd.suites.fees.SpecialAccountsAreExempted;
 import com.hedera.services.bdd.suites.file.ExchangeRateControlSuite;
@@ -199,10 +205,9 @@ class EndToEndTests extends E2ETestBase {
     @TestFactory
     Collection<DynamicContainer> contractOpenZeppelin() {
         return List.of(
-                //				extractSpecsFromSuite(ERC20ContractInteractions::new),
-                //				extractSpecsFromSuite(ERC721ContractInteractions::new),
-                //				extractSpecsFromSuite(ERC1155ContractInteractions::new)
-                );
+                extractSpecsFromSuite(ERC20ContractInteractions::new),
+                extractSpecsFromSuite(ERC721ContractInteractions::new),
+                extractSpecsFromSuite(ERC1155ContractInteractions::new));
     }
 
     @Tag("contract")
@@ -221,9 +226,7 @@ class EndToEndTests extends E2ETestBase {
     @TestFactory
     Collection<DynamicContainer> contractRecords() {
         return List.of(
-                //				extractSpecsFromSuite(LogsSuite::new),
-                //				extractSpecsFromSuite(RecordsSuite::new)
-                );
+                extractSpecsFromSuite(LogsSuite::new), extractSpecsFromSuite(RecordsSuite::new));
     }
 
     @Tag("contract")
@@ -316,7 +319,7 @@ class EndToEndTests extends E2ETestBase {
     Collection<DynamicContainer> contractTraceability() {
         return List.of(
                 //				extractSpecsFromSuite(ContractTraceabilitySuite::new)
-                );
+                extractSpecsFromSuite(EthereumSuite::new));
     }
 
     @Tag("contract")

@@ -195,7 +195,7 @@ public class EthereumSuite extends HapiApiSuite {
         final long thirdOfLimit = thirdOfFee * GAS_LIMIT;
         final long fullAllowance = gasPrice * chargedGasLimit * 5 / 4;
         final long fullPayment = gasPrice * chargedGasLimit;
-        final long ninteyPercentFee = gasPrice * 9 / 10;
+        final long ninetyPercentFee = gasPrice * 9 / 10;
 
         return Stream.of(
                         new Object[] {false, noPayment, noPayment, noPayment},
@@ -205,8 +205,8 @@ public class EthereumSuite extends HapiApiSuite {
                         new Object[] {false, thirdOfFee, thirdOfPayment, noPayment},
                         new Object[] {true, thirdOfFee, fullAllowance, thirdOfLimit},
                         new Object[] {true, thirdOfFee, fullAllowance * 9 / 10, thirdOfLimit},
-                        new Object[] {false, ninteyPercentFee, noPayment, noPayment},
-                        new Object[] {true, ninteyPercentFee, thirdOfPayment, fullPayment},
+                        new Object[] {false, ninetyPercentFee, noPayment, noPayment},
+                        new Object[] {true, ninetyPercentFee, thirdOfPayment, fullPayment},
                         new Object[] {true, gasPrice, noPayment, fullPayment},
                         new Object[] {true, gasPrice, thirdOfPayment, fullPayment},
                         new Object[] {true, gasPrice, fullAllowance, fullPayment})
@@ -680,27 +680,26 @@ public class EthereumSuite extends HapiApiSuite {
                         contractCreate(ERC20_CONTRACT).adminKey(THRESHOLD))
                 .when(
                         withOpContext(
-                                (spec, opLog) -> {
-                                    allRunFor(
-                                            spec,
-                                            ethereumCallWithFunctionAbi(
-                                                            true,
-                                                            FUNGIBLE_TOKEN,
-                                                            getABIFor(
-                                                                    Utils.FunctionType.FUNCTION,
-                                                                    "totalSupply",
-                                                                    "ERC20ABI"))
-                                                    .type(EthTxData.EthTransactionType.EIP1559)
-                                                    .signingWith(SECP_256K1_SOURCE_KEY)
-                                                    .payingWith(RELAYER)
-                                                    .via("totalSupplyTxn")
-                                                    .nonce(0)
-                                                    .gasPrice(50L)
-                                                    .maxGasAllowance(FIVE_HBARS)
-                                                    .maxPriorityGas(2L)
-                                                    .gasLimit(1_000_000L)
-                                                    .hasKnownStatus(ResponseCodeEnum.SUCCESS));
-                                }))
+                                (spec, opLog) ->
+                                        allRunFor(
+                                                spec,
+                                                ethereumCallWithFunctionAbi(
+                                                                true,
+                                                                FUNGIBLE_TOKEN,
+                                                                getABIFor(
+                                                                        Utils.FunctionType.FUNCTION,
+                                                                        "totalSupply",
+                                                                        "ERC20ABI"))
+                                                        .type(EthTxData.EthTransactionType.EIP1559)
+                                                        .signingWith(SECP_256K1_SOURCE_KEY)
+                                                        .payingWith(RELAYER)
+                                                        .via("totalSupplyTxn")
+                                                        .nonce(0)
+                                                        .gasPrice(50L)
+                                                        .maxGasAllowance(FIVE_HBARS)
+                                                        .maxPriorityGas(2L)
+                                                        .gasLimit(1_000_000L)
+                                                        .hasKnownStatus(ResponseCodeEnum.SUCCESS))))
                 .then(
                         childRecordsCheck(
                                 "totalSupplyTxn",
