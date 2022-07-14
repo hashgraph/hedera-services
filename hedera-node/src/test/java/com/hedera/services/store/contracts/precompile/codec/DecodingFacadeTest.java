@@ -170,6 +170,8 @@ class DecodingFacadeTest {
             Bytes.fromHexString(
                     "0x095ea7b300000000000000000000000000000000000000000000000000000000000003f0000000000000000000000000000000000000000000000000000000000000000a");
 
+    public static final Bytes GET_TOKEN_INFO_INPUT = Bytes.fromHexString("0x1f69565f000000000000000000000000000000000000000000000000000000000000000a");
+
     @Mock private WorldLedgers ledgers;
 
     @Test
@@ -665,6 +667,14 @@ class DecodingFacadeTest {
                         subject.decodeFungibleCreate(
                                 CREATE_FUNGIBLE_NO_FEES_TOKEN_KEY_EXCEEDING_INTEGER_MAX_INVALID_INPUT,
                                 a -> a));
+    }
+
+    @Test
+    void decodeGetTokenInfoAsExpected() {
+        final var decodedInput = subject.decodeGetTokenInfo(GET_TOKEN_INFO_INPUT);
+
+        assertEquals(TokenID.newBuilder().setTokenNum(10).build(), decodedInput.tokenID());
+        assertEquals(-1, decodedInput.serialNumber());
     }
 
     private void assertExpectedFungibleTokenCreateStruct(final TokenCreateWrapper decodedInput) {

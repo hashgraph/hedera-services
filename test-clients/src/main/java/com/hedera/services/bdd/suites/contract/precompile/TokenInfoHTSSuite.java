@@ -11,9 +11,8 @@ import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
-import static com.swirlds.common.utility.CommonUtils.hex;
+import static com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult.expandByteArrayTo32Length;
 
-import com.esaulpaugh.headlong.abi.Address;
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.suites.HapiApiSuite;
@@ -101,16 +100,6 @@ public class TokenInfoHTSSuite extends HapiApiSuite {
                                                                                 .getTokenID(name)))))
                                                         .via(TOKEN_INFO_TXN)
                                                         .gas(1_000_000L)
-                                                //                        .exposingResultTo(result
-                                                // -> {
-                                                //                          LOG.info("Explicit token
-                                                // info is {}",
-                                                // result[0]);
-                                                //                          final var res = (byte[])
-                                                // result[0];
-                                                //                          createTokenNum.set(new
-                                                // BigInteger(res).longValueExact());
-                                                //                        })
                                                 )))
                 .then(getTxnRecord(TOKEN_INFO_TXN).andAllChildRecords().logged());
     }
@@ -118,24 +107,5 @@ public class TokenInfoHTSSuite extends HapiApiSuite {
     @Override
     protected Logger getResultsLogger() {
         return LOG;
-    }
-
-    private static Address asHeadlongAddress(final byte[] solidityAddress) {
-        final var result = hex(solidityAddress);
-        final var prefix = "0x";
-        var headlongAdds = prefix + result;
-        return Address.wrap(Address.toChecksumAddress(headlongAdds));
-    }
-
-    private static byte[] expandByteArrayTo32Length(final byte[] bytesToExpand) {
-        byte[] expandedArray = new byte[32];
-
-        System.arraycopy(
-            bytesToExpand,
-            0,
-            expandedArray,
-            expandedArray.length - bytesToExpand.length,
-            bytesToExpand.length);
-        return expandedArray;
     }
 }

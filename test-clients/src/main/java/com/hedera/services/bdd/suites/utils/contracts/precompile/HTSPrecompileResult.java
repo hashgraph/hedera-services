@@ -24,9 +24,8 @@ import com.esaulpaugh.headlong.abi.Tuple;
 import com.esaulpaugh.headlong.abi.TupleType;
 import com.hedera.services.bdd.suites.utils.contracts.ContractCallResult;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import org.apache.tuweni.bytes.Bytes;
-
 import java.math.BigInteger;
+import org.apache.tuweni.bytes.Bytes;
 
 public class HTSPrecompileResult implements ContractCallResult {
 	private HTSPrecompileResult() {
@@ -185,7 +184,7 @@ public class HTSPrecompileResult implements ContractCallResult {
 		return Bytes.wrap(tupleType.encode(result).array());
 	}
 
-	private static byte[] expandByteArrayTo32Length(final byte[] bytesToExpand) {
+	public static byte[] expandByteArrayTo32Length(final byte[] bytesToExpand) {
 		byte[] expandedArray = new byte[32];
 
 		System.arraycopy(bytesToExpand, 0, expandedArray, expandedArray.length - bytesToExpand.length, bytesToExpand.length);
