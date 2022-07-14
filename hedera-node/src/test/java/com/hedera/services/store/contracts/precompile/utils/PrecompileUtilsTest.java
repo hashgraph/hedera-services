@@ -19,19 +19,18 @@ package com.hedera.services.store.contracts.precompile.utils;
  * ‍
  */
 
-import com.hedera.services.state.submerkle.ExpirableTxnRecord;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import org.apache.tuweni.bytes.Bytes;
-import org.hyperledger.besu.datatypes.Wei;
-import org.hyperledger.besu.evm.frame.MessageFrame;
-import org.junit.jupiter.api.Test;
-
-import java.util.Optional;
-
 import static org.hyperledger.besu.datatypes.Address.ALTBN128_ADD;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
+
+import com.hedera.services.state.submerkle.ExpirableTxnRecord;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import java.util.Optional;
+import org.apache.tuweni.bytes.Bytes;
+import org.hyperledger.besu.datatypes.Wei;
+import org.hyperledger.besu.evm.frame.MessageFrame;
+import org.junit.jupiter.api.Test;
 
 class PrecompileUtilsTest {
 

@@ -29,10 +29,9 @@ import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUti
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import java.util.function.UnaryOperator;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.evm.frame.MessageFrame;
-
-import java.util.function.UnaryOperator;
 
 public abstract class AbstractReadOnlyPrecompile implements Precompile {
     protected TokenID tokenId;

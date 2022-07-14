@@ -20,6 +20,15 @@ package com.hedera.services.store.contracts;
  * ‍
  */
 
+import static com.hedera.services.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
+import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
+import static com.hedera.services.ledger.properties.AccountProperty.FIRST_CONTRACT_STORAGE_KEY;
+import static com.hedera.services.ledger.properties.AccountProperty.NUM_CONTRACT_KV_PAIRS;
+import static com.hedera.services.utils.EntityNum.fromLong;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_CONTRACT_STORAGE_EXCEEDED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_STORAGE_IN_PRICE_REGIME_HAS_BEEN_USED;
+import static org.apache.tuweni.units.bigints.UInt256.ZERO;
+
 import com.google.common.annotations.VisibleForTesting;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.TransactionalLedger;
@@ -31,10 +40,6 @@ import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
-import org.apache.tuweni.units.bigints.UInt256;
-
-import javax.inject.Inject;
-import javax.inject.Singleton;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.TreeMap;
@@ -42,15 +47,9 @@ import java.util.TreeSet;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.function.Supplier;
-
-import static com.hedera.services.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
-import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
-import static com.hedera.services.ledger.properties.AccountProperty.FIRST_CONTRACT_STORAGE_KEY;
-import static com.hedera.services.ledger.properties.AccountProperty.NUM_CONTRACT_KV_PAIRS;
-import static com.hedera.services.utils.EntityNum.fromLong;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_CONTRACT_STORAGE_EXCEEDED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_STORAGE_IN_PRICE_REGIME_HAS_BEEN_USED;
-import static org.apache.tuweni.units.bigints.UInt256.ZERO;
+import javax.inject.Inject;
+import javax.inject.Singleton;
+import org.apache.tuweni.units.bigints.UInt256;
 
 /**
  * Buffers a set of changes to the key/value pairs in contract storage into a <i>session</i>, and

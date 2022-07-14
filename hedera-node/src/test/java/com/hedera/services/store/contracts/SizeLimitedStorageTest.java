@@ -20,31 +20,6 @@ package com.hedera.services.store.contracts;
  * ‍
  */
 
-import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.ledger.TransactionalLedger;
-import com.hedera.services.ledger.properties.AccountProperty;
-import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.virtual.ContractKey;
-import com.hedera.services.state.virtual.IterableContractValue;
-import com.hedera.services.utils.EntityNum;
-import com.hedera.test.utils.IdUtils;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.swirlds.merkle.map.MerkleMap;
-import com.swirlds.virtualmap.VirtualMap;
-import org.apache.tuweni.units.bigints.UInt256;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InOrder;
-import org.mockito.Mock;
-import org.mockito.Mockito;
-import org.mockito.junit.jupiter.MockitoExtension;
-
-import java.util.HashMap;
-import java.util.Map;
-import java.util.TreeMap;
-import java.util.TreeSet;
-
 import static com.hedera.services.ledger.properties.AccountProperty.FIRST_CONTRACT_STORAGE_KEY;
 import static com.hedera.services.ledger.properties.AccountProperty.NUM_CONTRACT_KV_PAIRS;
 import static com.hedera.services.store.contracts.SizeLimitedStorage.ZERO_VALUE;
@@ -61,6 +36,30 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+
+import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.ledger.TransactionalLedger;
+import com.hedera.services.ledger.properties.AccountProperty;
+import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.virtual.ContractKey;
+import com.hedera.services.state.virtual.IterableContractValue;
+import com.hedera.services.utils.EntityNum;
+import com.hedera.test.utils.IdUtils;
+import com.hederahashgraph.api.proto.java.AccountID;
+import com.swirlds.merkle.map.MerkleMap;
+import com.swirlds.virtualmap.VirtualMap;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.TreeMap;
+import java.util.TreeSet;
+import org.apache.tuweni.units.bigints.UInt256;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InOrder;
+import org.mockito.Mock;
+import org.mockito.Mockito;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class SizeLimitedStorageTest {

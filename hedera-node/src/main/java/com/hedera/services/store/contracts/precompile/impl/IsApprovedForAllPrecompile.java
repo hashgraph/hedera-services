@@ -20,6 +20,8 @@ package com.hedera.services.store.contracts.precompile.impl;
  * ‍
  */
 
+import static com.hedera.services.ledger.properties.AccountProperty.APPROVE_FOR_ALL_NFTS_ALLOWANCES;
+
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
 import com.hedera.services.store.contracts.WorldLedgers;
@@ -30,12 +32,9 @@ import com.hedera.services.store.contracts.precompile.codec.IsApproveForAllWrapp
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import org.apache.tuweni.bytes.Bytes;
-
 import java.util.Set;
 import java.util.function.UnaryOperator;
-
-import static com.hedera.services.ledger.properties.AccountProperty.APPROVE_FOR_ALL_NFTS_ALLOWANCES;
+import org.apache.tuweni.bytes.Bytes;
 
 public class IsApprovedForAllPrecompile extends AbstractReadOnlyPrecompile {
     private IsApproveForAllWrapper isApproveForAllWrapper;

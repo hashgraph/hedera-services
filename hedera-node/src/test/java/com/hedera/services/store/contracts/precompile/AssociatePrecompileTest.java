@@ -20,6 +20,36 @@ package com.hedera.services.store.contracts.precompile;
  * ‍
  */
 
+import static com.hedera.services.state.EntityCreator.EMPTY_MEMO;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_ASSOCIATE_TOKEN;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_ASSOCIATE_TOKENS;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.DEFAULT_GAS_PRICE;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.TEST_CONSENSUS_TIME;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.accountMerkleId;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.associateOp;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.contractAddress;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.failInvalidResult;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.invalidSigResult;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.multiAssociateOp;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.multiDissociateOp;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.parentContractAddress;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.parentRecipientAddress;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.recipientAddress;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.senderAddress;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.successResult;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.timestamp;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.tokenMerkleId;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ID_REPEATED_IN_TOKEN_LIST;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+
 import com.esaulpaugh.headlong.util.Integers;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.primitives.StateView;
@@ -62,6 +92,14 @@ import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.fee.FeeObject;
+import java.io.IOException;
+import java.math.BigDecimal;
+import java.util.Collections;
+import java.util.Deque;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Optional;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Wei;
@@ -73,45 +111,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-
-import java.io.IOException;
-import java.math.BigDecimal;
-import java.util.Collections;
-import java.util.Deque;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.Optional;
-
-import static com.hedera.services.state.EntityCreator.EMPTY_MEMO;
-import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_ASSOCIATE_TOKEN;
-import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_ASSOCIATE_TOKENS;
-import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.DEFAULT_GAS_PRICE;
-import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.TEST_CONSENSUS_TIME;
-import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.accountMerkleId;
-import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.associateOp;
-import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.contractAddress;
-import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.failInvalidResult;
-import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.invalidSigResult;
-import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.multiAssociateOp;
-import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.multiDissociateOp;
-import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.parentContractAddress;
-import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.parentRecipientAddress;
-import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.recipientAddress;
-import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.senderAddress;
-import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.successResult;
-import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.timestamp;
-import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.tokenMerkleId;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ID_REPEATED_IN_TOKEN_LIST;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 @SuppressWarnings("rawtypes")

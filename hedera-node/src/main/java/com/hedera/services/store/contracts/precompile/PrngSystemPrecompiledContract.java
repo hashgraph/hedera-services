@@ -20,6 +20,14 @@ package com.hedera.services.store.contracts.precompile;
  * ‍
  */
 
+import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
+import static com.hedera.services.state.EntityCreator.EMPTY_MEMO;
+import static com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils.GasCostType.PRNG;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_GAS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PRNG_RANGE;
+
 import com.esaulpaugh.headlong.abi.LongType;
 import com.esaulpaugh.headlong.abi.TypeFactory;
 import com.google.common.annotations.VisibleForTesting;
@@ -39,6 +47,11 @@ import com.hedera.services.txns.util.PrngLogic;
 import com.hederahashgraph.api.proto.java.PrngTransactionBody;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import java.time.Instant;
+import java.util.Collections;
+import java.util.Optional;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -50,20 +63,6 @@ import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.precompile.AbstractPrecompiledContract;
 import org.hyperledger.besu.evm.precompile.PrecompiledContract;
-
-import javax.inject.Inject;
-import javax.inject.Singleton;
-import java.time.Instant;
-import java.util.Collections;
-import java.util.Optional;
-
-import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
-import static com.hedera.services.state.EntityCreator.EMPTY_MEMO;
-import static com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils.GasCostType.PRNG;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_GAS;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PRNG_RANGE;
 
 /**
  * System contract to generate random numbers. This will generate 256-bit pseudorandom number when no range is provided

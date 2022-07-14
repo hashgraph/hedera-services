@@ -20,14 +20,14 @@ package com.hedera.services.store.contracts.precompile;
  * ‍
  */
 
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.payer;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.store.contracts.precompile.codec.TokenExpiryWrapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.payer;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
 class TokenExpiryWrapperTest {
 

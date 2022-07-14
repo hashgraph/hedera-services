@@ -20,18 +20,6 @@ package com.hedera.services.store.contracts.precompile.codec;
  * ‍
  */
 
-import com.esaulpaugh.headlong.abi.Tuple;
-import com.esaulpaugh.headlong.abi.TupleType;
-import org.apache.tuweni.bytes.Bytes;
-import org.hyperledger.besu.datatypes.Address;
-import org.hyperledger.besu.evm.log.Log;
-import org.hyperledger.besu.evm.log.LogTopic;
-import org.junit.jupiter.api.Test;
-
-import java.math.BigInteger;
-import java.util.ArrayList;
-import java.util.List;
-
 import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.HTS_PRECOMPILED_CONTRACT_ADDRESS;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.recipientAddress;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.senderAddress;
@@ -39,6 +27,17 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRA
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TREASURY_MUST_OWN_BURNED_NFT;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+
+import com.esaulpaugh.headlong.abi.Tuple;
+import com.esaulpaugh.headlong.abi.TupleType;
+import java.math.BigInteger;
+import java.util.ArrayList;
+import java.util.List;
+import org.apache.tuweni.bytes.Bytes;
+import org.hyperledger.besu.datatypes.Address;
+import org.hyperledger.besu.evm.log.Log;
+import org.hyperledger.besu.evm.log.LogTopic;
+import org.junit.jupiter.api.Test;
 
 class EncodingFacadeTest {
     private final EncodingFacade subject = new EncodingFacade();

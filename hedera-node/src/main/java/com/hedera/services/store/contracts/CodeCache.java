@@ -20,20 +20,19 @@ package com.hedera.services.store.contracts;
  * ‍
  */
 
+import static com.hedera.services.store.contracts.WorldStateTokenAccount.proxyBytecodeFor;
+import static com.hedera.services.utils.EntityIdUtils.accountIdFromEvmAddress;
+
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.hedera.services.context.properties.NodeLocalProperties;
 import com.hedera.services.utils.BytesKey;
+import java.util.concurrent.TimeUnit;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Hash;
 import org.hyperledger.besu.evm.Code;
-
-import javax.inject.Inject;
-import javax.inject.Singleton;
-import java.util.concurrent.TimeUnit;
-
-import static com.hedera.services.store.contracts.WorldStateTokenAccount.proxyBytecodeFor;
-import static com.hedera.services.utils.EntityIdUtils.accountIdFromEvmAddress;
 
 /**
  * Weak reference cache with expiration TTL for EVM bytecode. This cache is primarily used to store

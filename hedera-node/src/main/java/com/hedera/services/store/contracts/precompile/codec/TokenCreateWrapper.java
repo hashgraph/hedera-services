@@ -20,6 +20,8 @@ package com.hedera.services.store.contracts.precompile.codec;
  * ‍
  */
 
+import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
+
 import com.google.protobuf.ByteString;
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.legacy.core.jproto.JECDSASecp256k1Key;
@@ -36,13 +38,10 @@ import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.RoyaltyFee;
 import com.hederahashgraph.api.proto.java.TokenID;
-import org.apache.commons.codec.DecoderException;
-
 import java.math.BigInteger;
 import java.util.List;
 import java.util.Optional;
-
-import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
+import org.apache.commons.codec.DecoderException;
 
 public class TokenCreateWrapper {
 	private final boolean isFungible;

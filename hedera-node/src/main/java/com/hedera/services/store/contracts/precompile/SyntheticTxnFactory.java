@@ -20,6 +20,11 @@ package com.hedera.services.store.contracts.precompile;
  * ‍
  */
 
+import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.HTS_PRECOMPILE_MIRROR_ID;
+import static com.hedera.services.txns.crypto.AutoCreationLogic.AUTO_MEMO;
+import static com.hedera.services.txns.crypto.AutoCreationLogic.THREE_MONTHS_IN_SECONDS;
+import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
+
 import com.google.protobuf.BoolValue;
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
@@ -70,11 +75,6 @@ import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TokenType;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
-import org.apache.tuweni.bytes.Bytes;
-
-import javax.annotation.Nullable;
-import javax.inject.Inject;
-import javax.inject.Singleton;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -82,11 +82,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-
-import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.HTS_PRECOMPILE_MIRROR_ID;
-import static com.hedera.services.txns.crypto.AutoCreationLogic.AUTO_MEMO;
-import static com.hedera.services.txns.crypto.AutoCreationLogic.THREE_MONTHS_IN_SECONDS;
-import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
+import javax.annotation.Nullable;
+import javax.inject.Inject;
+import javax.inject.Singleton;
+import org.apache.tuweni.bytes.Bytes;
 
 @Singleton
 public class SyntheticTxnFactory {

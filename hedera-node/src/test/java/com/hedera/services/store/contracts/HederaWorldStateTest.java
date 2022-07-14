@@ -20,32 +20,6 @@ package com.hedera.services.store.contracts;
  * ‍
  */
 
-import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.ledger.SigImpactHistorian;
-import com.hedera.services.ledger.accounts.ContractAliases;
-import com.hedera.services.ledger.accounts.ContractCustomizer;
-import com.hedera.services.ledger.ids.EntityIdSource;
-import com.hedera.services.store.models.Id;
-import com.hedera.services.utils.EntityIdUtils;
-import com.hedera.services.utils.EntityNum;
-import com.hedera.test.utils.IdUtils;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.ContractID;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import org.apache.tuweni.bytes.Bytes;
-import org.apache.tuweni.units.bigints.UInt256;
-import org.hyperledger.besu.datatypes.Address;
-import org.hyperledger.besu.datatypes.Hash;
-import org.hyperledger.besu.datatypes.Wei;
-import org.hyperledger.besu.evm.account.Account;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
-
-import java.util.Map;
-
 import static com.hedera.services.store.contracts.WorldStateTokenAccount.TOKEN_PROXY_ACCOUNT_NONCE;
 import static com.hedera.services.utils.EntityIdUtils.accountIdFromEvmAddress;
 import static com.hedera.test.utils.TxnUtils.assertFailsWith;
@@ -65,6 +39,31 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.internal.verification.VerificationModeFactory.times;
+
+import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.ledger.SigImpactHistorian;
+import com.hedera.services.ledger.accounts.ContractAliases;
+import com.hedera.services.ledger.accounts.ContractCustomizer;
+import com.hedera.services.ledger.ids.EntityIdSource;
+import com.hedera.services.store.models.Id;
+import com.hedera.services.utils.EntityIdUtils;
+import com.hedera.services.utils.EntityNum;
+import com.hedera.test.utils.IdUtils;
+import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ContractID;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import java.util.Map;
+import org.apache.tuweni.bytes.Bytes;
+import org.apache.tuweni.units.bigints.UInt256;
+import org.hyperledger.besu.datatypes.Address;
+import org.hyperledger.besu.datatypes.Hash;
+import org.hyperledger.besu.datatypes.Wei;
+import org.hyperledger.besu.evm.account.Account;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class HederaWorldStateTest {

@@ -22,19 +22,6 @@ package com.hedera.services.store.contracts;
  *
  */
 
-import com.hedera.services.context.properties.NodeLocalProperties;
-import com.hedera.services.utils.BytesKey;
-import org.apache.tuweni.bytes.Bytes;
-import org.checkerframework.checker.units.qual.A;
-import org.hyperledger.besu.datatypes.Address;
-import org.hyperledger.besu.datatypes.Hash;
-import org.hyperledger.besu.evm.Code;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
-
 import static com.hedera.services.store.contracts.WorldStateTokenAccount.proxyBytecodeFor;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -43,6 +30,18 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verifyNoInteractions;
+
+import com.hedera.services.context.properties.NodeLocalProperties;
+import com.hedera.services.utils.BytesKey;
+import org.apache.tuweni.bytes.Bytes;
+import org.hyperledger.besu.datatypes.Address;
+import org.hyperledger.besu.datatypes.Hash;
+import org.hyperledger.besu.evm.Code;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class CodeCacheTest {

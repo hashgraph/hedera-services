@@ -20,6 +20,16 @@ package com.hedera.services.store.contracts.precompile.impl;
  * ‍
  */
 
+import static com.hedera.services.exceptions.ValidationUtils.validateTrueOrRevert;
+import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
+import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.HTS_PRECOMPILED_CONTRACT_ADDRESS;
+import static com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils.GasCostType.APPROVE;
+import static com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils.GasCostType.DELETE_NFT_APPROVE;
+import static com.hedera.services.utils.EntityIdUtils.asTypedEvmAddress;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SENDER_DOES_NOT_OWN_NFT_SERIAL_NO;
+
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.exceptions.InvalidTransactionException;
@@ -38,25 +48,14 @@ import com.hedera.services.store.models.NftId;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import java.math.BigInteger;
+import java.util.Objects;
+import java.util.function.UnaryOperator;
+import javax.annotation.Nullable;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.log.Log;
-
-import javax.annotation.Nullable;
-import java.math.BigInteger;
-import java.util.Objects;
-import java.util.function.UnaryOperator;
-
-import static com.hedera.services.exceptions.ValidationUtils.validateTrueOrRevert;
-import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
-import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.HTS_PRECOMPILED_CONTRACT_ADDRESS;
-import static com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils.GasCostType.APPROVE;
-import static com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils.GasCostType.DELETE_NFT_APPROVE;
-import static com.hedera.services.utils.EntityIdUtils.asTypedEvmAddress;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SENDER_DOES_NOT_OWN_NFT_SERIAL_NO;
 
 public class ApprovePrecompile extends AbstractWritePrecompile {
     private final TokenID tokenId;

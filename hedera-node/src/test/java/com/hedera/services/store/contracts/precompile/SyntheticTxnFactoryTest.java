@@ -20,46 +20,6 @@ package com.hedera.services.store.contracts.precompile;
  * ‍
  */
 
-import com.google.protobuf.BoolValue;
-import com.google.protobuf.ByteString;
-import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.ethereum.EthTxData;
-import com.hedera.services.ledger.accounts.ContractCustomizer;
-import com.hedera.services.store.contracts.precompile.codec.ApproveWrapper;
-import com.hedera.services.store.contracts.precompile.codec.Association;
-import com.hedera.services.store.contracts.precompile.codec.BurnWrapper;
-import com.hedera.services.store.contracts.precompile.codec.Dissociation;
-import com.hedera.services.store.contracts.precompile.codec.MintWrapper;
-import com.hedera.services.store.contracts.precompile.codec.SetApprovalForAllWrapper;
-import com.hedera.services.store.contracts.precompile.codec.TokenCreateWrapper;
-import com.hedera.services.store.contracts.precompile.codec.TokenTransferWrapper;
-import com.hedera.services.state.submerkle.EntityId;
-import com.hedera.services.utils.EntityIdUtils;
-import com.hedera.services.utils.EntityNum;
-import com.hedera.test.factories.keys.KeyFactory;
-import com.hedera.test.utils.IdUtils;
-import com.hederahashgraph.api.proto.java.AccountAmount;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.ContractID;
-import com.hederahashgraph.api.proto.java.Duration;
-import com.hederahashgraph.api.proto.java.NodeStake;
-import com.hederahashgraph.api.proto.java.Timestamp;
-import com.hederahashgraph.api.proto.java.TokenID;
-import com.hederahashgraph.api.proto.java.TokenSupplyType;
-import com.hederahashgraph.api.proto.java.TokenType;
-import org.apache.tuweni.bytes.Bytes;
-import org.hyperledger.besu.datatypes.Address;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
-
-import java.math.BigInteger;
-import java.time.Instant;
-import java.util.Collections;
-import java.util.List;
-
 import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.HTS_PRECOMPILED_CONTRACT_ADDRESS;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.account;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.contractAddress;
@@ -85,6 +45,45 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
+
+import com.google.protobuf.BoolValue;
+import com.google.protobuf.ByteString;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.ethereum.EthTxData;
+import com.hedera.services.ledger.accounts.ContractCustomizer;
+import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.store.contracts.precompile.codec.ApproveWrapper;
+import com.hedera.services.store.contracts.precompile.codec.Association;
+import com.hedera.services.store.contracts.precompile.codec.BurnWrapper;
+import com.hedera.services.store.contracts.precompile.codec.Dissociation;
+import com.hedera.services.store.contracts.precompile.codec.MintWrapper;
+import com.hedera.services.store.contracts.precompile.codec.SetApprovalForAllWrapper;
+import com.hedera.services.store.contracts.precompile.codec.TokenCreateWrapper;
+import com.hedera.services.store.contracts.precompile.codec.TokenTransferWrapper;
+import com.hedera.services.utils.EntityIdUtils;
+import com.hedera.services.utils.EntityNum;
+import com.hedera.test.factories.keys.KeyFactory;
+import com.hedera.test.utils.IdUtils;
+import com.hederahashgraph.api.proto.java.AccountAmount;
+import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ContractID;
+import com.hederahashgraph.api.proto.java.Duration;
+import com.hederahashgraph.api.proto.java.NodeStake;
+import com.hederahashgraph.api.proto.java.Timestamp;
+import com.hederahashgraph.api.proto.java.TokenID;
+import com.hederahashgraph.api.proto.java.TokenSupplyType;
+import com.hederahashgraph.api.proto.java.TokenType;
+import java.math.BigInteger;
+import java.time.Instant;
+import java.util.Collections;
+import java.util.List;
+import org.apache.tuweni.bytes.Bytes;
+import org.hyperledger.besu.datatypes.Address;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class SyntheticTxnFactoryTest {

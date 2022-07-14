@@ -24,11 +24,10 @@ package com.hedera.services.store.contracts;
 
 import com.hedera.services.ledger.accounts.ContractCustomizer;
 import com.hederahashgraph.api.proto.java.ContractID;
+import java.util.List;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.worldstate.WorldState;
 import org.hyperledger.besu.evm.worldstate.WorldView;
-
-import java.util.List;
 
 /**
  * Hedera adapted interface for a view over the accounts of the world state and methods for

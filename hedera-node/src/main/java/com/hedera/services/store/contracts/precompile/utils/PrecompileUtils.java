@@ -20,18 +20,17 @@ package com.hedera.services.store.contracts.precompile.utils;
  * ‍
  */
 
+import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.HTS_PRECOMPILE_MIRROR_ENTITY_ID;
+
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.EvmFnResult;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import java.util.Collections;
+import java.util.Optional;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.frame.MessageFrame;
-
-import java.util.Collections;
-import java.util.Optional;
-
-import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.HTS_PRECOMPILE_MIRROR_ENTITY_ID;
 
 /** Utility class for Precompile contracts */
 public class PrecompileUtils {

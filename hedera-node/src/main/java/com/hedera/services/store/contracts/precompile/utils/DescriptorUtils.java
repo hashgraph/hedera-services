@@ -20,11 +20,11 @@ package com.hedera.services.store.contracts.precompile.utils;
  * ‍
  */
 
-import com.hedera.services.store.contracts.precompile.proxy.RedirectTarget;
-import org.apache.tuweni.bytes.Bytes;
-
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_REDIRECT_FOR_TOKEN;
 import static com.hedera.services.utils.EntityIdUtils.tokenIdFromEvmAddress;
+
+import com.hedera.services.store.contracts.precompile.proxy.RedirectTarget;
+import org.apache.tuweni.bytes.Bytes;
 
 public class DescriptorUtils {
     public static boolean isTokenProxyRedirect(final Bytes input) {

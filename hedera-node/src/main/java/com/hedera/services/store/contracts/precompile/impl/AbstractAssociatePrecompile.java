@@ -20,6 +20,11 @@ package com.hedera.services.store.contracts.precompile.impl;
  * ‍
  */
 
+import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
+import static com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils.GasCostType.ASSOCIATE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.contracts.sources.EvmSigsVerifier;
@@ -36,15 +41,9 @@ import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUti
 import com.hedera.services.store.models.Id;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import org.hyperledger.besu.evm.frame.MessageFrame;
-
-import javax.inject.Provider;
 import java.util.Objects;
-
-import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
-import static com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils.GasCostType.ASSOCIATE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import javax.inject.Provider;
+import org.hyperledger.besu.evm.frame.MessageFrame;
 
 /* --- Constructor functional interfaces for mocking --- */
 public abstract class AbstractAssociatePrecompile implements Precompile {

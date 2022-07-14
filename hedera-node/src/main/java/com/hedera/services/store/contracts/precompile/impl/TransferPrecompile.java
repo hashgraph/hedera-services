@@ -20,6 +20,13 @@ package com.hedera.services.store.contracts.precompile.impl;
  * ‍
  */
 
+import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
+import static com.hedera.services.grpc.marshalling.ImpliedTransfers.NO_ALIASES;
+import static com.hedera.services.txns.span.SpanMapManager.reCalculateXferMeta;
+import static com.hedera.services.utils.EntityIdUtils.asTypedEvmAddress;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.contracts.sources.EvmSigsVerifier;
 import com.hedera.services.exceptions.InvalidTransactionException;
@@ -45,21 +52,13 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import org.apache.tuweni.bytes.Bytes;
-import org.hyperledger.besu.datatypes.Address;
-import org.hyperledger.besu.evm.frame.MessageFrame;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.UnaryOperator;
-
-import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
-import static com.hedera.services.grpc.marshalling.ImpliedTransfers.NO_ALIASES;
-import static com.hedera.services.txns.span.SpanMapManager.reCalculateXferMeta;
-import static com.hedera.services.utils.EntityIdUtils.asTypedEvmAddress;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import org.apache.tuweni.bytes.Bytes;
+import org.hyperledger.besu.datatypes.Address;
+import org.hyperledger.besu.evm.frame.MessageFrame;
 
 public class TransferPrecompile extends AbstractWritePrecompile {
 	private final HederaStackedWorldStateUpdater updater;

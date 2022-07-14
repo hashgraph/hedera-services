@@ -24,17 +24,16 @@ import com.esaulpaugh.headlong.abi.BigIntegerType;
 import com.esaulpaugh.headlong.abi.TypeFactory;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.fees.HbarCentExchange;
+import java.math.BigInteger;
+import java.time.Instant;
+import java.util.function.Supplier;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.precompile.AbstractPrecompiledContract;
-
-import javax.inject.Inject;
-import javax.inject.Singleton;
-import java.math.BigInteger;
-import java.time.Instant;
-import java.util.function.Supplier;
 
 /**
  * System contract to interconvert tinybars and tinycents at the active exchange rate.

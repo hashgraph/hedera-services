@@ -20,6 +20,11 @@ package com.hedera.services.store.contracts;
  * ‍
  */
 
+import static com.hedera.services.ledger.properties.AccountProperty.ALIAS;
+import static com.hedera.services.ledger.properties.AccountProperty.BALANCE;
+import static com.hedera.services.ledger.properties.AccountProperty.IS_DELETED;
+import static com.hedera.services.utils.EntityIdUtils.asLiteralString;
+
 import com.google.common.annotations.VisibleForTesting;
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.SideEffectsTracker;
@@ -36,15 +41,6 @@ import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import org.apache.tuweni.bytes.Bytes;
-import org.hyperledger.besu.datatypes.Address;
-import org.hyperledger.besu.datatypes.Wei;
-import org.hyperledger.besu.evm.account.Account;
-import org.hyperledger.besu.evm.account.EvmAccount;
-import org.hyperledger.besu.evm.worldstate.WorldUpdater;
-import org.hyperledger.besu.evm.worldstate.WorldView;
-import org.hyperledger.besu.evm.worldstate.WrappedEvmAccount;
-
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -54,11 +50,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-
-import static com.hedera.services.ledger.properties.AccountProperty.ALIAS;
-import static com.hedera.services.ledger.properties.AccountProperty.BALANCE;
-import static com.hedera.services.ledger.properties.AccountProperty.IS_DELETED;
-import static com.hedera.services.utils.EntityIdUtils.asLiteralString;
+import org.apache.tuweni.bytes.Bytes;
+import org.hyperledger.besu.datatypes.Address;
+import org.hyperledger.besu.datatypes.Wei;
+import org.hyperledger.besu.evm.account.Account;
+import org.hyperledger.besu.evm.account.EvmAccount;
+import org.hyperledger.besu.evm.worldstate.WorldUpdater;
+import org.hyperledger.besu.evm.worldstate.WorldView;
+import org.hyperledger.besu.evm.worldstate.WrappedEvmAccount;
 
 /**
  * Provides implementation help for both "base" and "stacked" {@link WorldUpdater}s.

@@ -20,6 +20,10 @@ package com.hedera.services.store.contracts.precompile.impl;
  * ‍
  */
 
+import static com.hedera.services.exceptions.ValidationUtils.validateTrueOrRevert;
+import static com.hedera.services.ledger.properties.AccountProperty.FUNGIBLE_TOKEN_ALLOWANCES;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALLOWANCE_OWNER_ID;
+
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.state.merkle.MerkleAccount;
@@ -34,14 +38,9 @@ import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUti
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import org.apache.tuweni.bytes.Bytes;
-
 import java.util.Map;
 import java.util.function.UnaryOperator;
-
-import static com.hedera.services.exceptions.ValidationUtils.validateTrueOrRevert;
-import static com.hedera.services.ledger.properties.AccountProperty.FUNGIBLE_TOKEN_ALLOWANCES;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALLOWANCE_OWNER_ID;
+import org.apache.tuweni.bytes.Bytes;
 
 public class AllowancePrecompile extends AbstractReadOnlyPrecompile {
     private TokenAllowanceWrapper allowanceWrapper;

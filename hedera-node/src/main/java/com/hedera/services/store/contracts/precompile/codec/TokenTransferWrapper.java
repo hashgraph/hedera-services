@@ -22,7 +22,6 @@ package com.hedera.services.store.contracts.precompile.codec;
 
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
-
 import java.util.List;
 
 public record TokenTransferWrapper(

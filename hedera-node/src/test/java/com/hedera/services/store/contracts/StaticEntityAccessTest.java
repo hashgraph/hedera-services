@@ -20,6 +20,27 @@ package com.hedera.services.store.contracts;
  * ‍
  */
 
+import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
+import static com.hedera.services.state.virtual.VirtualBlobKey.Type.CONTRACT_BYTECODE;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.fungible;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.fungibleTokenAddr;
+import static com.hedera.test.utils.TxnUtils.assertFailsRevertingWith;
+import static com.hedera.test.utils.TxnUtils.assertFailsWith;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALLOWANCE_OWNER_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.swirlds.common.utility.CommonUtils.unhex;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.BDDMockito.given;
+
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.ledger.accounts.ContractAliases;
@@ -46,6 +67,11 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
+import java.math.BigInteger;
+import java.nio.charset.StandardCharsets;
+import java.util.Set;
+import java.util.SortedMap;
+import java.util.TreeMap;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
@@ -54,33 +80,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-
-import java.math.BigInteger;
-import java.nio.charset.StandardCharsets;
-import java.util.Set;
-import java.util.SortedMap;
-import java.util.TreeMap;
-
-import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
-import static com.hedera.services.state.virtual.VirtualBlobKey.Type.CONTRACT_BYTECODE;
-import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.fungible;
-import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.fungibleTokenAddr;
-import static com.hedera.test.utils.TxnUtils.assertFailsRevertingWith;
-import static com.hedera.test.utils.TxnUtils.assertFailsWith;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALLOWANCE_OWNER_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static com.swirlds.common.utility.CommonUtils.unhex;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.BDDMockito.given;
 
 @ExtendWith(MockitoExtension.class)
 class StaticEntityAccessTest {

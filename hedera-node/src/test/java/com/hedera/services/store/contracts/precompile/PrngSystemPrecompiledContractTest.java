@@ -20,42 +20,6 @@ package com.hedera.services.store.contracts.precompile;
  * ‍
  */
 
-import com.google.common.primitives.Longs;
-import com.hedera.services.context.SideEffectsTracker;
-import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.contracts.execution.HederaBlockValues;
-import com.hedera.services.contracts.execution.LivePricesSource;
-import com.hedera.services.exceptions.InvalidTransactionException;
-import com.hedera.services.records.RecordsHistorian;
-import com.hedera.services.state.expiry.ExpiringCreations;
-import com.hedera.services.state.submerkle.EntityId;
-import com.hedera.services.state.submerkle.ExpirableTxnRecord;
-import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
-import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
-import com.hedera.services.stream.RecordsRunningHashLeaf;
-import com.hedera.services.txns.util.PrngLogic;
-import com.hedera.test.utils.TxnUtils;
-import com.hederahashgraph.api.proto.java.HederaFunctionality;
-import com.swirlds.common.crypto.Hash;
-import com.swirlds.common.utility.CommonUtils;
-import org.apache.tuweni.bytes.Bytes;
-import org.apache.tuweni.bytes.Bytes32;
-import org.hyperledger.besu.datatypes.Wei;
-import org.hyperledger.besu.evm.frame.MessageFrame;
-import org.hyperledger.besu.evm.gascalculator.GasCalculator;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
-
-import java.nio.ByteBuffer;
-import java.time.Instant;
-import java.util.Arrays;
-import java.util.Optional;
-import java.util.Random;
-
 import static com.hedera.services.store.contracts.precompile.PrngSystemPrecompiledContract.PSEUDORANDOM_NUM_IN_RANGE_GENERATOR_SELECTOR;
 import static com.hedera.services.store.contracts.precompile.PrngSystemPrecompiledContract.PSEUDORANDOM_SEED_GENERATOR_SELECTOR;
 import static com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils.GasCostType.PRNG;
@@ -76,6 +40,41 @@ import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
+
+import com.google.common.primitives.Longs;
+import com.hedera.services.context.SideEffectsTracker;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.contracts.execution.HederaBlockValues;
+import com.hedera.services.contracts.execution.LivePricesSource;
+import com.hedera.services.exceptions.InvalidTransactionException;
+import com.hedera.services.records.RecordsHistorian;
+import com.hedera.services.state.expiry.ExpiringCreations;
+import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.state.submerkle.ExpirableTxnRecord;
+import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
+import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
+import com.hedera.services.stream.RecordsRunningHashLeaf;
+import com.hedera.services.txns.util.PrngLogic;
+import com.hedera.test.utils.TxnUtils;
+import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.utility.CommonUtils;
+import java.nio.ByteBuffer;
+import java.time.Instant;
+import java.util.Arrays;
+import java.util.Optional;
+import java.util.Random;
+import org.apache.tuweni.bytes.Bytes;
+import org.apache.tuweni.bytes.Bytes32;
+import org.hyperledger.besu.datatypes.Wei;
+import org.hyperledger.besu.evm.frame.MessageFrame;
+import org.hyperledger.besu.evm.gascalculator.GasCalculator;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class PrngSystemPrecompiledContractTest {

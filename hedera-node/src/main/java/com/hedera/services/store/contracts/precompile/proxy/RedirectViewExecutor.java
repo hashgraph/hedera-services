@@ -20,17 +20,6 @@ package com.hedera.services.store.contracts.precompile.proxy;
  * ‍
  */
 
-import com.hedera.services.exceptions.InvalidTransactionException;
-import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
-import com.hedera.services.store.contracts.WorldLedgers;
-import com.hedera.services.store.contracts.precompile.codec.DecodingFacade;
-import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
-import com.hedera.services.store.models.NftId;
-import com.hederahashgraph.api.proto.java.TokenID;
-import org.apache.commons.lang3.tuple.Pair;
-import org.apache.tuweni.bytes.Bytes;
-import org.hyperledger.besu.evm.frame.MessageFrame;
-
 import static com.hedera.services.exceptions.ValidationUtils.validateFalse;
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hedera.services.state.enums.TokenType.FUNGIBLE_COMMON;
@@ -48,6 +37,17 @@ import static com.hedera.services.store.contracts.precompile.utils.DescriptorUti
 import static com.hedera.services.utils.MiscUtils.asSecondsTimestamp;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
+
+import com.hedera.services.exceptions.InvalidTransactionException;
+import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
+import com.hedera.services.store.contracts.WorldLedgers;
+import com.hedera.services.store.contracts.precompile.codec.DecodingFacade;
+import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
+import com.hedera.services.store.models.NftId;
+import com.hederahashgraph.api.proto.java.TokenID;
+import org.apache.commons.lang3.tuple.Pair;
+import org.apache.tuweni.bytes.Bytes;
+import org.hyperledger.besu.evm.frame.MessageFrame;
 
 public class RedirectViewExecutor {
     public static final long MINIMUM_TINYBARS_COST = 100;

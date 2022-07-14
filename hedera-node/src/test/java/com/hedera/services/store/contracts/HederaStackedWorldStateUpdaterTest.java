@@ -22,6 +22,20 @@ package com.hedera.services.store.contracts;
  *
  */
 
+import static com.hedera.services.ledger.properties.AccountProperty.NUM_NFTS_OWNED;
+import static com.hedera.services.ledger.properties.AccountProperty.NUM_POSITIVE_BALANCES;
+import static com.hedera.services.ledger.properties.AccountProperty.NUM_TREASURY_TITLES;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.internal.verification.VerificationModeFactory.times;
+
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.accounts.ContractAliases;
@@ -40,20 +54,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-
-import static com.hedera.services.ledger.properties.AccountProperty.NUM_NFTS_OWNED;
-import static com.hedera.services.ledger.properties.AccountProperty.NUM_POSITIVE_BALANCES;
-import static com.hedera.services.ledger.properties.AccountProperty.NUM_TREASURY_TITLES;
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.internal.verification.VerificationModeFactory.times;
 
 @ExtendWith(MockitoExtension.class)
 class HederaStackedWorldStateUpdaterTest {

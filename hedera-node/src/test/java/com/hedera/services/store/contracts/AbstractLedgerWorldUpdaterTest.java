@@ -20,6 +20,30 @@ package com.hedera.services.store.contracts;
  * ‍
  */
 
+import static com.hedera.services.ledger.properties.AccountProperty.ALIAS;
+import static com.hedera.services.ledger.properties.AccountProperty.BALANCE;
+import static com.hedera.services.ledger.properties.AccountProperty.IS_DELETED;
+import static com.hedera.services.ledger.properties.AccountProperty.NUM_NFTS_OWNED;
+import static com.hedera.services.ledger.properties.NftProperty.OWNER;
+import static com.hedera.services.ledger.properties.TokenRelProperty.TOKEN_BALANCE;
+import static com.hedera.services.store.contracts.WorldLedgers.staticLedgersWith;
+import static com.swirlds.common.utility.CommonUtils.unhex;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.internal.verification.VerificationModeFactory.times;
+
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
@@ -67,30 +91,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-
-import static com.hedera.services.ledger.properties.AccountProperty.ALIAS;
-import static com.hedera.services.ledger.properties.AccountProperty.BALANCE;
-import static com.hedera.services.ledger.properties.AccountProperty.IS_DELETED;
-import static com.hedera.services.ledger.properties.AccountProperty.NUM_NFTS_OWNED;
-import static com.hedera.services.ledger.properties.NftProperty.OWNER;
-import static com.hedera.services.ledger.properties.TokenRelProperty.TOKEN_BALANCE;
-import static com.hedera.services.store.contracts.WorldLedgers.staticLedgersWith;
-import static com.swirlds.common.utility.CommonUtils.unhex;
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertInstanceOf;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.internal.verification.VerificationModeFactory.times;
 
 @ExtendWith(MockitoExtension.class)
 class AbstractLedgerWorldUpdaterTest {

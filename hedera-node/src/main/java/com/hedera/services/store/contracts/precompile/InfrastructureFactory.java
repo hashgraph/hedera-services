@@ -20,6 +20,8 @@ package com.hedera.services.store.contracts.precompile;
  * ‍
  */
 
+import static com.hedera.services.ledger.ids.ExceptionalEntityIdSource.NOOP_ID_SOURCE;
+
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.SigImpactHistorian;
@@ -57,14 +59,11 @@ import com.hedera.services.txns.token.validators.CreateChecks;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.evm.frame.MessageFrame;
-
-import javax.inject.Inject;
-import javax.inject.Singleton;
-
-import static com.hedera.services.ledger.ids.ExceptionalEntityIdSource.NOOP_ID_SOURCE;
 
 @Singleton
 public class InfrastructureFactory {

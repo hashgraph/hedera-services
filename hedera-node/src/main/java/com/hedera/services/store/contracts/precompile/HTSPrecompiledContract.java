@@ -22,6 +22,15 @@ package com.hedera.services.store.contracts.precompile;
  *
  */
 
+import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
+import static com.hedera.services.state.EntityCreator.EMPTY_MEMO;
+import static com.hedera.services.store.contracts.precompile.utils.DescriptorUtils.isTokenProxyRedirect;
+import static com.hedera.services.utils.EntityIdUtils.contractIdFromEvmAddress;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_GAS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
+
 import com.google.common.annotations.VisibleForTesting;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.primitives.StateView;
@@ -69,6 +78,12 @@ import com.hedera.services.store.contracts.precompile.utils.PrecompileUtils;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import java.util.Optional;
+import java.util.function.Supplier;
+import java.util.function.UnaryOperator;
+import javax.inject.Inject;
+import javax.inject.Provider;
+import javax.inject.Singleton;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -80,22 +95,6 @@ import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.precompile.AbstractPrecompiledContract;
 import org.hyperledger.besu.evm.precompile.PrecompiledContract;
 import org.jetbrains.annotations.NotNull;
-
-import javax.inject.Inject;
-import javax.inject.Provider;
-import javax.inject.Singleton;
-import java.util.Optional;
-import java.util.function.Supplier;
-import java.util.function.UnaryOperator;
-
-import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
-import static com.hedera.services.state.EntityCreator.EMPTY_MEMO;
-import static com.hedera.services.store.contracts.precompile.utils.DescriptorUtils.isTokenProxyRedirect;
-import static com.hedera.services.utils.EntityIdUtils.contractIdFromEvmAddress;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_GAS;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 
 @Singleton
 public class HTSPrecompiledContract extends AbstractPrecompiledContract {

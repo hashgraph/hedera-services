@@ -20,22 +20,6 @@ package com.hedera.services.store.contracts.precompile.codec;
  * ‍
  */
 
-import com.hedera.services.exceptions.InvalidTransactionException;
-import com.hedera.services.legacy.core.jproto.JContractIDKey;
-import com.hedera.services.legacy.core.jproto.JECDSASecp256k1Key;
-import com.hedera.services.legacy.core.jproto.JEd25519Key;
-import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.state.submerkle.EntityId;
-import com.hedera.services.utils.EntityIdUtils;
-import com.hederahashgraph.api.proto.java.ContractID;
-import com.hederahashgraph.api.proto.java.Key;
-import org.apache.commons.codec.DecoderException;
-import org.hyperledger.besu.datatypes.Address;
-import org.junit.jupiter.api.Test;
-
-import java.util.Collections;
-import java.util.List;
-
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.contractAddress;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.createTokenCreateWrapperWithKeys;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.receiver;
@@ -46,6 +30,21 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import com.hedera.services.exceptions.InvalidTransactionException;
+import com.hedera.services.legacy.core.jproto.JContractIDKey;
+import com.hedera.services.legacy.core.jproto.JECDSASecp256k1Key;
+import com.hedera.services.legacy.core.jproto.JEd25519Key;
+import com.hedera.services.legacy.core.jproto.JKey;
+import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.utils.EntityIdUtils;
+import com.hederahashgraph.api.proto.java.ContractID;
+import com.hederahashgraph.api.proto.java.Key;
+import java.util.Collections;
+import java.util.List;
+import org.apache.commons.codec.DecoderException;
+import org.hyperledger.besu.datatypes.Address;
+import org.junit.jupiter.api.Test;
 
 class TokenCreateWrapperTest {
     private static final byte[] ecdsaSecpk256k1 = "123456789012345678901234567890123".getBytes();

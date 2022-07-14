@@ -20,6 +20,38 @@ package com.hedera.services.store.contracts.precompile;
  * ‍
  */
 
+import static com.hedera.services.ledger.properties.AccountProperty.AUTO_RENEW_ACCOUNT_ID;
+import static com.hedera.services.ledger.properties.AccountProperty.KEY;
+import static com.hedera.services.state.EntityCreator.EMPTY_MEMO;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_CREATE_FUNGIBLE_TOKEN;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_CREATE_FUNGIBLE_TOKEN_WITH_FEES;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_CREATE_NON_FUNGIBLE_TOKEN;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_CREATE_NON_FUNGIBLE_TOKEN_WITH_FEES;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.account;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.contractAddr;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.contractAddress;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.createNonFungibleTokenCreateWrapperWithKeys;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.createTokenCreateWrapperWithKeys;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.feeCollector;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.fixedFee;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.invalidSigResult;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.pendingChildConsTime;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.senderAddress;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.successResult;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.timestamp;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.when;
+
 import com.esaulpaugh.headlong.util.Integers;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.primitives.StateView;
@@ -71,6 +103,11 @@ import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.fee.FeeObject;
+import java.math.BigInteger;
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
+import java.util.function.Function;
 import org.apache.commons.codec.DecoderException;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
@@ -86,44 +123,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
-
-import java.math.BigInteger;
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
-import java.util.function.Function;
-
-import static com.hedera.services.ledger.properties.AccountProperty.AUTO_RENEW_ACCOUNT_ID;
-import static com.hedera.services.ledger.properties.AccountProperty.KEY;
-import static com.hedera.services.state.EntityCreator.EMPTY_MEMO;
-import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_CREATE_FUNGIBLE_TOKEN;
-import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_CREATE_FUNGIBLE_TOKEN_WITH_FEES;
-import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_CREATE_NON_FUNGIBLE_TOKEN;
-import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_CREATE_NON_FUNGIBLE_TOKEN_WITH_FEES;
-import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.account;
-import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.contractAddr;
-import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.contractAddress;
-import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.createNonFungibleTokenCreateWrapperWithKeys;
-import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.createTokenCreateWrapperWithKeys;
-import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.feeCollector;
-import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.fixedFee;
-import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.invalidSigResult;
-import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.pendingChildConsTime;
-import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.senderAddress;
-import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.successResult;
-import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.timestamp;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
-import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class CreatePrecompileTest {

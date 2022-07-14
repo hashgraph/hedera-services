@@ -31,10 +31,9 @@ import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.store.contracts.precompile.codec.DecodingFacade;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import org.apache.tuweni.bytes.Bytes;
-
-import javax.inject.Provider;
 import java.util.function.UnaryOperator;
+import javax.inject.Provider;
+import org.apache.tuweni.bytes.Bytes;
 
 public class AssociatePrecompile extends AbstractAssociatePrecompile {
     public AssociatePrecompile(

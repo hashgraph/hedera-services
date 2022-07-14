@@ -22,7 +22,6 @@ package com.hedera.services.store.contracts.precompile.codec;
 
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
-
 import java.util.List;
 
 public record Dissociation(AccountID accountId, List<TokenID> tokenIds) {

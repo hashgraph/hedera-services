@@ -20,6 +20,13 @@ package com.hedera.services.store.contracts;
  * ‍
  */
 
+import static com.hedera.services.store.contracts.WorldStateTokenAccount.TOKEN_BYTECODE_PATTERN;
+import static com.hedera.services.store.contracts.WorldStateTokenAccount.TOKEN_CALL_REDIRECT_CONTRACT_BINARY;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
@@ -27,13 +34,6 @@ import org.hyperledger.besu.datatypes.Hash;
 import org.hyperledger.besu.datatypes.Wei;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
-
-import static com.hedera.services.store.contracts.WorldStateTokenAccount.TOKEN_BYTECODE_PATTERN;
-import static com.hedera.services.store.contracts.WorldStateTokenAccount.TOKEN_CALL_REDIRECT_CONTRACT_BINARY;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class WorldStateTokenAccountTest {
     private static final Address pretendTokenAddr = Address.BLS12_G1MULTIEXP;

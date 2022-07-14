@@ -20,6 +20,9 @@ package com.hedera.services.store.contracts.precompile.impl;
  * ‍
  */
 
+import static com.hedera.services.exceptions.ValidationUtils.validateTrueOrRevert;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER;
+
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.store.contracts.WorldLedgers;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
@@ -29,12 +32,8 @@ import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUti
 import com.hedera.services.store.models.NftId;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import org.apache.tuweni.bytes.Bytes;
-
 import java.util.function.UnaryOperator;
-
-import static com.hedera.services.exceptions.ValidationUtils.validateTrueOrRevert;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER;
+import org.apache.tuweni.bytes.Bytes;
 
 public class OwnerOfPrecompile extends AbstractReadOnlyPrecompile {
     private NftId nftId;

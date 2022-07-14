@@ -22,6 +22,11 @@ package com.hedera.services.store.contracts;
  *
  */
 
+import static com.hedera.services.store.contracts.StaticEntityAccess.explicitCodeFetch;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCreate;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.EthereumTransaction;
+
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.ledger.HederaLedger;
@@ -38,18 +43,12 @@ import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.swirlds.virtualmap.VirtualMap;
+import java.util.function.Supplier;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
-
-import javax.inject.Inject;
-import javax.inject.Singleton;
-import java.util.function.Supplier;
-
-import static com.hedera.services.store.contracts.StaticEntityAccess.explicitCodeFetch;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCreate;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.EthereumTransaction;
 
 @Singleton
 public class MutableEntityAccess implements EntityAccess {

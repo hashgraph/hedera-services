@@ -22,7 +22,6 @@ package com.hedera.services.store.contracts.precompile.codec;
 
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
-
 import java.math.BigInteger;
 
 public record ApproveWrapper(

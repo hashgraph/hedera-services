@@ -29,9 +29,8 @@ import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUti
 import com.hedera.services.store.models.NftId;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import org.apache.tuweni.bytes.Bytes;
-
 import java.util.function.UnaryOperator;
+import org.apache.tuweni.bytes.Bytes;
 
 public class TokenURIPrecompile extends AbstractReadOnlyPrecompile {
     private NftId nftId;

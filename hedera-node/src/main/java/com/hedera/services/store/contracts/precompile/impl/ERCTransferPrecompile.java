@@ -20,6 +20,10 @@ package com.hedera.services.store.contracts.precompile.impl;
  * ‍
  */
 
+import static com.hedera.services.exceptions.ValidationUtils.validateTrueOrRevert;
+import static com.hedera.services.utils.EntityIdUtils.asTypedEvmAddress;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER;
+
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.contracts.sources.EvmSigsVerifier;
 import com.hedera.services.exceptions.InvalidTransactionException;
@@ -39,17 +43,12 @@ import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import java.math.BigInteger;
+import java.util.function.UnaryOperator;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.log.Log;
-
-import java.math.BigInteger;
-import java.util.function.UnaryOperator;
-
-import static com.hedera.services.exceptions.ValidationUtils.validateTrueOrRevert;
-import static com.hedera.services.utils.EntityIdUtils.asTypedEvmAddress;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER;
 
 public class ERCTransferPrecompile extends TransferPrecompile {
 	private final TokenID tokenID;

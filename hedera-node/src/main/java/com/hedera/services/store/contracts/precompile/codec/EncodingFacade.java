@@ -20,23 +20,22 @@ package com.hedera.services.store.contracts.precompile.codec;
  * ‍
  */
 
+import static com.hedera.services.store.contracts.precompile.codec.EncodingFacade.FunctionType.MINT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
+
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.esaulpaugh.headlong.abi.TupleType;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import java.math.BigInteger;
+import java.util.ArrayList;
+import java.util.List;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.log.Log;
 import org.hyperledger.besu.evm.log.LogTopic;
-
-import javax.inject.Inject;
-import javax.inject.Singleton;
-import java.math.BigInteger;
-import java.util.ArrayList;
-import java.util.List;
-
-import static com.hedera.services.store.contracts.precompile.codec.EncodingFacade.FunctionType.MINT;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 @Singleton
 public class EncodingFacade {

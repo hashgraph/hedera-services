@@ -20,6 +20,12 @@ package com.hedera.services.store.contracts.precompile.utils;
  * ‍
  */
 
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.fungibleTokenAddr;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.BDDMockito.given;
+
 import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.services.store.contracts.WorldStateAccount;
 import org.hyperledger.besu.evm.frame.MessageFrame;
@@ -27,12 +33,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-
-import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.fungibleTokenAddr;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.BDDMockito.given;
 
 @ExtendWith(MockitoExtension.class)
 class KeyActivationUtilsTest {

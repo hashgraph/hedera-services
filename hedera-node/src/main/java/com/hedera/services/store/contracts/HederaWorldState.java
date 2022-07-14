@@ -22,6 +22,14 @@ package com.hedera.services.store.contracts;
  *
  */
 
+import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
+import static com.hedera.services.ledger.HederaLedger.CONTRACT_ID_COMPARATOR;
+import static com.hedera.services.store.contracts.WorldStateTokenAccount.TOKEN_PROXY_ACCOUNT_NONCE;
+import static com.hedera.services.utils.EntityIdUtils.accountIdFromEvmAddress;
+import static com.hedera.services.utils.EntityIdUtils.asContract;
+import static com.hedera.services.utils.EntityIdUtils.asTypedEvmAddress;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
+
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.accounts.ContractCustomizer;
@@ -29,6 +37,16 @@ import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.utils.BytesComparator;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
+import java.util.stream.Stream;
+import javax.annotation.Nullable;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
@@ -39,25 +57,6 @@ import org.hyperledger.besu.datatypes.Hash;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.account.Account;
 import org.hyperledger.besu.evm.worldstate.WorldUpdater;
-
-import javax.annotation.Nullable;
-import javax.inject.Inject;
-import javax.inject.Singleton;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.TreeMap;
-import java.util.stream.Stream;
-
-import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
-import static com.hedera.services.ledger.HederaLedger.CONTRACT_ID_COMPARATOR;
-import static com.hedera.services.store.contracts.WorldStateTokenAccount.TOKEN_PROXY_ACCOUNT_NONCE;
-import static com.hedera.services.utils.EntityIdUtils.accountIdFromEvmAddress;
-import static com.hedera.services.utils.EntityIdUtils.asContract;
-import static com.hedera.services.utils.EntityIdUtils.asTypedEvmAddress;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 
 @Singleton
 public class HederaWorldState implements HederaMutableWorldState {

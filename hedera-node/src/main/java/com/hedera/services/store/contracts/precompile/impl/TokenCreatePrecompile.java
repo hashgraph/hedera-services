@@ -20,6 +20,19 @@ package com.hedera.services.store.contracts.precompile.impl;
  * ‍
  */
 
+import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
+import static com.hedera.services.ledger.properties.AccountProperty.AUTO_RENEW_ACCOUNT_ID;
+import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
+import static com.hedera.services.store.contracts.precompile.codec.TokenCreateWrapper.FixedFeeWrapper.FixedFeePayment.INVALID_PAYMENT;
+import static com.hedera.services.store.contracts.precompile.codec.TokenCreateWrapper.KeyValueWrapper.KeyValueType.INVALID_KEY;
+import static com.hedera.services.utils.EntityIdUtils.asTypedEvmAddress;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.contracts.sources.EvmSigsVerifier;
 import com.hedera.services.exceptions.InvalidTransactionException;
@@ -50,31 +63,17 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
-import org.apache.commons.codec.DecoderException;
-import org.apache.tuweni.bytes.Bytes;
-import org.hyperledger.besu.datatypes.Address;
-import org.hyperledger.besu.datatypes.Wei;
-import org.hyperledger.besu.evm.frame.MessageFrame;
-
-import javax.inject.Provider;
 import java.math.BigInteger;
 import java.time.Instant;
 import java.util.Objects;
 import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
-
-import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
-import static com.hedera.services.ledger.properties.AccountProperty.AUTO_RENEW_ACCOUNT_ID;
-import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
-import static com.hedera.services.store.contracts.precompile.codec.TokenCreateWrapper.FixedFeeWrapper.FixedFeePayment.INVALID_PAYMENT;
-import static com.hedera.services.store.contracts.precompile.codec.TokenCreateWrapper.KeyValueWrapper.KeyValueType.INVALID_KEY;
-import static com.hedera.services.utils.EntityIdUtils.asTypedEvmAddress;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import javax.inject.Provider;
+import org.apache.commons.codec.DecoderException;
+import org.apache.tuweni.bytes.Bytes;
+import org.hyperledger.besu.datatypes.Address;
+import org.hyperledger.besu.datatypes.Wei;
+import org.hyperledger.besu.evm.frame.MessageFrame;
 
 /**
  * Executes the logic of creating a token from {@link HTSPrecompiledContract}.

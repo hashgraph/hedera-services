@@ -20,6 +20,11 @@ package com.hedera.services.store.contracts.precompile.utils;
  * ‍
  */
 
+import static com.hedera.services.pricing.FeeSchedules.USD_TO_TINYCENTS;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.BDDMockito.given;
+
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.fees.HbarCentExchange;
@@ -29,20 +34,14 @@ import com.hederahashgraph.api.proto.java.ExchangeRate;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.SubType;
 import com.hederahashgraph.api.proto.java.Timestamp;
+import java.io.IOException;
+import java.math.BigDecimal;
+import java.util.Map;
+import javax.inject.Provider;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-
-import javax.inject.Provider;
-import java.io.IOException;
-import java.math.BigDecimal;
-import java.util.Map;
-
-import static com.hedera.services.pricing.FeeSchedules.USD_TO_TINYCENTS;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.BDDMockito.given;
 
 @ExtendWith(MockitoExtension.class)
 class PrecompilePricingUtilsTest {

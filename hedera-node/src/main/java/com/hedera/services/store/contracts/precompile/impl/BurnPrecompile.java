@@ -20,6 +20,14 @@ package com.hedera.services.store.contracts.precompile.impl;
  * ‍
  */
 
+import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
+import static com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils.GasCostType.BURN_FUNGIBLE;
+import static com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils.GasCostType.BURN_NFT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
+
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.contracts.sources.EvmSigsVerifier;
 import com.hedera.services.ledger.accounts.ContractAliases;
@@ -36,21 +44,12 @@ import com.hedera.services.store.models.Id;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import org.apache.tuweni.bytes.Bytes;
-import org.hyperledger.besu.evm.frame.MessageFrame;
-
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.UnaryOperator;
-
-import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
-import static com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils.GasCostType.BURN_FUNGIBLE;
-import static com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils.GasCostType.BURN_NFT;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
+import org.apache.tuweni.bytes.Bytes;
+import org.hyperledger.besu.evm.frame.MessageFrame;
 
 public class BurnPrecompile extends AbstractWritePrecompile {
     private static final List<Long> NO_SERIAL_NOS = Collections.emptyList();

@@ -20,12 +20,19 @@ package com.hedera.services.store.contracts;
  * ‍
  */
 
+import static com.hedera.services.ledger.properties.AccountProperty.BALANCE;
+import static com.hedera.services.store.contracts.WorldStateTokenAccount.TOKEN_PROXY_ACCOUNT_NONCE;
+
 import com.google.common.base.Preconditions;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
+import java.util.Map;
+import java.util.NavigableMap;
+import java.util.TreeMap;
+import javax.annotation.Nullable;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.units.bigints.UInt256;
@@ -37,14 +44,6 @@ import org.hyperledger.besu.evm.account.Account;
 import org.hyperledger.besu.evm.account.AccountStorageEntry;
 import org.hyperledger.besu.evm.account.EvmAccount;
 import org.hyperledger.besu.evm.account.MutableAccount;
-
-import javax.annotation.Nullable;
-import java.util.Map;
-import java.util.NavigableMap;
-import java.util.TreeMap;
-
-import static com.hedera.services.ledger.properties.AccountProperty.BALANCE;
-import static com.hedera.services.store.contracts.WorldStateTokenAccount.TOKEN_PROXY_ACCOUNT_NONCE;
 
 public class UpdateTrackingLedgerAccount<A extends Account> implements MutableAccount, EvmAccount {
     private final Hash addressHash;
