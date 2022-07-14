@@ -268,8 +268,6 @@ public class HapiContractCall extends HapiBaseCall<HapiContractCall> {
 			} else {
 				callData = (!abi.equals(FALLBACK_ABI))
 						? CallTransaction.Function.fromJsonInterface(abi).encode(params) : new byte[] { };
-
-//				? com.esaulpaugh.headlong.abi.Function.fromJson(abi).encodeCallWithArgs(params).array() : new byte[] { };
 			}
 		}
 

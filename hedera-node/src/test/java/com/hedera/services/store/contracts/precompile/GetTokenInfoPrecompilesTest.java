@@ -37,6 +37,7 @@ import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.tokenA
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.tokenMerkleAddress;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.tokenMerkleId;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.tokenWasDeletedResult;
+import static com.swirlds.common.utility.CommonUtils.unhex;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
@@ -808,7 +809,7 @@ class GetTokenInfoPrecompilesTest {
         given(merkleToken.accountsKycGrantedByDefault()).willReturn(defaultKycStatus);
         given(merkleToken.isPaused()).willReturn(pauseStatus);
 
-        given(networkInfo.ledgerId()).willReturn(ByteString.copyFrom(ledgerId.getBytes()));
+        given(networkInfo.ledgerId()).willReturn(ByteString.copyFrom(unhex(ledgerId.substring(2))));
     }
 
     private void givenKeyContext(final JKey key, final TokenKeyType keyType) {
