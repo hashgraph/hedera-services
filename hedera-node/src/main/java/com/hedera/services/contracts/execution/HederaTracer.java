@@ -36,6 +36,8 @@ import java.util.ArrayList;
 import java.util.Deque;
 import java.util.List;
 import java.util.Optional;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import org.hyperledger.besu.evm.Code;
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 import org.hyperledger.besu.evm.frame.MessageFrame;
@@ -45,14 +47,22 @@ import org.hyperledger.besu.evm.tracing.OperationTracer;
 /**
  * Custom {@link OperationTracer} that populates exceptional halt reasons in the {@link MessageFrame}
  */
-public class HederaTracer implements OperationTracer {
+@Singleton
+public class HederaTracer implements HederaOperationTracer {
 
 	private final List<SolidityAction> allActions;
 	private final Deque<SolidityAction> currentActionsStack;
 
+	@Inject
 	public HederaTracer() {
 		this.currentActionsStack = new ArrayDeque<>();
 		this.allActions = new ArrayList<>();
+	}
+
+	@Override
+	public void reset() {
+		this.currentActionsStack.clear();
+		this.allActions.clear();
 	}
 
 	//TODO: direct token calls? Call, but to system contract like HTS or ERC20 facades over Token accounts
@@ -75,6 +85,7 @@ public class HederaTracer implements OperationTracer {
 		}
 	}
 
+	@Override
 	public void tracePrecompileResult(final MessageFrame frame, final ContractActionType type) {
 		final var lastAction = currentActionsStack.pop();
 		// specialize the call type - precompile or system (Hedera precompile contracts)
@@ -153,7 +164,8 @@ public class HederaTracer implements OperationTracer {
 		};
 	}
 
-	public List<SolidityAction> getActions() {
+	@Override
+	public List<SolidityAction> getFinalizedActions() {
 		return allActions;
 	}
 }

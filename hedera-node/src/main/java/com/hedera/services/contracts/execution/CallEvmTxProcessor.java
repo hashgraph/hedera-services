@@ -64,7 +64,8 @@ public class CallEvmTxProcessor extends EvmTxProcessor {
 			final Map<String, PrecompiledContract> precompiledContractMap,
 			final AliasManager aliasManager,
 			final StorageExpiry storageExpiry,
-			final InHandleBlockMetaSource blockMetaSource
+			final InHandleBlockMetaSource blockMetaSource,
+			final HederaOperationTracer hederaOperationTracer
 	) {
 		super(
 				worldState,
@@ -73,7 +74,8 @@ public class CallEvmTxProcessor extends EvmTxProcessor {
 				gasCalculator,
 				hederaOperations,
 				precompiledContractMap,
-				blockMetaSource);
+				blockMetaSource,
+				hederaOperationTracer);
 		this.codeCache = codeCache;
 		this.aliasManager = aliasManager;
 		this.storageExpiry = storageExpiry;

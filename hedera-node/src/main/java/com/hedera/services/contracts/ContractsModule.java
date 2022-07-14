@@ -20,9 +20,18 @@ package com.hedera.services.contracts;
  * ‍
  */
 
+import static com.hedera.services.contracts.sources.AddressKeyedMapFactory.bytecodeMapFrom;
+import static com.hedera.services.contracts.sources.AddressKeyedMapFactory.storageMapFrom;
+import static com.hedera.services.files.EntityExpiryMapFactory.entityExpiryMapFrom;
+import static com.hedera.services.store.contracts.precompile.ExchangeRatePrecompiledContract.EXCHANGE_RATE_SYSTEM_CONTRACT_ADDRESS;
+import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.HTS_PRECOMPILED_CONTRACT_ADDRESS;
+import static com.hedera.services.store.contracts.precompile.PrngSystemPrecompiledContract.PRNG_PRECOMPILE_ADDRESS;
+
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.contracts.annotations.BytecodeSource;
 import com.hedera.services.contracts.annotations.StorageSource;
+import com.hedera.services.contracts.execution.HederaOperationTracer;
+import com.hedera.services.contracts.execution.HederaTracer;
 import com.hedera.services.contracts.gascalculator.GasCalculatorHederaV22;
 import com.hedera.services.contracts.operation.HederaBalanceOperation;
 import com.hedera.services.contracts.operation.HederaCallCodeOperation;
@@ -64,24 +73,16 @@ import dagger.Provides;
 import dagger.multibindings.IntoMap;
 import dagger.multibindings.IntoSet;
 import dagger.multibindings.StringKey;
+import java.util.Map;
+import java.util.function.BiPredicate;
+import java.util.function.Supplier;
+import java.util.stream.Collectors;
+import javax.inject.Singleton;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.operation.Operation;
 import org.hyperledger.besu.evm.precompile.PrecompiledContract;
-
-import javax.inject.Singleton;
-import java.util.Map;
-import java.util.function.BiPredicate;
-import java.util.function.Supplier;
-import java.util.stream.Collectors;
-
-import static com.hedera.services.contracts.sources.AddressKeyedMapFactory.bytecodeMapFrom;
-import static com.hedera.services.contracts.sources.AddressKeyedMapFactory.storageMapFrom;
-import static com.hedera.services.files.EntityExpiryMapFactory.entityExpiryMapFrom;
-import static com.hedera.services.store.contracts.precompile.ExchangeRatePrecompiledContract.EXCHANGE_RATE_SYSTEM_CONTRACT_ADDRESS;
-import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.HTS_PRECOMPILED_CONTRACT_ADDRESS;
-import static com.hedera.services.store.contracts.precompile.PrngSystemPrecompiledContract.PRNG_PRECOMPILE_ADDRESS;
 
 @Module(includes = {
 		StoresModule.class
@@ -90,6 +91,10 @@ public interface ContractsModule {
 	@Binds
 	@Singleton
 	HederaMutableWorldState provideMutableWorldState(HederaWorldState hederaWorldState);
+
+	@Binds
+	@Singleton
+	HederaOperationTracer provideTracer(HederaTracer hederaTracer);
 
 	@Provides
 	@Singleton

@@ -64,14 +64,16 @@ public class CallLocalEvmTxProcessor extends EvmTxProcessor {
 			final Set<Operation> hederaOperations,
 			final Map<String, PrecompiledContract> precompiledContractMap,
 			final AliasManager aliasManager,
-			final StorageExpiry storageExpiry
+			final StorageExpiry storageExpiry,
+			final HederaOperationTracer hederaOperationTracer
 	) {
 		super(
 				livePricesSource,
 				dynamicProperties,
 				gasCalculator,
 				hederaOperations,
-				precompiledContractMap);
+				precompiledContractMap,
+				hederaOperationTracer);
 		this.codeCache = codeCache;
 		this.aliasManager = aliasManager;
 		this.storageExpiry = storageExpiry;

@@ -89,6 +89,7 @@ abstract class EvmTxProcessor {
 	private final LivePricesSource livePricesSource;
 	private final AbstractMessageProcessor messageCallProcessor;
 	private final AbstractMessageProcessor contractCreationProcessor;
+	private final HederaOperationTracer hederaTracer;
 	protected final GlobalDynamicProperties dynamicProperties;
 
 	protected EvmTxProcessor(
@@ -96,7 +97,8 @@ abstract class EvmTxProcessor {
 			final GlobalDynamicProperties dynamicProperties,
 			final GasCalculator gasCalculator,
 			final Set<Operation> hederaOperations,
-			final Map<String, PrecompiledContract> precompiledContractMap
+			final Map<String, PrecompiledContract> precompiledContractMap,
+			final HederaOperationTracer hederaOperationTracer
 	) {
 		this(
 				null,
@@ -105,7 +107,8 @@ abstract class EvmTxProcessor {
 				gasCalculator,
 				hederaOperations,
 				precompiledContractMap,
-				null);
+				null,
+				hederaOperationTracer);
 	}
 
 	protected void setBlockMetaSource(final BlockMetaSource blockMetaSource) {
@@ -123,12 +126,14 @@ abstract class EvmTxProcessor {
 			final GasCalculator gasCalculator,
 			final Set<Operation> hederaOperations,
 			final Map<String, PrecompiledContract> precompiledContractMap,
-			final BlockMetaSource blockMetaSource
+			final BlockMetaSource blockMetaSource,
+			final HederaOperationTracer hederaTracer
 	) {
 		this.worldState = worldState;
 		this.livePricesSource = livePricesSource;
 		this.dynamicProperties = dynamicProperties;
 		this.gasCalculator = gasCalculator;
+		this.hederaTracer = hederaTracer;
 
 		var operationRegistry = new OperationRegistry();
 		registerLondonOperations(operationRegistry, gasCalculator, BigInteger.valueOf(dynamicProperties.chainId()));
@@ -277,7 +282,7 @@ abstract class EvmTxProcessor {
 		final MessageFrame initialFrame = buildInitialFrame(commonInitialFrame, receiver, payload, value);
 		messageFrameStack.addFirst(initialFrame);
 
-		final var hederaTracer = new HederaTracer();
+		hederaTracer.reset();
 		while (!messageFrameStack.isEmpty()) {
 			process(messageFrameStack.peekFirst(), hederaTracer);
 		}
@@ -334,7 +339,7 @@ abstract class EvmTxProcessor {
 					initialFrame.getOutputData(),
 					mirrorReceiver,
 					stateChanges,
-					hederaTracer.getActions());
+					hederaTracer.getFinalizedActions());
 		} else {
 			return TransactionProcessingResult.failed(
 					gasUsedByTransaction,
@@ -343,7 +348,7 @@ abstract class EvmTxProcessor {
 					initialFrame.getRevertReason(),
 					initialFrame.getExceptionalHaltReason(),
 					stateChanges,
-					hederaTracer.getActions());
+					hederaTracer.getFinalizedActions());
 		}
 	}
 

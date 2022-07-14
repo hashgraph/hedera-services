@@ -22,9 +22,28 @@ package com.hedera.services.contracts.execution;
  *
  */
 
+import static com.hedera.services.ethereum.EthTxData.WEIBARS_TO_TINYBARS;
+import static com.hedera.test.utils.TxnUtils.assertFailsWith;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_GAS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ETHEREUM_TRANSACTION;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.ledger.accounts.AliasManager;
+import com.hedera.services.state.enums.ContractActionType;
+import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.state.submerkle.SolidityAction;
 import com.hedera.services.store.contracts.CodeCache;
 import com.hedera.services.store.contracts.HederaWorldState;
 import com.hedera.services.store.models.Account;
@@ -33,7 +52,15 @@ import com.hedera.services.stream.proto.SidecarType;
 import com.hedera.services.txns.contract.helpers.StorageExpiry;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import java.math.BigInteger;
+import java.time.Instant;
+import java.util.ArrayDeque;
+import java.util.Collections;
+import java.util.Deque;
 import java.util.EnumSet;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.units.bigints.UInt256;
@@ -54,30 +81,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-
-import java.math.BigInteger;
-import java.time.Instant;
-import java.util.ArrayDeque;
-import java.util.Collections;
-import java.util.Deque;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-
-import static com.hedera.services.ethereum.EthTxData.WEIBARS_TO_TINYBARS;
-import static com.hedera.test.utils.TxnUtils.assertFailsWith;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_GAS;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ETHEREUM_TRANSACTION;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 class CallEvmTxProcessorTest {
@@ -125,16 +128,19 @@ class CallEvmTxProcessorTest {
 	private final long INTRINSIC_GAS_COST = 290_000L;
 	private final long GAS_LIMIT = 300_000L;
 
+	private FakeHederaTracer fakeHederaTracer;
 	private CallEvmTxProcessor callEvmTxProcessor;
 
 	@BeforeEach
 	private void setup() {
 		CommonProcessorSetup.setup(gasCalculator);
 
+		fakeHederaTracer = new FakeHederaTracer();
 		callEvmTxProcessor = new CallEvmTxProcessor(
 				worldState, livePricesSource,
 				codeCache, globalDynamicProperties, gasCalculator,
-				operations, precompiledContractMap, aliasManager, storageExpiry, blockMetaSource);
+				operations, precompiledContractMap, aliasManager, storageExpiry, blockMetaSource,
+				fakeHederaTracer);
 	}
 
 	@Test
@@ -278,6 +284,70 @@ class CallEvmTxProcessorTest {
 		assertEquals(0, result.getStateChanges().size());
 
 		verify(updater, never()).getFinalStateChanges();
+	}
+
+	@Test
+	void assertSuccessExecutionPopulatesContractActionsWhenEnabled() {
+		givenValidMock();
+		given(globalDynamicProperties.fundingAccount()).willReturn(new Id(0, 0, 1010).asGrpcAccount());
+		givenSenderWithBalance(350_000L);
+		given(aliasManager.resolveForEvm(receiverAddress)).willReturn(receiverAddress);
+		given(storageExpiry.hapiCallOracle()).willReturn(oracle);
+		//TODO: flag
+		final var action =
+				new SolidityAction(
+						ContractActionType.CALL,
+						EntityId.fromAddress(Address.ALTBN128_ADD),
+						null,
+						500L,
+						"input".getBytes(),
+						EntityId.fromAddress(Address.BLAKE2B_F_COMPRESSION),
+						null,
+						0L,
+						0);
+		final var action2 =
+				new SolidityAction(
+						ContractActionType.CREATE,
+						null,
+						EntityId.fromAddress(Address.ALTBN128_ADD),
+						5555L,
+						"input2".getBytes(),
+						null,
+						EntityId.fromAddress(Address.BLAKE2B_F_COMPRESSION),
+						666L,
+						1);
+		fakeHederaTracer.addAction(action);
+		fakeHederaTracer.addAction(action2);
+
+		final var result = callEvmTxProcessor.execute(
+				sender, receiverAddress, 33_333L, 1234L, Bytes.EMPTY, consensusTime);
+
+		assertTrue(fakeHederaTracer.hasBeenReset());
+		assertEquals(2, result.getActions().size());
+		assertEquals(action, result.getActions().get(0));
+		assertEquals(action2, result.getActions().get(1));
+	}
+
+	@Test
+	void assertSuccessExecutionWithDisabledActionsDoesNotPopulateActions() {
+		fail();
+		//TODO: fix up when flag
+
+//		givenValidMock();
+//		given(globalDynamicProperties.fundingAccount()).willReturn(new Id(0, 0, 1010).asGrpcAccount());
+//		given(globalDynamicProperties.shouldEnableTraceability()).willReturn(false);
+//		givenSenderWithBalance(350_000L);
+//		given(aliasManager.resolveForEvm(receiverAddress)).willReturn(receiverAddress);
+//		given(storageExpiry.hapiCallOracle()).willReturn(oracle);
+//
+//		final var result = callEvmTxProcessor.execute(
+//				sender, receiverAddress, 33_333L, 1234L, Bytes.EMPTY, consensusTime);
+//
+//		assertTrue(result.isSuccessful());
+//		assertEquals(receiver.getId().asGrpcContract(), result.toGrpc().getContractID());
+////		assertEquals(0, result.toGrpc().getStateChangesCount());
+//
+//		verify(updater, never()).getFinalStateChanges();
 	}
 
 	@Test

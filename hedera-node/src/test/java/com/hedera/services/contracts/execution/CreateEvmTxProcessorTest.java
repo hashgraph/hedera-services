@@ -22,6 +22,18 @@ package com.hedera.services.contracts.execution;
  *
  */
 
+import static com.hedera.test.utils.TxnUtils.assertFailsWith;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_GAS;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.store.contracts.CodeCache;
 import com.hedera.services.store.contracts.HederaWorldState;
@@ -30,6 +42,12 @@ import com.hedera.services.store.models.Id;
 import com.hedera.services.txns.contract.helpers.StorageExpiry;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import java.math.BigInteger;
+import java.time.Instant;
+import java.util.Deque;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
@@ -47,25 +65,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-
-import java.math.BigInteger;
-import java.time.Instant;
-import java.util.Deque;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-
-import static com.hedera.test.utils.TxnUtils.assertFailsWith;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_GAS;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 class CreateEvmTxProcessorTest {
@@ -116,7 +115,7 @@ class CreateEvmTxProcessorTest {
 		createEvmTxProcessor = new CreateEvmTxProcessor(
 				worldState,
 				livePricesSource, codeCache, globalDynamicProperties,
-				gasCalculator, operations, precompiledContractMap, storageExpiry, blockMetaSource);
+				gasCalculator, operations, precompiledContractMap, storageExpiry, blockMetaSource, new FakeHederaTracer());
 	}
 
 	@Test

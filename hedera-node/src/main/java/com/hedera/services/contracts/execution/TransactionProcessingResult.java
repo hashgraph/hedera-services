@@ -24,21 +24,18 @@ package com.hedera.services.contracts.execution;
 
 import com.hedera.services.state.submerkle.EvmFnResult;
 import com.hedera.services.state.submerkle.SolidityAction;
-import com.hedera.services.stream.proto.ContractAction;
 import com.hedera.services.stream.proto.ContractActions;
-import com.hedera.services.stream.proto.ContractStateChanges;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import com.hederahashgraph.api.proto.java.ContractID;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 import org.hyperledger.besu.evm.log.Log;
-
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
 
 /**
  * Model object holding all the necessary data to build and externalise the result of a single EVM transaction
@@ -196,6 +193,10 @@ public class TransactionProcessingResult {
 
 	public List<ContractID> getCreatedContracts() {
 		return createdContracts;
+	}
+
+	public List<SolidityAction> getActions() {
+		return actions;
 	}
 
 	/**

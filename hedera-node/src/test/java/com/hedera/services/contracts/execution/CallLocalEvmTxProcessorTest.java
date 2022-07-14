@@ -22,6 +22,16 @@ package com.hedera.services.contracts.execution;
  *
  */
 
+import static com.hedera.test.utils.TxnUtils.assertFailsWith;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.mock;
+
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.store.contracts.CodeCache;
@@ -30,6 +40,11 @@ import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.txns.contract.helpers.StorageExpiry;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import java.time.Instant;
+import java.util.Deque;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
@@ -48,22 +63,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-
-import java.time.Instant;
-import java.util.Deque;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-
-import static com.hedera.test.utils.TxnUtils.assertFailsWith;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.mock;
 
 @ExtendWith(MockitoExtension.class)
 class CallLocalEvmTxProcessorTest {
@@ -111,7 +110,7 @@ class CallLocalEvmTxProcessorTest {
 
 		callLocalEvmTxProcessor = new CallLocalEvmTxProcessor(
 				codeCache, livePricesSource, globalDynamicProperties,
-				gasCalculator, operations, precompiledContractMap, aliasManager, storageExpiry);
+				gasCalculator, operations, precompiledContractMap, aliasManager, storageExpiry, new FakeHederaTracer());
 
 		callLocalEvmTxProcessor.setWorldState(worldState);
 		callLocalEvmTxProcessor.setBlockMetaSource(blockMetaSource);
