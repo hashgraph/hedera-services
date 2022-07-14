@@ -1,7 +1,6 @@
 package com.hedera.services.contracts.execution;
 
 import com.hedera.services.state.enums.ContractActionType;
-import com.hedera.services.state.submerkle.SolidityAction;
 import java.util.ArrayList;
 import java.util.List;
 import org.hyperledger.besu.evm.frame.MessageFrame;

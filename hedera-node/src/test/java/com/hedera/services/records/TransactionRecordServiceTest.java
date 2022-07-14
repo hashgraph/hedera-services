@@ -35,9 +35,11 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import com.hedera.services.context.TransactionContext;
+import com.hedera.services.contracts.execution.SolidityAction;
 import com.hedera.services.contracts.execution.TransactionProcessingResult;
 import com.hedera.services.contracts.operation.HederaExceptionalHaltReason;
 import com.hedera.services.ethereum.EthTxData;
+import com.hedera.services.state.enums.ContractActionType;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.EvmFnResult;
 import com.hedera.services.store.models.Id;
@@ -49,6 +51,7 @@ import com.hedera.services.utils.SidecarUtils;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.TreeMap;
@@ -72,6 +75,9 @@ class TransactionRecordServiceTest {
 	private static final Long NON_THRESHOLD_FEE = GAS_USED - SBH_REFUND;
 	private static final Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> stateChanges =
 			new TreeMap<>(Map.of(Address.fromHexString("0x9"), Map.of(Bytes.of(10), Pair.of(Bytes.of(11), Bytes.of(12)))));
+	private static final List<SolidityAction> actions =
+			List.of(new SolidityAction(ContractActionType.CALL, EntityId.fromAddress(Address.ALTBN128_ADD),
+					null, 100, null, null, EntityId.fromAddress(Address.BLS12_PAIRING), 55, 0));
 
 	@Mock
 	private TransactionContext txnCtx;
@@ -123,6 +129,7 @@ class TransactionRecordServiceTest {
 		given(processingResult.getRecipient()).willReturn(recipient);
 		given(processingResult.getOutput()).willReturn(Bytes.fromHexStringLenient("0xabcd"));
 		given(processingResult.getStateChanges()).willReturn(stateChanges);
+		given(processingResult.getActions()).willReturn(actions);
 		final var contractBytecodeSidecar =
 				SidecarUtils.createContractBytecodeSidecarFrom(IdUtils.asContract("0.0.5"),
 				"initCode".getBytes(), "runtimeCode".getBytes());
@@ -135,11 +142,12 @@ class TransactionRecordServiceTest {
 		verify(txnCtx).setCreateResult(captor.capture());
 		verify(txnCtx).addNonThresholdFeeChargedToPayer(NON_THRESHOLD_FEE);
 		assertArrayEquals(mockAddr, captor.getValue().getEvmAddress());
-		verify(txnCtx, times(2)).addSidecarRecord(contextCaptor.capture());
+		verify(txnCtx, times(3)).addSidecarRecord(contextCaptor.capture());
 		final var sidecars = contextCaptor.getAllValues();
-		assertEquals(2, sidecars.size());
+		assertEquals(3, sidecars.size());
 		assertEquals(SidecarUtils.createStateChangesSidecarFrom(stateChanges).build(), sidecars.get(0).build());
-		assertEquals(contractBytecodeSidecar.build(), sidecars.get(1).build());
+		assertEquals(SidecarUtils.createContractActionsSidecar(actions).build(), sidecars.get(1).build());
+		assertEquals(contractBytecodeSidecar.build(), sidecars.get(2).build());
 	}
 
 	@Test
@@ -150,6 +158,7 @@ class TransactionRecordServiceTest {
 		given(processingResult.getRecipient()).willReturn(recipient);
 		given(processingResult.getOutput()).willReturn(Bytes.fromHexStringLenient("0xabcd"));
 		given(processingResult.getStateChanges()).willReturn(stateChanges);
+		given(processingResult.getActions()).willReturn(actions);
 		final var contextCaptor = ArgumentCaptor.forClass(TransactionSidecarRecord.Builder.class);
 
 		// when:
@@ -158,10 +167,11 @@ class TransactionRecordServiceTest {
 		verify(txnCtx).setStatus(SUCCESS);
 		verify(txnCtx).setCallResult(any());
 		verify(txnCtx).addNonThresholdFeeChargedToPayer(NON_THRESHOLD_FEE);
-		verify(txnCtx).addSidecarRecord(contextCaptor.capture());
+		verify(txnCtx, times(2)).addSidecarRecord(contextCaptor.capture());
 		final var sidecars = contextCaptor.getAllValues();
-		assertEquals(1, sidecars.size());
+		assertEquals(2, sidecars.size());
 		assertEquals(SidecarUtils.createStateChangesSidecarFrom(stateChanges).build(), sidecars.get(0).build());
+		assertEquals(SidecarUtils.createContractActionsSidecar(actions).build(), sidecars.get(1).build());
 	}
 
 	@Test
@@ -172,6 +182,7 @@ class TransactionRecordServiceTest {
 		given(processingResult.getRecipient()).willReturn(recipient);
 		given(processingResult.getOutput()).willReturn(Bytes.fromHexStringLenient("0xabcd"));
 		given(processingResult.getStateChanges()).willReturn(Collections.emptyMap());
+		given(processingResult.getActions()).willReturn(Collections.emptyList());
 
 		// when:
 		subject.externaliseEvmCallTransaction(processingResult);

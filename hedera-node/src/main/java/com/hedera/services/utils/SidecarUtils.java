@@ -21,13 +21,16 @@ package com.hedera.services.utils;
  */
 
 import com.google.protobuf.BytesValue;
+import com.hedera.services.contracts.execution.SolidityAction;
 import com.hedera.services.legacy.proto.utils.ByteStringUtils;
+import com.hedera.services.stream.proto.ContractActions;
 import com.hedera.services.stream.proto.ContractBytecode;
 import com.hedera.services.stream.proto.ContractStateChange;
 import com.hedera.services.stream.proto.ContractStateChanges;
 import com.hedera.services.stream.proto.StorageChange;
 import com.hedera.services.stream.proto.TransactionSidecarRecord;
 import com.hederahashgraph.api.proto.java.ContractID;
+import java.util.List;
 import java.util.Map;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
@@ -83,5 +86,15 @@ public class SidecarUtils {
 					ByteStringUtils.wrapUnsafely(access.getRight().trimLeadingZeros().toArrayUnsafe())));
 		}
 		return grpc;
+	}
+
+	public static TransactionSidecarRecord.Builder createContractActionsSidecar(
+			final List<SolidityAction> actions
+	) {
+		final var actionsBuilder = ContractActions.newBuilder();
+		for (final var action : actions) {
+			actionsBuilder.addContractActions(action.toGrpc());
+		}
+		return TransactionSidecarRecord.newBuilder().setActions(actionsBuilder.build());
 	}
 }

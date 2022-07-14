@@ -43,7 +43,6 @@ import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.state.enums.ContractActionType;
 import com.hedera.services.state.submerkle.EntityId;
-import com.hedera.services.state.submerkle.SolidityAction;
 import com.hedera.services.store.contracts.CodeCache;
 import com.hedera.services.store.contracts.HederaWorldState;
 import com.hedera.services.store.models.Account;

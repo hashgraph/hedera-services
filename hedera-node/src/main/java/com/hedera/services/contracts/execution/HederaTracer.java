@@ -29,7 +29,6 @@ import static com.hedera.services.state.enums.ContractActionType.CREATE;
 
 import com.hedera.services.state.enums.ContractActionType;
 import com.hedera.services.state.submerkle.EntityId;
-import com.hedera.services.state.submerkle.SolidityAction;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -68,7 +67,6 @@ public class HederaTracer implements HederaOperationTracer {
 		this.areActionSidecarsEnabled = areActionSidecarsEnabled;
 	}
 
-	//TODO: direct token calls? Call, but to system contract like HTS or ERC20 facades over Token accounts
 	@Override
 	public void traceExecution(MessageFrame frame, ExecuteOperation executeOperation) {
 		if (areActionSidecarsEnabled && currentActionsStack.isEmpty()) {
@@ -97,8 +95,8 @@ public class HederaTracer implements HederaOperationTracer {
 		lastAction.setCallType(type);
 		// we have to null out recipient account and set recipient contract
 		lastAction.setRecipientAccount(null);
-		// TODO: do we set contract for precompiles? 0.0.1?
 		lastAction.setRecipientContract(EntityId.fromAddress(frame.getContractAddress()));
+
 		finalizeActionFor(lastAction, frame, frame.getState());
 	}
 
@@ -127,6 +125,8 @@ public class HederaTracer implements HederaOperationTracer {
 			// extract only CALL output - CREATE output is extracted in bytecode sidecar
 			if (action.getCallType() != CREATE) {
 				action.setOutput(frame.getOutputData().toArrayUnsafe());
+			} else {
+				action.setOutput(new byte[0]);
 			}
 		} else if (frameState == State.REVERT) {
 			// deliberate failures do not burn extra gas

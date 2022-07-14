@@ -1,13 +1,9 @@
-package com.hedera.services.state.submerkle;
+package com.hedera.services.contracts.execution;
 
-import com.google.common.base.MoreObjects;
-import com.google.protobuf.ByteString;
+import com.hedera.services.legacy.proto.utils.ByteStringUtils;
 import com.hedera.services.state.enums.ContractActionType;
+import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.stream.proto.ContractAction;
-import com.swirlds.common.utility.CommonUtils;
-
-import java.util.Arrays;
-import java.util.Objects;
 
 public class SolidityAction {
     private static final byte[] MISSING_BYTES = new byte[0];
@@ -46,71 +42,6 @@ public class SolidityAction {
         this.recipientContract = recipientContract;
         this.value = value;
         this.callDepth = callDepth;
-    }
-
-    @Override
-    public boolean equals(final Object o) {
-        if (this == o) {
-            return true;
-        }
-        if (o == null || getClass() != o.getClass()) {
-            return false;
-        }
-        final SolidityAction that = (SolidityAction) o;
-        return gas == that.gas &&
-                value == that.value &&
-                gasUsed == that.gasUsed &&
-                callDepth == that.callDepth &&
-                callType == that.callType &&
-                Objects.equals(callingAccount, that.callingAccount) &&
-                Objects.equals(callingContract, that.callingContract) &&
-                Arrays.equals(input, that.input) &&
-                Objects.equals(recipientAccount, that.recipientAccount) &&
-                Objects.equals(recipientContract, that.recipientContract) &&
-                Arrays.equals(invalidSolidityAddress, that.invalidSolidityAddress) &&
-                Arrays.equals(output, that.output) &&
-                Arrays.equals(revertReason, that.revertReason) &&
-                Arrays.equals(error, that.error);
-    }
-
-    @Override
-    public int hashCode() {
-        int result = Objects.hash(
-                callType,
-                callingAccount,
-                callingContract,
-                gas,
-                recipientAccount,
-                recipientContract,
-                value,
-                gasUsed,
-                callDepth);
-        result = 31 * result + Arrays.hashCode(input);
-        result = 31 * result + Arrays.hashCode(invalidSolidityAddress);
-        result = 31 * result + Arrays.hashCode(output);
-        result = 31 * result + Arrays.hashCode(revertReason);
-        result = 31 * result + Arrays.hashCode(error);
-        return result;
-    }
-
-    @Override
-    public String toString() {
-        return MoreObjects.toStringHelper(this)
-                .add("callType", callType)
-                .add("callingAccount", callingAccount)
-                .add("callingContract", callingContract)
-                .add("gas", gas)
-                .add("input", CommonUtils.hex(input))
-                .add("recipientAccount", recipientAccount)
-                .add("recipientContract", recipientContract)
-                .add("invalidSolidityAddress", CommonUtils.hex(invalidSolidityAddress))
-                .add("value", value)
-                .add("gasUsed", gasUsed)
-                .add("output", CommonUtils.hex(output))
-                .add("revertReason", CommonUtils.hex(revertReason))
-                .add("error", CommonUtils.hex(error))
-                .add("callDepth", callDepth)
-                .toString();
     }
 
     public ContractActionType getCallType() {
@@ -202,7 +133,7 @@ public class SolidityAction {
     }
 
     public ContractAction toGrpc() {
-        var grpc = ContractAction.newBuilder();
+        final var grpc = ContractAction.newBuilder();
         grpc.setCallType(com.hedera.services.stream.proto.ContractActionType.forNumber(callType.ordinal()));
         if (callingAccount != null) {
             grpc.setCallingAccount(callingAccount.toGrpcAccountId());
@@ -210,22 +141,22 @@ public class SolidityAction {
             grpc.setCallingContract(callingContract.toGrpcContractId());
         }
         grpc.setGas(gas);
-        grpc.setInput(ByteString.copyFrom(input));
+        grpc.setInput(ByteStringUtils.wrapUnsafely(input));
         if (recipientAccount != null) {
             grpc.setRecipientAccount(recipientAccount.toGrpcAccountId());
         } else if (recipientContract != null) {
             grpc.setRecipientContract(recipientContract.toGrpcContractId());
         } else if (invalidSolidityAddress != null) {
-            grpc.setInvalidSolidityAddress(ByteString.copyFrom(invalidSolidityAddress));
+            grpc.setInvalidSolidityAddress(ByteStringUtils.wrapUnsafely(invalidSolidityAddress));
         }
         grpc.setValue(value);
         grpc.setGasUsed(gasUsed);
         if (output != null) {
-            grpc.setOutput(ByteString.copyFrom(output));
+            grpc.setOutput(ByteStringUtils.wrapUnsafely(output));
         } else if  (revertReason != null) {
-            grpc.setRevertReason(ByteString.copyFrom(revertReason));
+            grpc.setRevertReason(ByteStringUtils.wrapUnsafely(revertReason));
         } else if (error != null){
-            grpc.setError(ByteString.copyFrom(error));
+            grpc.setError(ByteStringUtils.wrapUnsafely(error));
         }
         grpc.setCallDepth(callDepth);
         return grpc.build();

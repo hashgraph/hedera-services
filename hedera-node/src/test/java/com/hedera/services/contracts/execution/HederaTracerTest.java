@@ -202,7 +202,7 @@ class HederaTracerTest {
         final var actions = subject.getFinalizedActions();
         final var solidityAction = actions.get(0);
         assertEquals(initialGas - remainingGasAfterExecution, solidityAction.getGasUsed());
-        assertNull(solidityAction.getOutput());
+        assertArrayEquals(new byte[0], solidityAction.getOutput());
     }
 
     @Test

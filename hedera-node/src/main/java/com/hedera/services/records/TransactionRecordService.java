@@ -20,6 +20,9 @@ package com.hedera.services.records;
  * ‍
  */
 
+import static com.hedera.services.utils.ResponseCodeUtil.getStatus;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
+
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.contracts.execution.TransactionProcessingResult;
 import com.hedera.services.ethereum.EthTxData;
@@ -28,12 +31,8 @@ import com.hedera.services.state.submerkle.EvmFnResult;
 import com.hedera.services.store.models.Topic;
 import com.hedera.services.stream.proto.TransactionSidecarRecord;
 import com.hedera.services.utils.SidecarUtils;
-
 import javax.inject.Inject;
 import javax.inject.Singleton;
-
-import static com.hedera.services.utils.ResponseCodeUtil.getStatus;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 @Singleton
 public class TransactionRecordService {
@@ -106,10 +105,14 @@ public class TransactionRecordService {
 	}
 
 	private void addAllSidecarsToTxnContextFrom(final TransactionProcessingResult result) {
-		if (!result.getStateChanges().isEmpty()) {
-			txnCtx.addSidecarRecord(SidecarUtils.createStateChangesSidecarFrom(result.getStateChanges()));
+		final var stateChanges = result.getStateChanges();
+		if (!stateChanges.isEmpty()) {
+			txnCtx.addSidecarRecord(SidecarUtils.createStateChangesSidecarFrom(stateChanges));
 		}
-		// FUTURE WORK - we should put the actions in the list here as well when they are added
+		final var actions = result.getActions();
+		if (!actions.isEmpty()) {
+			txnCtx.addSidecarRecord(SidecarUtils.createContractActionsSidecar(actions));
+		}
 	}
 
 	public void updateForEvmCall(EthTxData callContext, EntityId senderId) {
