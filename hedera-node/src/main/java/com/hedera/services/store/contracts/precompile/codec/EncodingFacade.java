@@ -48,6 +48,7 @@ public class EncodingFacade {
     public static final Bytes SUCCESS_RESULT = resultFrom(SUCCESS);
     private static final long[] NO_MINTED_SERIAL_NUMBERS = new long[0];
 
+    private static final String RESPONSE_STATUS_AT_BEGINNING = "(int32,";
     private static final String HEDERA_TOKEN =
             "("
                     + "string,string,address,string,bool,int64,bool,"
@@ -89,11 +90,12 @@ public class EncodingFacade {
     private static final TupleType tokenUriType = TupleType.parse(STRING);
     private static final TupleType ercTransferType = TupleType.parse(BOOL);
     private static final TupleType isApprovedForAllType = TupleType.parse(BOOL);
-    private static final TupleType getTokenInfoType = TupleType.parse("(int32," + TOKEN_INFO + ")");
+    private static final TupleType getTokenInfoType =
+            TupleType.parse(RESPONSE_STATUS_AT_BEGINNING + TOKEN_INFO + ")");
     private static final TupleType getFungibleTokenInfoType =
-            TupleType.parse("(int32," + FUNGIBLE_TOKEN_INFO + ")");
+            TupleType.parse(RESPONSE_STATUS_AT_BEGINNING + FUNGIBLE_TOKEN_INFO + ")");
     private static final TupleType getNonFungibleTokenInfoType =
-            TupleType.parse("(int32," + NON_FUNGIBLE_TOKEN_INFO + ")");
+            TupleType.parse(RESPONSE_STATUS_AT_BEGINNING + NON_FUNGIBLE_TOKEN_INFO + ")");
 
     @Inject
     public EncodingFacade() {
