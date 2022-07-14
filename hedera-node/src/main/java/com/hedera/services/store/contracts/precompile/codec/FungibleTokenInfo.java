@@ -15,4 +15,4 @@
  */
 package com.hedera.services.store.contracts.precompile.codec;
 
-public record FungibleTokenInfo(TokenInfo tokenInfo, long decimals) {}
+public record FungibleTokenInfo(TokenInfo tokenInfo, int decimals) {}

@@ -90,9 +90,10 @@ public class EncodingFacade {
     private static final TupleType ercTransferType = TupleType.parse(BOOL);
     private static final TupleType isApprovedForAllType = TupleType.parse(BOOL);
     private static final TupleType getTokenInfoType = TupleType.parse("(int32," + TOKEN_INFO + ")");
-    private static final TupleType getFungibleTokenInfoType = TupleType.parse(FUNGIBLE_TOKEN_INFO);
+    private static final TupleType getFungibleTokenInfoType =
+            TupleType.parse("(int32," + FUNGIBLE_TOKEN_INFO + ")");
     private static final TupleType getNonFungibleTokenInfoType =
-            TupleType.parse(NON_FUNGIBLE_TOKEN_INFO);
+            TupleType.parse("(int32," + NON_FUNGIBLE_TOKEN_INFO + ")");
 
     @Inject
     public EncodingFacade() {
@@ -239,13 +240,16 @@ public class EncodingFacade {
     public Bytes encodeGetFungibleTokenInfo(final FungibleTokenInfo fungibleTokenInfo) {
         return functionResultBuilder()
                 .forFunction(FunctionType.GET_FUNGIBLE_TOKEN_INFO)
-                .withFungibleTokenInfo(fungibleTokenInfo)
+                .withStatus(SUCCESS.getNumber())
+                .withDecimals(fungibleTokenInfo.decimals())
+                .withTokenInfo(fungibleTokenInfo.tokenInfo())
                 .build();
     }
 
     public Bytes encodeGetNonFungibleTokenInfo(final NonFungibleTokenInfo nonFungibleTokenInfo) {
         return functionResultBuilder()
                 .forFunction(FunctionType.GET_NON_FUNGIBLE_TOKEN_INFO)
+                .withStatus(SUCCESS.getNumber())
                 .withNonFungibleTokenInfo(nonFungibleTokenInfo)
                 .build();
     }
@@ -294,7 +298,6 @@ public class EncodingFacade {
         private String symbol;
         private String metadata;
         private TokenInfo tokenInfo;
-        private FungibleTokenInfo fungibleTokenInfo;
         private NonFungibleTokenInfo nonFungibleTokenInfo;
 
         private FunctionResultBuilder forFunction(final FunctionType functionType) {
@@ -406,12 +409,6 @@ public class EncodingFacade {
             return this;
         }
 
-        private FunctionResultBuilder withFungibleTokenInfo(
-                final FungibleTokenInfo fungibleTokenInfo) {
-            this.fungibleTokenInfo = fungibleTokenInfo;
-            return this;
-        }
-
         private FunctionResultBuilder withNonFungibleTokenInfo(
                 final NonFungibleTokenInfo nonFungibleTokenInfo) {
             this.nonFungibleTokenInfo = nonFungibleTokenInfo;
@@ -439,27 +436,33 @@ public class EncodingFacade {
                         case GET_APPROVED -> Tuple.of(
                                 convertBesuAddressToHeadlongAddress(approved));
                         case IS_APPROVED_FOR_ALL -> Tuple.of(isApprovedForAllStatus);
-                        case GET_TOKEN_INFO -> getTupleForTokenInfo(status, tokenInfo);
-                        case GET_FUNGIBLE_TOKEN_INFO -> Tuple.of(fungibleTokenInfo);
+                        case GET_TOKEN_INFO -> getTupleForGetTokenInfo();
+                        case GET_FUNGIBLE_TOKEN_INFO -> getTupleForGetFungibleTokenInfo();
                         case GET_NON_FUNGIBLE_TOKEN_INFO -> Tuple.of(nonFungibleTokenInfo);
                     };
 
             return Bytes.wrap(tupleType.encode(result).array());
         }
 
-        private Tuple getTupleForTokenInfo(final int status, final TokenInfo tokenInfo) {
+        private Tuple getTupleForGetFungibleTokenInfo() {
+            return Tuple.of(status, Tuple.of(getTupleForTokenInfo(), decimals));
+        }
+
+        private Tuple getTupleForGetTokenInfo() {
+            return Tuple.of(status, getTupleForTokenInfo());
+        }
+
+        private Tuple getTupleForTokenInfo() {
             return Tuple.of(
-                    status,
-                    Tuple.of(
-                            getHederaTokenTuple(),
-                            tokenInfo.totalSupply(),
-                            tokenInfo.deleted(),
-                            tokenInfo.defaultKycStatus(),
-                            tokenInfo.pauseStatus(),
-                            getFixedFeesTuples(),
-                            getFractionalFeesTuples(),
-                            getRoyaltyFeesTuples(),
-                            tokenInfo.ledgerId()));
+                    getHederaTokenTuple(),
+                    tokenInfo.totalSupply(),
+                    tokenInfo.deleted(),
+                    tokenInfo.defaultKycStatus(),
+                    tokenInfo.pauseStatus(),
+                    getFixedFeesTuples(),
+                    getFractionalFeesTuples(),
+                    getRoyaltyFeesTuples(),
+                    tokenInfo.ledgerId());
         }
 
         private Tuple[] getFixedFeesTuples() {

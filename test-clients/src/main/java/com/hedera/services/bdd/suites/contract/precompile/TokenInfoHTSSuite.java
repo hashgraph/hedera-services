@@ -46,7 +46,10 @@ public class TokenInfoHTSSuite extends HapiApiSuite {
     }
 
     List<HapiApiSpec> positiveSpecs() {
-        return List.of(happyPathGetTokenInfo());
+        return List.of(
+//            happyPathGetTokenInfo(),
+            happyPathGetFungibleTokenInfo()
+        );
     }
 
     private HapiApiSpec happyPathGetTokenInfo() {
@@ -66,10 +69,7 @@ public class TokenInfoHTSSuite extends HapiApiSuite {
                         newKeyNamed("pauseKey"),
                         uploadInitCode(TOKEN_INFO_CONTRACT),
                         contractCreate(TOKEN_INFO_CONTRACT).gas(1_000_000L),
-                        //            .adminKey(contractAdminKey)
-                        //            .autoRenewAccountId(AUTO_RENEW_ACCOUNT)
-                        //            .signedBy(contractAdminKey, DEFAULT_PAYER, AUTO_RENEW_ACCOUNT)
-                        tokenCreate("primary")
+                        tokenCreate(name)
                                 .supplyType(TokenSupplyType.FINITE)
                                 .entityMemo(memo)
                                 .name(name)
@@ -78,7 +78,6 @@ public class TokenInfoHTSSuite extends HapiApiSuite {
                                 .autoRenewPeriod(THREE_MONTHS_IN_SECONDS)
                                 .maxSupply(1000)
                                 .initialSupply(500)
-                                .decimals(1)
                                 .adminKey("adminKey")
                                 .freezeKey("freezeKey")
                                 .kycKey("kycKey")
@@ -102,6 +101,59 @@ public class TokenInfoHTSSuite extends HapiApiSuite {
                                                         .gas(1_000_000L)
                                                 )))
                 .then(getTxnRecord(TOKEN_INFO_TXN).andAllChildRecords().logged());
+    }
+
+    private HapiApiSpec happyPathGetFungibleTokenInfo() {
+        final String FUNGIBLE_TOKEN_INFO_TXN = "FungibleTokenInfoTxn";
+        final String memo = "JUMP";
+        final String name = "FungibleToken";
+        return defaultHapiSpec("HappyPathGetTokenInfo")
+            .given(
+                cryptoCreate(TOKEN_TREASURY).balance(0L),
+                cryptoCreate("autoRenewAccount").balance(0L),
+                newKeyNamed("adminKey"),
+                newKeyNamed("freezeKey"),
+                newKeyNamed("kycKey"),
+                newKeyNamed("supplyKey"),
+                newKeyNamed("wipeKey"),
+                newKeyNamed("feeScheduleKey"),
+                newKeyNamed("pauseKey"),
+                uploadInitCode(TOKEN_INFO_CONTRACT),
+                contractCreate(TOKEN_INFO_CONTRACT).gas(1_000_000L),
+                tokenCreate(name)
+                    .supplyType(TokenSupplyType.FINITE)
+                    .entityMemo(memo)
+                    .name(name)
+                    .symbol("FT")
+                    .treasury(TOKEN_TREASURY)
+                    .autoRenewAccount("autoRenewAccount")
+                    .autoRenewPeriod(THREE_MONTHS_IN_SECONDS)
+                    .maxSupply(1000)
+                    .initialSupply(500)
+                    .decimals(1)
+                    .adminKey("adminKey")
+                    .freezeKey("freezeKey")
+                    .kycKey("kycKey")
+                    .supplyKey("supplyKey")
+                    .wipeKey("wipeKey")
+                    .feeScheduleKey("feeScheduleKey")
+                    .pauseKey("pauseKey")
+                    .via("createTxn"))
+            .when(
+                withOpContext(
+                    (spec, opLog) ->
+                        allRunFor(
+                            spec,
+                            contractCall(
+                                TOKEN_INFO_CONTRACT,
+                                "getInformationForFungibleToken",
+                                Tuple.of(expandByteArrayTo32Length(asAddress(
+                                    spec.registry()
+                                        .getTokenID(name)))))
+                                .via(FUNGIBLE_TOKEN_INFO_TXN)
+                                .gas(1_000_000L)
+                        )))
+            .then(getTxnRecord(FUNGIBLE_TOKEN_INFO_TXN).andAllChildRecords().logged());
     }
 
     @Override
