@@ -20,24 +20,40 @@ package com.hedera.services.bdd.spec.transactions.contract;
  * ‍
  */
 
+import static com.hedera.services.bdd.spec.keys.TrieSigMapGenerator.uniqueWithFullPrefixesFor;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.extractTxnId;
+import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
+import static com.hedera.services.bdd.suites.HapiApiSuite.GENESIS;
+
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.google.common.base.MoreObjects;
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.infrastructure.meta.ActionableContractCall;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
-import com.hederahashgraph.api.proto.java.*;
+import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ContractCallTransactionBody;
+import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.Transaction;
+import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.hederahashgraph.api.proto.java.TransactionRecord;
+import com.hederahashgraph.api.proto.java.TransactionResponse;
 import com.swirlds.common.utility.CommonUtils;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
+import java.util.OptionalDouble;
+import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.function.LongConsumer;
+import java.util.function.ObjLongConsumer;
+import java.util.function.Supplier;
 import org.ethereum.core.CallTransaction;
-
-import java.util.*;
-import java.util.function.*;
-
-import static com.hedera.services.bdd.spec.keys.TrieSigMapGenerator.uniqueWithFullPrefixesFor;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
-import static com.hedera.services.bdd.spec.transactions.TxnUtils.extractTxnId;
-import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
-import static com.hedera.services.bdd.suites.HapiApiSuite.GENESIS;
 
 public class HapiContractCall extends HapiBaseCall<HapiContractCall> {
 	protected List<String> otherSigs = Collections.emptyList();
@@ -252,6 +268,8 @@ public class HapiContractCall extends HapiBaseCall<HapiContractCall> {
 			} else {
 				callData = (!abi.equals(FALLBACK_ABI))
 						? CallTransaction.Function.fromJsonInterface(abi).encode(params) : new byte[] { };
+
+//				? com.esaulpaugh.headlong.abi.Function.fromJson(abi).encodeCallWithArgs(params).array() : new byte[] { };
 			}
 		}
 

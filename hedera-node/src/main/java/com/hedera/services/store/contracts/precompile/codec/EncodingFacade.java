@@ -49,7 +49,8 @@ public class EncodingFacade {
     private static final long[] NO_MINTED_SERIAL_NUMBERS = new long[0];
 
     private static final String HEDERA_TOKEN =
-            "(string,string,address,string,bool,int64,bool,"
+            "("
+                    + "string,string,address,string,bool,int64,bool,"
                     + TOKEN_KEY
                     + ARRAY_BRACKETS
                     + ","
@@ -67,7 +68,8 @@ public class EncodingFacade {
                     + ","
                     + ROYALTY_FEE
                     + ARRAY_BRACKETS
-                    + ",string)";
+                    + ",string"
+                    + ")";
     private static final String FUNGIBLE_TOKEN_INFO = "(" + TOKEN_INFO + ",int32" + ")";
     private static final String NON_FUNGIBLE_TOKEN_INFO =
             "(" + TOKEN_INFO + ",int64,address,int32,bytes,address" + ")";
@@ -87,7 +89,7 @@ public class EncodingFacade {
     private static final TupleType tokenUriType = TupleType.parse(STRING);
     private static final TupleType ercTransferType = TupleType.parse(BOOL);
     private static final TupleType isApprovedForAllType = TupleType.parse(BOOL);
-    private static final TupleType getTokenInfoType = TupleType.parse(TOKEN_INFO);
+    private static final TupleType getTokenInfoType = TupleType.parse("(int32," + TOKEN_INFO + ")");
     private static final TupleType getFungibleTokenInfoType = TupleType.parse(FUNGIBLE_TOKEN_INFO);
     private static final TupleType getNonFungibleTokenInfoType =
             TupleType.parse(NON_FUNGIBLE_TOKEN_INFO);
@@ -229,6 +231,7 @@ public class EncodingFacade {
     public Bytes encodeGetTokenInfo(final TokenInfo tokenInfo) {
         return functionResultBuilder()
                 .forFunction(FunctionType.GET_TOKEN_INFO)
+                .withStatus(SUCCESS.getNumber())
                 .withTokenInfo(tokenInfo)
                 .build();
     }
@@ -436,12 +439,128 @@ public class EncodingFacade {
                         case GET_APPROVED -> Tuple.of(
                                 convertBesuAddressToHeadlongAddress(approved));
                         case IS_APPROVED_FOR_ALL -> Tuple.of(isApprovedForAllStatus);
-                        case GET_TOKEN_INFO -> Tuple.of(tokenInfo);
+                        case GET_TOKEN_INFO -> getTupleForTokenInfo(status, tokenInfo);
                         case GET_FUNGIBLE_TOKEN_INFO -> Tuple.of(fungibleTokenInfo);
                         case GET_NON_FUNGIBLE_TOKEN_INFO -> Tuple.of(nonFungibleTokenInfo);
                     };
 
             return Bytes.wrap(tupleType.encode(result).array());
+        }
+
+        private Tuple getTupleForTokenInfo(final int status, final TokenInfo tokenInfo) {
+            return Tuple.of(
+                    status,
+                    Tuple.of(
+                            getHederaTokenTuple(),
+                            tokenInfo.totalSupply(),
+                            tokenInfo.deleted(),
+                            tokenInfo.defaultKycStatus(),
+                            tokenInfo.pauseStatus(),
+                            getFixedFeesTuples(),
+                            getFractionalFeesTuples(),
+                            getRoyaltyFeesTuples(),
+                            tokenInfo.ledgerId()));
+        }
+
+        private Tuple[] getFixedFeesTuples() {
+            final var fixedFees = tokenInfo.fixedFees();
+            final Tuple[] fixedFeesTuples = new Tuple[fixedFees.size()];
+            for (int i = 0; i < fixedFees.size(); i++) {
+                final var fixedFee = fixedFees.get(i);
+                final var fixedFeeTuple =
+                        Tuple.of(
+                                fixedFee.amount(),
+                                fixedFee.tokenId(),
+                                fixedFee.useHbarsForPayment(),
+                                fixedFee.useCurrentTokenForPayment(),
+                                fixedFee.feeCollector());
+                fixedFeesTuples[i] = fixedFeeTuple;
+            }
+
+            return fixedFeesTuples;
+        }
+
+        private Tuple[] getFractionalFeesTuples() {
+            final var fractionalFees = tokenInfo.fractionalFees();
+            final Tuple[] fractionalFeesTuples = new Tuple[fractionalFees.size()];
+            for (int i = 0; i < fractionalFees.size(); i++) {
+                final var fractionalFee = fractionalFees.get(i);
+                final var fractionalFeeTuple =
+                        Tuple.of(
+                                fractionalFee.numerator(),
+                                fractionalFee.denominator(),
+                                fractionalFee.minimumAmount(),
+                                fractionalFee.maximumAmount(),
+                                fractionalFee.netOfTransfers(),
+                                fractionalFee.feeCollector());
+                fractionalFeesTuples[i] = fractionalFeeTuple;
+            }
+
+            return fractionalFeesTuples;
+        }
+
+        private Tuple[] getRoyaltyFeesTuples() {
+            final var royaltyFees = tokenInfo.royaltyFees();
+            final Tuple[] royaltyFeesTuples = new Tuple[royaltyFees.size()];
+            for (int i = 0; i < royaltyFees.size(); i++) {
+                final var royaltyFee = royaltyFees.get(i);
+                final var royaltyFeeTuple =
+                        Tuple.of(
+                                royaltyFee.numerator(),
+                                royaltyFee.denominator(),
+                                royaltyFee.amount(),
+                                royaltyFee.tokenId(),
+                                royaltyFee.useHbarsForPayment(),
+                                royaltyFee.feeCollector());
+                royaltyFeesTuples[i] = royaltyFeeTuple;
+            }
+
+            return royaltyFeesTuples;
+        }
+
+        private Tuple getHederaTokenTuple() {
+            final var hederaToken = tokenInfo.token();
+            final var expiry = hederaToken.expiry();
+            final var expiryTuple =
+                    Tuple.of(
+                            expiry.second(),
+                            convertBesuAddressToHeadlongAddress(expiry.autoRenewAccount()),
+                            expiry.autoRenewPeriod());
+
+            return Tuple.of(
+                    hederaToken.name(),
+                    hederaToken.symbol(),
+                    convertBesuAddressToHeadlongAddress(hederaToken.treasury()),
+                    hederaToken.memo(),
+                    hederaToken.tokenSupplyType(),
+                    hederaToken.maxSupply(),
+                    hederaToken.freezeDefault(),
+                    getTokenKeysTuples(),
+                    expiryTuple);
+        }
+
+        private Tuple[] getTokenKeysTuples() {
+            final var hederaToken = tokenInfo.token();
+            final var tokenKeys = hederaToken.tokenKeys();
+            final Tuple[] tokenKeysTuples = new Tuple[tokenKeys.size()];
+            for (int i = 0; i < tokenKeys.size(); i++) {
+                final var key = tokenKeys.get(i);
+                final var keyValue = key.key();
+                Tuple keyValueTuple =
+                        Tuple.of(
+                                keyValue.inheritAccountKey(),
+                                keyValue.contractId() != null
+                                        ? keyValue.contractId()
+                                        : convertBesuAddressToHeadlongAddress(Address.ZERO),
+                                keyValue.ed25519(),
+                                keyValue.ECDSA_secp256k1(),
+                                keyValue.delegatableContractId() != null
+                                        ? keyValue.delegatableContractId()
+                                        : convertBesuAddressToHeadlongAddress(Address.ZERO));
+                tokenKeysTuples[i] = (Tuple.of(BigInteger.valueOf(key.keyType()), keyValueTuple));
+            }
+
+            return tokenKeysTuples;
         }
     }
 

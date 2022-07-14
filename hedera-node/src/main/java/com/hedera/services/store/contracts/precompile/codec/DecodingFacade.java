@@ -308,7 +308,7 @@ public class DecodingFacade {
             TypeFactory.create(BYTES32);
 
     private static final Function GET_NON_FUNGIBLE_TOKEN_INFO_FUNCTION =
-            new Function("getFungibleTokenInfo(address,int64)");
+            new Function("getNonFungibleTokenInfo(address,int64)");
     private static final Bytes GET_NON_FUNGIBLE_TOKEN_INFO_SELECTOR =
             Bytes.wrap(GET_NON_FUNGIBLE_TOKEN_INFO_FUNCTION.selector());
     private static final ABIType<Tuple> GET_NON_FUNGIBLE_TOKEN_INFO_DECODER =

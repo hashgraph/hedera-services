@@ -210,9 +210,14 @@ public abstract class AbstractTokenInfoPrecompile extends AbstractReadOnlyPrecom
     private KeyValue getKeyValue(final JKey key) {
         return new KeyValue(
                 false,
-                EntityIdUtils.asTypedEvmAddress(key.getContractIDKey().getContractID()),
+                key.getContractIDKey() != null
+                        ? EntityIdUtils.asTypedEvmAddress(key.getContractIDKey().getContractID())
+                        : null,
                 key.getEd25519(),
                 key.getECDSASecp256k1Key(),
-                EntityIdUtils.asTypedEvmAddress(key.getDelegatableContractIdKey().getContractID()));
+                key.getDelegatableContractIdKey() != null
+                        ? EntityIdUtils.asTypedEvmAddress(
+                                key.getDelegatableContractIdKey().getContractID())
+                        : null);
     }
 }
