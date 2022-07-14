@@ -219,12 +219,4 @@ public class TransactionProcessingResult {
 	public ContractFunctionResult toGrpc() {
 		return EvmFnResult.fromCall(this).toGrpc();
 	}
-
-	public ContractActions toContractActionsGrpc() {
-		ContractActions.Builder contractActions = ContractActions.newBuilder();
-
-		actions.forEach(action -> contractActions.addContractActions(action.toGrpc()));
-
-		return contractActions.build();
-	}
 }
