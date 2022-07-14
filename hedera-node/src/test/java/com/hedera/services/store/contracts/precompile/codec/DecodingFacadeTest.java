@@ -15,6 +15,22 @@
  */
 package com.hedera.services.store.contracts.precompile.codec;
 
+import com.google.protobuf.ByteString;
+import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.store.contracts.WorldLedgers;
+import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ContractID;
+import com.hederahashgraph.api.proto.java.TokenID;
+import org.apache.tuweni.bytes.Bytes;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+
+import java.math.BigInteger;
+import java.util.Arrays;
+import java.util.List;
+
 import static com.hedera.services.store.contracts.precompile.codec.TokenCreateWrapper.FixedFeeWrapper.FixedFeePayment.USE_CURRENTLY_CREATED_TOKEN;
 import static com.hedera.services.store.contracts.precompile.codec.TokenCreateWrapper.FixedFeeWrapper.FixedFeePayment.USE_EXISTING_FUNGIBLE_TOKEN;
 import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
@@ -27,21 +43,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
-
-import com.google.protobuf.ByteString;
-import com.hedera.services.state.submerkle.EntityId;
-import com.hedera.services.store.contracts.WorldLedgers;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.ContractID;
-import com.hederahashgraph.api.proto.java.TokenID;
-import java.math.BigInteger;
-import java.util.Arrays;
-import java.util.List;
-import org.apache.tuweni.bytes.Bytes;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class DecodingFacadeTest {
@@ -686,7 +687,7 @@ class DecodingFacadeTest {
         assertTrue(decodedInput.token().getTokenNum() > 0);
         assertTrue(decodedInput.account().getAccountNum() > 0);
         assertEquals(10, decodedInput.amount());
-        assertEquals(0, decodedInput.serialNos().size());
+        assertEquals(0, decodedInput.serialNumbers().size());
         assertEquals(FUNGIBLE_COMMON, decodedInput.type());
     }
 
@@ -697,8 +698,8 @@ class DecodingFacadeTest {
         assertTrue(decodedInput.token().getTokenNum() > 0);
         assertTrue(decodedInput.account().getAccountNum() > 0);
         assertEquals(-1, decodedInput.amount());
-        assertEquals(1, decodedInput.serialNos().size());
-        assertEquals(1, decodedInput.serialNos().get(0));
+        assertEquals(1, decodedInput.serialNumbers().size());
+        assertEquals(1, decodedInput.serialNumbers().get(0));
         assertEquals(NON_FUNGIBLE_UNIQUE, decodedInput.type());
     }
 

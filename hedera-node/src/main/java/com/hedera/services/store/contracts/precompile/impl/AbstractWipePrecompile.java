@@ -15,11 +15,6 @@
  */
 package com.hedera.services.store.contracts.precompile.impl;
 
-import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
-
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.contracts.sources.EvmSigsVerifier;
 import com.hedera.services.ledger.accounts.ContractAliases;
@@ -31,23 +26,25 @@ import com.hedera.services.store.contracts.precompile.codec.WipeWrapper;
 import com.hedera.services.store.contracts.precompile.utils.KeyActivationUtils;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.services.store.models.Id;
-import com.hederahashgraph.api.proto.java.Timestamp;
-import com.hederahashgraph.api.proto.java.TransactionBody;
+import org.hyperledger.besu.evm.frame.MessageFrame;
+
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
-import java.util.function.UnaryOperator;
-import org.apache.tuweni.bytes.Bytes;
-import org.hyperledger.besu.evm.frame.MessageFrame;
 
-public class AbstractWipePrecompile extends AbstractWritePrecompile {
+import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
+
+public abstract class AbstractWipePrecompile extends AbstractWritePrecompile {
 
     protected final ContractAliases aliases;
     protected final EvmSigsVerifier sigsVerifier;
     protected WipeWrapper wipeOp;
     private static final List<Long> NO_SERIAL_NOS = Collections.emptyList();
 
-    public AbstractWipePrecompile(
+    protected AbstractWipePrecompile(
             WorldLedgers ledgers,
             DecodingFacade decoder,
             final ContractAliases aliases,
@@ -65,16 +62,6 @@ public class AbstractWipePrecompile extends AbstractWritePrecompile {
                 pricingUtils);
         this.aliases = aliases;
         this.sigsVerifier = sigsVerifier;
-    }
-
-    @Override
-    public TransactionBody.Builder body(Bytes input, UnaryOperator<byte[]> aliasResolver) {
-        return null;
-    }
-
-    @Override
-    public long getMinimumFeeInTinybars(Timestamp consensusTime) {
-        return 0;
     }
 
     @Override
@@ -108,8 +95,8 @@ public class AbstractWipePrecompile extends AbstractWritePrecompile {
 
         /* --- Execute the transaction and capture its results --- */
         if (wipeOp.type() == NON_FUNGIBLE_UNIQUE) {
-            final var targetSerialNos = wipeOp.serialNos();
-            wipeLogic.wipe(tokenId, accountId, 0, targetSerialNos);
+            final var targetSerialNumbers = wipeOp.serialNumbers();
+            wipeLogic.wipe(tokenId, accountId, 0, targetSerialNumbers);
         } else {
             wipeLogic.wipe(tokenId, accountId, wipeOp.amount(), NO_SERIAL_NOS);
         }
