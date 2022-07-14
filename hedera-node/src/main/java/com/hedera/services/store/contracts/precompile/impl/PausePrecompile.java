@@ -1,3 +1,18 @@
+/*
+ * Copyright (C) 2022 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package com.hedera.services.store.contracts.precompile.impl;
 
 /*
@@ -22,6 +37,10 @@ package com.hedera.services.store.contracts.precompile.impl;
  *
  */
 
+import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
+import static com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils.GasCostType.PAUSE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.contracts.sources.EvmSigsVerifier;
 import com.hedera.services.ledger.accounts.ContractAliases;
@@ -35,20 +54,16 @@ import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUti
 import com.hedera.services.store.models.Id;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import org.apache.tuweni.bytes.Bytes;
-import org.hyperledger.besu.evm.frame.MessageFrame;
-
 import java.util.Objects;
 import java.util.function.UnaryOperator;
-
-import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
-import static com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils.GasCostType.PAUSE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import org.apache.tuweni.bytes.Bytes;
+import org.hyperledger.besu.evm.frame.MessageFrame;
 
 public class PausePrecompile extends AbstractWritePrecompile {
     protected PauseWrapper pauseOp;
     protected final ContractAliases aliases;
     protected final EvmSigsVerifier sigsVerifier;
+
     public PausePrecompile(
             WorldLedgers ledgers,
             DecodingFacade decoder,
@@ -58,7 +73,13 @@ public class PausePrecompile extends AbstractWritePrecompile {
             SyntheticTxnFactory syntheticTxnFactory,
             InfrastructureFactory infrastructureFactory,
             PrecompilePricingUtils pricingUtils) {
-        super(ledgers, decoder, sideEffects, syntheticTxnFactory, infrastructureFactory, pricingUtils);
+        super(
+                ledgers,
+                decoder,
+                sideEffects,
+                syntheticTxnFactory,
+                infrastructureFactory,
+                pricingUtils);
         this.aliases = aliases;
         this.sigsVerifier = sigsVerifier;
     }
@@ -83,19 +104,24 @@ public class PausePrecompile extends AbstractWritePrecompile {
         /* --- Check required signatures --- */
         final var tokenId = Id.fromGrpcToken(pauseOp.token());
         ledgers.tokens().get(pauseOp.token(), TokenProperty.PAUSE_KEY);
-        //TODO : Create check for the pause key
-//        final var hasRequiredSigs = KeyActivationUtils.validateKey(
-//                frame,
-//                tokenId.asEvmAddress(),
-//                sigsVerifier::hasActiveSupplyKey,
-//                ledgers,
-//                aliases);
-//        validateTrue(hasRequiredSigs, INVALID_SIGNATURE);
+        // TODO : Create check for the pause key
+        //        final var hasRequiredSigs = KeyActivationUtils.validateKey(
+        //                frame,
+        //                tokenId.asEvmAddress(),
+        //                sigsVerifier::hasActiveSupplyKey,
+        //                ledgers,
+        //                aliases);
+        //        validateTrue(hasRequiredSigs, INVALID_SIGNATURE);
 
         /* --- Build the necessary infrastructure to execute the transaction --- */
         final var accountStore = infrastructureFactory.newAccountStore(ledgers.accounts());
-        final var tokenStore = infrastructureFactory.newTokenStore(
-                accountStore, sideEffects, ledgers.tokens(), ledgers.nfts(), ledgers.tokenRels());
+        final var tokenStore =
+                infrastructureFactory.newTokenStore(
+                        accountStore,
+                        sideEffects,
+                        ledgers.tokens(),
+                        ledgers.nfts(),
+                        ledgers.tokenRels());
         final var pauseLogic = infrastructureFactory.newPauseLogic(tokenStore);
         final var validity = pauseLogic.validateSyntax(transactionBody.build());
         validateTrue(validity == OK, validity);

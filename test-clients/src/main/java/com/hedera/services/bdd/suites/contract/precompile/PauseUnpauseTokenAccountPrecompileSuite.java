@@ -1,3 +1,18 @@
+/*
+ * Copyright (C) 2022 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package com.hedera.services.bdd.suites.contract.precompile;
 
 /*
@@ -22,15 +37,6 @@ package com.hedera.services.bdd.suites.contract.precompile;
  *
  */
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.suites.HapiApiSuite;
-import com.hederahashgraph.api.proto.java.TokenID;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
-import java.util.List;
-import java.util.concurrent.atomic.AtomicReference;
-
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
@@ -49,8 +55,17 @@ import static com.hederahashgraph.api.proto.java.TokenPauseStatus.Unpaused;
 import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
+import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hederahashgraph.api.proto.java.TokenID;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 public class PauseUnpauseTokenAccountPrecompileSuite extends HapiApiSuite {
-    private static final Logger log = LogManager.getLogger(PauseUnpauseTokenAccountPrecompileSuite.class);
+    private static final Logger log =
+            LogManager.getLogger(PauseUnpauseTokenAccountPrecompileSuite.class);
     private static final String PAUSE_UNPAUSE_CONTRACT = "PauseUnpauseTokenAccount";
 
     private static final String PAUSE_KEY = "PAUSE_KEY";
@@ -69,12 +84,12 @@ public class PauseUnpauseTokenAccountPrecompileSuite extends HapiApiSuite {
 
     @Override
     public List<HapiApiSpec> getSpecsInSuite() {
-        return allOf(List.of(
-                pauseFungibleTokenHappyPath(),
-                unpauseFungibleTokenHappyPath(),
-                pauseNonFungibleTokenHappyPath(),
-                unpauseNonFungibleTokenHappyPath())
-        );
+        return allOf(
+                List.of(
+                        pauseFungibleTokenHappyPath(),
+                        unpauseFungibleTokenHappyPath(),
+                        pauseNonFungibleTokenHappyPath(),
+                        unpauseNonFungibleTokenHappyPath()));
     }
 
     private HapiApiSpec pauseFungibleTokenHappyPath() {
@@ -100,15 +115,13 @@ public class PauseUnpauseTokenAccountPrecompileSuite extends HapiApiSuite {
                                                 contractCreate(PAUSE_UNPAUSE_CONTRACT)
                                                         .bytecode(PAUSE_UNPAUSE_CONTRACT),
                                                 contractCall(
-                                                        PAUSE_UNPAUSE_CONTRACT,
-                                                        "pauseTokenAccount",
-                                                        asAddress(tokenID.get()))
+                                                                PAUSE_UNPAUSE_CONTRACT,
+                                                                "pauseTokenAccount",
+                                                                asAddress(tokenID.get()))
                                                         .payingWith(GENESIS)
                                                         .via("pauseTokenAccountTxn")
                                                         .gas(GAS_TO_OFFER))))
-                .then(
-                        getTokenInfo(VANILLA_TOKEN).hasPauseStatus(Paused)
-                );
+                .then(getTokenInfo(VANILLA_TOKEN).hasPauseStatus(Paused));
     }
 
     private HapiApiSpec unpauseFungibleTokenHappyPath() {
@@ -134,15 +147,13 @@ public class PauseUnpauseTokenAccountPrecompileSuite extends HapiApiSuite {
                                                 contractCreate(PAUSE_UNPAUSE_CONTRACT)
                                                         .bytecode(PAUSE_UNPAUSE_CONTRACT),
                                                 contractCall(
-                                                        PAUSE_UNPAUSE_CONTRACT,
-                                                        "unpauseTokenAccount",
-                                                        asAddress(tokenID.get()))
+                                                                PAUSE_UNPAUSE_CONTRACT,
+                                                                "unpauseTokenAccount",
+                                                                asAddress(tokenID.get()))
                                                         .payingWith(GENESIS)
                                                         .via("unpauseTokenAccountTxn")
                                                         .gas(GAS_TO_OFFER))))
-                .then(
-                        getTokenInfo(VANILLA_TOKEN).hasPauseStatus(Unpaused)
-                );
+                .then(getTokenInfo(VANILLA_TOKEN).hasPauseStatus(Unpaused));
     }
 
     private HapiApiSpec pauseNonFungibleTokenHappyPath() {
@@ -168,15 +179,13 @@ public class PauseUnpauseTokenAccountPrecompileSuite extends HapiApiSuite {
                                                 contractCreate(PAUSE_UNPAUSE_CONTRACT)
                                                         .bytecode(PAUSE_UNPAUSE_CONTRACT),
                                                 contractCall(
-                                                        PAUSE_UNPAUSE_CONTRACT,
-                                                        "pauseTokenAccount",
-                                                        asAddress(tokenID.get()))
+                                                                PAUSE_UNPAUSE_CONTRACT,
+                                                                "pauseTokenAccount",
+                                                                asAddress(tokenID.get()))
                                                         .payingWith(GENESIS)
                                                         .via("pauseTokenAccountTxn")
                                                         .gas(GAS_TO_OFFER))))
-                .then(
-                        getTokenInfo(VANILLA_TOKEN).hasPauseStatus(Paused)
-                );
+                .then(getTokenInfo(VANILLA_TOKEN).hasPauseStatus(Paused));
     }
 
     private HapiApiSpec unpauseNonFungibleTokenHappyPath() {
@@ -202,14 +211,12 @@ public class PauseUnpauseTokenAccountPrecompileSuite extends HapiApiSuite {
                                                 contractCreate(PAUSE_UNPAUSE_CONTRACT)
                                                         .bytecode(PAUSE_UNPAUSE_CONTRACT),
                                                 contractCall(
-                                                        PAUSE_UNPAUSE_CONTRACT,
-                                                        "unpauseTokenAccount",
-                                                        asAddress(tokenID.get()))
+                                                                PAUSE_UNPAUSE_CONTRACT,
+                                                                "unpauseTokenAccount",
+                                                                asAddress(tokenID.get()))
                                                         .payingWith(GENESIS)
                                                         .via("unpauseTokenAccountTxn")
                                                         .gas(GAS_TO_OFFER))))
-                .then(
-                        getTokenInfo(VANILLA_TOKEN).hasPauseStatus(Unpaused)
-                );
+                .then(getTokenInfo(VANILLA_TOKEN).hasPauseStatus(Unpaused));
     }
 }
