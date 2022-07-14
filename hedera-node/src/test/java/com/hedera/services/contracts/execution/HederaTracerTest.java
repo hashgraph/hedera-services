@@ -28,6 +28,7 @@ import static com.hedera.services.state.enums.ContractActionType.CREATE;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -78,6 +79,7 @@ class HederaTracerTest {
     @BeforeEach
     void setUp() {
         subject = new HederaTracer();
+        subject.reset(true);
     }
 
     @Test
@@ -371,6 +373,15 @@ class HederaTracerTest {
         subject.traceAccountCreationResult(messageFrame, haltReason);
 
         verify(messageFrame).setExceptionalHaltReason(haltReason);
+    }
+
+    @Test
+    void actionsAreNotTrackedWhenNotEnabled() {
+        subject.reset(false);
+
+        subject.traceExecution(messageFrame, eo);
+
+        assertTrue(subject.getFinalizedActions().isEmpty());
     }
 
     private void givenTracedExecutingFrame(final Type frameType) {

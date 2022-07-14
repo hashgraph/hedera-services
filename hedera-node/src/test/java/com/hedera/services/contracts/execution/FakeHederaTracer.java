@@ -23,7 +23,7 @@ public class FakeHederaTracer implements HederaOperationTracer {
   }
 
   @Override
-  public void reset() {
+  public void reset(boolean isActionTracingEnabled) {
     hasBeenReset = true;
   }
 

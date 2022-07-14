@@ -13,6 +13,6 @@ public interface HederaOperationTracer extends OperationTracer {
 
   List<SolidityAction> getFinalizedActions();
 
-  void reset();
+  void reset(boolean areActionSidecarsEnabled);
 
 }

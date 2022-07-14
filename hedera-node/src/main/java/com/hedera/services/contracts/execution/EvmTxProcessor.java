@@ -282,7 +282,7 @@ abstract class EvmTxProcessor {
 		final MessageFrame initialFrame = buildInitialFrame(commonInitialFrame, receiver, payload, value);
 		messageFrameStack.addFirst(initialFrame);
 
-		hederaTracer.reset();
+		hederaTracer.reset(dynamicProperties.enabledSidecars().contains(SidecarType.CONTRACT_ACTION));
 		while (!messageFrameStack.isEmpty()) {
 			process(messageFrameStack.peekFirst(), hederaTracer);
 		}

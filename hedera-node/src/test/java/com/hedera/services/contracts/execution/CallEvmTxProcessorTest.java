@@ -293,7 +293,6 @@ class CallEvmTxProcessorTest {
 		givenSenderWithBalance(350_000L);
 		given(aliasManager.resolveForEvm(receiverAddress)).willReturn(receiverAddress);
 		given(storageExpiry.hapiCallOracle()).willReturn(oracle);
-		//TODO: flag
 		final var action =
 				new SolidityAction(
 						ContractActionType.CALL,
@@ -326,28 +325,6 @@ class CallEvmTxProcessorTest {
 		assertEquals(2, result.getActions().size());
 		assertEquals(action, result.getActions().get(0));
 		assertEquals(action2, result.getActions().get(1));
-	}
-
-	@Test
-	void assertSuccessExecutionWithDisabledActionsDoesNotPopulateActions() {
-		fail();
-		//TODO: fix up when flag
-
-//		givenValidMock();
-//		given(globalDynamicProperties.fundingAccount()).willReturn(new Id(0, 0, 1010).asGrpcAccount());
-//		given(globalDynamicProperties.shouldEnableTraceability()).willReturn(false);
-//		givenSenderWithBalance(350_000L);
-//		given(aliasManager.resolveForEvm(receiverAddress)).willReturn(receiverAddress);
-//		given(storageExpiry.hapiCallOracle()).willReturn(oracle);
-//
-//		final var result = callEvmTxProcessor.execute(
-//				sender, receiverAddress, 33_333L, 1234L, Bytes.EMPTY, consensusTime);
-//
-//		assertTrue(result.isSuccessful());
-//		assertEquals(receiver.getId().asGrpcContract(), result.toGrpc().getContractID());
-////		assertEquals(0, result.toGrpc().getStateChangesCount());
-//
-//		verify(updater, never()).getFinalStateChanges();
 	}
 
 	@Test

@@ -52,35 +52,40 @@ public class HederaTracer implements HederaOperationTracer {
 
 	private final List<SolidityAction> allActions;
 	private final Deque<SolidityAction> currentActionsStack;
+	private boolean areActionSidecarsEnabled;
 
 	@Inject
 	public HederaTracer() {
 		this.currentActionsStack = new ArrayDeque<>();
 		this.allActions = new ArrayList<>();
+		this.areActionSidecarsEnabled = false;
 	}
 
 	@Override
-	public void reset() {
+	public void reset(final boolean areActionSidecarsEnabled) {
 		this.currentActionsStack.clear();
 		this.allActions.clear();
+		this.areActionSidecarsEnabled = areActionSidecarsEnabled;
 	}
 
 	//TODO: direct token calls? Call, but to system contract like HTS or ERC20 facades over Token accounts
 	@Override
 	public void traceExecution(MessageFrame frame, ExecuteOperation executeOperation) {
-		if (currentActionsStack.isEmpty()) {
+		if (areActionSidecarsEnabled && currentActionsStack.isEmpty()) {
 			trackActionFor(frame, 0);
 		}
 
 		executeOperation.execute();
 
-		final var frameState = frame.getState();
-		if (frameState != State.CODE_EXECUTING) {
-			if (frameState == State.CODE_SUSPENDED) {
-				final var nextFrame = frame.getMessageFrameStack().peek();
-				trackActionFor(nextFrame, nextFrame.getMessageFrameStack().size() - 1);
-			} else {
-				finalizeActionFor(currentActionsStack.pop(), frame, frameState);
+		if (areActionSidecarsEnabled) {
+			final var frameState = frame.getState();
+			if (frameState != State.CODE_EXECUTING) {
+				if (frameState == State.CODE_SUSPENDED) {
+					final var nextFrame = frame.getMessageFrameStack().peek();
+					trackActionFor(nextFrame, nextFrame.getMessageFrameStack().size() - 1);
+				} else {
+					finalizeActionFor(currentActionsStack.pop(), frame, frameState);
+				}
 			}
 		}
 	}
