@@ -21,6 +21,7 @@ package com.hedera.services.contracts.operation;
  */
 
 import com.hedera.services.context.SideEffectsTracker;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.accounts.ContractCustomizer;
 import com.hedera.services.ledger.properties.AccountProperty;
@@ -33,6 +34,7 @@ import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.services.store.contracts.WorldLedgers;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
+import com.hedera.services.stream.proto.SidecarType;
 import com.hedera.services.stream.proto.TransactionSidecarRecord;
 import com.hedera.services.utils.SidecarUtils;
 import com.hedera.test.utils.IdUtils;
@@ -41,6 +43,7 @@ import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import java.util.Set;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
@@ -115,6 +118,8 @@ class AbstractRecordingCreateOperationTest {
 	private WorldLedgers ledgers;
 	@Mock
 	private TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
+	@Mock
+	private GlobalDynamicProperties dynamicProperties;
 
 	private static final long childStipend = 1_000_000L;
 	private static final Wei gasPrice = Wei.of(1000L);
@@ -138,7 +143,8 @@ class AbstractRecordingCreateOperationTest {
 				gasCalculator,
 				creator,
 				syntheticTxnFactory,
-				recordsHistorian);
+				recordsHistorian,
+				dynamicProperties);
 	}
 
 	@Test
@@ -201,7 +207,7 @@ class AbstractRecordingCreateOperationTest {
 	}
 
 	@Test
-	void hasExpectedChildCompletionOnSuccess() {
+	void hasExpectedChildCompletionOnSuccessWithSidecarEnabled() {
 		final var trackerCaptor = ArgumentCaptor.forClass(SideEffectsTracker.class);
 		final var liveRecord = ExpirableTxnRecord.newBuilder()
 				.setReceiptBuilder(TxnReceipt.newBuilder().setStatus(TxnReceipt.REVERTED_SUCCESS_LITERAL));
@@ -225,6 +231,7 @@ class AbstractRecordingCreateOperationTest {
 		final var sidecarUtilsMockedStatic = mockStatic(SidecarUtils.class);
 		sidecarUtilsMockedStatic.when(() -> SidecarUtils.createContractBytecodeSidecarFrom(lastAllocated, initCode, runtimeCode))
 				.thenReturn(sidecarRecord);
+		given(dynamicProperties.enabledSidecars()).willReturn(Set.of(SidecarType.CONTRACT_BYTECODE));
 
 		assertSameResult(EMPTY_HALT_RESULT, subject.execute(frame, evm));
 
@@ -246,6 +253,43 @@ class AbstractRecordingCreateOperationTest {
 		// and:
 		assertTrue(liveRecord.shouldNotBeExternalized());
 		sidecarUtilsMockedStatic.close();
+	}
+
+	@Test
+	void hasExpectedChildCompletionOnSuccessWithoutSidecarEnabled() {
+		final var trackerCaptor = ArgumentCaptor.forClass(SideEffectsTracker.class);
+		final var liveRecord = ExpirableTxnRecord.newBuilder()
+				.setReceiptBuilder(TxnReceipt.newBuilder().setStatus(TxnReceipt.REVERTED_SUCCESS_LITERAL));
+		final var mockCreation = TransactionBody.newBuilder()
+				.setContractCreateInstance(ContractCreateTransactionBody.newBuilder().setAutoRenewAccountId(autoRenewId.toGrpcAccountId()));
+		final var frameCaptor = ArgumentCaptor.forClass(MessageFrame.class);
+		givenSpawnPrereqs();
+		givenBuilderPrereqs();
+		given(updater.customizerForPendingCreation()).willReturn(contractCustomizer);
+		given(syntheticTxnFactory.contractCreation(contractCustomizer)).willReturn(mockCreation);
+		given(creator.createSuccessfulSyntheticRecord(any(), any(), any())).willReturn(liveRecord);
+		given(updater.idOfLastNewAddress()).willReturn(lastAllocated);
+		given(dynamicProperties.enabledSidecars()).willReturn(Set.of());
+
+		assertSameResult(EMPTY_HALT_RESULT, subject.execute(frame, evm));
+
+		verify(stack).addFirst(frameCaptor.capture());
+		final var childFrame = frameCaptor.getValue();
+		// when:
+		childFrame.setState(MessageFrame.State.COMPLETED_SUCCESS);
+		childFrame.notifyCompletion();
+		// then:
+		verify(frame).pushStackItem(Words.fromAddress(Subject.PRETEND_CONTRACT_ADDRESS));
+		verify(creator).createSuccessfulSyntheticRecord(
+				eq(Collections.emptyList()), trackerCaptor.capture(), eq(EMPTY_MEMO));
+		verify(updater).manageInProgressRecord(recordsHistorian, liveRecord, mockCreation, Collections.emptyList());
+		// and:
+		final var tracker = trackerCaptor.getValue();
+		assertTrue(tracker.hasTrackedContractCreation());
+		assertEquals(lastAllocated, tracker.getTrackedNewContractId());
+		assertArrayEquals(Subject.PRETEND_CONTRACT_ADDRESS.toArrayUnsafe(), tracker.getNewEntityAlias().toByteArray());
+		// and:
+		assertTrue(liveRecord.shouldNotBeExternalized());
 	}
 
 	@Test
@@ -309,11 +353,12 @@ class AbstractRecordingCreateOperationTest {
 				final GasCalculator gasCalculator,
 				final EntityCreator creator,
 				final SyntheticTxnFactory syntheticTxnFactory,
-				final RecordsHistorian recordsHistorian
+				final RecordsHistorian recordsHistorian,
+				final GlobalDynamicProperties dynamicProperties
 		) {
 			super(
 					opcode, name, stackItemsConsumed, stackItemsProduced, opSize, gasCalculator,
-					creator, syntheticTxnFactory, recordsHistorian);
+					creator, syntheticTxnFactory, recordsHistorian, dynamicProperties);
 		}
 
 		@Override

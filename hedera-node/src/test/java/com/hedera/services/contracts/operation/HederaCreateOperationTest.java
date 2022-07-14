@@ -23,6 +23,7 @@ package com.hedera.services.contracts.operation;
  */
 
 
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.contracts.gascalculator.StorageGasCalculator;
 import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.state.EntityCreator;
@@ -62,13 +63,15 @@ class HederaCreateOperationTest {
 	private RecordsHistorian recordsHistorian;
 	@Mock
 	private StorageGasCalculator storageGasCalculator;
+	@Mock
+	private GlobalDynamicProperties dynamicProperties;
 
 	private HederaCreateOperation subject;
 
 	@BeforeEach
 	void setup() {
 		subject = new HederaCreateOperation(
-				gasCalculator, creator, syntheticTxnFactory, recordsHistorian, storageGasCalculator);
+				gasCalculator, creator, syntheticTxnFactory, recordsHistorian, storageGasCalculator, dynamicProperties);
 	}
 
 	@Test
