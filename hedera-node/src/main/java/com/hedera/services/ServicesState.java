@@ -328,6 +328,10 @@ public class ServicesState extends PartialNaryMerkleInternal implements MerkleIn
 				// Once we have a dynamic address book, this will run unconditionally
 				app.sysFilesManager().updateStakeDetails();
 			}
+			if (trigger == RESTART) {
+				// Do this separately from ensureSystemAccounts(), as that call is expensive with a large saved state
+				app.treasuryCloner().ensureTreasuryClonesExist();
+			}
 		}
 	}
 

@@ -51,6 +51,7 @@ import com.hedera.services.state.exports.BalancesExporter;
 import com.hedera.services.state.forensics.HashLogger;
 import com.hedera.services.state.initialization.SystemAccountsCreator;
 import com.hedera.services.state.initialization.SystemFilesManager;
+import com.hedera.services.state.initialization.TreasuryCloner;
 import com.hedera.services.state.logic.NetworkCtxManager;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.validation.LedgerValidator;
@@ -132,6 +133,7 @@ public interface ServicesApp {
 	SystemExits systemExits();
 	GrpcStarter grpcStarter();
 	UpgradeActions upgradeActions();
+	TreasuryCloner treasuryCloner();
 	LedgerValidator ledgerValidator();
 	AccountsExporter accountsExporter();
 	BalancesExporter balancesExporter();

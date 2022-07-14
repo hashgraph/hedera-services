@@ -25,10 +25,13 @@ import com.hedera.services.config.AccountNumbers;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.SigImpactHistorian;
+import com.hedera.services.legacy.core.jproto.JEd25519Key;
+import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.core.jproto.TxnReceipt;
 import com.hedera.services.records.ConsensusTimeTracker;
 import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.state.EntityCreator;
+import com.hedera.services.state.initialization.TreasuryCloner;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.submerkle.EntityId;
@@ -36,6 +39,7 @@ import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.state.submerkle.TxnId;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.utils.EntityNum;
+import com.hedera.services.utils.MiscUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.Duration;
@@ -51,12 +55,15 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.Instant;
-import java.util.concurrent.atomic.AtomicLong;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static com.hedera.services.legacy.core.jproto.TxnReceipt.SUCCESS_LITERAL;
 import static com.hedera.services.records.TxnAwareRecordsHistorian.DEFAULT_SOURCE_ID;
 import static com.hedera.services.state.EntityCreator.EMPTY_MEMO;
 import static com.hedera.services.state.EntityCreator.NO_CUSTOM_FEES;
+import static com.hedera.services.state.initialization.TreasuryClonerTest.accountWith;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentCaptor.forClass;
 import static org.mockito.ArgumentMatchers.eq;
@@ -71,6 +78,8 @@ class MigrationRecordsManagerTest {
 	private static final long fundingExpiry = 33197904000L;
 	private static final long stakingRewardAccount = 800;
 	private static final long nodeRewardAccount = 801;
+	private static final ExpirableTxnRecord.Builder pretend200 = ExpirableTxnRecord.newBuilder();
+	private static final ExpirableTxnRecord.Builder pretend201 = ExpirableTxnRecord.newBuilder();
 	private static final ExpirableTxnRecord.Builder pretend800 = ExpirableTxnRecord.newBuilder();
 	private static final ExpirableTxnRecord.Builder pretend801 = ExpirableTxnRecord.newBuilder();
 	private static final Instant now = Instant.ofEpochSecond(1_234_567L);
@@ -96,15 +105,22 @@ class MigrationRecordsManagerTest {
 	@Mock
 	private SideEffectsTracker tracker801;
 	@Mock
+	private SideEffectsTracker tracker200;
+	@Mock
+	private SideEffectsTracker tracker201;
+	@Mock
 	private EntityCreator creator;
 	@Mock
 	private AccountNumbers accountNumbers;
-
-	private MerkleMap<EntityNum, MerkleAccount> accounts = new MerkleMap<>();
+	@Mock
+	private TreasuryCloner treasuryCloner;
 	@Mock
 	private MerkleAccount merkleAccount;
 
-	private final AtomicLong nextTracker = new AtomicLong();
+	private final List<MerkleAccount> treasuryClones = new ArrayList<>();
+	private final MerkleMap<EntityNum, MerkleAccount> accounts = new MerkleMap<>();
+
+	private final AtomicInteger nextTracker = new AtomicInteger();
 	private final SyntheticTxnFactory factory = new SyntheticTxnFactory(dynamicProperties);
 
 	private MigrationRecordsManager subject;
@@ -114,22 +130,34 @@ class MigrationRecordsManagerTest {
 		accounts.put(EntityNum.fromLong(1L), merkleAccount);
 		accounts.put(EntityNum.fromLong(2L), merkleAccount);
 
-		subject = new MigrationRecordsManager(creator, sigImpactHistorian, recordsHistorian, () -> networkCtx,
-				consensusTimeTracker, () -> accounts, factory, accountNumbers);
+		subject = new MigrationRecordsManager(
+				creator, treasuryCloner, sigImpactHistorian, recordsHistorian,
+				() -> networkCtx, consensusTimeTracker, () -> accounts, factory, accountNumbers);
 
-		subject.setSideEffectsFactory(() -> nextTracker.getAndIncrement() == 0 ? tracker800 : tracker801);
+		subject.setSideEffectsFactory(() -> switch (nextTracker.getAndIncrement()) {
+			case 0 -> tracker800;
+			case 1 -> tracker801;
+			case 2 -> tracker200;
+			default -> tracker201;
+		});
 	}
 
 	@Test
 	void ifContextIndicatesRecordsNeedToBeStreamedThenDoesSo() {
 		final ArgumentCaptor<TransactionBody.Builder> bodyCaptor = forClass(TransactionBody.Builder.class);
-		final var synthBody = expectedSyntheticCreate();
+		final var rewardSynthBody = expectedSyntheticRewardAccount();
+		final var cloneSynthBody = expectedSyntheticTreasuryClone();
 
 		given(consensusTimeTracker.unlimitedPreceding()).willReturn(true);
 		given(creator.createSuccessfulSyntheticRecord(NO_CUSTOM_FEES, tracker800, MEMO)).willReturn(pretend800);
 		given(creator.createSuccessfulSyntheticRecord(NO_CUSTOM_FEES, tracker801, MEMO)).willReturn(pretend801);
+		given(creator.createSuccessfulSyntheticRecord(
+				NO_CUSTOM_FEES, tracker200, "Synthetic zero-balance treasury clone")).willReturn(pretend200);
+		given(creator.createSuccessfulSyntheticRecord(
+				NO_CUSTOM_FEES, tracker201, "Synthetic zero-balance treasury clone")).willReturn(pretend201);
 		given(accountNumbers.stakingRewardAccount()).willReturn(stakingRewardAccount);
 		given(accountNumbers.nodeRewardAccount()).willReturn(nodeRewardAccount);
+		givenSomeTreasuryClones();
 
 		subject.publishMigrationRecords(now);
 
@@ -140,9 +168,19 @@ class MigrationRecordsManagerTest {
 		verify(recordsHistorian).trackPrecedingChildRecord(eq(DEFAULT_SOURCE_ID), bodyCaptor.capture(), eq(pretend800));
 		verify(recordsHistorian).trackPrecedingChildRecord(eq(DEFAULT_SOURCE_ID), bodyCaptor.capture(), eq(pretend801));
 		verify(networkCtx).markMigrationRecordsStreamed();
+		verify(recordsHistorian).trackPrecedingChildRecord(
+						eq(DEFAULT_SOURCE_ID),
+						bodyCaptor.capture(),
+						eq(pretend200));
+		verify(recordsHistorian).trackPrecedingChildRecord(
+						eq(DEFAULT_SOURCE_ID),
+						bodyCaptor.capture(),
+						eq(pretend201));
 		final var bodies = bodyCaptor.getAllValues();
-		assertEquals(synthBody, bodies.get(0).build());
-		assertEquals(synthBody, bodies.get(1).build());
+		assertEquals(rewardSynthBody, bodies.get(0).build());
+		assertEquals(rewardSynthBody, bodies.get(1).build());
+		assertEquals(cloneSynthBody, bodies.get(2).build());
+		assertEquals(cloneSynthBody, bodies.get(3).build());
 	}
 
 	@Test
@@ -233,7 +271,7 @@ class MigrationRecordsManagerTest {
 		verifyNoInteractions(recordsHistorian);
 	}
 
-	private TransactionBody expectedSyntheticCreate() {
+	private TransactionBody expectedSyntheticRewardAccount() {
 		final var txnBody = CryptoCreateTransactionBody.newBuilder()
 				.setKey(EXPECTED_KEY)
 				.setMemo(EMPTY_MEMO)
@@ -242,4 +280,28 @@ class MigrationRecordsManagerTest {
 				.build();
 		return TransactionBody.newBuilder().setCryptoCreateAccount(txnBody).build();
 	}
+
+	private TransactionBody expectedSyntheticTreasuryClone() {
+		final var txnBody = CryptoCreateTransactionBody.newBuilder()
+				.setKey(MiscUtils.asKeyUnchecked(pretendTreasuryKey))
+				.setMemo("123")
+				.setInitialBalance(0)
+				.setAutoRenewPeriod(Duration.newBuilder().setSeconds(pretendExpiry - now.getEpochSecond()))
+				.build();
+		return TransactionBody.newBuilder().setCryptoCreateAccount(txnBody).build();
+	}
+
+	private void givenSomeTreasuryClones() {
+		treasuryClones.addAll(List.of(
+				accountWith(pretendExpiry, pretendTreasuryKey),
+				accountWith(pretendExpiry, pretendTreasuryKey)));
+		treasuryClones.get(0).setKey(EntityNum.fromLong(200L));
+		treasuryClones.get(1).setKey(EntityNum.fromLong(201L));
+		given(treasuryCloner.getClonesCreated()).willReturn(treasuryClones);
+	}
+
+	private static final long pretendExpiry = 2 * now.getEpochSecond();
+	private static final String pretendMemo = "WHATEVER";
+	private static final JKey pretendTreasuryKey =
+			new JEd25519Key("a123456789a123456789a123456789a1".getBytes());
 }

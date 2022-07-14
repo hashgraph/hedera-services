@@ -29,6 +29,7 @@ import com.hedera.services.legacy.core.jproto.TxnReceipt;
 import com.hedera.services.records.ConsensusTimeTracker;
 import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.state.EntityCreator;
+import com.hedera.services.state.initialization.TreasuryCloner;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
@@ -54,6 +55,7 @@ import static com.hedera.services.records.TxnAwareRecordsHistorian.DEFAULT_SOURC
 import static com.hedera.services.state.EntityCreator.EMPTY_MEMO;
 import static com.hedera.services.state.EntityCreator.NO_CUSTOM_FEES;
 import static com.hedera.services.state.initialization.BackedSystemAccountsCreator.FUNDING_ACCOUNT_EXPIRY;
+import static com.hedera.services.utils.MiscUtils.asKeyUnchecked;
 
 /**
  * Responsible for externalizing any state changes that happened during migration via child records,
@@ -70,10 +72,12 @@ public class MigrationRecordsManager {
 
 	private static boolean expiryJustEnabled = false;
 	private static final Key immutableKey = Key.newBuilder().setKeyList(KeyList.getDefaultInstance()).build();
-	private static final String MEMO = "Release 0.24.1 migration record";
+	private static final String STAKING_MEMO = "Release 0.24.1 migration record";
+	private static final String TREASURY_CLONE_MEMO = "Synthetic zero-balance treasury clone";
 	static final String AUTO_RENEW_MEMO_TPL = "Contract {} was renewed during 0.26.0 upgrade; new expiry is {}";
 
 	private final EntityCreator creator;
+	private final TreasuryCloner treasuryCloner;
 	private final SigImpactHistorian sigImpactHistorian;
 	private final RecordsHistorian recordsHistorian;
 	private final Supplier<MerkleNetworkContext> networkCtx;
@@ -87,6 +91,7 @@ public class MigrationRecordsManager {
 	@Inject
 	public MigrationRecordsManager(
 			final EntityCreator creator,
+			final TreasuryCloner treasuryCloner,
 			final SigImpactHistorian sigImpactHistorian,
 			final RecordsHistorian recordsHistorian,
 			final Supplier<MerkleNetworkContext> networkCtx,
@@ -95,6 +100,7 @@ public class MigrationRecordsManager {
 			final SyntheticTxnFactory syntheticTxnFactory,
 			final AccountNumbers accountNumbers
 	) {
+		this.treasuryCloner = treasuryCloner;
 		this.sigImpactHistorian = sigImpactHistorian;
 		this.recordsHistorian = recordsHistorian;
 		this.networkCtx = networkCtx;
@@ -114,19 +120,18 @@ public class MigrationRecordsManager {
 	public void publishMigrationRecords(final Instant now) {
 		final var curNetworkCtx = networkCtx.get();
 
-		if ((!consensusTimeTracker.unlimitedPreceding()) || curNetworkCtx.areMigrationRecordsStreamed()) {
+		if (!consensusTimeTracker.unlimitedPreceding() || curNetworkCtx.areMigrationRecordsStreamed()) {
 			return;
 		}
 
-		// After release 0.24.1, we publish creation records for 0.0.800 [stakingRewardAccount] and
-		// 0.0.801 [nodeRewardAccount] _only_ on a network reset
+		// We always publish creation records for 0.0.800, and 0.0.801 on a network reset
 		if (curNetworkCtx.consensusTimeOfLastHandledTxn() == null) {
 			final var implicitAutoRenewPeriod = FUNDING_ACCOUNT_EXPIRY - now.getEpochSecond();
 			final var stakingFundAccounts = List.of(
 					EntityNum.fromLong(accountNumbers.stakingRewardAccount()),
 					EntityNum.fromLong(accountNumbers.nodeRewardAccount())
 			);
-			stakingFundAccounts.forEach(num -> publishForStakingFund(num, implicitAutoRenewPeriod));
+			stakingFundAccounts.forEach(num -> publishSyntheticCreationForStakingFund(num, implicitAutoRenewPeriod));
 		} else {
 			// Publish free auto-renewal migration records if expiry is just being enabled
 			if (expiryJustEnabled) {
@@ -134,23 +139,47 @@ public class MigrationRecordsManager {
 			}
 		}
 
+		// And we always publish records for any treasury clones that needed to be created
+		treasuryCloner.getClonesCreated().forEach(account -> publishSyntheticCreation(
+				account.getKey(),
+				account.getExpiry() - now.getEpochSecond(),
+				asKeyUnchecked(account.getAccountKey()),
+				account.getMemo(),
+				TREASURY_CLONE_MEMO,
+				"treasury clone"));
+
 		curNetworkCtx.markMigrationRecordsStreamed();
 	}
 
-	private void publishForStakingFund(final EntityNum num, final long autoRenewPeriod) {
-		final var tracker = sideEffectsFactory.get();
-		tracker.trackAutoCreation(num.toGrpcAccountId(), ByteString.EMPTY);
-		final var synthBody = synthStakingFundCreate(autoRenewPeriod);
-		final var synthRecord = creator.createSuccessfulSyntheticRecord(NO_CUSTOM_FEES, tracker, MEMO);
-		recordsHistorian.trackPrecedingChildRecord(DEFAULT_SOURCE_ID, synthBody, synthRecord);
-		sigImpactHistorian.markEntityChanged(num.longValue());
-		log.info("Published synthetic CryptoCreate for staking fund account 0.0.{}", num.longValue());
+	private void publishSyntheticCreationForStakingFund(final EntityNum num, final long autoRenewPeriod) {
+		publishSyntheticCreation(num, autoRenewPeriod, immutableKey, EMPTY_MEMO, STAKING_MEMO, "staking fund");
 	}
 
-	private TransactionBody.Builder synthStakingFundCreate(final long autoRenewPeriod) {
+	private void publishSyntheticCreation(
+			final EntityNum num,
+			final long autoRenewPeriod,
+			final Key key,
+			final String accountMemo,
+			final String recordMemo,
+			final String description
+	) {
+		final var tracker = sideEffectsFactory.get();
+		tracker.trackAutoCreation(num.toGrpcAccountId(), ByteString.EMPTY);
+		final var synthBody = synthCreation(autoRenewPeriod, key, accountMemo);
+		final var synthRecord = creator.createSuccessfulSyntheticRecord(NO_CUSTOM_FEES, tracker, recordMemo);
+		recordsHistorian.trackPrecedingChildRecord(DEFAULT_SOURCE_ID, synthBody, synthRecord);
+		sigImpactHistorian.markEntityChanged(num.longValue());
+		log.info("Published synthetic CryptoCreate for {} account 0.0.{}", description, num.longValue());
+	}
+
+	private TransactionBody.Builder synthCreation(
+			final long autoRenewPeriod,
+			final Key key,
+			final String memo
+	) {
 		final var txnBody = CryptoCreateTransactionBody.newBuilder()
-				.setKey(immutableKey)
-				.setMemo(EMPTY_MEMO)
+				.setKey(key)
+				.setMemo(memo)
 				.setInitialBalance(0)
 				.setAutoRenewPeriod(Duration.newBuilder().setSeconds(autoRenewPeriod))
 				.build();
@@ -165,8 +194,8 @@ public class MigrationRecordsManager {
 
 				final var syntheticSuccessReceipt = TxnReceipt.newBuilder().setStatus(SUCCESS_LITERAL).build();
 				// for 0.26.0 migration we use the contract account's hbar since auto-renew accounts are not set
-				final var synthBody = syntheticTxnFactory.synthContractAutoRenew(contractNum.asNum(), newExpiry,
-						contractNum.toGrpcAccountId());
+				final var synthBody = syntheticTxnFactory.synthContractAutoRenew(
+						contractNum.asNum(), newExpiry, contractNum.toGrpcAccountId());
 				final var memo = String.format(AUTO_RENEW_MEMO_TPL, contractNum.num(), newExpiry);
 				final var synthRecord = ExpirableTxnRecord.newBuilder()
 						.setMemo(memo)
