@@ -15,12 +15,6 @@
  */
 package com.hedera.services.store.contracts.precompile.impl;
 
-import static com.hedera.services.exceptions.ValidationUtils.validateTrueOrRevert;
-import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.HTS_PRECOMPILED_CONTRACT_ADDRESS;
-import static com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils.GasCostType.APPROVE;
-import static com.hedera.services.utils.EntityIdUtils.asTypedEvmAddress;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.store.contracts.WorldLedgers;
@@ -36,12 +30,19 @@ import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import java.util.Objects;
-import java.util.function.UnaryOperator;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.log.Log;
+
+import java.util.Objects;
+import java.util.function.UnaryOperator;
+
+import static com.hedera.services.exceptions.ValidationUtils.validateTrueOrRevert;
+import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.HTS_PRECOMPILED_CONTRACT_ADDRESS;
+import static com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils.GasCostType.APPROVE;
+import static com.hedera.services.utils.EntityIdUtils.asTypedEvmAddress;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 public class SetApprovalForAllPrecompile extends AbstractWritePrecompile {
     private final TokenID tokenId;
@@ -95,8 +96,9 @@ public class SetApprovalForAllPrecompile extends AbstractWritePrecompile {
     @Override
     public TransactionBody.Builder body(
             final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
-        final var nestedInput = input.slice(24);
-        setApprovalForAllWrapper = decoder.decodeSetApprovalForAll(nestedInput, tokenId, aliasResolver);
+        final var nestedInput = tokenId == null ? input : input.slice(24);
+        setApprovalForAllWrapper =
+                decoder.decodeSetApprovalForAll(nestedInput, tokenId, aliasResolver);
         transactionBody =
                 syntheticTxnFactory.createApproveAllowanceForAllNFT(
                         setApprovalForAllWrapper, tokenId);

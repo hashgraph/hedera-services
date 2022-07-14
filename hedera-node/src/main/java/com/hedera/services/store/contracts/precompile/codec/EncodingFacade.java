@@ -51,15 +51,20 @@ public class EncodingFacade {
 	private static final TupleType totalSupplyType = TupleType.parse(UINT256_RETURN_TYPE);
 	private static final TupleType balanceOfType = TupleType.parse(UINT256_RETURN_TYPE);
 	private static final TupleType allowanceOfType = TupleType.parse(UINT256_RETURN_TYPE);
+	private static final TupleType hapiAllowanceOfType = TupleType.parse("(int32,uint256)");
 	private static final TupleType approveOfType = TupleType.parse(BOOL_RETURN_TYPE);
+	private static final TupleType hapiApproveOfType = TupleType.parse("(int32,bool)");
+	private static final TupleType hapiApproveNftType = TupleType.parse("(int32)");
 	private static final TupleType decimalsType = TupleType.parse("(uint8)");
 	private static final TupleType ownerOfType = TupleType.parse("(address)");
 	private static final TupleType getApprovedType = TupleType.parse("(address)");
+	private static final TupleType hapiGetApprovedType = TupleType.parse("(int32,address)");
 	private static final TupleType nameType = TupleType.parse(STRING_RETURN_TYPE);
 	private static final TupleType symbolType = TupleType.parse(STRING_RETURN_TYPE);
 	private static final TupleType tokenUriType = TupleType.parse(STRING_RETURN_TYPE);
 	private static final TupleType ercTransferType = TupleType.parse(BOOL_RETURN_TYPE);
 	private static final TupleType isApprovedForAllType = TupleType.parse(BOOL_RETURN_TYPE);
+	private static final TupleType hapiIsApprovedForAllType = TupleType.parse("(int32,bool)");
 
 	@Inject
 	public EncodingFacade() {
@@ -105,6 +110,14 @@ public class EncodingFacade {
 				.build();
 	}
 
+	public Bytes encodeGetApproved(final int status, final Address approved) {
+		return functionResultBuilder()
+				.forFunction(FunctionType.HAPI_GET_APPROVED)
+				.withStatus(status)
+				.withApproved(approved)
+				.build();
+	}
+
 	public Bytes encodeBalance(final long balance) {
 		return functionResultBuilder()
 				.forFunction(FunctionType.BALANCE)
@@ -119,10 +132,33 @@ public class EncodingFacade {
 				.build();
 	}
 
+	public Bytes encodeAllowance(final int responseCode, final long allowance) {
+		return functionResultBuilder()
+				.forFunction(FunctionType.HAPI_ALLOWANCE)
+				.withStatus(responseCode)
+				.withAllowance(allowance)
+				.build();
+	}
+
 	public Bytes encodeApprove(final boolean approve) {
 		return functionResultBuilder()
 				.forFunction(FunctionType.APPROVE)
 				.withApprove(approve)
+				.build();
+	}
+
+	public Bytes encodeApprove(final int responseCode, final boolean approve) {
+		return functionResultBuilder()
+				.forFunction(FunctionType.HAPI_APPROVE)
+				.withStatus(responseCode)
+				.withApprove(approve)
+				.build();
+	}
+
+	public Bytes encodeApproveNFT(final int responseCode) {
+		return functionResultBuilder()
+				.forFunction(FunctionType.HAPI_APPROVE)
+				.withStatus(responseCode)
 				.build();
 	}
 
@@ -204,8 +240,17 @@ public class EncodingFacade {
 				.build();
 	}
 
+	public Bytes encodeIsApprovedForAll(final int status, final boolean isApprovedForAllStatus) {
+		return functionResultBuilder()
+				.forFunction(FunctionType.HAPI_IS_APPROVED_FOR_ALL)
+				.withStatus(status)
+				.withIsApprovedForAllStatus(isApprovedForAllStatus)
+				.build();
+	}
+
 	protected enum FunctionType {
-		CREATE, MINT, BURN, TOTAL_SUPPLY, DECIMALS, BALANCE, OWNER, TOKEN_URI, NAME, SYMBOL, ERC_TRANSFER, ALLOWANCE, APPROVE, GET_APPROVED, IS_APPROVED_FOR_ALL
+		CREATE, MINT, BURN, TOTAL_SUPPLY, DECIMALS, BALANCE, OWNER, TOKEN_URI, NAME, SYMBOL, ERC_TRANSFER, ALLOWANCE, APPROVE, GET_APPROVED, IS_APPROVED_FOR_ALL,
+		HAPI_ALLOWANCE, HAPI_APPROVE, HAPI_APPROVE_NFT, HAPI_GET_APPROVED, HAPI_IS_APPROVED_FOR_ALL
 	}
 
 	private FunctionResultBuilder functionResultBuilder() {
@@ -248,6 +293,11 @@ public class EncodingFacade {
 				case APPROVE -> approveOfType;
 				case GET_APPROVED -> getApprovedType;
 				case IS_APPROVED_FOR_ALL -> isApprovedForAllType;
+				case HAPI_ALLOWANCE -> hapiAllowanceOfType;
+				case HAPI_APPROVE -> hapiApproveOfType;
+				case HAPI_APPROVE_NFT -> hapiApproveNftType;
+				case HAPI_GET_APPROVED -> hapiGetApprovedType;
+				case HAPI_IS_APPROVED_FOR_ALL -> hapiIsApprovedForAllType;
 			};
 
 			this.functionType = functionType;
@@ -346,6 +396,11 @@ public class EncodingFacade {
 				case APPROVE -> Tuple.of(approve);
 				case GET_APPROVED -> Tuple.of(convertBesuAddressToHeadlongAddress(approved));
 				case IS_APPROVED_FOR_ALL -> Tuple.of(isApprovedForAllStatus);
+				case HAPI_APPROVE -> Tuple.of(status, approve);
+				case HAPI_APPROVE_NFT -> Tuple.of(status);
+				case HAPI_ALLOWANCE -> Tuple.of(status, BigInteger.valueOf(allowance));
+				case HAPI_GET_APPROVED -> Tuple.of(status,convertBesuAddressToHeadlongAddress(approved));
+				case HAPI_IS_APPROVED_FOR_ALL -> Tuple.of(status, isApprovedForAllStatus);
 			};
 
 			return Bytes.wrap(tupleType.encode(result).array());

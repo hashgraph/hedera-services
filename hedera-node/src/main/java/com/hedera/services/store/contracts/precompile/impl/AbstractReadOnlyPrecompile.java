@@ -9,9 +9,9 @@ package com.hedera.services.store.contracts.precompile.impl;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -35,52 +35,52 @@ import org.hyperledger.besu.evm.frame.MessageFrame;
 import java.util.function.UnaryOperator;
 
 public abstract class AbstractReadOnlyPrecompile implements Precompile {
-	protected TokenID tokenId;
-	protected final SyntheticTxnFactory syntheticTxnFactory;
-	protected final WorldLedgers ledgers;
-	protected final EncodingFacade encoder;
-	protected final DecodingFacade decoder;
-	protected final PrecompilePricingUtils pricingUtils;
+    protected final TokenID tokenId;
+    protected final SyntheticTxnFactory syntheticTxnFactory;
+    protected final WorldLedgers ledgers;
+    protected final EncodingFacade encoder;
+    protected final DecodingFacade decoder;
+    protected final PrecompilePricingUtils pricingUtils;
 
-	protected AbstractReadOnlyPrecompile(
-			final TokenID tokenId,
-			final SyntheticTxnFactory syntheticTxnFactory,
-			final WorldLedgers ledgers,
-			final EncodingFacade encoder,
-			final DecodingFacade decoder,
-			final PrecompilePricingUtils pricingUtils
-	) {
-		this.tokenId = tokenId;
-		this.syntheticTxnFactory = syntheticTxnFactory;
-		this.ledgers = ledgers;
-		this.encoder = encoder;
-		this.decoder = decoder;
-		this.pricingUtils = pricingUtils;
-	}
+    protected AbstractReadOnlyPrecompile(
+            final TokenID tokenId,
+            final SyntheticTxnFactory syntheticTxnFactory,
+            final WorldLedgers ledgers,
+            final EncodingFacade encoder,
+            final DecodingFacade decoder,
+            final PrecompilePricingUtils pricingUtils) {
+        this.tokenId = tokenId;
+        this.syntheticTxnFactory = syntheticTxnFactory;
+        this.ledgers = ledgers;
+        this.encoder = encoder;
+        this.decoder = decoder;
+        this.pricingUtils = pricingUtils;
+    }
 
-	@Override
-	public TransactionBody.Builder body(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
-		return syntheticTxnFactory.createTransactionCall(1L, input);
-	}
+    @Override
+    public TransactionBody.Builder body(
+            final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
+        return syntheticTxnFactory.createTransactionCall(1L, input);
+    }
 
-	@Override
-	public void run(final MessageFrame frame) {
-		// No changes to state to apply
-	}
+    @Override
+    public void run(final MessageFrame frame) {
+        // No changes to state to apply
+    }
 
-	@Override
-	public long getMinimumFeeInTinybars(final Timestamp consensusTime) {
-		return 100;
-	}
+    @Override
+    public long getMinimumFeeInTinybars(final Timestamp consensusTime) {
+        return 100;
+    }
 
-	@Override
-	public boolean shouldAddTraceabilityFieldsToRecord() {
-		return false;
-	}
+    @Override
+    public boolean shouldAddTraceabilityFieldsToRecord() {
+        return false;
+    }
 
-	@Override
-	public long getGasRequirement(long blockTimestamp) {
-		final var now = Timestamp.newBuilder().setSeconds(blockTimestamp).build();
-		return pricingUtils.computeViewFunctionGas(now, getMinimumFeeInTinybars(now));
-	}
+    @Override
+    public long getGasRequirement(long blockTimestamp) {
+        final var now = Timestamp.newBuilder().setSeconds(blockTimestamp).build();
+        return pricingUtils.computeViewFunctionGas(now, getMinimumFeeInTinybars(now));
+    }
 }

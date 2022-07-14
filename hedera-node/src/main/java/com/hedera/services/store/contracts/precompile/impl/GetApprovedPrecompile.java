@@ -15,10 +15,6 @@
  */
 package com.hedera.services.store.contracts.precompile.impl;
 
-import static com.hedera.services.exceptions.ValidationUtils.validateTrueOrRevert;
-import static com.hedera.services.ledger.properties.NftProperty.SPENDER;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER;
-
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.store.contracts.WorldLedgers;
@@ -30,8 +26,14 @@ import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUti
 import com.hedera.services.store.models.NftId;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import java.util.function.UnaryOperator;
 import org.apache.tuweni.bytes.Bytes;
+
+import java.util.function.UnaryOperator;
+
+import static com.hedera.services.exceptions.ValidationUtils.validateTrueOrRevert;
+import static com.hedera.services.ledger.properties.NftProperty.SPENDER;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 public class GetApprovedPrecompile extends AbstractReadOnlyPrecompile {
     GetApprovedWrapper getApprovedWrapper;
@@ -58,7 +60,7 @@ public class GetApprovedPrecompile extends AbstractReadOnlyPrecompile {
     @Override
     public TransactionBody.Builder body(
             final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
-        final var nestedInput = input.slice(24);
+        final var nestedInput = tokenId == null ? input : input.slice(24);
         getApprovedWrapper = decoder.decodeGetApproved(nestedInput, tokenId);
         return super.body(input, aliasResolver);
     }
@@ -66,10 +68,13 @@ public class GetApprovedPrecompile extends AbstractReadOnlyPrecompile {
     @Override
     public Bytes getSuccessResultFor(final ExpirableTxnRecord.Builder childRecord) {
         final var nftsLedger = ledgers.nfts();
-        final var nftId = NftId.fromGrpc(tokenId, getApprovedWrapper.serialNo());
+        final var nftId =
+                NftId.fromGrpc(getApprovedWrapper.tokenId(), getApprovedWrapper.serialNo());
         validateTrueOrRevert(nftsLedger.contains(nftId), INVALID_TOKEN_NFT_SERIAL_NUMBER);
         final var spender = (EntityId) nftsLedger.get(nftId, SPENDER);
         final var canonicalSpender = ledgers.canonicalAddress(spender.toEvmAddress());
-        return encoder.encodeGetApproved(canonicalSpender);
+        return tokenId == null
+                ? encoder.encodeGetApproved(SUCCESS.getNumber(), canonicalSpender)
+                : encoder.encodeGetApproved(canonicalSpender);
     }
 }

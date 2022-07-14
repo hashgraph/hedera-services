@@ -15,8 +15,6 @@
  */
 package com.hedera.services.store.contracts.precompile.impl;
 
-import static com.hedera.services.ledger.properties.AccountProperty.APPROVE_FOR_ALL_NFTS_ALLOWANCES;
-
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
 import com.hedera.services.store.contracts.WorldLedgers;
@@ -27,9 +25,13 @@ import com.hedera.services.store.contracts.precompile.codec.IsApproveForAllWrapp
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import org.apache.tuweni.bytes.Bytes;
+
 import java.util.Set;
 import java.util.function.UnaryOperator;
-import org.apache.tuweni.bytes.Bytes;
+
+import static com.hedera.services.ledger.properties.AccountProperty.APPROVE_FOR_ALL_NFTS_ALLOWANCES;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 public class IsApprovedForAllPrecompile extends AbstractReadOnlyPrecompile {
     private IsApproveForAllWrapper isApproveForAllWrapper;
@@ -56,8 +58,9 @@ public class IsApprovedForAllPrecompile extends AbstractReadOnlyPrecompile {
     @Override
     public TransactionBody.Builder body(
             final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
-        final var nestedInput = input.slice(24);
-        isApproveForAllWrapper = decoder.decodeIsApprovedForAll(nestedInput, tokenId, aliasResolver);
+        final var nestedInput = tokenId == null ? input : input.slice(24);
+        isApproveForAllWrapper =
+                decoder.decodeIsApprovedForAll(nestedInput, tokenId, aliasResolver);
         return super.body(input, aliasResolver);
     }
 
@@ -74,9 +77,12 @@ public class IsApprovedForAllPrecompile extends AbstractReadOnlyPrecompile {
             final var allowances =
                     (Set<FcTokenAllowanceId>)
                             accountsLedger.get(ownerId, APPROVE_FOR_ALL_NFTS_ALLOWANCES);
-            final var allowanceId = FcTokenAllowanceId.from(tokenId, operatorId);
+            final var allowanceId =
+                    FcTokenAllowanceId.from(isApproveForAllWrapper.tokenId(), operatorId);
             answer &= allowances.contains(allowanceId);
         }
-        return encoder.encodeIsApprovedForAll(answer);
+        return tokenId == null
+                ? encoder.encodeIsApprovedForAll(SUCCESS.getNumber(), answer)
+                : encoder.encodeIsApprovedForAll(answer);
     }
 }

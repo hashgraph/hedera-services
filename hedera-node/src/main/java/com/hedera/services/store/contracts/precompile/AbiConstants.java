@@ -50,8 +50,9 @@ public final class AbiConstants {
     // allowance(address token, address owner, address spender)
     public static final int ABI_ID_ALLOWANCE = 0x927da105;
     // approve(address token, address spender, uint256 amount)
-    // approve(address token, address to, uint256 tokenId)
     public static final int ABI_ID_APPROVE = 0xe1f21c67;
+    // approveNFT(address token, address to, uint256 tokenId)
+    public static final int ABI_ID_APPROVE_NFT = 0x7336aaf0;
     // setApprovalForAll(address token, address operator, bool approved)
     public static final int ABI_ID_SET_APPROVAL_FOR_ALL = 0x367605ca;
     // getApproved(address token, uint256 tokenId)

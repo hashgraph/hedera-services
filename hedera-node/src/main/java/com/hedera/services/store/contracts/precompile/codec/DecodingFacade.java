@@ -294,38 +294,45 @@ public class DecodingFacade {
             TypeFactory.create("(bytes32,uint256)");
 
     private static final Function HAPI_ALLOWANCE_FUNCTION =
-            new Function("allowance(address,address,address)", INT_OUTPUT);
+            new Function("allowance(address,address,address)", "(int,int)");
     private static final Bytes HAPI_ALLOWANCE_SELECTOR =
             Bytes.wrap(HAPI_ALLOWANCE_FUNCTION.selector());
     private static final ABIType<Tuple> HAPI_ALLOWANCE_DECODER =
             TypeFactory.create(ADDRESS_TRIPLE_RAW_TYPE);
 
     private static final Function HAPI_GET_APPROVED_FUNCTION =
-            new Function("getApproved(address,uint256)", INT_OUTPUT);
+            new Function("getApproved(address,uint256)", "(int,int)");
     private static final Bytes HAPI_GET_APPROVED_FUNCTION_SELECTOR =
             Bytes.wrap(HAPI_GET_APPROVED_FUNCTION.selector());
     private static final ABIType<Tuple> HAPI_GET_APPROVED_FUNCTION_DECODER =
             TypeFactory.create(ADDRESS_UINT256_RAW_TYPE);
 
     private static final Function HAPI_IS_APPROVED_FOR_ALL =
-            new Function("isApprovedForAll(address,address,address)", BOOL_OUTPUT);
+            new Function("isApprovedForAll(address,address,address)", "(int,bool)");
     private static final Bytes HAPI_IS_APPROVED_FOR_ALL_SELECTOR =
             Bytes.wrap(HAPI_IS_APPROVED_FOR_ALL.selector());
     private static final ABIType<Tuple> HAPI_IS_APPROVED_FOR_ALL_DECODER =
             TypeFactory.create(ADDRESS_TRIPLE_RAW_TYPE);
 
     private static final Function HAPI_SET_APPROVAL_FOR_ALL =
-            new Function("setApprovalForAll(address,address,bool)");
+            new Function("setApprovalForAll(address,address,bool)", INT_OUTPUT);
     private static final Bytes HAPI_SET_APPROVAL_FOR_ALL_SELECTOR =
             Bytes.wrap(HAPI_SET_APPROVAL_FOR_ALL.selector());
     private static final ABIType<Tuple> HAPI_SET_APPROVAL_FOR_ALL_DECODER =
             TypeFactory.create("(bytes32,bytes32,bool)");
 
     private static final Function HAPI_TOKEN_APPROVE_FUNCTION =
-            new Function("approve(address,address,uint256)", BOOL_OUTPUT);
+            new Function("approve(address,address,uint256)", "(int,bool)");
     private static final Bytes HAPI_TOKEN_APPROVE_SELECTOR =
             Bytes.wrap(HAPI_TOKEN_APPROVE_FUNCTION.selector());
     private static final ABIType<Tuple> HAPI_TOKEN_APPROVE_DECODER =
+            TypeFactory.create("(bytes32,bytes32,uint256)");
+
+    private static final Function HAPI_APPROVE_NFT_FUNCTION =
+            new Function("approveNFT(address,address,uint256)", "(int)");
+    private static final Bytes HAPI_APPROVE_NFT_SELECTOR =
+            Bytes.wrap(HAPI_APPROVE_NFT_FUNCTION.selector());
+    private static final ABIType<Tuple> HAPI_APPROVE_NFT_DECODER =
             TypeFactory.create("(bytes32,bytes32,uint256)");
 
     @Inject
@@ -520,7 +527,7 @@ public class DecodingFacade {
     public ApproveWrapper decodeTokenApprove(
             final Bytes input,
             final TokenID impliedTokenId,
-            final boolean impliedIsFungible,
+            final boolean isFungible,
             final UnaryOperator<byte[]> aliasResolver,
             WorldLedgers ledgers) {
 
@@ -528,22 +535,33 @@ public class DecodingFacade {
         final Tuple decodedArguments =
                 decodeFunctionCall(
                         input,
-                        offset == 0 ? ERC_TOKEN_APPROVE_SELECTOR : HAPI_TOKEN_APPROVE_SELECTOR,
-                        offset == 0 ? ERC_TOKEN_APPROVE_DECODER : HAPI_TOKEN_APPROVE_DECODER);
+                        offset == 0
+                                ? ERC_TOKEN_APPROVE_SELECTOR
+                                : isFungible
+                                        ? HAPI_TOKEN_APPROVE_SELECTOR
+                                        : HAPI_APPROVE_NFT_SELECTOR,
+                        offset == 0
+                                ? ERC_TOKEN_APPROVE_DECODER
+                                : isFungible
+                                        ? HAPI_TOKEN_APPROVE_DECODER
+                                        : HAPI_APPROVE_NFT_DECODER);
         final var tokenId =
                 offset == 0
                         ? impliedTokenId
                         : convertAddressBytesToTokenID(decodedArguments.get(0));
-        final var isFungible =
-                offset == 0
-                        ? impliedIsFungible
-                        : TokenType.FUNGIBLE_COMMON.equals(ledgers.typeOf(tokenId));
+        final var ledgerFungible = TokenType.FUNGIBLE_COMMON.equals(ledgers.typeOf(tokenId));
         final var spender =
                 convertLeftPaddedAddressToAccountId(decodedArguments.get(offset), aliasResolver);
         if (isFungible) {
+            if (!ledgerFungible) {
+                throw new IllegalArgumentException("Token is not a fungible token");
+            }
             final var amount = (BigInteger) decodedArguments.get(offset + 1);
             return new ApproveWrapper(tokenId, spender, amount, BigInteger.ZERO, isFungible);
         } else {
+            if (ledgerFungible) {
+                throw new IllegalArgumentException("Token is not an NFT");
+            }
             final var serialNumber = (BigInteger) decodedArguments.get(offset + 1);
             return new ApproveWrapper(tokenId, spender, BigInteger.ZERO, serialNumber, isFungible);
         }
