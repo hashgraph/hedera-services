@@ -1,11 +1,6 @@
-package com.hedera.services.store.contracts;
-
-/*-
- * ‌
- * Hedera Services Node
- * ​
- * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2021-2022 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,8 +12,8 @@ package com.hedera.services.store.contracts;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+package com.hedera.services.store.contracts;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -320,19 +315,19 @@ class UpdateTrackingLedgerAccountTest {
     @Test
     void toStringWorksAsExpected() {
         final var expectedNoUpdatedStorageOrCode =
-                "0x0000000000000000000000000000000000003039 -> "
-                        + "{nonce:0, balance:0x00000000000000000000000000000000000000000000000000000000000186a0, "
-                        + "code:[not updated], storage:[not updated] }";
+                "0x0000000000000000000000000000000000003039 -> {nonce:0,"
+                    + " balance:0x00000000000000000000000000000000000000000000000000000000000186a0,"
+                    + " code:[not updated], storage:[not updated] }";
         final var expectedUpdatedStorageNotCode =
-                "0x0000000000000000000000000000000000003039 -> "
-                        + "{nonce:0, balance:0x00000000000000000000000000000000000000000000000000000000000186a0, "
-                        + "code:[not updated], "
-                        + "storage:{0x0000000000000000000000000000000000000000000000000000000000000001"
-                        + "=0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff} }";
+                "0x0000000000000000000000000000000000003039 -> {nonce:0,"
+                    + " balance:0x00000000000000000000000000000000000000000000000000000000000186a0,"
+                    + " code:[not updated], "
+                    + "storage:{0x0000000000000000000000000000000000000000000000000000000000000001=0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff}"
+                    + " }";
         final var expectedUpdatedCodeClearedStorage =
-                "0x0000000000000000000000000000000000003039 -> "
-                        + "{nonce:0, balance:0x00000000000000000000000000000000000000000000000000000000000186a0, "
-                        + "code:0x04d2, storage:[cleared] }";
+                "0x0000000000000000000000000000000000003039 -> {nonce:0,"
+                    + " balance:0x00000000000000000000000000000000000000000000000000000000000186a0,"
+                    + " code:0x04d2, storage:[cleared] }";
 
         final var account =
                 new WorldStateAccount(
