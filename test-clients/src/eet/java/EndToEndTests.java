@@ -175,15 +175,12 @@ class EndToEndTests extends E2ETestBase {
     @TestFactory
     Collection<DynamicContainer> contractPrecompileEth() {
         return List.of(
-                new DynamicContainer[] {
-                    //
-                    // extractSpecsFromSuiteForEth(AssociatePrecompileSuite::new),
-                    //                    extractSpecsFromSuiteForEth(ContractBurnHTSSuite::new),
-                    //                    extractSpecsFromSuiteForEth(ContractHTSSuite::new),
-                    //                    extractSpecsFromSuiteForEth(ContractKeysHTSSuite::new),
-                    //                    extractSpecsFromSuiteForEth(ContractMintHTSSuite::new),
-                    //                    extractSpecsFromSuiteForEth(CreatePrecompileSuite::new)
-                });
+                extractSpecsFromSuiteForEth(AssociatePrecompileSuite::new),
+                extractSpecsFromSuiteForEth(ContractBurnHTSSuite::new),
+                extractSpecsFromSuiteForEth(ContractHTSSuite::new),
+                extractSpecsFromSuiteForEth(ContractKeysHTSSuite::new),
+                extractSpecsFromSuiteForEth(ContractMintHTSSuite::new),
+                extractSpecsFromSuiteForEth(CreatePrecompileSuite::new));
     }
 
     @Tag("contract")
