@@ -15,15 +15,50 @@
  */
 import com.hedera.services.bdd.suites.autorenew.GracePeriodRestrictionsSuite;
 import com.hedera.services.bdd.suites.consensus.TopicGetInfoSuite;
+import com.hedera.services.bdd.suites.contract.hapi.ContractCallLocalSuite;
 import com.hedera.services.bdd.suites.contract.hapi.ContractCallSuite;
+import com.hedera.services.bdd.suites.contract.hapi.ContractCreateSuite;
+import com.hedera.services.bdd.suites.contract.hapi.ContractDeleteSuite;
+import com.hedera.services.bdd.suites.contract.hapi.ContractGetBytecodeSuite;
+import com.hedera.services.bdd.suites.contract.hapi.ContractGetInfoSuite;
+import com.hedera.services.bdd.suites.contract.hapi.ContractMusicalChairsSuite;
+import com.hedera.services.bdd.suites.contract.hapi.ContractUpdateSuite;
+import com.hedera.services.bdd.suites.contract.opcodes.BalanceOperationSuite;
+import com.hedera.services.bdd.suites.contract.opcodes.CallCodeOperationSuite;
+import com.hedera.services.bdd.suites.contract.opcodes.CallOperationSuite;
 import com.hedera.services.bdd.suites.contract.opcodes.Create2OperationSuite;
+import com.hedera.services.bdd.suites.contract.opcodes.CreateOperationSuite;
+import com.hedera.services.bdd.suites.contract.opcodes.DelegateCallOperationSuite;
+import com.hedera.services.bdd.suites.contract.opcodes.ExtCodeCopyOperationSuite;
+import com.hedera.services.bdd.suites.contract.opcodes.ExtCodeHashOperationSuite;
+import com.hedera.services.bdd.suites.contract.opcodes.ExtCodeSizeOperationSuite;
+import com.hedera.services.bdd.suites.contract.opcodes.GlobalPropertiesSuite;
+import com.hedera.services.bdd.suites.contract.opcodes.SStoreSuite;
+import com.hedera.services.bdd.suites.contract.opcodes.SelfDestructSuite;
+import com.hedera.services.bdd.suites.contract.opcodes.StaticCallOperationSuite;
+import com.hedera.services.bdd.suites.contract.openzeppelin.ERC1155ContractInteractions;
+import com.hedera.services.bdd.suites.contract.openzeppelin.ERC20ContractInteractions;
+import com.hedera.services.bdd.suites.contract.openzeppelin.ERC721ContractInteractions;
 import com.hedera.services.bdd.suites.contract.precompile.AssociatePrecompileSuite;
+import com.hedera.services.bdd.suites.contract.precompile.ContractBurnHTSSuite;
+import com.hedera.services.bdd.suites.contract.precompile.ContractHTSSuite;
+import com.hedera.services.bdd.suites.contract.precompile.ContractKeysHTSSuite;
+import com.hedera.services.bdd.suites.contract.precompile.ContractMintHTSSuite;
+import com.hedera.services.bdd.suites.contract.precompile.CreatePrecompileSuite;
+import com.hedera.services.bdd.suites.contract.precompile.CryptoTransferHTSSuite;
 import com.hedera.services.bdd.suites.contract.precompile.DelegatePrecompileSuite;
+import com.hedera.services.bdd.suites.contract.precompile.DissociatePrecompileSuite;
+import com.hedera.services.bdd.suites.contract.precompile.ERCPrecompileSuite;
+import com.hedera.services.bdd.suites.contract.precompile.MixedHTSPrecompileTestsSuite;
+import com.hedera.services.bdd.suites.contract.records.LogsSuite;
+import com.hedera.services.bdd.suites.contract.records.RecordsSuite;
+import com.hedera.services.bdd.suites.contract.traceability.ContractTraceabilitySuite;
 import com.hedera.services.bdd.suites.crypto.AutoAccountUpdateSuite;
 import com.hedera.services.bdd.suites.crypto.CryptoApproveAllowanceSuite;
 import com.hedera.services.bdd.suites.crypto.CryptoCreateSuite;
 import com.hedera.services.bdd.suites.crypto.CryptoUpdateSuite;
 import com.hedera.services.bdd.suites.ethereum.EthereumSuite;
+import com.hedera.services.bdd.suites.ethereum.HelloWorldEthereumSuite;
 import com.hedera.services.bdd.suites.fees.CongestionPricingSuite;
 import com.hedera.services.bdd.suites.fees.SpecialAccountsAreExempted;
 import com.hedera.services.bdd.suites.file.ExchangeRateControlSuite;
@@ -69,7 +104,6 @@ public class SequentialIntegrationTests extends IntegrationTestBase {
                 extractSpecsFromSuite(FileRecordsSanityCheckSuite::new),
                 extractSpecsFromSuite(FetchSystemFiles::new),
                 extractSpecsFromSuite(VersionInfoSpec::new),
-                extractSpecsFromSuite(ContractCallSuite::new),
                 extractSpecsFromSuite(ContractRecordsSanityCheckSuite::new),
                 //                extractSpecsFromSuite(TopicUpdateSuite::new),
                 extractSpecsFromSuite(TopicGetInfoSuite::new),
@@ -83,9 +117,52 @@ public class SequentialIntegrationTests extends IntegrationTestBase {
                 extractSpecsFromSuite(UmbrellaRedux::new),
                 extractSpecsFromSuite(ScheduleCreateSpecs::new),
                 extractSpecsFromSuite(ScheduleSignSpecs::new),
-                extractSpecsFromSuite(AssociatePrecompileSuite::new),
-                extractSpecsFromSuite(DelegatePrecompileSuite::new),
+                // contract.hapi
+                extractSpecsFromSuite(ContractCallLocalSuite::new),
+                extractSpecsFromSuite(ContractCallSuite::new),
+                extractSpecsFromSuite(ContractCreateSuite::new),
+                extractSpecsFromSuite(ContractDeleteSuite::new),
+                extractSpecsFromSuite(ContractGetBytecodeSuite::new),
+                extractSpecsFromSuite(ContractGetInfoSuite::new),
+                extractSpecsFromSuite(ContractMusicalChairsSuite::new),
+                extractSpecsFromSuite(ContractUpdateSuite::new),
+                // contract.opcode
+                extractSpecsFromSuite(BalanceOperationSuite::new),
+                extractSpecsFromSuite(CallCodeOperationSuite::new),
+                extractSpecsFromSuite(CallOperationSuite::new),
+                extractSpecsFromSuite(CreateOperationSuite::new),
                 extractSpecsFromSuite(Create2OperationSuite::new),
-                extractSpecsFromSuite(EthereumSuite::new));
+                extractSpecsFromSuite(DelegateCallOperationSuite::new),
+                extractSpecsFromSuite(ExtCodeCopyOperationSuite::new),
+                extractSpecsFromSuite(ExtCodeHashOperationSuite::new),
+                extractSpecsFromSuite(ExtCodeSizeOperationSuite::new),
+                extractSpecsFromSuite(GlobalPropertiesSuite::new),
+                extractSpecsFromSuite(SelfDestructSuite::new),
+                extractSpecsFromSuite(SStoreSuite::new),
+                extractSpecsFromSuite(StaticCallOperationSuite::new),
+                // contract.openzeppelin
+                extractSpecsFromSuite(ERC20ContractInteractions::new),
+                extractSpecsFromSuite(ERC721ContractInteractions::new),
+                extractSpecsFromSuite(ERC1155ContractInteractions::new),
+                // contract.precompile
+                extractSpecsFromSuite(AssociatePrecompileSuite::new),
+                extractSpecsFromSuite(ContractBurnHTSSuite::new),
+                extractSpecsFromSuite(ContractHTSSuite::new),
+                extractSpecsFromSuite(ContractKeysHTSSuite::new),
+                extractSpecsFromSuite(ContractMintHTSSuite::new),
+                extractSpecsFromSuite(CreatePrecompileSuite::new),
+                extractSpecsFromSuite(CryptoTransferHTSSuite::new),
+                extractSpecsFromSuite(DelegatePrecompileSuite::new),
+                extractSpecsFromSuite(DissociatePrecompileSuite::new),
+                extractSpecsFromSuite(ERCPrecompileSuite::new),
+                extractSpecsFromSuite(MixedHTSPrecompileTestsSuite::new),
+                // contract.records
+                extractSpecsFromSuite(LogsSuite::new),
+                extractSpecsFromSuite(RecordsSuite::new),
+                // contract.traceability
+                extractSpecsFromSuite(ContractTraceabilitySuite::new),
+                // contract.ethereum
+                extractSpecsFromSuite(EthereumSuite::new),
+                extractSpecsFromSuite(HelloWorldEthereumSuite::new));
     }
 }
