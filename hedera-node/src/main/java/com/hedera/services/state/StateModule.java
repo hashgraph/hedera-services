@@ -41,7 +41,6 @@ import com.hedera.services.state.initialization.BackedSystemAccountsCreator;
 import com.hedera.services.state.initialization.HfsSystemFilesManager;
 import com.hedera.services.state.initialization.SystemAccountsCreator;
 import com.hedera.services.state.initialization.SystemFilesManager;
-import com.hedera.services.state.initialization.TreasuryCloner;
 import com.hedera.services.state.logic.HandleLogicModule;
 import com.hedera.services.state.logic.ReconnectListener;
 import com.hedera.services.state.logic.StateWriteToDiskListener;
