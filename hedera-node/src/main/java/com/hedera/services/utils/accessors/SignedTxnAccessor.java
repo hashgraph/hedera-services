@@ -62,7 +62,7 @@ import java.util.function.LongPredicate;
 
 import static com.hedera.services.legacy.proto.utils.CommonUtils.noThrowSha384HashOf;
 import static com.hedera.services.usage.token.TokenOpsUsageUtils.TOKEN_OPS_USAGE_UTILS;
-import static com.hedera.services.utils.MiscUtils.functionExtractor;
+import static com.hedera.services.utils.MiscUtils.FUNCTION_EXTRACTOR;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusSubmitMessage;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoApproveAllowance;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoCreate;
@@ -202,7 +202,7 @@ public class SignedTxnAccessor implements TxnAccessor {
 	@Override
 	public HederaFunctionality getFunction() {
 		if (function == null) {
-			function = functionExtractor.apply(getTxn());
+			function = FUNCTION_EXTRACTOR.apply(getTxn());
 		}
 		return function;
 	}

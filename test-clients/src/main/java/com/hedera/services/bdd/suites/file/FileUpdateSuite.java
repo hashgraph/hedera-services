@@ -404,13 +404,13 @@ public class FileUpdateSuite extends HapiApiSuite {
                 .given(
                         uploadInitCode(CONTRACT),
                         contractCreate(CONTRACT),
-                        overriding("contracts.maxGasPerSec", "100"))
+                        overriding(DEFAULT_MAX_CONS_GAS, "100"))
                 .when()
                 .then(
                         contractCallLocal(CONTRACT, INDIRECT_GET_ABI)
                                 .gas(101L)
                                 .hasCostAnswerPrecheck(BUSY),
-                        resetToDefault("contracts.maxGasPerSec"));
+                        resetToDefault(DEFAULT_MAX_CONS_GAS));
     }
 
     private HapiApiSpec kvLimitsEnforced() {

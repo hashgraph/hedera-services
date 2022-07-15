@@ -45,9 +45,8 @@ import org.junit.jupiter.api.Test;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
 
-import static com.hedera.services.utils.MiscUtils.functionExtractor;
+import static com.hedera.services.utils.MiscUtils.FUNCTION_EXTRACTOR;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.asTopic;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusCreateTopic;
@@ -62,9 +61,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.BDDMockito.times;
 import static org.mockito.BDDMockito.verify;
 import static org.mockito.Mockito.mock;
 
@@ -125,7 +122,7 @@ class PlatformTxnAccessorTest {
 	@Test
 	void extractorReturnsNoneWhenExpected() {
 		// expect:
-		assertEquals(HederaFunctionality.NONE, functionExtractor.apply(someTxn));
+		assertEquals(HederaFunctionality.NONE, FUNCTION_EXTRACTOR.apply(someTxn));
 	}
 
 	@Test
@@ -150,39 +147,7 @@ class PlatformTxnAccessorTest {
 				.build();
 
 		// expect:
-		assertEquals(ConsensusCreateTopic, functionExtractor.apply(someTxn));
-	}
-
-	@Test
-	void usesExtractorToGetFunctionAsExpected() {
-		// setup:
-		var memory = functionExtractor;
-		Function<TransactionBody, HederaFunctionality> mockFn =
-				(Function<TransactionBody, HederaFunctionality>) mock(Function.class);
-		functionExtractor = mockFn;
-		// and:
-		someTxn = someTxn.toBuilder()
-				.setConsensusCreateTopic(ConsensusCreateTopicTransactionBody.newBuilder())
-				.build();
-		Transaction signedTxn = Transaction.newBuilder()
-				.setBodyBytes(someTxn.toByteString())
-				.build();
-
-		given(mockFn.apply(any())).willReturn(ConsensusCreateTopic);
-		var subject = SignedTxnAccessor.uncheckedFrom(signedTxn);
-
-		// when:
-		var first = subject.getFunction();
-		var second = subject.getFunction();
-
-		// then:
-		assertEquals(ConsensusCreateTopic, first);
-		assertEquals(second, first);
-		// and:
-		verify(mockFn, times(1)).apply(any());
-
-		// cleanup:
-		functionExtractor = memory;
+		assertEquals(ConsensusCreateTopic, FUNCTION_EXTRACTOR.apply(someTxn));
 	}
 
 	@Test

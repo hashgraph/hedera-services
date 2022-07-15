@@ -15,6 +15,52 @@
  */
 package com.hedera.services.utils;
 
+import com.google.protobuf.ByteString;
+import com.google.protobuf.InvalidProtocolBufferException;
+import com.hedera.services.ethereum.EthTxData;
+import com.hedera.services.exceptions.UnknownHederaFunctionality;
+import com.hedera.services.ledger.HederaLedger;
+import com.hedera.services.legacy.core.jproto.JKey;
+import com.hedera.services.state.submerkle.ExpirableTxnRecord;
+import com.hedera.services.state.submerkle.RichInstant;
+import com.hederahashgraph.api.proto.java.AccountAmount;
+import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.Query;
+import com.hederahashgraph.api.proto.java.QueryHeader;
+import com.hederahashgraph.api.proto.java.SchedulableTransactionBody;
+import com.hederahashgraph.api.proto.java.SignedTransaction;
+import com.hederahashgraph.api.proto.java.Timestamp;
+import com.hederahashgraph.api.proto.java.TokenTransferList;
+import com.hederahashgraph.api.proto.java.Transaction;
+import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.hederahashgraph.api.proto.java.TransactionID;
+import com.hederahashgraph.api.proto.java.TransferList;
+import com.swirlds.common.merkle.MerkleNode;
+import com.swirlds.common.merkle.utility.Keyed;
+import com.swirlds.common.system.address.AddressBook;
+import com.swirlds.fcqueue.FCQueue;
+import com.swirlds.merkle.map.MerkleMap;
+import org.apache.commons.codec.DecoderException;
+
+import javax.annotation.Nullable;
+import java.math.BigInteger;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.EnumMap;
+import java.util.EnumSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
+import java.util.function.BiConsumer;
+import java.util.function.Function;
+import java.util.function.Supplier;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
+
 import static com.hedera.services.grpc.controllers.ConsensusController.CREATE_TOPIC_METRIC;
 import static com.hedera.services.grpc.controllers.ConsensusController.DELETE_TOPIC_METRIC;
 import static com.hedera.services.grpc.controllers.ConsensusController.GET_TOPIC_INFO_METRIC;
@@ -156,54 +202,8 @@ import static java.util.Comparator.comparing;
 import static java.util.stream.Collectors.toMap;
 import static java.util.stream.Collectors.toSet;
 
-import com.google.protobuf.ByteString;
-import com.google.protobuf.InvalidProtocolBufferException;
-import com.hedera.services.ethereum.EthTxData;
-import com.hedera.services.exceptions.UnknownHederaFunctionality;
-import com.hedera.services.ledger.HederaLedger;
-import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.state.submerkle.ExpirableTxnRecord;
-import com.hedera.services.state.submerkle.RichInstant;
-import com.hederahashgraph.api.proto.java.AccountAmount;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.HederaFunctionality;
-import com.hederahashgraph.api.proto.java.Key;
-import com.hederahashgraph.api.proto.java.Query;
-import com.hederahashgraph.api.proto.java.QueryHeader;
-import com.hederahashgraph.api.proto.java.SchedulableTransactionBody;
-import com.hederahashgraph.api.proto.java.SignedTransaction;
-import com.hederahashgraph.api.proto.java.Timestamp;
-import com.hederahashgraph.api.proto.java.TokenTransferList;
-import com.hederahashgraph.api.proto.java.Transaction;
-import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.api.proto.java.TransactionID;
-import com.hederahashgraph.api.proto.java.TransferList;
-import com.swirlds.common.merkle.MerkleNode;
-import com.swirlds.common.merkle.utility.Keyed;
-import com.swirlds.common.system.address.AddressBook;
-import com.swirlds.fcqueue.FCQueue;
-import com.swirlds.merkle.map.MerkleMap;
-import java.math.BigInteger;
-import java.time.Instant;
-import java.util.ArrayList;
-import java.util.EnumMap;
-import java.util.EnumSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
-import java.util.function.BiConsumer;
-import java.util.function.Function;
-import java.util.function.Supplier;
-import java.util.stream.IntStream;
-import java.util.stream.Stream;
-import javax.annotation.Nullable;
-import org.apache.commons.codec.DecoderException;
-
 public final class MiscUtils {
     private static final long ONE_SEC_IN_NANOS = 1_000_000_000;
-    public static final long SIZE_MASK = 0xffffffffL;
 
     private MiscUtils() {
         throw new UnsupportedOperationException("Utility Class");
@@ -237,7 +237,7 @@ public final class MiscUtils {
     private static final Set<HederaFunctionality> CONSENSUS_THROTTLED_FUNCTIONS =
             EnumSet.of(ContractCallLocal, ContractCall, ContractCreate, EthereumTransaction);
 
-    public static Function<TransactionBody, HederaFunctionality> functionExtractor =
+    public static final Function<TransactionBody, HederaFunctionality> FUNCTION_EXTRACTOR =
             trans -> {
                 try {
                     return functionOf(trans);

@@ -15,6 +15,35 @@
  */
 package com.hedera.services.bdd.suites.records;
 
+import com.google.protobuf.ByteString;
+import com.google.protobuf.InvalidProtocolBufferException;
+import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpecOperation;
+import com.hedera.services.bdd.spec.HapiSpecSetup;
+import com.hedera.services.bdd.spec.assertions.AccountInfoAsserts;
+import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.suites.utils.sysfiles.serdes.StandardSerdes;
+import com.hederahashgraph.api.proto.java.AccountAmount;
+import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.KeyList;
+import com.hederahashgraph.api.proto.java.ServicesConfigurationList;
+import com.hederahashgraph.api.proto.java.Setting;
+import com.hederahashgraph.api.proto.java.TokenType;
+import com.hederahashgraph.api.proto.java.TransactionRecord;
+import com.hederahashgraph.fee.FeeObject;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.IntStream;
+
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountDetailsAsserts.accountWith;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.changeFromSnapshot;
@@ -59,39 +88,12 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ZERO_B
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import com.google.protobuf.ByteString;
-import com.google.protobuf.InvalidProtocolBufferException;
-import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.spec.HapiSpecOperation;
-import com.hedera.services.bdd.spec.HapiSpecSetup;
-import com.hedera.services.bdd.spec.assertions.AccountInfoAsserts;
-import com.hedera.services.bdd.suites.HapiApiSuite;
-import com.hedera.services.bdd.suites.utils.sysfiles.serdes.StandardSerdes;
-import com.hederahashgraph.api.proto.java.AccountAmount;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.Key;
-import com.hederahashgraph.api.proto.java.KeyList;
-import com.hederahashgraph.api.proto.java.ServicesConfigurationList;
-import com.hederahashgraph.api.proto.java.Setting;
-import com.hederahashgraph.api.proto.java.TokenType;
-import com.hederahashgraph.api.proto.java.TransactionRecord;
-import com.hederahashgraph.fee.FeeObject;
-import java.io.IOException;
-import java.io.UncheckedIOException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.stream.IntStream;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
 public class RecordCreationSuite extends HapiApiSuite {
     private static final Logger log = LogManager.getLogger(RecordCreationSuite.class);
 
     private static final long SLEEP_MS = 1_000L;
-    private static final String defaultRecordsTtl =
+    private static final String PAY_RECEIVABLE_NAME = "PayReceivable";
+    private static final String DEFAULT_RECORDS_TTL =
             HapiSpecSetup.getDefaultNodeProps().get("cache.records.ttl");
 
     public static void main(String... args) {
@@ -636,30 +638,32 @@ public class RecordCreationSuite extends HapiApiSuite {
 
     private HapiApiSpec calledContractNoLongerGetsRecord() {
         return defaultHapiSpec("CalledContractNoLongerGetsRecord")
-                .given(uploadInitCode("PayReceivable"))
-                .when(contractCreate("PayReceivable").via("createTxn"))
+                .given(uploadInitCode(PAY_RECEIVABLE_NAME))
+                .when(contractCreate(PAY_RECEIVABLE_NAME).via("createTxn"))
                 .then(
-                        contractCall("PayReceivable", "deposit", 1_000L)
+                        contractCall(PAY_RECEIVABLE_NAME, "deposit", 1_000L)
                                 .via("callTxn")
                                 .sending(1_000L));
     }
 
     private HapiApiSpec thresholdRecordsDontExistAnymore() {
+        final var lowSendThreshold = "lowSendThreshold";
+        final var lowReceiveThreshold = "lowReceiveThreshold";
         return defaultHapiSpec("OnlyNetAdjustmentIsComparedToThresholdWhenCreating")
                 .given(
                         cryptoCreate("payer"),
-                        cryptoCreate("lowSendThreshold").sendThreshold(1L),
-                        cryptoCreate("lowReceiveThreshold").receiveThreshold(1L))
+                        cryptoCreate(lowSendThreshold).sendThreshold(1L),
+                        cryptoCreate(lowReceiveThreshold).receiveThreshold(1L))
                 .when(
                         cryptoTransfer(
                                         tinyBarsFromTo(
-                                                "lowSendThreshold", "lowReceiveThreshold", 2L))
+                                                lowSendThreshold, lowReceiveThreshold, 2L))
                                 .payingWith("payer")
                                 .via("testTxn"))
                 .then(
                         getAccountRecords("payer").has(inOrder(recordWith().txnId("testTxn"))),
-                        getAccountRecords("lowSendThreshold").has(inOrder()),
-                        getAccountRecords("lowReceiveThreshold").has(inOrder()));
+                        getAccountRecords(lowSendThreshold).has(inOrder()),
+                        getAccountRecords(lowReceiveThreshold).has(inOrder()));
     }
 
     private HapiApiSpec recordsTtlChangesAsExpected() {
@@ -670,7 +674,7 @@ public class RecordCreationSuite extends HapiApiSuite {
         return defaultHapiSpec("RecordsTtlChangesAsExpected")
                 .given(
                         getFileContents(APP_PROPERTIES).consumedBy(origPropContents::set),
-                        sleepFor((Long.parseLong(defaultRecordsTtl) + 1) * 1_000L),
+                        sleepFor((Long.parseLong(DEFAULT_RECORDS_TTL) + 1) * 1_000L),
                         sourcing(
                                 () ->
                                         fileUpdate(APP_PROPERTIES)

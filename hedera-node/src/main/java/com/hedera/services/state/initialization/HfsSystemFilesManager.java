@@ -15,11 +15,6 @@
  */
 package com.hedera.services.state.initialization;
 
-import static com.google.protobuf.TextFormat.escapeBytes;
-import static com.hedera.services.sysfiles.serdes.FeesJsonToProtoSerde.loadFeeScheduleFromStream;
-import static com.hedera.services.utils.EntityIdUtils.parseAccount;
-import static com.swirlds.common.system.address.Address.ipString;
-
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.config.FileNumbers;
@@ -46,6 +41,12 @@ import com.hederahashgraph.api.proto.java.TimestampSeconds;
 import com.swirlds.common.system.address.Address;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.utility.CommonUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
+import javax.annotation.Nullable;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
@@ -58,11 +59,11 @@ import java.util.Properties;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.stream.LongStream;
-import javax.annotation.Nullable;
-import javax.inject.Inject;
-import javax.inject.Singleton;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+
+import static com.google.protobuf.TextFormat.escapeBytes;
+import static com.hedera.services.sysfiles.serdes.FeesJsonToProtoSerde.loadFeeScheduleFromStream;
+import static com.hedera.services.utils.EntityIdUtils.parseAccount;
+import static com.swirlds.common.system.address.Address.ipString;
 
 @Singleton
 public final class HfsSystemFilesManager implements SystemFilesManager {
@@ -380,17 +381,16 @@ public final class HfsSystemFilesManager implements SystemFilesManager {
             final ServicesConfigurationList.Builder config) {
         jutilProps.entrySet().stream()
                 .sorted(Comparator.comparing(entry -> String.valueOf(entry.getKey())))
-                .peek(
-                        entry ->
-                                intoSb.append(
-                                        String.format(
-                                                "\n  %s=%s", entry.getKey(), entry.getValue())))
                 .forEach(
-                        entry ->
-                                config.addNameValue(
-                                        Setting.newBuilder()
-                                                .setName(String.valueOf(entry.getKey()))
-                                                .setValue(String.valueOf(entry.getValue()))));
+                        entry -> {
+                            intoSb.append(
+                                    String.format(
+                                            "%n  %s=%s", entry.getKey(), entry.getValue()));
+                            config.addNameValue(
+                                    Setting.newBuilder()
+                                            .setName(String.valueOf(entry.getKey()))
+                                            .setValue(String.valueOf(entry.getValue())));
+                        });
     }
 
     private HFileMeta systemFileInfo() {
