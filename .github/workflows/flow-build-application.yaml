@@ -27,6 +27,16 @@ on:
         type: boolean
         required: false
         default: false
+      enable-fossa-scan:
+        description: "FOSSA Scan Enabled"
+        type: boolean
+        required: false
+        default: false
+      enable-fossa-test:
+        description: "FOSSA Test Enabled"
+        type: boolean
+        required: false
+        default: false
       java-version:
         description: "Java JDK Version:"
         type: string
@@ -52,6 +62,9 @@ jobs:
       enable-sonar-analysis: ${{ github.event_name == 'push' || github.event.inputs.enable-sonar-analysis == 'true' }}
       enable-integration-tests: ${{ github.event_name == 'push' || github.event.inputs.enable-integration-tests == 'true' }}
       enable-e2e-tests: ${{ github.event_name == 'push' || github.event.inputs.enable-e2e-tests == 'true' }}
+      enable-fossa-scan: ${{ github.event_name == 'push' || github.event.inputs.enable-fossa-scan == 'true' }}
+      enable-fossa-test: ${{ github.event.inputs.enable-fossa-test == 'true' }}
     secrets:
       access-token: ${{ secrets.GITHUB_TOKEN }}
       sonar-token: ${{ secrets.SONAR_TOKEN }}
+      fossa-api-token: ${{ secrets.FOSSA_API_TOKEN }}
