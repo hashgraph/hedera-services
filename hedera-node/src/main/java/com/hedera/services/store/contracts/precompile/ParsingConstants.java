@@ -15,6 +15,7 @@
  */
 package com.hedera.services.store.contracts.precompile;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.hedera.services.store.contracts.precompile.codec.DecodingFacade;
 import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
 
@@ -43,4 +44,9 @@ public final class ParsingConstants {
     public static final String FIXED_FEE = "(uint32,address,bool,bool,address)";
     public static final String FRACTIONAL_FEE = "(uint32,uint32,uint32,uint32,bool,address)";
     public static final String ROYALTY_FEE = "(uint32,uint32,uint32,address,bool,address)";
+
+    @VisibleForTesting
+    public static void tryToInitialize() {
+        new ParsingConstants();
+    }
 }

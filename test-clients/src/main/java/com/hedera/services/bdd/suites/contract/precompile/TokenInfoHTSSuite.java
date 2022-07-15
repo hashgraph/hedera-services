@@ -65,6 +65,7 @@ public class TokenInfoHTSSuite extends HapiApiSuite {
     private static final String AUTO_RENEW_ACCOUNT = "autoRenewAccount";
     private static final String FEE_DENOM = "denom";
     private static final String HTS_COLLECTOR = "denomFee";
+    private static final String CREATE_TXN = "createTxn";
     private static final int NUMERATOR = 1;
     private static final int DENOMINATOR = 2;
     private static final int MINIMUM_TO_COLLECT = 5;
@@ -137,7 +138,7 @@ public class TokenInfoHTSSuite extends HapiApiSuite {
                                                 MINIMUM_TO_COLLECT,
                                                 OptionalLong.of(MAXIMUM_TO_COLLECT),
                                                 TOKEN_TREASURY))
-                                .via("createTxn"))
+                                .via(CREATE_TXN))
                 .when(
                         withOpContext(
                                 (spec, opLog) ->
@@ -201,7 +202,7 @@ public class TokenInfoHTSSuite extends HapiApiSuite {
                                                 MINIMUM_TO_COLLECT,
                                                 OptionalLong.of(MAXIMUM_TO_COLLECT),
                                                 TOKEN_TREASURY))
-                                .via("createTxn"))
+                                .via(CREATE_TXN))
                 .when(
                         withOpContext(
                                 (spec, opLog) ->
@@ -270,7 +271,7 @@ public class TokenInfoHTSSuite extends HapiApiSuite {
                                                 fixedHtsFeeInheritingRoyaltyCollector(
                                                         100, FEE_DENOM),
                                                 HTS_COLLECTOR))
-                                .via("createTxn"),
+                                .via(CREATE_TXN),
                         mintToken(tokenName, List.of(meta)),
                         tokenAssociate(owner, List.of(tokenName)),
                         tokenAssociate(spender, List.of(tokenName)),

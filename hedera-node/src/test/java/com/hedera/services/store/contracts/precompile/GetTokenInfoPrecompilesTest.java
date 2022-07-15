@@ -37,6 +37,7 @@ import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.tokenA
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.tokenMerkleAddress;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.tokenMerkleId;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.tokenWasDeletedResult;
+import static com.hedera.services.store.contracts.precompile.TokenKeyType.FREEZE_KEY;
 import static com.swirlds.common.utility.CommonUtils.unhex;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
@@ -236,7 +237,7 @@ class GetTokenInfoPrecompilesTest {
                 .thenReturn(feeToken);
 
         tokenKeys.add(tokenKey);
-        tokenInfo = createTokenInfo(tokenKeys);
+        tokenInfo = createTokenInfo(tokenKeys, true);
         fungibleTokenInfo = new FungibleTokenInfo(tokenInfo, decimals);
         nonFungibleTokenInfo =
                 new NonFungibleTokenInfo(
@@ -279,7 +280,7 @@ class GetTokenInfoPrecompilesTest {
                         EntityIdUtils.asTypedEvmAddress(tokenMerkleId));
         given(decoder.decodeGetTokenInfo(pretendArguments)).willReturn(tokenInfoWrapper);
 
-        givenMinimalTokenContext();
+        givenMinimalTokenContext(TokenSupplyType.FINITE);
         givenKeyContext(key, TokenKeyType.ADMIN_KEY);
         givenMinimalKeyContext();
 
@@ -302,6 +303,55 @@ class GetTokenInfoPrecompilesTest {
     }
 
     @Test
+    void getTokenInfoWorksWithContractKey() {
+        givenMinimalFrameContext();
+
+        final var tokenInfoWrapper = createTokenInfoWrapperForToken(tokenMerkleId);
+        final Bytes pretendArguments =
+            Bytes.concatenate(
+                Bytes.of(Integers.toBytes(ABI_ID_GET_TOKEN_INFO)),
+                EntityIdUtils.asTypedEvmAddress(tokenMerkleId));
+        given(decoder.decodeGetTokenInfo(pretendArguments)).willReturn(tokenInfoWrapper);
+
+        givenMinimalTokenContext(TokenSupplyType.INFINITE);
+        givenKeyContext(key, FREEZE_KEY);
+
+        final var tokenKeys = new ArrayList<TokenKey>();
+        final var tokenKey = new TokenKey(FREEZE_KEY.value(), new KeyValue(false, null, new byte[]{}, new byte[] {}, parentContractAddress));
+        tokenKeys.add(tokenKey);
+        tokenInfo = createTokenInfo(tokenKeys, false);
+
+        given(key.getEd25519()).willReturn(new byte[] {});
+        given(key.getECDSASecp256k1Key()).willReturn(new byte[] {});
+        given(key.getContractIDKey()).willReturn(null);
+        given(key.getDelegatableContractIdKey()).willReturn(delegateContractKey);
+        entityIdUtils
+            .when(
+                () ->
+                    EntityIdUtils.asTypedEvmAddress(
+                        parentContractAddressConvertedToContractId))
+            .thenReturn(parentContractAddress);
+        given(delegateContractKey.getContractID()).willReturn(parentContractAddressConvertedToContractId);
+
+        given(encoder.encodeGetTokenInfo(tokenInfo)).willReturn(successResult);
+
+        givenMinimalContextForSuccessfulCall(pretendArguments);
+        givenReadOnlyFeeSchedule();
+
+        // when:
+        subject.prepareFields(frame);
+        subject.prepareComputation(pretendArguments, a -> a);
+        subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
+        final var result = subject.computeInternal(frame);
+
+        // then:
+        assertEquals(successResult, result);
+        // and:
+        verify(worldUpdater)
+            .manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
+    }
+
+    @Test
     void getTokenInfoWithAllKeyTypesWorks() {
         givenMinimalFrameContext();
 
@@ -312,11 +362,11 @@ class GetTokenInfoPrecompilesTest {
                         EntityIdUtils.asTypedEvmAddress(tokenMerkleId));
         given(decoder.decodeGetTokenInfo(pretendArguments)).willReturn(tokenInfoWrapper);
 
-        givenMinimalTokenContext();
+        givenMinimalTokenContext(TokenSupplyType.FINITE);
 
         final TokenKey adminKey = new TokenKey(TokenKeyType.ADMIN_KEY.value(), keyValue);
         final TokenKey kycKey = new TokenKey(TokenKeyType.KYC_KEY.value(), keyValue);
-        final TokenKey freezeKey = new TokenKey(TokenKeyType.FREEZE_KEY.value(), keyValue);
+        final TokenKey freezeKey = new TokenKey(FREEZE_KEY.value(), keyValue);
         final TokenKey wipeKey = new TokenKey(TokenKeyType.WIPE_KEY.value(), keyValue);
         final TokenKey supplyKey = new TokenKey(TokenKeyType.SUPPLY_KEY.value(), keyValue);
         final TokenKey feeScheduleKey =
@@ -330,7 +380,7 @@ class GetTokenInfoPrecompilesTest {
         tokenKeys.add(supplyKey);
         tokenKeys.add(feeScheduleKey);
         tokenKeys.add(pauseKey);
-        tokenInfo = createTokenInfo(tokenKeys);
+        tokenInfo = createTokenInfo(tokenKeys, true);
 
         givenKeyContextAllKeysActive(key);
         givenMinimalKeyContext();
@@ -364,7 +414,7 @@ class GetTokenInfoPrecompilesTest {
                         EntityIdUtils.asTypedEvmAddress(tokenMerkleId));
         given(decoder.decodeGetFungibleTokenInfo(pretendArguments)).willReturn(tokenInfoWrapper);
 
-        givenMinimalTokenContext();
+        givenMinimalTokenContext(TokenSupplyType.FINITE);
         givenKeyContext(key, TokenKeyType.ADMIN_KEY);
         given(merkleToken.decimals()).willReturn(decimals);
         givenMinimalKeyContext();
@@ -400,7 +450,7 @@ class GetTokenInfoPrecompilesTest {
                         Bytes.wrap(new byte[] {Long.valueOf(serialNumber).byteValue()}));
         given(decoder.decodeGetNonFungibleTokenInfo(pretendArguments)).willReturn(tokenInfoWrapper);
 
-        givenMinimalTokenContext();
+        givenMinimalTokenContext(TokenSupplyType.FINITE);
         givenKeyContext(key, TokenKeyType.ADMIN_KEY);
         givenMinimalUniqueTokenContext();
         givenMinimalKeyContext();
@@ -435,7 +485,7 @@ class GetTokenInfoPrecompilesTest {
                         EntityIdUtils.asTypedEvmAddress(tokenMerkleId));
         given(decoder.decodeGetTokenInfo(pretendArguments)).willReturn(tokenInfoWrapper);
 
-        givenMinimalTokenContext();
+        givenMinimalTokenContext(TokenSupplyType.FINITE);
         givenKeyContext(key, TokenKeyType.ADMIN_KEY);
         givenFixedFeeContext();
         givenMinimalKeyContext();
@@ -469,7 +519,7 @@ class GetTokenInfoPrecompilesTest {
                         EntityIdUtils.asTypedEvmAddress(tokenMerkleId));
         given(decoder.decodeGetTokenInfo(pretendArguments)).willReturn(tokenInfoWrapper);
 
-        givenMinimalTokenContext();
+        givenMinimalTokenContext(TokenSupplyType.FINITE);
         givenKeyContext(key, TokenKeyType.ADMIN_KEY);
         givenFractionalFeeContext();
         givenMinimalKeyContext();
@@ -505,7 +555,7 @@ class GetTokenInfoPrecompilesTest {
                         Bytes.wrap(new byte[] {Long.valueOf(serialNumber).byteValue()}));
         given(decoder.decodeGetNonFungibleTokenInfo(pretendArguments)).willReturn(tokenInfoWrapper);
 
-        givenMinimalTokenContext();
+        givenMinimalTokenContext(TokenSupplyType.FINITE);
         givenKeyContext(key, TokenKeyType.ADMIN_KEY);
         givenMinimalUniqueTokenContext();
         givenRoyaltyFeeContext(true);
@@ -543,7 +593,7 @@ class GetTokenInfoPrecompilesTest {
                         Bytes.wrap(new byte[] {Long.valueOf(serialNumber).byteValue()}));
         given(decoder.decodeGetNonFungibleTokenInfo(pretendArguments)).willReturn(tokenInfoWrapper);
 
-        givenMinimalTokenContext();
+        givenMinimalTokenContext(TokenSupplyType.FINITE);
         givenKeyContext(key, TokenKeyType.ADMIN_KEY);
         givenMinimalUniqueTokenContext();
         givenRoyaltyFeeContext(false);
@@ -782,14 +832,14 @@ class GetTokenInfoPrecompilesTest {
         given(delegateContractKey.getContractID()).willReturn(null);
     }
 
-    private void givenMinimalTokenContext() {
+    private void givenMinimalTokenContext(final TokenSupplyType tokenSupplyType) {
         given(trackingLedgers.tokens()).willReturn(tokens);
         given(tokens.getImmutableRef(tokenMerkleId)).willReturn(merkleToken);
         given(merkleToken.name()).willReturn(name);
         given(merkleToken.symbol()).willReturn(symbol);
         given(merkleToken.treasury()).willReturn(treasury);
         given(merkleToken.memo()).willReturn(memo);
-        given(merkleToken.supplyType()).willReturn(TokenSupplyType.FINITE);
+        given(merkleToken.supplyType()).willReturn(tokenSupplyType);
         given(merkleToken.maxSupply()).willReturn(maxSupply);
         given(merkleToken.hasFreezeKey()).willReturn(freezeDefault);
         given(merkleToken.expiry()).willReturn(expiryPeriod);
@@ -1002,14 +1052,14 @@ class GetTokenInfoPrecompilesTest {
                 ledgerId);
     }
 
-    private TokenInfo createTokenInfo(final List<TokenKey> tokenKeys) {
+    private TokenInfo createTokenInfo(final List<TokenKey> tokenKeys, final boolean tokenSupplyType) {
         final HederaToken hederaToken =
                 new HederaToken(
                         name,
                         symbol,
                         EntityIdUtils.asTypedEvmAddress(treasury),
                         memo,
-                        true,
+                    tokenSupplyType,
                         maxSupply,
                         freezeDefault,
                         tokenKeys,

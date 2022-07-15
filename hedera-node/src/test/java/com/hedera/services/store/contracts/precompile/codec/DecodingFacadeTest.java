@@ -41,7 +41,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-// FUTURE WORK Add tests for token info decoding methods
 @ExtendWith(MockitoExtension.class)
 class DecodingFacadeTest {
     private final DecodingFacade subject = new DecodingFacade();

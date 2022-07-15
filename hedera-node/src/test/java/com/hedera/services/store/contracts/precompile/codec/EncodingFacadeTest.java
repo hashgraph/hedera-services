@@ -35,7 +35,6 @@ import org.hyperledger.besu.evm.log.Log;
 import org.hyperledger.besu.evm.log.LogTopic;
 import org.junit.jupiter.api.Test;
 
-// FUTURE WORK Add tests for token info encoding methods
 class EncodingFacadeTest {
     private final EncodingFacade subject = new EncodingFacade();
 
