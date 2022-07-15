@@ -84,13 +84,14 @@ public class PausePrecompile extends AbstractWritePrecompile {
         /* --- Check required signatures --- */
         final var tokenId = Id.fromGrpcToken(pauseOp.token());
         ledgers.tokens().get(pauseOp.token(), TokenProperty.PAUSE_KEY);
-                final var hasRequiredSigs = KeyActivationUtils.validateKey(
+        final var hasRequiredSigs =
+                KeyActivationUtils.validateKey(
                         frame,
                         tokenId.asEvmAddress(),
                         sigsVerifier::hasActivePauseKey,
                         ledgers,
                         aliases);
-                validateTrue(hasRequiredSigs, INVALID_SIGNATURE);
+        validateTrue(hasRequiredSigs, INVALID_SIGNATURE);
 
         /* --- Build the necessary infrastructure to execute the transaction --- */
         final var accountStore = infrastructureFactory.newAccountStore(ledgers.accounts());

@@ -82,14 +82,14 @@ public class UnpausePrecompile extends AbstractWritePrecompile {
 
         /* --- Check required signatures --- */
         final var tokenId = Id.fromGrpcToken(unpauseOp.token());
-                final var hasRequiredSigs =
-                        KeyActivationUtils.validateKey(
-                                frame,
-                                tokenId.asEvmAddress(),
-                                sigsVerifier::hasActivePauseKey,
-                                ledgers,
-                                aliases);
-                validateTrue(hasRequiredSigs, INVALID_SIGNATURE);
+        final var hasRequiredSigs =
+                KeyActivationUtils.validateKey(
+                        frame,
+                        tokenId.asEvmAddress(),
+                        sigsVerifier::hasActivePauseKey,
+                        ledgers,
+                        aliases);
+        validateTrue(hasRequiredSigs, INVALID_SIGNATURE);
 
         /* --- Build the necessary infrastructure to execute the transaction --- */
         final var accountStore = infrastructureFactory.newAccountStore(ledgers.accounts());
