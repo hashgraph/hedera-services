@@ -1,11 +1,6 @@
-package com.hedera.services.bdd.suites.contract.hapi;
-
-/*-
- * ‌
- * Hedera Services Test Clients
- * ​
- * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,8 +12,8 @@ package com.hedera.services.bdd.suites.contract.hapi;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+package com.hedera.services.bdd.suites.contract.hapi;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asSolidityAddress;
@@ -216,7 +211,7 @@ public class ContractCreateSuite extends HapiApiSuite {
                                                 .noStakingNodeId()
                                                 .stakedAccountId("0.0.10"))
                                 .logged(),
-                        /*-- sentinel values throw ---*/
+                        /* sentinel values throw */
                         contractCreate(contract)
                                 .adminKey(THRESHOLD)
                                 .declinedReward(false)
@@ -775,7 +770,8 @@ public class ContractCreateSuite extends HapiApiSuite {
                                     nodeAndNetworkFee.set(
                                             creationRecord.getTransactionFee() - gasFee.get());
                                     log.info(
-                                            "Network + node fees were {}, gas fee was {} (sum to {}, compare with {})",
+                                            "Network + node fees were {}, gas fee was {} (sum to"
+                                                    + " {}, compare with {})",
                                             nodeAndNetworkFee::get,
                                             gasFee::get,
                                             () -> nodeAndNetworkFee.get() + gasFee.get(),

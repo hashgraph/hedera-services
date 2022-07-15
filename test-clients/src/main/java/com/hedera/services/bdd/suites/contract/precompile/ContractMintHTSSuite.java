@@ -534,7 +534,7 @@ public class ContractMintHTSSuite extends HapiApiSuite {
                                                                                                     List
                                                                                                             .of(
                                                                                                                     "Test metadata"
-                                                                                                                            + " 1"))
+                                                                                                                        + " 1"))
                                                                                             .build())),
                                                     recordWith()
                                                             .status(SUCCESS)

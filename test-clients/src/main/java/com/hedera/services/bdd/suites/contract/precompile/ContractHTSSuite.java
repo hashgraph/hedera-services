@@ -1,11 +1,6 @@
-package com.hedera.services.bdd.suites.contract.precompile;
-
-/*-
- * ‌
- * Hedera Services Test Clients
- * ​
- * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2021-2022 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,8 +12,8 @@ package com.hedera.services.bdd.suites.contract.precompile;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+package com.hedera.services.bdd.suites.contract.precompile;
 
 import static com.google.protobuf.ByteString.copyFromUtf8;
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
@@ -137,17 +132,6 @@ public class ContractHTSSuite extends HapiApiSuite {
     }
 
     private HapiApiSpec HSCS_PREC_017_rollback_after_insufficient_balance() {
-        /*-
-        Alice has 7 hbars
-        TokenWithHbarFee has a custom fee of 4 hbars
-        Bob calls contract TransferAmountAndToken.sol trying to transfer both NFTs from Alice's account with 2 calls
-         to the HTS transferNft() precompile
-        First transfer is successful
-        Second transfer fails because Alice can't afford the custom fee
-        The contract reverts because of require(success)
-        Verify the fee collector has a 0 hbar balance meaning the first successful transfer was reverted and no
-        custom fees were paid.
-        */
         final var alice = "alice";
         final var bob = "bob";
         final var treasuryForToken = "treasuryForToken";

@@ -1,11 +1,6 @@
-package com.hedera.services.bdd.suites.contract.hapi;
-
-/*-
- * ‌
- * Hedera Services Test Clients
- * ​
- * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,8 +12,8 @@ package com.hedera.services.bdd.suites.contract.hapi;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+package com.hedera.services.bdd.suites.contract.hapi;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.isLiteralResult;
@@ -129,7 +124,7 @@ public class ContractUpdateSuite extends HapiApiSuite {
                                                 .stakedAccountId("0.0.10"))
                                 .logged(),
 
-                        /* --- reset the staking account ---*/
+                        /* --- reset the staking account */
                         contractUpdate(CONTRACT)
                                 .newDeclinedReward(false)
                                 .newStakedAccountId("0.0.0"),
@@ -149,7 +144,7 @@ public class ContractUpdateSuite extends HapiApiSuite {
                                                 .stakedNodeId(0))
                                 .logged(),
 
-                        /* --- reset the staking account ---*/
+                        /* --- reset the staking account */
                         contractUpdate(CONTRACT).newDeclinedReward(false).newStakedNodeId(-1L),
                         getContractInfo(CONTRACT)
                                 .has(

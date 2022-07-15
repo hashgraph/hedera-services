@@ -318,8 +318,8 @@ public class DynamicGasCostSuite extends HapiApiSuite {
                                                         id ->
                                                                 LOG.info(
                                                                         "Next entity num was {}"
-                                                                                + " instead of expected"
-                                                                                + " {}",
+                                                                            + " instead of expected"
+                                                                            + " {}",
                                                                         id.getAccountNum(),
                                                                         factoryEntityNum.get()
                                                                                 + 1))));
@@ -365,7 +365,7 @@ public class DynamicGasCostSuite extends HapiApiSuite {
                                                             testContractInitcode.set(tcInitcode);
                                                             LOG.info(
                                                                     "Contract reported TestContract"
-                                                                            + " initcode is {} bytes",
+                                                                        + " initcode is {} bytes",
                                                                     tcInitcode.length);
                                                         })
                                                 .payingWith(GENESIS)
@@ -394,8 +394,8 @@ public class DynamicGasCostSuite extends HapiApiSuite {
                                                         id ->
                                                                 LOG.info(
                                                                         "Next entity num was {}"
-                                                                                + " instead of expected"
-                                                                                + " {}",
+                                                                            + " instead of expected"
+                                                                            + " {}",
                                                                         id.getAccountNum(),
                                                                         factoryEntityNum.get()
                                                                                 + 1))));
@@ -495,7 +495,7 @@ public class DynamicGasCostSuite extends HapiApiSuite {
                                                             testContractInitcode.set(tcInitcode);
                                                             LOG.info(
                                                                     "Contract reported TestContract"
-                                                                            + " initcode is {} bytes",
+                                                                        + " initcode is {} bytes",
                                                                     tcInitcode.length);
                                                         })
                                                 .payingWith(GENESIS)
