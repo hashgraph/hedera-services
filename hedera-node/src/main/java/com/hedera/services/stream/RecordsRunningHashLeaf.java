@@ -62,9 +62,7 @@ public class RecordsRunningHashLeaf extends AbstractMerkleLeaf {
 
 	public RecordsRunningHashLeaf(final RunningHash runningHash) {
 		this.runningHash = runningHash;
-		this.nMinus1RunningHash = new RunningHash(EMPTY_HASH);
-		this.nMinus2RunningHash = new RunningHash(EMPTY_HASH);
-		this.nMinus3RunningHash = new RunningHash(EMPTY_HASH);
+		resetMinusHashes(true);
 	}
 
 	private RecordsRunningHashLeaf(final RecordsRunningHashLeaf runningHashLeaf) {
@@ -99,13 +97,13 @@ public class RecordsRunningHashLeaf extends AbstractMerkleLeaf {
 		runningHash = new RunningHash();
 		runningHash.setHash(in.readSerializable());
 
-		nMinus1RunningHash = new RunningHash(EMPTY_HASH);
-		nMinus2RunningHash = new RunningHash(EMPTY_HASH);
-		nMinus3RunningHash = new RunningHash(EMPTY_HASH);
 		if (version >= RELEASE_0280_VERSION) {
+			resetMinusHashes(false);
 			nMinus1RunningHash.setHash(in.readSerializable());
 			nMinus2RunningHash.setHash(in.readSerializable());
 			nMinus3RunningHash.setHash(in.readSerializable());
+		} else {
+			resetMinusHashes(true);
 		}
 	}
 
@@ -218,6 +216,12 @@ public class RecordsRunningHashLeaf extends AbstractMerkleLeaf {
 				this.nMinus1RunningHash.getHash().equals(that.nMinus1RunningHash.getHash()) &&
 				this.nMinus2RunningHash.getHash().equals(that.nMinus2RunningHash.getHash()) &&
 				this.nMinus3RunningHash.getHash().equals(that.nMinus3RunningHash.getHash());
+	}
+
+	private void resetMinusHashes(final boolean alreadyCompleted) {
+		nMinus1RunningHash = alreadyCompleted ? new RunningHash(EMPTY_HASH) : new RunningHash();
+		nMinus2RunningHash = alreadyCompleted ? new RunningHash(EMPTY_HASH) : new RunningHash();
+		nMinus3RunningHash = alreadyCompleted ? new RunningHash(EMPTY_HASH) : new RunningHash();
 	}
 
 	@VisibleForTesting
