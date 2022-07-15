@@ -24,24 +24,21 @@ import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.validation.UsageLimits;
 import com.hedera.services.store.models.NftId;
-import com.hedera.services.store.schedule.ScheduleStore;
-import com.hedera.services.store.tokens.TokenStore;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
-import javax.inject.Inject;
-import javax.inject.Singleton;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+
+import javax.inject.Inject;
+import javax.inject.Singleton;
 
 @Singleton
 public class StoreInitializationFlow {
     private static final Logger log = LogManager.getLogger(StoreInitializationFlow.class);
 
-    private final TokenStore tokenStore;
     private final UsageLimits usageLimits;
     private final AliasManager aliasManager;
-    private final ScheduleStore scheduleStore;
     private final MutableStateChildren workingState;
     private final BackingStore<AccountID, MerkleAccount> backingAccounts;
     private final BackingStore<TokenID, MerkleToken> backingTokens;
@@ -50,9 +47,7 @@ public class StoreInitializationFlow {
 
     @Inject
     public StoreInitializationFlow(
-            final TokenStore tokenStore,
             final UsageLimits usageLimits,
-            final ScheduleStore scheduleStore,
             final AliasManager aliasManager,
             final MutableStateChildren workingState,
             final BackingStore<AccountID, MerkleAccount> backingAccounts,
@@ -60,8 +55,6 @@ public class StoreInitializationFlow {
             final BackingStore<NftId, MerkleUniqueToken> backingNfts,
             final BackingStore<Pair<AccountID, TokenID>, MerkleTokenRelStatus> backingTokenRels) {
         this.usageLimits = usageLimits;
-        this.tokenStore = tokenStore;
-        this.scheduleStore = scheduleStore;
         this.backingAccounts = backingAccounts;
         this.backingTokens = backingTokens;
         this.workingState = workingState;

@@ -15,6 +15,20 @@
  */
 package com.hedera.services.bdd.suites.file;
 
+import com.google.protobuf.ByteString;
+import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpecSetup;
+import com.hedera.services.bdd.spec.transactions.TxnVerbs;
+import com.hedera.services.bdd.spec.utilops.UtilVerbs;
+import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.suites.token.TokenAssociationSpecs;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.ContractInfoAsserts.contractWith;
@@ -78,19 +92,6 @@ import static com.hederahashgraph.api.proto.java.TokenKycStatus.Revoked;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.google.protobuf.ByteString;
-import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.spec.HapiSpecSetup;
-import com.hedera.services.bdd.spec.transactions.TxnVerbs;
-import com.hedera.services.bdd.spec.utilops.UtilVerbs;
-import com.hedera.services.bdd.suites.HapiApiSuite;
-import com.hedera.services.bdd.suites.token.TokenAssociationSpecs;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
 /**
  * NOTE: 1. This test suite covers the test08UpdateFile() test scenarios from the legacy
  * FileServiceIT test class after the FileServiceIT class is removed since all other test scenarios
@@ -108,25 +109,32 @@ import org.apache.logging.log4j.Logger;
 public class FileUpdateSuite extends HapiApiSuite {
     private static final Logger log = LogManager.getLogger(FileUpdateSuite.class);
     private static final String CONTRACT = "CreateTrivial";
+    private static final String CREATE_TXN = "create";
+    private static final String INSERT_ABI = "insert";
+    private static final String INDIRECT_GET_ABI = "getIndirect";
+    private static final String CHAIN_ID_GET_ABI = "getChainID";
+    private static final String INVALID_ENTITY_ID = "1.2.3";
 
     private static final String INDIVIDUAL_KV_LIMIT_PROP = "contracts.maxKvPairs.individual";
     private static final String AGGREGATE_KV_LIMIT_PROP = "contracts.maxKvPairs.aggregate";
     private static final String USE_GAS_THROTTLE_PROP = "contracts.throttle.throttleByGas";
+    private static final String MAX_CUSTOM_FEES_PROP = "tokens.maxCustomFeesAllowed";
+    private static final String MAX_REFUND_GAS_PROP = "contracts.maxRefundPercentOfGasLimit";
     private static final String CONSENSUS_GAS_THROTTLE_PROP = "contracts.maxGasPerSec";
     private static final String CHAINID_PROP = "contracts.chainId";
 
-    private static final long defaultChainId =
+    private static final long DEFAULT_CHAIN_ID =
             Long.parseLong(HapiSpecSetup.getDefaultNodeProps().get(CHAINID_PROP));
-    private static final long defaultMaxLifetime =
+    private static final long DEFAULT_MAX_LIFETIME =
             Long.parseLong(HapiSpecSetup.getDefaultNodeProps().get("entities.maxLifetime"));
-    private static final String defaultMaxCustomFees =
-            HapiSpecSetup.getDefaultNodeProps().get("tokens.maxCustomFeesAllowed");
-    private static final String defaultMaxIndividualKvPairs =
+    private static final String DEFAULT_MAX_CUSTOM_FEES =
+            HapiSpecSetup.getDefaultNodeProps().get(MAX_CUSTOM_FEES_PROP);
+    private static final String DEFAULT_MAX_KV_PAIRS_PER_CONTRACT =
             HapiSpecSetup.getDefaultNodeProps().get(INDIVIDUAL_KV_LIMIT_PROP);
-    private static final String defaultMaxAggregateKvPairs =
+    private static final String DEFAULT_MAX_KV_PAIRS =
             HapiSpecSetup.getDefaultNodeProps().get(AGGREGATE_KV_LIMIT_PROP);
-    private static final String defaultMaxConsGasLimit =
-            HapiSpecSetup.getDefaultNodeProps().get("contracts.maxGasPerSec");
+    private static final String DEFAULT_MAX_CONS_GAS =
+            HapiSpecSetup.getDefaultNodeProps().get(CONSENSUS_GAS_THROTTLE_PROP);
 
     public static void main(String... args) {
         new FileUpdateSuite().runSuiteSync();
@@ -164,10 +172,10 @@ public class FileUpdateSuite extends HapiApiSuite {
                         TxnVerbs.tokenAssociate(
                                         "misc", TokenAssociationSpecs.FREEZABLE_TOKEN_ON_BY_DEFAULT)
                                 .hasKnownStatus(TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT),
-                        tokenAssociate("misc", "1.2.3").hasKnownStatus(INVALID_TOKEN_ID),
-                        tokenAssociate("misc", "1.2.3", "1.2.3")
+                        tokenAssociate("misc", INVALID_ENTITY_ID).hasKnownStatus(INVALID_TOKEN_ID),
+                        tokenAssociate("misc", INVALID_ENTITY_ID, INVALID_ENTITY_ID)
                                 .hasPrecheck(TOKEN_ID_REPEATED_IN_TOKEN_LIST),
-                        tokenDissociate("misc", "1.2.3", "1.2.3")
+                        tokenDissociate("misc", INVALID_ENTITY_ID, INVALID_ENTITY_ID)
                                 .hasPrecheck(TOKEN_ID_REPEATED_IN_TOKEN_LIST),
                         fileUpdate(APP_PROPERTIES)
                                 .payingWith(ADDRESS_BOOK_CONTROL)
@@ -227,7 +235,7 @@ public class FileUpdateSuite extends HapiApiSuite {
                 .given(
                         fileUpdate(APP_PROPERTIES)
                                 .payingWith(GENESIS)
-                                .overridingProps(Map.of("tokens.maxCustomFeesAllowed", "1")))
+                                .overridingProps(Map.of(MAX_CUSTOM_FEES_PROP, "1")))
                 .when(
                         tokenCreate(denom),
                         tokenCreate(token)
@@ -239,9 +247,7 @@ public class FileUpdateSuite extends HapiApiSuite {
                         fileUpdate(APP_PROPERTIES)
                                 .payingWith(GENESIS)
                                 .overridingProps(
-                                        Map.of(
-                                                "tokens.maxCustomFeesAllowed",
-                                                defaultMaxCustomFees)));
+                                        Map.of(MAX_CUSTOM_FEES_PROP, DEFAULT_MAX_CUSTOM_FEES)));
     }
 
     private HapiApiSpec optimisticSpecialFileUpdate() {
@@ -263,22 +269,23 @@ public class FileUpdateSuite extends HapiApiSuite {
     }
 
     private HapiApiSpec apiPermissionsChangeDynamically() {
+        final var civilian = "civilian";
         return defaultHapiSpec("ApiPermissionsChangeDynamically")
                 .given(
-                        cryptoCreate("civilian").balance(ONE_HUNDRED_HBARS),
+                        cryptoCreate(civilian).balance(ONE_HUNDRED_HBARS),
                         getFileContents(API_PERMISSIONS).logged(),
-                        tokenCreate("poc").payingWith("civilian"))
+                        tokenCreate("poc").payingWith(civilian))
                 .when(
                         fileUpdate(API_PERMISSIONS)
                                 .payingWith(ADDRESS_BOOK_CONTROL)
                                 .erasingProps(Set.of("tokenCreate")),
                         getFileContents(API_PERMISSIONS).logged())
                 .then(
-                        tokenCreate("poc").payingWith("civilian").hasPrecheck(NOT_SUPPORTED),
+                        tokenCreate("poc").payingWith(civilian).hasPrecheck(NOT_SUPPORTED),
                         fileUpdate(API_PERMISSIONS)
                                 .payingWith(ADDRESS_BOOK_CONTROL)
                                 .overridingProps(Map.of("tokenCreate", "0-*")),
-                        tokenCreate("secondPoc").payingWith("civilian"));
+                        tokenCreate("secondPoc").payingWith(civilian));
     }
 
     private HapiApiSpec updateFeesCompatibleWithCreates() {
@@ -289,7 +296,7 @@ public class FileUpdateSuite extends HapiApiSuite {
         final byte[] new2k = randomUtf8Bytes(BYTES_4K / 2);
 
         return defaultHapiSpec("UpdateFeesCompatibleWithCreates")
-                .given(fileCreate("test").contents(old2k).lifetime(origLifetime).via("create"))
+                .given(fileCreate("test").contents(old2k).lifetime(origLifetime).via(CREATE_TXN))
                 .when(
                         fileUpdate("test").contents(new4k).extendingExpiryBy(0).via("updateTo4"),
                         fileUpdate("test").contents(new2k).extendingExpiryBy(0).via("updateTo2"),
@@ -304,7 +311,7 @@ public class FileUpdateSuite extends HapiApiSuite {
                 .then(
                         UtilVerbs.withOpContext(
                                 (spec, opLog) -> {
-                                    final var createOp = getTxnRecord("create");
+                                    final var createOp = getTxnRecord(CREATE_TXN);
                                     final var to4kOp = getTxnRecord("updateTo4");
                                     final var to2kOp = getTxnRecord("updateTo2");
                                     final var extensionOp = getTxnRecord("extend");
@@ -313,39 +320,25 @@ public class FileUpdateSuite extends HapiApiSuite {
                                             spec, createOp, to4kOp, to2kOp, extensionOp, specialOp);
                                     final var createFee =
                                             createOp.getResponseRecord().getTransactionFee();
-                                    opLog.info("Creation : " + createFee);
+                                    opLog.info("Creation : {} ", createFee);
                                     opLog.info(
-                                            "New 4k   : "
-                                                    + to4kOp.getResponseRecord().getTransactionFee()
-                                                    + " ("
-                                                    + (to4kOp.getResponseRecord()
-                                                                    .getTransactionFee()
-                                                            - createFee)
-                                                    + ")");
+                                            "New 4k   : {} ({})",
+                                            to4kOp.getResponseRecord().getTransactionFee(),
+                                            (to4kOp.getResponseRecord().getTransactionFee()
+                                                    - createFee));
                                     opLog.info(
-                                            "New 2k   : "
-                                                    + to2kOp.getResponseRecord().getTransactionFee()
-                                                    + " ("
-                                                    + (to2kOp.getResponseRecord()
-                                                                    .getTransactionFee()
-                                                            - createFee)
-                                                    + ")");
+                                            "New 2k   : {} ({})",
+                                            to2kOp.getResponseRecord().getTransactionFee(),
+                                            +(to2kOp.getResponseRecord().getTransactionFee()
+                                                    - createFee));
                                     opLog.info(
-                                            "Extension: "
-                                                    + extensionOp
-                                                            .getResponseRecord()
-                                                            .getTransactionFee()
-                                                    + " ("
-                                                    + (extensionOp
-                                                                    .getResponseRecord()
-                                                                    .getTransactionFee()
-                                                            - createFee)
-                                                    + ")");
+                                            "Extension: {} ({})",
+                                            extensionOp.getResponseRecord().getTransactionFee(),
+                                            (extensionOp.getResponseRecord().getTransactionFee()
+                                                    - createFee));
                                     opLog.info(
-                                            "Special: "
-                                                    + specialOp
-                                                            .getResponseRecord()
-                                                            .getTransactionFee());
+                                            "Special: {}",
+                                            specialOp.getResponseRecord().getTransactionFee());
                                 }));
     }
 
@@ -374,36 +367,36 @@ public class FileUpdateSuite extends HapiApiSuite {
                 .when()
                 .then(
                         fileUpdate("test")
-                                .lifetime(defaultMaxLifetime + 12_345L)
+                                .lifetime(DEFAULT_MAX_LIFETIME + 12_345L)
                                 .hasPrecheck(AUTORENEW_DURATION_NOT_IN_RANGE));
     }
 
     private HapiApiSpec maxRefundIsEnforced() {
         return defaultHapiSpec("MaxRefundIsEnforced")
                 .given(
-                        overriding("contracts.maxRefundPercentOfGasLimit", "5"),
+                        overriding(MAX_REFUND_GAS_PROP, "5"),
                         uploadInitCode(CONTRACT),
                         contractCreate(CONTRACT))
-                .when(contractCall(CONTRACT, "create").gas(1_000_000L))
+                .when(contractCall(CONTRACT, CREATE_TXN).gas(1_000_000L))
                 .then(
-                        contractCallLocal(CONTRACT, "getIndirect")
+                        contractCallLocal(CONTRACT, INDIRECT_GET_ABI)
                                 .gas(300_000L)
                                 .has(resultWith().gasUsed(285_000L)),
-                        resetToDefault("contracts.maxRefundPercentOfGasLimit"));
+                        resetToDefault(MAX_REFUND_GAS_PROP));
     }
 
     private HapiApiSpec allUnusedGasIsRefundedIfSoConfigured() {
         return defaultHapiSpec("AllUnusedGasIsRefundedIfSoConfigured")
                 .given(
-                        overriding("contracts.maxRefundPercentOfGasLimit", "100"),
+                        overriding(MAX_REFUND_GAS_PROP, "100"),
                         uploadInitCode(CONTRACT),
                         contractCreate(CONTRACT))
-                .when(contractCall(CONTRACT, "create").gas(1_000_000L))
+                .when(contractCall(CONTRACT, CREATE_TXN).gas(1_000_000L))
                 .then(
-                        contractCallLocal(CONTRACT, "getIndirect")
+                        contractCallLocal(CONTRACT, INDIRECT_GET_ABI)
                                 .gas(300_000L)
                                 .has(resultWith().gasUsed(26_451)),
-                        resetToDefault("contracts.maxRefundPercentOfGasLimit"));
+                        resetToDefault(MAX_REFUND_GAS_PROP));
     }
 
     private HapiApiSpec gasLimitOverMaxGasLimitFailsPrecheck() {
@@ -414,7 +407,7 @@ public class FileUpdateSuite extends HapiApiSuite {
                         overriding("contracts.maxGasPerSec", "100"))
                 .when()
                 .then(
-                        contractCallLocal(CONTRACT, "getIndirect")
+                        contractCallLocal(CONTRACT, INDIRECT_GET_ABI)
                                 .gas(101L)
                                 .hasCostAnswerPrecheck(BUSY),
                         resetToDefault("contracts.maxGasPerSec"));
@@ -438,11 +431,15 @@ public class FileUpdateSuite extends HapiApiSuite {
                                                 CONSENSUS_GAS_THROTTLE_PROP, "100_000_000")))
                 .when(
                         /* The first call to insert adds 5 mappings */
-                        contractCall(contract, "insert", 1, 1).payingWith(GENESIS).gas(gasToOffer),
+                        contractCall(contract, INSERT_ABI, 1, 1)
+                                .payingWith(GENESIS)
+                                .gas(gasToOffer),
                         /* Each subsequent call to adds 3 mappings; so 8 total after this */
-                        contractCall(contract, "insert", 2, 4).payingWith(GENESIS).gas(gasToOffer),
+                        contractCall(contract, INSERT_ABI, 2, 4)
+                                .payingWith(GENESIS)
+                                .gas(gasToOffer),
                         /* And this one fails because 8 + 3 = 11 > 10 */
-                        contractCall(contract, "insert", 3, 9)
+                        contractCall(contract, INSERT_ABI, 3, 9)
                                 .payingWith(GENESIS)
                                 .hasKnownStatus(MAX_CONTRACT_STORAGE_EXCEEDED)
                                 .gas(gasToOffer),
@@ -455,7 +452,7 @@ public class FileUpdateSuite extends HapiApiSuite {
                                         Map.of(
                                                 INDIVIDUAL_KV_LIMIT_PROP, "1_000_000_000",
                                                 AGGREGATE_KV_LIMIT_PROP, "1")),
-                        contractCall(contract, "insert", 3, 9)
+                        contractCall(contract, INSERT_ABI, 3, 9)
                                 .payingWith(GENESIS)
                                 .hasKnownStatus(MAX_STORAGE_IN_PRICE_REGIME_HAS_BEEN_USED)
                                 .gas(gasToOffer),
@@ -467,18 +464,23 @@ public class FileUpdateSuite extends HapiApiSuite {
                                 .overridingProps(
                                         Map.of(
                                                 INDIVIDUAL_KV_LIMIT_PROP,
-                                                        defaultMaxIndividualKvPairs,
-                                                AGGREGATE_KV_LIMIT_PROP, defaultMaxAggregateKvPairs,
+                                                DEFAULT_MAX_KV_PAIRS_PER_CONTRACT,
+                                                AGGREGATE_KV_LIMIT_PROP,
+                                                DEFAULT_MAX_KV_PAIRS,
                                                 CONSENSUS_GAS_THROTTLE_PROP,
-                                                        defaultMaxConsGasLimit)),
-                        contractCall(contract, "insert", 3, 9).payingWith(GENESIS).gas(gasToOffer),
-                        contractCall(contract, "insert", 4, 16).payingWith(GENESIS).gas(gasToOffer),
+                                                DEFAULT_MAX_CONS_GAS)),
+                        contractCall(contract, INSERT_ABI, 3, 9)
+                                .payingWith(GENESIS)
+                                .gas(gasToOffer),
+                        contractCall(contract, INSERT_ABI, 4, 16)
+                                .payingWith(GENESIS)
+                                .gas(gasToOffer),
                         getContractInfo(contract).has(contractWith().numKvPairs(14)));
     }
 
     private HapiApiSpec serviceFeeRefundedIfConsGasExhausted() {
         final var contract = "User";
-        final var gasToOffer = Long.parseLong(defaultMaxConsGasLimit);
+        final var gasToOffer = Long.parseLong(DEFAULT_MAX_CONS_GAS);
         final var civilian = "payer";
         final var unrefundedTxn = "unrefundedTxn";
         final var refundedTxn = "refundedTxn";
@@ -487,25 +489,25 @@ public class FileUpdateSuite extends HapiApiSuite {
                 .given(
                         overridingTwo(
                                 CONSENSUS_GAS_THROTTLE_PROP,
-                                defaultMaxConsGasLimit,
+                                DEFAULT_MAX_CONS_GAS,
                                 USE_GAS_THROTTLE_PROP,
                                 "true"),
                         cryptoCreate(civilian).balance(ONE_HUNDRED_HBARS),
                         uploadInitCode(contract),
                         contractCreate(contract),
-                        contractCall(contract, "insert", 1, 4)
+                        contractCall(contract, INSERT_ABI, 1, 4)
                                 .payingWith(civilian)
                                 .gas(gasToOffer)
                                 .via(unrefundedTxn))
                 .when(
                         usableTxnIdNamed(refundedTxn).payerId(civilian),
-                        contractCall(contract, "insert", 2, 4)
+                        contractCall(contract, INSERT_ABI, 2, 4)
                                 .payingWith(GENESIS)
                                 .gas(gasToOffer)
                                 .hasAnyStatusAtAll()
                                 .deferStatusResolution(),
                         uncheckedSubmit(
-                                        contractCall(contract, "insert", 3, 4)
+                                        contractCall(contract, INSERT_ABI, 3, 4)
                                                 .signedBy(civilian)
                                                 .gas(gasToOffer)
                                                 .txnId(refundedTxn))
@@ -552,9 +554,12 @@ public class FileUpdateSuite extends HapiApiSuite {
                         resetToDefault(CHAINID_PROP),
                         uploadInitCode(chainIdUser),
                         contractCreate(chainIdUser),
-                        contractCall(chainIdUser, "getChainID").via(firstCallTxn),
-                        contractCallLocal(chainIdUser, "getChainID")
-                                .has(resultWith().contractCallResult(bigIntResult(defaultChainId))),
+                        contractCall(chainIdUser, CHAIN_ID_GET_ABI).via(firstCallTxn),
+                        contractCallLocal(chainIdUser, CHAIN_ID_GET_ABI)
+                                .has(
+                                        resultWith()
+                                                .contractCallResult(
+                                                        bigIntResult(DEFAULT_CHAIN_ID))),
                         getTxnRecord(firstCallTxn)
                                 .hasPriority(
                                         recordWith()
@@ -562,14 +567,17 @@ public class FileUpdateSuite extends HapiApiSuite {
                                                         resultWith()
                                                                 .contractCallResult(
                                                                         bigIntResult(
-                                                                                defaultChainId)))),
+                                                                                DEFAULT_CHAIN_ID)))),
                         contractCallLocal(chainIdUser, "getSavedChainID")
-                                .has(resultWith().contractCallResult(bigIntResult(defaultChainId))))
+                                .has(
+                                        resultWith()
+                                                .contractCallResult(
+                                                        bigIntResult(DEFAULT_CHAIN_ID))))
                 .when(
                         overriding(CHAINID_PROP, "" + otherChainId),
                         contractCreate(chainIdUser),
-                        contractCall(chainIdUser, "getChainID").via(secondCallTxn),
-                        contractCallLocal(chainIdUser, "getChainID")
+                        contractCall(chainIdUser, CHAIN_ID_GET_ABI).via(secondCallTxn),
+                        contractCallLocal(chainIdUser, CHAIN_ID_GET_ABI)
                                 .has(resultWith().contractCallResult(bigIntResult(otherChainId))),
                         getTxnRecord(secondCallTxn)
                                 .hasPriority(

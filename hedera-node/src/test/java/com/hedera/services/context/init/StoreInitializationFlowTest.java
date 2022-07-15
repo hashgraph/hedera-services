@@ -15,11 +15,6 @@
  */
 package com.hedera.services.context.init;
 
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-
 import com.hedera.services.context.MutableStateChildren;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.ledger.backing.BackingStore;
@@ -29,14 +24,11 @@ import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.validation.UsageLimits;
 import com.hedera.services.store.models.NftId;
-import com.hedera.services.store.schedule.ScheduleStore;
-import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.test.factories.accounts.MerkleAccountFactory;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.swirlds.merkle.map.MerkleMap;
-import java.util.function.BiConsumer;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -45,10 +37,15 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.function.BiConsumer;
+
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+
 @ExtendWith(MockitoExtension.class)
 class StoreInitializationFlowTest {
-    @Mock private TokenStore tokenStore;
-    @Mock private ScheduleStore scheduleStore;
     @Mock private MutableStateChildren workingState;
 
     @Mock private UsageLimits usageLimits;
@@ -65,9 +62,7 @@ class StoreInitializationFlowTest {
     void setUp() {
         subject =
                 new StoreInitializationFlow(
-                        tokenStore,
                         usageLimits,
-                        scheduleStore,
                         aliasManager,
                         workingState,
                         backingAccounts,
