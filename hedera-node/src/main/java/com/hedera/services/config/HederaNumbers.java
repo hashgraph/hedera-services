@@ -30,7 +30,8 @@ import static com.hedera.services.config.EntityNumbers.UNKNOWN_NUMBER;
 
 @Singleton
 public class HederaNumbers {
-	private static final long NUM_RESERVED_SYSTEM_ENTITIES = 750L;
+	public static final long NUM_RESERVED_SYSTEM_ENTITIES = 750L;
+	public static final long FIRST_POST_SYSTEM_FILE_ENTITY = 200L;
 
 	private final PropertySource properties;
 

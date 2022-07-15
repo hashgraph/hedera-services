@@ -36,7 +36,6 @@ import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.services.store.contracts.precompile.utils.PrecompileUtils;
 import com.hedera.services.txns.util.PrngLogic;
-import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.PrngTransactionBody;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -61,6 +60,7 @@ import java.util.Optional;
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hedera.services.state.EntityCreator.EMPTY_MEMO;
 import static com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils.GasCostType.PRNG;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_GAS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PRNG_RANGE;
@@ -82,7 +82,6 @@ public class PrngSystemPrecompiledContract extends AbstractPrecompiledContract {
 	static final int PSEUDORANDOM_NUM_IN_RANGE_GENERATOR_SELECTOR = 0xb781b004;
 	public static final String PRNG_PRECOMPILE_ADDRESS = "0x169";
 	private final PrngLogic prngLogic;
-	private final SideEffectsTracker tracker;
 	private final EntityCreator creator;
 	private HederaStackedWorldStateUpdater updater;
 	private final RecordsHistorian recordsHistorian;
@@ -96,7 +95,6 @@ public class PrngSystemPrecompiledContract extends AbstractPrecompiledContract {
 			final GasCalculator gasCalculator,
 			final PrngLogic prngLogic,
 			final ExpiringCreations creator,
-			final SideEffectsTracker tracker,
 			final RecordsHistorian recordsHistorian,
 			final PrecompilePricingUtils pricingUtils,
 			final LivePricesSource livePricesSource,
@@ -104,7 +102,6 @@ public class PrngSystemPrecompiledContract extends AbstractPrecompiledContract {
 		super(PRECOMPILE_NAME, gasCalculator);
 		this.prngLogic = prngLogic;
 		this.creator = creator;
-		this.tracker = tracker;
 		this.recordsHistorian = recordsHistorian;
 		this.pricingUtils = pricingUtils;
 		this.livePricesSource = livePricesSource;
@@ -117,6 +114,7 @@ public class PrngSystemPrecompiledContract extends AbstractPrecompiledContract {
 	}
 
 	@Override
+	@SuppressWarnings("rawtypes")
 	public PrecompileContractResult computePrecompile(final Bytes input, final MessageFrame frame) {
 		final var gasNeeded = calculateGas(Instant.ofEpochSecond(frame.getBlockValues().getTimestamp()));
 		final var result = computePrngResult(gasNeeded, input, frame);
@@ -166,6 +164,7 @@ public class PrngSystemPrecompiledContract extends AbstractPrecompiledContract {
 		}
 	}
 
+	@VisibleForTesting
 	Bytes generatePseudoRandomData(final Bytes input) {
 		final var selector = input.getInt(0);
 		return switch (selector) {
@@ -201,43 +200,51 @@ public class PrngSystemPrecompiledContract extends AbstractPrecompiledContract {
 		return hashBytes == null || hashBytes.length == 0;
 	}
 
+	@VisibleForTesting
 	long calculateGas(final Instant now) {
 		final var feesInTinyCents = pricingUtils.getCanonicalPriceInTinyCents(PRNG);
-		final var currentGasPriceInTinyCents = livePricesSource.currentGasPriceInTinycents(now,
-				HederaFunctionality.ContractCall);
+		final var currentGasPriceInTinyCents = livePricesSource.currentGasPriceInTinycents(now, ContractCall);
 		return feesInTinyCents / currentGasPriceInTinyCents;
 	}
 
+	@VisibleForTesting
 	ExpirableTxnRecord.Builder createUnsuccessfulChildRecord(
 			final ResponseCodeEnum status,
-			final MessageFrame frame) {
+			final MessageFrame frame
+	) {
 		final var childRecord = creator.createUnsuccessfulSyntheticRecord(status);
 		addContractCallResultToRecord(childRecord, null, Optional.of(status), frame);
 		return childRecord;
 	}
 
+	@VisibleForTesting
 	ExpirableTxnRecord.Builder createSuccessfulChildRecord(
 			final Bytes randomNum,
 			final MessageFrame frame,
-			final Bytes input) {
+			final Bytes input
+	) {
+		final var effectsTracker = new SideEffectsTracker();
+		trackPrngOutput(effectsTracker, input, randomNum);
 		final var childRecord = creator.createSuccessfulSyntheticRecord(
-				Collections.emptyList(), tracker, EMPTY_MEMO);
-
-		setPseudorandomData(childRecord, input, randomNum);
+				Collections.emptyList(), effectsTracker, EMPTY_MEMO);
 		addContractCallResultToRecord(childRecord, randomNum, Optional.empty(), frame);
 		return childRecord;
 	}
 
-	private void setPseudorandomData(final ExpirableTxnRecord.Builder childRecord, final Bytes input,
-			final Bytes randomNum) {
+	private void trackPrngOutput(
+			final SideEffectsTracker effectsTracker,
+			final Bytes input,
+			final Bytes randomNum
+	) {
 		final var selector = input.getInt(0);
 		if (selector == PSEUDORANDOM_NUM_IN_RANGE_GENERATOR_SELECTOR) {
-			childRecord.setPseudoRandomNumber(randomNum.toBigInteger().intValue());
+			effectsTracker.trackRandomNumber(randomNum.toBigInteger().intValue());
 		} else if (selector == PSEUDORANDOM_SEED_GENERATOR_SELECTOR) {
-			childRecord.setPseudoRandomBytes(randomNum.toArray());
+			effectsTracker.trackRandomBytes(randomNum.toArray());
 		}
 	}
 
+	@VisibleForTesting
 	TransactionBody.Builder body(final Bytes randomNum, final Bytes input) {
 		final var txnBody = TransactionBody.newBuilder();
 		if (randomNum == null) {

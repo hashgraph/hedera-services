@@ -55,6 +55,7 @@ public class BackedSystemAccountsCreator implements SystemAccountsCreator {
 	private final AccountNumbers accountNums;
 	private final PropertySource properties;
 	private final Supplier<JEd25519Key> genesisKeySource;
+	private final TreasuryCloner treasuryCloner;
 
 	private JKey genesisKey;
 
@@ -62,11 +63,13 @@ public class BackedSystemAccountsCreator implements SystemAccountsCreator {
 	public BackedSystemAccountsCreator(
 			final AccountNumbers accountNums,
 			final @CompositeProps PropertySource properties,
-			final Supplier<JEd25519Key> genesisKeySource
+			final Supplier<JEd25519Key> genesisKeySource,
+			final TreasuryCloner treasuryCloner
 	) {
 		this.accountNums = accountNums;
 		this.properties = properties;
 		this.genesisKeySource = genesisKeySource;
+		this.treasuryCloner = treasuryCloner;
 	}
 
 	/**
@@ -111,6 +114,8 @@ public class BackedSystemAccountsCreator implements SystemAccountsCreator {
 				accounts.put(id, accountWith(0, expiry));
 			}
 		}
+
+		treasuryCloner.ensureTreasuryClonesExist();
 
 		var allIds = accounts.idSet();
 		var ledgerFloat = allIds.stream().mapToLong(id -> accounts.getImmutableRef(id).getBalance()).sum();

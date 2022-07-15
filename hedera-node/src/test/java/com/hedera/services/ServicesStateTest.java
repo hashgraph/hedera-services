@@ -31,6 +31,7 @@ import com.hedera.services.state.DualStateAccessor;
 import com.hedera.services.state.forensics.HashLogger;
 import com.hedera.services.state.initialization.SystemAccountsCreator;
 import com.hedera.services.state.initialization.SystemFilesManager;
+import com.hedera.services.state.initialization.TreasuryCloner;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.merkle.MerkleScheduledTransactions;
@@ -169,6 +170,8 @@ class ServicesStateTest {
 	private DualStateAccessor dualStateAccessor;
 	@Mock
 	private ServicesInitFlow initFlow;
+	@Mock
+	private TreasuryCloner treasuryCloner;
 	@Mock
 	private ServicesApp.Builder appBuilder;
 	@Mock
@@ -497,6 +500,7 @@ class ServicesStateTest {
 		given(app.initializationFlow()).willReturn(initFlow);
 		given(app.dualStateAccessor()).willReturn(dualStateAccessor);
 		given(app.sysFilesManager()).willReturn(systemFilesManager);
+		given(app.treasuryCloner()).willReturn(treasuryCloner);
 		given(platform.getSelfId()).willReturn(selfId);
 
 		APPS.save(selfId.getId(), app);
@@ -621,6 +625,7 @@ class ServicesStateTest {
 		given(app.dualStateAccessor()).willReturn(dualStateAccessor);
 		given(platform.getSelfId()).willReturn(selfId);
 		given(app.sysFilesManager()).willReturn(systemFilesManager);
+		given(app.treasuryCloner()).willReturn(treasuryCloner);
 		// and:
 		APPS.save(selfId.getId(), app);
 
@@ -654,6 +659,7 @@ class ServicesStateTest {
 		given(app.dualStateAccessor()).willReturn(dualStateAccessor);
 		given(platform.getSelfId()).willReturn(selfId);
 		given(app.sysFilesManager()).willReturn(systemFilesManager);
+		given(app.treasuryCloner()).willReturn(treasuryCloner);
 		// and:
 		APPS.save(selfId.getId(), app);
 
@@ -714,6 +720,7 @@ class ServicesStateTest {
 		given(app.dualStateAccessor()).willReturn(dualStateAccessor);
 		given(platform.getSelfId()).willReturn(selfId);
 		given(app.sysFilesManager()).willReturn(systemFilesManager);
+		given(app.treasuryCloner()).willReturn(treasuryCloner);
 		// and:
 		APPS.save(selfId.getId(), app);
 
