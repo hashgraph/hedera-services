@@ -119,7 +119,7 @@ public class FileUpdateSuite extends HapiApiSuite {
     private static final String USE_GAS_THROTTLE_PROP = "contracts.throttle.throttleByGas";
     private static final String MAX_CUSTOM_FEES_PROP = "tokens.maxCustomFeesAllowed";
     private static final String MAX_REFUND_GAS_PROP = "contracts.maxRefundPercentOfGasLimit";
-    private static final String CONSENSUS_GAS_THROTTLE_PROP = "contracts.maxGasPerSec";
+    private static final String CONS_MAX_GAS_PROP = "contracts.maxGasPerSec";
     private static final String CHAINID_PROP = "contracts.chainId";
 
     private static final long DEFAULT_CHAIN_ID =
@@ -133,7 +133,7 @@ public class FileUpdateSuite extends HapiApiSuite {
     private static final String DEFAULT_MAX_KV_PAIRS =
             HapiSpecSetup.getDefaultNodeProps().get(AGGREGATE_KV_LIMIT_PROP);
     private static final String DEFAULT_MAX_CONS_GAS =
-            HapiSpecSetup.getDefaultNodeProps().get(CONSENSUS_GAS_THROTTLE_PROP);
+            HapiSpecSetup.getDefaultNodeProps().get(CONS_MAX_GAS_PROP);
 
     public static void main(String... args) {
         new FileUpdateSuite().runSuiteSync();
@@ -403,13 +403,13 @@ public class FileUpdateSuite extends HapiApiSuite {
                 .given(
                         uploadInitCode(CONTRACT),
                         contractCreate(CONTRACT),
-                        overriding(DEFAULT_MAX_CONS_GAS, "100"))
+                        overriding(CONS_MAX_GAS_PROP, "100"))
                 .when()
                 .then(
                         contractCallLocal(CONTRACT, INDIRECT_GET_ABI)
                                 .gas(101L)
                                 .hasCostAnswerPrecheck(BUSY),
-                        resetToDefault(DEFAULT_MAX_CONS_GAS));
+                        resetToDefault(CONS_MAX_GAS_PROP));
     }
 
     private HapiApiSpec kvLimitsEnforced() {
@@ -426,8 +426,10 @@ public class FileUpdateSuite extends HapiApiSuite {
                                 .payingWith(ADDRESS_BOOK_CONTROL)
                                 .overridingProps(
                                         Map.of(
-                                                INDIVIDUAL_KV_LIMIT_PROP, "10",
-                                                CONSENSUS_GAS_THROTTLE_PROP, "100_000_000")))
+                                                INDIVIDUAL_KV_LIMIT_PROP,
+                                                "10",
+                                                CONS_MAX_GAS_PROP,
+                                                "100_000_000")))
                 .when(
                         /* The first call to insert adds 5 mappings */
                         contractCall(contract, INSERT_ABI, 1, 1)
@@ -466,7 +468,7 @@ public class FileUpdateSuite extends HapiApiSuite {
                                                 DEFAULT_MAX_KV_PAIRS_PER_CONTRACT,
                                                 AGGREGATE_KV_LIMIT_PROP,
                                                 DEFAULT_MAX_KV_PAIRS,
-                                                CONSENSUS_GAS_THROTTLE_PROP,
+                                                CONS_MAX_GAS_PROP,
                                                 DEFAULT_MAX_CONS_GAS)),
                         contractCall(contract, INSERT_ABI, 3, 9)
                                 .payingWith(GENESIS)
@@ -487,7 +489,7 @@ public class FileUpdateSuite extends HapiApiSuite {
         return defaultHapiSpec("ServiceFeeRefundedIfConsGasExhausted")
                 .given(
                         overridingTwo(
-                                CONSENSUS_GAS_THROTTLE_PROP,
+                                CONS_MAX_GAS_PROP,
                                 DEFAULT_MAX_CONS_GAS,
                                 USE_GAS_THROTTLE_PROP,
                                 "true"),
