@@ -21,6 +21,18 @@ import com.hedera.services.bdd.suites.consensus.TopicGetInfoSuite;
 import com.hedera.services.bdd.suites.consensus.TopicUpdateSuite;
 import com.hedera.services.bdd.suites.contract.hapi.ContractGetBytecodeSuite;
 import com.hedera.services.bdd.suites.contract.hapi.ContractUpdateSuite;
+import com.hedera.services.bdd.suites.contract.opcodes.BalanceOperationSuite;
+import com.hedera.services.bdd.suites.contract.opcodes.CallCodeOperationSuite;
+import com.hedera.services.bdd.suites.contract.opcodes.CallOperationSuite;
+import com.hedera.services.bdd.suites.contract.opcodes.CreateOperationSuite;
+import com.hedera.services.bdd.suites.contract.opcodes.DelegateCallOperationSuite;
+import com.hedera.services.bdd.suites.contract.opcodes.ExtCodeCopyOperationSuite;
+import com.hedera.services.bdd.suites.contract.opcodes.ExtCodeHashOperationSuite;
+import com.hedera.services.bdd.suites.contract.opcodes.ExtCodeSizeOperationSuite;
+import com.hedera.services.bdd.suites.contract.opcodes.GlobalPropertiesSuite;
+import com.hedera.services.bdd.suites.contract.opcodes.SStoreSuite;
+import com.hedera.services.bdd.suites.contract.opcodes.SelfDestructSuite;
+import com.hedera.services.bdd.suites.contract.opcodes.StaticCallOperationSuite;
 import com.hedera.services.bdd.suites.contract.openzeppelin.ERC1155ContractInteractions;
 import com.hedera.services.bdd.suites.contract.openzeppelin.ERC20ContractInteractions;
 import com.hedera.services.bdd.suites.contract.openzeppelin.ERC721ContractInteractions;
@@ -29,6 +41,8 @@ import com.hedera.services.bdd.suites.contract.precompile.ContractBurnHTSSuite;
 import com.hedera.services.bdd.suites.contract.precompile.ContractHTSSuite;
 import com.hedera.services.bdd.suites.contract.precompile.ContractKeysHTSSuite;
 import com.hedera.services.bdd.suites.contract.precompile.ContractMintHTSSuite;
+import com.hedera.services.bdd.suites.contract.precompile.CreatePrecompileSuite;
+import com.hedera.services.bdd.suites.contract.precompile.CryptoTransferHTSSuite;
 import com.hedera.services.bdd.suites.contract.records.LogsSuite;
 import com.hedera.services.bdd.suites.contract.records.RecordsSuite;
 import com.hedera.services.bdd.suites.crypto.CryptoApproveAllowanceSuite;
@@ -151,9 +165,8 @@ class EndToEndTests extends E2ETestBase {
                 extractSpecsFromSuite(ContractBurnHTSSuite::new),
                 extractSpecsFromSuite(ContractHTSSuite::new),
                 extractSpecsFromSuite(ContractKeysHTSSuite::new),
-                extractSpecsFromSuite(ContractMintHTSSuite::new)
-                //				extractSpecsFromSuite(CreatePrecompileSuite::new)
-                );
+                extractSpecsFromSuite(ContractMintHTSSuite::new),
+                extractSpecsFromSuite(CreatePrecompileSuite::new));
     }
 
     @Tag("contract")
@@ -163,12 +176,12 @@ class EndToEndTests extends E2ETestBase {
     Collection<DynamicContainer> contractPrecompileEth() {
         return List.of(
                 new DynamicContainer[] {
-                    //				extractSpecsFromSuiteForEth(AssociatePrecompileSuite::new),
-                    //				extractSpecsFromSuiteForEth(ContractBurnHTSSuite::new),
-                    //				extractSpecsFromSuiteForEth(ContractHTSSuite::new),
-                    //				extractSpecsFromSuiteForEth(ContractKeysHTSSuite::new),
-                    //				extractSpecsFromSuiteForEth(ContractMintHTSSuite::new),
-                    //				extractSpecsFromSuiteForEth(CreatePrecompileSuite::new)
+                    extractSpecsFromSuiteForEth(AssociatePrecompileSuite::new),
+                    extractSpecsFromSuiteForEth(ContractBurnHTSSuite::new),
+                    extractSpecsFromSuiteForEth(ContractHTSSuite::new),
+                    extractSpecsFromSuiteForEth(ContractKeysHTSSuite::new),
+                    extractSpecsFromSuiteForEth(ContractMintHTSSuite::new),
+                    extractSpecsFromSuiteForEth(CreatePrecompileSuite::new)
                 });
     }
 
@@ -179,10 +192,9 @@ class EndToEndTests extends E2ETestBase {
     Collection<DynamicContainer> contractPrecompile2() {
         return List.of(
                 new DynamicContainer[] {
-                    //				extractSpecsFromSuite(CryptoTransferHTSSuite::new), TODO FAILS
+                    extractSpecsFromSuite(CryptoTransferHTSSuite::new),
                     //				extractSpecsFromSuite(DelegatePrecompileSuite::new),  TODO FAILS
                     //				extractSpecsFromSuite(DissociatePrecompileSuite::new),
-                    //				extractSpecsFromSuite(DynamicGasCostSuite::new),  TODO FAILS
                     //				extractSpecsFromSuite(MixedHTSPrecompileTestsSuite::new)  TODO FAILS
                 });
     }
@@ -244,19 +256,18 @@ class EndToEndTests extends E2ETestBase {
     @TestFactory
     Collection<DynamicContainer> contractOpcodes() {
         return List.of(
-                //				extractSpecsFromSuite(BalanceOperationSuite::new),
-                //				extractSpecsFromSuite(CallCodeOperationSuite::new),
-                //				extractSpecsFromSuite(CallOperationSuite::new),
-                //				extractSpecsFromSuite(CreateOperationSuite::new),
-                //				extractSpecsFromSuite(DelegateCallOperationSuite::new),
-                //				extractSpecsFromSuite(ExtCodeCopyOperationSuite::new),
-                //				extractSpecsFromSuite(ExtCodeHashOperationSuite::new),
-                //				extractSpecsFromSuite(ExtCodeSizeOperationSuite::new),
-                //				extractSpecsFromSuite(GlobalPropertiesSuite::new),
-                //				extractSpecsFromSuite(SelfDestructSuite::new),
-                //				extractSpecsFromSuite(SStoreSuite::new),
-                //				extractSpecsFromSuite(StaticCallOperationSuite::new)
-                );
+                extractSpecsFromSuite(BalanceOperationSuite::new),
+                extractSpecsFromSuite(CallCodeOperationSuite::new),
+                extractSpecsFromSuite(CallOperationSuite::new),
+                extractSpecsFromSuite(CreateOperationSuite::new),
+                extractSpecsFromSuite(DelegateCallOperationSuite::new),
+                extractSpecsFromSuite(ExtCodeCopyOperationSuite::new),
+                extractSpecsFromSuite(ExtCodeHashOperationSuite::new),
+                extractSpecsFromSuite(ExtCodeSizeOperationSuite::new),
+                extractSpecsFromSuite(GlobalPropertiesSuite::new),
+                extractSpecsFromSuite(SelfDestructSuite::new),
+                extractSpecsFromSuite(SStoreSuite::new),
+                extractSpecsFromSuite(StaticCallOperationSuite::new));
     }
 
     @Tag("contract")
