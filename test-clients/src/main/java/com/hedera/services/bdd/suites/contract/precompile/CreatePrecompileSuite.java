@@ -103,6 +103,9 @@ public class CreatePrecompileSuite extends HapiApiSuite {
     private static final String ECDSA_KEY = "ecdsa";
     private final String EXISTING_TOKEN = "EXISTING_TOKEN";
     private static final String AUTO_RENEW_ACCOUNT = "autoRenewAccount";
+    private static final String EXPLICIT_CREATE_RESULT = "Explicit create result is {}";
+    private static final String CREATE_NFT_WITH_KEYS_AND_EXPIRY_FUNCTION =
+            "createNFTTokenWithKeysAndExpiry";
 
     public static void main(String... args) {
         new CreatePrecompileSuite().runSuiteSync();
@@ -121,34 +124,30 @@ public class CreatePrecompileSuite extends HapiApiSuite {
 
     List<HapiApiSpec> positiveSpecs() {
         return List.of(
-                new HapiApiSpec[] {
-                    fungibleTokenCreateHappyPath(),
-                    fungibleTokenCreateWithFeesHappyPath(),
-                    nonFungibleTokenCreateHappyPath(),
-                    nonFungibleTokenCreateWithFeesHappyPath(),
-                    fungibleTokenCreateThenQueryAndTransfer(),
-                    nonFungibleTokenCreateThenQuery(),
-                    inheritsSenderAutoRenewAccountIfAnyForNftCreate(),
-                    inheritsSenderAutoRenewAccountForTokenCreate(),
-                    createTokenWithDefaultExpiryAndEmptyKeys()
-                });
+                fungibleTokenCreateHappyPath(),
+                fungibleTokenCreateWithFeesHappyPath(),
+                nonFungibleTokenCreateHappyPath(),
+                nonFungibleTokenCreateWithFeesHappyPath(),
+                fungibleTokenCreateThenQueryAndTransfer(),
+                nonFungibleTokenCreateThenQuery(),
+                inheritsSenderAutoRenewAccountIfAnyForNftCreate(),
+                inheritsSenderAutoRenewAccountForTokenCreate(),
+                createTokenWithDefaultExpiryAndEmptyKeys());
     }
 
     List<HapiApiSpec> negativeSpecs() {
         return List.of(
-                new HapiApiSpec[] {
-                    tokenCreateWithEmptyKeysReverts(),
-                    tokenCreateWithKeyWithMultipleKeyValuesReverts(),
-                    tokenCreateWithFixedFeeWithMultiplePaymentsReverts(),
-                    createTokenWithEmptyTokenStruct(),
-                    createTokenWithInvalidExpiry(),
-                    createTokenWithInvalidRoyaltyFee(),
-                    createTokenWithInvalidTreasury(),
-                    createTokenWithInvalidFixedFeeWithERC721Denomination(),
-                    createTokenWithInvalidFeeCollector(),
-                    createTokenWithInsufficientValueSent(),
-                    delegateCallTokenCreateFails()
-                });
+                tokenCreateWithEmptyKeysReverts(),
+                tokenCreateWithKeyWithMultipleKeyValuesReverts(),
+                tokenCreateWithFixedFeeWithMultiplePaymentsReverts(),
+                createTokenWithEmptyTokenStruct(),
+                createTokenWithInvalidExpiry(),
+                createTokenWithInvalidRoyaltyFee(),
+                createTokenWithInvalidTreasury(),
+                createTokenWithInvalidFixedFeeWithERC721Denomination(),
+                createTokenWithInvalidFeeCollector(),
+                createTokenWithInsufficientValueSent(),
+                delegateCallTokenCreateFails());
     }
 
     // TEST-001
@@ -227,8 +226,7 @@ public class CreatePrecompileSuite extends HapiApiSuite {
                                                         .exposingResultTo(
                                                                 result -> {
                                                                     log.info(
-                                                                            "Explicit create result"
-                                                                                    + " is {}",
+                                                                            EXPLICIT_CREATE_RESULT,
                                                                             result[0]);
                                                                     final var res =
                                                                             (byte[]) result[0];
@@ -343,8 +341,7 @@ public class CreatePrecompileSuite extends HapiApiSuite {
                                                         .exposingResultTo(
                                                                 result -> {
                                                                     log.info(
-                                                                            "Explicit create result"
-                                                                                    + " is {}",
+                                                                            EXPLICIT_CREATE_RESULT,
                                                                             result[0]);
                                                                     final var res =
                                                                             (byte[]) result[0];
@@ -435,7 +432,7 @@ public class CreatePrecompileSuite extends HapiApiSuite {
                                     final var subop2 =
                                             contractCall(
                                                             TOKEN_CREATE_CONTRACT,
-                                                            "createNFTTokenWithKeysAndExpiry",
+                                                            CREATE_NFT_WITH_KEYS_AND_EXPIRY_FUNCTION,
                                                             asAddress(
                                                                     spec.registry()
                                                                             .getAccountID(ACCOUNT)),
@@ -561,8 +558,7 @@ public class CreatePrecompileSuite extends HapiApiSuite {
                                                         .exposingResultTo(
                                                                 result -> {
                                                                     log.info(
-                                                                            "Explicit create result"
-                                                                                    + " is {}",
+                                                                            EXPLICIT_CREATE_RESULT,
                                                                             result[0]);
                                                                     final var res =
                                                                             (byte[]) result[0];
@@ -609,7 +605,7 @@ public class CreatePrecompileSuite extends HapiApiSuite {
                                     final var subop2 =
                                             contractCall(
                                                             TOKEN_CREATE_CONTRACT,
-                                                            "createNFTTokenWithKeysAndExpiry",
+                                                            CREATE_NFT_WITH_KEYS_AND_EXPIRY_FUNCTION,
                                                             asAddress(
                                                                     spec.registry()
                                                                             .getAccountID(ACCOUNT)),
@@ -652,9 +648,8 @@ public class CreatePrecompileSuite extends HapiApiSuite {
 
                                     final var delta =
                                             subop3.getResponseRecord().getTransactionFee();
-                                    final var effectivePayer = ACCOUNT;
                                     final var subop4 =
-                                            getAccountBalance(effectivePayer)
+                                            getAccountBalance(ACCOUNT)
                                                     .hasTinyBars(
                                                             changeFromSnapshot(
                                                                     ACCOUNT_BALANCE,
@@ -770,8 +765,7 @@ public class CreatePrecompileSuite extends HapiApiSuite {
                                                         .exposingResultTo(
                                                                 result -> {
                                                                     log.info(
-                                                                            "Explicit create result"
-                                                                                    + " is {}",
+                                                                            EXPLICIT_CREATE_RESULT,
                                                                             result[0]);
                                                                     final var res =
                                                                             (byte[]) result[0];
@@ -865,8 +859,7 @@ public class CreatePrecompileSuite extends HapiApiSuite {
                                                         .exposingResultTo(
                                                                 result -> {
                                                                     log.info(
-                                                                            "Explicit create result"
-                                                                                    + " is {}",
+                                                                            EXPLICIT_CREATE_RESULT,
                                                                             result[0]);
                                                                     final var res =
                                                                             (byte[]) result[0];
@@ -971,8 +964,7 @@ public class CreatePrecompileSuite extends HapiApiSuite {
                                                         .exposingResultTo(
                                                                 result -> {
                                                                     log.info(
-                                                                            "Explicit create result"
-                                                                                    + " is {}",
+                                                                            EXPLICIT_CREATE_RESULT,
                                                                             result[0]);
                                                                     final var res =
                                                                             (byte[]) result[0];
@@ -1384,7 +1376,7 @@ public class CreatePrecompileSuite extends HapiApiSuite {
                                                 spec,
                                                 contractCall(
                                                                 TOKEN_CREATE_CONTRACT,
-                                                                "createNFTTokenWithKeysAndExpiry",
+                                                                CREATE_NFT_WITH_KEYS_AND_EXPIRY_FUNCTION,
                                                                 ArrayUtils.toPrimitive(
                                                                         Utils.asSolidityAddress(
                                                                                 0,
@@ -1563,7 +1555,7 @@ public class CreatePrecompileSuite extends HapiApiSuite {
                                     final var hapiContractCall =
                                             contractCall(
                                                             TOKEN_CREATE_CONTRACT,
-                                                            "createNFTTokenWithKeysAndExpiry",
+                                                            CREATE_NFT_WITH_KEYS_AND_EXPIRY_FUNCTION,
                                                             asAddress(
                                                                     spec.registry()
                                                                             .getAccountID(ACCOUNT)),
@@ -1711,8 +1703,7 @@ public class CreatePrecompileSuite extends HapiApiSuite {
                                                         .exposingResultTo(
                                                                 result -> {
                                                                     log.info(
-                                                                            "Explicit create result"
-                                                                                    + " is {}",
+                                                                            EXPLICIT_CREATE_RESULT,
                                                                             result[0]);
                                                                     final var res =
                                                                             (byte[]) result[0];
