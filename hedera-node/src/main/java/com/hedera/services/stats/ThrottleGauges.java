@@ -34,8 +34,10 @@ import org.apache.logging.log4j.Logger;
 import javax.inject.Singleton;
 import java.time.Instant;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import static com.hedera.services.stats.ServicesStatsManager.GAUGE_FORMAT;
 import static com.hedera.services.stats.ServicesStatsManager.STAT_CATEGORY;
@@ -94,10 +96,16 @@ public class ThrottleGauges {
 			final List<DeterministicThrottle> throttles,
 			final Map<String, DoubleGauge> namedGauges
 	) {
+		final Set<String> activeReqs = new HashSet<>();
 		throttles.stream()
 				.filter(throttle -> throttlesToSample.contains(throttle.name()))
-				.forEach(throttle ->
-						addAndCorrelateEntryFor(type, throttle.name(), platform, namedGauges));
+				.forEach(throttle -> {
+					addAndCorrelateEntryFor(type, throttle.name(), platform, namedGauges);
+					activeReqs.add(throttle.name());
+				});
+		throttlesToSample.stream()
+				.filter(req -> !activeReqs.contains(req) && !GAS_THROTTLE_ID.equals(req))
+				.forEach(name -> justAddEntryFor(type, name, platform));
 		if (throttlesToSample.contains(GAS_THROTTLE_ID)) {
 			addAndCorrelateEntryFor(type, GAS_THROTTLE_NAME, platform, namedGauges);
 		}
@@ -126,12 +134,30 @@ public class ThrottleGauges {
 			final Platform platform,
 			final Map<String, DoubleGauge> utilizationMetrics
 	) {
+		utilizationMetrics.put(throttleName, registeredGaugeFor(type, throttleName, platform, "LIVE"));
+	}
+
+	private void justAddEntryFor(
+			final String type,
+			final String throttleName,
+			final Platform platform
+	) {
+		// Don't track this gauge since we can't update its value (the throttle bucket doesn't exist)
+		registeredGaugeFor(type, throttleName, platform, "INERT");
+	}
+
+	private DoubleGauge registeredGaugeFor(
+			final String type,
+			final String throttleName,
+			final Platform platform,
+			final String status
+	) {
 		final var name = type.toLowerCase() + String.format(THROTTLE_NAME_TPL, throttleName);
 		final var desc = String.format(THROTTLE_DESCRIPTION_TPL, type, throttleName);
 		final var gauge = new DoubleGauge(STAT_CATEGORY, name, desc, GAUGE_FORMAT);
-		utilizationMetrics.put(throttleName, gauge);
 		platform.addAppMetrics(gauge);
-		log.info("Registered gauge '{}' under name '{}'", desc, name);
+		log.info("Registered {} gauge for '{}' under name '{}'", status, desc, name);
+		return gauge;
 	}
 
 	private static final String THROTTLE_NAME_TPL = "%sPercentUsed";
