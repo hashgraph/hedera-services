@@ -41,6 +41,7 @@ import com.hedera.services.state.forensics.HashLogger;
 import com.hedera.services.state.forensics.IssListener;
 import com.hedera.services.state.initialization.BackedSystemAccountsCreator;
 import com.hedera.services.state.initialization.HfsSystemFilesManager;
+import com.hedera.services.state.initialization.TreasuryCloner;
 import com.hedera.services.state.logic.NetworkCtxManager;
 import com.hedera.services.state.logic.ReconnectListener;
 import com.hedera.services.state.logic.StandardProcessLogic;
@@ -113,6 +114,7 @@ class ServicesAppTest {
 
 	@Test
 	void objectGraphRootsAreAvailable() {
+		assertThat(subject.treasuryCloner(), instanceOf(TreasuryCloner.class));
 		assertThat(subject.logic(), instanceOf(StandardProcessLogic.class));
 		assertThat(subject.hashLogger(), instanceOf(HashLogger.class));
 		assertThat(subject.workingState(), instanceOf(MutableStateChildren.class));
