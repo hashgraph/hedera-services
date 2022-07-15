@@ -1,3 +1,18 @@
+/*
+ * Copyright (C) 2021-2022 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package com.hedera.services.contracts.execution;
 
 /*
@@ -220,15 +235,15 @@ class CreateEvmTxProcessorTest {
                         0,
                         Bytes.fromHexString(
                                 "6080604052348015600f57600080fd5b506000604e576040517f08c379a"
-                                        + "00000000000000000000000000000000000000000000000000000000081"
-                                        + "526004016045906071565b60405180910390fd5b60c9565b6000605d601"
-                                        + "183608f565b915060668260a0565b602082019050919050565b60006020"
-                                        + "8201905081810360008301526088816052565b9050919050565b6000828"
-                                        + "25260208201905092915050565b7f636f756c64206e6f74206578656375"
-                                        + "7465000000000000000000000000000000600082015250565b603f80610"
-                                        + "0d76000396000f3fe6080604052600080fdfea2646970667358221220d8"
-                                        + "2b5e4f0118f9b6972aae9287dfe93930fdbc1e62ca10ea7ac70bde1c0ad"
-                                        + "d2464736f6c63430008070033"),
+                                    + "00000000000000000000000000000000000000000000000000000000081"
+                                    + "526004016045906071565b60405180910390fd5b60c9565b6000605d601"
+                                    + "183608f565b915060668260a0565b602082019050919050565b60006020"
+                                    + "8201905081810360008301526088816052565b9050919050565b6000828"
+                                    + "25260208201905092915050565b7f636f756c64206e6f74206578656375"
+                                    + "7465000000000000000000000000000000600082015250565b603f80610"
+                                    + "0d76000396000f3fe6080604052600080fdfea2646970667358221220d8"
+                                    + "2b5e4f0118f9b6972aae9287dfe93930fdbc1e62ca10ea7ac70bde1c0ad"
+                                    + "d2464736f6c63430008070033"),
                         consensusTime,
                         expiry);
 
