@@ -297,7 +297,6 @@
 					</scmBranchCommitComment>
 					<preparationGoals>
 						clean
-						license:update-file-header
 						verify
 						exec:exec@stage-changes
 					</preparationGoals>
