@@ -52,7 +52,6 @@ import org.ethereum.core.CallTransaction;
 
 public class HapiContractCall extends HapiBaseCall<HapiContractCall> {
     protected List<String> otherSigs = Collections.emptyList();
-    private Optional<Long> gas = Optional.empty();
     private Optional<String> details = Optional.empty();
     private Optional<Function<HapiApiSpec, Object[]>> paramsFn = Optional.empty();
     private Optional<ObjLongConsumer<ResponseCodeEnum>> gasObserver = Optional.empty();
@@ -173,6 +172,7 @@ public class HapiContractCall extends HapiBaseCall<HapiContractCall> {
         return otherSigs;
     }
 
+    @Override
     public Optional<String> getPayer() {
         return payer;
     }
@@ -251,14 +251,13 @@ public class HapiContractCall extends HapiBaseCall<HapiContractCall> {
             contract = actionable.getContract();
             abi = actionable.getDetails().getAbi();
             params = actionable.getDetails().getExampleArgs();
-        } else if (paramsFn.isPresent()) {
-            params = paramsFn.get().apply(spec);
-        }
+        } else
+            paramsFn.ifPresent(hapiApiSpecFunction -> params = hapiApiSpecFunction.apply(spec));
 
         byte[] callData;
-        if (explicitHexedParams.isPresent()) {
-            callData = explicitHexedParams.map(Supplier::get).map(CommonUtils::unhex).get();
-        } else {
+        if (explicitHexedParams.isPresent())
+            callData = explicitHexedParams.map(Supplier::get).map(CommonUtils::unhex).orElseGet(() -> new byte[0]);
+        else {
             final var paramsList = Arrays.asList(params);
             final var tupleExist =
                     paramsList.stream().anyMatch(p -> p instanceof Tuple || p instanceof Tuple[]);
@@ -295,17 +294,17 @@ public class HapiContractCall extends HapiBaseCall<HapiContractCall> {
     protected void updateStateOf(HapiApiSpec spec) throws Throwable {
         if (gasObserver.isPresent()) {
             doGasLookup(
-                    gas -> gasObserver.get().accept(actualStatus, gas), spec, txnSubmitted, false);
+                    gasValue -> gasObserver.get().accept(actualStatus, gasValue), spec, txnSubmitted, false);
         }
         if (resultObserver != null) {
             doObservedLookup(
                     spec,
                     txnSubmitted,
-                    record -> {
+                    txnRecord -> {
                         final var function = CallTransaction.Function.fromJsonInterface(abi);
                         final var result =
                                 function.decodeResult(
-                                        record.getContractCallResult()
+                                    txnRecord.getContractCallResult()
                                                 .getContractCallResult()
                                                 .toByteArray());
                         resultObserver.accept(result);
@@ -332,11 +331,11 @@ public class HapiContractCall extends HapiBaseCall<HapiContractCall> {
         doObservedLookup(
                 spec,
                 txn,
-                record -> {
+                txnRecord -> {
                     final var gasUsed =
                             isCreate
-                                    ? record.getContractCreateResult().getGasUsed()
-                                    : record.getContractCallResult().getGasUsed();
+                                    ? txnRecord.getContractCreateResult().getGasUsed()
+                                    : txnRecord.getContractCallResult().getGasUsed();
                     gasObserver.accept(gasUsed);
                 });
     }
