@@ -331,14 +331,8 @@ class GetTokenInfoPrecompilesTest {
         tokenKeys.add(feeScheduleKey);
         tokenKeys.add(pauseKey);
         tokenInfo = createTokenInfo(tokenKeys);
-        givenKeyContext(key, TokenKeyType.ADMIN_KEY);
-        givenKeyContext(key, TokenKeyType.KYC_KEY);
-        givenKeyContext(key, TokenKeyType.FREEZE_KEY);
-        givenKeyContext(key, TokenKeyType.WIPE_KEY);
-        givenKeyContext(key, TokenKeyType.SUPPLY_KEY);
-        givenKeyContext(key, TokenKeyType.FEE_SCHEDULE_KEY);
-        givenKeyContext(key, TokenKeyType.PAUSE_KEY);
 
+        givenKeyContextAllKeysActive(key);
         givenMinimalKeyContext();
 
         given(encoder.encodeGetTokenInfo(tokenInfo)).willReturn(successResult);
@@ -814,14 +808,52 @@ class GetTokenInfoPrecompilesTest {
 
     private void givenKeyContext(final JKey key, final TokenKeyType keyType) {
         switch (keyType) {
-            case ADMIN_KEY -> given(merkleToken.getAdminKey()).willReturn(key);
-            case KYC_KEY -> given(merkleToken.getKycKey()).willReturn(key);
-            case FREEZE_KEY -> given(merkleToken.getFreezeKey()).willReturn(key);
-            case WIPE_KEY -> given(merkleToken.getWipeKey()).willReturn(key);
-            case SUPPLY_KEY -> given(merkleToken.getSupplyKey()).willReturn(key);
-            case FEE_SCHEDULE_KEY -> given(merkleToken.getFeeScheduleKey()).willReturn(key);
-            case PAUSE_KEY -> given(merkleToken.getPauseKey()).willReturn(key);
+            case ADMIN_KEY -> {
+                given(merkleToken.getAdminKey()).willReturn(key);
+                given(merkleToken.hasAdminKey()).willReturn(true);
+            }
+            case KYC_KEY -> {
+                given(merkleToken.getKycKey()).willReturn(key);
+                given(merkleToken.hasKycKey()).willReturn(true);
+            }
+            case FREEZE_KEY -> {
+                given(merkleToken.getFreezeKey()).willReturn(key);
+                given(merkleToken.hasFreezeKey()).willReturn(true);
+            }
+            case WIPE_KEY -> {
+                given(merkleToken.getWipeKey()).willReturn(key);
+                given(merkleToken.hasWipeKey()).willReturn(true);
+            }
+            case SUPPLY_KEY -> {
+                given(merkleToken.getSupplyKey()).willReturn(key);
+                given(merkleToken.hasSupplyKey()).willReturn(true);
+            }
+            case FEE_SCHEDULE_KEY -> {
+                given(merkleToken.getFeeScheduleKey()).willReturn(key);
+                given(merkleToken.hasFeeScheduleKey()).willReturn(true);
+            }
+            case PAUSE_KEY -> {
+                given(merkleToken.getPauseKey()).willReturn(key);
+                given(merkleToken.hasPauseKey()).willReturn(true);
+            }
         }
+    }
+
+    private void givenKeyContextAllKeysActive(final JKey key) {
+        given(merkleToken.getAdminKey()).willReturn(key);
+        given(merkleToken.hasAdminKey()).willReturn(true);
+        given(merkleToken.getKycKey()).willReturn(key);
+        given(merkleToken.hasKycKey()).willReturn(true);
+        given(merkleToken.getFreezeKey()).willReturn(key);
+        given(merkleToken.hasFreezeKey()).willReturn(true);
+        given(merkleToken.getWipeKey()).willReturn(key);
+        given(merkleToken.hasWipeKey()).willReturn(true);
+        given(merkleToken.getSupplyKey()).willReturn(key);
+        given(merkleToken.hasSupplyKey()).willReturn(true);
+        given(merkleToken.getFeeScheduleKey()).willReturn(key);
+        given(merkleToken.hasFeeScheduleKey()).willReturn(true);
+        given(merkleToken.getPauseKey()).willReturn(key);
+        given(merkleToken.hasPauseKey()).willReturn(true);
     }
 
     private void givenMinimalUniqueTokenContext() {

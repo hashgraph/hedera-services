@@ -77,7 +77,7 @@ public abstract class AbstractTokenInfoPrecompile extends AbstractReadOnlyPrecom
         final var memo = token.memo();
         final var tokenSupplyType = token.supplyType() == TokenSupplyType.FINITE;
         final var maxSupply = token.maxSupply();
-        final var freezeDefault = token.hasFreezeKey();
+        final var freezeDefault = token.accountsAreFrozenByDefault();
         final var tokenKeys = getTokenKeys(token);
         final var expiry =
                 new Expiry(
@@ -179,25 +179,25 @@ public abstract class AbstractTokenInfoPrecompile extends AbstractReadOnlyPrecom
     private List<TokenKey> getTokenKeys(final MerkleToken token) {
         final List<TokenKey> tokenKeys = new ArrayList<>(TokenKeyType.values().length);
 
-        if (token.getAdminKey() != null) {
+        if (token.hasAdminKey()) {
             tokenKeys.add(getTokenKey(token.getAdminKey(), ADMIN_KEY.value()));
         }
-        if (token.getKycKey() != null) {
+        if (token.hasKycKey()) {
             tokenKeys.add(getTokenKey(token.getKycKey(), KYC_KEY.value()));
         }
-        if (token.getFreezeKey() != null) {
+        if (token.hasFreezeKey()) {
             tokenKeys.add(getTokenKey(token.getFreezeKey(), FREEZE_KEY.value()));
         }
-        if (token.getWipeKey() != null) {
+        if (token.hasWipeKey()) {
             tokenKeys.add(getTokenKey(token.getWipeKey(), WIPE_KEY.value()));
         }
-        if (token.getSupplyKey() != null) {
+        if (token.hasSupplyKey()) {
             tokenKeys.add(getTokenKey(token.getSupplyKey(), SUPPLY_KEY.value()));
         }
-        if (token.getFeeScheduleKey() != null) {
+        if (token.hasFeeScheduleKey()) {
             tokenKeys.add(getTokenKey(token.getFeeScheduleKey(), FEE_SCHEDULE_KEY.value()));
         }
-        if (token.getPauseKey() != null) {
+        if (token.hasPauseKey()) {
             tokenKeys.add(getTokenKey(token.getPauseKey(), PAUSE_KEY.value()));
         }
 
