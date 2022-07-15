@@ -58,6 +58,8 @@ public class DecodingFacade {
     private static final String ADDRESS_PAIR_RAW_TYPE = "(bytes32,bytes32)";
     public static final String UINT256_RAW_TYPE = "(uint256)";
 
+    public static final String ADDRESS_RAW_TYPE = "(bytes32)";
+
     private static final List<SyntheticTxnFactory.NftExchange> NO_NFT_EXCHANGES =
             Collections.emptyList();
     private static final List<SyntheticTxnFactory.FungibleTokenTransfer> NO_FUNGIBLE_TRANSFERS =
@@ -150,7 +152,7 @@ public class DecodingFacade {
             new Function("balanceOf(address)", INT_OUTPUT);
     private static final Bytes BALANCE_OF_TOKEN_SELECTOR =
             Bytes.wrap(BALANCE_OF_TOKEN_FUNCTION.selector());
-    private static final ABIType<Tuple> BALANCE_OF_TOKEN_DECODER = TypeFactory.create("(bytes32)");
+    private static final ABIType<Tuple> BALANCE_OF_TOKEN_DECODER = TypeFactory.create(ADDRESS_RAW_TYPE);
 
     private static final Function OWNER_OF_NFT_FUNCTION =
             new Function("ownerOf(uint256)", INT_OUTPUT);
@@ -175,7 +177,7 @@ public class DecodingFacade {
 
     private static final Bytes PAUSE_TOKEN_SELECTOR = Bytes.wrap(PAUSE_TOKEN_FUNCTION.selector());
 
-    private static final ABIType<Tuple> PAUSE_TOKEN_DECODER = TypeFactory.create("(bytes32)");
+    private static final ABIType<Tuple> PAUSE_TOKEN_DECODER = TypeFactory.create(ADDRESS_RAW_TYPE);
 
     private static final Function UNPAUSE_TOKEN_FUNCTION =
             new Function("unpauseToken(address)", INT_OUTPUT);
@@ -183,7 +185,7 @@ public class DecodingFacade {
     private static final Bytes UNPAUSE_TOKEN_SELECTOR =
             Bytes.wrap(UNPAUSE_TOKEN_FUNCTION.selector());
 
-    private static final ABIType<Tuple> UNPAUSE_TOKEN_DECODER = TypeFactory.create("(bytes32)");
+    private static final ABIType<Tuple> UNPAUSE_TOKEN_DECODER = TypeFactory.create(ADDRESS_RAW_TYPE);
 
     /* --- Token Create Structs --- */
     private static final String KEY_VALUE = "(bool,address,bytes,bytes,address)";

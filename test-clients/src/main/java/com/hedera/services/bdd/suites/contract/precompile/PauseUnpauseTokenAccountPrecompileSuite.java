@@ -96,7 +96,7 @@ public class PauseUnpauseTokenAccountPrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 PAUSE_UNPAUSE_CONTRACT,
                                                                 "pauseTokenAccount",
-                                                                asAddress(tokenID.get()))
+                                                                (Object) asAddress(tokenID.get()))
                                                         .payingWith(GENESIS)
                                                         .via("pauseTokenAccountTxn")
                                                         .gas(GAS_TO_OFFER))))
@@ -128,7 +128,7 @@ public class PauseUnpauseTokenAccountPrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 PAUSE_UNPAUSE_CONTRACT,
                                                                 "unpauseTokenAccount",
-                                                                asAddress(tokenID.get()))
+                                                                (Object) asAddress(tokenID.get()))
                                                         .payingWith(GENESIS)
                                                         .via("unpauseTokenAccountTxn")
                                                         .gas(GAS_TO_OFFER))))
@@ -160,7 +160,7 @@ public class PauseUnpauseTokenAccountPrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 PAUSE_UNPAUSE_CONTRACT,
                                                                 "pauseTokenAccount",
-                                                                asAddress(tokenID.get()))
+                                                                (Object) asAddress(tokenID.get()))
                                                         .payingWith(GENESIS)
                                                         .via("pauseTokenAccountTxn")
                                                         .gas(GAS_TO_OFFER))))
@@ -192,7 +192,7 @@ public class PauseUnpauseTokenAccountPrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 PAUSE_UNPAUSE_CONTRACT,
                                                                 "unpauseTokenAccount",
-                                                                asAddress(tokenID.get()))
+                                                                (Object) asAddress(tokenID.get()))
                                                         .payingWith(GENESIS)
                                                         .via("unpauseTokenAccountTxn")
                                                         .gas(GAS_TO_OFFER))))
