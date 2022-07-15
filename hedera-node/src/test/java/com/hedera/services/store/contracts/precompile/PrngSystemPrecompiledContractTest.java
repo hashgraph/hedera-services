@@ -37,6 +37,7 @@ import com.hedera.services.txns.util.PrngLogic;
 import com.hedera.test.utils.TxnUtils;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.utility.CommonUtils;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.hyperledger.besu.datatypes.Wei;
@@ -45,11 +46,13 @@ import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.nio.ByteBuffer;
 import java.time.Instant;
+import java.util.Arrays;
 import java.util.Optional;
 import java.util.Random;
 
@@ -76,6 +79,9 @@ import static org.mockito.Mockito.mock;
 
 @ExtendWith(MockitoExtension.class)
 class PrngSystemPrecompiledContractTest {
+	private static final Hash WELL_KNOWN_HASH =
+			new Hash(CommonUtils.unhex(
+					"65386630386164632d356537632d343964342d623437372d62636134346538386338373133633038316162372d616300"));
 	@Mock
 	private MessageFrame frame;
 	@Mock
@@ -89,27 +95,24 @@ class PrngSystemPrecompiledContractTest {
 	@Mock
 	private ExpiringCreations creator;
 	@Mock
-	private SideEffectsTracker tracker;
-	@Mock
 	private RecordsHistorian recordsHistorian;
 	@Mock
 	private PrecompilePricingUtils pricingUtils;
-	private Instant consensusNow = Instant.ofEpochSecond(123456789L);
+	private final Instant consensusNow = Instant.ofEpochSecond(123456789L);
 	@Mock
 	private LivePricesSource livePricesSource;
 	@Mock
 	private HederaStackedWorldStateUpdater updater;
 
-	private PrngLogic logic;
 	private PrngSystemPrecompiledContract subject;
-	private Random r = new Random();
+	private final Random r = new Random();
 
-	private ExpirableTxnRecord.Builder childRecord = ExpirableTxnRecord.newBuilder();
+	private final ExpirableTxnRecord.Builder childRecord = ExpirableTxnRecord.newBuilder();
 
 	@BeforeEach
 	void setUp() {
-		logic = new PrngLogic(dynamicProperties, () -> runningHashLeaf, sideEffectsTracker);
-		subject = new PrngSystemPrecompiledContract(gasCalculator, logic, creator, tracker, recordsHistorian,
+		final var logic = new PrngLogic(dynamicProperties, () -> runningHashLeaf, sideEffectsTracker);
+		subject = new PrngSystemPrecompiledContract(gasCalculator, logic, creator, recordsHistorian,
 				pricingUtils, livePricesSource, dynamicProperties);
 	}
 
@@ -155,7 +158,7 @@ class PrngSystemPrecompiledContractTest {
 		assertEquals(INVALID_PRNG_RANGE, response.getRight());
 
 		final var result = subject.computePrecompile(input, frame);
-		assertEquals(null, result.getOutput());
+		assertNull(result.getOutput());
 		assertEquals(INVALID_OPERATION, result.getHaltReason().get());
 		assertEquals(MessageFrame.State.EXCEPTIONAL_HALT, result.getState());
 	}
@@ -181,43 +184,55 @@ class PrngSystemPrecompiledContractTest {
 		assertEquals(INSUFFICIENT_GAS, response.getRight());
 
 		final var result = subject.computePrecompile(input, frame);
-		assertEquals(null, result.getOutput());
+		assertNull(result.getOutput());
 	}
 
 	@Test
 	void happyPathWithRandomNumberGeneratedWorks() throws InterruptedException {
+		final ArgumentCaptor<SideEffectsTracker> captor = ArgumentCaptor.forClass(SideEffectsTracker.class);
+
 		final var input = randomNumberGeneratorInput(10);
 		initialSetUp();
-		given(creator.createSuccessfulSyntheticRecord(anyList(), any(), anyString())).willReturn(childRecord);
-		given(runningHashLeaf.nMinusThreeRunningHash()).willReturn(new Hash(TxnUtils.randomUtf8Bytes(48)));
+		given(creator.createSuccessfulSyntheticRecord(anyList(), captor.capture(), anyString())).willReturn(childRecord);
+		given(runningHashLeaf.nMinusThreeRunningHash()).willReturn(WELL_KNOWN_HASH);
 		given(frame.getBlockValues()).willReturn(new HederaBlockValues(10L, 123L, consensusNow));
 
 		final var response = subject.computePrngResult(10L, input, frame);
 		assertEquals(Optional.empty(), response.getLeft().getHaltReason());
 		assertEquals(COMPLETED_SUCCESS, response.getLeft().getState());
-		assertEquals(null, response.getRight());
+		assertNull(response.getRight());
 
 		final var result = subject.computePrecompile(input, frame);
 		assertNotNull(result.getOutput());
 		assertTrue(result.getOutput().toBigInteger().intValue() < 10);
+		// and:
+		final var effectsTracker = captor.getValue();
+		assertEquals(2, effectsTracker.getPseudorandomNumber());
 	}
 
 	@Test
 	void happyPathWithRandomSeedGeneratedWorks() throws InterruptedException {
+		final ArgumentCaptor<SideEffectsTracker> captor = ArgumentCaptor.forClass(SideEffectsTracker.class);
+
 		final var input = random256BitGeneratorInput();
 		initialSetUp();
-		given(creator.createSuccessfulSyntheticRecord(anyList(), any(), anyString())).willReturn(childRecord);
-		given(runningHashLeaf.nMinusThreeRunningHash()).willReturn(new Hash(TxnUtils.randomUtf8Bytes(48)));
+		given(creator.createSuccessfulSyntheticRecord(anyList(), captor.capture(), anyString())).willReturn(childRecord);
+		given(runningHashLeaf.nMinusThreeRunningHash()).willReturn(WELL_KNOWN_HASH);
 		given(frame.getBlockValues()).willReturn(new HederaBlockValues(10L, 123L, consensusNow));
 
 		final var response = subject.computePrngResult(10L, input, frame);
 		assertEquals(Optional.empty(), response.getLeft().getHaltReason());
 		assertEquals(COMPLETED_SUCCESS, response.getLeft().getState());
-		assertEquals(null, response.getRight());
+		assertNull(response.getRight());
 
 		final var result = subject.computePrecompile(input, frame);
 		assertNotNull(result.getOutput());
-		assertEquals(32, result.getOutput().toArray().length);
+
+		// and:
+		final var effectsTracker = captor.getValue();
+		assertArrayEquals(
+				Arrays.copyOfRange(WELL_KNOWN_HASH.getValue(), 0, 32),
+				effectsTracker.getPseudorandomBytes());
 	}
 
 	@Test
@@ -226,7 +241,7 @@ class PrngSystemPrecompiledContractTest {
 		initialSetUp();
 		given(frame.getBlockValues()).willReturn(new HederaBlockValues(10L, 123L, consensusNow));
 		final var logic = mock(PrngLogic.class);
-		subject = new PrngSystemPrecompiledContract(gasCalculator, logic, creator, tracker, recordsHistorian,
+		subject = new PrngSystemPrecompiledContract(gasCalculator, logic, creator, recordsHistorian,
 				pricingUtils, livePricesSource, dynamicProperties);
 		given(logic.getNMinus3RunningHashBytes()).willThrow(IndexOutOfBoundsException.class);
 
@@ -234,7 +249,7 @@ class PrngSystemPrecompiledContractTest {
 		assertEquals(INVALID_OPERATION, response.getLeft().getHaltReason().get());
 
 		final var result = subject.computePrecompile(input, frame);
-		assertEquals(null, result.getOutput());
+		assertNull(result.getOutput());
 	}
 
 	@Test
@@ -285,27 +300,24 @@ class PrngSystemPrecompiledContractTest {
 				frame, randomNumberGeneratorInput(10));
 
 		assertNotNull(childRecord);
-		assertArrayEquals(new byte[0], childRecord.getPseudoRandomBytes());
-		assertEquals(randomNum, childRecord.getPseudoRandomNumber());
 		assertEquals(EntityId.fromAddress(ALTBN128_ADD), childRecord.getContractCallResult().getSenderId());
 		assertEquals(randomNum, Bytes.wrap(childRecord.getContractCallResult().getResult()).toInt());
-		assertEquals(null, childRecord.getContractCallResult().getError());
+		assertNull(childRecord.getContractCallResult().getError());
 	}
 
 	@Test
 	void childRecordHasExpectationsForRandomSeed() {
 		final var randomBytes = Bytes.wrap(TxnUtils.randomUtf8Bytes(32));
+
 		setUpForChildRecord();
 		given(creator.createSuccessfulSyntheticRecord(anyList(), any(), anyString())).willReturn(childRecord);
 		final var childRecord = subject.createSuccessfulChildRecord(randomBytes,
 				frame, random256BitGeneratorInput());
 
 		assertNotNull(childRecord);
-		assertEquals(32, childRecord.getPseudoRandomBytes().length);
-		assertEquals(-1, childRecord.getPseudoRandomNumber());
 		assertEquals(EntityId.fromAddress(ALTBN128_ADD), childRecord.getContractCallResult().getSenderId());
 		assertArrayEquals(randomBytes.toArray(), Bytes.wrap(childRecord.getContractCallResult().getResult()).toArray());
-		assertEquals(null, childRecord.getContractCallResult().getError());
+		assertNull(childRecord.getContractCallResult().getError());
 	}
 
 	@Test
@@ -348,7 +360,7 @@ class PrngSystemPrecompiledContractTest {
 		assertEquals(INVALID_OPERATION, response.getLeft().getHaltReason().get());
 
 		final var result = subject.computePrecompile(input, frame);
-		assertEquals(null, result.getOutput());
+		assertNull(result.getOutput());
 	}
 
 	private static Bytes random256BitGeneratorInput() {
