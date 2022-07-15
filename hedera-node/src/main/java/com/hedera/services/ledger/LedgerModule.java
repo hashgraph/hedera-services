@@ -1,11 +1,6 @@
-package com.hedera.services.ledger;
-
-/*-
- * ‌
- * Hedera Services Node
- * ​
- * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2021-2022 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,8 +12,8 @@ package com.hedera.services.ledger;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+package com.hedera.services.ledger;
 
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.ledger.backing.BackingAccounts;
@@ -39,43 +34,42 @@ import com.hederahashgraph.api.proto.java.TokenID;
 import dagger.Binds;
 import dagger.Module;
 import dagger.Provides;
-
 import javax.inject.Singleton;
 
 @Module
 public interface LedgerModule {
-	@Binds
-	@Singleton
-	BackingStore<AccountID, MerkleAccount> bindBackingAccounts(BackingAccounts backingAccounts);
+    @Binds
+    @Singleton
+    BackingStore<AccountID, MerkleAccount> bindBackingAccounts(BackingAccounts backingAccounts);
 
-	@Provides
-	@Singleton
-	static HederaLedger provideHederaLedger(
-			final TokenStore tokenStore,
-			final ScheduleStore scheduleStore,
-			final EntityCreator creator,
-			final EntityIdSource ids,
-			final OptionValidator validator,
-			final SideEffectsTracker sideEffectsTracker,
-			final RecordsHistorian recordsHistorian,
-			final TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokensLedger,
-			final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger,
-			final AutoCreationLogic autoCreationLogic,
-			final TransferLogic transferLogic
-	) {
-		final var ledger = new HederaLedger(
-				tokenStore,
-				ids,
-				creator,
-				validator,
-				sideEffectsTracker,
-				recordsHistorian,
-				tokensLedger,
-				accountsLedger,
-				transferLogic,
-				autoCreationLogic);
-		scheduleStore.setAccountsLedger(accountsLedger);
-		scheduleStore.setHederaLedger(ledger);
-		return ledger;
-	}
+    @Provides
+    @Singleton
+    static HederaLedger provideHederaLedger(
+            final TokenStore tokenStore,
+            final ScheduleStore scheduleStore,
+            final EntityCreator creator,
+            final EntityIdSource ids,
+            final OptionValidator validator,
+            final SideEffectsTracker sideEffectsTracker,
+            final RecordsHistorian recordsHistorian,
+            final TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokensLedger,
+            final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger,
+            final AutoCreationLogic autoCreationLogic,
+            final TransferLogic transferLogic) {
+        final var ledger =
+                new HederaLedger(
+                        tokenStore,
+                        ids,
+                        creator,
+                        validator,
+                        sideEffectsTracker,
+                        recordsHistorian,
+                        tokensLedger,
+                        accountsLedger,
+                        transferLogic,
+                        autoCreationLogic);
+        scheduleStore.setAccountsLedger(accountsLedger);
+        scheduleStore.setHederaLedger(ledger);
+        return ledger;
+    }
 }

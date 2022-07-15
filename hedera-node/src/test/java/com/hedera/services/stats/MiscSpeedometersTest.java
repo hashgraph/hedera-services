@@ -1,11 +1,6 @@
-package com.hedera.services.stats;
-
-/*-
- * ‌
- * Hedera Services Node
- * ​
- * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,8 +12,12 @@ package com.hedera.services.stats;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+package com.hedera.services.stats;
+
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.mockito.BDDMockito.mock;
+import static org.mockito.BDDMockito.verify;
 
 import com.swirlds.common.metrics.SpeedometerMetric;
 import com.swirlds.common.system.Platform;
@@ -28,47 +27,39 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.mockito.BDDMockito.mock;
-import static org.mockito.BDDMockito.verify;
-
-
 @ExtendWith(MockitoExtension.class)
 class MiscSpeedometersTest {
-	private static final double halfLife = 10.0;
+    private static final double halfLife = 10.0;
 
-	@Mock
-	private Platform platform;
-	@Mock
-	private SpeedometerMetric syncVerifies;
-	@Mock
-	private SpeedometerMetric txnRejections;
+    @Mock private Platform platform;
+    @Mock private SpeedometerMetric syncVerifies;
+    @Mock private SpeedometerMetric txnRejections;
 
-	private MiscSpeedometers subject;
+    private MiscSpeedometers subject;
 
-	@BeforeEach
-	void setup() {
-		platform = mock(Platform.class);
+    @BeforeEach
+    void setup() {
+        platform = mock(Platform.class);
 
-		subject = new MiscSpeedometers(halfLife);
-	}
+        subject = new MiscSpeedometers(halfLife);
+    }
 
-	@Test
-	void registersExpectedStatEntries() {
-		subject.setSyncVerifications(syncVerifies);
-		subject.setPlatformTxnRejections(txnRejections);
+    @Test
+    void registersExpectedStatEntries() {
+        subject.setSyncVerifications(syncVerifies);
+        subject.setPlatformTxnRejections(txnRejections);
 
-		subject.registerWith(platform);
+        subject.registerWith(platform);
 
-		verify(platform).addAppMetrics(syncVerifies, txnRejections);
-	}
+        verify(platform).addAppMetrics(syncVerifies, txnRejections);
+    }
 
-	@Test
-	void cyclesExpectedSpeedometers() {
-		subject.cycleSyncVerifications();
-		subject.cyclePlatformTxnRejections();
+    @Test
+    void cyclesExpectedSpeedometers() {
+        subject.cycleSyncVerifications();
+        subject.cyclePlatformTxnRejections();
 
-		assertNotEquals(0.0, subject.getPlatformTxnRejections().getStatsBuffered().getMean());
-		assertNotEquals(0.0, subject.getSyncVerifications().getStatsBuffered().getMean());
-	}
+        assertNotEquals(0.0, subject.getPlatformTxnRejections().getStatsBuffered().getMean());
+        assertNotEquals(0.0, subject.getSyncVerifications().getStatsBuffered().getMean());
+    }
 }
