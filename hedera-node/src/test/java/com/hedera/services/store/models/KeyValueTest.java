@@ -1,3 +1,18 @@
+/*
+ * Copyright (C) 2022 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package com.hedera.services.store.models;
 
 /*
@@ -26,56 +41,58 @@ import org.junit.jupiter.api.Test;
 
 class KeyValueTest {
 
-  @Test
-  void hashCodeDiscriminates() {
-    final var akeyValue =
-        new KeyValue(false, parentContractAddress, new byte[] {}, new byte[] {}, null);
-    final var bkeyValue =
-        new KeyValue(true, parentContractAddress, new byte[] {}, new byte[] {}, null);
-    final var ckeyValue =
-        new KeyValue(false, null, new byte[] {}, new byte[] {}, parentContractAddress);
-    final var dkeyValue =
-        new KeyValue(false, parentContractAddress, new byte[] {}, new byte[] {}, null);
+    @Test
+    void hashCodeDiscriminates() {
+        final var akeyValue =
+                new KeyValue(false, parentContractAddress, new byte[] {}, new byte[] {}, null);
+        final var bkeyValue =
+                new KeyValue(true, parentContractAddress, new byte[] {}, new byte[] {}, null);
+        final var ckeyValue =
+                new KeyValue(false, null, new byte[] {}, new byte[] {}, parentContractAddress);
+        final var dkeyValue =
+                new KeyValue(false, parentContractAddress, new byte[] {}, new byte[] {}, null);
 
-    assertNotEquals(bkeyValue.hashCode(), akeyValue.hashCode());
-    assertNotEquals(ckeyValue.hashCode(), akeyValue.hashCode());
-    assertEquals(dkeyValue.hashCode(), akeyValue.hashCode());
-  }
+        assertNotEquals(bkeyValue.hashCode(), akeyValue.hashCode());
+        assertNotEquals(ckeyValue.hashCode(), akeyValue.hashCode());
+        assertEquals(dkeyValue.hashCode(), akeyValue.hashCode());
+    }
 
-  @Test
-  void equalsDiscriminates() {
-    final var akeyValue =
-        new KeyValue(false, parentContractAddress, new byte[] {}, new byte[] {}, null);
-    final var bkeyValue =
-        new KeyValue(true, parentContractAddress, new byte[] {}, new byte[] {}, null);
-    final var ckeyValue =
-        new KeyValue(false, null, new byte[] {}, new byte[] {}, parentContractAddress);
-    final var dkeyValue =
-        new KeyValue(false, parentContractAddress, new byte[] {}, new byte[] {}, null);
+    @Test
+    void equalsDiscriminates() {
+        final var akeyValue =
+                new KeyValue(false, parentContractAddress, new byte[] {}, new byte[] {}, null);
+        final var bkeyValue =
+                new KeyValue(true, parentContractAddress, new byte[] {}, new byte[] {}, null);
+        final var ckeyValue =
+                new KeyValue(false, null, new byte[] {}, new byte[] {}, parentContractAddress);
+        final var dkeyValue =
+                new KeyValue(false, parentContractAddress, new byte[] {}, new byte[] {}, null);
 
-    assertNotEquals(bkeyValue, akeyValue);
-    assertNotEquals(ckeyValue, akeyValue);
-    assertEquals(dkeyValue, akeyValue);
-    assertNotEquals(akeyValue, new Object());
-    assertEquals(akeyValue, akeyValue);
-  }
+        assertNotEquals(bkeyValue, akeyValue);
+        assertNotEquals(ckeyValue, akeyValue);
+        assertEquals(dkeyValue, akeyValue);
+        assertNotEquals(akeyValue, new Object());
+        assertEquals(akeyValue, akeyValue);
+    }
 
-  @Test
-  void toStringWorks() {
-    final var keyValue =
-        new KeyValue(false, parentContractAddress, new byte[] {}, new byte[] {}, null);
+    @Test
+    void toStringWorks() {
+        final var keyValue =
+                new KeyValue(false, parentContractAddress, new byte[] {}, new byte[] {}, null);
 
-    assertEquals("KeyValue{"
-        + "inheritAccountKey="
-        + false
-        + ", contractId="
-        + parentContractAddress
-        + ", ed25519="
-        + Arrays.toString(new byte[]{})
-        + ", ECDSA_secp256k1="
-        + Arrays.toString(new byte[]{})
-        + ", delegatableContractId="
-        + "null"
-        + '}', keyValue.toString());
-  }
+        assertEquals(
+                "KeyValue{"
+                        + "inheritAccountKey="
+                        + false
+                        + ", contractId="
+                        + parentContractAddress
+                        + ", ed25519="
+                        + Arrays.toString(new byte[] {})
+                        + ", ECDSA_secp256k1="
+                        + Arrays.toString(new byte[] {})
+                        + ", delegatableContractId="
+                        + "null"
+                        + '}',
+                keyValue.toString());
+    }
 }

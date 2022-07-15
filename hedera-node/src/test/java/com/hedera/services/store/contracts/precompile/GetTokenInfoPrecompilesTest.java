@@ -308,16 +308,20 @@ class GetTokenInfoPrecompilesTest {
 
         final var tokenInfoWrapper = createTokenInfoWrapperForToken(tokenMerkleId);
         final Bytes pretendArguments =
-            Bytes.concatenate(
-                Bytes.of(Integers.toBytes(ABI_ID_GET_TOKEN_INFO)),
-                EntityIdUtils.asTypedEvmAddress(tokenMerkleId));
+                Bytes.concatenate(
+                        Bytes.of(Integers.toBytes(ABI_ID_GET_TOKEN_INFO)),
+                        EntityIdUtils.asTypedEvmAddress(tokenMerkleId));
         given(decoder.decodeGetTokenInfo(pretendArguments)).willReturn(tokenInfoWrapper);
 
         givenMinimalTokenContext(TokenSupplyType.INFINITE);
         givenKeyContext(key, FREEZE_KEY);
 
         final var tokenKeys = new ArrayList<TokenKey>();
-        final var tokenKey = new TokenKey(FREEZE_KEY.value(), new KeyValue(false, null, new byte[]{}, new byte[] {}, parentContractAddress));
+        final var tokenKey =
+                new TokenKey(
+                        FREEZE_KEY.value(),
+                        new KeyValue(
+                                false, null, new byte[] {}, new byte[] {}, parentContractAddress));
         tokenKeys.add(tokenKey);
         tokenInfo = createTokenInfo(tokenKeys, false);
 
@@ -326,12 +330,13 @@ class GetTokenInfoPrecompilesTest {
         given(key.getContractIDKey()).willReturn(null);
         given(key.getDelegatableContractIdKey()).willReturn(delegateContractKey);
         entityIdUtils
-            .when(
-                () ->
-                    EntityIdUtils.asTypedEvmAddress(
-                        parentContractAddressConvertedToContractId))
-            .thenReturn(parentContractAddress);
-        given(delegateContractKey.getContractID()).willReturn(parentContractAddressConvertedToContractId);
+                .when(
+                        () ->
+                                EntityIdUtils.asTypedEvmAddress(
+                                        parentContractAddressConvertedToContractId))
+                .thenReturn(parentContractAddress);
+        given(delegateContractKey.getContractID())
+                .willReturn(parentContractAddressConvertedToContractId);
 
         given(encoder.encodeGetTokenInfo(tokenInfo)).willReturn(successResult);
 
@@ -348,7 +353,7 @@ class GetTokenInfoPrecompilesTest {
         assertEquals(successResult, result);
         // and:
         verify(worldUpdater)
-            .manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
+                .manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
     }
 
     @Test
@@ -1052,14 +1057,15 @@ class GetTokenInfoPrecompilesTest {
                 ledgerId);
     }
 
-    private TokenInfo createTokenInfo(final List<TokenKey> tokenKeys, final boolean tokenSupplyType) {
+    private TokenInfo createTokenInfo(
+            final List<TokenKey> tokenKeys, final boolean tokenSupplyType) {
         final HederaToken hederaToken =
                 new HederaToken(
                         name,
                         symbol,
                         EntityIdUtils.asTypedEvmAddress(treasury),
                         memo,
-                    tokenSupplyType,
+                        tokenSupplyType,
                         maxSupply,
                         freezeDefault,
                         tokenKeys,
