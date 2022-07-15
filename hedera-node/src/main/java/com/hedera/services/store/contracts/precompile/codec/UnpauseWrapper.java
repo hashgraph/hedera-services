@@ -17,9 +17,4 @@ package com.hedera.services.store.contracts.precompile.codec;
 
 import com.hederahashgraph.api.proto.java.TokenID;
 
-public record UnpauseWrapper(TokenID token) {
-
-    public static UnpauseWrapper unpause(final TokenID token) {
-        return new UnpauseWrapper(token);
-    }
-}
+public record UnpauseWrapper(TokenID token) {}

@@ -84,8 +84,7 @@ public class PauseUnpauseTokenAccountPrecompileSuite extends HapiApiSuite {
                                 .pauseKey(PAUSE_KEY)
                                 .initialSupply(1_000)
                                 .exposingCreatedIdTo(id -> tokenID.set(asToken(id))),
-                        uploadInitCode(PAUSE_UNPAUSE_CONTRACT),
-                        contractCreate(PAUSE_UNPAUSE_CONTRACT))
+                        uploadInitCode(PAUSE_UNPAUSE_CONTRACT))
                 .when(
                         withOpContext(
                                 (spec, opLog) ->
@@ -96,7 +95,7 @@ public class PauseUnpauseTokenAccountPrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 PAUSE_UNPAUSE_CONTRACT,
                                                                 "pauseTokenAccount",
-                                                                (Object) asAddress(tokenID.get()))
+                                                                asAddress(tokenID.get()))
                                                         .payingWith(GENESIS)
                                                         .via("pauseTokenAccountTxn")
                                                         .gas(GAS_TO_OFFER))))
@@ -116,8 +115,7 @@ public class PauseUnpauseTokenAccountPrecompileSuite extends HapiApiSuite {
                                 .pauseKey(UNPAUSE_KEY)
                                 .initialSupply(1_000)
                                 .exposingCreatedIdTo(id -> tokenID.set(asToken(id))),
-                        uploadInitCode(PAUSE_UNPAUSE_CONTRACT),
-                        contractCreate(PAUSE_UNPAUSE_CONTRACT))
+                        uploadInitCode(PAUSE_UNPAUSE_CONTRACT))
                 .when(
                         withOpContext(
                                 (spec, opLog) ->
@@ -128,7 +126,7 @@ public class PauseUnpauseTokenAccountPrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 PAUSE_UNPAUSE_CONTRACT,
                                                                 "unpauseTokenAccount",
-                                                                (Object) asAddress(tokenID.get()))
+                                                                asAddress(tokenID.get()))
                                                         .payingWith(GENESIS)
                                                         .via("unpauseTokenAccountTxn")
                                                         .gas(GAS_TO_OFFER))))
@@ -148,8 +146,7 @@ public class PauseUnpauseTokenAccountPrecompileSuite extends HapiApiSuite {
                                 .pauseKey(PAUSE_KEY)
                                 .initialSupply(0)
                                 .exposingCreatedIdTo(id -> tokenID.set(asToken(id))),
-                        uploadInitCode(PAUSE_UNPAUSE_CONTRACT),
-                        contractCreate(PAUSE_UNPAUSE_CONTRACT))
+                        uploadInitCode(PAUSE_UNPAUSE_CONTRACT))
                 .when(
                         withOpContext(
                                 (spec, opLog) ->
@@ -160,7 +157,7 @@ public class PauseUnpauseTokenAccountPrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 PAUSE_UNPAUSE_CONTRACT,
                                                                 "pauseTokenAccount",
-                                                                (Object) asAddress(tokenID.get()))
+                                                                asAddress(tokenID.get()))
                                                         .payingWith(GENESIS)
                                                         .via("pauseTokenAccountTxn")
                                                         .gas(GAS_TO_OFFER))))
@@ -180,8 +177,7 @@ public class PauseUnpauseTokenAccountPrecompileSuite extends HapiApiSuite {
                                 .pauseKey(UNPAUSE_KEY)
                                 .initialSupply(0)
                                 .exposingCreatedIdTo(id -> tokenID.set(asToken(id))),
-                        uploadInitCode(PAUSE_UNPAUSE_CONTRACT),
-                        contractCreate(PAUSE_UNPAUSE_CONTRACT))
+                        uploadInitCode(PAUSE_UNPAUSE_CONTRACT))
                 .when(
                         withOpContext(
                                 (spec, opLog) ->
@@ -192,7 +188,7 @@ public class PauseUnpauseTokenAccountPrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 PAUSE_UNPAUSE_CONTRACT,
                                                                 "unpauseTokenAccount",
-                                                                (Object) asAddress(tokenID.get()))
+                                                                asAddress(tokenID.get()))
                                                         .payingWith(GENESIS)
                                                         .via("unpauseTokenAccountTxn")
                                                         .gas(GAS_TO_OFFER))))

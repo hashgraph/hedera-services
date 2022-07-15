@@ -25,7 +25,6 @@ package com.hedera.services.contracts.sources;
 import com.hedera.services.store.contracts.WorldLedgers;
 import com.hedera.services.legacy.core.jproto.JKey;
 import org.hyperledger.besu.datatypes.Address;
-import org.jetbrains.annotations.NotNull;
 
 public interface EvmSigsVerifier {
 	/**

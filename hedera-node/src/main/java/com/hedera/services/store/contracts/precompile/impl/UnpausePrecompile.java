@@ -91,8 +91,6 @@ public class UnpausePrecompile extends AbstractWritePrecompile {
                                 aliases);
                 validateTrue(hasRequiredSigs, INVALID_SIGNATURE);
 
-
-
         /* --- Build the necessary infrastructure to execute the transaction --- */
         final var accountStore = infrastructureFactory.newAccountStore(ledgers.accounts());
         final var tokenStore =

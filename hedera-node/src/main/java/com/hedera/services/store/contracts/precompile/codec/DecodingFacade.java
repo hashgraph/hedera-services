@@ -174,17 +174,13 @@ public class DecodingFacade {
 
     private static final Function PAUSE_TOKEN_FUNCTION =
             new Function("pauseToken(address)", INT_OUTPUT);
-
     private static final Bytes PAUSE_TOKEN_SELECTOR = Bytes.wrap(PAUSE_TOKEN_FUNCTION.selector());
-
     private static final ABIType<Tuple> PAUSE_TOKEN_DECODER = TypeFactory.create(ADDRESS_RAW_TYPE);
 
     private static final Function UNPAUSE_TOKEN_FUNCTION =
             new Function("unpauseToken(address)", INT_OUTPUT);
-
     private static final Bytes UNPAUSE_TOKEN_SELECTOR =
             Bytes.wrap(UNPAUSE_TOKEN_FUNCTION.selector());
-
     private static final ABIType<Tuple> UNPAUSE_TOKEN_DECODER = TypeFactory.create(ADDRESS_RAW_TYPE);
 
     /* --- Token Create Structs --- */
@@ -899,7 +895,7 @@ public class DecodingFacade {
 
         final var tokenID = convertAddressBytesToTokenID(decodedArguments.get(0));
 
-        return PauseWrapper.pause(tokenID);
+        return new PauseWrapper(tokenID);
     }
 
     public UnpauseWrapper decodeUnpause(final Bytes input) {
@@ -908,7 +904,7 @@ public class DecodingFacade {
 
         final var tokenID = convertAddressBytesToTokenID(decodedArguments.get(0));
 
-        return UnpauseWrapper.unpause(tokenID);
+        return new UnpauseWrapper(tokenID);
     }
 
     private Tuple decodeFunctionCall(

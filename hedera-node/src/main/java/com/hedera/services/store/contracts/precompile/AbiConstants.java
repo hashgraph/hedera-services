@@ -82,10 +82,10 @@ public final class AbiConstants {
     // tokenURI(uint256 tokenId)
     public static final int ABI_ID_ERC_TOKEN_URI_NFT = 0xc87b56dd;
 
-    // pauseToken(address)
+    // pauseToken(address token)
     public static final int ABI_PAUSE_TOKEN = 0x7c41ad2c;
 
-    // unpauseToken(address)
+    // unpauseToken(address token)
     public static final int ABI_UNPAUSE_TOKEN = 0x3b3bff0f;
 
     // Transfer(address indexed from, address indexed to, uint256 indexed tokenId)
