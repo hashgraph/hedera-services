@@ -55,12 +55,12 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 
 class TokenFreezeTransitionLogicTest {
-	private long tokenNum = 12345L;
-	private long accountNum = 54321L;
-	private TokenID tokenID = IdUtils.asToken("0.0." + tokenNum);
-	private AccountID accountID = IdUtils.asAccount("0.0." + accountNum);
-	private Id tokenId = new Id(0, 0, tokenNum);
-	private Id accountId = new Id(0, 0, accountNum);
+	private final long tokenNum = 12345L;
+	private final long accountNum = 54321L;
+	private final TokenID tokenID = IdUtils.asToken("0.0." + tokenNum);
+	private final  AccountID accountID = IdUtils.asAccount("0.0." + accountNum);
+	private final Id tokenId = new Id(0, 0, tokenNum);
+	private final Id accountId = new Id(0, 0, accountNum);
 
 	private TypedTokenStore tokenStore;
 	private AccountStore accountStore;
@@ -72,7 +72,6 @@ class TokenFreezeTransitionLogicTest {
 
 	private TransactionBody tokenFreezeTxn;
 	private TokenFreezeTransitionLogic subject;
-	private FreezeLogic freezeLogic;
 
 	@BeforeEach
 	private void setup() {
@@ -82,11 +81,13 @@ class TokenFreezeTransitionLogicTest {
 		tokenRelationship = mock(TokenRelationship.class);
 		token = mock(Token.class);
 		account = mock(Account.class);
-
+		accountStore = mock(AccountStore.class);
+		tokenStore = mock(TypedTokenStore.class);
 		txnCtx = mock(TransactionContext.class);
 
+		FreezeLogic freezeLogic =
+				new FreezeLogic(tokenStore,accountStore);
 		subject = new TokenFreezeTransitionLogic(txnCtx, freezeLogic);
-		freezeLogic = new FreezeLogic(tokenStore, accountStore);
 	}
 
 	@Test
