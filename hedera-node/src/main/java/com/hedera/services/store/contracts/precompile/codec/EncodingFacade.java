@@ -73,7 +73,7 @@ public class EncodingFacade {
                     + ")";
     private static final String FUNGIBLE_TOKEN_INFO = "(" + TOKEN_INFO + ",int32" + ")";
     private static final String NON_FUNGIBLE_TOKEN_INFO =
-            "(" + TOKEN_INFO + ",int64,address,int32,bytes,address" + ")";
+            "(" + TOKEN_INFO + ",int64,address,int64,bytes,address" + ")";
 
     private static final TupleType mintReturnType = TupleType.parse("(int32,uint64,int64[])");
     private static final TupleType burnReturnType = TupleType.parse("(int32,uint64)");
@@ -125,10 +125,10 @@ public class EncodingFacade {
         return functionResultBuilder().forFunction(FunctionType.OWNER).withOwner(address).build();
     }
 
-    public Bytes encodeGetApproved(final Address approved) {
+    public Bytes encodeGetApproved(final Address spender) {
         return functionResultBuilder()
                 .forFunction(FunctionType.GET_APPROVED)
-                .withApproved(approved)
+                .withSpender(spender)
                 .build();
     }
 
@@ -252,7 +252,12 @@ public class EncodingFacade {
         return functionResultBuilder()
                 .forFunction(FunctionType.GET_NON_FUNGIBLE_TOKEN_INFO)
                 .withStatus(SUCCESS.getNumber())
-                .withNonFungibleTokenInfo(nonFungibleTokenInfo)
+                .withTokenInfo(nonFungibleTokenInfo.tokenInfo())
+                .withSerialNumber(nonFungibleTokenInfo.serialNumber())
+                .withCreationTime(nonFungibleTokenInfo.creationTime())
+                .withTokenUri(Bytes.wrap(nonFungibleTokenInfo.metadata()).toString())
+                .withOwner(nonFungibleTokenInfo.ownerId())
+                .withSpender(nonFungibleTokenInfo.spenderId())
                 .build();
     }
 
@@ -293,14 +298,15 @@ public class EncodingFacade {
         private long allowance;
         private boolean approve;
         private long[] serialNumbers;
+        private long serialNumber;
         private int decimals;
+        private long creationTime;
         private Address owner;
-        private Address approved;
+        private Address spender;
         private String name;
         private String symbol;
         private String metadata;
         private TokenInfo tokenInfo;
-        private NonFungibleTokenInfo nonFungibleTokenInfo;
 
         private FunctionResultBuilder forFunction(final FunctionType functionType) {
             this.tupleType =
@@ -374,8 +380,8 @@ public class EncodingFacade {
             return this;
         }
 
-        private FunctionResultBuilder withApproved(final Address approved) {
-            this.approved = approved;
+        private FunctionResultBuilder withSpender(final Address spender) {
+            this.spender = spender;
             return this;
         }
 
@@ -394,6 +400,16 @@ public class EncodingFacade {
             return this;
         }
 
+        private FunctionResultBuilder withSerialNumber(final long serialNumber) {
+            this.serialNumber = serialNumber;
+            return this;
+        }
+
+        private FunctionResultBuilder withCreationTime(final long creationTime) {
+            this.creationTime = creationTime;
+            return this;
+        }
+
         private FunctionResultBuilder withErcFungibleTransferStatus(
                 final boolean ercFungibleTransferStatus) {
             this.ercFungibleTransferStatus = ercFungibleTransferStatus;
@@ -408,12 +424,6 @@ public class EncodingFacade {
 
         private FunctionResultBuilder withTokenInfo(final TokenInfo tokenInfo) {
             this.tokenInfo = tokenInfo;
-            return this;
-        }
-
-        private FunctionResultBuilder withNonFungibleTokenInfo(
-                final NonFungibleTokenInfo nonFungibleTokenInfo) {
-            this.nonFungibleTokenInfo = nonFungibleTokenInfo;
             return this;
         }
 
@@ -435,23 +445,34 @@ public class EncodingFacade {
                         case ERC_TRANSFER -> Tuple.of(ercFungibleTransferStatus);
                         case ALLOWANCE -> Tuple.of(BigInteger.valueOf(allowance));
                         case APPROVE -> Tuple.of(approve);
-                        case GET_APPROVED -> Tuple.of(
-                                convertBesuAddressToHeadlongAddress(approved));
+                        case GET_APPROVED -> Tuple.of(convertBesuAddressToHeadlongAddress(spender));
                         case IS_APPROVED_FOR_ALL -> Tuple.of(isApprovedForAllStatus);
                         case GET_TOKEN_INFO -> getTupleForGetTokenInfo();
                         case GET_FUNGIBLE_TOKEN_INFO -> getTupleForGetFungibleTokenInfo();
-                        case GET_NON_FUNGIBLE_TOKEN_INFO -> Tuple.of(nonFungibleTokenInfo);
+                        case GET_NON_FUNGIBLE_TOKEN_INFO -> getTupleForGetNonFungibleTokenInfo();
                     };
 
             return Bytes.wrap(tupleType.encode(result).array());
+        }
+
+        private Tuple getTupleForGetTokenInfo() {
+            return Tuple.of(status, getTupleForTokenInfo());
         }
 
         private Tuple getTupleForGetFungibleTokenInfo() {
             return Tuple.of(status, Tuple.of(getTupleForTokenInfo(), decimals));
         }
 
-        private Tuple getTupleForGetTokenInfo() {
-            return Tuple.of(status, getTupleForTokenInfo());
+        private Tuple getTupleForGetNonFungibleTokenInfo() {
+            return Tuple.of(
+                    status,
+                    Tuple.of(
+                            getTupleForTokenInfo(),
+                            serialNumber,
+                            convertBesuAddressToHeadlongAddress(owner),
+                            creationTime,
+                            metadata.getBytes(),
+                            convertBesuAddressToHeadlongAddress(spender)));
         }
 
         private Tuple getTupleForTokenInfo() {
@@ -475,10 +496,10 @@ public class EncodingFacade {
                 final var fixedFeeTuple =
                         Tuple.of(
                                 fixedFee.amount(),
-                                fixedFee.tokenId(),
+                                convertBesuAddressToHeadlongAddress(fixedFee.tokenId()),
                                 fixedFee.useHbarsForPayment(),
                                 fixedFee.useCurrentTokenForPayment(),
-                                fixedFee.feeCollector());
+                                convertBesuAddressToHeadlongAddress(fixedFee.feeCollector()));
                 fixedFeesTuples[i] = fixedFeeTuple;
             }
 
@@ -497,7 +518,7 @@ public class EncodingFacade {
                                 fractionalFee.minimumAmount(),
                                 fractionalFee.maximumAmount(),
                                 fractionalFee.netOfTransfers(),
-                                fractionalFee.feeCollector());
+                                convertBesuAddressToHeadlongAddress(fractionalFee.feeCollector()));
                 fractionalFeesTuples[i] = fractionalFeeTuple;
             }
 
@@ -514,9 +535,9 @@ public class EncodingFacade {
                                 royaltyFee.numerator(),
                                 royaltyFee.denominator(),
                                 royaltyFee.amount(),
-                                royaltyFee.tokenId(),
+                                convertBesuAddressToHeadlongAddress(royaltyFee.tokenId()),
                                 royaltyFee.useHbarsForPayment(),
-                                royaltyFee.feeCollector());
+                                convertBesuAddressToHeadlongAddress(royaltyFee.feeCollector()));
                 royaltyFeesTuples[i] = royaltyFeeTuple;
             }
 

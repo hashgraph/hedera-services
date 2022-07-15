@@ -131,7 +131,9 @@ public abstract class AbstractTokenInfoPrecompile extends AbstractReadOnlyPrecom
         final var fixedFeeSpec = fee.getFixedFeeSpec();
         return new FixedFee(
                 fixedFeeSpec.getUnitsToCollect(),
-                EntityIdUtils.asTypedEvmAddress(fixedFeeSpec.getTokenDenomination()),
+                fixedFeeSpec.getTokenDenomination() != null
+                        ? EntityIdUtils.asTypedEvmAddress(fixedFeeSpec.getTokenDenomination())
+                        : Address.wrap(Bytes.wrap(new byte[20])),
                 fixedFeeSpec.getTokenDenomination() == null,
                 false,
                 feeCollector);

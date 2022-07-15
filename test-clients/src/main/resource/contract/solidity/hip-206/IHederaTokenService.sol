@@ -259,7 +259,7 @@ interface IHederaTokenService {
         //The account id specifying the owner of the NFT
         address ownerId;
         //The epoch second at which the NFT was created
-        uint32 creationTime;
+        int64 creationTime;
         //The unique metadata of the NFT
         bytes metadata;
         //The account id specifying an account that has been granted spending permissions on this NFT

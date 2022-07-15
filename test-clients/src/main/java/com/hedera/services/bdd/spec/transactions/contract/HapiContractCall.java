@@ -251,12 +251,15 @@ public class HapiContractCall extends HapiBaseCall<HapiContractCall> {
             contract = actionable.getContract();
             abi = actionable.getDetails().getAbi();
             params = actionable.getDetails().getExampleArgs();
-        } else
-            paramsFn.ifPresent(hapiApiSpecFunction -> params = hapiApiSpecFunction.apply(spec));
+        } else paramsFn.ifPresent(hapiApiSpecFunction -> params = hapiApiSpecFunction.apply(spec));
 
         byte[] callData;
         if (explicitHexedParams.isPresent())
-            callData = explicitHexedParams.map(Supplier::get).map(CommonUtils::unhex).orElseGet(() -> new byte[0]);
+            callData =
+                    explicitHexedParams
+                            .map(Supplier::get)
+                            .map(CommonUtils::unhex)
+                            .orElseGet(() -> new byte[0]);
         else {
             final var paramsList = Arrays.asList(params);
             final var tupleExist =
@@ -294,7 +297,10 @@ public class HapiContractCall extends HapiBaseCall<HapiContractCall> {
     protected void updateStateOf(HapiApiSpec spec) throws Throwable {
         if (gasObserver.isPresent()) {
             doGasLookup(
-                    gasValue -> gasObserver.get().accept(actualStatus, gasValue), spec, txnSubmitted, false);
+                    gasValue -> gasObserver.get().accept(actualStatus, gasValue),
+                    spec,
+                    txnSubmitted,
+                    false);
         }
         if (resultObserver != null) {
             doObservedLookup(
@@ -304,7 +310,8 @@ public class HapiContractCall extends HapiBaseCall<HapiContractCall> {
                         final var function = CallTransaction.Function.fromJsonInterface(abi);
                         final var result =
                                 function.decodeResult(
-                                    txnRecord.getContractCallResult()
+                                        txnRecord
+                                                .getContractCallResult()
                                                 .getContractCallResult()
                                                 .toByteArray());
                         resultObserver.accept(result);
