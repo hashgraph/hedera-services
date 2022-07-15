@@ -112,7 +112,8 @@ public class RedirectViewExecutor {
             final var priorityAddress = ledgers.canonicalAddress(spender);
             return encoder.encodeGetApproved(priorityAddress);
         } else if (selector == ABI_ID_ERC_IS_APPROVED_FOR_ALL) {
-            final var wrapper = decoder.decodeIsApprovedForAll(input.slice(24), tokenId, updater::unaliased);
+            final var wrapper =
+                    decoder.decodeIsApprovedForAll(input.slice(24), tokenId, updater::unaliased);
             final var isOperator =
                     ledgers.staticIsOperator(wrapper.owner(), wrapper.operator(), tokenId);
             return encoder.encodeIsApprovedForAll(isOperator);

@@ -15,6 +15,8 @@
  */
 package com.hedera.services.store.contracts.precompile.codec;
 
+import static com.hedera.services.utils.EntityIdUtils.accountIdFromEvmAddress;
+
 import com.esaulpaugh.headlong.abi.ABIType;
 import com.esaulpaugh.headlong.abi.Function;
 import com.esaulpaugh.headlong.abi.Tuple;
@@ -34,19 +36,16 @@ import com.hedera.services.store.models.NftId;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
-import org.apache.tuweni.bytes.Bytes;
-import org.hyperledger.besu.datatypes.Address;
-
-import javax.inject.Inject;
-import javax.inject.Singleton;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.function.UnaryOperator;
-
-import static com.hedera.services.utils.EntityIdUtils.accountIdFromEvmAddress;
+import javax.inject.Inject;
+import javax.inject.Singleton;
+import org.apache.tuweni.bytes.Bytes;
+import org.hyperledger.besu.datatypes.Address;
 
 @Singleton
 public class DecodingFacade {

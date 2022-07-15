@@ -173,7 +173,7 @@ class DecodingFacadeTest {
     public static final Bytes ALLOWANCE_INPUT_HAPI =
             Bytes.fromHexString(
                     "0x927da105000000000000000000000000000000000000000000000000000000000000123400000000000000000000000000000000000000000000000000000000000006010000000000000000000000000000000000000000000000000000000000000602");
-    
+
     public static final Bytes SET_APPROVAL_FOR_ALL_INPUT_ERC =
             Bytes.fromHexString(
                     "0xa22cb46500000000000000000000000000000000000000000000000000000000000006400000000000000000000000000000000000000000000000000000000000000001");
@@ -304,7 +304,8 @@ class DecodingFacadeTest {
     @Test
     void decodeSetApprovalForAllERC() {
         final var decodedInput =
-                subject.decodeSetApprovalForAll(SET_APPROVAL_FOR_ALL_INPUT_ERC, TOKEN_ID, identity());
+                subject.decodeSetApprovalForAll(
+                        SET_APPROVAL_FOR_ALL_INPUT_ERC, TOKEN_ID, identity());
 
         assertEquals(TOKEN_ID.getTokenNum(), decodedInput.tokenId().getTokenNum());
         assertEquals(ACCOUNT_NUM_APPROVE_ALL_TO, decodedInput.to().getAccountNum());
@@ -328,7 +329,8 @@ class DecodingFacadeTest {
 
         assertEquals(TOKEN_ID.getTokenNum(), decodedInput.tokenId().getTokenNum());
         assertEquals(ACCOUNT_NUM_IS_APPROVED_FOR_ALL_OWNER, decodedInput.owner().getAccountNum());
-        assertEquals(ACCOUNT_NUM_IS_APPROVED_FOR_ALL_OPERATOR, decodedInput.operator().getAccountNum());
+        assertEquals(
+                ACCOUNT_NUM_IS_APPROVED_FOR_ALL_OPERATOR, decodedInput.operator().getAccountNum());
     }
 
     @Test
@@ -338,7 +340,8 @@ class DecodingFacadeTest {
 
         assertEquals(TOKEN_NUM_HAPI_TOKEN, decodedInput.tokenId().getTokenNum());
         assertEquals(ACCOUNT_NUM_IS_APPROVED_FOR_ALL_OWNER, decodedInput.owner().getAccountNum());
-        assertEquals(ACCOUNT_NUM_IS_APPROVED_FOR_ALL_OPERATOR, decodedInput.operator().getAccountNum());
+        assertEquals(
+                ACCOUNT_NUM_IS_APPROVED_FOR_ALL_OPERATOR, decodedInput.operator().getAccountNum());
     }
 
     @Test

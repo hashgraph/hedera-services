@@ -15,6 +15,11 @@
  */
 package com.hedera.services.store.contracts.precompile.impl;
 
+import static com.hedera.services.exceptions.ValidationUtils.validateTrueOrRevert;
+import static com.hedera.services.ledger.properties.NftProperty.SPENDER;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
+
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.store.contracts.WorldLedgers;
@@ -26,14 +31,8 @@ import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUti
 import com.hedera.services.store.models.NftId;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import org.apache.tuweni.bytes.Bytes;
-
 import java.util.function.UnaryOperator;
-
-import static com.hedera.services.exceptions.ValidationUtils.validateTrueOrRevert;
-import static com.hedera.services.ledger.properties.NftProperty.SPENDER;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
+import org.apache.tuweni.bytes.Bytes;
 
 public class GetApprovedPrecompile extends AbstractReadOnlyPrecompile {
     GetApprovedWrapper getApprovedWrapper;
