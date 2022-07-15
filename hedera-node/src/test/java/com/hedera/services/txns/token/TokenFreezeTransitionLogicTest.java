@@ -72,6 +72,7 @@ class TokenFreezeTransitionLogicTest {
 
 	private TransactionBody tokenFreezeTxn;
 	private TokenFreezeTransitionLogic subject;
+	private FreezeLogic freezeLogic;
 
 	@BeforeEach
 	private void setup() {
@@ -84,7 +85,8 @@ class TokenFreezeTransitionLogicTest {
 
 		txnCtx = mock(TransactionContext.class);
 
-		subject = new TokenFreezeTransitionLogic(txnCtx, tokenStore, accountStore);
+		subject = new TokenFreezeTransitionLogic(txnCtx, freezeLogic);
+		freezeLogic = new FreezeLogic(tokenStore, accountStore);
 	}
 
 	@Test

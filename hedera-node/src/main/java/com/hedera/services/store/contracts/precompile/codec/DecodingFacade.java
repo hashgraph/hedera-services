@@ -143,7 +143,18 @@ public class DecodingFacade {
 			new Function("transfer(address,uint256)", BOOL_OUTPUT);
 	private static final Bytes ERC_TRANSFER_SELECTOR = Bytes.wrap(ERC_TRANSFER_FUNCTION.selector());
 	private static final ABIType<Tuple> ERC_TRANSFER_DECODER = TypeFactory.create("(bytes32,uint256)");
-
+	private static final Function FREEZE_TOKEN_FUNCTION =
+			new Function("freezeToken(address,address)", INT_OUTPUT);
+	private static final Bytes FREEZE_TOKEN_FUNCTION_SELECTOR =
+			Bytes.wrap(FREEZE_TOKEN_FUNCTION.selector());
+	private static final ABIType<Tuple> FREEZE_TOKEN_ACCOUNT_DECODER =
+			TypeFactory.create("(bytes32,bytes32)");
+	private static final Function UNFREEZE_TOKEN_FUNCTION =
+			new Function("unfreezeToken(address,address)", INT_OUTPUT);
+	private static final Bytes UNFREEZE_TOKEN_FUNCTION_SELECTOR =
+			Bytes.wrap(UNFREEZE_TOKEN_FUNCTION.selector());
+	private static final ABIType<Tuple> UNFREEZE_TOKEN_ACCOUNT_DECODER =
+			TypeFactory.create("(bytes32,bytes32)");
 	private static final Function ERC_TRANSFER_FROM_FUNCTION =
 			new Function("transferFrom(address,address,uint256)");
 	private static final Bytes ERC_TRANSFER_FROM_SELECTOR = Bytes.wrap(ERC_TRANSFER_FROM_FUNCTION.selector());
@@ -580,6 +591,26 @@ public class DecodingFacade {
 		tokenCreateWrapper.setRoyaltyFees(royaltyFees);
 
 		return tokenCreateWrapper;
+	}
+
+	public FreezeWrapper decodeFreeze(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
+		final Tuple decodedArguments =
+				decodeFunctionCall(input, FREEZE_TOKEN_FUNCTION_SELECTOR, FREEZE_TOKEN_ACCOUNT_DECODER);
+
+		final var tokenID = convertAddressBytesToTokenID(decodedArguments.get(0));
+		final var accountID =
+				convertLeftPaddedAddressToAccountId(decodedArguments.get(1), aliasResolver);
+		return new FreezeWrapper(tokenID, accountID);
+	}
+
+	public UnFreezeWrapper decodeUnFreeze(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
+		final Tuple decodedArguments =
+				decodeFunctionCall(input, FREEZE_TOKEN_FUNCTION_SELECTOR, FREEZE_TOKEN_ACCOUNT_DECODER);
+
+		final var tokenID = convertAddressBytesToTokenID(decodedArguments.get(0));
+		final var accountID =
+				convertLeftPaddedAddressToAccountId(decodedArguments.get(1), aliasResolver);
+		return new UnFreezeWrapper(tokenID, accountID);
 	}
 
 	private TokenCreateWrapper decodeTokenCreateWithoutFees(

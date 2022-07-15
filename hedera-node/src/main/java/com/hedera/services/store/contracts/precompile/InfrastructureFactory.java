@@ -9,9 +9,9 @@ package com.hedera.services.store.contracts.precompile;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -51,9 +51,11 @@ import com.hedera.services.txns.token.AssociateLogic;
 import com.hedera.services.txns.token.BurnLogic;
 import com.hedera.services.txns.token.CreateLogic;
 import com.hedera.services.txns.token.DissociateLogic;
+import com.hedera.services.txns.token.FreezeLogic;
 import com.hedera.services.txns.token.MintLogic;
 import com.hedera.services.txns.token.process.DissociationFactory;
 import com.hedera.services.txns.token.validators.CreateChecks;
+import com.hedera.services.txns.token.validators.UnFreezeLogic;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -189,6 +191,16 @@ public class InfrastructureFactory {
 			final TypedTokenStore tokenStore
 	) {
 		return new DeleteAllowanceLogic(accountStore, tokenStore);
+	}
+
+	public FreezeLogic newFreezeLogic(
+			final AccountStore accountStore, final TypedTokenStore tokenStore) {
+		return new FreezeLogic(tokenStore, accountStore);
+	}
+
+	public UnFreezeLogic newUnFreezeLogic(
+			final AccountStore accountStore, final TypedTokenStore tokenStore) {
+		return new UnFreezeLogic(tokenStore, accountStore);
 	}
 
 	public CreateChecks newCreateChecks() {

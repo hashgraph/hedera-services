@@ -1,0 +1,6 @@
+package com.hedera.services.store.contracts.precompile.codec;
+
+import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.TokenID;
+
+public record UnFreezeWrapper(TokenID token, AccountID account) {}
