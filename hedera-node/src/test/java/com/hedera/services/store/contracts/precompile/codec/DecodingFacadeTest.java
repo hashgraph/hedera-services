@@ -37,6 +37,7 @@ import com.hederahashgraph.api.proto.java.TokenID;
 import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.List;
+import java.util.function.UnaryOperator;
 import org.apache.tuweni.bytes.Bytes;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -625,9 +626,10 @@ class DecodingFacadeTest {
 
     @Test
     void decodeMultipleDissociateTokenInvalidInput() {
+        UnaryOperator<byte[]> identity = identity();
         assertThrows(
                 IllegalArgumentException.class,
-                () -> subject.decodeMultipleDissociations(INVALID_INPUT, identity()));
+                () -> subject.decodeMultipleDissociations(INVALID_INPUT, identity));
     }
 
     @Test
@@ -760,12 +762,13 @@ class DecodingFacadeTest {
 
     @Test
     void decodeCreateTokenWithInvalidInput() {
+        UnaryOperator<byte[]> identity = identity();
         assertThrows(
                 IllegalArgumentException.class,
                 () ->
                         subject.decodeFungibleCreate(
                                 CREATE_FUNGIBLE_NO_FEES_TOKEN_KEY_EXCEEDING_INTEGER_MAX_INVALID_INPUT,
-                                identity()));
+                                identity));
     }
 
     private void assertExpectedFungibleTokenCreateStruct(final TokenCreateWrapper decodedInput) {

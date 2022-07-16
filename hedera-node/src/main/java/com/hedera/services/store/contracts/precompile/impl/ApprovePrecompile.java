@@ -225,11 +225,13 @@ public class ApprovePrecompile extends AbstractWritePrecompile {
 
     @Override
     public Bytes getSuccessResultFor(final ExpirableTxnRecord.Builder childRecord) {
-        return tokenId != null
-                ? encoder.encodeApprove(true)
-                : isFungible
-                        ? encoder.encodeApprove(SUCCESS.getNumber(), true)
-                        : encoder.encodeApproveNFT(SUCCESS.getNumber());
+        if (tokenId != null) {
+            return encoder.encodeApprove(true);
+        } else if (isFungible) {
+            return encoder.encodeApprove(SUCCESS.getNumber(), true);
+        } else {
+            return encoder.encodeApproveNFT(SUCCESS.getNumber());
+        }
     }
 
     private boolean isNftApprovalRevocation() {

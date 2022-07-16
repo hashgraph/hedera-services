@@ -58,8 +58,9 @@ public class DecodingFacade {
     private static final String STRING_OUTPUT = "(string)";
     private static final String ADDRESS_PAIR_RAW_TYPE = "(bytes32,bytes32)";
     private static final String ADDRESS_TRIPLE_RAW_TYPE = "(bytes32,bytes32,bytes32)";
-    public static final String UINT256_RAW_TYPE = "(uint256)";
-    public static final String ADDRESS_UINT256_RAW_TYPE = "(bytes32,uint256)";
+    private static final String UINT256_RAW_TYPE = "(uint256)";
+    private static final String ADDRESS_UINT256_RAW_TYPE = "(bytes32,uint256)";
+    private static final String ADDRESS_ADDRESS_UINT256_RAW_TYPE = "(bytes32,bytes32,uint256)";
 
     private static final List<SyntheticTxnFactory.NftExchange> NO_NFT_EXCHANGES =
             Collections.emptyList();
@@ -164,14 +165,14 @@ public class DecodingFacade {
             new Function("transfer(address,uint256)", BOOL_OUTPUT);
     private static final Bytes ERC_TRANSFER_SELECTOR = Bytes.wrap(ERC_TRANSFER_FUNCTION.selector());
     private static final ABIType<Tuple> ERC_TRANSFER_DECODER =
-            TypeFactory.create("(bytes32,uint256)");
+            TypeFactory.create(ADDRESS_UINT256_RAW_TYPE);
 
     private static final Function ERC_TRANSFER_FROM_FUNCTION =
             new Function("transferFrom(address,address,uint256)");
     private static final Bytes ERC_TRANSFER_FROM_SELECTOR =
             Bytes.wrap(ERC_TRANSFER_FROM_FUNCTION.selector());
     private static final ABIType<Tuple> ERC_TRANSFER_FROM_DECODER =
-            TypeFactory.create("(bytes32,bytes32,uint256)");
+            TypeFactory.create(ADDRESS_ADDRESS_UINT256_RAW_TYPE);
 
     /* --- Token Create Structs --- */
     private static final String KEY_VALUE = "(bool,address,bytes,bytes,address)";
@@ -328,7 +329,7 @@ public class DecodingFacade {
             TypeFactory.create("(bytes32,bytes32,uint256)");
 
     private static final Function HAPI_APPROVE_NFT_FUNCTION =
-            new Function("approveNFT(address,address,uint256)", "(int)");
+            new Function("approveNFT(address,address,uint256)", INT_OUTPUT);
     private static final Bytes HAPI_APPROVE_NFT_SELECTOR =
             Bytes.wrap(HAPI_APPROVE_NFT_FUNCTION.selector());
     private static final ABIType<Tuple> HAPI_APPROVE_NFT_DECODER =
@@ -531,19 +532,27 @@ public class DecodingFacade {
             WorldLedgers ledgers) {
 
         final var offset = impliedTokenId == null ? 1 : 0;
-        final Tuple decodedArguments =
-                decodeFunctionCall(
-                        input,
-                        offset == 0
-                                ? ERC_TOKEN_APPROVE_SELECTOR
-                                : isFungible
-                                        ? HAPI_TOKEN_APPROVE_SELECTOR
-                                        : HAPI_APPROVE_NFT_SELECTOR,
-                        offset == 0
-                                ? ERC_TOKEN_APPROVE_DECODER
-                                : isFungible
-                                        ? HAPI_TOKEN_APPROVE_DECODER
-                                        : HAPI_APPROVE_NFT_DECODER);
+        Bytes selector;
+        if (offset == 0) {
+            selector = ERC_TOKEN_APPROVE_SELECTOR;
+        } else {
+            if (isFungible) {
+                selector = HAPI_TOKEN_APPROVE_SELECTOR;
+            } else {
+                selector = HAPI_APPROVE_NFT_SELECTOR;
+            }
+        }
+        ABIType<Tuple> decoder;
+        if (offset == 0) {
+            decoder = ERC_TOKEN_APPROVE_DECODER;
+        } else {
+            if (isFungible) {
+                decoder = HAPI_TOKEN_APPROVE_DECODER;
+            } else {
+                decoder = HAPI_APPROVE_NFT_DECODER;
+            }
+        }
+        final Tuple decodedArguments = decodeFunctionCall(input, selector, decoder);
         final var tokenId =
                 offset == 0
                         ? impliedTokenId
