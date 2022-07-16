@@ -333,7 +333,7 @@ public class DecodingFacade {
     private static final Bytes HAPI_APPROVE_NFT_SELECTOR =
             Bytes.wrap(HAPI_APPROVE_NFT_FUNCTION.selector());
     private static final ABIType<Tuple> HAPI_APPROVE_NFT_DECODER =
-            TypeFactory.create("(bytes32,bytes32,uint256)");
+            TypeFactory.create(ADDRESS_ADDRESS_UINT256_RAW_TYPE);
 
     @Inject
     public DecodingFacade() {
