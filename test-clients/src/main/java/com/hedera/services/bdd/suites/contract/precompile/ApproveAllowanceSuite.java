@@ -63,9 +63,9 @@ public class ApproveAllowanceSuite extends HapiApiSuite {
     private static final String ACCOUNT = "anybody";
     private static final String RECIPIENT = "recipient";
     private static final String HTS_APPROVE_ALLOWANCE_CONTRACT = "HtsApproveAllowance";
-    private final String SPENDER = "spender";
-    private final String ALLOWANCE_TX = "allowanceTxn";
-    private final String EXPORT_RECORD_RESULTS_FEATURE_FLAG =
+    private static final String SPENDER = "spender";
+    private static final String ALLOWANCE_TX = "allowanceTxn";
+    private static final String EXPORT_RECORD_RESULTS_FEATURE_FLAG =
             "contracts.precompile.exportRecordResults";
 
     public static void main(String... args) {

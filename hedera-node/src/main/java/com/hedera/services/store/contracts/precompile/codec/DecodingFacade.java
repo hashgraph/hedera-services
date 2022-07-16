@@ -291,7 +291,7 @@ public class DecodingFacade {
     private static final Bytes ERC_TOKEN_APPROVE_SELECTOR =
             Bytes.wrap(ERC_TOKEN_APPROVE_FUNCTION.selector());
     private static final ABIType<Tuple> ERC_TOKEN_APPROVE_DECODER =
-            TypeFactory.create("(bytes32,uint256)");
+            TypeFactory.create(ADDRESS_UINT256_RAW_TYPE);
 
     private static final Function HAPI_ALLOWANCE_FUNCTION =
             new Function("allowance(address,address,address)", "(int,int)");
@@ -326,7 +326,7 @@ public class DecodingFacade {
     private static final Bytes HAPI_TOKEN_APPROVE_SELECTOR =
             Bytes.wrap(HAPI_TOKEN_APPROVE_FUNCTION.selector());
     private static final ABIType<Tuple> HAPI_TOKEN_APPROVE_DECODER =
-            TypeFactory.create("(bytes32,bytes32,uint256)");
+            TypeFactory.create(ADDRESS_ADDRESS_UINT256_RAW_TYPE);
 
     private static final Function HAPI_APPROVE_NFT_FUNCTION =
             new Function("approveNFT(address,address,uint256)", INT_OUTPUT);
