@@ -1442,8 +1442,6 @@ workflows:
 #            workflow-name: "Continuous-integration"
         - build-platform-and-services:
             context: SonarCloud
-            requires:
-              - artifact-build
             workflow-name: "Continuous-integration-GCP"
         - jrs-regression:
             context: Slack
@@ -1462,38 +1460,38 @@ workflows:
               - attach_workspace:
                   at: /
 jobs:
-  build-artifact:
-    parameters:
-      workflow-name:
-        type: string
-        default: ""
-    executor:
-      name: build-executor
-      workflow-name:  << parameters.workflow-name >>
-    steps:
-      - checkout
-      - run:
-          name: prepare log dir
-          command: |
-            mkdir -p /repo/test-clients/output
-      - run:
-          name: gradle assemble
-          # use double quote otherwise the backslash of line continuation will be treated as part of mvn parameter
-          command: |
-            ./gradlew assemble copyLib copyApp --scan --parallel \
-              | tee /repo/test-clients/output/hapi-client.log
-
+#  build-artifact:
+#    parameters:
+#      workflow-name:
+#        type: string
+#        default: ""
+#    executor:
+#      name: build-executor
+#      workflow-name:  << parameters.workflow-name >>
+#    steps:
+#      - checkout
 #      - run:
-#          name: Upload codecov
+#          name: prepare log dir
 #          command: |
-#            apt update -y
-#            apt install -y curl
-#            bash <(wget -O - https://codecov.io/bash)
-      - persist_to_workspace:
-          root: /
-          paths:
-            - repo/
-            - root/.m2
+#            mkdir -p /repo/test-clients/output
+#      - run:
+#          name: gradle assemble
+#          # use double quote otherwise the backslash of line continuation will be treated as part of mvn parameter
+#          command: |
+#            ./gradlew assemble copyLib copyApp --scan --parallel \
+#              | tee /repo/test-clients/output/hapi-client.log
+#
+##      - run:
+##          name: Upload codecov
+##          command: |
+##            apt update -y
+##            apt install -y curl
+##            bash <(wget -O - https://codecov.io/bash)
+#      - persist_to_workspace:
+#          root: /
+#          paths:
+#            - repo/
+#            - root/.m2
 
   sonar-check:
     parameters:
