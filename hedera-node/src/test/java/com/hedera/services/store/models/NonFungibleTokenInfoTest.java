@@ -125,7 +125,7 @@ class NonFungibleTokenInfoTest {
         assertNotEquals(cNonFungibleTokenInfo, aNonFungibleTokenInfo);
         assertEquals(dNonFungibleTokenInfo, aNonFungibleTokenInfo);
         assertNotEquals(aNonFungibleTokenInfo, new Object());
-        assertNotEquals(aNonFungibleTokenInfo, null);
+        assertNotEquals(null, aNonFungibleTokenInfo);
         assertEquals(aNonFungibleTokenInfo, aNonFungibleTokenInfo);
     }
 
