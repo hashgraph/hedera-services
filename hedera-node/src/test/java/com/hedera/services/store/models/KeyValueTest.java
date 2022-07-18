@@ -31,7 +31,6 @@ package com.hedera.services.store.models;
  * limitations under the License.
  */
 
-import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.contractAddr;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.parentContractAddress;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -61,20 +60,30 @@ class KeyValueTest {
     @Test
     void equalsDiscriminates() {
         final var aKeyValue =
-                new KeyValue(false, parentContractAddress, new byte[] {}, new byte[] {}, null);
+                new KeyValue(
+                        false,
+                        parentContractAddress,
+                        new byte[] {35, -44, 21, 4, -4, 6},
+                        new byte[] {35, -104, 14, 5 - 4, 6},
+                        null);
         final var bKeyValue =
                 new KeyValue(true, parentContractAddress, new byte[] {}, new byte[] {}, null);
         final var cKeyValue =
                 new KeyValue(false, null, new byte[] {}, new byte[] {}, parentContractAddress);
         final var dKeyValue =
                 new KeyValue(
-                        true,
-                        contractAddr,
+                        false,
+                        parentContractAddress,
                         new byte[] {35, -44, 21, 4, -4, 6},
                         new byte[] {35, -104, 14, 5 - 4, 6},
                         parentContractAddress);
         final var eKeyValue =
-                new KeyValue(false, parentContractAddress, new byte[] {}, new byte[] {}, null);
+                new KeyValue(
+                        false,
+                        parentContractAddress,
+                        new byte[] {35, -44, 21, 4, -4, 6},
+                        new byte[] {35, -104, 14, 5 - 4, 6},
+                        null);
 
         assertNotEquals(bKeyValue, aKeyValue);
         assertNotEquals(cKeyValue, aKeyValue);

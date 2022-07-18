@@ -480,7 +480,7 @@ class GetTokenInfoPrecompilesTest {
     }
 
     @Test
-    void getTokenInfoWithFixedFeeWorks() {
+    void getTokenInfoWithFixedFeeWithDenominationWorks() {
         givenMinimalFrameContext();
 
         final var tokenInfoWrapper = createTokenInfoWrapperForToken(tokenMerkleId);
@@ -492,7 +492,41 @@ class GetTokenInfoPrecompilesTest {
 
         givenMinimalTokenContext(TokenSupplyType.FINITE);
         givenKeyContext(key, TokenKeyType.ADMIN_KEY);
-        givenFixedFeeContext();
+        givenFixedFeeContextWithDenomination();
+        givenMinimalKeyContext();
+
+        given(encoder.encodeGetTokenInfo(tokenInfo)).willReturn(successResult);
+
+        givenMinimalContextForSuccessfulCall(pretendArguments);
+        givenReadOnlyFeeSchedule();
+
+        // when:
+        subject.prepareFields(frame);
+        subject.prepareComputation(pretendArguments, a -> a);
+        subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
+        final var result = subject.computeInternal(frame);
+
+        // then:
+        assertEquals(successResult, result);
+        // and:
+        verify(worldUpdater)
+                .manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
+    }
+
+    @Test
+    void getTokenInfoWithFixedFeeWithoutDenominationWorks() {
+        givenMinimalFrameContext();
+
+        final var tokenInfoWrapper = createTokenInfoWrapperForToken(tokenMerkleId);
+        final Bytes pretendArguments =
+                Bytes.concatenate(
+                        Bytes.of(Integers.toBytes(ABI_ID_GET_TOKEN_INFO)),
+                        EntityIdUtils.asTypedEvmAddress(tokenMerkleId));
+        given(decoder.decodeGetTokenInfo(pretendArguments)).willReturn(tokenInfoWrapper);
+
+        givenMinimalTokenContext(TokenSupplyType.FINITE);
+        givenKeyContext(key, TokenKeyType.ADMIN_KEY);
+        givenFixedFeeContextWithoutDenomination();
         givenMinimalKeyContext();
 
         given(encoder.encodeGetTokenInfo(tokenInfo)).willReturn(successResult);
@@ -955,7 +989,7 @@ class GetTokenInfoPrecompilesTest {
                 .willReturn(mockRecordBuilder);
     }
 
-    private void givenFixedFeeContext() {
+    private void givenFixedFeeContextWithDenomination() {
         final var fixedFee = new FixedFee(amount, feeToken, false, false, feeCollector);
         final List<FixedFee> fixedFees = new ArrayList<>();
         fixedFees.add(fixedFee);
@@ -966,6 +1000,24 @@ class GetTokenInfoPrecompilesTest {
         given(customFixedFee.getFixedFeeSpec()).willReturn(fixedFeeSpec);
         given(fixedFeeSpec.getUnitsToCollect()).willReturn(amount);
         given(fixedFeeSpec.getTokenDenomination()).willReturn(feeTokenEntityId);
+        final List<FcCustomFee> customFees = new ArrayList<>();
+        customFees.add(customFixedFee);
+        given(merkleToken.customFeeSchedule()).willReturn(customFees);
+    }
+
+    private void givenFixedFeeContextWithoutDenomination() {
+        final var fixedFee =
+                new FixedFee(
+                        amount, Address.wrap(Bytes.wrap(new byte[20])), true, false, feeCollector);
+        final List<FixedFee> fixedFees = new ArrayList<>();
+        fixedFees.add(fixedFee);
+        tokenInfo = createTokenInfo(fixedFees, new ArrayList<>(), new ArrayList<>(), tokenKeys);
+
+        given(customFixedFee.getFeeCollector()).willReturn(feeCollectorEntityId);
+        given(customFixedFee.getFeeType()).willReturn(FeeType.FIXED_FEE);
+        given(customFixedFee.getFixedFeeSpec()).willReturn(fixedFeeSpec);
+        given(fixedFeeSpec.getUnitsToCollect()).willReturn(amount);
+        given(fixedFeeSpec.getTokenDenomination()).willReturn(null);
         final List<FcCustomFee> customFees = new ArrayList<>();
         customFees.add(customFixedFee);
         given(merkleToken.customFeeSchedule()).willReturn(customFees);
