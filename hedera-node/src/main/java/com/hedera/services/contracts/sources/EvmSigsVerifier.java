@@ -66,7 +66,7 @@ public interface EvmSigsVerifier {
             Address account,
             Address activeContract,
             WorldLedgers worldLedgers);
-
+  
     /**
      * Determines if the target account <b>either</b> has no receiver sig requirement; or an active
      * key given the cryptographic signatures from the {@link
@@ -123,7 +123,7 @@ public interface EvmSigsVerifier {
      * asynchronously; plus the given recipient and contract of the current {@link
      * org.hyperledger.besu.evm.frame.MessageFrame}.
      *
-     * <p>If the supply key includes a {@code contractID} key matching the contract address, or a
+     * <p>If the pause key includes a {@code contractID} key matching the contract address, or a
      * {@code delegatableContractId} key matching the recipient address, then those keys must be
      * treated as active for the purposes of this test.
      *
@@ -131,7 +131,7 @@ public interface EvmSigsVerifier {
      *
      * @param isDelegateCall a flag showing if the message represented by the active frame is
      *     invoked via {@code delegatecall}
-     * @param tokenAddress the address of the token to test for supply key activation
+     * @param tokenAddress the address of the token to test for pause key activation
      * @param activeContract the address of the contract that should be signed in the key
      * @param worldLedgers the worldLedgers representing current state
      * @return whether the target account's key has an active signature

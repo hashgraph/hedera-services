@@ -47,6 +47,10 @@ public final class AbiConstants {
     public static final int ABI_ID_DISSOCIATE_TOKENS = 0x78b63918;
     // dissociateToken(address account, address token)
     public static final int ABI_ID_DISSOCIATE_TOKEN = 0x099794e8;
+    // pauseToken(address token)
+    public static final int ABI_PAUSE_TOKEN = 0x7c41ad2c;
+    // unpauseToken(address token)
+    public static final int ABI_UNPAUSE_TOKEN = 0x3b3bff0f;
 
     // **** HIP-218 + HIP-376 function selectors and event signatures ****
     // redirectForToken(address token, bytes memory data)
@@ -81,13 +85,6 @@ public final class AbiConstants {
     public static final int ABI_ID_ERC_OWNER_OF_NFT = 0x6352211e;
     // tokenURI(uint256 tokenId)
     public static final int ABI_ID_ERC_TOKEN_URI_NFT = 0xc87b56dd;
-
-    // pauseToken(address token)
-    public static final int ABI_PAUSE_TOKEN = 0x7c41ad2c;
-
-    // unpauseToken(address token)
-    public static final int ABI_UNPAUSE_TOKEN = 0x3b3bff0f;
-
     // Transfer(address indexed from, address indexed to, uint256 indexed tokenId)
     // Transfer(address indexed from, address indexed to, uint256 value)
     public static final Bytes TRANSFER_EVENT =

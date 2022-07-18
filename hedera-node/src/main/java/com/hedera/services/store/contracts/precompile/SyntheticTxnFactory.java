@@ -438,7 +438,6 @@ public class SyntheticTxnFactory {
         builder.setToken(unpauseWrapper.token());
 
         return TransactionBody.newBuilder().setTokenUnpause(builder);
-    }
 
     public static class HbarTransfer {
         protected final long amount;
