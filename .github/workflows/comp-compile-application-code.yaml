@@ -27,6 +27,16 @@ on:
         type: boolean
         required: false
         default: false
+      enable-fossa-scan:
+        description: "FOSSA Scan Enabled"
+        type: boolean
+        required: false
+        default: false
+      enable-fossa-test:
+        description: "FOSSA Test Enabled"
+        type: boolean
+        required: false
+        default: false
       java-distribution:
         description: "Java JDK Distribution:"
         type: string
@@ -50,6 +60,9 @@ on:
       sonar-token:
         description: "The SonarCloud access token used by the SonarQube agent to report an analysis."
         required: false
+      fossa-api-token:
+        description: "The FOSSA API access token used to run FOSSA scan and test features."
+        required: false
 
 defaults:
   run:
@@ -66,7 +79,7 @@ permissions:
 jobs:
   compile:
     name: ${{ inputs.custom-job-label || 'Compiles' }}
-    runs-on: [self-hosted, Linux, services, standard, ephemeral]
+    runs-on: [ self-hosted, Linux, services, standard, ephemeral ]
     steps:
       - name: Checkout Code
         uses: actions/checkout@v2
@@ -156,33 +169,12 @@ jobs:
         if: ${{ inputs.enable-unit-tests && !cancelled() }}
         uses: codecov/codecov-action@v3
 
-#      - name: Publish Code Coverage Data
-#        uses: actions/upload-artifact@v3
-#        if: ${{ inputs.enable-unit-tests && !cancelled() }}
-#        with:
-#          name: Jacoco Data
-#          path: "**/build/reports/jacoco/test/jacocoTestReport.xml"
-
       - name: Publish Test Reports
         uses: actions/upload-artifact@v3
         if: ${{ inputs.enable-unit-tests && !cancelled() }}
         with:
           name: Test Reports
           path: "**/build/reports/tests/**"
-
-#      - name: Show Integration Test Folder Structures
-#        if: ${{ always() }}
-#        run: |
-#          if ! command -v tree >/dev/null 2>&1; then
-#            echo "::group::Install Tree Command"
-#            sudo apt update
-#            sudo apt install -y tree
-#            echo "::endgroup::"
-#          fi
-#
-#          echo "::group::Show Network Folder Contents"
-#          tree -apshug  "${{ github.workspace }}/test-clients/build/network"
-#          echo "::endgroup::"
 
       - name: Publish Test Network Logs
         uses: actions/upload-artifact@v3
@@ -215,3 +207,16 @@ jobs:
         if: ${{ inputs.enable-sonar-analysis && steps.gradle-build.conclusion == 'success' && !cancelled() }}
         with:
           arguments: sonarqube --info
+
+      - name: FOSSA Scan
+        uses: fossas/fossa-action@v1.3.1
+        if: ${{ inputs.enable-fossa-scan && !cancelled() }}
+        with:
+          api-key: ${{ secrets.fossa-api-token }}
+
+      - name: FOSSA Test
+        uses: fossas/fossa-action@v1.3.1
+        if: ${{ inputs.enable-fossa-test && !cancelled() }}
+        with:
+          api-key: ${{ secrets.fossa-api-token }}
+          run-tests: true

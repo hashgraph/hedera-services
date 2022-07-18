@@ -15,22 +15,6 @@
  */
 package com.hedera.services.store.contracts.precompile;
 
-/*
- * Copyright (C) 2022 Hedera Hashgraph, LLC
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 import org.apache.tuweni.bytes.Bytes;
 
 /** All ABI constants used by {@link Precompile} implementations, in one place for easy review. */
@@ -97,10 +81,10 @@ public final class AbiConstants {
     public static final int ABI_ID_ERC_OWNER_OF_NFT = 0x6352211e;
     // tokenURI(uint256 tokenId)
     public static final int ABI_ID_ERC_TOKEN_URI_NFT = 0xc87b56dd;
-    // wipeTokenAccount(address, address, uint32)
-    public static final int ABI_WIPE_TOKEN_ACCOUNT_FUNGIBLE = 0x9790686d;
-    // wipeTokenAccountNFT(address, address, int64[])
-    public static final int ABI_WIPE_TOKEN_ACCOUNT_NFT = 0xf7f38e26;
+	// wipeTokenAccount(address, address, uint32)
+	public static final int ABI_WIPE_TOKEN_ACCOUNT_FUNGIBLE = 0x9790686d;
+	// wipeTokenAccountNFT(address, address, int64[])
+	public static final int ABI_WIPE_TOKEN_ACCOUNT_NFT = 0xf7f38e26;
     // Transfer(address indexed from, address indexed to, uint256 indexed tokenId)
     // Transfer(address indexed from, address indexed to, uint256 value)
     public static final Bytes TRANSFER_EVENT =
