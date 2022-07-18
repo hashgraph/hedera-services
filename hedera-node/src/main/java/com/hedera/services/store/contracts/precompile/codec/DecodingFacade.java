@@ -55,6 +55,7 @@ public class DecodingFacade {
     private static final String INT_OUTPUT = "(int)";
     private static final String BOOL_OUTPUT = "(bool)";
     private static final String STRING_OUTPUT = "(string)";
+    private static final String INT_BOOL_PAIR_OUTPUT = "(int,bool)";
     private static final String ADDRESS_PAIR_RAW_TYPE = "(bytes32,bytes32)";
     public static final String UINT256_RAW_TYPE = "(uint256)";
 
@@ -169,18 +170,25 @@ public class DecodingFacade {
             Bytes.wrap(ERC_TRANSFER_FROM_FUNCTION.selector());
     private static final ABIType<Tuple> ERC_TRANSFER_FROM_DECODER =
             TypeFactory.create("(bytes32,bytes32,uint256)");
-	private static final Function FREEZE_TOKEN_FUNCTION =
-			new Function("freezeToken(address,address)", INT_OUTPUT);
-	private static final Bytes FREEZE_TOKEN_FUNCTION_SELECTOR =
-			Bytes.wrap(FREEZE_TOKEN_FUNCTION.selector());
-	private static final ABIType<Tuple> FREEZE_TOKEN_ACCOUNT_DECODER =
-			TypeFactory.create("(bytes32,bytes32)");
-	private static final Function UNFREEZE_TOKEN_FUNCTION =
-			new Function("unfreezeToken(address,address)", INT_OUTPUT);
-	private static final Bytes UNFREEZE_TOKEN_FUNCTION_SELECTOR =
-			Bytes.wrap(UNFREEZE_TOKEN_FUNCTION.selector());
-	private static final ABIType<Tuple> UNFREEZE_TOKEN_ACCOUNT_DECODER =
-			TypeFactory.create("(bytes32,bytes32)");
+
+    private static final Function IS_FROZEN_TOKEN_FUNCTION =
+            new Function("isFrozen(address, address)", INT_BOOL_PAIR_OUTPUT);
+    private static final Bytes IS_FROZEN_TOKEN_FUNCTION_SELECTOR =
+            Bytes.wrap(IS_FROZEN_TOKEN_FUNCTION.selector());
+    private static final ABIType<Tuple> IS_FROZEN_TOKEN_DECODER =
+            TypeFactory.create("(bytes32,bytes32)");
+    private static final Function FREEZE_TOKEN_FUNCTION =
+            new Function("freezeToken(address,address)", INT_OUTPUT);
+    private static final Bytes FREEZE_TOKEN_FUNCTION_SELECTOR =
+            Bytes.wrap(FREEZE_TOKEN_FUNCTION.selector());
+    private static final ABIType<Tuple> FREEZE_TOKEN_ACCOUNT_DECODER =
+            TypeFactory.create("(bytes32,bytes32)");
+    private static final Function UNFREEZE_TOKEN_FUNCTION =
+            new Function("unfreezeToken(address,address)", INT_OUTPUT);
+    private static final Bytes UNFREEZE_TOKEN_FUNCTION_SELECTOR =
+            Bytes.wrap(UNFREEZE_TOKEN_FUNCTION.selector());
+    private static final ABIType<Tuple> UNFREEZE_TOKEN_ACCOUNT_DECODER =
+            TypeFactory.create("(bytes32,bytes32)");
 
     /* --- Token Create Structs --- */
     private static final String KEY_VALUE = "(bool,address,bytes,bytes,address)";
@@ -728,25 +736,41 @@ public class DecodingFacade {
 
         return tokenCreateWrapper;
     }
-	public FreezeWrapper decodeFreeze(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
-		final Tuple decodedArguments =
-				decodeFunctionCall(input, FREEZE_TOKEN_FUNCTION_SELECTOR, FREEZE_TOKEN_ACCOUNT_DECODER);
 
-		final var tokenID = convertAddressBytesToTokenID(decodedArguments.get(0));
-		final var accountID =
-				convertLeftPaddedAddressToAccountId(decodedArguments.get(1), aliasResolver);
-		return new FreezeWrapper(tokenID, accountID);
-	}
+    public TokenFreezeUnfreezeWrapper decodeIsFrozen(
+            final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
+        final Tuple decodedArguments =
+                decodeFunctionCall(input, IS_FROZEN_TOKEN_FUNCTION_SELECTOR, IS_FROZEN_TOKEN_DECODER);
 
-	public UnFreezeWrapper decodeUnFreeze(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
-		final Tuple decodedArguments =
-				decodeFunctionCall(input, FREEZE_TOKEN_FUNCTION_SELECTOR, FREEZE_TOKEN_ACCOUNT_DECODER);
+        final var tokenID = convertAddressBytesToTokenID(decodedArguments.get(0));
+        final var accountID =
+                convertLeftPaddedAddressToAccountId(decodedArguments.get(1), aliasResolver);
+        return new TokenFreezeUnfreezeWrapper(tokenID, accountID);
+    }
 
-		final var tokenID = convertAddressBytesToTokenID(decodedArguments.get(0));
-		final var accountID =
-				convertLeftPaddedAddressToAccountId(decodedArguments.get(1), aliasResolver);
-		return new UnFreezeWrapper(tokenID, accountID);
-	}
+    public TokenFreezeUnfreezeWrapper decodeFreeze(
+            final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
+        final Tuple decodedArguments =
+                decodeFunctionCall(
+                        input, FREEZE_TOKEN_FUNCTION_SELECTOR, FREEZE_TOKEN_ACCOUNT_DECODER);
+
+        final var tokenID = convertAddressBytesToTokenID(decodedArguments.get(0));
+        final var accountID =
+                convertLeftPaddedAddressToAccountId(decodedArguments.get(1), aliasResolver);
+        return new TokenFreezeUnfreezeWrapper(tokenID, accountID);
+    }
+
+    public TokenFreezeUnfreezeWrapper decodeUnFreeze(
+            final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
+        final Tuple decodedArguments =
+                decodeFunctionCall(
+                        input, UNFREEZE_TOKEN_FUNCTION_SELECTOR, UNFREEZE_TOKEN_ACCOUNT_DECODER);
+
+        final var tokenID = convertAddressBytesToTokenID(decodedArguments.get(0));
+        final var accountID =
+                convertLeftPaddedAddressToAccountId(decodedArguments.get(1), aliasResolver);
+        return new TokenFreezeUnfreezeWrapper(tokenID, accountID);
+    }
 
     private TokenCreateWrapper decodeTokenCreateWithoutFees(
             final Tuple tokenCreateStruct,

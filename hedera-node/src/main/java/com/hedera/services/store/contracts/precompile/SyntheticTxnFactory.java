@@ -31,12 +31,11 @@ import com.hedera.services.store.contracts.precompile.codec.ApproveWrapper;
 import com.hedera.services.store.contracts.precompile.codec.Association;
 import com.hedera.services.store.contracts.precompile.codec.BurnWrapper;
 import com.hedera.services.store.contracts.precompile.codec.Dissociation;
-import com.hedera.services.store.contracts.precompile.codec.FreezeWrapper;
+import com.hedera.services.store.contracts.precompile.codec.TokenFreezeUnfreezeWrapper;
 import com.hedera.services.store.contracts.precompile.codec.MintWrapper;
 import com.hedera.services.store.contracts.precompile.codec.SetApprovalForAllWrapper;
 import com.hedera.services.store.contracts.precompile.codec.TokenCreateWrapper;
 import com.hedera.services.store.contracts.precompile.codec.TokenTransferWrapper;
-import com.hedera.services.store.contracts.precompile.codec.UnFreezeWrapper;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.MiscUtils;
 import com.hederahashgraph.api.proto.java.AccountAmount;
@@ -424,14 +423,14 @@ public class SyntheticTxnFactory {
         return TransactionBody.newBuilder().setNodeStakeUpdate(txnBody);
     }
 
-	public TransactionBody.Builder createFreeze(final FreezeWrapper freezeWrapper) {
+	public TransactionBody.Builder createFreeze(final TokenFreezeUnfreezeWrapper freezeWrapper) {
 		final var builder = TokenFreezeAccountTransactionBody.newBuilder();
 		builder.setToken(freezeWrapper.token());
 		builder.setAccount(freezeWrapper.account());
 		return TransactionBody.newBuilder().setTokenFreeze(builder);
 	}
 
-	public TransactionBody.Builder createUnFreeze(final UnFreezeWrapper unFreezeWrapper) {
+	public TransactionBody.Builder createUnFreeze(final TokenFreezeUnfreezeWrapper unFreezeWrapper) {
 		final var builder = TokenUnfreezeAccountTransactionBody.newBuilder();
 		builder.setToken(unFreezeWrapper.token());
 		builder.setAccount(unFreezeWrapper.account());
