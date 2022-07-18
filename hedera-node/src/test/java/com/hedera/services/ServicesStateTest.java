@@ -420,7 +420,7 @@ class ServicesStateTest {
 
         subject.preHandle(event);
 
-        verify(eventExpansion).expandAllSigs(event);
+        verify(eventExpansion).expandAllSigs(event, subject);
     }
 
     @Test

@@ -196,7 +196,7 @@ class BootstrapPropertiesTest {
                     entry(
                             "scheduling.whitelist",
                             Set.of(CryptoTransfer, TokenMint, TokenBurn, ConsensusSubmitMessage)),
-                    entry("sigs.expandFromLastSignedState", true),
+                    entry("sigs.expandFromImmutableState", true),
                     entry(
                             "stats.consThrottlesToSample",
                             List.of("<GAS>", "ThroughputLimits", "CreationLimits")),

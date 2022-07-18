@@ -228,7 +228,7 @@ public class ServicesState extends PartialNaryMerkleInternal
 
     @Override
     public void preHandle(final Event event) {
-        metadata.app().eventExpansion().expandAllSigs(event);
+        metadata.app().eventExpansion().expandAllSigs(event, this);
     }
 
     private void deserializedInit(

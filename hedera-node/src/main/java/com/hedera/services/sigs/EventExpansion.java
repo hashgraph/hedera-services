@@ -16,6 +16,7 @@
 package com.hedera.services.sigs;
 
 import com.google.protobuf.InvalidProtocolBufferException;
+import com.hedera.services.ServicesState;
 import com.hedera.services.sigs.order.SigReqsManager;
 import com.hedera.services.txns.prefetch.PrefetchProcessor;
 import com.hedera.services.txns.span.ExpandHandleSpan;
@@ -47,7 +48,7 @@ public class EventExpansion {
         this.prefetchProcessor = prefetchProcessor;
     }
 
-    public void expandAllSigs(final Event event) {
+    public void expandAllSigs(final Event event, final ServicesState sourceState) {
         event.forEachTransaction(
                 txn -> {
                     try {
@@ -57,7 +58,7 @@ public class EventExpansion {
                         // example, pre-fetching of contract bytecode; should start before
                         // synchronous signature expansion
                         prefetchProcessor.submit(accessor);
-                        sigReqsManager.expandSigsInto(accessor);
+                        sigReqsManager.expandSigs(sourceState, accessor);
                         engine.verifyAsync(txn.getSignatures());
                     } catch (final InvalidProtocolBufferException e) {
                         log.warn("Event contained a non-GRPC transaction", e);

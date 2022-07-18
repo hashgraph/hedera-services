@@ -25,6 +25,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import com.google.protobuf.InvalidProtocolBufferException;
+import com.hedera.services.ServicesState;
 import com.hedera.services.sigs.order.SigReqsManager;
 import com.hedera.services.txns.prefetch.PrefetchProcessor;
 import com.hedera.services.txns.span.ExpandHandleSpan;
@@ -49,6 +50,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith({MockitoExtension.class, LogCaptureExtension.class})
 class EventExpansionTest {
     @Mock private Event event;
+    @Mock private ServicesState sourceState;
     @Mock private PlatformTxnAccessor txnAccessor;
     @Mock private Cryptography engine;
     @Mock private SigReqsManager sigReqsManager;
@@ -69,10 +71,10 @@ class EventExpansionTest {
         givenNTransactions(n);
         given(expandHandleSpan.track(any())).willReturn(txnAccessor);
 
-        subject.expandAllSigs(event);
+        subject.expandAllSigs(event, sourceState);
 
         verify(prefetchProcessor, times(n)).submit(txnAccessor);
-        verify(sigReqsManager, times(n)).expandSigsInto(txnAccessor);
+        verify(sigReqsManager, times(n)).expandSigs(sourceState, txnAccessor);
         verify(engine, times(n)).verifyAsync(Collections.emptyList());
     }
 
@@ -82,7 +84,7 @@ class EventExpansionTest {
 
         willThrow(InvalidProtocolBufferException.class).given(expandHandleSpan).track(any());
 
-        subject.expandAllSigs(event);
+        subject.expandAllSigs(event, sourceState);
 
         assertThat(
                 logCaptor.warnLogs(),
@@ -94,9 +96,9 @@ class EventExpansionTest {
         givenNTransactions(1);
         given(expandHandleSpan.track(any())).willReturn(txnAccessor);
 
-        willThrow(IllegalStateException.class).given(sigReqsManager).expandSigsInto(any());
+        willThrow(IllegalStateException.class).given(sigReqsManager).expandSigs(any(), any());
 
-        subject.expandAllSigs(event);
+        subject.expandAllSigs(event, sourceState);
 
         assertThat(
                 logCaptor.warnLogs(),
