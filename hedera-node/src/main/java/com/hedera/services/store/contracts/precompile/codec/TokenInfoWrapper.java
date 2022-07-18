@@ -25,7 +25,15 @@ public record TokenInfoWrapper(TokenID tokenID, long serialNumber) {
         return new TokenInfoWrapper(tokenId, serialNumber);
     }
 
+    public static TokenInfoWrapper forFungibleToken(final TokenID tokenId) {
+        return initializeWithTokenId(tokenId);
+    }
+
     public static TokenInfoWrapper forToken(final TokenID tokenId) {
+        return initializeWithTokenId(tokenId);
+    }
+
+    private static TokenInfoWrapper initializeWithTokenId(final TokenID tokenId) {
         return new TokenInfoWrapper(tokenId, INVALID_SERIAL_NUMBER);
     }
 }

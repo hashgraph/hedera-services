@@ -756,7 +756,7 @@ public class DecodingFacade {
                         input, GET_FUNGIBLE_TOKEN_INFO_SELECTOR, GET_FUNGIBLE_TOKEN_INFO_DECODER);
 
         final var tokenID = convertAddressBytesToTokenID(decodedArguments.get(0));
-        return TokenInfoWrapper.forToken(tokenID);
+        return TokenInfoWrapper.forFungibleToken(tokenID);
     }
 
     public TokenInfoWrapper decodeGetNonFungibleTokenInfo(final Bytes input) {
