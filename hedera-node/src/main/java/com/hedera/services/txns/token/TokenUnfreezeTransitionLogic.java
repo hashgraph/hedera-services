@@ -23,7 +23,6 @@ package com.hedera.services.txns.token;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.txns.TransitionLogic;
-import com.hedera.services.txns.token.validators.UnFreezeLogic;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
@@ -51,7 +50,7 @@ public class TokenUnfreezeTransitionLogic implements TransitionLogic {
         final var targetTokenId = Id.fromGrpcToken(op.getToken());
         final var targetAccountId = Id.fromGrpcAccount(op.getAccount());
         /* --- Do the business logic --- */
-        unFreezeLogic.unFreeze(targetTokenId, targetAccountId);
+        unFreezeLogic.doFreezeUnfreeze(targetTokenId, targetAccountId);
     }
 
     @Override

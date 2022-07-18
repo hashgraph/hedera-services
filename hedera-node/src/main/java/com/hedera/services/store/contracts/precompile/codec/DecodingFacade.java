@@ -172,17 +172,19 @@ public class DecodingFacade {
             TypeFactory.create("(bytes32,bytes32,uint256)");
 
     private static final Function IS_FROZEN_TOKEN_FUNCTION =
-            new Function("isFrozen(address, address)", INT_BOOL_PAIR_OUTPUT);
+            new Function("isFrozen(address,address)", INT_BOOL_PAIR_OUTPUT);
     private static final Bytes IS_FROZEN_TOKEN_FUNCTION_SELECTOR =
             Bytes.wrap(IS_FROZEN_TOKEN_FUNCTION.selector());
     private static final ABIType<Tuple> IS_FROZEN_TOKEN_DECODER =
             TypeFactory.create("(bytes32,bytes32)");
+
     private static final Function FREEZE_TOKEN_FUNCTION =
             new Function("freezeToken(address,address)", INT_OUTPUT);
     private static final Bytes FREEZE_TOKEN_FUNCTION_SELECTOR =
             Bytes.wrap(FREEZE_TOKEN_FUNCTION.selector());
     private static final ABIType<Tuple> FREEZE_TOKEN_ACCOUNT_DECODER =
             TypeFactory.create("(bytes32,bytes32)");
+
     private static final Function UNFREEZE_TOKEN_FUNCTION =
             new Function("unfreezeToken(address,address)", INT_OUTPUT);
     private static final Bytes UNFREEZE_TOKEN_FUNCTION_SELECTOR =

@@ -31,7 +31,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUN
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
-public class FreezeLogic {
+public class FreezeLogic implements FreezingLogic{
     private final TypedTokenStore tokenStore;
     private final AccountStore accountStore;
 
@@ -40,8 +40,8 @@ public class FreezeLogic {
         this.tokenStore = tokenStore;
         this.accountStore = accountStore;
     }
-
-    public void freeze(Id targetTokenId, Id targetAccountId) {
+    @Override
+    public void doFreezeUnfreeze(Id targetTokenId, Id targetAccountId) {
         /* --- Load the model objects --- */
         final var loadedToken = tokenStore.loadToken(targetTokenId);
         final var loadedAccount = accountStore.loadAccount(targetAccountId);

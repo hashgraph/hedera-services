@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.hedera.services.txns.token.validators;
+package com.hedera.services.txns.token;
 
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.TypedTokenStore;
@@ -31,7 +31,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUN
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
-public class UnFreezeLogic {
+public class UnFreezeLogic implements FreezingLogic{
     private final TypedTokenStore tokenStore;
     private final AccountStore accountStore;
 
@@ -40,8 +40,8 @@ public class UnFreezeLogic {
         this.tokenStore = tokenStore;
         this.accountStore = accountStore;
     }
-
-    public void unFreeze(Id targetTokenId, Id targetAccountId) {
+    @Override
+    public void doFreezeUnfreeze(Id targetTokenId, Id targetAccountId) {
         /* --- Load the model objects --- */
         final var loadedToken = tokenStore.loadToken(targetTokenId);
         final var loadedAccount = accountStore.loadAccount(targetAccountId);
@@ -52,10 +52,6 @@ public class UnFreezeLogic {
 
         /* --- Persist the updated models --- */
         tokenStore.commitTokenRelationships(List.of(tokenRelationship));
-    }
-
-    public boolean isFrozen(Token token, Account account) {
-        return tokenStore.loadTokenRelationship(token, account).isFrozen();
     }
 
     public ResponseCodeEnum validate(TransactionBody txnBody) {
