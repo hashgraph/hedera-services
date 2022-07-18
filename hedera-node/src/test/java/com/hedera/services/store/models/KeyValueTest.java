@@ -72,6 +72,7 @@ class KeyValueTest {
         assertNotEquals(ckeyValue, akeyValue);
         assertEquals(dkeyValue, akeyValue);
         assertNotEquals(akeyValue, new Object());
+        assertNotEquals(akeyValue, null);
         assertEquals(akeyValue, akeyValue);
     }
 

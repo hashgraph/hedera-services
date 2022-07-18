@@ -15,7 +15,6 @@
  */
 package com.hedera.services.store.contracts.precompile;
 
-import com.google.common.annotations.VisibleForTesting;
 import com.hedera.services.store.contracts.precompile.codec.DecodingFacade;
 import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
 
@@ -46,9 +45,4 @@ public final class ParsingConstants {
     public static final String KEY_VALUE = "(bool,address,bytes,bytes,address)";
     public static final String ROYALTY_FEE = "(uint32,uint32,uint32,address,bool,address)";
     public static final String TOKEN_KEY = "(uint256," + KEY_VALUE + ")";
-
-    @VisibleForTesting
-    public static void tryToInitialize() {
-        new ParsingConstants();
-    }
 }
