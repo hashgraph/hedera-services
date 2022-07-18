@@ -31,6 +31,7 @@ package com.hedera.services.store.models;
  * limitations under the License.
  */
 
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.contractAddr;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.parentContractAddress;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -84,6 +85,20 @@ class KeyValueTest {
                         parentContractAddress);
         final var eKeyValue =
                 new KeyValue(
+                        true,
+                        parentContractAddress,
+                        new byte[] {35, -44, 21, 4, -4, 6},
+                        new byte[] {},
+                        parentContractAddress);
+        final var fKeyValue =
+                new KeyValue(
+                        false,
+                        contractAddr,
+                        new byte[] {35, -44, 21, 4, -4, 6},
+                        new byte[] {35, -104, 14, 5 - 4, 6},
+                        null);
+        final var gKeyValue =
+                new KeyValue(
                         false,
                         parentContractAddress,
                         new byte[] {35, -44, 21, 4, -4, 6},
@@ -93,7 +108,9 @@ class KeyValueTest {
         assertNotEquals(bKeyValue, aKeyValue);
         assertNotEquals(cKeyValue, aKeyValue);
         assertNotEquals(dKeyValue, aKeyValue);
-        assertEquals(eKeyValue, aKeyValue);
+        assertNotEquals(eKeyValue, aKeyValue);
+        assertNotEquals(fKeyValue, aKeyValue);
+        assertEquals(gKeyValue, aKeyValue);
         assertNotEquals(aKeyValue, new Object());
         assertNotEquals(null, aKeyValue);
         assertEquals(aKeyValue, aKeyValue);

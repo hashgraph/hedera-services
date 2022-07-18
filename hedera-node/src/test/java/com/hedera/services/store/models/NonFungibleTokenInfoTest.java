@@ -99,8 +99,8 @@ class NonFungibleTokenInfoTest {
                         recipientAddr);
         final var bNonFungibleTokenInfo =
                 new NonFungibleTokenInfo(
-                        createTokenInfo(),
-                        2,
+                        commonTokenInfo,
+                        1,
                         senderAddress,
                         43643743437L,
                         new byte[] {56, -32, 73, 2, -8},
@@ -110,7 +110,7 @@ class NonFungibleTokenInfoTest {
                         createTokenInfo(),
                         1,
                         recipientAddr,
-                        74643363L,
+                        1434353562L,
                         new byte[] {50, -32, 56, 4, -9},
                         senderAddress);
         final var dNonFungibleTokenInfo =
@@ -123,9 +123,17 @@ class NonFungibleTokenInfoTest {
                         senderAddress);
         final var eNonFungibleTokenInfo =
                 new NonFungibleTokenInfo(
-                        createTokenInfo(),
+                        commonTokenInfo,
                         1,
                         senderAddress,
+                        1434353562L,
+                        new byte[] {50, -32, 73, -10, -8},
+                        recipientAddr);
+        final var fNonFungibleTokenInfo =
+                new NonFungibleTokenInfo(
+                        commonTokenInfo,
+                        1,
+                        recipientAddr,
                         1434353562L,
                         new byte[] {40, -32, 56, 2, -8},
                         recipientAddr);
@@ -133,7 +141,8 @@ class NonFungibleTokenInfoTest {
         assertNotEquals(bNonFungibleTokenInfo, aNonFungibleTokenInfo);
         assertNotEquals(cNonFungibleTokenInfo, aNonFungibleTokenInfo);
         assertNotEquals(dNonFungibleTokenInfo, aNonFungibleTokenInfo);
-        assertEquals(eNonFungibleTokenInfo, aNonFungibleTokenInfo);
+        assertNotEquals(eNonFungibleTokenInfo, aNonFungibleTokenInfo);
+        assertEquals(fNonFungibleTokenInfo, aNonFungibleTokenInfo);
         assertNotEquals(aNonFungibleTokenInfo, new Object());
         assertNotEquals(null, aNonFungibleTokenInfo);
         assertEquals(aNonFungibleTokenInfo, aNonFungibleTokenInfo);
