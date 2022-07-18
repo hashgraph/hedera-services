@@ -133,7 +133,7 @@ class NonFungibleTokenInfoTest {
                 new NonFungibleTokenInfo(
                         commonTokenInfo,
                         1,
-                        recipientAddr,
+                        senderAddress,
                         1434353562L,
                         new byte[] {40, -32, 56, 2, -8},
                         recipientAddr);
