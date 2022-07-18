@@ -18,6 +18,7 @@ package com.hedera.services.txns.span;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.protobuf.InvalidProtocolBufferException;
+import com.hedera.services.ServicesState;
 import com.hedera.services.utils.accessors.AccessorFactory;
 import com.hedera.services.utils.accessors.PlatformTxnAccessor;
 import com.hedera.services.utils.accessors.SwirldsTxnAccessor;
@@ -29,7 +30,7 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * Encapsulates a "span" that tracks our contact with a given {@link Transaction} between the {@link
- * com.hedera.services.sigs.EventExpansion#expandAllSigs(Event)} and {@link
+ * com.hedera.services.sigs.EventExpansion#expandAllSigs(Event, ServicesState)} and {@link
  * com.hedera.services.ServicesState#handleConsensusRound(Round, SwirldDualState)} platform
  * callbacks.
  *
