@@ -1,3 +1,18 @@
+/*
+ * Copyright (C) 2022 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package com.hedera.services.contracts.operation;
 
 /*
@@ -24,6 +39,9 @@ package com.hedera.services.contracts.operation;
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
+import java.util.Optional;
+import java.util.OptionalLong;
+import javax.inject.Inject;
 import com.hedera.services.stream.proto.SidecarType;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.units.bigints.UInt256;
@@ -37,35 +55,31 @@ import org.hyperledger.besu.evm.internal.FixedStack.OverflowException;
 import org.hyperledger.besu.evm.internal.FixedStack.UnderflowException;
 import org.hyperledger.besu.evm.operation.AbstractOperation;
 
-import javax.inject.Inject;
-import java.util.Optional;
-import java.util.OptionalLong;
-
 /**
- * Hedera adapted version of the {@link org.hyperledger.besu.evm.operation.SLoadOperation}.
- * No externally visible changes, the result of sload is stored for the benefit of ther record stream.
+ * Hedera adapted version of the {@link org.hyperledger.besu.evm.operation.SLoadOperation}. No
+ * externally visible changes, the result of sload is stored for the benefit of ther record stream.
  */
 public class HederaSLoadOperation extends AbstractOperation {
 
+    private final OptionalLong warmCost;
+    private final OptionalLong coldCost;
 
-	private final OptionalLong warmCost;
-	private final OptionalLong coldCost;
+    private final OperationResult warmSuccess;
+    private final OperationResult coldSuccess;
+    private final GlobalDynamicProperties dynamicProperties;
 
-	private final OperationResult warmSuccess;
-	private final OperationResult coldSuccess;
-	private final GlobalDynamicProperties dynamicProperties;
+    @Inject
+    public HederaSLoadOperation(
+            final GasCalculator gasCalculator, final GlobalDynamicProperties dynamicProperties) {
+        super(0x54, "SLOAD", 1, 1, 1, gasCalculator);
+        final long baseCost = gasCalculator.getSloadOperationGasCost();
+        warmCost = OptionalLong.of(baseCost + gasCalculator.getWarmStorageReadCost());
+        coldCost = OptionalLong.of(baseCost + gasCalculator.getColdSloadCost());
 
-	@Inject
-	public HederaSLoadOperation(final GasCalculator gasCalculator, final GlobalDynamicProperties dynamicProperties) {
-		super(0x54, "SLOAD", 1, 1, 1, gasCalculator);
-		final long baseCost = gasCalculator.getSloadOperationGasCost();
-		warmCost = OptionalLong.of(baseCost + gasCalculator.getWarmStorageReadCost());
-		coldCost = OptionalLong.of(baseCost + gasCalculator.getColdSloadCost());
-
-		warmSuccess = new OperationResult(warmCost, Optional.empty());
-		coldSuccess = new OperationResult(coldCost, Optional.empty());
-		this.dynamicProperties = dynamicProperties;
-	}
+        warmSuccess = new OperationResult(warmCost, Optional.empty());
+        coldSuccess = new OperationResult(coldCost, Optional.empty());
+        this.dynamicProperties = dynamicProperties;
+    }
 
 	@Override
 	public OperationResult execute(final MessageFrame frame, final EVM evm) {
@@ -86,14 +100,15 @@ public class HederaSLoadOperation extends AbstractOperation {
 					HederaOperationUtil.cacheExistingValue(frame, address, key, storageValue);
 				}
 
-				frame.pushStackItem(storageValue);
-				return slotIsWarm ? warmSuccess : coldSuccess;
-			}
-		} catch (final UnderflowException ufe) {
-			return new OperationResult(
-					warmCost, Optional.of(ExceptionalHaltReason.INSUFFICIENT_STACK_ITEMS));
-		} catch (final OverflowException ofe) {
-			return new OperationResult(warmCost, Optional.of(ExceptionalHaltReason.TOO_MANY_STACK_ITEMS));
-		}
-	}
+                frame.pushStackItem(storageValue);
+                return slotIsWarm ? warmSuccess : coldSuccess;
+            }
+        } catch (final UnderflowException ufe) {
+            return new OperationResult(
+                    warmCost, Optional.of(ExceptionalHaltReason.INSUFFICIENT_STACK_ITEMS));
+        } catch (final OverflowException ofe) {
+            return new OperationResult(
+                    warmCost, Optional.of(ExceptionalHaltReason.TOO_MANY_STACK_ITEMS));
+        }
+    }
 }
