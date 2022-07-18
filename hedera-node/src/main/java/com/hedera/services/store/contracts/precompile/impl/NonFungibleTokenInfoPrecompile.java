@@ -15,6 +15,8 @@
  */
 package com.hedera.services.store.contracts.precompile.impl;
 
+import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
+
 import com.hedera.services.config.NetworkInfo;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.store.contracts.WorldLedgers;
@@ -25,6 +27,7 @@ import com.hedera.services.store.contracts.precompile.codec.NonFungibleTokenInfo
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.utils.EntityIdUtils;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionBody.Builder;
 import java.util.function.UnaryOperator;
@@ -54,10 +57,12 @@ public class NonFungibleTokenInfoPrecompile extends AbstractTokenInfoPrecompile 
 
     @Override
     public Bytes getSuccessResultFor(final ExpirableTxnRecord.Builder childRecord) {
+        final var tokenInfo = super.getTokenInfo();
+
         final var uniqueToken =
                 ledgers.nfts().getImmutableRef(NftId.fromGrpc(tokenId, serialNumber));
+        validateTrue(uniqueToken != null, ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER);
 
-        final var tokenInfo = super.getTokenInfo();
         final var ownerId = EntityIdUtils.asTypedEvmAddress(uniqueToken.getOwner());
         final var creationTime = uniqueToken.getPackedCreationTime();
         final var metadata = uniqueToken.getMetadata();
