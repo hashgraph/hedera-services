@@ -16,8 +16,6 @@
 package com.hedera.services.bdd.suites.contract.traceability;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
-import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
-import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
@@ -518,6 +516,9 @@ public class ContractTraceabilitySuite extends HapiApiSuite {
     }
 
     private CustomSpecAssert assertStateChanges(final StateChange... stateChanges) {
+        // FUTURE WORK: state changes must be asserted from sidecar files,
+        // not from the transaction record
+        log.info("Expected state changes {}", stateChanges);
         return withOpContext(
                 (spec, opLog) ->
                         allRunFor(

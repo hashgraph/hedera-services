@@ -20,19 +20,12 @@ import static com.hedera.services.state.EntityCreator.NO_CUSTOM_FEES;
 import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.ILLEGAL_STATE_CHANGE;
 import static org.hyperledger.besu.evm.internal.Words.clampedToLong;
 
-import static com.hedera.services.state.EntityCreator.EMPTY_MEMO;
-import static com.hedera.services.state.EntityCreator.NO_CUSTOM_FEES;
-import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.ILLEGAL_STATE_CHANGE;
-import static org.hyperledger.besu.evm.internal.Words.clampedToLong;
-
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.state.EntityCreator;
 import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
-import java.util.Optional;
-import java.util.OptionalLong;
 import com.hedera.services.stream.proto.SidecarType;
 import com.hedera.services.utils.SidecarUtils;
 import java.util.Collections;
