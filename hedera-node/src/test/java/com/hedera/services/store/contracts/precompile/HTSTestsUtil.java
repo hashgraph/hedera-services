@@ -92,20 +92,20 @@ public class HTSTestsUtil {
     public static final MintWrapper fungibleMint = MintWrapper.forFungible(fungible, AMOUNT);
     public static final BurnWrapper fungibleBurnAmountOversize =
             BurnWrapper.forFungible(fungible, new BigInteger("2").pow(64).longValue());
-	public static final WipeWrapper fungibleWipeAmountOversize =
-			WipeWrapper.forFungible(fungible, account, new BigInteger("2").pow(64).longValue());
+    public static final WipeWrapper fungibleWipeAmountOversize =
+            WipeWrapper.forFungible(fungible, account, new BigInteger("2").pow(64).longValue());
     public static final BurnWrapper fungibleBurnMaxAmount =
             BurnWrapper.forFungible(fungible, Long.MAX_VALUE);
-	public static final WipeWrapper fungibleWipeMaxAmount =
-			WipeWrapper.forFungible(fungible, account, Long.MAX_VALUE);
+    public static final WipeWrapper fungibleWipeMaxAmount =
+            WipeWrapper.forFungible(fungible, account, Long.MAX_VALUE);
     public static final MintWrapper fungibleMintAmountOversize =
             MintWrapper.forFungible(fungible, new BigInteger("2").pow(64).longValue());
     public static final MintWrapper fungibleMintMaxAmount =
             MintWrapper.forFungible(fungible, Long.MAX_VALUE);
-	public static final WipeWrapper fungibleWipe =
-			WipeWrapper.forFungible(fungible, account, AMOUNT);
-	public static final WipeWrapper nonFungibleWipe =
-			WipeWrapper.forNonFungible(nonFungible, account, targetSerialNos);
+    public static final WipeWrapper fungibleWipe =
+            WipeWrapper.forFungible(fungible, account, AMOUNT);
+    public static final WipeWrapper nonFungibleWipe =
+            WipeWrapper.forNonFungible(nonFungible, account, targetSerialNos);
     public static final Long serialNumber = 1L;
     public static final OwnerOfAndTokenURIWrapper ownerOfAndTokenUriWrapper =
             new OwnerOfAndTokenURIWrapper(serialNumber);
