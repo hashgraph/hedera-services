@@ -165,19 +165,15 @@ public class DecodingFacade {
 
     private static final Function WIPE_TOKEN_ACCOUNT_FUNCTION =
             new Function("wipeTokenAccount(address,address,uint32)", INT_OUTPUT);
-
     private static final Bytes WIPE_TOKEN_ACCOUNT_SELECTOR =
             Bytes.wrap(WIPE_TOKEN_ACCOUNT_FUNCTION.selector());
-
     private static final ABIType<Tuple> WIPE_TOKEN_ACCOUNT_DECODER =
             TypeFactory.create("(bytes32,bytes32,uint32)");
 
     private static final Function WIPE_TOKEN_ACCOUNT_NFT_FUNCTION =
             new Function("wipeTokenAccountNFT(address,address,int64[])", INT_OUTPUT);
-
     private static final Bytes WIPE_TOKEN_ACCOUNT_NFT_SELECTOR =
             Bytes.wrap(WIPE_TOKEN_ACCOUNT_NFT_FUNCTION.selector());
-
     private static final ABIType<Tuple> WIPE_TOKEN_ACCOUNT_NFT_DECODER =
             TypeFactory.create("(bytes32,bytes32,int64[])");
 

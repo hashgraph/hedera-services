@@ -17,18 +17,7 @@ package com.hedera.services.store.contracts.precompile;
 
 import static com.hedera.services.state.EntityCreator.EMPTY_MEMO;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_WIPE_TOKEN_ACCOUNT_NFT;
-import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.DEFAULT_GAS_PRICE;
-import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.TEST_CONSENSUS_TIME;
-import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.accountAddr;
-import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.accountId;
-import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.contractAddr;
-import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.contractAddress;
-import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.nonFungibleId;
-import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.nonFungibleTokenAddr;
-import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.nonFungibleWipe;
-import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.successResult;
-import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.targetSerialNos;
-import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.timestamp;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.*;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -216,7 +205,9 @@ class WipeNonFungiblePrecompileTest {
         givenLedgers();
         givenPricingUtilsContext();
 
-        given(sigsVerifier.hasActiveKey(true, accountAddr, nonFungibleTokenAddr, wrappedLedgers))
+        given(
+                        sigsVerifier.hasActiveWipeKey(
+                                true, nonFungibleTokenAddr, nonFungibleTokenAddr, wrappedLedgers))
                 .willReturn(true);
         given(infrastructureFactory.newAccountStore(accounts)).willReturn(accountStore);
         given(
@@ -257,7 +248,9 @@ class WipeNonFungiblePrecompileTest {
         givenLedgers();
         givenPricingUtilsContext();
 
-        given(sigsVerifier.hasActiveKey(true, accountAddr, nonFungibleTokenAddr, wrappedLedgers))
+        given(
+                        sigsVerifier.hasActiveWipeKey(
+                                true, nonFungibleTokenAddr, nonFungibleTokenAddr, wrappedLedgers))
                 .willReturn(true);
         given(infrastructureFactory.newAccountStore(accounts)).willReturn(accountStore);
         given(
@@ -287,7 +280,7 @@ class WipeNonFungiblePrecompileTest {
     }
 
     @Test
-    void gasRequirementReturnsCorrectValueForBurnToken() {
+    void gasRequirementReturnsCorrectValueForWipeNonFungibleToken() {
         // given
         givenMinFrameContext();
         givenPricingUtilsContext();

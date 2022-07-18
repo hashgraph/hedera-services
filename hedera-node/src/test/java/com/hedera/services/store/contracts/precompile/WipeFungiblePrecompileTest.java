@@ -20,7 +20,6 @@ import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_WI
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.AMOUNT;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.DEFAULT_GAS_PRICE;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.TEST_CONSENSUS_TIME;
-import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.accountAddr;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.accountId;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.contractAddr;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.contractAddress;
@@ -190,7 +189,9 @@ class WipeFungiblePrecompileTest {
         givenLedgers();
         givenPricingUtilsContext();
 
-        given(sigsVerifier.hasActiveKey(true, accountAddr, fungibleTokenAddr, wrappedLedgers))
+        given(
+                        sigsVerifier.hasActiveWipeKey(
+                                true, fungibleTokenAddr, fungibleTokenAddr, wrappedLedgers))
                 .willReturn(true);
         given(infrastructureFactory.newAccountStore(accounts)).willReturn(accountStore);
         given(
@@ -253,7 +254,9 @@ class WipeFungiblePrecompileTest {
         given(decoder.decodeWipe(eq(pretendArguments), any())).willReturn(fungibleWipeMaxAmount);
         given(syntheticTxnFactory.createWipe(fungibleWipeMaxAmount))
                 .willReturn(mockSynthBodyBuilder);
-        given(sigsVerifier.hasActiveKey(true, accountAddr, fungibleTokenAddr, wrappedLedgers))
+        given(
+                        sigsVerifier.hasActiveWipeKey(
+                                true, fungibleTokenAddr, fungibleTokenAddr, wrappedLedgers))
                 .willReturn(true);
         given(infrastructureFactory.newAccountStore(accounts)).willReturn(accountStore);
         given(
@@ -290,7 +293,7 @@ class WipeFungiblePrecompileTest {
     }
 
     @Test
-    void gasRequirementReturnsCorrectValueForBurnToken() {
+    void gasRequirementReturnsCorrectValueForWipeFungibleToken() {
         // given
         givenMinFrameContext();
         givenPricingUtilsContext();

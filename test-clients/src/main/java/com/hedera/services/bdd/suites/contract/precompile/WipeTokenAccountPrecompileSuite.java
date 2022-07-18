@@ -94,8 +94,6 @@ public class WipeTokenAccountPrecompileSuite extends HapiApiSuite {
                                 (spec, opLog) ->
                                         allRunFor(
                                                 spec,
-                                                contractCreate(WIPE_CONTRACT)
-                                                        .bytecode(WIPE_CONTRACT),
                                                 contractCall(
                                                                 WIPE_CONTRACT,
                                                                 "wipeFungibleToken",
@@ -142,7 +140,6 @@ public class WipeTokenAccountPrecompileSuite extends HapiApiSuite {
                                     serialNumbers.add(1L);
                                     allRunFor(
                                             spec,
-                                            contractCreate(WIPE_CONTRACT).bytecode(WIPE_CONTRACT),
                                             contractCall(
                                                             WIPE_CONTRACT,
                                                             "wipeNonFungibleToken",
@@ -150,7 +147,7 @@ public class WipeTokenAccountPrecompileSuite extends HapiApiSuite {
                                                             asAddress(accountID.get()),
                                                             serialNumbers)
                                                     .payingWith(ACCOUNT)
-                                                    .via("wipeFungibleTxn")
+                                                    .via("wipeNonFungibleTxn")
                                                     .gas(GAS_TO_OFFER));
                                 }))
                 .then(

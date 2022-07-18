@@ -73,8 +73,8 @@ public abstract class AbstractWipePrecompile extends AbstractWritePrecompile {
         final var hasRequiredSigs =
                 KeyActivationUtils.validateKey(
                         frame,
-                        accountId.asEvmAddress(),
-                        sigsVerifier::hasActiveKey,
+                        tokenId.asEvmAddress(),
+                        sigsVerifier::hasActiveWipeKey,
                         ledgers,
                         aliases);
         validateTrue(hasRequiredSigs, INVALID_SIGNATURE);
