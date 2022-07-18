@@ -321,6 +321,59 @@ class GetTokenInfoPrecompilesTest {
                 new TokenKey(
                         FREEZE_KEY.value(),
                         new KeyValue(
+                                false, parentContractAddress, new byte[] {}, new byte[] {}, null));
+        tokenKeys.add(tokenKey);
+        tokenInfo = createTokenInfo(tokenKeys, false);
+
+        given(key.getEd25519()).willReturn(new byte[] {});
+        given(key.getECDSASecp256k1Key()).willReturn(new byte[] {});
+        given(key.getContractIDKey()).willReturn(contractKey);
+        given(key.getDelegatableContractIdKey()).willReturn(null);
+        entityIdUtils
+                .when(
+                        () ->
+                                EntityIdUtils.asTypedEvmAddress(
+                                        parentContractAddressConvertedToContractId))
+                .thenReturn(parentContractAddress);
+        given(contractKey.getContractID()).willReturn(parentContractAddressConvertedToContractId);
+
+        given(encoder.encodeGetTokenInfo(tokenInfo)).willReturn(successResult);
+
+        givenMinimalContextForSuccessfulCall(pretendArguments);
+        givenReadOnlyFeeSchedule();
+
+        // when:
+        subject.prepareFields(frame);
+        subject.prepareComputation(pretendArguments, a -> a);
+        subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
+        final var result = subject.computeInternal(frame);
+
+        // then:
+        assertEquals(successResult, result);
+        // and:
+        verify(worldUpdater)
+                .manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
+    }
+
+    @Test
+    void getTokenInfoWorksWithDelegatableContractKey() {
+        givenMinimalFrameContext();
+
+        final var tokenInfoWrapper = createTokenInfoWrapperForToken(tokenMerkleId);
+        final Bytes pretendArguments =
+                Bytes.concatenate(
+                        Bytes.of(Integers.toBytes(ABI_ID_GET_TOKEN_INFO)),
+                        EntityIdUtils.asTypedEvmAddress(tokenMerkleId));
+        given(decoder.decodeGetTokenInfo(pretendArguments)).willReturn(tokenInfoWrapper);
+
+        givenMinimalTokenContext(TokenSupplyType.INFINITE);
+        givenKeyContext(key, FREEZE_KEY);
+
+        final var tokenKeys = new ArrayList<TokenKey>();
+        final var tokenKey =
+                new TokenKey(
+                        FREEZE_KEY.value(),
+                        new KeyValue(
                                 false, null, new byte[] {}, new byte[] {}, parentContractAddress));
         tokenKeys.add(tokenKey);
         tokenInfo = createTokenInfo(tokenKeys, false);

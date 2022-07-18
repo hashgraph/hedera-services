@@ -88,9 +88,10 @@ class NonFungibleTokenInfoTest {
 
     @Test
     void equalsDiscriminates() {
+        final var commonTokenInfo = createTokenInfo();
         final var aNonFungibleTokenInfo =
                 new NonFungibleTokenInfo(
-                        createTokenInfo(),
+                        commonTokenInfo,
                         1,
                         senderAddress,
                         1434353562L,
@@ -114,11 +115,11 @@ class NonFungibleTokenInfoTest {
                         senderAddress);
         final var dNonFungibleTokenInfo =
                 new NonFungibleTokenInfo(
-                        createTokenInfo(),
+                        commonTokenInfo,
                         1,
                         senderAddress,
-                        14353553562L,
-                        new byte[] {40, -50, 56, 1, -8},
+                        1434353562L,
+                        new byte[] {40, -32, 56, 2, -8},
                         senderAddress);
         final var eNonFungibleTokenInfo =
                 new NonFungibleTokenInfo(
@@ -135,7 +136,6 @@ class NonFungibleTokenInfoTest {
         assertEquals(eNonFungibleTokenInfo, aNonFungibleTokenInfo);
         assertNotEquals(aNonFungibleTokenInfo, new Object());
         assertNotEquals(null, aNonFungibleTokenInfo);
-        assertNotEquals(1, aNonFungibleTokenInfo);
         assertEquals(aNonFungibleTokenInfo, aNonFungibleTokenInfo);
     }
 

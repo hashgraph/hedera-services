@@ -67,9 +67,14 @@ class KeyValueTest {
                         new byte[] {35, -104, 14, 5 - 4, 6},
                         null);
         final var bKeyValue =
-                new KeyValue(true, parentContractAddress, new byte[] {}, new byte[] {}, null);
+                new KeyValue(false, parentContractAddress, new byte[] {}, new byte[] {}, null);
         final var cKeyValue =
-                new KeyValue(false, null, new byte[] {}, new byte[] {}, parentContractAddress);
+                new KeyValue(
+                        false,
+                        parentContractAddress,
+                        new byte[] {35, -44, 21, 4, -4, 6},
+                        new byte[] {},
+                        parentContractAddress);
         final var dKeyValue =
                 new KeyValue(
                         false,
@@ -91,7 +96,6 @@ class KeyValueTest {
         assertEquals(eKeyValue, aKeyValue);
         assertNotEquals(aKeyValue, new Object());
         assertNotEquals(null, aKeyValue);
-        assertNotEquals(1, aKeyValue);
         assertEquals(aKeyValue, aKeyValue);
     }
 
