@@ -523,12 +523,6 @@ public class ContractTraceabilitySuite extends HapiApiSuite {
                         allRunFor(
                                 spec,
                                 getTxnRecord(traceabilityTxn)
-                                        .hasPriority(
-                                                recordWith()
-                                                        .contractCallResult(
-                                                                resultWith()
-                                                                        .stateChanges(
-                                                                                stateChanges)))
                                         .logged()));
     }
 
