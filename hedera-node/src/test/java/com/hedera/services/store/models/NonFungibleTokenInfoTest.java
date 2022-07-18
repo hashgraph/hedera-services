@@ -113,13 +113,13 @@ class NonFungibleTokenInfoTest {
                         new byte[] {74, -32, 56, 2, -5},
                         recipientAddr);
         final var dNonFungibleTokenInfo =
-            new NonFungibleTokenInfo(
-                createTokenInfo(),
-                1,
-                senderAddress,
-                1434353562L,
-                new byte[] {40, -32, 56, 2, -8},
-                senderAddress);
+                new NonFungibleTokenInfo(
+                        createTokenInfo(),
+                        1,
+                        recipientAddr,
+                        14353553562L,
+                        new byte[] {40, -50, 56, 1, -8},
+                        senderAddress);
         final var eNonFungibleTokenInfo =
                 new NonFungibleTokenInfo(
                         createTokenInfo(),
