@@ -108,7 +108,7 @@ class RecordsRunningHashLeafTest {
         assertEquals(leafWithEmptyHash, leafWithEmptyHash);
 
         assertNotEquals(null, runningHashLeaf);
-        assertNotEquals(new Object(), runningHashLeaf);
+        assertNotEquals(runningHashLeaf, new Object());
     }
 
     @Test

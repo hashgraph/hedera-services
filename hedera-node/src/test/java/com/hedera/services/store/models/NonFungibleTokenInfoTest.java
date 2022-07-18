@@ -113,6 +113,14 @@ class NonFungibleTokenInfoTest {
                         new byte[] {74, -32, 56, 2, -5},
                         recipientAddr);
         final var dNonFungibleTokenInfo =
+            new NonFungibleTokenInfo(
+                createTokenInfo(),
+                1,
+                senderAddress,
+                1434353562L,
+                new byte[] {40, -32, 56, 2, -8},
+                senderAddress);
+        final var eNonFungibleTokenInfo =
                 new NonFungibleTokenInfo(
                         createTokenInfo(),
                         1,
@@ -123,9 +131,11 @@ class NonFungibleTokenInfoTest {
 
         assertNotEquals(bNonFungibleTokenInfo, aNonFungibleTokenInfo);
         assertNotEquals(cNonFungibleTokenInfo, aNonFungibleTokenInfo);
-        assertEquals(dNonFungibleTokenInfo, aNonFungibleTokenInfo);
+        assertNotEquals(dNonFungibleTokenInfo, aNonFungibleTokenInfo);
+        assertEquals(eNonFungibleTokenInfo, aNonFungibleTokenInfo);
         assertNotEquals(aNonFungibleTokenInfo, new Object());
         assertNotEquals(null, aNonFungibleTokenInfo);
+        assertNotEquals(1, aNonFungibleTokenInfo);
         assertEquals(aNonFungibleTokenInfo, aNonFungibleTokenInfo);
     }
 

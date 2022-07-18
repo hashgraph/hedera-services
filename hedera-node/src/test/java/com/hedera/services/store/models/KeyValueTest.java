@@ -31,6 +31,7 @@ package com.hedera.services.store.models;
  * limitations under the License.
  */
 
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.contractAddr;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.parentContractAddress;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -43,37 +44,41 @@ class KeyValueTest {
 
     @Test
     void hashCodeDiscriminates() {
-        final var akeyValue =
+        final var aKeyValue =
                 new KeyValue(false, parentContractAddress, new byte[] {}, new byte[] {}, null);
-        final var bkeyValue =
+        final var bKeyValue =
                 new KeyValue(true, parentContractAddress, new byte[] {}, new byte[] {}, null);
-        final var ckeyValue =
+        final var cKeyValue =
                 new KeyValue(false, null, new byte[] {}, new byte[] {}, parentContractAddress);
-        final var dkeyValue =
+        final var dKeyValue =
                 new KeyValue(false, parentContractAddress, new byte[] {}, new byte[] {}, null);
 
-        assertNotEquals(bkeyValue.hashCode(), akeyValue.hashCode());
-        assertNotEquals(ckeyValue.hashCode(), akeyValue.hashCode());
-        assertEquals(dkeyValue.hashCode(), akeyValue.hashCode());
+        assertNotEquals(bKeyValue.hashCode(), aKeyValue.hashCode());
+        assertNotEquals(cKeyValue.hashCode(), aKeyValue.hashCode());
+        assertEquals(dKeyValue.hashCode(), aKeyValue.hashCode());
     }
 
     @Test
     void equalsDiscriminates() {
-        final var akeyValue =
+        final var aKeyValue =
                 new KeyValue(false, parentContractAddress, new byte[] {}, new byte[] {}, null);
-        final var bkeyValue =
+        final var bKeyValue =
                 new KeyValue(true, parentContractAddress, new byte[] {}, new byte[] {}, null);
-        final var ckeyValue =
+        final var cKeyValue =
                 new KeyValue(false, null, new byte[] {}, new byte[] {}, parentContractAddress);
-        final var dkeyValue =
-                new KeyValue(false, parentContractAddress, new byte[] {}, new byte[] {}, null);
+        final var dKeyValue =
+            new KeyValue(false, null, new byte[] {}, new byte[] {}, contractAddr);
+        final var eKeyValue =
+            new KeyValue(false, parentContractAddress, new byte[] {}, new byte[] {}, null);
 
-        assertNotEquals(bkeyValue, akeyValue);
-        assertNotEquals(ckeyValue, akeyValue);
-        assertEquals(dkeyValue, akeyValue);
-        assertNotEquals(akeyValue, new Object());
-        assertNotEquals(null, akeyValue);
-        assertEquals(akeyValue, akeyValue);
+        assertNotEquals(bKeyValue, aKeyValue);
+        assertNotEquals(cKeyValue, aKeyValue);
+        assertNotEquals(dKeyValue, aKeyValue);
+        assertEquals(eKeyValue, aKeyValue);
+        assertNotEquals(aKeyValue, new Object());
+        assertNotEquals(null, aKeyValue);
+        assertNotEquals(1, aKeyValue);
+        assertEquals(aKeyValue, aKeyValue);
     }
 
     @Test
