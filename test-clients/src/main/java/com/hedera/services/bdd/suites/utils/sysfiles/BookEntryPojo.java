@@ -140,6 +140,14 @@ public class BookEntryPojo {
         return entry;
     }
 
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
+    }
+
     @SuppressWarnings("java:S1874")
     public Stream<NodeAddress> toGrpcStream() {
         var grpc = NodeAddress.newBuilder();

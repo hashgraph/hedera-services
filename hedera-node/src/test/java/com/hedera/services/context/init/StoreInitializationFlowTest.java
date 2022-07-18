@@ -29,8 +29,6 @@ import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.validation.UsageLimits;
 import com.hedera.services.store.models.NftId;
-import com.hedera.services.store.schedule.ScheduleStore;
-import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.test.factories.accounts.MerkleAccountFactory;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -47,8 +45,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class StoreInitializationFlowTest {
-    @Mock private TokenStore tokenStore;
-    @Mock private ScheduleStore scheduleStore;
     @Mock private MutableStateChildren workingState;
 
     @Mock private UsageLimits usageLimits;
@@ -65,9 +61,7 @@ class StoreInitializationFlowTest {
     void setUp() {
         subject =
                 new StoreInitializationFlow(
-                        tokenStore,
                         usageLimits,
-                        scheduleStore,
                         aliasManager,
                         workingState,
                         backingAccounts,

@@ -380,17 +380,15 @@ public final class HfsSystemFilesManager implements SystemFilesManager {
             final ServicesConfigurationList.Builder config) {
         jutilProps.entrySet().stream()
                 .sorted(Comparator.comparing(entry -> String.valueOf(entry.getKey())))
-                .peek(
-                        entry ->
-                                intoSb.append(
-                                        String.format(
-                                                "\n  %s=%s", entry.getKey(), entry.getValue())))
                 .forEach(
-                        entry ->
-                                config.addNameValue(
-                                        Setting.newBuilder()
-                                                .setName(String.valueOf(entry.getKey()))
-                                                .setValue(String.valueOf(entry.getValue()))));
+                        entry -> {
+                            intoSb.append(
+                                    String.format("%n  %s=%s", entry.getKey(), entry.getValue()));
+                            config.addNameValue(
+                                    Setting.newBuilder()
+                                            .setName(String.valueOf(entry.getKey()))
+                                            .setValue(String.valueOf(entry.getValue())));
+                        });
     }
 
     private HFileMeta systemFileInfo() {

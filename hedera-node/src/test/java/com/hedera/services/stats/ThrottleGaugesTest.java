@@ -57,7 +57,7 @@ class ThrottleGaugesTest {
 
         subject.registerWith(platform);
 
-        verify(platform, times(5)).addAppMetrics(any());
+        verify(platform, times(6)).addAppMetrics(any());
     }
 
     @Test
@@ -106,7 +106,7 @@ class ThrottleGaugesTest {
 
     private void givenThrottleMocksWithGas() {
         given(nodeProperties.consThrottlesToSample()).willReturn(List.of("A", "<GAS>"));
-        given(nodeProperties.hapiThrottlesToSample()).willReturn(List.of("A", "B", "<GAS>"));
+        given(nodeProperties.hapiThrottlesToSample()).willReturn(List.of("A", "B", "C", "<GAS>"));
         given(hapiThrottling.allActiveThrottles()).willReturn(List.of(aThrottle, bThrottle));
         given(handleThrottling.allActiveThrottles()).willReturn(List.of(aThrottle, bThrottle));
     }

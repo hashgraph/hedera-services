@@ -203,7 +203,6 @@ import org.apache.commons.codec.DecoderException;
 
 public final class MiscUtils {
     private static final long ONE_SEC_IN_NANOS = 1_000_000_000;
-    public static final long SIZE_MASK = 0xffffffffL;
 
     private MiscUtils() {
         throw new UnsupportedOperationException("Utility Class");
@@ -237,7 +236,7 @@ public final class MiscUtils {
     private static final Set<HederaFunctionality> CONSENSUS_THROTTLED_FUNCTIONS =
             EnumSet.of(ContractCallLocal, ContractCall, ContractCreate, EthereumTransaction);
 
-    public static Function<TransactionBody, HederaFunctionality> functionExtractor =
+    public static final Function<TransactionBody, HederaFunctionality> FUNCTION_EXTRACTOR =
             trans -> {
                 try {
                     return functionOf(trans);
