@@ -1432,32 +1432,19 @@ workflows:
 
   continuous-integration-gcp:
       jobs:
-        - build-artifact:
-            name: "artifact-build"
-            context: SonarCloud
-            filters:
-              branches:
-                ignore:
-                  - NONE
-            workflow-name: "Continuous-integration"
-#        - sonar-check:
+#        - build-artifact:
+#            name: "artifact-build"
 #            context: SonarCloud
-#            requires:
-#              - artifact-build
-#            workflow-name: "Continuous-integration-GCP"
-
+#            filters:
+#              branches:
+#                ignore:
+#                  - NONE
+#            workflow-name: "Continuous-integration"
         - build-platform-and-services:
             context: SonarCloud
             requires:
               - artifact-build
             workflow-name: "Continuous-integration-GCP"
-#        - javadoc-generation:
-#            context: Slack
-#            requires:
-#              - build-platform-and-services
-#            pre-steps:
-#              - attach_workspace:
-#                  at: /
         - jrs-regression:
             context: Slack
             regression_path: /swirlds-platform/regression/assets
@@ -1477,14 +1464,6 @@ workflows:
 jobs:
   build-artifact:
     parameters:
-      sys-props:
-        type: string
-        description: System properties for mvn install
-        default: ''
-      mvn-args:
-        type: string
-        description: Args for mvn install
-        default: ''
       workflow-name:
         type: string
         default: ""
@@ -1498,26 +1477,11 @@ jobs:
           command: |
             mkdir -p /repo/test-clients/output
       - run:
-          name: mvn install
+          name: gradle assemble
           # use double quote otherwise the backslash of line continuation will be treated as part of mvn parameter
           command: |
-            mvn --no-transfer-progress clean install \
+            ./gradlew assemble copyLib copyApp --scan --parallel \
               | tee /repo/test-clients/output/hapi-client.log
-      - run:
-          name: Save Unit Test Results
-          command: |
-            set -x
-            JUNIT_PATH="${HOME}/junit"
-
-            if [[ ! -d "${JUNIT_PATH}" ]]; then
-              mkdir -pv "${JUNIT_PATH}"
-            fi
-            find . -type f -regex ".*/target/surefire-reports/.*xml" -exec cp -v {} "${JUNIT_PATH}" \;
-          when: always
-      - store_test_results:
-          path: ~/junit
-      - store_artifacts:
-          path: ~/junit
 
 #      - run:
 #          name: Upload codecov
@@ -1576,17 +1540,6 @@ jobs:
             - repo/
             - swirlds-platform/
 
-  javadoc-generation:
-    executor:
-      name: build-executor
-    steps:
-      - attach_workspace:
-          at: /
-      - run:
-          name: Generate javadocs
-          command: |
-            cd /repo; export JAVA_HOME="/usr/local/java/jdk-17"; mvn javadoc:javadoc
-
   build-platform-and-services:
     parameters:
       workflow-name:
@@ -1606,7 +1559,7 @@ jobs:
       - run:
           name: Build hedera-services repo
           command: |
-                mvn --no-transfer-progress clean install -DskipTests ;
+            ./gradlew assemble copyApp copyLib
       - run:
           name: Checkout swirlds-platform repos and build
           command: |
@@ -1627,7 +1580,7 @@ jobs:
             
             # Build JRS
             cd /swirlds-platform/regression
-            ./mvnw clean install
+            ./gradlew assemble --scan --parallel
 
       - run:
           name: Save PEM file to keys folder
