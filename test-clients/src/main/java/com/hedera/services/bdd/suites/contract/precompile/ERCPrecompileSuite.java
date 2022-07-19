@@ -3750,7 +3750,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                                                                         HTSPrecompileResult
                                                                                                                 .FunctionType
                                                                                                                 .GET_APPROVED)
-                                                                                                .withApproved(
+                                                                                                .withSpender(
                                                                                                         new byte
                                                                                                                 [0])))),
                                                 childRecordsCheck(
@@ -3766,7 +3766,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                                                                         HTSPrecompileResult
                                                                                                                 .FunctionType
                                                                                                                 .GET_APPROVED)
-                                                                                                .withApproved(
+                                                                                                .withSpender(
                                                                                                         asAddress(
                                                                                                                 spec.registry()
                                                                                                                         .getAccountID(
@@ -4015,7 +4015,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                                                                         HTSPrecompileResult
                                                                                                                 .FunctionType
                                                                                                                 .GET_APPROVED)
-                                                                                                .withApproved(
+                                                                                                .withSpender(
                                                                                                         asAddress(
                                                                                                                 spec.registry()
                                                                                                                         .getAccountID(
@@ -4621,7 +4621,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                                                                         HTSPrecompileResult
                                                                                                                 .FunctionType
                                                                                                                 .GET_APPROVED)
-                                                                                                .withApproved(
+                                                                                                .withSpender(
                                                                                                         asAddress(
                                                                                                                 spec.registry()
                                                                                                                         .getAccountID(

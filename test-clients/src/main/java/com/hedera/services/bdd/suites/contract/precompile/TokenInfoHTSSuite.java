@@ -16,6 +16,10 @@
 package com.hedera.services.bdd.suites.contract.precompile;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
+import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenInfo;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenNftInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
@@ -33,43 +37,63 @@ import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fix
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fractionalFee;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.royaltyFeeWithFallback;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult.expandByteArrayTo32Length;
+import static com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult.htsPrecompileResult;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
 import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.suites.contract.Utils;
+import com.hedera.services.bdd.suites.utils.contracts.precompile.Expiry;
+import com.hedera.services.bdd.suites.utils.contracts.precompile.FixedFee;
+import com.hedera.services.bdd.suites.utils.contracts.precompile.FractionalFee;
+import com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult.FunctionType;
+import com.hedera.services.bdd.suites.utils.contracts.precompile.HederaToken;
+import com.hedera.services.bdd.suites.utils.contracts.precompile.KeyValue;
+import com.hedera.services.bdd.suites.utils.contracts.precompile.RoyaltyFee;
+import com.hedera.services.bdd.suites.utils.contracts.precompile.TokenInfo;
+import com.hedera.services.bdd.suites.utils.contracts.precompile.TokenKey;
+import com.hedera.services.bdd.suites.utils.contracts.precompile.TokenKeyType;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import com.hederahashgraph.api.proto.java.TokenType;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.OptionalLong;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.apache.tuweni.bytes.Bytes;
+import org.hyperledger.besu.datatypes.Address;
 
 public class TokenInfoHTSSuite extends HapiApiSuite {
 
     private static final Logger LOG = LogManager.getLogger(TokenInfoHTSSuite.class);
 
     private static final String TOKEN_INFO_CONTRACT = "TokenInfoContract";
-    private static final String ADMIN_KEY = "adminKey";
-    private static final String KYC_KEY = "kycKey";
-    private static final String SUPPLY_KEY = "supplyKey";
-    private static final String FREEZE_KEY = "freezeKey";
-    private static final String WIPE_KEY = "wipeKey";
-    private static final String FEE_SCHEDULE_KEY = "feeScheduleKey";
-    private static final String PAUSE_KEY = "pauseKey";
+    private static final String ADMIN_KEY = TokenKeyType.ADMIN_KEY.name();
+    private static final String KYC_KEY = TokenKeyType.KYC_KEY.name();
+    private static final String SUPPLY_KEY = TokenKeyType.SUPPLY_KEY.name();
+    private static final String FREEZE_KEY = TokenKeyType.FREEZE_KEY.name();
+    private static final String WIPE_KEY = TokenKeyType.WIPE_KEY.name();
+    private static final String FEE_SCHEDULE_KEY = TokenKeyType.FEE_SCHEDULE_KEY.name();
+    private static final String PAUSE_KEY = TokenKeyType.PAUSE_KEY.name();
     private static final String AUTO_RENEW_ACCOUNT = "autoRenewAccount";
     private static final String FEE_DENOM = "denom";
     private static final String HTS_COLLECTOR = "denomFee";
     private static final String CREATE_TXN = "CreateTxn";
     private static final String TOKEN_INFO_TXN = "TokenInfoTxn";
     private static final String NON_FUNGIBLE_TOKEN_INFO_TXN = "NonFungibleTokenInfoTxn";
+    private static final String GET_TOKEN_INFO_TXN = "GetTokenInfo";
+    private static final String LEDGER_ID = "0x03";
+    private static final String SYMBOL = "T";
     private static final String META = "First";
     private static final String PRIMARY_TOKEN_NAME = "primary";
     private static final String NON_FUNGIBLE_TOKEN_NAME = "NonFungibleToken";
@@ -82,6 +106,8 @@ public class TokenInfoHTSSuite extends HapiApiSuite {
     private static final int DENOMINATOR = 2;
     private static final int MINIMUM_TO_COLLECT = 5;
     private static final int MAXIMUM_TO_COLLECT = 400;
+    private static final int MAX_SUPPLY = 1000;
+  private static final long MASK_INT_AS_UNSIGNED_LONG = (1L << 32) - 1;
 
     public static void main(String... args) {
         new TokenInfoHTSSuite().runSuiteSync();
@@ -102,18 +128,22 @@ public class TokenInfoHTSSuite extends HapiApiSuite {
                 getInfoOnDeletedFungibleTokenFails(),
                 getInfoOnInvalidFungibleTokenFails(),
                 getInfoOnDeletedNonFungibleTokenFails(),
-                getInfoOnInvalidNonFungibleTokenFails());
+                getInfoOnInvalidNonFungibleTokenFails()
+                );
     }
 
     List<HapiApiSpec> positiveSpecs() {
         return List.of(
                 happyPathGetTokenInfo(),
                 happyPathGetFungibleTokenInfo(),
-                happyPathGetNonFungibleTokenInfo());
+                happyPathGetNonFungibleTokenInfo()
+                );
     }
 
     private HapiApiSpec happyPathGetTokenInfo() {
         final String memo = "JUMP";
+
+//        final String getInfoTxn = "GetTokenInfo";
         return defaultHapiSpec("HappyPathGetTokenInfo")
                 .given(
                         cryptoCreate(TOKEN_TREASURY).balance(0L),
@@ -131,12 +161,13 @@ public class TokenInfoHTSSuite extends HapiApiSuite {
                         tokenCreate(PRIMARY_TOKEN_NAME)
                                 .supplyType(TokenSupplyType.FINITE)
                                 .entityMemo(memo)
+                                .symbol(SYMBOL)
                                 .name(PRIMARY_TOKEN_NAME)
                                 .treasury(TOKEN_TREASURY)
                                 .autoRenewAccount(AUTO_RENEW_ACCOUNT)
                                 .autoRenewPeriod(THREE_MONTHS_IN_SECONDS)
-                                .maxSupply(1000)
-                                .initialSupply(500)
+                                .maxSupply(MAX_SUPPLY)
+                                .initialSupply(500L)
                                 .adminKey(ADMIN_KEY)
                                 .freezeKey(FREEZE_KEY)
                                 .kycKey(KYC_KEY)
@@ -152,7 +183,8 @@ public class TokenInfoHTSSuite extends HapiApiSuite {
                                                 MINIMUM_TO_COLLECT,
                                                 OptionalLong.of(MAXIMUM_TO_COLLECT),
                                                 TOKEN_TREASURY))
-                                .via(CREATE_TXN))
+                                .via(CREATE_TXN),
+                        getTokenInfo(PRIMARY_TOKEN_NAME).via(GET_TOKEN_INFO_TXN))
                 .when(
                         withOpContext(
                                 (spec, opLog) ->
@@ -169,13 +201,49 @@ public class TokenInfoHTSSuite extends HapiApiSuite {
                                                                                                         PRIMARY_TOKEN_NAME)))))
                                                         .via(TOKEN_INFO_TXN)
                                                         .gas(1_000_000L))))
-                .then(getTxnRecord(TOKEN_INFO_TXN).andAllChildRecords().logged());
+                .then(
+                        withOpContext(
+                                (spec, opLog) -> {
+                                    final var getTokenInfoQuery = getTokenInfo(PRIMARY_TOKEN_NAME);
+                                    allRunFor(spec, getTokenInfoQuery);
+                                    final var expirySecond =
+                                        getTokenInfoQuery
+                                                    .getResponse()
+                                                    .getTokenGetInfo()
+                                                    .getTokenInfo()
+                                                    .getExpiry()
+                                                    .getSeconds();
+
+                                    allRunFor(
+                                            spec,
+                                            getTxnRecord(TOKEN_INFO_TXN)
+                                                    .andAllChildRecords()
+                                                    .logged(),
+                                            childRecordsCheck(
+                                                    TOKEN_INFO_TXN,
+                                                    SUCCESS,
+                                                    recordWith()
+                                                            .status(SUCCESS)
+                                                            .contractCallResult(
+                                                                    resultWith()
+                                                                            .contractCallResult(
+                                                                                    htsPrecompileResult()
+                                                                                            .forFunction(
+                                                                                                    FunctionType
+                                                                                                            .GET_TOKEN_INFO)
+                                                                                            .withStatus(
+                                                                                                    SUCCESS)
+                                                                                            .withTokenInfo(
+                                                                                                getTokenInfoStructForFungibleToken(spec, PRIMARY_TOKEN_NAME, SYMBOL, expirySecond, memo, MAX_SUPPLY))))));
+                                }));
     }
 
     private HapiApiSpec happyPathGetFungibleTokenInfo() {
         final String fungibleTokenInfoTxn = "FungibleTokenInfoTxn";
         final String memo = "JUMP";
         final String tokenName = "FungibleToken";
+        final String symbol = "FT";
+        final int decimals = 1;
         return defaultHapiSpec("HappyPathGetFungibleTokenInfo")
                 .given(
                         cryptoCreate(TOKEN_TREASURY).balance(0L),
@@ -194,13 +262,13 @@ public class TokenInfoHTSSuite extends HapiApiSuite {
                                 .supplyType(TokenSupplyType.FINITE)
                                 .entityMemo(memo)
                                 .name(tokenName)
-                                .symbol("FT")
+                                .symbol(symbol)
                                 .treasury(TOKEN_TREASURY)
                                 .autoRenewAccount(AUTO_RENEW_ACCOUNT)
                                 .autoRenewPeriod(THREE_MONTHS_IN_SECONDS)
-                                .maxSupply(1000)
+                                .maxSupply(MAX_SUPPLY)
                                 .initialSupply(500)
-                                .decimals(1)
+                                .decimals(decimals)
                                 .adminKey(ADMIN_KEY)
                                 .freezeKey(FREEZE_KEY)
                                 .kycKey(KYC_KEY)
@@ -208,7 +276,7 @@ public class TokenInfoHTSSuite extends HapiApiSuite {
                                 .wipeKey(WIPE_KEY)
                                 .feeScheduleKey(FEE_SCHEDULE_KEY)
                                 .pauseKey(PAUSE_KEY)
-                                .withCustom(fixedHbarFee(654L, HTS_COLLECTOR))
+                                .withCustom(fixedHbarFee(500L, HTS_COLLECTOR))
                                 .withCustom(
                                         fractionalFee(
                                                 NUMERATOR,
@@ -216,7 +284,9 @@ public class TokenInfoHTSSuite extends HapiApiSuite {
                                                 MINIMUM_TO_COLLECT,
                                                 OptionalLong.of(MAXIMUM_TO_COLLECT),
                                                 TOKEN_TREASURY))
-                                .via(CREATE_TXN))
+                                .via(CREATE_TXN)
+//                    getTokenInfo(tokenName).via(GET_TOKEN_INFO_TXN)
+                )
                 .when(
                         withOpContext(
                                 (spec, opLog) ->
@@ -233,13 +303,49 @@ public class TokenInfoHTSSuite extends HapiApiSuite {
                                                                                                         tokenName)))))
                                                         .via(fungibleTokenInfoTxn)
                                                         .gas(1_000_000L))))
-                .then(getTxnRecord(fungibleTokenInfoTxn).andAllChildRecords().logged());
+                .then(withOpContext(
+                    (spec, opLog) -> {
+                        final var getTokenInfoQuery = getTokenInfo(tokenName);
+                        allRunFor(spec, getTokenInfoQuery);
+                        final var expirySecond =
+                            getTokenInfoQuery
+                                .getResponse()
+                                .getTokenGetInfo()
+                                .getTokenInfo()
+                                .getExpiry()
+                                .getSeconds();
+
+                        allRunFor(
+                            spec,
+                            getTxnRecord(fungibleTokenInfoTxn)
+                                .andAllChildRecords()
+                                .logged(),
+                            childRecordsCheck(
+                                fungibleTokenInfoTxn,
+                                SUCCESS,
+                                recordWith()
+                                    .status(SUCCESS)
+                                    .contractCallResult(
+                                        resultWith()
+                                            .contractCallResult(
+                                                htsPrecompileResult()
+                                                    .forFunction(
+                                                        FunctionType
+                                                            .GET_FUNGIBLE_TOKEN_INFO)
+                                                    .withStatus(
+                                                        SUCCESS)
+                                                    .withDecimals(decimals)
+                                                    .withTokenInfo(
+                                                        getTokenInfoStructForFungibleToken(spec, tokenName, symbol, expirySecond, memo, MAX_SUPPLY))))));
+                        }));
     }
 
     private HapiApiSpec happyPathGetNonFungibleTokenInfo() {
         final String memo = "JUMP";
         final String owner = "NFT Owner";
         final String spender = "NFT Spender";
+        final String nftSymbol = "NFT";
+        final int maxSupply = 10;
         final ByteString meta = ByteString.copyFrom(META.getBytes(StandardCharsets.UTF_8));
         return defaultHapiSpec("HappyPathGetNonFungibleTokenInfo")
                 .given(
@@ -263,11 +369,11 @@ public class TokenInfoHTSSuite extends HapiApiSuite {
                                 .supplyType(TokenSupplyType.FINITE)
                                 .entityMemo(memo)
                                 .name(NON_FUNGIBLE_TOKEN_NAME)
-                                .symbol("NFT")
+                                .symbol(nftSymbol)
                                 .treasury(TOKEN_TREASURY)
                                 .autoRenewAccount(AUTO_RENEW_ACCOUNT)
                                 .autoRenewPeriod(THREE_MONTHS_IN_SECONDS)
-                                .maxSupply(10)
+                                .maxSupply(maxSupply)
                                 .initialSupply(0)
                                 .adminKey(ADMIN_KEY)
                                 .freezeKey(FREEZE_KEY)
@@ -316,7 +422,56 @@ public class TokenInfoHTSSuite extends HapiApiSuite {
                                                                         1L))
                                                         .via(NON_FUNGIBLE_TOKEN_INFO_TXN)
                                                         .gas(1_000_000L))))
-                .then(getTxnRecord(NON_FUNGIBLE_TOKEN_INFO_TXN).andAllChildRecords().logged());
+                .then(withOpContext(
+                    (spec, opLog) -> {
+                        final var getTokenInfoQuery = getTokenInfo(NON_FUNGIBLE_TOKEN_NAME);
+                        allRunFor(spec, getTokenInfoQuery);
+                        final var expirySecond =
+                            getTokenInfoQuery
+                                .getResponse()
+                                .getTokenGetInfo()
+                                .getTokenInfo()
+                                .getExpiry()
+                                .getSeconds();
+
+                        final var getNftTokenInfoQuery = getTokenNftInfo(NON_FUNGIBLE_TOKEN_NAME, 1L);
+                        allRunFor(spec, getNftTokenInfoQuery);
+                        final var creationTime =
+                            getNftTokenInfoQuery
+                                .getResponse()
+                                .getTokenGetNftInfo().getNft().getCreationTime();
+                      final var packedCreationTime = packedTime(creationTime.getSeconds(), creationTime.getNanos());
+
+                        final var ownerBytes = Utils.asAddress(spec.registry().getAccountID(owner));
+                        final var spenderBytes = Utils.asAddress(spec.registry().getAccountID(spender));
+
+                        allRunFor(
+                            spec,
+                            getTxnRecord(NON_FUNGIBLE_TOKEN_INFO_TXN)
+                                .andAllChildRecords()
+                                .logged(),
+                            childRecordsCheck(
+                                NON_FUNGIBLE_TOKEN_INFO_TXN,
+                                SUCCESS,
+                                recordWith()
+                                    .status(SUCCESS)
+                                    .contractCallResult(
+                                        resultWith()
+                                            .contractCallResult(
+                                                htsPrecompileResult()
+                                                    .forFunction(
+                                                        FunctionType
+                                                            .GET_NON_FUNGIBLE_TOKEN_INFO)
+                                                    .withStatus(
+                                                        SUCCESS)
+                                                    .withSerialNumber(1L)
+                                                    .withCreationTime(packedCreationTime)
+                                                    .withTokenUri(Bytes.wrap(meta.toByteArray()).toString())
+                                                    .withOwner(ownerBytes)
+                                                    .withSpender(spenderBytes)
+                                                    .withTokenInfo(
+                                                        getTokenInfoStructForNonFungibleToken(spec, NON_FUNGIBLE_TOKEN_NAME, FEE_DENOM, nftSymbol, expirySecond, memo, maxSupply, 1L))))));
+                    }));
     }
 
     private HapiApiSpec getInfoOnDeletedFungibleTokenFails() {
@@ -541,6 +696,131 @@ public class TokenInfoHTSSuite extends HapiApiSuite {
                                 .andAllChildRecords()
                                 .logged());
     }
+
+    private TokenInfo getTokenInfoStructForFungibleToken(final HapiApiSpec spec, final String tokenName, final String symbol, final long expirySecond, final String memo, final long maxSupply) {
+        final var autoRenewAccount = spec.registry().getAccountID(AUTO_RENEW_ACCOUNT);
+        final var expiry =
+            new Expiry(
+                expirySecond,
+                Address.wrap(Bytes.wrap(Utils.asAddress(autoRenewAccount))),
+                THREE_MONTHS_IN_SECONDS);
+        final var treasury = spec.registry().getAccountID(TOKEN_TREASURY);
+        final var token =
+            new HederaToken(
+                tokenName,
+                symbol,
+                Address.wrap(Bytes.wrap(Utils.asAddress(treasury))),
+                memo,
+                true,
+                maxSupply,
+                false,
+                getTokenKeys(spec),
+                expiry);
+
+        final var fixedFees = new ArrayList<FixedFee>();
+        final var fixedFeeCollector =
+            Address.wrap(
+                Bytes.wrap(Utils.asAddress(spec.registry().getAccountID(HTS_COLLECTOR))));
+        final var fixedFee =
+            new FixedFee(
+                500L,
+                Address.wrap(Bytes.wrap(new byte[20])),
+                true,
+                false,
+                fixedFeeCollector);
+        fixedFees.add(fixedFee);
+
+        final var fractionalFees = new ArrayList<FractionalFee>();
+        final var fractionalFeeCollector =
+            Address.wrap(
+                Bytes.wrap(Utils.asAddress(spec.registry().getAccountID(TOKEN_TREASURY))));
+        final var fractionalFee =
+            new FractionalFee(
+                NUMERATOR,
+                DENOMINATOR,
+                MINIMUM_TO_COLLECT,
+                MAXIMUM_TO_COLLECT,
+                false,
+                fractionalFeeCollector);
+        fractionalFees.add(fractionalFee);
+
+        return
+            new TokenInfo(
+                token,
+                500L,
+                false,
+                false,
+                false,
+                fixedFees,
+                fractionalFees,
+                new ArrayList<>(),
+                LEDGER_ID);
+    }
+
+    private TokenInfo getTokenInfoStructForNonFungibleToken(final HapiApiSpec spec, final String tokenName, final String tokenDenom, final String symbol, final long expirySecond, final String memo, final long maxSupply, final long totalSupply) {
+        final var autoRenewAccount = spec.registry().getAccountID(AUTO_RENEW_ACCOUNT);
+        final var expiry =
+            new Expiry(
+                expirySecond,
+                Address.wrap(Bytes.wrap(Utils.asAddress(autoRenewAccount))),
+                THREE_MONTHS_IN_SECONDS);
+        final var treasury = spec.registry().getAccountID(TOKEN_TREASURY);
+        final var token =
+            new HederaToken(
+                tokenName,
+                symbol,
+                Address.wrap(Bytes.wrap(Utils.asAddress(treasury))),
+                memo,
+                true,
+                maxSupply,
+                false,
+                getTokenKeys(spec),
+                expiry);
+
+        final var royaltyFees = new ArrayList<RoyaltyFee>();
+        final var royaltyFeeCollector =
+            Address.wrap(
+                Bytes.wrap(Utils.asAddress(spec.registry().getAccountID(HTS_COLLECTOR))));
+        final var tokenDenomAddress = Address.wrap(
+            Bytes.wrap(Utils.asAddress(spec.registry().getTokenID(tokenDenom))));
+        final var royaltyFee = new RoyaltyFee(NUMERATOR, DENOMINATOR, 100, tokenDenomAddress, false, royaltyFeeCollector);
+        royaltyFees.add(royaltyFee);
+
+        return
+            new TokenInfo(
+                token,
+                totalSupply,
+                false,
+                false,
+                false,
+                new ArrayList<>(),
+                new ArrayList<>(),
+                royaltyFees,
+                LEDGER_ID);
+    }
+
+    private List<TokenKey> getTokenKeys(final HapiApiSpec spec) {
+        final var tokenKeys = new ArrayList<TokenKey>();
+        tokenKeys.add(getTokenKeyFromSpec(spec, TokenKeyType.ADMIN_KEY));
+        tokenKeys.add(getTokenKeyFromSpec(spec, TokenKeyType.KYC_KEY));
+        tokenKeys.add(getTokenKeyFromSpec(spec, TokenKeyType.FREEZE_KEY));
+        tokenKeys.add(getTokenKeyFromSpec(spec, TokenKeyType.WIPE_KEY));
+        tokenKeys.add(getTokenKeyFromSpec(spec, TokenKeyType.SUPPLY_KEY));
+        tokenKeys.add(getTokenKeyFromSpec(spec, TokenKeyType.FEE_SCHEDULE_KEY));
+        tokenKeys.add(getTokenKeyFromSpec(spec, TokenKeyType.PAUSE_KEY));
+        return tokenKeys;
+    }
+
+    private TokenKey getTokenKeyFromSpec(final HapiApiSpec spec, final TokenKeyType type) {
+        final var key = spec.registry().getKey(type.name());
+        final var keyValue = new KeyValue(false, key.getContractID().getContractNum() > 0 ? Address.wrap(Bytes.wrap(Utils.asAddress(key.getContractID()))) : null, key.getEd25519().toByteArray(), key.getECDSASecp256K1().toByteArray(),
+            key.getDelegatableContractId().getContractNum() > 0 ? Address.wrap(Bytes.wrap(Utils.asAddress(key.getDelegatableContractId()))) : null);
+        return new TokenKey(type.value(), keyValue);
+    }
+
+  private static long packedTime(long seconds, int nanos) {
+    return seconds << 32 | (nanos & MASK_INT_AS_UNSIGNED_LONG);
+  }
 
     @Override
     protected Logger getResultsLogger() {
