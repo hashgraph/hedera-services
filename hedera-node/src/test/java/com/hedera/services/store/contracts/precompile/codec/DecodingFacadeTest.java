@@ -369,7 +369,7 @@ class DecodingFacadeTest {
 
     @Test
     void decodeApproveForNFTHAPI() {
-        given(ledgers.typeOf(any())).willReturn(TokenType.NON_FUNGIBLE_UNIQUE);
+        given(ledgers.typeOf(any())).willReturn(TokenType.NON_FUNGIBLE_UNIQUE).willReturn(TokenType.FUNGIBLE_COMMON);
         UnaryOperator<byte[]> identity = identity();
         final var decodedInput =
                 subject.decodeTokenApprove(
@@ -383,12 +383,12 @@ class DecodingFacadeTest {
                 IllegalArgumentException.class,
                 () ->
                         subject.decodeTokenApprove(
-                                APPROVE_NFT_INPUT_HAPI, null, true, identity, ledgers));
+                                APPROVE_NFT_INPUT_HAPI, null, false, identity, ledgers));
     }
 
     @Test
     void decodeApproveForTokenAHPI() {
-        given(ledgers.typeOf(any())).willReturn(TokenType.FUNGIBLE_COMMON);
+        given(ledgers.typeOf(any())).willReturn(TokenType.FUNGIBLE_COMMON).willReturn(TokenType.NON_FUNGIBLE_UNIQUE);
 
         UnaryOperator<byte[]> identity = identity();
         final var decodedInput =
@@ -403,7 +403,7 @@ class DecodingFacadeTest {
                 IllegalArgumentException.class,
                 () ->
                         subject.decodeTokenApprove(
-                                APPROVE_TOKEN_INPUT_HAPI, null, false, identity, ledgers));
+                                APPROVE_TOKEN_INPUT_HAPI, null, true, identity, ledgers));
     }
 
     @Test
