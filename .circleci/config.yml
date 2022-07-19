@@ -1558,6 +1558,7 @@ jobs:
           name: Build hedera-services repo
           command: |
             ./gradlew assemble copyApp copyLib
+            touch hedera-node/swirlds.jar
       - run:
           name: Checkout swirlds-platform repos and build
           command: |
