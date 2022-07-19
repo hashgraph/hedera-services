@@ -697,14 +697,14 @@ class DecodingFacadeTest {
 
     @Test
     void decodeFungibleUnpauseInput() {
-        final var decodedInput = subject.decodePause(FUNGIBLE_UNPAUSE_INPUT);
+        final var decodedInput = subject.decodeUnpause(FUNGIBLE_UNPAUSE_INPUT);
 
         assertTrue(decodedInput.token().getTokenNum() > 0);
     }
 
     @Test
     void decodeNonFungibleUnpauseInput() {
-        final var decodedInput = subject.decodePause(NON_FUNGIBLE_UNPAUSE_INPUT);
+        final var decodedInput = subject.decodeUnpause(NON_FUNGIBLE_UNPAUSE_INPUT);
 
         assertTrue(decodedInput.token().getTokenNum() > 0);
     }

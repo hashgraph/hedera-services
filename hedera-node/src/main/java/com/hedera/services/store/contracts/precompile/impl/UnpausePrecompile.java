@@ -17,7 +17,6 @@ package com.hedera.services.store.contracts.precompile.impl;
 
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils.GasCostType.UNPAUSE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 import com.hedera.services.context.SideEffectsTracker;
@@ -28,7 +27,6 @@ import com.hedera.services.store.contracts.precompile.InfrastructureFactory;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.store.contracts.precompile.codec.DecodingFacade;
 import com.hedera.services.store.contracts.precompile.codec.UnpauseWrapper;
-import com.hedera.services.store.contracts.precompile.utils.KeyActivationUtils;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.services.store.models.Id;
 import com.hederahashgraph.api.proto.java.Timestamp;
@@ -81,15 +79,15 @@ public class UnpausePrecompile extends AbstractWritePrecompile {
         Objects.requireNonNull(unpauseOp);
 
         /* --- Check required signatures --- */
-        final var tokenId = Id.fromGrpcToken(unpauseOp.token());
-        final var hasRequiredSigs =
-                KeyActivationUtils.validateKey(
-                        frame,
-                        tokenId.asEvmAddress(),
-                        sigsVerifier::hasActivePauseKey,
-                        ledgers,
-                        aliases);
-        validateTrue(hasRequiredSigs, INVALID_SIGNATURE);
+        final var tokenId = Id.fromGrpcToken(Objects.requireNonNull(unpauseOp).token());
+        //        final var hasRequiredSigs =
+        //                KeyActivationUtils.validateKey(
+        //                        frame,
+        //                        tokenId.asEvmAddress(),
+        //                        sigsVerifier::hasActivePauseKey,
+        //                        ledgers,
+        //                        aliases);
+        //        validateTrue(hasRequiredSigs, OK);
 
         /* --- Build the necessary infrastructure to execute the transaction --- */
         final var accountStore = infrastructureFactory.newAccountStore(ledgers.accounts());

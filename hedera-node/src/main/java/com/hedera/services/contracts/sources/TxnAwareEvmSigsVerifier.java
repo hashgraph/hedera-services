@@ -101,10 +101,10 @@ public class TxnAwareEvmSigsVerifier implements EvmSigsVerifier {
         final var tokenId = EntityIdUtils.tokenIdFromEvmAddress(tokenAddress);
         validateTrue(worldLedgers.tokens().exists(tokenId), INVALID_TOKEN_ID);
 
-        final var supplyKey = (JKey) worldLedgers.tokens().get(tokenId, TokenProperty.PAUSE_KEY);
-        validateTrue(supplyKey != null, TOKEN_HAS_NO_PAUSE_KEY);
+        final var pauseKey = (JKey) worldLedgers.tokens().get(tokenId, TokenProperty.PAUSE_KEY);
+        validateTrue(pauseKey != null, TOKEN_HAS_NO_PAUSE_KEY);
 
-        return isActiveInFrame(supplyKey, isDelegateCall, activeContract, worldLedgers.aliases());
+        return isActiveInFrame(pauseKey, isDelegateCall, activeContract, worldLedgers.aliases());
     }
 
     @Override
