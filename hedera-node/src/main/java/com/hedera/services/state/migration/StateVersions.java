@@ -46,6 +46,7 @@ public final class StateVersions {
     public static final int RELEASE_0260_VERSION = 19;
     public static final int RELEASE_0270_VERSION = 20;
     public static final int RELEASE_0280_VERSION = 21;
+    public static final int RELEASE_0290_VERSION = 22;
 
     public static final SerializableSemVers LAST_025X_VERSION =
             forHapiAndHedera("0.25.1", "0.25.4");
@@ -61,7 +62,7 @@ public final class StateVersions {
             forHapiAndHedera("0.28.0", "0.28.0");
 
     public static final int MINIMUM_SUPPORTED_VERSION = RELEASE_025X_VERSION;
-    public static final int CURRENT_VERSION = RELEASE_0280_VERSION;
+    public static final int CURRENT_VERSION = RELEASE_0290_VERSION;
 
     @Nullable
     public static SerializableSemVers lastSoftwareVersionOf(final int stateVersion) {
