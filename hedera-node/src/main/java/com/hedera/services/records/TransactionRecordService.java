@@ -32,7 +32,7 @@ import com.hedera.services.utils.SidecarUtils;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
-import static com.hedera.services.utils.ResponseCodeUtil.getStatus;
+import static com.hedera.services.utils.ResponseCodeUtil.getStatusOrDefault;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 @Singleton
@@ -87,9 +87,9 @@ public class TransactionRecordService {
 	}
 
 	private void externalizeGenericEvmCreate(final TransactionProcessingResult result) {
-		txnCtx.setStatus(getStatus(result, SUCCESS));
+		txnCtx.setStatus(getStatusOrDefault(result, SUCCESS));
 		final var finalGasPayment = result.getGasPrice() * (result.getGasUsed() - result.getSbhRefund());
-		txnCtx.addNonThresholdFeeChargedToPayer(finalGasPayment);
+		txnCtx.addFeeChargedToPayer(finalGasPayment);
 	}
 
 	/**
@@ -99,9 +99,9 @@ public class TransactionRecordService {
 	 * 		the processing result of the EVM transaction
 	 */
 	public void externaliseEvmCallTransaction(final TransactionProcessingResult result) {
-		txnCtx.setStatus(getStatus(result, SUCCESS));
+		txnCtx.setStatus(getStatusOrDefault(result, SUCCESS));
 		txnCtx.setCallResult(EvmFnResult.fromCall(result));
-		txnCtx.addNonThresholdFeeChargedToPayer(result.getGasPrice() * (result.getGasUsed() - result.getSbhRefund()));
+		txnCtx.addFeeChargedToPayer(result.getGasPrice() * (result.getGasUsed() - result.getSbhRefund()));
 		addAllSidecarsToTxnContextFrom(result);
 	}
 

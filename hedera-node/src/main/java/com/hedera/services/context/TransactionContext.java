@@ -251,7 +251,7 @@ public interface TransactionContext {
 	 * @param amount
 	 * 		the extra amount deducted from the current txn's payer.
 	 */
-	void addNonThresholdFeeChargedToPayer(long amount);
+	void addFeeChargedToPayer(long amount);
 
 	/**
 	 * Record that the payer of the current txn is known to have an active

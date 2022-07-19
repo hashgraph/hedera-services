@@ -33,7 +33,7 @@ public final class ResponseCodeUtil {
 		throw new UnsupportedOperationException("Utility Class");
 	}
 
-	public static ResponseCodeEnum getStatus(final TransactionProcessingResult result, ResponseCodeEnum success) {
+	public static ResponseCodeEnum getStatusOrDefault(final TransactionProcessingResult result, ResponseCodeEnum success) {
 		if (result.isSuccessful()) {
 			return success;
 		}

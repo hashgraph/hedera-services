@@ -38,7 +38,6 @@ import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.state.submerkle.FcTokenAssociation;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.state.submerkle.TxnId;
-import com.hedera.services.stream.proto.TransactionSidecarRecord.Builder;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.SidecarUtils;
 import com.hedera.services.utils.accessors.SignedTxnAccessor;
@@ -276,7 +275,7 @@ class BasicTransactionContextTest {
 		given(accessor.getTxnId()).willReturn(txnId);
 		given(accessor.getTxn()).willReturn(txn);
 		// and:
-		subject.addNonThresholdFeeChargedToPayer(1_234L);
+		subject.addFeeChargedToPayer(1_234L);
 		subject.setCallResult(result);
 		subject.setStatus(SUCCESS);
 		subject.setTargetedContract(contractCreated);
@@ -342,7 +341,7 @@ class BasicTransactionContextTest {
 		given(accessor.getTxn()).willReturn(txn);
 
 		// when:
-		subject.addNonThresholdFeeChargedToPayer(other);
+		subject.addFeeChargedToPayer(other);
 
 		setUpBuildingExpirableTxnRecord();
 		record = subject.recordSoFar().build();

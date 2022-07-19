@@ -309,7 +309,7 @@ public class BasicTransactionContext implements TransactionContext {
 	}
 
 	@Override
-	public void addNonThresholdFeeChargedToPayer(final long amount) {
+	public void addFeeChargedToPayer(final long amount) {
 		otherNonThresholdFees += amount;
 	}
 
