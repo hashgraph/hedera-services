@@ -15,11 +15,11 @@
  */
 package com.hedera.services.bdd.suites.utils.contracts.precompile;
 
-import org.hyperledger.besu.datatypes.Address;
+import org.apache.tuweni.bytes.Bytes;
 
 public record FixedFee(
         long amount,
-        Address tokenId,
+        Bytes tokenId,
         boolean useHbarsForPayment,
         boolean useCurrentTokenForPayment,
-        Address feeCollector) {}
+        Bytes feeCollector) {}

@@ -15,7 +15,7 @@
  */
 package com.hedera.services.bdd.suites.utils.contracts.precompile;
 
-import org.hyperledger.besu.datatypes.Address;
+import org.apache.tuweni.bytes.Bytes;
 
 public record FractionalFee(
         long numerator,
@@ -23,4 +23,4 @@ public record FractionalFee(
         long minimumAmount,
         long maximumAmount,
         boolean netOfTransfers,
-        Address feeCollector) {}
+        Bytes feeCollector) {}

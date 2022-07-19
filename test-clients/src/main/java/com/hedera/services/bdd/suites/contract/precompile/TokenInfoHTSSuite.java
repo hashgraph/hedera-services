@@ -71,7 +71,6 @@ import java.util.OptionalLong;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes;
-import org.hyperledger.besu.datatypes.Address;
 
 public class TokenInfoHTSSuite extends HapiApiSuite {
 
@@ -719,14 +718,14 @@ public class TokenInfoHTSSuite extends HapiApiSuite {
         final var expiry =
                 new Expiry(
                         expirySecond,
-                        Address.wrap(Bytes.wrap(Utils.asAddress(autoRenewAccount))),
+                        Bytes.wrap(expandByteArrayTo32Length(Utils.asAddress(autoRenewAccount))),
                         THREE_MONTHS_IN_SECONDS);
         final var treasury = spec.registry().getAccountID(TOKEN_TREASURY);
         final var token =
                 new HederaToken(
                         tokenName,
                         symbol,
-                        Address.wrap(Bytes.wrap(Utils.asAddress(treasury))),
+                        Bytes.wrap(expandByteArrayTo32Length(Utils.asAddress(treasury))),
                         MEMO,
                         true,
                         MAX_SUPPLY,
@@ -736,21 +735,18 @@ public class TokenInfoHTSSuite extends HapiApiSuite {
 
         final var fixedFees = new ArrayList<FixedFee>();
         final var fixedFeeCollector =
-                Address.wrap(
-                        Bytes.wrap(Utils.asAddress(spec.registry().getAccountID(HTS_COLLECTOR))));
+                Bytes.wrap(
+                        expandByteArrayTo32Length(
+                                Utils.asAddress(spec.registry().getAccountID(HTS_COLLECTOR))));
         final var fixedFee =
-                new FixedFee(
-                        500L,
-                        Address.wrap(Bytes.wrap(new byte[20])),
-                        true,
-                        false,
-                        fixedFeeCollector);
+                new FixedFee(500L, Bytes.wrap(new byte[32]), true, false, fixedFeeCollector);
         fixedFees.add(fixedFee);
 
         final var fractionalFees = new ArrayList<FractionalFee>();
         final var fractionalFeeCollector =
-                Address.wrap(
-                        Bytes.wrap(Utils.asAddress(spec.registry().getAccountID(TOKEN_TREASURY))));
+                Bytes.wrap(
+                        expandByteArrayTo32Length(
+                                Utils.asAddress(spec.registry().getAccountID(TOKEN_TREASURY))));
         final var fractionalFee =
                 new FractionalFee(
                         NUMERATOR,
@@ -779,14 +775,14 @@ public class TokenInfoHTSSuite extends HapiApiSuite {
         final var expiry =
                 new Expiry(
                         expirySecond,
-                        Address.wrap(Bytes.wrap(Utils.asAddress(autoRenewAccount))),
+                        Bytes.wrap(expandByteArrayTo32Length(Utils.asAddress(autoRenewAccount))),
                         THREE_MONTHS_IN_SECONDS);
         final var treasury = spec.registry().getAccountID(TOKEN_TREASURY);
         final var token =
                 new HederaToken(
                         NON_FUNGIBLE_TOKEN_NAME,
                         NON_FUNGIBLE_SYMBOL,
-                        Address.wrap(Bytes.wrap(Utils.asAddress(treasury))),
+                        Bytes.wrap(expandByteArrayTo32Length(Utils.asAddress(treasury))),
                         MEMO,
                         true,
                         10L,
@@ -796,10 +792,13 @@ public class TokenInfoHTSSuite extends HapiApiSuite {
 
         final var royaltyFees = new ArrayList<RoyaltyFee>();
         final var royaltyFeeCollector =
-                Address.wrap(
-                        Bytes.wrap(Utils.asAddress(spec.registry().getAccountID(HTS_COLLECTOR))));
+                Bytes.wrap(
+                        expandByteArrayTo32Length(
+                                Utils.asAddress(spec.registry().getAccountID(HTS_COLLECTOR))));
         final var tokenDenomAddress =
-                Address.wrap(Bytes.wrap(Utils.asAddress(spec.registry().getTokenID(FEE_DENOM))));
+                Bytes.wrap(
+                        expandByteArrayTo32Length(
+                                Utils.asAddress(spec.registry().getTokenID(FEE_DENOM))));
         final var royaltyFee =
                 new RoyaltyFee(
                         NUMERATOR, DENOMINATOR, 100, tokenDenomAddress, false, royaltyFeeCollector);
@@ -835,13 +834,16 @@ public class TokenInfoHTSSuite extends HapiApiSuite {
                 new KeyValue(
                         false,
                         key.getContractID().getContractNum() > 0
-                                ? Address.wrap(Bytes.wrap(Utils.asAddress(key.getContractID())))
+                                ? Bytes.wrap(
+                                        expandByteArrayTo32Length(
+                                                Utils.asAddress(key.getContractID())))
                                 : null,
                         key.getEd25519().toByteArray(),
                         key.getECDSASecp256K1().toByteArray(),
                         key.getDelegatableContractId().getContractNum() > 0
-                                ? Address.wrap(
-                                        Bytes.wrap(Utils.asAddress(key.getDelegatableContractId())))
+                                ? Bytes.wrap(
+                                        expandByteArrayTo32Length(
+                                                Utils.asAddress(key.getDelegatableContractId())))
                                 : null);
         return new TokenKey(type.value(), keyValue);
     }

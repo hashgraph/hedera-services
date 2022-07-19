@@ -60,11 +60,11 @@ public class TokenDeleteSpecs extends HapiApiSuite {
     public List<HapiApiSpec> getSpecsInSuite() {
         return List.of(
                 new HapiApiSpec[] {
-                    //						deletionValidatesMissingAdminKey(),
-                    deletionWorksAsExpected()
-                    //						deletionValidatesAlreadyDeletedToken(),
-                    //						treasuryBecomesDeletableAfterTokenDelete(),
-                    //						deletionValidatesRef(),
+                    deletionValidatesMissingAdminKey(),
+                    deletionWorksAsExpected(),
+                    deletionValidatesAlreadyDeletedToken(),
+                    treasuryBecomesDeletableAfterTokenDelete(),
+                    deletionValidatesRef(),
                 });
     }
 

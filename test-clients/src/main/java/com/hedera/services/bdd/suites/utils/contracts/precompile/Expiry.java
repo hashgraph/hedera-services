@@ -15,6 +15,6 @@
  */
 package com.hedera.services.bdd.suites.utils.contracts.precompile;
 
-import org.hyperledger.besu.datatypes.Address;
+import org.apache.tuweni.bytes.Bytes;
 
-public record Expiry(long second, Address autoRenewAccount, long autoRenewPeriod) {}
+public record Expiry(long second, Bytes autoRenewAccount, long autoRenewPeriod) {}
