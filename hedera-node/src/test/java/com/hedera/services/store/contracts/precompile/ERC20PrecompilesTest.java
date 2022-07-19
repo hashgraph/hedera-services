@@ -1421,16 +1421,6 @@ class ERC20PrecompilesTest {
                             new SyntheticTxnFactory.FungibleTokenTransfer(
                                     -AMOUNT, true, token, sender, null)));
 
-    //    private static final FcTokenAllowanceId FUNGIBLE_ALLOWANCE_ID =
-    //            FcTokenAllowanceId.from(
-    //                    EntityNum.fromTokenId(token),
-    // EntityId.fromGrpcAccountId(receiver).asNum());
-    //
-    //    private static final FcTokenAllowanceId NFT_ALLOWANCE_ID =
-    //            FcTokenAllowanceId.from(
-    //                    EntityNum.fromTokenId(nonFungible),
-    //                    EntityId.fromGrpcAccountId(receiver).asNum());
-    //
     public static final ApproveWrapper APPROVE_WRAPPER =
             new ApproveWrapper(token, receiver, BigInteger.ONE, BigInteger.ZERO, true);
 

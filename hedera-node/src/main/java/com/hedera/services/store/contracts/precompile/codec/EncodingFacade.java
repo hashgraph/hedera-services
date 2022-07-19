@@ -148,7 +148,7 @@ public class EncodingFacade {
 
     public Bytes encodeApproveNFT(final int responseCode) {
         return functionResultBuilder()
-                .forFunction(FunctionType.HAPI_APPROVE)
+                .forFunction(FunctionType.HAPI_APPROVE_NFT)
                 .withStatus(responseCode)
                 .build();
     }
