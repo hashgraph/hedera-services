@@ -26,6 +26,7 @@ import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
+import static com.hedera.services.bdd.suites.contract.Utils.asByteAddress;
 import static com.hedera.services.bdd.suites.contract.Utils.asToken;
 import static com.hedera.services.bdd.suites.token.TokenAssociationSpecs.VANILLA_TOKEN;
 import static com.hederahashgraph.api.proto.java.TokenPauseStatus.Paused;
@@ -49,6 +50,10 @@ public class PauseUnpauseTokenAccountPrecompileSuite extends HapiApiSuite {
     private static final String PAUSE_KEY = "PAUSE_KEY";
 
     private static final String UNPAUSE_KEY = "UNPAUSE_KEY";
+
+    private static final String ACCOUNT = "account";
+
+    public static final long INITIAL_BALANCE = 1_000_000_000L;
     private static final long GAS_TO_OFFER = 4_000_000L;
 
     public static void main(String... args) {
@@ -77,6 +82,9 @@ public class PauseUnpauseTokenAccountPrecompileSuite extends HapiApiSuite {
                 .given(
                         newKeyNamed(PAUSE_KEY),
                         cryptoCreate(TOKEN_TREASURY),
+                        cryptoCreate(ACCOUNT)
+                                .balance(INITIAL_BALANCE)
+                                .key(PAUSE_KEY),
                         tokenCreate(VANILLA_TOKEN)
                                 .tokenType(FUNGIBLE_COMMON)
                                 .treasury(TOKEN_TREASURY)
@@ -95,7 +103,7 @@ public class PauseUnpauseTokenAccountPrecompileSuite extends HapiApiSuite {
                                                                 PAUSE_UNPAUSE_CONTRACT,
                                                                 "pauseTokenAccount",
                                                                 asAddress(tokenID.get()))
-                                                        .payingWith(GENESIS)
+                                                        .payingWith(ACCOUNT)
                                                         .via("pauseTokenAccountTxn")
                                                         .gas(GAS_TO_OFFER))))
                 .then(getTokenInfo(VANILLA_TOKEN).hasPauseStatus(Paused));
@@ -108,6 +116,9 @@ public class PauseUnpauseTokenAccountPrecompileSuite extends HapiApiSuite {
                 .given(
                         newKeyNamed(UNPAUSE_KEY),
                         cryptoCreate(TOKEN_TREASURY),
+                        cryptoCreate(ACCOUNT)
+                                .balance(INITIAL_BALANCE)
+                                .key(UNPAUSE_KEY),
                         tokenCreate(VANILLA_TOKEN)
                                 .tokenType(FUNGIBLE_COMMON)
                                 .treasury(TOKEN_TREASURY)
@@ -126,7 +137,7 @@ public class PauseUnpauseTokenAccountPrecompileSuite extends HapiApiSuite {
                                                                 PAUSE_UNPAUSE_CONTRACT,
                                                                 "unpauseTokenAccount",
                                                                 asAddress(tokenID.get()))
-                                                        .payingWith(GENESIS)
+                                                        .payingWith(ACCOUNT)
                                                         .via("unpauseTokenAccountTxn")
                                                         .gas(GAS_TO_OFFER))))
                 .then(getTokenInfo(VANILLA_TOKEN).hasPauseStatus(Unpaused));
@@ -139,6 +150,9 @@ public class PauseUnpauseTokenAccountPrecompileSuite extends HapiApiSuite {
                 .given(
                         newKeyNamed(PAUSE_KEY),
                         cryptoCreate(TOKEN_TREASURY),
+                        cryptoCreate(ACCOUNT)
+                                .balance(INITIAL_BALANCE)
+                                .key(PAUSE_KEY),
                         tokenCreate(VANILLA_TOKEN)
                                 .tokenType(NON_FUNGIBLE_UNIQUE)
                                 .treasury(TOKEN_TREASURY)
@@ -157,7 +171,7 @@ public class PauseUnpauseTokenAccountPrecompileSuite extends HapiApiSuite {
                                                                 PAUSE_UNPAUSE_CONTRACT,
                                                                 "pauseTokenAccount",
                                                                 asAddress(tokenID.get()))
-                                                        .payingWith(GENESIS)
+                                                        .payingWith(ACCOUNT)
                                                         .via("pauseTokenAccountTxn")
                                                         .gas(GAS_TO_OFFER))))
                 .then(getTokenInfo(VANILLA_TOKEN).hasPauseStatus(Paused));
@@ -170,6 +184,9 @@ public class PauseUnpauseTokenAccountPrecompileSuite extends HapiApiSuite {
                 .given(
                         newKeyNamed(UNPAUSE_KEY),
                         cryptoCreate(TOKEN_TREASURY),
+                        cryptoCreate(ACCOUNT)
+                                .balance(INITIAL_BALANCE)
+                                .key(UNPAUSE_KEY),
                         tokenCreate(VANILLA_TOKEN)
                                 .tokenType(NON_FUNGIBLE_UNIQUE)
                                 .treasury(TOKEN_TREASURY)
@@ -188,7 +205,7 @@ public class PauseUnpauseTokenAccountPrecompileSuite extends HapiApiSuite {
                                                                 PAUSE_UNPAUSE_CONTRACT,
                                                                 "unpauseTokenAccount",
                                                                 asAddress(tokenID.get()))
-                                                        .payingWith(GENESIS)
+                                                        .payingWith(ACCOUNT)
                                                         .via("unpauseTokenAccountTxn")
                                                         .gas(GAS_TO_OFFER))))
                 .then(getTokenInfo(VANILLA_TOKEN).hasPauseStatus(Unpaused));
