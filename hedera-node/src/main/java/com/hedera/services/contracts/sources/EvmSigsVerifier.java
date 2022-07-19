@@ -66,7 +66,7 @@ public interface EvmSigsVerifier {
             Address account,
             Address activeContract,
             WorldLedgers worldLedgers);
-  
+
     /**
      * Determines if the target account <b>either</b> has no receiver sig requirement; or an active
      * key given the cryptographic signatures from the {@link

@@ -169,19 +169,22 @@ class DecodingFacadeTest {
             Bytes.fromHexString(
                     "0x095ea7b300000000000000000000000000000000000000000000000000000000000003f0000000000000000000000000000000000000000000000000000000000000000a");
 
-	private static final Bytes APPROVE_NFT_INPUT = Bytes.fromHexString("0x095ea7b300000000000000000000000000000000000000000000000000000000000003ea0000000000000000000000000000000000000000000000000000000000000001");
+    private static final Bytes FUNGIBLE_PAUSE_INPUT =
+            Bytes.fromHexString(
+                    "0x7c41ad2c000000000000000000000000000000000000000000000000000000000000043d");
 
-	public static final Bytes APPROVE_TOKEN_INPUT = Bytes.fromHexString("0x095ea7b300000000000000000000000000000000000000000000000000000000000003f0000000000000000000000000000000000000000000000000000000000000000a");
+    private static final Bytes NON_FUNGIBLE_PAUSE_INPUT =
+            Bytes.fromHexString(
+                    "0x7c41ad2c0000000000000000000000000000000000000000000000000000000000000445");
 
-	private static final Bytes FUNGIBLE_PAUSE_INPUT = Bytes.fromHexString("0x7c41ad2c000000000000000000000000000000000000000000000000000000000000043d");
+    private static final Bytes FUNGIBLE_UNPAUSE_INPUT =
+            Bytes.fromHexString(
+                    "0x3b3bff0f0000000000000000000000000000000000000000000000000000000000000441");
 
-	private static final Bytes NON_FUNGIBLE_PAUSE_INPUT = Bytes.fromHexString("0x7c41ad2c0000000000000000000000000000000000000000000000000000000000000445");
-
-	private static final Bytes FUNGIBLE_UNPAUSE_INPUT = Bytes.fromHexString("0x3b3bff0f0000000000000000000000000000000000000000000000000000000000000441");
-
-	private static final Bytes NON_FUNGIBLE_UNPAUSE_INPUT = Bytes.fromHexString("0x3b3bff0f0000000000000000000000000000000000000000000000000000000000000449");
-	@Mock
-	private WorldLedgers ledgers;
+    private static final Bytes NON_FUNGIBLE_UNPAUSE_INPUT =
+            Bytes.fromHexString(
+                    "0x3b3bff0f0000000000000000000000000000000000000000000000000000000000000449");
+    @Mock private WorldLedgers ledgers;
 
     @Test
     void decodeCryptoTransferPositiveFungibleAmountAndNftTransfer() {
@@ -678,47 +681,49 @@ class DecodingFacadeTest {
                                 a -> a));
     }
 
-	@Test
-	void decodeFungiblePauseInput() {
-		final var decodedInput = subject.decodePause(FUNGIBLE_PAUSE_INPUT);
+    @Test
+    void decodeFungiblePauseInput() {
+        final var decodedInput = subject.decodePause(FUNGIBLE_PAUSE_INPUT);
 
-		assertTrue(decodedInput.token().getTokenNum() > 0);
-	}
+        assertTrue(decodedInput.token().getTokenNum() > 0);
+    }
 
-	@Test
-	void decodeNonFungiblePauseInput() {
-		final var decodedInput = subject.decodePause(NON_FUNGIBLE_PAUSE_INPUT);
+    @Test
+    void decodeNonFungiblePauseInput() {
+        final var decodedInput = subject.decodePause(NON_FUNGIBLE_PAUSE_INPUT);
 
-		assertTrue(decodedInput.token().getTokenNum() > 0);
-	}
+        assertTrue(decodedInput.token().getTokenNum() > 0);
+    }
 
-	@Test
-	void decodeFungibleUnpauseInput() {
-		final var decodedInput = subject.decodePause(FUNGIBLE_UNPAUSE_INPUT);
+    @Test
+    void decodeFungibleUnpauseInput() {
+        final var decodedInput = subject.decodePause(FUNGIBLE_UNPAUSE_INPUT);
 
-		assertTrue(decodedInput.token().getTokenNum() > 0);
-	}
+        assertTrue(decodedInput.token().getTokenNum() > 0);
+    }
 
-	@Test
-	void decodeNonFungibleUnpauseInput() {
-		final var decodedInput = subject.decodePause(NON_FUNGIBLE_UNPAUSE_INPUT);
+    @Test
+    void decodeNonFungibleUnpauseInput() {
+        final var decodedInput = subject.decodePause(NON_FUNGIBLE_UNPAUSE_INPUT);
 
-		assertTrue(decodedInput.token().getTokenNum() > 0);
-	}
+        assertTrue(decodedInput.token().getTokenNum() > 0);
+    }
 
-	private void assertExpectedFungibleTokenCreateStruct(final TokenCreateWrapper decodedInput) {
-		assertTrue(decodedInput.isFungible());
-		assertEquals("MyToken", decodedInput.getName());
-		assertEquals("MTK", decodedInput.getSymbol());
-		assertEquals(AccountID.newBuilder().setAccountNum(1L).build(), decodedInput.getTreasury());
-		assertEquals("memo", decodedInput.getMemo());
-		assertFalse(decodedInput.isSupplyTypeFinite());
-		assertEquals(0L, decodedInput.getMaxSupply());
-		assertFalse(decodedInput.isFreezeDefault());
-		assertEquals(5554, decodedInput.getExpiry().autoRenewPeriod());
-		assertEquals(AccountID.newBuilder().setAccountNum(2L).build(), decodedInput.getExpiry().autoRenewAccount());
-		assertEquals(0L, decodedInput.getExpiry().second());
-	}
+    private void assertExpectedFungibleTokenCreateStruct(final TokenCreateWrapper decodedInput) {
+        assertTrue(decodedInput.isFungible());
+        assertEquals("MyToken", decodedInput.getName());
+        assertEquals("MTK", decodedInput.getSymbol());
+        assertEquals(AccountID.newBuilder().setAccountNum(1L).build(), decodedInput.getTreasury());
+        assertEquals("memo", decodedInput.getMemo());
+        assertFalse(decodedInput.isSupplyTypeFinite());
+        assertEquals(0L, decodedInput.getMaxSupply());
+        assertFalse(decodedInput.isFreezeDefault());
+        assertEquals(5554, decodedInput.getExpiry().autoRenewPeriod());
+        assertEquals(
+                AccountID.newBuilder().setAccountNum(2L).build(),
+                decodedInput.getExpiry().autoRenewAccount());
+        assertEquals(0L, decodedInput.getExpiry().second());
+    }
 
     private void assertExpectedNonFungibleTokenCreateStruct(final TokenCreateWrapper decodedInput) {
         assertFalse(decodedInput.isFungible());

@@ -49,64 +49,63 @@ import org.hyperledger.besu.datatypes.Address;
 
 public class HTSTestsUtil {
 
-	public static final long AMOUNT = 1_234_567L;
-	public static final long DEFAULT_GAS_PRICE = 10_000L;
-	public static final long TEST_CONSENSUS_TIME = 1_640_000_000L; // Monday, December 20, 2021 11:33:20 AM UTC
-	public static final TokenID token = IdUtils.asToken("0.0.1");
-	public static final AccountID payer = IdUtils.asAccount("0.0.12345");
-	public static final AccountID sender = IdUtils.asAccount("0.0.2");
-	public static final EntityId senderId = EntityId.fromGrpcAccountId(sender);
-	public static final AccountID receiver = IdUtils.asAccount("0.0.3");
-	public static final AccountID feeCollector = IdUtils.asAccount("0.0.4");
-	public static final AccountID account = IdUtils.asAccount("0.0.3");
-	public static final AccountID accountMerkleId = IdUtils.asAccount("0.0.999");
-	public static final ContractID precompiledContract = IdUtils.asContract("0.0.359");
-	public static final TokenID nonFungible = IdUtils.asToken("0.0.777");
-	public static final TokenID tokenMerkleId = IdUtils.asToken("0.0.777");
-	public static final Id accountId = Id.fromGrpcAccount(account);
-	public static final Address recipientAddr = Address.ALTBN128_ADD;
-	public static final Address tokenAddress = Address.ECREC;
-	public static final Address contractAddr = Address.ALTBN128_MUL;
-	public static final Address senderAddress = Address.ALTBN128_PAIRING;
-	public static final Address parentContractAddress = Address.BLAKE2B_F_COMPRESSION;
-	public static final Address parentRecipientAddress = Address.BLS12_G1ADD;
-	public static final Dissociation dissociateToken =
-			Dissociation.singleDissociation(account, nonFungible);
-	public static final Dissociation multiDissociateOp =
-			Dissociation.singleDissociation(account, nonFungible);
-	public static final Timestamp timestamp = Timestamp.newBuilder().setSeconds(TEST_CONSENSUS_TIME).build();
-	public static final Bytes successResult = UInt256.valueOf(ResponseCodeEnum.SUCCESS_VALUE);
-	public static final Bytes failResult = UInt256.valueOf(ResponseCodeEnum.FAIL_INVALID_VALUE);
-	public static final Bytes invalidSigResult = UInt256.valueOf(ResponseCodeEnum.INVALID_SIGNATURE_VALUE);
-	public static final Bytes missingNftResult = UInt256.valueOf(ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER_VALUE);
-	public static final Association associateOp =
-			Association.singleAssociation(accountMerkleId, tokenMerkleId);
-	public static final TokenID fungible = IdUtils.asToken("0.0.888");
-	public static final Id nonFungibleId = Id.fromGrpcToken(nonFungible);
-	public static final Id fungibleId = Id.fromGrpcToken(fungible);
-	public static final List<Long> targetSerialNos = List.of(1L, 2L, 3L);
-	public static final BurnWrapper fungibleBurn =
-			BurnWrapper.forFungible(fungible, AMOUNT);
-	public static final MintWrapper fungibleMint =
-			MintWrapper.forFungible(fungible, AMOUNT);
-	public static final BurnWrapper fungibleBurnAmountOversize =
-			BurnWrapper.forFungible(fungible, new BigInteger("2").pow(64).longValue());
-	public static final BurnWrapper fungibleBurnMaxAmount =
-			BurnWrapper.forFungible(fungible, Long.MAX_VALUE);
-	public static final MintWrapper fungibleMintAmountOversize =
-			MintWrapper.forFungible(fungible, new BigInteger("2").pow(64).longValue());
-	public static final MintWrapper fungibleMintMaxAmount =
-			MintWrapper.forFungible(fungible, Long.MAX_VALUE);
-	public static final PauseWrapper fungiblePause =
-			new PauseWrapper(fungible);
-	public static final PauseWrapper nonFungiblePause =
-			new PauseWrapper(nonFungible);
-	public static final UnpauseWrapper fungibleUnpause =
-			new UnpauseWrapper(fungible);
-	public static final UnpauseWrapper nonFungibleUnpause =
-			new UnpauseWrapper(nonFungible);
-	public static final Long serialNumber = 1L;
-	public static final OwnerOfAndTokenURIWrapper ownerOfAndTokenUriWrapper = new OwnerOfAndTokenURIWrapper(serialNumber);
+    public static final long AMOUNT = 1_234_567L;
+    public static final long DEFAULT_GAS_PRICE = 10_000L;
+    public static final long TEST_CONSENSUS_TIME =
+            1_640_000_000L; // Monday, December 20, 2021 11:33:20 AM UTC
+    public static final TokenID token = IdUtils.asToken("0.0.1");
+    public static final AccountID payer = IdUtils.asAccount("0.0.12345");
+    public static final AccountID sender = IdUtils.asAccount("0.0.2");
+    public static final EntityId senderId = EntityId.fromGrpcAccountId(sender);
+    public static final AccountID receiver = IdUtils.asAccount("0.0.3");
+    public static final AccountID feeCollector = IdUtils.asAccount("0.0.4");
+    public static final AccountID account = IdUtils.asAccount("0.0.3");
+    public static final AccountID accountMerkleId = IdUtils.asAccount("0.0.999");
+    public static final ContractID precompiledContract = IdUtils.asContract("0.0.359");
+    public static final TokenID nonFungible = IdUtils.asToken("0.0.777");
+    public static final TokenID tokenMerkleId = IdUtils.asToken("0.0.777");
+    public static final Id accountId = Id.fromGrpcAccount(account);
+    public static final Address recipientAddr = Address.ALTBN128_ADD;
+    public static final Address tokenAddress = Address.ECREC;
+    public static final Address contractAddr = Address.ALTBN128_MUL;
+    public static final Address senderAddress = Address.ALTBN128_PAIRING;
+    public static final Address parentContractAddress = Address.BLAKE2B_F_COMPRESSION;
+    public static final Address parentRecipientAddress = Address.BLS12_G1ADD;
+    public static final Dissociation dissociateToken =
+            Dissociation.singleDissociation(account, nonFungible);
+    public static final Dissociation multiDissociateOp =
+            Dissociation.singleDissociation(account, nonFungible);
+    public static final Timestamp timestamp =
+            Timestamp.newBuilder().setSeconds(TEST_CONSENSUS_TIME).build();
+    public static final Bytes successResult = UInt256.valueOf(ResponseCodeEnum.SUCCESS_VALUE);
+    public static final Bytes failResult = UInt256.valueOf(ResponseCodeEnum.FAIL_INVALID_VALUE);
+    public static final Bytes invalidSigResult =
+            UInt256.valueOf(ResponseCodeEnum.INVALID_SIGNATURE_VALUE);
+    public static final Bytes missingNftResult =
+            UInt256.valueOf(ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER_VALUE);
+    public static final Association associateOp =
+            Association.singleAssociation(accountMerkleId, tokenMerkleId);
+    public static final TokenID fungible = IdUtils.asToken("0.0.888");
+    public static final Id nonFungibleId = Id.fromGrpcToken(nonFungible);
+    public static final Id fungibleId = Id.fromGrpcToken(fungible);
+    public static final List<Long> targetSerialNos = List.of(1L, 2L, 3L);
+    public static final BurnWrapper fungibleBurn = BurnWrapper.forFungible(fungible, AMOUNT);
+    public static final MintWrapper fungibleMint = MintWrapper.forFungible(fungible, AMOUNT);
+    public static final BurnWrapper fungibleBurnAmountOversize =
+            BurnWrapper.forFungible(fungible, new BigInteger("2").pow(64).longValue());
+    public static final BurnWrapper fungibleBurnMaxAmount =
+            BurnWrapper.forFungible(fungible, Long.MAX_VALUE);
+    public static final MintWrapper fungibleMintAmountOversize =
+            MintWrapper.forFungible(fungible, new BigInteger("2").pow(64).longValue());
+    public static final MintWrapper fungibleMintMaxAmount =
+            MintWrapper.forFungible(fungible, Long.MAX_VALUE);
+    public static final PauseWrapper fungiblePause = new PauseWrapper(fungible);
+    public static final PauseWrapper nonFungiblePause = new PauseWrapper(nonFungible);
+    public static final UnpauseWrapper fungibleUnpause = new UnpauseWrapper(fungible);
+    public static final UnpauseWrapper nonFungibleUnpause = new UnpauseWrapper(nonFungible);
+    public static final Long serialNumber = 1L;
+    public static final OwnerOfAndTokenURIWrapper ownerOfAndTokenUriWrapper =
+            new OwnerOfAndTokenURIWrapper(serialNumber);
 
     public static final Association multiAssociateOp =
             Association.singleAssociation(accountMerkleId, tokenMerkleId);

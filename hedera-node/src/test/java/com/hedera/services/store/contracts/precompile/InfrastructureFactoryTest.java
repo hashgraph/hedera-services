@@ -267,26 +267,26 @@ class InfrastructureFactoryTest {
         assertInstanceOf(ApproveAllowanceChecks.class, subject.newApproveAllowanceChecks());
     }
 
-	@Test
-	void canCreateNewDeleteAllowanceChecks() {
-		assertInstanceOf(DeleteAllowanceChecks.class, subject.newDeleteAllowanceChecks());
-	}
+    @Test
+    void canCreateNewDeleteAllowanceChecks() {
+        assertInstanceOf(DeleteAllowanceChecks.class, subject.newDeleteAllowanceChecks());
+    }
 
-	@Test
-	void canCreateNewPauseLogic() {
-		final var accountStore = subject.newAccountStore(accounts);
-		final var tokenStore =
-				subject.newTokenStore(
-						accountStore, subject.newSideEffects(), tokens, uniqueTokens, tokenRels);
-		assertInstanceOf(PauseLogic.class, subject.newPauseLogic(tokenStore));
-	}
+    @Test
+    void canCreateNewPauseLogic() {
+        final var accountStore = subject.newAccountStore(accounts);
+        final var tokenStore =
+                subject.newTokenStore(
+                        accountStore, subject.newSideEffects(), tokens, uniqueTokens, tokenRels);
+        assertInstanceOf(PauseLogic.class, subject.newPauseLogic(tokenStore));
+    }
 
-	@Test
-	void canCreateNewUnpauseLogic() {
-		final var accountStore = subject.newAccountStore(accounts);
-		final var tokenStore =
-				subject.newTokenStore(
-						accountStore, subject.newSideEffects(), tokens, uniqueTokens, tokenRels);
-		assertInstanceOf(UnpauseLogic.class, subject.newUnpauseLogic(tokenStore));
-	}
+    @Test
+    void canCreateNewUnpauseLogic() {
+        final var accountStore = subject.newAccountStore(accounts);
+        final var tokenStore =
+                subject.newTokenStore(
+                        accountStore, subject.newSideEffects(), tokens, uniqueTokens, tokenRels);
+        assertInstanceOf(UnpauseLogic.class, subject.newUnpauseLogic(tokenStore));
+    }
 }

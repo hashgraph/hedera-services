@@ -814,52 +814,49 @@ class SyntheticTxnFactoryTest {
                 SyntheticTxnFactory.areSameBuilder(subject, differentSender.asGrpc().toBuilder()));
     }
 
-	@Test
-	void createsExpectedFungiblePause() {
-		final var fungiblePause = new PauseWrapper(fungible);
+    @Test
+    void createsExpectedFungiblePause() {
+        final var fungiblePause = new PauseWrapper(fungible);
 
-		final var result = subject.createPause(fungiblePause);
-		final var txnBody = result.build();
+        final var result = subject.createPause(fungiblePause);
+        final var txnBody = result.build();
 
-		assertEquals(fungible, txnBody.getTokenPause().getToken());
-	}
+        assertEquals(fungible, txnBody.getTokenPause().getToken());
+    }
 
-	@Test
-	void createsExpectedNonFungiblePause() {
-		final var nonFungiblePause = new PauseWrapper(nonFungible);
+    @Test
+    void createsExpectedNonFungiblePause() {
+        final var nonFungiblePause = new PauseWrapper(nonFungible);
 
-		final var result = subject.createPause(nonFungiblePause);
-		final var txnBody = result.build();
+        final var result = subject.createPause(nonFungiblePause);
+        final var txnBody = result.build();
 
-		assertEquals(nonFungible, txnBody.getTokenPause().getToken());
-	}
+        assertEquals(nonFungible, txnBody.getTokenPause().getToken());
+    }
 
-	@Test
-	void createsExpectedFungibleUnpause() {
-		final var fungibleUnpause = new UnpauseWrapper(fungible);
+    @Test
+    void createsExpectedFungibleUnpause() {
+        final var fungibleUnpause = new UnpauseWrapper(fungible);
 
-		final var result = subject.createUnpause(fungibleUnpause);
-		final var txnBody = result.build();
+        final var result = subject.createUnpause(fungibleUnpause);
+        final var txnBody = result.build();
 
-		assertEquals(fungible, txnBody.getTokenUnpause().getToken());
-	}
+        assertEquals(fungible, txnBody.getTokenUnpause().getToken());
+    }
 
-	@Test
-	void createsExpectedNonFungibleUnpause() {
-		final var nonFungibleUnpause = new UnpauseWrapper(nonFungible);
+    @Test
+    void createsExpectedNonFungibleUnpause() {
+        final var nonFungibleUnpause = new UnpauseWrapper(nonFungible);
 
-		final var result = subject.createUnpause(nonFungibleUnpause);
-		final var txnBody = result.build();
+        final var result = subject.createUnpause(nonFungibleUnpause);
+        final var txnBody = result.build();
 
-		assertEquals(nonFungible, txnBody.getTokenUnpause().getToken());
-	}
+        assertEquals(nonFungible, txnBody.getTokenUnpause().getToken());
+    }
 
-	private AccountAmount aaWith(final AccountID account, final long amount) {
-		return AccountAmount.newBuilder()
-				.setAccountID(account)
-				.setAmount(amount)
-				.build();
-	}
+    private AccountAmount aaWith(final AccountID account, final long amount) {
+        return AccountAmount.newBuilder().setAccountID(account).setAmount(amount).build();
+    }
 
     private static final long serialNo = 100;
     private static final long secondAmount = 200;
