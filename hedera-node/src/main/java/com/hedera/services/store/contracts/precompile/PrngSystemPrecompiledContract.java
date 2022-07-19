@@ -42,13 +42,11 @@ import com.hedera.services.txns.util.PrngLogic;
 import com.hederahashgraph.api.proto.java.PrngTransactionBody;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-
 import java.time.Instant;
 import java.util.Collections;
 import java.util.Optional;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -235,9 +233,9 @@ public class PrngSystemPrecompiledContract extends AbstractPrecompiledContract {
     private void trackPrngOutput(
             final SideEffectsTracker effectsTracker, final Bytes input, final Bytes randomNum) {
         final var selector = input.getInt(0);
-		if (randomNum == null) {
-			return;
-		}
+        if (randomNum == null) {
+            return;
+        }
         if (selector == PSEUDORANDOM_NUM_IN_RANGE_GENERATOR_SELECTOR) {
             effectsTracker.trackRandomNumber(randomNum.toBigInteger().intValue());
         } else if (selector == PSEUDORANDOM_SEED_GENERATOR_SELECTOR) {
