@@ -9,6 +9,7 @@ interface IPrngSystemContract {
     // Given an unsigned 32-bit integer "range", generates a pseudorandom number X within 0 <= X < range.
     // Uses the first 32-bits of running hash of n-3 transaction record to generate the pseudorandom number.
     // When running hash of n-3 transaction record is not present or invalid, doesn't return the pseudorandom number.
-    // Need confirmation on use of seed ?
+    // When the range provided is not greater than zero or not in the integer range, contract fails with
+    // INVALID_PRNG_RANGE.
     function getPseudorandomNumber(uint32 range) external returns (uint32);
 }
