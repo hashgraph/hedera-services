@@ -86,8 +86,10 @@ import com.hedera.services.store.contracts.precompile.impl.DissociatePrecompile;
 import com.hedera.services.store.contracts.precompile.impl.MintPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.MultiAssociatePrecompile;
 import com.hedera.services.store.contracts.precompile.impl.MultiDissociatePrecompile;
+import com.hedera.services.store.contracts.precompile.impl.PausePrecompile;
 import com.hedera.services.store.contracts.precompile.impl.TokenCreatePrecompile;
 import com.hedera.services.store.contracts.precompile.impl.TransferPrecompile;
+import com.hedera.services.store.contracts.precompile.impl.UnpausePrecompile;
 import com.hedera.services.store.contracts.precompile.proxy.RedirectViewExecutor;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.services.store.models.Id;
@@ -115,6 +117,13 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_PAUSE_TOKEN;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_UNPAUSE_TOKEN;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.fungiblePause;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.fungibleUnpause;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.nonFungiblePause;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.nonFungibleUnpause;
 
 @ExtendWith(MockitoExtension.class)
 class HTSPrecompiledContractTest {
@@ -644,18 +653,82 @@ class HTSPrecompiledContractTest {
                 InvalidTransactionException.class, () -> subject.computeInternal(messageFrame));
     }
 
-    @Test
-    void defaultHandleHbarsThrows() {
-        // given
-        givenFrameContext();
-        Bytes input = Bytes.of(Integers.toBytes(ABI_ID_TRANSFER_NFTS));
-        given(messageFrame.getValue()).willReturn(Wei.of(1));
-        given(syntheticTxnFactory.createCryptoTransfer(any()))
-                .willReturn(
-                        TransactionBody.newBuilder()
-                                .setCryptoTransfer(CryptoTransferTransactionBody.newBuilder()));
-        given(worldUpdater.permissivelyUnaliased(any()))
-                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+	@Test
+	void computeCallsCorrectImplementationForPauseFungibleToken() {
+		// given
+		givenFrameContext();
+		Bytes input = Bytes.of(Integers.toBytes(ABI_PAUSE_TOKEN));
+		given(decoder.decodePause(any())).willReturn(fungiblePause);
+		given(worldUpdater.permissivelyUnaliased(any()))
+				.willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+
+		// when
+		subject.prepareFields(messageFrame);
+		subject.prepareComputation(input, a -> a);
+
+		// then
+		assertTrue(subject.getPrecompile() instanceof PausePrecompile);
+	}
+
+	@Test
+	void computeCallsCorrectImplementationForPauseNonFungibleToken() {
+		// given
+		givenFrameContext();
+		Bytes input = Bytes.of(Integers.toBytes(ABI_PAUSE_TOKEN));
+		given(decoder.decodePause(any())).willReturn(nonFungiblePause);
+		given(worldUpdater.permissivelyUnaliased(any()))
+				.willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+
+		// when
+		subject.prepareFields(messageFrame);
+		subject.prepareComputation(input, a -> a);
+
+		// then
+		assertTrue(subject.getPrecompile() instanceof PausePrecompile);
+	}
+
+	@Test
+	void computeCallsCorrectImplementationForUnpauseFungibleToken() {
+		// given
+		givenFrameContext();
+		Bytes input = Bytes.of(Integers.toBytes(ABI_UNPAUSE_TOKEN));
+		given(decoder.decodeUnpause(any())).willReturn(fungibleUnpause);
+		given(worldUpdater.permissivelyUnaliased(any()))
+				.willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+
+		// when
+		subject.prepareFields(messageFrame);
+		subject.prepareComputation(input, a -> a);
+
+		// then
+		assertTrue(subject.getPrecompile() instanceof UnpausePrecompile);
+	}
+	@Test
+	void computeCallsCorrectImplementationForUnpauseNonFungibleToken() {
+		// given
+		givenFrameContext();
+		Bytes input = Bytes.of(Integers.toBytes(ABI_UNPAUSE_TOKEN));
+		given(decoder.decodeUnpause(any())).willReturn(nonFungibleUnpause);
+		given(worldUpdater.permissivelyUnaliased(any()))
+				.willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+
+		// when
+		subject.prepareFields(messageFrame);
+		subject.prepareComputation(input, a -> a);
+
+		// then
+		assertTrue(subject.getPrecompile() instanceof UnpausePrecompile);
+	}
+
+	@Test
+	void defaultHandleHbarsThrows() {
+		// given
+		givenFrameContext();
+		Bytes input = Bytes.of(Integers.toBytes(ABI_ID_TRANSFER_NFTS));
+		given(messageFrame.getValue()).willReturn(Wei.of(1));
+		given(syntheticTxnFactory.createCryptoTransfer(any()))
+				.willReturn(TransactionBody.newBuilder().setCryptoTransfer(CryptoTransferTransactionBody.newBuilder()));
+		given(worldUpdater.permissivelyUnaliased(any())).willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
         // when
         subject.prepareFields(messageFrame);

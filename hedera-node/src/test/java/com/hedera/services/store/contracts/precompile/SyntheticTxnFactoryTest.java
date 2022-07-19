@@ -52,9 +52,11 @@ import com.hedera.services.store.contracts.precompile.codec.Association;
 import com.hedera.services.store.contracts.precompile.codec.BurnWrapper;
 import com.hedera.services.store.contracts.precompile.codec.Dissociation;
 import com.hedera.services.store.contracts.precompile.codec.MintWrapper;
+import com.hedera.services.store.contracts.precompile.codec.PauseWrapper;
 import com.hedera.services.store.contracts.precompile.codec.SetApprovalForAllWrapper;
 import com.hedera.services.store.contracts.precompile.codec.TokenCreateWrapper;
 import com.hedera.services.store.contracts.precompile.codec.TokenTransferWrapper;
+import com.hedera.services.store.contracts.precompile.codec.UnpauseWrapper;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.test.factories.keys.KeyFactory;
@@ -812,9 +814,52 @@ class SyntheticTxnFactoryTest {
                 SyntheticTxnFactory.areSameBuilder(subject, differentSender.asGrpc().toBuilder()));
     }
 
-    private AccountAmount aaWith(final AccountID account, final long amount) {
-        return AccountAmount.newBuilder().setAccountID(account).setAmount(amount).build();
-    }
+	@Test
+	void createsExpectedFungiblePause() {
+		final var fungiblePause = new PauseWrapper(fungible);
+
+		final var result = subject.createPause(fungiblePause);
+		final var txnBody = result.build();
+
+		assertEquals(fungible, txnBody.getTokenPause().getToken());
+	}
+
+	@Test
+	void createsExpectedNonFungiblePause() {
+		final var nonFungiblePause = new PauseWrapper(nonFungible);
+
+		final var result = subject.createPause(nonFungiblePause);
+		final var txnBody = result.build();
+
+		assertEquals(nonFungible, txnBody.getTokenPause().getToken());
+	}
+
+	@Test
+	void createsExpectedFungibleUnpause() {
+		final var fungibleUnpause = new UnpauseWrapper(fungible);
+
+		final var result = subject.createUnpause(fungibleUnpause);
+		final var txnBody = result.build();
+
+		assertEquals(fungible, txnBody.getTokenUnpause().getToken());
+	}
+
+	@Test
+	void createsExpectedNonFungibleUnpause() {
+		final var nonFungibleUnpause = new UnpauseWrapper(nonFungible);
+
+		final var result = subject.createUnpause(nonFungibleUnpause);
+		final var txnBody = result.build();
+
+		assertEquals(nonFungible, txnBody.getTokenUnpause().getToken());
+	}
+
+	private AccountAmount aaWith(final AccountID account, final long amount) {
+		return AccountAmount.newBuilder()
+				.setAccountID(account)
+				.setAmount(amount)
+				.build();
+	}
 
     private static final long serialNo = 100;
     private static final long secondAmount = 200;
