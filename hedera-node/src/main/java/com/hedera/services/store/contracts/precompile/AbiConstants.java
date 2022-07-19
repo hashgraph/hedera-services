@@ -81,12 +81,12 @@ public final class AbiConstants {
     public static final int ABI_ID_ERC_OWNER_OF_NFT = 0x6352211e;
     // tokenURI(uint256 tokenId)
     public static final int ABI_ID_ERC_TOKEN_URI_NFT = 0xc87b56dd;
-	//isFrozen(address, address)
-	public static final int ABI_IS_TOKEN_FROZEN = 0x46de0fb1;
-	// freezeToken(address, address)
-	public static final int ABI_FREEZE_TOKEN = 0x5b8f8584;
-	// unfreezeToken(address, address)
-	public static final int ABI_UNFREEZE_TOKEN = 0x52f91387;
+    // isFrozen(address, address)
+    public static final int ABI_IS_TOKEN_FROZEN = 0x46de0fb1;
+    // freezeToken(address, address)
+    public static final int ABI_FREEZE_TOKEN = 0x5b8f8584;
+    // unfreezeToken(address, address)
+    public static final int ABI_UNFREEZE_TOKEN = 0x52f91387;
     // Transfer(address indexed from, address indexed to, uint256 indexed tokenId)
     // Transfer(address indexed from, address indexed to, uint256 value)
     public static final Bytes TRANSFER_EVENT =

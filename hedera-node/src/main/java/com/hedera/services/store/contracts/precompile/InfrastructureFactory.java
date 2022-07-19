@@ -50,9 +50,9 @@ import com.hedera.services.txns.token.CreateLogic;
 import com.hedera.services.txns.token.DissociateLogic;
 import com.hedera.services.txns.token.FreezeLogic;
 import com.hedera.services.txns.token.MintLogic;
+import com.hedera.services.txns.token.UnFreezeLogic;
 import com.hedera.services.txns.token.process.DissociationFactory;
 import com.hedera.services.txns.token.validators.CreateChecks;
-import com.hedera.services.txns.token.UnFreezeLogic;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -191,15 +191,15 @@ public class InfrastructureFactory {
         return new DeleteAllowanceLogic(accountStore, tokenStore);
     }
 
-	public FreezeLogic newFreezeLogic(
-			final AccountStore accountStore, final TypedTokenStore tokenStore) {
-		return new FreezeLogic(tokenStore, accountStore);
-	}
+    public FreezeLogic newFreezeLogic(
+            final AccountStore accountStore, final TypedTokenStore tokenStore) {
+        return new FreezeLogic(tokenStore, accountStore);
+    }
 
-	public UnFreezeLogic newUnFreezeLogic(
-			final AccountStore accountStore, final TypedTokenStore tokenStore) {
-		return new UnFreezeLogic(tokenStore, accountStore);
-	}
+    public UnFreezeLogic newUnFreezeLogic(
+            final AccountStore accountStore, final TypedTokenStore tokenStore) {
+        return new UnFreezeLogic(tokenStore, accountStore);
+    }
 
     public CreateChecks newCreateChecks() {
         return new CreateChecks(dynamicProperties, validator);

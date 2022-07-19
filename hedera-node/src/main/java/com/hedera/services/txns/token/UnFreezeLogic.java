@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,23 +15,20 @@
  */
 package com.hedera.services.txns.token;
 
-import com.hedera.services.store.AccountStore;
-import com.hedera.services.store.TypedTokenStore;
-import com.hedera.services.store.models.Account;
-import com.hedera.services.store.models.Id;
-import com.hedera.services.store.models.Token;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.TokenUnfreezeAccountTransactionBody;
-import com.hederahashgraph.api.proto.java.TransactionBody;
-
-import javax.inject.Inject;
-import java.util.List;
-
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
-public class UnFreezeLogic implements FreezingLogic{
+import com.hedera.services.store.AccountStore;
+import com.hedera.services.store.TypedTokenStore;
+import com.hedera.services.store.models.Id;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.TokenUnfreezeAccountTransactionBody;
+import com.hederahashgraph.api.proto.java.TransactionBody;
+import java.util.List;
+import javax.inject.Inject;
+
+public class UnFreezeLogic implements FreezingLogic {
     private final TypedTokenStore tokenStore;
     private final AccountStore accountStore;
 
@@ -40,6 +37,7 @@ public class UnFreezeLogic implements FreezingLogic{
         this.tokenStore = tokenStore;
         this.accountStore = accountStore;
     }
+
     @Override
     public void doFreezeUnfreeze(Id targetTokenId, Id targetAccountId) {
         /* --- Load the model objects --- */

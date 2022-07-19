@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,7 +25,7 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 public interface FreezingLogic {
     ResponseCodeEnum validate(TransactionBody txnBody);
 
-     void doFreezeUnfreeze(Id targetTokenId, Id targetAccountId);
+    void doFreezeUnfreeze(Id targetTokenId, Id targetAccountId);
 
     default boolean isFrozen(TypedTokenStore tokenStore, Token token, Account account) {
         return tokenStore.loadTokenRelationship(token, account).isFrozen();
