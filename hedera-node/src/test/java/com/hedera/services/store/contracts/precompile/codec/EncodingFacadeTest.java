@@ -15,18 +15,6 @@
  */
 package com.hedera.services.store.contracts.precompile.codec;
 
-import com.esaulpaugh.headlong.abi.Tuple;
-import com.esaulpaugh.headlong.abi.TupleType;
-import org.apache.tuweni.bytes.Bytes;
-import org.hyperledger.besu.datatypes.Address;
-import org.hyperledger.besu.evm.log.Log;
-import org.hyperledger.besu.evm.log.LogTopic;
-import org.junit.jupiter.api.Test;
-
-import java.math.BigInteger;
-import java.util.ArrayList;
-import java.util.List;
-
 import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.HTS_PRECOMPILED_CONTRACT_ADDRESS;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.recipientAddress;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.senderAddress;
@@ -36,23 +24,34 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TREASURY_MUST_OWN_BURNED_NFT;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import com.esaulpaugh.headlong.abi.Tuple;
+import com.esaulpaugh.headlong.abi.TupleType;
+import java.math.BigInteger;
+import java.util.ArrayList;
+import java.util.List;
+import org.apache.tuweni.bytes.Bytes;
+import org.hyperledger.besu.datatypes.Address;
+import org.hyperledger.besu.evm.log.Log;
+import org.hyperledger.besu.evm.log.LogTopic;
+import org.junit.jupiter.api.Test;
+
 class EncodingFacadeTest {
     private final EncodingFacade subject = new EncodingFacade();
 
     private static final Bytes RETURN_FUNGIBLE_MINT_FOR_10_TOKENS =
             Bytes.fromHexString(
                     "0x0000000000000000000000000000000000000000000000000000000000000016"
-                            + "0000000000000000000000000000000000000000000000000000000000"
-                            + "00000a0000000000000000000000000000000000000000000000000000"
-                            + "0000000000600000000000000000000000000000000000000000000000000000000000000000");
+                        + "0000000000000000000000000000000000000000000000000000000000"
+                        + "00000a0000000000000000000000000000000000000000000000000000"
+                        + "0000000000600000000000000000000000000000000000000000000000000000000000000000");
     private static final Bytes RETURN_NON_FUNGIBLE_MINT_FOR_2_TOKENS =
             Bytes.fromHexString(
                     "0x0000000000000000000000000000000000000000000000000000000000000016"
-                            + "0000000000000000000000000000000000000000000000000000000000"
-                            + "0000020000000000000000000000000000000000000000000000000000"
-                            + "00000000006000000000000000000000000000000000000000000000000"
-                            + "00000000000000002000000000000000000000000000000000000000000"
-                            + "00000000000000000000010000000000000000000000000000000000000000000000000000000000000002");
+                        + "0000000000000000000000000000000000000000000000000000000000"
+                        + "0000020000000000000000000000000000000000000000000000000000"
+                        + "00000000006000000000000000000000000000000000000000000000000"
+                        + "00000000000000002000000000000000000000000000000000000000000"
+                        + "00000000000000000000010000000000000000000000000000000000000000000000000000000000000002");
     private static final Bytes RETURN_BURN_FOR_49_TOKENS =
             Bytes.fromHexString(
                     "0x0000000000000000000000000000000000000000000000000000000000000016"
@@ -60,9 +59,9 @@ class EncodingFacadeTest {
     private static final Bytes MINT_FAILURE_FROM_INVALID_TOKEN_ID =
             Bytes.fromHexString(
                     "0x00000000000000000000000000000000000000000000000000000000000000a7"
-                            + "0000000000000000000000000000000000000000000000000000000000"
-                            + "0000000000000000000000000000000000000000000000000000000000"
-                            + "0000000000600000000000000000000000000000000000000000000000000000000000000000");
+                        + "0000000000000000000000000000000000000000000000000000000000"
+                        + "0000000000000000000000000000000000000000000000000000000000"
+                        + "0000000000600000000000000000000000000000000000000000000000000000000000000000");
     private static final Bytes BURN_FAILURE_FROM_TREASURY_NOT_OWNER =
             Bytes.fromHexString(
                     "0x00000000000000000000000000000000000000000000000000000000000000fc"
@@ -88,22 +87,22 @@ class EncodingFacadeTest {
     private static final Bytes RETURN_TOKEN_URI_FIRST =
             Bytes.fromHexString(
                     "0x000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000"
-                            + "000000000000000000000000054649525354000000000000000000000000000000000000000000000000000000");
+                        + "000000000000000000000000054649525354000000000000000000000000000000000000000000000000000000");
 
     private static final Bytes RETURN_NAME_TOKENA =
             Bytes.fromHexString(
                     "0x000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000"
-                            + "00000000000000000000006546f6b656e410000000000000000000000000000000000000000000000000000");
+                        + "00000000000000000000006546f6b656e410000000000000000000000000000000000000000000000000000");
 
     private static final Bytes RETURN_SYMBOL_F =
             Bytes.fromHexString(
                     "0x0000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000"
-                            + "00000000000000000000000014600000000000000000000000000000000000000000000000000000000000000");
+                        + "00000000000000000000000014600000000000000000000000000000000000000000000000000000000000000");
 
     private static final Bytes RETURN_TRUE =
             Bytes.fromHexString(
                     "0x0000000000000000000000000000000000000000000000000000000000000001");
-    
+
     private static final Bytes RETURN_SUCCESS =
             Bytes.fromHexString(
                     "0x0000000000000000000000000000000000000000000000000000000000000016");

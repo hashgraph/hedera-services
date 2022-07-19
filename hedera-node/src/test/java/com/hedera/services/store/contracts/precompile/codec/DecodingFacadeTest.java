@@ -369,11 +369,12 @@ class DecodingFacadeTest {
 
     @Test
     void decodeApproveForNFTHAPI() {
-        given(ledgers.typeOf(any())).willReturn(TokenType.NON_FUNGIBLE_UNIQUE).willReturn(TokenType.FUNGIBLE_COMMON);
+        given(ledgers.typeOf(any()))
+                .willReturn(TokenType.NON_FUNGIBLE_UNIQUE)
+                .willReturn(TokenType.FUNGIBLE_COMMON);
         UnaryOperator<byte[]> identity = identity();
         final var decodedInput =
-                subject.decodeTokenApprove(
-                        APPROVE_NFT_INPUT_HAPI, null, false, identity, ledgers);
+                subject.decodeTokenApprove(APPROVE_NFT_INPUT_HAPI, null, false, identity, ledgers);
 
         assertEquals(ACCOUNT_NUM_SPENDER_NFT, decodedInput.spender().getAccountNum());
         assertEquals(TOKEN_NUM_HAPI_TOKEN, decodedInput.tokenId().getTokenNum());
@@ -388,12 +389,13 @@ class DecodingFacadeTest {
 
     @Test
     void decodeApproveForTokenAHPI() {
-        given(ledgers.typeOf(any())).willReturn(TokenType.FUNGIBLE_COMMON).willReturn(TokenType.NON_FUNGIBLE_UNIQUE);
+        given(ledgers.typeOf(any()))
+                .willReturn(TokenType.FUNGIBLE_COMMON)
+                .willReturn(TokenType.NON_FUNGIBLE_UNIQUE);
 
         UnaryOperator<byte[]> identity = identity();
         final var decodedInput =
-                subject.decodeTokenApprove(
-                        APPROVE_TOKEN_INPUT_HAPI, null, true, identity, ledgers);
+                subject.decodeTokenApprove(APPROVE_TOKEN_INPUT_HAPI, null, true, identity, ledgers);
 
         assertEquals(ACCOUNT_NUM_SPENDER, decodedInput.spender().getAccountNum());
         assertEquals(TOKEN_NUM_HAPI_TOKEN, decodedInput.tokenId().getTokenNum());
