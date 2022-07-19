@@ -107,7 +107,7 @@ public class TokenInfoHTSSuite extends HapiApiSuite {
     private static final int MINIMUM_TO_COLLECT = 5;
     private static final int MAXIMUM_TO_COLLECT = 400;
     private static final int MAX_SUPPLY = 1000;
-  private static final long MASK_INT_AS_UNSIGNED_LONG = (1L << 32) - 1;
+    private static final long MASK_INT_AS_UNSIGNED_LONG = (1L << 32) - 1;
 
     public static void main(String... args) {
         new TokenInfoHTSSuite().runSuiteSync();
@@ -128,22 +128,20 @@ public class TokenInfoHTSSuite extends HapiApiSuite {
                 getInfoOnDeletedFungibleTokenFails(),
                 getInfoOnInvalidFungibleTokenFails(),
                 getInfoOnDeletedNonFungibleTokenFails(),
-                getInfoOnInvalidNonFungibleTokenFails()
-                );
+                getInfoOnInvalidNonFungibleTokenFails());
     }
 
     List<HapiApiSpec> positiveSpecs() {
         return List.of(
                 happyPathGetTokenInfo(),
                 happyPathGetFungibleTokenInfo(),
-                happyPathGetNonFungibleTokenInfo()
-                );
+                happyPathGetNonFungibleTokenInfo());
     }
 
     private HapiApiSpec happyPathGetTokenInfo() {
         final String memo = "JUMP";
 
-//        final String getInfoTxn = "GetTokenInfo";
+        //        final String getInfoTxn = "GetTokenInfo";
         return defaultHapiSpec("HappyPathGetTokenInfo")
                 .given(
                         cryptoCreate(TOKEN_TREASURY).balance(0L),
@@ -207,7 +205,7 @@ public class TokenInfoHTSSuite extends HapiApiSuite {
                                     final var getTokenInfoQuery = getTokenInfo(PRIMARY_TOKEN_NAME);
                                     allRunFor(spec, getTokenInfoQuery);
                                     final var expirySecond =
-                                        getTokenInfoQuery
+                                            getTokenInfoQuery
                                                     .getResponse()
                                                     .getTokenGetInfo()
                                                     .getTokenInfo()
@@ -234,7 +232,13 @@ public class TokenInfoHTSSuite extends HapiApiSuite {
                                                                                             .withStatus(
                                                                                                     SUCCESS)
                                                                                             .withTokenInfo(
-                                                                                                getTokenInfoStructForFungibleToken(spec, PRIMARY_TOKEN_NAME, SYMBOL, expirySecond, memo, MAX_SUPPLY))))));
+                                                                                                    getTokenInfoStructForFungibleToken(
+                                                                                                            spec,
+                                                                                                            PRIMARY_TOKEN_NAME,
+                                                                                                            SYMBOL,
+                                                                                                            expirySecond,
+                                                                                                            memo,
+                                                                                                            MAX_SUPPLY))))));
                                 }));
     }
 
@@ -285,8 +289,8 @@ public class TokenInfoHTSSuite extends HapiApiSuite {
                                                 OptionalLong.of(MAXIMUM_TO_COLLECT),
                                                 TOKEN_TREASURY))
                                 .via(CREATE_TXN)
-//                    getTokenInfo(tokenName).via(GET_TOKEN_INFO_TXN)
-                )
+                        //                    getTokenInfo(tokenName).via(GET_TOKEN_INFO_TXN)
+                        )
                 .when(
                         withOpContext(
                                 (spec, opLog) ->
@@ -303,41 +307,49 @@ public class TokenInfoHTSSuite extends HapiApiSuite {
                                                                                                         tokenName)))))
                                                         .via(fungibleTokenInfoTxn)
                                                         .gas(1_000_000L))))
-                .then(withOpContext(
-                    (spec, opLog) -> {
-                        final var getTokenInfoQuery = getTokenInfo(tokenName);
-                        allRunFor(spec, getTokenInfoQuery);
-                        final var expirySecond =
-                            getTokenInfoQuery
-                                .getResponse()
-                                .getTokenGetInfo()
-                                .getTokenInfo()
-                                .getExpiry()
-                                .getSeconds();
+                .then(
+                        withOpContext(
+                                (spec, opLog) -> {
+                                    final var getTokenInfoQuery = getTokenInfo(tokenName);
+                                    allRunFor(spec, getTokenInfoQuery);
+                                    final var expirySecond =
+                                            getTokenInfoQuery
+                                                    .getResponse()
+                                                    .getTokenGetInfo()
+                                                    .getTokenInfo()
+                                                    .getExpiry()
+                                                    .getSeconds();
 
-                        allRunFor(
-                            spec,
-                            getTxnRecord(fungibleTokenInfoTxn)
-                                .andAllChildRecords()
-                                .logged(),
-                            childRecordsCheck(
-                                fungibleTokenInfoTxn,
-                                SUCCESS,
-                                recordWith()
-                                    .status(SUCCESS)
-                                    .contractCallResult(
-                                        resultWith()
-                                            .contractCallResult(
-                                                htsPrecompileResult()
-                                                    .forFunction(
-                                                        FunctionType
-                                                            .GET_FUNGIBLE_TOKEN_INFO)
-                                                    .withStatus(
-                                                        SUCCESS)
-                                                    .withDecimals(decimals)
-                                                    .withTokenInfo(
-                                                        getTokenInfoStructForFungibleToken(spec, tokenName, symbol, expirySecond, memo, MAX_SUPPLY))))));
-                        }));
+                                    allRunFor(
+                                            spec,
+                                            getTxnRecord(fungibleTokenInfoTxn)
+                                                    .andAllChildRecords()
+                                                    .logged(),
+                                            childRecordsCheck(
+                                                    fungibleTokenInfoTxn,
+                                                    SUCCESS,
+                                                    recordWith()
+                                                            .status(SUCCESS)
+                                                            .contractCallResult(
+                                                                    resultWith()
+                                                                            .contractCallResult(
+                                                                                    htsPrecompileResult()
+                                                                                            .forFunction(
+                                                                                                    FunctionType
+                                                                                                            .GET_FUNGIBLE_TOKEN_INFO)
+                                                                                            .withStatus(
+                                                                                                    SUCCESS)
+                                                                                            .withDecimals(
+                                                                                                    decimals)
+                                                                                            .withTokenInfo(
+                                                                                                    getTokenInfoStructForFungibleToken(
+                                                                                                            spec,
+                                                                                                            tokenName,
+                                                                                                            symbol,
+                                                                                                            expirySecond,
+                                                                                                            memo,
+                                                                                                            MAX_SUPPLY))))));
+                                }));
     }
 
     private HapiApiSpec happyPathGetNonFungibleTokenInfo() {
@@ -422,56 +434,83 @@ public class TokenInfoHTSSuite extends HapiApiSuite {
                                                                         1L))
                                                         .via(NON_FUNGIBLE_TOKEN_INFO_TXN)
                                                         .gas(1_000_000L))))
-                .then(withOpContext(
-                    (spec, opLog) -> {
-                        final var getTokenInfoQuery = getTokenInfo(NON_FUNGIBLE_TOKEN_NAME);
-                        allRunFor(spec, getTokenInfoQuery);
-                        final var expirySecond =
-                            getTokenInfoQuery
-                                .getResponse()
-                                .getTokenGetInfo()
-                                .getTokenInfo()
-                                .getExpiry()
-                                .getSeconds();
+                .then(
+                        withOpContext(
+                                (spec, opLog) -> {
+                                    final var getTokenInfoQuery =
+                                            getTokenInfo(NON_FUNGIBLE_TOKEN_NAME);
+                                    allRunFor(spec, getTokenInfoQuery);
+                                    final var expirySecond =
+                                            getTokenInfoQuery
+                                                    .getResponse()
+                                                    .getTokenGetInfo()
+                                                    .getTokenInfo()
+                                                    .getExpiry()
+                                                    .getSeconds();
 
-                        final var getNftTokenInfoQuery = getTokenNftInfo(NON_FUNGIBLE_TOKEN_NAME, 1L);
-                        allRunFor(spec, getNftTokenInfoQuery);
-                        final var creationTime =
-                            getNftTokenInfoQuery
-                                .getResponse()
-                                .getTokenGetNftInfo().getNft().getCreationTime();
-                      final var packedCreationTime = packedTime(creationTime.getSeconds(), creationTime.getNanos());
+                                    final var getNftTokenInfoQuery =
+                                            getTokenNftInfo(NON_FUNGIBLE_TOKEN_NAME, 1L);
+                                    allRunFor(spec, getNftTokenInfoQuery);
+                                    final var creationTime =
+                                            getNftTokenInfoQuery
+                                                    .getResponse()
+                                                    .getTokenGetNftInfo()
+                                                    .getNft()
+                                                    .getCreationTime();
+                                    final var packedCreationTime =
+                                            packedTime(
+                                                    creationTime.getSeconds(),
+                                                    creationTime.getNanos());
 
-                        final var ownerBytes = Utils.asAddress(spec.registry().getAccountID(owner));
-                        final var spenderBytes = Utils.asAddress(spec.registry().getAccountID(spender));
+                                    final var ownerBytes =
+                                            Utils.asAddress(spec.registry().getAccountID(owner));
+                                    final var spenderBytes =
+                                            Utils.asAddress(spec.registry().getAccountID(spender));
 
-                        allRunFor(
-                            spec,
-                            getTxnRecord(NON_FUNGIBLE_TOKEN_INFO_TXN)
-                                .andAllChildRecords()
-                                .logged(),
-                            childRecordsCheck(
-                                NON_FUNGIBLE_TOKEN_INFO_TXN,
-                                SUCCESS,
-                                recordWith()
-                                    .status(SUCCESS)
-                                    .contractCallResult(
-                                        resultWith()
-                                            .contractCallResult(
-                                                htsPrecompileResult()
-                                                    .forFunction(
-                                                        FunctionType
-                                                            .GET_NON_FUNGIBLE_TOKEN_INFO)
-                                                    .withStatus(
-                                                        SUCCESS)
-                                                    .withSerialNumber(1L)
-                                                    .withCreationTime(packedCreationTime)
-                                                    .withTokenUri(Bytes.wrap(meta.toByteArray()).toString())
-                                                    .withOwner(ownerBytes)
-                                                    .withSpender(spenderBytes)
-                                                    .withTokenInfo(
-                                                        getTokenInfoStructForNonFungibleToken(spec, NON_FUNGIBLE_TOKEN_NAME, FEE_DENOM, nftSymbol, expirySecond, memo, maxSupply, 1L))))));
-                    }));
+                                    allRunFor(
+                                            spec,
+                                            getTxnRecord(NON_FUNGIBLE_TOKEN_INFO_TXN)
+                                                    .andAllChildRecords()
+                                                    .logged(),
+                                            childRecordsCheck(
+                                                    NON_FUNGIBLE_TOKEN_INFO_TXN,
+                                                    SUCCESS,
+                                                    recordWith()
+                                                            .status(SUCCESS)
+                                                            .contractCallResult(
+                                                                    resultWith()
+                                                                            .contractCallResult(
+                                                                                    htsPrecompileResult()
+                                                                                            .forFunction(
+                                                                                                    FunctionType
+                                                                                                            .GET_NON_FUNGIBLE_TOKEN_INFO)
+                                                                                            .withStatus(
+                                                                                                    SUCCESS)
+                                                                                            .withSerialNumber(
+                                                                                                    1L)
+                                                                                            .withCreationTime(
+                                                                                                    packedCreationTime)
+                                                                                            .withTokenUri(
+                                                                                                    Bytes
+                                                                                                            .wrap(
+                                                                                                                    meta
+                                                                                                                            .toByteArray())
+                                                                                                            .toString())
+                                                                                            .withOwner(
+                                                                                                    ownerBytes)
+                                                                                            .withSpender(
+                                                                                                    spenderBytes)
+                                                                                            .withTokenInfo(
+                                                                                                    getTokenInfoStructForNonFungibleToken(
+                                                                                                            spec,
+                                                                                                            NON_FUNGIBLE_TOKEN_NAME,
+                                                                                                            FEE_DENOM,
+                                                                                                            nftSymbol,
+                                                                                                            expirySecond,
+                                                                                                            memo,
+                                                                                                            maxSupply,
+                                                                                                            1L))))));
+                                }));
     }
 
     private HapiApiSpec getInfoOnDeletedFungibleTokenFails() {
@@ -697,55 +736,60 @@ public class TokenInfoHTSSuite extends HapiApiSuite {
                                 .logged());
     }
 
-    private TokenInfo getTokenInfoStructForFungibleToken(final HapiApiSpec spec, final String tokenName, final String symbol, final long expirySecond, final String memo, final long maxSupply) {
+    private TokenInfo getTokenInfoStructForFungibleToken(
+            final HapiApiSpec spec,
+            final String tokenName,
+            final String symbol,
+            final long expirySecond,
+            final String memo,
+            final long maxSupply) {
         final var autoRenewAccount = spec.registry().getAccountID(AUTO_RENEW_ACCOUNT);
         final var expiry =
-            new Expiry(
-                expirySecond,
-                Address.wrap(Bytes.wrap(Utils.asAddress(autoRenewAccount))),
-                THREE_MONTHS_IN_SECONDS);
+                new Expiry(
+                        expirySecond,
+                        Address.wrap(Bytes.wrap(Utils.asAddress(autoRenewAccount))),
+                        THREE_MONTHS_IN_SECONDS);
         final var treasury = spec.registry().getAccountID(TOKEN_TREASURY);
         final var token =
-            new HederaToken(
-                tokenName,
-                symbol,
-                Address.wrap(Bytes.wrap(Utils.asAddress(treasury))),
-                memo,
-                true,
-                maxSupply,
-                false,
-                getTokenKeys(spec),
-                expiry);
+                new HederaToken(
+                        tokenName,
+                        symbol,
+                        Address.wrap(Bytes.wrap(Utils.asAddress(treasury))),
+                        memo,
+                        true,
+                        maxSupply,
+                        false,
+                        getTokenKeys(spec),
+                        expiry);
 
         final var fixedFees = new ArrayList<FixedFee>();
         final var fixedFeeCollector =
-            Address.wrap(
-                Bytes.wrap(Utils.asAddress(spec.registry().getAccountID(HTS_COLLECTOR))));
+                Address.wrap(
+                        Bytes.wrap(Utils.asAddress(spec.registry().getAccountID(HTS_COLLECTOR))));
         final var fixedFee =
-            new FixedFee(
-                500L,
-                Address.wrap(Bytes.wrap(new byte[20])),
-                true,
-                false,
-                fixedFeeCollector);
+                new FixedFee(
+                        500L,
+                        Address.wrap(Bytes.wrap(new byte[20])),
+                        true,
+                        false,
+                        fixedFeeCollector);
         fixedFees.add(fixedFee);
 
         final var fractionalFees = new ArrayList<FractionalFee>();
         final var fractionalFeeCollector =
-            Address.wrap(
-                Bytes.wrap(Utils.asAddress(spec.registry().getAccountID(TOKEN_TREASURY))));
+                Address.wrap(
+                        Bytes.wrap(Utils.asAddress(spec.registry().getAccountID(TOKEN_TREASURY))));
         final var fractionalFee =
-            new FractionalFee(
-                NUMERATOR,
-                DENOMINATOR,
-                MINIMUM_TO_COLLECT,
-                MAXIMUM_TO_COLLECT,
-                false,
-                fractionalFeeCollector);
+                new FractionalFee(
+                        NUMERATOR,
+                        DENOMINATOR,
+                        MINIMUM_TO_COLLECT,
+                        MAXIMUM_TO_COLLECT,
+                        false,
+                        fractionalFeeCollector);
         fractionalFees.add(fractionalFee);
 
-        return
-            new TokenInfo(
+        return new TokenInfo(
                 token,
                 500L,
                 false,
@@ -757,37 +801,46 @@ public class TokenInfoHTSSuite extends HapiApiSuite {
                 LEDGER_ID);
     }
 
-    private TokenInfo getTokenInfoStructForNonFungibleToken(final HapiApiSpec spec, final String tokenName, final String tokenDenom, final String symbol, final long expirySecond, final String memo, final long maxSupply, final long totalSupply) {
+    private TokenInfo getTokenInfoStructForNonFungibleToken(
+            final HapiApiSpec spec,
+            final String tokenName,
+            final String tokenDenom,
+            final String symbol,
+            final long expirySecond,
+            final String memo,
+            final long maxSupply,
+            final long totalSupply) {
         final var autoRenewAccount = spec.registry().getAccountID(AUTO_RENEW_ACCOUNT);
         final var expiry =
-            new Expiry(
-                expirySecond,
-                Address.wrap(Bytes.wrap(Utils.asAddress(autoRenewAccount))),
-                THREE_MONTHS_IN_SECONDS);
+                new Expiry(
+                        expirySecond,
+                        Address.wrap(Bytes.wrap(Utils.asAddress(autoRenewAccount))),
+                        THREE_MONTHS_IN_SECONDS);
         final var treasury = spec.registry().getAccountID(TOKEN_TREASURY);
         final var token =
-            new HederaToken(
-                tokenName,
-                symbol,
-                Address.wrap(Bytes.wrap(Utils.asAddress(treasury))),
-                memo,
-                true,
-                maxSupply,
-                false,
-                getTokenKeys(spec),
-                expiry);
+                new HederaToken(
+                        tokenName,
+                        symbol,
+                        Address.wrap(Bytes.wrap(Utils.asAddress(treasury))),
+                        memo,
+                        true,
+                        maxSupply,
+                        false,
+                        getTokenKeys(spec),
+                        expiry);
 
         final var royaltyFees = new ArrayList<RoyaltyFee>();
         final var royaltyFeeCollector =
-            Address.wrap(
-                Bytes.wrap(Utils.asAddress(spec.registry().getAccountID(HTS_COLLECTOR))));
-        final var tokenDenomAddress = Address.wrap(
-            Bytes.wrap(Utils.asAddress(spec.registry().getTokenID(tokenDenom))));
-        final var royaltyFee = new RoyaltyFee(NUMERATOR, DENOMINATOR, 100, tokenDenomAddress, false, royaltyFeeCollector);
+                Address.wrap(
+                        Bytes.wrap(Utils.asAddress(spec.registry().getAccountID(HTS_COLLECTOR))));
+        final var tokenDenomAddress =
+                Address.wrap(Bytes.wrap(Utils.asAddress(spec.registry().getTokenID(tokenDenom))));
+        final var royaltyFee =
+                new RoyaltyFee(
+                        NUMERATOR, DENOMINATOR, 100, tokenDenomAddress, false, royaltyFeeCollector);
         royaltyFees.add(royaltyFee);
 
-        return
-            new TokenInfo(
+        return new TokenInfo(
                 token,
                 totalSupply,
                 false,
@@ -813,14 +866,24 @@ public class TokenInfoHTSSuite extends HapiApiSuite {
 
     private TokenKey getTokenKeyFromSpec(final HapiApiSpec spec, final TokenKeyType type) {
         final var key = spec.registry().getKey(type.name());
-        final var keyValue = new KeyValue(false, key.getContractID().getContractNum() > 0 ? Address.wrap(Bytes.wrap(Utils.asAddress(key.getContractID()))) : null, key.getEd25519().toByteArray(), key.getECDSASecp256K1().toByteArray(),
-            key.getDelegatableContractId().getContractNum() > 0 ? Address.wrap(Bytes.wrap(Utils.asAddress(key.getDelegatableContractId()))) : null);
+        final var keyValue =
+                new KeyValue(
+                        false,
+                        key.getContractID().getContractNum() > 0
+                                ? Address.wrap(Bytes.wrap(Utils.asAddress(key.getContractID())))
+                                : null,
+                        key.getEd25519().toByteArray(),
+                        key.getECDSASecp256K1().toByteArray(),
+                        key.getDelegatableContractId().getContractNum() > 0
+                                ? Address.wrap(
+                                        Bytes.wrap(Utils.asAddress(key.getDelegatableContractId())))
+                                : null);
         return new TokenKey(type.value(), keyValue);
     }
 
-  private static long packedTime(long seconds, int nanos) {
-    return seconds << 32 | (nanos & MASK_INT_AS_UNSIGNED_LONG);
-  }
+    private static long packedTime(long seconds, int nanos) {
+        return seconds << 32 | (nanos & MASK_INT_AS_UNSIGNED_LONG);
+    }
 
     @Override
     protected Logger getResultsLogger() {

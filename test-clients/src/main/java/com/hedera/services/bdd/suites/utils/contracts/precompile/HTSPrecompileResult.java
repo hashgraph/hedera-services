@@ -47,30 +47,30 @@ public class HTSPrecompileResult implements ContractCallResult {
 
     private static final String RESPONSE_STATUS_AT_BEGINNING = "(int32,";
     private static final String HEDERA_TOKEN =
-        "("
-            + "string,string,address,string,bool,int64,bool,"
-            + TOKEN_KEY
-            + ARRAY_BRACKETS
-            + ","
-            + EXPIRY
-            + ")";
+            "("
+                    + "string,string,address,string,bool,int64,bool,"
+                    + TOKEN_KEY
+                    + ARRAY_BRACKETS
+                    + ","
+                    + EXPIRY
+                    + ")";
     private static final String TOKEN_INFO =
-        "("
-            + HEDERA_TOKEN
-            + ",int64,bool,bool,bool,"
-            + FIXED_FEE
-            + ARRAY_BRACKETS
-            + ","
-            + FRACTIONAL_FEE
-            + ARRAY_BRACKETS
-            + ","
-            + ROYALTY_FEE
-            + ARRAY_BRACKETS
-            + ",string"
-            + ")";
+            "("
+                    + HEDERA_TOKEN
+                    + ",int64,bool,bool,bool,"
+                    + FIXED_FEE
+                    + ARRAY_BRACKETS
+                    + ","
+                    + FRACTIONAL_FEE
+                    + ARRAY_BRACKETS
+                    + ","
+                    + ROYALTY_FEE
+                    + ARRAY_BRACKETS
+                    + ",string"
+                    + ")";
     private static final String FUNGIBLE_TOKEN_INFO = "(" + TOKEN_INFO + ",int32" + ")";
     private static final String NON_FUNGIBLE_TOKEN_INFO =
-        "(" + TOKEN_INFO + ",int64,address,int64,bytes,address" + ")";
+            "(" + TOKEN_INFO + ",int64,address,int64,bytes,address" + ")";
 
     private static final TupleType mintReturnType = TupleType.parse("(int32,uint64,int64[])");
     private static final TupleType notSpecifiedType = TupleType.parse("(int32)");
@@ -87,12 +87,11 @@ public class HTSPrecompileResult implements ContractCallResult {
     private static final TupleType ercTransferType = TupleType.parse("(bool)");
     private static final TupleType isApprovedForAllType = TupleType.parse("(bool)");
     private static final TupleType getTokenInfoType =
-        TupleType.parse(RESPONSE_STATUS_AT_BEGINNING + TOKEN_INFO + ")");
+            TupleType.parse(RESPONSE_STATUS_AT_BEGINNING + TOKEN_INFO + ")");
     private static final TupleType getFungibleTokenInfoType =
-        TupleType.parse(RESPONSE_STATUS_AT_BEGINNING + FUNGIBLE_TOKEN_INFO + ")");
+            TupleType.parse(RESPONSE_STATUS_AT_BEGINNING + FUNGIBLE_TOKEN_INFO + ")");
     private static final TupleType getNonFungibleTokenInfoType =
-        TupleType.parse(RESPONSE_STATUS_AT_BEGINNING + NON_FUNGIBLE_TOKEN_INFO + ")");
-
+            TupleType.parse(RESPONSE_STATUS_AT_BEGINNING + NON_FUNGIBLE_TOKEN_INFO + ")");
 
     public static HTSPrecompileResult htsPrecompileResult() {
         return new HTSPrecompileResult();
@@ -283,27 +282,27 @@ public class HTSPrecompileResult implements ContractCallResult {
 
     private Tuple getTupleForGetNonFungibleTokenInfo() {
         return Tuple.of(
-            status.getNumber(),
-            Tuple.of(
-                getTupleForTokenInfo(),
-                serialNumber,
-                convertBesuAddressToHeadlongAddress(Address.wrap(Bytes.wrap(owner))),
-                creationTime,
-                metadata.getBytes(),
-                    convertBesuAddressToHeadlongAddress(Address.wrap(Bytes.wrap(spender)))));
+                status.getNumber(),
+                Tuple.of(
+                        getTupleForTokenInfo(),
+                        serialNumber,
+                        convertBesuAddressToHeadlongAddress(Address.wrap(Bytes.wrap(owner))),
+                        creationTime,
+                        metadata.getBytes(),
+                        convertBesuAddressToHeadlongAddress(Address.wrap(Bytes.wrap(spender)))));
     }
 
     private Tuple getTupleForTokenInfo() {
         return Tuple.of(
-            getHederaTokenTuple(),
-            tokenInfo.totalSupply(),
-            tokenInfo.deleted(),
-            tokenInfo.defaultKycStatus(),
-            tokenInfo.pauseStatus(),
-            getFixedFeesTuples(),
-            getFractionalFeesTuples(),
-            getRoyaltyFeesTuples(),
-            tokenInfo.ledgerId());
+                getHederaTokenTuple(),
+                tokenInfo.totalSupply(),
+                tokenInfo.deleted(),
+                tokenInfo.defaultKycStatus(),
+                tokenInfo.pauseStatus(),
+                getFixedFeesTuples(),
+                getFractionalFeesTuples(),
+                getRoyaltyFeesTuples(),
+                tokenInfo.ledgerId());
     }
 
     private Tuple[] getFixedFeesTuples() {
@@ -312,12 +311,16 @@ public class HTSPrecompileResult implements ContractCallResult {
         for (int i = 0; i < fixedFees.size(); i++) {
             final var fixedFee = fixedFees.get(i);
             final var fixedFeeTuple =
-                Tuple.of(
-                    fixedFee.amount(),
-                    fixedFee.tokenId()!=null ? convertBesuAddressToHeadlongAddress(fixedFee.tokenId()) : convertBesuAddressToHeadlongAddress(Address.ZERO),
-                    fixedFee.useHbarsForPayment(),
-                    fixedFee.useCurrentTokenForPayment(),
-                    fixedFee.feeCollector() != null ? convertBesuAddressToHeadlongAddress(fixedFee.feeCollector()) : convertBesuAddressToHeadlongAddress(Address.ZERO));
+                    Tuple.of(
+                            fixedFee.amount(),
+                            fixedFee.tokenId() != null
+                                    ? convertBesuAddressToHeadlongAddress(fixedFee.tokenId())
+                                    : convertBesuAddressToHeadlongAddress(Address.ZERO),
+                            fixedFee.useHbarsForPayment(),
+                            fixedFee.useCurrentTokenForPayment(),
+                            fixedFee.feeCollector() != null
+                                    ? convertBesuAddressToHeadlongAddress(fixedFee.feeCollector())
+                                    : convertBesuAddressToHeadlongAddress(Address.ZERO));
             fixedFeesTuples[i] = fixedFeeTuple;
         }
 
@@ -330,13 +333,16 @@ public class HTSPrecompileResult implements ContractCallResult {
         for (int i = 0; i < fractionalFees.size(); i++) {
             final var fractionalFee = fractionalFees.get(i);
             final var fractionalFeeTuple =
-                Tuple.of(
-                    fractionalFee.numerator(),
-                    fractionalFee.denominator(),
-                    fractionalFee.minimumAmount(),
-                    fractionalFee.maximumAmount(),
-                    fractionalFee.netOfTransfers(),
-                    fractionalFee.feeCollector() != null ? convertBesuAddressToHeadlongAddress(fractionalFee.feeCollector()) : convertBesuAddressToHeadlongAddress(Address.ZERO));
+                    Tuple.of(
+                            fractionalFee.numerator(),
+                            fractionalFee.denominator(),
+                            fractionalFee.minimumAmount(),
+                            fractionalFee.maximumAmount(),
+                            fractionalFee.netOfTransfers(),
+                            fractionalFee.feeCollector() != null
+                                    ? convertBesuAddressToHeadlongAddress(
+                                            fractionalFee.feeCollector())
+                                    : convertBesuAddressToHeadlongAddress(Address.ZERO));
             fractionalFeesTuples[i] = fractionalFeeTuple;
         }
 
@@ -349,13 +355,17 @@ public class HTSPrecompileResult implements ContractCallResult {
         for (int i = 0; i < royaltyFees.size(); i++) {
             final var royaltyFee = royaltyFees.get(i);
             final var royaltyFeeTuple =
-                Tuple.of(
-                    royaltyFee.numerator(),
-                    royaltyFee.denominator(),
-                    royaltyFee.amount(),
-                    royaltyFee.tokenId()!=null ? convertBesuAddressToHeadlongAddress(royaltyFee.tokenId()) : convertBesuAddressToHeadlongAddress(Address.ZERO),
-                    royaltyFee.useHbarsForPayment(),
-                    royaltyFee.feeCollector() != null ? convertBesuAddressToHeadlongAddress(royaltyFee.feeCollector()) : convertBesuAddressToHeadlongAddress(Address.ZERO));
+                    Tuple.of(
+                            royaltyFee.numerator(),
+                            royaltyFee.denominator(),
+                            royaltyFee.amount(),
+                            royaltyFee.tokenId() != null
+                                    ? convertBesuAddressToHeadlongAddress(royaltyFee.tokenId())
+                                    : convertBesuAddressToHeadlongAddress(Address.ZERO),
+                            royaltyFee.useHbarsForPayment(),
+                            royaltyFee.feeCollector() != null
+                                    ? convertBesuAddressToHeadlongAddress(royaltyFee.feeCollector())
+                                    : convertBesuAddressToHeadlongAddress(Address.ZERO));
             royaltyFeesTuples[i] = royaltyFeeTuple;
         }
 
@@ -366,21 +376,21 @@ public class HTSPrecompileResult implements ContractCallResult {
         final var hederaToken = tokenInfo.token();
         final var expiry = hederaToken.expiry();
         final var expiryTuple =
-            Tuple.of(
-                expiry.second(),
-                convertBesuAddressToHeadlongAddress(expiry.autoRenewAccount()),
-                expiry.autoRenewPeriod());
+                Tuple.of(
+                        expiry.second(),
+                        convertBesuAddressToHeadlongAddress(expiry.autoRenewAccount()),
+                        expiry.autoRenewPeriod());
 
         return Tuple.of(
-            hederaToken.name(),
-            hederaToken.symbol(),
-            convertBesuAddressToHeadlongAddress(hederaToken.treasury()),
-            hederaToken.memo(),
-            hederaToken.tokenSupplyType(),
-            hederaToken.maxSupply(),
-            hederaToken.freezeDefault(),
-            getTokenKeysTuples(),
-            expiryTuple);
+                hederaToken.name(),
+                hederaToken.symbol(),
+                convertBesuAddressToHeadlongAddress(hederaToken.treasury()),
+                hederaToken.memo(),
+                hederaToken.tokenSupplyType(),
+                hederaToken.maxSupply(),
+                hederaToken.freezeDefault(),
+                getTokenKeysTuples(),
+                expiryTuple);
     }
 
     private Tuple[] getTokenKeysTuples() {
@@ -391,16 +401,16 @@ public class HTSPrecompileResult implements ContractCallResult {
             final var key = tokenKeys.get(i);
             final var keyValue = key.key();
             Tuple keyValueTuple =
-                Tuple.of(
-                    keyValue.inheritAccountKey(),
-                    keyValue.contractId() != null
-                        ? keyValue.contractId()
-                        : convertBesuAddressToHeadlongAddress(Address.ZERO),
-                    keyValue.ed25519(),
-                    keyValue.ECDSA_secp256k1(),
-                    keyValue.delegatableContractId() != null
-                        ? keyValue.delegatableContractId()
-                        : convertBesuAddressToHeadlongAddress(Address.ZERO));
+                    Tuple.of(
+                            keyValue.inheritAccountKey(),
+                            keyValue.contractId() != null
+                                    ? keyValue.contractId()
+                                    : convertBesuAddressToHeadlongAddress(Address.ZERO),
+                            keyValue.ed25519(),
+                            keyValue.ECDSA_secp256k1(),
+                            keyValue.delegatableContractId() != null
+                                    ? keyValue.delegatableContractId()
+                                    : convertBesuAddressToHeadlongAddress(Address.ZERO));
             tokenKeysTuples[i] = (Tuple.of(BigInteger.valueOf(key.keyType()), keyValueTuple));
         }
 
@@ -408,10 +418,10 @@ public class HTSPrecompileResult implements ContractCallResult {
     }
 
     static com.esaulpaugh.headlong.abi.Address convertBesuAddressToHeadlongAddress(
-        final Address address) {
+            final Address address) {
         return com.esaulpaugh.headlong.abi.Address.wrap(
-            com.esaulpaugh.headlong.abi.Address.toChecksumAddress(
-                address.toUnsignedBigInteger()));
+                com.esaulpaugh.headlong.abi.Address.toChecksumAddress(
+                        address.toUnsignedBigInteger()));
     }
 
     public static byte[] expandByteArrayTo32Length(final byte[] bytesToExpand) {
