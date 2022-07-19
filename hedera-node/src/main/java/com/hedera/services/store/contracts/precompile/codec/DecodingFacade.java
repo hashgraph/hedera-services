@@ -176,21 +176,21 @@ public class DecodingFacade {
     private static final Bytes IS_FROZEN_TOKEN_FUNCTION_SELECTOR =
             Bytes.wrap(IS_FROZEN_TOKEN_FUNCTION.selector());
     private static final ABIType<Tuple> IS_FROZEN_TOKEN_DECODER =
-            TypeFactory.create("(bytes32,bytes32)");
+            TypeFactory.create(ADDRESS_PAIR_RAW_TYPE);
 
     private static final Function FREEZE_TOKEN_FUNCTION =
             new Function("freezeToken(address,address)", INT_OUTPUT);
     private static final Bytes FREEZE_TOKEN_FUNCTION_SELECTOR =
             Bytes.wrap(FREEZE_TOKEN_FUNCTION.selector());
     private static final ABIType<Tuple> FREEZE_TOKEN_ACCOUNT_DECODER =
-            TypeFactory.create("(bytes32,bytes32)");
+            TypeFactory.create(ADDRESS_PAIR_RAW_TYPE);
 
     private static final Function UNFREEZE_TOKEN_FUNCTION =
             new Function("unfreezeToken(address,address)", INT_OUTPUT);
     private static final Bytes UNFREEZE_TOKEN_FUNCTION_SELECTOR =
             Bytes.wrap(UNFREEZE_TOKEN_FUNCTION.selector());
     private static final ABIType<Tuple> UNFREEZE_TOKEN_ACCOUNT_DECODER =
-            TypeFactory.create("(bytes32,bytes32)");
+            TypeFactory.create(ADDRESS_PAIR_RAW_TYPE);
 
     /* --- Token Create Structs --- */
     private static final String KEY_VALUE = "(bool,address,bytes,bytes,address)";

@@ -92,6 +92,7 @@ public class MerkleToken extends AbstractMerkleLeaf implements Keyed<EntityNum> 
 	private boolean accountsFrozenByDefault;
 	private boolean accountsKycGrantedByDefault;
 	private boolean paused;
+	private boolean isFrozen;
 	private EntityId treasury;
 	private EntityId autoRenewAccount = null;
 	private List<FcCustomFee> feeSchedule = Collections.emptyList();
@@ -491,6 +492,15 @@ public class MerkleToken extends AbstractMerkleLeaf implements Keyed<EntityNum> 
 	public void setPaused(boolean paused) {
 		throwIfImmutable("Cannot change this token's freeze key if it's immutable.");
 		this.paused = paused;
+	}
+
+	public boolean isFrozen() {
+		return isFrozen;
+	}
+
+	public void setFrozen(boolean isFrozen) {
+		throwIfImmutable("Cannot change this token's freeze status if it's immutable.");
+		this.isFrozen = isFrozen;
 	}
 
 	public String symbol() {

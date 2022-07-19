@@ -142,6 +142,17 @@ public enum TokenProperty implements BeanProperty<MerkleToken> {
 			return MerkleToken::isPaused;
 		}
 	},
+	IS_FROZEN {
+		@Override
+		public BiConsumer<MerkleToken, Object> setter() {
+			return (a, f) -> a.setFrozen((boolean) f);
+		}
+
+		@Override
+		public Function<MerkleToken, Object> getter() {
+			return MerkleToken::isPaused;
+		}
+	},
 	SYMBOL {
 		@Override
 		public BiConsumer<MerkleToken, Object> setter() {

@@ -54,10 +54,6 @@ public class FreezeLogic implements FreezingLogic {
         tokenStore.commitTokenRelationships(List.of(tokenRelationship));
     }
 
-    public boolean isFrozen(Token token, Account account) {
-        return tokenStore.loadTokenRelationship(token, account).isFrozen();
-    }
-
     public ResponseCodeEnum validate(TransactionBody txnBody) {
         TokenFreezeAccountTransactionBody op = txnBody.getTokenFreeze();
 

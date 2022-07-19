@@ -54,6 +54,7 @@ public class EncodingFacade {
     private static final TupleType tokenUriType = TupleType.parse(STRING_RETURN_TYPE);
     private static final TupleType ercTransferType = TupleType.parse(BOOL_RETURN_TYPE);
     private static final TupleType isApprovedForAllType = TupleType.parse(BOOL_RETURN_TYPE);
+    private static final TupleType isTokenFrozenType = TupleType.parse(BOOL_RETURN_TYPE);
 
     @Inject
     public EncodingFacade() {
@@ -94,6 +95,13 @@ public class EncodingFacade {
         return functionResultBuilder()
                 .forFunction(FunctionType.BALANCE)
                 .withBalance(balance)
+                .build();
+    }
+
+    public Bytes encodeIsFrozen(final boolean isFrozen) {
+        return functionResultBuilder()
+                .forFunction(FunctionType.IS_FROZEN)
+                .withIsFrozen(isFrozen)
                 .build();
     }
 
@@ -204,7 +212,8 @@ public class EncodingFacade {
         ALLOWANCE,
         APPROVE,
         GET_APPROVED,
-        IS_APPROVED_FOR_ALL
+        IS_APPROVED_FOR_ALL,
+        IS_FROZEN
     }
 
     private FunctionResultBuilder functionResultBuilder() {
@@ -229,6 +238,7 @@ public class EncodingFacade {
         private String name;
         private String symbol;
         private String metadata;
+        private boolean isFrozen;
 
         private FunctionResultBuilder forFunction(final FunctionType functionType) {
             this.tupleType =
@@ -248,6 +258,7 @@ public class EncodingFacade {
                         case APPROVE -> approveOfType;
                         case GET_APPROVED -> getApprovedType;
                         case IS_APPROVED_FOR_ALL -> isApprovedForAllType;
+                        case IS_FROZEN -> isTokenFrozenType;
                     };
 
             this.functionType = functionType;
@@ -281,6 +292,11 @@ public class EncodingFacade {
 
         private FunctionResultBuilder withBalance(final long balance) {
             this.balance = balance;
+            return this;
+        }
+
+        private FunctionResultBuilder withIsFrozen(final boolean isFrozen) {
+            this.isFrozen = isFrozen;
             return this;
         }
 
@@ -352,6 +368,7 @@ public class EncodingFacade {
                         case GET_APPROVED -> Tuple.of(
                                 convertBesuAddressToHeadlongAddress(approved));
                         case IS_APPROVED_FOR_ALL -> Tuple.of(isApprovedForAllStatus);
+                        case IS_FROZEN -> Tuple.of(isFrozen);
                     };
 
             return Bytes.wrap(tupleType.encode(result).array());

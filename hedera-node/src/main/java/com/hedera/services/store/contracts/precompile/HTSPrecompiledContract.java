@@ -75,6 +75,7 @@ import com.hedera.services.store.contracts.precompile.impl.DecimalsPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.DissociatePrecompile;
 import com.hedera.services.store.contracts.precompile.impl.ERCTransferPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.FreezeTokenPrecompile;
+import com.hedera.services.store.contracts.precompile.impl.IsFrozenPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.GetApprovedPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.IsApprovedForAllPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.MintPrecompile;
@@ -337,6 +338,13 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
                             precompilePricingUtils,
                             feeCalculator,
                             currentView);
+                    case AbiConstants.ABI_IS_TOKEN_FROZEN -> new IsFrozenPrecompile(
+                            null,
+                            syntheticTxnFactory,
+                            ledgers,
+                            encoder,
+                            decoder,
+                            precompilePricingUtils);
                     case AbiConstants.ABI_FREEZE_TOKEN -> new FreezeTokenPrecompile(
                             ledgers,
                             decoder,
