@@ -196,50 +196,50 @@ public class ContractCallSuite extends HapiApiSuite {
     @Override
     public List<HapiApiSpec> getSpecsInSuite() {
         return List.of(
-//                resultSizeAffectsFees(),
-//                payableSuccess(),
-//                depositSuccess(),
-//                depositDeleteSuccess(),
-//                multipleDepositSuccess(),
-//                payTestSelfDestructCall(),
-//                multipleSelfDestructsAreSafe(),
-//                smartContractInlineAssemblyCheck(),
-//                ocToken(),
-//                contractTransferToSigReqAccountWithKeySucceeds(),
-//                maxRefundIsMaxGasRefundConfiguredWhenTXGasPriceIsSmaller(),
-//                minChargeIsTXGasUsedByContractCall(),
-//                hscsEvm005TransferOfHBarsWorksBetweenContracts(),
-//                hscsEvm006ContractHBarTransferToAccount(),
-//                hscsEvm005TransfersWithSubLevelCallsBetweenContracts(),
-//                hscsEvm010MultiSignatureAccounts(),
-//                hscsEvm010ReceiverMustSignContractTx(),
-//                insufficientGas(),
-//                insufficientFee(),
-//                nonPayable(),
-//                invalidContract(),
-//                smartContractFailFirst(),
-//                contractTransferToSigReqAccountWithoutKeyFails(),
-//                callingDestructedContractReturnsStatusDeleted(),
-//                gasLimitOverMaxGasLimitFailsPrecheck(),
-//                imapUserExercise(),
-//                deletedContractsCannotBeUpdated(),
-//                sendHbarsToAddressesMultipleTimes(),
-//                sendHbarsToDifferentAddresses(),
-//                sendHbarsFromDifferentAddressessToAddress(),
-//                sendHbarsFromAndToDifferentAddressess(),
-//                transferNegativeAmountOfHbars(),
-//                transferToCaller(),
-//                transferZeroHbarsToCaller(),
-//                transferZeroHbars(),
-//                sendHbarsToOuterContractFromDifferentAddresses(),
-//                sendHbarsToCallerFromDifferentAddresses(),
-//                bitcarbonTestStillPasses(),
-//                contractCreationStoragePriceMatchesFinalExpiry(),
-//                whitelistingAliasedContract(),
-//                cannotUseMirrorAddressOfAliasedContractInPrecompileMethod(),
-//                exchangeRatePrecompileWorks(),
-//                canMintAndTransferInSameContractOperation(),
-//                workingHoursDemo(),
+                resultSizeAffectsFees(),
+                payableSuccess(),
+                depositSuccess(),
+                depositDeleteSuccess(),
+                multipleDepositSuccess(),
+                payTestSelfDestructCall(),
+                multipleSelfDestructsAreSafe(),
+                smartContractInlineAssemblyCheck(),
+                ocToken(),
+                contractTransferToSigReqAccountWithKeySucceeds(),
+                maxRefundIsMaxGasRefundConfiguredWhenTXGasPriceIsSmaller(),
+                minChargeIsTXGasUsedByContractCall(),
+                hscsEvm005TransferOfHBarsWorksBetweenContracts(),
+                hscsEvm006ContractHBarTransferToAccount(),
+                hscsEvm005TransfersWithSubLevelCallsBetweenContracts(),
+                hscsEvm010MultiSignatureAccounts(),
+                hscsEvm010ReceiverMustSignContractTx(),
+                insufficientGas(),
+                insufficientFee(),
+                nonPayable(),
+                invalidContract(),
+                smartContractFailFirst(),
+                contractTransferToSigReqAccountWithoutKeyFails(),
+                callingDestructedContractReturnsStatusDeleted(),
+                gasLimitOverMaxGasLimitFailsPrecheck(),
+                imapUserExercise(),
+                deletedContractsCannotBeUpdated(),
+                sendHbarsToAddressesMultipleTimes(),
+                sendHbarsToDifferentAddresses(),
+                sendHbarsFromDifferentAddressessToAddress(),
+                sendHbarsFromAndToDifferentAddressess(),
+                transferNegativeAmountOfHbars(),
+                transferToCaller(),
+                transferZeroHbarsToCaller(),
+                transferZeroHbars(),
+                sendHbarsToOuterContractFromDifferentAddresses(),
+                sendHbarsToCallerFromDifferentAddresses(),
+                bitcarbonTestStillPasses(),
+                contractCreationStoragePriceMatchesFinalExpiry(),
+                whitelistingAliasedContract(),
+                cannotUseMirrorAddressOfAliasedContractInPrecompileMethod(),
+                exchangeRatePrecompileWorks(),
+                canMintAndTransferInSameContractOperation(),
+                workingHoursDemo(),
                 prngPrecompileWorks());
     }
 
@@ -250,31 +250,29 @@ public class ContractCallSuite extends HapiApiSuite {
                 .given(cryptoCreate("bob"), uploadInitCode(prng), contractCreate(prng))
                 .when(
                         sourcing(
-                                        () ->
-                                                contractCall(prng, "getPseudorandomSeed")
-                                                        .gas(gasToOffer)
-                                                        .payingWith("bob")
-                                                        .via("randomBits")
-                                                        .logged()))
-                                .then(
-                                        getTxnRecord("randomBits")
-                                                .andAllChildRecords()
-                                                .hasChildRecordCount(1)
-                                                .hasChildRecords(
-                                                        recordWith()
-                                                                .pseudoRandomBytes()
-                                                                .contractCallResult(
-                                                                        resultWith()
-                                                                                .resultViaFunctionName(
-                                                                                        "getPseudorandomSeed",
-                                                                                        prng,
-                                                                                        isRandomResult(
-                                                                                                new Object
-                                                                                                        [] {
-                                                                                                    new byte
-                                                                                                            [32]
-                                                                                                }))))
-                                                .logged());
+                                () ->
+                                        contractCall(prng, "getPseudorandomSeed")
+                                                .gas(gasToOffer)
+                                                .payingWith("bob")
+                                                .via("randomBits")
+                                                .logged()))
+                .then(
+                        getTxnRecord("randomBits")
+                                .andAllChildRecords()
+                                .hasChildRecordCount(1)
+                                .hasChildRecords(
+                                        recordWith()
+                                                .pseudoRandomBytes()
+                                                .contractCallResult(
+                                                        resultWith()
+                                                                .resultViaFunctionName(
+                                                                        "getPseudorandomSeed",
+                                                                        prng,
+                                                                        isRandomResult(
+                                                                                new Object[] {
+                                                                                    new byte[32]
+                                                                                }))))
+                                .logged());
     }
 
     private HapiApiSpec whitelistingAliasedContract() {
