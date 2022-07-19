@@ -1577,7 +1577,6 @@ jobs:
             
             # Build JRS
             cd /swirlds-platform/regression
-            git checkout 02648-Hedera-Paths-Gradle
             ./gradlew assemble --scan --parallel
 
       - run:
