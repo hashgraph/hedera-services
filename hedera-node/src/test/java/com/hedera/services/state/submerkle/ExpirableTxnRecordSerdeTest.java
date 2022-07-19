@@ -20,13 +20,13 @@ package com.hedera.services.state.submerkle;
  * ‍
  */
 
-import com.hedera.test.serde.SelfSerializableDataTest;
-import com.hedera.test.serde.SerializedForms;
-import com.hedera.test.utils.SeededPropertySource;
-
 import static com.hedera.services.state.submerkle.ExpirableTxnRecord.RELEASE_0260_VERSION;
 import static com.hedera.services.state.submerkle.ExpirableTxnRecord.RELEASE_0270_VERSION;
 import static com.hedera.services.state.submerkle.ExpirableTxnRecord.RELEASE_0280_VERSION;
+
+import com.hedera.test.serde.SelfSerializableDataTest;
+import com.hedera.test.serde.SerializedForms;
+import com.hedera.test.utils.SeededPropertySource;
 
 public class ExpirableTxnRecordSerdeTest extends SelfSerializableDataTest<ExpirableTxnRecord> {
 	public static final int NUM_TEST_CASES = 4 * MIN_TEST_CASES_PER_VERSION;
@@ -65,9 +65,6 @@ public class ExpirableTxnRecordSerdeTest extends SelfSerializableDataTest<Expira
 		}
 		if (version < RELEASE_0280_VERSION) {
 			seeded.clearPrngData();
-		}
-		if (version >= RELEASE_0280_VERSION) {
-			seeded.clearStateChanges();
 		}
 		return seeded;
 	}

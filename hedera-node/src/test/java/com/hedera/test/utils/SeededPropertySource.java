@@ -20,6 +20,11 @@ package com.hedera.test.utils;
  * ‍
  */
 
+import static com.hedera.services.state.merkle.internals.BitPackUtils.numFromCode;
+import static com.hedera.services.state.merkle.internals.BitPackUtils.packedTime;
+import static com.hedera.services.state.submerkle.TxnId.USER_TRANSACTION_NONCE;
+import static com.hedera.services.state.virtual.KeyPackingUtils.computeNonZeroBytes;
+
 import com.google.common.primitives.Longs;
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.properties.EntityType;
@@ -45,8 +50,8 @@ import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.merkle.internals.BitPackUtils;
-import com.hedera.services.state.merkle.internals.CopyOnWriteIds;
 import com.hedera.services.state.merkle.internals.BytesElement;
+import com.hedera.services.state.merkle.internals.CopyOnWriteIds;
 import com.hedera.services.state.submerkle.CurrencyAdjustments;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.EvmFnResult;
@@ -83,11 +88,6 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.RunningHash;
 import com.swirlds.common.utility.CommonUtils;
-import org.apache.commons.lang3.tuple.Pair;
-import org.apache.tuweni.bytes.Bytes;
-import org.apache.tuweni.bytes.Bytes32;
-import org.hyperledger.besu.datatypes.Address;
-
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -97,11 +97,10 @@ import java.util.SplittableRandom;
 import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.stream.IntStream;
-
-import static com.hedera.services.state.merkle.internals.BitPackUtils.numFromCode;
-import static com.hedera.services.state.merkle.internals.BitPackUtils.packedTime;
-import static com.hedera.services.state.submerkle.TxnId.USER_TRANSACTION_NONCE;
-import static com.hedera.services.state.virtual.KeyPackingUtils.computeNonZeroBytes;
+import org.apache.commons.lang3.tuple.Pair;
+import org.apache.tuweni.bytes.Bytes;
+import org.apache.tuweni.bytes.Bytes32;
+import org.hyperledger.besu.datatypes.Address;
 
 public class SeededPropertySource {
 	private static final long BASE_SEED = 4_242_424L;
@@ -117,16 +116,26 @@ public class SeededPropertySource {
 	}
 
 	public EvmFnResult nextEvmResult() {
+		final var contractId = nextEntityId();
+		final var result = nextBytes(32);
+		final var error = nextString(64);
+		final var bloom = nextBytes(256);
+		final var gasUsed = nextUnsignedLong();
+		final var logs = nextEvmLogs(3);
+		final var createdContractIds = nextEntityIds(2);
+		final var evmAddress = nextBytes(20);
+		// call nextStateChanges(), even though state changes are not part of EvmFnResult anymore,
+		// in order to advance SEEDED_RANDOM and get correct values for subsequent fields
+		nextStateChanges(2, 5);
 		return new EvmFnResult(
-				nextEntityId(),
-				nextBytes(32),
-				nextString(64),
-				nextBytes(256),
-				nextUnsignedLong(),
-				nextEvmLogs(3),
-				nextEntityIds(2),
-				nextBytes(20),
-				nextStateChanges(2, 5),
+				contractId,
+				result,
+				error,
+				bloom,
+				gasUsed,
+				logs,
+				createdContractIds,
+				evmAddress,
 				nextUnsignedLong(),
 				nextUnsignedLong(),
 				nextBytes(128),
@@ -677,16 +686,24 @@ public class SeededPropertySource {
 	}
 
 	public EvmFnResult nextEvmFnResult() {
+		final var contractId = nextEntityId();
+		final var result = nextBytes(128);
+		final var error = nextString(32);
+		final var bloom = nextBytes(32);
+		final var gasUsed = nextUnsignedLong();
+		final var evmAddress = nextBytes(20);
+		// call nextStateChanges(), even though state changes are not part of EvmFnResult anymore,
+		// in order to advance SEEDED_RANDOM and get correct values for subsequent fields
+		nextStateChanges(5, 10);
 		return new EvmFnResult(
-				nextEntityId(),
-				nextBytes(128),
-				nextString(32),
-				nextBytes(32),
-				nextUnsignedLong(),
+				contractId,
+				result,
+				error,
+				bloom,
+				gasUsed,
 				List.of(),
 				List.of(),
-				nextBytes(20),
-				nextStateChanges(5, 10),
+				evmAddress,
 				nextUnsignedLong(),
 				nextUnsignedLong(),
 				nextBytes(64),

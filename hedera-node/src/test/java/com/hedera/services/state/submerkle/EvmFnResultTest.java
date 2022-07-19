@@ -20,16 +20,30 @@ package com.hedera.services.state.submerkle;
  * ‍
  */
 
+import static java.util.stream.Collectors.toList;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.mock;
+
 import com.google.protobuf.ByteString;
 import com.google.protobuf.BytesValue;
 import com.hedera.services.contracts.execution.HederaMessageCallProcessor;
 import com.hedera.services.contracts.execution.TransactionProcessingResult;
 import com.hedera.services.ethereum.EthTxData;
-import com.hedera.services.stream.proto.StorageChange;
 import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.swirlds.common.utility.CommonUtils;
+import java.math.BigInteger;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.TreeMap;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
@@ -38,22 +52,6 @@ import org.hyperledger.besu.evm.log.LogTopic;
 import org.hyperledger.besu.evm.log.LogsBloomFilter;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import java.math.BigInteger;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.TreeMap;
-
-import static java.util.stream.Collectors.toList;
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.BDDMockito.mock;
 
 class EvmFnResultTest {
 	private static final long gasUsed = 1_234;
@@ -93,7 +91,6 @@ class EvmFnResultTest {
 				logs,
 				createdContractIds,
 				evmAddress,
-				stateChanges,
 				gas,
 				amount,
 				functionParameters,
@@ -110,9 +107,8 @@ class EvmFnResultTest {
 		assertEquals(gasUsed, subject.getGasUsed());
 		assertEquals(logs, subject.getLogs());
 		assertEquals(createdContractIds, subject.getCreatedContractIds());
-		assertEquals(stateChanges, subject.getStateChanges());
 		assertEquals(0x2055c5c03ff84eb4L, subject.getClassId());
-		assertEquals(EvmFnResult.RELEASE_0280_VERSION, subject.getVersion());
+		assertEquals(EvmFnResult.RELEASE_0290_VERSION, subject.getVersion());
 		assertEquals(gas, subject.getGas());
 		assertEquals(amount, subject.getAmount());
 		assertEquals(functionParameters, subject.getFunctionParameters());
@@ -225,7 +221,6 @@ class EvmFnResultTest {
 				logs,
 				createdContractIds,
 				evmAddress,
-				stateChanges,
 				gas,
 				amount,
 				functionParameters,
@@ -239,7 +234,6 @@ class EvmFnResultTest {
 				logs,
 				createdContractIds,
 				evmAddress,
-				stateChanges,
 				gas,
 				amount,
 				functionParameters, 
@@ -253,7 +247,6 @@ class EvmFnResultTest {
 				logs,
 				createdContractIds,
 				Address.ZERO.toArray(),
-				stateChanges,
 				gas,
 				amount,
 				functionParameters, 
@@ -267,7 +260,6 @@ class EvmFnResultTest {
 				logs,
 				createdContractIds,
 				evmAddress,
-				stateChanges,
 				gas,
 				amount,
 				functionParameters,
@@ -281,7 +273,6 @@ class EvmFnResultTest {
 				List.of(logFrom(1)),
 				createdContractIds,
 				evmAddress,
-				stateChanges,
 				gas,
 				amount,
 				functionParameters,
@@ -295,21 +286,6 @@ class EvmFnResultTest {
 				logs,
 				List.of(new EntityId(1L, 1L, 42L)),
 				evmAddress,
-				stateChanges,
-				gas,
-				amount,
-				functionParameters,
-				senderId);
-		final var eight = new EvmFnResult(
-				contractId,
-				result,
-				error,
-				bloom,
-				gasUsed,
-				logs,
-				createdContractIds,
-				evmAddress,
-				Collections.emptyMap(),
 				gas,
 				amount,
 				functionParameters,
@@ -323,7 +299,6 @@ class EvmFnResultTest {
 				logs,
 				createdContractIds,
 				evmAddress,
-				stateChanges,
 				gas,
 				amount,
 				"randomParameters".getBytes(),
@@ -337,7 +312,6 @@ class EvmFnResultTest {
 				logs,
 				createdContractIds,
 				evmAddress,
-				stateChanges,
 				gas,
 				amount,
 				"randomParameters".getBytes(),
@@ -350,7 +324,6 @@ class EvmFnResultTest {
 		assertNotEquals(one, five);
 		assertNotEquals(one, six);
 		assertNotEquals(one, seven);
-		assertNotEquals(one, eight);
 		assertNotEquals(one, nine);
 		assertNotEquals(one, ten);
 		assertEquals(one, three);
@@ -371,7 +344,6 @@ class EvmFnResultTest {
 						subject.getLogs(),
 						subject.getCreatedContractIds(),
 						subject.getEvmAddress(),
-						subject.getStateChanges(),
 						subject.getGas(),
 						subject.getAmount(),
 						subject.getFunctionParameters(),
@@ -391,8 +363,6 @@ class EvmFnResultTest {
 						"contractId=" + contractId + ", " +
 						"createdContractIds=" + createdContractIds + ", " +
 						"logs=" + logs +
-						", stateChanges={0x0000000000000000000000000000000000000006={0x07=(0x08,null)}, " +
-						"0x0000000000000000000000000000000000000009={0x0a=(0x0b,0x0c)}}" +
 						", evmAddress=0000000000000000000000000000000000000009, " +
 						"gas=" + gas + ", " +
 						"amount=" + amount + ", " +
@@ -493,7 +463,7 @@ class EvmFnResultTest {
 
 	@Test
 	void serializableDetWorks() {
-		assertEquals(EvmFnResult.RELEASE_0280_VERSION, subject.getVersion());
+		assertEquals(EvmFnResult.RELEASE_0290_VERSION, subject.getVersion());
 		assertEquals(EvmFnResult.RUNTIME_CONSTRUCTABLE_ID, subject.getClassId());
 	}
 	

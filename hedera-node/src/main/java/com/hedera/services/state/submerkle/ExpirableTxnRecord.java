@@ -20,6 +20,18 @@ package com.hedera.services.state.submerkle;
  * ‍
  */
 
+import static com.hedera.services.context.SideEffectsTracker.MAX_PSEUDORANDOM_BYTES_LENGTH;
+import static com.hedera.services.context.SideEffectsTracker.MISSING_NUMBER;
+import static com.hedera.services.legacy.proto.utils.ByteStringUtils.wrapUnsafely;
+import static com.hedera.services.state.merkle.internals.BitPackUtils.packedTime;
+import static com.hedera.services.state.serdes.IoUtils.readNullable;
+import static com.hedera.services.state.serdes.IoUtils.readNullableSerializable;
+import static com.hedera.services.state.serdes.IoUtils.writeNullable;
+import static com.hedera.services.state.serdes.IoUtils.writeNullableSerializable;
+import static com.hedera.services.state.serdes.IoUtils.writeNullableString;
+import static com.hedera.services.utils.MiscUtils.asTimestamp;
+import static java.util.stream.Collectors.joining;
+
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.MoreObjects;
 import com.google.protobuf.ByteString;
@@ -34,7 +46,6 @@ import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.fcqueue.FCQueueElement;
-
 import java.io.IOException;
 import java.time.Instant;
 import java.util.Arrays;
@@ -42,18 +53,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.IntStream;
-
-import static com.hedera.services.context.SideEffectsTracker.MAX_PSEUDORANDOM_BYTES_LENGTH;
-import static com.hedera.services.context.SideEffectsTracker.MISSING_NUMBER;
-import static com.hedera.services.legacy.proto.utils.ByteStringUtils.wrapUnsafely;
-import static com.hedera.services.state.merkle.internals.BitPackUtils.packedTime;
-import static com.hedera.services.state.serdes.IoUtils.readNullable;
-import static com.hedera.services.state.serdes.IoUtils.readNullableSerializable;
-import static com.hedera.services.state.serdes.IoUtils.writeNullable;
-import static com.hedera.services.state.serdes.IoUtils.writeNullableSerializable;
-import static com.hedera.services.state.serdes.IoUtils.writeNullableString;
-import static com.hedera.services.utils.MiscUtils.asTimestamp;
-import static java.util.stream.Collectors.joining;
 
 public class ExpirableTxnRecord implements FCQueueElement {
 	public static final long UNKNOWN_SUBMITTING_MEMBER = -1;
@@ -984,14 +983,5 @@ public class ExpirableTxnRecord implements FCQueueElement {
 	public void clearPrngData() {
 		pseudoRandomBytes = MISSING_PSEUDORANDOM_BYTES;
 		pseudoRandomNumber = MISSING_NUMBER;
-	}
-
-	@VisibleForTesting
-	void clearStateChanges() {
-		if (this.contractCreateResult != null) {
-			this.contractCreateResult.setStateChanges(Collections.emptyMap());
-		} else if (this.contractCallResult != null) {
-			this.contractCallResult.setStateChanges(Collections.emptyMap());
-		}
 	}
 }

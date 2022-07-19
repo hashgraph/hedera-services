@@ -51,9 +51,6 @@ public class EvmFnResultSerdeTest extends SelfSerializableDataTest<EvmFnResult> 
 			// Always empty before 0.26
 			seeded.setSenderId(null);
 		}
-		if (version >= EvmFnResult.RELEASE_0280_VERSION) {
-			seeded.setStateChanges(Collections.emptyMap());
-		}
 		return seeded;
 	}
 

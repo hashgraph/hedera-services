@@ -20,6 +20,13 @@ package com.hedera.services.state.submerkle;
  * ‍
  */
 
+import static com.hedera.services.state.serdes.IoUtils.readNullableSerializable;
+import static com.hedera.services.state.serdes.IoUtils.readNullableString;
+import static com.hedera.services.state.serdes.IoUtils.writeNullableSerializable;
+import static com.hedera.services.state.serdes.IoUtils.writeNullableString;
+import static com.swirlds.common.utility.CommonUtils.hex;
+import static org.apache.commons.collections4.CollectionUtils.isNotEmpty;
+
 import com.google.common.base.MoreObjects;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.BytesValue;
@@ -30,27 +37,16 @@ import com.hederahashgraph.api.proto.java.ContractID;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
-import org.apache.commons.lang3.tuple.Pair;
-import org.apache.tuweni.bytes.Bytes;
-import org.hyperledger.besu.datatypes.Address;
-import org.hyperledger.besu.evm.log.Log;
-import org.hyperledger.besu.evm.log.LogsBloomFilter;
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
-import java.util.TreeMap;
-
-import static com.hedera.services.state.serdes.IoUtils.readNullableSerializable;
-import static com.hedera.services.state.serdes.IoUtils.readNullableString;
-import static com.hedera.services.state.serdes.IoUtils.writeNullableSerializable;
-import static com.hedera.services.state.serdes.IoUtils.writeNullableString;
-import static com.swirlds.common.utility.CommonUtils.hex;
-import static org.apache.commons.collections4.CollectionUtils.isNotEmpty;
+import org.apache.tuweni.bytes.Bytes;
+import org.hyperledger.besu.datatypes.Address;
+import org.hyperledger.besu.evm.log.Log;
+import org.hyperledger.besu.evm.log.LogsBloomFilter;
 
 public class EvmFnResult implements SelfSerializable {
 	public static final byte[] EMPTY = new byte[0];
@@ -58,8 +54,8 @@ public class EvmFnResult implements SelfSerializable {
 	static final int RELEASE_0240_VERSION = 3;
 	static final int RELEASE_0250_VERSION = 4;
 	static final int RELEASE_0260_VERSION = 5;
-	static final int RELEASE_0280_VERSION = 6;
-	static final int CURRENT_VERSION = RELEASE_0280_VERSION;
+	static final int RELEASE_0290_VERSION = 6;
+	static final int CURRENT_VERSION = RELEASE_0290_VERSION;
 
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0x2055c5c03ff84eb4L;
 
@@ -78,8 +74,6 @@ public class EvmFnResult implements SelfSerializable {
 	private EntityId contractId;
 	private List<EntityId> createdContractIds = Collections.emptyList();
 	private List<EvmLog> logs = Collections.emptyList();
-	// stateChanges are only kept for migration purposes, they are not saved with the txn record anymore
-	private Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> stateChanges = Collections.emptyMap();
 	private long gas;
 	private long amount;
 	private byte[] functionParameters = EMPTY;
@@ -146,36 +140,6 @@ public class EvmFnResult implements SelfSerializable {
 		this.senderId = senderId;
 	}
 
-	public EvmFnResult(
-			final EntityId contractId,
-			final byte[] result,
-			final String error,
-			final byte[] bloom,
-			final long gasUsed,
-			final List<EvmLog> logs,
-			final List<EntityId> createdContractIds,
-			final byte[] evmAddress,
-			final Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> stateChanges,
-			final long gas,
-			final long amount,
-			final byte[] functionParameters,
-			final EntityId senderId
-	) {
-		this.contractId = contractId;
-		this.result = result;
-		this.error = error;
-		this.bloom = bloom;
-		this.gasUsed = gasUsed;
-		this.logs = logs;
-		this.createdContractIds = createdContractIds;
-		this.evmAddress = evmAddress;
-		this.stateChanges = stateChanges;
-		this.gas = gas;
-		this.amount = amount;
-		this.functionParameters = functionParameters;
-		this.senderId = senderId;
-	}
-
 	/* --- SelfSerializable --- */
 	@Override
 	public long getClassId() {
@@ -204,23 +168,20 @@ public class EvmFnResult implements SelfSerializable {
 		// Added in 0.23
 		evmAddress = in.readByteArray(MAX_ADDRESS_BYTES);
 		// Added in 0.24
-		if (version < RELEASE_0280_VERSION) {
+		if (version < RELEASE_0290_VERSION) {
 			int numAffectedContracts = in.readInt();
-			final Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> state = new TreeMap<>();
 			while (numAffectedContracts-- > 0) {
-				final byte[] contractAddress = in.readByteArray(MAX_ADDRESS_BYTES);
+				in.readByteArray(MAX_ADDRESS_BYTES);
 				int numAffectedSlots = in.readInt();
-				final Map<Bytes, Pair<Bytes, Bytes>> storage = new TreeMap<>();
-				state.put(Address.fromHexString(hex(contractAddress)), storage);
 				while (numAffectedSlots-- > 0) {
-					final var slot = Bytes.wrap(in.readByteArray(32));
-					final var left = Bytes.wrap(in.readByteArray(32));
+					in.readByteArray(32);
+					in.readByteArray(32);
 					final var hasRight = in.readBoolean();
-					final var right = hasRight ? Bytes.wrap(in.readByteArray(32)) : null;
-					storage.put(slot, Pair.of(left, right));
+					if (hasRight) {
+						in.readByteArray(32);
+					}
 				}
 			}
-			stateChanges = state;
 		}
 		if (version >= RELEASE_0250_VERSION) {
 			gas = in.readLong();
@@ -266,7 +227,6 @@ public class EvmFnResult implements SelfSerializable {
 				Objects.equals(logs, that.logs) &&
 				Objects.equals(createdContractIds, that.createdContractIds) &&
 				Arrays.equals(evmAddress, that.evmAddress) &&
-				this.stateChanges.equals(that.stateChanges) &&
 				gas == that.gas &&
 				amount == that.amount &&
 				Arrays.equals(functionParameters, that.functionParameters) && 
@@ -291,7 +251,6 @@ public class EvmFnResult implements SelfSerializable {
 				.add("contractId", contractId)
 				.add("createdContractIds", createdContractIds)
 				.add("logs", logs)
-				.add("stateChanges", stateChanges)
 				.add("evmAddress", hex(evmAddress))
 				.add("gas", gas)
 				.add("amount", amount)
@@ -333,10 +292,6 @@ public class EvmFnResult implements SelfSerializable {
 		return createdContractIds;
 	}
 
-	public Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> getStateChanges() {
-		return stateChanges;
-	}
-
 	public byte[] getEvmAddress() {
 		return evmAddress;
 	}
@@ -359,10 +314,6 @@ public class EvmFnResult implements SelfSerializable {
 
 	public void setEvmAddress(final byte[] evmAddress) {
 		this.evmAddress = evmAddress;
-	}
-
-	public void setStateChanges(final Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> stateChanges) {
-		this.stateChanges = stateChanges;
 	}
 
 	public void setGas(final long gas) {
