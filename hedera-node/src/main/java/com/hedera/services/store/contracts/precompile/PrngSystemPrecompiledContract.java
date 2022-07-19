@@ -21,7 +21,6 @@ import static com.hedera.services.store.contracts.precompile.utils.PrecompilePri
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_GAS;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PRNG_RANGE;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.hedera.services.context.SideEffectsTracker;
@@ -145,11 +144,6 @@ public class PrngSystemPrecompiledContract extends AbstractPrecompiledContract {
                     PrecompiledContract.PrecompileContractResult.halt(
                             null, Optional.ofNullable(ExceptionalHaltReason.INVALID_OPERATION)),
                     e.getResponseCode());
-        } catch (IllegalArgumentException e) {
-            return Pair.of(
-                    PrecompiledContract.PrecompileContractResult.halt(
-                            null, Optional.ofNullable(ExceptionalHaltReason.INVALID_OPERATION)),
-                    INVALID_PRNG_RANGE);
         } catch (Exception e) {
             log.warn("Internal precompile failure", e);
             return Pair.of(

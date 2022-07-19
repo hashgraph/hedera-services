@@ -236,9 +236,21 @@ class PrngSystemPrecompiledContractTest {
         setUpForChildRecord();
         given(creator.createSuccessfulSyntheticRecord(anyList(), any(), anyString()))
                 .willReturn(childRecord);
-        final var childRecord =
+        var childRecord =
                 subject.createSuccessfulChildRecord(
                         Bytes.ofUnsignedInt(randomNum), frame, random256BitGeneratorInput());
+
+        assertNotNull(childRecord);
+        assertEquals(
+                EntityId.fromAddress(ALTBN128_ADD),
+                childRecord.getContractCallResult().getSenderId());
+        assertEquals(
+                randomNum, Bytes.wrap(childRecord.getContractCallResult().getResult()).toInt());
+        assertNull(childRecord.getContractCallResult().getError());
+
+        childRecord =
+                subject.createSuccessfulChildRecord(
+                        Bytes.ofUnsignedInt(randomNum), frame, defaultInput());
 
         assertNotNull(childRecord);
         assertEquals(
@@ -307,6 +319,10 @@ class PrngSystemPrecompiledContractTest {
 
     private static Bytes random256BitGeneratorInput() {
         return input(PSEUDORANDOM_SEED_GENERATOR_SELECTOR, Bytes.EMPTY);
+    }
+
+    private static Bytes defaultInput() {
+        return input(0x34676789, Bytes.EMPTY);
     }
 
     private static Bytes input(final int selector, final Bytes wordInput) {
