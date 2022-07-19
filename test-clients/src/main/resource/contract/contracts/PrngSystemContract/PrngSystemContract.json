@@ -5,7 +5,7 @@
 	"outputs": [
 	  {
 		"internalType": "bytes32",
-		"name": "",
+		"name": "randomBytes",
 		"type": "bytes32"
 	  }
 	],
