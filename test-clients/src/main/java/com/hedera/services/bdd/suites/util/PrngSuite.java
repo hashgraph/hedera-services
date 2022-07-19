@@ -47,6 +47,7 @@ import org.apache.logging.log4j.Logger;
 
 public class PrngSuite extends HapiApiSuite {
     private static final Logger log = LogManager.getLogger(PrngSuite.class);
+    private static final String PRNG_ENABLED = "prng.isEnabled";
 
     public static void main(String... args) {
         new PrngSuite().runSuiteSync();
@@ -59,13 +60,11 @@ public class PrngSuite extends HapiApiSuite {
 
     private List<HapiApiSpec> positiveTests() {
         return List.of(
-                new HapiApiSpec[] {
-                    happyPathWorksForRangeAndBitString(),
-                    failsInPreCheckForNegativeRange(),
-                    usdFeeAsExpected(),
-                    featureFlagWorks(),
-                    multipleCallsHaveIndependentResults(),
-                });
+                happyPathWorksForRangeAndBitString(),
+                failsInPreCheckForNegativeRange(),
+                usdFeeAsExpected(),
+                featureFlagWorks(),
+                multipleCallsHaveIndependentResults());
     }
 
     private HapiApiSpec multipleCallsHaveIndependentResults() {
@@ -139,7 +138,7 @@ public class PrngSuite extends HapiApiSuite {
     private HapiApiSpec featureFlagWorks() {
         return defaultHapiSpec("featureFlagWorks")
                 .given(
-                        overridingAllOf(Map.of("prng.isEnabled", "false")),
+                        overridingAllOf(Map.of(PRNG_ENABLED, "false")),
                         cryptoCreate("bob").balance(ONE_HUNDRED_HBARS),
                         hapiPrng().payingWith("bob").via("baseTxn").blankMemo().logged(),
                         getTxnRecord("baseTxn").hasNoPseudoRandomData().logged())
@@ -158,7 +157,7 @@ public class PrngSuite extends HapiApiSuite {
 
         return defaultHapiSpec("usdFeeAsExpected")
                 .given(
-                        overridingAllOf(Map.of("prng.isEnabled", "true")),
+                        overridingAllOf(Map.of(PRNG_ENABLED, "true")),
                         cryptoCreate("bob").balance(ONE_HUNDRED_HBARS),
                         hapiPrng().payingWith("bob").via(baseTxn).blankMemo().logged(),
                         getTxnRecord(baseTxn).hasOnlyPseudoRandomBytes().logged(),
@@ -173,7 +172,7 @@ public class PrngSuite extends HapiApiSuite {
     private HapiApiSpec failsInPreCheckForNegativeRange() {
         return defaultHapiSpec("failsInPreCheckForNegativeRange")
                 .given(
-                        overridingAllOf(Map.of("prng.isEnabled", "true")),
+                        overridingAllOf(Map.of(PRNG_ENABLED, "true")),
                         cryptoCreate("bob").balance(ONE_HUNDRED_HBARS),
                         hapiPrng(-10)
                                 .payingWith("bob")
@@ -188,7 +187,7 @@ public class PrngSuite extends HapiApiSuite {
     private HapiApiSpec happyPathWorksForRangeAndBitString() {
         return defaultHapiSpec("happyPathWorksForRangeAndBitString")
                 .given(
-                        overridingAllOf(Map.of("prng.isEnabled", "true")),
+                        overridingAllOf(Map.of(PRNG_ENABLED, "true")),
                         // running hash is set
                         cryptoCreate("bob").balance(ONE_HUNDRED_HBARS),
                         // n-1 running hash and running has set
