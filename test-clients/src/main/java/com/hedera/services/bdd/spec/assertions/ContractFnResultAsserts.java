@@ -149,7 +149,7 @@ public class ContractFnResultAsserts extends BaseErroringAssertsProvider<Contrac
                     final var epsilon = allowedPercentDeviation * actual / 100.0;
                     Assertions.assertEquals(
                             expected,
-                            (double) result.getGasUsed(),
+                            result.getGasUsed(),
                             epsilon,
                             "Wrong amount of gas used");
                 });
@@ -247,7 +247,7 @@ public class ContractFnResultAsserts extends BaseErroringAssertsProvider<Contrac
                         if (opError.isPresent()) {
                             throw opError.get();
                         }
-                    } catch (Throwable t) {
+                    } catch (Throwable t) { //NOSONAR throw from 2 lines above must be caught
                         return Optional.of(t);
                     }
                     return Optional.empty();
@@ -283,12 +283,12 @@ public class ContractFnResultAsserts extends BaseErroringAssertsProvider<Contrac
                     } else {
                         Assertions.assertEquals(expected, actual);
                     }
-                } catch (Throwable T) {
-                    return Optional.of(T);
+                } catch (Exception e) {
+                    return Optional.of(e);
                 }
             }
-        } catch (Throwable T) {
-            return Optional.of(T);
+        } catch (Exception e) {
+            return Optional.of(e);
         }
         return Optional.empty();
     }
@@ -315,8 +315,8 @@ public class ContractFnResultAsserts extends BaseErroringAssertsProvider<Contrac
                                     expecteds[i], actuals[i]));
                 }
             }
-        } catch (Throwable T) {
-            return Optional.of(T);
+        } catch (Exception e) {
+            return Optional.of(e);
         }
         return Optional.empty();
     }
