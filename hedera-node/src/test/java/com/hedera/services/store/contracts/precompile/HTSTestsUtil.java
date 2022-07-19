@@ -89,6 +89,10 @@ public class HTSTestsUtil {
             Timestamp.newBuilder().setSeconds(TEST_CONSENSUS_TIME).build();
     public static final Bytes successResult = UInt256.valueOf(ResponseCodeEnum.SUCCESS_VALUE);
     public static final Bytes failResult = UInt256.valueOf(ResponseCodeEnum.FAIL_INVALID_VALUE);
+    public static final Bytes invalidTokenIdResult =
+            UInt256.valueOf(ResponseCodeEnum.INVALID_TOKEN_ID_VALUE);
+    public static final Bytes invalidSerialNumberResult =
+            UInt256.valueOf(ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER_VALUE);
     public static final Bytes tokenWasDeletedResult =
             UInt256.valueOf(ResponseCodeEnum.TOKEN_WAS_DELETED_VALUE);
     public static final Bytes invalidSigResult =

@@ -70,7 +70,6 @@ public abstract class AbstractTokenInfoPrecompile extends AbstractReadOnlyPrecom
     protected TokenInfo getTokenInfo() {
         final var token = ledgers.tokens().getImmutableRef(tokenId);
         validateTrue(token != null, ResponseCodeEnum.INVALID_TOKEN_ID);
-        validateTrue(!token.isDeleted(), ResponseCodeEnum.TOKEN_WAS_DELETED);
 
         final var name = token.name();
         final var symbol = token.symbol();

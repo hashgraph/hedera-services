@@ -22,7 +22,8 @@ import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.TEST_CONSENSUS_TIME;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.createTokenInfoWrapperForNonFungibleToken;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.createTokenInfoWrapperForToken;
-import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.failResult;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.invalidSerialNumberResult;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.invalidTokenIdResult;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.parentContractAddress;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.parentContractAddressConvertedToContractId;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.payerId;
@@ -36,7 +37,6 @@ import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.tokenA
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.tokenAddressConvertedToEntityId;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.tokenMerkleAddress;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.tokenMerkleId;
-import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.tokenWasDeletedResult;
 import static com.hedera.services.store.contracts.precompile.TokenKeyType.FREEZE_KEY;
 import static com.swirlds.common.utility.CommonUtils.unhex;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -237,7 +237,7 @@ class GetTokenInfoPrecompilesTest {
                 .thenReturn(feeToken);
 
         tokenKeys.add(tokenKey);
-        tokenInfo = createTokenInfo(tokenKeys, true);
+        tokenInfo = createTokenInfo(tokenKeys, true, false);
         fungibleTokenInfo = new FungibleTokenInfo(tokenInfo, decimals);
         nonFungibleTokenInfo =
                 new NonFungibleTokenInfo(
@@ -323,7 +323,7 @@ class GetTokenInfoPrecompilesTest {
                         new KeyValue(
                                 false, parentContractAddress, new byte[] {}, new byte[] {}, null));
         tokenKeys.add(tokenKey);
-        tokenInfo = createTokenInfo(tokenKeys, false);
+        tokenInfo = createTokenInfo(tokenKeys, false, false);
 
         given(key.getEd25519()).willReturn(new byte[] {});
         given(key.getECDSASecp256k1Key()).willReturn(new byte[] {});
@@ -376,7 +376,7 @@ class GetTokenInfoPrecompilesTest {
                         new KeyValue(
                                 false, null, new byte[] {}, new byte[] {}, parentContractAddress));
         tokenKeys.add(tokenKey);
-        tokenInfo = createTokenInfo(tokenKeys, false);
+        tokenInfo = createTokenInfo(tokenKeys, false, false);
 
         given(key.getEd25519()).willReturn(new byte[] {});
         given(key.getECDSASecp256k1Key()).willReturn(new byte[] {});
@@ -438,7 +438,7 @@ class GetTokenInfoPrecompilesTest {
         tokenKeys.add(supplyKey);
         tokenKeys.add(feeScheduleKey);
         tokenKeys.add(pauseKey);
-        tokenInfo = createTokenInfo(tokenKeys, true);
+        tokenInfo = createTokenInfo(tokenKeys, true, false);
 
         givenKeyContextAllKeysActive(key);
         givenMinimalKeyContext();
@@ -724,7 +724,7 @@ class GetTokenInfoPrecompilesTest {
         given(trackingLedgers.tokens()).willReturn(tokens);
         given(tokens.getImmutableRef(tokenMerkleId)).willReturn(null);
 
-        givenMinimalContextForFailureCall(pretendArguments);
+        givenMinimalContextForInvalidTokenIdCall(pretendArguments);
         givenReadOnlyFeeSchedule();
 
         // when:
@@ -734,7 +734,7 @@ class GetTokenInfoPrecompilesTest {
         final var result = subject.computeInternal(frame);
 
         // then:
-        assertEquals(failResult, result);
+        assertEquals(invalidTokenIdResult, result);
         // and:
         verify(worldUpdater)
                 .manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
@@ -754,7 +754,7 @@ class GetTokenInfoPrecompilesTest {
         given(trackingLedgers.tokens()).willReturn(tokens);
         given(tokens.getImmutableRef(tokenMerkleId)).willReturn(null);
 
-        givenMinimalContextForFailureCall(pretendArguments);
+        givenMinimalContextForInvalidTokenIdCall(pretendArguments);
         givenReadOnlyFeeSchedule();
 
         // when:
@@ -764,14 +764,14 @@ class GetTokenInfoPrecompilesTest {
         final var result = subject.computeInternal(frame);
 
         // then:
-        assertEquals(failResult, result);
+        assertEquals(invalidTokenIdResult, result);
         // and:
         verify(worldUpdater)
                 .manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
     }
 
     @Test
-    void getNonFungibleTokenInfoOfMissingTokenFails() {
+    void getNonFungibleTokenInfoOfMissingSerialNumberFails() {
         givenMinimalFrameContext();
 
         final var tokenInfoWrapper =
@@ -783,10 +783,11 @@ class GetTokenInfoPrecompilesTest {
                         Bytes.wrap(new byte[] {Long.valueOf(serialNumber).byteValue()}));
         given(decoder.decodeGetNonFungibleTokenInfo(pretendArguments)).willReturn(tokenInfoWrapper);
 
+        givenMinimalTokenContext(TokenSupplyType.FINITE);
         given(trackingLedgers.nfts()).willReturn(nfts);
         given(nfts.getImmutableRef(NftId.fromGrpc(tokenMerkleId, serialNumber))).willReturn(null);
 
-        givenMinimalContextForFailureCall(pretendArguments);
+        givenMinimalContextForInvalidNftSerialNumberCall(pretendArguments);
         givenReadOnlyFeeSchedule();
 
         // when:
@@ -796,14 +797,14 @@ class GetTokenInfoPrecompilesTest {
         final var result = subject.computeInternal(frame);
 
         // then:
-        assertEquals(failResult, result);
+        assertEquals(invalidSerialNumberResult, result);
         // and:
         verify(worldUpdater)
                 .manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
     }
 
     @Test
-    void getTokenInfoOfDeletedTokenFails() {
+    void getTokenInfoOfDeletedTokenWorks() {
         givenMinimalFrameContext();
 
         final var tokenInfoWrapper = createTokenInfoWrapperForToken(tokenMerkleId);
@@ -813,10 +814,15 @@ class GetTokenInfoPrecompilesTest {
                         EntityIdUtils.asTypedEvmAddress(tokenMerkleId));
         given(decoder.decodeGetTokenInfo(pretendArguments)).willReturn(tokenInfoWrapper);
 
-        given(trackingLedgers.tokens()).willReturn(tokens);
-        given(tokens.getImmutableRef(tokenMerkleId)).willReturn(merkleToken);
+        givenMinimalTokenContext(TokenSupplyType.FINITE);
         given(merkleToken.isDeleted()).willReturn(true);
-        givenMinimalContextForDeletedTokenCall(pretendArguments);
+        givenKeyContext(key, TokenKeyType.ADMIN_KEY);
+        givenMinimalKeyContext();
+
+        tokenInfo = createTokenInfo(tokenKeys, true, true);
+        given(encoder.encodeGetTokenInfo(tokenInfo)).willReturn(successResult);
+
+        givenMinimalContextForSuccessfulCall(pretendArguments);
         givenReadOnlyFeeSchedule();
 
         // when:
@@ -826,14 +832,14 @@ class GetTokenInfoPrecompilesTest {
         final var result = subject.computeInternal(frame);
 
         // then:
-        assertEquals(tokenWasDeletedResult, result);
+        assertEquals(successResult, result);
         // and:
         verify(worldUpdater)
                 .manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
     }
 
     @Test
-    void getFungibleTokenInfoOfDeletedTokenFails() {
+    void getFungibleTokenInfoOfDeletedTokenWorks() {
         givenMinimalFrameContext();
 
         final var tokenInfoWrapper = createTokenInfoWrapperForToken(tokenMerkleId);
@@ -843,10 +849,16 @@ class GetTokenInfoPrecompilesTest {
                         EntityIdUtils.asTypedEvmAddress(tokenMerkleId));
         given(decoder.decodeGetFungibleTokenInfo(pretendArguments)).willReturn(tokenInfoWrapper);
 
-        given(trackingLedgers.tokens()).willReturn(tokens);
-        given(tokens.getImmutableRef(tokenMerkleId)).willReturn(merkleToken);
+        givenMinimalTokenContext(TokenSupplyType.FINITE);
         given(merkleToken.isDeleted()).willReturn(true);
-        givenMinimalContextForDeletedTokenCall(pretendArguments);
+        givenKeyContext(key, TokenKeyType.ADMIN_KEY);
+        given(merkleToken.decimals()).willReturn(decimals);
+        givenMinimalKeyContext();
+
+        fungibleTokenInfo = new FungibleTokenInfo(createTokenInfo(tokenKeys, true, true), decimals);
+        given(encoder.encodeGetFungibleTokenInfo(fungibleTokenInfo)).willReturn(successResult);
+
+        givenMinimalContextForSuccessfulCall(pretendArguments);
         givenReadOnlyFeeSchedule();
 
         // when:
@@ -856,14 +868,14 @@ class GetTokenInfoPrecompilesTest {
         final var result = subject.computeInternal(frame);
 
         // then:
-        assertEquals(tokenWasDeletedResult, result);
+        assertEquals(successResult, result);
         // and:
         verify(worldUpdater)
                 .manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
     }
 
     @Test
-    void getNonFungibleTokenInfoOfDeletedTokenFails() {
+    void getNonFungibleTokenInfoOfDeletedTokenWorks() {
         givenMinimalFrameContext();
 
         final var tokenInfoWrapper =
@@ -875,13 +887,24 @@ class GetTokenInfoPrecompilesTest {
                         Bytes.wrap(new byte[] {Long.valueOf(serialNumber).byteValue()}));
         given(decoder.decodeGetNonFungibleTokenInfo(pretendArguments)).willReturn(tokenInfoWrapper);
 
-        given(trackingLedgers.nfts()).willReturn(nfts);
-        given(nfts.getImmutableRef(NftId.fromGrpc(tokenMerkleId, serialNumber)))
-                .willReturn(uniqueToken);
-        given(trackingLedgers.tokens()).willReturn(tokens);
-        given(tokens.getImmutableRef(tokenMerkleId)).willReturn(merkleToken);
+        givenMinimalTokenContext(TokenSupplyType.FINITE);
         given(merkleToken.isDeleted()).willReturn(true);
-        givenMinimalContextForDeletedTokenCall(pretendArguments);
+        givenKeyContext(key, TokenKeyType.ADMIN_KEY);
+        givenMinimalUniqueTokenContext();
+        givenMinimalKeyContext();
+
+        nonFungibleTokenInfo =
+                new NonFungibleTokenInfo(
+                        createTokenInfo(tokenKeys, true, true),
+                        serialNumber,
+                        ownerId,
+                        creationTime,
+                        metadata,
+                        spenderId);
+        given(encoder.encodeGetNonFungibleTokenInfo(nonFungibleTokenInfo))
+                .willReturn(successResult);
+
+        givenMinimalContextForSuccessfulCall(pretendArguments);
         givenReadOnlyFeeSchedule();
 
         // when:
@@ -891,7 +914,7 @@ class GetTokenInfoPrecompilesTest {
         final var result = subject.computeInternal(frame);
 
         // then:
-        assertEquals(tokenWasDeletedResult, result);
+        assertEquals(successResult, result);
         // and:
         verify(worldUpdater)
                 .manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
@@ -1028,10 +1051,19 @@ class GetTokenInfoPrecompilesTest {
                 .willReturn(mockRecordBuilder);
     }
 
-    private void givenMinimalContextForFailureCall(final Bytes pretendArguments) {
+    private void givenMinimalContextForInvalidNftSerialNumberCall(final Bytes pretendArguments) {
         given(syntheticTxnFactory.createTransactionCall(1L, pretendArguments))
                 .willReturn(mockSynthBodyBuilder);
-        given(creator.createUnsuccessfulSyntheticRecord(ResponseCodeEnum.FAIL_INVALID))
+        given(
+                        creator.createUnsuccessfulSyntheticRecord(
+                                ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER))
+                .willReturn(mockRecordBuilder);
+    }
+
+    private void givenMinimalContextForInvalidTokenIdCall(final Bytes pretendArguments) {
+        given(syntheticTxnFactory.createTransactionCall(1L, pretendArguments))
+                .willReturn(mockSynthBodyBuilder);
+        given(creator.createUnsuccessfulSyntheticRecord(ResponseCodeEnum.INVALID_TOKEN_ID))
                 .willReturn(mockRecordBuilder);
     }
 
@@ -1163,7 +1195,9 @@ class GetTokenInfoPrecompilesTest {
     }
 
     private TokenInfo createTokenInfo(
-            final List<TokenKey> tokenKeys, final boolean tokenSupplyType) {
+            final List<TokenKey> tokenKeys,
+            final boolean tokenSupplyType,
+            final boolean isDeleted) {
         final HederaToken hederaToken =
                 new HederaToken(
                         name,
@@ -1178,7 +1212,7 @@ class GetTokenInfoPrecompilesTest {
         return new TokenInfo(
                 hederaToken,
                 totalSupply,
-                deleted,
+                isDeleted,
                 defaultKycStatus,
                 pauseStatus,
                 new ArrayList<>(),
