@@ -39,10 +39,10 @@ package com.hedera.services.contracts.operation;
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
+import com.hedera.services.stream.proto.SidecarType;
 import java.util.Optional;
 import java.util.OptionalLong;
 import javax.inject.Inject;
-import com.hedera.services.stream.proto.SidecarType;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
@@ -81,24 +81,26 @@ public class HederaSLoadOperation extends AbstractOperation {
         this.dynamicProperties = dynamicProperties;
     }
 
-	@Override
-	public OperationResult execute(final MessageFrame frame, final EVM evm) {
-		try {
-			final var addressOrAlias = frame.getRecipientAddress();
-			final var worldUpdater = (HederaStackedWorldStateUpdater) frame.getWorldUpdater();
-			final Account account = worldUpdater.get(addressOrAlias);
-			final Address address = account.getAddress();
-			final Bytes32 key = UInt256.fromBytes(frame.popStackItem());
-			final boolean slotIsWarm = frame.warmUpStorage(address, key);
-			final OptionalLong optionalCost = slotIsWarm ? warmCost : coldCost;
-			if (frame.getRemainingGas() < optionalCost.orElse(0L)) {
-				return new OperationResult(
-						optionalCost, Optional.of(ExceptionalHaltReason.INSUFFICIENT_GAS));
-			} else {
-				UInt256 storageValue = account.getStorageValue(UInt256.fromBytes(key));
-				if (dynamicProperties.enabledSidecars().contains(SidecarType.CONTRACT_STATE_CHANGE)) {
-					HederaOperationUtil.cacheExistingValue(frame, address, key, storageValue);
-				}
+    @Override
+    public OperationResult execute(final MessageFrame frame, final EVM evm) {
+        try {
+            final var addressOrAlias = frame.getRecipientAddress();
+            final var worldUpdater = (HederaStackedWorldStateUpdater) frame.getWorldUpdater();
+            final Account account = worldUpdater.get(addressOrAlias);
+            final Address address = account.getAddress();
+            final Bytes32 key = UInt256.fromBytes(frame.popStackItem());
+            final boolean slotIsWarm = frame.warmUpStorage(address, key);
+            final OptionalLong optionalCost = slotIsWarm ? warmCost : coldCost;
+            if (frame.getRemainingGas() < optionalCost.orElse(0L)) {
+                return new OperationResult(
+                        optionalCost, Optional.of(ExceptionalHaltReason.INSUFFICIENT_GAS));
+            } else {
+                UInt256 storageValue = account.getStorageValue(UInt256.fromBytes(key));
+                if (dynamicProperties
+                        .enabledSidecars()
+                        .contains(SidecarType.CONTRACT_STATE_CHANGE)) {
+                    HederaOperationUtil.cacheExistingValue(frame, address, key, storageValue);
+                }
 
                 frame.pushStackItem(storageValue);
                 return slotIsWarm ? warmSuccess : coldSuccess;

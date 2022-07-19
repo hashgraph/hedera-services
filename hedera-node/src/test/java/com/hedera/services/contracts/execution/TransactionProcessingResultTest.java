@@ -98,24 +98,31 @@ class TransactionProcessingResultTest {
                         List.of(logTopic, logTopic, logTopic, logTopic));
         final var logList = List.of(log);
 
-		final var expect = ContractFunctionResult.newBuilder()
-				.setGasUsed(GAS_USAGE)
-				.setBloom(ByteString.copyFrom(LogsBloomFilter.builder().insertLogs(logList).build().toArray()));
+        final var expect =
+                ContractFunctionResult.newBuilder()
+                        .setGasUsed(GAS_USAGE)
+                        .setBloom(
+                                ByteString.copyFrom(
+                                        LogsBloomFilter.builder()
+                                                .insertLogs(logList)
+                                                .build()
+                                                .toArray()));
 
         expect.setContractCallResult(ByteString.copyFrom(Bytes.EMPTY.toArray()));
         expect.setContractID(
                 EntityIdUtils.contractIdFromEvmAddress(recipient.getId().asEvmAddress().toArray()));
         expect.addAllCreatedContractIDs(listOfCreatedContracts);
 
-		var result = TransactionProcessingResult.successful(
-				logList,
-				GAS_USAGE,
-				GAS_REFUND,
-				1234L,
-				Bytes.EMPTY,
-				recipient.getId().asEvmAddress(),
-				Collections.emptyMap());
-		result.setCreatedContracts(listOfCreatedContracts);
+        var result =
+                TransactionProcessingResult.successful(
+                        logList,
+                        GAS_USAGE,
+                        GAS_REFUND,
+                        1234L,
+                        Bytes.EMPTY,
+                        recipient.getId().asEvmAddress(),
+                        Collections.emptyMap());
+        result.setCreatedContracts(listOfCreatedContracts);
 
         assertEquals(expect.getGasUsed(), result.getGasUsed());
 
@@ -227,7 +234,6 @@ class TransactionProcessingResultTest {
                         recipient.getId().asEvmAddress(),
                         Map.of());
 
-		assertTrue(result.isSuccessful());
-	}
-
+        assertTrue(result.isSuccessful());
+    }
 }

@@ -237,26 +237,26 @@ public abstract class AbstractLedgerWorldUpdater<W extends WorldView, A extends 
         }
     }
 
-	public void manageInProgressRecord(
-			final RecordsHistorian recordsHistorian,
-			final ExpirableTxnRecord.Builder recordSoFar,
-			final TransactionBody.Builder syntheticBody
-	) {
-		this.manageInProgressRecord(recordsHistorian, recordSoFar, syntheticBody, Collections.emptyList());
-	}
+    public void manageInProgressRecord(
+            final RecordsHistorian recordsHistorian,
+            final ExpirableTxnRecord.Builder recordSoFar,
+            final TransactionBody.Builder syntheticBody) {
+        this.manageInProgressRecord(
+                recordsHistorian, recordSoFar, syntheticBody, Collections.emptyList());
+    }
 
-	public void manageInProgressRecord(
-			final RecordsHistorian recordsHistorian,
-			final ExpirableTxnRecord.Builder recordSoFar,
-			final TransactionBody.Builder syntheticBody,
-			final List<TransactionSidecarRecord.Builder> sidecarRecords
-	) {
-		ensureFamiliarityWith(recordsHistorian);
-		if (thisRecordSourceId == UNKNOWN_RECORD_SOURCE_ID) {
-			thisRecordSourceId = recordsHistorian.nextChildRecordSourceId();
-		}
-		recordsHistorian.trackFollowingChildRecord(thisRecordSourceId, syntheticBody, recordSoFar, sidecarRecords);
-	}
+    public void manageInProgressRecord(
+            final RecordsHistorian recordsHistorian,
+            final ExpirableTxnRecord.Builder recordSoFar,
+            final TransactionBody.Builder syntheticBody,
+            final List<TransactionSidecarRecord.Builder> sidecarRecords) {
+        ensureFamiliarityWith(recordsHistorian);
+        if (thisRecordSourceId == UNKNOWN_RECORD_SOURCE_ID) {
+            thisRecordSourceId = recordsHistorian.nextChildRecordSourceId();
+        }
+        recordsHistorian.trackFollowingChildRecord(
+                thisRecordSourceId, syntheticBody, recordSoFar, sidecarRecords);
+    }
 
     public WorldLedgers wrappedTrackingLedgers(final SideEffectsTracker sideEffectsTracker) {
         return withChangeObserver(trackingLedgers.wrapped(sideEffectsTracker));

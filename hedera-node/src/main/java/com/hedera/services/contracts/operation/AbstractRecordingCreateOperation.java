@@ -58,29 +58,28 @@ public abstract class AbstractRecordingCreateOperation extends AbstractOperation
                     OptionalLong.empty(),
                     Optional.of(ExceptionalHaltReason.INSUFFICIENT_STACK_ITEMS));
 
-	protected final GlobalDynamicProperties dynamicProperties;
-	private final EntityCreator creator;
-	private final SyntheticTxnFactory syntheticTxnFactory;
-	private final RecordsHistorian recordsHistorian;
+    protected final GlobalDynamicProperties dynamicProperties;
+    private final EntityCreator creator;
+    private final SyntheticTxnFactory syntheticTxnFactory;
+    private final RecordsHistorian recordsHistorian;
 
-	protected AbstractRecordingCreateOperation(
-			final int opcode,
-			final String name,
-			final int stackItemsConsumed,
-			final int stackItemsProduced,
-			final int opSize,
-			final GasCalculator gasCalculator,
-			final EntityCreator creator,
-			final SyntheticTxnFactory syntheticTxnFactory,
-			final RecordsHistorian recordsHistorian,
-			final GlobalDynamicProperties dynamicProperties
-	) {
-		super(opcode, name, stackItemsConsumed, stackItemsProduced, opSize, gasCalculator);
-		this.creator = creator;
-		this.recordsHistorian = recordsHistorian;
-		this.syntheticTxnFactory = syntheticTxnFactory;
-		this.dynamicProperties = dynamicProperties;
-	}
+    protected AbstractRecordingCreateOperation(
+            final int opcode,
+            final String name,
+            final int stackItemsConsumed,
+            final int stackItemsProduced,
+            final int opSize,
+            final GasCalculator gasCalculator,
+            final EntityCreator creator,
+            final SyntheticTxnFactory syntheticTxnFactory,
+            final RecordsHistorian recordsHistorian,
+            final GlobalDynamicProperties dynamicProperties) {
+        super(opcode, name, stackItemsConsumed, stackItemsProduced, opSize, gasCalculator);
+        this.creator = creator;
+        this.recordsHistorian = recordsHistorian;
+        this.syntheticTxnFactory = syntheticTxnFactory;
+        this.dynamicProperties = dynamicProperties;
+    }
 
     @Override
     public Operation.OperationResult execute(final MessageFrame frame, final EVM evm) {
@@ -201,41 +200,41 @@ public abstract class AbstractRecordingCreateOperation extends AbstractOperation
             frame.mergeWarmedUpFields(childFrame);
             frame.pushStackItem(Words.fromAddress(childFrame.getContractAddress()));
 
-			// Add an in-progress record so that if everything succeeds, we can externalize the newly
-			// created contract in the record stream with both its 0.0.X id and its EVM address.
-			// C.f. https://github.com/hashgraph/hedera-services/issues/2807
-			final var updater = (HederaStackedWorldStateUpdater) frame.getWorldUpdater();
-			final var sideEffects = new SideEffectsTracker();
-			sideEffects.trackNewContract(updater.idOfLastNewAddress(), childFrame.getContractAddress());
-			final var childRecord = creator.createSuccessfulSyntheticRecord(
-					NO_CUSTOM_FEES, sideEffects, EMPTY_MEMO);
-			childRecord.onlyExternalizeIfSuccessful();
-			final var opCustomizer = updater.customizerForPendingCreation();
-			final var syntheticOp = syntheticTxnFactory.contractCreation(opCustomizer);
-			if (dynamicProperties.enabledSidecars().contains(SidecarType.CONTRACT_BYTECODE)) {
-					final var contractBytecodeSidecar =
-									SidecarUtils.createContractBytecodeSidecarFrom(
-													updater.idOfLastNewAddress(),
-													childFrame.getCode().getBytes().toArrayUnsafe(),
-													updater.get(childFrame.getContractAddress())
-																	.getCode()
-																	.toArrayUnsafe());
-					updater.manageInProgressRecord(
-									recordsHistorian,
-									childRecord,
-									syntheticOp,
-									List.of(contractBytecodeSidecar));
-			} else {
-				updater.manageInProgressRecord(
-						recordsHistorian,
-						childRecord,
-						syntheticOp,
-						Collections.emptyList());
-			}
-		} else {
-			frame.setReturnData(childFrame.getOutputData());
-			frame.pushStackItem(UInt256.ZERO);
-		}
+            // Add an in-progress record so that if everything succeeds, we can externalize the
+            // newly
+            // created contract in the record stream with both its 0.0.X id and its EVM address.
+            // C.f. https://github.com/hashgraph/hedera-services/issues/2807
+            final var updater = (HederaStackedWorldStateUpdater) frame.getWorldUpdater();
+            final var sideEffects = new SideEffectsTracker();
+            sideEffects.trackNewContract(
+                    updater.idOfLastNewAddress(), childFrame.getContractAddress());
+            final var childRecord =
+                    creator.createSuccessfulSyntheticRecord(
+                            NO_CUSTOM_FEES, sideEffects, EMPTY_MEMO);
+            childRecord.onlyExternalizeIfSuccessful();
+            final var opCustomizer = updater.customizerForPendingCreation();
+            final var syntheticOp = syntheticTxnFactory.contractCreation(opCustomizer);
+            if (dynamicProperties.enabledSidecars().contains(SidecarType.CONTRACT_BYTECODE)) {
+                final var contractBytecodeSidecar =
+                        SidecarUtils.createContractBytecodeSidecarFrom(
+                                updater.idOfLastNewAddress(),
+                                childFrame.getCode().getBytes().toArrayUnsafe(),
+                                updater.get(childFrame.getContractAddress())
+                                        .getCode()
+                                        .toArrayUnsafe());
+                updater.manageInProgressRecord(
+                        recordsHistorian,
+                        childRecord,
+                        syntheticOp,
+                        List.of(contractBytecodeSidecar));
+            } else {
+                updater.manageInProgressRecord(
+                        recordsHistorian, childRecord, syntheticOp, Collections.emptyList());
+            }
+        } else {
+            frame.setReturnData(childFrame.getOutputData());
+            frame.pushStackItem(UInt256.ZERO);
+        }
 
         final int currentPC = frame.getPC();
         frame.setPC(currentPC + 1);

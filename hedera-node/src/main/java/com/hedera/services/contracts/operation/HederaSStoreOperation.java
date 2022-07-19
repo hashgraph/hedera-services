@@ -125,9 +125,9 @@ public class HederaSStoreOperation extends AbstractOperation {
                     optionalCost, Optional.of(ExceptionalHaltReason.INSUFFICIENT_GAS));
         }
 
-		if (dynamicProperties.enabledSidecars().contains(SidecarType.CONTRACT_STATE_CHANGE)) {
-			cacheExistingValue(frame, account.getAddress(), key, currentValue);
-		}
+        if (dynamicProperties.enabledSidecars().contains(SidecarType.CONTRACT_STATE_CHANGE)) {
+            cacheExistingValue(frame, account.getAddress(), key, currentValue);
+        }
 
         account.setStorageValue(key, value);
         frame.storageWasUpdated(key, value);

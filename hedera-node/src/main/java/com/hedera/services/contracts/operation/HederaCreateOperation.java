@@ -59,28 +59,27 @@ import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 public class HederaCreateOperation extends AbstractRecordingCreateOperation {
     private final StorageGasCalculator storageGasCalculator;
 
-	@Inject
-	public HederaCreateOperation(
-			final GasCalculator gasCalculator,
-			final EntityCreator creator,
-			final SyntheticTxnFactory syntheticTxnFactory,
-			final RecordsHistorian recordsHistorian,
-			final StorageGasCalculator storageGasCalculator,
-			final GlobalDynamicProperties dynamicProperties
-	) {
-		super(
-				0xF0,
-				"ħCREATE",
-				3,
-				1,
-				1,
-				gasCalculator,
-				creator,
-				syntheticTxnFactory,
-				recordsHistorian,
-				dynamicProperties);
-		this.storageGasCalculator = storageGasCalculator;
-	}
+    @Inject
+    public HederaCreateOperation(
+            final GasCalculator gasCalculator,
+            final EntityCreator creator,
+            final SyntheticTxnFactory syntheticTxnFactory,
+            final RecordsHistorian recordsHistorian,
+            final StorageGasCalculator storageGasCalculator,
+            final GlobalDynamicProperties dynamicProperties) {
+        super(
+                0xF0,
+                "ħCREATE",
+                3,
+                1,
+                1,
+                gasCalculator,
+                creator,
+                syntheticTxnFactory,
+                recordsHistorian,
+                dynamicProperties);
+        this.storageGasCalculator = storageGasCalculator;
+    }
 
     @Override
     public long cost(final MessageFrame frame) {

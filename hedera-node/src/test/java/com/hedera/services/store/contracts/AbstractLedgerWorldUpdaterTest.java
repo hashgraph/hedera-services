@@ -158,29 +158,35 @@ class AbstractLedgerWorldUpdaterTest {
         subject.manageInProgressRecord(recordsHistorian, firstRecord, firstSynthBuilder);
         subject.manageInProgressRecord(recordsHistorian, secondRecord, secondSynthBuilder);
 
-		verify(recordsHistorian, times(1)).nextChildRecordSourceId();
-		verify(recordsHistorian).trackFollowingChildRecord(sourceId, firstSynthBuilder, firstRecord, Collections.emptyList());
-		verify(recordsHistorian).trackFollowingChildRecord(sourceId, secondSynthBuilder, secondRecord, Collections.emptyList());
-	}
+        verify(recordsHistorian, times(1)).nextChildRecordSourceId();
+        verify(recordsHistorian)
+                .trackFollowingChildRecord(
+                        sourceId, firstSynthBuilder, firstRecord, Collections.emptyList());
+        verify(recordsHistorian)
+                .trackFollowingChildRecord(
+                        sourceId, secondSynthBuilder, secondRecord, Collections.emptyList());
+    }
 
-	@Test
-	void sidecarRecordsAreProperlyPassedToRecordHistorian() {
-		// given
-		final var sourceId = 123;
-		given(recordsHistorian.nextChildRecordSourceId()).willReturn(sourceId);
-		final var firstRecord = ExpirableTxnRecord.newBuilder();
-		final var firstSynthBuilder = TransactionBody.newBuilder();
-		final var contractBytecode =
-				SidecarUtils.createContractBytecodeSidecarFrom(asContract("0.0.666"), "bytes".getBytes(), "moreBytes".getBytes());
-		final var sidecars = List.of(contractBytecode);
+    @Test
+    void sidecarRecordsAreProperlyPassedToRecordHistorian() {
+        // given
+        final var sourceId = 123;
+        given(recordsHistorian.nextChildRecordSourceId()).willReturn(sourceId);
+        final var firstRecord = ExpirableTxnRecord.newBuilder();
+        final var firstSynthBuilder = TransactionBody.newBuilder();
+        final var contractBytecode =
+                SidecarUtils.createContractBytecodeSidecarFrom(
+                        asContract("0.0.666"), "bytes".getBytes(), "moreBytes".getBytes());
+        final var sidecars = List.of(contractBytecode);
 
-		// when
-		subject.manageInProgressRecord(recordsHistorian, firstRecord, firstSynthBuilder, sidecars);
+        // when
+        subject.manageInProgressRecord(recordsHistorian, firstRecord, firstSynthBuilder, sidecars);
 
-		// then
-		verify(recordsHistorian, times(1)).nextChildRecordSourceId();
-		verify(recordsHistorian).trackFollowingChildRecord(sourceId, firstSynthBuilder, firstRecord, sidecars);
-	}
+        // then
+        verify(recordsHistorian, times(1)).nextChildRecordSourceId();
+        verify(recordsHistorian)
+                .trackFollowingChildRecord(sourceId, firstSynthBuilder, firstRecord, sidecars);
+    }
 
     @Test
     void revertsSourceIdsIfCreated() {

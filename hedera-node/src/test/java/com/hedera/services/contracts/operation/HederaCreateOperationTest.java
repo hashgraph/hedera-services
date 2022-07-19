@@ -64,30 +64,28 @@ class HederaCreateOperationTest {
     private final Address recipientAddr =
             Address.fromHexString("0x0102030405060708090a0b0c0d0e0f1011121314");
 
-	@Mock
-	private MessageFrame frame;
-	@Mock
-	private GasCalculator gasCalculator;
-	@Mock
-	private HederaWorldUpdater hederaWorldUpdater;
-	@Mock
-	private SyntheticTxnFactory syntheticTxnFactory;
-	@Mock
-	private EntityCreator creator;
-	@Mock
-	private RecordsHistorian recordsHistorian;
-	@Mock
-	private StorageGasCalculator storageGasCalculator;
-	@Mock
-	private GlobalDynamicProperties dynamicProperties;
+    @Mock private MessageFrame frame;
+    @Mock private GasCalculator gasCalculator;
+    @Mock private HederaWorldUpdater hederaWorldUpdater;
+    @Mock private SyntheticTxnFactory syntheticTxnFactory;
+    @Mock private EntityCreator creator;
+    @Mock private RecordsHistorian recordsHistorian;
+    @Mock private StorageGasCalculator storageGasCalculator;
+    @Mock private GlobalDynamicProperties dynamicProperties;
 
     private HederaCreateOperation subject;
 
-	@BeforeEach
-	void setup() {
-		subject = new HederaCreateOperation(
-				gasCalculator, creator, syntheticTxnFactory, recordsHistorian, storageGasCalculator, dynamicProperties);
-	}
+    @BeforeEach
+    void setup() {
+        subject =
+                new HederaCreateOperation(
+                        gasCalculator,
+                        creator,
+                        syntheticTxnFactory,
+                        recordsHistorian,
+                        storageGasCalculator,
+                        dynamicProperties);
+    }
 
     @Test
     void isAlwaysEnabled() {

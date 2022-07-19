@@ -84,36 +84,21 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class AbstractRecordingCreateOperationTest {
-	@Mock
-	private SyntheticTxnFactory syntheticTxnFactory;
-	@Mock
-	private GasCalculator gasCalculator;
-	@Mock
-	private EVM evm;
-	@Mock
-	private MessageFrame frame;
-	@Mock
-	private EvmAccount recipientAccount;
-	@Mock
-	private MutableAccount mutableAccount;
-	@Mock
-	private HederaStackedWorldStateUpdater updater;
-	@Mock
-	private Deque<MessageFrame> stack;
-	@Mock
-	private BlockValues blockValues;
-	@Mock
-	private EntityCreator creator;
-	@Mock
-	private RecordsHistorian recordsHistorian;
-	@Mock
-	private ContractCustomizer contractCustomizer;
-	@Mock
-	private WorldLedgers ledgers;
-	@Mock
-	private TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
-	@Mock
-	private GlobalDynamicProperties dynamicProperties;
+    @Mock private SyntheticTxnFactory syntheticTxnFactory;
+    @Mock private GasCalculator gasCalculator;
+    @Mock private EVM evm;
+    @Mock private MessageFrame frame;
+    @Mock private EvmAccount recipientAccount;
+    @Mock private MutableAccount mutableAccount;
+    @Mock private HederaStackedWorldStateUpdater updater;
+    @Mock private Deque<MessageFrame> stack;
+    @Mock private BlockValues blockValues;
+    @Mock private EntityCreator creator;
+    @Mock private RecordsHistorian recordsHistorian;
+    @Mock private ContractCustomizer contractCustomizer;
+    @Mock private WorldLedgers ledgers;
+    @Mock private TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
+    @Mock private GlobalDynamicProperties dynamicProperties;
 
     private static final long childStipend = 1_000_000L;
     private static final Wei gasPrice = Wei.of(1000L);
@@ -126,20 +111,21 @@ class AbstractRecordingCreateOperationTest {
 
     private Subject subject;
 
-	@BeforeEach
-	void setUp() {
-		subject = new Subject(
-				0xF0,
-				"ħCREATE",
-				3,
-				1,
-				1,
-				gasCalculator,
-				creator,
-				syntheticTxnFactory,
-				recordsHistorian,
-				dynamicProperties);
-	}
+    @BeforeEach
+    void setUp() {
+        subject =
+                new Subject(
+                        0xF0,
+                        "ħCREATE",
+                        3,
+                        1,
+                        1,
+                        gasCalculator,
+                        creator,
+                        syntheticTxnFactory,
+                        recordsHistorian,
+                        dynamicProperties);
+    }
 
     @Test
     void returnsUnderflowWhenStackSizeTooSmall() {
@@ -200,91 +186,119 @@ class AbstractRecordingCreateOperationTest {
         verify(frame).pushStackItem(UInt256.ZERO);
     }
 
-	@Test
-	void hasExpectedChildCompletionOnSuccessWithSidecarEnabled() {
-		final var trackerCaptor = ArgumentCaptor.forClass(SideEffectsTracker.class);
-		final var liveRecord = ExpirableTxnRecord.newBuilder()
-				.setReceiptBuilder(TxnReceipt.newBuilder().setStatus(TxnReceipt.REVERTED_SUCCESS_LITERAL));
-		final var mockCreation = TransactionBody.newBuilder()
-				.setContractCreateInstance(ContractCreateTransactionBody.newBuilder().setAutoRenewAccountId(autoRenewId.toGrpcAccountId()));
-		final var frameCaptor = ArgumentCaptor.forClass(MessageFrame.class);
-		givenSpawnPrereqs();
-		givenBuilderPrereqs();
-		given(updater.customizerForPendingCreation()).willReturn(contractCustomizer);
-		given(syntheticTxnFactory.contractCreation(contractCustomizer)).willReturn(mockCreation);
-		given(creator.createSuccessfulSyntheticRecord(any(), any(), any())).willReturn(liveRecord);
-		given(updater.idOfLastNewAddress()).willReturn(lastAllocated);
-		final var initCode = "initCode".getBytes();
-		given(frame.readMemory(anyLong(), anyLong())).willReturn(Bytes.wrap(initCode));
-		final var newContractMock = mock(Account.class);
-		final var runtimeCode = "runtimeCode".getBytes();
-		given(newContractMock.getCode()).willReturn(Bytes.of(runtimeCode));
-		given(updater.get(Subject.PRETEND_CONTRACT_ADDRESS)).willReturn(newContractMock);
-		final var sidecarRecord = TransactionSidecarRecord.newBuilder()
-				.setConsensusTimestamp(Timestamp.newBuilder().setSeconds(666L).build());
-		final var sidecarUtilsMockedStatic = mockStatic(SidecarUtils.class);
-		sidecarUtilsMockedStatic.when(() -> SidecarUtils.createContractBytecodeSidecarFrom(lastAllocated, initCode, runtimeCode))
-				.thenReturn(sidecarRecord);
-		given(dynamicProperties.enabledSidecars()).willReturn(Set.of(SidecarType.CONTRACT_BYTECODE));
+    @Test
+    void hasExpectedChildCompletionOnSuccessWithSidecarEnabled() {
+        final var trackerCaptor = ArgumentCaptor.forClass(SideEffectsTracker.class);
+        final var liveRecord =
+                ExpirableTxnRecord.newBuilder()
+                        .setReceiptBuilder(
+                                TxnReceipt.newBuilder()
+                                        .setStatus(TxnReceipt.REVERTED_SUCCESS_LITERAL));
+        final var mockCreation =
+                TransactionBody.newBuilder()
+                        .setContractCreateInstance(
+                                ContractCreateTransactionBody.newBuilder()
+                                        .setAutoRenewAccountId(autoRenewId.toGrpcAccountId()));
+        final var frameCaptor = ArgumentCaptor.forClass(MessageFrame.class);
+        givenSpawnPrereqs();
+        givenBuilderPrereqs();
+        given(updater.customizerForPendingCreation()).willReturn(contractCustomizer);
+        given(syntheticTxnFactory.contractCreation(contractCustomizer)).willReturn(mockCreation);
+        given(creator.createSuccessfulSyntheticRecord(any(), any(), any())).willReturn(liveRecord);
+        given(updater.idOfLastNewAddress()).willReturn(lastAllocated);
+        final var initCode = "initCode".getBytes();
+        given(frame.readMemory(anyLong(), anyLong())).willReturn(Bytes.wrap(initCode));
+        final var newContractMock = mock(Account.class);
+        final var runtimeCode = "runtimeCode".getBytes();
+        given(newContractMock.getCode()).willReturn(Bytes.of(runtimeCode));
+        given(updater.get(Subject.PRETEND_CONTRACT_ADDRESS)).willReturn(newContractMock);
+        final var sidecarRecord =
+                TransactionSidecarRecord.newBuilder()
+                        .setConsensusTimestamp(Timestamp.newBuilder().setSeconds(666L).build());
+        final var sidecarUtilsMockedStatic = mockStatic(SidecarUtils.class);
+        sidecarUtilsMockedStatic
+                .when(
+                        () ->
+                                SidecarUtils.createContractBytecodeSidecarFrom(
+                                        lastAllocated, initCode, runtimeCode))
+                .thenReturn(sidecarRecord);
+        given(dynamicProperties.enabledSidecars())
+                .willReturn(Set.of(SidecarType.CONTRACT_BYTECODE));
 
         assertSameResult(EMPTY_HALT_RESULT, subject.execute(frame, evm));
 
-		verify(stack).addFirst(frameCaptor.capture());
-		final var childFrame = frameCaptor.getValue();
-		// when:
-		childFrame.setState(MessageFrame.State.COMPLETED_SUCCESS);
-		childFrame.notifyCompletion();
-		// then:
-		verify(frame).pushStackItem(Words.fromAddress(Subject.PRETEND_CONTRACT_ADDRESS));
-		verify(creator).createSuccessfulSyntheticRecord(
-				eq(Collections.emptyList()), trackerCaptor.capture(), eq(EMPTY_MEMO));
-		verify(updater).manageInProgressRecord(recordsHistorian, liveRecord, mockCreation, List.of(sidecarRecord));
-		// and:
-		final var tracker = trackerCaptor.getValue();
-		assertTrue(tracker.hasTrackedContractCreation());
-		assertEquals(lastAllocated, tracker.getTrackedNewContractId());
-		assertArrayEquals(Subject.PRETEND_CONTRACT_ADDRESS.toArrayUnsafe(), tracker.getNewEntityAlias().toByteArray());
-		// and:
-		assertTrue(liveRecord.shouldNotBeExternalized());
-		sidecarUtilsMockedStatic.close();
-	}
+        verify(stack).addFirst(frameCaptor.capture());
+        final var childFrame = frameCaptor.getValue();
+        // when:
+        childFrame.setState(MessageFrame.State.COMPLETED_SUCCESS);
+        childFrame.notifyCompletion();
+        // then:
+        verify(frame).pushStackItem(Words.fromAddress(Subject.PRETEND_CONTRACT_ADDRESS));
+        verify(creator)
+                .createSuccessfulSyntheticRecord(
+                        eq(Collections.emptyList()), trackerCaptor.capture(), eq(EMPTY_MEMO));
+        verify(updater)
+                .manageInProgressRecord(
+                        recordsHistorian, liveRecord, mockCreation, List.of(sidecarRecord));
+        // and:
+        final var tracker = trackerCaptor.getValue();
+        assertTrue(tracker.hasTrackedContractCreation());
+        assertEquals(lastAllocated, tracker.getTrackedNewContractId());
+        assertArrayEquals(
+                Subject.PRETEND_CONTRACT_ADDRESS.toArrayUnsafe(),
+                tracker.getNewEntityAlias().toByteArray());
+        // and:
+        assertTrue(liveRecord.shouldNotBeExternalized());
+        sidecarUtilsMockedStatic.close();
+    }
 
-	@Test
-	void hasExpectedChildCompletionOnSuccessWithoutSidecarEnabled() {
-		final var trackerCaptor = ArgumentCaptor.forClass(SideEffectsTracker.class);
-		final var liveRecord = ExpirableTxnRecord.newBuilder()
-				.setReceiptBuilder(TxnReceipt.newBuilder().setStatus(TxnReceipt.REVERTED_SUCCESS_LITERAL));
-		final var mockCreation = TransactionBody.newBuilder()
-				.setContractCreateInstance(ContractCreateTransactionBody.newBuilder().setAutoRenewAccountId(autoRenewId.toGrpcAccountId()));
-		final var frameCaptor = ArgumentCaptor.forClass(MessageFrame.class);
-		givenSpawnPrereqs();
-		givenBuilderPrereqs();
-		given(updater.customizerForPendingCreation()).willReturn(contractCustomizer);
-		given(syntheticTxnFactory.contractCreation(contractCustomizer)).willReturn(mockCreation);
-		given(creator.createSuccessfulSyntheticRecord(any(), any(), any())).willReturn(liveRecord);
-		given(updater.idOfLastNewAddress()).willReturn(lastAllocated);
-		given(dynamicProperties.enabledSidecars()).willReturn(Set.of());
+    @Test
+    void hasExpectedChildCompletionOnSuccessWithoutSidecarEnabled() {
+        final var trackerCaptor = ArgumentCaptor.forClass(SideEffectsTracker.class);
+        final var liveRecord =
+                ExpirableTxnRecord.newBuilder()
+                        .setReceiptBuilder(
+                                TxnReceipt.newBuilder()
+                                        .setStatus(TxnReceipt.REVERTED_SUCCESS_LITERAL));
+        final var mockCreation =
+                TransactionBody.newBuilder()
+                        .setContractCreateInstance(
+                                ContractCreateTransactionBody.newBuilder()
+                                        .setAutoRenewAccountId(autoRenewId.toGrpcAccountId()));
+        final var frameCaptor = ArgumentCaptor.forClass(MessageFrame.class);
+        givenSpawnPrereqs();
+        givenBuilderPrereqs();
+        given(updater.customizerForPendingCreation()).willReturn(contractCustomizer);
+        given(syntheticTxnFactory.contractCreation(contractCustomizer)).willReturn(mockCreation);
+        given(creator.createSuccessfulSyntheticRecord(any(), any(), any())).willReturn(liveRecord);
+        given(updater.idOfLastNewAddress()).willReturn(lastAllocated);
+        given(dynamicProperties.enabledSidecars()).willReturn(Set.of());
 
-		assertSameResult(EMPTY_HALT_RESULT, subject.execute(frame, evm));
+        assertSameResult(EMPTY_HALT_RESULT, subject.execute(frame, evm));
 
-		verify(stack).addFirst(frameCaptor.capture());
-		final var childFrame = frameCaptor.getValue();
-		// when:
-		childFrame.setState(MessageFrame.State.COMPLETED_SUCCESS);
-		childFrame.notifyCompletion();
-		// then:
-		verify(frame).pushStackItem(Words.fromAddress(Subject.PRETEND_CONTRACT_ADDRESS));
-		verify(creator).createSuccessfulSyntheticRecord(
-				eq(Collections.emptyList()), trackerCaptor.capture(), eq(EMPTY_MEMO));
-		verify(updater).manageInProgressRecord(recordsHistorian, liveRecord, mockCreation, Collections.emptyList());
-		// and:
-		final var tracker = trackerCaptor.getValue();
-		assertTrue(tracker.hasTrackedContractCreation());
-		assertEquals(lastAllocated, tracker.getTrackedNewContractId());
-		assertArrayEquals(Subject.PRETEND_CONTRACT_ADDRESS.toArrayUnsafe(), tracker.getNewEntityAlias().toByteArray());
-		// and:
-		assertTrue(liveRecord.shouldNotBeExternalized());
-	}
+        verify(stack).addFirst(frameCaptor.capture());
+        final var childFrame = frameCaptor.getValue();
+        // when:
+        childFrame.setState(MessageFrame.State.COMPLETED_SUCCESS);
+        childFrame.notifyCompletion();
+        // then:
+        verify(frame).pushStackItem(Words.fromAddress(Subject.PRETEND_CONTRACT_ADDRESS));
+        verify(creator)
+                .createSuccessfulSyntheticRecord(
+                        eq(Collections.emptyList()), trackerCaptor.capture(), eq(EMPTY_MEMO));
+        verify(updater)
+                .manageInProgressRecord(
+                        recordsHistorian, liveRecord, mockCreation, Collections.emptyList());
+        // and:
+        final var tracker = trackerCaptor.getValue();
+        assertTrue(tracker.hasTrackedContractCreation());
+        assertEquals(lastAllocated, tracker.getTrackedNewContractId());
+        assertArrayEquals(
+                Subject.PRETEND_CONTRACT_ADDRESS.toArrayUnsafe(),
+                tracker.getNewEntityAlias().toByteArray());
+        // and:
+        assertTrue(liveRecord.shouldNotBeExternalized());
+    }
 
     @Test
     void hasExpectedChildCompletionOnFailure() {
@@ -339,22 +353,29 @@ class AbstractRecordingCreateOperationTest {
 
         boolean isEnabled = true;
 
-		protected Subject(
-				final int opcode,
-				final String name,
-				final int stackItemsConsumed,
-				final int stackItemsProduced,
-				final int opSize,
-				final GasCalculator gasCalculator,
-				final EntityCreator creator,
-				final SyntheticTxnFactory syntheticTxnFactory,
-				final RecordsHistorian recordsHistorian,
-				final GlobalDynamicProperties dynamicProperties
-		) {
-			super(
-					opcode, name, stackItemsConsumed, stackItemsProduced, opSize, gasCalculator,
-					creator, syntheticTxnFactory, recordsHistorian, dynamicProperties);
-		}
+        protected Subject(
+                final int opcode,
+                final String name,
+                final int stackItemsConsumed,
+                final int stackItemsProduced,
+                final int opSize,
+                final GasCalculator gasCalculator,
+                final EntityCreator creator,
+                final SyntheticTxnFactory syntheticTxnFactory,
+                final RecordsHistorian recordsHistorian,
+                final GlobalDynamicProperties dynamicProperties) {
+            super(
+                    opcode,
+                    name,
+                    stackItemsConsumed,
+                    stackItemsProduced,
+                    opSize,
+                    gasCalculator,
+                    creator,
+                    syntheticTxnFactory,
+                    recordsHistorian,
+                    dynamicProperties);
+        }
 
         @Override
         protected boolean isEnabled() {

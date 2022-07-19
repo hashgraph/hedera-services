@@ -341,11 +341,11 @@ abstract class EvmTxProcessor {
             mutableCoinbase.incrementBalance(Wei.of(coinbaseFee * gasPrice));
             initialFrame.getSelfDestructs().forEach(updater::deleteAccount);
 
-			if (dynamicProperties.enabledSidecars().contains(SidecarType.CONTRACT_STATE_CHANGE)) {
-				stateChanges = updater.getFinalStateChanges();
-			} else {
-				stateChanges = Map.of();
-			}
+            if (dynamicProperties.enabledSidecars().contains(SidecarType.CONTRACT_STATE_CHANGE)) {
+                stateChanges = updater.getFinalStateChanges();
+            } else {
+                stateChanges = Map.of();
+            }
 
             // Commit top level updater
             updater.commit();

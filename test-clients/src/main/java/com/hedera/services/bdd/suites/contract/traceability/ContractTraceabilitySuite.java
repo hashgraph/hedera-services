@@ -520,11 +520,7 @@ public class ContractTraceabilitySuite extends HapiApiSuite {
         // not from the transaction record
         log.info("Expected state changes {}", stateChanges);
         return withOpContext(
-                (spec, opLog) ->
-                        allRunFor(
-                                spec,
-                                getTxnRecord(traceabilityTxn)
-                                        .logged()));
+                (spec, opLog) -> allRunFor(spec, getTxnRecord(traceabilityTxn).logged()));
     }
 
     @NotNull

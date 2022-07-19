@@ -52,8 +52,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
-import com.google.protobuf.ByteString;
-import com.google.protobuf.BytesValue;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.ledger.accounts.AliasManager;
@@ -65,11 +63,12 @@ import com.hedera.services.stream.proto.SidecarType;
 import com.hedera.services.txns.contract.helpers.StorageExpiry;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import java.util.EnumSet;
 import java.math.BigInteger;
 import java.time.Instant;
 import java.util.ArrayDeque;
+import java.util.Collections;
 import java.util.Deque;
+import java.util.EnumSet;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -93,30 +92,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-
-import java.math.BigInteger;
-import java.time.Instant;
-import java.util.ArrayDeque;
-import java.util.Collections;
-import java.util.Deque;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-
-import static com.hedera.services.ethereum.EthTxData.WEIBARS_TO_TINYBARS;
-import static com.hedera.test.utils.TxnUtils.assertFailsWith;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_GAS;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ETHEREUM_TRANSACTION;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 class CallEvmTxProcessorTest {
@@ -286,51 +261,62 @@ class CallEvmTxProcessorTest {
         assertEquals(receiver.getId().asGrpcContract(), result.toGrpc().getContractID());
     }
 
-	@Test
-	void assertSuccessExecutionPopulatesStateChanges() {
-		givenValidMock();
-		given(globalDynamicProperties.fundingAccount()).willReturn(new Id(0, 0, 1010).asGrpcAccount());
-		given(globalDynamicProperties.enabledSidecars()).willReturn(EnumSet.of(SidecarType.CONTRACT_STATE_CHANGE));
-		givenSenderWithBalance(350_000L);
-		given(aliasManager.resolveForEvm(receiverAddress)).willReturn(receiverAddress);
-		final var contractAddress = "0xffff";
-		final var slot = 1L;
-		final var oldSlotValue = 4L;
-		final var newSlotValue = 255L;
-		given(updater.getFinalStateChanges())
-				.willReturn(Map.of(Address.fromHexString(contractAddress), Map.of(UInt256.valueOf(slot),
-								Pair.of(UInt256.valueOf(oldSlotValue), UInt256.valueOf(newSlotValue)))));
-		given(storageExpiry.hapiCallOracle()).willReturn(oracle);
+    @Test
+    void assertSuccessExecutionPopulatesStateChanges() {
+        givenValidMock();
+        given(globalDynamicProperties.fundingAccount())
+                .willReturn(new Id(0, 0, 1010).asGrpcAccount());
+        given(globalDynamicProperties.enabledSidecars())
+                .willReturn(EnumSet.of(SidecarType.CONTRACT_STATE_CHANGE));
+        givenSenderWithBalance(350_000L);
+        given(aliasManager.resolveForEvm(receiverAddress)).willReturn(receiverAddress);
+        final var contractAddress = "0xffff";
+        final var slot = 1L;
+        final var oldSlotValue = 4L;
+        final var newSlotValue = 255L;
+        given(updater.getFinalStateChanges())
+                .willReturn(
+                        Map.of(
+                                Address.fromHexString(contractAddress),
+                                Map.of(
+                                        UInt256.valueOf(slot),
+                                        Pair.of(
+                                                UInt256.valueOf(oldSlotValue),
+                                                UInt256.valueOf(newSlotValue)))));
+        given(storageExpiry.hapiCallOracle()).willReturn(oracle);
 
         final var result =
                 callEvmTxProcessor.execute(
                         sender, receiverAddress, 33_333L, 1234L, Bytes.EMPTY, consensusTime);
 
-		assertTrue(result.isSuccessful());
-		assertEquals(receiver.getId().asGrpcContract(), result.toGrpc().getContractID());
-		assertEquals(1, result.getStateChanges().size());
-		final var contractStateChange =
-				result.getStateChanges().get(Address.fromHexString(contractAddress)).get(UInt256.valueOf(slot));
-		assertEquals(UInt256.valueOf(oldSlotValue), contractStateChange.getLeft());
-		assertEquals(UInt256.valueOf(newSlotValue), contractStateChange.getRight());
-	}
+        assertTrue(result.isSuccessful());
+        assertEquals(receiver.getId().asGrpcContract(), result.toGrpc().getContractID());
+        assertEquals(1, result.getStateChanges().size());
+        final var contractStateChange =
+                result.getStateChanges()
+                        .get(Address.fromHexString(contractAddress))
+                        .get(UInt256.valueOf(slot));
+        assertEquals(UInt256.valueOf(oldSlotValue), contractStateChange.getLeft());
+        assertEquals(UInt256.valueOf(newSlotValue), contractStateChange.getRight());
+    }
 
-	@Test
-	void assertSuccessExecutionWithDisabledTraceabilityDoNotPopulatesStorageChanges() {
-		givenValidMock();
-		given(globalDynamicProperties.fundingAccount()).willReturn(new Id(0, 0, 1010).asGrpcAccount());
-		given(globalDynamicProperties.enabledSidecars()).willReturn(Collections.emptySet());
-		givenSenderWithBalance(350_000L);
-		given(aliasManager.resolveForEvm(receiverAddress)).willReturn(receiverAddress);
-		given(storageExpiry.hapiCallOracle()).willReturn(oracle);
+    @Test
+    void assertSuccessExecutionWithDisabledTraceabilityDoNotPopulatesStorageChanges() {
+        givenValidMock();
+        given(globalDynamicProperties.fundingAccount())
+                .willReturn(new Id(0, 0, 1010).asGrpcAccount());
+        given(globalDynamicProperties.enabledSidecars()).willReturn(Collections.emptySet());
+        givenSenderWithBalance(350_000L);
+        given(aliasManager.resolveForEvm(receiverAddress)).willReturn(receiverAddress);
+        given(storageExpiry.hapiCallOracle()).willReturn(oracle);
 
         final var result =
                 callEvmTxProcessor.execute(
                         sender, receiverAddress, 33_333L, 1234L, Bytes.EMPTY, consensusTime);
 
-		assertTrue(result.isSuccessful());
-		assertEquals(receiver.getId().asGrpcContract(), result.toGrpc().getContractID());
-		assertEquals(0, result.getStateChanges().size());
+        assertTrue(result.isSuccessful());
+        assertEquals(receiver.getId().asGrpcContract(), result.toGrpc().getContractID());
+        assertEquals(0, result.getStateChanges().size());
 
         verify(updater, never()).getFinalStateChanges();
     }

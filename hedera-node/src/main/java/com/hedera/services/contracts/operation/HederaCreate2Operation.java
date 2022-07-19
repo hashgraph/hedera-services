@@ -37,28 +37,27 @@ public class HederaCreate2Operation extends AbstractRecordingCreateOperation {
 
     private final StorageGasCalculator storageGasCalculator;
 
-	@Inject
-	public HederaCreate2Operation(
-			final GasCalculator gasCalculator,
-			final EntityCreator creator,
-			final SyntheticTxnFactory syntheticTxnFactory,
-			final RecordsHistorian recordsHistorian,
-			final GlobalDynamicProperties dynamicProperties,
-			final StorageGasCalculator storageGasCalculator
-	) {
-		super(
-				0xF5,
-				"ħCREATE2",
-				4,
-				1,
-				1,
-				gasCalculator,
-				creator,
-				syntheticTxnFactory,
-				recordsHistorian,
-				dynamicProperties);
-		this.storageGasCalculator = storageGasCalculator;
-	}
+    @Inject
+    public HederaCreate2Operation(
+            final GasCalculator gasCalculator,
+            final EntityCreator creator,
+            final SyntheticTxnFactory syntheticTxnFactory,
+            final RecordsHistorian recordsHistorian,
+            final GlobalDynamicProperties dynamicProperties,
+            final StorageGasCalculator storageGasCalculator) {
+        super(
+                0xF5,
+                "ħCREATE2",
+                4,
+                1,
+                1,
+                gasCalculator,
+                creator,
+                syntheticTxnFactory,
+                recordsHistorian,
+                dynamicProperties);
+        this.storageGasCalculator = storageGasCalculator;
+    }
 
     @Override
     protected long cost(final MessageFrame frame) {
