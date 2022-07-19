@@ -33,6 +33,7 @@ import org.apache.logging.log4j.Logger;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.nio.ByteBuffer;
+import java.util.Arrays;
 import java.util.function.Supplier;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PRNG_RANGE;
@@ -94,7 +95,7 @@ public class PrngLogic {
 		try {
 			// Use n-3 running hash instead of n-1 running hash for processing transactions quickly
 			nMinus3RunningHash = runningHashLeafSupplier.get().nMinusThreeRunningHash();
-			if (nMinus3RunningHash == null) {
+			if (nMinus3RunningHash == null || Arrays.equals(nMinus3RunningHash.getValue(), new byte[48])) {
 				log.info("No n-3 record running hash available to generate random number");
 				return MISSING_BYTES;
 			}

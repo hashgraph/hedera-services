@@ -633,10 +633,9 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
         if (noPseudoRandomData) {
             final var actualByteString = actualRecord.getPrngBytes();
             final var actualRandomNum = actualRecord.getPrngNumber();
-            if (actualByteString.size() > 0) {
-                assertArrayEquals(new byte[48], actualByteString.toByteArray());
-            }
-            assertEquals(0, actualRandomNum);
+			assertEquals(TransactionRecord.EntropyCase.ENTROPY_NOT_SET, actualRecord.getEntropyCase());
+			assertEquals(ByteString.EMPTY, actualByteString);
+			assertEquals(0, actualRandomNum);
         }
         if (pseudorandomBytesExpected) {
             final var actualByteString = actualRecord.getPrngBytes();

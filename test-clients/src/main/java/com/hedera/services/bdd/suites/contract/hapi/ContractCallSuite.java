@@ -248,7 +248,10 @@ public class ContractCallSuite extends HapiApiSuite {
         final var prng = "PrngSystemContract";
         final var gasToOffer = 400_000;
         return defaultHapiSpec("prngPrecompileWorks")
-                .given(cryptoCreate("bob"), uploadInitCode(prng), contractCreate(prng))
+                .given(
+                        cryptoCreate("bob"),
+                        uploadInitCode(prng),
+                        contractCreate(prng))
                 .when(
                         sourcing(
                                 () ->

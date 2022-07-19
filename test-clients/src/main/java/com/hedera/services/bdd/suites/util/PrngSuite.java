@@ -140,6 +140,9 @@ public class PrngSuite extends HapiApiSuite {
 								"prng.isEnabled", "false"
 						)),
 						cryptoCreate("bob").balance(ONE_HUNDRED_HBARS),
+						cryptoCreate("mary").balance(ONE_HUNDRED_HBARS),
+						cryptoCreate("tina").balance(ONE_HUNDRED_HBARS),
+						cryptoCreate("alex").balance(ONE_HUNDRED_HBARS),
 						hapiPrng()
 								.payingWith("bob")
 								.via("baseTxn")
