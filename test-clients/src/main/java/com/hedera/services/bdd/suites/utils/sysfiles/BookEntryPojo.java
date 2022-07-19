@@ -140,6 +140,14 @@ public class BookEntryPojo {
         return entry;
     }
 
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
+    }
+
     @SuppressWarnings("java:S1874")
     public Stream<NodeAddress> toGrpcStream() {
         var grpc = NodeAddress.newBuilder();
@@ -181,12 +189,23 @@ public class BookEntryPojo {
         if (description != null) {
             grpc.setDescription(description);
         }
+        if (stake != null) {
+            grpc.setStake(stake);
+        }
 
         return Stream.of(grpc.build());
     }
 
     private static void mapEndpoints(NodeAddress from, BookEntryPojo to) {
         to.endpoints = from.getServiceEndpointList().stream().map(EndpointPojo::fromGrpc).toList();
+    }
+
+    public Long getStake() {
+        return stake;
+    }
+
+    public void setStake(Long stake) {
+        this.stake = stake;
     }
 
     public String getDeprecatedIp() {
