@@ -25,7 +25,7 @@ package com.hedera.services.yahcli.commands.system;
 import com.hedera.services.yahcli.Yahcli;
 import com.hedera.services.yahcli.suites.UpgradeHelperSuite;
 import com.hedera.services.yahcli.suites.Utils;
-import com.swirlds.common.CommonUtils;
+import com.swirlds.common.utility.CommonUtils;
 import picocli.CommandLine;
 
 import java.util.concurrent.Callable;

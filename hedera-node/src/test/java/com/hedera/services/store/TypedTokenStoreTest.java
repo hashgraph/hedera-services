@@ -59,7 +59,6 @@ import java.util.List;
 import static com.hedera.services.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
 import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
 import static com.hedera.services.state.submerkle.RichInstant.MISSING_INSTANT;
-import static com.hedera.services.store.models.Id.MISSING_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -147,19 +146,6 @@ class TypedTokenStoreTest {
 		assertEquals(miscTokenRel, actualTokenRel);
 	}
 
-	@Test
-	void loadsExpectedLatestRelationShipFromAccountsLastAssociatedToken() {
-		givenRelationship(miscTokenRelId, miscTokenMerkleRel);
-		givenToken(merkleTokenId, merkleToken);
-		given(accountStore.loadAccount(autoRenewId)).willReturn(autoRenewAccount);
-		given(accountStore.loadAccount(treasuryId)).willReturn(treasuryAccount);
-		miscAccount.setHeadTokenNum(tokenNum);
-
-		final var actualTokenRel = subject.getLatestTokenRelationship(miscAccount);
-
-		assertEquals(miscTokenRel, actualTokenRel);
-	}
-
 	/* --- Token relationship saving --- */
 	@Test
 	void persistsExtantTokenRelAsExpected() {
@@ -213,10 +199,8 @@ class TypedTokenStoreTest {
 	void persistsNewTokenRelAsExpected() {
 		// setup:
 		final var expectedNewTokenRel = new MerkleTokenRelStatus(balance * 2, false, true, false);
-		expectedNewTokenRel.setKey(miscTokenRelId);
 		// given:
 		final var newTokenRel = new TokenRelationship(token, miscAccount);
-		newTokenRel.setKey(miscTokenRelId);
 		// when:
 		newTokenRel.setKycGranted(true);
 		newTokenRel.setBalance(balance * 2);
@@ -479,9 +463,6 @@ class TypedTokenStoreTest {
 		miscTokenRel.setKycGranted(kycGranted);
 		miscTokenRel.setAutomaticAssociation(automaticAssociation);
 		miscTokenRel.markAsPersisted();
-		miscTokenRel.setKey(miscTokenRelId);
-		miscTokenRel.setPrevKey(MISSING_ID.num());
-		miscTokenRel.setNextKey(MISSING_ID.num());
 	}
 
 	private final long expiry = 1_234_567L;

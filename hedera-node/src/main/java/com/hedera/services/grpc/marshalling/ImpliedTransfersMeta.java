@@ -27,8 +27,8 @@ import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.txns.customfees.CustomFeeSchedules;
 import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.swirlds.common.SwirldDualState;
-import com.swirlds.common.SwirldTransaction;
+import com.swirlds.common.system.SwirldDualState;
+import com.swirlds.common.system.transaction.SwirldTransaction;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 

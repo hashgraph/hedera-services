@@ -49,7 +49,7 @@ import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
-import com.swirlds.common.CommonUtils;
+import com.swirlds.common.utility.CommonUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -65,6 +65,8 @@ import static com.hedera.services.bdd.spec.HapiPropertySource.asAccountString;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asScheduleString;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asTokenString;
 import static com.hedera.services.bdd.spec.keys.KeyFactory.payerKey;
+import static com.hedera.services.bdd.suites.HapiApiSuite.DEFAULT_CONTRACT_RECEIVER;
+import static com.hedera.services.bdd.suites.HapiApiSuite.DEFAULT_CONTRACT_SENDER;
 import static java.util.stream.Collectors.counting;
 import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.toList;
@@ -90,9 +92,16 @@ public class HapiSpecRegistry {
 		saveKey(setup.genesisAccountName(), asKeyList(genesisKey));
 		saveAccountId(setup.defaultPayerName(), setup.defaultPayer());
 		saveKey(setup.defaultPayerName(), asKeyList(genesisKey));
+		// The default contract sender is the default payer unless using Ethereum transactions
+		saveAccountId(DEFAULT_CONTRACT_SENDER, setup.defaultPayer());
+		saveKey(DEFAULT_CONTRACT_SENDER, asKeyList(genesisKey));
+		saveAccountId(DEFAULT_CONTRACT_RECEIVER, setup.fundingAccount());
+		saveKey(DEFAULT_CONTRACT_RECEIVER, asKeyList(genesisKey));
 		saveAccountId(setup.defaultNodeName(), setup.defaultNode());
 		saveAccountId(setup.fundingAccountName(), setup.fundingAccount());
 		saveContractId(setup.invalidContractName(), setup.invalidContract());
+		saveAccountId(setup.stakingRewardAccountName(), setup.stakingRewardAccount());
+		saveAccountId(setup.nodeRewardAccountName(), setup.nodeRewardAccount());
 
 		saveAccountId(setup.strongControlName(), setup.strongControlAccount());
 		saveKey(setup.strongControlName(), asKeyList(genesisKey));
@@ -764,6 +773,10 @@ public class HapiSpecRegistry {
 			remove(name, TransactionRecord.class);
 		} catch (Exception ignore) {
 		}
+	}
+
+	public boolean hasTransactionRecord(String name) {
+		return has(name, TransactionRecord.class);
 	}
 
 	public ContractGetInfoResponse.ContractInfo getContractInfo(String name) {

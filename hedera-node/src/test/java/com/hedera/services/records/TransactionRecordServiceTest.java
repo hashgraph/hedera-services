@@ -23,6 +23,8 @@ package com.hedera.services.records;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.contracts.execution.TransactionProcessingResult;
 import com.hedera.services.contracts.operation.HederaExceptionalHaltReason;
+import com.hedera.services.ethereum.EthTxData;
+import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.EvmFnResult;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.Topic;
@@ -67,6 +69,8 @@ class TransactionRecordServiceTest {
 	private TransactionProcessingResult processingResult;
 	@Mock
 	private EvmFnResult functionResult;
+	@Mock
+	private EthTxData evmFnCallContext;
 
 	private TransactionRecordService subject;
 
@@ -156,6 +160,15 @@ class TransactionRecordServiceTest {
 		verify(txnCtx).setStatus(ResponseCodeEnum.INVALID_SIGNATURE);
 		verify(txnCtx).setCreateResult(any());
 		verify(txnCtx).addNonThresholdFeeChargedToPayer(NON_THRESHOLD_FEE);
+	}
+	
+	@Test 
+	void updateFromEvmCallContextRelaysToDelegate() {
+		EntityId senderId = EntityId.fromIdentityCode(42);
+		// when:
+		subject.updateForEvmCall(evmFnCallContext, senderId);
+		// then:
+		verify(txnCtx).updateForEvmCall(evmFnCallContext, senderId);
 	}
 
 	@Test

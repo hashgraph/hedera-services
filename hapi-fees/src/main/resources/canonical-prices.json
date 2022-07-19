@@ -126,6 +126,9 @@
   "ContractCall": {
 	"DEFAULT": 0.05
   },
+  "EthereumTransaction": {
+	"DEFAULT": 0.0001
+  },
   "ContractCallLocal": {
 	"DEFAULT": 0.001
   },
@@ -163,7 +166,8 @@
 	"DEFAULT": 0.0001
   },
   "ScheduleCreate": {
-	"DEFAULT": 0.01
+	"DEFAULT": 0.01,
+	"SCHEDULE_CREATE_CONTRACT_CALL": 0.1
   },
   "ScheduleSign": {
 	"DEFAULT": 0.01
@@ -191,5 +195,8 @@
   },
   "SystemUndelete": {
 	"DEFAULT": 0
+  },
+  "PRNG": {
+	"DEFAULT": 0.01
   }
 }

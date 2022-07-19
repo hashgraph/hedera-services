@@ -23,7 +23,7 @@ package com.hedera.services.txns.network;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.merkle.MerkleSpecialFiles;
-import com.swirlds.common.SwirldDualState;
+import com.swirlds.common.system.SwirldDualState;
 import org.apache.commons.io.FileUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;

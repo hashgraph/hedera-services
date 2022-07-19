@@ -40,6 +40,14 @@ public class LinkedRefs {
 	private long[] linkedNums = new long[EXPECTED_LINKED_NUMS];
 	private List<ByteString> linkedAliases = null;
 
+	public LinkedRefs() {
+		// No-op
+	}
+
+	public LinkedRefs(final Instant sourceSignedAt) {
+		this.sourceSignedAt = sourceSignedAt;
+	}
+
 	public boolean haveNoChangesAccordingTo(final SigImpactHistorian historian) {
 		for (int j = 0; j < linkedNums.length && linkedNums[j] != 0; j++) {
 			if (historian.entityStatusSince(sourceSignedAt, linkedNums[j]) != UNCHANGED) {

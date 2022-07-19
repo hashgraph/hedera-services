@@ -23,9 +23,9 @@ package com.hedera.services.state.logic;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.SigImpactHistorian;
-import com.hedera.services.records.RecordsHistorian;
+import com.hedera.services.ledger.accounts.staking.RewardCalculator;
 import com.hedera.services.records.RecordCache;
-import com.hedera.services.state.annotations.RunRecordStreaming;
+import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.state.annotations.RunTopLevelTransition;
 import com.hedera.services.state.annotations.RunTriggeredTransition;
 import com.hedera.services.state.migration.MigrationRecordsManager;
@@ -46,7 +46,6 @@ public class ServicesTxnManager {
 	private static final String ERROR_LOG_TPL = "Possibly CATASTROPHIC failure in {} :: {} ==>> {} ==>>";
 
 	private final Runnable scopedProcessing;
-	private final Runnable scopedRecordStreaming;
 	private final Runnable scopedTriggeredProcessing;
 	private final RecordCache recordCache;
 	private final HederaLedger ledger;
@@ -54,28 +53,35 @@ public class ServicesTxnManager {
 	private final SigImpactHistorian sigImpactHistorian;
 	private final RecordsHistorian recordsHistorian;
 	private final MigrationRecordsManager migrationRecordsManager;
+	private final RecordStreaming recordStreaming;
+	private final BlockManager blockManager;
+	private final RewardCalculator rewardCalculator;
 
 	@Inject
 	public ServicesTxnManager(
 			final @RunTopLevelTransition Runnable scopedProcessing,
-			final @RunRecordStreaming Runnable scopedRecordStreaming,
 			final @RunTriggeredTransition Runnable scopedTriggeredProcessing,
 			final RecordCache recordCache,
 			final HederaLedger ledger,
 			final TransactionContext txnCtx,
 			final SigImpactHistorian sigImpactHistorian,
 			final RecordsHistorian recordsHistorian,
-			final MigrationRecordsManager migrationRecordsManager
+			final MigrationRecordsManager migrationRecordsManager,
+			final RecordStreaming recordStreaming,
+			final BlockManager blockManager,
+			final RewardCalculator rewardCalculator
 	) {
 		this.txnCtx = txnCtx;
 		this.ledger = ledger;
 		this.recordCache = recordCache;
+		this.recordStreaming = recordStreaming;
 		this.recordsHistorian = recordsHistorian;
 		this.scopedProcessing = scopedProcessing;
 		this.sigImpactHistorian = sigImpactHistorian;
-		this.scopedRecordStreaming = scopedRecordStreaming;
 		this.migrationRecordsManager = migrationRecordsManager;
 		this.scopedTriggeredProcessing = scopedTriggeredProcessing;
+		this.blockManager = blockManager;
+		this.rewardCalculator = rewardCalculator;
 	}
 
 	private boolean needToPublishMigrationRecords = true;
@@ -89,6 +95,8 @@ public class ServicesTxnManager {
 			txnCtx.resetFor(accessor, consensusTime, submittingMember);
 			sigImpactHistorian.setChangeTime(consensusTime);
 			recordsHistorian.clearHistory();
+			blockManager.reset();
+			rewardCalculator.reset();
 			ledger.begin();
 
 			if (needToPublishMigrationRecords) {
@@ -120,7 +128,7 @@ public class ServicesTxnManager {
 
 	private void attemptRecordStreaming() {
 		try {
-			scopedRecordStreaming.run();
+			recordStreaming.streamUserTxnRecords();
 		} catch (Exception e) {
 			logContextualizedError(e, "record streaming");
 		}

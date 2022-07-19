@@ -33,7 +33,7 @@ import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
 import static com.hedera.services.bdd.spec.keys.SigControl.OFF;
 import static com.hedera.services.bdd.spec.keys.SigControl.ON;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAliasedAccountBalance;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAutoCreatedAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAliasedAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
@@ -82,12 +82,12 @@ public class AutoAccountUpdateSuite extends HapiApiSuite {
 								"transferTxn"),
 						/* validate child record has alias set and has fields as expected */
 						getTxnRecord("transferTxn").andAllChildRecords()
-								.hasChildRecordCount(1)
+								.hasNonStakingChildRecordCount(1)
 								.hasAliasInChildRecord("testAlias", 0).logged(),
 						getAliasedAccountInfo("testAlias").has(accountWith()
 								.autoRenew(THREE_MONTHS_IN_SECONDS)
 								.receiverSigReq(false)
-								.expectedBalanceWithChargedUsd((ONE_HUNDRED_HBARS), 0.05, 0.5))
+								.expectedBalanceWithChargedUsd((ONE_HUNDRED_HBARS), 0.05, 10))
 				).then(
 						/* change receiverSigRequired to false and validate */
 						cryptoUpdateAliased("testAlias").receiverSigRequired(true).signedBy(
@@ -95,7 +95,7 @@ public class AutoAccountUpdateSuite extends HapiApiSuite {
 						getAliasedAccountInfo("testAlias").has(accountWith()
 								.autoRenew(THREE_MONTHS_IN_SECONDS)
 								.receiverSigReq(true)
-								.expectedBalanceWithChargedUsd((ONE_HUNDRED_HBARS), 0.05, 0.5)),
+								.expectedBalanceWithChargedUsd((ONE_HUNDRED_HBARS), 0.05, 10)),
 
 						/* transfer without receiver sig fails */
 						cryptoTransfer(tinyBarsFromToWithAlias("payer", "testAlias", ONE_HUNDRED_HBARS))
@@ -107,10 +107,10 @@ public class AutoAccountUpdateSuite extends HapiApiSuite {
 						cryptoTransfer(tinyBarsFromToWithAlias("payer", "testAlias", ONE_HUNDRED_HBARS))
 								.via("transferTxn3")
 								.signedBy("testAlias", "payer", DEFAULT_PAYER),
-						getTxnRecord("transferTxn3").andAllChildRecords().hasChildRecordCount(0),
+						getTxnRecord("transferTxn3").andAllChildRecords().hasNonStakingChildRecordCount(0),
 						getAliasedAccountInfo("testAlias").has(
 								accountWith()
-										.expectedBalanceWithChargedUsd((2 * ONE_HUNDRED_HBARS), 0.05, 0.5))
+										.expectedBalanceWithChargedUsd((2 * ONE_HUNDRED_HBARS), 0.05, 10))
 				);
 	}
 
@@ -129,21 +129,21 @@ public class AutoAccountUpdateSuite extends HapiApiSuite {
 						getTxnRecord("transferTxn").andAllChildRecords().logged(),
 						getAliasedAccountInfo("alias").has(accountWith()
 								.autoRenew(THREE_MONTHS_IN_SECONDS)
-								.expectedBalanceWithChargedUsd((ONE_HUNDRED_HBARS), 1, 10))
+								.expectedBalanceWithChargedUsd((ONE_HUNDRED_HBARS), 0.05, 10))
 				).then(
 						/* update auto renew period */
 						cryptoUpdateAliased("alias").autoRenewPeriod(briefAutoRenew).signedBy(
 								"alias", "randomPayer", DEFAULT_PAYER),
 						sleepFor(2 * briefAutoRenew * 1_000L + 500L),
-						getAliasedAccountBalance("alias"),
+						getAutoCreatedAccountBalance("alias"),
 
 						/* account is expired but not deleted and validate the transfer succeeds*/
 						cryptoTransfer(tinyBarsFromToWithAlias("randomPayer", "alias", ONE_HUNDRED_HBARS)).via(
 								"transferTxn2"),
-						getTxnRecord("transferTxn2").andAllChildRecords().hasChildRecordCount(0),
+						getTxnRecord("transferTxn2").andAllChildRecords().hasNonStakingChildRecordCount(0),
 						getAliasedAccountInfo("alias").has(
 								accountWith()
-										.expectedBalanceWithChargedUsd((2 * ONE_HUNDRED_HBARS), 1, 10)),
+										.expectedBalanceWithChargedUsd((2 * ONE_HUNDRED_HBARS), 0.05, 10)),
 
 						fileUpdate(APP_PROPERTIES)
 								.payingWith(GENESIS)
@@ -169,7 +169,7 @@ public class AutoAccountUpdateSuite extends HapiApiSuite {
 
 						getTxnRecord("transferTxn").andAllChildRecords().logged(),
 						getAliasedAccountInfo("alias").has(accountWith()
-								.expectedBalanceWithChargedUsd(ONE_HUNDRED_HBARS, 0.05, 0.1)
+								.expectedBalanceWithChargedUsd(ONE_HUNDRED_HBARS, 0.05, 10)
 								.alias("alias"))
 				).then(
 						/* validate the key on account can be updated to complex key, and has no relation to alias*/
@@ -179,14 +179,14 @@ public class AutoAccountUpdateSuite extends HapiApiSuite {
 								.signedBy("alias", "complexKey", "payer", DEFAULT_PAYER),
 						getAliasedAccountInfo("alias").has(
 								accountWith()
-										.expectedBalanceWithChargedUsd((ONE_HUNDRED_HBARS), 0.05, 0.1)
+										.expectedBalanceWithChargedUsd((ONE_HUNDRED_HBARS), 0.05, 10)
 										.key("complexKey")));
 	}
 
 	// Can't be done without property change, since auto-renew period can't be reduced from 3 months after create.
 	private HapiApiSpec accountCreatedAfterAliasAccountExpiresAndDelete() {
 		final var briefAutoRenew = 3L;
-		return defaultHapiSpec("AccountCreatedAfterAliasAccountExpires")
+		return defaultHapiSpec("AccountCreatedAfterAliasAccountExpiresAndDelete")
 				.given(
 						newKeyNamed("alias"),
 						fileUpdate(APP_PROPERTIES).payingWith(GENESIS)
@@ -202,14 +202,14 @@ public class AutoAccountUpdateSuite extends HapiApiSuite {
 						cryptoUpdateAliased("alias").autoRenewPeriod(briefAutoRenew).signedBy(
 								"alias", "randomPayer"),
 						sleepFor(2 * briefAutoRenew * 1_000L + 500L),
-						getAliasedAccountBalance("alias").hasAnswerOnlyPrecheck(INVALID_ACCOUNT_ID),
+						getAutoCreatedAccountBalance("alias").hasAnswerOnlyPrecheck(INVALID_ACCOUNT_ID),
 
 						// Need to know why its INVALID_ACCOUNT_ID, same reason as Delete
 
 						/* validate account is expired and deleted , so new account is created */
 						cryptoTransfer(tinyBarsFromToWithAlias("randomPayer", "alias", ONE_HUNDRED_HBARS)).via(
 								"transferTxn2"),
-						getTxnRecord("transferTxn2").andAllChildRecords().hasChildRecordCount(1),
+						getTxnRecord("transferTxn2").andAllChildRecords().hasNonStakingChildRecordCount(1),
 
 						fileUpdate(APP_PROPERTIES)
 								.payingWith(GENESIS)

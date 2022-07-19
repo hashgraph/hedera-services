@@ -20,7 +20,7 @@ package com.hedera.services.state;
  * ‍
  */
 
-import com.swirlds.common.SwirldDualState;
+import com.swirlds.common.system.SwirldDualState;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;

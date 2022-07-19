@@ -20,11 +20,16 @@ package com.hedera.services.txns.span;
  * ‍
  */
 
+import com.hedera.services.ethereum.EthTxData;
+import com.hedera.services.ethereum.EthTxSigs;
+import com.hedera.services.sigs.order.LinkedRefs;
 import com.hedera.services.usage.crypto.CryptoApproveAllowanceMeta;
 import com.hedera.services.usage.crypto.CryptoCreateMeta;
 import com.hedera.services.usage.crypto.CryptoDeleteAllowanceMeta;
 import com.hedera.services.usage.crypto.CryptoUpdateMeta;
+import com.hedera.services.usage.util.PrngMeta;
 import com.hedera.services.utils.accessors.TxnAccessor;
+import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -32,17 +37,20 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.math.BigInteger;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
 
 import static com.hedera.services.usage.token.TokenOpsUsageUtils.TOKEN_OPS_USAGE_UTILS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.BDDMockito.given;
 
 @ExtendWith(MockitoExtension.class)
 class ExpandHandleSpanMapAccessorTest {
-	private Map<String, Object> span = new HashMap<>();
+	private final Map<String, Object> span = new HashMap<>();
 
 	@Mock
 	private TxnAccessor accessor;
@@ -54,6 +62,15 @@ class ExpandHandleSpanMapAccessorTest {
 		subject = new ExpandHandleSpanMapAccessor();
 
 		given(accessor.getSpanMap()).willReturn(span);
+	}
+
+	@Test
+	void managesExpansionAsExpected() {
+		final var expansion = new EthTxExpansion(new LinkedRefs(), INSUFFICIENT_ACCOUNT_BALANCE);
+
+		subject.setEthTxExpansion(accessor, expansion);
+
+		assertSame(expansion, subject.getEthTxExpansion(accessor));
 	}
 
 	@Test
@@ -74,6 +91,11 @@ class ExpandHandleSpanMapAccessorTest {
 	@Test
 	void testsForTokenWipeMetaAsExpected() {
 		Assertions.assertDoesNotThrow(() -> subject.getTokenWipeMeta(accessor));
+	}
+
+	@Test
+	void testsForPrngMetaAsExpected() {
+		Assertions.assertDoesNotThrow(() -> subject.getPrngMeta(accessor));
 	}
 
 	@Test
@@ -168,5 +190,46 @@ class ExpandHandleSpanMapAccessorTest {
 		subject.setCryptoDeleteAllowanceMeta(accessor, opMeta);
 		assertEquals(112, subject.getCryptoDeleteAllowanceMeta(accessor).getMsgBytesUsed());
 		assertEquals(now, subject.getCryptoDeleteAllowanceMeta(accessor).getEffectiveNow());
+	}
+
+	@Test
+	void testsForEthTxDataMeta() {
+		var oneByte = new byte[] { 1 };
+		var ethTxData =
+				new EthTxData(oneByte, EthTxData.EthTransactionType.EIP1559, oneByte, 1,
+						oneByte, oneByte, oneByte, 1,
+						oneByte, BigInteger.ONE, oneByte, oneByte, 1,
+						oneByte, oneByte, oneByte);
+
+		subject.setEthTxDataMeta(accessor, ethTxData);
+		assertEquals(ethTxData, subject.getEthTxDataMeta(accessor));
+	}
+
+	@Test
+	void testsForEthTxSigs() {
+		var oneByte = new byte[] { 1 };
+		var ethTxSigs =
+				new EthTxSigs(oneByte, oneByte);
+
+		subject.setEthTxSigsMeta(accessor, ethTxSigs);
+		assertEquals(ethTxSigs, subject.getEthTxSigsMeta(accessor));
+	}
+
+	@Test
+	void testsForEthTxBody() {
+		var txBody = TransactionBody.newBuilder().build();
+
+		subject.setEthTxBodyMeta(accessor, txBody);
+		assertEquals(txBody, subject.getEthTxBodyMeta(accessor));
+	}
+
+	@Test
+	void testsForPrngMetaBody() {
+		final var opMeta = PrngMeta.newBuilder()
+				.msgBytesUsed(112)
+				.build();
+
+		subject.setPrngMeta(accessor, opMeta);
+		assertEquals(112, subject.getPrngMeta(accessor).getMsgBytesUsed());
 	}
 }

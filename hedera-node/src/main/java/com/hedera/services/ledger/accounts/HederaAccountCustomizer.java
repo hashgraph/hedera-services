@@ -32,9 +32,15 @@ import java.util.Collections;
 import java.util.EnumMap;
 import java.util.Map;
 
+import static com.hedera.services.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
+
 public final class HederaAccountCustomizer extends
 		AccountCustomizer<AccountID, MerkleAccount, AccountProperty, HederaAccountCustomizer> {
 	private static final Map<Option, AccountProperty> OPTION_PROPERTIES;
+	public static final String STAKED_ID_NOT_SET_CASE = "STAKEDID_NOT_SET";
+	public static final String STAKED_ACCOUNT_ID_CASE = "STAKED_ACCOUNT_ID";
+	public static final String STAKED_NODE_ID_CASE = "STAKED_NODE_ID";
+
 	static {
 		Map<Option, AccountProperty> optionAccountPropertyMap = new EnumMap<>(Option.class);
 		optionAccountPropertyMap.put(Option.KEY, AccountProperty.KEY);
@@ -48,6 +54,9 @@ public final class HederaAccountCustomizer extends
 		optionAccountPropertyMap.put(Option.MAX_AUTOMATIC_ASSOCIATIONS, AccountProperty.MAX_AUTOMATIC_ASSOCIATIONS);
 		optionAccountPropertyMap.put(Option.USED_AUTOMATIC_ASSOCIATIONS, AccountProperty.USED_AUTOMATIC_ASSOCIATIONS);
 		optionAccountPropertyMap.put(Option.ALIAS, AccountProperty.ALIAS);
+		optionAccountPropertyMap.put(Option.AUTO_RENEW_ACCOUNT_ID, AccountProperty.AUTO_RENEW_ACCOUNT_ID);
+		optionAccountPropertyMap.put(Option.DECLINE_REWARD, AccountProperty.DECLINE_REWARD);
+		optionAccountPropertyMap.put(Option.STAKED_ID, AccountProperty.STAKED_ID);
 		OPTION_PROPERTIES = Collections.unmodifiableMap(optionAccountPropertyMap);
 	}
 
@@ -64,13 +73,62 @@ public final class HederaAccountCustomizer extends
 			op.setAutoRenewPeriod(Duration.newBuilder()
 					.setSeconds((long) changes.get(AccountProperty.AUTO_RENEW_PERIOD)));
 		}
-		if (changes.containsKey(AccountProperty.PROXY)) {
-			op.setProxyAccountID(((EntityId) changes.get(AccountProperty.PROXY)).toGrpcAccountId());
+		if (changes.containsKey(AccountProperty.STAKED_ID)) {
+			final long id = (long) changes.get(AccountProperty.STAKED_ID);
+			if (id < 0) {
+				op.setStakedNodeId(-id - 1);
+			} else if (id > 0) {
+				op.setStakedAccountId(STATIC_PROPERTIES.scopedAccountWith(id));
+			}
+		}
+		if (changes.containsKey(AccountProperty.DECLINE_REWARD)) {
+			op.setDeclineReward((boolean) changes.get(AccountProperty.DECLINE_REWARD));
+		}
+		if (changes.containsKey(AccountProperty.AUTO_RENEW_ACCOUNT_ID)) {
+			op.setAutoRenewAccountId(((EntityId) changes.get(AccountProperty.AUTO_RENEW_ACCOUNT_ID)).toGrpcAccountId());
+		}
+		if (changes.containsKey(AccountProperty.MAX_AUTOMATIC_ASSOCIATIONS)) {
+			op.setMaxAutomaticTokenAssociations(((int) changes.get(AccountProperty.MAX_AUTOMATIC_ASSOCIATIONS)));
 		}
 	}
 
 	@Override
 	protected HederaAccountCustomizer self() {
 		return this;
+	}
+
+	public static boolean hasStakedId(final String idCase) {
+		return !idCase.equals(STAKED_ID_NOT_SET_CASE);
+	}
+
+	public void customizeStakedId(
+			final String idCase,
+			final AccountID stakedAccountId,
+			final long stakedNodeId
+	) {
+		final var stakedId = getStakedId(idCase, stakedAccountId, stakedNodeId);
+		this.stakedId(stakedId);
+	}
+
+	/**
+	 * Gets the stakedId from the provided staked_account_id or staked_node_id.
+	 *
+	 * @param stakedAccountId
+	 * 		given staked_account_id
+	 * @param stakedNodeId
+	 * 		given staked_node_id
+	 * @return valid staked id
+	 */
+	static long getStakedId(
+			final String idCase,
+			final AccountID stakedAccountId,
+			final long stakedNodeId
+	) {
+		if (idCase.matches(STAKED_ACCOUNT_ID_CASE)) {
+			return stakedAccountId.getAccountNum();
+		} else {
+			// return a number less than the given node Id, in order to recognize the if nodeId 0 is set
+			return -stakedNodeId - 1;
+		}
 	}
 }

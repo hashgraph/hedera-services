@@ -29,6 +29,7 @@ import com.hedera.services.grpc.controllers.FreezeController;
 import com.hedera.services.grpc.controllers.NetworkController;
 import com.hedera.services.grpc.controllers.ScheduleController;
 import com.hedera.services.grpc.controllers.TokenController;
+import com.hedera.services.grpc.controllers.UtilController;
 import com.hedera.services.grpc.marshalling.AdjustmentUtils;
 import com.hedera.services.grpc.marshalling.AliasResolver;
 import com.hedera.services.grpc.marshalling.BalanceChangeManager;
@@ -66,7 +67,8 @@ public interface GrpcModule {
 			ConsensusController consensusController,
 			NetworkController networkController,
 			TokenController tokenController,
-			ScheduleController scheduleController
+			ScheduleController scheduleController,
+			UtilController utilController
 	) {
 		return Set.of(
 				cryptoController,
@@ -76,7 +78,8 @@ public interface GrpcModule {
 				consensusController,
 				networkController,
 				tokenController,
-				scheduleController);
+				scheduleController,
+				utilController);
 	}
 
 	@Provides

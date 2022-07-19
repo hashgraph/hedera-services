@@ -69,4 +69,23 @@ class ContractCallResourceUsageTest {
 		// then:
 		verify(usageEstimator).getContractCallTxFeeMatrices(contractCallTxn, sigUsage);
 	}
+
+	@Test
+	void throwsExceptionWhenTxnBodyIsNull() throws Exception {
+		// when:
+		subject.usageGiven(null, sigUsage, null);
+
+		// then:
+		verify(usageEstimator).getContractCallTxFeeMatrices(null, sigUsage);
+	}
+
+	@Test
+	void delegatesToCorrectEstimateForInvalidCall() throws Exception {
+		// when:
+		given(nonContractCallTxn.hasContractCall()).willReturn(false);
+		subject.usageGiven(nonContractCallTxn, sigUsage, null);
+
+		// then:
+		verify(usageEstimator).getContractCallTxFeeMatrices(nonContractCallTxn, sigUsage);
+	}
 }

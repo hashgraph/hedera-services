@@ -21,6 +21,10 @@ package com.hedera.services.utils.accessors;
  */
 
 import com.google.protobuf.InvalidProtocolBufferException;
+import com.hedera.services.ledger.accounts.AliasManager;
+import com.hedera.test.utils.IdUtils;
+import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.goterl.lazysodium.interfaces.Sign;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.txns.validation.OptionValidator;
@@ -28,7 +32,7 @@ import com.hederahashgraph.api.proto.java.TokenWipeAccountTransactionBody;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
-import com.swirlds.common.SwirldTransaction;
+import com.swirlds.common.system.transaction.SwirldTransaction;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -36,10 +40,14 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import static com.hedera.test.utils.IdUtils.asAccount;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @ExtendWith(MockitoExtension.class)
 class AccessorFactoryTest {
+	private static final AccountID payerId = IdUtils.asAccount("0.0.456");
+	private static final ScheduleID scheduleId = IdUtils.asSchedule("0.0.333333");
+
 	@Mock
 	private OptionValidator validator;
 	@Mock
@@ -68,11 +76,34 @@ class AccessorFactoryTest {
 				new SwirldTransaction(Transaction.newBuilder()
 						.setBodyBytes(someTxn.toByteString())
 						.build().toByteArray());
-		assertTrue(subject.nonTriggeredTxn(platformTxn.getContentsDirect()) instanceof SignedTxnAccessor);
+		assertTrue(subject.nonTriggeredTxn(platformTxn.getContents()) instanceof SignedTxnAccessor);
 
 		SwirldTransaction wipeTxn = new SwirldTransaction(Transaction.newBuilder()
 				.setBodyBytes(tokenWipeTxn.toByteString())
 				.build().toByteArray());
-		assertTrue(subject.nonTriggeredTxn(wipeTxn.getContentsDirect()) instanceof SignedTxnAccessor);
+		assertTrue(subject.nonTriggeredTxn(wipeTxn.getContents()) instanceof SignedTxnAccessor);
+	}
+
+	@Test
+	void constructsTriggeredCorrectly() throws InvalidProtocolBufferException {
+		SwirldTransaction platformTxn =
+				new SwirldTransaction(Transaction.newBuilder()
+						.setBodyBytes(someTxn.toByteString())
+						.build().toByteArray());
+		assertTrue(subject.nonTriggeredTxn(platformTxn.getContents()) instanceof SignedTxnAccessor);
+
+		SwirldTransaction wipeTxn = new SwirldTransaction(Transaction.newBuilder()
+				.setBodyBytes(tokenWipeTxn.toByteString())
+				.build().toByteArray());
+
+		var triggered = subject.triggeredTxn(
+				wipeTxn.getContents(), payerId, scheduleId, true, true);
+
+		assertTrue(triggered instanceof SignedTxnAccessor);
+
+		assertTrue(triggered.congestionExempt());
+		assertTrue(triggered.throttleExempt());
+		assertEquals(payerId, triggered.getPayer());
+		assertEquals(scheduleId, triggered.getScheduleRef());
 	}
 }

@@ -84,11 +84,46 @@ public class AccountInfoAsserts extends BaseErroringAssertsProvider<AccountInfo>
 		return this;
 	}
 
-	public AccountInfoAsserts proxy(String idLiteral) {
+	public AccountInfoAsserts stakedAccountId(String idLiteral) {
 		registerProvider((spec, o) -> {
 			assertEquals(HapiPropertySource.asAccount(idLiteral),
-					((AccountInfo) o).getProxyAccountID(),
-					"Bad proxy id!");
+					((AccountInfo) o).getStakingInfo().getStakedAccountId(),
+					"Bad stakedAccountId id!");
+		});
+		return this;
+	}
+
+	public AccountInfoAsserts noStakedAccountId(){
+		registerProvider((spec, o) -> {
+			assertEquals(AccountID.getDefaultInstance(),
+					((AccountInfo) o).getStakingInfo().getStakedAccountId(),
+					"Bad stakedAccountId id!");
+		});
+		return this;
+	}
+
+	public AccountInfoAsserts noStakingNodeId(){
+		registerProvider((spec, o) -> {
+			assertEquals(0, ((AccountInfo) o).getStakingInfo().getStakedNodeId(),
+					"Bad stakedNodeId id!");
+		});
+		return this;
+	}
+
+	public AccountInfoAsserts stakedNodeId(long idLiteral) {
+		registerProvider((spec, o) -> {
+			assertEquals(idLiteral,
+					((AccountInfo) o).getStakingInfo().getStakedNodeId(),
+					"Bad stakedNodeId id!");
+		});
+		return this;
+	}
+
+	public AccountInfoAsserts isDeclinedReward(boolean isDeclined){
+		registerProvider((spec, o) -> {
+			assertEquals(isDeclined,
+					((AccountInfo) o).getStakingInfo().getDeclineReward(),
+					"Bad isDeclinedReward!");
 		});
 		return this;
 	}
@@ -134,19 +169,26 @@ public class AccountInfoAsserts extends BaseErroringAssertsProvider<AccountInfo>
 
 	public AccountInfoAsserts expectedBalanceWithChargedUsd(
 			final long amount,
-			final double expectedUsdToSubstract,
+			final double expectedUsdToSubtract,
 			final double allowedPercentDiff
 	) {
 		registerProvider((spec, o) -> {
-			var expectedTinyBarsToSubtract = expectedUsdToSubstract * 100
-					* spec.ratesProvider().rates().getHbarEquiv() / spec.ratesProvider().rates().getCentEquiv()
+			final var rates = spec.ratesProvider().rates();
+			var expectedTinyBarsToSubtract = expectedUsdToSubtract * 100
+					* rates.getHbarEquiv() / rates.getCentEquiv()
 					* ONE_HBAR;
-			var expected = amount - expectedTinyBarsToSubtract;
+			final var newAmount = ((AccountInfo) o).getBalance();
+			final var actualSubtractedTinybars = amount - newAmount;
+			System.out.println("Expected to deduct " + (long) expectedTinyBarsToSubtract
+					+ " tinybar to equal ≈ $" + expectedUsdToSubtract + " at a "
+					+ rates.getHbarEquiv() + "ℏ <-> " + rates.getCentEquiv()
+					+ "¢ exchange rate (actually deducted " + (amount - newAmount) + " tinybars)");
+
 			assertEquals(
-					expected,
-					((AccountInfo) o).getBalance(),
-					(allowedPercentDiff / 100.0) * expected,
-					"Unexpected balance");
+					expectedTinyBarsToSubtract,
+					actualSubtractedTinybars,
+					(allowedPercentDiff / 100.0) * expectedTinyBarsToSubtract,
+					"Unexpected balance deduction");
 		});
 		return this;
 	}
@@ -290,6 +332,22 @@ public class AccountInfoAsserts extends BaseErroringAssertsProvider<AccountInfo>
 		registerProvider((spec, o) -> {
 			assertEquals(period, ((AccountInfo) o).getAutoRenewPeriod().getSeconds(),
 					"Bad auto-renew period!");
+		});
+		return this;
+	}
+
+	public AccountInfoAsserts nonce(long nonce) {
+		registerProvider((spec, o) -> {
+			assertEquals(nonce, ((AccountInfo) o).getEthereumNonce(),
+					"Bad nonce!");
+		});
+		return this;
+	}
+
+	public AccountInfoAsserts pendingRewards(long reward) {
+		registerProvider((spec, o) -> {
+			assertEquals(reward, ((AccountInfo) o).getStakingInfo().getPendingReward(),
+					"Bad pending rewards!");
 		});
 		return this;
 	}

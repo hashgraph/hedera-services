@@ -46,8 +46,8 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_DELET
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OBTAINER_DOES_NOT_EXIST;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OBTAINER_REQUIRED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OBTAINER_SAME_CONTRACT_ID;
+import static com.swirlds.common.utility.CommonUtils.unhex;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES;
-import static com.swirlds.common.CommonUtils.unhex;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
@@ -107,6 +107,7 @@ class DeletionLogicTest {
 		final var deleted = subject.performFor(op);
 		verify(ledger).delete(id.toGrpcAccountId(), obtainer);
 		assertEquals(deleted, id.toGrpcContractID());
+		assertEquals(obtainer, subject.getLastObtainer());
 		verify(sigImpactHistorian).markEntityChanged(id.longValue());
 	}
 

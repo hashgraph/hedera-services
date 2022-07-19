@@ -9,6 +9,7 @@
 		  "operations": [
 			"CryptoCreate",
 			"CryptoTransfer",
+			"PRNG",
 			"CryptoUpdate",
 			"CryptoDelete",
 			"CryptoGetInfo",
@@ -46,7 +47,8 @@
 			"FileCreate",
 			"FileUpdate",
 			"FileAppend",
-			"FileDelete"
+			"FileDelete",
+            "EthereumTransaction"
 		  ]
 		},
 		{
@@ -83,7 +85,8 @@
 			"FileCreate",
 			"FileUpdate",
 			"FileAppend",
-			"FileDelete"
+			"FileDelete",
+            "EthereumTransaction"
 		  ]
 		}
 	  ]

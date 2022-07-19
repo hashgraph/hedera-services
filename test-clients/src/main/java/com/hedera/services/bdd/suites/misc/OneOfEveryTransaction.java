@@ -21,7 +21,6 @@ package com.hedera.services.bdd.suites.misc;
  */
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
 import com.hedera.services.bdd.spec.keys.ControlForKey;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.suites.HapiApiSuite;
@@ -55,6 +54,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.submitMessageTo
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.systemFileDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.systemFileUndelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.updateTopic;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 
@@ -97,7 +97,7 @@ public class OneOfEveryTransaction extends HapiApiSuite {
 				/* Contract resources */
 				newKeyNamed("contractFirstKey").shape(complexContract),
 				newKeyNamed("contractSecondKey"),
-				fileCreate("bytecode").path(ContractResources.MULTIPURPOSE_BYTECODE_PATH),
+				uploadInitCode("Multipurpose"),
 				/* Network resources */
 				fileCreate("misc").lifetime(2_000_000)
 		).when(
@@ -137,16 +137,16 @@ public class OneOfEveryTransaction extends HapiApiSuite {
 						.signedBy(GENESIS),
 				deleteTopic("topicTbd"),
 				/* Contract txns */
-				contractCreate("contractTbd")
-						.bytecode("bytecode")
+				uploadInitCode("Multipurpose"),
+				contractCreate("Multipurpose")
 						.adminKey("contractFirstKey")
 						.balance(1),
-				contractCall("contractTbd")
+				contractCall("Multipurpose")
 						.sending(1L),
-				contractCallLocal("contractTbd", ContractResources.LUCKY_NO_LOOKUP_ABI),
-				contractUpdate("contractTbd")
+				contractCallLocal("Multipurpose", "pick"),
+				contractUpdate("Multipurpose")
 						.newKey("contractSecondKey"),
-				contractDelete("contractTbd").transferAccount(GENESIS),
+				contractDelete("Multipurpose").transferAccount(GENESIS),
 				/* Network txns */
 				systemFileDelete("misc")
 						.payingWith(SYSTEM_DELETE_ADMIN)

@@ -44,6 +44,7 @@ public class ContractUpdateFactory extends SignedTxnFactory<ContractUpdateFactor
 	private Optional<Duration> newAutoRenewPeriod = Optional.empty();
 	private Optional<Timestamp> newExpiration = Optional.empty();
 	private Optional<AccountID> newProxyAccount = Optional.empty();
+	private Optional<AccountID> newAutoRenewAccount = Optional.empty();
 
 	public ContractUpdateFactory(String contract) {
 		this.contract = contract;
@@ -76,6 +77,7 @@ public class ContractUpdateFactory extends SignedTxnFactory<ContractUpdateFactor
 		newAutoRenewPeriod.ifPresent(p -> op.setAutoRenewPeriod(p));
 		newExpiration.ifPresent(t -> op.setExpirationTime(t));
 		newProxyAccount.ifPresent(a -> op.setProxyAccountID(a));
+		newAutoRenewAccount.ifPresent(a -> op.setAutoRenewAccountId(a));
 		txn.setContractUpdateInstance(op);
 	}
 
@@ -105,6 +107,10 @@ public class ContractUpdateFactory extends SignedTxnFactory<ContractUpdateFactor
 	}
 	public ContractUpdateFactory newProxyAccount(String a) {
 		this.newProxyAccount = Optional.of(asAccount(a));
+		return this;
+	}
+	public ContractUpdateFactory newAutoRenewAccount(String a) {
+		this.newAutoRenewAccount = Optional.of(asAccount(a));
 		return this;
 	}
 }

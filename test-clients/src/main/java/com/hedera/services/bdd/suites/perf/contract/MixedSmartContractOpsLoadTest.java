@@ -22,7 +22,7 @@ package com.hedera.services.bdd.suites.perf.contract;
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
-import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
+import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.utilops.LoadTest;
 import com.hedera.services.bdd.suites.perf.PerfTestLoadSettings;
 import org.apache.logging.log4j.LogManager;
@@ -33,7 +33,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
-import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.BALANCE_LOOKUP_ABI;
 import static com.hedera.services.bdd.spec.keys.KeyFactory.KeyType.THRESHOLD;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocal;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
@@ -43,6 +42,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.logIt;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 
@@ -72,14 +72,12 @@ public class MixedSmartContractOpsLoadTest extends LoadTest {
 		final String SOME_BYTE_CODE = "contractByteCode";
 		final String UPDATABLE_CONTRACT = "updatableContract";
 		final String CONTRACT_NAME_PREFIX = "testContract";
-		final String PAYABLE_FILE = "payableByteCode";
-		final String PAYABLE_CONTRACT = "payableContract";
-		final String LOOKUP_FILE = "lookUpByteCode";
-		final String LOOKUP_CONTRACT = "lookUpContract";
+		final String PAYABLE_CONTRACT = "PayReceivable";
+		final String LOOKUP_CONTRACT = "BalanceLookup";
 		final String CIVILIAN_ACCOUNT = "civilian";
 		final int depositAmount = 1;
 
-		Supplier<HapiSpecOperation[]> mixedOpsBurst = () -> new HapiSpecOperation[]{
+		Supplier<HapiSpecOperation[]> mixedOpsBurst = () -> new HapiSpecOperation[] {
 				/* create a contract */
 				contractCreate(CONTRACT_NAME_PREFIX + createdSoFar.getAndIncrement())
 						.bytecode(SOME_BYTE_CODE)
@@ -94,11 +92,11 @@ public class MixedSmartContractOpsLoadTest extends LoadTest {
 
 				/* call balance lookup contract and contract to deposit funds*/
 				contractCallLocal(LOOKUP_CONTRACT,
-						BALANCE_LOOKUP_ABI,
-						spec -> new Object[]{spec.registry().getAccountID(CIVILIAN_ACCOUNT).getAccountNum()}
+						"lookup",
+						spec -> new Object[] { spec.registry().getAccountID(CIVILIAN_ACCOUNT).getAccountNum() }
 				).payingWith(GENESIS),
 
-				contractCall(PAYABLE_CONTRACT, ContractResources.DEPOSIT_ABI, depositAmount)
+				contractCall(PAYABLE_CONTRACT, "deposit", depositAmount)
 						.sending(depositAmount)
 						.suppressStats(true)
 						.deferStatusResolution()
@@ -113,16 +111,16 @@ public class MixedSmartContractOpsLoadTest extends LoadTest {
 						cryptoCreate(CIVILIAN_ACCOUNT).balance(ONE_HUNDRED_HBARS),
 
 						/* create a file with some contents and contract with it */
-						fileCreate(SOME_BYTE_CODE).path(ContractResources.VALID_BYTECODE_PATH),
+						fileCreate(SOME_BYTE_CODE).path(HapiSpecSetup.getDefaultInstance().defaultContractPath()),
 						contractCreate(UPDATABLE_CONTRACT).bytecode(SOME_BYTE_CODE).adminKey(THRESHOLD),
 
 						/* create a contract which does a query to look up balance of the civilan account */
-						fileCreate(LOOKUP_FILE).path(ContractResources.BALANCE_LOOKUP_BYTECODE_PATH),
-						contractCreate(LOOKUP_CONTRACT).bytecode(LOOKUP_FILE).adminKey(THRESHOLD),
+						uploadInitCode(LOOKUP_CONTRACT),
+						contractCreate(LOOKUP_CONTRACT).adminKey(THRESHOLD),
 
 						/* create a contract that does a transaction to deposit funds */
-						fileCreate(PAYABLE_FILE).path(ContractResources.PAYABLE_CONTRACT_BYTECODE_PATH),
-						contractCreate(PAYABLE_CONTRACT).bytecode(PAYABLE_FILE).adminKey(THRESHOLD),
+						uploadInitCode(PAYABLE_CONTRACT),
+						contractCreate(PAYABLE_CONTRACT).adminKey(THRESHOLD),
 
 						/* get contract info on all contracts created */
 						getContractInfo(LOOKUP_CONTRACT).hasExpectedInfo().logged(),

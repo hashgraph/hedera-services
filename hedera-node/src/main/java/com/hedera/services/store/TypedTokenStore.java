@@ -118,9 +118,6 @@ public class TypedTokenStore extends ReadOnlyTokenStore {
 		mutableTokenRel.setFrozen(modelRel.isFrozen());
 		mutableTokenRel.setKycGranted(modelRel.isKycGranted());
 		mutableTokenRel.setAutomaticAssociation(modelRel.isAutomaticAssociation());
-		mutableTokenRel.setKey(modelRel.getKey());
-		mutableTokenRel.setNext(modelRel.getNextKey());
-		mutableTokenRel.setPrev(modelRel.getPrevKey());
 		tokenRels.put(key.asAccountTokenRel(), mutableTokenRel);
 	}
 

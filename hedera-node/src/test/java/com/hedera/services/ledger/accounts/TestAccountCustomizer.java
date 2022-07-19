@@ -23,8 +23,12 @@ package com.hedera.services.ledger.accounts;
 import com.hedera.services.ledger.properties.ChangeSummaryManager;
 import com.hedera.services.ledger.properties.TestAccountProperty;
 
+import java.util.HashMap;
 import java.util.Map;
 
+import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.DECLINE_REWARD;
+import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.STAKED_ID;
+import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.AUTO_RENEW_ACCOUNT_ID;
 import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.USED_AUTOMATIC_ASSOCIATIONS;
 import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.AUTO_RENEW_PERIOD;
 import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.EXPIRY;
@@ -41,18 +45,23 @@ import static com.hedera.services.ledger.properties.TestAccountProperty.OBJ;
 
 public final class TestAccountCustomizer extends
 		AccountCustomizer<Long, TestAccount, TestAccountProperty, TestAccountCustomizer> {
-	protected static final Map<Option, TestAccountProperty> OPTION_PROPERTIES = Map.of(
-			KEY, OBJ,
-			MEMO, OBJ,
-			PROXY, OBJ,
-			EXPIRY, LONG,
-			IS_DELETED, FLAG,
-			AUTO_RENEW_PERIOD, LONG,
-			IS_SMART_CONTRACT, FLAG,
-			IS_RECEIVER_SIG_REQUIRED, FLAG,
-			MAX_AUTOMATIC_ASSOCIATIONS, LONG,
-			USED_AUTOMATIC_ASSOCIATIONS, LONG
-	);
+	protected static final Map<Option, TestAccountProperty> OPTION_PROPERTIES = new HashMap<>();
+
+	static {
+		OPTION_PROPERTIES.put(KEY, OBJ);
+		OPTION_PROPERTIES.put(MEMO, OBJ);
+		OPTION_PROPERTIES.put(PROXY, OBJ);
+		OPTION_PROPERTIES.put(EXPIRY, LONG);
+		OPTION_PROPERTIES.put(IS_DELETED, FLAG);
+		OPTION_PROPERTIES.put(AUTO_RENEW_PERIOD, LONG);
+		OPTION_PROPERTIES.put(IS_SMART_CONTRACT, FLAG);
+		OPTION_PROPERTIES.put(IS_RECEIVER_SIG_REQUIRED, FLAG);
+		OPTION_PROPERTIES.put(MAX_AUTOMATIC_ASSOCIATIONS, LONG);
+		OPTION_PROPERTIES.put(USED_AUTOMATIC_ASSOCIATIONS, LONG);
+		OPTION_PROPERTIES.put(AUTO_RENEW_ACCOUNT_ID, OBJ);
+		OPTION_PROPERTIES.put(DECLINE_REWARD, FLAG);
+		OPTION_PROPERTIES.put(STAKED_ID, OBJ);
+	}
 
 	public TestAccountCustomizer(final ChangeSummaryManager<TestAccount, TestAccountProperty> changeManager) {
 		super(TestAccountProperty.class, OPTION_PROPERTIES, changeManager);

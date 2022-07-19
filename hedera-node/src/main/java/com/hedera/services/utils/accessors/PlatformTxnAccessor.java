@@ -42,14 +42,15 @@ import com.hederahashgraph.api.proto.java.SubType;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
-import com.swirlds.common.SwirldTransaction;
+import com.swirlds.common.system.transaction.SwirldTransaction;
 import com.swirlds.common.crypto.TransactionSignature;
+import com.swirlds.common.system.transaction.SwirldTransaction;
 
 import java.util.Map;
 import java.util.function.Function;
 
 /**
- * Encapsulates access to several commonly referenced parts of a {@link com.swirlds.common.SwirldTransaction}
+ * Encapsulates access to several commonly referenced parts of a {@link com.swirlds.common.system.transaction.SwirldTransaction}
  * whose contents is <i>supposed</i> to be a Hedera Services gRPC {@link Transaction}. (The constructor of this
  * class immediately tries to parse the {@code byte[]} contents of the txn, and propagates any protobuf
  * exceptions encountered.)
@@ -73,7 +74,7 @@ public class PlatformTxnAccessor implements SwirldsTxnAccessor {
 	}
 
 	public static PlatformTxnAccessor from(final SwirldTransaction platformTxn) throws InvalidProtocolBufferException {
-		return new PlatformTxnAccessor(SignedTxnAccessor.from(platformTxn.getContentsDirect()), platformTxn);
+		return new PlatformTxnAccessor(SignedTxnAccessor.from(platformTxn.getContents()), platformTxn);
 	}
 
 	@Override
@@ -82,7 +83,7 @@ public class PlatformTxnAccessor implements SwirldsTxnAccessor {
 	}
 
 	@Override
-	public void setSigMeta(RationalizedSigMeta sigMeta) {
+	public void setSigMeta(final RationalizedSigMeta sigMeta) {
 		this.sigMeta = sigMeta;
 	}
 
@@ -132,8 +133,7 @@ public class PlatformTxnAccessor implements SwirldsTxnAccessor {
 	public Function<byte[], TransactionSignature> getRationalizedPkToCryptoSigFn() {
 		final var meta = getSigMeta();
 		if (!meta.couldRationalizeOthers()) {
-			throw new IllegalStateException("Public-key-to-crypto-sig mapping is unusable after rationalization " +
-					"failed");
+			throw new IllegalStateException("Public-key-to-sig mapping is unusable after rationalization failed");
 		}
 		return meta.pkToVerifiedSigFn();
 	}
@@ -200,6 +200,16 @@ public class PlatformTxnAccessor implements SwirldsTxnAccessor {
 	}
 
 	@Override
+	public boolean throttleExempt() {
+		return delegate.throttleExempt();
+	}
+
+	@Override
+	public boolean congestionExempt() {
+		return delegate.congestionExempt();
+	}
+
+	@Override
 	public ScheduleID getScheduleRef() {
 		return delegate.getScheduleRef();
 	}
@@ -227,6 +237,11 @@ public class PlatformTxnAccessor implements SwirldsTxnAccessor {
 	@Override
 	public long getGasLimitForContractTx() {
 		return delegate.getGasLimitForContractTx();
+	}
+
+	@Override
+	public void setRationalizedSpanMap(final Map<String, Object> newSpanMap) {
+		delegate.setRationalizedSpanMap(newSpanMap);
 	}
 
 	@Override

@@ -21,17 +21,16 @@ package com.hedera.services.records;
  */
 
 import com.google.common.cache.Cache;
-import com.hedera.services.context.MutableStateChildren;
 import com.hedera.services.context.annotations.StaticAccountMemo;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.context.properties.NodeLocalProperties;
 import com.hedera.services.stats.MiscRunningAvgs;
 import com.hedera.services.stream.CurrentRecordStreamType;
 import com.hedera.services.stream.RecordStreamManager;
 import com.hedera.services.stream.RecordStreamType;
 import com.hederahashgraph.api.proto.java.TransactionID;
-import com.swirlds.common.Platform;
+import com.swirlds.common.system.Platform;
 import com.swirlds.common.crypto.Hash;
-import com.swirlds.common.crypto.RunningHash;
 import dagger.Binds;
 import dagger.Module;
 import dagger.Provides;
@@ -41,7 +40,6 @@ import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.Consumer;
 
 @Module
 public interface RecordsModule {
@@ -67,20 +65,15 @@ public interface RecordsModule {
 
 	@Provides
 	@Singleton
-	static Consumer<RunningHash> provideRunningHashUpdate(MutableStateChildren workingState) {
-		return runningHash -> workingState.runningHashLeaf().setRunningHash(runningHash);
-	}
-
-	@Provides
-	@Singleton
 	static RecordStreamManager provideRecordStreamManager(
 			final Platform platform,
 			final MiscRunningAvgs runningAvgs,
 			final NodeLocalProperties nodeLocalProperties,
 			final @StaticAccountMemo String accountMemo,
 			final Hash initialHash,
-			final RecordStreamType streamType
-	) {
+			final RecordStreamType streamType,
+			final GlobalDynamicProperties globalDynamicProperties
+			) {
 		try {
 			return new RecordStreamManager(
 					platform,
@@ -88,7 +81,8 @@ public interface RecordsModule {
 					nodeLocalProperties,
 					accountMemo,
 					initialHash,
-					streamType);
+					streamType,
+					globalDynamicProperties);
 		} catch (NoSuchAlgorithmException | IOException fatal) {
 			throw new IllegalStateException("Could not construct record stream manager", fatal);
 		}

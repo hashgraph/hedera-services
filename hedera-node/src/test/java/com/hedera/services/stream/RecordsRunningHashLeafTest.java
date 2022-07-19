@@ -20,29 +20,38 @@ package com.hedera.services.stream;
  * ‍
  */
 
+import com.hedera.test.utils.TxnUtils;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.crypto.CryptoFactory;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.RunningHash;
-import com.swirlds.common.io.SerializableDataInputStream;
-import com.swirlds.common.io.SerializableDataOutputStream;
+import com.swirlds.common.io.streams.SerializableDataInputStream;
+import com.swirlds.common.io.streams.SerializableDataOutputStream;
+import io.netty.util.internal.StringUtil;
+import com.swirlds.common.threading.futures.StandardFuture;
 import org.apache.commons.lang3.RandomUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.Objects;
+import java.util.concurrent.ExecutionException;
 
+import static com.hedera.services.ServicesState.EMPTY_HASH;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 
 class RecordsRunningHashLeafTest {
@@ -79,23 +88,52 @@ class RecordsRunningHashLeafTest {
 		final var sameButDifferent = runningHashLeaf;
 		assertEquals(runningHashLeaf, sameButDifferent);
 		assertNotEquals(runningHashLeaf, new Object());
+
+		// n-3 running hashes set
+		final var hash1 = new RunningHash(new Hash(TxnUtils.randomUtf8Bytes(48)));
+		final var hash2 = new RunningHash(new Hash(TxnUtils.randomUtf8Bytes(48)));
+		final var hash3 = new RunningHash(new Hash(TxnUtils.randomUtf8Bytes(48)));
+
+		runningHashLeaf.setRunningHash(hash1);
+		runningHashLeaf.setRunningHash(hash2);
+		runningHashLeaf.setRunningHash(hash3);
+
+		final var diffWithoutNullValues = new RecordsRunningHashLeaf(runningHash);
+		diffWithoutNullValues.setRunningHash(hash1);
+		diffWithoutNullValues.setRunningHash(hash1);
+		diffWithoutNullValues.setRunningHash(hash3);
+		assertNotEquals(runningHashLeaf, diffWithoutNullValues);
+
+		final var sameDiffWithoutNullValues = new RecordsRunningHashLeaf(runningHash);
+		sameDiffWithoutNullValues.setRunningHash(hash1);
+		sameDiffWithoutNullValues.setRunningHash(hash2);
+		sameDiffWithoutNullValues.setRunningHash(hash3);
+		assertEquals(runningHashLeaf, sameDiffWithoutNullValues);
 	}
 
 	@Test
 	void toStringTest() {
-		var example = String.format("RecordsRunningHashLeaf's Hash: %s, Hash contained in the leaf: %s",
+		var example = String.format("RecordsRunningHashLeaf's Hash: %s, Hash contained in the leaf: %s, " +
+						"nMinus1RunningHash: %s, nMinus2RunningHash: %s, nMinus3RunningHash: %s",
 				runningHashLeaf.getHash(),
-				runningHash.getHash());
+				runningHashLeaf.getRunningHash().getHash(),
+				runningHashLeaf.getNMinus1RunningHash().getHash(),
+				runningHashLeaf.getNMinus2RunningHash().getHash(),
+				runningHashLeaf.getNMinus3RunningHash().getHash());
 		assertEquals(example, runningHashLeaf.toString());
 	}
 
 	@Test
 	void hashCodeTest() {
-		assertEquals(Objects.hash(runningHash), runningHashLeaf.hashCode());
+		assertEquals(Objects.hash(runningHashLeaf.getRunningHash(),
+						runningHashLeaf.getNMinus1RunningHash(),
+						runningHashLeaf.getNMinus2RunningHash(),
+						runningHashLeaf.getNMinus3RunningHash()),
+				runningHashLeaf.hashCode());
 	}
 
 	@Test
-	void setRunningHashTest() {
+	void setRunningHashTest() throws InterruptedException {
 		// initializes a leaf without setting RunningHash
 		final var leafForTestingRunningHash = new RecordsRunningHashLeaf();
 		assertNull(leafForTestingRunningHash.getRunningHash());
@@ -112,6 +150,115 @@ class RecordsRunningHashLeafTest {
 		runningHash.setHash(hash);
 		assertEquals(runningHash, leafForTestingRunningHash.getRunningHash());
 		assertEquals(hash, leafForTestingRunningHash.getRunningHash().getHash());
+		assertEquals(hash, leafForTestingRunningHash.currentRunningHash());
+	}
+
+	@Test
+	void propagatesFatalExecutionException() throws ExecutionException, InterruptedException {
+		final var delegate = mock(RunningHash.class);
+		final var future = mock(StandardFuture.class);
+
+		given(delegate.getFutureHash()).willReturn(future);
+		given(future.get()).willThrow(ExecutionException.class);
+		final var subject = new RecordsRunningHashLeaf(delegate);
+
+		assertThrows(IllegalStateException.class, subject::currentRunningHash);
+	}
+
+	@Test
+	void updatesLastThreeRunningHashes() throws InterruptedException {
+		final var runningHash1 = new RunningHash();
+		// sets Hash for the RunningHash
+		runningHash1.setHash(new Hash(RandomUtils.nextBytes(DigestType.SHA_384.digestLength())));
+
+		// initializes a leaf with a RunningHash
+		final var leafForTestingRunningHash = new RecordsRunningHashLeaf(runningHash1);
+		CryptoFactory.getInstance().digestSync(leafForTestingRunningHash, DigestType.SHA_384);
+		assertEquals(EMPTY_HASH, leafForTestingRunningHash.getNMinus3RunningHash().getHash());
+		assertEquals(EMPTY_HASH, leafForTestingRunningHash.getNMinus2RunningHash().getHash());
+		assertEquals(EMPTY_HASH, leafForTestingRunningHash.getNMinus1RunningHash().getHash());
+		assertEquals(runningHash1.getHash(), leafForTestingRunningHash.getRunningHash().getHash());
+
+		// update runningHash object
+		final var runningHash2 = new RunningHash();
+		runningHash2.setHash(new Hash(RandomUtils.nextBytes(DigestType.SHA_384.digestLength())));
+
+		leafForTestingRunningHash.setRunningHash(runningHash2);
+		CryptoFactory.getInstance().digestSync(leafForTestingRunningHash, DigestType.SHA_384);
+		assertEquals(EMPTY_HASH, leafForTestingRunningHash.getNMinus3RunningHash().getHash());
+		assertEquals(EMPTY_HASH, leafForTestingRunningHash.getNMinus2RunningHash().getHash());
+		assertEquals(runningHash1.getHash(), leafForTestingRunningHash.getNMinus1RunningHash().getHash());
+		assertEquals(runningHash2.getHash(), leafForTestingRunningHash.getRunningHash().getHash());
+
+		// update runningHash object
+		final var runningHash3 = new RunningHash();
+		runningHash3.setHash(new Hash(RandomUtils.nextBytes(DigestType.SHA_384.digestLength())));
+
+		leafForTestingRunningHash.setRunningHash(runningHash3);
+		CryptoFactory.getInstance().digestSync(leafForTestingRunningHash, DigestType.SHA_384);
+		assertEquals(EMPTY_HASH, leafForTestingRunningHash.getNMinus3RunningHash().getHash());
+		assertEquals(runningHash1.getHash(), leafForTestingRunningHash.getNMinus2RunningHash().getHash());
+		assertEquals(runningHash2.getHash(), leafForTestingRunningHash.getNMinus1RunningHash().getHash());
+		assertEquals(runningHash3.getHash(), leafForTestingRunningHash.getRunningHash().getHash());
+
+		// update runningHash object
+		final var runningHash4 = new RunningHash();
+		runningHash4.setHash(new Hash(RandomUtils.nextBytes(DigestType.SHA_384.digestLength())));
+
+		leafForTestingRunningHash.setRunningHash(runningHash4);
+		CryptoFactory.getInstance().digestSync(leafForTestingRunningHash, DigestType.SHA_384);
+		assertEquals(runningHash1.getHash(), leafForTestingRunningHash.getNMinus3RunningHash().getHash());
+		assertEquals(runningHash1.getHash(), leafForTestingRunningHash.nMinusThreeRunningHash());
+		assertEquals(runningHash2.getHash(), leafForTestingRunningHash.getNMinus2RunningHash().getHash());
+		assertEquals(runningHash3.getHash(), leafForTestingRunningHash.getNMinus1RunningHash().getHash());
+		assertEquals(runningHash4.getHash(), leafForTestingRunningHash.getRunningHash().getHash());
+	}
+
+	@Test
+	void interruptedExceptionThrownForNMinusThreeRunningHash() throws ExecutionException, InterruptedException {
+		final var nMinus3Hash = mock(RunningHash.class);
+		final var futureHash = mock(StandardFuture.class);
+		given(nMinus3Hash.getFutureHash()).willReturn(futureHash);
+		given(futureHash.get()).willThrow(InterruptedException.class);
+
+		final var leafForTestingRunningHash = new RecordsRunningHashLeaf(nMinus3Hash);
+		final var runningHash2 = new RunningHash();
+		runningHash2.setHash(new Hash(RandomUtils.nextBytes(DigestType.SHA_384.digestLength())));
+		leafForTestingRunningHash.setRunningHash(runningHash2);
+
+		final var runningHash3 = new RunningHash();
+		runningHash3.setHash(new Hash(RandomUtils.nextBytes(DigestType.SHA_384.digestLength())));
+		leafForTestingRunningHash.setRunningHash(runningHash3);
+
+		final var runningHash4 = new RunningHash();
+		runningHash4.setHash(new Hash(RandomUtils.nextBytes(DigestType.SHA_384.digestLength())));
+		leafForTestingRunningHash.setRunningHash(runningHash4);
+
+		assertThrows(InterruptedException.class, () -> leafForTestingRunningHash.nMinusThreeRunningHash());
+	}
+
+	@Test
+	void IllegalStateExceptionExceptionThrownForNMinusThreeRunningHash() throws ExecutionException, InterruptedException {
+		final var nMinus3Hash = mock(RunningHash.class);
+		final var futureHash = mock(StandardFuture.class);
+		given(nMinus3Hash.getFutureHash()).willReturn(futureHash);
+		given(futureHash.get()).willThrow(ExecutionException.class);
+
+		final var leafForTestingRunningHash = new RecordsRunningHashLeaf(nMinus3Hash);
+		final var runningHash2 = new RunningHash();
+		runningHash2.setHash(new Hash(RandomUtils.nextBytes(DigestType.SHA_384.digestLength())));
+		leafForTestingRunningHash.setRunningHash(runningHash2);
+
+		final var runningHash3 = new RunningHash();
+		runningHash3.setHash(new Hash(RandomUtils.nextBytes(DigestType.SHA_384.digestLength())));
+		leafForTestingRunningHash.setRunningHash(runningHash3);
+
+		final var runningHash4 = new RunningHash();
+		runningHash4.setHash(new Hash(RandomUtils.nextBytes(DigestType.SHA_384.digestLength())));
+		leafForTestingRunningHash.setRunningHash(runningHash4);
+
+		final var msg = assertThrows(IllegalStateException.class, () -> leafForTestingRunningHash.nMinusThreeRunningHash());
+		assertTrue(msg.getMessage().contains("Unable to get n-3 running hash"));
 	}
 
 	@Test
@@ -135,7 +282,7 @@ class RecordsRunningHashLeafTest {
 	}
 
 	@Test
-	void serializationDeserializationTest() throws IOException, InterruptedException {
+	void serializationDeserializationTest() throws IOException, InterruptedException, ExecutionException {
 		try (final var byteArrayOutputStream = new ByteArrayOutputStream();
 			 final var out = new SerializableDataOutputStream(byteArrayOutputStream)) {
 			runningHashLeaf.serialize(out);
@@ -156,7 +303,21 @@ class RecordsRunningHashLeafTest {
 	@Test
 	void merkleMethodsWork() {
 		final var subject = new RecordsRunningHashLeaf();
-		assertEquals(RecordsRunningHashLeaf.CLASS_VERSION, subject.getVersion());
+		assertEquals(RecordsRunningHashLeaf.RELEASE_0280_VERSION, subject.getVersion());
 		assertEquals(RecordsRunningHashLeaf.CLASS_ID, subject.getClassId());
+	}
+
+	@Test
+	void serializationFailsThrowsException() throws ExecutionException, InterruptedException {
+		final var runningHash = mock(RunningHash.class);
+		final var futureHash = mock(StandardFuture.class);
+		final var sout = mock(SerializableDataOutputStream.class);
+		final var subject = new RecordsRunningHashLeaf(runningHash);
+
+		given(runningHash.getFutureHash()).willReturn(futureHash);
+		given(futureHash.get()).willThrow(InterruptedException.class);
+		final var msg = assertThrows(IOException.class, () -> subject.serialize(sout));
+		assertTrue(
+				msg.getMessage().contains("Got interrupted when getting runningHash when serializing RunningHashLeaf"));
 	}
 }

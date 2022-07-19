@@ -20,7 +20,7 @@ package com.hedera.services.state.virtual;
  * ‍
  */
 
-import com.swirlds.common.io.SerializableDataOutputStream;
+import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.jasperdb.files.DataFileCommon;
 import org.apache.tuweni.units.bigints.UInt256;
 import org.junit.jupiter.api.Test;

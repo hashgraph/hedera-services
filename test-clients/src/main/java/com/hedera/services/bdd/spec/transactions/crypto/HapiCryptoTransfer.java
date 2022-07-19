@@ -652,5 +652,4 @@ public class HapiCryptoTransfer extends HapiTxnOp<HapiCryptoTransfer> {
 	};
 	private static final Comparator<AccountAmount> ACCOUNT_AMOUNT_COMPARATOR = Comparator.comparing(
 			AccountAmount::getAccountID, ACCOUNT_NUM_OR_ALIAS_COMPARATOR);
-
 }

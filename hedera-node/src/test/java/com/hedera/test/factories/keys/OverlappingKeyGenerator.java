@@ -22,7 +22,7 @@ package com.hedera.test.factories.keys;
 
 import com.google.protobuf.ByteString;
 import com.hederahashgraph.api.proto.java.Key;
-import com.swirlds.common.CommonUtils;
+import com.swirlds.common.utility.CommonUtils;
 
 import java.security.PrivateKey;
 import java.util.ArrayList;

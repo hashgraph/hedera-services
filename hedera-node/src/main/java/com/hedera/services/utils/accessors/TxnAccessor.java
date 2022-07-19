@@ -43,10 +43,10 @@ import java.util.Map;
  * Defines a type that gives access to several commonly referenced parts of a Hedera Services gRPC {@link Transaction}.
  */
 public interface TxnAccessor {
-	/* --- Used to complete transaction-specific logic ---*/
+	// --- Used to complete transaction-specific logic ---
 	<T extends TxnAccessor> T castToSpecialized();
 
-	/* --- Used to calculate and charge fee for any transaction ---*/
+	// --- Used to calculate and charge fee for any transaction ---
 	long getOfferedFee();
 
 	SubType getSubType();
@@ -61,7 +61,7 @@ public interface TxnAccessor {
 
 	SigUsage usageGiven(int numPayerKeys);
 
-	/* --- Used to process and validate any transaction ---*/
+	// --- Used to process and validate any transaction ---
 	byte[] getMemoUtf8Bytes();
 
 	boolean memoHasZeroByte();
@@ -70,11 +70,21 @@ public interface TxnAccessor {
 
 	boolean isTriggeredTxn();
 
+	/**
+	 * @return true if the transaction should be affected by throttles
+	 */
+	boolean throttleExempt();
+
+	/**
+	 * @return true if the transaction should not be charged congestion pricing.
+	 */
+	boolean congestionExempt();
+
 	TransactionBody getTxn();
 
 	long getGasLimitForContractTx();
 
-	/* --- Used to construct the record for any transaction ---*/
+	// --- Used to construct the record for any transaction ---
 	String getMemo();
 
 	byte[] getHash();
@@ -83,20 +93,25 @@ public interface TxnAccessor {
 
 	void setScheduleRef(ScheduleID parent);
 
-	/* --- Used to log failures for any transaction --- */
+	// --- Used to track the results of creating signatures for all linked keys ---
+	void setExpandedSigStatus(ResponseCodeEnum status);
+
+	ResponseCodeEnum getExpandedSigStatus();
+
+	// --- Used to log failures for any transaction ---
 	String toLoggableString();
 
 	void setPayer(AccountID payer);
 
-	/* --- Used universally for transaction submission */
+	// --- Used universally for transaction submission
 	byte[] getSignedTxnWrapperBytes();
 
-	/* --- Used universally for logging --- */
+	// --- Used universally for logging ---
 	Transaction getSignedTxnWrapper();
 
 	byte[] getTxnBytes();
 
-	/* --- Used only by specific transactions and will be moved to Custom accessors in future PR ---*/
+	// --- Used only by specific transactions and will be moved to Custom accessors in future PR ---
 
 	// Used only for CryptoTransfer
 	CryptoTransferMeta availXferUsageMeta();
@@ -115,8 +130,15 @@ public interface TxnAccessor {
 	// Used only for ScheduleCreate/Sign, to find valid signatures that apply to a scheduled transaction
 	SignatureMap getSigMap();
 
+	// ---- These will be removed by using the fields in custom accessors in future PR ---
 
-	/* ---- These both will be removed by using the fields in custom accessors in future PR ---*/
+	/**
+	 * Used in {@code handleTransaction} to reset this accessor's span map to new, <b>unmodifiable</b> map
+	 * with the authoritative results of expanding from the working state. This protects the authoritative
+	 * values from contamination by a pre-fetch thread.
+	 */
+	void setRationalizedSpanMap(Map<String, Object> newSpanMap);
+
 	Map<String, Object> getSpanMap();
 
 	ExpandHandleSpanMapAccessor getSpanMapAccessor();

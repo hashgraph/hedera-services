@@ -36,6 +36,7 @@ import java.util.List;
 
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.asToken;
+import static com.hedera.test.utils.IdUtils.nftXfer;
 import static com.hedera.test.utils.TxnUtils.withAdjustments;
 import static com.hedera.test.utils.TxnUtils.withAllowanceAdjustments;
 import static com.hedera.test.utils.TxnUtils.withOwnershipChanges;
@@ -143,7 +144,7 @@ class PureTransferSemanticChecksTest {
 								.setReceiverAccountID(asAccount("0.0.2000")).setSerialNumber(1L).build())
 						.build()
 		);
-		validity = subject.fullPureValidation(TransferList.newBuilder().build(), nftAdjusts, validationProps);
+		validity = subject.fullPureValidation(TransferList.getDefaultInstance(), nftAdjusts, validationProps);
 		assertEquals(OK, validity);
 	}
 
@@ -300,6 +301,20 @@ class PureTransferSemanticChecksTest {
 		assertEquals(
 				TRANSFER_LIST_SIZE_LIMIT_EXCEEDED,
 				subject.fullPureValidation(hbarAdjusts, tokenAdjusts, strictValProps));
+	}
+
+	@Test
+	void rejectsRepeatedSerialNumbers() {
+		final var tokenAdjusts = List.of(
+				TokenTransferList.newBuilder()
+						.setToken(aTid)
+						.addNftTransfers(nftXfer(a, b, 1L))
+						.addNftTransfers(nftXfer(b, c, 1L))
+						.addNftTransfers(nftXfer(c, d, 1L))
+						.build());
+		assertEquals(
+				INVALID_ACCOUNT_AMOUNTS,
+				subject.fullPureValidation(TransferList.getDefaultInstance(), tokenAdjusts, validationProps));
 	}
 
 	@Test

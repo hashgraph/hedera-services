@@ -21,7 +21,7 @@ package com.hedera.services.sigs.utils;
  */
 
 import com.hedera.test.factories.keys.KeyFactory;
-import com.swirlds.common.CommonUtils;
+import com.swirlds.common.utility.CommonUtils;
 import org.bouncycastle.crypto.params.ECPublicKeyParameters;
 import org.junit.jupiter.api.Test;
 

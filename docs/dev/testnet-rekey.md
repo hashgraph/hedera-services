@@ -5,16 +5,10 @@ change the `0.0.2` key on a saved state from stable testnet.
 (We can then update our migration tests to use the new state 
 and key, without any security concerns.)
 
-:bangbang:&nbsp; There are two prerequisites to this guide:
+:bangbang:&nbsp; There is one important prerequisite to this guide:
   1. Since only `0.0.2` can update the treasury key, you must 
      have a local PEM/passphrase combination with the current 
      `0.0.2` key on stable testnet. 
-  2. You must have installed `pg_restore` with a version in the 
-     _10.x_ range of versions. We have verified _10.16_ works,
-     so you can use `brew install postgresql@10` on MacOS to
-     meet this prereq. (But just install; don't start the 
-     server, since it's almost always more convenient to use a 
-     dockerized PostgreSQL locally.)
 
 :warning:&nbsp; Always follow these steps **on the tag** matching 
 the version of testnet state that DevOps provided. For example, if

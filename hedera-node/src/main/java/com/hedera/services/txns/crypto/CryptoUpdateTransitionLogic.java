@@ -20,22 +20,25 @@ package com.hedera.services.txns.crypto;
  * ‍
  */
 
+import com.hedera.services.context.NodeInfo;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.exceptions.DeletedAccountException;
-import com.hedera.services.exceptions.MissingAccountException;
+import com.hedera.services.exceptions.MissingEntityException;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.txns.validation.OptionValidator;
+import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.swirlds.merkle.map.MerkleMap;
 import org.apache.commons.codec.DecoderException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -45,7 +48,10 @@ import javax.inject.Singleton;
 import java.util.EnumSet;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 
+import static com.hedera.services.ledger.accounts.HederaAccountCustomizer.hasStakedId;
+import static com.hedera.services.ledger.accounts.staking.StakingUtils.validSentinel;
 import static com.hedera.services.utils.MiscUtils.asFcKeyUnchecked;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
@@ -55,9 +61,13 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EXISTING_AUTOM
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EXPIRATION_REDUCTION_NOT_ALLOWED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ADMIN_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_STAKING_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PROXY_ACCOUNT_ID_FIELD_IS_DEPRECATED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.STAKING_NOT_ENABLED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 /**
@@ -78,6 +88,8 @@ public class CryptoUpdateTransitionLogic implements TransitionLogic {
 	private final SigImpactHistorian sigImpactHistorian;
 	private final TransactionContext txnCtx;
 	private final GlobalDynamicProperties dynamicProperties;
+	private final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts;
+	private final NodeInfo nodeInfo;
 
 	@Inject
 	public CryptoUpdateTransitionLogic(
@@ -85,13 +97,17 @@ public class CryptoUpdateTransitionLogic implements TransitionLogic {
 			final OptionValidator validator,
 			final SigImpactHistorian sigImpactHistorian,
 			final TransactionContext txnCtx,
-			final GlobalDynamicProperties dynamicProperties
+			final GlobalDynamicProperties dynamicProperties,
+			final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts,
+			final NodeInfo nodeInfo
 	) {
 		this.ledger = ledger;
 		this.validator = validator;
 		this.txnCtx = txnCtx;
 		this.sigImpactHistorian = sigImpactHistorian;
 		this.dynamicProperties = dynamicProperties;
+		this.accounts = accounts;
+		this.nodeInfo = nodeInfo;
 	}
 
 	@Override
@@ -114,7 +130,7 @@ public class CryptoUpdateTransitionLogic implements TransitionLogic {
 			ledger.customize(target, customizer);
 			sigImpactHistorian.markEntityChanged(target.getAccountNum());
 			txnCtx.setStatus(SUCCESS);
-		} catch (MissingAccountException mae) {
+		} catch (MissingEntityException mae) {
 			txnCtx.setStatus(INVALID_ACCOUNT_ID);
 		} catch (DeletedAccountException aide) {
 			txnCtx.setStatus(ACCOUNT_DELETED);
@@ -152,7 +168,6 @@ public class CryptoUpdateTransitionLogic implements TransitionLogic {
 				return REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT;
 			}
 		}
-
 		return OK;
 	}
 
@@ -166,9 +181,6 @@ public class CryptoUpdateTransitionLogic implements TransitionLogic {
 		}
 		if (op.hasExpirationTime()) {
 			customizer.expiry(op.getExpirationTime().getSeconds());
-		}
-		if (op.hasProxyAccountID()) {
-			customizer.proxy(EntityId.fromGrpcAccountId(op.getProxyAccountID()));
 		}
 		if (op.hasReceiverSigRequiredWrapper()) {
 			customizer.isReceiverSigRequired(op.getReceiverSigRequiredWrapper().getValue());
@@ -184,6 +196,13 @@ public class CryptoUpdateTransitionLogic implements TransitionLogic {
 		if (op.hasMaxAutomaticTokenAssociations()) {
 			customizer.maxAutomaticAssociations(op.getMaxAutomaticTokenAssociations().getValue());
 		}
+		if (op.hasDeclineReward()) {
+			customizer.isDeclinedReward(op.getDeclineReward().getValue());
+		}
+		if (hasStakedId(op.getStakedIdCase().name())) {
+			customizer.customizeStakedId(op.getStakedIdCase().name(), op.getStakedAccountId(), op.getStakedNodeId());
+		}
+
 		return customizer;
 	}
 
@@ -210,7 +229,7 @@ public class CryptoUpdateTransitionLogic implements TransitionLogic {
 				JKey fcKey = JKey.mapKey(op.getKey());
 				/* Note that an empty key is never valid. */
 				if (!fcKey.isValid()) {
-					return BAD_ENCODING;
+					return INVALID_ADMIN_KEY;
 				}
 			} catch (DecoderException e) {
 				return BAD_ENCODING;
@@ -220,7 +239,27 @@ public class CryptoUpdateTransitionLogic implements TransitionLogic {
 		if (op.hasAutoRenewPeriod() && !validator.isValidAutoRenewPeriod(op.getAutoRenewPeriod())) {
 			return AUTORENEW_DURATION_NOT_IN_RANGE;
 		}
+		if (op.hasProxyAccountID() && !op.getProxyAccountID().equals(AccountID.getDefaultInstance())) {
+			return PROXY_ACCOUNT_ID_FIELD_IS_DEPRECATED;
+		}
 
+		final var stakedIdCase = op.getStakedIdCase().name();
+		final var electsStakingId = hasStakedId(stakedIdCase);
+		if (!dynamicProperties.isStakingEnabled() && (electsStakingId || op.hasDeclineReward())) {
+			return STAKING_NOT_ENABLED;
+		}
+		if (electsStakingId) {
+			if (validSentinel(stakedIdCase, op.getStakedAccountId(), op.getStakedNodeId())) {
+				return OK;
+			} else if (!validator.isValidStakedId(
+					stakedIdCase,
+					op.getStakedAccountId(),
+					op.getStakedNodeId(),
+					accounts.get(),
+					nodeInfo)) {
+				return INVALID_STAKING_ID;
+			}
+		}
 		return OK;
 	}
 }

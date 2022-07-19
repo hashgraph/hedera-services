@@ -25,7 +25,8 @@
                 },
                 {
                     "operations": [
-                        "ScheduleCreate"
+                        "ScheduleCreate",
+                        "ScheduleSign"
                     ],
                     "opsPerSec": 100
                 }

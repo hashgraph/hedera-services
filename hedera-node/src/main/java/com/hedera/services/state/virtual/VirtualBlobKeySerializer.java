@@ -20,8 +20,8 @@ package com.hedera.services.state.virtual;
  * ‍
  */
 
-import com.swirlds.common.io.SerializableDataInputStream;
-import com.swirlds.common.io.SerializableDataOutputStream;
+import com.swirlds.common.io.streams.SerializableDataInputStream;
+import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.jasperdb.files.hashmap.KeySerializer;
 
 import java.io.IOException;

@@ -20,7 +20,7 @@ package com.hedera.services.state.serdes;
  * ‍
  */
 
-import com.swirlds.common.io.SerializableDataInputStream;
+import com.swirlds.common.io.streams.SerializableDataInputStream;
 
 import java.io.IOException;
 

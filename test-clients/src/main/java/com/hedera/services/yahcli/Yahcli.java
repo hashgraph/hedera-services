@@ -23,6 +23,7 @@ package com.hedera.services.yahcli;
 import com.hedera.services.yahcli.commands.accounts.AccountsCommand;
 import com.hedera.services.yahcli.commands.fees.FeesCommand;
 import com.hedera.services.yahcli.commands.files.SysFilesCommand;
+import com.hedera.services.yahcli.commands.keys.KeysCommand;
 import com.hedera.services.yahcli.commands.system.FreezeAbortCommand;
 import com.hedera.services.yahcli.commands.system.FreezeOnlyCommand;
 import com.hedera.services.yahcli.commands.system.FreezeUpgradeCommand;
@@ -45,6 +46,7 @@ import java.util.concurrent.Callable;
 		name = "yahcli",
 		subcommands = {
 				HelpCommand.class,
+				KeysCommand.class,
 				AccountsCommand.class,
 				SysFilesCommand.class,
 				ValidationCommand.class,

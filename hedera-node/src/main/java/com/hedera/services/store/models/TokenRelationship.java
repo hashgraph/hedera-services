@@ -23,13 +23,11 @@ package com.hedera.services.store.models;
 import com.google.common.base.MoreObjects;
 import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.state.submerkle.FcTokenAssociation;
-import com.hedera.services.utils.EntityNumPair;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 
 import static com.hedera.services.exceptions.ValidationUtils.validateFalse;
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
-import static com.hedera.services.utils.EntityNumPair.MISSING_NUM_PAIR;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
@@ -60,10 +58,6 @@ public class TokenRelationship {
 	private boolean destroyed = false;
 	private boolean notYetPersisted = true;
 	private boolean automaticAssociation = false;
-	private EntityNumPair key = MISSING_NUM_PAIR;
-	private long nextKey;
-	private long prevKey;
-
 
 	private long balanceChange = 0L;
 
@@ -214,30 +208,6 @@ public class TokenRelationship {
 		return !token.hasKycKey() || kycGranted;
 	}
 
-	public EntityNumPair getKey() {
-		return key;
-	}
-
-	public void setKey(final EntityNumPair key) {
-		this.key = key;
-	}
-
-	public long getNextKey() {
-		return nextKey;
-	}
-
-	public void setNextKey(final long nextKey) {
-		this.nextKey = nextKey;
-	}
-
-	public long getPrevKey() {
-		return prevKey;
-	}
-
-	public void setPrevKey(final long prevKey) {
-		this.prevKey = prevKey;
-	}
-
 	/* The object methods below are only overridden to improve
 		readability of unit tests; model objects are not used in hash-based
 		collections, so the performance of these methods doesn't matter. */
@@ -259,9 +229,6 @@ public class TokenRelationship {
 				.append(frozen, that.frozen)
 				.append(kycGranted, that.kycGranted)
 				.append(automaticAssociation, that.automaticAssociation)
-				.append(key, that.key)
-				.append(nextKey, that.nextKey)
-				.append(prevKey, that.prevKey)
 				.isEquals();
 	}
 
@@ -281,9 +248,6 @@ public class TokenRelationship {
 				.add("frozen", frozen)
 				.add("kycGranted", kycGranted)
 				.add("isAutomaticAssociation", automaticAssociation)
-				.add("key", key)
-				.add("nextKey", nextKey)
-				.add("prevKey", prevKey)
 				.toString();
 	}
 }

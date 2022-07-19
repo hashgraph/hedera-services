@@ -37,6 +37,12 @@ public final class ValidationUtils {
 		}
 	}
 
+	public static void validateTrueOrRevert(final boolean flag, final ResponseCodeEnum code) {
+		if (!flag) {
+			throw new InvalidTransactionException(code, true);
+		}
+	}
+
 	public static void validateTrue(final boolean flag, final ResponseCodeEnum code, final String failureMsg) {
 		if (!flag) {
 			throw new InvalidTransactionException(failureMsg, code);

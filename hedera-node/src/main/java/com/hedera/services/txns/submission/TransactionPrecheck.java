@@ -41,7 +41,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_T
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PLATFORM_NOT_ACTIVE;
-import static com.swirlds.common.PlatformStatus.ACTIVE;
+import static com.swirlds.common.system.PlatformStatus.ACTIVE;
 
 /**
  * Implements the appropriate stages of precheck for a transaction to be submitted to the

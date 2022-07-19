@@ -28,10 +28,12 @@ import com.hedera.services.sigs.order.SigningOrderResult;
 import com.hedera.services.sigs.order.SigningOrderResultFactory;
 import com.hedera.services.sigs.sourcing.PubKeyToSigBytes;
 import com.hedera.services.utils.accessors.SwirldsTxnAccessor;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.swirlds.common.crypto.TransactionSignature;
 
+import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -95,9 +97,9 @@ class Expansion {
 	private void finalizeForExpansionUpTo(final Role lastExpandSuccess, final ResponseCodeEnum finalStatus) {
 		txnAccessor.getPlatformTxn().addAll(expandedSigs.toArray(new TransactionSignature[0]));
 		if (lastExpandSuccess == Role.PAYER) {
-			txnAccessor.setSigMeta(forPayerOnly(payerKey, expandedSigs));
+			txnAccessor.setSigMeta(forPayerOnly(payerKey, expandedSigs, txnAccessor));
 		} else {
-			txnAccessor.setSigMeta(forPayerAndOthers(payerKey, otherPartyKeys, expandedSigs));
+			txnAccessor.setSigMeta(forPayerAndOthers(payerKey, otherPartyKeys, expandedSigs, txnAccessor));
 		}
 		txnAccessor.setExpandedSigStatus(finalStatus);
 		txnAccessor.setLinkedRefs(linkedRefs);
@@ -109,7 +111,7 @@ class Expansion {
 			final SigReqsFunction sigReqsFn
 	) {
 		var orderResult = sigReqsFn.apply(
-				txnAccessor.getTxn(), CODE_ORDER_RESULT_FACTORY, linkedRefs);
+				txnAccessor.getTxn(), CODE_ORDER_RESULT_FACTORY, linkedRefs, txnAccessor.getPayer());
 		if (orderResult.hasErrorReport()) {
 			return orderResult.getErrorReport();
 		}
@@ -132,7 +134,8 @@ class Expansion {
 		SigningOrderResult<ResponseCodeEnum> apply(
 				TransactionBody txn,
 				SigningOrderResultFactory<ResponseCodeEnum> factory,
-				LinkedRefs linkedRefs);
+				@Nullable LinkedRefs linkedRefs,
+				@Nullable AccountID payer);
 	}
 
 	@FunctionalInterface

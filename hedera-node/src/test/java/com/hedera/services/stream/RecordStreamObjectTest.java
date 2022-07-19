@@ -29,8 +29,9 @@ import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.internal.SettingsCommon;
-import com.swirlds.common.io.SerializableDataInputStream;
-import com.swirlds.common.io.SerializableDataOutputStream;
+import com.swirlds.common.io.streams.SerializableDataInputStream;
+import com.swirlds.common.io.streams.SerializableDataOutputStream;
+import com.swirlds.common.stream.StreamAligned;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
@@ -68,6 +69,21 @@ class RecordStreamObjectTest {
 		SettingsCommon.maxTransactionCountPerEvent = 245760;
 		SettingsCommon.maxTransactionBytesPerEvent = 245760;
 		SettingsCommon.transactionMaxBytes = 6144;
+	}
+
+	@Test
+	void defaultAlignmentIsNewAlignment() {
+		final var subject = new RecordStreamObject();
+
+		assertEquals(StreamAligned.NO_ALIGNMENT, subject.getStreamAlignment());
+	}
+
+	@Test
+	void alignmentIsBlockNumberIfSet() {
+		final var blockNo = 666L;
+		final var subject = new RecordStreamObject().withBlockNumber(blockNo);
+
+		assertEquals(blockNo, subject.getStreamAlignment());
 	}
 
 	@Test

@@ -30,8 +30,8 @@ import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.UncheckedSubmitBody;
-import com.swirlds.common.Platform;
-import com.swirlds.common.SwirldTransaction;
+import com.swirlds.common.system.Platform;
+import com.swirlds.common.system.transaction.SwirldTransaction;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -96,8 +96,8 @@ class PlatformSubmissionManagerTest {
 	@Test
 	void updatesRecordCacheWhenTxnIsCreated() {
 		// setup:
-		ArgumentCaptor<SwirldTransaction> captor =
-				ArgumentCaptor.forClass(SwirldTransaction.class);
+		ArgumentCaptor<byte[]> captor =
+				ArgumentCaptor.forClass(byte[].class);
 
 		given(platform.createTransaction(captor.capture())).willReturn(true);
 
@@ -105,7 +105,7 @@ class PlatformSubmissionManagerTest {
 		var result = subject.trySubmission(accessor);
 
 		// then:
-		assertArrayEquals(signedTxn.toByteArray(), captor.getValue().getContents());
+		assertArrayEquals(signedTxn.toByteArray(), captor.getValue());
 		assertEquals(OK, result);
 		// and:
 		verify(recordCache).addPreConsensus(accessor.getTxnId());
@@ -128,8 +128,8 @@ class PlatformSubmissionManagerTest {
 	@Test
 	void submitsChildInsteadOfParentForUnchecked() {
 		// setup:
-		ArgumentCaptor<SwirldTransaction> captor =
-				ArgumentCaptor.forClass(SwirldTransaction.class);
+		ArgumentCaptor<byte[]> captor =
+				ArgumentCaptor.forClass(byte[].class);
 
 		given(platform.createTransaction(captor.capture())).willReturn(true);
 
@@ -137,7 +137,7 @@ class PlatformSubmissionManagerTest {
 		var result = subject.trySubmission(uncheckedAccessor);
 
 		// then:
-		assertArrayEquals(signedTxn.toByteArray(), captor.getValue().getContents());
+		assertArrayEquals(signedTxn.toByteArray(), captor.getValue());
 		assertEquals(OK, result);
 		// and:
 		verify(recordCache).addPreConsensus(accessor.getTxnId());

@@ -43,6 +43,7 @@ import org.junit.jupiter.api.Assertions;
 import java.io.IOException;
 import java.io.Serializable;
 import java.io.UncheckedIOException;
+import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.security.PrivateKey;
 import java.security.interfaces.ECPrivateKey;
@@ -77,7 +78,7 @@ public class KeyFactory implements Serializable {
 
 	private final HapiSpecSetup setup;
 	private final Map<String, PrivateKey> pkMap = new ConcurrentHashMap<>();
-	private Map<Key, SigControl> controlMap = new ConcurrentHashMap<>();
+	private final Map<Key, SigControl> controlMap = new ConcurrentHashMap<>();
 	private final SigMapGenerator defaultSigMapGen = TrieSigMapGenerator.withNature(UNIQUE_PREFIXES);
 
 	private transient HapiSpecRegistry registry;
@@ -102,6 +103,10 @@ public class KeyFactory implements Serializable {
 		exportSimpleKey(loc, name, key -> key.getEd25519().toByteArray(), passphrase);
 	}
 
+	public void exportEcdsaKey(final String name) {
+		exportSimpleEcdsaKey(name, key -> key.getECDSASecp256K1().toByteArray());
+	}
+
 	public void exportSimpleWacl(final String loc, final String name) {
 		exportSimpleKey(loc, name, key -> key.getKeyList().getKeys(0).getEd25519().toByteArray());
 	}
@@ -121,9 +126,25 @@ public class KeyFactory implements Serializable {
 			final String passphrase
 	) {
 		final var pubKeyBytes = targetKeyExtractor.apply(registry.getKey(name));
-		final var hexedPubKey = com.swirlds.common.CommonUtils.hex(pubKeyBytes);
+		final var hexedPubKey = com.swirlds.common.utility.CommonUtils.hex(pubKeyBytes);
 		final var key = (EdDSAPrivateKey) pkMap.get(hexedPubKey);
 		Ed25519Utils.writeKeyTo(key, loc, passphrase);
+	}
+
+	public void exportSimpleEcdsaKey(final String name, final Function<Key, byte[]> targetKeyExtractor) {
+		final var pubKeyBytes = targetKeyExtractor.apply(registry.getKey(name));
+		final var hexedPubKey = com.swirlds.common.utility.CommonUtils.hex(pubKeyBytes);
+		final var key = (ECPrivateKey) pkMap.get(hexedPubKey);
+		final var loc = explicitEcdsaLocFor(name);
+		try {
+			Files.writeString(Paths.get(loc), hexedPubKey + "|" + key.getS().toString(16));
+		} catch (IOException e) {
+			throw new UncheckedIOException(e);
+		}
+	}
+
+	public static String explicitEcdsaLocFor(final String name) {
+		return name + "-secp256k1.hexed";
 	}
 
 	public void incorporate(final String byName, final EdDSAPrivateKey key) {
@@ -131,13 +152,13 @@ public class KeyFactory implements Serializable {
 	}
 
 	public void incorporate(final String byName, final EdDSAPrivateKey key, final SigControl control) {
-		final var pubKeyHex = com.swirlds.common.CommonUtils.hex(key.getAbyte());
+		final var pubKeyHex = com.swirlds.common.utility.CommonUtils.hex(key.getAbyte());
 		pkMap.put(pubKeyHex, key);
 		controlMap.put(registry.getKey(byName), control);
 	}
 
 	public void incorporateEd25519SimpleWacl(final String byName, final EdDSAPrivateKey key) {
-		final var pubKeyHex = com.swirlds.common.CommonUtils.hex(key.getAbyte());
+		final var pubKeyHex = com.swirlds.common.utility.CommonUtils.hex(key.getAbyte());
 		incorporate(byName, pubKeyHex, key, KeyShape.listOf(1));
 	}
 
@@ -276,7 +297,7 @@ public class KeyFactory implements Serializable {
 
 		private void signIfNecessary(final Key key) throws Throwable {
 			final var pk = extractPubKey(key);
-			final var hexedPk = com.swirlds.common.CommonUtils.hex(pk);
+			final var hexedPk = com.swirlds.common.utility.CommonUtils.hex(pk);
 			if (!used.contains(hexedPk)) {
 				final var privateKey = pkMap.get(hexedPk);
 				final byte[] sig;
@@ -304,13 +325,17 @@ public class KeyFactory implements Serializable {
 		}
 	}
 
+	public ECPrivateKey getPrivateKey(final String pubKeyHex) {
+		return (ECPrivateKey) pkMap.get(pubKeyHex);
+	}
+
 	public static KeyList getCompositeList(Key key) {
 		return key.hasKeyList() ? key.getKeyList() : key.getThresholdKey().getKeys();
 	}
 
-	public static EdDSAPrivateKey payerKey(HapiSpecSetup setup) throws Exception {
+	public static EdDSAPrivateKey payerKey(HapiSpecSetup setup) {
 		if (StringUtils.isNotEmpty(setup.defaultPayerKey())) {
-			return Ed25519Utils.keyFrom(com.swirlds.common.CommonUtils.unhex(setup.defaultPayerKey()));
+			return Ed25519Utils.keyFrom(com.swirlds.common.utility.CommonUtils.unhex(setup.defaultPayerKey()));
 		} else if (StringUtils.isNotEmpty(setup.defaultPayerMnemonic())) {
 			return mnemonicToEd25519Key(setup.defaultPayerMnemonic());
 		} else if (StringUtils.isNotEmpty(setup.defaultPayerMnemonicFile())) {

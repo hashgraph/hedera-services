@@ -26,9 +26,10 @@ import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.queries.AnswerService;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.txns.validation.OptionValidator;
-import com.hedera.services.utils.accessors.SignedTxnAccessor;
 import com.hedera.services.utils.EntityNum;
+import com.hedera.services.utils.accessors.SignedTxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.CryptoGetAccountBalanceQuery;
 import com.hederahashgraph.api.proto.java.CryptoGetAccountBalanceResponse;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
@@ -120,7 +121,8 @@ public class GetAccountBalanceAnswer implements AnswerService {
 			final MerkleMap<EntityNum, MerkleAccount> accounts
 	) {
 		if (op.hasContractID()) {
-			return optionValidator.queryableContractStatus(op.getContractID(), accounts);
+			final var effId = resolvedContract(op.getContractID());
+			return optionValidator.queryableContractStatus(effId, accounts);
 		} else if (op.hasAccountID()) {
 			final var effId = resolvedNonContract(op.getAccountID());
 			return optionValidator.queryableAccountStatus(effId, accounts);
@@ -129,9 +131,9 @@ public class GetAccountBalanceAnswer implements AnswerService {
 		}
 	}
 
-	private AccountID targetOf(CryptoGetAccountBalanceQuery op) {
+	private AccountID targetOf(final CryptoGetAccountBalanceQuery op) {
 		if (op.hasContractID()) {
-			return asAccount(op.getContractID());
+			return asAccount(resolvedContract(op.getContractID()));
 		} else {
 			return resolvedNonContract(op.getAccountID());
 		}
@@ -141,6 +143,15 @@ public class GetAccountBalanceAnswer implements AnswerService {
 		if (isAlias(idOrAlias)) {
 			final var id = aliasManager.lookupIdBy(idOrAlias.getAlias());
 			return id.toGrpcAccountId();
+		} else {
+			return idOrAlias;
+		}
+	}
+
+	private ContractID resolvedContract(final ContractID idOrAlias) {
+		if (isAlias(idOrAlias)) {
+			final var id = aliasManager.lookupIdBy(idOrAlias.getEvmAddress());
+			return id.toGrpcContractID();
 		} else {
 			return idOrAlias;
 		}

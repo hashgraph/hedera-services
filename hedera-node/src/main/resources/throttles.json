@@ -16,6 +16,7 @@
 			"CryptoDelete",
 			"CryptoGetInfo",
 			"CryptoGetAccountRecords",
+			"PRNG",
 			"ConsensusCreateTopic",
 			"ConsensusSubmitMessage",
 			"ConsensusUpdateTopic",
@@ -62,8 +63,9 @@
 		  "opsPerSec": 350,
 		  "operations": [
 			"ContractCall",
-			"ContractCreate"
-		  ]
+			"ContractCreate",
+                        "EthereumTransaction"
+                   ]
 		},
 		{
 		  "opsPerSec": 3000,

@@ -2,6 +2,10 @@ pragma solidity ^0.5.0;
 
 contract PayReceivable {
 
+    constructor () payable public {
+
+    }
+
     event TransferReceived(
 
         address indexed _from,

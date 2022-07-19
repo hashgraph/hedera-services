@@ -48,7 +48,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
 
-import static com.hedera.services.store.models.Id.MISSING_ID;
 import static com.hedera.test.utils.TxnUtils.assertFailsWith;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
@@ -124,9 +123,6 @@ class ReadOnlyTokenStoreTest {
 		miscTokenRel.setKycGranted(kycGranted);
 		miscTokenRel.setAutomaticAssociation(automaticAssociation);
 		miscTokenRel.markAsPersisted();
-		miscTokenRel.setKey(miscTokenRelId);
-		miscTokenRel.setPrevKey(MISSING_ID.num());
-		miscTokenRel.setNextKey(MISSING_ID.num());
 	}
 
 	/* --- Token loading --- */
@@ -256,19 +252,6 @@ class ReadOnlyTokenStoreTest {
 
 		given(uniqueTokens.getImmutableRef(any())).willReturn(null);
 		assertThrows(InvalidTransactionException.class, () -> subject.loadUniqueTokens(aToken, serialNumbers));
-	}
-
-	@Test
-	void loadsExpectedLatestRelationShipFromAccountsLastAssociatedToken() {
-		givenRelationship(miscTokenRelId, miscTokenMerkleRel);
-		givenToken(merkleTokenId, merkleToken);
-		given(accountStore.loadAccount(autoRenewId)).willReturn(autoRenewAccount);
-		given(accountStore.loadAccount(treasuryId)).willReturn(treasuryAccount);
-		miscAccount.setHeadTokenNum(tokenNum);
-
-		final var actualTokenRel = subject.getLatestTokenRelationship(miscAccount);
-
-		assertEquals(miscTokenRel, actualTokenRel);
 	}
 
 	@Test

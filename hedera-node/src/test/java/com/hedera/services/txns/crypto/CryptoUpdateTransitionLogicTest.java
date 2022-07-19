@@ -23,18 +23,20 @@ package com.hedera.services.txns.crypto;
 import com.google.protobuf.BoolValue;
 import com.google.protobuf.Int32Value;
 import com.google.protobuf.StringValue;
+import com.hedera.services.context.NodeInfo;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.exceptions.DeletedAccountException;
-import com.hedera.services.exceptions.MissingAccountException;
+import com.hedera.services.exceptions.MissingEntityException;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.accounts.AccountCustomizer;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.txns.validation.OptionValidator;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.accessors.SignedTxnAccessor;
 import com.hedera.test.factories.txns.SignedTxnFactory;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -42,10 +44,12 @@ import com.hederahashgraph.api.proto.java.CryptoUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ThresholdKey;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
+import com.swirlds.merkle.map.MerkleMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -53,9 +57,11 @@ import org.mockito.ArgumentCaptor;
 import java.time.Instant;
 import java.util.EnumSet;
 
+import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.DECLINE_REWARD;
 import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.EXPIRY;
 import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.IS_RECEIVER_SIG_REQUIRED;
 import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.MAX_AUTOMATIC_ASSOCIATIONS;
+import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.STAKED_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
@@ -64,14 +70,21 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EXISTING_AUTOM
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EXPIRATION_REDUCTION_NOT_ALLOWED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ADMIN_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_STAKING_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MEMO_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PROXY_ACCOUNT_ID_FIELD_IS_DEPRECATED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.STAKING_NOT_ENABLED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.argThat;
 import static org.mockito.BDDMockito.given;
@@ -103,6 +116,8 @@ class CryptoUpdateTransitionLogicTest {
 	private SignedTxnAccessor accessor;
 	private GlobalDynamicProperties dynamicProperties;
 	private CryptoUpdateTransitionLogic subject;
+	private MerkleMap<EntityNum, MerkleAccount> accounts;
+	private NodeInfo nodeInfo;
 
 	@BeforeEach
 	private void setup() {
@@ -115,13 +130,16 @@ class CryptoUpdateTransitionLogicTest {
 		validator = mock(OptionValidator.class);
 		sigImpactHistorian = mock(SigImpactHistorian.class);
 		dynamicProperties = mock(GlobalDynamicProperties.class);
+		accounts = mock(MerkleMap.class);
+		nodeInfo = mock(NodeInfo.class);
 		withRubberstampingValidator();
 
-		subject = new CryptoUpdateTransitionLogic(ledger, validator, sigImpactHistorian, txnCtx, dynamicProperties);
+		subject = new CryptoUpdateTransitionLogic(ledger, validator, sigImpactHistorian, txnCtx, dynamicProperties,
+				() -> accounts, nodeInfo);
 	}
 
 	@Test
-	void updatesProxyIfPresent() {
+	void ignoresProxyIfPresent() {
 		final var captor = ArgumentCaptor.forClass(HederaAccountCustomizer.class);
 		givenTxnCtx(EnumSet.of(AccountCustomizer.Option.PROXY));
 
@@ -131,8 +149,113 @@ class CryptoUpdateTransitionLogicTest {
 		verify(txnCtx).setStatus(SUCCESS);
 		verify(sigImpactHistorian).markEntityChanged(TARGET.getAccountNum());
 		final var changes = captor.getValue().getChanges();
+		assertEquals(0, changes.size());
+	}
+
+	@Test
+	void updatesStakedIdIfPresentAndEnabled() {
+		final var captor = ArgumentCaptor.forClass(HederaAccountCustomizer.class);
+		givenTxnCtx(EnumSet.of(STAKED_ID));
+		given(dynamicProperties.isStakingEnabled()).willReturn(true);
+
+		subject.doStateTransition();
+
+		verify(ledger).customize(argThat(TARGET::equals), captor.capture());
+		verify(txnCtx).setStatus(SUCCESS);
+		verify(sigImpactHistorian).markEntityChanged(TARGET.getAccountNum());
+		final var changes = captor.getValue().getChanges();
 		assertEquals(1, changes.size());
-		assertEquals(EntityId.fromGrpcAccountId(PROXY), changes.get(AccountProperty.PROXY));
+		assertEquals(-11L, changes.get(AccountProperty.STAKED_ID));
+		assertNull(changes.get(AccountProperty.DECLINE_REWARD));
+	}
+
+	@Test
+	void validatesStakedId() {
+		final var op = CryptoUpdateTransactionBody.newBuilder();
+		cryptoUpdateTxn = TransactionBody.newBuilder().setTransactionID(ourTxnId()).setCryptoUpdateAccount(op).build();
+		cryptoUpdateTxn = cryptoUpdateTxn.toBuilder()
+				.setCryptoUpdateAccount(cryptoUpdateTxn.getCryptoUpdateAccount().toBuilder()
+						.setStakedAccountId(AccountID.newBuilder().setAccountNum(10).build()).build())
+				.build();
+		given(dynamicProperties.isStakingEnabled()).willReturn(true);
+
+		given(validator.isValidStakedId(any(), any(), anyLong(), any(), any())).willReturn(false);
+
+		assertEquals(INVALID_STAKING_ID, subject.semanticCheck().apply(cryptoUpdateTxn));
+	}
+
+	@Test
+	void rejectsStakedIdIfStakingDisabled() {
+		final var op = CryptoUpdateTransactionBody.newBuilder();
+		cryptoUpdateTxn = TransactionBody.newBuilder().setTransactionID(ourTxnId()).setCryptoUpdateAccount(op).build();
+		cryptoUpdateTxn = cryptoUpdateTxn.toBuilder()
+				.setCryptoUpdateAccount(cryptoUpdateTxn.getCryptoUpdateAccount().toBuilder()
+						.setStakedAccountId(AccountID.newBuilder().setAccountNum(10).build()).build())
+				.build();
+
+		assertEquals(STAKING_NOT_ENABLED, subject.semanticCheck().apply(cryptoUpdateTxn));
+	}
+
+	@Test
+	void rejectsDeclineRewardIfStakingDisabled() {
+		final var op = CryptoUpdateTransactionBody.newBuilder();
+		cryptoUpdateTxn = TransactionBody.newBuilder().setTransactionID(ourTxnId()).setCryptoUpdateAccount(op).build();
+		cryptoUpdateTxn = cryptoUpdateTxn.toBuilder()
+				.setCryptoUpdateAccount(cryptoUpdateTxn.getCryptoUpdateAccount().toBuilder()
+						.setDeclineReward(BoolValue.newBuilder().setValue(false)).build())
+				.build();
+
+		assertEquals(STAKING_NOT_ENABLED, subject.semanticCheck().apply(cryptoUpdateTxn));
+	}
+
+	@Test
+	void agreesUpdatingToSentinelValues() {
+		final var op = CryptoUpdateTransactionBody.newBuilder();
+		given(dynamicProperties.isStakingEnabled()).willReturn(true);
+		cryptoUpdateTxn = TransactionBody.newBuilder().setTransactionID(ourTxnId()).setCryptoUpdateAccount(op).build();
+		cryptoUpdateTxn = cryptoUpdateTxn.toBuilder()
+				.setCryptoUpdateAccount(cryptoUpdateTxn.getCryptoUpdateAccount().toBuilder()
+						.setStakedAccountId(AccountID.newBuilder().setAccountNum(0).build()).build())
+				.build();
+
+		assertEquals(OK, subject.semanticCheck().apply(cryptoUpdateTxn));
+
+		cryptoUpdateTxn = cryptoUpdateTxn.toBuilder()
+				.setCryptoUpdateAccount(cryptoUpdateTxn.getCryptoUpdateAccount().toBuilder()
+						.setStakedAccountId(AccountID.newBuilder().setAccountNum(-2).build()).build())
+				.build();
+
+		given(validator.isValidStakedId(any(), any(), anyLong(), any(), any())).willReturn(false);
+		assertEquals(INVALID_STAKING_ID, subject.semanticCheck().apply(cryptoUpdateTxn));
+
+		cryptoUpdateTxn = cryptoUpdateTxn.toBuilder()
+				.setCryptoUpdateAccount(cryptoUpdateTxn.getCryptoUpdateAccount().toBuilder()
+						.setStakedNodeId(-1).build())
+				.build();
+		assertEquals(OK, subject.semanticCheck().apply(cryptoUpdateTxn));
+
+		cryptoUpdateTxn = cryptoUpdateTxn.toBuilder()
+				.setCryptoUpdateAccount(cryptoUpdateTxn.getCryptoUpdateAccount().toBuilder()
+						.setStakedNodeId(-2).build())
+				.build();
+		given(validator.isValidStakedId(any(), any(), anyLong(), any(), any())).willReturn(false);
+		assertEquals(INVALID_STAKING_ID, subject.semanticCheck().apply(cryptoUpdateTxn));
+	}
+
+	@Test
+	void updatesDeclineRewardIfPresent() {
+		final var captor = ArgumentCaptor.forClass(HederaAccountCustomizer.class);
+		givenTxnCtx(EnumSet.of(DECLINE_REWARD));
+		given(dynamicProperties.isStakingEnabled()).willReturn(true);
+
+		subject.doStateTransition();
+
+		verify(ledger).customize(argThat(TARGET::equals), captor.capture());
+		verify(txnCtx).setStatus(SUCCESS);
+		verify(sigImpactHistorian).markEntityChanged(TARGET.getAccountNum());
+		final var changes = captor.getValue().getChanges();
+		assertEquals(1, changes.size());
+		assertEquals(true, changes.get(AccountProperty.DECLINE_REWARD));
 	}
 
 
@@ -209,6 +332,33 @@ class CryptoUpdateTransitionLogicTest {
 	}
 
 	@Test
+	void usingProxyAccountFails(){
+		cryptoUpdateTxn = TransactionBody.newBuilder()
+				.setTransactionID(ourTxnId())
+				.setCryptoUpdateAccount(
+						CryptoUpdateTransactionBody.newBuilder()
+								.setMemo(StringValue.of(MEMO))
+								.setProxyAccountID(PROXY)
+								.setReceiverSigRequired(true)
+								.setKey(KEY)
+				).build();
+
+		assertEquals(PROXY_ACCOUNT_ID_FIELD_IS_DEPRECATED, subject.semanticCheck().apply(cryptoUpdateTxn));
+
+		cryptoUpdateTxn = TransactionBody.newBuilder()
+				.setTransactionID(ourTxnId())
+				.setCryptoUpdateAccount(
+						CryptoUpdateTransactionBody.newBuilder()
+								.setMemo(StringValue.of(MEMO))
+								.setProxyAccountID(AccountID.getDefaultInstance())
+								.setReceiverSigRequired(true)
+								.setKey(KEY)
+				).build();
+
+		assertNotEquals(PROXY_ACCOUNT_ID_FIELD_IS_DEPRECATED, subject.semanticCheck().apply(cryptoUpdateTxn));
+	}
+
+	@Test
 	void updateMaxAutomaticAssociationsFailAsExpectedWithMaxMoreThanAllowedTokenAssociations() {
 		final var captor = ArgumentCaptor.forClass(HederaAccountCustomizer.class);
 		givenTxnCtx(EnumSet.of(MAX_AUTOMATIC_ASSOCIATIONS));
@@ -271,12 +421,12 @@ class CryptoUpdateTransitionLogicTest {
 
 	@Test
 	void rejectsKeyWithBadEncoding() {
-		rejectsKey(unmappableKey());
+		rejectsKey(unmappableKey(), BAD_ENCODING);
 	}
 
 	@Test
 	void rejectsInvalidKey() {
-		rejectsKey(emptyKey());
+		rejectsKey(emptyKey(), INVALID_ADMIN_KEY);
 	}
 
 	@Test
@@ -298,6 +448,7 @@ class CryptoUpdateTransitionLogicTest {
 	@Test
 	void acceptsValidTxn() {
 		givenTxnCtx();
+		given(dynamicProperties.isStakingEnabled()).willReturn(true);
 
 		assertEquals(OK, subject.semanticCheck().apply(cryptoUpdateTxn));
 	}
@@ -306,6 +457,7 @@ class CryptoUpdateTransitionLogicTest {
 	void rejectsDetachedAccount() {
 		givenTxnCtx();
 		given(ledger.isDetached(TARGET)).willReturn(true);
+		given(dynamicProperties.isStakingEnabled()).willReturn(true);
 
 		subject.doStateTransition();
 
@@ -316,6 +468,7 @@ class CryptoUpdateTransitionLogicTest {
 	void rejectsInvalidExpiry() {
 		givenTxnCtx();
 		given(validator.isValidExpiry(any())).willReturn(false);
+		given(dynamicProperties.isStakingEnabled()).willReturn(true);
 
 		subject.doStateTransition();
 
@@ -347,6 +500,7 @@ class CryptoUpdateTransitionLogicTest {
 	void rejectsSmartContract() {
 		givenTxnCtx();
 		given(ledger.isSmartContract(TARGET)).willReturn(true);
+		given(dynamicProperties.isStakingEnabled()).willReturn(true);
 
 		subject.doStateTransition();
 
@@ -357,6 +511,7 @@ class CryptoUpdateTransitionLogicTest {
 	void preemptsMissingAccountException() {
 		givenTxnCtx();
 		given(ledger.exists(TARGET)).willReturn(false);
+		given(dynamicProperties.isStakingEnabled()).willReturn(true);
 
 		subject.doStateTransition();
 
@@ -366,7 +521,8 @@ class CryptoUpdateTransitionLogicTest {
 	@Test
 	void translatesMissingAccountException() {
 		givenTxnCtx();
-		willThrow(MissingAccountException.class).given(ledger).customize(any(), any());
+		willThrow(MissingEntityException.class).given(ledger).customize(any(), any());
+		given(dynamicProperties.isStakingEnabled()).willReturn(true);
 
 		subject.doStateTransition();
 
@@ -377,6 +533,7 @@ class CryptoUpdateTransitionLogicTest {
 	void translatesAccountIsDeletedException() {
 		givenTxnCtx();
 		willThrow(DeletedAccountException.class).given(ledger).customize(any(), any());
+		given(dynamicProperties.isStakingEnabled()).willReturn(true);
 
 		subject.doStateTransition();
 
@@ -409,20 +566,21 @@ class CryptoUpdateTransitionLogicTest {
 		).build();
 	}
 
-	private void rejectsKey(final Key key) {
+	private void rejectsKey(final Key key, ResponseCodeEnum err) {
 		givenTxnCtx();
 		cryptoUpdateTxn = cryptoUpdateTxn.toBuilder()
 				.setCryptoUpdateAccount(cryptoUpdateTxn.getCryptoUpdateAccount().toBuilder().setKey(key))
 				.build();
 
-		assertEquals(BAD_ENCODING, subject.semanticCheck().apply(cryptoUpdateTxn));
+		assertEquals(err, subject.semanticCheck().apply(cryptoUpdateTxn));
 	}
 
 	private void givenTxnCtx() {
 		givenTxnCtx(EnumSet.of(
 				AccountCustomizer.Option.KEY,
 				AccountCustomizer.Option.MEMO,
-				AccountCustomizer.Option.PROXY,
+				STAKED_ID,
+				DECLINE_REWARD,
 				EXPIRY,
 				IS_RECEIVER_SIG_REQUIRED,
 				AccountCustomizer.Option.AUTO_RENEW_PERIOD
@@ -467,6 +625,12 @@ class CryptoUpdateTransitionLogicTest {
 		if (updating.contains(MAX_AUTOMATIC_ASSOCIATIONS)) {
 			op.setMaxAutomaticTokenAssociations(Int32Value.of(NEW_MAX_AUTOMATIC_ASSOCIATIONS));
 		}
+		if (updating.contains(STAKED_ID)) {
+			op.setStakedNodeId(10L);
+		}
+		if (updating.contains(DECLINE_REWARD)) {
+			op.setDeclineReward(BoolValue.of(true));
+		}
 		op.setAccountIDToUpdate(TARGET);
 		cryptoUpdateTxn = TransactionBody.newBuilder().setTransactionID(ourTxnId()).setCryptoUpdateAccount(op).build();
 		given(accessor.getTxn()).willReturn(cryptoUpdateTxn);
@@ -487,5 +651,6 @@ class CryptoUpdateTransitionLogicTest {
 		given(validator.isValidExpiry(any())).willReturn(true);
 		given(validator.hasGoodEncoding(any())).willReturn(true);
 		given(validator.memoCheck(any())).willReturn(OK);
+		given(validator.isValidStakedId(any(), any(), anyLong(), any(), any())).willReturn(true);
 	}
 }

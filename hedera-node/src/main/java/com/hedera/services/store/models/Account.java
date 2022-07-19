@@ -23,13 +23,13 @@ package com.hedera.services.store.models;
 import com.google.common.base.MoreObjects;
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.ethereum.EthTxSigs;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
 import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.txns.token.process.Dissociation;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.EntityNum;
-import com.hedera.services.utils.EntityNumPair;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.apache.tuweni.bytes.Bytes;
@@ -37,7 +37,6 @@ import org.hyperledger.besu.datatypes.Address;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -46,14 +45,15 @@ import java.util.SortedSet;
 import java.util.TreeMap;
 import java.util.TreeSet;
 
-import static com.hedera.services.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
 import static com.hedera.services.exceptions.ValidationUtils.validateFalse;
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hedera.services.state.merkle.internals.BitPackUtils.getAlreadyUsedAutomaticAssociationsFrom;
 import static com.hedera.services.state.merkle.internals.BitPackUtils.getMaxAutomaticAssociationsFrom;
 import static com.hedera.services.state.merkle.internals.BitPackUtils.setAlreadyUsedAutomaticAssociationsTo;
 import static com.hedera.services.state.merkle.internals.BitPackUtils.setMaxAutomaticAssociationsTo;
-import static com.hedera.services.store.models.Id.MISSING_ID;
+import static com.hedera.services.store.contracts.WorldLedgers.ECDSA_KEY_ALIAS_PREFIX;
+import static com.hedera.services.utils.EntityIdUtils.ECDSA_SECP256K1_ALIAS_SIZE;
+import static com.hedera.services.utils.EntityIdUtils.EVM_ADDRESS_SIZE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NO_REMAINING_AUTOMATIC_ASSOCIATIONS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED;
@@ -90,7 +90,7 @@ public class Account {
 	private int numAssociations;
 	private int numPositiveBalances;
 	private int numTreasuryTitles;
-	private long headTokenNum;
+	private long ethereumNonce;
 
 	public Account(Id id) {
 		this.id = id;
@@ -102,6 +102,18 @@ public class Account {
 
 	public void initBalance(long balance) {
 		this.balance = balance;
+	}
+
+	public void setEthereumNonce(long ethereumNonce) {
+		this.ethereumNonce = ethereumNonce;
+	}
+
+	public void incrementEthereumNonce() {
+		this.ethereumNonce++;
+	}
+
+	public long getEthereumNonce() {
+		return ethereumNonce;
 	}
 
 	public long getOwnedNfts() {
@@ -141,7 +153,14 @@ public class Account {
 		if (alias.isEmpty()) {
 			return id.asEvmAddress();
 		} else {
-			return Address.wrap(Bytes.wrap(alias.toByteArray()));
+			if (alias.size() == EVM_ADDRESS_SIZE) {
+				return Address.wrap(Bytes.wrap(alias.toByteArray()));
+			} else if (alias.size() == ECDSA_SECP256K1_ALIAS_SIZE && alias.startsWith(ECDSA_KEY_ALIAS_PREFIX)) {
+				var addressBytes = EthTxSigs.recoverAddressFromPubKey(alias.substring(2).toByteArray());
+				return addressBytes == null ? id.asEvmAddress() : Address.wrap(Bytes.wrap(addressBytes));
+			} else {
+				return id.asEvmAddress();
+			}
 		}
 	}
 
@@ -166,7 +185,7 @@ public class Account {
 		autoAssociationMetadata = setAlreadyUsedAutomaticAssociationsTo(autoAssociationMetadata, alreadyUsedCount);
 	}
 
-	public void incrementUsedAutomaticAssocitions() {
+	public void incrementUsedAutomaticAssociations() {
 		var count = getAlreadyUsedAutomaticAssociations();
 		setAlreadyUsedAutomaticAssociations(++count);
 	}
@@ -174,14 +193,6 @@ public class Account {
 	public void decrementUsedAutomaticAssociations() {
 		var count = getAlreadyUsedAutomaticAssociations();
 		setAlreadyUsedAutomaticAssociations(--count);
-	}
-
-	public long getHeadTokenNum() {
-		return headTokenNum;
-	}
-
-	public void setHeadTokenNum(final long headTokenNum) {
-		this.headTokenNum = headTokenNum;
 	}
 
 	public int getNumAssociations() {
@@ -216,76 +227,53 @@ public class Account {
 	 * @param tokens
 	 * 		List of tokens to be associated to the Account
 	 * @param tokenStore
-	 * 		TypedTokenStore to validate if existing relationship with the tokens to be associated with.
+	 * 		TypedTokenStore to validate if existing relationship with the tokens to be associated with
 	 * @param isAutomaticAssociation
-	 * 		boolean flag to denote if its an automaticAssociation.
+	 * 		whether these associations count against the max auto-associations limit
 	 * @param shouldEnableRelationship
-	 * 		boolean flag to denote if the new relationships have to enabled by default without considering the KYC key and Freeze Key
+	 * 		whether the new relationships should be enabled unconditionally, no matter KYC and freeze settings
 	 * @param dynamicProperties
 	 * 		GlobalDynamicProperties to fetch the token associations limit and enforce it.
-	 * @return A list of TokenRelationships [new and old] that are touched by associating the tokens to this account.
+	 * @return the new token relationships formed by this association
 	 */
 	public List<TokenRelationship> associateWith(
 			final List<Token> tokens,
 			final TypedTokenStore tokenStore,
 			final boolean isAutomaticAssociation,
 			final boolean shouldEnableRelationship,
-			final GlobalDynamicProperties dynamicProperties) {
-		List<TokenRelationship> tokenRelationshipsToPersist = new ArrayList<>();
-
+			final GlobalDynamicProperties dynamicProperties
+	) {
 		final var proposedTotalAssociations = tokens.size() + numAssociations;
-		validateFalse(exceedsTokenAssociationLimit(dynamicProperties, proposedTotalAssociations),
+		validateFalse(
+				exceedsTokenAssociationLimit(dynamicProperties, proposedTotalAssociations),
 				TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED);
-
-		var currKey = headTokenNum;
-		TokenRelationship currRel = currKey == MISSING_ID.num() ?
-				null : tokenStore.getLatestTokenRelationship(this);
-		for (var token : tokens) {
+		final List<TokenRelationship> newModelRels = new ArrayList<>();
+		for (final var token : tokens) {
 			validateFalse(tokenStore.hasAssociation(token, this), TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT);
 			if (isAutomaticAssociation) {
-				incrementUsedAutomaticAssocitions();
+				incrementUsedAutomaticAssociations();
 			}
-
 			final var newRel = shouldEnableRelationship ?
 					token.newEnabledRelationship(this) :
 					token.newRelationshipWith(this, false);
-			final var newTokenNum = token.getId().num();
-			if (currRel != null) {
-				final var prevKey = currRel.getPrevKey();
-				newRel.setPrevKey(prevKey);
-				newRel.setNextKey(currKey);
-				currRel.setPrevKey(newTokenNum);
-				tokenRelationshipsToPersist.add(currRel);
-			}
 			numAssociations++;
-			currRel = newRel;
-			currKey = newTokenNum;
+			newModelRels.add(newRel);
 		}
-		headTokenNum = currKey;
-		tokenRelationshipsToPersist.add(currRel);
-		return tokenRelationshipsToPersist;
+		return newModelRels;
 	}
 
 	/**
 	 * Applies the given list of {@link Dissociation}s, validating that this account is
 	 * indeed associated to each involved token.
-	 *  @param dissociations
-	 * 		the dissociations to perform.
-	 * @param tokenStore
-	 * 		tokenStore to load the prev and next tokenRelationships of the account
+	 *
+	 * @param dissociations
+	 * 		the dissociations to perform
 	 * @param validator
-	 * 		validator to check if the dissociating token has expired.
-	 * @return A list of TokenRelationships that are touched by the dissociating tokens.
+	 * 		validator to check if the dissociating token has expired
 	 */
-	public List<TokenRelationship> dissociateUsing(
-			final List<Dissociation> dissociations,
-			final TypedTokenStore tokenStore,
-			final OptionValidator validator
-	) {
-		final Map<EntityNumPair, TokenRelationship> unPersistedRelationships = new HashMap<>();
+	public void dissociateUsing(final List<Dissociation> dissociations, final OptionValidator validator) {
 		for (final var dissociation : dissociations) {
 			validateTrue(id.equals(dissociation.dissociatingAccountId()), FAIL_INVALID);
-
 			dissociation.updateModelRelsSubjectTo(validator);
 			final var pastRel = dissociation.dissociatingAccountRel();
 			if (pastRel.isAutomaticAssociation()) {
@@ -294,66 +282,8 @@ public class Account {
 			if (pastRel.getBalanceChange() != 0) {
 				numPositiveBalances--;
 			}
-
-			final var tokenId = dissociation.dissociatedTokenId();
-			final var relKey = EntityNumPair.fromLongs(id.num(),tokenId.num());
-			if (headTokenNum == tokenId.num()) {
-				// removing the latest associated token from the account
-				if (numAssociations == 1) {
-					headTokenNum = MISSING_ID.num();
-				} else {
-					updateLastAssociation(tokenStore, unPersistedRelationships, relKey);
-				}
-			} else {
-				/* get next, prev tokenRelationships and update the links by un-linking the dissociating relationship */
-				updateAssociationList(tokenStore, unPersistedRelationships, dissociation.dissociatingToken(), relKey);
-			}
 			numAssociations--;
 		}
-		return unPersistedRelationships.values().stream().toList();
-	}
-
-	private void updateAssociationList(
-			final TypedTokenStore tokenStore,
-			final Map<EntityNumPair, TokenRelationship> unPersistedRelationships,
-			final Token token,
-			final EntityNumPair relKey) {
-		final var dissociatingRel = unPersistedRelationships.computeIfAbsent(relKey,
-				ignore -> tokenStore.loadTokenRelationship(token, this));
-		final var prevKey = dissociatingRel.getPrevKey();
-		final var prevToken = tokenStore.loadPossiblyDeletedOrAutoRemovedToken(
-				STATIC_PROPERTIES.scopedIdWith(prevKey));
-		final var prevRelKey = EntityNumPair.fromLongs(id.num(), prevKey);
-		final var prevRel = unPersistedRelationships.computeIfAbsent(prevRelKey,
-				ignore -> tokenStore.loadTokenRelationship(prevToken, this));
-		// nextKey can be 0.
-		final var nextKey = dissociatingRel.getNextKey();
-		if (nextKey != MISSING_ID.num()) {
-			final var nextToken = tokenStore.loadPossiblyDeletedOrAutoRemovedToken(
-					STATIC_PROPERTIES.scopedIdWith(nextKey));
-			final var nextRelKey = EntityNumPair.fromLongs(id.num(), nextKey);
-			final var nextRel = unPersistedRelationships.computeIfAbsent(nextRelKey,
-					ignore -> tokenStore.loadTokenRelationship(nextToken, this));
-			nextRel.setPrevKey(prevKey);
-		}
-		prevRel.setNextKey(nextKey);
-	}
-
-	private void updateLastAssociation(
-			final TypedTokenStore tokenStore,
-			final Map<EntityNumPair, TokenRelationship> unPersistedRelationships,
-			final EntityNumPair relKey
-	) {
-		final var latestRel =  unPersistedRelationships.computeIfAbsent(relKey,
-				ignore -> tokenStore.getLatestTokenRelationship(this));
-		final var nextKey = latestRel.getNextKey();
-		final var nextToken = tokenStore.loadPossiblyDeletedOrAutoRemovedToken(
-				STATIC_PROPERTIES.scopedIdWith(nextKey));
-		final var nextRelKey = EntityNumPair.fromLongs(id.num(), nextKey);
-		final var nextRel = unPersistedRelationships.computeIfAbsent(nextRelKey,
-				ignore -> tokenStore.loadTokenRelationship(nextToken, this));
-		headTokenNum = nextKey;
-		nextRel.setPrevKey(MISSING_ID.num());
 	}
 
 	public Id getId() {
@@ -399,7 +329,7 @@ public class Account {
 				.add("approveForAllNfts", approveForAllNfts)
 				.add("numAssociations", numAssociations)
 				.add("numPositiveBalances", numPositiveBalances)
-				.add("headTokenNum", headTokenNum)
+				.add("ethereumNonce", ethereumNonce)
 				.toString();
 	}
 
@@ -522,8 +452,6 @@ public class Account {
 	}
 
 	public int getTotalAllowances() {
-		return cryptoAllowances.size() +
-				fungibleTokenAllowances.size() +
-				approveForAllNfts.size();
+		return cryptoAllowances.size() + fungibleTokenAllowances.size() + approveForAllNfts.size();
 	}
 }

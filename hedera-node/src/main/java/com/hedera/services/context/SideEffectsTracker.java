@@ -4,7 +4,7 @@ package com.hedera.services.context;
  * ‌
  * Hedera Services Node
  * ​
- * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
+ * Copyright (C) 2018 - 2022 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,14 +23,12 @@ package com.hedera.services.context;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.protobuf.ByteString;
 import com.hedera.services.state.submerkle.CurrencyAdjustments;
-import com.hedera.services.state.submerkle.FcTokenAllowanceId;
 import com.hedera.services.state.submerkle.FcTokenAssociation;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.models.OwnershipTracker;
 import com.hedera.services.store.models.Token;
 import com.hedera.services.store.models.TokenRelationship;
-import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -48,7 +46,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.TreeMap;
 
 import static com.hedera.services.ledger.HederaLedger.ACCOUNT_ID_COMPARATOR;
 import static com.hedera.services.ledger.HederaLedger.TOKEN_ID_COMPARATOR;
@@ -61,12 +58,15 @@ import static com.hedera.services.ledger.HederaLedger.TOKEN_ID_COMPARATOR;
 @Singleton
 public class SideEffectsTracker {
 	private static final long INAPPLICABLE_NEW_SUPPLY = -1;
+	public static final int MISSING_NUMBER = -1;
 	private static final int MAX_TOKENS_TOUCHED = 1_000;
-	private static final int BALANCE_CHANGES_LENGTH = 64;
-
+	private static final int MAX_BALANCE_CHANGES = 2048;
+	public static final int MAX_PSEUDORANDOM_BYTES_LENGTH = 48;
 	private final TokenID[] tokensTouched = new TokenID[MAX_TOKENS_TOUCHED];
-	private final long[] changedAccounts = new long[BALANCE_CHANGES_LENGTH];
-	private final long[] balanceChanges = new long[BALANCE_CHANGES_LENGTH];
+	private final long[] changedAccounts = new long[MAX_BALANCE_CHANGES];
+	private final long[] balanceChanges = new long[MAX_BALANCE_CHANGES];
+	private final long[] rewardedAccounts = new long[MAX_BALANCE_CHANGES];
+	private final long[] rewardAmounts = new long[MAX_BALANCE_CHANGES];
 	private final List<Long> nftMints = new ArrayList<>();
 	private final List<FcTokenAssociation> autoAssociations = new ArrayList<>();
 	private final Map<TokenID, TransferList.Builder> netTokenChanges = new HashMap<>();
@@ -76,14 +76,16 @@ public class SideEffectsTracker {
 	private long newSupply = INAPPLICABLE_NEW_SUPPLY;
 	private long netHbarChange = 0;
 	private int numHbarChangesSoFar = 0;
+	private int numRewardedAccounts = 0;
 	private TokenID newTokenId = null;
 	private AccountID newAccountId = null;
 	private ContractID newContractId = null;
-	/* Either the key-derived alias for an auto-created account, or the EVM address of a created contract */
+	// Either the key-derived alias for an auto-created account, or the EVM address of a created contract
 	private ByteString newEntityAlias = ByteString.EMPTY;
 	private List<TokenTransferList> explicitNetTokenUnitOrOwnershipChanges = null;
-	private Map<EntityNum, Map<EntityNum, Long>> cryptoAllowances = Collections.emptyMap();
-	private Map<EntityNum, Map<FcTokenAllowanceId, Long>> fungibleTokenAllowances = Collections.emptyMap();
+
+	private byte[] pseudorandomBytes = null;
+	private int pseudorandomNumber = MISSING_NUMBER;
 
 	@Inject
 	public SideEffectsTracker() {
@@ -275,14 +277,18 @@ public class SideEffectsTracker {
 	}
 
 	/**
-	 * Tracks an account/token association automatically created (either by a {@code TokenCreate}
-	 * or a {@code CryptoTransfer}).
+	 * Tracks the reward payment to the account.
 	 *
-	 * @param association
-	 * 		the auto-association
+	 * @param accountNum
+	 * 		Account number of the account receiving the reward.
+	 * @param amount
+	 * 		Reward amount.
 	 */
-	public void trackExplicitAutoAssociation(final FcTokenAssociation association) {
-		autoAssociations.add(association);
+	public void trackRewardPayment(final long accountNum, final long amount) {
+		if (amount != 0) {
+			numRewardedAccounts = includeOrderedFungibleChange(
+					rewardedAccounts, rewardAmounts, numRewardedAccounts, accountNum, amount);
+		}
 	}
 
 	/**
@@ -371,6 +377,12 @@ public class SideEffectsTracker {
 		return netHbarChange;
 	}
 
+	public CurrencyAdjustments getStakingRewardsPaid() {
+		final long[] rewards = Arrays.copyOfRange(rewardAmounts, 0, numRewardedAccounts);
+		final long[] accounts = Arrays.copyOfRange(rewardedAccounts, 0, numRewardedAccounts);
+		return CurrencyAdjustments.fromChanges(rewards, accounts);
+	}
+
 	/**
 	 * Returns the list-of-lists of net token changes (in unit balances for fungible token types, NFT
 	 * ownership changes for non-fungible), including all incremental side effects since the last call
@@ -416,35 +428,24 @@ public class SideEffectsTracker {
 		return all;
 	}
 
-	public Map<EntityNum, Map<EntityNum, Long>> getCryptoAllowances() {
-		return cryptoAllowances;
+	public void trackRandomBytes(final byte[] bytes) {
+		this.pseudorandomBytes = bytes;
 	}
 
-	public void setCryptoAllowances(final Map<EntityNum, Map<EntityNum, Long>> cryptoAllowances) {
-		this.cryptoAllowances = cryptoAllowances;
+	public void trackRandomNumber(final int pseudoRandomNumber) {
+		this.pseudorandomNumber = pseudoRandomNumber;
 	}
 
-	public void setCryptoAllowances(final EntityNum ownerNum, final Map<EntityNum, Long> cryptoAllowancesOfOwner) {
-		if (cryptoAllowances.equals(Collections.emptyMap())) {
-			cryptoAllowances = new TreeMap<>();
-		}
-		cryptoAllowances.put(ownerNum, cryptoAllowancesOfOwner);
+	public byte[] getPseudorandomBytes() {
+		return pseudorandomBytes;
 	}
 
-	public Map<EntityNum, Map<FcTokenAllowanceId, Long>> getFungibleTokenAllowances() {
-		return fungibleTokenAllowances;
+	public int getPseudorandomNumber() {
+		return pseudorandomNumber;
 	}
 
-	public void setFungibleTokenAllowances(Map<EntityNum, Map<FcTokenAllowanceId, Long>> fungibleTokenAllowances) {
-		this.fungibleTokenAllowances = fungibleTokenAllowances;
-	}
-
-	public void setFungibleTokenAllowances(
-			final EntityNum ownerNum, final Map<FcTokenAllowanceId, Long> fungibleTokenAllowances) {
-		if (this.fungibleTokenAllowances.equals(Collections.emptyMap())) {
-			this.fungibleTokenAllowances = new TreeMap<>();
-		}
-		this.fungibleTokenAllowances.put(ownerNum, fungibleTokenAllowances);
+	public boolean hasTrackedRandomData() {
+		return pseudorandomNumber >= 0 || (pseudorandomBytes != null && pseudorandomBytes.length > 0);
 	}
 
 	/**
@@ -453,12 +454,13 @@ public class SideEffectsTracker {
 	public void reset() {
 		resetTrackedTokenChanges();
 		numHbarChangesSoFar = 0;
+		numRewardedAccounts = 0;
 		netHbarChange = 0;
 		newAccountId = null;
 		newContractId = null;
 		newEntityAlias = ByteString.EMPTY;
-		cryptoAllowances = Collections.emptyMap();
-		fungibleTokenAllowances = Collections.emptyMap();
+		pseudorandomNumber = MISSING_NUMBER;
+		pseudorandomBytes = null;
 	}
 
 	/**
@@ -631,6 +633,11 @@ public class SideEffectsTracker {
 	@VisibleForTesting
 	int getNumHbarChangesSoFar() {
 		return numHbarChangesSoFar;
+	}
+
+	@VisibleForTesting
+	int getNumRewardedAccounts() {
+		return numRewardedAccounts;
 	}
 
 	@VisibleForTesting

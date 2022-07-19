@@ -21,8 +21,8 @@ package com.hedera.services.state.submerkle;
  */
 
 import com.hederahashgraph.api.proto.java.Timestamp;
-import com.swirlds.common.io.SerializableDataInputStream;
-import com.swirlds.common.io.SerializableDataOutputStream;
+import com.swirlds.common.io.streams.SerializableDataInputStream;
+import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -147,5 +147,19 @@ class RichInstantTest {
 		assertEquals(MISSING_INSTANT, anotherSubject);
 		assertEquals(MISSING_INSTANT, fromGrpc(Timestamp.getDefaultInstance()));
 		assertEquals(Timestamp.getDefaultInstance(), anotherSubject.toGrpc());
+	}
+
+	@Test
+	void compareToWorks() {
+		assertEquals(0, new RichInstant(2, 2).compareTo(new RichInstant(2, 2)));
+
+		assertTrue(new RichInstant(2, 3).compareTo(new RichInstant(2, 2)) > 0);
+		assertTrue(new RichInstant(2, 3).compareTo(new RichInstant(2, 4)) < 0);
+
+		assertTrue(new RichInstant(3, 2).compareTo(new RichInstant(2, 2)) > 0);
+		assertTrue(new RichInstant(3, 2).compareTo(new RichInstant(4, 2)) < 0);
+
+		assertTrue(new RichInstant(3, 1).compareTo(new RichInstant(2, 2)) > 0);
+		assertTrue(new RichInstant(3, 2).compareTo(new RichInstant(4, 1)) < 0);
 	}
 }

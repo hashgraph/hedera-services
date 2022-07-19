@@ -97,7 +97,7 @@ public class TokenTransfersLoadProvider extends HapiApiSuite {
 						getAccountBalance(DEFAULT_PAYER).logged(),
 						stdMgmtOf(duration, unit, maxOpsPerSec),
 						fileUpdate(APP_PROPERTIES)
-								.payingWith(ADDRESS_BOOK_CONTROL)
+								.payingWith(GENESIS)
 								.overridingProps(Map.of("balances.exportPeriodSecs", "300",
 										"balances.exportDir.path", "data/accountBalances/")
 								)
@@ -140,35 +140,6 @@ public class TokenTransfersLoadProvider extends HapiApiSuite {
 				var initialSupply =
 						(sendingAccountsPerToken.get() + receivingAccountsPerToken.get()) * balanceInit.get();
 				List<HapiSpecOperation> initializers = new ArrayList<>();
-				initializers.add(tokenOpsEnablement());
-				/* Temporary, can be removed after the public testnet state used in
-				   restart tests includes a fee schedule with HTS resource prices. */
-				if (spec.setup().defaultNode().equals(asAccount("0.0.3"))) {
-					initializers.add(uploadDefaultFeeSchedules(GENESIS));
-				} else {
-					initializers.add(withOpContext((spec, opLog) -> {
-						log.info("\n\n" + bannerWith("Waiting for a fee schedule with token ops!"));
-						boolean hasKnownHtsFeeSchedules = false;
-						SysFileSerde<String> serde = new FeesJsonToGrpcBytes();
-						while (!hasKnownHtsFeeSchedules) {
-							var query = QueryVerbs.getFileContents(FEE_SCHEDULE)
-									.fee(10_000_000_000L);
-							try {
-								allRunFor(spec, query);
-								var contents = query.getResponse().getFileGetContents().getFileContents().getContents();
-								var schedules = serde.fromRawFile(contents.toByteArray());
-								hasKnownHtsFeeSchedules = schedules.contains("TokenCreate");
-							} catch (Exception e) {
-								var msg = e.toString();
-								msg = msg.substring(msg.indexOf(":") + 2);
-								log.info("Couldn't check for HTS fee schedules---'{}'", msg);
-							}
-							TimeUnit.SECONDS.sleep(3);
-						}
-						log.info("\n\n" + bannerWith("A fee schedule with token ops now available!"));
-						spec.tryReinitializingFees();
-					}));
-				}
 				for (int i = 0; i < tokensPerTxn.get(); i++) {
 					var token = "token" + i;
 					var treasury = "treasury" + i;

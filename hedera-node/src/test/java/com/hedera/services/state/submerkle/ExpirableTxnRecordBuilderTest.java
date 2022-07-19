@@ -82,6 +82,7 @@ class ExpirableTxnRecordBuilderTest {
 				.setTransactionID(TransactionID.newBuilder().setAccountID(IdUtils.asAccount("0.0.2")))
 				.setConsensusTimestamp(MiscUtils.asTimestamp(parentConsTime.plusNanos(1)))
 				.setParentConsensusTimestamp(MiscUtils.asTimestamp(parentConsTime))
+				.setPrngNumber(10)
 				.build();
 
 		final var subject = ExpirableTxnRecordTestHelper.fromGprc(grpcRecord);
@@ -199,6 +200,8 @@ class ExpirableTxnRecordBuilderTest {
 	void revertClearsAllSideEffects() {
 		subject.setTokens(List.of(MISSING_ENTITY_ID));
 		subject.setHbarAdjustments(new CurrencyAdjustments(new long[] { 1 }, new long[] { MISSING_ENTITY_ID.num() }));
+		subject.setStakingRewardsPaid(new CurrencyAdjustments(new long[] { 1 },
+				new long[] { MISSING_ENTITY_ID.num() }));
 		subject.setReceiptBuilder(receiptBuilder);
 		subject.setTokenAdjustments(
 				List.of(new CurrencyAdjustments(new long[] { 1 }, new long[] { MISSING_ENTITY_ID.num() })));
@@ -216,6 +219,7 @@ class ExpirableTxnRecordBuilderTest {
 		assertNull(subject.getTokens());
 		assertNull(subject.getScheduleRef());
 		assertNull(subject.getHbarAdjustments());
+		assertNull(subject.getStakingRewardsPaid());
 		assertNull(subject.getTokenAdjustments());
 		assertNotNull(subject.getContractCallResult());
 		assertNull(subject.getNftTokenAdjustments());
@@ -223,6 +227,8 @@ class ExpirableTxnRecordBuilderTest {
 		assertNull(subject.getAssessedCustomFees());
 		assertTrue(subject.getNewTokenAssociations().isEmpty());
 		assertTrue(subject.getAlias().isEmpty());
+		assertEquals(0, subject.getPseudoRandomBytes().length);
+		assertEquals(-1, subject.getPseudoRandomNumber());
 	}
 
 	@Test

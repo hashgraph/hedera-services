@@ -21,6 +21,7 @@ package com.hedera.services.bdd.suites.throttling;
  */
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -28,7 +29,12 @@ import org.apache.logging.log4j.Logger;
 import java.util.List;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.PropertySource.asAccount;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
+import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.usableTxnIdNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.utils.sysfiles.serdes.ThrottleDefsLoader.protoDefsFromResource;
 
 public final class ResetThrottleSuite extends HapiApiSuite {
@@ -50,9 +56,18 @@ public final class ResetThrottleSuite extends HapiApiSuite {
 		return defaultHapiSpec("ResetThrottle")
 				.given(
 				).when(
-						fileUpdate(THROTTLE_DEFS)
-								.payingWith(GENESIS)
-								.contents(devThrottles.toByteArray())
+						// only allow the first client to update throttle file with the first node
+						withOpContext((spec, opLog) -> {
+							HapiSpecOperation subOp;
+							if (spec.setup().defaultNode().equals(asAccount("0.0.3"))) {
+								subOp = fileUpdate(THROTTLE_DEFS)
+										.payingWith(GENESIS)
+										.contents(devThrottles.toByteArray());
+							} else {
+								subOp = sleepFor(20000);
+							}
+							allRunFor(spec, subOp);
+						})
 				).then(
 				);
 	}

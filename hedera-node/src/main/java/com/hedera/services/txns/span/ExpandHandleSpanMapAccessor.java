@@ -20,6 +20,8 @@ package com.hedera.services.txns.span;
  * ‍
  */
 
+import com.hedera.services.ethereum.EthTxData;
+import com.hedera.services.ethereum.EthTxSigs;
 import com.hedera.services.grpc.marshalling.ImpliedTransfers;
 import com.hedera.services.usage.crypto.CryptoApproveAllowanceMeta;
 import com.hedera.services.usage.crypto.CryptoCreateMeta;
@@ -33,10 +35,13 @@ import com.hedera.services.usage.token.meta.TokenPauseMeta;
 import com.hedera.services.usage.token.meta.TokenUnfreezeMeta;
 import com.hedera.services.usage.token.meta.TokenUnpauseMeta;
 import com.hedera.services.usage.token.meta.TokenWipeMeta;
+import com.hedera.services.usage.util.PrngMeta;
 import com.hedera.services.utils.accessors.TxnAccessor;
+import com.hederahashgraph.api.proto.java.TransactionBody;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import java.util.Map;
 
 /**
  * Minimal helper class for getting/setting entries in a span map.
@@ -56,6 +61,11 @@ public class ExpandHandleSpanMapAccessor {
 	private static final String CRYPTO_UPDATE_META_KEY = "cryptoUpdateMeta";
 	private static final String CRYPTO_APPROVE_META_KEY = "cryptoApproveMeta";
 	private static final String CRYPTO_DELETE_ALLOWANCE_META_KEY = "cryptoDeleteAllowanceMeta";
+	private static final String ETH_TX_DATA_META_KEY = "ethTxDataMeta";
+	private static final String ETH_TX_SIGS_META_KEY = "ethTxSigsMeta";
+	private static final String ETH_TX_BODY_META_KEY = "ethTxBodyMeta";
+	private static final String ETH_TX_EXPANSION_KEY = "ethTxExpansion";
+	private static final String PRNG_META_KEY = "prngMeta";
 
 	@Inject
 	public ExpandHandleSpanMapAccessor() {
@@ -164,5 +174,65 @@ public class ExpandHandleSpanMapAccessor {
 
 	public CryptoDeleteAllowanceMeta getCryptoDeleteAllowanceMeta(TxnAccessor accessor) {
 		return (CryptoDeleteAllowanceMeta) accessor.getSpanMap().get(CRYPTO_DELETE_ALLOWANCE_META_KEY);
+	}
+
+	public void setEthTxDataMeta(final TxnAccessor accessor, final EthTxData ethTxData) {
+		accessor.getSpanMap().put(ETH_TX_DATA_META_KEY, ethTxData);
+	}
+
+	public void setEthTxDataMeta(final Map<String, Object> spanMap, final EthTxData ethTxData) {
+		spanMap.put(ETH_TX_DATA_META_KEY, ethTxData);
+	}
+
+	public EthTxData getEthTxDataMeta(TxnAccessor accessor) {
+		return (EthTxData) accessor.getSpanMap().get(ETH_TX_DATA_META_KEY);
+	}
+
+	public EthTxData getEthTxDataMeta(final Map<String, Object> spanMap) {
+		return (EthTxData) spanMap.get(ETH_TX_DATA_META_KEY);
+	}
+
+	public void setEthTxSigsMeta(TxnAccessor accessor, EthTxSigs ethTxSigs) {
+		accessor.getSpanMap().put(ETH_TX_SIGS_META_KEY, ethTxSigs);
+	}
+
+	public void setEthTxSigsMeta(final Map<String, Object> spanMap, final EthTxSigs ethTxSigs) {
+		spanMap.put(ETH_TX_SIGS_META_KEY, ethTxSigs);
+	}
+
+	public EthTxSigs getEthTxSigsMeta(TxnAccessor accessor) {
+		return (EthTxSigs) accessor.getSpanMap().get(ETH_TX_SIGS_META_KEY);
+	}
+
+	public void setEthTxBodyMeta(TxnAccessor accessor, TransactionBody txBody) {
+		accessor.getSpanMap().put(ETH_TX_BODY_META_KEY, txBody);
+	}
+
+	public void setEthTxBodyMeta(final Map<String, Object> spanMap, final TransactionBody txBody) {
+		spanMap.put(ETH_TX_BODY_META_KEY, txBody);
+	}
+
+	public TransactionBody getEthTxBodyMeta(TxnAccessor accessor) {
+		return (TransactionBody) accessor.getSpanMap().get(ETH_TX_BODY_META_KEY);
+	}
+
+	public void setEthTxExpansion(final TxnAccessor accessor, final EthTxExpansion expansion) {
+		accessor.getSpanMap().put(ETH_TX_EXPANSION_KEY, expansion);
+	}
+
+	public void setEthTxExpansion(final Map<String, Object> spanMap, final EthTxExpansion expansion) {
+		spanMap.put(ETH_TX_EXPANSION_KEY, expansion);
+	}
+
+	public EthTxExpansion getEthTxExpansion(final TxnAccessor accessor) {
+		return (EthTxExpansion) accessor.getSpanMap().get(ETH_TX_EXPANSION_KEY);
+	}
+
+	public PrngMeta getPrngMeta(TxnAccessor accessor) {
+		return (PrngMeta) accessor.getSpanMap().get(PRNG_META_KEY);
+	}
+
+	public void setPrngMeta(TxnAccessor accessor, PrngMeta prngMeta) {
+		accessor.getSpanMap().put(PRNG_META_KEY, prngMeta);
 	}
 }

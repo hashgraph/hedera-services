@@ -24,6 +24,7 @@ import com.hedera.services.state.EntityCreator;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.stream.RecordStreamObject;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.swirlds.common.crypto.RunningHash;
 
 import java.time.Instant;
 import java.util.List;
@@ -65,11 +66,11 @@ public interface RecordsHistorian {
 	void saveExpirableTransactionRecords();
 
 	/**
-	 * Returns the last record created by this historian, if it is known, and null otherwise.
+	 * Returns the primary record created by this historian in the current transaction context.
 	 *
-	 * @return the last-created record, or null if none is known
+	 * @return the top-level record object
 	 */
-	ExpirableTxnRecord lastCreatedTopLevelRecord();
+	RecordStreamObject getTopLevelRecord();
 
 	/**
 	 * Indicates if the active transaction created child records that follow the top-level transaction.
@@ -154,4 +155,18 @@ public interface RecordsHistorian {
 	 * that matches the given predicate.
 	 */
 	void customizeSuccessor(Predicate<InProgressChildRecord> matcher, Consumer<InProgressChildRecord> customizer);
+
+	/**
+	 * Convenience method to get the {@link RunningHash} of the last record saved in this transaction.
+	 *
+	 * @return the running hash of the last record saved by this transaction
+	 */
+	default RunningHash lastRunningHash() {
+		if (hasFollowingChildRecords()) {
+			final var choices = getFollowingChildRecords();
+			return choices.get(choices.size() - 1).getRunningHash();
+		} else {
+			return getTopLevelRecord().getRunningHash();
+		}
+	}
 }

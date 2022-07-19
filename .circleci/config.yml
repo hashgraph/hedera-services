@@ -437,9 +437,13 @@ commands:
             else
               JRS_BRANCH="${CIRCLE_BRANCH}"
             fi
-
-            gsutil -m rsync -r "<< parameters.result_path >>" "gs://<< parameters.bucket_name >>/${JRS_USER}/${JRS_BRANCH}/<< parameters.result_path >>/"
-
+            
+            cd assets
+            original_path="<< parameters.result_path >>"
+            prefix_removed=${original_path//assets\//}
+            gsutil -m rsync -r ${prefix_removed} "gs://<< parameters.bucket_name >>/${JRS_USER}/${JRS_BRANCH}/${prefix_removed}/"
+            cd -
+            
             tar -czvf /results.tar.gz  /swirlds-platform/regression/<< parameters.result_path >>
           when: always
 
@@ -486,13 +490,16 @@ commands:
         type: string
       regression_path:
         type: string
-        default: "regression"
+        default: "regression/assets"
       slack_results_channel:
         type: string
         default: ""
       slack_summary_channel:
         type: string
         default: ""
+      platform_repo_path:
+        type: string
+        default: "../platform-swirlds"
       hedera_services_path:
         type: string
         default: "/repo"
@@ -575,23 +582,11 @@ commands:
               ${JRS_OPTIONS} \
               -Dlog4j.configurationFile=log4j2-jrs.xml \
               -Dspring.output.ansi.enabled=ALWAYS \
-              -jar regression.jar "${CONFIG_PATH}" -r "<< parameters.hedera_services_path >>" -w DOCKER_REMOTE -ci "${CI_PARAMETERS}"
+              -jar regression.jar "${CONFIG_PATH}" -pr "<< parameters.platform_repo_path >>" \
+              -r "<< parameters.hedera_services_path >>" -w DOCKER_REMOTE -ci "${CI_PARAMETERS}" \
+              --slack-api-token="${SLACK_API_TOKEN}"
             popd > /dev/null 2>&1
           no_output_timeout: 30m
-
-  run-jrs-experiment:
-    description: Run JRS experiment json
-    parameters:
-      experiment-name:
-        type: string
-        default: ""
-    steps:
-      - run:
-          name: Run experiment << parameters.experiment-name >>.json
-          no_output_timeout: 30m
-          command: |
-            cd /swirlds-platform/regression;
-            ./regression_services_circleci.sh configs/services/suites/daily/<< parameters.experiment-name >>.json /repo
 
 executors:
   build-executor:
@@ -673,8 +668,8 @@ workflows:
       - build-platform-and-services
       - jrs-regression:
           context: Slack
-          regression_path: /swirlds-platform/regression
-          result_path: results/15N_15C/
+          regression_path: /swirlds-platform/regression/assets
+          result_path: assets/results/15N_15C/
           config_type: "weekly"
           workflow-name: "GCP-Weekly-Services-Crypto-Restart-Performance-15N-15C"
           requires:
@@ -695,8 +690,8 @@ workflows:
       - build-platform-and-services
       - jrs-regression:
           context: Slack
-          regression_path: /swirlds-platform/regression
-          result_path: results/20N_20C/
+          regression_path: /swirlds-platform/regression/assets
+          result_path: assets/results/20N_20C/
           config_type: "weekly"
           workflow-name: "GCP-Weekly-Services-MixedOps-Restart-Performance-21N-21C"
           requires:
@@ -718,8 +713,8 @@ workflows:
       - build-platform-and-services
       - jrs-regression:
           context: Slack
-          regression_path: /swirlds-platform/regression
-          result_path: results/15N_15C/
+          regression_path: /swirlds-platform/regression/assets
+          result_path: assets/results/15N_15C/
           config_type: "weekly"
           workflow-name: "GCP-Weekly-Services-HCS-Restart-Performance-15N-15C"
           requires:
@@ -741,8 +736,8 @@ workflows:
       - build-platform-and-services
       - jrs-regression:
           context: Slack
-          regression_path: /swirlds-platform/regression
-          result_path: results/15N_15C/
+          regression_path: /swirlds-platform/regression/assets
+          result_path: assets/results/15N_15C/
           config_type: "weekly"
           workflow-name: "GCP-Weekly-Services-HTS-Restart-Performance-15N-15C"
           requires:
@@ -764,8 +759,8 @@ workflows:
       - build-platform-and-services
       - jrs-regression:
           context: Slack
-          regression_path: /swirlds-platform/regression
-          result_path: results/4N_1C/NetError
+          regression_path: /swirlds-platform/regression/assets
+          result_path: assets/results/4N_1C/NetError
           config_type: "daily"
           workflow-name: "GCP-Daily-Services-Comp-NetError-4N-1C"
           requires:
@@ -789,8 +784,8 @@ workflows:
       - build-platform-and-services
       - jrs-regression:
           context: Slack
-          regression_path: /swirlds-platform/regression
-          result_path: results/1N-1C/LargeVolumeNFTs
+          regression_path: /swirlds-platform/regression/assets
+          result_path: assets/results/1N-1C/LargeVolumeNFTs
           config_type: "ci"
           workflow-name: "GCP-Create-Large-Volume-NFTs-SavedState"
           slack_results_channel: "hedera-regression-test"
@@ -817,8 +812,8 @@ workflows:
       - build-platform-and-services
       - jrs-regression:
           context: Slack
-          regression_path: /swirlds-platform/regression
-          result_path: results/7N_1C/Migration
+          regression_path: /swirlds-platform/regression/assets
+          result_path: assets/results/7N_1C/Migration
           config_type: "daily"
           workflow-name: "GCP-Daily-Services-Crypto-Migration-7N-1C"
           requires:
@@ -846,8 +841,8 @@ workflows:
             - build-platform-and-services
       - jrs-regression:
           context: Slack
-          regression_path: /swirlds-platform/regression
-          result_path: results/18N_1C/MainnetMigration
+          regression_path: /swirlds-platform/regression/assets
+          result_path: assets/results/18N_1C/MainnetMigration
           config_type: "daily"
           workflow-name: "GCP-Daily-Services-Crypto-Migration-18N-1C"
           requires:
@@ -869,8 +864,8 @@ workflows:
       - build-platform-and-services
       - jrs-regression:
           context: Slack
-          regression_path: /swirlds-platform/regression
-          result_path: results/4N_1C/Restart
+          regression_path: /swirlds-platform/regression/assets
+          result_path: assets/results/4N_1C/Restart
           config_type: "daily"
           workflow-name: "GCP-Daily-Services-Crypto-Restart-4N-1C"
           requires:
@@ -892,8 +887,8 @@ workflows:
       - build-platform-and-services
       - jrs-regression:
           context: Slack
-          regression_path: /swirlds-platform/regression
-          result_path: results/4N_2C/Update
+          regression_path: /swirlds-platform/regression/assets
+          result_path: assets/results/4N_2C/Update
           config_type: "daily"
           workflow-name: "GCP-Daily-Services-Crypto-Update-Ubuntu1804-4N-2C"
           requires:
@@ -915,8 +910,8 @@ workflows:
       - build-platform-and-services
       - jrs-regression:
           context: Slack
-          regression_path: /swirlds-platform/regression
-          result_path: results/4N_2C/Update
+          regression_path: /swirlds-platform/regression/assets
+          result_path: assets/results/4N_2C/Update
           config_type: "daily"
           workflow-name: "GCP-Daily-Services-Crypto-Update-Rhel7-4N-2C"
           requires:
@@ -938,8 +933,8 @@ workflows:
       - build-platform-and-services
       - jrs-regression:
           context: Slack
-          regression_path: /swirlds-platform/regression
-          result_path: results/4N_2C/Update
+          regression_path: /swirlds-platform/regression/assets
+          result_path: assets/results/4N_2C/Update
           config_type: "daily"
           workflow-name: "GCP-Daily-Services-Crypto-Update-Rhel8-4N-2C"
           requires:
@@ -961,8 +956,8 @@ workflows:
       - build-platform-and-services
       - jrs-regression:
           context: Slack
-          regression_path: /swirlds-platform/regression
-          result_path: results/4N_2C/Update
+          regression_path: /swirlds-platform/regression/assets
+          result_path: assets/results/4N_2C/Update
           config_type: "daily"
           workflow-name: "GCP-Daily-Services-Crypto-Update-CentOS7-4N-2C"
           requires:
@@ -984,8 +979,8 @@ workflows:
       - build-platform-and-services
       - jrs-regression:
           context: Slack
-          regression_path: /swirlds-platform/regression
-          result_path: results/4N_4C/CryptoInvalidAccounts
+          regression_path: /swirlds-platform/regression/assets
+          result_path: assets/results/4N_4C/CryptoInvalidAccounts
           config_type: "daily"
           workflow-name: "GCP-Daily-Services-Crypto-Invalid-Accounts-4N-4C"
           requires:
@@ -1007,10 +1002,33 @@ workflows:
       - build-platform-and-services
       - jrs-regression:
           context: Slack
-          regression_path: /swirlds-platform/regression
-          result_path: results/4N_2C/Update
+          regression_path: /swirlds-platform/regression/assets
+          result_path: assets/results/4N_2C/Update
           config_type: "daily"
           workflow-name: "GCP-Daily-Services-Crypto-Update-4N-2C"
+          requires:
+            - build-platform-and-services
+          pre-steps:
+            - install-tools
+            - attach_workspace:
+                at: /
+
+  GCP-Daily-Services-Update-Abort-4N-2C:
+    triggers:
+      - schedule:
+          cron: "15 22 * * *"
+          filters:
+            branches:
+              only:
+                - master
+    jobs:
+      - build-platform-and-services
+      - jrs-regression:
+          context: Slack
+          regression_path: /swirlds-platform/regression/assets
+          result_path: assets/results/4N_2C/Update
+          config_type: "daily"
+          workflow-name: "GCP-Daily-Services-Crypto-Update-Abort-4N-2C"
           requires:
             - build-platform-and-services
           pre-steps:
@@ -1030,8 +1048,8 @@ workflows:
       - build-platform-and-services
       - jrs-regression:
           context: Slack
-          regression_path: /swirlds-platform/regression
-          result_path: results/4N_2C/UpdateDisPreUpdate
+          regression_path: /swirlds-platform/regression/assets
+          result_path: assets/results/4N_2C/UpdateDisPreUpdate
           config_type: "daily"
           workflow-name: "GCP-Daily-Services-Comp-Update-DisPreUpdate-4N-2C"
           requires:
@@ -1053,8 +1071,8 @@ workflows:
       - build-platform-and-services
       - jrs-regression:
           context: Slack
-          regression_path: /swirlds-platform/regression
-          result_path: results/4N_2C/UpdateReconnect
+          regression_path: /swirlds-platform/regression/assets
+          result_path: assets/results/4N_2C/UpdateReconnect
           config_type: "daily"
           workflow-name: "GCP-Daily-Services-Comp-Update-Reconnect-4N-2C"
           requires:
@@ -1076,8 +1094,8 @@ workflows:
       - build-platform-and-services
       - jrs-regression:
           context: Slack
-          regression_path: /swirlds-platform/regression
-          result_path: results/4N_2C/UpdateReconnectAbort
+          regression_path: /swirlds-platform/regression/assets
+          result_path: assets/results/4N_2C/UpdateReconnectAbort
           config_type: "daily"
           workflow-name: "GCP-Daily-Services-Comp-Update-Reconnect-Abort-4N-2C"
           requires:
@@ -1099,8 +1117,8 @@ workflows:
       - build-platform-and-services
       - jrs-regression:
           context: Slack
-          regression_path: /swirlds-platform/regression
-          result_path: results/4N_2C/UpdateReconnectAbortDisPreUpdate
+          regression_path: /swirlds-platform/regression/assets
+          result_path: assets/results/4N_2C/UpdateReconnectAbortDisPreUpdate
           config_type: "daily"
           workflow-name: "GCP-Daily-Services-Comp-Update-Reconnect-Abort-DisPreUpdate-4N-2C"
           requires:
@@ -1122,8 +1140,8 @@ workflows:
       - build-platform-and-services
       - jrs-regression:
           context: Slack
-          regression_path: /swirlds-platform/regression
-          result_path: results/6N_1C/BalanceValid
+          regression_path: /swirlds-platform/regression/assets
+          result_path: assets/results/6N_1C/BalanceValid
           config_type: "daily"
           workflow-name: "GCP-Daily-Services-Balances-Validation-6N-1C"
           requires:
@@ -1146,8 +1164,8 @@ workflows:
       - build-platform-and-services
       - jrs-regression:
           context: Slack
-          regression_path: /swirlds-platform/regression
-          result_path: results/6N_4C/Reconnect
+          regression_path: /swirlds-platform/regression/assets
+          result_path: assets/results/6N_4C/Reconnect
           config_type: "daily"
           workflow-name: "GCP-Daily-Services-Reconnect-6N-4C"
           requires:
@@ -1170,8 +1188,8 @@ workflows:
       - build-platform-and-services
       - jrs-regression:
           context: Slack
-          regression_path: /swirlds-platform/regression
-          result_path: results/15N_4C/Global3NReconnect
+          regression_path: /swirlds-platform/regression/assets
+          result_path: assets/results/15N_4C/Global3NReconnect
           config_type: "daily"
           workflow-name: "GCP-Daily-Services-Global-3NReconnect-15N-4C"
           requires:
@@ -1193,8 +1211,8 @@ workflows:
       - build-platform-and-services
       - jrs-regression:
           context: Slack
-          regression_path: /swirlds-platform/regression
-          result_path: results/15N_1C/NetDelay
+          regression_path: /swirlds-platform/regression/assets
+          result_path: assets/results/15N_1C/NetDelay
           config_type: "weekly"
           workflow-name: "GCP-Weekly-Services-Comp-NetDelay-15N-1C"
           requires:
@@ -1216,8 +1234,8 @@ workflows:
       - build-platform-and-services
       - jrs-regression:
           context: Slack
-          regression_path: /swirlds-platform/regression
-          result_path: results/4N_1C/Recovery
+          regression_path: /swirlds-platform/regression/assets
+          result_path: assets/results/4N_1C/Recovery
           config_type: "daily"
           workflow-name: "GCP-Daily-Services-Recovery-4N-1C"
           requires:
@@ -1239,8 +1257,8 @@ workflows:
       - build-platform-and-services
       - jrs-regression:
           context: Slack
-          regression_path: /swirlds-platform/regression
-          result_path: results/7N_7C/QueryPerf
+          regression_path: /swirlds-platform/regression/assets
+          result_path: assets/results/7N_7C/QueryPerf
           config_type: "weekly"
           workflow-name: "GCP-Weekly-Services-Query-Restart-Performance-7N-7C"
           requires:
@@ -1262,8 +1280,8 @@ workflows:
       - build-platform-and-services
       - jrs-regression:
           context: Slack
-          regression_path: /swirlds-platform/regression
-          result_path: results/6N_6C/Performance
+          regression_path: /swirlds-platform/regression/assets
+          result_path: assets/results/6N_6C/Performance
           config_type: "daily"
           workflow-name: "GCP-Daily-Services-Comp-Restart-Performance-Hotspot-6N-6C"
           requires:
@@ -1285,8 +1303,8 @@ workflows:
       - build-platform-and-services
       - jrs-regression:
           context: Slack
-          regression_path: /swirlds-platform/regression
-          result_path: results/7N_7C/Performance
+          regression_path: /swirlds-platform/regression/assets
+          result_path: assets/results/7N_7C/Performance
           config_type: "daily"
           workflow-name: "GCP-Daily-Services-Comp-Restart-Performance-Random-7N-7C"
           requires:
@@ -1309,8 +1327,8 @@ workflows:
       - build-platform-and-services
       - jrs-regression:
           context: Slack
-          regression_path: /swirlds-platform/regression
-          result_path: results/7N_7C/Performance
+          regression_path: /swirlds-platform/regression/assets
+          result_path: assets/results/7N_7C/Performance
           config_type: "daily"
           workflow-name: "GCP-Daily-Services-HTS-Restart-Performance-7N-7C"
           requires:
@@ -1332,8 +1350,8 @@ workflows:
       - build-platform-and-services
       - jrs-regression:
           context: Slack
-          regression_path: /swirlds-platform/regression
-          result_path: results/6N_1C/Reconnect
+          regression_path: /swirlds-platform/regression/assets
+          result_path: assets/results/6N_1C/Reconnect
           config_type: "daily"
           workflow-name: "GCP-Daily-Services-Comp-Reconnect-6N-1C"
           requires:
@@ -1355,8 +1373,8 @@ workflows:
       - build-platform-and-services
       - jrs-regression:
           context: Slack
-          regression_path: /swirlds-platform/regression
-          result_path: results/6N_1C/NIReconnectCorrectness
+          regression_path: /swirlds-platform/regression/assets
+          result_path: assets/results/6N_1C/NIReconnectCorrectness
           config_type: "daily"
           workflow-name: "GCP-Daily-Services-Comp-NI-Reconnect-Correctness-6N-1C"
           requires:
@@ -1378,8 +1396,8 @@ workflows:
       - build-platform-and-services
       - jrs-regression:
           context: Slack
-          regression_path: /swirlds-platform/regression
-          result_path: results/6N_1C/NDReconnectCorrectness
+          regression_path: /swirlds-platform/regression/assets
+          result_path: assets/results/6N_1C/NDReconnectCorrectness
           config_type: "daily"
           workflow-name: "GCP-Daily-Services-Comp-ND-Reconnect-Correctness-6N-1C"
           requires:
@@ -1401,8 +1419,8 @@ workflows:
       - build-platform-and-services
       - jrs-regression:
           context: Slack
-          regression_path: /swirlds-platform/regression
-          result_path: results/15N_4C/3NReconnect
+          regression_path: /swirlds-platform/regression/assets
+          result_path: assets/results/15N_4C/3NReconnect
           config_type: "daily"
           workflow-name: "GCP-Daily-Services-Comp-3NReconnect-15N-4C"
           requires:
@@ -1414,36 +1432,21 @@ workflows:
 
   continuous-integration-gcp:
       jobs:
-        - build-artifact:
-            name: "artifact-build"
-            context: SonarCloud
-            filters:
-              branches:
-                ignore:
-                  - NONE
-            workflow-name: "Continuous-integration"
-        - sonar-check:
-            context: SonarCloud
-            requires:
-              - artifact-build
-            workflow-name: "Continuous-integration-GCP"
-
+#        - build-artifact:
+#            name: "artifact-build"
+#            context: SonarCloud
+#            filters:
+#              branches:
+#                ignore:
+#                  - NONE
+#            workflow-name: "Continuous-integration"
         - build-platform-and-services:
             context: SonarCloud
-            requires:
-              - artifact-build
             workflow-name: "Continuous-integration-GCP"
-        - javadoc-generation:
-            context: Slack
-            requires:
-              - build-platform-and-services
-            pre-steps:
-              - attach_workspace:
-                  at: /
         - jrs-regression:
             context: Slack
-            regression_path: /swirlds-platform/regression
-            result_path: results/4N_1C/CI
+            regression_path: /swirlds-platform/regression/assets
+            result_path: assets/results/4N_1C/CI
             config_type: "ci"
             workflow-name: "GCP-Commit-Services-Comp-Basic-4N-1C"
             name: "run-continuous-integration-gcp"
@@ -1451,67 +1454,44 @@ workflows:
             slack_results_channel: "hedera-cicd"
             slack_summary_channel: "hedera-cicd"
             requires:
-              - javadoc-generation
+              - build-platform-and-services
             pre-steps:
               - install-tools
               - attach_workspace:
                   at: /
 jobs:
-  build-artifact:
-    parameters:
-      sys-props:
-        type: string
-        description: System properties for mvn install
-        default: ''
-      mvn-args:
-        type: string
-        description: Args for mvn install
-        default: ''
-      workflow-name:
-        type: string
-        default: ""
-    executor:
-      name: build-executor
-      workflow-name:  << parameters.workflow-name >>
-    steps:
-      - checkout
-      - run:
-          name: prepare log dir
-          command: |
-            mkdir -p /repo/test-clients/output
-      - run:
-          name: mvn install
-          # use double quote otherwise the backslash of line continuation will be treated as part of mvn parameter
-          command: |
-            mvn --no-transfer-progress -Dsonar.branch.name=${CIRCLE_BRANCH} -Dsonar.login=${SONAR_TOKEN} clean install sonar:sonar \
-              | tee /repo/test-clients/output/hapi-client.log
-      - run:
-          name: Save Unit Test Results
-          command: |
-            set -x
-            JUNIT_PATH="${HOME}/junit"
-
-            if [[ ! -d "${JUNIT_PATH}" ]]; then
-              mkdir -pv "${JUNIT_PATH}"
-            fi
-            find . -type f -regex ".*/target/surefire-reports/.*xml" -exec cp -v {} "${JUNIT_PATH}" \;
-          when: always
-      - store_test_results:
-          path: ~/junit
-      - store_artifacts:
-          path: ~/junit
-
-      - run:
-          name: Upload codecov
-          command: |
-            apt update -y
-            apt install -y curl
-            bash <(wget -O - https://codecov.io/bash)
-      - persist_to_workspace:
-          root: /
-          paths:
-            - repo/
-            - root/.m2
+#  build-artifact:
+#    parameters:
+#      workflow-name:
+#        type: string
+#        default: ""
+#    executor:
+#      name: build-executor
+#      workflow-name:  << parameters.workflow-name >>
+#    steps:
+#      - checkout
+#      - run:
+#          name: prepare log dir
+#          command: |
+#            mkdir -p /repo/test-clients/output
+#      - run:
+#          name: gradle assemble
+#          # use double quote otherwise the backslash of line continuation will be treated as part of mvn parameter
+#          command: |
+#            ./gradlew assemble copyLib copyApp --scan --parallel \
+#              | tee /repo/test-clients/output/hapi-client.log
+#
+##      - run:
+##          name: Upload codecov
+##          command: |
+##            apt update -y
+##            apt install -y curl
+##            bash <(wget -O - https://codecov.io/bash)
+#      - persist_to_workspace:
+#          root: /
+#          paths:
+#            - repo/
+#            - root/.m2
 
   sonar-check:
     parameters:
@@ -1558,17 +1538,6 @@ jobs:
             - repo/
             - swirlds-platform/
 
-  javadoc-generation:
-    executor:
-      name: build-executor
-    steps:
-      - attach_workspace:
-          at: /
-      - run:
-          name: Generate javadocs
-          command: |
-            cd /repo; export JAVA_HOME="/usr/local/java/jdk-17"; mvn javadoc:javadoc
-
   build-platform-and-services:
     parameters:
       workflow-name:
@@ -1587,22 +1556,33 @@ jobs:
       - checkout
       - run:
           name: Build hedera-services repo
-          command: |
-                mvn --no-transfer-progress clean install -DskipTests ;
+          command: ./gradlew assemble copyApp copyLib
       - run:
           name: Checkout swirlds-platform repos and build
           command: |
             sed -i -e 's/Host services-jrs-regression/Host services-jrs-regression\n HostName github.com/g' ~/.ssh/config
-            cd /; GIT_SSH_COMMAND="ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no" \
+            
+            # Git Clone for Platform
+            cd /
+            export GIT_SSH_COMMAND="ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no"
             git clone ssh://git@services-jrs-regression/swirlds/swirlds-platform.git;
-            cd /swirlds-platform;
-            sed -i -e 's/github.com/services-jrs-regression/g' .gitmodules;
-            git submodule update --init --recursive --checkout;
-            mvn --no-transfer-progress clean install -DskipTests;
+            
+            # Git Clone JRS Separately
+            mkdir -p /swirlds-platform/regression >/dev/null 2>&1 || true
+            git clone ssh://git@services-jrs-regression/swirlds/swirlds-platform-regression.git /swirlds-platform/regression
+            
+            # Build Platform
+            cd /swirlds-platform
+            ./mvnw clean install -DskipTests;
+            
+            # Build JRS
+            cd /swirlds-platform/regression
+            ./gradlew assemble --scan --parallel
 
       - run:
           name: Save PEM file to keys folder
           command: |
+            mkdir -p /swirlds-platform/regression/keys
             cp ~/.ssh/id_rsa_e7a63e343ed8fe642c7fb657450344ac /swirlds-platform/regression/keys/services-regression.pem
 
       - persist_to_workspace:
@@ -1656,16 +1636,16 @@ jobs:
         default: ""
       regression_path:
         type: string
-        default: "regression"
+        default: "regression/assets"
       result_path:
         type: string
-        default: "regression/results"
+        default: "regression/assets/results"
       result_bucket:
         type: string
         default: "hedera-services-jrs-test-results"
       summary_path:
         type: string
-        default: "summaryHistory"
+        default: "assets/summaryHistory"
       summary_bucket:
         type: string
         default: "hedera-services-jrs-summary-history/summaryHistory"
@@ -1681,6 +1661,9 @@ jobs:
       workflow-name:
         type: string
         default: ""
+      platform_repo_path:
+        type: string
+        default: "../platform-swirlds"
       hedera_services_path:
         type: string
         default: "/repo"
@@ -1712,6 +1695,7 @@ jobs:
           slack_results_channel: << parameters.slack_results_channel >>
           slack_summary_channel: << parameters.slack_summary_channel >>
           hedera_services_path: << parameters.hedera_services_path >>
+          platform_repo_path: << parameters.platform_repo_path >>
           continuous_integration: << parameters.continuous_integration >>
       - when:
           condition: << parameters.automated_run >>
@@ -1730,14 +1714,14 @@ jobs:
             set -x;
             set +e;
             cd /swirlds-platform/regression
-            CI_RESULTS_LOG=$(find results/4N_1C -name hapi-client-combined.log)
+            CI_RESULTS_LOG=$(find assets/results/4N_1C -name hapi-client-combined.log)
             grep $CI_RESULTS_LOG -e 'status=ERROR' -e 'status=FAILED'
             if [ "$?" -eq "0" ]; then
               exit 1
             else
               exit 0
             fi
-            SAMPLE_NODE_LOG=$(find results/4N_1C -name hgcaa.log | head -1)
+            SAMPLE_NODE_LOG=$(find assets/results/4N_1C -name hgcaa.log | head -1)
             grep $SAMPLE_NODE_LOG -e 'IssListener - In round'
             if [ "$?" -eq "0" ]; then
               exit 1

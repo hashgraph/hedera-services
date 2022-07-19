@@ -38,11 +38,13 @@ import com.hederahashgraph.api.proto.java.CryptoDeleteAllowanceTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoUpdateTransactionBody;
+import com.hederahashgraph.api.proto.java.EthereumTransactionBody;
 import com.hederahashgraph.api.proto.java.FileAppendTransactionBody;
 import com.hederahashgraph.api.proto.java.FileCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.FileDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.FileUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.FreezeTransactionBody;
+import com.hederahashgraph.api.proto.java.PrngTransactionBody;
 import com.hederahashgraph.api.proto.java.ScheduleCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.ScheduleDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.ScheduleSignTransactionBody;
@@ -298,6 +300,11 @@ public class TxnFactory {
 				.setGas(setup.defaultCallGas());
 	}
 
+	public Consumer<EthereumTransactionBody.Builder> defaultDef_EthereumTransactionBody() {
+		return builder -> builder
+				.setMaxGasAllowance(setup.defaultCallGas());
+	}
+
 	public Consumer<ContractCreateTransactionBody.Builder> defaultDef_ContractCreateTransactionBody() {
 		return builder -> builder
 				.setAutoRenewPeriod(setup.defaultAutoRenewPeriod())
@@ -305,8 +312,7 @@ public class TxnFactory {
 				.setInitialBalance(setup.defaultContractBalance())
 				.setMemo(setup.defaultMemo())
 				.setShardID(setup.defaultShard())
-				.setRealmID(setup.defaultRealm())
-				.setProxyAccountID(setup.defaultProxy());
+				.setRealmID(setup.defaultRealm());
 	}
 
 	public Consumer<FileCreateTransactionBody.Builder> defaultDef_FileCreateTransactionBody() {
@@ -394,6 +400,11 @@ public class TxnFactory {
 	}
 
 	public Consumer<TokenFeeScheduleUpdateTransactionBody.Builder> defaultDef_TokenFeeScheduleUpdateTransactionBody() {
+		return builder -> {
+		};
+	}
+
+	public Consumer<PrngTransactionBody.Builder> defaultDef_PrngTransactionBody() {
 		return builder -> {
 		};
 	}

@@ -20,10 +20,9 @@ package com.hedera.services.utils;
  * ‍
  */
 
-import com.hedera.services.state.submerkle.FcTokenAllowance;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
-import com.swirlds.common.io.SerializableDataInputStream;
-import com.swirlds.common.io.SerializableDataOutputStream;
+import com.swirlds.common.io.streams.SerializableDataInputStream;
+import com.swirlds.common.io.streams.SerializableDataOutputStream;
 
 import java.io.IOException;
 import java.util.Collections;
@@ -82,16 +81,6 @@ public final class SerializationUtils {
 		}
 	}
 
-	public static void serializeNftAllowance(
-			SerializableDataOutputStream out,
-			final Map<FcTokenAllowanceId, FcTokenAllowance> nftAllowances) throws IOException {
-		out.writeInt(nftAllowances.size());
-		for (Map.Entry<FcTokenAllowanceId, FcTokenAllowance> entry : nftAllowances.entrySet()) {
-			out.writeSerializable(entry.getKey(), true);
-			out.writeSerializable(entry.getValue(), true);
-		}
-	}
-
 	public static Map<EntityNum, Long> deserializeCryptoAllowances(
 			final SerializableDataInputStream in) throws IOException {
 		var numCryptoAllowances = in.readInt();
@@ -105,22 +94,6 @@ public final class SerializationUtils {
 			cryptoAllowances.put(entityNum, allowance);
 		}
 		return cryptoAllowances;
-	}
-
-	public static Map<FcTokenAllowanceId, FcTokenAllowance> deserializeNftAllowances(
-			final SerializableDataInputStream in
-	) throws IOException {
-		var numNftAllowances = in.readInt();
-		if (numNftAllowances == 0) {
-			return Collections.emptyMap();
-		}
-		final Map<FcTokenAllowanceId, FcTokenAllowance> nftAllowances = new TreeMap<>();
-		while (numNftAllowances-- > 0) {
-			final FcTokenAllowanceId nftAllowanceId = in.readSerializable();
-			final FcTokenAllowance value = in.readSerializable();
-			nftAllowances.put(nftAllowanceId, value);
-		}
-		return nftAllowances;
 	}
 
 	public static Set<FcTokenAllowanceId> deserializeApproveForAllNftsAllowances(

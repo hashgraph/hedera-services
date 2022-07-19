@@ -53,6 +53,18 @@ public enum TokenAssociateScenarios implements TxnHandlingScenario {
 			));
 		}
 	},
+	TOKEN_ASSOCIATE_WITH_CUSTOM_PAYER_PAID_KNOWN_TARGET {
+		@Override
+		public PlatformTxnAccessor platformTxn() throws Throwable {
+			return PlatformTxnAccessor.from(from(
+					newSignedTokenAssociate()
+							.targeting(CUSTOM_PAYER_ACCOUNT)
+							.associating(KNOWN_TOKEN_WITH_KYC)
+							.associating(KNOWN_TOKEN_NO_SPECIAL_KEYS)
+							.get()
+			));
+		}
+	},
 	TOKEN_ASSOCIATE_WITH_IMMUTABLE_TARGET {
 		@Override
 		public PlatformTxnAccessor platformTxn() throws Throwable {

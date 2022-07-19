@@ -26,7 +26,10 @@ import com.hedera.services.context.annotations.CompositeProps;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.exceptions.InvalidTransactionException;
+import com.hedera.services.ledger.TransactionalLedger;
+import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.legacy.core.jproto.JKey;
+import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -46,7 +49,12 @@ import javax.inject.Singleton;
 import java.time.Instant;
 import java.util.Optional;
 
+import static com.hedera.services.ledger.properties.AccountProperty.BALANCE;
+import static com.hedera.services.ledger.properties.AccountProperty.EXPIRY;
+import static com.hedera.services.ledger.properties.AccountProperty.IS_SMART_CONTRACT;
 import static com.hedera.services.legacy.core.jproto.JKey.mapKey;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_EXPIRED_AND_PENDING_REMOVAL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOPIC_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MEMO_TOO_LONG;
@@ -71,15 +79,43 @@ public class ContextOptionValidator implements OptionValidator {
 
 	@Inject
 	public ContextOptionValidator(
-			NodeInfo nodeInfo,
-			@CompositeProps PropertySource properties,
-			TransactionContext txnCtx,
-			GlobalDynamicProperties dynamicProperties
+			final NodeInfo nodeInfo,
+			final @CompositeProps PropertySource properties,
+			final TransactionContext txnCtx,
+			final GlobalDynamicProperties dynamicProperties
 	) {
 		maxEntityLifetime = properties.getLongProperty("entities.maxLifetime");
 		this.txnCtx = txnCtx;
 		this.nodeInfo = nodeInfo;
 		this.dynamicProperties = dynamicProperties;
+	}
+
+	@Override
+	public ResponseCodeEnum expiryStatusGiven(
+			final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accounts,
+			final AccountID id
+	) {
+		if (!dynamicProperties.shouldAutoRenewSomeEntityType()) {
+			return OK;
+		}
+		final var balance = (long) accounts.get(id, BALANCE);
+		if (balance > 0) {
+			return OK;
+		}
+		final var expiry = (long) accounts.get(id, EXPIRY);
+		if (isAfterConsensusSecond(expiry)) {
+			return OK;
+		}
+		final var isContract = (boolean) accounts.get(id, IS_SMART_CONTRACT);
+		return expiryStatusForNominallyDetached(isContract);
+	}
+
+	@Override
+	public ResponseCodeEnum expiryStatusGiven(final long balance, final long expiry, final boolean isContract) {
+		if (balance > 0 || isAfterConsensusSecond(expiry)) {
+			return OK;
+		}
+		return expiryStatusForNominallyDetached(isContract);
 	}
 
 	@Override
@@ -136,7 +172,7 @@ public class ContextOptionValidator implements OptionValidator {
 			throw new InvalidTransactionException(ResponseCodeEnum.BAD_ENCODING);
 		}
 	}
-	
+
 
 	@Override
 	public ResponseCodeEnum nftMetadataCheck(byte[] metadata) {
@@ -280,6 +316,12 @@ public class ContextOptionValidator implements OptionValidator {
 		}
 	}
 
+	@Override
+	public boolean isAfterConsensusSecond(final long now) {
+		final var consensusNow = txnCtx.consensusTime();
+		return consensusNow == null || now > consensusNow.getEpochSecond();
+	}
+
 	/* Not applicable until auto-renew is implemented. */
 	boolean isExpired(MerkleTopic merkleTopic) {
 		Instant expiry = Instant.ofEpochSecond(
@@ -288,9 +330,11 @@ public class ContextOptionValidator implements OptionValidator {
 		return txnCtx.consensusTime().isAfter(expiry);
 	}
 
-	@Override
-	public boolean isAfterConsensusSecond(long now) {
-		return now > txnCtx.consensusTime().getEpochSecond();
+	private ResponseCodeEnum expiryStatusForNominallyDetached(final boolean isContract) {
+		if (isExpiryDisabled(isContract)) {
+			return OK;
+		}
+		return isContract ? CONTRACT_EXPIRED_AND_PENDING_REMOVAL : ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
 	}
 
 	private AccountID nodeAccount() {
@@ -298,5 +342,10 @@ public class ContextOptionValidator implements OptionValidator {
 			nodeAccount = nodeInfo.selfAccount();
 		}
 		return nodeAccount;
+	}
+
+	private boolean isExpiryDisabled(final boolean isContract) {
+		return 	(isContract && !dynamicProperties.shouldAutoRenewContracts()) ||
+				(!isContract && !dynamicProperties.shouldAutoRenewAccounts());
 	}
 }

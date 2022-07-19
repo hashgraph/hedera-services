@@ -82,6 +82,7 @@ class DissociateLogicTest {
 	}
 
 	@Test
+	@SuppressWarnings("unchecked")
 	void performsExpectedLogic() {
 		given(accessor.getTxn()).willReturn(validDissociateTxn());
 		given(txnCtx.accessor()).willReturn(accessor);
@@ -97,7 +98,7 @@ class DissociateLogicTest {
 		subject.dissociate(accountId, txnCtx.accessor().getTxn().getTokenDissociate().getTokensList());
 
 		// then:
-		verify(account).dissociateUsing(List.of(dissociation), tokenStore, validator);
+		verify(account).dissociateUsing(List.of(dissociation), validator);
 		// and:
 		verify(accountStore).commitAccount(account);
 		verify(tokenStore).commitTokenRelationships(List.of(tokenRelationship));

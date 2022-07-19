@@ -29,6 +29,7 @@ import com.hedera.services.usage.crypto.CryptoOpsUsage;
 import com.hedera.services.usage.file.FileOpsUsage;
 import com.hedera.services.usage.state.UsageAccumulator;
 import com.hedera.services.usage.token.TokenOpsUsage;
+import com.hedera.services.usage.util.UtilOpsUsage;
 import com.hedera.services.utils.accessors.TxnAccessor;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 
@@ -43,6 +44,7 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoDelet
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoUpdate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileAppend;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.PRNG;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAccountWipe;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenBurn;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenCreate;
@@ -60,7 +62,7 @@ public class AccessorBasedUsages {
 			CryptoTransfer, CryptoCreate, CryptoUpdate, CryptoApproveAllowance, CryptoDeleteAllowance,
 			ConsensusSubmitMessage,
 			TokenFeeScheduleUpdate, TokenCreate, TokenBurn, TokenMint, TokenAccountWipe,
-			TokenFreezeAccount, TokenUnfreezeAccount, TokenPause, TokenUnpause
+			TokenFreezeAccount, TokenUnfreezeAccount, TokenPause, TokenUnpause, PRNG
 	);
 
 	private final ExpandHandleSpanMapAccessor spanMapAccessor = new ExpandHandleSpanMapAccessor();
@@ -69,6 +71,8 @@ public class AccessorBasedUsages {
 	private final TokenOpsUsage tokenOpsUsage;
 	private final CryptoOpsUsage cryptoOpsUsage;
 	private final ConsensusOpsUsage consensusOpsUsage;
+
+	private final UtilOpsUsage utilOpsUsage;
 
 	private final OpUsageCtxHelper opUsageCtxHelper;
 	private final GlobalDynamicProperties dynamicProperties;
@@ -80,6 +84,7 @@ public class AccessorBasedUsages {
 			CryptoOpsUsage cryptoOpsUsage,
 			OpUsageCtxHelper opUsageCtxHelper,
 			ConsensusOpsUsage consensusOpsUsage,
+			UtilOpsUsage utilOpsUsage,
 			GlobalDynamicProperties dynamicProperties
 	) {
 		this.fileOpsUsage = fileOpsUsage;
@@ -87,6 +92,7 @@ public class AccessorBasedUsages {
 		this.cryptoOpsUsage = cryptoOpsUsage;
 		this.opUsageCtxHelper = opUsageCtxHelper;
 		this.consensusOpsUsage = consensusOpsUsage;
+		this.utilOpsUsage = utilOpsUsage;
 		this.dynamicProperties = dynamicProperties;
 	}
 
@@ -105,7 +111,7 @@ public class AccessorBasedUsages {
 			estimateCryptoUpdate(sigUsage, accessor, baseMeta, into);
 		} else if (function == CryptoApproveAllowance) {
 			estimateCryptoApproveAllowance(sigUsage, accessor, baseMeta, into);
-		}  else if (function == CryptoDeleteAllowance) {
+		} else if (function == CryptoDeleteAllowance) {
 			estimateCryptoDeleteAllowance(sigUsage, accessor, baseMeta, into);
 		} else if (function == ConsensusSubmitMessage) {
 			estimateSubmitMessage(sigUsage, accessor, baseMeta, into);
@@ -129,6 +135,8 @@ public class AccessorBasedUsages {
 			estimateTokenPause(sigUsage, accessor, baseMeta, into);
 		} else if (function == TokenUnpause) {
 			estimateTokenUnpause(sigUsage, accessor, baseMeta, into);
+		} else if (function == PRNG) {
+			estimatePrng(sigUsage, accessor, baseMeta, into);
 		}
 	}
 
@@ -189,7 +197,7 @@ public class AccessorBasedUsages {
 	private void estimateCryptoApproveAllowance(SigUsage sigUsage, TxnAccessor accessor, BaseTransactionMeta baseMeta,
 			UsageAccumulator into) {
 		final var cryptoApproveMeta = accessor.getSpanMapAccessor().getCryptoApproveMeta(accessor);
-		final var cryptoContext = opUsageCtxHelper.ctxForCryptoAllowance(accessor.getTxn());
+		final var cryptoContext = opUsageCtxHelper.ctxForCryptoAllowance(accessor);
 		cryptoOpsUsage.cryptoApproveAllowanceUsage(sigUsage, baseMeta, cryptoApproveMeta, cryptoContext, into);
 	}
 
@@ -287,5 +295,15 @@ public class AccessorBasedUsages {
 	) {
 		final var tokenUnpauseMeta = accessor.getSpanMapAccessor().getTokenUnpauseMeta(accessor);
 		tokenOpsUsage.tokenUnpauseUsage(sigUsage, baseMeta, tokenUnpauseMeta, into);
+	}
+
+	private void estimatePrng(
+			SigUsage sigUsage,
+			TxnAccessor accessor,
+			BaseTransactionMeta baseMeta,
+			UsageAccumulator into
+	) {
+		final var prngMeta = accessor.getSpanMapAccessor().getPrngMeta(accessor);
+		utilOpsUsage.prngUsage(sigUsage, baseMeta, prngMeta, into);
 	}
 }

@@ -54,7 +54,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSO
 
 @Singleton
 public class ApproveAllowanceChecks extends AllowanceChecks {
-	private final GlobalDynamicProperties dynamicProperties;
 	private final OptionValidator validator;
 
 	@Inject
@@ -62,7 +61,6 @@ public class ApproveAllowanceChecks extends AllowanceChecks {
 			final GlobalDynamicProperties dynamicProperties,
 			final OptionValidator validator) {
 		super(dynamicProperties);
-		this.dynamicProperties = dynamicProperties;
 		this.validator = validator;
 	}
 
@@ -81,12 +79,13 @@ public class ApproveAllowanceChecks extends AllowanceChecks {
 	 * 		working view
 	 * @return response code after validation
 	 */
-	public ResponseCodeEnum allowancesValidation(final List<CryptoAllowance> cryptoAllowances,
+	public ResponseCodeEnum allowancesValidation(
+			final List<CryptoAllowance> cryptoAllowances,
 			final List<TokenAllowance> tokenAllowances,
 			final List<NftAllowance> nftAllowances,
 			final Account payerAccount,
-			final StateView view) {
-
+			final StateView view
+	) {
 		// feature flag for allowances
 		if (!isEnabled()) {
 			return NOT_SUPPORTED;
@@ -97,7 +96,7 @@ public class ApproveAllowanceChecks extends AllowanceChecks {
 			return validity;
 		}
 
-		final var accountStore = new AccountStore(validator, dynamicProperties, view.asReadOnlyAccountStore());
+		final var accountStore = new AccountStore(validator, view.asReadOnlyAccountStore());
 		validity = validateCryptoAllowances(cryptoAllowances, payerAccount, accountStore);
 		if (validity != OK) {
 			return validity;
@@ -275,7 +274,6 @@ public class ApproveAllowanceChecks extends AllowanceChecks {
 		}
 		return OK;
 	}
-
 
 	public ResponseCodeEnum validateTokenAmount(final long amount, final Token token) {
 		if (amount < 0) {

@@ -21,7 +21,7 @@ package com.hedera.services.state.exports;
  */
 
 import com.hedera.services.ServicesState;
-import com.swirlds.common.NodeId;
+import com.swirlds.common.system.NodeId;
 
 import java.time.Instant;
 

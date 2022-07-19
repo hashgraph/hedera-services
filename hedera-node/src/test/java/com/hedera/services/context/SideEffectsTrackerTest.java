@@ -33,6 +33,7 @@ import com.hedera.services.store.models.TokenRelationship;
 import com.hedera.services.store.models.UniqueToken;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.test.utils.IdUtils;
+import com.hedera.test.utils.TxnUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import org.hyperledger.besu.datatypes.Address;
@@ -47,6 +48,7 @@ import java.util.TreeMap;
 import java.util.TreeSet;
 
 import static com.hedera.services.state.enums.TokenType.FUNGIBLE_COMMON;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
@@ -133,7 +135,7 @@ class SideEffectsTrackerTest {
 				new FcTokenAssociation(bToken.getTokenNum(), bAccount.getAccountNum()));
 
 		subject.trackAutoAssociation(aToken, aAccount);
-		subject.trackExplicitAutoAssociation(expected.get(1));
+		subject.trackAutoAssociation(bToken, bAccount);
 
 		assertEquals(expected, subject.getTrackedAutoAssociations());
 		assertNotSame(subject.getInternalAutoAssociations(), subject.getTrackedAutoAssociations());
@@ -253,21 +255,34 @@ class SideEffectsTrackerTest {
 	}
 
 	@Test
-	void tracksAndResetsAllowanceAdjusts() {
-		subject.setFungibleTokenAllowances(ownerNum, fungibleAllowance);
-		subject.setCryptoAllowances(ownerNum, cryptoAllowance);
+	void zeroRewardHasNoEffect() {
+		subject.trackRewardPayment(1234L, 0);
+		assertEquals(0, subject.getNumRewardedAccounts());
+	}
 
-		final var trackedCryptoAllowances = subject.getCryptoAllowances();
-		assertTrue(trackedCryptoAllowances.containsKey(ownerNum));
-		assertEquals(cryptoAllowance, trackedCryptoAllowances.get(ownerNum));
+	@Test
+	void tracksAndResetsRewardsPaidAsExpected() {
+		final var rewardA = 1_000L;
+		final var rewardB = 333L;
+		final var rewardC = 1_234_567L;
+		subject.trackRewardPayment(aAccount.getAccountNum(), rewardA);
+		subject.trackRewardPayment(bAccount.getAccountNum(), rewardB);
+		subject.trackRewardPayment(cAccount.getAccountNum(), rewardC);
 
-		final var trackedTokenAllowances = subject.getFungibleTokenAllowances();
-		assertTrue(trackedTokenAllowances.containsKey(ownerNum));
-		assertEquals(fungibleAllowance, trackedTokenAllowances.get(ownerNum));
+		final var rewardsPaid = subject.getStakingRewardsPaid();
+		assertEquals(3, rewardsPaid.getAccountNums().length);
+		assertEquals(3, rewardsPaid.getHbars().length);
+		assertEquals(aAccount.getAccountNum(), rewardsPaid.getAccountNums()[0]);
+		assertEquals(rewardA, rewardsPaid.getHbars()[0]);
+		assertEquals(bAccount.getAccountNum(), rewardsPaid.getAccountNums()[1]);
+		assertEquals(rewardB, rewardsPaid.getHbars()[1]);
+		assertEquals(cAccount.getAccountNum(), rewardsPaid.getAccountNums()[2]);
+		assertEquals(rewardC, rewardsPaid.getHbars()[2]);
 
 		subject.reset();
-		assertTrue(subject.getCryptoAllowances().isEmpty());
-		assertTrue(subject.getFungibleTokenAllowances().isEmpty());
+		final var emptyRewards = subject.getStakingRewardsPaid();
+		assertEquals(0, emptyRewards.getAccountNums().length);
+		assertEquals(0, emptyRewards.getHbars().length);
 	}
 
 	@Test
@@ -331,15 +346,6 @@ class SideEffectsTrackerTest {
 	}
 
 	@Test
-	void gettersAndSettersWork() {
-		subject.setFungibleTokenAllowances(fungibleAllowances);
-		subject.setCryptoAllowances(cryptoAllowances);
-
-		assertEquals(cryptoAllowances, subject.getCryptoAllowances());
-		assertEquals(fungibleAllowances, subject.getFungibleTokenAllowances());
-	}
-
-	@Test
 	void purgesZeroChangesSuccessfully() {
 		final var accountNums = new long[] { 100L, 200L, 300L, 400L, 200L };
 		final var balanceChanges = new long[] { 1000L, 2000L, 0L, 300L, -100L };
@@ -368,6 +374,56 @@ class SideEffectsTrackerTest {
 		assertEquals(0, subject.getNumHbarChangesSoFar());
 	}
 
+	@Test
+	void resetsRewardedNumsCorrectly() {
+		subject.trackRewardPayment(100L, 200L);
+		subject.trackRewardPayment(200L, 200L);
+		subject.trackRewardPayment(800L, -400L);
+		assertEquals(3, subject.getNumRewardedAccounts());
+		subject.reset();
+		assertEquals(0, subject.getNumRewardedAccounts());
+	}
+
+	@Test
+	void tracksAndResetsPseudoRandomDataCorrectly() {
+		final var num = 100;
+		final var bytes = TxnUtils.randomUtf8Bytes(48);
+
+		subject.trackRandomNumber(num);
+		subject.trackRandomBytes(bytes);
+
+		assertTrue(subject.hasTrackedRandomData());
+		assertEquals(100, subject.getPseudorandomNumber());
+		assertEquals(bytes, subject.getPseudorandomBytes());
+
+		subject.reset();
+		assertFalse(subject.hasTrackedRandomData());
+		assertEquals(-1, subject.getPseudorandomNumber());
+		assertEquals(null, subject.getPseudorandomBytes());
+	}
+
+	@Test
+	void checksPseudoRandomDataIsSetCorrectly() {
+		final var num = 100;
+		final var bytes = TxnUtils.randomUtf8Bytes(48);
+
+		subject.trackRandomNumber(num);
+		assertTrue(subject.hasTrackedRandomData());
+		subject.reset();
+
+		subject.trackRandomBytes(bytes);
+		assertTrue(subject.hasTrackedRandomData());
+		subject.reset();
+
+		subject.trackRandomBytes(new byte[0]);
+		assertFalse(subject.hasTrackedRandomData());
+		subject.reset();
+
+		subject.trackRandomNumber(-1);
+		assertFalse(subject.hasTrackedRandomData());
+		subject.reset();
+	}
+
 	private static final long aFirstBalanceChange = 1_000L;
 	private static final long aSecondBalanceChange = 9_000L;
 	private static final long bOnlyBalanceChange = 7_777L;
@@ -381,7 +437,7 @@ class SideEffectsTrackerTest {
 	private static final AccountID aAccount = IdUtils.asAccount("0.0.12345");
 	private static final AccountID bAccount = IdUtils.asAccount("0.0.23456");
 	private static final AccountID cAccount = IdUtils.asAccount("0.0.34567");
-	private static final EntityNum ownerNum = EntityNum.fromAccountId(owner);
+
 	private static final FcTokenAllowance nftAllowance1 = FcTokenAllowance.from(true);
 	private static final FcTokenAllowance nftAllowance2 = FcTokenAllowance.from(List.of(1L, 2L));
 	private static final FcTokenAllowanceId fungibleAllowanceId =
@@ -419,7 +475,7 @@ class SideEffectsTrackerTest {
 					put(fungibleAllowanceId, nftAllowance1);
 					put(nftAllowanceId, nftAllowance2);
 				}});
-	}};
+			}};
 	private static final UniqueToken nft1 = new UniqueToken(
 			Id.fromGrpcToken(bToken), 1L, Id.fromGrpcAccount(owner));
 	private static final UniqueToken nft2 = new UniqueToken(

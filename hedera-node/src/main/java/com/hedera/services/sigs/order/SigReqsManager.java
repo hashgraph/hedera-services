@@ -33,9 +33,9 @@ import com.hedera.services.sigs.metadata.StateChildrenSigMetadataLookup;
 import com.hedera.services.sigs.metadata.TokenMetaUtils;
 import com.hedera.services.sigs.metadata.TokenSigningMetadata;
 import com.hedera.services.state.merkle.MerkleToken;
+import com.swirlds.common.system.Platform;
+import com.swirlds.common.system.transaction.SwirldTransaction;
 import com.hedera.services.utils.accessors.SwirldsTxnAccessor;
-import com.swirlds.common.Platform;
-import com.swirlds.common.SwirldTransaction;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -81,12 +81,14 @@ public class SigReqsManager {
 	private SigRequirements workingSigReqs;
 
 	@Inject
-	public SigReqsManager(final FileNumbers fileNumbers,
+	public SigReqsManager(
+			final FileNumbers fileNumbers,
 			final ExpansionHelper expansionHelper,
 			final SignatureWaivers signatureWaivers,
 			final MutableStateChildren workingState,
 			final GlobalDynamicProperties dynamicProperties,
-			final SignedStateViewFactory stateViewFactory) {
+			final SignedStateViewFactory stateViewFactory
+	) {
 		this.fileNumbers = fileNumbers;
 		this.workingState = workingState;
 		this.expansionHelper = expansionHelper;

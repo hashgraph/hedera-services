@@ -24,7 +24,6 @@ import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.sigs.annotations.WorkingStateSigReqs;
 import com.hedera.services.sigs.factories.ReusableBodySigningFactory;
-import com.hedera.services.sigs.order.CodeOrderResultFactory;
 import com.hedera.services.sigs.order.SigRequirements;
 import com.hedera.services.sigs.order.SigningOrderResult;
 import com.hedera.services.sigs.sourcing.PubKeyToSigBytes;
@@ -33,7 +32,6 @@ import com.hedera.services.utils.RationalizedSigMeta;
 import com.hedera.services.utils.accessors.SwirldsTxnAccessor;
 import com.hedera.services.utils.accessors.TxnAccessor;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.swirlds.common.crypto.TransactionSignature;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -42,11 +40,12 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.BiFunction;
 
 import static com.hedera.services.sigs.PlatformSigOps.createCryptoSigsFrom;
 import static com.hedera.services.sigs.factories.PlatformSigFactory.allVaryingMaterialEquals;
 import static com.hedera.services.sigs.order.CodeOrderResultFactory.CODE_ORDER_RESULT_FACTORY;
+import static com.hedera.services.utils.RationalizedSigMeta.forPayerAndOthers;
+import static com.hedera.services.utils.RationalizedSigMeta.forPayerOnly;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 @Singleton
@@ -164,9 +163,9 @@ public class Rationalization {
 
 	private void makeRationalizedMetaAccessible() {
 		if (reqOthersSigs == null) {
-			txnAccessor.setSigMeta(RationalizedSigMeta.forPayerOnly(reqPayerSig, txnSigs));
+			txnAccessor.setSigMeta(forPayerOnly(reqPayerSig, txnSigs, txnAccessor));
 		} else {
-			txnAccessor.setSigMeta(RationalizedSigMeta.forPayerAndOthers(reqPayerSig, reqOthersSigs, txnSigs));
+			txnAccessor.setSigMeta(forPayerAndOthers(reqPayerSig, reqOthersSigs, txnSigs, txnAccessor));
 		}
 	}
 
@@ -187,9 +186,9 @@ public class Rationalization {
 
 	private ResponseCodeEnum expandIn(
 			List<TransactionSignature> target,
-			BiFunction<TransactionBody, CodeOrderResultFactory, SigningOrderResult<ResponseCodeEnum>> keysFn
+			Expansion.SigReqsFunction keysFn
 	) {
-		lastOrderResult = keysFn.apply(txnAccessor.getTxn(), CODE_ORDER_RESULT_FACTORY);
+		lastOrderResult = keysFn.apply(txnAccessor.getTxn(), CODE_ORDER_RESULT_FACTORY, null, txnAccessor.getPayer());
 		if (lastOrderResult.hasErrorReport()) {
 			return lastOrderResult.getErrorReport();
 		}

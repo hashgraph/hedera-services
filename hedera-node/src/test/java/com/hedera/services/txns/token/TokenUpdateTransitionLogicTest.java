@@ -58,9 +58,9 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_KYC_KE
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SUPPLY_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_SYMBOL;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TREASURY_ACCOUNT_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_WIPE_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NO_REMAINING_AUTOMATIC_ASSOCIATIONS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_IS_IMMUTABLE;
@@ -182,15 +182,37 @@ class TokenUpdateTransitionLogicTest {
 	}
 
 	@Test
-	void abortsOnUnassociatedNewTreasury() {
+	void worksWithUnassociatedNewTreasury() {
+		final long oldTreasuryBalance = 10;
 		givenValidTxnCtx(true);
 		givenToken(true, true);
 		given(store.associationExists(newTreasury, target)).willReturn(false);
+		given(store.autoAssociate(newTreasury, target)).willReturn(OK);
+		given(ledger.unfreeze(newTreasury, target)).willReturn(OK);
+		given(ledger.grantKyc(newTreasury, target)).willReturn(OK);
+		given(store.update(any(), anyLong())).willReturn(OK);
+		given(ledger.getTokenBalance(oldTreasury, target)).willReturn(oldTreasuryBalance);
+		given(ledger.doTokenTransfer(target, oldTreasury, newTreasury, oldTreasuryBalance)).willReturn(OK);
+
+		subject.doStateTransition();
+
+		verify(txnCtx).setStatus(SUCCESS);
+		verify(ledger).decrementNumTreasuryTitles(oldTreasury);
+		verify(ledger).incrementNumTreasuryTitles(newTreasury);
+		verify(sigImpactHistorian).markEntityChanged(target.getTokenNum());
+	}
+
+	@Test
+	void abortsOnFailedAutoAssociationForUnassociatedNewTreasury() {
+		givenValidTxnCtx(true);
+		givenToken(true, true);
+		given(store.associationExists(newTreasury, target)).willReturn(false);
+		given(store.autoAssociate(newTreasury, target)).willReturn(NO_REMAINING_AUTOMATIC_ASSOCIATIONS);
 
 		subject.doStateTransition();
 
 		verify(store, never()).update(any(), anyLong());
-		verify(txnCtx).setStatus(INVALID_TREASURY_ACCOUNT_FOR_TOKEN);
+		verify(txnCtx).setStatus(NO_REMAINING_AUTOMATIC_ASSOCIATIONS);
 		verify(ledger, never()).doTokenTransfer(any(), any(), any(), anyLong());
 	}
 

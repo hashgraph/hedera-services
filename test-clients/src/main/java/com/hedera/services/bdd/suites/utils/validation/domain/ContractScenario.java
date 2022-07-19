@@ -23,8 +23,8 @@ package com.hedera.services.bdd.suites.utils.validation.domain;
 public class ContractScenario {
 	public static String NOVEL_CONTRACT_NAME = "novelContract";
 	public static String PERSISTENT_CONTRACT_NAME = "persistentContract";
-	public static String DEFAULT_CONTRACT_RESOURCE = "contract/solidity/Multipurpose.sol";
-	public static String DEFAULT_BYTECODE_RESOURCE = "contract/bytecodes/Multipurpose.bin";
+	public static String DEFAULT_CONTRACT_RESOURCE = "contract/contracts/Multipurpose/Multipurpose.sol";
+	public static String DEFAULT_BYTECODE_RESOURCE = "contract/contracts/Multipurpose/Multipurpose.bin";
 	public static int DEFAULT_LUCKY_NUMBER = 42;
 
 	PersistentContract persistent;

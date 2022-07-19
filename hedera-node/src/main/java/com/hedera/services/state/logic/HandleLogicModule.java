@@ -20,7 +20,6 @@ package com.hedera.services.state.logic;
  * ‍
  */
 
-import com.hedera.services.state.annotations.RunRecordStreaming;
 import com.hedera.services.state.annotations.RunTopLevelTransition;
 import com.hedera.services.state.annotations.RunTriggeredTransition;
 import com.hedera.services.txns.ProcessLogic;
@@ -31,11 +30,6 @@ import javax.inject.Singleton;
 
 @Module
 public interface HandleLogicModule {
-	@Binds
-	@Singleton
-	@RunRecordStreaming
-	Runnable provideRecordStreaming(RecordStreaming recordStreaming);
-
 	@Binds
 	@Singleton
 	@RunTopLevelTransition

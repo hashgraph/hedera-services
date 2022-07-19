@@ -27,16 +27,18 @@ import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.suites.contract.Utils;
 import com.hedera.services.bdd.suites.utils.contracts.ContractCallResult;
 import com.hedera.services.bdd.spec.utilops.UtilStateChange;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.ContractLoginfo;
-import com.swirlds.common.CommonUtils;
+import com.swirlds.common.utility.CommonUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes;
 import org.ethereum.core.CallTransaction;
 import org.junit.jupiter.api.Assertions;
 
+import java.math.BigInteger;
 import java.util.List;
 import java.util.Optional;
 import java.util.Random;
@@ -47,9 +49,6 @@ import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTIO
 
 public class ContractFnResultAsserts extends BaseErroringAssertsProvider<ContractFunctionResult> {
 	static final Logger log = LogManager.getLogger(ContractFnResultAsserts.class);
-
-	Optional<String> resultAbi = Optional.empty();
-	Optional<Function<HapiApiSpec, Function<Object[], Optional<Throwable>>>> objArrayAssert = Optional.empty();
 
 	public static ContractFnResultAsserts resultWith() {
 		return new ContractFnResultAsserts();
@@ -72,8 +71,8 @@ public class ContractFnResultAsserts extends BaseErroringAssertsProvider<Contrac
 	    and should replace the "resultThruAbi" method, which depends on function ABI, passed as String literal.
     */
 	public ContractFnResultAsserts resultViaFunctionName(final String functionName,
-														 final String contractName,
-														 final Function<HapiApiSpec, Function<Object[], Optional<Throwable>>> provider) {
+			final String contractName,
+			final Function<HapiApiSpec, Function<Object[], Optional<Throwable>>> provider) {
 		final var abi = Utils.getABIFor(FUNCTION, functionName, contractName);
 		registerProvider((spec, o) -> {
 			Object[] actualObjs = viaAbi(abi, ((ContractFunctionResult) o).getContractCallResult().toByteArray());
@@ -125,6 +124,18 @@ public class ContractFnResultAsserts extends BaseErroringAssertsProvider<Contrac
 			Assertions.assertEquals(
 					msg, Optional.ofNullable(result.getErrorMessage()).orElse(""),
 					"Wrong contract function error!");
+		});
+		return this;
+	}
+
+	public ContractFnResultAsserts approxGasUsed(final long expected, final double allowedPercentDeviation) {
+		registerProvider((spec, o) -> {
+			ContractFunctionResult result = (ContractFunctionResult) o;
+			final var actual = result.getGasUsed();
+			final var epsilon = allowedPercentDeviation * actual / 100.0;
+			Assertions.assertEquals(
+					expected, (double) result.getGasUsed(), epsilon,
+					"Wrong amount of gas used");
 		});
 		return this;
 	}
@@ -190,6 +201,16 @@ public class ContractFnResultAsserts extends BaseErroringAssertsProvider<Contrac
 		return this;
 	}
 
+	public ContractFnResultAsserts senderId(AccountID senderId) {
+		registerProvider((spec, o) -> {
+			ContractFunctionResult result = (ContractFunctionResult) o;
+			Assertions.assertEquals(
+					senderId, result.getSenderId(),
+					"Wrong senderID!");
+		});
+		return this;
+	}
+
 	/* Helpers to create the provider for #resultThruAbi. */
 	public static Function<HapiApiSpec, Function<Object[], Optional<Throwable>>> isContractWith(
 			ContractInfoAsserts theExpectedInfo) {
@@ -211,14 +232,12 @@ public class ContractFnResultAsserts extends BaseErroringAssertsProvider<Contrac
 		};
 	}
 
-	public static Function<HapiApiSpec, Function<Object[], Optional<Throwable>>> isComputedResult(
-			Function<HapiApiSpec, Object[]> resultProvider
-	) {
-		return spec -> actualObjs -> matchErrors(resultProvider.apply(spec), actualObjs);
-	}
-
 	public static Function<HapiApiSpec, Function<Object[], Optional<Throwable>>> isLiteralResult(Object[] objs) {
 		return ignore -> actualObjs -> matchErrors(objs, actualObjs);
+	}
+
+	public static Function<HapiApiSpec, Function<Object[], Optional<Throwable>>> isRandomResult(Object[] objs) {
+		return ignore -> actualObjs -> validateRandomResult(objs, actualObjs);
 	}
 
 	public static Function<HapiApiSpec, Function<Object[], Optional<Throwable>>> isLiteralArrayResult(Object[] objs) {
@@ -241,6 +260,29 @@ public class ContractFnResultAsserts extends BaseErroringAssertsProvider<Contrac
 					}
 				} catch (Throwable T) {
 					return Optional.of(T);
+				}
+			}
+		} catch (Throwable T) {
+			return Optional.of(T);
+		}
+		return Optional.empty();
+	}
+
+	private static Optional<Throwable> validateRandomResult(final Object[] expecteds, final Object[] actuals) {
+		try {
+			for (int i = 0; i < Math.max(expecteds.length, actuals.length); i++) {
+				Object expected = expecteds[i];
+				Object actual = actuals[i];
+				Assertions.assertNotNull(expected);
+				Assertions.assertNotNull(actual);
+				if (expected instanceof byte[]) {
+					Assertions.assertEquals(((byte[]) expected).length, ((byte[]) actual).length);
+				} else if (expected instanceof Integer) {
+					Assertions.assertTrue(((BigInteger) actual).intValue() >= 0 &&
+							((BigInteger) actual).intValue() < ((Integer) expected).intValue());
+				} else {
+					throw new Exception(
+							String.format("Invalid Random result, expected %s , actual %s", expecteds[i], actuals[i]));
 				}
 			}
 		} catch (Throwable T) {

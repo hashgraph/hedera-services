@@ -23,8 +23,8 @@ package com.hedera.services.state.serdes;
 import com.hedera.services.legacy.core.jproto.JKeySerializer;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.state.submerkle.RichInstant;
-import com.swirlds.common.io.SerializableDataInputStream;
-import com.swirlds.common.io.SerializableDataOutputStream;
+import com.swirlds.common.io.streams.SerializableDataInputStream;
+import com.swirlds.common.io.streams.SerializableDataOutputStream;
 
 import java.io.IOException;
 

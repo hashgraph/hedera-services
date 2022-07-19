@@ -23,6 +23,7 @@ package com.hedera.services.state.expiry;
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.ethereum.EthTxData;
 import com.hedera.services.fees.charging.NarratedCharging;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.legacy.core.jproto.TxnReceipt;
@@ -32,6 +33,7 @@ import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.state.submerkle.FcAssessedCustomFee;
 import com.hedera.services.state.submerkle.FcTokenAssociation;
+import com.hedera.services.txns.span.ExpandHandleSpanMapAccessor;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.accessors.TxnAccessor;
 import com.hedera.test.utils.IdUtils;
@@ -60,6 +62,8 @@ import static com.hedera.services.state.EntityCreator.EMPTY_MEMO;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.asToken;
 import static com.hedera.test.utils.TxnUtils.withAdjustments;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.EthereumTransaction;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.PRNG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
@@ -67,6 +71,7 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.verify;
 
@@ -98,6 +103,10 @@ class ExpiringCreationsTest {
 	private TxnAccessor accessor;
 	@Mock
 	private SideEffectsTracker sideEffectsTracker;
+	@Mock
+	private ExpandHandleSpanMapAccessor expandHandleSpanMapAccessor;
+	@Mock
+	private EthTxData ethTxData;
 
 	private static final AccountID payer = asAccount("0.0.2");
 	private static final AccountID created = asAccount("1.0.2");
@@ -321,6 +330,68 @@ class ExpiringCreationsTest {
 		assertNull(created.getScheduleRef());
 	}
 
+	@Test
+	void includesEthereumHash() {
+		final var mockHash = ByteString.copyFromUtf8("corn-beef").toByteArray();
+		setUpForExpiringRecordBuilder();
+
+		given(accessor.getFunction()).willReturn(EthereumTransaction);
+		given(accessor.getSpanMapAccessor()).willReturn(expandHandleSpanMapAccessor);
+		given(expandHandleSpanMapAccessor.getEthTxDataMeta(accessor)).willReturn(ethTxData);
+		given(ethTxData.getEthereumHash()).willReturn(mockHash);
+
+		final var created = subject.createTopLevelRecord(
+				totalFee,
+				hash,
+				accessor,
+				timestamp,
+				receiptBuilder,
+				customFeesCharged,
+				sideEffectsTracker).build();
+
+		assertArrayEquals(mockHash, created.getEthereumHash());
+	}
+
+	@Test
+	void includesPseudoRandomData(){
+		final var mockString = ByteString.copyFromUtf8("corn-beef");
+		setUpForExpiringRecordBuilder();
+
+		// case 1
+		given(accessor.getFunction()).willReturn(PRNG);
+		given(sideEffectsTracker.getPseudorandomNumber()).willReturn(10);
+		given(sideEffectsTracker.hasTrackedRandomData()).willReturn(true);
+
+		var created = subject.createTopLevelRecord(
+				totalFee,
+				hash,
+				accessor,
+				timestamp,
+				receiptBuilder,
+				customFeesCharged,
+				sideEffectsTracker).build();
+
+		assertEquals(10, created.getPseudoRandomNumber());
+		assertEquals(0, created.getPseudoRandomBytes().length);
+
+		// case 2
+		given(sideEffectsTracker.getPseudorandomNumber()).willReturn(-1);
+		given(sideEffectsTracker.getPseudorandomBytes()).willReturn(mockString.toByteArray());
+		given(sideEffectsTracker.hasTrackedRandomData()).willReturn(true);
+
+		created = subject.createTopLevelRecord(
+				totalFee,
+				hash,
+				accessor,
+				timestamp,
+				receiptBuilder,
+				customFeesCharged,
+				sideEffectsTracker).build();
+
+		assertEquals(-1, created.getPseudoRandomNumber());
+		assertArrayEquals(mockString.toByteArray(), created.getPseudoRandomBytes());
+
+	}
 	private void setupTracker() {
 		given(sideEffectsTracker.getNetTrackedHbarChanges()).willReturn(transfers);
 		given(sideEffectsTracker.getTrackedAutoAssociations()).willReturn(newTokenAssociations);

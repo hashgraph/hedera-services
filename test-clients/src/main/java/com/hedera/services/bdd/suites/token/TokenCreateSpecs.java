@@ -23,7 +23,6 @@ package com.hedera.services.bdd.suites.token;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
-import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hederahashgraph.api.proto.java.TokenFreezeStatus;
 import com.hederahashgraph.api.proto.java.TokenKycStatus;
@@ -44,6 +43,7 @@ import java.util.stream.IntStream;
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
 import static com.hedera.services.bdd.spec.assertions.AutoAssocAsserts.accountTokenPairs;
+import static com.hedera.services.bdd.spec.assertions.AutoAssocAsserts.accountTokenPairsInAnyOrder;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
@@ -72,6 +72,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.recordSystemProperty;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsdWithin;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_MUST_BE_POSITIVE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_NOT_FULLY_SPECIFIED;
@@ -120,7 +121,7 @@ public class TokenCreateSpecs extends HapiApiSuite {
 	}
 
 	@Override
-	public boolean canRunAsync() {
+	public boolean canRunConcurrent() {
 		return true;
 	}
 
@@ -466,6 +467,7 @@ public class TokenCreateSpecs extends HapiApiSuite {
 	public HapiApiSpec creationHappyPath() {
 		String memo = "JUMP";
 		String saltedName = salted("primary");
+		final var secondCreation = "secondCreation";
 		return defaultHapiSpec("CreationHappyPath")
 				.given(
 						cryptoCreate(TOKEN_TREASURY).balance(0L),
@@ -503,8 +505,13 @@ public class TokenCreateSpecs extends HapiApiSuite {
 								.initialSupply(0)
 								.maxSupply(100)
 								.treasury(TOKEN_TREASURY)
+								.via(secondCreation),
+						getTxnRecord(secondCreation).logged().hasPriority(recordWith().autoAssociated(
+								accountTokenPairsInAnyOrder(List.of(
+										Pair.of(TOKEN_TREASURY, "non-fungible-unique-finite")
+								))))
 				).then(
-						UtilVerbs.withOpContext((spec, opLog) -> {
+						withOpContext((spec, opLog) -> {
 							var createTxn = getTxnRecord("createTxn");
 							allRunFor(spec, createTxn);
 							var timestamp = createTxn.getResponseRecord().getConsensusTimestamp().getSeconds();
@@ -569,7 +576,7 @@ public class TokenCreateSpecs extends HapiApiSuite {
 								.treasury(TOKEN_TREASURY)
 								.via("createTxn")
 				).then(
-						UtilVerbs.withOpContext((spec, opLog) -> {
+						withOpContext((spec, opLog) -> {
 							var createTxn = getTxnRecord("createTxn");
 							allRunFor(spec, createTxn);
 							var timestamp = createTxn.getResponseRecord().getConsensusTimestamp().getSeconds();

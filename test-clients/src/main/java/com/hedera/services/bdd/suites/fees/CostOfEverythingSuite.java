@@ -167,7 +167,7 @@ public class CostOfEverythingSuite extends HapiApiSuite {
 										isLiteralResult(new Object[]{BigInteger.valueOf(256)}))),
 						contractCall(multipurposeContract, "donate", donationArgs)
 								.payingWith("civilian"),
-						contractCallLocal(lookupContract, getABIFor(FUNCTION, "lookup", lookupContract),
+						contractCallLocal(lookupContract, "lookup",
 								spec -> new Object[]{
 										spec.registry().getAccountID("civilian").getAccountNum()
 								}

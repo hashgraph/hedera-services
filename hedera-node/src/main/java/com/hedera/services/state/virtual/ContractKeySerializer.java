@@ -20,8 +20,8 @@ package com.hedera.services.state.virtual;
  * ‍
  */
 
-import com.swirlds.common.io.SerializableDataInputStream;
-import com.swirlds.common.io.SerializableDataOutputStream;
+import com.swirlds.common.io.streams.SerializableDataInputStream;
+import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.jasperdb.files.DataFileCommon;
 import com.swirlds.jasperdb.files.hashmap.KeySerializer;
 
@@ -31,7 +31,7 @@ import java.util.Arrays;
 import java.util.Objects;
 
 import static com.hedera.services.state.virtual.ContractKey.deserializeContractID;
-import static com.hedera.services.state.virtual.ContractKey.deserializeUnit256Key;
+import static com.hedera.services.state.virtual.KeyPackingUtils.deserializeUint256Key;
 import static com.hedera.services.state.virtual.ContractKey.getContractIdNonZeroBytesFromPacked;
 import static com.hedera.services.state.virtual.ContractKey.getUint256KeyNonZeroBytesFromPacked;
 
@@ -135,7 +135,7 @@ public class ContractKeySerializer implements KeySerializer<ContractKey> {
 		if (uint256KeyNonZeroBytes != contractKey.getUint256KeyNonZeroBytes()) return false;
 		final long contractId = deserializeContractID(contractIdNonZeroBytes, buf, ByteBuffer::get);
 		if (contractId != contractKey.getContractId()) return false;
-		final int[] uint256Key = deserializeUnit256Key(uint256KeyNonZeroBytes, buf, ByteBuffer::get);
+		final int[] uint256Key = deserializeUint256Key(uint256KeyNonZeroBytes, buf, ByteBuffer::get);
 		return Arrays.equals(uint256Key, contractKey.getKey());
 	}
 

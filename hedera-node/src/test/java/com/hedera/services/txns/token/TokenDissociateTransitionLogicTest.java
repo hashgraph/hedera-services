@@ -21,7 +21,11 @@ package com.hedera.services.txns.token;
  */
 
 import com.hedera.services.context.TransactionContext;
+import com.hedera.services.store.AccountStore;
+import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.store.models.Id;
+import com.hedera.services.txns.token.process.DissociationFactory;
+import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.accessors.PlatformTxnAccessor;
 import com.hedera.services.utils.accessors.SignedTxnAccessor;
 import com.hedera.test.utils.IdUtils;
@@ -42,6 +46,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
@@ -52,14 +57,22 @@ class TokenDissociateTransitionLogicTest {
 	@Mock
 	private TransactionContext txnCtx;
 	@Mock
-	private DissociateLogic dissociateLogic;
-	@Mock
 	private SignedTxnAccessor accessor;
+	@Mock
+	private OptionValidator validator;
+	@Mock
+	private TypedTokenStore tokenStore;
+	@Mock
+	private AccountStore accountStore;
+	@Mock
+	private DissociationFactory dissociationFactory;
 
+	private DissociateLogic dissociateLogic;
 	private TokenDissociateTransitionLogic subject;
 
 	@BeforeEach
 	void setUp() {
+		dissociateLogic = new DissociateLogic(validator, tokenStore, accountStore, dissociationFactory);
 		subject = new TokenDissociateTransitionLogic(txnCtx, dissociateLogic);
 	}
 
@@ -97,6 +110,8 @@ class TokenDissociateTransitionLogicTest {
 	@Test
 	void callsDissociateLogicWithCorrectParams() {
 		final var accountId = new Id(1, 2, 3);
+		dissociateLogic = mock(DissociateLogic.class);
+		subject = new TokenDissociateTransitionLogic(txnCtx, dissociateLogic);
 
 		given(accessor.getTxn()).willReturn(validDissociateTxn());
 		given(txnCtx.accessor()).willReturn(accessor);

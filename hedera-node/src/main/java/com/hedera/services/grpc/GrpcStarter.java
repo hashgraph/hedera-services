@@ -21,8 +21,8 @@ package com.hedera.services.grpc;
  */
 
 import com.hedera.services.context.properties.NodeLocalProperties;
-import com.swirlds.common.AddressBook;
-import com.swirlds.common.NodeId;
+import com.swirlds.common.system.address.AddressBook;
+import com.swirlds.common.system.NodeId;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 

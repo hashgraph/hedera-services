@@ -21,31 +21,36 @@ package com.hedera.services.bdd.spec.utilops.inventory;
  */
 
 import com.google.common.base.MoreObjects;
+import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.keys.KeyGenerator;
 import com.hedera.services.bdd.spec.keys.KeyLabel;
 import com.hedera.services.bdd.spec.keys.SigControl;
+import com.hedera.services.bdd.spec.keys.deterministic.Bip0032;
+import com.hedera.services.bdd.spec.persistence.SpecKey;
 import com.hedera.services.bdd.spec.utilops.UtilOp;
+import com.hedera.services.keys.Ed25519Utils;
 import com.hederahashgraph.api.proto.java.Key;
-import com.swirlds.common.CommonUtils;
+import net.i2p.crypto.eddsa.EdDSAPrivateKey;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.security.KeyStoreException;
 import java.util.Optional;
 
 import static com.hedera.services.bdd.spec.keys.DefaultKeyGen.DEFAULT_KEY_GEN;
 import static com.hedera.services.bdd.spec.keys.KeyFactory.KeyType;
 import static com.hedera.services.yahcli.output.CommonMessages.COMMON_MESSAGES;
+import static com.swirlds.common.utility.CommonUtils.hex;
 
 public class NewSpecKey extends UtilOp {
 	static final Logger log = LogManager.getLogger(NewSpecKey.class);
 
 	private boolean yahcliLogger = false;
 	private boolean verboseLoggingOn = false;
+	private boolean exportEd25519Mnemonic = false;
 	private final String name;
 	private Optional<String> immediateExportLoc = Optional.empty();
 	private Optional<String> immediateExportPass = Optional.empty();
@@ -61,6 +66,11 @@ public class NewSpecKey extends UtilOp {
 	public NewSpecKey exportingTo(String loc, String pass) {
 		immediateExportLoc = Optional.of(loc);
 		immediateExportPass = Optional.of(pass);
+		return this;
+	}
+
+	public NewSpecKey includingEd25519Mnemonic() {
+		exportEd25519Mnemonic = true;
 		return this;
 	}
 
@@ -97,6 +107,30 @@ public class NewSpecKey extends UtilOp {
 
 	@Override
 	protected boolean submitOp(HapiApiSpec spec) throws Throwable {
+		if (exportEd25519Mnemonic) {
+			if (!immediateExportLoc.isPresent() || !immediateExportPass.isPresent()) {
+				throw new IllegalStateException("Must have an export location for the key info");
+			}
+
+			final var mnemonic = SpecKey.randomMnemonic();
+			final var seed = Bip0032.seedFrom(mnemonic);
+			final var curvePoint = Bip0032.privateKeyFrom(seed);
+			final EdDSAPrivateKey privateKey = Ed25519Utils.keyFrom(curvePoint);
+
+			final var pubKey = privateKey.getAbyte();
+			final var key = Key.newBuilder().setEd25519(ByteString.copyFrom(pubKey)).build();
+
+			spec.registry().saveKey(name, key);
+			spec.keys().incorporate(name, privateKey);
+
+			final var exportLoc = immediateExportLoc.get();
+			final var exportPass = immediateExportPass.get();
+			exportWithPass(spec, name, exportLoc, exportPass);
+			final var wordsLoc = exportLoc.replace(".pem", ".words");
+			Files.writeString(Paths.get(wordsLoc), mnemonic);
+			return false;
+		}
+
 		final var keyGen = generator.orElse(DEFAULT_KEY_GEN);
 		Key key;
 		if (shape.isPresent()) {
@@ -121,7 +155,7 @@ public class NewSpecKey extends UtilOp {
 			if (type.orElse(KeyType.SIMPLE) == KeyType.SIMPLE) {
 				log.info("Created simple '{}' w/ Ed25519 public key {}",
 						name,
-						CommonUtils.hex(key.getEd25519().toByteArray()));
+						hex(key.getEd25519().toByteArray()));
 			} else {
 				log.info("Created a complex key...");
 			}
@@ -134,7 +168,7 @@ public class NewSpecKey extends UtilOp {
 			String name,
 			String exportLoc,
 			String exportPass
-	) throws KeyStoreException, IOException {
+	) throws IOException {
 		spec.keys().exportSimpleKey(exportLoc, name, exportPass);
 		final var passLoc = exportLoc.replace(".pem", ".pass");
 		Files.writeString(Paths.get(passLoc), exportPass);

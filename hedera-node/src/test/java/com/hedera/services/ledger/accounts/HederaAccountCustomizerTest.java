@@ -30,9 +30,11 @@ import org.junit.jupiter.api.Test;
 import java.util.Arrays;
 import java.util.Map;
 
+import static com.hedera.services.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
 import static com.hedera.services.ledger.accounts.AccountCustomizer.Option;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class HederaAccountCustomizerTest {
 	HederaAccountCustomizer subject = new HederaAccountCustomizer();
@@ -59,23 +61,55 @@ class HederaAccountCustomizerTest {
 	@Test
 	void customizesSyntheticContractCreation() {
 		final var memo = "Inherited";
-		final var proxy = new EntityId(0, 0, 4);
+		final var stakedId = 4L;
 		final var autoRenew = 7776001L;
 		final var expiry = 1_234_567L;
+		final var autoRenewAccount = new EntityId(0, 0, 5);
 
 		final var customizer = new HederaAccountCustomizer()
 				.memo(memo)
-				.proxy(proxy)
+				.stakedId(stakedId)
 				.autoRenewPeriod(autoRenew)
 				.expiry(expiry)
-				.isSmartContract(true);
+				.isSmartContract(true)
+				.autoRenewAccount(autoRenewAccount)
+				.maxAutomaticAssociations(10);
 
 		final var op = ContractCreateTransactionBody.newBuilder();
 		customizer.customizeSynthetic(op);
 
 		assertEquals(memo, op.getMemo());
-		assertEquals(proxy.toGrpcAccountId(), op.getProxyAccountID());
+		assertEquals(STATIC_PROPERTIES.scopedAccountWith(stakedId), op.getStakedAccountId());
 		assertEquals(autoRenew, op.getAutoRenewPeriod().getSeconds());
+		assertEquals(false, op.getDeclineReward());
+	}
+
+	@Test
+	void negativeNumMinusOneForStakedIdIsNodeID() {
+		final var memo = "Inherited";
+		final var stakedId = -4L;
+		final var autoRenew = 7776001L;
+		final var expiry = 1_234_567L;
+		final var autoRenewAccount = new EntityId(0, 0, 5);
+
+
+		final var customizer = new HederaAccountCustomizer()
+				.memo(memo)
+				.stakedId(stakedId)
+				.autoRenewPeriod(autoRenew)
+				.expiry(expiry)
+				.isSmartContract(true)
+				.isDeclinedReward(true)
+				.autoRenewAccount(autoRenewAccount);
+
+		final var op = ContractCreateTransactionBody.newBuilder();
+		customizer.customizeSynthetic(op);
+
+		assertEquals(memo, op.getMemo());
+		assertEquals(-1 * stakedId -1, op.getStakedNodeId());
+		assertEquals(autoRenew, op.getAutoRenewPeriod().getSeconds());
+		assertEquals(autoRenewAccount.toGrpcAccountId(), op.getAutoRenewAccountId());
+		assertEquals(true, op.getDeclineReward());
 	}
 
 	@Test

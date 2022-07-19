@@ -25,9 +25,11 @@ import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.swirlds.common.crypto.AbstractSerializableHashable;
 import com.swirlds.common.crypto.RunningHash;
-import com.swirlds.common.crypto.SerializableRunningHashable;
-import com.swirlds.common.io.SerializableDataInputStream;
-import com.swirlds.common.io.SerializableDataOutputStream;
+import com.swirlds.common.crypto.RunningHashable;
+import com.swirlds.common.crypto.SerializableHashable;
+import com.swirlds.common.io.streams.SerializableDataInputStream;
+import com.swirlds.common.io.streams.SerializableDataOutputStream;
+import com.swirlds.common.stream.StreamAligned;
 import com.swirlds.common.stream.Timestamped;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
@@ -42,13 +44,16 @@ import java.time.Instant;
  * Is used for record streaming
  */
 public class RecordStreamObject
-		extends AbstractSerializableHashable implements Timestamped, SerializableRunningHashable {
+		extends AbstractSerializableHashable
+		implements Timestamped, RunningHashable, SerializableHashable, StreamAligned {
 	private static final long CLASS_ID = 0xe370929ba5429d8bL;
 	static final int CLASS_VERSION = 1;
 
 	private static final int MAX_RECORD_LENGTH = 64 * 1024;
 	private static final int MAX_TRANSACTION_LENGTH = 64 * 1024;
 
+	// The number of the ETH JSON-RPC bridge block containing this record
+	private long blockNumber = StreamAligned.NO_ALIGNMENT;
 	/* The gRPC transaction for the record stream file */
 	private Transaction transaction;
 	private TransactionRecord transactionRecord;
@@ -76,6 +81,16 @@ public class RecordStreamObject
 		this.fcTransactionRecord = fcTransactionRecord;
 
 		runningHash = new RunningHash();
+	}
+
+	public RecordStreamObject withBlockNumber(final long blockNumber) {
+		this.blockNumber = blockNumber;
+		return this;
+	}
+
+	@Override
+	public long getStreamAlignment() {
+		return blockNumber;
 	}
 
 	@Override

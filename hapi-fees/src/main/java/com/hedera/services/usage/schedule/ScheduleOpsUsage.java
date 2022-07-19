@@ -1,11 +1,6 @@
-package com.hedera.services.usage.schedule;
-
-/*-
- * ‌
- * Hedera Services API Fees
- * ​
- * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,9 +12,20 @@ package com.hedera.services.usage.schedule;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+package com.hedera.services.usage.schedule;
 
+import static com.hedera.services.usage.SingletonEstimatorUtils.ESTIMATOR_UTILS;
+import static com.hedera.services.usage.SingletonUsageProperties.USAGE_PROPERTIES;
+import static com.hedera.services.usage.schedule.entities.ScheduleEntitySizes.SCHEDULE_ENTITY_SIZES;
+import static com.hederahashgraph.api.proto.java.SubType.SCHEDULE_CREATE_CONTRACT_CALL;
+import static com.hederahashgraph.fee.FeeBuilder.BASIC_ENTITY_ID_SIZE;
+import static com.hederahashgraph.fee.FeeBuilder.BASIC_RICH_INSTANT_SIZE;
+import static com.hederahashgraph.fee.FeeBuilder.BASIC_TX_ID_SIZE;
+import static com.hederahashgraph.fee.FeeBuilder.BOOL_SIZE;
+import static com.hederahashgraph.fee.FeeBuilder.getAccountKeyStorageSize;
+
+import com.google.common.annotations.VisibleForTesting;
 import com.hedera.services.usage.EstimatorFactory;
 import com.hedera.services.usage.QueryUsage;
 import com.hedera.services.usage.SigUsage;
@@ -28,99 +34,98 @@ import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.ResponseType;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-
+import java.util.function.Function;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import java.util.function.Function;
-
-import static com.hedera.services.usage.SingletonEstimatorUtils.ESTIMATOR_UTILS;
-import static com.hedera.services.usage.SingletonUsageProperties.USAGE_PROPERTIES;
-import static com.hedera.services.usage.schedule.entities.ScheduleEntitySizes.SCHEDULE_ENTITY_SIZES;
-import static com.hederahashgraph.fee.FeeBuilder.BASIC_ENTITY_ID_SIZE;
-import static com.hederahashgraph.fee.FeeBuilder.BASIC_RICH_INSTANT_SIZE;
-import static com.hederahashgraph.fee.FeeBuilder.BASIC_TX_ID_SIZE;
-import static com.hederahashgraph.fee.FeeBuilder.BOOL_SIZE;
-import static com.hederahashgraph.fee.FeeBuilder.getAccountKeyStorageSize;
 
 @Singleton
 public class ScheduleOpsUsage {
-	/* Scheduled transaction ids have the scheduled=true flag set */
-	private static final long SCHEDULED_TXN_ID_SIZE = (1L * BASIC_TX_ID_SIZE) + BOOL_SIZE;
+    /* Scheduled transaction ids have the scheduled=true flag set */
+    private static final long SCHEDULED_TXN_ID_SIZE = (1L * BASIC_TX_ID_SIZE) + BOOL_SIZE;
 
-	static EstimatorFactory txnEstimateFactory = TxnUsageEstimator::new;
-	static Function<ResponseType, QueryUsage> queryEstimateFactory = QueryUsage::new;
+    @VisibleForTesting EstimatorFactory txnEstimateFactory = TxnUsageEstimator::new;
+    @VisibleForTesting Function<ResponseType, QueryUsage> queryEstimateFactory = QueryUsage::new;
 
-	@Inject
-	public ScheduleOpsUsage() {
-		// Default constructor
-	}
+    @Inject
+    public ScheduleOpsUsage() {
+        // Default constructor
+    }
 
-	public FeeData scheduleInfoUsage(Query scheduleInfo, ExtantScheduleContext ctx) {
-		var op = scheduleInfo.getScheduleGetInfo();
+    public FeeData scheduleInfoUsage(Query scheduleInfo, ExtantScheduleContext ctx) {
+        var op = scheduleInfo.getScheduleGetInfo();
 
-		var estimate = queryEstimateFactory.apply(op.getHeader().getResponseType());
-		estimate.addTb(BASIC_ENTITY_ID_SIZE);
-		estimate.addRb(ctx.nonBaseRb());
+        var estimate = queryEstimateFactory.apply(op.getHeader().getResponseType());
+        estimate.addTb(BASIC_ENTITY_ID_SIZE);
+        estimate.addRb(ctx.nonBaseRb());
 
-		return estimate.get();
-	}
+        return estimate.get();
+    }
 
-	public FeeData scheduleCreateUsage(TransactionBody scheduleCreate, SigUsage sigUsage, long lifetimeSecs) {
-		var op = scheduleCreate.getScheduleCreate();
+    public FeeData scheduleCreateUsage(
+            TransactionBody scheduleCreate, SigUsage sigUsage, long lifetimeSecs) {
+        var op = scheduleCreate.getScheduleCreate();
 
-		var scheduledTxn = op.getScheduledTransactionBody();
-		long msgBytesUsed = (long) scheduledTxn.getSerializedSize() + op.getMemoBytes().size();
-		if (op.hasPayerAccountID()) {
-			msgBytesUsed += BASIC_ENTITY_ID_SIZE;
-		}
+        var scheduledTxn = op.getScheduledTransactionBody();
+        long msgBytesUsed = (long) scheduledTxn.getSerializedSize() + op.getMemoBytes().size();
+        if (op.hasPayerAccountID()) {
+            msgBytesUsed += BASIC_ENTITY_ID_SIZE;
+        }
 
-		var creationCtx = ExtantScheduleContext.newBuilder()
-				.setScheduledTxn(scheduledTxn)
-				.setNumSigners(SCHEDULE_ENTITY_SIZES.estimatedScheduleSigs(sigUsage))
-				.setMemo(op.getMemo())
-				.setResolved(false);
-		if (op.hasAdminKey()) {
-			var adminKey = op.getAdminKey();
-			msgBytesUsed += getAccountKeyStorageSize(adminKey);
-			creationCtx.setAdminKey(adminKey);
-		} else {
-			creationCtx.setNoAdminKey();
-		}
+        var creationCtx =
+                ExtantScheduleContext.newBuilder()
+                        .setScheduledTxn(scheduledTxn)
+                        .setNumSigners(SCHEDULE_ENTITY_SIZES.estimatedScheduleSigs(sigUsage))
+                        .setMemo(op.getMemo())
+                        .setResolved(false);
+        if (op.hasAdminKey()) {
+            var adminKey = op.getAdminKey();
+            msgBytesUsed += getAccountKeyStorageSize(adminKey);
+            creationCtx.setAdminKey(adminKey);
+        } else {
+            creationCtx.setNoAdminKey();
+        }
 
-		var estimate = txnEstimateFactory.get(sigUsage, scheduleCreate, ESTIMATOR_UTILS);
-		estimate.addBpt(msgBytesUsed);
-		estimate.addRbs(creationCtx.build().nonBaseRb() * lifetimeSecs);
+        var estimate = txnEstimateFactory.get(sigUsage, scheduleCreate, ESTIMATOR_UTILS);
+        estimate.addBpt(msgBytesUsed);
+        estimate.addRbs(creationCtx.build().nonBaseRb() * lifetimeSecs);
 
-		/* The receipt of a schedule create includes both the id of the created schedule
-		and the transaction id to use for querying the record of the scheduled txn. */
-		estimate.addNetworkRbs((BASIC_ENTITY_ID_SIZE + SCHEDULED_TXN_ID_SIZE)
-				* USAGE_PROPERTIES.legacyReceiptStorageSecs());
+        /* The receipt of a schedule create includes both the id of the created schedule
+        and the transaction id to use for querying the record of the scheduled txn. */
+        estimate.addNetworkRbs(
+                (BASIC_ENTITY_ID_SIZE + SCHEDULED_TXN_ID_SIZE)
+                        * USAGE_PROPERTIES.legacyReceiptStorageSecs());
 
-		return estimate.get();
-	}
+        if (scheduledTxn.hasContractCall()) {
+            return estimate.get(SCHEDULE_CREATE_CONTRACT_CALL);
+        }
 
-	public FeeData scheduleSignUsage(TransactionBody scheduleSign, SigUsage sigUsage, long scheduleExpiry) {
-		var estimate = txnEstimateFactory.get(sigUsage, scheduleSign, ESTIMATOR_UTILS);
+        return estimate.get();
+    }
 
-		estimate.addBpt(BASIC_ENTITY_ID_SIZE);
+    public FeeData scheduleSignUsage(
+            TransactionBody scheduleSign, SigUsage sigUsage, long scheduleExpiry) {
+        var estimate = txnEstimateFactory.get(sigUsage, scheduleSign, ESTIMATOR_UTILS);
 
-		int estNewSigners = SCHEDULE_ENTITY_SIZES.estimatedScheduleSigs(sigUsage);
-		long lifetime = ESTIMATOR_UTILS.relativeLifetime(scheduleSign, scheduleExpiry);
-		estimate.addRbs(SCHEDULE_ENTITY_SIZES.bytesUsedForSigningKeys(estNewSigners) * lifetime);
+        estimate.addBpt(BASIC_ENTITY_ID_SIZE);
 
-		estimate.addNetworkRbs(SCHEDULED_TXN_ID_SIZE * USAGE_PROPERTIES.legacyReceiptStorageSecs());
+        int estNewSigners = SCHEDULE_ENTITY_SIZES.estimatedScheduleSigs(sigUsage);
+        long lifetime = ESTIMATOR_UTILS.relativeLifetime(scheduleSign, scheduleExpiry);
+        estimate.addRbs(SCHEDULE_ENTITY_SIZES.bytesUsedForSigningKeys(estNewSigners) * lifetime);
 
-		return estimate.get();
-	}
+        estimate.addNetworkRbs(SCHEDULED_TXN_ID_SIZE * USAGE_PROPERTIES.legacyReceiptStorageSecs());
 
-	public FeeData scheduleDeleteUsage(TransactionBody scheduleDelete, SigUsage sigUsage, long scheduleExpiry) {
-		var estimate = txnEstimateFactory.get(sigUsage, scheduleDelete, ESTIMATOR_UTILS);
+        return estimate.get();
+    }
 
-		estimate.addBpt(BASIC_ENTITY_ID_SIZE);
+    public FeeData scheduleDeleteUsage(
+            TransactionBody scheduleDelete, SigUsage sigUsage, long scheduleExpiry) {
+        var estimate = txnEstimateFactory.get(sigUsage, scheduleDelete, ESTIMATOR_UTILS);
 
-		long lifetime = ESTIMATOR_UTILS.relativeLifetime(scheduleDelete, scheduleExpiry);
-		estimate.addRbs(BASIC_RICH_INSTANT_SIZE * lifetime);
+        estimate.addBpt(BASIC_ENTITY_ID_SIZE);
 
-		return estimate.get();
-	}
+        long lifetime = ESTIMATOR_UTILS.relativeLifetime(scheduleDelete, scheduleExpiry);
+        estimate.addRbs(BASIC_RICH_INSTANT_SIZE * lifetime);
+
+        return estimate.get();
+    }
 }

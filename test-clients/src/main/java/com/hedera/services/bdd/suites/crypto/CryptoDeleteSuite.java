@@ -36,6 +36,7 @@ import static com.hedera.services.bdd.spec.assertions.TransferListAsserts.includ
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.burnToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
@@ -165,6 +166,7 @@ public class CryptoDeleteSuite extends HapiApiSuite {
 						cryptoDelete("toBeDeleted")
 								.hasKnownStatus(ACCOUNT_DELETED),
 						tokenDelete("misc"),
+						tokenDissociate(TOKEN_TREASURY, "misc"),
 						cryptoDelete(TOKEN_TREASURY)
 				);
 	}

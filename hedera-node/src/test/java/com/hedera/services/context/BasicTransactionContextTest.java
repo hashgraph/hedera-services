@@ -20,6 +20,7 @@ package com.hedera.services.context;
  * ‍
  */
 
+import com.hedera.services.ethereum.EthTxData;
 import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.fees.charging.NarratedCharging;
 import com.hedera.services.ledger.ids.EntityIdSource;
@@ -148,6 +149,8 @@ class BasicTransactionContextTest {
 	@Mock
 	private SignedTxnAccessor accessor;
 	@Mock
+	private SignedTxnAccessor accessor2;
+	@Mock
 	private SwirldsTxnAccessor swirldsTxnAccessor;
 	@Mock
 	private TransactionBody txn;
@@ -167,6 +170,8 @@ class BasicTransactionContextTest {
 	private EntityIdSource ids;
 	@Mock
 	private EvmFnResult result;
+	@Mock
+	private EthTxData evmFnCallContext;
 
 	@LoggingTarget
 	private LogCaptor logCaptor;
@@ -181,6 +186,17 @@ class BasicTransactionContextTest {
 		subject.resetFor(accessor, now, memberId);
 
 		verify(narratedCharging).resetForTxn(accessor, memberId);
+	}
+
+	@Test
+	void throwIaeIfNoRecordedDeletionsOrDeletionNotRecorded() {
+		assertEquals(0, subject.numDeletedAccountsAndContracts());
+		assertThrows(IllegalArgumentException.class, () -> subject.getBeneficiaryOfDeleted(123L));
+		subject.recordBeneficiaryOfDeleted(124L, 356L);
+		subject.recordBeneficiaryOfDeleted(125L, 357L);
+		assertEquals(2, subject.numDeletedAccountsAndContracts());
+		assertThrows(IllegalArgumentException.class, () -> subject.getBeneficiaryOfDeleted(123L));
+		assertEquals(356L, subject.getBeneficiaryOfDeleted(124L));
 	}
 
 	@Test
@@ -264,6 +280,7 @@ class BasicTransactionContextTest {
 		subject.setTargetedContract(contractCreated);
 		subject.payerSigIsKnownActive();
 		subject.setAssessedCustomFees(Collections.emptyList());
+		subject.recordBeneficiaryOfDeleted(1L, 2L);
 		// and:
 		assertEquals(memberId, subject.submittingSwirldsMember());
 		assertEquals(nodeAccount, subject.submittingNodeAccount());
@@ -271,6 +288,8 @@ class BasicTransactionContextTest {
 		// when:
 		subject.resetFor(accessor, now, anotherMemberId);
 		assertNull(subject.getAssessedCustomFees());
+		assertThrows(IllegalArgumentException.class, () -> subject.getBeneficiaryOfDeleted(1L));
+		assertEquals(0, subject.numDeletedAccountsAndContracts());
 		// and:
 		setUpBuildingExpirableTxnRecord();
 		record = subject.recordSoFar().build();
@@ -356,6 +375,26 @@ class BasicTransactionContextTest {
 		record = subject.recordSoFar().build();
 
 		assertSame(result, record.getContractCallResult());
+	}
+
+	@Test
+	void configuresEthereumHash() {
+		var ethHash = new byte[] {2};
+		var senderId = EntityId.fromIdentityCode(42);
+		given(exchange.fcActiveRates()).willReturn(ExchangeRates.fromGrpc(ratesNow));
+		given(accessor.getTxnId()).willReturn(txnId);
+		given(accessor.getTxn()).willReturn(txn);
+		given(evmFnCallContext.getEthereumHash()).willReturn(ethHash);
+
+		// when:
+		subject.setCallResult(result);
+		subject.updateForEvmCall(evmFnCallContext, senderId);
+		setUpBuildingExpirableTxnRecord();
+		record = subject.recordSoFar().build();
+
+		// then:
+		verify(result).updateForEvmCall(evmFnCallContext, senderId);
+		assertArrayEquals(ethHash, record.getEthereumHash());
 	}
 
 	@Test
@@ -600,6 +639,13 @@ class BasicTransactionContextTest {
 	void throwsIfAccessorIsAlreadyTriggered() {
 		given(accessor.isTriggeredTxn()).willReturn(true);
 		assertThrows(IllegalStateException.class, () -> subject.trigger(accessor));
+	}
+
+	@Test
+	void throwsOnMoreThanOneTrigger() {
+		subject.trigger(accessor);
+		subject.trigger(accessor);
+		assertThrows(IllegalStateException.class, () -> subject.trigger(accessor2));
 	}
 
 	@Test

@@ -43,7 +43,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
 
-import static com.hedera.services.store.models.Id.MISSING_ID;
 import static com.hedera.test.utils.TxnUtils.assertFailsWith;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEES_LIST_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
@@ -80,8 +79,6 @@ class CreationTest {
 	@Mock
 	private TokenRelationship newRel;
 	@Mock
-	private TokenRelationship oldRel;
-	@Mock
 	private FcTokenAssociation autoAssociation;
 	@Mock
 	private OptionValidator validator;
@@ -102,7 +99,7 @@ class CreationTest {
 	void getsExpectedAutoAssociations() {
 		givenSubjectWithEverything();
 		given(newRel.asAutoAssociation()).willReturn(autoAssociation);
-		subject.setNewAndUpdatedRels(List.of(newRel));
+		subject.setNewRels(List.of(newRel));
 
 		final var actual = subject.newAssociations();
 
@@ -113,7 +110,7 @@ class CreationTest {
 	void persistWorks() {
 		givenSubjectWithEverything();
 		given(newRel.getAccount()).willReturn(treasury);
-		subject.setNewAndUpdatedRels(List.of(newRel));
+		subject.setNewRels(List.of(newRel));
 		subject.setProvisionalToken(provisionalToken);
 
 		subject.persist();
@@ -173,7 +170,6 @@ class CreationTest {
 		givenSubjectWithEverything();
 
 		given(dynamicProperties.maxCustomFeesAllowed()).willReturn(2);
-		given(treasury.getHeadTokenNum()).willReturn(MISSING_ID.num());
 		given(modelFactory.createFrom(provisionalId, op, treasury, autoRenew, now)).willReturn(provisionalToken);
 		given(listing.listFrom(provisionalToken, tokenStore, dynamicProperties)).willReturn(List.of(newRel));
 		given(provisionalToken.getCustomFees()).willReturn(List.of(customFee));
@@ -195,9 +191,8 @@ class CreationTest {
 		givenSubjectWithEverything();
 
 		given(dynamicProperties.maxCustomFeesAllowed()).willReturn(2);
-		given(treasury.getHeadTokenNum()).willReturn(123L);
 		given(modelFactory.createFrom(provisionalId, op, treasury, autoRenew, now)).willReturn(provisionalToken);
-		given(listing.listFrom(provisionalToken, tokenStore, dynamicProperties)).willReturn(List.of(oldRel, newRel));
+		given(listing.listFrom(provisionalToken, tokenStore, dynamicProperties)).willReturn(List.of(newRel));
 		given(provisionalToken.getCustomFees()).willReturn(List.of(customFee));
 
 		subject.setProvisionalId(provisionalId);
@@ -217,7 +212,6 @@ class CreationTest {
 		givenSubjectWithEverythingExceptInitialSupply();
 
 		given(dynamicProperties.maxCustomFeesAllowed()).willReturn(2);
-		given(treasury.getHeadTokenNum()).willReturn(123L);
 		given(modelFactory.createFrom(provisionalId, op, treasury, autoRenew, now)).willReturn(provisionalToken);
 		given(listing.listFrom(provisionalToken, tokenStore, dynamicProperties)).willReturn(List.of(newRel));
 

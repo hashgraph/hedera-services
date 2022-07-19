@@ -20,6 +20,7 @@ package com.hedera.services.bdd.spec.assertions;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.queries.QueryUtils;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
@@ -72,6 +73,31 @@ public class TransactionRecordAsserts extends BaseErroringAssertsProvider<Transa
 		this.<TransactionID>registerTypedProvider("transactionID", spec -> txnId -> {
 			try {
 				Assertions.assertEquals(expectedTxn, txnId, "Wrong txnId!");
+			} catch (Throwable t) {
+				return List.of(t);
+			}
+			return EMPTY_LIST;
+		});
+		return this;
+	}
+
+	public TransactionRecordAsserts pseudoRandomBytes() {
+		this.<ByteString>registerTypedProvider("prngBytes", spec -> prngBytes -> {
+			try {
+				Assertions.assertNotNull(prngBytes, "Null prngBytes!");
+				Assertions.assertEquals(32, prngBytes.size(), "Wrong prngBytes!");
+			} catch (Throwable t) {
+				return List.of(t);
+			}
+			return EMPTY_LIST;
+		});
+		return this;
+	}
+
+	public TransactionRecordAsserts pseudoRandomNumber(final int range) {
+		this.<Integer>registerTypedProvider("prngNumber", spec -> prngNumber -> {
+			try {
+				Assertions.assertTrue(prngNumber >= 0 && prngNumber < range, "Wrong prngNumber!");
 			} catch (Throwable t) {
 				return List.of(t);
 			}
@@ -250,6 +276,11 @@ public class TransactionRecordAsserts extends BaseErroringAssertsProvider<Transa
 
 	public TransactionRecordAsserts autoAssociated(ErroringAssertsProvider<List<TokenAssociation>> provider) {
 		registerTypedProvider("automaticTokenAssociationsList", provider);
+		return this;
+	}
+
+	public TransactionRecordAsserts ethereumHash(ByteString hash) {
+		registerTypedProvider("ethereumHash", shouldBe(hash));
 		return this;
 	}
 

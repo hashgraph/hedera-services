@@ -9,9 +9,9 @@ package com.hedera.services.ledger.accounts;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -32,11 +32,12 @@ import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
 import javax.annotation.Nullable;
 import java.time.Instant;
 
+import static com.hedera.services.ledger.accounts.HederaAccountCustomizer.hasStakedId;
+import static com.hedera.services.ledger.properties.AccountProperty.AUTO_RENEW_ACCOUNT_ID;
 import static com.hedera.services.ledger.properties.AccountProperty.AUTO_RENEW_PERIOD;
 import static com.hedera.services.ledger.properties.AccountProperty.EXPIRY;
 import static com.hedera.services.ledger.properties.AccountProperty.KEY;
 import static com.hedera.services.ledger.properties.AccountProperty.MEMO;
-import static com.hedera.services.ledger.properties.AccountProperty.PROXY;
 import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
 import static com.hedera.services.utils.MiscUtils.asKeyUnchecked;
 
@@ -77,16 +78,24 @@ public class ContractCustomizer {
 	) {
 		final var autoRenewPeriod = op.getAutoRenewPeriod().getSeconds();
 		final var expiry = consensusTime.getEpochSecond() + autoRenewPeriod;
-		final var proxyId = op.hasProxyAccountID()
-				? EntityId.fromGrpcAccountId(op.getProxyAccountID())
-				: MISSING_ENTITY_ID;
+
 		final var key = (decodedKey instanceof JContractIDKey) ? null : decodedKey;
+		final var autoRenewAccount = op.hasAutoRenewAccountId()
+				? EntityId.fromGrpcAccountId(op.getAutoRenewAccountId())
+				: MISSING_ENTITY_ID;
 		final var customizer = new HederaAccountCustomizer()
 				.memo(op.getMemo())
-				.proxy(proxyId)
 				.expiry(expiry)
 				.autoRenewPeriod(op.getAutoRenewPeriod().getSeconds())
+				.isDeclinedReward(op.getDeclineReward())
+				.autoRenewAccount(autoRenewAccount)
+				.maxAutomaticAssociations(op.getMaxAutomaticTokenAssociations())
 				.isSmartContract(true);
+
+		if (hasStakedId(op.getStakedIdCase().name())) {
+			customizer.customizeStakedId(op.getStakedIdCase().name(), op.getStakedAccountId(), op.getStakedNodeId());
+		}
+
 		return new ContractCustomizer(key, customizer);
 	}
 
@@ -111,8 +120,11 @@ public class ContractCustomizer {
 		final var customizer = new HederaAccountCustomizer()
 				.memo((String) ledger.get(sponsor, MEMO))
 				.expiry((long) ledger.get(sponsor, EXPIRY))
-				.proxy((EntityId) ledger.get(sponsor, PROXY))
 				.autoRenewPeriod((long) ledger.get(sponsor, AUTO_RENEW_PERIOD))
+				.autoRenewAccount((EntityId) ledger.get(sponsor, AUTO_RENEW_ACCOUNT_ID))
+				.maxAutomaticAssociations((int)ledger.get(sponsor, AccountProperty.MAX_AUTOMATIC_ASSOCIATIONS))
+				.stakedId((long)ledger.get(sponsor, AccountProperty.STAKED_ID))
+				.isDeclinedReward((boolean)ledger.get(sponsor, AccountProperty.DECLINE_REWARD))
 				.isSmartContract(true);
 		return new ContractCustomizer(key, customizer);
 	}
@@ -149,5 +161,9 @@ public class ContractCustomizer {
 			op.setAdminKey(asKeyUnchecked(cryptoAdminKey));
 		}
 		accountCustomizer.customizeSynthetic(op);
+	}
+
+	public HederaAccountCustomizer accountCustomizer() {
+		return accountCustomizer;
 	}
 }

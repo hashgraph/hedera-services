@@ -21,12 +21,17 @@ package com.hedera.test.factories.scenarios;
  */
 
 import com.hedera.services.utils.accessors.PlatformTxnAccessor;
+import com.hedera.test.utils.IdUtils;
 
 import static com.hedera.test.factories.txns.CryptoTransferFactory.newSignedCryptoTransfer;
+import static com.hedera.test.factories.txns.CryptoUpdateFactory.newSignedCryptoUpdate;
 import static com.hedera.test.factories.txns.PlatformTxnFactory.from;
 import static com.hedera.test.factories.txns.ScheduleCreateFactory.newSignedScheduleCreate;
 import static com.hedera.test.factories.txns.ScheduleSignFactory.newSignedScheduleSign;
 import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_PAYER;
+import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_PAYER_ID;
+import static com.hedera.test.factories.txns.SignedTxnFactory.MASTER_PAYER_ID;
+import static com.hedera.test.factories.txns.SignedTxnFactory.TREASURY_PAYER_ID;
 import static com.hedera.test.factories.txns.TinyBarsFromTo.tinyBarsFromTo;
 
 public enum ScheduleCreateScenarios implements TxnHandlingScenario {
@@ -113,6 +118,97 @@ public enum ScheduleCreateScenarios implements TxnHandlingScenario {
 			));
 		}
 	},
+	SCHEDULE_CREATE_XFER_WITH_ADMIN_AND_PAYER_AS_CUSTOM_PAYER {
+		public PlatformTxnAccessor platformTxn() throws Throwable {
+			return PlatformTxnAccessor.from(from(
+					newSignedScheduleCreate()
+							.designatingPayer(CUSTOM_PAYER_ACCOUNT)
+							.creating(newSignedCryptoTransfer()
+									.skipPayerSig()
+									.transfers(tinyBarsFromTo(MISC_ACCOUNT_ID, RECEIVER_SIG_ID, 1_000L))
+									.get())
+							.get()
+			));
+		}
+	},
+	SCHEDULE_CREATE_XFER_WITH_ADMIN_SENDER_AND_PAYER_AS_SELF {
+		public PlatformTxnAccessor platformTxn() throws Throwable {
+			return PlatformTxnAccessor.from(from(
+					newSignedScheduleCreate()
+							.designatingPayer(DEFAULT_PAYER)
+							.creating(newSignedCryptoTransfer()
+									.skipPayerSig()
+									.transfers(tinyBarsFromTo(DEFAULT_PAYER_ID, RECEIVER_SIG_ID, 1_000L))
+									.get())
+							.get()
+			));
+		}
+	},
+	SCHEDULE_CREATE_XFER_WITH_ADMIN_SENDER_AS_SELF_AND_PAYER {
+		public PlatformTxnAccessor platformTxn() throws Throwable {
+			return PlatformTxnAccessor.from(from(
+					newSignedScheduleCreate()
+							.designatingPayer(DILIGENT_SIGNING_PAYER)
+							.creating(newSignedCryptoTransfer()
+									.skipPayerSig()
+									.transfers(tinyBarsFromTo(DEFAULT_PAYER_ID, RECEIVER_SIG_ID, 1_000L))
+									.get())
+							.get()
+			));
+		}
+	},
+	SCHEDULE_CREATE_XFER_WITH_ADMIN_SENDER_AS_CUSTOM_PAYER_AND_PAYER {
+		public PlatformTxnAccessor platformTxn() throws Throwable {
+			return PlatformTxnAccessor.from(from(
+					newSignedScheduleCreate()
+							.designatingPayer(DILIGENT_SIGNING_PAYER)
+							.creating(newSignedCryptoTransfer()
+									.skipPayerSig()
+									.transfers(tinyBarsFromTo(CUSTOM_PAYER_ACCOUNT_ID, RECEIVER_SIG_ID, 1_000L))
+									.get())
+							.get()
+			));
+		}
+	},
+	SCHEDULE_CREATE_XFER_WITH_ADMIN_SENDER_AND_PAYER_AS_CUSTOM_PAYER {
+		public PlatformTxnAccessor platformTxn() throws Throwable {
+			return PlatformTxnAccessor.from(from(
+					newSignedScheduleCreate()
+							.designatingPayer(CUSTOM_PAYER_ACCOUNT)
+							.creating(newSignedCryptoTransfer()
+									.skipPayerSig()
+									.transfers(tinyBarsFromTo(CUSTOM_PAYER_ACCOUNT_ID, RECEIVER_SIG_ID, 1_000L))
+									.get())
+							.get()
+			));
+		}
+	},
+	SCHEDULE_CREATE_XFER_WITH_ADMIN_SELF_SENDER_AND_PAYER_AS_CUSTOM_PAYER {
+		public PlatformTxnAccessor platformTxn() throws Throwable {
+			return PlatformTxnAccessor.from(from(
+					newSignedScheduleCreate()
+							.designatingPayer(CUSTOM_PAYER_ACCOUNT)
+							.creating(newSignedCryptoTransfer()
+									.skipPayerSig()
+									.transfers(tinyBarsFromTo(DEFAULT_PAYER_ID, RECEIVER_SIG_ID, 1_000L))
+									.get())
+							.get()
+			));
+		}
+	},
+	SCHEDULE_CREATE_XFER_WITH_ADMIN_CUSTOM_PAYER_SENDER_AND_PAYER_AS_SELF {
+		public PlatformTxnAccessor platformTxn() throws Throwable {
+			return PlatformTxnAccessor.from(from(
+					newSignedScheduleCreate()
+							.designatingPayer(DEFAULT_PAYER)
+							.creating(newSignedCryptoTransfer()
+									.skipPayerSig()
+									.transfers(tinyBarsFromTo(CUSTOM_PAYER_ACCOUNT_ID, RECEIVER_SIG_ID, 1_000L))
+									.get())
+							.get()
+			));
+		}
+	},
 	SCHEDULE_CREATE_XFER_WITH_MISSING_PAYER {
 		public PlatformTxnAccessor platformTxn() throws Throwable {
 			return PlatformTxnAccessor.from(from(
@@ -123,6 +219,52 @@ public enum ScheduleCreateScenarios implements TxnHandlingScenario {
 									.skipPayerSig()
 									.transfers(tinyBarsFromTo(MISC_ACCOUNT_ID, RECEIVER_SIG_ID, 1_000L))
 									.get())
+							.get()
+			));
+		}
+	},
+	SCHEDULE_CREATE_TREASURY_UPDATE_WITH_TREASURY_CUSTOM_PAYER {
+		public PlatformTxnAccessor platformTxn() throws Throwable {
+			return PlatformTxnAccessor.from(from(
+					newSignedScheduleCreate()
+							.designatingPayer(IdUtils.asAccount(TREASURY_PAYER_ID))
+							.creating(
+								newSignedCryptoUpdate(TREASURY_PAYER_ID)
+										.skipPayerSig()
+										.newAccountKt(NEW_ACCOUNT_KT)
+										.get()
+							)
+							.get()
+			));
+		}
+	},
+	SCHEDULE_CREATE_SYS_ACCOUNT_UPDATE_WITH_PRIVILEGED_CUSTOM_PAYER {
+		public PlatformTxnAccessor platformTxn() throws Throwable {
+			return PlatformTxnAccessor.from(from(
+					newSignedScheduleCreate()
+							.designatingPayer(IdUtils.asAccount(MASTER_PAYER_ID))
+							.creating(
+								newSignedCryptoUpdate(SYS_ACCOUNT_ID)
+										.skipPayerSig()
+										.newAccountKt(NEW_ACCOUNT_KT)
+										.get()
+							)
+							.get()
+			));
+		}
+	},
+	SCHEDULE_CREATE_SYS_ACCOUNT_UPDATE_WITH_PRIVILEGED_CUSTOM_PAYER_AND_REGULAR_PAYER {
+		public PlatformTxnAccessor platformTxn() throws Throwable {
+			return PlatformTxnAccessor.from(from(
+					newSignedScheduleCreate()
+							.payer(MASTER_PAYER_ID)
+							.designatingPayer(IdUtils.asAccount(MASTER_PAYER_ID))
+							.creating(
+								newSignedCryptoUpdate(SYS_ACCOUNT_ID)
+										.skipPayerSig()
+										.newAccountKt(NEW_ACCOUNT_KT)
+										.get()
+							)
 							.get()
 			));
 		}

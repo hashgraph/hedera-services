@@ -25,6 +25,8 @@ import com.google.protobuf.ByteString;
 import com.google.protobuf.Int32Value;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.StringValue;
+import com.hedera.services.ethereum.EthTxData;
+import com.hedera.services.ethereum.EthTxSigs;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.legacy.proto.utils.CommonUtils;
 import com.hedera.services.state.submerkle.EntityId;
@@ -47,11 +49,14 @@ import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.CustomFee;
 import com.hederahashgraph.api.proto.java.Duration;
+import com.hederahashgraph.api.proto.java.EthereumTransactionBody;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.NftAllowance;
 import com.hederahashgraph.api.proto.java.NftRemoveAllowance;
 import com.hederahashgraph.api.proto.java.NftTransfer;
+import com.hederahashgraph.api.proto.java.PrngTransactionBody;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.SignaturePair;
 import com.hederahashgraph.api.proto.java.SignedTransaction;
@@ -73,15 +78,19 @@ import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransferList;
 import com.hederahashgraph.builder.RequestBuilder;
 import com.hederahashgraph.fee.FeeBuilder;
-import com.swirlds.common.SwirldTransaction;
+import com.swirlds.common.system.transaction.SwirldTransaction;
 import com.swirlds.common.crypto.TransactionSignature;
+import org.bouncycastle.util.encoders.Hex;
 import org.junit.jupiter.api.Test;
 
+import java.math.BigInteger;
+import java.util.HashMap;
 import java.util.List;
 import java.util.function.Function;
 
 import static com.hedera.services.state.submerkle.FcCustomFee.fixedFee;
 import static com.hedera.services.state.submerkle.FcCustomFee.fractionalFee;
+import static com.hedera.services.txns.ethereum.TestingConstants.TRUFFLE0_PRIVATE_ECDSA_KEY;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.asToken;
 import static com.hedera.test.utils.IdUtils.asTopic;
@@ -92,6 +101,7 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -129,7 +139,6 @@ class SignedTxnAccessorTest {
 					.setPubKeyPrefix(ByteString.copyFromUtf8("s"))
 					.setEd25519(ByteString.copyFromUtf8("econd")))
 			.build();
-
 
 	@Test
 	@SuppressWarnings("uncheckeed")
@@ -252,6 +261,18 @@ class SignedTxnAccessorTest {
 	}
 
 	@Test
+	void usesUnmodifiableFormOfRationalizedSpanMap() {
+		final var subject = SignedTxnAccessor.uncheckedFrom(Transaction.getDefaultInstance());
+
+		final var newMap = new HashMap<String, Object>();
+		newMap.put("1", new Object());
+		subject.setRationalizedSpanMap(newMap);
+
+		final var rationalizedMap = subject.getSpanMap();
+		assertThrows(UnsupportedOperationException.class, () -> rationalizedMap.put("2", 3));
+	}
+
+	@Test
 	void canGetSetNumAutoCreations() {
 		final var accessor = SignedTxnAccessor.uncheckedFrom(Transaction.getDefaultInstance());
 		assertFalse(accessor.areAutoCreationsCounted());
@@ -259,6 +280,16 @@ class SignedTxnAccessorTest {
 		assertEquals(2, accessor.getNumAutoCreations());
 		assertTrue(accessor.areAutoCreationsCounted());
 		accessor.setNumAutoCreations(2);
+	}
+
+	@Test
+	void canGetExpandedSigStatus() {
+		final var accessor = SignedTxnAccessor.uncheckedFrom(Transaction.getDefaultInstance());
+		assertNull(accessor.getExpandedSigStatus());
+		accessor.setExpandedSigStatus(ResponseCodeEnum.ACCOUNT_DELETED);
+		assertEquals(ResponseCodeEnum.ACCOUNT_DELETED, accessor.getExpandedSigStatus());
+		accessor.setExpandedSigStatus(ResponseCodeEnum.OK);
+		assertEquals(ResponseCodeEnum.OK, accessor.getExpandedSigStatus());
 	}
 
 	@Test
@@ -596,6 +627,33 @@ class SignedTxnAccessorTest {
 		assertEquals(now, expandedMeta.getEffectiveNow());
 	}
 
+	@Test
+	void setEthTxDataMetaMetaWorks() {
+		final var txn = signedEthereumTxn();
+		final var accessor = SignedTxnAccessor.uncheckedFrom(txn);
+		final var spanMapAccessor = accessor.getSpanMapAccessor();
+
+		final var expandedMeta = spanMapAccessor.getEthTxDataMeta(accessor);
+
+		assertEquals(98304L, expandedMeta.gasLimit());
+	}
+
+	@Test
+	void setPrngMetaWorks() {
+		final var op = PrngTransactionBody.newBuilder().setRange(10).build();
+		final var txn = buildTransactionFrom(TransactionBody.newBuilder()
+				.setTransactionID(TransactionID.newBuilder()
+						.setTransactionValidStart(Timestamp.newBuilder()
+								.setSeconds(now)))
+				.setPrng(op)
+				.build());
+		final var accessor = SignedTxnAccessor.uncheckedFrom(txn);
+		final var spanMapAccessor = accessor.getSpanMapAccessor();
+
+		final var expandedMeta = spanMapAccessor.getPrngMeta(accessor);
+
+		assertEquals(4, expandedMeta.getMsgBytesUsed());
+	}
 
 	@Test
 	void getGasLimitWorksForCreate() {
@@ -626,6 +684,130 @@ class SignedTxnAccessorTest {
 	}
 
 	@Test
+	void getGasLimitWorksForEthTxn() {
+		final var gasLimit = 1234L;
+		final var unsignedTx = new EthTxData(
+				null,
+				EthTxData.EthTransactionType.EIP1559,
+				new byte[0],
+				1,
+				null,
+				new byte[0],
+				new byte[0],
+				gasLimit,
+				new byte[0],
+				BigInteger.ZERO,
+				new byte[0],
+				null,
+				0,
+				null,
+				null,
+				null
+		);
+		final var ethTxData = EthTxSigs.signMessage(unsignedTx, TRUFFLE0_PRIVATE_ECDSA_KEY);
+		final var op = EthereumTransactionBody.newBuilder()
+				.setEthereumData(ByteString.copyFrom(ethTxData.encodeTx()))
+				.build();
+		final var txn = buildTransactionFrom(TransactionBody.newBuilder()
+				.setEthereumTransaction(op)
+				.build());
+
+		final var subject = SignedTxnAccessor.uncheckedFrom(txn);
+
+		assertEquals(gasLimit, subject.getGasLimitForContractTx());
+	}
+
+	@Test
+	void getGasLimitReturnsZeroByDefault() {
+		final var op = TokenCreateTransactionBody.getDefaultInstance();
+		final var txn = buildTransactionFrom(TransactionBody.newBuilder()
+				.setTokenCreation(op)
+				.build());
+
+		final var subject = SignedTxnAccessor.uncheckedFrom(txn);
+
+		assertEquals(0L, subject.getGasLimitForContractTx());
+	}
+
+	@Test
+	void markThrottleExemptWorks() {
+		final var op = ContractCallTransactionBody.newBuilder()
+				.build();
+		final var txn = buildTransactionFrom(TransactionBody.newBuilder()
+				.setContractCall(op)
+				.build());
+
+		final var subject = SignedTxnAccessor.uncheckedFrom(txn);
+
+		subject.setPayer(asAccount("0.0.2222"));
+
+		assertFalse(subject.throttleExempt());
+		subject.markThrottleExempt();
+		assertTrue(subject.throttleExempt());
+
+	}
+
+	@Test
+	void throttleExemptWorksWithExemptPayer() {
+		final var op = ContractCallTransactionBody.newBuilder()
+				.build();
+		final var txn = buildTransactionFrom(TransactionBody.newBuilder()
+				.setContractCall(op)
+				.build());
+
+		final var subject = SignedTxnAccessor.uncheckedFrom(txn);
+
+		subject.setPayer(asAccount("0.0.2"));
+
+		assertTrue(subject.throttleExempt());
+	}
+
+	@Test
+	void throttleExemptWorksWithNonExemptPayer() {
+		final var op = ContractCallTransactionBody.newBuilder()
+				.build();
+		final var txn = buildTransactionFrom(TransactionBody.newBuilder()
+				.setContractCall(op)
+				.build());
+
+		final var subject = SignedTxnAccessor.uncheckedFrom(txn);
+
+		subject.setPayer(asAccount("0.0.2222"));
+
+		assertFalse(subject.throttleExempt());
+	}
+
+	@Test
+	void throttleExemptWorksWithNullPayer() {
+		final var op = ContractCallTransactionBody.newBuilder()
+				.build();
+		final var txn = buildTransactionFrom(TransactionBody.newBuilder()
+				.setContractCall(op)
+				.build());
+
+		final var subject = SignedTxnAccessor.uncheckedFrom(txn);
+
+		subject.setPayer(null);
+
+		assertFalse(subject.throttleExempt());
+	}
+
+	@Test
+	void markCongestionExemptWorks() {
+		final var op = ContractCallTransactionBody.newBuilder()
+				.build();
+		final var txn = buildTransactionFrom(TransactionBody.newBuilder()
+				.setContractCall(op)
+				.build());
+
+		final var subject = SignedTxnAccessor.uncheckedFrom(txn);
+
+		assertFalse(subject.congestionExempt());
+		subject.markCongestionExempt();
+		assertTrue(subject.congestionExempt());
+	}
+
+	@Test
 	void toLoggableStringWorks() throws InvalidProtocolBufferException {
 		TransactionBody someTxn = TransactionBody.newBuilder()
 				.setTransactionID(TransactionID.newBuilder().setAccountID(asAccount("0.0.2")))
@@ -645,15 +827,18 @@ class SignedTxnAccessorTest {
 				.setBodyBytes(someTxn.toByteString())
 				.setSigMap(onePairSigMap)
 				.build();
-		SwirldTransaction platformTxn = new SwirldTransaction(signedTxnWithBody.toByteArray());
+		final var platformTxn = new SwirldTransaction(signedTxnWithBody.toByteArray());
 
 		// when:
-		SignedTxnAccessor subject = SignedTxnAccessor.from(platformTxn.getContentsDirect());
+		SignedTxnAccessor subject = SignedTxnAccessor.from(platformTxn.getContents());
 
 		final var expectedString = "SignedTxnAccessor{sigMapSize=71, numSigPairs=1, numAutoCreations=-1, hash=[111, " +
-				"-123, -70, 79, 75, -80, -114, -49, 88, -76, -82, -23, 43, 103, -21, 52, -31, -60, 98, -55, -26, -18, " +
-				"-101, -108, -51, 24, 49, 72, 18, -69, 21, -84, -68, -118, 31, -53, 91, -61, -71, -56, 100, -52, -104, " +
-				"87, -85, -33, -73, -124], txnBytes=[10, 4, 18, 2, 24, 2, 24, 10, 50, 3, 72, 105, 33, -38, 1, 4, 10, 2," +
+				"-123, -70, 79, 75, -80, -114, -49, 88, -76, -82, -23, 43, 103, -21, 52, -31, -60, 98, -55, -26, -18," +
+				" " +
+				"-101, -108, -51, 24, 49, 72, 18, -69, 21, -84, -68, -118, 31, -53, 91, -61, -71, -56, 100, -52, -104," +
+				" " +
+				"87, -85, -33, -73, -124], txnBytes=[10, 4, 18, 2, 24, 2, 24, 10, 50, 3, 72, 105, 33, -38, 1, 4, 10, " +
+				"2," +
 				" 24, 10], utf8MemoBytes=[72, 105, 33], memo=Hi!, memoHasZeroByte=false, signedTxnWrapper=sigMap {\n" +
 				"  sigPair {\n" +
 				"    pubKeyPrefix: \"a\"\n" +
@@ -662,8 +847,10 @@ class SignedTxnAccessorTest {
 				"}\n" +
 				"bodyBytes: \"\\n\\004\\022\\002\\030\\002\\030\\n2\\003Hi!\\332\\001\\004\\n\\002\\030\\n\"\n" +
 				", hash=[111, -123, -70, 79, 75, -80, -114, -49, 88, -76, -82, -23, 43, 103, -21, 52, -31, -60, 98, " +
-				"-55, -26, -18, -101, -108, -51, 24, 49, 72, 18, -69, 21, -84, -68, -118, 31, -53, 91, -61, -71, -56, " +
-				"100, -52, -104, 87, -85, -33, -73, -124], txnBytes=[10, 4, 18, 2, 24, 2, 24, 10, 50, 3, 72, 105, 33, " +
+				"-55, -26, -18, -101, -108, -51, 24, 49, 72, 18, -69, 21, -84, -68, -118, 31, -53, 91, -61, -71, -56," +
+				" " +
+				"100, -52, -104, 87, -85, -33, -73, -124], txnBytes=[10, 4, 18, 2, 24, 2, 24, 10, 50, 3, 72, 105, 33," +
+				" " +
 				"-38, 1, 4, 10, 2, 24, 10], sigMap=sigPair {\n" +
 				"  pubKeyPrefix: \"a\"\n" +
 				"  ed25519: \"0123456789012345678901234567890123456789012345678901234567890123\"\n" +
@@ -686,7 +873,8 @@ class SignedTxnAccessorTest {
 				", submitMessageMeta=SubmitMessageMeta[numMsgBytes=0], xferUsageMeta=null, " +
 				"txnUsageMeta=BaseTransactionMeta[memoUtf8Bytes=3, numExplicitTransfers=0], " +
 				"function=ConsensusSubmitMessage, pubKeyToSigBytes=PojoSigMapPubKeyToSigBytes{pojoSigMap=PojoSigMap" +
-				"{keyTypes=[ED25519], rawMap=[[[97], [48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 48, 49, 50, 51, 52, 53, " +
+				"{keyTypes=[ED25519], rawMap=[[[97], [48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 48, 49, 50, 51, 52, 53," +
+				" " +
 				"54, 55, 56, 57, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 48, " +
 				"49, 50, 51, 52, 53, 54, 55, 56, 57, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 48, 49, 50, 51]]]}, " +
 				"used=[false]}, payer=accountNum: 2\n" +
@@ -709,6 +897,10 @@ class SignedTxnAccessorTest {
 
 	private Transaction signedCryptoDeleteAllowanceTxn() {
 		return buildTransactionFrom(cryptoDeleteAllowanceOp());
+	}
+
+	private Transaction signedEthereumTxn() {
+		return buildTransactionFrom(ethereumTransactionOp());
 	}
 
 	private TransactionBody cryptoCreateOp() {
@@ -763,6 +955,19 @@ class SignedTxnAccessorTest {
 						.setTransactionValidStart(Timestamp.newBuilder()
 								.setSeconds(now)))
 				.setCryptoDeleteAllowance(op)
+				.build();
+	}
+
+	private TransactionBody ethereumTransactionOp() {
+		final var op = EthereumTransactionBody.newBuilder()
+				.setEthereumData(ByteString.copyFrom(Hex.decode(
+						"f864012f83018000947e3a9eaf9bcc39e2ffa38eb30bf7a93feacbc18180827653820277a0f9fbff985d374be4a55f296915002eec11ac96f1ce2df183adf992baa9390b2fa00c1e867cc960d9c74ec2e6a662b7908ec4c8cc9f3091e886bcefbeb2290fb792")))
+				.build();
+		return TransactionBody.newBuilder()
+				.setTransactionID(TransactionID.newBuilder()
+						.setTransactionValidStart(Timestamp.newBuilder()
+								.setSeconds(now)))
+				.setEthereumTransaction(op)
 				.build();
 	}
 

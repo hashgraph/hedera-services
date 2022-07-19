@@ -56,6 +56,7 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoGetIn
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoGetLiveHash;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoUpdate;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.EthereumTransaction;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileAppend;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileDelete;
@@ -67,6 +68,7 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.GetAccountD
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.GetBySolidityID;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.GetVersionInfo;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.NetworkGetExecutionTime;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.PRNG;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ScheduleCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ScheduleDelete;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ScheduleGetInfo;
@@ -139,6 +141,7 @@ public final class PermissionFileUtils {
 		permissionKeys.put(ContractUpdate, "updateContract");
 		permissionKeys.put(ContractCall, "contractCallMethod");
 		permissionKeys.put(ContractDelete, "deleteContract");
+		permissionKeys.put(EthereumTransaction, "ethereumTransaction");
 		permissionKeys.put(ConsensusCreateTopic, "createTopic");
 		permissionKeys.put(ConsensusUpdateTopic, "updateTopic");
 		permissionKeys.put(ConsensusDeleteTopic, "deleteTopic");
@@ -188,6 +191,7 @@ public final class PermissionFileUtils {
 		permissionKeys.put(TokenGetNftInfos, "tokenGetNftInfos");
 		permissionKeys.put(TokenGetAccountNftInfos, "tokenGetAccountNftInfos");
 		permissionKeys.put(TokenFeeScheduleUpdate, "tokenFeeScheduleUpdate");
+		permissionKeys.put(PRNG, "prng");
 
 		legacyKeys = permissionKeys.entrySet().stream()
 				.collect(Collectors.toMap(Map.Entry::getValue, Map.Entry::getKey));

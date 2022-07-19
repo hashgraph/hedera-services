@@ -81,5 +81,6 @@ public interface FeeCalculator {
 	RenewAssessment assessCryptoAutoRenewal(
 			MerkleAccount expiredAccount,
 			long requestedRenewal,
-			Instant now);
+			Instant now,
+			MerkleAccount payer);
 }

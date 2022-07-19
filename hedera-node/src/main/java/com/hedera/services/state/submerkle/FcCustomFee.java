@@ -31,8 +31,8 @@ import com.hederahashgraph.api.proto.java.Fraction;
 import com.hederahashgraph.api.proto.java.FractionalFee;
 import com.hederahashgraph.api.proto.java.RoyaltyFee;
 import com.swirlds.common.io.SelfSerializable;
-import com.swirlds.common.io.SerializableDataInputStream;
-import com.swirlds.common.io.SerializableDataOutputStream;
+import com.swirlds.common.io.streams.SerializableDataInputStream;
+import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 
 import java.io.IOException;
@@ -51,7 +51,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSO
  * Represents a custom fee attached to an HTS token type. Custom fees are
  * charged during a CryptoTransfer that moves units of the token type. They
  * are always paid by the same account that pays the ordinary Hedera fees
- * to account 0.0.98 and the submitting node's account.
+ * to funding/reward accounts 0.0.98/0.0.800 and the submitting node's account.
  *
  * A custom fee must give a fee collection account to receive the charged
  * fees. The amount to be charged is specified by either a fixed or

@@ -53,6 +53,8 @@ public class DeletionLogic {
 	private final SigImpactHistorian sigImpactHistorian;
 	private final Supplier<MerkleMap<EntityNum, MerkleAccount>> contracts;
 
+	private AccountID obtainer;
+
 	@Inject
 	public DeletionLogic(
 			final HederaLedger ledger,
@@ -74,13 +76,15 @@ public class DeletionLogic {
 	}
 
 	public ContractID performFor(final ContractDeleteTransactionBody op) {
+		obtainer = null;
+
 		final var id = unaliased(op.getContractID(), aliasManager);
 		final var tbd = id.toGrpcAccountId();
 		validateFalse(ledger.isKnownTreasury(tbd), ACCOUNT_IS_TREASURY);
 		validateFalse(ledger.hasAnyFungibleTokenBalance(tbd), TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES);
 		validateFalse(ledger.hasAnyNfts(tbd), ACCOUNT_STILL_OWNS_NFTS);
 
-		final var obtainer = obtainerOf(op);
+		obtainer = obtainerOf(op);
 		validateFalse(tbd.equals(obtainer), OBTAINER_SAME_CONTRACT_ID);
 		validateTrue(ledger.exists(obtainer), OBTAINER_DOES_NOT_EXIST);
 		validateFalse(ledger.isDeleted(obtainer), OBTAINER_DOES_NOT_EXIST);
@@ -97,11 +101,15 @@ public class DeletionLogic {
 		return id.toGrpcContractID();
 	}
 
+	public AccountID getLastObtainer() {
+		return obtainer;
+	}
+
 	private AccountID obtainerOf(final ContractDeleteTransactionBody op) {
 		validateTrue(op.hasTransferAccountID() || op.hasTransferContractID(), OBTAINER_REQUIRED);
 		if (op.hasTransferAccountID()) {
-			final var obtainer = op.getTransferAccountID();
-			final var obtainerExpired = ledger.exists(obtainer) && ledger.isDetached(obtainer);
+			final var obtainerId = op.getTransferAccountID();
+			final var obtainerExpired = ledger.exists(obtainerId) && ledger.isDetached(obtainerId);
 			validateFalse(obtainerExpired, ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
 			return op.getTransferAccountID();
 		} else {

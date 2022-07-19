@@ -20,16 +20,20 @@ package com.hedera.services.exceptions;
  * ‍
  */
 
+import org.apache.tuweni.bytes.Bytes;
 import org.junit.jupiter.api.Test;
 
 import static com.hedera.services.exceptions.ValidationUtils.validateFalse;
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
+import static com.hedera.services.exceptions.ValidationUtils.validateTrueOrRevert;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CANNOT_WIPE_TOKEN_TREASURY_ACCOUNT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALLOWANCE_OWNER_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_BURN_AMOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MEMO_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_SUPPLY_KEY;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class ValidationUtilsTest {
 	@Test
@@ -49,5 +53,14 @@ class ValidationUtilsTest {
 		assertEquals(CANNOT_WIPE_TOKEN_TREASURY_ACCOUNT, trueExCapturedByCode.getResponseCode());
 		assertEquals(TOKEN_HAS_NO_SUPPLY_KEY, trueExCapturedByCodeAndMsg.getResponseCode());
 		assertEquals("Should be false!", trueExCapturedByCodeAndMsg.getMessage());
+	}
+
+	@Test
+	void validatesWithRevertingReason() {
+		final var capturedEx = assertThrows(InvalidTransactionException.class, () ->
+				validateTrueOrRevert(false, INVALID_ALLOWANCE_OWNER_ID));
+		assertTrue(capturedEx.isReverting());
+		final var reason = Bytes.of(INVALID_ALLOWANCE_OWNER_ID.name().getBytes());
+		assertEquals(reason, capturedEx.getRevertReason());
 	}
 }

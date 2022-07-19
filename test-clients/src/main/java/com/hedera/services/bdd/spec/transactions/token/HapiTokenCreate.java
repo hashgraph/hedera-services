@@ -31,6 +31,7 @@ import com.hedera.services.legacy.proto.utils.CommonUtils;
 import com.hedera.services.usage.BaseTransactionMeta;
 import com.hedera.services.usage.state.UsageAccumulator;
 import com.hedera.services.usage.token.TokenOpsUsage;
+import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.CustomFee;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.FeeData;
@@ -39,6 +40,7 @@ import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.SubType;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
+import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import com.hederahashgraph.api.proto.java.TokenType;
 import com.hederahashgraph.api.proto.java.Transaction;
@@ -72,6 +74,7 @@ public class HapiTokenCreate extends HapiTxnOp<HapiTokenCreate> {
 	private String token;
 
 	private boolean advertiseCreation = false;
+	private boolean asCallableContract = false;
 	private Optional<TokenType> tokenType = Optional.empty();
 	private Optional<TokenSupplyType> supplyType = Optional.empty();
 	private OptionalInt decimals = OptionalInt.empty();
@@ -137,6 +140,11 @@ public class HapiTokenCreate extends HapiTxnOp<HapiTokenCreate> {
 
 	public HapiTokenCreate advertisingCreation() {
 		advertiseCreation = true;
+		return this;
+	}
+
+	public HapiTokenCreate asCallableContract() {
+		asCallableContract = true;
 		return this;
 	}
 
@@ -343,9 +351,10 @@ public class HapiTokenCreate extends HapiTxnOp<HapiTokenCreate> {
 		symbol.ifPresent(s -> registry.saveSymbol(token, s));
 		name.ifPresent(s -> registry.saveName(token, s));
 		registry.saveMemo(token, memo.orElse(""));
-		registry.saveTokenId(token, lastReceipt.getTokenID());
+		TokenID tokenID = lastReceipt.getTokenID();
+		registry.saveTokenId(token, tokenID);
 		registry.saveTreasury(token, treasury.orElse(spec.setup().defaultPayerName()));
-		createdIdObs.ifPresent(obs -> obs.accept(HapiPropertySource.asTokenString(lastReceipt.getTokenID())));
+		createdIdObs.ifPresent(obs -> obs.accept(HapiPropertySource.asTokenString(tokenID)));
 
 		try {
 			var submittedBody = CommonUtils.extractTransactionBody(txnSubmitted);
@@ -377,8 +386,15 @@ public class HapiTokenCreate extends HapiTxnOp<HapiTokenCreate> {
 		if (advertiseCreation) {
 			String banner = "\n\n" + bannerWith(
 					String.format(
-							"Created token '%s' with id '0.0.%d'.", token, lastReceipt.getTokenID().getTokenNum()));
+							"Created token '%s' with id '0.0.%d'.", token, tokenID.getTokenNum()));
 			log.info(banner);
+		}
+		if (asCallableContract) {
+			registry.saveContractId(token, ContractID.newBuilder()
+					.setShardNum(tokenID.getShardNum())
+					.setRealmNum(tokenID.getRealmNum())
+					.setContractNum(tokenID.getTokenNum())
+					.build());
 		}
 	}
 

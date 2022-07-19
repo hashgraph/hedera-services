@@ -20,10 +20,10 @@ package com.hedera.services.utils;
  * ‍
  */
 
-import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.models.TokenRelationship;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.NftID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import org.apache.commons.lang3.tuple.Pair;
 
@@ -55,6 +55,14 @@ public record EntityNumPair(long value) {
 		return new EntityNumPair(value);
 	}
 
+	public static EntityNumPair fromGrpcNftId(NftID grpcId) {
+		final var tokenId = grpcId.getTokenID();
+		if (!areValidNums(tokenId.getShardNum(), tokenId.getRealmNum())) {
+			return MISSING_NUM_PAIR;
+		}
+		return fromLongs(tokenId.getTokenNum(), grpcId.getSerialNumber());
+	}
+
 	public static EntityNumPair fromNftId(NftId id) {
 		if (!areValidNums(id.shard(), id.realm())) {
 			return MISSING_NUM_PAIR;
@@ -84,16 +92,10 @@ public record EntityNumPair(long value) {
 		return unsignedHighOrder32From(value);
 	}
 
-	public EntityId getHighOrderAsEntityId() {
-		return STATIC_PROPERTIES.scopedEntityIdWith(getHiOrderAsLong());
-	}
-
-	public EntityId getLowOrderAsEntityId() {
-		return STATIC_PROPERTIES.scopedEntityIdWith(getLowOrderAsLong());
-	}
-
 	public static EntityNumPair fromModelRel(TokenRelationship tokenRelationship) {
-		return tokenRelationship.getKey();
+		return EntityNumPair.fromLongs(
+				tokenRelationship.getAccount().getId().num(),
+				tokenRelationship.getToken().getId().num());
 	}
 
 	public Pair<AccountID, TokenID> asAccountTokenRel() {
@@ -110,6 +112,10 @@ public record EntityNumPair(long value) {
 
 	public EntityNum getLowOrderAsNum() {
 		return EntityNum.fromLong(getLowOrderAsLong());
+	}
+
+	public NftNumPair asNftNumPair() {
+		return NftNumPair.fromLongs(getHiOrderAsLong(), getLowOrderAsLong());
 	}
 
 	@Override

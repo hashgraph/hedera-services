@@ -41,7 +41,7 @@ public class GetContractRecordsAnswer extends AbstractAnswer {
 	@Inject
 	public GetContractRecordsAnswer() {
 		super(ContractGetRecords,
-				query -> null,
+				query -> query.getContractGetRecords().getHeader().getPayment(),
 				query -> query.getContractGetRecords().getHeader().getResponseType(),
 				response -> response.getContractGetRecordsResponse().getHeader().getNodeTransactionPrecheckCode(),
 				(query, view) -> NOT_SUPPORTED);

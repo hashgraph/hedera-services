@@ -53,6 +53,8 @@ public class RenewableEntityClassifier {
 
 	private EntityNum lastClassifiedNum;
 	private MerkleAccount lastClassified = null;
+	private EntityNum payerForAutoRenewNum;
+	private MerkleAccount payerAccountForAutoRenew = null;
 
 	@Inject
 	public RenewableEntityClassifier(
@@ -96,18 +98,24 @@ public class RenewableEntityClassifier {
 		return lastClassified;
 	}
 
+	public EntityNum getPayerForAutoRenew() {
+		return payerForAutoRenewNum;
+	}
+
 	// --- Internal helpers ---
 	void renewLastClassifiedWith(long fee, long renewalPeriod) {
 		assertHasLastClassifiedAccount();
-		assertLastClassifiedAccountCanAfford(fee);
+		assertPayerAccountForRenewalCanAfford(fee);
 
 		final var currentAccounts = accounts.get();
 
 		final var mutableLastClassified = currentAccounts.getForModify(lastClassifiedNum);
 		final long newExpiry = mutableLastClassified.getExpiry() + renewalPeriod;
-		final long newBalance = mutableLastClassified.getBalance() - fee;
 		mutableLastClassified.setExpiry(newExpiry);
-		mutableLastClassified.setBalanceUnchecked(newBalance);
+
+		final var mutablePayerForRenew = currentAccounts.getForModify(payerForAutoRenewNum);
+		final long newBalance = mutablePayerForRenew.getBalance() - fee;
+		mutablePayerForRenew.setBalanceUnchecked(newBalance);
 
 		final var fundingId = fromAccountId(dynamicProperties.fundingAccount());
 		final var mutableFundingAccount = currentAccounts.getForModify(fundingId);
@@ -117,15 +125,45 @@ public class RenewableEntityClassifier {
 		log.debug("Renewed {} at a price of {}tb", lastClassifiedNum, fee);
 	}
 
+	/**
+	 * If there is an autoRenewAccount on the contract with non-zero hbar balance and not deleted, uses that account for
+	 * paying autorenewal fee. Else uses contract's hbar funds for renewal.
+	 *
+	 * @return resolved payer for renewal
+	 */
+	MerkleAccount resolvePayerForAutoRenew() {
+		if (lastClassified.isSmartContract() && lastClassified.hasAutoRenewAccount()) {
+			payerForAutoRenewNum = lastClassified.getAutoRenewAccount().asNum();
+			payerAccountForAutoRenew = accounts.get().get(payerForAutoRenewNum);
+			if (isValid(payerAccountForAutoRenew)) {
+				return payerAccountForAutoRenew;
+			}
+		}
+		payerForAutoRenewNum = lastClassifiedNum;
+		payerAccountForAutoRenew = lastClassified;
+		return lastClassified;
+	}
+
+	/**
+	 * Checks if autoRenewAccount is not deleted and has non-zero hbar balance
+	 *
+	 * @param payer
+	 * 		autoRenewAccount on contract
+	 * @return if the account is valid
+	 */
+	boolean isValid(final MerkleAccount payer) {
+		return payer != null && !payer.isDeleted() && payer.getBalance() > 0;
+	}
+
 	private void assertHasLastClassifiedAccount() {
 		if (lastClassified == null) {
 			throw new IllegalStateException("Cannot remove a last classified account; none is present!");
 		}
 	}
 
-	private void assertLastClassifiedAccountCanAfford(long fee) {
-		if (lastClassified.getBalance() < fee) {
-			var msg = "Cannot charge " + fee + " to account number " + lastClassifiedNum.longValue() + "!";
+	private void assertPayerAccountForRenewalCanAfford(long fee) {
+		if (payerAccountForAutoRenew.getBalance() < fee) {
+			var msg = "Cannot charge " + fee + " to account number " + payerForAutoRenewNum + "!";
 			throw new IllegalStateException(msg);
 		}
 	}

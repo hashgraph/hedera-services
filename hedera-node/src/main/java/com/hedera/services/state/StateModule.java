@@ -26,10 +26,11 @@ import com.hedera.services.context.MutableStateChildren;
 import com.hedera.services.context.annotations.CompositeProps;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.PropertySource;
-import com.hedera.services.keys.LegacyEd25519KeyReader;
+import com.hedera.services.ethereum.EthTxData;
+import com.hedera.services.ethereum.EthTxSigs;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.ledger.ids.SeqNoEntityIdSource;
-import com.hedera.services.legacy.core.jproto.JKey;
+import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.state.expiry.ExpiringCreations;
 import com.hedera.services.state.exports.AccountsExporter;
 import com.hedera.services.state.exports.BalancesExporter;
@@ -45,8 +46,9 @@ import com.hedera.services.state.logic.ReconnectListener;
 import com.hedera.services.state.logic.StateWriteToDiskListener;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
-import com.hedera.services.state.merkle.MerkleSchedule;
+import com.hedera.services.state.merkle.MerkleScheduledTransactions;
 import com.hedera.services.state.merkle.MerkleSpecialFiles;
+import com.hedera.services.state.merkle.MerkleStakingInfo;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleTopic;
@@ -56,11 +58,12 @@ import com.hedera.services.state.submerkle.SequenceNumber;
 import com.hedera.services.state.validation.BasedLedgerValidator;
 import com.hedera.services.state.validation.LedgerValidator;
 import com.hedera.services.state.virtual.ContractKey;
-import com.hedera.services.state.virtual.ContractValue;
+import com.hedera.services.state.virtual.IterableContractValue;
 import com.hedera.services.state.virtual.VirtualBlobKey;
 import com.hedera.services.state.virtual.VirtualBlobValue;
 import com.hedera.services.state.virtual.VirtualMapFactory;
 import com.hedera.services.store.schedule.ScheduleStore;
+import com.hedera.services.stream.RecordsRunningHashLeaf;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
 import com.hedera.services.utils.JvmSystemExits;
@@ -68,14 +71,15 @@ import com.hedera.services.utils.NamedDigestFactory;
 import com.hedera.services.utils.Pause;
 import com.hedera.services.utils.SleepingPause;
 import com.hedera.services.utils.SystemExits;
-import com.swirlds.common.AddressBook;
 import com.swirlds.common.InvalidSignedStateListener;
-import com.swirlds.common.NodeId;
-import com.swirlds.common.Platform;
 import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.notification.NotificationFactory;
 import com.swirlds.common.notification.listeners.ReconnectCompleteListener;
 import com.swirlds.common.notification.listeners.StateWriteToDiskCompleteListener;
+import com.swirlds.common.system.NodeId;
+import com.swirlds.common.system.Platform;
+import com.swirlds.common.system.address.AddressBook;
+import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.jasperdb.JasperDbBuilder;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
@@ -89,10 +93,9 @@ import java.nio.charset.Charset;
 import java.security.MessageDigest;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
-
-import static com.hedera.services.utils.MiscUtils.lookupInCustomStore;
 
 @Module(includes = HandleLogicModule.class)
 public interface StateModule {
@@ -139,7 +142,7 @@ public interface StateModule {
 
 	@Provides
 	@Singleton
-	public static VirtualMapFactory provideVirtualMapFactory() {
+	static VirtualMapFactory provideVirtualMapFactory() {
 		return new VirtualMapFactory(JasperDbBuilder::new);
 	}
 
@@ -165,6 +168,12 @@ public interface StateModule {
 	@Singleton
 	static Supplier<NotificationEngine> provideNotificationEngine() {
 		return NotificationFactory::getEngine;
+	}
+
+	@Provides
+	@Singleton
+	static Function<EthTxData, EthTxSigs> provideSigsFunction() {
+		return EthTxSigs::extractSignatures;
 	}
 
 	@Provides
@@ -222,6 +231,14 @@ public interface StateModule {
 
 	@Provides
 	@Singleton
+	static Supplier<MerkleMap<EntityNum, MerkleStakingInfo>> provideWorkingStakingInfo(
+			final MutableStateChildren workingState
+	) {
+		return workingState::stakingInfo;
+	}
+
+	@Provides
+	@Singleton
 	static Supplier<VirtualMap<VirtualBlobKey, VirtualBlobValue>> provideWorkingStorage(
 			final MutableStateChildren workingState
 	) {
@@ -254,7 +271,7 @@ public interface StateModule {
 
 	@Provides
 	@Singleton
-	static Supplier<MerkleMap<EntityNum, MerkleSchedule>> provideWorkingSchedules(
+	static Supplier<MerkleScheduledTransactions> provideWorkingSchedules(
 			final MutableStateChildren workingState
 	) {
 		return workingState::schedules;
@@ -278,7 +295,7 @@ public interface StateModule {
 
 	@Provides
 	@Singleton
-	static Supplier<VirtualMap<ContractKey, ContractValue>> provideWorkingContractStorage(
+	static Supplier<VirtualMap<ContractKey, IterableContractValue>> provideWorkingContractStorage(
 			final MutableStateChildren workingState
 	) {
 		return workingState::contractStorage;
@@ -290,6 +307,14 @@ public interface StateModule {
 			final MutableStateChildren workingState
 	) {
 		return workingState::networkCtx;
+	}
+
+	@Provides
+	@Singleton
+	static Supplier<RecordsRunningHashLeaf> provideRecordsRunningHashLeaf(
+			final MutableStateChildren workingState
+	) {
+		return workingState::runningHashLeaf;
 	}
 
 	@Provides
@@ -334,13 +359,14 @@ public interface StateModule {
 
 	@Provides
 	@Singleton
-	static Supplier<JKey> provideSystemFileKey(
-			LegacyEd25519KeyReader b64KeyReader,
-			@CompositeProps PropertySource properties
-	) {
-		return () -> lookupInCustomStore(
-				b64KeyReader,
-				properties.getStringProperty("bootstrap.genesisB64Keystore.path"),
-				properties.getStringProperty("bootstrap.genesisB64Keystore.keyName"));
+	static Supplier<JEd25519Key> provideSystemFileKey(@CompositeProps PropertySource properties) {
+		return () -> {
+			final var hexedEd25519Key = properties.getStringProperty("bootstrap.genesisPublicKey");
+			final var ed25519Key = new JEd25519Key(CommonUtils.unhex(hexedEd25519Key));
+			if (!ed25519Key.isValid()) {
+				throw new IllegalStateException("'" + hexedEd25519Key + "' is not a possible Ed25519 public key");
+			}
+			return ed25519Key;
+		};
 	}
 }

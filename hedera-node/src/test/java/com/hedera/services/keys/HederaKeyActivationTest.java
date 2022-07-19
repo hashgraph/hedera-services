@@ -58,7 +58,7 @@ import static com.hedera.test.factories.keys.NodeFactory.ecdsa384Secp256k1;
 import static com.hedera.test.factories.keys.NodeFactory.ed25519;
 import static com.hedera.test.factories.keys.NodeFactory.list;
 import static com.hedera.test.factories.keys.NodeFactory.threshold;
-import static com.swirlds.common.CommonUtils.hex;
+import static com.swirlds.common.utility.CommonUtils.hex;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -266,5 +266,10 @@ class HederaKeyActivationTest {
 		assertTrue(HederaKeyActivation.keysMatch(sameParityCompressed, uncompressed));
 		assertFalse(HederaKeyActivation.keysMatch(otherParityCompressed, uncompressed));
 		assertFalse(HederaKeyActivation.keysMatch(sameParityCompressed, other));
+	}
+
+	@Test
+	void validSigIsValid() {
+		assertEquals(VerificationStatus.VALID, HederaKeyActivationTest.VALID_SIG.getSignatureStatus());
 	}
 }

@@ -9,6 +9,7 @@
 		  "operations": [
 			"CryptoCreate",
 			"CryptoTransfer",
+			"PRNG",
 			"CryptoUpdate",
 			"CryptoDelete",
 			"CryptoGetInfo",
@@ -46,8 +47,9 @@
 			"FileCreate",
 			"FileUpdate",
 			"FileAppend",
-			"FileDelete"
-		  ]
+			"FileDelete",
+            "EthereumTransaction"
+          ]
 		},
 		{
 		  "opsPerSec": 6000,
@@ -84,7 +86,8 @@
 			"FileCreate",
 			"FileUpdate",
 			"FileAppend",
-			"FileDelete"
+			"FileDelete",
+            "EthereumTransaction"
 		  ]
 		}
 	  ]

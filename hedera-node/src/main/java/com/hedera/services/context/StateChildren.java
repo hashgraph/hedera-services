@@ -23,20 +23,21 @@ package com.hedera.services.context;
 import com.google.protobuf.ByteString;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
-import com.hedera.services.state.merkle.MerkleSchedule;
+import com.hedera.services.state.merkle.MerkleScheduledTransactions;
 import com.hedera.services.state.merkle.MerkleSpecialFiles;
+import com.hedera.services.state.merkle.MerkleStakingInfo;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.virtual.ContractKey;
-import com.hedera.services.state.virtual.ContractValue;
+import com.hedera.services.state.virtual.IterableContractValue;
 import com.hedera.services.state.virtual.VirtualBlobKey;
 import com.hedera.services.state.virtual.VirtualBlobValue;
 import com.hedera.services.stream.RecordsRunningHashLeaf;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
-import com.swirlds.common.AddressBook;
+import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
 
@@ -52,11 +53,11 @@ public interface StateChildren {
 
 	MerkleMap<EntityNum, MerkleToken> tokens();
 
-	MerkleMap<EntityNum, MerkleSchedule> schedules();
+	MerkleScheduledTransactions schedules();
 
 	VirtualMap<VirtualBlobKey, VirtualBlobValue> storage();
 
-	VirtualMap<ContractKey, ContractValue> contractStorage();
+	VirtualMap<ContractKey, IterableContractValue> contractStorage();
 
 	MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenAssociations();
 
@@ -67,6 +68,8 @@ public interface StateChildren {
 	MerkleSpecialFiles specialFiles();
 
 	MerkleMap<EntityNumPair, MerkleUniqueToken> uniqueTokens();
+
+	MerkleMap<EntityNum, MerkleStakingInfo> stakingInfo();
 
 	RecordsRunningHashLeaf runningHashLeaf();
 

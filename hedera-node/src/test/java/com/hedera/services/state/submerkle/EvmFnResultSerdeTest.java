@@ -39,11 +39,15 @@ public class EvmFnResultSerdeTest extends SelfSerializableDataTest<EvmFnResult> 
 	@Override
 	protected EvmFnResult getExpectedObject(final int version, final int testCaseNo) {
 		final var seeded = SeededPropertySource.forSerdeTest(version, testCaseNo).nextEvmResult();
-		if (version == EvmFnResult.RELEASE_0240_VERSION) {
+		if (version < EvmFnResult.RELEASE_0250_VERSION) {
 			// Always empty before 0.25
 			seeded.setGas(0);
 			seeded.setAmount(0);
 			seeded.setFunctionParameters(EvmFnResult.EMPTY);
+		}
+		if (version < EvmFnResult.RELEASE_0260_VERSION) {
+			// Always empty before 0.26
+			seeded.setSenderId(null);
 		}
 		return seeded;
 	}

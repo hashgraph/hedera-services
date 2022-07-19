@@ -44,6 +44,7 @@
   "ContractUpdate": 0.2,
   "ContractDelete": 0.2,
   "ContractCall": 0.2,
+  "EthereumTransaction": 0.2,
   "ContractCallLocal": 0.2,
   "ContractGetBytecode": 0.2,
   "GetBySolidityID": 0.2,
@@ -61,5 +62,6 @@
   "TransactionGetReceipt": 0.2,
   "TransactionGetRecord": 0.2,
   "SystemDelete": 0.2,
-  "SystemUndelete": 0.2
+  "SystemUndelete": 0.2,
+  "PRNG": 0.2
 }

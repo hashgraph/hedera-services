@@ -20,7 +20,7 @@ package com.hedera.services.txns;
  * ‍
  */
 
-import com.swirlds.common.SwirldTransaction;
+import com.swirlds.common.system.transaction.SwirldTransaction;
 
 import java.time.Instant;
 

@@ -16,6 +16,7 @@
 			"CryptoGetAccountRecords",
 			"CryptoApproveAllowance",
 			"CryptoDeleteAllowance",
+			"PRNG",
 			"ConsensusCreateTopic",
 			"ConsensusSubmitMessage",
 			"ConsensusUpdateTopic",
@@ -47,8 +48,9 @@
 			"FileCreate",
 			"FileUpdate",
 			"FileAppend",
-			"FileDelete"
-		  ]
+			"FileDelete", 
+            "EthereumTransaction"
+          ]
 		},
 		{
 		  "opsPerSec": 100,
@@ -90,7 +92,8 @@
 			"FileCreate",
 			"FileUpdate",
 			"FileAppend",
-			"FileDelete"
+			"FileDelete",
+            "EthereumTransaction"
 		  ]
 		}
 	  ]

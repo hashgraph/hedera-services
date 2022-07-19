@@ -46,16 +46,17 @@ import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransferList;
-import com.swirlds.common.CommonUtils;
+import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.common.io.SelfSerializable;
-import com.swirlds.common.io.SerializableDataInputStream;
-import com.swirlds.common.io.SerializableDataOutputStream;
+import com.swirlds.common.io.streams.SerializableDataInputStream;
+import com.swirlds.common.io.streams.SerializableDataOutputStream;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.List;
+import java.util.Random;
 import java.util.UUID;
 import java.util.function.Supplier;
 
@@ -67,6 +68,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUN
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class TxnUtils {
 	public static TransferList withAdjustments(AccountID a, long A, AccountID b, long B, AccountID c, long C) {
@@ -236,6 +238,17 @@ public class TxnUtils {
 		return data;
 	}
 
+	public static String random384BitBinaryText() {
+		Random rand = new Random();
+		// Use to collect result
+		String result = "";
+		for (int i = 0; i < 384; ++i) {
+			// Collect the random number
+			result = (Math.abs(rand.nextInt() % 2)) + result;
+		}
+		return result;
+	}
+
 	public static ByteString randomUtf8ByteString(int n) {
 		return ByteString.copyFrom(randomUtf8Bytes(n));
 	}
@@ -272,6 +285,12 @@ public class TxnUtils {
 	public static void assertFailsWith(final Runnable something, final ResponseCodeEnum status) {
 		final var ex = assertThrows(InvalidTransactionException.class, something::run);
 		assertEquals(status, ex.getResponseCode());
+	}
+
+	public static void assertFailsRevertingWith(final Runnable something, final ResponseCodeEnum status) {
+		final var ex = assertThrows(InvalidTransactionException.class, something::run);
+		assertEquals(status, ex.getResponseCode());
+		assertTrue(ex.isReverting());
 	}
 
 	public static <T extends SelfSerializable> void assertSerdeWorks(

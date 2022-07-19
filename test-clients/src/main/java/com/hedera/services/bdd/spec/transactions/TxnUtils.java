@@ -57,11 +57,15 @@ import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.api.proto.java.TransferList;
 import com.hederahashgraph.fee.SigValueObj;
-import com.swirlds.common.CommonUtils;
+import com.swirlds.common.utility.CommonUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.math.BigInteger;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -368,6 +372,17 @@ public class TxnUtils {
 		return subOp.getResponse().getContractGetInfo().getContractInfo().getExpirationTime();
 	}
 
+	public static int currentMaxAutoAssociationSlots(String contract, HapiApiSpec spec) throws Throwable {
+		HapiGetContractInfo subOp = getContractInfo(contract).noLogging();
+		Optional<Throwable> error = subOp.execFor(spec);
+		if (error.isPresent()) {
+			log.error("Unable to look up current expiration timestamp of contract 0.0."
+					+ spec.registry().getContractId(contract).getContractNum());
+			throw error.get();
+		}
+		return subOp.getResponse().getContractGetInfo().getContractInfo().getMaxAutomaticTokenAssociations();
+	}
+
 	public static TopicID asTopicId(AccountID id) {
 		return TopicID.newBuilder()
 				.setShardNum(id.getShardNum())
@@ -586,6 +601,23 @@ public class TxnUtils {
 	public static String toReadableString(Transaction grpcTransaction) throws InvalidProtocolBufferException {
 		TransactionBody body = extractTransactionBody(grpcTransaction);
 		return "body=" + TextFormat.shortDebugString(body) + "; sigs="
-				+ TextFormat.shortDebugString(com.hedera.services.legacy.proto.utils.CommonUtils.extractSignatureMap(grpcTransaction));
+				+ TextFormat.shortDebugString(
+				com.hedera.services.legacy.proto.utils.CommonUtils.extractSignatureMap(grpcTransaction));
+	}
+
+	public static String bytecodePath(String contractName) {
+		return String.format("src/main/resource/contract/contracts/%s/%s.bin", contractName, contractName);
+	}
+
+	public static ByteString literalInitcodeFor(final String contract) {
+		try {
+			return ByteString.copyFrom(Files.readAllBytes(Paths.get(bytecodePath(contract))));
+		} catch (IOException e) {
+			throw new UncheckedIOException(e);
+		}
+	}
+
+	public static boolean isEndOfStakingPeriodRecord(final TransactionRecord record) {
+		return record.getMemo().startsWith("End of Staking Period Calculation");
 	}
 }

@@ -22,7 +22,7 @@ package com.hedera.services.files;
 
 import com.hedera.services.files.store.BytesStoreAdapter;
 import com.hederahashgraph.api.proto.java.FileID;
-import com.swirlds.common.CommonUtils;
+import com.swirlds.common.utility.CommonUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -70,7 +70,7 @@ public final class MetadataMapFactory {
 		return String.format(LEGACY_PATH_TEMPLATE, fid.getRealmNum(), fid.getFileNum());
 	}
 
-	static HFileMeta toAttr(final byte[] bytes) {
+	public static HFileMeta toAttr(final byte[] bytes) {
 		try {
 			return (bytes == null || bytes.length == 0) ? null : HFileMeta.deserialize(bytes);
 		} catch (final IOException internal) {
@@ -79,7 +79,7 @@ public final class MetadataMapFactory {
 		}
 	}
 
-	static byte[] toValueBytes(final HFileMeta attr) {
+	public static byte[] toValueBytes(final HFileMeta attr) {
 		try {
 			return attr.serialize();
 		} catch (final IOException internal) {

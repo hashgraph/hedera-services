@@ -22,7 +22,7 @@ package com.hedera.services.context;
 
 import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.swirlds.common.AddressBook;
+import com.swirlds.common.system.address.AddressBook;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -136,6 +136,14 @@ public class NodeInfo {
 			throw new IllegalArgumentException("The address book did not have an account for node id " + nodeId + "!");
 		}
 		return index;
+	}
+
+	public boolean isValidId(long nodeId) {
+		if (!bookIsRead) {
+			readBook();
+		}
+		final int index = (int) nodeId;
+		return !isIndexOutOfBounds(index) && accounts[index] != null;
 	}
 
 	/**

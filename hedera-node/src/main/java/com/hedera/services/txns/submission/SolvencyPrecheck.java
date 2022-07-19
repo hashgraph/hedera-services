@@ -22,15 +22,14 @@ package com.hedera.services.txns.submission;
 
 import com.hedera.services.context.domain.process.TxnValidityAndFeeReq;
 import com.hedera.services.context.primitives.StateView;
-import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.fees.FeeExemptions;
 import com.hedera.services.legacy.exception.InvalidAccountIDException;
 import com.hedera.services.legacy.exception.KeyPrefixMismatchException;
 import com.hedera.services.sigs.verification.PrecheckVerifier;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.utils.EntityNum;
 import com.hedera.services.txns.validation.OptionValidator;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.accessors.SignedTxnAccessor;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.fee.FeeObject;
@@ -43,7 +42,6 @@ import javax.inject.Singleton;
 import java.util.function.Supplier;
 
 import static com.hedera.services.txns.validation.PureValidation.queryableAccountStatus;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
@@ -71,7 +69,6 @@ public class SolvencyPrecheck {
 	private final OptionValidator validator;
 	private final PrecheckVerifier precheckVerifier;
 	private final Supplier<StateView> stateView;
-	private final GlobalDynamicProperties dynamicProperties;
 	private final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts;
 
 	@Inject
@@ -81,7 +78,6 @@ public class SolvencyPrecheck {
 			OptionValidator validator,
 			PrecheckVerifier precheckVerifier,
 			Supplier<StateView> stateView,
-			GlobalDynamicProperties dynamicProperties,
 			Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts
 	) {
 		this.accounts = accounts;
@@ -90,7 +86,6 @@ public class SolvencyPrecheck {
 		this.feeExemptions = feeExemptions;
 		this.feeCalculator = feeCalculator;
 		this.precheckVerifier = precheckVerifier;
-		this.dynamicProperties = dynamicProperties;
 	}
 
 	TxnValidityAndFeeReq assessSansSvcFees(SignedTxnAccessor accessor) {
@@ -136,12 +131,11 @@ public class SolvencyPrecheck {
 			final var estimatedAdj = Math.min(0L, feeCalculator.estimatedNonFeePayerAdjustments(accessor, now));
 			final var requiredPayerBalance = estimatedReqFee - estimatedAdj;
 			final var payerBalance = payerAccount.getBalance();
-			ResponseCodeEnum finalStatus = OK;
+			var finalStatus = OK;
 			if (payerBalance < requiredPayerBalance) {
-				final var isDetached = payerBalance == 0
-						&& dynamicProperties.shouldAutoRenewSomeEntityType()
-						&& !validator.isAfterConsensusSecond(payerAccount.getExpiry());
-				finalStatus = isDetached ? ACCOUNT_EXPIRED_AND_PENDING_REMOVAL : INSUFFICIENT_PAYER_BALANCE;
+				final var expiryStatus = validator.expiryStatusGiven(
+						payerBalance, payerAccount.getExpiry(), payerAccount.isSmartContract());
+				finalStatus = expiryStatus != OK ? expiryStatus : INSUFFICIENT_PAYER_BALANCE;
 			}
 
 			return new TxnValidityAndFeeReq(finalStatus, estimatedReqFee);

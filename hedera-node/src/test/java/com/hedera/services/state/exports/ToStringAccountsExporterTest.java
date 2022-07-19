@@ -1,6 +1,5 @@
 package com.hedera.services.state.exports;
 
-
 /*-
  * ‌
  * Hedera Services Node
@@ -117,6 +116,7 @@ class ToStringAccountsExporterTest {
 		TreeMap<EntityNum, Long> cryptoAllowances = new TreeMap();
 		cryptoAllowances.put(EntityNum.fromLong(1L), 10L);
 		account1.setBalance(1L);
+		account1.setEthereumNonce(1L);
 		account1.setMaxAutomaticAssociations(10);
 		account1.setUsedAutomaticAssociations(7);
 		account1.setCryptoAllowances(cryptoAllowances);
@@ -124,6 +124,7 @@ class ToStringAccountsExporterTest {
 		account1.setNumPositiveBalances(0);
 		account1.setHeadTokenId(MISSING_ID.num());
 		account2.setBalance(2L);
+		account2.setEthereumNonce(2L);
 		account2.setNumAssociations(1);
 		account2.setNumPositiveBalances(0);
 		account2.setHeadTokenId(MISSING_ID.num());
@@ -135,7 +136,10 @@ class ToStringAccountsExporterTest {
 				"smartContract=true, numContractKvPairs=0, receiverSigRequired=true, proxy=EntityId{shard=0, realm=0, " +
 				"num=0}, nftsOwned=0, alreadyUsedAutoAssociations=7, maxAutoAssociations=10, alias=, " +
 				"cryptoAllowances={EntityNum{value=1}=10}, fungibleTokenAllowances={}, approveForAllNfts=[], " +
-				"numAssociations=3, numPositiveBalances=0, headTokenId=0, numTreasuryTitles=0}, # records=0}\n" +
+				"firstContractStorageKey=<N/A>, numAssociations=3, numPositiveBalances=0, headTokenId=0, " +
+				"numTreasuryTitles=0, ethereumNonce=1, autoRenewAccount=null, headNftId=0, headNftSerialNum=0, " +
+				"stakedToMe=0, stakePeriodStart=-1, stakedNum=0, declineReward=false, " +
+				"balanceAtStartOfLastRewardedPeriod=-1}, # records=0}\n" +
 				"\n" +
 				"0.0.2\n" +
 				"---\n" +
@@ -144,7 +148,10 @@ class ToStringAccountsExporterTest {
 				"deleted=true, smartContract=false, numContractKvPairs=0, receiverSigRequired=false, " +
 				"proxy=EntityId{shard=0, realm=0, num=0}, nftsOwned=0, alreadyUsedAutoAssociations=0, " +
 				"maxAutoAssociations=0, alias=, cryptoAllowances={}, fungibleTokenAllowances={}, approveForAllNfts=[], " +
-				"numAssociations=1, numPositiveBalances=0, headTokenId=0, numTreasuryTitles=0}, # records=0}\n";
+				"firstContractStorageKey=<N/A>, numAssociations=1, numPositiveBalances=0, headTokenId=0, " +
+				"numTreasuryTitles=0, ethereumNonce=2, autoRenewAccount=null, headNftId=0, headNftSerialNum=0, " +
+				"stakedToMe=0, stakePeriodStart=-1, stakedNum=0, declineReward=false, " +
+				"balanceAtStartOfLastRewardedPeriod=-1}, # records=0}\n";
 
 		// given:
 		MerkleMap<EntityNum, MerkleAccount> accounts = new MerkleMap<>();

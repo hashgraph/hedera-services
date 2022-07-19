@@ -55,6 +55,7 @@ import java.util.function.Function;
 
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.asId;
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.asTokenId;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.suFrom;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
@@ -179,8 +180,8 @@ public class HapiCryptoApproveAllowance extends HapiTxnOp<HapiCryptoApproveAllow
 
 		for (var entry : tokenAllowances) {
 			final var builder = TokenAllowance.newBuilder()
-					.setTokenId(spec.registry().getTokenID(entry.token()))
-					.setSpender(spec.registry().getAccountID(entry.spender()))
+					.setTokenId(asTokenId(entry.token, spec))
+					.setSpender(asId(entry.spender(), spec))
 					.setAmount(entry.amount());
 			if (entry.owner() != MISSING_OWNER) {
 				builder.setOwner(spec.registry().getAccountID(entry.owner()));

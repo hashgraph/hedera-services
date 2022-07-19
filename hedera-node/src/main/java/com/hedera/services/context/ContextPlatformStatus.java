@@ -20,12 +20,12 @@ package com.hedera.services.context;
  * ‍
  */
 
-import com.swirlds.common.PlatformStatus;
+import com.swirlds.common.system.PlatformStatus;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
-import static com.swirlds.common.PlatformStatus.STARTING_UP;
+import static com.swirlds.common.system.PlatformStatus.STARTING_UP;
 
 @Singleton
 public final class ContextPlatformStatus implements CurrentPlatformStatus {

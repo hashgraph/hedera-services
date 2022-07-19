@@ -1,3 +1,18 @@
+/*
+ * Copyright (C) 2021-2022 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package com.hedera.services.contracts.execution;
 
 /*
@@ -28,6 +43,12 @@ import com.hedera.services.store.contracts.HederaMutableWorldState;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.txns.contract.helpers.StorageExpiry;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import java.math.BigInteger;
+import java.time.Instant;
+import java.util.Map;
+import java.util.Set;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Hash;
@@ -37,81 +58,114 @@ import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.operation.Operation;
 import org.hyperledger.besu.evm.precompile.PrecompiledContract;
 
-import javax.inject.Inject;
-import javax.inject.Singleton;
-import java.time.Instant;
-import java.util.Map;
-import java.util.Set;
-
 /**
- * Extension of the base {@link EvmTxProcessor} that provides interface for executing
- * {@link com.hederahashgraph.api.proto.java.ContractCreateTransactionBody} transactions
+ * Extension of the base {@link EvmTxProcessor} that provides interface for executing {@link
+ * com.hederahashgraph.api.proto.java.ContractCreateTransactionBody} transactions
  */
 @Singleton
 public class CreateEvmTxProcessor extends EvmTxProcessor {
-	private final CodeCache codeCache;
-	private final StorageExpiry storageExpiry;
+    private final CodeCache codeCache;
+    private final StorageExpiry storageExpiry;
 
-	@Inject
-	public CreateEvmTxProcessor(
-			final HederaMutableWorldState worldState,
-			final LivePricesSource livePricesSource,
-			final CodeCache codeCache,
-			final GlobalDynamicProperties globalDynamicProperties,
-			final GasCalculator gasCalculator,
-			final Set<Operation> hederaOperations,
-			final Map<String, PrecompiledContract> precompiledContractMap,
-			final StorageExpiry storageExpiry
-	) {
-		super(worldState, livePricesSource, globalDynamicProperties, gasCalculator, hederaOperations, precompiledContractMap);
-		this.codeCache = codeCache;
-		this.storageExpiry = storageExpiry;
-	}
+    @Inject
+    public CreateEvmTxProcessor(
+            final HederaMutableWorldState worldState,
+            final LivePricesSource livePricesSource,
+            final CodeCache codeCache,
+            final GlobalDynamicProperties globalDynamicProperties,
+            final GasCalculator gasCalculator,
+            final Set<Operation> hederaOperations,
+            final Map<String, PrecompiledContract> precompiledContractMap,
+            final StorageExpiry storageExpiry,
+            final InHandleBlockMetaSource blockMetaSource) {
+        super(
+                worldState,
+                livePricesSource,
+                globalDynamicProperties,
+                gasCalculator,
+                hederaOperations,
+                precompiledContractMap,
+                blockMetaSource);
+        this.codeCache = codeCache;
+        this.storageExpiry = storageExpiry;
+    }
 
-	public TransactionProcessingResult execute(
-			final Account sender,
-			final Address receiver,
-			final long providedGasLimit,
-			final long value,
-			final Bytes code,
-			final Instant consensusTime,
-			final long hapiExpiry
-	) {
-		final long gasPrice = gasPriceTinyBarsGiven(consensusTime);
+    public TransactionProcessingResult execute(
+            final Account sender,
+            final Address receiver,
+            final long providedGasLimit,
+            final long value,
+            final Bytes code,
+            final Instant consensusTime,
+            final long hapiExpiry) {
+        final long gasPrice = gasPriceTinyBarsGiven(consensusTime, false);
 
-		return super.execute(
-				sender,
-				receiver,
-				gasPrice,
-				providedGasLimit,
-				value,
-				code,
-				true,
-				consensusTime,
-				false,
-				storageExpiry.hapiCreationOracle(hapiExpiry),
-				receiver);
-	}
+        return super.execute(
+                sender,
+                receiver,
+                gasPrice,
+                providedGasLimit,
+                value,
+                code,
+                true,
+                consensusTime,
+                false,
+                storageExpiry.hapiCreationOracle(hapiExpiry),
+                receiver,
+                null,
+                0,
+                null);
+    }
 
-	@Override
-	protected HederaFunctionality getFunctionType() {
-		return HederaFunctionality.ContractCreate;
-	}
+    public TransactionProcessingResult executeEth(
+            final Account sender,
+            final Address receiver,
+            final long providedGasLimit,
+            final long value,
+            final Bytes code,
+            final Instant consensusTime,
+            final long hapiExpiry,
+            final Account relayer,
+            final BigInteger providedMaxGasPrice,
+            final long maxGasAllowance) {
+        final long gasPrice = gasPriceTinyBarsGiven(consensusTime, true);
 
-	@Override
-	protected MessageFrame buildInitialFrame(
-			final MessageFrame.Builder commonInitialFrame,
-			final Address to,
-			final Bytes payload
-	) {
-		codeCache.invalidate(to);
+        return super.execute(
+                sender,
+                receiver,
+                gasPrice,
+                providedGasLimit,
+                value,
+                code,
+                true,
+                consensusTime,
+                false,
+                storageExpiry.hapiCreationOracle(hapiExpiry),
+                receiver,
+                providedMaxGasPrice,
+                maxGasAllowance,
+                relayer);
+    }
 
-		return commonInitialFrame
-				.type(MessageFrame.Type.CONTRACT_CREATION)
-				.address(to)
-				.contract(to)
-				.inputData(Bytes.EMPTY)
-				.code(new Code(payload, Hash.hash(payload)))
-				.build();
-	}
+    @Override
+    protected HederaFunctionality getFunctionType() {
+        return HederaFunctionality.ContractCreate;
+    }
+
+    @Override
+    protected MessageFrame buildInitialFrame(
+            final MessageFrame.Builder commonInitialFrame,
+            final Address to,
+            final Bytes payload,
+            final long value) {
+        codeCache.invalidate(to);
+
+        return commonInitialFrame
+                .type(MessageFrame.Type.CONTRACT_CREATION)
+                .address(to)
+                .contract(to)
+                .inputData(Bytes.EMPTY)
+                .code(Code.createLegacyCode(payload, Hash.hash(payload)))
+                .build();
+    }
 }

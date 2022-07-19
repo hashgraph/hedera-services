@@ -35,7 +35,8 @@ import com.hederahashgraph.api.proto.java.NftID;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TopicID;
-import com.swirlds.common.CommonUtils;
+import com.swirlds.common.utility.CommonUtils;
+import org.bouncycastle.util.encoders.Hex;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -44,6 +45,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.Arrays;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static com.hedera.services.utils.EntityIdUtils.asEvmAddress;
 import static com.hedera.services.utils.EntityIdUtils.asLiteralString;
@@ -54,7 +56,7 @@ import static com.hedera.services.utils.EntityIdUtils.unaliased;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.asContract;
 import static com.hedera.test.utils.IdUtils.asToken;
-import static com.swirlds.common.CommonUtils.unhex;
+import static com.swirlds.common.utility.CommonUtils.unhex;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -86,6 +88,13 @@ class EntityIdUtilsTest {
 	}
 
 	@Test
+	void extractsMirrorNum() {
+		final byte[] mockAddr = unhex("0000000000000000000000009abcdefabcdefbbb");
+
+		assertEquals(0x9abcdefabcdefbbbL, EntityIdUtils.numOfMirror(mockAddr));
+	}
+
+	@Test
 	void returnsResolvedContractIdIfNonMirro() {
 		final byte[] mockAddr = unhex("aaaaaaaaaaaaaaaaaaaaaaaa9abcdefabcdefbbb");
 		final var extantNum = EntityNum.fromLong(1_234_567L);
@@ -93,6 +102,47 @@ class EntityIdUtilsTest {
 		given(aliasManager.lookupIdBy(ByteString.copyFrom(mockAddr))).willReturn(extantNum);
 
 		assertEquals(extantNum, unaliased(input, aliasManager));
+	}
+
+	@Test
+	void echoesUnaliasedAccountId() {
+		final var literalId = AccountID.newBuilder().setAccountNum(1234).build();
+
+		assertEquals(EntityNum.fromLong(1234), unaliased(literalId, aliasManager));
+		assertEquals(EntityNum.MISSING_NUM, unaliased(AccountID.getDefaultInstance(), aliasManager));
+	}
+
+	@Test
+	void useAliasDirectlyIfMirror() {
+		final byte[] mockAddr = unhex("0000000000000000000000009abcdefabcdefbbb");
+		final var num = Longs.fromByteArray(Arrays.copyOfRange(mockAddr, 12, 20));
+		final var expectedId = EntityNum.fromLong(num);
+		final var input = AccountID.newBuilder().setAlias(ByteString.copyFrom(mockAddr)).build();
+
+		given(aliasManager.isMirror(mockAddr)).willReturn(true);
+		assertEquals(expectedId, unaliased(input, aliasManager));
+	}
+
+	@Test
+	void returnsResolvedAccountIdIfNonMirro() {
+		final byte[] mockAddr = unhex("aaaaaaaaaaaaaaaaaaaaaaaa9abcdefabcdefbbb");
+		final var extantNum = EntityNum.fromLong(1_234_567L);
+		final var input = AccountID.newBuilder().setAlias(ByteString.copyFrom(mockAddr)).build();
+		given(aliasManager.lookupIdBy(ByteString.copyFrom(mockAddr))).willReturn(extantNum);
+
+		assertEquals(extantNum, unaliased(input, aliasManager));
+	}
+
+	@Test
+	void observesUnalising() {
+		final byte[] mockAddr = unhex("aaaaaaaaaaaaaaaaaaaaaaaa9abcdefabcdefbbb");
+		final var extantNum = EntityNum.fromLong(1_234_567L);
+		final var input = AccountID.newBuilder().setAlias(ByteString.copyFrom(mockAddr)).build();
+		given(aliasManager.lookupIdBy(ByteString.copyFrom(mockAddr))).willReturn(extantNum);
+
+		AtomicReference<ByteString> observer = new AtomicReference<>();
+		unaliased(input, aliasManager, observer::set);
+		assertEquals(ByteString.copyFrom(mockAddr), observer.get()); 
 	}
 
 	@Test
@@ -124,20 +174,25 @@ class EntityIdUtilsTest {
 				(byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0xDE,
 				(byte) 0xBA, (byte) 0x00, (byte) 0x00, (byte) 0xBA
 		};
+		final var create2AddressBytes = Hex.decode("0102030405060708090a0b0c0d0e0f1011121314");
 		final var equivAccount = asAccount(String.format("%d.%d.%d", shard, realm, num));
 		final var equivContract = asContract(String.format("%d.%d.%d", shard, realm, num));
 		final var equivToken = asToken(String.format("%d.%d.%d", shard, realm, num));
+		final var create2Contract = ContractID.newBuilder().setEvmAddress(
+				ByteString.copyFrom(create2AddressBytes)).build();
 
 		final var actual = asEvmAddress(shard, realm, num);
 		final var typedActual = EntityIdUtils.asTypedEvmAddress(equivAccount);
 		final var typedToken = EntityIdUtils.asTypedEvmAddress(equivToken);
 		final var anotherActual = EntityIdUtils.asEvmAddress(equivContract);
+		final var create2Actual = EntityIdUtils.asEvmAddress(create2Contract);
 		final var actualHex = EntityIdUtils.asHexedEvmAddress(equivAccount);
 
 		assertArrayEquals(expected, actual);
 		assertArrayEquals(expected, anotherActual);
 		assertArrayEquals(expected, typedActual.toArray());
 		assertArrayEquals(expected, typedToken.toArray());
+		assertArrayEquals(create2AddressBytes, create2Actual);
 		assertEquals(CommonUtils.hex(expected), actualHex);
 		assertEquals(equivAccount, EntityIdUtils.accountIdFromEvmAddress(actual));
 		assertEquals(equivContract, contractIdFromEvmAddress(actual));

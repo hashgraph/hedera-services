@@ -23,10 +23,8 @@ package com.hedera.services.state;
 import com.hedera.services.config.NetworkInfo;
 import com.hedera.services.context.MutableStateChildren;
 import com.hedera.services.context.properties.PropertySource;
-import com.hedera.services.keys.LegacyEd25519KeyReader;
 import com.hedera.services.store.schedule.ScheduleStore;
-import com.hedera.services.store.tokens.TokenStore;
-import com.swirlds.common.CommonUtils;
+import com.swirlds.common.utility.CommonUtils;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -38,19 +36,16 @@ import static com.hedera.services.state.StateModule.provideStateViews;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.given;
 
 
 @ExtendWith(MockitoExtension.class)
 class StateModuleTest {
 	@Mock
-	private TokenStore tokenStore;
-	@Mock
 	private ScheduleStore scheduleStore;
 	@Mock
 	private MutableStateChildren workingState;
-	@Mock
-	private LegacyEd25519KeyReader b64KeyReader;
 	@Mock
 	private PropertySource properties;
 	@Mock
@@ -83,21 +78,28 @@ class StateModuleTest {
 
 	@Test
 	void looksUpExpectedKey() {
-		// setup:
-		final var keystoreLoc = "somewhere";
-		final var storeName = "far";
 		final var keyBytes = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".getBytes();
+		final var hexedKeyBytes = CommonUtils.hex(keyBytes);
 
-		given(properties.getStringProperty("bootstrap.genesisB64Keystore.path")).willReturn(keystoreLoc);
-		given(properties.getStringProperty("bootstrap.genesisB64Keystore.keyName")).willReturn(storeName);
-		given(b64KeyReader.hexedABytesFrom(keystoreLoc, storeName)).willReturn(CommonUtils.hex(keyBytes));
+		given(properties.getStringProperty("bootstrap.genesisPublicKey")).willReturn(hexedKeyBytes);
 
 		// when:
-		final var keySupplier = StateModule.provideSystemFileKey(b64KeyReader, properties);
+		final var keySupplier = StateModule.provideSystemFileKey(properties);
 		// and:
 		final var key = keySupplier.get();
 
 		// then:
 		assertArrayEquals(keyBytes, key.getEd25519());
+	}
+
+	@Test
+	void failsWithClearlyInvalidGenesisKey() {
+		final var keyBytes = "aaaaaaaaaaaaaaaa".getBytes();
+		final var hexedKeyBytes = CommonUtils.hex(keyBytes);
+
+		given(properties.getStringProperty("bootstrap.genesisPublicKey")).willReturn(hexedKeyBytes);
+
+		final var keySupplier = StateModule.provideSystemFileKey(properties);
+		assertThrows(IllegalStateException.class, keySupplier::get);
 	}
 }

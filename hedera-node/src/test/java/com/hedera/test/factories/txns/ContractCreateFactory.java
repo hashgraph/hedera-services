@@ -9,9 +9,9 @@ package com.hedera.test.factories.txns;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -21,6 +21,8 @@ package com.hedera.test.factories.txns;
  */
 
 import com.hedera.test.factories.keys.KeyTree;
+import com.hedera.test.factories.scenarios.TxnHandlingScenario;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.Key;
@@ -30,6 +32,7 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.util.OptionalLong;
 
 import static com.hedera.test.factories.keys.NodeFactory.ed25519;
+import static com.hedera.test.utils.IdUtils.asAccount;
 
 public class ContractCreateFactory extends SignedTxnFactory<ContractCreateFactory> {
 	public static final KeyTree DEFAULT_ADMIN_KT = KeyTree.withRoot(ed25519());
@@ -41,8 +44,12 @@ public class ContractCreateFactory extends SignedTxnFactory<ContractCreateFactor
 	private boolean useDeprecatedAdminKey = false;
 	private OptionalLong gas = OptionalLong.empty();
 	private OptionalLong initialBalance = OptionalLong.empty();
+	private AccountID autoRenewAccount = TxnHandlingScenario.MISC_ACCOUNT;
+	private boolean useAutoRenewAccount = false;
 
-	private ContractCreateFactory() {}
+	private ContractCreateFactory() {
+	}
+
 	public static ContractCreateFactory newSignedContractCreate() {
 		return new ContractCreateFactory();
 	}
@@ -64,6 +71,9 @@ public class ContractCreateFactory extends SignedTxnFactory<ContractCreateFactor
 			op.setAdminKey(DEPRECATED_CID_KEY);
 		} else if (useAdminKey) {
 			op.setAdminKey(adminKt.asKey(keyFactory));
+		}
+		if (useAutoRenewAccount) {
+			op.setAutoRenewAccountId(autoRenewAccount);
 		}
 		gas.ifPresent(op::setGas);
 		initialBalance.ifPresent(op::setInitialBalance);
@@ -89,8 +99,14 @@ public class ContractCreateFactory extends SignedTxnFactory<ContractCreateFactor
 		useDeprecatedAdminKey = shouldUse;
 		return this;
 	}
+
 	public ContractCreateFactory useAdminKey(boolean shouldUse) {
 		useAdminKey = shouldUse;
+		return this;
+	}
+
+	public ContractCreateFactory useAutoRenewAccount(boolean shouldUse) {
+		useAutoRenewAccount = shouldUse;
 		return this;
 	}
 }

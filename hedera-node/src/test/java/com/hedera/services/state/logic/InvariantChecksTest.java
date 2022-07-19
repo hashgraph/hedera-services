@@ -33,7 +33,7 @@ import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
-import com.swirlds.common.SwirldTransaction;
+import com.swirlds.common.system.transaction.SwirldTransaction;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -77,7 +77,7 @@ class InvariantChecksTest {
 	@BeforeEach
 	void setUp() throws InvalidProtocolBufferException {
 		final var swirldsTxn = new SwirldTransaction(mockTxn.toByteArray());
-		accessor = PlatformTxnAccessor.from(SignedTxnAccessor.from(swirldsTxn.getContentsDirect()), swirldsTxn);
+		accessor = PlatformTxnAccessor.from(SignedTxnAccessor.from(swirldsTxn.getContents()), swirldsTxn);
 		subject = new InvariantChecks(nodeInfo, () -> networkCtx);
 	}
 

@@ -24,8 +24,8 @@ import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.core.jproto.JKeySerializer;
 import com.hedera.services.legacy.core.jproto.JObjectType;
 import com.hedera.services.state.serdes.IoUtils;
-import com.swirlds.common.io.SerializableDataInputStream;
-import com.swirlds.common.io.SerializableDataOutputStream;
+import com.swirlds.common.io.streams.SerializableDataInputStream;
+import com.swirlds.common.io.streams.SerializableDataOutputStream;
 
 import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
@@ -83,7 +83,7 @@ public class HFileMetaSerde {
 		boolean deleted = stream.readBoolean();
 		long expirationTime = stream.readLong();
 		byte[] key = stream.readAllBytes();
-		JKey wacl = JKeySerializer.deserialize(new DataInputStream(new ByteArrayInputStream(key)));
+		JKey wacl = JKeySerializer.deserialize(new SerializableDataInputStream(new ByteArrayInputStream(key)));
 		return new HFileMeta(deleted, wacl, expirationTime);
 	}
 

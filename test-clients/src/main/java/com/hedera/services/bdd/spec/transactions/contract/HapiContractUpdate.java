@@ -9,9 +9,9 @@ package com.hedera.services.bdd.spec.transactions.contract;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -21,7 +21,9 @@ package com.hedera.services.bdd.spec.transactions.contract;
  */
 
 import com.google.common.base.MoreObjects;
+import com.google.protobuf.BoolValue;
 import com.google.protobuf.ByteString;
+import com.google.protobuf.Int32Value;
 import com.google.protobuf.StringValue;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.fees.FeeCalculator;
@@ -37,7 +39,7 @@ import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
-import com.swirlds.common.CommonUtils;
+import com.swirlds.common.utility.CommonUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -48,6 +50,7 @@ import java.util.OptionalLong;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.asId;
 import static com.hedera.services.bdd.spec.transactions.contract.HapiContractCall.HEXED_EVM_ADDRESS_LEN;
 import static com.hedera.services.bdd.spec.transactions.contract.HapiContractCreate.DEPRECATED_CID_ADMIN_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
@@ -66,6 +69,12 @@ public class HapiContractUpdate extends HapiTxnOp<HapiContractUpdate> {
 	private boolean useEmptyAdminKeyList = false;
 	private boolean useDeprecatedMemoField = false;
 	private Optional<String> bytecode = Optional.empty();
+	private Optional<String> newStakedAccountId = Optional.empty();
+	private Optional<Long> newStakedNodeId = Optional.empty();
+	private Optional<Boolean> newDeclinedReward = Optional.empty();
+	private Optional<String> newProxy = Optional.empty();
+	private Optional<String> newAutoRenewAccount = Optional.empty();
+	private Optional<Integer> newMaxAutomaticAssociations = Optional.empty();
 
 	public HapiContractUpdate(String contract) {
 		this.contract = contract;
@@ -80,40 +89,82 @@ public class HapiContractUpdate extends HapiTxnOp<HapiContractUpdate> {
 		newKey = Optional.of(name);
 		return this;
 	}
+
+	public HapiContractUpdate newMaxAutomaticAssociations(int max) {
+		newMaxAutomaticAssociations = Optional.of(max);
+		return this;
+	}
+
+
 	public HapiContractUpdate newExpiryTime(long t) {
 		newExpiryTime = OptionalLong.of(t);
 		return this;
 	}
+
+
+	public HapiContractUpdate newProxy(String proxy) {
+		newProxy = Optional.of(proxy);
+		return this;
+	}
+
 	public HapiContractUpdate newExpirySecs(long t) {
 		newExpirySecs = Optional.of(t);
 		return this;
 	}
+
 	public HapiContractUpdate newMemo(String s) {
 		newMemo = Optional.of(s);
 		return this;
 	}
+
 	public HapiContractUpdate newAutoRenew(long autoRenewSecs) {
 		newAutoRenew = Optional.of(autoRenewSecs);
 		return this;
 	}
+
+	public HapiContractUpdate newAutoRenewAccount(String id) {
+		newAutoRenewAccount = Optional.of(id);
+		return this;
+	}
+
+
 	public HapiContractUpdate useDeprecatedAdminKey() {
 		useDeprecatedAdminKey = true;
 		return this;
 	}
+
 	public HapiContractUpdate useDeprecatedMemoField() {
 		useDeprecatedMemoField = true;
 		return this;
 	}
+
 	public HapiContractUpdate improperlyEmptyingAdminKey() {
 		wipeToThresholdKey = true;
 		return this;
 	}
+
 	public HapiContractUpdate properlyEmptyingAdminKey() {
 		useEmptyAdminKeyList = true;
 		return this;
 	}
+
 	public HapiContractUpdate bytecode(String bytecode) {
 		this.bytecode = Optional.of(bytecode);
+		return this;
+	}
+
+	public HapiContractUpdate newStakedAccountId(String idLit) {
+		newStakedAccountId = Optional.of(idLit);
+		return this;
+	}
+
+	public HapiContractUpdate newStakedNodeId(long idLit) {
+		newStakedNodeId = Optional.of(idLit);
+		return this;
+	}
+
+	public HapiContractUpdate newDeclinedReward(boolean isDeclined) {
+		newDeclinedReward = Optional.of(isDeclined);
 		return this;
 	}
 
@@ -143,6 +194,7 @@ public class HapiContractUpdate extends HapiTxnOp<HapiContractUpdate> {
 							} else {
 								b.setContractID(TxnUtils.asContractId(contract, spec));
 							}
+							newProxy.ifPresent(p -> b.setProxyAccountID(asId(p, spec)));
 							if (useDeprecatedAdminKey) {
 								b.setAdminKey(DEPRECATED_CID_ADMIN_KEY);
 							} else if (wipeToThresholdKey) {
@@ -152,16 +204,28 @@ public class HapiContractUpdate extends HapiTxnOp<HapiContractUpdate> {
 							} else {
 								key.ifPresent(b::setAdminKey);
 							}
-							newExpirySecs.ifPresent(t -> b.setExpirationTime(Timestamp.newBuilder().setSeconds(t).build()));
+							newExpirySecs.ifPresent(
+									t -> b.setExpirationTime(Timestamp.newBuilder().setSeconds(t).build()));
 							newMemo.ifPresent(s -> {
-								if (useDeprecatedMemoField)	 {
+								if (useDeprecatedMemoField) {
 									b.setMemo(s);
 								} else {
 									b.setMemoWrapper(StringValue.newBuilder().setValue(s).build());
 								}
 							});
-							newAutoRenew.ifPresent(autoRenew -> b.setAutoRenewPeriod(Duration.newBuilder().setSeconds(autoRenew).build()));
+							newAutoRenew.ifPresent(autoRenew -> b.setAutoRenewPeriod(
+									Duration.newBuilder().setSeconds(autoRenew).build()));
 							bytecode.ifPresent(f -> b.setFileID(TxnUtils.asFileId(bytecode.get(), spec)).build());
+							newAutoRenewAccount.ifPresent(p -> b.setAutoRenewAccountId(asId(p, spec)));
+							newMaxAutomaticAssociations.ifPresent(p ->
+									b.setMaxAutomaticTokenAssociations(Int32Value.of(p)));
+
+							if (newStakedAccountId.isPresent()) {
+								b.setStakedAccountId(asId(newStakedAccountId.get(), spec));
+							} else {
+								newStakedNodeId.ifPresent(b::setStakedNodeId);
+							}
+							newDeclinedReward.ifPresent(p -> b.setDeclineReward(BoolValue.of(p)));
 						}
 				);
 		return builder -> builder.setContractUpdateInstance(opBody);
@@ -173,8 +237,10 @@ public class HapiContractUpdate extends HapiTxnOp<HapiContractUpdate> {
 		if (!useDeprecatedAdminKey && newKey.isPresent()) {
 			signers.add(spec -> spec.registry().getKey(newKey.get()));
 		}
+		newAutoRenewAccount.ifPresent(id -> signers.add(spec -> spec.registry().getKey(id)));
 		return signers;
 	}
+
 	private List<Function<HapiApiSpec, Key>> oldDefaults() {
 		return List.of(
 				spec -> spec.registry().getKey(effectivePayer(spec)),

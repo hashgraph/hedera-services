@@ -28,7 +28,7 @@ import com.hedera.services.context.StateChildren;
 import com.hedera.services.exceptions.NoValidSignedStateException;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
-import com.hedera.services.state.merkle.MerkleSchedule;
+import com.hedera.services.state.merkle.MerkleScheduledTransactions;
 import com.hedera.services.state.merkle.MerkleSpecialFiles;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
@@ -36,16 +36,16 @@ import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.migration.StateVersions;
 import com.hedera.services.state.virtual.ContractKey;
-import com.hedera.services.state.virtual.ContractValue;
+import com.hedera.services.state.virtual.IterableContractValue;
 import com.hedera.services.state.virtual.VirtualBlobKey;
 import com.hedera.services.state.virtual.VirtualBlobValue;
 import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.stream.RecordsRunningHashLeaf;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
-import com.swirlds.common.AddressBook;
-import com.swirlds.common.AutoCloseableWrapper;
-import com.swirlds.common.Platform;
+import com.swirlds.common.system.address.AddressBook;
+import com.swirlds.common.system.Platform;
+import com.swirlds.common.utility.AutoCloseableWrapper;
 import com.swirlds.fchashmap.FCHashMap;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
@@ -86,7 +86,7 @@ class SignedStateViewFactoryTest {
 	@Mock
 	private VirtualMap<VirtualBlobKey, VirtualBlobValue> storage;
 	@Mock
-	private VirtualMap<ContractKey, ContractValue> contractStorage;
+	private VirtualMap<ContractKey, IterableContractValue> contractStorage;
 	@Mock
 	private MerkleMap<EntityNum, MerkleTopic> topics;
 	@Mock
@@ -94,7 +94,7 @@ class SignedStateViewFactoryTest {
 	@Mock
 	private MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenAssociations;
 	@Mock
-	private MerkleMap<EntityNum, MerkleSchedule> scheduleTxs;
+	private MerkleScheduledTransactions scheduleTxs;
 	@Mock
 	private MerkleNetworkContext networkCtx;
 	@Mock
@@ -118,7 +118,7 @@ class SignedStateViewFactoryTest {
 		given(state.getTimeOfLastHandledTxn()).willReturn(Instant.now());
 		given(state.getStateVersion()).willReturn(StateVersions.CURRENT_VERSION);
 		given(state.isInitialized()).willReturn(true);
-		assertTrue(factory.isValid(state));
+		assertTrue(factory.isUsable(state));
 	}
 
 	@Test
@@ -126,13 +126,13 @@ class SignedStateViewFactoryTest {
 		given(state.getTimeOfLastHandledTxn()).willReturn(Instant.now());
 		given(state.getStateVersion()).willReturn(StateVersions.CURRENT_VERSION);
 		given(state.isInitialized()).willReturn(false);
-		assertFalse(factory.isValid(state));
+		assertFalse(factory.isUsable(state));
 
 		given(state.getStateVersion()).willReturn(StateVersions.MINIMUM_SUPPORTED_VERSION);
-		assertFalse(factory.isValid(state));
+		assertFalse(factory.isUsable(state));
 
 		given(state.getTimeOfLastHandledTxn()).willReturn(null);
-		assertFalse(factory.isValid(state));
+		assertFalse(factory.isUsable(state));
 	}
 
 	@Test
@@ -144,7 +144,7 @@ class SignedStateViewFactoryTest {
 		given(state.getTimeOfLastHandledTxn()).willReturn(Instant.now());
 		given(state.getStateVersion()).willReturn(StateVersions.CURRENT_VERSION);
 		given(state.isInitialized()).willReturn(true);
-		assertTrue(factory.isValid(state));
+		assertTrue(factory.isUsable(state));
 		assertDoesNotThrow(() -> factory.tryToUpdateToLatestSignedChildren(childrenToUpdate));
 		assertChildrenAreExpectedMocks(childrenToUpdate);
 	}
@@ -154,7 +154,7 @@ class SignedStateViewFactoryTest {
 		given(platform.getLastCompleteSwirldState()).willReturn(new AutoCloseableWrapper<>(state, () -> {
 		}));
 		given(state.getTimeOfLastHandledTxn()).willReturn(null);
-		assertFalse(factory.isValid(state));
+		assertFalse(factory.isUsable(state));
 		assertThrows(NoValidSignedStateException.class,
 				() -> factory.tryToUpdateToLatestSignedChildren(new MutableStateChildren()));
 	}
@@ -164,8 +164,8 @@ class SignedStateViewFactoryTest {
 		given(platform.getLastCompleteSwirldState()).willReturn(new AutoCloseableWrapper<>(state, () -> {
 		}));
 		given(state.getTimeOfLastHandledTxn()).willReturn(null);
-		assertFalse(factory.isValid(state));
-		final var children = factory.tryToGetLatestSignedChildren();
+		assertFalse(factory.isUsable(state));
+		final var children = factory.childrenOfLatestSignedState();
 		assertEquals(Optional.empty(), children);
 	}
 
@@ -177,7 +177,7 @@ class SignedStateViewFactoryTest {
 		given(state.getStateVersion()).willReturn(StateVersions.CURRENT_VERSION);
 		given(state.isInitialized()).willReturn(true);
 		givenStateWithMockChildren();
-		final var children = factory.tryToGetLatestSignedChildren();
+		final var children = factory.childrenOfLatestSignedState();
 		assertChildrenAreExpectedMocks(children.get());
 	}
 
@@ -195,8 +195,8 @@ class SignedStateViewFactoryTest {
 		given(secondState.getStateVersion()).willReturn(StateVersions.CURRENT_VERSION);
 		given(secondState.isInitialized()).willReturn(true);
 		givenStateWithMockChildren();
-		var firstChildren = factory.tryToGetLatestSignedChildren();
-		var secondChildren = factory.tryToGetLatestSignedChildren();
+		var firstChildren = factory.childrenOfLatestSignedState();
+		var secondChildren = factory.childrenOfLatestSignedState();
 		assertNotSame(firstChildren, secondChildren);
 		assertChildrenAreExpectedMocks(firstChildren.get());
 		assertEquals(firstHandleTime, firstChildren.get().signedAt());
@@ -232,20 +232,20 @@ class SignedStateViewFactoryTest {
 		given(state.getTimeOfLastHandledTxn()).willReturn(Instant.now());
 		given(state.getStateVersion()).willReturn(StateVersions.CURRENT_VERSION);
 		given(state.isInitialized()).willReturn(true);
-		assertTrue(factory.isValid(state));
+		assertTrue(factory.isUsable(state));
 		given(platform.getLastCompleteSwirldState()).willReturn(new AutoCloseableWrapper<>(state, () -> {
 		}));
-		final var stateView = factory.getLatestSignedStateView();
+		final var stateView = factory.latestSignedStateView();
 		assertFalse(stateView.isEmpty());
 	}
 
 	@Test
 	void failsToConstructStateViewIfChildrenEmpty() {
 		given(state.getTimeOfLastHandledTxn()).willReturn(null);
-		assertFalse(factory.isValid(state));
+		assertFalse(factory.isUsable(state));
 		given(platform.getLastCompleteSwirldState()).willReturn(new AutoCloseableWrapper<>(state, () -> {
 		}));
-		final var stateView = factory.getLatestSignedStateView();
+		final var stateView = factory.latestSignedStateView();
 		assertTrue(stateView.isEmpty());
 	}
 

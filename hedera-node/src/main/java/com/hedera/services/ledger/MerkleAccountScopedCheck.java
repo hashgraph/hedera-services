@@ -20,7 +20,6 @@ package com.hedera.services.ledger;
  * ‍
  */
 
-import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.NftProperty;
 import com.hedera.services.state.merkle.MerkleAccount;
@@ -51,17 +50,15 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SPENDER_DOES_NOT_HAVE_ALLOWANCE;
 
 public class MerkleAccountScopedCheck implements LedgerCheck<MerkleAccount, AccountProperty> {
-	private final GlobalDynamicProperties dynamicProperties;
 	private final OptionValidator validator;
 
 	private BalanceChange balanceChange;
 	private TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger;
 
 	public MerkleAccountScopedCheck(
-			final GlobalDynamicProperties dynamicProperties,
 			final OptionValidator validator,
-			final TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger) {
-		this.dynamicProperties = dynamicProperties;
+			final TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger
+	) {
 		this.validator = validator;
 		this.nftsLedger = nftsLedger;
 	}
@@ -134,16 +131,17 @@ public class MerkleAccountScopedCheck implements LedgerCheck<MerkleAccount, Acco
 	private ResponseCodeEnum hbarCheck(
 			@Nullable final MerkleAccount account,
 			@Nullable final Function<AccountProperty, Object> extantProps,
-			final Map<AccountProperty, Object> changeSet) {
+			final Map<AccountProperty, Object> changeSet
+	) {
 		if ((boolean) getEffective(IS_DELETED, account, extantProps, changeSet)) {
 			return ResponseCodeEnum.ACCOUNT_DELETED;
 		}
 
+		final var expiry = (long) getEffective(EXPIRY, account, extantProps, changeSet);
 		final var balance = (long) getEffective(BALANCE, account, extantProps, changeSet);
-		final var isDetached = dynamicProperties.shouldAutoRenewSomeEntityType() &&
-				balance == 0L &&
-				!validator.isAfterConsensusSecond((long) getEffective(EXPIRY, account, extantProps, changeSet));
-		if (isDetached) {
+		final var isContract = (boolean) getEffective(IS_SMART_CONTRACT, account, extantProps, changeSet);
+		final var expiryStatus = validator.expiryStatusGiven(balance, expiry, isContract);
+		if (expiryStatus != OK) {
 			return ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
 		}
 
@@ -161,6 +159,7 @@ public class MerkleAccountScopedCheck implements LedgerCheck<MerkleAccount, Acco
 		return OK;
 	}
 
+	@SuppressWarnings("unchecked")
 	public ResponseCodeEnum validateNftAllowance(
 			@Nullable final MerkleAccount account,
 			@Nullable final Function<AccountProperty, Object> extantProps,
@@ -202,6 +201,8 @@ public class MerkleAccountScopedCheck implements LedgerCheck<MerkleAccount, Acco
 		return OK;
 	}
 
+
+	@SuppressWarnings("unchecked")
 	public ResponseCodeEnum validateFungibleTokenAllowance(
 			@Nullable final MerkleAccount account,
 			@Nullable final Function<AccountProperty, Object> extantProps,

@@ -4,7 +4,7 @@ package com.hedera.services.state.expiry;
  * ‌
  * Hedera Services Node
  * ​
- * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
+ * Copyright (C) 2018 - 2022 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,6 +38,7 @@ import com.hedera.services.state.submerkle.TxnId;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.accessors.TxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.swirlds.merkle.map.MerkleMap;
@@ -137,6 +138,10 @@ public class ExpiringCreations implements EntityCreator {
 		if (accessor.isTriggeredTxn()) {
 			expiringRecord.setScheduleRef(fromGrpcScheduleId(accessor.getScheduleRef()));
 		}
+		if (accessor.getFunction() == HederaFunctionality.EthereumTransaction) {
+			expiringRecord.setEthereumHash(
+					accessor.getSpanMapAccessor().getEthTxDataMeta(accessor).getEthereumHash());
+		}
 
 		return expiringRecord;
 	}
@@ -164,6 +169,7 @@ public class ExpiringCreations implements EntityCreator {
 				.setReceiptBuilder(receiptBuilder)
 				.setMemo(memo)
 				.setHbarAdjustments(sideEffectsTracker.getNetTrackedHbarChanges())
+				.setStakingRewardsPaid(sideEffectsTracker.getStakingRewardsPaid())
 				.setAssessedCustomFees(customFeesCharged)
 				.setNewTokenAssociations(sideEffectsTracker.getTrackedAutoAssociations());
 
@@ -183,6 +189,14 @@ public class ExpiringCreations implements EntityCreator {
 			createResult.setContractId(newId);
 			createResult.setEvmAddress(sideEffectsTracker.getNewEntityAlias().toByteArray());
 			baseRecord.setContractCreateResult(createResult);
+		}
+
+		if (sideEffectsTracker.hasTrackedRandomData()) {
+			if (sideEffectsTracker.getPseudorandomNumber() >= 0) {
+				baseRecord.setPseudoRandomNumber(sideEffectsTracker.getPseudorandomNumber());
+			} else {
+				baseRecord.setPseudoRandomBytes(sideEffectsTracker.getPseudorandomBytes());
+			}
 		}
 
 		return baseRecord;

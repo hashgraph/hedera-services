@@ -36,6 +36,7 @@ import java.util.List;
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NODE_ACCOUNT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_DURATION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_START;
@@ -71,8 +72,9 @@ public class CryptoCornerCasesSuite extends HapiApiSuite {
 				).when(
 				).then(
 						cryptoCreate("newPayee").balance(10000L)
+								.withLegacyProtoStructure()  // Ensure legacy construction so removeTransactionBody() works
 								.scrambleTxnBody(CryptoCornerCasesSuite::removeTransactionBody)
-								.hasPrecheckFrom(INVALID_TRANSACTION_BODY)
+								.hasPrecheckFrom(INVALID_TRANSACTION_BODY, INVALID_TRANSACTION)
 				);
 	}
 
@@ -89,7 +91,7 @@ public class CryptoCornerCasesSuite extends HapiApiSuite {
 				).then(
 						cryptoCreate("newPayee").balance(10000L)
 								.scrambleTxnBody(CryptoCornerCasesSuite::replaceTxnNodeAccount)
-								.hasPrecheckFrom(INVALID_NODE_ACCOUNT)
+								.hasPrecheckFrom(INVALID_NODE_ACCOUNT, INVALID_TRANSACTION)
 				);
 	}
 
@@ -104,7 +106,7 @@ public class CryptoCornerCasesSuite extends HapiApiSuite {
 				).then(
 						cryptoCreate("newPayee").balance(10000L)
 								.scrambleTxnBody(CryptoCornerCasesSuite::replaceTxnDuration)
-								.hasPrecheckFrom(INVALID_TRANSACTION_DURATION)
+								.hasPrecheckFrom(INVALID_TRANSACTION_DURATION, INVALID_TRANSACTION)
 				);
 	}
 
@@ -120,7 +122,7 @@ public class CryptoCornerCasesSuite extends HapiApiSuite {
 				).then(
 						cryptoCreate("newPayee").balance(10000L)
 								.scrambleTxnBody(CryptoCornerCasesSuite::replaceTxnMemo)
-								.hasPrecheckFrom(MEMO_TOO_LONG)
+								.hasPrecheckFrom(MEMO_TOO_LONG, INVALID_TRANSACTION)
 				);
 	}
 
@@ -137,7 +139,7 @@ public class CryptoCornerCasesSuite extends HapiApiSuite {
 				).then(
 						cryptoCreate("newPayee").balance(10000L)
 								.scrambleTxnBody(CryptoCornerCasesSuite::replaceTxnPayerAccount)
-								.hasPrecheckFrom(PAYER_ACCOUNT_NOT_FOUND)
+								.hasPrecheckFrom(PAYER_ACCOUNT_NOT_FOUND, INVALID_TRANSACTION)
 				);
 	}
 
@@ -153,7 +155,7 @@ public class CryptoCornerCasesSuite extends HapiApiSuite {
 				).then(
 						cryptoCreate("newPayee").balance(10000L)
 								.scrambleTxnBody(CryptoCornerCasesSuite::replaceTxnStartTtime)
-								.hasPrecheckFrom(INVALID_TRANSACTION_START)
+								.hasPrecheckFrom(INVALID_TRANSACTION_START, INVALID_TRANSACTION)
 				);
 	}
 

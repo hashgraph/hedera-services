@@ -21,7 +21,7 @@ package com.hedera.services.sigs.factories;
  */
 
 
-import com.swirlds.common.CommonUtils;
+import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.common.crypto.SignatureType;
 import com.swirlds.common.crypto.TransactionSignature;
 
