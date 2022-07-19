@@ -29,7 +29,10 @@ import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_ERC_TOTAL_SUPPLY_TOKEN;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_ERC_TRANSFER;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_ERC_TRANSFER_FROM;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_GET_APPROVED;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_IS_APPROVED_FOR_ALL;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_REDIRECT_FOR_TOKEN;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_SET_APPROVAL_FOR_ALL;
 import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.HTS_PRECOMPILED_CONTRACT_ADDRESS;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.NOT_SUPPORTED_NON_FUNGIBLE_OPERATION_REASON;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.TEST_CONSENSUS_TIME;
@@ -59,6 +62,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALLOWA
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SENDER_DOES_NOT_OWN_NFT_SERIAL_NO;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static org.hyperledger.besu.datatypes.Address.RIPEMD160;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -337,7 +341,7 @@ class ERC721PrecompilesTest {
     }
 
     @Test
-    void isApprovedForAllWorksWithBothOwnerAndOperatorExtant() {
+    void ercIsApprovedForAllWorksWithBothOwnerAndOperatorExtant() {
         Set<FcTokenAllowanceId> allowances = new TreeSet<>();
         FcTokenAllowanceId fcTokenAllowanceId =
                 FcTokenAllowanceId.from(
@@ -369,6 +373,56 @@ class ERC721PrecompilesTest {
 
         given(encoder.encodeIsApprovedForAll(true)).willReturn(successResult);
         given(decoder.decodeIsApprovedForAll(eq(nestedPretendArguments), eq(token), any()))
+                .willReturn(IS_APPROVE_FOR_ALL_WRAPPER);
+        given(dynamicProperties.areAllowancesEnabled()).willReturn(true);
+        given(accounts.get(any(), any())).willReturn(allowances);
+
+        // when:
+        subject.prepareFields(frame);
+        subject.prepareComputation(pretendArguments, a -> a);
+        subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
+        final var result = subject.computeInternal(frame);
+
+        // then:
+        assertEquals(successResult, result);
+        verify(wrappedLedgers).commit();
+        verify(worldUpdater)
+                .manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
+    }
+
+    @Test
+    void hapiIsApprovedForAllWorksWithBothOwnerAndOperatorExtant() {
+        Set<FcTokenAllowanceId> allowances = new TreeSet<>();
+        FcTokenAllowanceId fcTokenAllowanceId =
+                FcTokenAllowanceId.from(
+                        EntityNum.fromLong(token.getTokenNum()),
+                        EntityNum.fromLong(receiver.getAccountNum()));
+        allowances.add(fcTokenAllowanceId);
+
+        Bytes pretendArguments = Bytes.of(Integers.toBytes(ABI_ID_IS_APPROVED_FOR_ALL));
+        givenMinimalFrameContext(pretendArguments);
+        given(wrappedLedgers.accounts()).willReturn(accounts);
+        given(accounts.contains(IS_APPROVE_FOR_ALL_WRAPPER.owner())).willReturn(true);
+        given(accounts.contains(IS_APPROVE_FOR_ALL_WRAPPER.operator())).willReturn(true);
+        given(syntheticTxnFactory.createTransactionCall(1L, pretendArguments))
+                .willReturn(mockSynthBodyBuilder);
+        given(
+                        creator.createSuccessfulSyntheticRecord(
+                                Collections.emptyList(), sideEffects, EMPTY_MEMO))
+                .willReturn(mockRecordBuilder);
+
+        given(
+                        feeCalculator.estimatedGasPriceInTinybars(
+                                HederaFunctionality.ContractCall, timestamp))
+                .willReturn(1L);
+        given(feeCalculator.estimatePayment(any(), any(), any(), any(), any()))
+                .willReturn(mockFeeObject);
+        given(mockFeeObject.getNodeFee()).willReturn(1L);
+        given(mockFeeObject.getNetworkFee()).willReturn(1L);
+        given(mockFeeObject.getServiceFee()).willReturn(1L);
+
+        given(encoder.encodeIsApprovedForAll(SUCCESS.getNumber(), true)).willReturn(successResult);
+        given(decoder.decodeIsApprovedForAll(eq(pretendArguments), eq(null), any()))
                 .willReturn(IS_APPROVE_FOR_ALL_WRAPPER);
         given(dynamicProperties.areAllowancesEnabled()).willReturn(true);
         given(accounts.get(any(), any())).willReturn(allowances);
@@ -862,7 +916,7 @@ class ERC721PrecompilesTest {
     }
 
     @Test
-    void setApprovalForAll() {
+    void ercSetApprovalForAll() {
         List<CryptoAllowance> cryptoAllowances = new ArrayList<>();
         List<TokenAllowance> tokenAllowances = new ArrayList<>();
         List<NftAllowance> nftAllowances = new ArrayList<>();
@@ -934,7 +988,79 @@ class ERC721PrecompilesTest {
     }
 
     @Test
-    void getApproved() {
+    void hapiSetApprovalForAll() {
+        List<CryptoAllowance> cryptoAllowances = new ArrayList<>();
+        List<TokenAllowance> tokenAllowances = new ArrayList<>();
+        List<NftAllowance> nftAllowances = new ArrayList<>();
+
+        Bytes pretendArguments = Bytes.of(Integers.toBytes(ABI_ID_SET_APPROVAL_FOR_ALL));
+        givenMinimalFrameContext(pretendArguments);
+        givenLedgers();
+        givenPricingUtilsContext();
+
+        given(wrappedLedgers.tokens()).willReturn(tokens);
+        given(wrappedLedgers.accounts()).willReturn(accounts);
+        given(
+                        creator.createSuccessfulSyntheticRecord(
+                                Collections.emptyList(), sideEffects, EMPTY_MEMO))
+                .willReturn(mockRecordBuilder);
+
+        given(
+                        feeCalculator.estimatedGasPriceInTinybars(
+                                HederaFunctionality.ContractCall, timestamp))
+                .willReturn(1L);
+        given(feeCalculator.computeFee(any(), any(), any(), any())).willReturn(mockFeeObject);
+        given(mockFeeObject.getServiceFee()).willReturn(1L);
+
+        given(
+                        syntheticTxnFactory.createApproveAllowanceForAllNFT(
+                                SET_APPROVAL_FOR_ALL_WRAPPER, null))
+                .willReturn(mockSynthBodyBuilder);
+        given(mockSynthBodyBuilder.build()).willReturn(TransactionBody.newBuilder().build());
+        given(mockSynthBodyBuilder.setTransactionID(any(TransactionID.class)))
+                .willReturn(mockSynthBodyBuilder);
+        given(mockSynthBodyBuilder.getCryptoApproveAllowance())
+                .willReturn(cryptoApproveAllowanceTransactionBody);
+
+        given(infrastructureFactory.newAccountStore(accounts)).willReturn(accountStore);
+        given(
+                        infrastructureFactory.newTokenStore(
+                                accountStore, sideEffects, tokens, nfts, tokenRels))
+                .willReturn(tokenStore);
+        given(infrastructureFactory.newApproveAllowanceLogic(accountStore, tokenStore))
+                .willReturn(approveAllowanceLogic);
+        given(EntityIdUtils.accountIdFromEvmAddress((Address) any())).willReturn(sender);
+        given(accountStore.loadAccount(any())).willReturn(new Account(accountId));
+        given(dynamicProperties.areAllowancesEnabled()).willReturn(true);
+        given(infrastructureFactory.newApproveAllowanceChecks()).willReturn(allowanceChecks);
+
+        given(
+                        allowanceChecks.allowancesValidation(
+                                cryptoAllowances,
+                                tokenAllowances,
+                                nftAllowances,
+                                new Account(accountId),
+                                stateView))
+                .willReturn(OK);
+
+        given(decoder.decodeSetApprovalForAll(eq(pretendArguments), any(), any()))
+                .willReturn(SET_APPROVAL_FOR_ALL_WRAPPER);
+
+        // when:
+        subject.prepareFields(frame);
+        subject.prepareComputation(pretendArguments, a -> a);
+        subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
+        final var result = subject.computeInternal(frame);
+
+        // then:
+        assertEquals(successResult, result);
+        verify(wrappedLedgers).commit();
+        verify(worldUpdater)
+                .manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
+    }
+
+    @Test
+    void ercGetApproved() {
         Set<FcTokenAllowanceId> allowances = new TreeSet<>();
         FcTokenAllowanceId fcTokenAllowanceId =
                 FcTokenAllowanceId.from(
@@ -970,6 +1096,57 @@ class ERC721PrecompilesTest {
         given(encoder.encodeGetApproved(RIPEMD160)).willReturn(successResult);
         given(decoder.decodeGetApproved(nestedPretendArguments, token))
                 .willReturn(GET_APPROVED_WRAPPER);
+        given(wrappedLedgers.canonicalAddress(any())).willReturn(RIPEMD160);
+
+        // when:
+        subject.prepareFields(frame);
+        subject.prepareComputation(pretendArguments, a -> a);
+        subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
+        final var result = subject.computeInternal(frame);
+
+        // then:
+        assertEquals(successResult, result);
+        verify(wrappedLedgers).commit();
+        verify(worldUpdater)
+                .manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
+    }
+
+    @Test
+    void hapiGetApproved() {
+        Set<FcTokenAllowanceId> allowances = new TreeSet<>();
+        FcTokenAllowanceId fcTokenAllowanceId =
+                FcTokenAllowanceId.from(
+                        EntityNum.fromLong(token.getTokenNum()),
+                        EntityNum.fromLong(receiver.getAccountNum()));
+        allowances.add(fcTokenAllowanceId);
+
+        Bytes pretendArguments = Bytes.of(Integers.toBytes(ABI_ID_GET_APPROVED));
+        givenMinimalFrameContext(pretendArguments);
+
+        given(wrappedLedgers.nfts()).willReturn(nfts);
+        final var nftId = NftId.fromGrpc(token, GET_APPROVED_WRAPPER.serialNo());
+        given(nfts.contains(nftId)).willReturn(true);
+        given(nfts.get(nftId, NftProperty.SPENDER)).willReturn(EntityId.fromAddress(RIPEMD160));
+        given(dynamicProperties.areAllowancesEnabled()).willReturn(true);
+        given(syntheticTxnFactory.createTransactionCall(1L, pretendArguments))
+                .willReturn(mockSynthBodyBuilder);
+        given(
+                        creator.createSuccessfulSyntheticRecord(
+                                Collections.emptyList(), sideEffects, EMPTY_MEMO))
+                .willReturn(mockRecordBuilder);
+
+        given(
+                        feeCalculator.estimatedGasPriceInTinybars(
+                                HederaFunctionality.ContractCall, timestamp))
+                .willReturn(1L);
+        given(feeCalculator.estimatePayment(any(), any(), any(), any(), any()))
+                .willReturn(mockFeeObject);
+        given(mockFeeObject.getNodeFee()).willReturn(1L);
+        given(mockFeeObject.getNetworkFee()).willReturn(1L);
+        given(mockFeeObject.getServiceFee()).willReturn(1L);
+
+        given(encoder.encodeGetApproved(SUCCESS.getNumber(), RIPEMD160)).willReturn(successResult);
+        given(decoder.decodeGetApproved(pretendArguments, null)).willReturn(GET_APPROVED_WRAPPER);
         given(wrappedLedgers.canonicalAddress(any())).willReturn(RIPEMD160);
 
         // when:

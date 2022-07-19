@@ -532,31 +532,23 @@ public class DecodingFacade {
             WorldLedgers ledgers) {
 
         final var offset = impliedTokenId == null ? 1 : 0;
-        Bytes selector;
+        final Tuple decodedArguments;
+        final TokenID tokenId;
         if (offset == 0) {
-            selector = ERC_TOKEN_APPROVE_SELECTOR;
+            decodedArguments =
+                    decodeFunctionCall(
+                            input, ERC_TOKEN_APPROVE_SELECTOR, ERC_TOKEN_APPROVE_DECODER);
+            tokenId = impliedTokenId;
+        } else if (isFungible) {
+            decodedArguments =
+                    decodeFunctionCall(
+                            input, HAPI_TOKEN_APPROVE_SELECTOR, HAPI_TOKEN_APPROVE_DECODER);
+            tokenId = convertAddressBytesToTokenID(decodedArguments.get(0));
         } else {
-            if (isFungible) {
-                selector = HAPI_TOKEN_APPROVE_SELECTOR;
-            } else {
-                selector = HAPI_APPROVE_NFT_SELECTOR;
-            }
+            decodedArguments =
+                    decodeFunctionCall(input, HAPI_APPROVE_NFT_SELECTOR, HAPI_APPROVE_NFT_DECODER);
+            tokenId = convertAddressBytesToTokenID(decodedArguments.get(0));
         }
-        ABIType<Tuple> decoder;
-        if (offset == 0) {
-            decoder = ERC_TOKEN_APPROVE_DECODER;
-        } else {
-            if (isFungible) {
-                decoder = HAPI_TOKEN_APPROVE_DECODER;
-            } else {
-                decoder = HAPI_APPROVE_NFT_DECODER;
-            }
-        }
-        final Tuple decodedArguments = decodeFunctionCall(input, selector, decoder);
-        final var tokenId =
-                offset == 0
-                        ? impliedTokenId
-                        : convertAddressBytesToTokenID(decodedArguments.get(0));
         final var ledgerFungible = TokenType.FUNGIBLE_COMMON.equals(ledgers.typeOf(tokenId));
         final var spender =
                 convertLeftPaddedAddressToAccountId(decodedArguments.get(offset), aliasResolver);

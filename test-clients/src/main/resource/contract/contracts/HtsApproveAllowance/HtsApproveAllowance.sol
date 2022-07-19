@@ -15,11 +15,11 @@ contract HtsApproveAllowance is HederaTokenService {
         (_responseCode, amount) = HederaTokenService.allowance(token, owner, spender);
     }
 
-    function htsApproveNFT(address token, address spender, uint256 amount) public returns (bool success) {
+    function htsApproveNFT(address token, address spender, uint256 serialNumber) public returns (bool success) {
         bytes memory result;
         (success, result) = precompileAddress.delegatecall(
             abi.encodeWithSelector(IHederaTokenService.approveNFT.selector,
-            token, spender, amount));
+            token, spender, serialNumber));
     }
 
     function htsGetApproved(address token, uint256 serialNumber) public returns (address approved) {

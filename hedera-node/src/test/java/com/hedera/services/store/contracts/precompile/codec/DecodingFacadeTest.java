@@ -377,6 +377,12 @@ class DecodingFacadeTest {
         assertEquals(ACCOUNT_NUM_SPENDER_NFT, decodedInput.spender().getAccountNum());
         assertEquals(TOKEN_NUM_HAPI_TOKEN, decodedInput.tokenId().getTokenNum());
         assertEquals(BigInteger.ONE, decodedInput.serialNumber());
+
+        assertThrows(
+                IllegalArgumentException.class,
+                () ->
+                        subject.decodeTokenApprove(
+                                APPROVE_NFT_INPUT_HAPI, null, true, identity(), ledgers));
     }
 
     @Test
@@ -390,6 +396,12 @@ class DecodingFacadeTest {
         assertEquals(ACCOUNT_NUM_SPENDER, decodedInput.spender().getAccountNum());
         assertEquals(TOKEN_NUM_HAPI_TOKEN, decodedInput.tokenId().getTokenNum());
         assertEquals(BigInteger.TEN, decodedInput.amount());
+
+        assertThrows(
+                IllegalArgumentException.class,
+                () ->
+                        subject.decodeTokenApprove(
+                                APPROVE_TOKEN_INPUT_HAPI, null, false, identity(), ledgers));
     }
 
     @Test
