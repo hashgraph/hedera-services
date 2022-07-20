@@ -54,6 +54,7 @@ public class EncodingFacade {
     private static final TupleType tokenUriType = TupleType.parse(STRING_RETURN_TYPE);
     private static final TupleType ercTransferType = TupleType.parse(BOOL_RETURN_TYPE);
     private static final TupleType isApprovedForAllType = TupleType.parse(BOOL_RETURN_TYPE);
+    private static final TupleType getTokenDefaultFreezeStatusType = TupleType.parse(BOOL_RETURN_TYPE);
 
     @Inject
     public EncodingFacade() {
@@ -189,6 +190,13 @@ public class EncodingFacade {
                 .build();
     }
 
+    public Bytes encodeGetTokenDefaultFreezeStatus(final boolean defaultFreezeStatus) {
+        return functionResultBuilder()
+            .forFunction(FunctionType.GET_TOKEN_DEFAULT_FREEZE_STATUS)
+            .withGetTokenDefaultFreezeStatus(defaultFreezeStatus)
+            .build();
+    }
+
     protected enum FunctionType {
         CREATE,
         MINT,
@@ -204,7 +212,8 @@ public class EncodingFacade {
         ALLOWANCE,
         APPROVE,
         GET_APPROVED,
-        IS_APPROVED_FOR_ALL
+        IS_APPROVED_FOR_ALL,
+        GET_TOKEN_DEFAULT_FREEZE_STATUS
     }
 
     private FunctionResultBuilder functionResultBuilder() {
@@ -218,6 +227,7 @@ public class EncodingFacade {
         private Address newTokenAddress;
         private boolean ercFungibleTransferStatus;
         private boolean isApprovedForAllStatus;
+        private boolean tokenDefaultFreezeStatus;
         private long totalSupply;
         private long balance;
         private long allowance;
@@ -248,6 +258,7 @@ public class EncodingFacade {
                         case APPROVE -> approveOfType;
                         case GET_APPROVED -> getApprovedType;
                         case IS_APPROVED_FOR_ALL -> isApprovedForAllType;
+                        case GET_TOKEN_DEFAULT_FREEZE_STATUS -> getTokenDefaultFreezeStatusType;
                     };
 
             this.functionType = functionType;
@@ -331,6 +342,11 @@ public class EncodingFacade {
             return this;
         }
 
+        private FunctionResultBuilder withGetTokenDefaultFreezeStatus(final boolean tokenDefaultFreezeStatus) {
+            this.tokenDefaultFreezeStatus = tokenDefaultFreezeStatus;
+            return this;
+        }
+
         private Bytes build() {
             final var result =
                     switch (functionType) {
@@ -352,6 +368,7 @@ public class EncodingFacade {
                         case GET_APPROVED -> Tuple.of(
                                 convertBesuAddressToHeadlongAddress(approved));
                         case IS_APPROVED_FOR_ALL -> Tuple.of(isApprovedForAllStatus);
+                        case GET_TOKEN_DEFAULT_FREEZE_STATUS -> Tuple.of(tokenDefaultFreezeStatus);
                     };
 
             return Bytes.wrap(tupleType.encode(result).array());

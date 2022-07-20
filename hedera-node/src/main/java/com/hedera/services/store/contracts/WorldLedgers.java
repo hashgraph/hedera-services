@@ -22,6 +22,7 @@ import static com.hedera.services.ledger.properties.AccountProperty.ALIAS;
 import static com.hedera.services.ledger.properties.AccountProperty.APPROVE_FOR_ALL_NFTS_ALLOWANCES;
 import static com.hedera.services.ledger.properties.NftProperty.METADATA;
 import static com.hedera.services.ledger.properties.NftProperty.OWNER;
+import static com.hedera.services.ledger.properties.TokenProperty.ACC_FROZEN_BY_DEFAULT;
 import static com.hedera.services.ledger.properties.TokenProperty.DECIMALS;
 import static com.hedera.services.ledger.properties.TokenProperty.NAME;
 import static com.hedera.services.ledger.properties.TokenProperty.SYMBOL;
@@ -120,6 +121,10 @@ public class WorldLedgers {
         } else {
             return tokensLedger.contains(tokenIdFromEvmAddress(address));
         }
+    }
+
+    public boolean defaultFreezeStatus(final TokenID tokenId) {
+        return propertyOf(tokenId, ACC_FROZEN_BY_DEFAULT, StaticEntityAccess::defaultFreezeStatus);
     }
 
     public String nameOf(final TokenID tokenId) {

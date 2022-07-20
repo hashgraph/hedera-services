@@ -111,6 +111,13 @@ public class DecodingFacade {
     private static final ABIType<Tuple> BURN_TOKEN_DECODER =
             TypeFactory.create("(bytes32,int64,int64[])");
 
+    private static final Function GET_TOKEN_DEFAULT_FREEZE_STATUS_FUNCTION =
+            new Function("getTokenDefaultFreezeStatus(address)", INT_OUTPUT);
+    private static final Bytes GET_TOKEN_DEFAULT_FREEZE_STATUS_SELECTOR =
+            Bytes.wrap(GET_TOKEN_DEFAULT_FREEZE_STATUS_FUNCTION.selector());
+    private static final ABIType<Tuple> GET_TOKEN_DEFAULT_FREEZE_STATUS_DECODER =
+            TypeFactory.create("(bytes32)");
+
     private static final Function ASSOCIATE_TOKENS_FUNCTION =
             new Function("associateTokens(address,address[])", INT_OUTPUT);
     private static final Bytes ASSOCIATE_TOKENS_SELECTOR =
@@ -339,6 +346,15 @@ public class DecodingFacade {
             return BurnWrapper.forNonFungible(
                     tokenID, Arrays.stream(serialNumbers).boxed().toList());
         }
+    }
+
+    public GetTokenDefaultFreezeStatusWrapper decodeTokenDefaultFreezeStatus(final Bytes input) {
+        final Tuple decodedArguments =
+            decodeFunctionCall(input, GET_TOKEN_DEFAULT_FREEZE_STATUS_SELECTOR, GET_TOKEN_DEFAULT_FREEZE_STATUS_DECODER);
+
+        final var tokenID = convertAddressBytesToTokenID(decodedArguments.get(0));
+
+        return new GetTokenDefaultFreezeStatusWrapper(tokenID);
     }
 
     public BalanceOfWrapper decodeBalanceOf(
