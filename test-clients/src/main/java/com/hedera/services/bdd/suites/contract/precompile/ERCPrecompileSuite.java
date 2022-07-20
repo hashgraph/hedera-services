@@ -2994,8 +2994,8 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                         cryptoCreate(B_CIVILIAN)
                                 .exposingCreatedIdTo(
                                         id -> bCivilianMirrorAddr.set(asHexedSolidityAddress(id))),
-                        uploadInitCode(SOME_ERC_721_SCENARIOS),
-                        contractCreate(SOME_ERC_721_SCENARIOS).adminKey(MULTI_KEY_NAME),
+                        uploadInitCode(SOME_ERC_20_SCENARIOS),
+                        contractCreate(SOME_ERC_20_SCENARIOS).adminKey(MULTI_KEY_NAME),
                         tokenCreate(TOKEN)
                                 .supplyKey(MULTI_KEY_NAME)
                                 .tokenType(FUNGIBLE_COMMON)

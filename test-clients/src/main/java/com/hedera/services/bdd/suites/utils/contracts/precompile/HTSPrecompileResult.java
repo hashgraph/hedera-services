@@ -209,6 +209,12 @@ public class HTSPrecompileResult implements ContractCallResult {
 
     @Override
     public Bytes getBytes() {
+        if (FunctionType.OWNER.equals(functionType)) {
+            return Bytes.wrap(expandByteArrayTo32Length(owner));
+        } else if (FunctionType.GET_APPROVED.equals(functionType)) {
+            return Bytes.wrap(expandByteArrayTo32Length(spender));
+        }
+
         Tuple result =
                 switch (functionType) {
                     case MINT -> Tuple.of(
@@ -229,13 +235,6 @@ public class HTSPrecompileResult implements ContractCallResult {
                     default -> Tuple.of(status.getNumber());
                 };
 
-        if (FunctionType.OWNER.equals(functionType)) {
-
-            return Bytes.wrap(expandByteArrayTo32Length(owner));
-        } else if (FunctionType.GET_APPROVED.equals(functionType)) {
-
-            return Bytes.wrap(expandByteArrayTo32Length(spender));
-        }
         return Bytes.wrap(tupleType.encode(result).array());
     }
 
