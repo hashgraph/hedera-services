@@ -468,7 +468,7 @@ class SyntheticTxnFactoryTest {
 
     @Test
     void createsAdjustAllowanceForAllNFT() {
-        var allowances = new SetApprovalForAllWrapper(receiver, true);
+        var allowances = new SetApprovalForAllWrapper(nonFungible, receiver, true);
 
         final var result = subject.createApproveAllowanceForAllNFT(allowances, token);
         final var txnBody = result.build();
