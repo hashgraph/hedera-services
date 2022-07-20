@@ -31,10 +31,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 public class UnpauseLogicTest {
     private final Id id = new Id(1, 2, 3);
 
-    @Mock
-    private Token token;
-    @Mock
-    private TypedTokenStore store;
+    @Mock private Token token;
+    @Mock private TypedTokenStore store;
     private UnpauseLogic subject;
 
     @BeforeEach

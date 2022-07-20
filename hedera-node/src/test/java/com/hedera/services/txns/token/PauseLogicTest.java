@@ -18,27 +18,21 @@ package com.hedera.services.txns.token;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
-
 import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.Token;
-
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.util.List;
-
 @ExtendWith(MockitoExtension.class)
 public class PauseLogicTest {
     private final Id id = new Id(1, 2, 3);
 
-    @Mock
-    private Token token;
-    @Mock
-    private TypedTokenStore store;
+    @Mock private Token token;
+    @Mock private TypedTokenStore store;
     private PauseLogic subject;
 
     @BeforeEach
