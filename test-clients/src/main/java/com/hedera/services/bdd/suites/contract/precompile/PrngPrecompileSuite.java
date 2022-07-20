@@ -39,7 +39,7 @@ public class PrngPrecompileSuite extends HapiApiSuite {
     private static final Logger log = LogManager.getLogger(PrngPrecompileSuite.class);
     private static final long GAS_TO_OFFER = 400_000L;
     private static final String THE_GRACEFULLY_FAILING_PRNG_CONTRACT = "GracefullyFailingPrng";
-    private static final String bob = "bob";
+    private static final String BOB = "bob";
 
     public static void main(String... args) {
         new PrngPrecompileSuite().runSuiteSync();
@@ -71,13 +71,13 @@ public class PrngPrecompileSuite extends HapiApiSuite {
         final var prng = THE_GRACEFULLY_FAILING_PRNG_CONTRACT;
         final var emptyInputCall = "emptyInputCall";
         return defaultHapiSpec("emptyInputCallFails")
-                .given(cryptoCreate(bob), uploadInitCode(prng), contractCreate(prng))
+                .given(cryptoCreate(BOB), uploadInitCode(prng), contractCreate(prng))
                 .when(
                         sourcing(
                                 () ->
                                         contractCall(prng, "performEmptyInputCall")
                                                 .gas(GAS_TO_OFFER)
-                                                .payingWith(bob)
+                                                .payingWith(BOB)
                                                 .via(emptyInputCall)
                                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
                                                 .logged()))
@@ -101,13 +101,13 @@ public class PrngPrecompileSuite extends HapiApiSuite {
         final var prng = THE_GRACEFULLY_FAILING_PRNG_CONTRACT;
         final var largeInputCall = "largeInputCall";
         return defaultHapiSpec("invalidLargeInputFails")
-                .given(cryptoCreate(bob), uploadInitCode(prng), contractCreate(prng))
+                .given(cryptoCreate(BOB), uploadInitCode(prng), contractCreate(prng))
                 .when(
                         sourcing(
                                 () ->
                                         contractCall(prng, "performLargeInputCall")
                                                 .gas(GAS_TO_OFFER)
-                                                .payingWith(bob)
+                                                .payingWith(BOB)
                                                 .via(largeInputCall)
                                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
                                                 .logged()))
@@ -131,13 +131,13 @@ public class PrngPrecompileSuite extends HapiApiSuite {
         final var prng = THE_GRACEFULLY_FAILING_PRNG_CONTRACT;
         final var failedCall = "failedCall";
         return defaultHapiSpec("nonSupportedAbiCallGracefullyFails")
-                .given(cryptoCreate(bob), uploadInitCode(prng), contractCreate(prng))
+                .given(cryptoCreate(BOB), uploadInitCode(prng), contractCreate(prng))
                 .when(
                         sourcing(
                                 () ->
                                         contractCall(prng, "performNonExistingServiceFunctionCall")
                                                 .gas(GAS_TO_OFFER)
-                                                .payingWith(bob)
+                                                .payingWith(BOB)
                                                 .via(failedCall)
                                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
                                                 .logged()))
@@ -161,7 +161,7 @@ public class PrngPrecompileSuite extends HapiApiSuite {
         final var lessThan4Bytes = "lessThan4Bytes";
         return defaultHapiSpec("functionCallWithLessThanFourBytesFailsGracefully")
                 .given(
-                        cryptoCreate(bob),
+                        cryptoCreate(BOB),
                         uploadInitCode(THE_GRACEFULLY_FAILING_PRNG_CONTRACT),
                         contractCreate(THE_GRACEFULLY_FAILING_PRNG_CONTRACT))
                 .when(
@@ -171,7 +171,7 @@ public class PrngPrecompileSuite extends HapiApiSuite {
                                                         THE_GRACEFULLY_FAILING_PRNG_CONTRACT,
                                                         "performLessThanFourBytesFunctionCall")
                                                 .gas(GAS_TO_OFFER)
-                                                .payingWith(bob)
+                                                .payingWith(BOB)
                                                 .via(lessThan4Bytes)
                                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
                                                 .logged()),
@@ -195,13 +195,13 @@ public class PrngPrecompileSuite extends HapiApiSuite {
         final var prng = "PrngSystemContract";
         final var randomBits = "randomBits";
         return defaultHapiSpec("prngPrecompileHappyPathWorks")
-                .given(cryptoCreate(bob), uploadInitCode(prng), contractCreate(prng))
+                .given(cryptoCreate(BOB), uploadInitCode(prng), contractCreate(prng))
                 .when(
                         sourcing(
                                 () ->
                                         contractCall(prng, "getPseudorandomSeed")
                                                 .gas(GAS_TO_OFFER)
-                                                .payingWith(bob)
+                                                .payingWith(BOB)
                                                 .via(randomBits)
                                                 .logged()))
                 .then(
