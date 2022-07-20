@@ -154,6 +154,21 @@ public class DeterministicThrottle {
         return new UsageSnapshot(bucket.capacityUsed(), lastDecisionTime);
     }
 
+    /**
+     * Returns the percent usage of this throttle, at a time which may be later than the last
+     * throttling decision (which would imply some capacity has been freed).
+     *
+     * @param now a time which will be ignored if before the last throttling decision
+     * @return the capacity available at this time
+     */
+    public double percentUsed(final Instant now) {
+        if (lastDecisionTime == null) {
+            return 0.0;
+        }
+        final var elapsedNanos = Math.max(0, Duration.between(lastDecisionTime, now).toNanos());
+        return delegate.percentUsed(elapsedNanos);
+    }
+
     public void resetUsageTo(final UsageSnapshot usageSnapshot) {
         final var bucket = delegate.bucket();
         lastDecisionTime = usageSnapshot.lastDecisionTime();

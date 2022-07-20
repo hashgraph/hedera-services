@@ -19,6 +19,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.swirlds.common.utility.Units;
 import org.junit.jupiter.api.Test;
 
 class GasLimitBucketThrottleTest {
@@ -27,6 +28,16 @@ class GasLimitBucketThrottleTest {
     private static final long BEYOND_CAPACITY = 1_234_569;
 
     GasLimitBucketThrottle subject = new GasLimitBucketThrottle(BUCKET_CAPACITY);
+
+    @Test
+    void hasExpectedPercentUsed() {
+        final var capacity = 1_000_000;
+        var subject = new GasLimitBucketThrottle(capacity);
+        subject.bucket().useCapacity(capacity / 2);
+
+        assertEquals(50.0, subject.percentUsed(0));
+        assertEquals(25.0, subject.percentUsed(Units.SECONDS_TO_NANOSECONDS / 4));
+    }
 
     @Test
     void rejectsUnsupportedTXGasLimit() {

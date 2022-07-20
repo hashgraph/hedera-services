@@ -32,6 +32,7 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
+import com.hedera.services.state.validation.UsageLimits;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.store.contracts.precompile.codec.DecodingFacade;
@@ -64,6 +65,7 @@ import org.hyperledger.besu.evm.frame.MessageFrame;
 
 @Singleton
 public class InfrastructureFactory {
+    private final UsageLimits usageLimits;
     private final EntityIdSource ids;
     private final EncodingFacade encoder;
     private final DecodingFacade decoder;
@@ -75,6 +77,7 @@ public class InfrastructureFactory {
 
     @Inject
     public InfrastructureFactory(
+            final UsageLimits usageLimits,
             final EntityIdSource ids,
             final EncodingFacade encoder,
             final DecodingFacade decoder,
@@ -87,6 +90,7 @@ public class InfrastructureFactory {
         this.encoder = encoder;
         this.decoder = decoder;
         this.validator = validator;
+        this.usageLimits = usageLimits;
         this.recordsHistorian = recordsHistorian;
         this.dynamicProperties = dynamicProperties;
         this.sigImpactHistorian = sigImpactHistorian;
@@ -120,6 +124,7 @@ public class InfrastructureFactory {
                     tokenRelsLedger) {
         return new HederaTokenStore(
                 NOOP_ID_SOURCE,
+                usageLimits,
                 validator,
                 sideEffects,
                 dynamicProperties,
@@ -135,12 +140,12 @@ public class InfrastructureFactory {
 
     public MintLogic newMintLogic(
             final AccountStore accountStore, final TypedTokenStore tokenStore) {
-        return new MintLogic(validator, tokenStore, accountStore, dynamicProperties);
+        return new MintLogic(usageLimits, validator, tokenStore, accountStore, dynamicProperties);
     }
 
     public AssociateLogic newAssociateLogic(
             final AccountStore accountStore, final TypedTokenStore tokenStore) {
-        return new AssociateLogic(tokenStore, accountStore, dynamicProperties);
+        return new AssociateLogic(usageLimits, tokenStore, accountStore, dynamicProperties);
     }
 
     public DissociateLogic newDissociateLogic(
@@ -151,7 +156,13 @@ public class InfrastructureFactory {
     public CreateLogic newTokenCreateLogic(
             final AccountStore accountStore, final TypedTokenStore tokenStore) {
         return new CreateLogic(
-                accountStore, tokenStore, dynamicProperties, sigImpactHistorian, ids, validator);
+                usageLimits,
+                accountStore,
+                tokenStore,
+                dynamicProperties,
+                sigImpactHistorian,
+                ids,
+                validator);
     }
 
     public TransferLogic newTransferLogic(
