@@ -17,6 +17,8 @@ package com.hedera.services.throttles;
 
 import static com.hedera.services.legacy.proto.utils.CommonUtils.productWouldOverflow;
 
+import com.swirlds.common.utility.Units;
+
 /**
  * Responsible for throttling transaction by gas limit. Uses a {@link DiscreteLeakyBucket} under the
  * hood. Calculates the amount of gas that should be leaked from the bucket based on the amount of
@@ -24,10 +26,10 @@ import static com.hedera.services.legacy.proto.utils.CommonUtils.productWouldOve
  * called.
  */
 public class GasLimitBucketThrottle {
+    private static final long TIME_TO_EMPTY = Units.SECONDS_TO_NANOSECONDS;
 
     private final DiscreteLeakyBucket bucket;
     private long lastAllowedUnits = 0L;
-    private static final long ONE_SECOND_IN_NANOSECONDS = 1_000_000_000;
 
     /**
      * Creates an instance of the throttle with the specified capacity
@@ -48,18 +50,8 @@ public class GasLimitBucketThrottle {
      * @param elapsedNanos - the amount of time passed since the last call
      * @return true if there is enough capacity, false if the transaction should be throttled
      */
-    public boolean allow(long txGasLimit, long elapsedNanos) {
-        if (elapsedNanos >= ONE_SECOND_IN_NANOSECONDS) {
-            bucket.leak(bucket.totalCapacity());
-        } else if (elapsedNanos > 0) {
-            boolean wouldOverflow = productWouldOverflow(elapsedNanos, bucket.totalCapacity());
-            long toLeak =
-                    wouldOverflow
-                            ? Long.MAX_VALUE / ONE_SECOND_IN_NANOSECONDS
-                            : elapsedNanos * bucket.totalCapacity() / ONE_SECOND_IN_NANOSECONDS;
-            bucket.leak(toLeak);
-        }
-
+    public boolean allow(final long txGasLimit, final long elapsedNanos) {
+        bucket.leak(effectiveLeak(elapsedNanos));
         if (bucket.capacityFree() >= txGasLimit) {
             bucket.useCapacity(txGasLimit);
             lastAllowedUnits += txGasLimit;
@@ -67,6 +59,20 @@ public class GasLimitBucketThrottle {
         } else {
             return false;
         }
+    }
+
+    /**
+     * Returns the percent of the throttle bucket's capacity that is used, given some number of
+     * nanoseconds have elapsed since the last capacity test.
+     *
+     * @param givenElapsedNanos time since last test
+     * @return the percent of the bucket that is used
+     */
+    double percentUsed(final long givenElapsedNanos) {
+        final var used = bucket.capacityUsed();
+        return 100.0
+                * (used - Math.min(used, effectiveLeak(givenElapsedNanos)))
+                / bucket.totalCapacity();
     }
 
     void resetLastAllowedUse() {
@@ -85,5 +91,15 @@ public class GasLimitBucketThrottle {
      */
     public DiscreteLeakyBucket bucket() {
         return bucket;
+    }
+
+    private long effectiveLeak(final long elapsedNanos) {
+        if (elapsedNanos >= TIME_TO_EMPTY) {
+            return bucket.totalCapacity();
+        } else {
+            return productWouldOverflow(elapsedNanos, bucket.totalCapacity())
+                    ? Long.MAX_VALUE / TIME_TO_EMPTY
+                    : elapsedNanos * bucket.totalCapacity() / TIME_TO_EMPTY;
+        }
     }
 }

@@ -85,3 +85,14 @@ tasks.eet {
     systemProperty("TAG", "services-node:" + project.version)
     systemProperty("networkWorkspaceDir", File(project.buildDir, "network/eet"))
 }
+
+val copyApp = tasks.register<Copy>("copyApp") {
+    from(tasks.jar)
+    into(File(project.buildDir, "libs"))
+    rename { "SuiteRunner.jar" }
+    shouldRunAfter(tasks.assemble)
+}
+
+tasks.assemble {
+    dependsOn(copyApp)
+}
