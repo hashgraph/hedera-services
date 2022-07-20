@@ -838,8 +838,8 @@ public class TokenInfoHTSSuite extends HapiApiSuite {
                                         expandByteArrayTo32Length(
                                                 Utils.asAddress(key.getContractID())))
                                 : null,
-                        key.getEd25519().toByteArray(),
-                        key.getECDSASecp256K1().toByteArray(),
+                        key.getEd25519(),
+                        key.getECDSASecp256K1(),
                         key.getDelegatableContractId().getContractNum() > 0
                                 ? Bytes.wrap(
                                         expandByteArrayTo32Length(

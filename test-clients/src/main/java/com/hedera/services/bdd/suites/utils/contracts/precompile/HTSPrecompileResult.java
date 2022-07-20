@@ -339,8 +339,8 @@ public class HTSPrecompileResult implements ContractCallResult {
                             keyValue.contractId() != null
                                     ? keyValue.contractId().toArray()
                                     : new byte[32],
-                            keyValue.ed25519(),
-                            keyValue.ECDSA_secp256k1(),
+                            keyValue.ed25519().toByteArray(),
+                            keyValue.ECDSA_secp256k1().toByteArray(),
                             keyValue.delegatableContractId() != null
                                     ? keyValue.delegatableContractId().toArray()
                                     : new byte[32]);

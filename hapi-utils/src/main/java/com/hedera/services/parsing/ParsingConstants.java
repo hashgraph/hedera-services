@@ -67,9 +67,9 @@ public final class ParsingConstants {
 
     public static final String TOKEN_INFO_REPLACED_ADDRESS =
             "("
-                    + HEDERA_TOKEN.replace("address", "bytes32")
+                    + HEDERA_TOKEN.replace(removeBrackets(ADDRESS), removeBrackets(BYTES32))
                     + ",int64,bool,bool,bool,"
-                    + FIXED_FEE.replace("address", "bytes32")
+                    + FIXED_FEE.replace(removeBrackets(ADDRESS), removeBrackets(BYTES32))
                     + ARRAY_BRACKETS
                     + ","
                     + FRACTIONAL_FEE.replace("address", "bytes32")
@@ -141,5 +141,10 @@ public final class ParsingConstants {
         GET_TOKEN_INFO,
         GET_FUNGIBLE_TOKEN_INFO,
         GET_NON_FUNGIBLE_TOKEN_INFO
+    }
+
+    private static String removeBrackets(final String type) {
+        final var typeWithRemovedOpenBracket = type.replace("(", "");
+        return typeWithRemovedOpenBracket.replace(")", "");
     }
 }
