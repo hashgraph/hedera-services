@@ -30,7 +30,6 @@ import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.timest
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
@@ -215,7 +214,7 @@ class PausePrecompileTest {
         givenMinFrameContext();
         givenPricingUtilsContext();
         Bytes input = Bytes.of(Integers.toBytes(ABI_PAUSE_TOKEN));
-        given(decoder.decodePause(eq(pretendArguments))).willReturn(fungiblePause);
+        given(decoder.decodePause(pretendArguments)).willReturn(fungiblePause);
         given(syntheticTxnFactory.createPause(fungiblePause))
                 .willReturn(
                         TransactionBody.newBuilder()
@@ -237,7 +236,7 @@ class PausePrecompileTest {
 
     private void givenFungibleFrameContext() {
         givenFrameContext();
-        given(decoder.decodePause(eq(pretendArguments))).willReturn(fungiblePause);
+        given(decoder.decodePause(pretendArguments)).willReturn(fungiblePause);
         given(syntheticTxnFactory.createPause(fungiblePause)).willReturn(mockSynthBodyBuilder);
     }
 

@@ -30,7 +30,6 @@ import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.timest
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
@@ -92,7 +91,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-public class UnpausePrecompileTest {
+class UnpausePrecompileTest {
     private final Bytes pretendArguments = Bytes.of(Integers.toBytes(ABI_UNPAUSE_TOKEN));
 
     @Mock private TypedTokenStore tokenStore;
@@ -215,7 +214,7 @@ public class UnpausePrecompileTest {
         givenMinFrameContext();
         givenPricingUtilsContext();
         Bytes input = Bytes.of(Integers.toBytes(ABI_UNPAUSE_TOKEN));
-        given(decoder.decodeUnpause(eq(pretendArguments))).willReturn(fungibleUnpause);
+        given(decoder.decodeUnpause(pretendArguments)).willReturn(fungibleUnpause);
         given(syntheticTxnFactory.createUnpause(fungibleUnpause))
                 .willReturn(
                         TransactionBody.newBuilder()
@@ -237,7 +236,7 @@ public class UnpausePrecompileTest {
 
     private void givenFungibleFrameContext() {
         givenFrameContext();
-        given(decoder.decodeUnpause(eq(pretendArguments))).willReturn(fungibleUnpause);
+        given(decoder.decodeUnpause(pretendArguments)).willReturn(fungibleUnpause);
         given(syntheticTxnFactory.createUnpause(fungibleUnpause)).willReturn(mockSynthBodyBuilder);
     }
 
