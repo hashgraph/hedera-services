@@ -15,15 +15,20 @@
  */
 package com.hedera.services.bdd.suites.utils.contracts.precompile;
 
+import static com.hedera.services.parsing.ParsingConstants.ADDRESS;
+import static com.hedera.services.parsing.ParsingConstants.ARRAY_BRACKETS;
+import static com.hedera.services.parsing.ParsingConstants.BYTES32;
+import static com.hedera.services.parsing.ParsingConstants.FIXED_FEE;
+import static com.hedera.services.parsing.ParsingConstants.FRACTIONAL_FEE;
+import static com.hedera.services.parsing.ParsingConstants.HEDERA_TOKEN;
+import static com.hedera.services.parsing.ParsingConstants.RESPONSE_STATUS_AT_BEGINNING;
+import static com.hedera.services.parsing.ParsingConstants.ROYALTY_FEE;
 import static com.hedera.services.parsing.ParsingConstants.allowanceOfType;
 import static com.hedera.services.parsing.ParsingConstants.balanceOfType;
 import static com.hedera.services.parsing.ParsingConstants.burnReturnType;
 import static com.hedera.services.parsing.ParsingConstants.decimalsType;
 import static com.hedera.services.parsing.ParsingConstants.ercTransferType;
 import static com.hedera.services.parsing.ParsingConstants.getApprovedType;
-import static com.hedera.services.parsing.ParsingConstants.getFungibleTokenInfoTypeReplacedAddress;
-import static com.hedera.services.parsing.ParsingConstants.getNonFungibleTokenInfoTypeReplacedAddress;
-import static com.hedera.services.parsing.ParsingConstants.getTokenInfoTypeReplacedAddress;
 import static com.hedera.services.parsing.ParsingConstants.isApprovedForAllType;
 import static com.hedera.services.parsing.ParsingConstants.mintReturnType;
 import static com.hedera.services.parsing.ParsingConstants.nameType;
@@ -47,6 +52,34 @@ public class HTSPrecompileResult implements ContractCallResult {
     public static HTSPrecompileResult htsPrecompileResult() {
         return new HTSPrecompileResult();
     }
+
+    public static final String TOKEN_INFO_REPLACED_ADDRESS =
+            "("
+                    + HEDERA_TOKEN.replace(removeBrackets(ADDRESS), removeBrackets(BYTES32))
+                    + ",int64,bool,bool,bool,"
+                    + FIXED_FEE.replace(removeBrackets(ADDRESS), removeBrackets(BYTES32))
+                    + ARRAY_BRACKETS
+                    + ","
+                    + FRACTIONAL_FEE.replace("address", "bytes32")
+                    + ARRAY_BRACKETS
+                    + ","
+                    + ROYALTY_FEE.replace("address", "bytes32")
+                    + ARRAY_BRACKETS
+                    + ",string"
+                    + ")";
+    public static final String FUNGIBLE_TOKEN_INFO_REPLACED_ADDRESS =
+            "(" + TOKEN_INFO_REPLACED_ADDRESS + ",int32" + ")";
+    public static final String NON_FUNGIBLE_TOKEN_INFO_REPLACED_ADDRESS =
+            "(" + TOKEN_INFO_REPLACED_ADDRESS + ",int64,bytes32,int64,bytes,bytes32" + ")";
+
+    public static final TupleType getTokenInfoTypeReplacedAddress =
+            TupleType.parse(RESPONSE_STATUS_AT_BEGINNING + TOKEN_INFO_REPLACED_ADDRESS + ")");
+    public static final TupleType getFungibleTokenInfoTypeReplacedAddress =
+            TupleType.parse(
+                    RESPONSE_STATUS_AT_BEGINNING + FUNGIBLE_TOKEN_INFO_REPLACED_ADDRESS + ")");
+    public static final TupleType getNonFungibleTokenInfoTypeReplacedAddress =
+            TupleType.parse(
+                    RESPONSE_STATUS_AT_BEGINNING + NON_FUNGIBLE_TOKEN_INFO_REPLACED_ADDRESS + ")");
 
     private FunctionType functionType = FunctionType.NOT_SPECIFIED;
     private TupleType tupleType = notSpecifiedType;
@@ -348,6 +381,11 @@ public class HTSPrecompileResult implements ContractCallResult {
         }
 
         return tokenKeysTuples;
+    }
+
+    private static String removeBrackets(final String type) {
+        final var typeWithRemovedOpenBracket = type.replace("(", "");
+        return typeWithRemovedOpenBracket.replace(")", "");
     }
 
     public static byte[] expandByteArrayTo32Length(final byte[] bytesToExpand) {

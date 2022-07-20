@@ -41,7 +41,6 @@ public final class ParsingConstants {
     public static final String ROYALTY_FEE = "(uint32,uint32,uint32,address,bool,address)";
     public static final String TOKEN_KEY = "(uint256," + KEY_VALUE + ")";
 
-    public static final String RESPONSE_STATUS_AT_BEGINNING = "(int32,";
     public static final String HEDERA_TOKEN =
             "("
                     + "string,string,address,string,bool,int64,bool,"
@@ -64,87 +63,55 @@ public final class ParsingConstants {
                     + ARRAY_BRACKETS
                     + ",string"
                     + ")";
-
-    public static final String TOKEN_INFO_REPLACED_ADDRESS =
-            "("
-                    + HEDERA_TOKEN.replace(removeBrackets(ADDRESS), removeBrackets(BYTES32))
-                    + ",int64,bool,bool,bool,"
-                    + FIXED_FEE.replace(removeBrackets(ADDRESS), removeBrackets(BYTES32))
-                    + ARRAY_BRACKETS
-                    + ","
-                    + FRACTIONAL_FEE.replace("address", "bytes32")
-                    + ARRAY_BRACKETS
-                    + ","
-                    + ROYALTY_FEE.replace("address", "bytes32")
-                    + ARRAY_BRACKETS
-                    + ",string"
-                    + ")";
+    public static final String RESPONSE_STATUS_AT_BEGINNING = "(int32,";
 
     public static final String FUNGIBLE_TOKEN_INFO = "(" + TOKEN_INFO + ",int32" + ")";
-    public static final String FUNGIBLE_TOKEN_INFO_REPLACED_ADDRESS =
-            "(" + TOKEN_INFO_REPLACED_ADDRESS + ",int32" + ")";
-
     public static final String NON_FUNGIBLE_TOKEN_INFO =
-            "(" + TOKEN_INFO + ",int64,bytes32,int64,bytes,bytes32" + ")";
-    public static final String NON_FUNGIBLE_TOKEN_INFO_REPLACED_ADDRESS =
-            "(" + TOKEN_INFO_REPLACED_ADDRESS + ",int64,bytes32,int64,bytes,bytes32" + ")";
+            "(" + TOKEN_INFO + ",int64,address,int64,bytes,address" + ")";
 
     // tuple types
-    public static final TupleType mintReturnType = TupleType.parse("(int32,uint64,int64[])");
-    public static final TupleType notSpecifiedType = TupleType.parse("(int32)");
-    public static final TupleType burnReturnType = TupleType.parse("(int32,uint64)");
-    public static final TupleType totalSupplyType = TupleType.parse(UINT256);
-    public static final TupleType balanceOfType = TupleType.parse(UINT256);
-    public static final TupleType createReturnType = TupleType.parse("(int32,address)");
     public static final TupleType allowanceOfType = TupleType.parse(UINT256);
     public static final TupleType approveOfType = TupleType.parse(BOOL);
+    public static final TupleType balanceOfType = TupleType.parse(UINT256);
+    public static final TupleType burnReturnType = TupleType.parse("(int32,uint64)");
+    public static final TupleType createReturnType = TupleType.parse("(int32,address)");
     public static final TupleType decimalsType = TupleType.parse(UINT8);
-    public static final TupleType ownerOfType = TupleType.parse(ADDRESS);
-    public static final TupleType getApprovedType = TupleType.parse(ADDRESS);
-    public static final TupleType nameType = TupleType.parse(STRING);
-    public static final TupleType symbolType = TupleType.parse(STRING);
-    public static final TupleType tokenUriType = TupleType.parse(STRING);
     public static final TupleType ercTransferType = TupleType.parse(BOOL);
-    public static final TupleType isApprovedForAllType = TupleType.parse(BOOL);
-    public static final TupleType getTokenInfoType =
-            TupleType.parse(RESPONSE_STATUS_AT_BEGINNING + TOKEN_INFO + ")");
-    public static final TupleType getTokenInfoTypeReplacedAddress =
-            TupleType.parse(RESPONSE_STATUS_AT_BEGINNING + TOKEN_INFO_REPLACED_ADDRESS + ")");
+    public static final TupleType getApprovedType = TupleType.parse(ADDRESS);
     public static final TupleType getFungibleTokenInfoType =
             TupleType.parse(RESPONSE_STATUS_AT_BEGINNING + FUNGIBLE_TOKEN_INFO + ")");
-    public static final TupleType getFungibleTokenInfoTypeReplacedAddress =
-            TupleType.parse(
-                    RESPONSE_STATUS_AT_BEGINNING + FUNGIBLE_TOKEN_INFO_REPLACED_ADDRESS + ")");
+    public static final TupleType getTokenInfoType =
+            TupleType.parse(RESPONSE_STATUS_AT_BEGINNING + TOKEN_INFO + ")");
     public static final TupleType getNonFungibleTokenInfoType =
             TupleType.parse(RESPONSE_STATUS_AT_BEGINNING + NON_FUNGIBLE_TOKEN_INFO + ")");
-    public static final TupleType getNonFungibleTokenInfoTypeReplacedAddress =
-            TupleType.parse(
-                    RESPONSE_STATUS_AT_BEGINNING + NON_FUNGIBLE_TOKEN_INFO_REPLACED_ADDRESS + ")");
+    public static final TupleType isApprovedForAllType = TupleType.parse(BOOL);
+    public static final TupleType mintReturnType = TupleType.parse("(int32,uint64,int64[])");
+    public static final TupleType nameType = TupleType.parse(STRING);
+    public static final TupleType notSpecifiedType = TupleType.parse("(int32)");
+    public static final TupleType ownerOfType = TupleType.parse(ADDRESS);
+    public static final TupleType symbolType = TupleType.parse(STRING);
+    public static final TupleType tokenUriType = TupleType.parse(STRING);
+    public static final TupleType totalSupplyType = TupleType.parse(UINT256);
 
     public enum FunctionType {
-        NOT_SPECIFIED,
-        CREATE,
-        MINT,
-        BURN,
-        TOTAL_SUPPLY,
-        DECIMALS,
-        BALANCE,
-        OWNER,
-        TOKEN_URI,
-        NAME,
-        SYMBOL,
-        ERC_TRANSFER,
         ALLOWANCE,
         APPROVE,
+        BALANCE,
+        BURN,
+        CREATE,
+        DECIMALS,
+        ERC_TRANSFER,
         GET_APPROVED,
-        IS_APPROVED_FOR_ALL,
-        GET_TOKEN_INFO,
         GET_FUNGIBLE_TOKEN_INFO,
-        GET_NON_FUNGIBLE_TOKEN_INFO
-    }
-
-    private static String removeBrackets(final String type) {
-        final var typeWithRemovedOpenBracket = type.replace("(", "");
-        return typeWithRemovedOpenBracket.replace(")", "");
+        GET_NON_FUNGIBLE_TOKEN_INFO,
+        GET_TOKEN_INFO,
+        IS_APPROVED_FOR_ALL,
+        MINT,
+        NAME,
+        NOT_SPECIFIED,
+        OWNER,
+        SYMBOL,
+        TOTAL_SUPPLY,
+        TOKEN_URI
     }
 }
