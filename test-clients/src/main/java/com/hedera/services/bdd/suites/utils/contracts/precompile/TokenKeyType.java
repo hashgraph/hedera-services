@@ -15,7 +15,7 @@
  */
 package com.hedera.services.bdd.suites.utils.contracts.precompile;
 
-/** All key types used by {@link Precompile} implementations, in one place for easy review. */
+/** All key types in one place for easy review. */
 public enum TokenKeyType {
     ADMIN_KEY(1),
     KYC_KEY(2),
