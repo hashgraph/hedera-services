@@ -23,7 +23,6 @@ import static com.hedera.services.bdd.spec.HapiPropertySource.contractIdFromHexe
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.changeFromSnapshot;
 import static com.hedera.services.bdd.spec.assertions.AssertUtils.inOrder;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.isLiteralResult;
-import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.isRandomResult;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.ContractInfoAsserts.contractWith;
 import static com.hedera.services.bdd.spec.assertions.ContractLogAsserts.logWith;
@@ -239,11 +238,8 @@ public class ContractCallSuite extends HapiApiSuite {
                 cannotUseMirrorAddressOfAliasedContractInPrecompileMethod(),
                 exchangeRatePrecompileWorks(),
                 canMintAndTransferInSameContractOperation(),
-                workingHoursDemo()
-        );
+                workingHoursDemo());
     }
-
-
 
     private HapiApiSpec whitelistingAliasedContract() {
         final var creationTxn = "creationTxn";
