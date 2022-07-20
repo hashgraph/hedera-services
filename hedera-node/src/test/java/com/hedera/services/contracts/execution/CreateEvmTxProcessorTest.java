@@ -15,28 +15,6 @@
  */
 package com.hedera.services.contracts.execution;
 
-/*
- * -
- * ‌
- * Hedera Services Node
- * ​
- * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
- * ​
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *       http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- * ‍
- *
- */
-
 import static com.hedera.test.utils.TxnUtils.assertFailsWith;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_GAS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -64,6 +42,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import org.apache.tuweni.bytes.Bytes;
+import org.apache.tuweni.bytes.Bytes32;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.account.EvmAccount;
@@ -132,6 +111,7 @@ class CreateEvmTxProcessorTest {
         givenValidMock(true);
         givenSenderWithBalance(350_000L);
         given(storageExpiry.hapiCreationOracle(expiry)).willReturn(oracle);
+        given(globalDynamicProperties.chainIdBytes32()).willReturn(Bytes32.ZERO);
         var result =
                 createEvmTxProcessor.execute(
                         sender,
@@ -156,6 +136,7 @@ class CreateEvmTxProcessorTest {
         var senderMutableAccount = mock(MutableAccount.class);
         given(evmAccount.getMutable()).willReturn(senderMutableAccount);
         given(senderMutableAccount.getBalance()).willReturn(Wei.of(2000L));
+        given(globalDynamicProperties.chainIdBytes32()).willReturn(Bytes32.ZERO);
 
         var result =
                 createEvmTxProcessor.executeEth(
@@ -179,6 +160,7 @@ class CreateEvmTxProcessorTest {
         givenValidMock(true);
         given(globalDynamicProperties.maxGasRefundPercentage()).willReturn(MAX_REFUND_PERCENT);
         givenSenderWithBalance(350_000L);
+        given(globalDynamicProperties.chainIdBytes32()).willReturn(Bytes32.ZERO);
         given(storageExpiry.hapiCreationOracle(expiry)).willReturn(oracle);
         var result =
                 createEvmTxProcessor.execute(
@@ -202,6 +184,7 @@ class CreateEvmTxProcessorTest {
                 .willReturn(INTRINSIC_GAS_COST);
         givenSenderWithBalance(350_000L);
         given(storageExpiry.hapiCreationOracle(expiry)).willReturn(oracle);
+        given(globalDynamicProperties.chainIdBytes32()).willReturn(Bytes32.ZERO);
         var result =
                 createEvmTxProcessor.execute(
                         sender,
@@ -225,6 +208,7 @@ class CreateEvmTxProcessorTest {
         given(gasCalculator.memoryExpansionGasCost(any(), anyLong(), anyLong())).willReturn(5000L);
         givenSenderWithBalance(350_000L);
         given(storageExpiry.hapiCreationOracle(expiry)).willReturn(oracle);
+        given(globalDynamicProperties.chainIdBytes32()).willReturn(Bytes32.ZERO);
 
         // when:
         var result =
@@ -292,6 +276,7 @@ class CreateEvmTxProcessorTest {
     void throwsWhenSenderCannotCoverUpfrontCost() {
         givenInvalidMock();
         givenSenderWithBalance(123);
+        given(globalDynamicProperties.chainIdBytes32()).willReturn(Bytes32.ZERO);
 
         Address receiver = this.receiver.getId().asEvmAddress();
         assertFailsWith(
@@ -311,6 +296,7 @@ class CreateEvmTxProcessorTest {
     void throwsWhenIntrinsicGasCostExceedsGasLimit() {
         givenInvalidMock();
         givenExtantSender();
+        given(globalDynamicProperties.chainIdBytes32()).willReturn(Bytes32.ZERO);
 
         Address receiver = this.receiver.getId().asEvmAddress();
         assertFailsWith(
@@ -332,6 +318,7 @@ class CreateEvmTxProcessorTest {
         givenExtantSender();
         given(gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, true))
                 .willReturn(MAX_GAS_LIMIT + 1L);
+        given(globalDynamicProperties.chainIdBytes32()).willReturn(Bytes32.ZERO);
 
         Address receiver = this.receiver.getId().asEvmAddress();
         assertFailsWith(

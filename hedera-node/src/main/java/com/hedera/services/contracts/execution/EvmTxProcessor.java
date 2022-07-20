@@ -60,8 +60,10 @@ import java.util.Deque;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import javax.annotation.Nullable;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
+import org.apache.tuweni.bytes.Bytes32;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.EVM;
@@ -72,6 +74,7 @@ import org.hyperledger.besu.evm.contractvalidation.PrefixCodeRule;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.internal.EvmConfiguration;
+import org.hyperledger.besu.evm.operation.ChainIdOperation;
 import org.hyperledger.besu.evm.operation.Operation;
 import org.hyperledger.besu.evm.operation.OperationRegistry;
 import org.hyperledger.besu.evm.precompile.MainnetPrecompiledContracts;
@@ -99,6 +102,8 @@ abstract class EvmTxProcessor {
     private BlockMetaSource blockMetaSource;
     private HederaMutableWorldState worldState;
 
+    @Nullable private Bytes32 lastChainId;
+    private final OperationRegistry operationRegistry;
     private final GasCalculator gasCalculator;
     private final LivePricesSource livePricesSource;
     private final AbstractMessageProcessor messageCallProcessor;
@@ -142,9 +147,9 @@ abstract class EvmTxProcessor {
         this.dynamicProperties = dynamicProperties;
         this.gasCalculator = gasCalculator;
 
-        var operationRegistry = new OperationRegistry();
-        registerLondonOperations(
-                operationRegistry, gasCalculator, BigInteger.valueOf(dynamicProperties.chainId()));
+        operationRegistry = new OperationRegistry();
+        // We always register the latest ChainIdOperation before any execute(), so use ZERO here
+        registerLondonOperations(operationRegistry, gasCalculator, BigInteger.ZERO);
         hederaOperations.forEach(operationRegistry::put);
 
         final var evm = new EVM(operationRegistry, gasCalculator, EvmConfiguration.DEFAULT);
@@ -195,6 +200,7 @@ abstract class EvmTxProcessor {
             final BigInteger userOfferedGasPrice,
             final long maxGasAllowanceInTinybars,
             final Account relayer) {
+        ensureLatestChainId();
         final Wei gasCost = Wei.of(Math.multiplyExact(gasLimit, gasPrice));
         final Wei upfrontCost = gasCost.add(value);
         final long intrinsicGas =
@@ -369,6 +375,14 @@ abstract class EvmTxProcessor {
                     initialFrame.getRevertReason(),
                     initialFrame.getExceptionalHaltReason(),
                     stateChanges);
+        }
+    }
+
+    private void ensureLatestChainId() {
+        final var curChainId = dynamicProperties.chainIdBytes32();
+        if (!curChainId.equals(lastChainId)) {
+            lastChainId = curChainId;
+            operationRegistry.put(new ChainIdOperation(gasCalculator, curChainId));
         }
     }
 

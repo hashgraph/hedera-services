@@ -36,11 +36,12 @@ import com.hedera.services.state.serdes.IoUtils;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
+import com.swirlds.common.FastCopyable;
 import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.crypto.SerializableHashable;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.utility.CommonUtils;
-import com.swirlds.fcqueue.FCQueueElement;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.Arrays;
@@ -49,7 +50,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.stream.IntStream;
 
-public class ExpirableTxnRecord implements FCQueueElement {
+public class ExpirableTxnRecord implements FastCopyable, SerializableHashable {
     public static final long UNKNOWN_SUBMITTING_MEMBER = -1;
     public static final long MISSING_PARENT_CONSENSUS_TIMESTAMP = -1;
     public static final short NO_CHILD_TRANSACTIONS = 0;
@@ -68,6 +69,7 @@ public class ExpirableTxnRecord implements FCQueueElement {
     static final int RELEASE_0250_VERSION = 8;
     static final int RELEASE_0260_VERSION = 9;
     static final int RELEASE_0270_VERSION = 10;
+
     static final int RELEASE_0280_VERSION = 11;
     static final int CURRENT_VERSION = RELEASE_0280_VERSION;
     static final long RUNTIME_CONSTRUCTABLE_ID = 0x8b9ede7ca8d8db93L;

@@ -40,6 +40,7 @@ import com.hedera.test.extensions.LoggingSubject;
 import com.hedera.test.extensions.LoggingTarget;
 import java.io.IOException;
 import java.util.EnumSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.apache.commons.lang3.tuple.Pair;
@@ -152,7 +153,6 @@ class BootstrapPropertiesTest {
                     entry("ledger.id", "0x03"),
                     entry("ledger.changeHistorian.memorySecs", 20),
                     entry("ledger.fundingAccount", 98L),
-                    entry("ledger.maxAccountNum", 100_000_000L),
                     entry("ledger.numSystemAccounts", 100),
                     entry("ledger.records.maxQueryableByAccount", 180),
                     entry("ledger.transfers.maxLen", 10),
@@ -168,9 +168,8 @@ class BootstrapPropertiesTest {
                     entry("ledger.autoRenewPeriod.maxDuration", 8000001L),
                     entry("ledger.autoRenewPeriod.minDuration", 6999999L),
                     entry("ledger.schedule.txExpiryTimeSecs", 1800),
-                    entry("iss.dumpFcms", false),
                     entry("iss.resetPeriod", 60),
-                    entry("iss.roundsToDump", 5000),
+                    entry("iss.roundsToLog", 5000),
                     entry("netty.mode", Profile.PROD),
                     entry("netty.prod.flowControlWindow", 10240),
                     entry("netty.prod.maxConcurrentCalls", 10),
@@ -202,8 +201,21 @@ class BootstrapPropertiesTest {
                             "scheduling.whitelist",
                             Set.of(CryptoTransfer, TokenMint, TokenBurn, ConsensusSubmitMessage)),
                     entry("sigs.expandFromLastSignedState", true),
+                    entry(
+                            "stats.consThrottlesToSample",
+                            List.of("<GAS>", "ThroughputLimits", "CreationLimits")),
+                    entry(
+                            "stats.hapiThrottlesToSample",
+                            List.of(
+                                    "<GAS>",
+                                    "ThroughputLimits",
+                                    "OffHeapQueryLimits",
+                                    "CreationLimits",
+                                    "FreeQueryLimits")),
                     entry("stats.runningAvgHalfLifeSecs", 10.0),
+                    entry("stats.entityUtils.gaugeUpdateIntervalMs", 3_000L),
                     entry("stats.hapiOps.speedometerUpdateIntervalMs", 3_000L),
+                    entry("stats.throttleUtils.gaugeUpdateIntervalMs", 1_000L),
                     entry("stats.speedometerHalfLifeSecs", 10.0),
                     entry("stats.executionTimesToTrack", 0),
                     entry("staking.isEnabled", true),
@@ -239,6 +251,13 @@ class BootstrapPropertiesTest {
                     entry("entities.limitTokenAssociations", false),
                     entry("hedera.recordStream.recordFileVersion", 5),
                     entry("hedera.recordStream.signatureFileVersion", 5),
+                    entry("accounts.maxNumber", 5_000_000L),
+                    entry("contracts.maxNumber", 5_000_000L),
+                    entry("files.maxNumber", 1_000_000L),
+                    entry("scheduling.maxNumber", 10_000_000L),
+                    entry("tokens.maxNumber", 1_000_000L),
+                    entry("topics.maxNumber", 1_000_000L),
+                    entry("tokens.maxAggregateRels", 10_000_000L),
                     entry("prng.isEnabled", true),
                     entry("contracts.sidecars", EnumSet.noneOf(SidecarType.class)));
 
@@ -299,6 +318,11 @@ class BootstrapPropertiesTest {
                     expectedProps.get(name),
                     subject.getProperty(name),
                     name + " has the wrong value!");
+        }
+        for (final var key : expectedProps.keySet()) {
+            if (!BootstrapProperties.BOOTSTRAP_PROP_NAMES.contains(key)) {
+                System.out.println(key);
+            }
         }
         assertEquals(expectedProps, subject.bootstrapProps);
     }

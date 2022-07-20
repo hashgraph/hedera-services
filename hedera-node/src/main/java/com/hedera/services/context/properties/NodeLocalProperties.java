@@ -16,6 +16,7 @@
 package com.hedera.services.context.properties;
 
 import com.hedera.services.context.annotations.CompositeProps;
+import java.util.List;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -25,7 +26,9 @@ public class NodeLocalProperties {
 
     private int port;
     private int tlsPort;
-    private long statsHapiOpsSpeedometerUpdateIntervalMs;
+    private long hapiOpStatsUpdateIntervalMs;
+    private long entityUtilStatsUpdateIntervalMs;
+    private long throttleUtilStatsUpdateIntervalMs;
     private Profile activeProfile;
     private double statsSpeedometerHalfLifeSecs;
     private double statsRunningAvgHalfLifeSecs;
@@ -50,13 +53,14 @@ public class NodeLocalProperties {
     private Profile nettyMode;
     private int nettyStartRetries;
     private long nettyStartRetryIntervalMs;
-    private boolean dumpFcmsOnIss;
     private int numExecutionTimesToTrack;
     private int issResetPeriod;
-    private int issRoundsToDump;
+    private int issRoundsToLog;
     private int prefetchQueueCapacity;
     private int prefetchThreadPoolSize;
     private int prefetchCodeCacheTtlSecs;
+    private List<String> consThrottlesToSample;
+    private List<String> hapiThrottlesToSample;
     private String sidecarDir;
 
     @Inject
@@ -70,7 +74,7 @@ public class NodeLocalProperties {
         port = properties.getIntProperty("grpc.port");
         tlsPort = properties.getIntProperty("grpc.tlsPort");
         activeProfile = properties.getProfileProperty("hedera.profiles.active");
-        statsHapiOpsSpeedometerUpdateIntervalMs =
+        hapiOpStatsUpdateIntervalMs =
                 properties.getLongProperty("stats.hapiOps.speedometerUpdateIntervalMs");
         statsSpeedometerHalfLifeSecs =
                 properties.getDoubleProperty("stats.speedometerHalfLifeSecs");
@@ -97,13 +101,18 @@ public class NodeLocalProperties {
         nettyMode = properties.getProfileProperty("netty.mode");
         nettyStartRetries = properties.getIntProperty("netty.startRetries");
         nettyStartRetryIntervalMs = properties.getLongProperty("netty.startRetryIntervalMs");
-        dumpFcmsOnIss = properties.getBooleanProperty("iss.dumpFcms");
         numExecutionTimesToTrack = properties.getIntProperty("stats.executionTimesToTrack");
         issResetPeriod = properties.getIntProperty("iss.resetPeriod");
-        issRoundsToDump = properties.getIntProperty("iss.roundsToDump");
+        issRoundsToLog = properties.getIntProperty("iss.roundsToLog");
         prefetchQueueCapacity = properties.getIntProperty("hedera.prefetch.queueCapacity");
         prefetchThreadPoolSize = properties.getIntProperty("hedera.prefetch.threadPoolSize");
         prefetchCodeCacheTtlSecs = properties.getIntProperty("hedera.prefetch.codeCacheTtlSecs");
+        consThrottlesToSample = properties.getStringsProperty("stats.consThrottlesToSample");
+        hapiThrottlesToSample = properties.getStringsProperty("stats.hapiThrottlesToSample");
+        entityUtilStatsUpdateIntervalMs =
+                properties.getLongProperty("stats.entityUtils.gaugeUpdateIntervalMs");
+        throttleUtilStatsUpdateIntervalMs =
+                properties.getLongProperty("stats.throttleUtils.gaugeUpdateIntervalMs");
     }
 
     public int port() {
@@ -118,8 +127,8 @@ public class NodeLocalProperties {
         return activeProfile;
     }
 
-    public long statsHapiOpsSpeedometerUpdateIntervalMs() {
-        return statsHapiOpsSpeedometerUpdateIntervalMs;
+    public long hapiOpsStatsUpdateIntervalMs() {
+        return hapiOpStatsUpdateIntervalMs;
     }
 
     public double statsSpeedometerHalfLifeSecs() {
@@ -134,12 +143,12 @@ public class NodeLocalProperties {
         return recordLogDir;
     }
 
-    public String sidecarDir() {
-        return sidecarDir;
-    }
-
     public long recordLogPeriod() {
         return recordLogPeriod;
+    }
+
+    public String sidecarDir() {
+        return sidecarDir;
     }
 
     public boolean isRecordStreamEnabled() {
@@ -218,10 +227,6 @@ public class NodeLocalProperties {
         return nettyStartRetryIntervalMs;
     }
 
-    public boolean shouldDumpFcmsOnIss() {
-        return dumpFcmsOnIss;
-    }
-
     public int numExecutionTimesToTrack() {
         return numExecutionTimesToTrack;
     }
@@ -230,8 +235,8 @@ public class NodeLocalProperties {
         return issResetPeriod;
     }
 
-    public int issRoundsToDump() {
-        return issRoundsToDump;
+    public int issRoundsToLog() {
+        return issRoundsToLog;
     }
 
     public int prefetchQueueCapacity() {
@@ -244,5 +249,21 @@ public class NodeLocalProperties {
 
     public int prefetchCodeCacheTtlSecs() {
         return prefetchCodeCacheTtlSecs;
+    }
+
+    public List<String> consThrottlesToSample() {
+        return consThrottlesToSample;
+    }
+
+    public List<String> hapiThrottlesToSample() {
+        return hapiThrottlesToSample;
+    }
+
+    public long entityUtilStatsUpdateIntervalMs() {
+        return entityUtilStatsUpdateIntervalMs;
+    }
+
+    public long throttleUtilStatsUpdateIntervalMs() {
+        return throttleUtilStatsUpdateIntervalMs;
     }
 }

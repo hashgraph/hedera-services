@@ -24,6 +24,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 
+import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -54,10 +55,12 @@ class NodeLocalPropertiesTest {
         assertEquals(23, subject.nettyStartRetries());
         assertEquals(25, subject.numExecutionTimesToTrack());
         assertEquals(26, subject.issResetPeriod());
-        assertEquals(27, subject.issRoundsToDump());
+        assertEquals(27, subject.issRoundsToLog());
         assertEquals(28, subject.prefetchQueueCapacity());
         assertEquals(29, subject.prefetchThreadPoolSize());
         assertEquals(30, subject.prefetchCodeCacheTtlSecs());
+        assertEquals(List.of("80"), subject.consThrottlesToSample());
+        assertEquals(List.of("81"), subject.hapiThrottlesToSample());
     }
 
     @Test
@@ -67,7 +70,7 @@ class NodeLocalPropertiesTest {
         subject = new NodeLocalProperties(properties);
 
         assertEquals(TEST, subject.activeProfile());
-        assertEquals(6L, subject.statsHapiOpsSpeedometerUpdateIntervalMs());
+        assertEquals(6L, subject.hapiOpsStatsUpdateIntervalMs());
         assertEquals(7.0, subject.statsSpeedometerHalfLifeSecs());
         assertEquals(8.0, subject.statsRunningAvgHalfLifeSecs());
         assertEquals(logDir(9), subject.recordLogDir());
@@ -86,8 +89,6 @@ class NodeLocalPropertiesTest {
         assertFalse(subject.exportAccountsOnStartup());
         assertEquals(Profile.PROD, subject.nettyMode());
         assertEquals(24L, subject.nettyStartRetryIntervalMs());
-        assertTrue(subject.shouldDumpFcmsOnIss());
-        assertEquals(logDir(31), subject.sidecarDir());
     }
 
     @Test
@@ -108,7 +109,7 @@ class NodeLocalPropertiesTest {
         assertEquals(24, subject.nettyStartRetries());
         assertEquals(26, subject.numExecutionTimesToTrack());
         assertEquals(27, subject.issResetPeriod());
-        assertEquals(28, subject.issRoundsToDump());
+        assertEquals(28, subject.issRoundsToLog());
         assertEquals(29, subject.prefetchQueueCapacity());
         assertEquals(30, subject.prefetchThreadPoolSize());
         assertEquals(31, subject.prefetchCodeCacheTtlSecs());
@@ -124,7 +125,7 @@ class NodeLocalPropertiesTest {
 
         // expect:
         assertEquals(DEV, subject.activeProfile());
-        assertEquals(7L, subject.statsHapiOpsSpeedometerUpdateIntervalMs());
+        assertEquals(7L, subject.hapiOpsStatsUpdateIntervalMs());
         assertEquals(8.0, subject.statsSpeedometerHalfLifeSecs());
         assertEquals(9.0, subject.statsRunningAvgHalfLifeSecs());
         assertEquals(logDir(10), subject.recordLogDir());
@@ -143,7 +144,8 @@ class NodeLocalPropertiesTest {
         assertTrue(subject.exportAccountsOnStartup());
         assertEquals(Profile.TEST, subject.nettyMode());
         assertEquals(25L, subject.nettyStartRetryIntervalMs());
-        assertFalse(subject.shouldDumpFcmsOnIss());
+        assertEquals(83L, subject.entityUtilStatsUpdateIntervalMs());
+        assertEquals(84L, subject.throttleUtilStatsUpdateIntervalMs());
         assertEquals(logDir(32), subject.sidecarDir());
     }
 
@@ -186,13 +188,20 @@ class NodeLocalPropertiesTest {
                 .willReturn(LEGACY_ENV_ORDER[(i + 21) % 3]);
         given(properties.getIntProperty("netty.startRetries")).willReturn(i + 22);
         given(properties.getLongProperty("netty.startRetryIntervalMs")).willReturn(i + 23L);
-        given(properties.getBooleanProperty("iss.dumpFcms")).willReturn(i % 2 == 1);
         given(properties.getIntProperty("stats.executionTimesToTrack")).willReturn(i + 24);
         given(properties.getIntProperty("iss.resetPeriod")).willReturn(i + 25);
-        given(properties.getIntProperty("iss.roundsToDump")).willReturn(i + 26);
+        given(properties.getIntProperty("iss.roundsToLog")).willReturn(i + 26);
         given(properties.getIntProperty("hedera.prefetch.queueCapacity")).willReturn(i + 27);
         given(properties.getIntProperty("hedera.prefetch.threadPoolSize")).willReturn(i + 28);
         given(properties.getIntProperty("hedera.prefetch.codeCacheTtlSecs")).willReturn(i + 29);
+        given(properties.getStringsProperty("stats.consThrottlesToSample"))
+                .willReturn(List.of("" + (i + 79)));
+        given(properties.getStringsProperty("stats.hapiThrottlesToSample"))
+                .willReturn(List.of("" + (i + 80)));
+        given(properties.getLongProperty("stats.entityUtils.gaugeUpdateIntervalMs"))
+                .willReturn(i + 81L);
+        given(properties.getLongProperty("stats.throttleUtils.gaugeUpdateIntervalMs"))
+                .willReturn(i + 82L);
         given(properties.getStringProperty("hedera.recordStream.sidecarDir"))
                 .willReturn(logDir(i + 30));
     }

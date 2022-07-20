@@ -25,10 +25,10 @@ import com.hedera.services.sysfiles.domain.throttling.ThrottleReqOpsScaleFactor;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
-import java.time.Instant;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.EnumSet;
+import java.util.List;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -50,8 +50,14 @@ public interface PropertySource {
     Function<String, Object> AS_STRING = s -> s;
     Function<String, Object> AS_PROFILE = v -> Profile.valueOf(v.toUpperCase());
     Function<String, Object> AS_BOOLEAN = Boolean::valueOf;
+    Function<String, Object> AS_CS_STRINGS = s -> Arrays.stream(s.split(",")).toList();
     Function<String, Object> AS_FUNCTIONS =
             s -> Arrays.stream(s.split(",")).map(HederaFunctionality::valueOf).collect(toSet());
+    Function<String, Object> AS_CONGESTION_MULTIPLIERS = CongestionMultipliers::from;
+    Function<String, Object> AS_KNOWN_BLOCK_VALUES = KnownBlockValues::from;
+    Function<String, Object> AS_THROTTLE_SCALE_FACTOR = ThrottleReqOpsScaleFactor::from;
+    Function<String, Object> AS_ENTITY_NUM_RANGE = EntityIdUtils::parseEntityNumRange;
+    Function<String, Object> AS_ENTITY_TYPES = EntityType::csvTypeSet;
     Function<String, Object> AS_SIDECARS =
             s ->
                     s.isEmpty()
@@ -61,12 +67,6 @@ public interface PropertySource {
                                     .collect(
                                             Collectors.toCollection(
                                                     () -> EnumSet.noneOf(SidecarType.class)));
-    Function<String, Object> AS_CONGESTION_MULTIPLIERS = CongestionMultipliers::from;
-    Function<String, Object> AS_KNOWN_BLOCK_VALUES = KnownBlockValues::from;
-    Function<String, Object> AS_THROTTLE_SCALE_FACTOR = ThrottleReqOpsScaleFactor::from;
-    Function<String, Object> AS_ENTITY_NUM_RANGE = EntityIdUtils::parseEntityNumRange;
-    Function<String, Object> AS_ENTITY_TYPES = EntityType::csvTypeSet;
-    Function<String, Object> AS_INSTANT = Instant::parse;
 
     boolean containsProperty(String name);
 
@@ -92,12 +92,12 @@ public interface PropertySource {
     }
 
     @SuppressWarnings("unchecked")
-    default Set<SidecarType> getSidecarsProperty(String name) {
+    default Set<EntityType> getTypesProperty(String name) {
         return getTypedProperty(Set.class, name);
     }
 
     @SuppressWarnings("unchecked")
-    default Set<EntityType> getTypesProperty(String name) {
+    default Set<SidecarType> getSidecarsProperty(String name) {
         return getTypedProperty(Set.class, name);
     }
 
@@ -116,6 +116,11 @@ public interface PropertySource {
 
     default int getIntProperty(String name) {
         return getTypedProperty(Integer.class, name);
+    }
+
+    @SuppressWarnings("unchecked")
+    default List<String> getStringsProperty(final String name) {
+        return getTypedProperty(List.class, name);
     }
 
     default double getDoubleProperty(String name) {

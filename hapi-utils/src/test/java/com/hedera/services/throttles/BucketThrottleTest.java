@@ -211,6 +211,19 @@ class BucketThrottleTest {
     }
 
     @Test
+    void hasExpectedPercentUsed() {
+        int mtps = 500;
+        int burstPeriod = 2;
+
+        var subject = BucketThrottle.withMtpsAndBurstPeriod(mtps, burstPeriod);
+        final var totalCap = subject.bucket().totalCapacity();
+        subject.bucket().useCapacity(totalCap / 2);
+
+        assertEquals(50.0, subject.percentUsed(0));
+        assertEquals(25.0, subject.percentUsed(totalCap / mtps / 4));
+    }
+
+    @Test
     void canReclaimCapacity() {
         // setup:
         int mtps = 500;

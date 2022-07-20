@@ -29,13 +29,15 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.willThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
-import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.validation.UsageLimits;
 import com.hedera.services.state.virtual.ContractKey;
 import com.hedera.services.state.virtual.IterableContractValue;
 import com.hedera.services.utils.EntityNum;
@@ -58,9 +60,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class SizeLimitedStorageTest {
+    @Mock private UsageLimits usageLimits;
     @Mock private SizeLimitedStorage.IterableStorageUpserter storageUpserter;
     @Mock private SizeLimitedStorage.IterableStorageRemover storageRemover;
-    @Mock private GlobalDynamicProperties dynamicProperties;
     @Mock private MerkleMap<EntityNum, MerkleAccount> accounts;
     @Mock private VirtualMap<ContractKey, IterableContractValue> storage;
     @Mock private TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
@@ -75,9 +77,9 @@ class SizeLimitedStorageTest {
     void setUp() {
         subject =
                 new SizeLimitedStorage(
+                        usageLimits,
                         storageUpserter,
                         storageRemover,
-                        dynamicProperties,
                         () -> accounts,
                         () -> storage);
     }
@@ -94,7 +96,6 @@ class SizeLimitedStorageTest {
 
         InOrder inOrder = Mockito.inOrder(storage, accounts, accountsLedger, storageRemover);
 
-        givenNoSizeLimits();
         given(storage.containsKey(firstAKey)).willReturn(true);
         given(storage.containsKey(firstBKey)).willReturn(true);
         given(storage.containsKey(nextAKey)).willReturn(true);
@@ -115,6 +116,8 @@ class SizeLimitedStorageTest {
                 .set(firstAccount, FIRST_CONTRACT_STORAGE_KEY, firstRootKey.getKey());
         inOrder.verify(accountsLedger).set(nextAccount, NUM_CONTRACT_KV_PAIRS, nextKvPairs - 1);
         inOrder.verify(accountsLedger).set(nextAccount, FIRST_CONTRACT_STORAGE_KEY, null);
+        // and:
+        verify(usageLimits).refreshStorageSlots();
     }
 
     @Test
@@ -126,7 +129,6 @@ class SizeLimitedStorageTest {
     void commitsMappingsInOrder() {
         InOrder inOrder = Mockito.inOrder(storage, accountsLedger, storageUpserter);
 
-        givenNoSizeLimits();
         givenAccount(firstAccount, firstKvPairs, firstRootKey);
         givenAccount(nextAccount, nextKvPairs, nextRootKey);
         given(storageUpserter.upsertMapping(firstAKey, aValue, firstRootKey, null, storage))
@@ -157,7 +159,6 @@ class SizeLimitedStorageTest {
     void commitsMappingsForMissingAccount() {
         InOrder inOrder = Mockito.inOrder(storage, accountsLedger, storageUpserter);
 
-        givenNoSizeLimits();
         given(storageUpserter.upsertMapping(firstAKey, aValue, null, null, storage))
                 .willReturn(firstAKey);
 
@@ -172,8 +173,9 @@ class SizeLimitedStorageTest {
     @Test
     void validatesSingleContractStorage() {
         givenAccount(firstAccount, firstKvPairs);
-        given(dynamicProperties.maxIndividualContractKvPairs()).willReturn(firstKvPairs + 1);
-        given(dynamicProperties.maxAggregateContractKvPairs()).willReturn(Long.MAX_VALUE);
+        willThrow(new InvalidTransactionException(MAX_CONTRACT_STORAGE_EXCEEDED))
+                .given(usageLimits)
+                .assertUsableContractSlots(firstKvPairs + 2);
 
         subject.putStorage(firstAccount, aLiteralKey, bLiteralValue);
         subject.putStorage(firstAccount, bLiteralKey, aLiteralValue);
@@ -190,7 +192,9 @@ class SizeLimitedStorageTest {
         given(storage.containsKey(firstAKey)).willReturn(false);
         given(storage.containsKey(firstBKey)).willReturn(false);
         given(storage.containsKey(nextAKey)).willReturn(true);
-        given(dynamicProperties.maxAggregateContractKvPairs()).willReturn(maxKvPairs);
+        willThrow(new InvalidTransactionException(MAX_STORAGE_IN_PRICE_REGIME_HAS_BEEN_USED))
+                .given(usageLimits)
+                .assertUsableTotalSlots(maxKvPairs + 1);
 
         subject.beginSession();
         subject.putStorage(firstAccount, aLiteralKey, bLiteralValue);
@@ -263,7 +267,6 @@ class SizeLimitedStorageTest {
     void removingOnlyCurrentMappingInListCausesSubsequentInsertionToUseNullRoot() {
         givenAccount(firstAccount, 1, firstAKey);
         given(storage.containsKey(firstAKey)).willReturn(true);
-        givenNoSizeLimits();
 
         subject.putStorage(firstAccount, aLiteralKey, UInt256.ZERO);
         subject.putStorage(firstAccount, bLiteralKey, bLiteralValue);
@@ -448,11 +451,6 @@ class SizeLimitedStorageTest {
     private void givenContainedStorage(final ContractKey key, final IterableContractValue value) {
         given(storage.get(key)).willReturn(value);
         given(storage.containsKey(key)).willReturn(true);
-    }
-
-    private void givenNoSizeLimits() {
-        given(dynamicProperties.maxIndividualContractKvPairs()).willReturn(Integer.MAX_VALUE);
-        given(dynamicProperties.maxAggregateContractKvPairs()).willReturn(Long.MAX_VALUE);
     }
 
     private static final AccountID firstAccount = IdUtils.asAccount("0.0.1234");

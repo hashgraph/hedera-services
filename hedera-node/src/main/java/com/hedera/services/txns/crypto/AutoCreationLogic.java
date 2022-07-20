@@ -18,6 +18,7 @@ package com.hedera.services.txns.crypto;
 import static com.hedera.services.context.BasicTransactionContext.EMPTY_KEY;
 import static com.hedera.services.records.TxnAwareRecordsHistorian.DEFAULT_SOURCE_ID;
 import static com.hedera.services.utils.MiscUtils.asFcKeyUnchecked;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 import com.google.protobuf.ByteString;
@@ -39,6 +40,7 @@ import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.state.EntityCreator;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.submerkle.FcAssessedCustomFee;
+import com.hedera.services.state.validation.UsageLimits;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.accessors.SignedTxnAccessor;
@@ -49,9 +51,11 @@ import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.SignedTransaction;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.swirlds.merkle.map.MerkleMap;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.function.Supplier;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.commons.lang3.tuple.Pair;
@@ -65,6 +69,7 @@ public class AutoCreationLogic {
     private static final List<FcAssessedCustomFee> NO_CUSTOM_FEES = Collections.emptyList();
 
     private final StateView currentView;
+    private final UsageLimits usageLimits;
     private final EntityIdSource ids;
     private final EntityCreator creator;
     private final TransactionContext txnCtx;
@@ -72,6 +77,7 @@ public class AutoCreationLogic {
     private final SigImpactHistorian sigImpactHistorian;
     private final SyntheticTxnFactory syntheticTxnFactory;
     private final List<InProgressChildRecord> pendingCreations = new ArrayList<>();
+    private final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts;
 
     private FeeCalculator feeCalculator;
 
@@ -80,16 +86,20 @@ public class AutoCreationLogic {
 
     @Inject
     public AutoCreationLogic(
+            final UsageLimits usageLimits,
             final SyntheticTxnFactory syntheticTxnFactory,
             final EntityCreator creator,
             final EntityIdSource ids,
             final AliasManager aliasManager,
             final SigImpactHistorian sigImpactHistorian,
             final StateView currentView,
-            final TransactionContext txnCtx) {
+            final TransactionContext txnCtx,
+            final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts) {
         this.ids = ids;
         this.txnCtx = txnCtx;
         this.creator = creator;
+        this.accounts = accounts;
+        this.usageLimits = usageLimits;
         this.currentView = currentView;
         this.sigImpactHistorian = sigImpactHistorian;
         this.syntheticTxnFactory = syntheticTxnFactory;
@@ -160,6 +170,9 @@ public class AutoCreationLogic {
     public Pair<ResponseCodeEnum, Long> create(
             final BalanceChange change,
             final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger) {
+        if (!usageLimits.areCreatableAccounts(1)) {
+            return Pair.of(MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED, 0L);
+        }
         final var alias = change.alias();
         final var key = asPrimitiveKeyUnchecked(alias);
         final var syntheticCreation = syntheticTxnFactory.createAccount(key, 0L);
@@ -171,10 +184,6 @@ public class AutoCreationLogic {
         change.setNewBalance(change.getAggregatedUnits());
 
         final var sideEffects = new SideEffectsTracker();
-        // tbd - this is not correct, syntheticCreation.getTransactionID().getAccountID() is always
-        // the default account id instance
-        // and it only works because the fields we extract from the account id here should always be
-        // 0
         final var newId = ids.newAccountId(syntheticCreation.getTransactionID().getAccountID());
         accountsLedger.create(newId);
         change.replaceAliasWith(newId);
