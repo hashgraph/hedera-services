@@ -22,7 +22,7 @@ import com.hedera.services.store.models.Token;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
-public interface FreezingLogic {
+public interface TokenFreezeUnfreezeLogic {
     ResponseCodeEnum validate(TransactionBody txnBody);
 
     void doFreezeUnfreeze(Id targetTokenId, Id targetAccountId);

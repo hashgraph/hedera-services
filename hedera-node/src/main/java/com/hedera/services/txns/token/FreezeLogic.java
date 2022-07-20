@@ -28,7 +28,7 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.util.List;
 import javax.inject.Inject;
 
-public class FreezeLogic implements FreezingLogic {
+public class FreezeLogic implements TokenFreezeUnfreezeLogic {
     private final TypedTokenStore tokenStore;
     private final AccountStore accountStore;
 

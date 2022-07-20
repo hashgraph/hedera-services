@@ -71,7 +71,7 @@ public class FreezeUnfreezeTokenPrecompileSuite extends HapiApiSuite {
 
     @Override
     public List<HapiApiSpec> getSpecsInSuite() {
-        return allOf(List.of( freezeFungibleAndNftTokensHappyPath(),isFrozenTokenHappyPath()));
+        return allOf(List.of(freezeFungibleAndNftTokensHappyPath(), isFrozenTokenHappyPath()));
     }
 
     private HapiApiSpec freezeFungibleAndNftTokensHappyPath() {
