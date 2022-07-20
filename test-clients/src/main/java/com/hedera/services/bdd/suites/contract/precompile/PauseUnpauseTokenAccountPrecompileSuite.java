@@ -16,18 +16,25 @@
 package com.hedera.services.bdd.suites.contract.precompile;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
+import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.asHexedAddress;
 import static com.hedera.services.bdd.suites.contract.Utils.asToken;
 import static com.hedera.services.bdd.suites.token.TokenAssociationSpecs.VANILLA_TOKEN;
+import static com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult.htsPrecompileResult;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.TokenPauseStatus.Paused;
 import static com.hederahashgraph.api.proto.java.TokenPauseStatus.Unpaused;
 import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
@@ -71,7 +78,9 @@ public class PauseUnpauseTokenAccountPrecompileSuite extends HapiApiSuite {
                         pauseFungibleTokenHappyPath(),
                         unpauseFungibleTokenHappyPath(),
                         pauseNonFungibleTokenHappyPath(),
-                        unpauseNonFungibleTokenHappyPath()));
+                        unpauseNonFungibleTokenHappyPath()
+                )
+        );
     }
 
     private HapiApiSpec pauseFungibleTokenHappyPath() {
@@ -81,29 +90,50 @@ public class PauseUnpauseTokenAccountPrecompileSuite extends HapiApiSuite {
                 .given(
                         newKeyNamed(PAUSE_KEY),
                         cryptoCreate(TOKEN_TREASURY),
-                        cryptoCreate(ACCOUNT).balance(INITIAL_BALANCE).key(PAUSE_KEY),
+                        cryptoCreate(ACCOUNT).balance(INITIAL_BALANCE),
                         tokenCreate(VANILLA_TOKEN)
                                 .tokenType(FUNGIBLE_COMMON)
                                 .treasury(TOKEN_TREASURY)
                                 .pauseKey(PAUSE_KEY)
                                 .initialSupply(1_000)
                                 .exposingCreatedIdTo(id -> tokenID.set(asToken(id))),
-                        uploadInitCode(PAUSE_UNPAUSE_CONTRACT))
+                        uploadInitCode(PAUSE_UNPAUSE_CONTRACT),
+                        contractCreate(PAUSE_UNPAUSE_CONTRACT))
                 .when(
                         withOpContext(
                                 (spec, opLog) ->
                                         allRunFor(
                                                 spec,
-                                                contractCreate(PAUSE_UNPAUSE_CONTRACT)
-                                                        .bytecode(PAUSE_UNPAUSE_CONTRACT),
                                                 contractCall(
-                                                                PAUSE_UNPAUSE_CONTRACT,
-                                                                "pauseTokenAccount",
-                                                                asHexedAddress(tokenID.get()))
+                                                        PAUSE_UNPAUSE_CONTRACT,
+                                                        "pauseTokenAccount",
+                                                        asHexedAddress(tokenID.get()))
                                                         .payingWith(ACCOUNT)
-                                                        .via("pauseTokenAccountTxn")
-                                                        .gas(GAS_TO_OFFER))))
-                .then(getTokenInfo(VANILLA_TOKEN).hasPauseStatus(Paused));
+                                                        .via("pauseFungibleAccountDoesNotOwnPauseKeyFailingTxn")
+                                                        .gas(GAS_TO_OFFER)
+                                                        .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
+                                                cryptoUpdate(ACCOUNT).key(PAUSE_KEY),
+                                                contractCall(
+                                                        PAUSE_UNPAUSE_CONTRACT,
+                                                        "pauseTokenAccount",
+                                                        asHexedAddress(tokenID.get()))
+                                                        .payingWith(ACCOUNT)
+                                                        .via("pauseFungibleTxn")
+                                                        .gas(GAS_TO_OFFER)
+                                                )))
+                .then(
+                        childRecordsCheck(
+                                "pauseFungibleAccountDoesNotOwnPauseKeyFailingTxn",
+                                CONTRACT_REVERT_EXECUTED,
+                                recordWith()
+                                        .status(INVALID_SIGNATURE)
+                                        .contractCallResult(
+                                                resultWith()
+                                                        .contractCallResult(
+                                                                htsPrecompileResult()
+                                                                        .withStatus(
+                                                                                INVALID_SIGNATURE)))),
+                        getTokenInfo(VANILLA_TOKEN).hasPauseStatus(Paused));
     }
 
     private HapiApiSpec unpauseFungibleTokenHappyPath() {
@@ -113,29 +143,50 @@ public class PauseUnpauseTokenAccountPrecompileSuite extends HapiApiSuite {
                 .given(
                         newKeyNamed(UNPAUSE_KEY),
                         cryptoCreate(TOKEN_TREASURY),
-                        cryptoCreate(ACCOUNT).balance(INITIAL_BALANCE).key(UNPAUSE_KEY),
+                        cryptoCreate(ACCOUNT).balance(INITIAL_BALANCE),
                         tokenCreate(VANILLA_TOKEN)
                                 .tokenType(FUNGIBLE_COMMON)
                                 .treasury(TOKEN_TREASURY)
                                 .pauseKey(UNPAUSE_KEY)
                                 .initialSupply(1_000)
                                 .exposingCreatedIdTo(id -> tokenID.set(asToken(id))),
-                        uploadInitCode(PAUSE_UNPAUSE_CONTRACT))
+                        uploadInitCode(PAUSE_UNPAUSE_CONTRACT),
+                        contractCreate(PAUSE_UNPAUSE_CONTRACT))
                 .when(
                         withOpContext(
                                 (spec, opLog) ->
                                         allRunFor(
                                                 spec,
-                                                contractCreate(PAUSE_UNPAUSE_CONTRACT)
-                                                        .bytecode(PAUSE_UNPAUSE_CONTRACT),
                                                 contractCall(
-                                                                PAUSE_UNPAUSE_CONTRACT,
-                                                                "unpauseTokenAccount",
-                                                                asHexedAddress(tokenID.get()))
+                                                        PAUSE_UNPAUSE_CONTRACT,
+                                                        "unpauseTokenAccount",
+                                                        asHexedAddress(tokenID.get()))
                                                         .payingWith(ACCOUNT)
-                                                        .via("unpauseTokenAccountTxn")
-                                                        .gas(GAS_TO_OFFER))))
-                .then(getTokenInfo(VANILLA_TOKEN).hasPauseStatus(Unpaused));
+                                                        .via("unpauseFungibleAccountDoesNotOwnPauseKeyFailingTxn")
+                                                        .gas(GAS_TO_OFFER)
+                                                        .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
+                                                cryptoUpdate(ACCOUNT).key(UNPAUSE_KEY),
+                                                contractCall(
+                                                        PAUSE_UNPAUSE_CONTRACT,
+                                                        "unpauseTokenAccount",
+                                                        asHexedAddress(tokenID.get()))
+                                                        .payingWith(ACCOUNT)
+                                                        .via("unpauseFungibleTxn")
+                                                        .gas(GAS_TO_OFFER)
+                                        )))
+                .then(
+                        childRecordsCheck(
+                                "unpauseFungibleAccountDoesNotOwnPauseKeyFailingTxn",
+                                CONTRACT_REVERT_EXECUTED,
+                                recordWith()
+                                        .status(INVALID_SIGNATURE)
+                                        .contractCallResult(
+                                                resultWith()
+                                                        .contractCallResult(
+                                                                htsPrecompileResult()
+                                                                        .withStatus(
+                                                                                INVALID_SIGNATURE)))),
+                        getTokenInfo(VANILLA_TOKEN).hasPauseStatus(Unpaused));
     }
 
     private HapiApiSpec pauseNonFungibleTokenHappyPath() {
@@ -145,29 +196,50 @@ public class PauseUnpauseTokenAccountPrecompileSuite extends HapiApiSuite {
                 .given(
                         newKeyNamed(PAUSE_KEY),
                         cryptoCreate(TOKEN_TREASURY),
-                        cryptoCreate(ACCOUNT).balance(INITIAL_BALANCE).key(PAUSE_KEY),
+                        cryptoCreate(ACCOUNT).balance(INITIAL_BALANCE),
                         tokenCreate(VANILLA_TOKEN)
                                 .tokenType(NON_FUNGIBLE_UNIQUE)
                                 .treasury(TOKEN_TREASURY)
                                 .pauseKey(PAUSE_KEY)
                                 .initialSupply(0)
                                 .exposingCreatedIdTo(id -> tokenID.set(asToken(id))),
-                        uploadInitCode(PAUSE_UNPAUSE_CONTRACT))
+                        uploadInitCode(PAUSE_UNPAUSE_CONTRACT),
+                        contractCreate(PAUSE_UNPAUSE_CONTRACT))
                 .when(
                         withOpContext(
                                 (spec, opLog) ->
                                         allRunFor(
                                                 spec,
-                                                contractCreate(PAUSE_UNPAUSE_CONTRACT)
-                                                        .bytecode(PAUSE_UNPAUSE_CONTRACT),
                                                 contractCall(
-                                                                PAUSE_UNPAUSE_CONTRACT,
-                                                                "pauseTokenAccount",
-                                                                asHexedAddress(tokenID.get()))
+                                                        PAUSE_UNPAUSE_CONTRACT,
+                                                        "pauseTokenAccount",
+                                                        asHexedAddress(tokenID.get()))
                                                         .payingWith(ACCOUNT)
-                                                        .via("pauseTokenAccountTxn")
-                                                        .gas(GAS_TO_OFFER))))
-                .then(getTokenInfo(VANILLA_TOKEN).hasPauseStatus(Paused));
+                                                        .via("pauseNonFungibleAccountDoesNotOwnPauseKeyFailingTxn")
+                                                        .gas(GAS_TO_OFFER)
+                                                        .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
+                                                cryptoUpdate(ACCOUNT).key(PAUSE_KEY),
+                                                contractCall(
+                                                        PAUSE_UNPAUSE_CONTRACT,
+                                                        "pauseTokenAccount",
+                                                        asHexedAddress(tokenID.get()))
+                                                        .payingWith(ACCOUNT)
+                                                        .via("pauseFungibleTxn")
+                                                        .gas(GAS_TO_OFFER)
+                                        )))
+                .then(
+                        childRecordsCheck(
+                                "pauseNonFungibleAccountDoesNotOwnPauseKeyFailingTxn",
+                                CONTRACT_REVERT_EXECUTED,
+                                recordWith()
+                                        .status(INVALID_SIGNATURE)
+                                        .contractCallResult(
+                                                resultWith()
+                                                        .contractCallResult(
+                                                                htsPrecompileResult()
+                                                                        .withStatus(
+                                                                                INVALID_SIGNATURE)))),
+                        getTokenInfo(VANILLA_TOKEN).hasPauseStatus(Paused));
     }
 
     private HapiApiSpec unpauseNonFungibleTokenHappyPath() {
@@ -177,28 +249,49 @@ public class PauseUnpauseTokenAccountPrecompileSuite extends HapiApiSuite {
                 .given(
                         newKeyNamed(UNPAUSE_KEY),
                         cryptoCreate(TOKEN_TREASURY),
-                        cryptoCreate(ACCOUNT).balance(INITIAL_BALANCE).key(UNPAUSE_KEY),
+                        cryptoCreate(ACCOUNT).balance(INITIAL_BALANCE),
                         tokenCreate(VANILLA_TOKEN)
                                 .tokenType(NON_FUNGIBLE_UNIQUE)
                                 .treasury(TOKEN_TREASURY)
                                 .pauseKey(UNPAUSE_KEY)
                                 .initialSupply(0)
                                 .exposingCreatedIdTo(id -> tokenID.set(asToken(id))),
-                        uploadInitCode(PAUSE_UNPAUSE_CONTRACT))
+                        uploadInitCode(PAUSE_UNPAUSE_CONTRACT),
+                        contractCreate(PAUSE_UNPAUSE_CONTRACT))
                 .when(
                         withOpContext(
                                 (spec, opLog) ->
                                         allRunFor(
                                                 spec,
-                                                contractCreate(PAUSE_UNPAUSE_CONTRACT)
-                                                        .bytecode(PAUSE_UNPAUSE_CONTRACT),
                                                 contractCall(
-                                                                PAUSE_UNPAUSE_CONTRACT,
-                                                                "unpauseTokenAccount",
-                                                                asHexedAddress(tokenID.get()))
+                                                        PAUSE_UNPAUSE_CONTRACT,
+                                                        "unpauseTokenAccount",
+                                                        asHexedAddress(tokenID.get()))
                                                         .payingWith(ACCOUNT)
-                                                        .via("unpauseTokenAccountTxn")
-                                                        .gas(GAS_TO_OFFER))))
-                .then(getTokenInfo(VANILLA_TOKEN).hasPauseStatus(Unpaused));
+                                                        .via("unpauseNonFungibleAccountDoesNotOwnPauseKeyFailingTxn")
+                                                        .gas(GAS_TO_OFFER)
+                                                        .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
+                                                cryptoUpdate(ACCOUNT).key(UNPAUSE_KEY),
+                                                contractCall(
+                                                        PAUSE_UNPAUSE_CONTRACT,
+                                                        "unpauseTokenAccount",
+                                                        asHexedAddress(tokenID.get()))
+                                                        .payingWith(ACCOUNT)
+                                                        .via("pauseFungibleTxn")
+                                                        .gas(GAS_TO_OFFER)
+                                        )))
+                .then(
+                        childRecordsCheck(
+                                "unpauseNonFungibleAccountDoesNotOwnPauseKeyFailingTxn",
+                                CONTRACT_REVERT_EXECUTED,
+                                recordWith()
+                                        .status(INVALID_SIGNATURE)
+                                        .contractCallResult(
+                                                resultWith()
+                                                        .contractCallResult(
+                                                                htsPrecompileResult()
+                                                                        .withStatus(
+                                                                                INVALID_SIGNATURE)))),
+                        getTokenInfo(VANILLA_TOKEN).hasPauseStatus(Unpaused));
     }
 }
