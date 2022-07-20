@@ -327,38 +327,39 @@ public class ServicesState extends PartialNaryMerkleInternal
             metadata = new StateMetadata(app, new FCHashMap<>());
             // Log state before migration.
             logStateChildrenSizes();
-			final Runnable initTask = () -> {
-				// This updates the working state accessor with our children
-				app.initializationFlow().runWith(this);
+            final Runnable initTask = () -> {
+                // This updates the working state accessor with our children
+                app.initializationFlow().runWith(this);
 
-				// Ensure the prefetch queue is created and thread pool is active instead of waiting
-				// for lazy-initialization to take place
-				app.prefetchProcessor();
-				log.info("Created prefetch processor");
+                // Ensure the prefetch queue is created and thread pool is active instead of waiting
+                // for lazy-initialization to take place
+                app.prefetchProcessor();
+                log.info("Created prefetch processor");
 
-				logSummary();
-				log.info("  --> Context initialized accordingly on Services node {}", selfId);
-			};
-			if (deployedVersion.equals(deserializedVersion)) {
-				initTask.run();
-			} else {
-				postInitTasks.add(initTask);
-			}
+                logSummary();
+                log.info("  --> Context initialized accordingly on Services node {}", selfId);
 
-            if (trigger == GENESIS) {
-                app.sysAccountsCreator()
-                        .ensureSystemAccounts(
-                                app.backingAccounts(), app.workingState().addressBook());
-                app.sysFilesManager().createManagedFilesIfMissing();
-            }
-            if (trigger != RECONNECT) {
-                // Once we have a dynamic address book, this will run unconditionally
-                app.sysFilesManager().updateStakeDetails();
-            }
-            if (trigger == RESTART) {
-                // Do this separately from ensureSystemAccounts(), as that call is expensive with a
-                // large saved state
-                app.treasuryCloner().ensureTreasuryClonesExist();
+                if (trigger == GENESIS) {
+                    app.sysAccountsCreator()
+                            .ensureSystemAccounts(
+                                    app.backingAccounts(), app.workingState().addressBook());
+                    app.sysFilesManager().createManagedFilesIfMissing();
+                }
+                if (trigger != RECONNECT) {
+                    // Once we have a dynamic address book, this will run unconditionally
+                    app.sysFilesManager().updateStakeDetails();
+                }
+                if (trigger == RESTART) {
+                    // Do this separately from ensureSystemAccounts(), as that call is expensive with a
+                    // large saved state
+                    app.treasuryCloner().ensureTreasuryClonesExist();
+                }
+            };
+
+            if (deployedVersion.equals(deserializedVersion)) {
+                initTask.run();
+            } else {
+                postInitTasks.add(initTask);
             }
         }
     }
