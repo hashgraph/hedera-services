@@ -127,10 +127,11 @@ class SizeLimitedStorageTest {
 	}
 
 	@Test
-	void commitsMappingsInOrder() {
+	void commitsMappingsInOrderWithNewRootValue() {
 		InOrder inOrder = Mockito.inOrder(storage, accountsLedger, storageUpserter);
 
 		givenNoSizeLimits();
+		given(storage.size()).willReturn(0L).willReturn(1L);
 		givenAccount(firstAccount, firstKvPairs, firstRootKey);
 		givenAccount(nextAccount, nextKvPairs, nextRootKey);
 		given(storageUpserter.upsertMapping(
@@ -153,6 +154,39 @@ class SizeLimitedStorageTest {
 				firstAKey, aValue, firstRootKey, null, storage);
 		inOrder.verify(storageUpserter).upsertMapping(
 				firstBKey, bValue, firstAKey, aValue, storage);
+		inOrder.verify(storageUpserter).upsertMapping(
+				firstDKey, dValue, firstAKey, null, storage);
+		inOrder.verify(storageUpserter).upsertMapping(
+				nextAKey, aValue, nextRootKey, null, storage);
+	}
+
+	@Test
+	void commitsMappingsInOrderWithUpdatedRootValue() {
+		InOrder inOrder = Mockito.inOrder(storage, accountsLedger, storageUpserter);
+
+		givenNoSizeLimits();
+		givenAccount(firstAccount, firstKvPairs, firstRootKey);
+		givenAccount(nextAccount, nextKvPairs, nextRootKey);
+		given(storageUpserter.upsertMapping(
+				firstAKey, aValue, firstRootKey, null, storage)).willReturn(firstAKey);
+		given(storageUpserter.upsertMapping(
+				firstBKey, bValue, firstAKey, null, storage)).willReturn(firstAKey);
+		given(storageUpserter.upsertMapping(
+				firstDKey, dValue, firstAKey, null, storage)).willReturn(firstAKey);
+		given(storageUpserter.upsertMapping(
+				nextAKey, aValue, nextRootKey, null, storage)).willReturn(nextAKey);
+
+		subject.putStorage(firstAccount, aLiteralKey, aLiteralValue);
+		subject.putStorage(firstAccount, bLiteralKey, bLiteralValue);
+		subject.putStorage(nextAccount, aLiteralKey, aLiteralValue);
+		subject.putStorage(firstAccount, dLiteralKey, dLiteralValue);
+
+		subject.validateAndCommit();
+
+		inOrder.verify(storageUpserter).upsertMapping(
+				firstAKey, aValue, firstRootKey, null, storage);
+		inOrder.verify(storageUpserter).upsertMapping(
+				firstBKey, bValue, firstAKey, null, storage);
 		inOrder.verify(storageUpserter).upsertMapping(
 				firstDKey, dValue, firstAKey, null, storage);
 		inOrder.verify(storageUpserter).upsertMapping(

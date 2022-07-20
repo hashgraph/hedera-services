@@ -353,9 +353,11 @@ public class SizeLimitedStorage {
 			var firstKey = newFirstKeys.containsKey(id) ? newFirstKeys.get(id) : firstKeyLookup(id);
 			for (final var changedKey : changeSet) {
 				final var newValue = newMappings.get(changedKey);
+				final var preInsertSize = curStorage.size();
 				firstKey = storageUpserter.upsertMapping(changedKey, newValue, firstKey, firstValue, curStorage);
-				firstValue = firstKey.equals(changedKey) ? newValue : null;
-			}
+				// If newValue was just added to the map, it is the mutable root value; but if we only
+				// updated the existing root value, then newValue is NOT the mutable root value
+				firstValue = (firstKey.equals(changedKey) && curStorage.size() > preInsertSize) ? newValue : null;			}
 			newFirstKeys.put(id, firstKey);
 		});
 	}
