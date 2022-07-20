@@ -239,41 +239,11 @@ public class ContractCallSuite extends HapiApiSuite {
                 cannotUseMirrorAddressOfAliasedContractInPrecompileMethod(),
                 exchangeRatePrecompileWorks(),
                 canMintAndTransferInSameContractOperation(),
-                workingHoursDemo(),
-                prngPrecompileWorks());
+                workingHoursDemo()
+        );
     }
 
-    private HapiApiSpec prngPrecompileWorks() {
-        final var prng = "PrngSystemContract";
-        final var gasToOffer = 400_000;
-        return defaultHapiSpec("prngPrecompileWorks")
-                .given(cryptoCreate("bob"), uploadInitCode(prng), contractCreate(prng))
-                .when(
-                        sourcing(
-                                () ->
-                                        contractCall(prng, "getPseudorandomSeed")
-                                                .gas(gasToOffer)
-                                                .payingWith("bob")
-                                                .via("randomBits")
-                                                .logged()))
-                .then(
-                        getTxnRecord("randomBits")
-                                .andAllChildRecords()
-                                .hasChildRecordCount(1)
-                                .hasChildRecords(
-                                        recordWith()
-                                                .pseudoRandomBytes()
-                                                .contractCallResult(
-                                                        resultWith()
-                                                                .resultViaFunctionName(
-                                                                        "getPseudorandomSeed",
-                                                                        prng,
-                                                                        isRandomResult(
-                                                                                new Object[] {
-                                                                                    new byte[32]
-                                                                                }))))
-                                .logged());
-    }
+
 
     private HapiApiSpec whitelistingAliasedContract() {
         final var creationTxn = "creationTxn";
