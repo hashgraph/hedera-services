@@ -15,22 +15,10 @@
  */
 package com.hedera.services.bdd.suites.contract.precompile;
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.spec.queries.crypto.ExpectedTokenRel;
-import com.hedera.services.bdd.suites.HapiApiSuite;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.TokenFreezeStatus;
-import com.hederahashgraph.api.proto.java.TokenID;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
-import java.util.List;
-import java.util.concurrent.atomic.AtomicReference;
-
 import static com.google.protobuf.ByteString.copyFromUtf8;
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountDetails;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
+import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
+import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.*;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
@@ -42,14 +30,27 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hedera.services.bdd.suites.contract.Utils.asToken;
 import static com.hedera.services.bdd.suites.token.TokenAssociationSpecs.KNOWABLE_TOKEN;
 import static com.hedera.services.bdd.suites.token.TokenAssociationSpecs.VANILLA_TOKEN;
+import static com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult.htsPrecompileResult;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
+
+import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult;
+import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.TokenID;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 public class FreezeUnfreezeTokenPrecompileSuite extends HapiApiSuite {
     private static final Logger log =
@@ -71,19 +72,27 @@ public class FreezeUnfreezeTokenPrecompileSuite extends HapiApiSuite {
 
     @Override
     public List<HapiApiSpec> getSpecsInSuite() {
-        return allOf(List.of(freezeFungibleAndNftTokensHappyPath(), isFrozenTokenHappyPath()));
+        return allOf(
+                List.of(
+                        freezeFungibleTokensHappyPath(),
+                        freezeNftTokenHappyPath(),
+                        unFreezeFungibleTokensHappyPath(),
+                        unFreezeNftTokenHappyPath()));
     }
 
-    private HapiApiSpec freezeFungibleAndNftTokensHappyPath() {
+    private HapiApiSpec freezeFungibleTokensHappyPath() {
         final AtomicReference<AccountID> accountID = new AtomicReference<>();
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
-        final AtomicReference<TokenID> nftTokenID = new AtomicReference<>();
+        final var isFrozenTxn = "isFrozenTxn";
 
         return defaultHapiSpec("freezeFungibleTokenHappyPath")
                 .given(
                         newKeyNamed(FREEZE_KEY),
                         newKeyNamed(MULTI_KEY),
-                        cryptoCreate(ACCOUNT).exposingCreatedIdTo(accountID::set).key(FREEZE_KEY),
+                        cryptoCreate(ACCOUNT)
+                                .balance(100 * ONE_HBAR)
+                                .exposingCreatedIdTo(accountID::set)
+                                .key(FREEZE_KEY),
                         cryptoCreate(TOKEN_TREASURY),
                         tokenCreate(VANILLA_TOKEN)
                                 .tokenType(FUNGIBLE_COMMON)
@@ -91,21 +100,10 @@ public class FreezeUnfreezeTokenPrecompileSuite extends HapiApiSuite {
                                 .freezeKey(FREEZE_KEY)
                                 .initialSupply(1_000)
                                 .exposingCreatedIdTo(id -> vanillaTokenID.set(asToken(id))),
-                        tokenCreate(KNOWABLE_TOKEN)
-                                .tokenType(NON_FUNGIBLE_UNIQUE)
-                                .treasury(TOKEN_TREASURY)
-                                .freezeKey(FREEZE_KEY)
-                                .supplyKey(MULTI_KEY)
-                                .initialSupply(0)
-                                .exposingCreatedIdTo(id -> nftTokenID.set(asToken(id))),
-                        mintToken(KNOWABLE_TOKEN, List.of(copyFromUtf8("First!"))),
                         uploadInitCode(FREEZE_CONTRACT),
                         contractCreate(FREEZE_CONTRACT),
                         tokenAssociate(ACCOUNT, VANILLA_TOKEN),
-                        tokenAssociate(ACCOUNT, KNOWABLE_TOKEN),
-                        cryptoTransfer(moving(500, VANILLA_TOKEN).between(TOKEN_TREASURY, ACCOUNT)),
-                        cryptoTransfer(
-                                movingUnique(KNOWABLE_TOKEN, 1L).between(TOKEN_TREASURY, ACCOUNT)))
+                        cryptoTransfer(moving(500, VANILLA_TOKEN).between(TOKEN_TREASURY, ACCOUNT)))
                 .when(
                         withOpContext(
                                 (spec, opLog) ->
@@ -122,34 +120,49 @@ public class FreezeUnfreezeTokenPrecompileSuite extends HapiApiSuite {
                                                         .gas(GAS_TO_OFFER),
                                                 contractCall(
                                                                 FREEZE_CONTRACT,
-                                                                "tokenFreeze",
-                                                                asAddress(nftTokenID.get()),
+                                                                "isTokenFrozen",
+                                                                asAddress(vanillaTokenID.get()),
                                                                 asAddress(accountID.get()))
+                                                        .logged()
                                                         .payingWith(ACCOUNT)
-                                                        .via("freezeNFTTxn")
+                                                        .via(isFrozenTxn)
                                                         .gas(GAS_TO_OFFER))))
                 .then(
-                        getAccountDetails(ACCOUNT)
-                                .hasToken(
-                                        ExpectedTokenRel.relationshipWith(KNOWABLE_TOKEN)
-                                                .freeze(TokenFreezeStatus.Frozen)),
-                        getAccountDetails(ACCOUNT)
-                                .hasToken(
-                                        ExpectedTokenRel.relationshipWith(VANILLA_TOKEN)
-                                                .freeze(TokenFreezeStatus.Frozen)));
+                        childRecordsCheck(
+                                isFrozenTxn,
+                                SUCCESS,
+                                recordWith()
+                                        .status(SUCCESS)
+                                        .contractCallResult(
+                                                resultWith()
+                                                        .contractCallResult(
+                                                                htsPrecompileResult()
+                                                                        .forFunction(
+                                                                                HTSPrecompileResult
+                                                                                        .FunctionType
+                                                                                        .IS_FROZEN)
+                                                                        .withStatus(SUCCESS)
+                                                                        .withIsFrozen(true)))));
     }
 
-    private HapiApiSpec isFrozenTokenHappyPath() {
+    private HapiApiSpec unFreezeFungibleTokensHappyPath() {
         final AtomicReference<AccountID> accountID = new AtomicReference<>();
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
+        final var isFrozenTxn = "isFrozenTxn";
 
-        return defaultHapiSpec("freezeFungibleTokenHappyPath")
+        return defaultHapiSpec("unFreezeFungibleTokensHappyPath")
                 .given(
-                        cryptoCreate(ACCOUNT).exposingCreatedIdTo(accountID::set),
+                        newKeyNamed(FREEZE_KEY),
+                        newKeyNamed(MULTI_KEY),
+                        cryptoCreate(ACCOUNT)
+                                .balance(100 * ONE_HBAR)
+                                .exposingCreatedIdTo(accountID::set)
+                                .key(FREEZE_KEY),
                         cryptoCreate(TOKEN_TREASURY),
                         tokenCreate(VANILLA_TOKEN)
                                 .tokenType(FUNGIBLE_COMMON)
                                 .treasury(TOKEN_TREASURY)
+                                .freezeKey(FREEZE_KEY)
                                 .initialSupply(1_000)
                                 .exposingCreatedIdTo(id -> vanillaTokenID.set(asToken(id))),
                         uploadInitCode(FREEZE_CONTRACT),
@@ -163,13 +176,171 @@ public class FreezeUnfreezeTokenPrecompileSuite extends HapiApiSuite {
                                                 spec,
                                                 contractCall(
                                                                 FREEZE_CONTRACT,
+                                                                "tokenUnfreeze",
+                                                                asAddress(vanillaTokenID.get()),
+                                                                asAddress(accountID.get()))
+                                                        .logged()
+                                                        .payingWith(ACCOUNT)
+                                                        .via("freezeTxn")
+                                                        .gas(GAS_TO_OFFER),
+                                                contractCall(
+                                                                FREEZE_CONTRACT,
                                                                 "isTokenFrozen",
                                                                 asAddress(vanillaTokenID.get()),
                                                                 asAddress(accountID.get()))
                                                         .logged()
                                                         .payingWith(ACCOUNT)
-                                                        .via("isFrozenTxn")
+                                                        .via(isFrozenTxn)
                                                         .gas(GAS_TO_OFFER))))
-                .then(getTxnRecord("isFrozenTxn").andAllChildRecords().logged());
+                .then(
+                        childRecordsCheck(
+                                isFrozenTxn,
+                                SUCCESS,
+                                recordWith()
+                                        .status(SUCCESS)
+                                        .contractCallResult(
+                                                resultWith()
+                                                        .contractCallResult(
+                                                                htsPrecompileResult()
+                                                                        .forFunction(
+                                                                                HTSPrecompileResult
+                                                                                        .FunctionType
+                                                                                        .IS_FROZEN)
+                                                                        .withStatus(SUCCESS)
+                                                                        .withIsFrozen(false)))));
+    }
+
+    private HapiApiSpec freezeNftTokenHappyPath() {
+        final AtomicReference<AccountID> accountID = new AtomicReference<>();
+        final AtomicReference<TokenID> nftTokenID = new AtomicReference<>();
+        final var isFrozenNftTxn = "isFrozenNftTxn";
+
+        return defaultHapiSpec("freezeNftTokenHappyPath")
+                .given(
+                        newKeyNamed(FREEZE_KEY),
+                        newKeyNamed(MULTI_KEY),
+                        cryptoCreate(ACCOUNT)
+                                .balance(100 * ONE_HBAR)
+                                .exposingCreatedIdTo(accountID::set)
+                                .key(FREEZE_KEY),
+                        cryptoCreate(TOKEN_TREASURY),
+                        tokenCreate(KNOWABLE_TOKEN)
+                                .tokenType(NON_FUNGIBLE_UNIQUE)
+                                .treasury(TOKEN_TREASURY)
+                                .freezeKey(FREEZE_KEY)
+                                .supplyKey(MULTI_KEY)
+                                .initialSupply(0)
+                                .exposingCreatedIdTo(id -> nftTokenID.set(asToken(id))),
+                        mintToken(KNOWABLE_TOKEN, List.of(copyFromUtf8("First!"))),
+                        uploadInitCode(FREEZE_CONTRACT),
+                        contractCreate(FREEZE_CONTRACT),
+                        tokenAssociate(ACCOUNT, KNOWABLE_TOKEN),
+                        cryptoTransfer(
+                                movingUnique(KNOWABLE_TOKEN, 1L).between(TOKEN_TREASURY, ACCOUNT)))
+                .when(
+                        withOpContext(
+                                (spec, opLog) ->
+                                        allRunFor(
+                                                spec,
+                                                contractCall(
+                                                                FREEZE_CONTRACT,
+                                                                "tokenFreeze",
+                                                                asAddress(nftTokenID.get()),
+                                                                asAddress(accountID.get()))
+                                                        .payingWith(ACCOUNT)
+                                                        .via("freezeNFTTxn")
+                                                        .gas(GAS_TO_OFFER),
+                                                contractCall(
+                                                                FREEZE_CONTRACT,
+                                                                "isTokenFrozen",
+                                                                asAddress(nftTokenID.get()),
+                                                                asAddress(accountID.get()))
+                                                        .logged()
+                                                        .payingWith(ACCOUNT)
+                                                        .via(isFrozenNftTxn)
+                                                        .gas(GAS_TO_OFFER))))
+                .then(
+                        childRecordsCheck(
+                                isFrozenNftTxn,
+                                SUCCESS,
+                                recordWith()
+                                        .status(SUCCESS)
+                                        .contractCallResult(
+                                                resultWith()
+                                                        .contractCallResult(
+                                                                htsPrecompileResult()
+                                                                        .forFunction(
+                                                                                HTSPrecompileResult
+                                                                                        .FunctionType
+                                                                                        .IS_FROZEN)
+                                                                        .withStatus(SUCCESS)
+                                                                        .withIsFrozen(true)))));
+    }
+
+    private HapiApiSpec unFreezeNftTokenHappyPath() {
+        final AtomicReference<AccountID> accountID = new AtomicReference<>();
+        final AtomicReference<TokenID> nftTokenID = new AtomicReference<>();
+        final var isFrozenNftTxn = "isFrozenNftTxn";
+
+        return defaultHapiSpec("unFreezeNftTokenHappyPath")
+                .given(
+                        newKeyNamed(FREEZE_KEY),
+                        newKeyNamed(MULTI_KEY),
+                        cryptoCreate(ACCOUNT)
+                                .balance(100 * ONE_HBAR)
+                                .exposingCreatedIdTo(accountID::set)
+                                .key(FREEZE_KEY),
+                        cryptoCreate(TOKEN_TREASURY),
+                        tokenCreate(KNOWABLE_TOKEN)
+                                .tokenType(NON_FUNGIBLE_UNIQUE)
+                                .treasury(TOKEN_TREASURY)
+                                .freezeKey(FREEZE_KEY)
+                                .supplyKey(MULTI_KEY)
+                                .initialSupply(0)
+                                .exposingCreatedIdTo(id -> nftTokenID.set(asToken(id))),
+                        mintToken(KNOWABLE_TOKEN, List.of(copyFromUtf8("First!"))),
+                        uploadInitCode(FREEZE_CONTRACT),
+                        contractCreate(FREEZE_CONTRACT),
+                        tokenAssociate(ACCOUNT, KNOWABLE_TOKEN),
+                        cryptoTransfer(
+                                movingUnique(KNOWABLE_TOKEN, 1L).between(TOKEN_TREASURY, ACCOUNT)))
+                .when(
+                        withOpContext(
+                                (spec, opLog) ->
+                                        allRunFor(
+                                                spec,
+                                                contractCall(
+                                                                FREEZE_CONTRACT,
+                                                                "tokenUnfreeze",
+                                                                asAddress(nftTokenID.get()),
+                                                                asAddress(accountID.get()))
+                                                        .payingWith(ACCOUNT)
+                                                        .via("freezeNFTTxn")
+                                                        .gas(GAS_TO_OFFER),
+                                                contractCall(
+                                                                FREEZE_CONTRACT,
+                                                                "isTokenFrozen",
+                                                                asAddress(nftTokenID.get()),
+                                                                asAddress(accountID.get()))
+                                                        .logged()
+                                                        .payingWith(ACCOUNT)
+                                                        .via(isFrozenNftTxn)
+                                                        .gas(GAS_TO_OFFER))))
+                .then(
+                        childRecordsCheck(
+                                isFrozenNftTxn,
+                                SUCCESS,
+                                recordWith()
+                                        .status(SUCCESS)
+                                        .contractCallResult(
+                                                resultWith()
+                                                        .contractCallResult(
+                                                                htsPrecompileResult()
+                                                                        .forFunction(
+                                                                                HTSPrecompileResult
+                                                                                        .FunctionType
+                                                                                        .IS_FROZEN)
+                                                                        .withStatus(SUCCESS)
+                                                                        .withIsFrozen(false)))));
     }
 }

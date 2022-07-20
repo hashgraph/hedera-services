@@ -39,6 +39,7 @@ public class HTSPrecompileResult implements ContractCallResult {
     private static final TupleType tokenUriType = TupleType.parse("(string)");
     private static final TupleType ercTransferType = TupleType.parse("(bool)");
     private static final TupleType isApprovedForAllType = TupleType.parse("(bool)");
+    private static final TupleType isFrozenType = TupleType.parse("(int32,bool)");
 
     public static HTSPrecompileResult htsPrecompileResult() {
         return new HTSPrecompileResult();
@@ -58,8 +59,9 @@ public class HTSPrecompileResult implements ContractCallResult {
         NOT_SPECIFIED,
         ALLOWANCE,
         IS_APPROVED_FOR_ALL,
-        GET_APPROVED
-    }
+        GET_APPROVED,
+        IS_FROZEN
+	}
 
     private FunctionType functionType = FunctionType.NOT_SPECIFIED;
     private TupleType tupleType = notSpecifiedType;
@@ -76,6 +78,7 @@ public class HTSPrecompileResult implements ContractCallResult {
     private long allowance;
     private boolean ercFungibleTransferStatus;
     private boolean isApprovedForAllStatus;
+    private boolean isFrozen;
 
     public HTSPrecompileResult forFunction(final FunctionType functionType) {
         switch (functionType) {
@@ -92,6 +95,7 @@ public class HTSPrecompileResult implements ContractCallResult {
             case ERC_TRANSFER -> tupleType = ercTransferType;
             case ALLOWANCE -> tupleType = allowanceOfType;
             case IS_APPROVED_FOR_ALL -> tupleType = isApprovedForAllType;
+            case IS_FROZEN -> tupleType = isFrozenType;
         }
 
         this.functionType = functionType;
@@ -164,6 +168,11 @@ public class HTSPrecompileResult implements ContractCallResult {
         return this;
     }
 
+    public HTSPrecompileResult withIsFrozen(final boolean isFrozen) {
+        this.isFrozen = isFrozen;
+        return this;
+    }
+
     @Override
     public Bytes getBytes() {
         Tuple result;
@@ -187,6 +196,7 @@ public class HTSPrecompileResult implements ContractCallResult {
             case ERC_TRANSFER -> result = Tuple.of(ercFungibleTransferStatus);
             case IS_APPROVED_FOR_ALL -> result = Tuple.of(isApprovedForAllStatus);
             case ALLOWANCE -> result = Tuple.of(BigInteger.valueOf(allowance));
+            case IS_FROZEN -> result = Tuple.of(status.getNumber(),isFrozen);
             default -> result = Tuple.of(status.getNumber());
         }
         return Bytes.wrap(tupleType.encode(result).array());
