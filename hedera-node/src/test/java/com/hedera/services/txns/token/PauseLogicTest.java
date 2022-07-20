@@ -28,7 +28,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-public class PauseLogicTest {
+class PauseLogicTest {
     private final Id id = new Id(1, 2, 3);
 
     @Mock private Token token;
