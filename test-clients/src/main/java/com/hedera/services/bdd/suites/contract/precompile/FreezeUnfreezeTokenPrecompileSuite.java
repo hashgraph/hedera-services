@@ -1,10 +1,24 @@
+/*
+ * Copyright (C) 2022 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package com.hedera.services.bdd.suites.contract.precompile;
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.queries.crypto.ExpectedTokenRel;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenFreezeStatus;
 import com.hederahashgraph.api.proto.java.TokenID;
 import org.apache.logging.log4j.LogManager;
@@ -57,13 +71,7 @@ public class FreezeUnfreezeTokenPrecompileSuite extends HapiApiSuite {
 
     @Override
     public List<HapiApiSpec> getSpecsInSuite() {
-        return allOf(
-                List.of(
-//                        freezeFungibleAndNftTokensHappyPath(),
-                        isFrozenTokenHappyPath()
-                        //                freezeNonFungibleTokenHappyPath(),
-//                        unfreezeFungibleTokenHappyPath()
-                ));
+        return allOf(List.of( freezeFungibleAndNftTokensHappyPath(),isFrozenTokenHappyPath()));
     }
 
     private HapiApiSpec freezeFungibleAndNftTokensHappyPath() {
@@ -113,18 +121,18 @@ public class FreezeUnfreezeTokenPrecompileSuite extends HapiApiSuite {
                                                         .via("freezeTxn")
                                                         .gas(GAS_TO_OFFER),
                                                 contractCall(
-                                                        FREEZE_CONTRACT,
-                                                        "tokenFreeze",
-                                                        asAddress(nftTokenID.get()),
-                                                        asAddress(accountID.get()))
+                                                                FREEZE_CONTRACT,
+                                                                "tokenFreeze",
+                                                                asAddress(nftTokenID.get()),
+                                                                asAddress(accountID.get()))
                                                         .payingWith(ACCOUNT)
                                                         .via("freezeNFTTxn")
-                                                        .gas(GAS_TO_OFFER))
-                                        ))
-                .then(getAccountDetails(ACCOUNT)
-                        .hasToken(
-                                ExpectedTokenRel.relationshipWith(KNOWABLE_TOKEN)
-                                        .freeze(TokenFreezeStatus.Frozen)),
+                                                        .gas(GAS_TO_OFFER))))
+                .then(
+                        getAccountDetails(ACCOUNT)
+                                .hasToken(
+                                        ExpectedTokenRel.relationshipWith(KNOWABLE_TOKEN)
+                                                .freeze(TokenFreezeStatus.Frozen)),
                         getAccountDetails(ACCOUNT)
                                 .hasToken(
                                         ExpectedTokenRel.relationshipWith(VANILLA_TOKEN)
@@ -162,54 +170,6 @@ public class FreezeUnfreezeTokenPrecompileSuite extends HapiApiSuite {
                                                         .payingWith(ACCOUNT)
                                                         .via("isFrozenTxn")
                                                         .gas(GAS_TO_OFFER))))
-                .then(
-                        getTxnRecord("isFrozenTxn").andAllChildRecords().logged()
-                );
+                .then(getTxnRecord("isFrozenTxn").andAllChildRecords().logged());
     }
-
-    private HapiApiSpec freezeNonFungibleTokenHappyPath() {
-        final AtomicReference<AccountID> accountID = new AtomicReference<>();
-        final AtomicReference<TokenID> nftTokenID = new AtomicReference<>();
-
-        return defaultHapiSpec("freezeNonFungibleTokenHappyPath")
-                .given(
-                        newKeyNamed(FREEZE_KEY),
-                        newKeyNamed(MULTI_KEY),
-                        cryptoCreate(ACCOUNT).exposingCreatedIdTo(accountID::set).key(FREEZE_KEY),
-                        cryptoCreate(TOKEN_TREASURY),
-                        tokenCreate(KNOWABLE_TOKEN)
-                                .tokenType(NON_FUNGIBLE_UNIQUE)
-                                .treasury(TOKEN_TREASURY)
-                                .freezeKey(FREEZE_KEY)
-                                .supplyKey(MULTI_KEY)
-                                .initialSupply(0)
-                                .exposingCreatedIdTo(id -> nftTokenID.set(asToken(id))),
-                        mintToken(KNOWABLE_TOKEN, List.of(copyFromUtf8("First!"))),
-                        uploadInitCode(FREEZE_CONTRACT),
-                        contractCreate(FREEZE_CONTRACT),
-                        tokenAssociate(ACCOUNT, KNOWABLE_TOKEN),
-                        cryptoTransfer(
-                                movingUnique(KNOWABLE_TOKEN, 1L).between(TOKEN_TREASURY, ACCOUNT)))
-                .when(
-                        withOpContext(
-                                (spec, opLog) -> {
-                                    allRunFor(
-                                            spec,
-                                            contractCall(
-                                                            FREEZE_CONTRACT,
-                                                            "tokenUnfreeze",
-                                                            asAddress(nftTokenID.get()),
-                                                            asAddress(accountID.get()))
-                                                    .payingWith(ACCOUNT)
-                                                    .via("unfreezeTxn")
-                                                    .gas(GAS_TO_OFFER));
-                                }))
-                .then(
-                        getAccountDetails(ACCOUNT)
-                                .hasToken(
-                                        ExpectedTokenRel.relationshipWith(VANILLA_TOKEN)
-                                                .freeze(TokenFreezeStatus.Unfrozen)));
-    }
-
-
 }

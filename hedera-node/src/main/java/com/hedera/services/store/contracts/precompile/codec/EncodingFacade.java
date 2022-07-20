@@ -54,7 +54,7 @@ public class EncodingFacade {
     private static final TupleType tokenUriType = TupleType.parse(STRING_RETURN_TYPE);
     private static final TupleType ercTransferType = TupleType.parse(BOOL_RETURN_TYPE);
     private static final TupleType isApprovedForAllType = TupleType.parse(BOOL_RETURN_TYPE);
-    private static final TupleType isTokenFrozenType = TupleType.parse(BOOL_RETURN_TYPE);
+    private static final TupleType isTokenFrozenType = TupleType.parse("(int32,bool)");
 
     @Inject
     public EncodingFacade() {
@@ -101,6 +101,7 @@ public class EncodingFacade {
     public Bytes encodeIsFrozen(final boolean isFrozen) {
         return functionResultBuilder()
                 .forFunction(FunctionType.IS_FROZEN)
+                .withStatus(SUCCESS.getNumber())
                 .withIsFrozen(isFrozen)
                 .build();
     }
@@ -368,7 +369,7 @@ public class EncodingFacade {
                         case GET_APPROVED -> Tuple.of(
                                 convertBesuAddressToHeadlongAddress(approved));
                         case IS_APPROVED_FOR_ALL -> Tuple.of(isApprovedForAllStatus);
-                        case IS_FROZEN -> Tuple.of(isFrozen);
+                        case IS_FROZEN -> Tuple.of(status, isFrozen);
                     };
 
             return Bytes.wrap(tupleType.encode(result).array());
