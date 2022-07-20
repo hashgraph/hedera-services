@@ -17,24 +17,21 @@ package com.hedera.services.bdd.suites.contract.precompile;
 
 import static com.google.protobuf.ByteString.copyFromUtf8;
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
+import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
+import static com.hedera.services.bdd.spec.infrastructure.providers.ops.crypto.RandomAccount.INITIAL_BALANCE;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenInfo;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.*;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.*;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hedera.services.bdd.suites.contract.Utils.asToken;
 import static com.hedera.services.bdd.suites.token.TokenAssociationSpecs.VANILLA_TOKEN;
+import static com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult.htsPrecompileResult;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
@@ -52,9 +49,12 @@ public class WipeTokenAccountPrecompileSuite extends HapiApiSuite {
     private static final Logger log = LogManager.getLogger(WipeTokenAccountPrecompileSuite.class);
     private static final String WIPE_CONTRACT = "WipeTokenAccount";
     private static final String ACCOUNT = "anybody";
+    private static final String SECOND_ACCOUNT = "anybodySecond";
     private static final String WIPE_KEY = "wipeKey";
     private static final String MULTI_KEY = "purpose";
-    private static final long GAS_TO_OFFER = 4_000_000L;
+    public static final int GAS_TO_OFFER = 1_000_000;
+    public static final String WIPE_FUNGIBLE_TOKEN = "wipeFungibleToken";
+    public static final String WIPE_NON_FUNGIBLE_TOKEN = "wipeNonFungibleToken";
 
     public static void main(String... args) {
         new WipeTokenAccountPrecompileSuite().runSuiteSync();
@@ -67,17 +67,20 @@ public class WipeTokenAccountPrecompileSuite extends HapiApiSuite {
 
     @Override
     public List<HapiApiSpec> getSpecsInSuite() {
-        return allOf(List.of(wipeFungibleTokenHappyPath(), wipeNonFungibleTokenHappyPath()));
+        return allOf(List.of(wipeFungibleTokenScenarios(), wipeNonFungibleTokenScenarios()));
     }
 
-    private HapiApiSpec wipeFungibleTokenHappyPath() {
+    private HapiApiSpec wipeFungibleTokenScenarios() {
         final AtomicReference<AccountID> accountID = new AtomicReference<>();
+        final AtomicReference<AccountID> secondAccountID = new AtomicReference<>();
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
 
         return defaultHapiSpec("WipeFungibleTokenHappyPath")
                 .given(
                         newKeyNamed(WIPE_KEY),
                         cryptoCreate(ACCOUNT).exposingCreatedIdTo(accountID::set),
+                        cryptoCreate(SECOND_ACCOUNT).exposingCreatedIdTo(secondAccountID::set),
+                        cryptoUpdate(SECOND_ACCOUNT).key(WIPE_KEY),
                         cryptoCreate(TOKEN_TREASURY),
                         tokenCreate(VANILLA_TOKEN)
                                 .tokenType(FUNGIBLE_COMMON)
@@ -88,6 +91,7 @@ public class WipeTokenAccountPrecompileSuite extends HapiApiSuite {
                         uploadInitCode(WIPE_CONTRACT),
                         contractCreate(WIPE_CONTRACT),
                         tokenAssociate(ACCOUNT, VANILLA_TOKEN),
+                        tokenAssociate(SECOND_ACCOUNT, VANILLA_TOKEN),
                         cryptoTransfer(moving(500, VANILLA_TOKEN).between(TOKEN_TREASURY, ACCOUNT)))
                 .when(
                         withOpContext(
@@ -96,7 +100,38 @@ public class WipeTokenAccountPrecompileSuite extends HapiApiSuite {
                                                 spec,
                                                 contractCall(
                                                                 WIPE_CONTRACT,
-                                                                "wipeFungibleToken",
+                                                                WIPE_FUNGIBLE_TOKEN,
+                                                                asAddress(vanillaTokenID.get()),
+                                                                asAddress(accountID.get()),
+                                                                10L)
+                                                        .payingWith(ACCOUNT)
+                                                        .via("accountDoesNotOwnWipeKeyTxn")
+                                                        .gas(GAS_TO_OFFER)
+                                                        .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
+                                                cryptoUpdate(ACCOUNT).key(WIPE_KEY),
+                                                contractCall(
+                                                                WIPE_CONTRACT,
+                                                                WIPE_FUNGIBLE_TOKEN,
+                                                                asAddress(vanillaTokenID.get()),
+                                                                asAddress(accountID.get()),
+                                                                1_000L)
+                                                        .payingWith(ACCOUNT)
+                                                        .via("amountLargerThanBalanceTxn")
+                                                        .gas(GAS_TO_OFFER)
+                                                        .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
+                                                contractCall(
+                                                                WIPE_CONTRACT,
+                                                                WIPE_FUNGIBLE_TOKEN,
+                                                                asAddress(vanillaTokenID.get()),
+                                                                asAddress(secondAccountID.get()),
+                                                                10L)
+                                                        .payingWith(SECOND_ACCOUNT)
+                                                        .via("accountDoesNotOwnTokensTxn")
+                                                        .gas(GAS_TO_OFFER)
+                                                        .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
+                                                contractCall(
+                                                                WIPE_CONTRACT,
+                                                                WIPE_FUNGIBLE_TOKEN,
                                                                 asAddress(vanillaTokenID.get()),
                                                                 asAddress(accountID.get()),
                                                                 10L)
@@ -104,11 +139,44 @@ public class WipeTokenAccountPrecompileSuite extends HapiApiSuite {
                                                         .via("wipeFungibleTxn")
                                                         .gas(GAS_TO_OFFER))))
                 .then(
+                        childRecordsCheck(
+                                "accountDoesNotOwnWipeKeyTxn",
+                                CONTRACT_REVERT_EXECUTED,
+                                recordWith()
+                                        .status(INVALID_SIGNATURE)
+                                        .contractCallResult(
+                                                resultWith()
+                                                        .contractCallResult(
+                                                                htsPrecompileResult()
+                                                                        .withStatus(
+                                                                                INVALID_SIGNATURE)))),
+                        childRecordsCheck(
+                                "amountLargerThanBalanceTxn",
+                                CONTRACT_REVERT_EXECUTED,
+                                recordWith()
+                                        .status(INVALID_WIPING_AMOUNT)
+                                        .contractCallResult(
+                                                resultWith()
+                                                        .contractCallResult(
+                                                                htsPrecompileResult()
+                                                                        .withStatus(
+                                                                                INVALID_WIPING_AMOUNT)))),
+                        childRecordsCheck(
+                                "accountDoesNotOwnTokensTxn",
+                                CONTRACT_REVERT_EXECUTED,
+                                recordWith()
+                                        .status(INVALID_WIPING_AMOUNT)
+                                        .contractCallResult(
+                                                resultWith()
+                                                        .contractCallResult(
+                                                                htsPrecompileResult()
+                                                                        .withStatus(
+                                                                                INVALID_WIPING_AMOUNT)))),
                         getTokenInfo(VANILLA_TOKEN).hasTotalSupply(990),
                         getAccountBalance(ACCOUNT).hasTokenBalance(VANILLA_TOKEN, 490));
     }
 
-    private HapiApiSpec wipeNonFungibleTokenHappyPath() {
+    private HapiApiSpec wipeNonFungibleTokenScenarios() {
         final AtomicReference<AccountID> accountID = new AtomicReference<>();
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
 
@@ -116,7 +184,10 @@ public class WipeTokenAccountPrecompileSuite extends HapiApiSuite {
                 .given(
                         newKeyNamed(WIPE_KEY),
                         newKeyNamed(MULTI_KEY),
-                        cryptoCreate(ACCOUNT).exposingCreatedIdTo(accountID::set),
+                        cryptoCreate(ACCOUNT)
+                                .balance(INITIAL_BALANCE)
+                                .exposingCreatedIdTo(accountID::set),
+                        cryptoUpdate(ACCOUNT).key(WIPE_KEY),
                         cryptoCreate(TOKEN_TREASURY),
                         tokenCreate(VANILLA_TOKEN)
                                 .tokenType(NON_FUNGIBLE_UNIQUE)
@@ -131,8 +202,7 @@ public class WipeTokenAccountPrecompileSuite extends HapiApiSuite {
                         contractCreate(WIPE_CONTRACT),
                         tokenAssociate(ACCOUNT, VANILLA_TOKEN),
                         cryptoTransfer(
-                                movingUnique(VANILLA_TOKEN, 1L, 2L)
-                                        .between(TOKEN_TREASURY, ACCOUNT)))
+                                movingUnique(VANILLA_TOKEN, 1L).between(TOKEN_TREASURY, ACCOUNT)))
                 .when(
                         withOpContext(
                                 (spec, opLog) -> {
@@ -142,7 +212,38 @@ public class WipeTokenAccountPrecompileSuite extends HapiApiSuite {
                                             spec,
                                             contractCall(
                                                             WIPE_CONTRACT,
-                                                            "wipeNonFungibleToken",
+                                                            WIPE_NON_FUNGIBLE_TOKEN,
+                                                            asAddress(vanillaTokenID.get()),
+                                                            asAddress(accountID.get()),
+                                                            List.of(2L))
+                                                    .payingWith(ACCOUNT)
+                                                    .via(
+                                                            "wipeNonFungibleAccountDoesNotOwnTheSerialTxn")
+                                                    .gas(GAS_TO_OFFER)
+                                                    .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
+                                            contractCall(
+                                                            WIPE_CONTRACT,
+                                                            WIPE_NON_FUNGIBLE_TOKEN,
+                                                            asAddress(vanillaTokenID.get()),
+                                                            asAddress(accountID.get()),
+                                                            List.of(-2L))
+                                                    .payingWith(ACCOUNT)
+                                                    .via("wipeNonFungibleNegativeSerialTxn")
+                                                    .gas(GAS_TO_OFFER)
+                                                    .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
+                                            contractCall(
+                                                            WIPE_CONTRACT,
+                                                            WIPE_NON_FUNGIBLE_TOKEN,
+                                                            asAddress(vanillaTokenID.get()),
+                                                            asAddress(accountID.get()),
+                                                            List.of(3L))
+                                                    .payingWith(ACCOUNT)
+                                                    .via("wipeNonFungibleSerialDoesNotExistsTxn")
+                                                    .gas(GAS_TO_OFFER)
+                                                    .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
+                                            contractCall(
+                                                            WIPE_CONTRACT,
+                                                            WIPE_NON_FUNGIBLE_TOKEN,
                                                             asAddress(vanillaTokenID.get()),
                                                             asAddress(accountID.get()),
                                                             serialNumbers)
@@ -151,7 +252,40 @@ public class WipeTokenAccountPrecompileSuite extends HapiApiSuite {
                                                     .gas(GAS_TO_OFFER));
                                 }))
                 .then(
+                        childRecordsCheck(
+                                "wipeNonFungibleAccountDoesNotOwnTheSerialTxn",
+                                CONTRACT_REVERT_EXECUTED,
+                                recordWith()
+                                        .status(ACCOUNT_DOES_NOT_OWN_WIPED_NFT)
+                                        .contractCallResult(
+                                                resultWith()
+                                                        .contractCallResult(
+                                                                htsPrecompileResult()
+                                                                        .withStatus(
+                                                                                ACCOUNT_DOES_NOT_OWN_WIPED_NFT)))),
+                        childRecordsCheck(
+                                "wipeNonFungibleNegativeSerialTxn",
+                                CONTRACT_REVERT_EXECUTED,
+                                recordWith()
+                                        .status(INVALID_NFT_ID)
+                                        .contractCallResult(
+                                                resultWith()
+                                                        .contractCallResult(
+                                                                htsPrecompileResult()
+                                                                        .withStatus(
+                                                                                INVALID_NFT_ID)))),
+                        childRecordsCheck(
+                                "wipeNonFungibleSerialDoesNotExistsTxn",
+                                CONTRACT_REVERT_EXECUTED,
+                                recordWith()
+                                        .status(INVALID_NFT_ID)
+                                        .contractCallResult(
+                                                resultWith()
+                                                        .contractCallResult(
+                                                                htsPrecompileResult()
+                                                                        .withStatus(
+                                                                                INVALID_NFT_ID)))),
                         getTokenInfo(VANILLA_TOKEN).hasTotalSupply(1),
-                        getAccountBalance(ACCOUNT).hasTokenBalance(VANILLA_TOKEN, 1));
+                        getAccountBalance(ACCOUNT).hasTokenBalance(VANILLA_TOKEN, 0));
     }
 }
