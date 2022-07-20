@@ -15,28 +15,6 @@
  */
 package com.hedera.services.contracts.execution;
 
-/*
- * -
- * ‌
- * Hedera Services Node
- * ​
- * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
- * ​
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *       http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- * ‍
- *
- */
-
 import static com.hedera.test.utils.TxnUtils.assertFailsWith;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -61,6 +39,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import org.apache.tuweni.bytes.Bytes;
+import org.apache.tuweni.bytes.Bytes32;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.Code;
@@ -131,6 +110,7 @@ class CallLocalEvmTxProcessorTest {
         given(storageExpiry.hapiStaticCallOracle()).willReturn(oracle);
         final var receiverAddress = receiver.getId().asEvmAddress();
         given(aliasManager.resolveForEvm(receiverAddress)).willReturn(receiverAddress);
+        given(globalDynamicProperties.chainIdBytes32()).willReturn(Bytes32.ZERO);
         var result =
                 callLocalEvmTxProcessor.execute(
                         sender, receiverAddress, 33_333L, 1234L, Bytes.EMPTY, consensusTime);
@@ -162,6 +142,7 @@ class CallLocalEvmTxProcessorTest {
         given(updater.getSenderAccount(any()).getMutable()).willReturn(senderMutableAccount);
         given(updater.getOrCreate(any())).willReturn(evmAccount);
         given(updater.getOrCreate(any()).getMutable()).willReturn(senderMutableAccount);
+        given(globalDynamicProperties.chainIdBytes32()).willReturn(Bytes32.ZERO);
 
         assertFailsWith(
                 () ->

@@ -22,7 +22,8 @@ import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.RunningHash;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
-import com.swirlds.common.merkle.utility.AbstractMerkleLeaf;
+import com.swirlds.common.merkle.MerkleLeaf;
+import com.swirlds.common.merkle.impl.PartialMerkleLeaf;
 import java.io.IOException;
 import java.util.Objects;
 import java.util.concurrent.ExecutionException;
@@ -32,7 +33,7 @@ import org.apache.commons.lang3.builder.EqualsBuilder;
  * Contains current {@code com.swirlds.common.crypto.RunningHash} which contains a Hash which is a
  * running Hash calculated from all {@link RecordStreamObject} in history
  */
-public class RecordsRunningHashLeaf extends AbstractMerkleLeaf {
+public class RecordsRunningHashLeaf extends PartialMerkleLeaf implements MerkleLeaf {
     static final long CLASS_ID = 0xe370929ba5429d9bL;
     static final int CLASS_VERSION = 1;
 

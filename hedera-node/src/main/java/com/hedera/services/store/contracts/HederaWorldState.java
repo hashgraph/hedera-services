@@ -15,28 +15,6 @@
  */
 package com.hedera.services.store.contracts;
 
-/*
- * -
- * ‌
- * Hedera Services Node
- * ​
- * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
- * ​
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *       http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- * ‍
- *
- */
-
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hedera.services.ledger.HederaLedger.CONTRACT_ID_COMPARATOR;
 import static com.hedera.services.store.contracts.WorldStateTokenAccount.TOKEN_PROXY_ACCOUNT_NONCE;
@@ -49,6 +27,7 @@ import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.accounts.ContractCustomizer;
 import com.hedera.services.ledger.ids.EntityIdSource;
+import com.hedera.services.state.validation.UsageLimits;
 import com.hedera.services.utils.BytesComparator;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -75,6 +54,7 @@ import org.hyperledger.besu.evm.worldstate.WorldUpdater;
 
 @Singleton
 public class HederaWorldState implements HederaMutableWorldState {
+    private final UsageLimits usageLimits;
     private final EntityIdSource ids;
     private final EntityAccess entityAccess;
     private final SigImpactHistorian sigImpactHistorian;
@@ -87,12 +67,14 @@ public class HederaWorldState implements HederaMutableWorldState {
 
     @Inject
     public HederaWorldState(
+            final UsageLimits usageLimits,
             final EntityIdSource ids,
             final EntityAccess entityAccess,
             final CodeCache codeCache,
             final SigImpactHistorian sigImpactHistorian,
             final GlobalDynamicProperties dynamicProperties) {
         this.ids = ids;
+        this.usageLimits = usageLimits;
         this.entityAccess = entityAccess;
         this.codeCache = codeCache;
         this.sigImpactHistorian = sigImpactHistorian;
@@ -108,6 +90,7 @@ public class HederaWorldState implements HederaMutableWorldState {
         this.ids = ids;
         this.entityAccess = entityAccess;
         this.codeCache = codeCache;
+        this.usageLimits = null;
         this.sigImpactHistorian = null;
         this.dynamicProperties = dynamicProperties;
     }
@@ -297,30 +280,21 @@ public class HederaWorldState implements HederaMutableWorldState {
             final HederaWorldState wrapped = (HederaWorldState) wrappedWorldView();
             final var entityAccess = wrapped.entityAccess;
             final var impactHistorian = wrapped.sigImpactHistorian;
+            final var updatedAccounts = getUpdatedAccounts();
 
-            commitSizeLimitedStorageTo(entityAccess);
-
-            final var deletedAddresses = getDeletedAccountAddresses();
-            deletedAddresses.forEach(
-                    address -> {
-                        final var accountId = accountIdFromEvmAddress(address);
-                        validateTrue(impactHistorian != null, FAIL_INVALID);
-                        impactHistorian.markEntityChanged(accountId.getAccountNum());
-                        ensureExistence(
-                                accountId, entityAccess, wrapped.provisionalContractCreations);
-                    });
-            for (final var updatedAccount : getUpdatedAccounts()) {
-                if (updatedAccount.getNonce() == TOKEN_PROXY_ACCOUNT_NONCE) {
-                    continue;
-                }
-                final var accountId = accountIdFromEvmAddress(updatedAccount.getAddress());
-                ensureExistence(accountId, entityAccess, wrapped.provisionalContractCreations);
-                if (updatedAccount.codeWasUpdated()) {
-                    entityAccess.storeCode(accountId, updatedAccount.getCode());
-                }
+            trackNewlyCreatedAccounts(
+                    entityAccess,
+                    wrapped.provisionalContractCreations,
+                    impactHistorian,
+                    getDeletedAccountAddresses(),
+                    updatedAccounts);
+            if (!wrapped.provisionalContractCreations.isEmpty()) {
+                wrapped.usageLimits.assertCreatableContracts(
+                        wrapped.provisionalContractCreations.size());
             }
-
+            commitSizeLimitedStorageTo(entityAccess, updatedAccounts);
             entityAccess.recordNewKvUsageTo(trackingAccounts());
+
             // Because we have tracked all account creations, deletions, and balance changes in the
             // ledgers,
             // this commit() persists all of that information without any additional use of the
@@ -329,7 +303,29 @@ public class HederaWorldState implements HederaMutableWorldState {
             trackingLedgers().commit(impactHistorian);
         }
 
-        private void ensureExistence(
+        private void trackNewlyCreatedAccounts(
+                final EntityAccess entityAccess,
+                final List<ContractID> provisionalCreations,
+                final SigImpactHistorian impactHistorian,
+                final Collection<Address> deletedAddresses,
+                final Collection<UpdateTrackingLedgerAccount<Account>> updatedAccounts) {
+            deletedAddresses.forEach(
+                    address -> {
+                        final var accountId = accountIdFromEvmAddress(address);
+                        validateTrue(impactHistorian != null, FAIL_INVALID);
+                        impactHistorian.markEntityChanged(accountId.getAccountNum());
+                        trackIfNewlyCreated(accountId, entityAccess, provisionalCreations);
+                    });
+            for (final var updatedAccount : updatedAccounts) {
+                if (updatedAccount.getNonce() == TOKEN_PROXY_ACCOUNT_NONCE) {
+                    continue;
+                }
+                final var accountId = accountIdFromEvmAddress(updatedAccount.getAddress());
+                trackIfNewlyCreated(accountId, entityAccess, provisionalCreations);
+            }
+        }
+
+        private void trackIfNewlyCreated(
                 final AccountID accountId,
                 final EntityAccess entityAccess,
                 final List<ContractID> provisionalContractCreations) {
@@ -338,9 +334,11 @@ public class HederaWorldState implements HederaMutableWorldState {
             }
         }
 
-        private void commitSizeLimitedStorageTo(final EntityAccess entityAccess) {
-            for (final var updatedAccount : getUpdatedAccounts()) {
-                final var accountId = accountIdFromEvmAddress(updatedAccount.getAddress());
+        private void commitSizeLimitedStorageTo(
+                final EntityAccess entityAccess,
+                final Collection<UpdateTrackingLedgerAccount<Account>> updatedAccounts) {
+            for (final var updatedAccount : updatedAccounts) {
+                final var accountId = updatedAccount.getAccountId();
                 // Note that we don't have the equivalent of an account-scoped storage trie, so we
                 // can't
                 // do anything in particular when updated.getStorageWasCleared() is true. (We will
@@ -353,6 +351,11 @@ public class HederaWorldState implements HederaMutableWorldState {
                 }
             }
             entityAccess.flushStorage();
+            for (final var updatedAccount : updatedAccounts) {
+                if (updatedAccount.codeWasUpdated()) {
+                    entityAccess.storeCode(updatedAccount.getAccountId(), updatedAccount.getCode());
+                }
+            }
         }
 
         @Override
