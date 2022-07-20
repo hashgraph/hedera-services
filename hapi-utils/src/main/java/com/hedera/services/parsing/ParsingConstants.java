@@ -29,6 +29,7 @@ public final class ParsingConstants {
     public static final String BYTES32 = "(bytes32)";
     public static final String BYTES32_PAIR_RAW_TYPE = "(bytes32,bytes32)";
     public static final String INT = "(int)";
+    public static final String INT32 = "(int32)";
     public static final String STRING = "(string)";
     public static final String UINT8 = "(uint8)";
     public static final String UINT256 = "(uint256)";
@@ -70,28 +71,33 @@ public final class ParsingConstants {
             "(" + TOKEN_INFO + ",int64,address,int64,bytes,address" + ")";
 
     // tuple types
-    public static final TupleType allowanceOfType = TupleType.parse(UINT256);
-    public static final TupleType approveOfType = TupleType.parse(BOOL);
-    public static final TupleType balanceOfType = TupleType.parse(UINT256);
+    private static final TupleType addressTuple = TupleType.parse(ADDRESS);
+    private static final TupleType booleanTuple = TupleType.parse(BOOL);
+    private static final TupleType stringTuple = TupleType.parse(STRING);
+    private static final TupleType bigIntegerTuple = TupleType.parse(UINT256);
+
+    public static final TupleType allowanceOfType = bigIntegerTuple;
+    public static final TupleType approveOfType = booleanTuple;
+    public static final TupleType balanceOfType = bigIntegerTuple;
     public static final TupleType burnReturnType = TupleType.parse("(int32,uint64)");
     public static final TupleType createReturnType = TupleType.parse("(int32,address)");
     public static final TupleType decimalsType = TupleType.parse(UINT8);
-    public static final TupleType ercTransferType = TupleType.parse(BOOL);
-    public static final TupleType getApprovedType = TupleType.parse(ADDRESS);
+    public static final TupleType ercTransferType = booleanTuple;
+    public static final TupleType getApprovedType = addressTuple;
     public static final TupleType getFungibleTokenInfoType =
             TupleType.parse(RESPONSE_STATUS_AT_BEGINNING + FUNGIBLE_TOKEN_INFO + ")");
     public static final TupleType getTokenInfoType =
             TupleType.parse(RESPONSE_STATUS_AT_BEGINNING + TOKEN_INFO + ")");
     public static final TupleType getNonFungibleTokenInfoType =
             TupleType.parse(RESPONSE_STATUS_AT_BEGINNING + NON_FUNGIBLE_TOKEN_INFO + ")");
-    public static final TupleType isApprovedForAllType = TupleType.parse(BOOL);
+    public static final TupleType isApprovedForAllType = booleanTuple;
     public static final TupleType mintReturnType = TupleType.parse("(int32,uint64,int64[])");
-    public static final TupleType nameType = TupleType.parse(STRING);
-    public static final TupleType notSpecifiedType = TupleType.parse("(int32)");
-    public static final TupleType ownerOfType = TupleType.parse(ADDRESS);
-    public static final TupleType symbolType = TupleType.parse(STRING);
-    public static final TupleType tokenUriType = TupleType.parse(STRING);
-    public static final TupleType totalSupplyType = TupleType.parse(UINT256);
+    public static final TupleType nameType = stringTuple;
+    public static final TupleType notSpecifiedType = TupleType.parse(INT32);
+    public static final TupleType ownerOfType = addressTuple;
+    public static final TupleType symbolType = stringTuple;
+    public static final TupleType tokenUriType = stringTuple;
+    public static final TupleType totalSupplyType = bigIntegerTuple;
 
     public enum FunctionType {
         ALLOWANCE,
