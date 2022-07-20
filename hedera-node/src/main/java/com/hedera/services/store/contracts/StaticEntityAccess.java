@@ -226,6 +226,11 @@ public class StaticEntityAccess implements EntityAccess {
         return token.accountsAreFrozenByDefault();
     }
 
+    public boolean defaultKycStatus(final TokenID tokenID) {
+        final var token = lookupToken(tokenID);
+        return token.accountsKycGrantedByDefault();
+    }
+
     /**
      * Returns the name of the given token.
      *

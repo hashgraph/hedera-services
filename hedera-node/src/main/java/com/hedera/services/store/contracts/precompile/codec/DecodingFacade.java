@@ -118,6 +118,13 @@ public class DecodingFacade {
     private static final ABIType<Tuple> GET_TOKEN_DEFAULT_FREEZE_STATUS_DECODER =
             TypeFactory.create("(bytes32)");
 
+    private static final Function GET_TOKEN_DEFAULT_KYC_STATUS_FUNCTION =
+        new Function("getTokenDefaultKycStatus(address)", INT_OUTPUT);
+    private static final Bytes GET_TOKEN_DEFAULT_KYC_STATUS_SELECTOR =
+        Bytes.wrap(GET_TOKEN_DEFAULT_KYC_STATUS_FUNCTION.selector());
+    private static final ABIType<Tuple> GET_TOKEN_DEFAULT_KYC_STATUS_DECODER =
+        TypeFactory.create("(bytes32)");
+
     private static final Function ASSOCIATE_TOKENS_FUNCTION =
             new Function("associateTokens(address,address[])", INT_OUTPUT);
     private static final Bytes ASSOCIATE_TOKENS_SELECTOR =
@@ -355,6 +362,15 @@ public class DecodingFacade {
         final var tokenID = convertAddressBytesToTokenID(decodedArguments.get(0));
 
         return new GetTokenDefaultFreezeStatusWrapper(tokenID);
+    }
+
+    public GetTokenDefaultKycStatusWrapper decodeTokenDefaultKycStatus(final Bytes input) {
+        final Tuple decodedArguments =
+            decodeFunctionCall(input, GET_TOKEN_DEFAULT_KYC_STATUS_SELECTOR, GET_TOKEN_DEFAULT_KYC_STATUS_DECODER);
+
+        final var tokenID = convertAddressBytesToTokenID(decodedArguments.get(0));
+
+        return new GetTokenDefaultKycStatusWrapper(tokenID);
     }
 
     public BalanceOfWrapper decodeBalanceOf(

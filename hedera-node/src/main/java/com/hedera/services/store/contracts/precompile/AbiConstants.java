@@ -114,4 +114,6 @@ public final class AbiConstants {
     // getTokenDefaultFreezeStatus(address)
     public static final int ABI_ID_GET_TOKEN_DEFAULT_FREEZE_STATUS = 0xa7daa18d;
 
+    // getTokenDefaultKycStatus(address)
+    public static final int ABI_ID_GET_TOKEN_DEFAULT_KYC_STATUS = 0x335e04c1;
 }
