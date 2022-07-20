@@ -31,15 +31,24 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.swirlds.common.utility.CommonUtils;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.apache.tuweni.bytes.Bytes;
 
 public class PrngPrecompileSuite extends HapiApiSuite {
     private static final Logger log = LogManager.getLogger(PrngPrecompileSuite.class);
     private static final long GAS_TO_OFFER = 400_000L;
     private static final String THE_GRACEFULLY_FAILING_PRNG_CONTRACT = "GracefullyFailingPrng";
+    private static final String THE_PRNG_CONTRACT = "PrngSystemContract";
     private static final String BOB = "bob";
+    private static final String EXPLICIT_LARGE_PARAMS =
+            "d83bf9a10000000000000000000000d83bf9a10000d83bf9a1000d83bf9a10000000d83bf9a108000d83bf9a100000d83bf9a1000000"
+                + "0000d83bf9a100000d83bf9a1000000d83bf9a100339000000d83bf9a1000000000123456789012345678901234"
+                + "5678901234567890000000000000000000000000123456789012345678901234567890123456789000000000"
+                + "000d83bf9a1083bf9a1000d83bf9a10000000d83bf9a10000000000000000026e790000000000000000000000000000"
+                + "00000000d83bf9a1000000000d83bf9a1000";
 
     public static void main(String... args) {
         new PrngPrecompileSuite().runSuiteSync();
@@ -68,14 +77,19 @@ public class PrngPrecompileSuite extends HapiApiSuite {
     }
 
     private HapiApiSpec emptyInputCallFails() {
-        final var prng = THE_GRACEFULLY_FAILING_PRNG_CONTRACT;
+        final var prng = THE_PRNG_CONTRACT;
         final var emptyInputCall = "emptyInputCall";
         return defaultHapiSpec("emptyInputCallFails")
                 .given(cryptoCreate(BOB), uploadInitCode(prng), contractCreate(prng))
                 .when(
                         sourcing(
                                 () ->
-                                        contractCall(prng, "performEmptyInputCall")
+                                        contractCall(prng, "getPseudorandomSeed")
+                                                .withExplicitParams(
+                                                        () ->
+                                                                CommonUtils.hex(
+                                                                        Bytes.fromBase64String("")
+                                                                                .toArray()))
                                                 .gas(GAS_TO_OFFER)
                                                 .payingWith(BOB)
                                                 .via(emptyInputCall)
@@ -93,19 +107,25 @@ public class PrngPrecompileSuite extends HapiApiSuite {
                                                     .getTransactionRecord(emptyInputCall)
                                                     .getContractCallResult()
                                                     .getGasUsed();
-                                    assertEquals(394213, gasUsed);
+                                    assertEquals(320000, gasUsed);
                                 }));
     }
 
     private HapiApiSpec invalidLargeInputFails() {
-        final var prng = THE_GRACEFULLY_FAILING_PRNG_CONTRACT;
+        final var prng = THE_PRNG_CONTRACT;
         final var largeInputCall = "largeInputCall";
         return defaultHapiSpec("invalidLargeInputFails")
                 .given(cryptoCreate(BOB), uploadInitCode(prng), contractCreate(prng))
                 .when(
                         sourcing(
                                 () ->
-                                        contractCall(prng, "performLargeInputCall")
+                                        contractCall(prng, "getPseudorandomSeed")
+                                                .withExplicitParams(
+                                                        () ->
+                                                                CommonUtils.hex(
+                                                                        Bytes.fromBase64String(
+                                                                                        EXPLICIT_LARGE_PARAMS)
+                                                                                .toArray()))
                                                 .gas(GAS_TO_OFFER)
                                                 .payingWith(BOB)
                                                 .via(largeInputCall)
@@ -123,7 +143,7 @@ public class PrngPrecompileSuite extends HapiApiSuite {
                                                     .getTransactionRecord(largeInputCall)
                                                     .getContractCallResult()
                                                     .getGasUsed();
-                                    assertEquals(394244, gasUsed);
+                                    assertEquals(320000, gasUsed);
                                 }));
     }
 
@@ -162,14 +182,20 @@ public class PrngPrecompileSuite extends HapiApiSuite {
         return defaultHapiSpec("functionCallWithLessThanFourBytesFailsGracefully")
                 .given(
                         cryptoCreate(BOB),
-                        uploadInitCode(THE_GRACEFULLY_FAILING_PRNG_CONTRACT),
-                        contractCreate(THE_GRACEFULLY_FAILING_PRNG_CONTRACT))
+                        uploadInitCode(THE_PRNG_CONTRACT),
+                        contractCreate(THE_PRNG_CONTRACT))
                 .when(
                         sourcing(
                                 () ->
-                                        contractCall(
-                                                        THE_GRACEFULLY_FAILING_PRNG_CONTRACT,
-                                                        "performLessThanFourBytesFunctionCall")
+                                        contractCall(THE_PRNG_CONTRACT, "getPseudorandomSeed")
+                                                .withExplicitParams(
+                                                        () ->
+                                                                CommonUtils.hex(
+                                                                        Bytes.of(
+                                                                                        (byte) 0xab,
+                                                                                        (byte) 0xab,
+                                                                                        (byte) 0xab)
+                                                                                .toArray()))
                                                 .gas(GAS_TO_OFFER)
                                                 .payingWith(BOB)
                                                 .via(lessThan4Bytes)
@@ -187,12 +213,12 @@ public class PrngPrecompileSuite extends HapiApiSuite {
                                                     .getTransactionRecord(lessThan4Bytes)
                                                     .getContractCallResult()
                                                     .getGasUsed();
-                                    assertEquals(394214, gasUsed);
+                                    assertEquals(320000, gasUsed);
                                 }));
     }
 
     private HapiApiSpec prngPrecompileHappyPathWorks() {
-        final var prng = "PrngSystemContract";
+        final var prng = THE_PRNG_CONTRACT;
         final var randomBits = "randomBits";
         return defaultHapiSpec("prngPrecompileHappyPathWorks")
                 .given(cryptoCreate(BOB), uploadInitCode(prng), contractCreate(prng))
