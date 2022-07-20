@@ -149,8 +149,8 @@ public class PrngSuite extends HapiApiSuite {
     }
 
     private HapiApiSpec usdFeeAsExpected() {
-        double baseFee = 0.01;
-        double plusRangeFee = 0.0100103388;
+        double baseFee = 0.001;
+        double plusRangeFee = 0.0010010316;
 
         final var baseTxn = "prng";
         final var plusRangeTxn = "prngWithRange";

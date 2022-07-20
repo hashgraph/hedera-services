@@ -197,6 +197,6 @@
 	"DEFAULT": 0
   },
   "PRNG": {
-	"DEFAULT": 0.01
+	"DEFAULT": 0.001
   }
 }
