@@ -61,6 +61,9 @@ public class PauseUnpauseTokenAccountPrecompileSuite extends HapiApiSuite {
 
     public static final long INITIAL_BALANCE = 1_000_000_000L;
     private static final long GAS_TO_OFFER = 4_000_000L;
+    private static final String PAUSE_TOKEN_ACCOUNT_FUNCTION_NAME = "pauseTokenAccount";
+    private static final String UNPAUSE_TOKEN_ACCOUNT_FUNCTION_NAME = "unpauseTokenAccount";
+    private static final String PAUSE_FUNGIBLE_TXN = "pauseFungibleTxn";
 
     public static void main(String... args) {
         new PauseUnpauseTokenAccountPrecompileSuite().runSuiteSync();
@@ -78,9 +81,7 @@ public class PauseUnpauseTokenAccountPrecompileSuite extends HapiApiSuite {
                         pauseFungibleTokenHappyPath(),
                         unpauseFungibleTokenHappyPath(),
                         pauseNonFungibleTokenHappyPath(),
-                        unpauseNonFungibleTokenHappyPath()
-                )
-        );
+                        unpauseNonFungibleTokenHappyPath()));
     }
 
     private HapiApiSpec pauseFungibleTokenHappyPath() {
@@ -105,22 +106,22 @@ public class PauseUnpauseTokenAccountPrecompileSuite extends HapiApiSuite {
                                         allRunFor(
                                                 spec,
                                                 contractCall(
-                                                        PAUSE_UNPAUSE_CONTRACT,
-                                                        "pauseTokenAccount",
-                                                        asHexedAddress(tokenID.get()))
+                                                                PAUSE_UNPAUSE_CONTRACT,
+                                                                PAUSE_TOKEN_ACCOUNT_FUNCTION_NAME,
+                                                                asHexedAddress(tokenID.get()))
                                                         .payingWith(ACCOUNT)
-                                                        .via("pauseFungibleAccountDoesNotOwnPauseKeyFailingTxn")
+                                                        .via(
+                                                                "pauseFungibleAccountDoesNotOwnPauseKeyFailingTxn")
                                                         .gas(GAS_TO_OFFER)
                                                         .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
                                                 cryptoUpdate(ACCOUNT).key(PAUSE_KEY),
                                                 contractCall(
-                                                        PAUSE_UNPAUSE_CONTRACT,
-                                                        "pauseTokenAccount",
-                                                        asHexedAddress(tokenID.get()))
+                                                                PAUSE_UNPAUSE_CONTRACT,
+                                                                PAUSE_TOKEN_ACCOUNT_FUNCTION_NAME,
+                                                                asHexedAddress(tokenID.get()))
                                                         .payingWith(ACCOUNT)
-                                                        .via("pauseFungibleTxn")
-                                                        .gas(GAS_TO_OFFER)
-                                                )))
+                                                        .via(PAUSE_FUNGIBLE_TXN)
+                                                        .gas(GAS_TO_OFFER))))
                 .then(
                         childRecordsCheck(
                                 "pauseFungibleAccountDoesNotOwnPauseKeyFailingTxn",
@@ -158,22 +159,22 @@ public class PauseUnpauseTokenAccountPrecompileSuite extends HapiApiSuite {
                                         allRunFor(
                                                 spec,
                                                 contractCall(
-                                                        PAUSE_UNPAUSE_CONTRACT,
-                                                        "unpauseTokenAccount",
-                                                        asHexedAddress(tokenID.get()))
+                                                                PAUSE_UNPAUSE_CONTRACT,
+                                                                UNPAUSE_TOKEN_ACCOUNT_FUNCTION_NAME,
+                                                                asHexedAddress(tokenID.get()))
                                                         .payingWith(ACCOUNT)
-                                                        .via("unpauseFungibleAccountDoesNotOwnPauseKeyFailingTxn")
+                                                        .via(
+                                                                "unpauseFungibleAccountDoesNotOwnPauseKeyFailingTxn")
                                                         .gas(GAS_TO_OFFER)
                                                         .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
                                                 cryptoUpdate(ACCOUNT).key(UNPAUSE_KEY),
                                                 contractCall(
-                                                        PAUSE_UNPAUSE_CONTRACT,
-                                                        "unpauseTokenAccount",
-                                                        asHexedAddress(tokenID.get()))
+                                                                PAUSE_UNPAUSE_CONTRACT,
+                                                                UNPAUSE_TOKEN_ACCOUNT_FUNCTION_NAME,
+                                                                asHexedAddress(tokenID.get()))
                                                         .payingWith(ACCOUNT)
                                                         .via("unpauseFungibleTxn")
-                                                        .gas(GAS_TO_OFFER)
-                                        )))
+                                                        .gas(GAS_TO_OFFER))))
                 .then(
                         childRecordsCheck(
                                 "unpauseFungibleAccountDoesNotOwnPauseKeyFailingTxn",
@@ -211,22 +212,22 @@ public class PauseUnpauseTokenAccountPrecompileSuite extends HapiApiSuite {
                                         allRunFor(
                                                 spec,
                                                 contractCall(
-                                                        PAUSE_UNPAUSE_CONTRACT,
-                                                        "pauseTokenAccount",
-                                                        asHexedAddress(tokenID.get()))
+                                                                PAUSE_UNPAUSE_CONTRACT,
+                                                                PAUSE_TOKEN_ACCOUNT_FUNCTION_NAME,
+                                                                asHexedAddress(tokenID.get()))
                                                         .payingWith(ACCOUNT)
-                                                        .via("pauseNonFungibleAccountDoesNotOwnPauseKeyFailingTxn")
+                                                        .via(
+                                                                "pauseNonFungibleAccountDoesNotOwnPauseKeyFailingTxn")
                                                         .gas(GAS_TO_OFFER)
                                                         .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
                                                 cryptoUpdate(ACCOUNT).key(PAUSE_KEY),
                                                 contractCall(
-                                                        PAUSE_UNPAUSE_CONTRACT,
-                                                        "pauseTokenAccount",
-                                                        asHexedAddress(tokenID.get()))
+                                                                PAUSE_UNPAUSE_CONTRACT,
+                                                                PAUSE_TOKEN_ACCOUNT_FUNCTION_NAME,
+                                                                asHexedAddress(tokenID.get()))
                                                         .payingWith(ACCOUNT)
-                                                        .via("pauseFungibleTxn")
-                                                        .gas(GAS_TO_OFFER)
-                                        )))
+                                                        .via(PAUSE_FUNGIBLE_TXN)
+                                                        .gas(GAS_TO_OFFER))))
                 .then(
                         childRecordsCheck(
                                 "pauseNonFungibleAccountDoesNotOwnPauseKeyFailingTxn",
@@ -264,22 +265,22 @@ public class PauseUnpauseTokenAccountPrecompileSuite extends HapiApiSuite {
                                         allRunFor(
                                                 spec,
                                                 contractCall(
-                                                        PAUSE_UNPAUSE_CONTRACT,
-                                                        "unpauseTokenAccount",
-                                                        asHexedAddress(tokenID.get()))
+                                                                PAUSE_UNPAUSE_CONTRACT,
+                                                                UNPAUSE_TOKEN_ACCOUNT_FUNCTION_NAME,
+                                                                asHexedAddress(tokenID.get()))
                                                         .payingWith(ACCOUNT)
-                                                        .via("unpauseNonFungibleAccountDoesNotOwnPauseKeyFailingTxn")
+                                                        .via(
+                                                                "unpauseNonFungibleAccountDoesNotOwnPauseKeyFailingTxn")
                                                         .gas(GAS_TO_OFFER)
                                                         .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
                                                 cryptoUpdate(ACCOUNT).key(UNPAUSE_KEY),
                                                 contractCall(
-                                                        PAUSE_UNPAUSE_CONTRACT,
-                                                        "unpauseTokenAccount",
-                                                        asHexedAddress(tokenID.get()))
+                                                                PAUSE_UNPAUSE_CONTRACT,
+                                                                UNPAUSE_TOKEN_ACCOUNT_FUNCTION_NAME,
+                                                                asHexedAddress(tokenID.get()))
                                                         .payingWith(ACCOUNT)
-                                                        .via("pauseFungibleTxn")
-                                                        .gas(GAS_TO_OFFER)
-                                        )))
+                                                        .via(PAUSE_FUNGIBLE_TXN)
+                                                        .gas(GAS_TO_OFFER))))
                 .then(
                         childRecordsCheck(
                                 "unpauseNonFungibleAccountDoesNotOwnPauseKeyFailingTxn",
