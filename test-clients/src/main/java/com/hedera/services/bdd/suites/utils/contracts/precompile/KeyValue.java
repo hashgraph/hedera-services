@@ -49,4 +49,20 @@ public record KeyValue(
         result = 31 * result + Arrays.hashCode(ECDSA_secp256k1);
         return result;
     }
+
+    @Override
+    public String toString() {
+        return "KeyValue{"
+                + "inheritAccountKey="
+                + inheritAccountKey
+                + ", contractId="
+                + contractId
+                + ", ed25519="
+                + Arrays.toString(ed25519)
+                + ", ECDSA_secp256k1="
+                + Arrays.toString(ECDSA_secp256k1)
+                + ", delegatableContractId="
+                + delegatableContractId
+                + '}';
+    }
 }

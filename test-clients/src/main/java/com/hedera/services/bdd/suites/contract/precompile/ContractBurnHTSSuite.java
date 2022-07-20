@@ -45,6 +45,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
+import static com.hedera.services.bdd.suites.contract.Utils.asHexedAddress;
 import static com.hedera.services.bdd.suites.contract.Utils.parsedToByteString;
 import static com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult.htsPrecompileResult;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
@@ -57,7 +58,7 @@ import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.assertions.AccountInfoAsserts;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.suites.HapiApiSuite;
-import com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult;
+import com.hedera.services.parsing.ParsingConstants.FunctionType;
 import com.hederahashgraph.api.proto.java.TokenType;
 import java.util.ArrayList;
 import java.util.List;
@@ -77,6 +78,8 @@ public class ContractBurnHTSSuite extends HapiApiSuite {
     private static final String MULTI_KEY = "purpose";
     private static final String CONTRACT_KEY = "Contract key";
     private static final String SUPPLY_KEY = "Supply key";
+    private static final String CREATION_TX = "creationTx";
+    private static final String BURN_AFTER_NESTED_MINT_TX = "burnAfterNestedMint";
 
     public static void main(String... args) {
         new ContractBurnHTSSuite().runSuiteSync();
@@ -122,13 +125,13 @@ public class ContractBurnHTSSuite extends HapiApiSuite {
                                                 spec,
                                                 contractCreate(
                                                                 THE_CONTRACT,
-                                                                asAddress(
+                                                                asHexedAddress(
                                                                         spec.registry()
                                                                                 .getTokenID(TOKEN)))
                                                         .payingWith(ALICE)
-                                                        .via("creationTx")
+                                                        .via(CREATION_TX)
                                                         .gas(GAS_TO_OFFER))),
-                        getTxnRecord("creationTx").logged())
+                        getTxnRecord(CREATION_TX).logged())
                 .when(
                         contractCall(THE_CONTRACT, "burnTokenWithEvent", 1, new ArrayList<Long>())
                                 .payingWith(ALICE)
@@ -160,9 +163,7 @@ public class ContractBurnHTSSuite extends HapiApiSuite {
                                                         .contractCallResult(
                                                                 htsPrecompileResult()
                                                                         .forFunction(
-                                                                                HTSPrecompileResult
-                                                                                        .FunctionType
-                                                                                        .BURN)
+                                                                                FunctionType.BURN)
                                                                         .withStatus(SUCCESS)
                                                                         .withTotalSupply(49)))
                                         .newTotalSupply(49)
@@ -185,9 +186,7 @@ public class ContractBurnHTSSuite extends HapiApiSuite {
                                                         .contractCallResult(
                                                                 htsPrecompileResult()
                                                                         .forFunction(
-                                                                                HTSPrecompileResult
-                                                                                        .FunctionType
-                                                                                        .BURN)
+                                                                                FunctionType.BURN)
                                                                         .withStatus(SUCCESS)
                                                                         .withTotalSupply(48)))
                                         .newTotalSupply(48)
@@ -217,13 +216,13 @@ public class ContractBurnHTSSuite extends HapiApiSuite {
                                                 spec,
                                                 contractCreate(
                                                                 THE_CONTRACT,
-                                                                asAddress(
+                                                                asHexedAddress(
                                                                         spec.registry()
                                                                                 .getTokenID(TOKEN)))
                                                         .payingWith(ALICE)
-                                                        .via("creationTx")
+                                                        .via(CREATION_TX)
                                                         .gas(GAS_TO_OFFER))),
-                        getTxnRecord("creationTx").logged())
+                        getTxnRecord(CREATION_TX).logged())
                 .when(
                         withOpContext(
                                 (spec, opLog) -> {
@@ -251,9 +250,7 @@ public class ContractBurnHTSSuite extends HapiApiSuite {
                                                         .contractCallResult(
                                                                 htsPrecompileResult()
                                                                         .forFunction(
-                                                                                HTSPrecompileResult
-                                                                                        .FunctionType
-                                                                                        .BURN)
+                                                                                FunctionType.BURN)
                                                                         .withStatus(SUCCESS)
                                                                         .withTotalSupply(1)))
                                         .newTotalSupply(1)))
@@ -287,9 +284,9 @@ public class ContractBurnHTSSuite extends HapiApiSuite {
                                                                 getNestedContractAddress(
                                                                         innerContract, spec))
                                                         .payingWith(ALICE)
-                                                        .via("creationTx")
+                                                        .via(CREATION_TX)
                                                         .gas(GAS_TO_OFFER))),
-                        getTxnRecord("creationTx").logged())
+                        getTxnRecord(CREATION_TX).logged())
                 .when(
                         withOpContext(
                                 (spec, opLog) ->
@@ -305,16 +302,16 @@ public class ContractBurnHTSSuite extends HapiApiSuite {
                                                 tokenUpdate(TOKEN).supplyKey(CONTRACT_KEY),
                                                 contractCall(
                                                                 outerContract,
-                                                                "burnAfterNestedMint",
+                                                                BURN_AFTER_NESTED_MINT_TX,
                                                                 1,
                                                                 asAddress(
                                                                         spec.registry()
                                                                                 .getTokenID(TOKEN)),
                                                                 new ArrayList<>())
                                                         .payingWith(ALICE)
-                                                        .via("burnAfterNestedMint"))),
+                                                        .via(BURN_AFTER_NESTED_MINT_TX))),
                         childRecordsCheck(
-                                "burnAfterNestedMint",
+                                BURN_AFTER_NESTED_MINT_TX,
                                 SUCCESS,
                                 recordWith()
                                         .status(SUCCESS)
@@ -323,9 +320,7 @@ public class ContractBurnHTSSuite extends HapiApiSuite {
                                                         .contractCallResult(
                                                                 htsPrecompileResult()
                                                                         .forFunction(
-                                                                                HTSPrecompileResult
-                                                                                        .FunctionType
-                                                                                        .MINT)
+                                                                                FunctionType.MINT)
                                                                         .withStatus(SUCCESS)
                                                                         .withTotalSupply(51)
                                                                         .withSerialNumbers()))
@@ -340,9 +335,7 @@ public class ContractBurnHTSSuite extends HapiApiSuite {
                                                         .contractCallResult(
                                                                 htsPrecompileResult()
                                                                         .forFunction(
-                                                                                HTSPrecompileResult
-                                                                                        .FunctionType
-                                                                                        .BURN)
+                                                                                FunctionType.BURN)
                                                                         .withStatus(SUCCESS)
                                                                         .withTotalSupply(50)))
                                         .tokenTransfers(
@@ -380,7 +373,7 @@ public class ContractBurnHTSSuite extends HapiApiSuite {
                                                 spec,
                                                 contractCreate(
                                                                 theContract,
-                                                                asAddress(
+                                                                asHexedAddress(
                                                                         spec.registry()
                                                                                 .getTokenID(
                                                                                         tokenWithHbarFee)))
@@ -429,9 +422,7 @@ public class ContractBurnHTSSuite extends HapiApiSuite {
                                                         .contractCallResult(
                                                                 htsPrecompileResult()
                                                                         .forFunction(
-                                                                                HTSPrecompileResult
-                                                                                        .FunctionType
-                                                                                        .BURN)
+                                                                                FunctionType.BURN)
                                                                         .withStatus(SUCCESS)
                                                                         .withTotalSupply(1))),
                                 recordWith()

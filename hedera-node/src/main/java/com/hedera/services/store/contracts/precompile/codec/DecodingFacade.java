@@ -15,18 +15,18 @@
  */
 package com.hedera.services.store.contracts.precompile.codec;
 
-import static com.hedera.services.store.contracts.precompile.ParsingConstants.ARRAY_BRACKETS;
-import static com.hedera.services.store.contracts.precompile.ParsingConstants.BOOL;
-import static com.hedera.services.store.contracts.precompile.ParsingConstants.BYTES32;
-import static com.hedera.services.store.contracts.precompile.ParsingConstants.BYTES32_PAIR_RAW_TYPE;
-import static com.hedera.services.store.contracts.precompile.ParsingConstants.EXPIRY;
-import static com.hedera.services.store.contracts.precompile.ParsingConstants.FIXED_FEE;
-import static com.hedera.services.store.contracts.precompile.ParsingConstants.FRACTIONAL_FEE;
-import static com.hedera.services.store.contracts.precompile.ParsingConstants.INT;
-import static com.hedera.services.store.contracts.precompile.ParsingConstants.ROYALTY_FEE;
-import static com.hedera.services.store.contracts.precompile.ParsingConstants.STRING;
-import static com.hedera.services.store.contracts.precompile.ParsingConstants.TOKEN_KEY;
-import static com.hedera.services.store.contracts.precompile.ParsingConstants.UINT256;
+import static com.hedera.services.parsing.ParsingConstants.ARRAY_BRACKETS;
+import static com.hedera.services.parsing.ParsingConstants.BOOL;
+import static com.hedera.services.parsing.ParsingConstants.BYTES32;
+import static com.hedera.services.parsing.ParsingConstants.BYTES32_PAIR_RAW_TYPE;
+import static com.hedera.services.parsing.ParsingConstants.EXPIRY;
+import static com.hedera.services.parsing.ParsingConstants.FIXED_FEE;
+import static com.hedera.services.parsing.ParsingConstants.FRACTIONAL_FEE;
+import static com.hedera.services.parsing.ParsingConstants.INT;
+import static com.hedera.services.parsing.ParsingConstants.ROYALTY_FEE;
+import static com.hedera.services.parsing.ParsingConstants.STRING;
+import static com.hedera.services.parsing.ParsingConstants.TOKEN_KEY;
+import static com.hedera.services.parsing.ParsingConstants.UINT256;
 import static com.hedera.services.utils.EntityIdUtils.accountIdFromEvmAddress;
 
 import com.esaulpaugh.headlong.abi.ABIType;

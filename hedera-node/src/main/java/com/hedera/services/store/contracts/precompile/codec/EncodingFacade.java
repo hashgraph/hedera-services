@@ -15,22 +15,31 @@
  */
 package com.hedera.services.store.contracts.precompile.codec;
 
-import static com.hedera.services.store.contracts.precompile.ParsingConstants.ADDRESS;
-import static com.hedera.services.store.contracts.precompile.ParsingConstants.ARRAY_BRACKETS;
-import static com.hedera.services.store.contracts.precompile.ParsingConstants.BOOL;
-import static com.hedera.services.store.contracts.precompile.ParsingConstants.EXPIRY;
-import static com.hedera.services.store.contracts.precompile.ParsingConstants.FIXED_FEE;
-import static com.hedera.services.store.contracts.precompile.ParsingConstants.FRACTIONAL_FEE;
-import static com.hedera.services.store.contracts.precompile.ParsingConstants.ROYALTY_FEE;
-import static com.hedera.services.store.contracts.precompile.ParsingConstants.STRING;
-import static com.hedera.services.store.contracts.precompile.ParsingConstants.TOKEN_KEY;
-import static com.hedera.services.store.contracts.precompile.ParsingConstants.UINT256;
-import static com.hedera.services.store.contracts.precompile.ParsingConstants.UINT8;
-import static com.hedera.services.store.contracts.precompile.codec.EncodingFacade.FunctionType.MINT;
+import static com.hedera.services.parsing.ParsingConstants.FunctionType.MINT;
+import static com.hedera.services.parsing.ParsingConstants.allowanceOfType;
+import static com.hedera.services.parsing.ParsingConstants.approveOfType;
+import static com.hedera.services.parsing.ParsingConstants.balanceOfType;
+import static com.hedera.services.parsing.ParsingConstants.burnReturnType;
+import static com.hedera.services.parsing.ParsingConstants.createReturnType;
+import static com.hedera.services.parsing.ParsingConstants.decimalsType;
+import static com.hedera.services.parsing.ParsingConstants.ercTransferType;
+import static com.hedera.services.parsing.ParsingConstants.getApprovedType;
+import static com.hedera.services.parsing.ParsingConstants.getFungibleTokenInfoType;
+import static com.hedera.services.parsing.ParsingConstants.getNonFungibleTokenInfoType;
+import static com.hedera.services.parsing.ParsingConstants.getTokenInfoType;
+import static com.hedera.services.parsing.ParsingConstants.isApprovedForAllType;
+import static com.hedera.services.parsing.ParsingConstants.mintReturnType;
+import static com.hedera.services.parsing.ParsingConstants.nameType;
+import static com.hedera.services.parsing.ParsingConstants.notSpecifiedType;
+import static com.hedera.services.parsing.ParsingConstants.ownerOfType;
+import static com.hedera.services.parsing.ParsingConstants.symbolType;
+import static com.hedera.services.parsing.ParsingConstants.tokenUriType;
+import static com.hedera.services.parsing.ParsingConstants.totalSupplyType;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.esaulpaugh.headlong.abi.TupleType;
+import com.hedera.services.parsing.ParsingConstants.FunctionType;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.math.BigInteger;
 import java.util.ArrayList;
@@ -47,55 +56,6 @@ import org.hyperledger.besu.evm.log.LogTopic;
 public class EncodingFacade {
     public static final Bytes SUCCESS_RESULT = resultFrom(SUCCESS);
     private static final long[] NO_MINTED_SERIAL_NUMBERS = new long[0];
-
-    private static final String RESPONSE_STATUS_AT_BEGINNING = "(int32,";
-    private static final String HEDERA_TOKEN =
-            "("
-                    + "string,string,address,string,bool,int64,bool,"
-                    + TOKEN_KEY
-                    + ARRAY_BRACKETS
-                    + ","
-                    + EXPIRY
-                    + ")";
-    private static final String TOKEN_INFO =
-            "("
-                    + HEDERA_TOKEN
-                    + ",int64,bool,bool,bool,"
-                    + FIXED_FEE
-                    + ARRAY_BRACKETS
-                    + ","
-                    + FRACTIONAL_FEE
-                    + ARRAY_BRACKETS
-                    + ","
-                    + ROYALTY_FEE
-                    + ARRAY_BRACKETS
-                    + ",string"
-                    + ")";
-    private static final String FUNGIBLE_TOKEN_INFO = "(" + TOKEN_INFO + ",int32" + ")";
-    private static final String NON_FUNGIBLE_TOKEN_INFO =
-            "(" + TOKEN_INFO + ",int64,address,int64,bytes,address" + ")";
-
-    private static final TupleType mintReturnType = TupleType.parse("(int32,uint64,int64[])");
-    private static final TupleType burnReturnType = TupleType.parse("(int32,uint64)");
-    private static final TupleType createReturnType = TupleType.parse("(int32,address)");
-    private static final TupleType totalSupplyType = TupleType.parse(UINT256);
-    private static final TupleType balanceOfType = TupleType.parse(UINT256);
-    private static final TupleType allowanceOfType = TupleType.parse(UINT256);
-    private static final TupleType approveOfType = TupleType.parse(BOOL);
-    private static final TupleType decimalsType = TupleType.parse(UINT8);
-    private static final TupleType ownerOfType = TupleType.parse(ADDRESS);
-    private static final TupleType getApprovedType = TupleType.parse(ADDRESS);
-    private static final TupleType nameType = TupleType.parse(STRING);
-    private static final TupleType symbolType = TupleType.parse(STRING);
-    private static final TupleType tokenUriType = TupleType.parse(STRING);
-    private static final TupleType ercTransferType = TupleType.parse(BOOL);
-    private static final TupleType isApprovedForAllType = TupleType.parse(BOOL);
-    private static final TupleType getTokenInfoType =
-            TupleType.parse(RESPONSE_STATUS_AT_BEGINNING + TOKEN_INFO + ")");
-    private static final TupleType getFungibleTokenInfoType =
-            TupleType.parse(RESPONSE_STATUS_AT_BEGINNING + FUNGIBLE_TOKEN_INFO + ")");
-    private static final TupleType getNonFungibleTokenInfoType =
-            TupleType.parse(RESPONSE_STATUS_AT_BEGINNING + NON_FUNGIBLE_TOKEN_INFO + ")");
 
     @Inject
     public EncodingFacade() {
@@ -261,27 +221,6 @@ public class EncodingFacade {
                 .build();
     }
 
-    protected enum FunctionType {
-        CREATE,
-        MINT,
-        BURN,
-        TOTAL_SUPPLY,
-        DECIMALS,
-        BALANCE,
-        OWNER,
-        TOKEN_URI,
-        NAME,
-        SYMBOL,
-        ERC_TRANSFER,
-        ALLOWANCE,
-        APPROVE,
-        GET_APPROVED,
-        IS_APPROVED_FOR_ALL,
-        GET_TOKEN_INFO,
-        GET_FUNGIBLE_TOKEN_INFO,
-        GET_NON_FUNGIBLE_TOKEN_INFO
-    }
-
     private FunctionResultBuilder functionResultBuilder() {
         return new FunctionResultBuilder();
     }
@@ -329,6 +268,7 @@ public class EncodingFacade {
                         case GET_TOKEN_INFO -> getTokenInfoType;
                         case GET_FUNGIBLE_TOKEN_INFO -> getFungibleTokenInfoType;
                         case GET_NON_FUNGIBLE_TOKEN_INFO -> getNonFungibleTokenInfoType;
+                        default -> notSpecifiedType;
                     };
 
             this.functionType = functionType;
@@ -450,6 +390,7 @@ public class EncodingFacade {
                         case GET_TOKEN_INFO -> getTupleForGetTokenInfo();
                         case GET_FUNGIBLE_TOKEN_INFO -> getTupleForGetFungibleTokenInfo();
                         case GET_NON_FUNGIBLE_TOKEN_INFO -> getTupleForGetNonFungibleTokenInfo();
+                        default -> Tuple.of(status);
                     };
 
             return Bytes.wrap(tupleType.encode(result).array());

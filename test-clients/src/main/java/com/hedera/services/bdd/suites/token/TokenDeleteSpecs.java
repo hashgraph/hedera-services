@@ -47,6 +47,12 @@ import org.apache.logging.log4j.Logger;
 public class TokenDeleteSpecs extends HapiApiSuite {
     private static final Logger log = LogManager.getLogger(TokenDeleteSpecs.class);
 
+    private static final String FIRST_TBD = "firstTbd";
+    private static final String SECOND_TBD = "secondTbd";
+    private static final String TOKEN_ADMIN = "tokenAdmin";
+    private static final String PAYER = "payer";
+    private static final String MULTI_KEY = "multiKey";
+
     public static void main(String... args) {
         new TokenDeleteSpecs().runSuiteAsync();
     }
@@ -59,39 +65,37 @@ public class TokenDeleteSpecs extends HapiApiSuite {
     @Override
     public List<HapiApiSpec> getSpecsInSuite() {
         return List.of(
-                new HapiApiSpec[] {
-                    deletionValidatesMissingAdminKey(),
-                    deletionWorksAsExpected(),
-                    deletionValidatesAlreadyDeletedToken(),
-                    treasuryBecomesDeletableAfterTokenDelete(),
-                    deletionValidatesRef(),
-                });
+                deletionValidatesMissingAdminKey(),
+                deletionWorksAsExpected(),
+                deletionValidatesAlreadyDeletedToken(),
+                treasuryBecomesDeletableAfterTokenDelete(),
+                deletionValidatesRef());
     }
 
     private HapiApiSpec treasuryBecomesDeletableAfterTokenDelete() {
         return defaultHapiSpec("TreasuryBecomesDeletableAfterTokenDelete")
                 .given(
-                        newKeyNamed("tokenAdmin"),
+                        newKeyNamed(TOKEN_ADMIN),
                         cryptoCreate(TOKEN_TREASURY).balance(0L),
-                        tokenCreate("firstTbd").adminKey("tokenAdmin").treasury(TOKEN_TREASURY),
-                        tokenCreate("secondTbd").adminKey("tokenAdmin").treasury(TOKEN_TREASURY),
+                        tokenCreate(FIRST_TBD).adminKey(TOKEN_ADMIN).treasury(TOKEN_TREASURY),
+                        tokenCreate(SECOND_TBD).adminKey(TOKEN_ADMIN).treasury(TOKEN_TREASURY),
                         cryptoDelete(TOKEN_TREASURY).hasKnownStatus(ACCOUNT_IS_TREASURY),
-                        tokenDissociate(TOKEN_TREASURY, "firstTbd")
+                        tokenDissociate(TOKEN_TREASURY, FIRST_TBD)
                                 .hasKnownStatus(ACCOUNT_IS_TREASURY))
                 .when(
-                        tokenDelete("firstTbd"),
-                        tokenDissociate(TOKEN_TREASURY, "firstTbd"),
+                        tokenDelete(FIRST_TBD),
+                        tokenDissociate(TOKEN_TREASURY, FIRST_TBD),
                         cryptoDelete(TOKEN_TREASURY).hasKnownStatus(ACCOUNT_IS_TREASURY),
-                        tokenDelete("secondTbd"))
-                .then(tokenDissociate(TOKEN_TREASURY, "secondTbd"), cryptoDelete(TOKEN_TREASURY));
+                        tokenDelete(SECOND_TBD))
+                .then(tokenDissociate(TOKEN_TREASURY, SECOND_TBD), cryptoDelete(TOKEN_TREASURY));
     }
 
     private HapiApiSpec deletionValidatesAlreadyDeletedToken() {
         return defaultHapiSpec("DeletionValidatesAlreadyDeletedToken")
                 .given(
-                        newKeyNamed("multiKey"),
+                        newKeyNamed(MULTI_KEY),
                         cryptoCreate(TOKEN_TREASURY).balance(0L),
-                        tokenCreate("tbd").adminKey("multiKey").treasury(TOKEN_TREASURY),
+                        tokenCreate("tbd").adminKey(MULTI_KEY).treasury(TOKEN_TREASURY),
                         tokenDelete("tbd"))
                 .when()
                 .then(tokenDelete("tbd").hasKnownStatus(TOKEN_WAS_DELETED));
@@ -100,36 +104,36 @@ public class TokenDeleteSpecs extends HapiApiSuite {
     private HapiApiSpec deletionValidatesMissingAdminKey() {
         return defaultHapiSpec("DeletionValidatesMissingAdminKey")
                 .given(
-                        newKeyNamed("multiKey"),
+                        newKeyNamed(MULTI_KEY),
                         cryptoCreate(TOKEN_TREASURY).balance(0L),
-                        cryptoCreate("payer"),
+                        cryptoCreate(PAYER),
                         tokenCreate("tbd")
                                 .freezeDefault(false)
                                 .treasury(TOKEN_TREASURY)
-                                .payingWith("payer"))
+                                .payingWith(PAYER))
                 .when()
                 .then(
                         tokenDelete("tbd")
-                                .payingWith("payer")
-                                .signedBy("payer")
+                                .payingWith(PAYER)
+                                .signedBy(PAYER)
                                 .hasKnownStatus(TOKEN_IS_IMMUTABLE));
     }
 
     public HapiApiSpec deletionWorksAsExpected() {
         return defaultHapiSpec("DeletionWorksAsExpected")
                 .given(
-                        newKeyNamed("multiKey"),
+                        newKeyNamed(MULTI_KEY),
                         cryptoCreate(TOKEN_TREASURY).balance(0L),
-                        cryptoCreate("payer"),
+                        cryptoCreate(PAYER),
                         tokenCreate("tbd")
-                                .adminKey("multiKey")
-                                .freezeKey("multiKey")
-                                .kycKey("multiKey")
-                                .wipeKey("multiKey")
-                                .supplyKey("multiKey")
+                                .adminKey(MULTI_KEY)
+                                .freezeKey(MULTI_KEY)
+                                .kycKey(MULTI_KEY)
+                                .wipeKey(MULTI_KEY)
+                                .supplyKey(MULTI_KEY)
                                 .freezeDefault(false)
                                 .treasury(TOKEN_TREASURY)
-                                .payingWith("payer"),
+                                .payingWith(PAYER),
                         tokenAssociate(GENESIS, "tbd"))
                 .when(
                         getAccountInfo(TOKEN_TREASURY).logged(),
@@ -140,40 +144,32 @@ public class TokenDeleteSpecs extends HapiApiSuite {
                         tokenFreeze("tbd", GENESIS),
                         tokenUnfreeze("tbd", GENESIS),
                         cryptoTransfer(moving(1, "tbd").between(TOKEN_TREASURY, GENESIS)),
-                        tokenDelete("tbd").payingWith("payer"))
+                        tokenDelete("tbd").payingWith(PAYER))
                 .then(
-                        getTokenInfo("tbd").logged()
-                        //						getAccountInfo(TOKEN_TREASURY).logged(),
-                        //						cryptoTransfer(moving(1, "tbd")
-                        //								.between(TOKEN_TREASURY, GENESIS))
-                        //								.hasKnownStatus(TOKEN_WAS_DELETED),
-                        //						mintToken("tbd", 1)
-                        //								.hasKnownStatus(TOKEN_WAS_DELETED),
-                        //						burnToken("tbd", 1)
-                        //								.hasKnownStatus(TOKEN_WAS_DELETED),
-                        //						revokeTokenKyc("tbd", GENESIS)
-                        //								.hasKnownStatus(TOKEN_WAS_DELETED),
-                        //						grantTokenKyc("tbd", GENESIS)
-                        //								.hasKnownStatus(TOKEN_WAS_DELETED),
-                        //						tokenFreeze("tbd", GENESIS)
-                        //								.hasKnownStatus(TOKEN_WAS_DELETED),
-                        //						tokenUnfreeze("tbd", GENESIS)
-                        //								.hasKnownStatus(TOKEN_WAS_DELETED)
-                        );
+                        getTokenInfo("tbd").logged(),
+                        getAccountInfo(TOKEN_TREASURY).logged(),
+                        cryptoTransfer(moving(1, "tbd").between(TOKEN_TREASURY, GENESIS))
+                                .hasKnownStatus(TOKEN_WAS_DELETED),
+                        mintToken("tbd", 1).hasKnownStatus(TOKEN_WAS_DELETED),
+                        burnToken("tbd", 1).hasKnownStatus(TOKEN_WAS_DELETED),
+                        revokeTokenKyc("tbd", GENESIS).hasKnownStatus(TOKEN_WAS_DELETED),
+                        grantTokenKyc("tbd", GENESIS).hasKnownStatus(TOKEN_WAS_DELETED),
+                        tokenFreeze("tbd", GENESIS).hasKnownStatus(TOKEN_WAS_DELETED),
+                        tokenUnfreeze("tbd", GENESIS).hasKnownStatus(TOKEN_WAS_DELETED));
     }
 
     public HapiApiSpec deletionValidatesRef() {
         return defaultHapiSpec("DeletionValidatesRef")
-                .given(cryptoCreate("payer"))
+                .given(cryptoCreate(PAYER))
                 .when()
                 .then(
                         tokenDelete("0.0.0")
-                                .payingWith("payer")
-                                .signedBy("payer")
+                                .payingWith(PAYER)
+                                .signedBy(PAYER)
                                 .hasKnownStatus(INVALID_TOKEN_ID),
                         tokenDelete("1.2.3")
-                                .payingWith("payer")
-                                .signedBy("payer")
+                                .payingWith(PAYER)
+                                .signedBy(PAYER)
                                 .hasKnownStatus(INVALID_TOKEN_ID));
     }
 

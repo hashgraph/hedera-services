@@ -15,9 +15,28 @@
  */
 package com.hedera.services.bdd.suites.utils.contracts.precompile;
 
+import static com.hedera.services.parsing.ParsingConstants.allowanceOfType;
+import static com.hedera.services.parsing.ParsingConstants.balanceOfType;
+import static com.hedera.services.parsing.ParsingConstants.burnReturnType;
+import static com.hedera.services.parsing.ParsingConstants.decimalsType;
+import static com.hedera.services.parsing.ParsingConstants.ercTransferType;
+import static com.hedera.services.parsing.ParsingConstants.getApprovedType;
+import static com.hedera.services.parsing.ParsingConstants.getFungibleTokenInfoTypeReplacedAddress;
+import static com.hedera.services.parsing.ParsingConstants.getNonFungibleTokenInfoTypeReplacedAddress;
+import static com.hedera.services.parsing.ParsingConstants.getTokenInfoTypeReplacedAddress;
+import static com.hedera.services.parsing.ParsingConstants.isApprovedForAllType;
+import static com.hedera.services.parsing.ParsingConstants.mintReturnType;
+import static com.hedera.services.parsing.ParsingConstants.nameType;
+import static com.hedera.services.parsing.ParsingConstants.notSpecifiedType;
+import static com.hedera.services.parsing.ParsingConstants.ownerOfType;
+import static com.hedera.services.parsing.ParsingConstants.symbolType;
+import static com.hedera.services.parsing.ParsingConstants.tokenUriType;
+import static com.hedera.services.parsing.ParsingConstants.totalSupplyType;
+
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.esaulpaugh.headlong.abi.TupleType;
 import com.hedera.services.bdd.suites.utils.contracts.ContractCallResult;
+import com.hedera.services.parsing.ParsingConstants.FunctionType;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.math.BigInteger;
 import org.apache.tuweni.bytes.Bytes;
@@ -25,96 +44,8 @@ import org.apache.tuweni.bytes.Bytes;
 public class HTSPrecompileResult implements ContractCallResult {
     private HTSPrecompileResult() {}
 
-    // data types
-    public static final String ADDRESS = "(address)";
-    public static final String ARRAY_BRACKETS = "[]";
-    public static final String BOOL = "(bool)";
-    public static final String BYTES32 = "(bytes32)";
-    public static final String BYTES32_PAIR_RAW_TYPE = "(bytes32,bytes32)";
-    public static final String INT = "(int)";
-    public static final String STRING = "(string)";
-    public static final String UINT8 = "(uint8)";
-    public static final String UINT256 = "(uint256)";
-
-    // struct types
-    public static final String EXPIRY = "(uint32,bytes32,uint32)";
-    public static final String FIXED_FEE = "(uint32,bytes32,bool,bool,bytes32)";
-    public static final String FRACTIONAL_FEE = "(uint32,uint32,uint32,uint32,bool,bytes32)";
-    public static final String KEY_VALUE = "(bool,bytes32,bytes,bytes,bytes32)";
-    public static final String ROYALTY_FEE = "(uint32,uint32,uint32,bytes32,bool,bytes32)";
-    public static final String TOKEN_KEY = "(uint256," + KEY_VALUE + ")";
-
-    private static final String RESPONSE_STATUS_AT_BEGINNING = "(int32,";
-    private static final String HEDERA_TOKEN =
-            "("
-                    + "string,string,bytes32,string,bool,int64,bool,"
-                    + TOKEN_KEY
-                    + ARRAY_BRACKETS
-                    + ","
-                    + EXPIRY
-                    + ")";
-    private static final String TOKEN_INFO =
-            "("
-                    + HEDERA_TOKEN
-                    + ",int64,bool,bool,bool,"
-                    + FIXED_FEE
-                    + ARRAY_BRACKETS
-                    + ","
-                    + FRACTIONAL_FEE
-                    + ARRAY_BRACKETS
-                    + ","
-                    + ROYALTY_FEE
-                    + ARRAY_BRACKETS
-                    + ",string"
-                    + ")";
-    private static final String FUNGIBLE_TOKEN_INFO = "(" + TOKEN_INFO + ",int32" + ")";
-    private static final String NON_FUNGIBLE_TOKEN_INFO =
-            "(" + TOKEN_INFO + ",int64,bytes32,int64,bytes,bytes32" + ")";
-
-    private static final TupleType defaultReturnType = TupleType.parse(UINT8);
-    private static final TupleType mintReturnType = TupleType.parse("(int32,uint64,int64[])");
-    private static final TupleType notSpecifiedType = TupleType.parse("(int32)");
-    private static final TupleType burnReturnType = TupleType.parse("(int32,uint64)");
-    private static final TupleType totalSupplyType = TupleType.parse(UINT256);
-    private static final TupleType balanceOfType = TupleType.parse(UINT256);
-    private static final TupleType allowanceOfType = TupleType.parse(UINT256);
-    private static final TupleType decimalsType = TupleType.parse(UINT8);
-    private static final TupleType ownerOfType = TupleType.parse(ADDRESS);
-    private static final TupleType getApprovedType = TupleType.parse(ADDRESS);
-    private static final TupleType nameType = TupleType.parse(STRING);
-    private static final TupleType symbolType = TupleType.parse(STRING);
-    private static final TupleType tokenUriType = TupleType.parse(STRING);
-    private static final TupleType ercTransferType = TupleType.parse(BOOL);
-    private static final TupleType isApprovedForAllType = TupleType.parse(BOOL);
-    private static final TupleType getTokenInfoType =
-            TupleType.parse(RESPONSE_STATUS_AT_BEGINNING + TOKEN_INFO + ")");
-    private static final TupleType getFungibleTokenInfoType =
-            TupleType.parse(RESPONSE_STATUS_AT_BEGINNING + FUNGIBLE_TOKEN_INFO + ")");
-    private static final TupleType getNonFungibleTokenInfoType =
-            TupleType.parse(RESPONSE_STATUS_AT_BEGINNING + NON_FUNGIBLE_TOKEN_INFO + ")");
-
     public static HTSPrecompileResult htsPrecompileResult() {
         return new HTSPrecompileResult();
-    }
-
-    public enum FunctionType {
-        MINT,
-        BURN,
-        TOTAL_SUPPLY,
-        DECIMALS,
-        BALANCE,
-        OWNER,
-        TOKEN_URI,
-        NAME,
-        SYMBOL,
-        ERC_TRANSFER,
-        NOT_SPECIFIED,
-        ALLOWANCE,
-        IS_APPROVED_FOR_ALL,
-        GET_APPROVED,
-        GET_TOKEN_INFO,
-        GET_FUNGIBLE_TOKEN_INFO,
-        GET_NON_FUNGIBLE_TOKEN_INFO
     }
 
     private FunctionType functionType = FunctionType.NOT_SPECIFIED;
@@ -152,10 +83,10 @@ public class HTSPrecompileResult implements ContractCallResult {
                     case ERC_TRANSFER -> ercTransferType;
                     case ALLOWANCE -> allowanceOfType;
                     case IS_APPROVED_FOR_ALL -> isApprovedForAllType;
-                    case GET_TOKEN_INFO -> getTokenInfoType;
-                    case GET_FUNGIBLE_TOKEN_INFO -> getFungibleTokenInfoType;
-                    case GET_NON_FUNGIBLE_TOKEN_INFO -> getNonFungibleTokenInfoType;
-                    default -> defaultReturnType;
+                    case GET_TOKEN_INFO -> getTokenInfoTypeReplacedAddress;
+                    case GET_FUNGIBLE_TOKEN_INFO -> getFungibleTokenInfoTypeReplacedAddress;
+                    case GET_NON_FUNGIBLE_TOKEN_INFO -> getNonFungibleTokenInfoTypeReplacedAddress;
+                    default -> notSpecifiedType;
                 };
 
         this.functionType = functionType;
