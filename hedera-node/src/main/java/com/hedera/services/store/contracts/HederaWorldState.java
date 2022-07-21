@@ -250,6 +250,11 @@ public class HederaWorldState implements HederaMutableWorldState {
         }
 
         @Override
+        public boolean isNewCreationAllowed() {
+            return numAllocatedIds < dynamicProperties.maxFollowingRecords();
+        }
+
+        @Override
         public long getSbhRefund() {
             return sbhRefund;
         }

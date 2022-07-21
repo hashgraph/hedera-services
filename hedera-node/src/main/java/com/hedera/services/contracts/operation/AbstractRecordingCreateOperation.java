@@ -75,6 +75,11 @@ public abstract class AbstractRecordingCreateOperation extends AbstractOperation
 
     @Override
     public Operation.OperationResult execute(final MessageFrame frame, final EVM evm) {
+
+        if (!isContractCreationAllowed(frame)) {
+            return INVALID_RESPONSE;
+        }
+
         // We have a feature flag for CREATE2
         if (!isEnabled()) {
             return INVALID_RESPONSE;
@@ -120,6 +125,8 @@ public abstract class AbstractRecordingCreateOperation extends AbstractOperation
     protected abstract long cost(final MessageFrame frame);
 
     protected abstract Address targetContractAddress(MessageFrame frame);
+
+    protected abstract boolean isContractCreationAllowed(MessageFrame frame);
 
     private void fail(final MessageFrame frame) {
         final long inputOffset = clampedToLong(frame.getStackItem(1));

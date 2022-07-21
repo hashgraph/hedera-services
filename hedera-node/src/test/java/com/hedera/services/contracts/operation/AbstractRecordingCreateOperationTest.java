@@ -308,5 +308,10 @@ class AbstractRecordingCreateOperationTest {
         protected Address targetContractAddress(final MessageFrame frame) {
             return PRETEND_CONTRACT_ADDRESS;
         }
+
+        @Override
+        protected boolean isContractCreationAllowed(MessageFrame frame) {
+            return true;
+        }
     }
 }

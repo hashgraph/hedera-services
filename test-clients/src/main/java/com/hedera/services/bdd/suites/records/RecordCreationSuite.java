@@ -48,12 +48,14 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.assertionsHold;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.balanceSnapshot;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingAllOf;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.uploadDefaultFeeSchedules;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.usableTxnIdNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_EXECUTION_EXCEPTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
@@ -65,6 +67,7 @@ import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.assertions.AccountInfoAsserts;
+import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hedera.services.bdd.suites.utils.sysfiles.serdes.StandardSerdes;
 import com.hederahashgraph.api.proto.java.AccountAmount;
@@ -103,15 +106,16 @@ public class RecordCreationSuite extends HapiApiSuite {
     public List<HapiApiSpec> getSpecsInSuite() {
         return List.of(
                 new HapiApiSpec[] {
-                    ensureSystemStateAsExpected(),
-                    confirmNftToggleIsWorksThenReenable(),
-                    payerRecordCreationSanityChecks(),
-                    accountsGetPayerRecordsIfSoConfigured(),
-                    calledContractNoLongerGetsRecord(),
-                    thresholdRecordsDontExistAnymore(),
-                    submittingNodeChargedNetworkFeeForLackOfDueDiligence(),
-                    submittingNodeChargedNetworkFeeForIgnoringPayerUnwillingness(),
-                    submittingNodeStillPaidIfServiceFeesOmitted(),
+                    //                    ensureSystemStateAsExpected(),
+                    //                    confirmNftToggleIsWorksThenReenable(),
+                    //                    payerRecordCreationSanityChecks(),
+                    //                    accountsGetPayerRecordsIfSoConfigured(),
+                    //                    calledContractNoLongerGetsRecord(),
+                    //                    thresholdRecordsDontExistAnymore(),
+                    //                    submittingNodeChargedNetworkFeeForLackOfDueDiligence(),
+                    //
+                    // submittingNodeChargedNetworkFeeForIgnoringPayerUnwillingness(),
+                    //                    submittingNodeStillPaidIfServiceFeesOmitted(),
 
                     /* This last spec requires sleeping for the default TTL (180s) so that the
                     expiration queue will be purged of all entries for existing records.
@@ -122,6 +126,7 @@ public class RecordCreationSuite extends HapiApiSuite {
                     However, it is a good sanity check to have available locally when making
                     changes to record expiration.  */
                     //						recordsTtlChangesAsExpected(),
+                    recStream6InternalContractCreates()
                 });
     }
 
@@ -694,6 +699,29 @@ public class RecordCreationSuite extends HapiApiSuite {
                                 .payingWith(GENESIS),
                         getAccountRecords("payer").has(inOrder()))
                 .then(sourcing(() -> fileUpdate(APP_PROPERTIES).contents(origPropContents.get())));
+    }
+
+    private HapiApiSpec recStream6InternalContractCreates() {
+
+        final var contract = "RecStream6Deploy";
+        final var deploySmallContractFn = "deploySmallContract";
+        final var deployAvgContractFn = "deployAverageContract";
+        final var deployBigContractFn = "deployBigContract";
+        final var deploySmallContractRec = "deploySmallContractRec";
+
+        return defaultHapiSpec("recStream6InternalContractCreates")
+                .given(cryptoCreate("payer"), uploadInitCode(contract), contractCreate(contract))
+                .when(overriding("contracts.throttle.throttleByGas", "false"))
+                .then(
+                        UtilVerbs.inParallel(
+                                asOpArray(
+                                        1,
+                                        i ->
+                                                contractCall(contract, deploySmallContractFn, 51)
+                                                        .via(deploySmallContractRec)
+                                                        .gas(2000000)
+                                                        .hasKnownStatus(
+                                                                CONTRACT_EXECUTION_EXCEPTION))));
     }
 
     private byte[] rawConfigPlus(byte[] rawBase, String extraName, String extraValue) {
