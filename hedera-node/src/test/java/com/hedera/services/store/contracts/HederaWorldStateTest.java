@@ -40,6 +40,7 @@ import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.accounts.ContractAliases;
 import com.hedera.services.ledger.accounts.ContractCustomizer;
 import com.hedera.services.ledger.ids.EntityIdSource;
+import com.hedera.services.state.validation.UsageLimits;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.EntityNum;
@@ -69,6 +70,7 @@ class HederaWorldStateTest {
     @Mock private ContractAliases aliases;
     @Mock private GlobalDynamicProperties dynamicProperties;
     @Mock private ContractCustomizer customizer;
+    @Mock private UsageLimits usageLimits;
 
     private CodeCache codeCache;
 
@@ -88,7 +90,12 @@ class HederaWorldStateTest {
         codeCache = new CodeCache(0, entityAccess);
         subject =
                 new HederaWorldState(
-                        ids, entityAccess, codeCache, sigImpactHistorian, dynamicProperties);
+                        usageLimits,
+                        ids,
+                        entityAccess,
+                        codeCache,
+                        sigImpactHistorian,
+                        dynamicProperties);
     }
 
     @Test
@@ -461,6 +468,7 @@ class HederaWorldStateTest {
 
         // then:
         verify(entityAccess).flushStorage();
+        verify(usageLimits).assertCreatableContracts(1);
         verify(worldLedgers).commit(sigImpactHistorian);
         verify(entityAccess).recordNewKvUsageTo(any());
     }

@@ -33,6 +33,7 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
+import com.hedera.services.state.validation.UsageLimits;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
@@ -68,6 +69,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class InfrastructureFactoryTest {
+    @Mock private UsageLimits usageLimits;
     @Mock private EntityIdSource ids;
     @Mock private EncodingFacade encoder;
     @Mock private DecodingFacade decoder;
@@ -96,6 +98,7 @@ class InfrastructureFactoryTest {
     void setUp() {
         subject =
                 new InfrastructureFactory(
+                        usageLimits,
                         ids,
                         encoder,
                         decoder,
