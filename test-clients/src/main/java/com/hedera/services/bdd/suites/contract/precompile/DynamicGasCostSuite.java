@@ -777,7 +777,7 @@ public class DynamicGasCostSuite extends HapiApiSuite {
                                                                                 htsPrecompileResult()
                                                                                         .forFunction(
                                                                                                 FunctionType
-                                                                                                        .OWNER)
+                                                                                                        .ERC_OWNER)
                                                                                         .withOwner(
                                                                                                 unhex(
                                                                                                         userAliasAddr

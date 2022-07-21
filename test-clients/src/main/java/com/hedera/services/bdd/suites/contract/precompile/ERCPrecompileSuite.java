@@ -2038,7 +2038,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                                                     htsPrecompileResult()
                                                                                             .forFunction(
                                                                                                     FunctionType
-                                                                                                            .OWNER)
+                                                                                                            .ERC_OWNER)
                                                                                             .withOwner(
                                                                                                     ownerAddr
                                                                                                             .get())))));
@@ -3602,7 +3602,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                                                         htsPrecompileResult()
                                                                                                 .forFunction(
                                                                                                         FunctionType
-                                                                                                                .OWNER)
+                                                                                                                .ERC_OWNER)
                                                                                                 .withOwner(
                                                                                                         asAddress(
                                                                                                                 spec.registry()
@@ -3973,7 +3973,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                                                         htsPrecompileResult()
                                                                                                 .forFunction(
                                                                                                         FunctionType
-                                                                                                                .OWNER)
+                                                                                                                .ERC_OWNER)
                                                                                                 .withOwner(
                                                                                                         asAddress(
                                                                                                                 spec.registry()
