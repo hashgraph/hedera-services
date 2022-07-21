@@ -26,8 +26,4 @@ public interface TokenFreezeUnfreezeLogic {
     ResponseCodeEnum validate(TransactionBody txnBody);
 
     void doFreezeUnfreeze(Id targetTokenId, Id targetAccountId);
-
-    default boolean isFrozen(TypedTokenStore tokenStore, Token token, Account account) {
-        return tokenStore.loadTokenRelationship(token, account).isFrozen();
-    }
 }

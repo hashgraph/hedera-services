@@ -56,6 +56,9 @@ public class FreezeUnfreezeTokenPrecompileSuite extends HapiApiSuite {
     private static final Logger log =
             LogManager.getLogger(FreezeUnfreezeTokenPrecompileSuite.class);
     private static final String FREEZE_CONTRACT = "FreezeUnfreezeContract";
+    private static final String IS_FROZEN_FUNC = "isTokenFrozen";
+    private static final String TOKEN_FREEZE_FUNC = "tokenFreeze";
+    private static final String TOKEN_UNFREEZE_FUNC = "tokenUnfreeze";
     private static final String ACCOUNT = "anybody";
     private static final String FREEZE_KEY = "freezeKey";
     private static final String MULTI_KEY = "purpose";
@@ -111,7 +114,7 @@ public class FreezeUnfreezeTokenPrecompileSuite extends HapiApiSuite {
                                                 spec,
                                                 contractCall(
                                                                 FREEZE_CONTRACT,
-                                                                "tokenFreeze",
+                                                                TOKEN_FREEZE_FUNC,
                                                                 asAddress(vanillaTokenID.get()),
                                                                 asAddress(accountID.get()))
                                                         .logged()
@@ -120,7 +123,7 @@ public class FreezeUnfreezeTokenPrecompileSuite extends HapiApiSuite {
                                                         .gas(GAS_TO_OFFER),
                                                 contractCall(
                                                                 FREEZE_CONTRACT,
-                                                                "isTokenFrozen",
+                                                                 IS_FROZEN_FUNC,
                                                                 asAddress(vanillaTokenID.get()),
                                                                 asAddress(accountID.get()))
                                                         .logged()
@@ -176,7 +179,7 @@ public class FreezeUnfreezeTokenPrecompileSuite extends HapiApiSuite {
                                                 spec,
                                                 contractCall(
                                                                 FREEZE_CONTRACT,
-                                                                "tokenUnfreeze",
+                                                                TOKEN_UNFREEZE_FUNC,
                                                                 asAddress(vanillaTokenID.get()),
                                                                 asAddress(accountID.get()))
                                                         .logged()
@@ -185,7 +188,7 @@ public class FreezeUnfreezeTokenPrecompileSuite extends HapiApiSuite {
                                                         .gas(GAS_TO_OFFER),
                                                 contractCall(
                                                                 FREEZE_CONTRACT,
-                                                                "isTokenFrozen",
+                                                                IS_FROZEN_FUNC,
                                                                 asAddress(vanillaTokenID.get()),
                                                                 asAddress(accountID.get()))
                                                         .logged()
@@ -244,7 +247,7 @@ public class FreezeUnfreezeTokenPrecompileSuite extends HapiApiSuite {
                                                 spec,
                                                 contractCall(
                                                                 FREEZE_CONTRACT,
-                                                                "tokenFreeze",
+                                                        TOKEN_FREEZE_FUNC,
                                                                 asAddress(nftTokenID.get()),
                                                                 asAddress(accountID.get()))
                                                         .payingWith(ACCOUNT)
@@ -252,7 +255,7 @@ public class FreezeUnfreezeTokenPrecompileSuite extends HapiApiSuite {
                                                         .gas(GAS_TO_OFFER),
                                                 contractCall(
                                                                 FREEZE_CONTRACT,
-                                                                "isTokenFrozen",
+                                                                IS_FROZEN_FUNC,
                                                                 asAddress(nftTokenID.get()),
                                                                 asAddress(accountID.get()))
                                                         .logged()
@@ -311,7 +314,7 @@ public class FreezeUnfreezeTokenPrecompileSuite extends HapiApiSuite {
                                                 spec,
                                                 contractCall(
                                                                 FREEZE_CONTRACT,
-                                                                "tokenUnfreeze",
+                                                                TOKEN_UNFREEZE_FUNC,
                                                                 asAddress(nftTokenID.get()),
                                                                 asAddress(accountID.get()))
                                                         .payingWith(ACCOUNT)
@@ -319,7 +322,7 @@ public class FreezeUnfreezeTokenPrecompileSuite extends HapiApiSuite {
                                                         .gas(GAS_TO_OFFER),
                                                 contractCall(
                                                                 FREEZE_CONTRACT,
-                                                                "isTokenFrozen",
+                                                                IS_FROZEN_FUNC,
                                                                 asAddress(nftTokenID.get()),
                                                                 asAddress(accountID.get()))
                                                         .logged()

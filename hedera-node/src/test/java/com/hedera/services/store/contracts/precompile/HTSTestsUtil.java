@@ -27,6 +27,7 @@ import com.hedera.services.store.contracts.precompile.codec.MintWrapper;
 import com.hedera.services.store.contracts.precompile.codec.OwnerOfAndTokenURIWrapper;
 import com.hedera.services.store.contracts.precompile.codec.TokenCreateWrapper;
 import com.hedera.services.store.contracts.precompile.codec.TokenExpiryWrapper;
+import com.hedera.services.store.contracts.precompile.codec.TokenFreezeUnfreezeWrapper;
 import com.hedera.services.store.contracts.precompile.codec.TokenTransferWrapper;
 import com.hedera.services.store.models.Id;
 import com.hedera.test.utils.IdUtils;
@@ -100,6 +101,9 @@ public class HTSTestsUtil {
     public static final Long serialNumber = 1L;
     public static final OwnerOfAndTokenURIWrapper ownerOfAndTokenUriWrapper =
             new OwnerOfAndTokenURIWrapper(serialNumber);
+
+    public static final TokenFreezeUnfreezeWrapper tokenFreezeUnFreezeWrapper =
+            new TokenFreezeUnfreezeWrapper(fungible,account);
 
     public static final Association multiAssociateOp =
             Association.singleAssociation(accountMerkleId, tokenMerkleId);

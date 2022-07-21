@@ -61,7 +61,7 @@ public class HTSPrecompileResult implements ContractCallResult {
         IS_APPROVED_FOR_ALL,
         GET_APPROVED,
         IS_FROZEN
-	}
+    }
 
     private FunctionType functionType = FunctionType.NOT_SPECIFIED;
     private TupleType tupleType = notSpecifiedType;
@@ -196,7 +196,7 @@ public class HTSPrecompileResult implements ContractCallResult {
             case ERC_TRANSFER -> result = Tuple.of(ercFungibleTransferStatus);
             case IS_APPROVED_FOR_ALL -> result = Tuple.of(isApprovedForAllStatus);
             case ALLOWANCE -> result = Tuple.of(BigInteger.valueOf(allowance));
-            case IS_FROZEN -> result = Tuple.of(status.getNumber(),isFrozen);
+            case IS_FROZEN -> result = Tuple.of(status.getNumber(), isFrozen);
             default -> result = Tuple.of(status.getNumber());
         }
         return Bytes.wrap(tupleType.encode(result).array());
