@@ -611,7 +611,7 @@ class EncodingFacadeTest {
                         Address.wrap(
                                 Bytes.fromHexString("0x00000000000000000000000000000000000005a6")),
                         7120543443612535051L,
-                        new byte[] {70, 73, 82, 83, 84},
+                        Bytes.wrap(new byte[] {70, 73, 82, 83, 84}).toString(),
                         Address.wrap(
                                 Bytes.fromHexString("0x00000000000000000000000000000000000005a7")));
         final var encodedResult = subject.encodeGetNonFungibleTokenInfo(nonFungibleTokenInfo);

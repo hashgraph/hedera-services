@@ -215,7 +215,7 @@ public class EncodingFacade {
                 .withTokenInfo(nonFungibleTokenInfo.tokenInfo())
                 .withSerialNumber(nonFungibleTokenInfo.serialNumber())
                 .withCreationTime(nonFungibleTokenInfo.creationTime())
-                .withTokenUri(Bytes.wrap(nonFungibleTokenInfo.metadata()).toString())
+                .withTokenUri(nonFungibleTokenInfo.metadata())
                 .withOwner(nonFungibleTokenInfo.ownerId())
                 .withSpender(nonFungibleTokenInfo.spenderId())
                 .build();

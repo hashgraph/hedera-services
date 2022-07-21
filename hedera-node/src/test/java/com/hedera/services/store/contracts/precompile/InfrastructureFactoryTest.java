@@ -39,8 +39,8 @@ import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.services.store.contracts.precompile.codec.DecodingFacade;
 import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
-import com.hedera.services.store.contracts.precompile.proxy.RedirectGasCalculator;
 import com.hedera.services.store.contracts.precompile.proxy.RedirectViewExecutor;
+import com.hedera.services.store.contracts.precompile.proxy.ViewGasCalculator;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.tokens.HederaTokenStore;
 import com.hedera.services.txns.crypto.ApproveAllowanceLogic;
@@ -88,7 +88,7 @@ class InfrastructureFactoryTest {
     @Mock private BackingStore<NftId, MerkleUniqueToken> uniqueTokens;
     @Mock private BackingStore<Pair<AccountID, TokenID>, MerkleTokenRelStatus> tokenRels;
     @Mock private MessageFrame frame;
-    @Mock private RedirectGasCalculator gasCalculator;
+    @Mock private ViewGasCalculator gasCalculator;
     @Mock private HederaStackedWorldStateUpdater worldStateUpdater;
 
     private InfrastructureFactory subject;

@@ -21,8 +21,8 @@ import com.hedera.services.store.contracts.WorldLedgers;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.store.contracts.precompile.codec.DecodingFacade;
 import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
-import com.hedera.services.store.contracts.precompile.codec.FungibleTokenInfo;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
+import com.hedera.services.store.contracts.precompile.utils.TokenInfoRetrievalUtils;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionBody.Builder;
 import java.util.function.UnaryOperator;
@@ -50,10 +50,6 @@ public class FungibleTokenInfoPrecompile extends AbstractTokenInfoPrecompile {
 
     @Override
     public Bytes getSuccessResultFor(final ExpirableTxnRecord.Builder childRecord) {
-        final var token = ledgers.tokens().getImmutableRef(tokenId);
-
-        final var tokenInfo = super.getTokenInfo();
-        final var decimals = token.decimals();
-        return encoder.encodeGetFungibleTokenInfo(new FungibleTokenInfo(tokenInfo, decimals));
+        return encoder.encodeGetFungibleTokenInfo(TokenInfoRetrievalUtils.getFungibleTokenInfo(tokenId, ledgers, networkInfo));
     }
 }

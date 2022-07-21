@@ -17,6 +17,7 @@ package com.hedera.services.store.contracts.precompile;
 
 import static com.hedera.services.ledger.ids.ExceptionalEntityIdSource.NOOP_ID_SOURCE;
 
+import com.hedera.services.config.NetworkInfo;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.SigImpactHistorian;
@@ -37,8 +38,9 @@ import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.store.contracts.precompile.codec.DecodingFacade;
 import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
-import com.hedera.services.store.contracts.precompile.proxy.RedirectGasCalculator;
 import com.hedera.services.store.contracts.precompile.proxy.RedirectViewExecutor;
+import com.hedera.services.store.contracts.precompile.proxy.ViewExecutor;
+import com.hedera.services.store.contracts.precompile.proxy.ViewGasCalculator;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.tokens.HederaTokenStore;
 import com.hedera.services.txns.crypto.ApproveAllowanceLogic;
@@ -186,8 +188,16 @@ public class InfrastructureFactory {
     public RedirectViewExecutor newRedirectExecutor(
             final Bytes input,
             final MessageFrame frame,
-            final RedirectGasCalculator gasCalculator) {
+            final ViewGasCalculator gasCalculator) {
         return new RedirectViewExecutor(input, frame, encoder, decoder, gasCalculator);
+    }
+
+    public ViewExecutor newViewExecutor(
+        final Bytes input,
+        final MessageFrame frame,
+        final ViewGasCalculator gasCalculator,
+        final NetworkInfo networkInfo) {
+        return new ViewExecutor(input, frame, encoder, decoder, gasCalculator, networkInfo);
     }
 
     public ApproveAllowanceLogic newApproveAllowanceLogic(

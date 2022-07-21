@@ -29,7 +29,6 @@ import static com.hedera.services.bdd.suites.HapiApiSuite.RELAYER;
 import static com.hedera.services.bdd.suites.HapiApiSuite.WEIBARS_TO_TINYBARS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
-import com.esaulpaugh.headlong.abi.Tuple;
 import com.esaulpaugh.headlong.util.Integers;
 import com.google.common.base.MoreObjects;
 import com.google.protobuf.ByteString;
@@ -49,7 +48,6 @@ import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
-import com.swirlds.common.utility.CommonUtils;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -71,7 +69,6 @@ public class HapiEthereumCall extends HapiBaseCall<HapiEthereumCall> {
     private Optional<String> details = Optional.empty();
     private Optional<Function<HapiApiSpec, Object[]>> paramsFn = Optional.empty();
     private Optional<ObjLongConsumer<ResponseCodeEnum>> gasObserver = Optional.empty();
-    private Optional<Supplier<String>> explicitHexedParams = Optional.empty();
 
     public static final long DEFAULT_GAS_PRICE_TINYBARS = 50L;
     private EthTxData.EthTransactionType type = EthTxData.EthTransactionType.EIP1559;
@@ -274,26 +271,10 @@ public class HapiEthereumCall extends HapiBaseCall<HapiEthereumCall> {
             contract = actionable.getContract();
             abi = actionable.getDetails().getAbi();
             params = actionable.getDetails().getExampleArgs();
-        } else if (paramsFn.isPresent()) {
-            params = paramsFn.get().apply(spec);
-        }
+        } else
+            paramsFn.ifPresent(hapiApiSpecFunction -> params = hapiApiSpecFunction.apply(spec));
 
-        byte[] callData;
-        if (explicitHexedParams.isPresent()) {
-            callData = explicitHexedParams.map(Supplier::get).map(CommonUtils::unhex).orElseThrow();
-        } else {
-            final var paramsList = Arrays.asList(params);
-            final var tupleExist =
-                    paramsList.stream().anyMatch(p -> p instanceof Tuple || p instanceof Tuple[]);
-            if (tupleExist) {
-                callData = encodeParametersWithTuple(params);
-            } else {
-                callData =
-                        (!abi.equals(FALLBACK_ABI))
-                                ? CallTransaction.Function.fromJsonInterface(abi).encode(params)
-                                : new byte[] {};
-            }
-        }
+        byte[] callData = initializeCallData();
 
         final byte[] to;
         if (account != null) {

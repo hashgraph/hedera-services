@@ -26,7 +26,6 @@ import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.FcCustomFee;
-
 import java.util.List;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
@@ -296,5 +295,27 @@ public enum TokenProperty implements BeanProperty<MerkleToken> {
 			return MerkleToken::decimals;
 		}
 
+	},
+	ACCOUNTS_FROZEN_BY_DEFAULT {
+		@Override
+		public BiConsumer<MerkleToken, Object> setter() {
+			return (a, l) -> a.setAccountsFrozenByDefault((boolean) l);
+		}
+
+		@Override
+		public Function<MerkleToken, Object> getter() {
+			return MerkleToken::accountsAreFrozenByDefault;
+		}
+	},
+	ACCOUNTS_KYC_GRANTED_BY_DEFAULT {
+		@Override
+		public BiConsumer<MerkleToken, Object> setter() {
+			return (a, l) -> a.setAccountsKycGrantedByDefault((boolean) l);
+		}
+
+		@Override
+		public Function<MerkleToken, Object> getter() {
+			return MerkleToken::accountsKycGrantedByDefault;
+		}
 	}
 }

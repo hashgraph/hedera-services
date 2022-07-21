@@ -26,6 +26,7 @@ import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.invali
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.invalidTokenIdResult;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.parentContractAddress;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.parentContractAddressConvertedToContractId;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.payerAddress;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.payerId;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.payerIdConvertedToAddress;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.senderAddress;
@@ -51,13 +52,11 @@ import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.contracts.sources.TxnAwareEvmSigsVerifier;
+import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.fees.calculation.UsagePricesProvider;
 import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;
-import com.hedera.services.ledger.TransactionalLedger;
-import com.hedera.services.ledger.properties.NftProperty;
-import com.hedera.services.ledger.properties.TokenProperty;
 import com.hedera.services.legacy.core.jproto.JContractIDKey;
 import com.hedera.services.legacy.core.jproto.JDelegatableContractIDKey;
 import com.hedera.services.legacy.core.jproto.JKey;
@@ -65,8 +64,6 @@ import com.hedera.services.pricing.AssetsLoader;
 import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.state.enums.TokenSupplyType;
 import com.hedera.services.state.expiry.ExpiringCreations;
-import com.hedera.services.state.merkle.MerkleToken;
-import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.state.submerkle.FcCustomFee;
@@ -93,7 +90,6 @@ import com.hedera.services.store.models.NftId;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.fee.FeeObject;
 import java.util.ArrayList;
@@ -131,9 +127,6 @@ class GetTokenInfoPrecompilesTest {
     @Mock private SyntheticTxnFactory syntheticTxnFactory;
     @Mock private HederaStackedWorldStateUpdater worldUpdater;
     @Mock private WorldLedgers wrappedLedgers;
-    @Mock private WorldLedgers trackingLedgers;
-    @Mock private TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nfts;
-    @Mock private TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokens;
     @Mock private ExpiringCreations creator;
     @Mock private ImpliedTransfersMarshal impliedTransfersMarshal;
     @Mock private FeeCalculator feeCalculator;
@@ -143,8 +136,6 @@ class GetTokenInfoPrecompilesTest {
     @Mock private AssetsLoader assetLoader;
     @Mock private HbarCentExchange exchange;
     @Mock private NetworkInfo networkInfo;
-    @Mock private MerkleToken merkleToken;
-    @Mock private MerkleUniqueToken uniqueToken;
     @Mock private FeeObject mockFeeObject;
     @Mock private JKey key;
     @Mock private JContractIDKey contractKey;
@@ -192,7 +183,7 @@ class GetTokenInfoPrecompilesTest {
     private final long serialNumber = 1;
     private final Address ownerId = payerIdConvertedToAddress;
     private final long creationTime = 152435353252L;
-    private final byte[] metadata = "Metadata".getBytes();
+    private final String metadata = "Metadata";
     private final Address spenderId = senderIdConvertedToAddress;
 
     // Fee properties
@@ -208,7 +199,7 @@ class GetTokenInfoPrecompilesTest {
     private final boolean isNetOfTransfers = false;
 
     // Info objects
-    private Expiry expiry = new Expiry(expiryPeriod, autoRenewAccountAddress, autoRenewPeriod);
+    private final Expiry expiry = new Expiry(expiryPeriod, autoRenewAccountAddress, autoRenewPeriod);
     private TokenInfo tokenInfo;
     private FungibleTokenInfo fungibleTokenInfo;
     private NonFungibleTokenInfo nonFungibleTokenInfo;
@@ -474,7 +465,7 @@ class GetTokenInfoPrecompilesTest {
 
         givenMinimalTokenContext(TokenSupplyType.FINITE);
         givenKeyContext(key, TokenKeyType.ADMIN_KEY);
-        given(merkleToken.decimals()).willReturn(decimals);
+        given(wrappedLedgers.decimalsOf(tokenMerkleId)).willReturn(decimals);
         givenMinimalKeyContext();
 
         given(encoder.encodeGetFungibleTokenInfo(fungibleTokenInfo)).willReturn(successResult);
@@ -720,9 +711,7 @@ class GetTokenInfoPrecompilesTest {
                         Bytes.of(Integers.toBytes(ABI_ID_GET_TOKEN_INFO)),
                         EntityIdUtils.asTypedEvmAddress(tokenMerkleId));
         given(decoder.decodeGetTokenInfo(pretendArguments)).willReturn(tokenInfoWrapper);
-
-        given(trackingLedgers.tokens()).willReturn(tokens);
-        given(tokens.getImmutableRef(tokenMerkleId)).willReturn(null);
+        given(wrappedLedgers.nameOf(tokenMerkleId)).willThrow(new InvalidTransactionException(ResponseCodeEnum.INVALID_TOKEN_ID));
 
         givenMinimalContextForInvalidTokenIdCall(pretendArguments);
         givenReadOnlyFeeSchedule();
@@ -751,8 +740,7 @@ class GetTokenInfoPrecompilesTest {
                         EntityIdUtils.asTypedEvmAddress(tokenMerkleId));
         given(decoder.decodeGetFungibleTokenInfo(pretendArguments)).willReturn(tokenInfoWrapper);
 
-        given(trackingLedgers.tokens()).willReturn(tokens);
-        given(tokens.getImmutableRef(tokenMerkleId)).willReturn(null);
+        given(wrappedLedgers.nameOf(tokenMerkleId)).willThrow(new InvalidTransactionException(ResponseCodeEnum.INVALID_TOKEN_ID));
 
         givenMinimalContextForInvalidTokenIdCall(pretendArguments);
         givenReadOnlyFeeSchedule();
@@ -784,8 +772,8 @@ class GetTokenInfoPrecompilesTest {
         given(decoder.decodeGetNonFungibleTokenInfo(pretendArguments)).willReturn(tokenInfoWrapper);
 
         givenMinimalTokenContext(TokenSupplyType.FINITE);
-        given(trackingLedgers.nfts()).willReturn(nfts);
-        given(nfts.getImmutableRef(NftId.fromGrpc(tokenMerkleId, serialNumber))).willReturn(null);
+        final var nftId = NftId.fromGrpc(tokenMerkleId, serialNumber);
+        given(wrappedLedgers.ownerOf(nftId)).willThrow(new InvalidTransactionException(ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER));
 
         givenMinimalContextForInvalidNftSerialNumberCall(pretendArguments);
         givenReadOnlyFeeSchedule();
@@ -815,7 +803,7 @@ class GetTokenInfoPrecompilesTest {
         given(decoder.decodeGetTokenInfo(pretendArguments)).willReturn(tokenInfoWrapper);
 
         givenMinimalTokenContext(TokenSupplyType.FINITE);
-        given(merkleToken.isDeleted()).willReturn(true);
+        given(wrappedLedgers.isDeleted(tokenMerkleId)).willReturn(true);
         givenKeyContext(key, TokenKeyType.ADMIN_KEY);
         givenMinimalKeyContext();
 
@@ -850,9 +838,9 @@ class GetTokenInfoPrecompilesTest {
         given(decoder.decodeGetFungibleTokenInfo(pretendArguments)).willReturn(tokenInfoWrapper);
 
         givenMinimalTokenContext(TokenSupplyType.FINITE);
-        given(merkleToken.isDeleted()).willReturn(true);
+        given(wrappedLedgers.isDeleted(tokenMerkleId)).willReturn(true);
         givenKeyContext(key, TokenKeyType.ADMIN_KEY);
-        given(merkleToken.decimals()).willReturn(decimals);
+        given(wrappedLedgers.decimalsOf(tokenMerkleId)).willReturn(decimals);
         givenMinimalKeyContext();
 
         fungibleTokenInfo = new FungibleTokenInfo(createTokenInfo(tokenKeys, true, true), decimals);
@@ -888,7 +876,7 @@ class GetTokenInfoPrecompilesTest {
         given(decoder.decodeGetNonFungibleTokenInfo(pretendArguments)).willReturn(tokenInfoWrapper);
 
         givenMinimalTokenContext(TokenSupplyType.FINITE);
-        given(merkleToken.isDeleted()).willReturn(true);
+        given(wrappedLedgers.isDeleted(tokenMerkleId)).willReturn(true);
         givenKeyContext(key, TokenKeyType.ADMIN_KEY);
         givenMinimalUniqueTokenContext();
         givenMinimalKeyContext();
@@ -948,25 +936,22 @@ class GetTokenInfoPrecompilesTest {
     }
 
     private void givenMinimalTokenContext(final TokenSupplyType tokenSupplyType) {
-        given(trackingLedgers.tokens()).willReturn(tokens);
-        given(tokens.getImmutableRef(tokenMerkleId)).willReturn(merkleToken);
-        given(merkleToken.name()).willReturn(name);
-        given(merkleToken.symbol()).willReturn(symbol);
-        given(merkleToken.treasury()).willReturn(treasury);
-        given(merkleToken.memo()).willReturn(memo);
-        given(merkleToken.supplyType()).willReturn(tokenSupplyType);
-        given(merkleToken.maxSupply()).willReturn(maxSupply);
-        given(merkleToken.hasFreezeKey()).willReturn(freezeDefault);
-        given(merkleToken.expiry()).willReturn(expiryPeriod);
+        given(wrappedLedgers.nameOf(tokenMerkleId)).willReturn(name);
+        given(wrappedLedgers.symbolOf(tokenMerkleId)).willReturn(symbol);
+        given(wrappedLedgers.treasury(tokenMerkleId)).willReturn(treasury);
+        given(wrappedLedgers.memo(tokenMerkleId)).willReturn(memo);
+        given(wrappedLedgers.supplyType(tokenMerkleId)).willReturn(tokenSupplyType);
+        given(wrappedLedgers.maxSupply(tokenMerkleId)).willReturn(maxSupply);
+        given(wrappedLedgers.expiry(tokenMerkleId)).willReturn(expiryPeriod);
         entityIdUtils
                 .when(() -> EntityIdUtils.asTypedEvmAddress(autoRenewAccount))
                 .thenReturn(autoRenewAccountAddress);
-        given(merkleToken.autoRenewAccount()).willReturn(autoRenewAccount);
-        given(merkleToken.autoRenewPeriod()).willReturn(autoRenewPeriod);
-        given(merkleToken.totalSupply()).willReturn(totalSupply);
-        given(merkleToken.isDeleted()).willReturn(deleted);
-        given(merkleToken.accountsKycGrantedByDefault()).willReturn(defaultKycStatus);
-        given(merkleToken.isPaused()).willReturn(pauseStatus);
+        given(wrappedLedgers.autoRenewAccount(tokenMerkleId)).willReturn(autoRenewAccount);
+        given(wrappedLedgers.autoRenewPeriod(tokenMerkleId)).willReturn(autoRenewPeriod);
+        given(wrappedLedgers.totalSupplyOf(tokenMerkleId)).willReturn(totalSupply);
+        given(wrappedLedgers.isDeleted(tokenMerkleId)).willReturn(deleted);
+        given(wrappedLedgers.accountsKycGrantedByDefault(tokenMerkleId)).willReturn(defaultKycStatus);
+        given(wrappedLedgers.isPaused(tokenMerkleId)).willReturn(pauseStatus);
 
         given(networkInfo.ledgerId()).willReturn(ByteString.copyFrom(unhex(ledgerId.substring(2))));
     }
@@ -974,61 +959,45 @@ class GetTokenInfoPrecompilesTest {
     private void givenKeyContext(final JKey key, final TokenKeyType keyType) {
         switch (keyType) {
             case ADMIN_KEY -> {
-                given(merkleToken.getAdminKey()).willReturn(key);
-                given(merkleToken.hasAdminKey()).willReturn(true);
+                given(wrappedLedgers.adminKey(tokenMerkleId)).willReturn(Optional.of(key));
             }
             case KYC_KEY -> {
-                given(merkleToken.getKycKey()).willReturn(key);
-                given(merkleToken.hasKycKey()).willReturn(true);
+                given(wrappedLedgers.kycKey(tokenMerkleId)).willReturn(Optional.of(key));
             }
             case FREEZE_KEY -> {
-                given(merkleToken.getFreezeKey()).willReturn(key);
-                given(merkleToken.hasFreezeKey()).willReturn(true);
+                given(wrappedLedgers.freezeKey(tokenMerkleId)).willReturn(Optional.of(key));
             }
             case WIPE_KEY -> {
-                given(merkleToken.getWipeKey()).willReturn(key);
-                given(merkleToken.hasWipeKey()).willReturn(true);
+                given(wrappedLedgers.wipeKey(tokenMerkleId)).willReturn(Optional.of(key));
             }
             case SUPPLY_KEY -> {
-                given(merkleToken.getSupplyKey()).willReturn(key);
-                given(merkleToken.hasSupplyKey()).willReturn(true);
+                given(wrappedLedgers.supplyKey(tokenMerkleId)).willReturn(Optional.of(key));
             }
             case FEE_SCHEDULE_KEY -> {
-                given(merkleToken.getFeeScheduleKey()).willReturn(key);
-                given(merkleToken.hasFeeScheduleKey()).willReturn(true);
+                given(wrappedLedgers.feeScheduleKey(tokenMerkleId)).willReturn(Optional.of(key));
             }
             case PAUSE_KEY -> {
-                given(merkleToken.getPauseKey()).willReturn(key);
-                given(merkleToken.hasPauseKey()).willReturn(true);
+                given(wrappedLedgers.pauseKey(tokenMerkleId)).willReturn(Optional.of(key));
             }
         }
     }
 
     private void givenKeyContextAllKeysActive(final JKey key) {
-        given(merkleToken.getAdminKey()).willReturn(key);
-        given(merkleToken.hasAdminKey()).willReturn(true);
-        given(merkleToken.getKycKey()).willReturn(key);
-        given(merkleToken.hasKycKey()).willReturn(true);
-        given(merkleToken.getFreezeKey()).willReturn(key);
-        given(merkleToken.hasFreezeKey()).willReturn(true);
-        given(merkleToken.getWipeKey()).willReturn(key);
-        given(merkleToken.hasWipeKey()).willReturn(true);
-        given(merkleToken.getSupplyKey()).willReturn(key);
-        given(merkleToken.hasSupplyKey()).willReturn(true);
-        given(merkleToken.getFeeScheduleKey()).willReturn(key);
-        given(merkleToken.hasFeeScheduleKey()).willReturn(true);
-        given(merkleToken.getPauseKey()).willReturn(key);
-        given(merkleToken.hasPauseKey()).willReturn(true);
+        given(wrappedLedgers.adminKey(tokenMerkleId)).willReturn(Optional.of(key));
+        given(wrappedLedgers.kycKey(tokenMerkleId)).willReturn(Optional.of(key));
+        given(wrappedLedgers.freezeKey(tokenMerkleId)).willReturn(Optional.of(key));
+        given(wrappedLedgers.wipeKey(tokenMerkleId)).willReturn(Optional.of(key));
+        given(wrappedLedgers.supplyKey(tokenMerkleId)).willReturn(Optional.of(key));
+        given(wrappedLedgers.feeScheduleKey(tokenMerkleId)).willReturn(Optional.of(key));
+        given(wrappedLedgers.pauseKey(tokenMerkleId)).willReturn(Optional.of(key));
     }
 
     private void givenMinimalUniqueTokenContext() {
-        given(trackingLedgers.nfts()).willReturn(nfts);
-        given(nfts.getImmutableRef(NftId.fromGrpc(tokenMerkleId, serialNumber)))
-                .willReturn(uniqueToken);
-        given(uniqueToken.getOwner()).willReturn(payerId);
-        given(uniqueToken.getPackedCreationTime()).willReturn(creationTime);
-        given(uniqueToken.getMetadata()).willReturn(metadata);
-        given(uniqueToken.getSpender()).willReturn(senderId);
+        final var nftId = NftId.fromGrpc(tokenMerkleId, serialNumber);
+        given(wrappedLedgers.ownerOf(nftId)).willReturn(payerAddress);
+        given(wrappedLedgers.packedCreationTimeOf(nftId)).willReturn(creationTime);
+        given(wrappedLedgers.metadataOf(nftId)).willReturn(metadata);
+        given(wrappedLedgers.spenderOf(nftId)).willReturn(senderId);
     }
 
     private void givenMinimalFrameContext() {
@@ -1039,7 +1008,6 @@ class GetTokenInfoPrecompilesTest {
         Optional<WorldUpdater> parent = Optional.of(worldUpdater);
         given(worldUpdater.parentUpdater()).willReturn(parent);
         given(worldUpdater.wrappedTrackingLedgers(any())).willReturn(wrappedLedgers);
-        given(worldUpdater.trackingLedgers()).willReturn(trackingLedgers);
     }
 
     private void givenMinimalContextForSuccessfulCall(final Bytes pretendArguments) {
@@ -1067,13 +1035,6 @@ class GetTokenInfoPrecompilesTest {
                 .willReturn(mockRecordBuilder);
     }
 
-    private void givenMinimalContextForDeletedTokenCall(final Bytes pretendArguments) {
-        given(syntheticTxnFactory.createTransactionCall(1L, pretendArguments))
-                .willReturn(mockSynthBodyBuilder);
-        given(creator.createUnsuccessfulSyntheticRecord(ResponseCodeEnum.TOKEN_WAS_DELETED))
-                .willReturn(mockRecordBuilder);
-    }
-
     private void givenFixedFeeContextWithDenomination() {
         final var fixedFee = new FixedFee(amount, feeToken, false, false, feeCollector);
         final List<FixedFee> fixedFees = new ArrayList<>();
@@ -1087,7 +1048,7 @@ class GetTokenInfoPrecompilesTest {
         given(fixedFeeSpec.getTokenDenomination()).willReturn(feeTokenEntityId);
         final List<FcCustomFee> customFees = new ArrayList<>();
         customFees.add(customFixedFee);
-        given(merkleToken.customFeeSchedule()).willReturn(customFees);
+        given(wrappedLedgers.feeSchedule(tokenMerkleId)).willReturn(customFees);
     }
 
     private void givenFixedFeeContextWithoutDenomination() {
@@ -1105,7 +1066,7 @@ class GetTokenInfoPrecompilesTest {
         given(fixedFeeSpec.getTokenDenomination()).willReturn(null);
         final List<FcCustomFee> customFees = new ArrayList<>();
         customFees.add(customFixedFee);
-        given(merkleToken.customFeeSchedule()).willReturn(customFees);
+        given(wrappedLedgers.feeSchedule(tokenMerkleId)).willReturn(customFees);
     }
 
     private void givenFractionalFeeContext() {
@@ -1132,7 +1093,7 @@ class GetTokenInfoPrecompilesTest {
         given(fractionalFeeSpec.isNetOfTransfers()).willReturn(isNetOfTransfers);
         final List<FcCustomFee> customFees = new ArrayList<>();
         customFees.add(customFractionalFee);
-        given(merkleToken.customFeeSchedule()).willReturn(customFees);
+        given(wrappedLedgers.feeSchedule(tokenMerkleId)).willReturn(customFees);
     }
 
     private void givenRoyaltyFeeContext(final boolean hasFallbackFee) {
@@ -1163,7 +1124,7 @@ class GetTokenInfoPrecompilesTest {
         }
         final List<FcCustomFee> customFees = new ArrayList<>();
         customFees.add(customRoyaltyFee);
-        given(merkleToken.customFeeSchedule()).willReturn(customFees);
+        given(wrappedLedgers.feeSchedule(tokenMerkleId)).willReturn(customFees);
     }
 
     private TokenInfo createTokenInfo(

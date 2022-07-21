@@ -22,6 +22,7 @@ import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.store.contracts.precompile.codec.DecodingFacade;
 import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
+import com.hedera.services.store.contracts.precompile.utils.TokenInfoRetrievalUtils;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionBody.Builder;
 import java.util.function.UnaryOperator;
@@ -49,6 +50,6 @@ public class TokenInfoPrecompile extends AbstractTokenInfoPrecompile {
 
     @Override
     public Bytes getSuccessResultFor(final ExpirableTxnRecord.Builder childRecord) {
-        return encoder.encodeGetTokenInfo(super.getTokenInfo());
+        return encoder.encodeGetTokenInfo(TokenInfoRetrievalUtils.getTokenInfo(tokenId, ledgers, networkInfo));
     }
 }

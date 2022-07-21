@@ -40,6 +40,7 @@ package com.hedera.services.store.contracts.precompile;
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hedera.services.state.EntityCreator.EMPTY_MEMO;
 import static com.hedera.services.store.contracts.precompile.utils.DescriptorUtils.isTokenProxyRedirect;
+import static com.hedera.services.store.contracts.precompile.utils.DescriptorUtils.isViewFunction;
 import static com.hedera.services.utils.EntityIdUtils.contractIdFromEvmAddress;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_GAS;
@@ -197,10 +198,10 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
     public Pair<Long, Bytes> computeCosted(final Bytes input, final MessageFrame frame) {
         if (frame.isStatic()) {
-            if (!isTokenProxyRedirect(input)) {
+            if (!isTokenProxyRedirect(input) && !isViewFunction(input)) {
                 frame.setRevertReason(STATIC_CALL_REVERT_REASON);
                 return Pair.of(defaultGas(), null);
-            } else {
+            } else if (isTokenProxyRedirect(input)){
                 final var proxyUpdater = (HederaStackedWorldStateUpdater) frame.getWorldUpdater();
                 if (!proxyUpdater.isInTransaction()) {
                     final var executor =
@@ -208,8 +209,16 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
                                     input, frame, precompilePricingUtils::computeViewFunctionGas);
                     return executor.computeCosted();
                 }
+            } else if(isViewFunction(input)) {
+                final var proxyUpdater = (HederaStackedWorldStateUpdater) frame.getWorldUpdater();
+                if (!proxyUpdater.isInTransaction()) {
+                    final var executor =
+                        infrastructureFactory.newViewExecutor(
+                            input, frame, precompilePricingUtils::computeViewFunctionGas, networkInfo);
+                    return executor.computeCosted();
             }
         }
+            }
         final var result = computePrecompile(input, frame);
         return Pair.of(gasRequirement, result.getOutput());
     }
@@ -531,7 +540,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
                     case AbiConstants.ABI_ID_GET_TOKEN_INFO -> new TokenInfoPrecompile(
                             null,
                             syntheticTxnFactory,
-                            updater.trackingLedgers(),
+                        ledgers,
                             encoder,
                             decoder,
                             precompilePricingUtils,
@@ -540,7 +549,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
                             .ABI_ID_GET_FUNGIBLE_TOKEN_INFO -> new FungibleTokenInfoPrecompile(
                             null,
                             syntheticTxnFactory,
-                            updater.trackingLedgers(),
+                            ledgers,
                             encoder,
                             decoder,
                             precompilePricingUtils,
@@ -549,7 +558,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
                             .ABI_ID_GET_NON_FUNGIBLE_TOKEN_INFO -> new NonFungibleTokenInfoPrecompile(
                             null,
                             syntheticTxnFactory,
-                            updater.trackingLedgers(),
+                        ledgers,
                             encoder,
                             decoder,
                             precompilePricingUtils,

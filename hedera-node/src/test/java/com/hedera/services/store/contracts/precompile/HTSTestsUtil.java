@@ -56,6 +56,7 @@ public class HTSTestsUtil {
     public static final TokenID token = IdUtils.asToken("0.0.1");
     public static final AccountID payer = IdUtils.asAccount("0.0.12345");
     public static final AccountID sender = IdUtils.asAccount("0.0.2");
+    public static final Address payerAddress = EntityIdUtils.asTypedEvmAddress(payer);
     public static final EntityId payerId = EntityId.fromGrpcAccountId(payer);
     public static final EntityId senderId = EntityId.fromGrpcAccountId(sender);
     public static final Address payerIdConvertedToAddress =
@@ -76,6 +77,7 @@ public class HTSTestsUtil {
     public static final Address contractAddr = Address.ALTBN128_MUL;
     public static final Address senderAddress = Address.ALTBN128_PAIRING;
     public static final Address parentContractAddress = Address.BLAKE2B_F_COMPRESSION;
+    public static final EntityId treasuryEntityId = EntityId.fromAddress(Address.wrap(Bytes.wrap("0x00000000000000000000000000000000000005cc".getBytes())));
     public static final EntityId tokenAddressConvertedToEntityId =
             EntityId.fromAddress(tokenAddress);
     public static final ContractID parentContractAddressConvertedToContractId =
