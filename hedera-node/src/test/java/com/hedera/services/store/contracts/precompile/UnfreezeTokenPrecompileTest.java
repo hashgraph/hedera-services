@@ -87,7 +87,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-public class UnfreezeTokenPrecompileTest {
+ class UnfreezeTokenPrecompileTest {
     @Mock private GlobalDynamicProperties dynamicProperties;
     @Mock private GasCalculator gasCalculator;
     @Mock private TypedTokenStore tokenStore;

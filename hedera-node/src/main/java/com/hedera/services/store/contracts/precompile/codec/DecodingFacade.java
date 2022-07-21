@@ -330,7 +330,7 @@ public class DecodingFacade {
             TypeFactory.create(ADDRESS_UINT256_RAW_TYPE);
 
     private static final Function HAPI_IS_APPROVED_FOR_ALL =
-            new Function("isApprovedForAll(address,address,address)", "(int,bool)");
+            new Function("isApprovedForAll(address,address,address)", INT_BOOL_PAIR_OUTPUT);
     private static final Bytes HAPI_IS_APPROVED_FOR_ALL_SELECTOR =
             Bytes.wrap(HAPI_IS_APPROVED_FOR_ALL.selector());
     private static final ABIType<Tuple> HAPI_IS_APPROVED_FOR_ALL_DECODER =

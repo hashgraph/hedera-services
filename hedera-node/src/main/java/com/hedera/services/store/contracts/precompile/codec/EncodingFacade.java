@@ -39,6 +39,7 @@ public class EncodingFacade {
     private static final String STRING_RETURN_TYPE = "(string)";
     public static final String UINT256_RETURN_TYPE = "(uint256)";
     public static final String BOOL_RETURN_TYPE = "(bool)";
+    public static final String INT_BOOL_PAIR_RETURN_TYPE = "(int32,bool)";
     private static final TupleType mintReturnType = TupleType.parse("(int32,uint64,int64[])");
     private static final TupleType burnReturnType = TupleType.parse("(int32,uint64)");
     private static final TupleType createReturnType = TupleType.parse("(int32,address)");
@@ -47,7 +48,7 @@ public class EncodingFacade {
     private static final TupleType allowanceOfType = TupleType.parse(UINT256_RETURN_TYPE);
     private static final TupleType hapiAllowanceOfType = TupleType.parse("(int32,uint256)");
     private static final TupleType approveOfType = TupleType.parse(BOOL_RETURN_TYPE);
-    private static final TupleType hapiApproveOfType = TupleType.parse("(int32,bool)");
+    private static final TupleType hapiApproveOfType = TupleType.parse(INT_BOOL_PAIR_RETURN_TYPE);
     private static final TupleType hapiApproveNftType = TupleType.parse("(int32)");
     private static final TupleType decimalsType = TupleType.parse("(uint8)");
     private static final TupleType ownerOfType = TupleType.parse("(address)");
@@ -58,8 +59,8 @@ public class EncodingFacade {
     private static final TupleType tokenUriType = TupleType.parse(STRING_RETURN_TYPE);
     private static final TupleType ercTransferType = TupleType.parse(BOOL_RETURN_TYPE);
     private static final TupleType isApprovedForAllType = TupleType.parse(BOOL_RETURN_TYPE);
-    private static final TupleType hapiIsApprovedForAllType = TupleType.parse("(int32,bool)");
-    private static final TupleType isTokenFrozenType = TupleType.parse("(int32,bool)");
+    private static final TupleType hapiIsApprovedForAllType = TupleType.parse(INT_BOOL_PAIR_RETURN_TYPE);
+    private static final TupleType isTokenFrozenType = TupleType.parse(INT_BOOL_PAIR_RETURN_TYPE);
 
     @Inject
     public EncodingFacade() {
