@@ -208,7 +208,7 @@ public class WorldLedgers {
     }
 
     public long expiry(final TokenID tokenId) {
-        return propertyOf(tokenId, EXPIRY, StaticEntityAccess::supplyOf);
+        return propertyOf(tokenId, EXPIRY, StaticEntityAccess::expiry);
     }
 
     public EntityId autoRenewAccount(final TokenID tokenId) {
@@ -216,7 +216,7 @@ public class WorldLedgers {
     }
 
     public long autoRenewPeriod(final TokenID tokenId) {
-        return propertyOf(tokenId, AUTO_RENEW_PERIOD, StaticEntityAccess::supplyOf);
+        return propertyOf(tokenId, AUTO_RENEW_PERIOD, StaticEntityAccess::autoRenewPeriod);
     }
 
     public int decimalsOf(final TokenID tokenId) {

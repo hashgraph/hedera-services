@@ -164,12 +164,6 @@ class HTSPrecompiledContractTest {
     private static final long viewTimestamp = 10L;
     private static final int CENTS_RATE = 12;
     private static final int HBAR_RATE = 1;
-    private static final String tokenName = "NAME";
-    private static final String symbol = "S";
-    private static final Address treasury =
-            Address.wrap(Bytes.fromHexString("0x00000000000000000000000000000000000005cc"));
-    private static final String memo = "MEMO";
-    private static final long maxSupply = 1000L;
     private TokenInfo tokenInfo;
 
     public static final Id fungibleId = Id.fromGrpcToken(fungible);
