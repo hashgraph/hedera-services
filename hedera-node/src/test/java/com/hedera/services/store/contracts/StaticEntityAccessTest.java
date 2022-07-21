@@ -44,6 +44,7 @@ import com.hedera.services.ledger.accounts.ContractAliases;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.legacy.core.jproto.JKey;
+import com.hedera.services.state.enums.TokenSupplyType;
 import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
@@ -269,11 +270,14 @@ class StaticEntityAccessTest {
         assertFailsWith(() -> subject.maxSupply(tokenId), INVALID_TOKEN_ID);
         assertFailsWith(() -> subject.expiry(tokenId), INVALID_TOKEN_ID);
         assertFailsWith(() -> subject.autoRenewAccount(tokenId), INVALID_TOKEN_ID);
+        assertFailsWith(() -> subject.autoRenewPeriod(tokenId), INVALID_TOKEN_ID);
         assertFailsWith(() -> subject.feeSchedule(tokenId), INVALID_TOKEN_ID);
         assertFailsWith(() -> subject.accountsAreFrozenByDefault(tokenId), INVALID_TOKEN_ID);
         assertFailsWith(() -> subject.isPaused(tokenId), INVALID_TOKEN_ID);
+        assertFailsWith(() -> subject.supplyType(tokenId), INVALID_TOKEN_ID);
         assertFailsWith(() -> subject.isDeleted(tokenId), INVALID_TOKEN_ID);
         assertFailsWith(() -> subject.accountsKycGrantedByDefault(tokenId), INVALID_TOKEN_ID);
+        assertFailsWith(() -> subject.treasury(tokenId), INVALID_TOKEN_ID);
     }
 
     @Test
@@ -284,8 +288,9 @@ class StaticEntityAccessTest {
         assertEquals(symbol, subject.symbolOf(tokenId));
         assertEquals(decimals, subject.decimalsOf(tokenId));
         assertEquals(totalSupply, subject.supplyOf(tokenId));
+        assertEquals(treasuryNum.toEntityId(), subject.treasury(tokenId));
+        assertEquals(TokenSupplyType.FINITE, subject.supplyType(tokenId));
         assertEquals(type, subject.typeOf(tokenId));
-
         assertEquals(key, subject.adminKey(tokenId));
         assertEquals(key, subject.kycKey(tokenId));
         assertEquals(key, subject.freezeKey(tokenId));
@@ -297,6 +302,7 @@ class StaticEntityAccessTest {
         assertEquals(maxSupply, subject.maxSupply(tokenId));
         assertEquals(expiry, subject.expiry(tokenId));
         assertEquals(senderId, subject.autoRenewAccount(tokenId));
+        assertEquals(autoRenewPeriod, subject.autoRenewPeriod(tokenId));
         assertEquals(new ArrayList<>(), subject.feeSchedule(tokenId));
         assertFalse(subject.accountsAreFrozenByDefault(tokenId));
         assertFalse(subject.isPaused(tokenId));
@@ -438,6 +444,7 @@ class StaticEntityAccessTest {
     private static final String memo = "MEMO";
     private static final long maxSupply = 1000L;
     private static final long expiry = 123456L;
+    private static final long autoRenewPeriod = 235325;
     private static final EntityNum tokenNum = EntityNum.fromLong(666);
     private static final EntityNum accountNum = EntityNum.fromLong(888);
     private static final EntityNum treasuryNum = EntityNum.fromLong(999);
@@ -481,6 +488,7 @@ class StaticEntityAccessTest {
         token.setPaused(false);
         token.setFeeSchedule(new ArrayList<>());
         token.setExpiry(expiry);
+        token.setSupplyType(TokenSupplyType.FINITE);
         token.setAutoRenewAccount(senderId);
         token.setAdminKey(key);
         token.setKycKey(key);
@@ -489,5 +497,6 @@ class StaticEntityAccessTest {
         token.setWipeKey(key);
         token.setPauseKey(key);
         token.setSupplyKey(key);
+        token.setAutoRenewPeriod(autoRenewPeriod);
     }
 }

@@ -19,12 +19,15 @@ import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_GET_NON_FUNGIBLE_TOKEN_INFO;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_GET_TOKEN_INFO;
 import static com.hedera.services.store.contracts.precompile.proxy.RedirectViewExecutor.MINIMUM_TINYBARS_COST;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.verify;
 
 import com.esaulpaugh.headlong.util.Integers;
 import com.hedera.services.config.NetworkInfo;
+import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.services.store.contracts.WorldLedgers;
@@ -165,13 +168,28 @@ class ViewExecutorTest {
 
     @Test
     void computeGetNonFungibleTokenInfo() {
-        final var input = prerequisites(ABI_ID_GET_NON_FUNGIBLE_TOKEN_INFO, fungibleTokenAddress);
+        final var input =
+                prerequisites(ABI_ID_GET_NON_FUNGIBLE_TOKEN_INFO, nonfungibleTokenAddress);
 
-        final var tokenInfoWrapper = TokenInfoWrapper.forToken(fungible);
+        final var tokenInfoWrapper = TokenInfoWrapper.forNonFungibleToken(nonfungibletoken, 1L);
         given(decodingFacade.decodeGetNonFungibleTokenInfo(input)).willReturn(tokenInfoWrapper);
         given(encodingFacade.encodeGetNonFungibleTokenInfo(any())).willReturn(tokenInfoEncoded);
 
         assertEquals(Pair.of(gas, tokenInfoEncoded), subject.computeCosted());
+    }
+
+    @Test
+    void revertsFrameAndReturnsNullOnRevertingException() {
+        final var input = prerequisites(ABI_ID_GET_TOKEN_INFO, fungibleTokenAddress);
+
+        final var tokenInfoWrapper = TokenInfoWrapper.forToken(fungible);
+        given(decodingFacade.decodeGetTokenInfo(input)).willReturn(tokenInfoWrapper);
+
+        given(TokenInfoRetrievalUtils.getTokenInfo(any(), any(), any()))
+                .willThrow(new InvalidTransactionException(INVALID_TOKEN_ID, true));
+
+        assertEquals(Pair.of(gas, null), subject.computeCosted());
+        verify(frame).setState(MessageFrame.State.REVERT);
     }
 
     Bytes prerequisites(final int descriptor, final Bytes tokenAddress) {
