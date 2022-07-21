@@ -19,19 +19,24 @@ import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.isRandomResult;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocal;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
+import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.swirlds.common.utility.CommonUtils;
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -73,7 +78,57 @@ public class PrngPrecompileSuite extends HapiApiSuite {
     }
 
     List<HapiApiSpec> positiveSpecs() {
-        return List.of(prngPrecompileHappyPathWorks());
+        return List.of(prngPrecompileHappyPathWorks(), multipleCallsHaveIndependentResults());
+    }
+
+    private HapiApiSpec multipleCallsHaveIndependentResults() {
+        final var prng = "PrngSystemContract";
+        final var gasToOffer = 400_000;
+        final var numCalls = 5;
+        final List<String> prngSeeds = new ArrayList<>();
+        return defaultHapiSpec("MultipleCallsHaveIndependentResults")
+                .given(uploadInitCode(prng), contractCreate(prng))
+                .when(
+                        withOpContext(
+                                (spec, opLog) -> {
+                                    for (int i = 0; i < numCalls; i++) {
+                                        final var txn = "call" + i;
+                                        final var call =
+                                                contractCall(prng, "getPseudorandomSeed")
+                                                        .gas(gasToOffer)
+                                                        .via(txn);
+                                        final var lookup = getTxnRecord(txn).andAllChildRecords();
+                                        allRunFor(spec, call, lookup);
+                                        final var response = lookup.getResponseRecord();
+                                        final var rawResult =
+                                                response.getContractCallResult()
+                                                        .getContractCallResult()
+                                                        .toByteArray();
+                                        // Since this contract returns the result of the Prng system
+                                        // contract, its call result
+                                        // should be identical to the result of the system contract
+                                        // in the child record
+                                        for (final var child : lookup.getChildRecords()) {
+                                            if (child.hasContractCallResult()) {
+                                                assertArrayEquals(
+                                                        rawResult,
+                                                        child.getContractCallResult()
+                                                                .getContractCallResult()
+                                                                .toByteArray());
+                                            }
+                                        }
+                                        prngSeeds.add(CommonUtils.hex(rawResult));
+                                    }
+                                    opLog.info("Got prng seeds  : {}", prngSeeds);
+                                    assertEquals(
+                                            prngSeeds.size(),
+                                            new HashSet<>(prngSeeds).size(),
+                                            "An N-3 running hash was repeated, which is"
+                                                    + " inconceivable");
+                                }))
+                .then(
+                        // It's possible to call these contracts in a static context with no issues
+                        contractCallLocal(prng, "getPseudorandomSeed").gas(gasToOffer));
     }
 
     private HapiApiSpec emptyInputCallFails() {

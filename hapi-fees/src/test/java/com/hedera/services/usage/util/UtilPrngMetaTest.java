@@ -55,7 +55,9 @@ class UtilPrngMetaTest {
 
         // without range
         canonicalTxn =
-                TransactionBody.newBuilder().setUtilPrng(UtilPrngTransactionBody.newBuilder()).build();
+                TransactionBody.newBuilder()
+                        .setUtilPrng(UtilPrngTransactionBody.newBuilder())
+                        .build();
 
         subject = new UtilPrngMeta(canonicalTxn.getUtilPrng());
         assertEquals(0, subject.getMsgBytesUsed());
