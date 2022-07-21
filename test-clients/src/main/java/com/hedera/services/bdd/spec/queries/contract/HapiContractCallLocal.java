@@ -186,7 +186,7 @@ public class HapiContractCallLocal extends HapiQueryOp<HapiContractCallLocal> {
         byte[] callData;
         final var paramsList = Arrays.asList(params);
         final var tupleExist =
-            paramsList.stream().anyMatch(p -> p instanceof Tuple || p instanceof Tuple[]);
+                paramsList.stream().anyMatch(p -> p instanceof Tuple || p instanceof Tuple[]);
         if (tupleExist) {
             callData = HapiParserUtil.encodeParametersWithTuple(params, abi);
         } else {
@@ -194,7 +194,7 @@ public class HapiContractCallLocal extends HapiQueryOp<HapiContractCallLocal> {
                     (!FALLBACK_ABI.equals(abi))
                             ? CallTransaction.Function.fromJsonInterface(abi).encode(params)
                             : new byte[] {};
-            }
+        }
 
         @SuppressWarnings("java:S1874")
         final var opBuilder =

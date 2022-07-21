@@ -201,7 +201,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
             if (!isTokenProxyRedirect(input) && !isViewFunction(input)) {
                 frame.setRevertReason(STATIC_CALL_REVERT_REASON);
                 return Pair.of(defaultGas(), null);
-            } else if (isTokenProxyRedirect(input)){
+            } else if (isTokenProxyRedirect(input)) {
                 final var proxyUpdater = (HederaStackedWorldStateUpdater) frame.getWorldUpdater();
                 if (!proxyUpdater.isInTransaction()) {
                     final var executor =
@@ -209,16 +209,19 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
                                     input, frame, precompilePricingUtils::computeViewFunctionGas);
                     return executor.computeCosted();
                 }
-            } else if(isViewFunction(input)) {
+            } else if (isViewFunction(input)) {
                 final var proxyUpdater = (HederaStackedWorldStateUpdater) frame.getWorldUpdater();
                 if (!proxyUpdater.isInTransaction()) {
                     final var executor =
-                        infrastructureFactory.newViewExecutor(
-                            input, frame, precompilePricingUtils::computeViewFunctionGas, networkInfo);
+                            infrastructureFactory.newViewExecutor(
+                                    input,
+                                    frame,
+                                    precompilePricingUtils::computeViewFunctionGas,
+                                    networkInfo);
                     return executor.computeCosted();
+                }
             }
         }
-            }
         final var result = computePrecompile(input, frame);
         return Pair.of(gasRequirement, result.getOutput());
     }
@@ -540,7 +543,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
                     case AbiConstants.ABI_ID_GET_TOKEN_INFO -> new TokenInfoPrecompile(
                             null,
                             syntheticTxnFactory,
-                        ledgers,
+                            ledgers,
                             encoder,
                             decoder,
                             precompilePricingUtils,
@@ -558,7 +561,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
                             .ABI_ID_GET_NON_FUNGIBLE_TOKEN_INFO -> new NonFungibleTokenInfoPrecompile(
                             null,
                             syntheticTxnFactory,
-                        ledgers,
+                            ledgers,
                             encoder,
                             decoder,
                             precompilePricingUtils,

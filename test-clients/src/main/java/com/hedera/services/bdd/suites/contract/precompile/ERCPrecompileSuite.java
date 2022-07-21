@@ -183,33 +183,33 @@ public class ERCPrecompileSuite extends HapiApiSuite {
     @Override
     public List<HapiApiSpec> getSpecsInSuite() {
         return allOf(
-            ERC_20()
-//            ERC_721()
-        );
+                ERC_20()
+                //            ERC_721()
+                );
     }
 
     List<HapiApiSpec> ERC_20() {
         return List.of(
-//                getErc20TokenName(),
+                //                getErc20TokenName(),
                 getErc20TokenSymbol()
-//                getErc20TokenDecimals(),
-//                getErc20TotalSupply(),
-//                getErc20BalanceOfAccount(),
-//                transferErc20Token(),
-//                erc20Allowance(),
-//                erc20Approve(),
-//                someERC20ApproveAllowanceScenariosPass(),
-//                someERC20NegativeTransferFromScenariosPass(),
-//                someERC20ApproveAllowanceScenarioInOneCall(),
-//                getErc20TokenDecimalsFromErc721TokenFails(),
-//                transferErc20TokenFromErc721TokenFails(),
-//                transferErc20TokenReceiverContract(),
-//                transferErc20TokenSenderAccount(),
-//                transferErc20TokenAliasedSender(),
-//                directCallsWorkForERC20(),
-//                erc20TransferFrom(),
-//                erc20TransferFromSelf()
-        );
+                //                getErc20TokenDecimals(),
+                //                getErc20TotalSupply(),
+                //                getErc20BalanceOfAccount(),
+                //                transferErc20Token(),
+                //                erc20Allowance(),
+                //                erc20Approve(),
+                //                someERC20ApproveAllowanceScenariosPass(),
+                //                someERC20NegativeTransferFromScenariosPass(),
+                //                someERC20ApproveAllowanceScenarioInOneCall(),
+                //                getErc20TokenDecimalsFromErc721TokenFails(),
+                //                transferErc20TokenFromErc721TokenFails(),
+                //                transferErc20TokenReceiverContract(),
+                //                transferErc20TokenSenderAccount(),
+                //                transferErc20TokenAliasedSender(),
+                //                directCallsWorkForERC20(),
+                //                erc20TransferFrom(),
+                //                erc20TransferFromSelf()
+                );
     }
 
     List<HapiApiSpec> ERC_721() {

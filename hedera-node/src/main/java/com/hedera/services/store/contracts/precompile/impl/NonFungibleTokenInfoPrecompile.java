@@ -53,6 +53,7 @@ public class NonFungibleTokenInfoPrecompile extends AbstractTokenInfoPrecompile 
     @Override
     public Bytes getSuccessResultFor(final ExpirableTxnRecord.Builder childRecord) {
         return encoder.encodeGetNonFungibleTokenInfo(
-            TokenInfoRetrievalUtils.getNonFungibleTokenInfo(tokenId, serialNumber, ledgers, networkInfo));
+                TokenInfoRetrievalUtils.getNonFungibleTokenInfo(
+                        tokenId, serialNumber, ledgers, networkInfo));
     }
 }

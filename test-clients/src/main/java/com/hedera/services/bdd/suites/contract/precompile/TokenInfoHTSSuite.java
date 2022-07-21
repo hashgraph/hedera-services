@@ -132,16 +132,14 @@ public class TokenInfoHTSSuite extends HapiApiSuite {
                 getInfoOnDeletedFungibleTokenWorks(),
                 getInfoOnInvalidFungibleTokenFails(),
                 getInfoOnDeletedNonFungibleTokenFails(),
-                getInfoOnInvalidNonFungibleTokenFails()
-        );
+                getInfoOnInvalidNonFungibleTokenFails());
     }
 
     List<HapiApiSpec> positiveSpecs() {
         return List.of(
                 happyPathGetTokenInfo(),
                 happyPathGetFungibleTokenInfo(),
-                happyPathGetNonFungibleTokenInfo()
-        );
+                happyPathGetNonFungibleTokenInfo());
     }
 
     private HapiApiSpec happyPathGetTokenInfo() {
@@ -199,21 +197,18 @@ public class TokenInfoHTSSuite extends HapiApiSuite {
                                                                                 asAddress(
                                                                                         spec.registry()
                                                                                                 .getTokenID(
-                                                                                                        PRIMARY_TOKEN_NAME))))
-                                                )
+                                                                                                        PRIMARY_TOKEN_NAME)))))
                                                         .via(TOKEN_INFO_TXN)
                                                         .gas(1_000_000L),
-                                            contractCallLocal(
-                                                TOKEN_INFO_CONTRACT,
-                                                GET_INFORMATION_FOR_TOKEN,
-                                                Tuple.singleton(
-                                                    expandByteArrayTo32Length(
-                                                        asAddress(
-                                                            spec.registry()
-                                                                .getTokenID(
-                                                                    PRIMARY_TOKEN_NAME)))))
-                        )))
-
+                                                contractCallLocal(
+                                                        TOKEN_INFO_CONTRACT,
+                                                        GET_INFORMATION_FOR_TOKEN,
+                                                        Tuple.singleton(
+                                                                expandByteArrayTo32Length(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getTokenID(
+                                                                                                PRIMARY_TOKEN_NAME))))))))
                 .then(
                         withOpContext(
                                 (spec, opLog) -> {
@@ -251,8 +246,7 @@ public class TokenInfoHTSSuite extends HapiApiSuite {
                                                                                                             spec,
                                                                                                             PRIMARY_TOKEN_NAME,
                                                                                                             SYMBOL,
-                                                                                                            expirySecond)))))
-                                        );
+                                                                                                            expirySecond))))));
                                 }));
     }
 
@@ -316,16 +310,15 @@ public class TokenInfoHTSSuite extends HapiApiSuite {
                                                                                                         tokenName)))))
                                                         .via(FUNGIBLE_TOKEN_INFO_TXN)
                                                         .gas(1_000_000L),
-                    contractCallLocal(
-                        TOKEN_INFO_CONTRACT,
-                        GET_INFORMATION_FOR_FUNGIBLE_TOKEN,
-                        Tuple.singleton(
-                            expandByteArrayTo32Length(
-                                asAddress(
-                                    spec.registry()
-                                        .getTokenID(
-                                            tokenName)))))
-                       )))
+                                                contractCallLocal(
+                                                        TOKEN_INFO_CONTRACT,
+                                                        GET_INFORMATION_FOR_FUNGIBLE_TOKEN,
+                                                        Tuple.singleton(
+                                                                expandByteArrayTo32Length(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getTokenID(
+                                                                                                tokenName))))))))
                 .then(
                         withOpContext(
                                 (spec, opLog) -> {
@@ -449,16 +442,16 @@ public class TokenInfoHTSSuite extends HapiApiSuite {
                                                                         1L))
                                                         .via(NON_FUNGIBLE_TOKEN_INFO_TXN)
                                                         .gas(1_000_000L),
-                                            contractCallLocal(
-                                                TOKEN_INFO_CONTRACT,
-                                                GET_INFORMATION_FOR_NON_FUNGIBLE_TOKEN,
-                                                Tuple.of(
-                                                    expandByteArrayTo32Length(
-                                                        asAddress(
-                                                            spec.registry()
-                                                                .getTokenID(
-                                                                    NON_FUNGIBLE_TOKEN_NAME))),
-                                                    1L)))))
+                                                contractCallLocal(
+                                                        TOKEN_INFO_CONTRACT,
+                                                        GET_INFORMATION_FOR_NON_FUNGIBLE_TOKEN,
+                                                        Tuple.of(
+                                                                expandByteArrayTo32Length(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getTokenID(
+                                                                                                NON_FUNGIBLE_TOKEN_NAME))),
+                                                                1L)))))
                 .then(
                         withOpContext(
                                 (spec, opLog) -> {
@@ -516,7 +509,7 @@ public class TokenInfoHTSSuite extends HapiApiSuite {
                                                                                             .withCreationTime(
                                                                                                     packedCreationTime)
                                                                                             .withTokenUri(
-                                                                                                META)
+                                                                                                    META)
                                                                                             .withOwner(
                                                                                                     ownerBytes)
                                                                                             .withSpender(

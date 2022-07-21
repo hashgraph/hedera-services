@@ -23,5 +23,4 @@ public record NonFungibleTokenInfo(
         Address ownerId,
         long creationTime,
         String metadata,
-        Address spenderId) {
-}
+        Address spenderId) {}

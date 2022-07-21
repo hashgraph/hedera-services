@@ -50,6 +50,7 @@ public class FungibleTokenInfoPrecompile extends AbstractTokenInfoPrecompile {
 
     @Override
     public Bytes getSuccessResultFor(final ExpirableTxnRecord.Builder childRecord) {
-        return encoder.encodeGetFungibleTokenInfo(TokenInfoRetrievalUtils.getFungibleTokenInfo(tokenId, ledgers, networkInfo));
+        return encoder.encodeGetFungibleTokenInfo(
+                TokenInfoRetrievalUtils.getFungibleTokenInfo(tokenId, ledgers, networkInfo));
     }
 }

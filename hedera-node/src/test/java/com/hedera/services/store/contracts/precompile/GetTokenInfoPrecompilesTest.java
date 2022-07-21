@@ -199,7 +199,8 @@ class GetTokenInfoPrecompilesTest {
     private final boolean isNetOfTransfers = false;
 
     // Info objects
-    private final Expiry expiry = new Expiry(expiryPeriod, autoRenewAccountAddress, autoRenewPeriod);
+    private final Expiry expiry =
+            new Expiry(expiryPeriod, autoRenewAccountAddress, autoRenewPeriod);
     private TokenInfo tokenInfo;
     private FungibleTokenInfo fungibleTokenInfo;
     private NonFungibleTokenInfo nonFungibleTokenInfo;
@@ -711,7 +712,8 @@ class GetTokenInfoPrecompilesTest {
                         Bytes.of(Integers.toBytes(ABI_ID_GET_TOKEN_INFO)),
                         EntityIdUtils.asTypedEvmAddress(tokenMerkleId));
         given(decoder.decodeGetTokenInfo(pretendArguments)).willReturn(tokenInfoWrapper);
-        given(wrappedLedgers.nameOf(tokenMerkleId)).willThrow(new InvalidTransactionException(ResponseCodeEnum.INVALID_TOKEN_ID));
+        given(wrappedLedgers.nameOf(tokenMerkleId))
+                .willThrow(new InvalidTransactionException(ResponseCodeEnum.INVALID_TOKEN_ID));
 
         givenMinimalContextForInvalidTokenIdCall(pretendArguments);
         givenReadOnlyFeeSchedule();
@@ -740,7 +742,8 @@ class GetTokenInfoPrecompilesTest {
                         EntityIdUtils.asTypedEvmAddress(tokenMerkleId));
         given(decoder.decodeGetFungibleTokenInfo(pretendArguments)).willReturn(tokenInfoWrapper);
 
-        given(wrappedLedgers.nameOf(tokenMerkleId)).willThrow(new InvalidTransactionException(ResponseCodeEnum.INVALID_TOKEN_ID));
+        given(wrappedLedgers.nameOf(tokenMerkleId))
+                .willThrow(new InvalidTransactionException(ResponseCodeEnum.INVALID_TOKEN_ID));
 
         givenMinimalContextForInvalidTokenIdCall(pretendArguments);
         givenReadOnlyFeeSchedule();
@@ -773,7 +776,10 @@ class GetTokenInfoPrecompilesTest {
 
         givenMinimalTokenContext(TokenSupplyType.FINITE);
         final var nftId = NftId.fromGrpc(tokenMerkleId, serialNumber);
-        given(wrappedLedgers.ownerOf(nftId)).willThrow(new InvalidTransactionException(ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER));
+        given(wrappedLedgers.ownerOf(nftId))
+                .willThrow(
+                        new InvalidTransactionException(
+                                ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER));
 
         givenMinimalContextForInvalidNftSerialNumberCall(pretendArguments);
         givenReadOnlyFeeSchedule();
@@ -950,7 +956,8 @@ class GetTokenInfoPrecompilesTest {
         given(wrappedLedgers.autoRenewPeriod(tokenMerkleId)).willReturn(autoRenewPeriod);
         given(wrappedLedgers.totalSupplyOf(tokenMerkleId)).willReturn(totalSupply);
         given(wrappedLedgers.isDeleted(tokenMerkleId)).willReturn(deleted);
-        given(wrappedLedgers.accountsKycGrantedByDefault(tokenMerkleId)).willReturn(defaultKycStatus);
+        given(wrappedLedgers.accountsKycGrantedByDefault(tokenMerkleId))
+                .willReturn(defaultKycStatus);
         given(wrappedLedgers.isPaused(tokenMerkleId)).willReturn(pauseStatus);
 
         given(networkInfo.ledgerId()).willReturn(ByteString.copyFrom(unhex(ledgerId.substring(2))));

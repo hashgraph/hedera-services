@@ -271,8 +271,7 @@ public class HapiEthereumCall extends HapiBaseCall<HapiEthereumCall> {
             contract = actionable.getContract();
             abi = actionable.getDetails().getAbi();
             params = actionable.getDetails().getExampleArgs();
-        } else
-            paramsFn.ifPresent(hapiApiSpecFunction -> params = hapiApiSpecFunction.apply(spec));
+        } else paramsFn.ifPresent(hapiApiSpecFunction -> params = hapiApiSpecFunction.apply(spec));
 
         byte[] callData = initializeCallData();
 

@@ -30,8 +30,9 @@ public class DescriptorUtils {
     }
 
     public static boolean isViewFunction(final Bytes input) {
-        return ABI_ID_GET_TOKEN_INFO == input.getInt(0) || ABI_ID_GET_FUNGIBLE_TOKEN_INFO == input.getInt(0)
-            || ABI_ID_GET_NON_FUNGIBLE_TOKEN_INFO == input.getInt(0);
+        return ABI_ID_GET_TOKEN_INFO == input.getInt(0)
+                || ABI_ID_GET_FUNGIBLE_TOKEN_INFO == input.getInt(0)
+                || ABI_ID_GET_NON_FUNGIBLE_TOKEN_INFO == input.getInt(0);
     }
 
     public static RedirectTarget getRedirectTarget(final Bytes input) {

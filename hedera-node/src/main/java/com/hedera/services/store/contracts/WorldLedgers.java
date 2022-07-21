@@ -180,7 +180,10 @@ public class WorldLedgers {
     }
 
     public boolean accountsFrozenByDefault(final TokenID tokenId) {
-        return propertyOf(tokenId, ACCOUNTS_FROZEN_BY_DEFAULT, StaticEntityAccess::accountsAreFrozenByDefault);
+        return propertyOf(
+                tokenId,
+                ACCOUNTS_FROZEN_BY_DEFAULT,
+                StaticEntityAccess::accountsAreFrozenByDefault);
     }
 
     public long totalSupplyOf(final TokenID tokenId) {
@@ -200,7 +203,10 @@ public class WorldLedgers {
     }
 
     public boolean accountsKycGrantedByDefault(final TokenID tokenId) {
-        return propertyOf(tokenId, ACCOUNTS_KYC_GRANTED_BY_DEFAULT, StaticEntityAccess::accountsKycGrantedByDefault);
+        return propertyOf(
+                tokenId,
+                ACCOUNTS_KYC_GRANTED_BY_DEFAULT,
+                StaticEntityAccess::accountsKycGrantedByDefault);
     }
 
     public long expiry(final TokenID tokenId) {
@@ -240,7 +246,8 @@ public class WorldLedgers {
     }
 
     public Optional<JKey> feeScheduleKey(final TokenID tokenId) {
-        return Optional.ofNullable(propertyOf(tokenId, FEE_SCHEDULE_KEY, StaticEntityAccess::feeScheduleKey));
+        return Optional.ofNullable(
+                propertyOf(tokenId, FEE_SCHEDULE_KEY, StaticEntityAccess::feeScheduleKey));
     }
 
     public Optional<JKey> pauseKey(final TokenID tokenId) {
@@ -486,9 +493,9 @@ public class WorldLedgers {
     }
 
     private <T> T nftPropertyOf(
-        final NftId nftId,
-        final NftProperty property,
-        final BiFunction<StaticEntityAccess, NftId, T> staticGetter) {
+            final NftId nftId,
+            final NftProperty property,
+            final BiFunction<StaticEntityAccess, NftId, T> staticGetter) {
         if (staticEntityAccess != null) {
             return staticGetter.apply(staticEntityAccess, nftId);
         } else {

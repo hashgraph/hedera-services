@@ -186,17 +186,15 @@ public class InfrastructureFactory {
     }
 
     public RedirectViewExecutor newRedirectExecutor(
-            final Bytes input,
-            final MessageFrame frame,
-            final ViewGasCalculator gasCalculator) {
+            final Bytes input, final MessageFrame frame, final ViewGasCalculator gasCalculator) {
         return new RedirectViewExecutor(input, frame, encoder, decoder, gasCalculator);
     }
 
     public ViewExecutor newViewExecutor(
-        final Bytes input,
-        final MessageFrame frame,
-        final ViewGasCalculator gasCalculator,
-        final NetworkInfo networkInfo) {
+            final Bytes input,
+            final MessageFrame frame,
+            final ViewGasCalculator gasCalculator,
+            final NetworkInfo networkInfo) {
         return new ViewExecutor(input, frame, encoder, decoder, gasCalculator, networkInfo);
     }
 
