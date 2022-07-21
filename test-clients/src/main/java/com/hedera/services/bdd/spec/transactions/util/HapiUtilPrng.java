@@ -108,7 +108,7 @@ public class HapiUtilPrng extends HapiTxnOp<HapiUtilPrng> {
 
 	@Override
 	protected Function<Transaction, TransactionResponse> callToUse(HapiApiSpec spec) {
-		return spec.clients().getUtilSvcStub(targetNodeFor(spec), useTls)::utilPrng;
+		return spec.clients().getUtilSvcStub(targetNodeFor(spec), useTls)::prng;
 	}
 
 	@Override

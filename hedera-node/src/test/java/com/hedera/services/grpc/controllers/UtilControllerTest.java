@@ -21,7 +21,6 @@ package com.hedera.services.grpc.controllers;
  */
 
 import com.hedera.services.txns.submission.TxnResponseHelper;
-import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
 import io.grpc.stub.StreamObserver;
@@ -49,7 +48,7 @@ class UtilControllerTest {
 	@Test
 	void forwardsPrngAsExpected() {
 		// when:
-		subject.utilPrng(txn, txnObserver);
+		subject.prng(txn, txnObserver);
 
 		// expect:
 		verify(txnResponseHelper).submit(txn, txnObserver, UtilPrng);

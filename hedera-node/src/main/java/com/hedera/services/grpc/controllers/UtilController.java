@@ -41,7 +41,7 @@ public class UtilController extends UtilServiceGrpc.UtilServiceImplBase {
 	}
 
 	@Override
-	public void utilPrng(Transaction signedTxn, StreamObserver<TransactionResponse> observer) {
+	public void prng(Transaction signedTxn, StreamObserver<TransactionResponse> observer) {
 		txnHelper.submit(signedTxn, observer, UtilPrng);
 	}
 }
