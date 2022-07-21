@@ -174,6 +174,7 @@ class TxnAwareEvmSigsVerifierTest {
                         subject.hasActiveSupplyKey(
                                 true, PRETEND_TOKEN_ADDR, PRETEND_SENDER_ADDR, ledgers));
     }
+
     @Test
     void throwsIfAskedToVerifyTokenWithoutWipeKey() {
         given(ledgers.tokens()).willReturn(tokensLedger);
