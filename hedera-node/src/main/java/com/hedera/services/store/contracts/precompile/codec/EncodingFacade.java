@@ -54,8 +54,8 @@ public class EncodingFacade {
     private static final TupleType tokenUriType = TupleType.parse(STRING_RETURN_TYPE);
     private static final TupleType ercTransferType = TupleType.parse(BOOL_RETURN_TYPE);
     private static final TupleType isApprovedForAllType = TupleType.parse(BOOL_RETURN_TYPE);
-    private static final TupleType getTokenDefaultFreezeStatusType = TupleType.parse(BOOL_RETURN_TYPE);
-    private static final TupleType getTokenDefaultKycStatusType = TupleType.parse(BOOL_RETURN_TYPE);
+    private static final TupleType getTokenDefaultFreezeStatusType = TupleType.parse("(int32,bool)");
+    private static final TupleType getTokenDefaultKycStatusType = TupleType.parse("(int32,bool)");
 
     @Inject
     public EncodingFacade() {
@@ -194,6 +194,7 @@ public class EncodingFacade {
     public Bytes encodeGetTokenDefaultFreezeStatus(final boolean defaultFreezeStatus) {
         return functionResultBuilder()
             .forFunction(FunctionType.GET_TOKEN_DEFAULT_FREEZE_STATUS)
+            .withStatus(SUCCESS.getNumber())
             .withGetTokenDefaultFreezeStatus(defaultFreezeStatus)
             .build();
     }
@@ -384,8 +385,8 @@ public class EncodingFacade {
                         case GET_APPROVED -> Tuple.of(
                                 convertBesuAddressToHeadlongAddress(approved));
                         case IS_APPROVED_FOR_ALL -> Tuple.of(isApprovedForAllStatus);
-                        case GET_TOKEN_DEFAULT_FREEZE_STATUS -> Tuple.of(tokenDefaultFreezeStatus);
-                        case GET_TOKEN_DEFAULT_KYC_STATUS -> Tuple.of(tokenDefaultKycStatus);
+                        case GET_TOKEN_DEFAULT_FREEZE_STATUS -> Tuple.of(status, tokenDefaultFreezeStatus);
+                        case GET_TOKEN_DEFAULT_KYC_STATUS -> Tuple.of(status, tokenDefaultKycStatus);
                     };
 
             return Bytes.wrap(tupleType.encode(result).array());

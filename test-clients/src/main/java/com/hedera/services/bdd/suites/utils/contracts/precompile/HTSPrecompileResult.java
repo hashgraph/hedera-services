@@ -39,6 +39,8 @@ public class HTSPrecompileResult implements ContractCallResult {
     private static final TupleType tokenUriType = TupleType.parse("(string)");
     private static final TupleType ercTransferType = TupleType.parse("(bool)");
     private static final TupleType isApprovedForAllType = TupleType.parse("(bool)");
+    private static final TupleType getTokenDefaultFreezeStatusType = TupleType.parse("(int32,bool)");
+    private static final TupleType getTokenDefaultKycStatusType = TupleType.parse("(int32,bool)");
 
     public static HTSPrecompileResult htsPrecompileResult() {
         return new HTSPrecompileResult();
@@ -58,7 +60,9 @@ public class HTSPrecompileResult implements ContractCallResult {
         NOT_SPECIFIED,
         ALLOWANCE,
         IS_APPROVED_FOR_ALL,
-        GET_APPROVED
+        GET_APPROVED,
+        GET_TOKEN_DEFAULT_FREEZE_STATUS,
+        GET_TOKEN_DEFAULT_KYC_STATUS
     }
 
     private FunctionType functionType = FunctionType.NOT_SPECIFIED;
@@ -76,6 +80,8 @@ public class HTSPrecompileResult implements ContractCallResult {
     private long allowance;
     private boolean ercFungibleTransferStatus;
     private boolean isApprovedForAllStatus;
+    private boolean tokenDefaultFreezeStatus;
+    private boolean tokenDefaultKycStatus;
 
     public HTSPrecompileResult forFunction(final FunctionType functionType) {
         switch (functionType) {
@@ -92,6 +98,8 @@ public class HTSPrecompileResult implements ContractCallResult {
             case ERC_TRANSFER -> tupleType = ercTransferType;
             case ALLOWANCE -> tupleType = allowanceOfType;
             case IS_APPROVED_FOR_ALL -> tupleType = isApprovedForAllType;
+            case GET_TOKEN_DEFAULT_FREEZE_STATUS -> tupleType = getTokenDefaultFreezeStatusType;
+            case GET_TOKEN_DEFAULT_KYC_STATUS -> tupleType = getTokenDefaultKycStatusType;
         }
 
         this.functionType = functionType;
@@ -164,6 +172,16 @@ public class HTSPrecompileResult implements ContractCallResult {
         return this;
     }
 
+    public HTSPrecompileResult withTokenDefaultFreezeStatus(final boolean tokenDefaultFreezeStatus) {
+        this.tokenDefaultFreezeStatus = tokenDefaultFreezeStatus;
+        return this;
+    }
+
+    public HTSPrecompileResult withTokenDefaultKycStatus(final boolean tokenDefaultKycStatus) {
+        this.tokenDefaultKycStatus = tokenDefaultKycStatus;
+        return this;
+    }
+
     @Override
     public Bytes getBytes() {
         Tuple result;
@@ -187,6 +205,8 @@ public class HTSPrecompileResult implements ContractCallResult {
             case ERC_TRANSFER -> result = Tuple.of(ercFungibleTransferStatus);
             case IS_APPROVED_FOR_ALL -> result = Tuple.of(isApprovedForAllStatus);
             case ALLOWANCE -> result = Tuple.of(BigInteger.valueOf(allowance));
+            case GET_TOKEN_DEFAULT_FREEZE_STATUS -> result = Tuple.of(status.getNumber(), tokenDefaultFreezeStatus);
+            case GET_TOKEN_DEFAULT_KYC_STATUS -> result = Tuple.of(status.getNumber(), tokenDefaultKycStatus);
             default -> result = Tuple.of(status.getNumber());
         }
         return Bytes.wrap(tupleType.encode(result).array());

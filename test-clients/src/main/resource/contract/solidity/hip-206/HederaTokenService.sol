@@ -214,7 +214,7 @@ abstract contract HederaTokenService is HederaResponseCodes {
     function getTokenDefaultFreezeStatus(address token) internal returns (int responseCode, bool defaultFreezeStatus) {
         (bool success, bytes memory result) = precompileAddress.call(
             abi.encodeWithSelector(IHederaTokenService.getTokenDefaultFreezeStatus.selector, token));
-        (responseCode, defaultFreezeStatus) = success ? abi.decode(result, (int32, bool)) : (HederaResponseCodes.UNKNOWN, false)
+        (responseCode, defaultFreezeStatus) = success ? abi.decode(result, (int32, bool)) : (HederaResponseCodes.UNKNOWN, false);
     }
 
     /// Query token default kyc status
@@ -224,7 +224,7 @@ abstract contract HederaTokenService is HederaResponseCodes {
     function getTokenDefaultKycStatus(address token) internal returns (int responseCode, bool defaultKycStatus) {
         (bool success, bytes memory result) = precompileAddress.call(
             abi.encodeWithSelector(IHederaTokenService.getTokenDefaultKycStatus.selector, token));
-        (responseCode, defaultKycStatus) = success ? abi.decode(result, (int32, bool)) : (HederaResponseCodes.UNKNOWN, false)
+        (responseCode, defaultKycStatus) = success ? abi.decode(result, (int32, bool)) : (HederaResponseCodes.UNKNOWN, false);
     }
 
     /**********************
