@@ -20,6 +20,7 @@ import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.recipi
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.senderAddress;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TREASURY_MUST_OWN_BURNED_NFT;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -78,6 +79,11 @@ class EncodingFacadeTest {
             Bytes.fromHexString(
                     "0x0000000000000000000000000000000000000000000000000000000000000003");
 
+    private static final Bytes RETURN_SUCCESS_3 =
+            Bytes.fromHexString(
+                    "0x0000000000000000000000000000000000000000000000000000000000000016"
+                            + "0000000000000000000000000000000000000000000000000000000000000003");
+
     private static final Bytes RETURN_TOKEN_URI_FIRST =
             Bytes.fromHexString(
                     "0x000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000"
@@ -96,6 +102,15 @@ class EncodingFacadeTest {
     private static final Bytes RETURN_TRUE =
             Bytes.fromHexString(
                     "0x0000000000000000000000000000000000000000000000000000000000000001");
+
+    private static final Bytes RETURN_SUCCESS =
+            Bytes.fromHexString(
+                    "0x0000000000000000000000000000000000000000000000000000000000000016");
+
+    private static final Bytes RETURN_SUCCESS_TRUE =
+            Bytes.fromHexString(
+                    "0x0000000000000000000000000000000000000000000000000000000000000016"
+                            + "0000000000000000000000000000000000000000000000000000000000000001");
 
     private static final Bytes RETURN_ADDRESS =
             Bytes.fromHexString(
@@ -202,27 +217,57 @@ class EncodingFacadeTest {
     }
 
     @Test
-    void decodeReturnResultForApprove() {
+    void decodeReturnResultForApproveERC() {
         final var decodedResult = subject.encodeApprove(true);
         assertEquals(RETURN_TRUE, decodedResult);
     }
 
     @Test
-    void decodeReturnResultForIsApprovedForAll() {
+    void decodeReturnResultForApproveHAPI() {
+        final var decodedResult = subject.encodeApprove(SUCCESS.getNumber(), true);
+        assertEquals(RETURN_SUCCESS_TRUE, decodedResult);
+    }
+
+    @Test
+    void decodeReturnResultForApproveNFTHAPI() {
+        final var decodedResult = subject.encodeApproveNFT(SUCCESS.getNumber());
+        assertEquals(RETURN_SUCCESS, decodedResult);
+    }
+
+    @Test
+    void decodeReturnResultForIsApprovedForAllERC() {
         final var decodedResult = subject.encodeIsApprovedForAll(true);
         assertEquals(RETURN_TRUE, decodedResult);
     }
 
     @Test
-    void decodeReturnResultForAllowance() {
+    void decodeReturnResultForIsApprovedForAllHAPI() {
+        final var decodedResult = subject.encodeIsApprovedForAll(SUCCESS.getNumber(), true);
+        assertEquals(RETURN_SUCCESS_TRUE, decodedResult);
+    }
+
+    @Test
+    void decodeReturnResultForAllowanceERC() {
         final var decodedResult = subject.encodeAllowance(3);
         assertEquals(RETURN_3, decodedResult);
     }
 
     @Test
-    void decodeReturnResultForGetApproved() {
+    void decodeReturnResultForAllowanceHAPI() {
+        final var decodedResult = subject.encodeAllowance(SUCCESS.getNumber(), 3);
+        assertEquals(RETURN_SUCCESS_3, decodedResult);
+    }
+
+    @Test
+    void decodeReturnResultForGetApprovedERC() {
         final var decodedResult = subject.encodeGetApproved(senderAddress);
         assertEquals(RETURN_ADDRESS, decodedResult);
+    }
+
+    @Test
+    void decodeReturnResultForGetApprovedHAPI() {
+        final var decodedResult = subject.encodeGetApproved(SUCCESS.getNumber(), senderAddress);
+        assertEquals(RETURN_CREATE_SUCCESS, decodedResult);
     }
 
     @Test

@@ -39,6 +39,9 @@ public class HTSPrecompileResult implements ContractCallResult {
     private static final TupleType tokenUriType = TupleType.parse("(string)");
     private static final TupleType ercTransferType = TupleType.parse("(bool)");
     private static final TupleType isApprovedForAllType = TupleType.parse("(bool)");
+    private static final TupleType hapiAllowanceOfType = TupleType.parse("(int32,uint256)");
+    private static final TupleType hapiGetApprovedType = TupleType.parse("(int32,bytes32)");
+    private static final TupleType hapiIsApprovedForAllType = TupleType.parse("(int32,bool)");
     private static final TupleType isFrozenType = TupleType.parse("(int32,bool)");
 
     public static HTSPrecompileResult htsPrecompileResult() {
@@ -60,6 +63,9 @@ public class HTSPrecompileResult implements ContractCallResult {
         ALLOWANCE,
         IS_APPROVED_FOR_ALL,
         GET_APPROVED,
+        HAPI_ALLOWANCE,
+        HAPI_IS_APPROVED_FOR_ALL,
+        HAPI_GET_APPROVED,
         IS_FROZEN
     }
 
@@ -95,6 +101,9 @@ public class HTSPrecompileResult implements ContractCallResult {
             case ERC_TRANSFER -> tupleType = ercTransferType;
             case ALLOWANCE -> tupleType = allowanceOfType;
             case IS_APPROVED_FOR_ALL -> tupleType = isApprovedForAllType;
+            case HAPI_GET_APPROVED -> tupleType = hapiGetApprovedType;
+            case HAPI_ALLOWANCE -> tupleType = hapiAllowanceOfType;
+            case HAPI_IS_APPROVED_FOR_ALL -> tupleType = hapiIsApprovedForAllType;
             case IS_FROZEN -> tupleType = isFrozenType;
         }
 
@@ -137,6 +146,12 @@ public class HTSPrecompileResult implements ContractCallResult {
         return this;
     }
 
+    public HTSPrecompileResult withApproved(final ResponseCodeEnum status, final byte[] approved) {
+        this.status = status;
+        this.approved = approved;
+        return this;
+    }
+
     public HTSPrecompileResult withName(final String name) {
         this.name = name;
         return this;
@@ -164,6 +179,13 @@ public class HTSPrecompileResult implements ContractCallResult {
     }
 
     public HTSPrecompileResult withIsApprovedForAll(final boolean isApprovedForAllStatus) {
+        this.isApprovedForAllStatus = isApprovedForAllStatus;
+        return this;
+    }
+
+    public HTSPrecompileResult withIsApprovedForAll(
+            final ResponseCodeEnum status, final boolean isApprovedForAllStatus) {
+        this.status = status;
         this.isApprovedForAllStatus = isApprovedForAllStatus;
         return this;
     }
@@ -196,6 +218,12 @@ public class HTSPrecompileResult implements ContractCallResult {
             case ERC_TRANSFER -> result = Tuple.of(ercFungibleTransferStatus);
             case IS_APPROVED_FOR_ALL -> result = Tuple.of(isApprovedForAllStatus);
             case ALLOWANCE -> result = Tuple.of(BigInteger.valueOf(allowance));
+            case HAPI_IS_APPROVED_FOR_ALL -> result =
+                    Tuple.of(status.getNumber(), isApprovedForAllStatus);
+            case HAPI_ALLOWANCE -> result =
+                    Tuple.of(status.getNumber(), BigInteger.valueOf(allowance));
+            case HAPI_GET_APPROVED -> result =
+                    Tuple.of(status.getNumber(), expandByteArrayTo32Length(approved));
             case IS_FROZEN -> result = Tuple.of(status.getNumber(), isFrozen);
             default -> result = Tuple.of(status.getNumber());
         }

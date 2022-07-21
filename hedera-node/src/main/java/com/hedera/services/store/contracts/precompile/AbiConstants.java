@@ -47,6 +47,18 @@ public final class AbiConstants {
     public static final int ABI_ID_DISSOCIATE_TOKENS = 0x78b63918;
     // dissociateToken(address account, address token)
     public static final int ABI_ID_DISSOCIATE_TOKEN = 0x099794e8;
+    // allowance(address token, address owner, address spender)
+    public static final int ABI_ID_ALLOWANCE = 0x927da105;
+    // approve(address token, address spender, uint256 amount)
+    public static final int ABI_ID_APPROVE = 0xe1f21c67;
+    // approveNFT(address token, address to, uint256 tokenId)
+    public static final int ABI_ID_APPROVE_NFT = 0x7336aaf0;
+    // setApprovalForAll(address token, address operator, bool approved)
+    public static final int ABI_ID_SET_APPROVAL_FOR_ALL = 0x367605ca;
+    // getApproved(address token, uint256 tokenId)
+    public static final int ABI_ID_GET_APPROVED = 0x098f2366;
+    // isApprovedForAll(address token, address owner, address operator)
+    public static final int ABI_ID_IS_APPROVED_FOR_ALL = 0xf49f40db;
 
     // **** HIP-218 + HIP-376 function selectors and event signatures ****
     // redirectForToken(address token, bytes memory data)

@@ -16,6 +16,7 @@
 package com.hedera.services.store.contracts.precompile.impl;
 
 import static com.hedera.services.ledger.properties.AccountProperty.APPROVE_FOR_ALL_NFTS_ALLOWANCES;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
@@ -44,11 +45,21 @@ public class IsApprovedForAllPrecompile extends AbstractReadOnlyPrecompile {
         super(tokenId, syntheticTxnFactory, ledgers, encoder, decoder, pricingUtils);
     }
 
+    public IsApprovedForAllPrecompile(
+            final SyntheticTxnFactory syntheticTxnFactory,
+            final WorldLedgers ledgers,
+            final EncodingFacade encoder,
+            final DecodingFacade decoder,
+            final PrecompilePricingUtils pricingUtils) {
+        this(null, syntheticTxnFactory, ledgers, encoder, decoder, pricingUtils);
+    }
+
     @Override
     public TransactionBody.Builder body(
             final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
-        final var nestedInput = input.slice(24);
-        isApproveForAllWrapper = decoder.decodeIsApprovedForAll(nestedInput, aliasResolver);
+        final var nestedInput = tokenId == null ? input : input.slice(24);
+        isApproveForAllWrapper =
+                decoder.decodeIsApprovedForAll(nestedInput, tokenId, aliasResolver);
         return super.body(input, aliasResolver);
     }
 
@@ -65,9 +76,12 @@ public class IsApprovedForAllPrecompile extends AbstractReadOnlyPrecompile {
             final var allowances =
                     (Set<FcTokenAllowanceId>)
                             accountsLedger.get(ownerId, APPROVE_FOR_ALL_NFTS_ALLOWANCES);
-            final var allowanceId = FcTokenAllowanceId.from(tokenId, operatorId);
+            final var allowanceId =
+                    FcTokenAllowanceId.from(isApproveForAllWrapper.tokenId(), operatorId);
             answer &= allowances.contains(allowanceId);
         }
-        return encoder.encodeIsApprovedForAll(answer);
+        return tokenId == null
+                ? encoder.encodeIsApprovedForAll(SUCCESS.getNumber(), answer)
+                : encoder.encodeIsApprovedForAll(answer);
     }
 }
