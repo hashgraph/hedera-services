@@ -80,9 +80,14 @@ public final class ParsingConstants {
     public static final TupleType approveOfType = booleanTuple;
     public static final TupleType balanceOfType = bigIntegerTuple;
     public static final TupleType burnReturnType = TupleType.parse("(int32,uint64)");
+    public static final TupleType mintReturnType = TupleType.parse("(int32,uint64,int64[])");
     public static final TupleType createReturnType = TupleType.parse("(int32,address)");
     public static final TupleType decimalsType = TupleType.parse(UINT8);
-    public static final TupleType ercTransferType = booleanTuple;
+    public static final TupleType nameType = stringTuple;
+    public static final TupleType ownerOfType = addressTuple;
+    public static final TupleType symbolType = stringTuple;
+    public static final TupleType tokenUriType = stringTuple;
+    public static final TupleType totalSupplyType = bigIntegerTuple;
     public static final TupleType getApprovedType = addressTuple;
     public static final TupleType getFungibleTokenInfoType =
             TupleType.parse(RESPONSE_STATUS_AT_BEGINNING + FUNGIBLE_TOKEN_INFO + ")");
@@ -91,16 +96,12 @@ public final class ParsingConstants {
     public static final TupleType getNonFungibleTokenInfoType =
             TupleType.parse(RESPONSE_STATUS_AT_BEGINNING + NON_FUNGIBLE_TOKEN_INFO + ")");
     public static final TupleType isApprovedForAllType = booleanTuple;
+    public static final TupleType ercTransferType = booleanTuple;
     public static final TupleType hapiAllowanceOfType = TupleType.parse("(int32,uint256)");
     public static final TupleType hapiGetApprovedType = TupleType.parse("(int32,bytes32)");
     public static final TupleType hapiIsApprovedForAllType = TupleType.parse("(int32,bool)");
-    public static final TupleType mintReturnType = TupleType.parse("(int32,uint64,int64[])");
-    public static final TupleType nameType = stringTuple;
+
     public static final TupleType notSpecifiedType = TupleType.parse(INT32);
-    public static final TupleType ownerOfType = addressTuple;
-    public static final TupleType symbolType = stringTuple;
-    public static final TupleType tokenUriType = stringTuple;
-    public static final TupleType totalSupplyType = bigIntegerTuple;
 
     public enum FunctionType {
         ERC_TOTAL_SUPPLY,

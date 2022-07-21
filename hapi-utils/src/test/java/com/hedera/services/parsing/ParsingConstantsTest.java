@@ -36,6 +36,9 @@ import static com.hedera.services.parsing.ParsingConstants.getApprovedType;
 import static com.hedera.services.parsing.ParsingConstants.getFungibleTokenInfoType;
 import static com.hedera.services.parsing.ParsingConstants.getNonFungibleTokenInfoType;
 import static com.hedera.services.parsing.ParsingConstants.getTokenInfoType;
+import static com.hedera.services.parsing.ParsingConstants.hapiAllowanceOfType;
+import static com.hedera.services.parsing.ParsingConstants.hapiGetApprovedType;
+import static com.hedera.services.parsing.ParsingConstants.hapiIsApprovedForAllType;
 import static com.hedera.services.parsing.ParsingConstants.isApprovedForAllType;
 import static com.hedera.services.parsing.ParsingConstants.mintReturnType;
 import static com.hedera.services.parsing.ParsingConstants.nameType;
@@ -43,7 +46,6 @@ import static com.hedera.services.parsing.ParsingConstants.notSpecifiedType;
 import static com.hedera.services.parsing.ParsingConstants.ownerOfType;
 import static com.hedera.services.parsing.ParsingConstants.symbolType;
 import static com.hedera.services.parsing.ParsingConstants.tokenUriType;
-import static com.hedera.services.parsing.ParsingConstants.totalSupplyType;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.esaulpaugh.headlong.abi.TupleType;
@@ -54,27 +56,33 @@ class ParsingConstantsTest {
 
     @Test
     void functionTypeValidation() {
-        assertEquals("ALLOWANCE", FunctionType.ERC_ALLOWANCE.name());
-        assertEquals("APPROVE", FunctionType.ERC_APPROVE.name());
-        assertEquals("BALANCE", FunctionType.ERC_BALANCE.name());
-        assertEquals("BURN", FunctionType.HAPI_BURN.name());
-        assertEquals("CREATE", FunctionType.HAPI_CREATE.name());
-        assertEquals("DECIMALS", FunctionType.ERC_DECIMALS.name());
+        assertEquals("ERC_ALLOWANCE", FunctionType.ERC_ALLOWANCE.name());
+        assertEquals("ERC_APPROVE", FunctionType.ERC_APPROVE.name());
+        assertEquals("ERC_BALANCE", FunctionType.ERC_BALANCE.name());
+        assertEquals("ERC_IS_APPROVED_FOR_ALL", FunctionType.ERC_IS_APPROVED_FOR_ALL.name());
+        assertEquals("ERC_DECIMALS", FunctionType.ERC_DECIMALS.name());
         assertEquals("ERC_TRANSFER", FunctionType.ERC_TRANSFER.name());
-        assertEquals("GET_APPROVED", FunctionType.ERC_GET_APPROVED.name());
-        assertEquals("GET_FUNGIBLE_TOKEN_INFO", FunctionType.HAPI_GET_FUNGIBLE_TOKEN_INFO.name());
+        assertEquals("ERC_GET_APPROVED", FunctionType.ERC_GET_APPROVED.name());
+        assertEquals("ERC_OWNER", FunctionType.ERC_OWNER.name());
+        assertEquals("ERC_SYMBOL", FunctionType.ERC_SYMBOL.name());
+        assertEquals("ERC_TOTAL_SUPPLY", FunctionType.ERC_TOTAL_SUPPLY.name());
+        assertEquals("ERC_TOKEN_URI", FunctionType.ERC_TOKEN_URI.name());
+        assertEquals("ERC_NAME", FunctionType.ERC_NAME.name());
         assertEquals(
-                "GET_NON_FUNGIBLE_TOKEN_INFO",
+                "HAPI_GET_FUNGIBLE_TOKEN_INFO", FunctionType.HAPI_GET_FUNGIBLE_TOKEN_INFO.name());
+        assertEquals(
+                "HAPI_GET_NON_FUNGIBLE_TOKEN_INFO",
                 FunctionType.HAPI_GET_NON_FUNGIBLE_TOKEN_INFO.name());
-        assertEquals("GET_TOKEN_INFO", FunctionType.HAPI_GET_TOKEN_INFO.name());
-        assertEquals("IS_APPROVED_FOR_ALL", FunctionType.ERC_IS_APPROVED_FOR_ALL.name());
-        assertEquals("MINT", FunctionType.HAPI_MINT.name());
-        assertEquals("NAME", FunctionType.ERC_NAME.name());
+        assertEquals("HAPI_GET_TOKEN_INFO", FunctionType.HAPI_GET_TOKEN_INFO.name());
+        assertEquals("HAPI_MINT", FunctionType.HAPI_MINT.name());
+        assertEquals("HAPI_BURN", FunctionType.HAPI_BURN.name());
+        assertEquals("HAPI_CREATE", FunctionType.HAPI_CREATE.name());
+        assertEquals("HAPI_ALLOWANCE", FunctionType.HAPI_ALLOWANCE.name());
+        assertEquals("HAPI_APPROVE_NFT", FunctionType.HAPI_APPROVE_NFT.name());
+        assertEquals("HAPI_APPROVE", FunctionType.HAPI_APPROVE.name());
+        assertEquals("HAPI_GET_APPROVED", FunctionType.HAPI_GET_APPROVED.name());
+        assertEquals("HAPI_IS_APPROVED_FOR_ALL", FunctionType.HAPI_IS_APPROVED_FOR_ALL.name());
         assertEquals("NOT_SPECIFIED", FunctionType.NOT_SPECIFIED.name());
-        assertEquals("OWNER", FunctionType.OWNER.name());
-        assertEquals("SYMBOL", FunctionType.ERC_SYMBOL.name());
-        assertEquals("TOTAL_SUPPLY", FunctionType.ERC_TOTAL_SUPPLY.name());
-        assertEquals("TOKEN_URI", FunctionType.ERC_TOKEN_URI.name());
     }
 
     @Test
@@ -102,6 +110,8 @@ class ParsingConstantsTest {
         assertEquals(ownerOfType, TupleType.parse(ADDRESS));
         assertEquals(symbolType, TupleType.parse(STRING));
         assertEquals(tokenUriType, TupleType.parse(STRING));
-        assertEquals(totalSupplyType, TupleType.parse(UINT256));
+        assertEquals(hapiAllowanceOfType, TupleType.parse("(int32,uint256)"));
+        assertEquals(hapiGetApprovedType, TupleType.parse("(int32,bytes32)"));
+        assertEquals(hapiIsApprovedForAllType, TupleType.parse("(int32,bool)"));
     }
 }
