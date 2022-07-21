@@ -31,6 +31,7 @@ import org.apache.tuweni.bytes.Bytes;
 
 public class IsFrozenPrecompile extends AbstractReadOnlyPrecompile {
     private AccountID accountId;
+
     public IsFrozenPrecompile(
             TokenID tokenId,
             SyntheticTxnFactory syntheticTxnFactory,

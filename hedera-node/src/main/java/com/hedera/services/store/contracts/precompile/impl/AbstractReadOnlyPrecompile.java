@@ -29,7 +29,7 @@ import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 
 public abstract class AbstractReadOnlyPrecompile implements Precompile {
-    protected  TokenID tokenId;
+    protected TokenID tokenId;
     protected final SyntheticTxnFactory syntheticTxnFactory;
     protected final WorldLedgers ledgers;
     protected final EncodingFacade encoder;
