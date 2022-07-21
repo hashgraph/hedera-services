@@ -197,8 +197,7 @@ public class TxnFactory {
         return builder -> {};
     }
 
-    public Consumer<TokenGrantKycTransactionBody.Builder>
-            defaultDefTokenGrantKycTransactionBody() {
+    public Consumer<TokenGrantKycTransactionBody.Builder> defaultDefTokenGrantKycTransactionBody() {
         return builder -> {};
     }
 
