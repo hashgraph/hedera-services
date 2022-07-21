@@ -14,7 +14,7 @@ contract WipeTokenAccount is HederaTokenService {
     }
 
     function wipeNonFungibleToken(address token, address account, int64[] memory serialNumbers) public {
-        int response = HederaTokenService.wipeTokenAccount(token, account, serialNumbers);
+        int response = HederaTokenService.wipeTokenAccountNFT(token, account, serialNumbers);
 
         if (response != HederaResponseCodes.SUCCESS) {
             revert ("NFT wipe failed!");

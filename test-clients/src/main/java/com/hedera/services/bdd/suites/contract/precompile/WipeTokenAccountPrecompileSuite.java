@@ -75,7 +75,7 @@ public class WipeTokenAccountPrecompileSuite extends HapiApiSuite {
         final AtomicReference<AccountID> secondAccountID = new AtomicReference<>();
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
 
-        return defaultHapiSpec("WipeFungibleTokenHappyPath")
+        return defaultHapiSpec("WipeFungibleTokenScenarios")
                 .given(
                         newKeyNamed(WIPE_KEY),
                         cryptoCreate(ACCOUNT).exposingCreatedIdTo(accountID::set),
@@ -180,7 +180,7 @@ public class WipeTokenAccountPrecompileSuite extends HapiApiSuite {
         final AtomicReference<AccountID> accountID = new AtomicReference<>();
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
 
-        return defaultHapiSpec("WipeNonFungibleTokenHappyPath")
+        return defaultHapiSpec("WipeNonFungibleTokenScenarios")
                 .given(
                         newKeyNamed(WIPE_KEY),
                         newKeyNamed(MULTI_KEY),

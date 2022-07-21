@@ -40,6 +40,8 @@ public record WipeWrapper(TokenID token, AccountID account, long amount, List<Lo
     }
 
     public TokenType type() {
-        return (amount == NON_FUNGIBLE_WIPE_AMOUNT) ? NON_FUNGIBLE_UNIQUE : FUNGIBLE_COMMON;
+        return (serialNumbers != null && !serialNumbers.isEmpty() && amount <= 0)
+                ? NON_FUNGIBLE_UNIQUE
+                : FUNGIBLE_COMMON;
     }
 }
