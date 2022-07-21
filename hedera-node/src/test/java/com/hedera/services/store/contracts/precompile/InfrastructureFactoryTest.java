@@ -51,7 +51,9 @@ import com.hedera.services.txns.token.AssociateLogic;
 import com.hedera.services.txns.token.BurnLogic;
 import com.hedera.services.txns.token.CreateLogic;
 import com.hedera.services.txns.token.DissociateLogic;
+import com.hedera.services.txns.token.FreezeLogic;
 import com.hedera.services.txns.token.MintLogic;
+import com.hedera.services.txns.token.UnFreezeLogic;
 import com.hedera.services.txns.token.process.DissociationFactory;
 import com.hedera.services.txns.token.validators.CreateChecks;
 import com.hedera.services.txns.validation.OptionValidator;
@@ -271,5 +273,23 @@ class InfrastructureFactoryTest {
     @Test
     void canCreateNewDeleteAllowanceChecks() {
         assertInstanceOf(DeleteAllowanceChecks.class, subject.newDeleteAllowanceChecks());
+    }
+
+    @Test
+    void canCreateNewFreezeLogic() {
+        final var accountStore = subject.newAccountStore(accounts);
+        final var tokenStore =
+                subject.newTokenStore(
+                        accountStore, subject.newSideEffects(), tokens, uniqueTokens, tokenRels);
+        assertInstanceOf(FreezeLogic.class, subject.newFreezeLogic(accountStore, tokenStore));
+    }
+
+    @Test
+    void canCreateNewUnfreezeLogic() {
+        final var accountStore = subject.newAccountStore(accounts);
+        final var tokenStore =
+                subject.newTokenStore(
+                        accountStore, subject.newSideEffects(), tokens, uniqueTokens, tokenRels);
+        assertInstanceOf(UnFreezeLogic.class, subject.newUnFreezeLogic(accountStore, tokenStore));
     }
 }

@@ -344,7 +344,7 @@ public class DecodingFacade {
             TypeFactory.create("(bytes32,bytes32,bool)");
 
     private static final Function HAPI_TOKEN_APPROVE_FUNCTION =
-            new Function("approve(address,address,uint256)", "(int,bool)");
+            new Function("approve(address,address,uint256)", INT_BOOL_PAIR_OUTPUT);
     private static final Bytes HAPI_TOKEN_APPROVE_SELECTOR =
             Bytes.wrap(HAPI_TOKEN_APPROVE_FUNCTION.selector());
     private static final ABIType<Tuple> HAPI_TOKEN_APPROVE_DECODER =
