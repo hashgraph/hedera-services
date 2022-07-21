@@ -22,6 +22,7 @@ import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.store.contracts.precompile.codec.DecodingFacade;
 import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.util.function.UnaryOperator;
@@ -29,6 +30,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
 
 public class IsFrozenPrecompile extends AbstractReadOnlyPrecompile {
+    private AccountID accountId;
     public IsFrozenPrecompile(
             TokenID tokenId,
             SyntheticTxnFactory syntheticTxnFactory,
