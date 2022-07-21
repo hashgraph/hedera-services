@@ -233,6 +233,9 @@ public class PrngSystemPrecompiledContract extends AbstractPrecompiledContract {
     private void trackPrngOutput(
             final SideEffectsTracker effectsTracker, final Bytes input, final Bytes randomNum) {
         final var selector = input.getInt(0);
+        if(randomNum == null){
+            return;
+        }
         if (selector == PSEUDORANDOM_NUM_IN_RANGE_GENERATOR_SELECTOR) {
             effectsTracker.trackRandomNumber(randomNum.toBigInteger().intValue());
         } else if (selector == PSEUDORANDOM_SEED_GENERATOR_SELECTOR) {
