@@ -404,7 +404,7 @@ public class TxnFactory {
 		};
 	}
 
-	public Consumer<UtilPrngTransactionBody.Builder> defaultDef_PrngTransactionBody() {
+	public Consumer<UtilPrngTransactionBody.Builder> defaultDef_UtilPrngTransactionBody() {
 		return builder -> {
 		};
 	}
