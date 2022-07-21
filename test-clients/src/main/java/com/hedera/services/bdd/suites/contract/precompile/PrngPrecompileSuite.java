@@ -49,7 +49,7 @@ public class PrngPrecompileSuite extends HapiApiSuite {
     private static final String THE_PRNG_CONTRACT = "PrngSystemContract";
     private static final String BOB = "bob";
 
-    private static final String seedSelectorFunction = "getPseudorandomSeed";
+    private static final String GET_SEED = "getPseudorandomSeed";
     private static final String EXPLICIT_LARGE_PARAMS =
             "d83bf9a10000000000000000000000d83bf9a10000d83bf9a1000d83bf9a10000000d83bf9a108000d83bf9a100000d83bf9a1000000"
                 + "0000d83bf9a100000d83bf9a1000000d83bf9a100339000000d83bf9a1000000000123456789012345678901234"
@@ -96,7 +96,7 @@ public class PrngPrecompileSuite extends HapiApiSuite {
                                     for (int i = 0; i < numCalls; i++) {
                                         final var txn = "call" + i;
                                         final var call =
-                                                contractCall(prng, seedSelectorFunction)
+                                                contractCall(prng, GET_SEED)
                                                         .gas(gasToOffer)
                                                         .via(txn);
                                         final var lookup = getTxnRecord(txn).andAllChildRecords();
@@ -130,7 +130,7 @@ public class PrngPrecompileSuite extends HapiApiSuite {
                                 }))
                 .then(
                         // It's possible to call these contracts in a static context with no issues
-                        contractCallLocal(prng, seedSelectorFunction).gas(gasToOffer));
+                        contractCallLocal(prng, GET_SEED).gas(gasToOffer));
     }
 
     private HapiApiSpec emptyInputCallFails() {
@@ -141,7 +141,7 @@ public class PrngPrecompileSuite extends HapiApiSuite {
                 .when(
                         sourcing(
                                 () ->
-                                        contractCall(prng, seedSelectorFunction)
+                                        contractCall(prng, GET_SEED)
                                                 .withExplicitParams(
                                                         () ->
                                                                 CommonUtils.hex(
@@ -176,7 +176,7 @@ public class PrngPrecompileSuite extends HapiApiSuite {
                 .when(
                         sourcing(
                                 () ->
-                                        contractCall(prng, seedSelectorFunction)
+                                        contractCall(prng, GET_SEED)
                                                 .withExplicitParams(
                                                         () ->
                                                                 CommonUtils.hex(
@@ -244,7 +244,7 @@ public class PrngPrecompileSuite extends HapiApiSuite {
                 .when(
                         sourcing(
                                 () ->
-                                        contractCall(THE_PRNG_CONTRACT, seedSelectorFunction)
+                                        contractCall(THE_PRNG_CONTRACT, GET_SEED)
                                                 .withExplicitParams(
                                                         () ->
                                                                 CommonUtils.hex(
@@ -282,7 +282,7 @@ public class PrngPrecompileSuite extends HapiApiSuite {
                 .when(
                         sourcing(
                                 () ->
-                                        contractCall(prng, seedSelectorFunction)
+                                        contractCall(prng, GET_SEED)
                                                 .gas(GAS_TO_OFFER)
                                                 .payingWith(BOB)
                                                 .via(randomBits)
@@ -297,7 +297,7 @@ public class PrngPrecompileSuite extends HapiApiSuite {
                                                 .contractCallResult(
                                                         resultWith()
                                                                 .resultViaFunctionName(
-                                                                        seedSelectorFunction,
+                                                                        GET_SEED,
                                                                         prng,
                                                                         isRandomResult(
                                                                                 new Object[] {
