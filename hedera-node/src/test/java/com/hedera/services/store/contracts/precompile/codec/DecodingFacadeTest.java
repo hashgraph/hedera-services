@@ -669,25 +669,22 @@ class DecodingFacadeTest {
     }
 
     @Test
-    void decodeTokenFreezeWithValidInput(){
-        final var decodedInput =
-                subject.decodeFreeze(FREEZE_INPUT, a -> a);
+    void decodeTokenFreezeWithValidInput() {
+        final var decodedInput = subject.decodeFreeze(FREEZE_INPUT, a -> a);
 
         assertEquals(TokenID.newBuilder().setTokenNum(1294).build(), decodedInput.token());
     }
 
     @Test
-    void decodeTokenUnFreezeWithValidInput(){
-        final var decodedInput =
-                subject.decodeUnFreeze(UNFREEZE_INPUT, a -> a);
+    void decodeTokenUnFreezeWithValidInput() {
+        final var decodedInput = subject.decodeUnFreeze(UNFREEZE_INPUT, a -> a);
 
         assertEquals(TokenID.newBuilder().setTokenNum(1304).build(), decodedInput.token());
     }
 
     @Test
-    void decodeTokenIsFrozenWithValidInput(){
-        final var decodedInput =
-                subject.decodeIsFrozen(IS_FROZEN_INPUT, a -> a);
+    void decodeTokenIsFrozenWithValidInput() {
+        final var decodedInput = subject.decodeIsFrozen(IS_FROZEN_INPUT, a -> a);
 
         assertEquals(TokenID.newBuilder().setTokenNum(1294).build(), decodedInput.token());
     }

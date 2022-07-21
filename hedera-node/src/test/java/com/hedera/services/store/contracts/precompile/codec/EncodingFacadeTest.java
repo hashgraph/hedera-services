@@ -104,7 +104,7 @@ class EncodingFacadeTest {
     private static final Bytes RETURN_IS_TOKEN_FROZEN =
             Bytes.fromHexString(
                     "0x00000000000000000000000000000000000000000000000000000000000000160000000000000000000000000000000000000"
-                            + "000000000000000000000000001");
+                        + "000000000000000000000000001");
 
     private static final Bytes TRANSFER_EVENT =
             Bytes.fromHexString("ddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef");

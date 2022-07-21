@@ -103,7 +103,7 @@ public class HTSTestsUtil {
             new OwnerOfAndTokenURIWrapper(serialNumber);
 
     public static final TokenFreezeUnfreezeWrapper tokenFreezeUnFreezeWrapper =
-            new TokenFreezeUnfreezeWrapper(fungible,account);
+            new TokenFreezeUnfreezeWrapper(fungible, account);
 
     public static final Association multiAssociateOp =
             Association.singleAssociation(accountMerkleId, tokenMerkleId);
