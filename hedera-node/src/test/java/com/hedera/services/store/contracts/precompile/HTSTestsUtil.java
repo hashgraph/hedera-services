@@ -110,7 +110,9 @@ public class HTSTestsUtil {
     public static final Association multiAssociateOp =
             Association.singleAssociation(accountMerkleId, tokenMerkleId);
     public static final Address recipientAddress = Address.ALTBN128_ADD;
+
     public static final Address contractAddress = Address.ALTBN128_MUL;
+    public static final EntityId ownerEntity = EntityId.fromAddress(contractAddress);
 
     public static final BurnWrapper nonFungibleBurn =
             BurnWrapper.forNonFungible(nonFungible, targetSerialNos);

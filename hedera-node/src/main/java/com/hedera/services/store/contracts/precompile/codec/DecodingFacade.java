@@ -23,6 +23,7 @@ import com.esaulpaugh.headlong.abi.Tuple;
 import com.esaulpaugh.headlong.abi.TypeFactory;
 import com.google.protobuf.ByteString;
 import com.hedera.services.legacy.proto.utils.ByteStringUtils;
+import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.store.contracts.WorldLedgers;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
@@ -56,7 +57,10 @@ public class DecodingFacade {
     private static final String BOOL_OUTPUT = "(bool)";
     private static final String STRING_OUTPUT = "(string)";
     private static final String ADDRESS_PAIR_RAW_TYPE = "(bytes32,bytes32)";
-    public static final String UINT256_RAW_TYPE = "(uint256)";
+    private static final String ADDRESS_TRIPLE_RAW_TYPE = "(bytes32,bytes32,bytes32)";
+    private static final String UINT256_RAW_TYPE = "(uint256)";
+    private static final String ADDRESS_UINT256_RAW_TYPE = "(bytes32,uint256)";
+    private static final String ADDRESS_ADDRESS_UINT256_RAW_TYPE = "(bytes32,bytes32,uint256)";
 
     public static final String ADDRESS_RAW_TYPE = "(bytes32)";
 
@@ -164,14 +168,14 @@ public class DecodingFacade {
             new Function("transfer(address,uint256)", BOOL_OUTPUT);
     private static final Bytes ERC_TRANSFER_SELECTOR = Bytes.wrap(ERC_TRANSFER_FUNCTION.selector());
     private static final ABIType<Tuple> ERC_TRANSFER_DECODER =
-            TypeFactory.create("(bytes32,uint256)");
+            TypeFactory.create(ADDRESS_UINT256_RAW_TYPE);
 
     private static final Function ERC_TRANSFER_FROM_FUNCTION =
             new Function("transferFrom(address,address,uint256)");
     private static final Bytes ERC_TRANSFER_FROM_SELECTOR =
             Bytes.wrap(ERC_TRANSFER_FROM_FUNCTION.selector());
     private static final ABIType<Tuple> ERC_TRANSFER_FROM_DECODER =
-            TypeFactory.create("(bytes32,bytes32,uint256)");
+            TypeFactory.create(ADDRESS_ADDRESS_UINT256_RAW_TYPE);
 
     private static final Function PAUSE_TOKEN_FUNCTION =
             new Function("pauseToken(address)", INT_OUTPUT);
@@ -269,40 +273,82 @@ public class DecodingFacade {
                             + ROYALTY_FEE_DECODER
                             + "[])");
 
-    private static final Function TOKEN_ALLOWANCE_FUNCTION =
+    private static final Function ERC_ALLOWANCE_FUNCTION =
             new Function("allowance(address,address)", INT_OUTPUT);
-    private static final Bytes TOKEN_ALLOWANCE_SELECTOR =
-            Bytes.wrap(TOKEN_ALLOWANCE_FUNCTION.selector());
-    private static final ABIType<Tuple> TOKEN_ALLOWANCE_DECODER =
+    private static final Bytes ERC_ALLOWANCE_SELECTOR =
+            Bytes.wrap(ERC_ALLOWANCE_FUNCTION.selector());
+    private static final ABIType<Tuple> ERC_ALLOWANCE_DECODER =
             TypeFactory.create(ADDRESS_PAIR_RAW_TYPE);
 
-    private static final Function GET_APPROVED_FUNCTION =
+    private static final Function ERC_GET_APPROVED_FUNCTION =
             new Function("getApproved(uint256)", INT_OUTPUT);
-    private static final Bytes GET_APPROVED_FUNCTION_SELECTOR =
-            Bytes.wrap(GET_APPROVED_FUNCTION.selector());
-    private static final ABIType<Tuple> GET_APPROVED_FUNCTION_DECODER =
+    private static final Bytes ERC_GET_APPROVED_FUNCTION_SELECTOR =
+            Bytes.wrap(ERC_GET_APPROVED_FUNCTION.selector());
+    private static final ABIType<Tuple> ERC_GET_APPROVED_FUNCTION_DECODER =
             TypeFactory.create(UINT256_RAW_TYPE);
 
-    private static final Function IS_APPROVED_FOR_ALL =
+    private static final Function ERC_IS_APPROVED_FOR_ALL =
             new Function("isApprovedForAll(address,address)", BOOL_OUTPUT);
-    private static final Bytes IS_APPROVED_FOR_ALL_SELECTOR =
-            Bytes.wrap(IS_APPROVED_FOR_ALL.selector());
-    private static final ABIType<Tuple> IS_APPROVED_FOR_ALL_DECODER =
+    private static final Bytes ERC_IS_APPROVED_FOR_ALL_SELECTOR =
+            Bytes.wrap(ERC_IS_APPROVED_FOR_ALL.selector());
+    private static final ABIType<Tuple> ERC_IS_APPROVED_FOR_ALL_DECODER =
             TypeFactory.create(ADDRESS_PAIR_RAW_TYPE);
 
-    private static final Function SET_APPROVAL_FOR_ALL =
+    private static final Function ERC_SET_APPROVAL_FOR_ALL =
             new Function("setApprovalForAll(address,bool)");
-    private static final Bytes SET_APPROVAL_FOR_ALL_SELECTOR =
-            Bytes.wrap(SET_APPROVAL_FOR_ALL.selector());
-    private static final ABIType<Tuple> SET_APPROVAL_FOR_ALL_DECODER =
+    private static final Bytes ERC_SET_APPROVAL_FOR_ALL_SELECTOR =
+            Bytes.wrap(ERC_SET_APPROVAL_FOR_ALL.selector());
+    private static final ABIType<Tuple> ERC_SET_APPROVAL_FOR_ALL_DECODER =
             TypeFactory.create("(bytes32,bool)");
 
-    private static final Function TOKEN_APPROVE_FUNCTION =
+    private static final Function ERC_TOKEN_APPROVE_FUNCTION =
             new Function("approve(address,uint256)", BOOL_OUTPUT);
-    private static final Bytes TOKEN_APPROVE_SELECTOR =
-            Bytes.wrap(TOKEN_APPROVE_FUNCTION.selector());
-    private static final ABIType<Tuple> TOKEN_APPROVE_DECODER =
-            TypeFactory.create("(bytes32,uint256)");
+    private static final Bytes ERC_TOKEN_APPROVE_SELECTOR =
+            Bytes.wrap(ERC_TOKEN_APPROVE_FUNCTION.selector());
+    private static final ABIType<Tuple> ERC_TOKEN_APPROVE_DECODER =
+            TypeFactory.create(ADDRESS_UINT256_RAW_TYPE);
+
+    private static final Function HAPI_ALLOWANCE_FUNCTION =
+            new Function("allowance(address,address,address)", "(int,int)");
+    private static final Bytes HAPI_ALLOWANCE_SELECTOR =
+            Bytes.wrap(HAPI_ALLOWANCE_FUNCTION.selector());
+    private static final ABIType<Tuple> HAPI_ALLOWANCE_DECODER =
+            TypeFactory.create(ADDRESS_TRIPLE_RAW_TYPE);
+
+    private static final Function HAPI_GET_APPROVED_FUNCTION =
+            new Function("getApproved(address,uint256)", "(int,int)");
+    private static final Bytes HAPI_GET_APPROVED_FUNCTION_SELECTOR =
+            Bytes.wrap(HAPI_GET_APPROVED_FUNCTION.selector());
+    private static final ABIType<Tuple> HAPI_GET_APPROVED_FUNCTION_DECODER =
+            TypeFactory.create(ADDRESS_UINT256_RAW_TYPE);
+
+    private static final Function HAPI_IS_APPROVED_FOR_ALL =
+            new Function("isApprovedForAll(address,address,address)", "(int,bool)");
+    private static final Bytes HAPI_IS_APPROVED_FOR_ALL_SELECTOR =
+            Bytes.wrap(HAPI_IS_APPROVED_FOR_ALL.selector());
+    private static final ABIType<Tuple> HAPI_IS_APPROVED_FOR_ALL_DECODER =
+            TypeFactory.create(ADDRESS_TRIPLE_RAW_TYPE);
+
+    private static final Function HAPI_SET_APPROVAL_FOR_ALL =
+            new Function("setApprovalForAll(address,address,bool)", INT_OUTPUT);
+    private static final Bytes HAPI_SET_APPROVAL_FOR_ALL_SELECTOR =
+            Bytes.wrap(HAPI_SET_APPROVAL_FOR_ALL.selector());
+    private static final ABIType<Tuple> HAPI_SET_APPROVAL_FOR_ALL_DECODER =
+            TypeFactory.create("(bytes32,bytes32,bool)");
+
+    private static final Function HAPI_TOKEN_APPROVE_FUNCTION =
+            new Function("approve(address,address,uint256)", "(int,bool)");
+    private static final Bytes HAPI_TOKEN_APPROVE_SELECTOR =
+            Bytes.wrap(HAPI_TOKEN_APPROVE_FUNCTION.selector());
+    private static final ABIType<Tuple> HAPI_TOKEN_APPROVE_DECODER =
+            TypeFactory.create(ADDRESS_ADDRESS_UINT256_RAW_TYPE);
+
+    private static final Function HAPI_APPROVE_NFT_FUNCTION =
+            new Function("approveNFT(address,address,uint256)", INT_OUTPUT);
+    private static final Bytes HAPI_APPROVE_NFT_SELECTOR =
+            Bytes.wrap(HAPI_APPROVE_NFT_FUNCTION.selector());
+    private static final ABIType<Tuple> HAPI_APPROVE_NFT_DECODER =
+            TypeFactory.create(ADDRESS_ADDRESS_UINT256_RAW_TYPE);
 
     @Inject
     public DecodingFacade() {
@@ -446,55 +492,120 @@ public class DecodingFacade {
         return new OwnerOfAndTokenURIWrapper(tokenId.longValue());
     }
 
-    public GetApprovedWrapper decodeGetApproved(final Bytes input) {
+    public GetApprovedWrapper decodeGetApproved(final Bytes input, final TokenID impliedTokenId) {
+        final var offset = impliedTokenId == null ? 1 : 0;
+
         final Tuple decodedArguments =
                 decodeFunctionCall(
-                        input, GET_APPROVED_FUNCTION_SELECTOR, GET_APPROVED_FUNCTION_DECODER);
-        final var serialNo = (BigInteger) decodedArguments.get(0);
-        return new GetApprovedWrapper(serialNo.longValue());
+                        input,
+                        offset == 0
+                                ? ERC_GET_APPROVED_FUNCTION_SELECTOR
+                                : HAPI_GET_APPROVED_FUNCTION_SELECTOR,
+                        offset == 0
+                                ? ERC_GET_APPROVED_FUNCTION_DECODER
+                                : HAPI_GET_APPROVED_FUNCTION_DECODER);
+
+        final var tokenId =
+                offset == 0
+                        ? impliedTokenId
+                        : convertAddressBytesToTokenID(decodedArguments.get(0));
+
+        final var serialNo = (BigInteger) decodedArguments.get(offset);
+        return new GetApprovedWrapper(tokenId, serialNo.longValue());
     }
 
     public TokenAllowanceWrapper decodeTokenAllowance(
-            final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
+            final Bytes input,
+            final TokenID impliedTokenId,
+            final UnaryOperator<byte[]> aliasResolver) {
+        final var offset = impliedTokenId == null ? 1 : 0;
+
         final Tuple decodedArguments =
-                decodeFunctionCall(input, TOKEN_ALLOWANCE_SELECTOR, TOKEN_ALLOWANCE_DECODER);
+                decodeFunctionCall(
+                        input,
+                        offset == 0 ? ERC_ALLOWANCE_SELECTOR : HAPI_ALLOWANCE_SELECTOR,
+                        offset == 0 ? ERC_ALLOWANCE_DECODER : HAPI_ALLOWANCE_DECODER);
 
+        final var tokenId =
+                offset == 0
+                        ? impliedTokenId
+                        : convertAddressBytesToTokenID(decodedArguments.get(0));
         final var owner =
-                convertLeftPaddedAddressToAccountId(decodedArguments.get(0), aliasResolver);
+                convertLeftPaddedAddressToAccountId(decodedArguments.get(offset), aliasResolver);
         final var spender =
-                convertLeftPaddedAddressToAccountId(decodedArguments.get(1), aliasResolver);
+                convertLeftPaddedAddressToAccountId(
+                        decodedArguments.get(offset + 1), aliasResolver);
 
-        return new TokenAllowanceWrapper(owner, spender);
+        return new TokenAllowanceWrapper(tokenId, owner, spender);
     }
 
     public ApproveWrapper decodeTokenApprove(
             final Bytes input,
-            final TokenID token,
+            final TokenID impliedTokenId,
             final boolean isFungible,
-            final UnaryOperator<byte[]> aliasResolver) {
-        final Tuple decodedArguments =
-                decodeFunctionCall(input, TOKEN_APPROVE_SELECTOR, TOKEN_APPROVE_DECODER);
-        final var spender =
-                convertLeftPaddedAddressToAccountId(decodedArguments.get(0), aliasResolver);
-        if (isFungible) {
-            final var amount = (BigInteger) decodedArguments.get(1);
-            return new ApproveWrapper(token, spender, amount, BigInteger.ZERO, isFungible);
+            final UnaryOperator<byte[]> aliasResolver,
+            WorldLedgers ledgers) {
+
+        final var offset = impliedTokenId == null ? 1 : 0;
+        final Tuple decodedArguments;
+        final TokenID tokenId;
+        if (offset == 0) {
+            decodedArguments =
+                    decodeFunctionCall(
+                            input, ERC_TOKEN_APPROVE_SELECTOR, ERC_TOKEN_APPROVE_DECODER);
+            tokenId = impliedTokenId;
+        } else if (isFungible) {
+            decodedArguments =
+                    decodeFunctionCall(
+                            input, HAPI_TOKEN_APPROVE_SELECTOR, HAPI_TOKEN_APPROVE_DECODER);
+            tokenId = convertAddressBytesToTokenID(decodedArguments.get(0));
         } else {
-            final var serialNumber = (BigInteger) decodedArguments.get(1);
-            return new ApproveWrapper(token, spender, BigInteger.ZERO, serialNumber, isFungible);
+            decodedArguments =
+                    decodeFunctionCall(input, HAPI_APPROVE_NFT_SELECTOR, HAPI_APPROVE_NFT_DECODER);
+            tokenId = convertAddressBytesToTokenID(decodedArguments.get(0));
+        }
+        final var ledgerFungible = TokenType.FUNGIBLE_COMMON.equals(ledgers.typeOf(tokenId));
+        final var spender =
+                convertLeftPaddedAddressToAccountId(decodedArguments.get(offset), aliasResolver);
+        if (isFungible) {
+            if (!ledgerFungible) {
+                throw new IllegalArgumentException("Token is not a fungible token");
+            }
+            final var amount = (BigInteger) decodedArguments.get(offset + 1);
+            return new ApproveWrapper(tokenId, spender, amount, BigInteger.ZERO, isFungible);
+        } else {
+            if (ledgerFungible) {
+                throw new IllegalArgumentException("Token is not an NFT");
+            }
+            final var serialNumber = (BigInteger) decodedArguments.get(offset + 1);
+            return new ApproveWrapper(tokenId, spender, BigInteger.ZERO, serialNumber, isFungible);
         }
     }
 
     public SetApprovalForAllWrapper decodeSetApprovalForAll(
-            final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
+            final Bytes input,
+            final TokenID impliedTokenId,
+            final UnaryOperator<byte[]> aliasResolver) {
+        final var offset = impliedTokenId == null ? 1 : 0;
         final Tuple decodedArguments =
                 decodeFunctionCall(
-                        input, SET_APPROVAL_FOR_ALL_SELECTOR, SET_APPROVAL_FOR_ALL_DECODER);
+                        input,
+                        offset == 0
+                                ? ERC_SET_APPROVAL_FOR_ALL_SELECTOR
+                                : HAPI_SET_APPROVAL_FOR_ALL_SELECTOR,
+                        offset == 0
+                                ? ERC_SET_APPROVAL_FOR_ALL_DECODER
+                                : HAPI_SET_APPROVAL_FOR_ALL_DECODER);
+        final var tokenId =
+                offset == 0
+                        ? impliedTokenId
+                        : convertAddressBytesToTokenID(decodedArguments.get(0));
 
-        final var to = convertLeftPaddedAddressToAccountId(decodedArguments.get(0), aliasResolver);
-        final var approved = (boolean) decodedArguments.get(1);
+        final var to =
+                convertLeftPaddedAddressToAccountId(decodedArguments.get(offset), aliasResolver);
+        final var approved = (boolean) decodedArguments.get(offset + 1);
 
-        return new SetApprovalForAllWrapper(to, approved);
+        return new SetApprovalForAllWrapper(tokenId, to, approved);
     }
 
     public MintWrapper decodeMint(final Bytes input) {
@@ -536,17 +647,33 @@ public class DecodingFacade {
     }
 
     public IsApproveForAllWrapper decodeIsApprovedForAll(
-            final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
+            final Bytes input,
+            final TokenID impliedTokenId,
+            final UnaryOperator<byte[]> aliasResolver) {
+        final var offset = impliedTokenId == null ? 1 : 0;
+
         final Tuple decodedArguments =
                 decodeFunctionCall(
-                        input, IS_APPROVED_FOR_ALL_SELECTOR, IS_APPROVED_FOR_ALL_DECODER);
+                        input,
+                        offset == 0
+                                ? ERC_IS_APPROVED_FOR_ALL_SELECTOR
+                                : HAPI_IS_APPROVED_FOR_ALL_SELECTOR,
+                        offset == 0
+                                ? ERC_IS_APPROVED_FOR_ALL_DECODER
+                                : HAPI_IS_APPROVED_FOR_ALL_DECODER);
+
+        final var tokenId =
+                offset == 0
+                        ? impliedTokenId
+                        : convertAddressBytesToTokenID(decodedArguments.get(0));
 
         final var owner =
-                convertLeftPaddedAddressToAccountId(decodedArguments.get(0), aliasResolver);
+                convertLeftPaddedAddressToAccountId(decodedArguments.get(offset), aliasResolver);
         final var operator =
-                convertLeftPaddedAddressToAccountId(decodedArguments.get(1), aliasResolver);
+                convertLeftPaddedAddressToAccountId(
+                        decodedArguments.get(offset + 1), aliasResolver);
 
-        return new IsApproveForAllWrapper(owner, operator);
+        return new IsApproveForAllWrapper(tokenId, owner, operator);
     }
 
     public List<TokenTransferWrapper> decodeTransferTokens(

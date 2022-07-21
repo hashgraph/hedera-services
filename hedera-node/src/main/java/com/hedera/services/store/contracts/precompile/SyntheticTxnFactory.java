@@ -236,14 +236,14 @@ public class SyntheticTxnFactory {
         if (approveWrapper.isFungible()) {
             builder.addTokenAllowances(
                     TokenAllowance.newBuilder()
-                            .setTokenId(approveWrapper.token())
+                            .setTokenId(approveWrapper.tokenId())
                             .setSpender(approveWrapper.spender())
                             .setAmount(approveWrapper.amount().longValue())
                             .build());
         } else {
             final var op =
                     NftAllowance.newBuilder()
-                            .setTokenId(approveWrapper.token())
+                            .setTokenId(approveWrapper.tokenId())
                             .setSpender(approveWrapper.spender())
                             .addSerialNumbers(approveWrapper.serialNumber().longValue());
             if (ownerId != null) {
@@ -264,7 +264,7 @@ public class SyntheticTxnFactory {
                         List.of(
                                 NftRemoveAllowance.newBuilder()
                                         .setOwner(owner.toGrpcAccountId())
-                                        .setTokenId(approveWrapper.token())
+                                        .setTokenId(approveWrapper.tokenId())
                                         .addAllSerialNumbers(
                                                 List.of(approveWrapper.serialNumber().longValue()))
                                         .build()))
