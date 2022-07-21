@@ -209,7 +209,7 @@ public class TokenInfoRetrievalUtils {
                             FEE_SCHEDULE_KEY.value()));
         }
         if (ledgers.pauseKey(tokenId).isPresent()) {
-            tokenKeys.add(getTokenKey(ledgers.pauseKey(tokenId).get(), PAUSE_KEY.value()));
+            tokenKeys.add(getTokenKey(ledgers.pauseKey(tokenId).orElse(null), PAUSE_KEY.value()));
         }
 
         return tokenKeys;
@@ -221,16 +221,21 @@ public class TokenInfoRetrievalUtils {
     }
 
     private static KeyValue getKeyValue(final JKey key) {
-        return new KeyValue(
-                false,
-                key.getContractIDKey() != null
-                        ? EntityIdUtils.asTypedEvmAddress(key.getContractIDKey().getContractID())
-                        : null,
-                key.getEd25519(),
-                key.getECDSASecp256k1Key(),
-                key.getDelegatableContractIdKey() != null
-                        ? EntityIdUtils.asTypedEvmAddress(
-                                key.getDelegatableContractIdKey().getContractID())
-                        : null);
+        if (key != null) {
+            return new KeyValue(
+                    false,
+                    key.getContractIDKey() != null
+                            ? EntityIdUtils.asTypedEvmAddress(
+                                    key.getContractIDKey().getContractID())
+                            : null,
+                    key.getEd25519(),
+                    key.getECDSASecp256k1Key(),
+                    key.getDelegatableContractIdKey() != null
+                            ? EntityIdUtils.asTypedEvmAddress(
+                                    key.getDelegatableContractIdKey().getContractID())
+                            : null);
+        } else {
+            return new KeyValue(false, null, new byte[] {}, new byte[] {}, null);
+        }
     }
 }
