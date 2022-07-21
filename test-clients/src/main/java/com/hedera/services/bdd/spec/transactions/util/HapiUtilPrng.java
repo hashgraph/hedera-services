@@ -30,7 +30,7 @@ import com.hedera.services.usage.state.UsageAccumulator;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
-import com.hederahashgraph.api.proto.java.PrngTransactionBody;
+import com.hederahashgraph.api.proto.java.UtilPrngTransactionBody;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
@@ -46,37 +46,37 @@ import java.util.function.Function;
 
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.suFrom;
 
-public class HapiPrng extends HapiTxnOp<HapiPrng> {
-	static final Logger log = LogManager.getLogger(HapiPrng.class);
+public class HapiUtilPrng extends HapiTxnOp<HapiUtilPrng> {
+	static final Logger log = LogManager.getLogger(HapiUtilPrng.class);
 
 	private Optional<Integer> range = Optional.empty();
 
-	public HapiPrng() {
+	public HapiUtilPrng() {
 	}
 
-	public HapiPrng(int range) {
+	public HapiUtilPrng(int range) {
 		this.range = Optional.of(range);
 	}
 
 	@Override
 	public HederaFunctionality type() {
-		return HederaFunctionality.PRNG;
+		return HederaFunctionality.UtilPrng;
 	}
 
-	public HapiPrng range(int range) {
+	public HapiUtilPrng range(int range) {
 		this.range = Optional.of(range);
 		return this;
 	}
 
 	@Override
-	protected HapiPrng self() {
+	protected HapiUtilPrng self() {
 		return this;
 	}
 
 	@Override
 	protected long feeFor(HapiApiSpec spec, Transaction txn, int numPayerKeys) throws Throwable {
 		return spec.fees().forActivityBasedOp(
-				HederaFunctionality.PRNG, this::usageEstimate, txn, numPayerKeys);
+				HederaFunctionality.UtilPrng, this::usageEstimate, txn, numPayerKeys);
 	}
 
 	private FeeData usageEstimate(TransactionBody txn, SigValueObj svo) {
@@ -89,15 +89,15 @@ public class HapiPrng extends HapiTxnOp<HapiPrng> {
 
 	@Override
 	protected Consumer<TransactionBody.Builder> opBodyDef(HapiApiSpec spec) throws Throwable {
-		PrngTransactionBody opBody = spec
+		UtilPrngTransactionBody opBody = spec
 				.txns()
-				.<PrngTransactionBody, PrngTransactionBody.Builder>body(
-						PrngTransactionBody.class, b -> {
+				.<UtilPrngTransactionBody, UtilPrngTransactionBody.Builder>body(
+						UtilPrngTransactionBody.class, b -> {
 							if (range.isPresent()) {
 								b.setRange(range.get());
 							}
 						});
-		return b -> b.setPrng(opBody);
+		return b -> b.setUtilPrng(opBody);
 	}
 
 	@Override
@@ -108,7 +108,7 @@ public class HapiPrng extends HapiTxnOp<HapiPrng> {
 
 	@Override
 	protected Function<Transaction, TransactionResponse> callToUse(HapiApiSpec spec) {
-		return spec.clients().getUtilSvcStub(targetNodeFor(spec), useTls)::prng;
+		return spec.clients().getUtilSvcStub(targetNodeFor(spec), useTls)::utilPrng;
 	}
 
 	@Override

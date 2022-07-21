@@ -44,7 +44,7 @@ import com.hederahashgraph.api.proto.java.FileCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.FileDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.FileUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.FreezeTransactionBody;
-import com.hederahashgraph.api.proto.java.PrngTransactionBody;
+import com.hederahashgraph.api.proto.java.UtilPrngTransactionBody;
 import com.hederahashgraph.api.proto.java.ScheduleCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.ScheduleDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.ScheduleSignTransactionBody;
@@ -404,7 +404,7 @@ public class TxnFactory {
 		};
 	}
 
-	public Consumer<PrngTransactionBody.Builder> defaultDef_PrngTransactionBody() {
+	public Consumer<UtilPrngTransactionBody.Builder> defaultDef_PrngTransactionBody() {
 		return builder -> {
 		};
 	}

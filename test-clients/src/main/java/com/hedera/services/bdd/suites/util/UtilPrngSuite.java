@@ -51,11 +51,11 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class PrngSuite extends HapiApiSuite {
-	private static final Logger log = LogManager.getLogger(PrngSuite.class);
+public class UtilPrngSuite extends HapiApiSuite {
+	private static final Logger log = LogManager.getLogger(UtilPrngSuite.class);
 
 	public static void main(String... args) {
-		new PrngSuite().runSuiteSync();
+		new UtilPrngSuite().runSuiteSync();
 	}
 
 	@Override
@@ -104,7 +104,7 @@ public class PrngSuite extends HapiApiSuite {
 								final var rawResult = response.getContractCallResult()
 										.getContractCallResult()
 										.toByteArray();
-								// Since this contract returns the result of the PRNG system contract, its call result
+								// Since this contract returns the result of the Prng system contract, its call result
 								// should be identical to the result of the system contract in the child record
 								for (final var child : lookup.getChildRecords()) {
 									if (child.hasContractCallResult()) {
@@ -137,7 +137,7 @@ public class PrngSuite extends HapiApiSuite {
 		return defaultHapiSpec("featureFlagWorks")
 				.given(
 						overridingAllOf(Map.of(
-								"prng.isEnabled", "false"
+								"utilPrng.isEnabled", "false"
 						)),
 						cryptoCreate("bob").balance(ONE_HUNDRED_HBARS),
 						hapiPrng()
@@ -171,7 +171,7 @@ public class PrngSuite extends HapiApiSuite {
 		return defaultHapiSpec("usdFeeAsExpected")
 				.given(
 						overridingAllOf(Map.of(
-								"prng.isEnabled", "true"
+								"utilPrng.isEnabled", "true"
 						)),
 						cryptoCreate("bob").balance(ONE_HUNDRED_HBARS),
 
@@ -202,7 +202,7 @@ public class PrngSuite extends HapiApiSuite {
 		return defaultHapiSpec("failsInPreCheckForNegativeRange")
 				.given(
 						overridingAllOf(Map.of(
-								"prng.isEnabled", "true"
+								"utilPrng.isEnabled", "true"
 						)),
 						cryptoCreate("bob").balance(ONE_HUNDRED_HBARS),
 						hapiPrng(-10)
@@ -224,7 +224,7 @@ public class PrngSuite extends HapiApiSuite {
 		return defaultHapiSpec("happyPathWorksForRangeAndBitString")
 				.given(
 						overridingAllOf(Map.of(
-								"prng.isEnabled", "true"
+								"utilPrng.isEnabled", "true"
 						)),
 						// running hash is set
 						cryptoCreate("bob").balance(ONE_HUNDRED_HBARS),

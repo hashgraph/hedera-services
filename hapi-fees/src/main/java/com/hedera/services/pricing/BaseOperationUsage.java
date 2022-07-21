@@ -43,7 +43,7 @@ import com.hedera.services.usage.state.UsageAccumulator;
 import com.hedera.services.usage.token.TokenOpsUsage;
 import com.hedera.services.usage.token.meta.ExtantFeeScheduleContext;
 import com.hedera.services.usage.token.meta.FeeScheduleUpdateMeta;
-import com.hedera.services.usage.util.PrngMeta;
+import com.hedera.services.usage.util.UtilPrngMeta;
 import com.hedera.services.usage.util.UtilOpsUsage;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -61,7 +61,6 @@ import com.hederahashgraph.api.proto.java.FixedFee;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.NftRemoveAllowance;
-import com.hederahashgraph.api.proto.java.PrngTransactionBody;
 import com.hederahashgraph.api.proto.java.SchedulableTransactionBody;
 import com.hederahashgraph.api.proto.java.ScheduleCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.SignatureMap;
@@ -80,6 +79,8 @@ import com.hederahashgraph.api.proto.java.TransferList;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
+
+import com.hederahashgraph.api.proto.java.UtilPrngTransactionBody;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -277,8 +278,8 @@ public class BaseOperationUsage {
                 return tokenUnpause();
             case ConsensusSubmitMessage:
                 return submitMessage();
-            case PRNG:
-                return prng();
+            case UtilPrng:
+                return utilPrng();
             default:
                 break;
         }
@@ -311,9 +312,9 @@ public class BaseOperationUsage {
         return into;
     }
 
-    UsageAccumulator prng() {
-        final var prngTxnBody = PrngTransactionBody.newBuilder().build();
-        final var prngMeta = new PrngMeta(prngTxnBody);
+    UsageAccumulator utilPrng() {
+        final var prngTxnBody = UtilPrngTransactionBody.newBuilder().build();
+        final var prngMeta = new UtilPrngMeta(prngTxnBody);
         final var into = new UsageAccumulator();
         UTIL_OPS_USAGE.prngUsage(SINGLE_SIG_USAGE, NO_MEMO_AND_NO_EXPLICIT_XFERS, prngMeta, into);
         return into;

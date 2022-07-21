@@ -39,7 +39,7 @@ import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.services.store.contracts.precompile.utils.PrecompileUtils;
 import com.hedera.services.txns.util.PrngLogic;
-import com.hederahashgraph.api.proto.java.PrngTransactionBody;
+import com.hederahashgraph.api.proto.java.UtilPrngTransactionBody;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.time.Instant;
@@ -246,12 +246,12 @@ public class PrngSystemPrecompiledContract extends AbstractPrecompiledContract {
         if (randomNum == null) {
             return txnBody;
         }
-        final var body = PrngTransactionBody.newBuilder();
+        final var body = UtilPrngTransactionBody.newBuilder();
         final var selector = input.getInt(0);
         if (selector == PSEUDORANDOM_NUM_IN_RANGE_GENERATOR_SELECTOR) {
             body.setRange(randomNum.toBigInteger().intValue());
         }
-        return txnBody.setPrng(body.build());
+        return txnBody.setUtilPrng(body.build());
     }
 
     private Bytes padded(final int result) {

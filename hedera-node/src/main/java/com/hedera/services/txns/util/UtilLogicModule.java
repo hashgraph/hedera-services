@@ -28,15 +28,15 @@ import dagger.multibindings.IntoMap;
 
 import java.util.List;
 
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.PRNG;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.UtilPrng;
 
 @Module
 public final class UtilLogicModule {
 	@Provides
 	@IntoMap
-	@FunctionKey(PRNG)
-	public static List<TransitionLogic> providePrngLogic(final PrngTransitionLogic prngLogic) {
-		return List.of(prngLogic);
+	@FunctionKey(UtilPrng)
+	public static List<TransitionLogic> providePrngLogic(final UtilPrngTransitionLogic utilPrngLogic) {
+		return List.of(utilPrngLogic);
 	}
 
 	private UtilLogicModule() {

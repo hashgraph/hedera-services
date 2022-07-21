@@ -53,7 +53,6 @@ import com.hederahashgraph.api.proto.java.FreezeTransactionBody;
 import com.hederahashgraph.api.proto.java.GetBySolidityIDQuery;
 import com.hederahashgraph.api.proto.java.NetworkGetExecutionTimeQuery;
 import com.hederahashgraph.api.proto.java.NetworkGetVersionInfoQuery;
-import com.hederahashgraph.api.proto.java.PrngTransactionBody;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.ScheduleCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.ScheduleDeleteTransactionBody;
@@ -65,6 +64,7 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionGetFastRecordQuery;
 import com.hederahashgraph.api.proto.java.TransactionGetReceiptQuery;
 import com.hederahashgraph.api.proto.java.TransactionGetRecordQuery;
+import com.hederahashgraph.api.proto.java.UtilPrngTransactionBody;
 import org.junit.jupiter.api.Test;
 
 import static com.hedera.services.context.domain.security.PermissionFileUtils.permissionFileKeyForQuery;
@@ -82,10 +82,10 @@ class PermissionFileUtilsTest {
 		assertEquals("", permissionFileKeyForQuery(Query.getDefaultInstance()));
 	}
 	@Test
-	void worksForPrng() {
-		final var op = PrngTransactionBody.getDefaultInstance();
+	void worksForUtilPrng() {
+		final var op = UtilPrngTransactionBody.getDefaultInstance();
 		final var txn = TransactionBody.newBuilder()
-				.setPrng(op)
+				.setUtilPrng(op)
 				.build();
 		assertEquals(permissionFileKeyForTxn(txn), legacyKeyForTxn(txn));
 	}
@@ -588,8 +588,8 @@ class PermissionFileUtilsTest {
 			key = "submitMessage";
 		} else if (txn.hasTokenFeeScheduleUpdate()) {
 			key = "tokenFeeScheduleUpdate";
-		} else if(txn.hasPrng()){
-			key = "prng";
+		} else if(txn.hasUtilPrng()){
+			key = "utilPrng";
 		}
 		return key;
 	}

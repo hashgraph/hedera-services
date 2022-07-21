@@ -26,8 +26,8 @@ import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.stream.RecordsRunningHashLeaf;
 import com.hedera.services.utils.accessors.SignedTxnAccessor;
 import com.hedera.test.utils.TxnUtils;
-import com.hederahashgraph.api.proto.java.PrngTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.hederahashgraph.api.proto.java.UtilPrngTransactionBody;
 import com.swirlds.common.crypto.Hash;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -50,7 +50,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
-class PrngTransitionLogicTest {
+class UtilPrngTransitionLogicTest {
 	private static final Hash aFullHash = new Hash(TxnUtils.randomUtf8Bytes(48));
 
 	private SideEffectsTracker tracker = new SideEffectsTracker();
@@ -63,35 +63,35 @@ class PrngTransitionLogicTest {
 	@Mock
 	private GlobalDynamicProperties properties;
 
-	private PrngTransitionLogic subject;
-	private TransactionBody prngTxn;
+	private UtilPrngTransitionLogic subject;
+	private TransactionBody utilPrngTxn;
 	private PrngLogic logic;
 
 	@BeforeEach
 	private void setup() {
 		logic = new PrngLogic(properties, () -> runningHashLeaf, tracker);
-		subject = new PrngTransitionLogic(txnCtx, logic);
+		subject = new UtilPrngTransitionLogic(txnCtx, logic);
 	}
 
 	@Test
 	void hasCorrectApplicability() {
 		givenValidTxnCtx(0);
 
-		assertTrue(subject.applicability().test(prngTxn));
+		assertTrue(subject.applicability().test(utilPrngTxn));
 		assertFalse(subject.applicability().test(TransactionBody.getDefaultInstance()));
 	}
 
 	@Test
 	void rejectsInvalidRange() {
 		givenValidTxnCtx(-10000);
-		assertEquals(INVALID_PRNG_RANGE, subject.semanticCheck().apply(prngTxn));
+		assertEquals(INVALID_PRNG_RANGE, subject.semanticCheck().apply(utilPrngTxn));
 	}
 
 	@Test
 	void returnsIfNotEnabled() {
-		given(properties.isPrngEnabled()).willReturn(false);
+		given(properties.isUtilPrngEnabled()).willReturn(false);
 		givenValidTxnCtx(10000);
-		given(accessor.getTxn()).willReturn(prngTxn);
+		given(accessor.getTxn()).willReturn(utilPrngTxn);
 		given(txnCtx.accessor()).willReturn(accessor);
 
 		subject.doStateTransition();
@@ -102,24 +102,24 @@ class PrngTransitionLogicTest {
 	@Test
 	void acceptsPositiveAndZeroRange() {
 		givenValidTxnCtx(10000);
-		assertEquals(OK, subject.semanticCheck().apply(prngTxn));
+		assertEquals(OK, subject.semanticCheck().apply(utilPrngTxn));
 
 		givenValidTxnCtx(0);
-		assertEquals(OK, subject.semanticCheck().apply(prngTxn));
+		assertEquals(OK, subject.semanticCheck().apply(utilPrngTxn));
 	}
 
 	@Test
 	void acceptsNoRange() {
 		givenValidTxnCtxWithoutRange();
-		assertEquals(OK, subject.semanticCheck().apply(prngTxn));
+		assertEquals(OK, subject.semanticCheck().apply(utilPrngTxn));
 	}
 
 	@Test
 	void followsHappyPathWithNoRange() throws InterruptedException {
 		givenValidTxnCtxWithoutRange();
-		given(properties.isPrngEnabled()).willReturn(true);
+		given(properties.isUtilPrngEnabled()).willReturn(true);
 		given(runningHashLeaf.nMinusThreeRunningHash()).willReturn(aFullHash);
-		given(accessor.getTxn()).willReturn(prngTxn);
+		given(accessor.getTxn()).willReturn(utilPrngTxn);
 		given(txnCtx.accessor()).willReturn(accessor);
 
 		subject.doStateTransition();
@@ -132,9 +132,9 @@ class PrngTransitionLogicTest {
 	@Test
 	void followsHappyPathWithRange() throws InterruptedException {
 		givenValidTxnCtx(20);
-		given(properties.isPrngEnabled()).willReturn(true);
+		given(properties.isUtilPrngEnabled()).willReturn(true);
 		given(runningHashLeaf.nMinusThreeRunningHash()).willReturn(aFullHash);
-		given(accessor.getTxn()).willReturn(prngTxn);
+		given(accessor.getTxn()).willReturn(utilPrngTxn);
 		given(txnCtx.accessor()).willReturn(accessor);
 
 		subject.doStateTransition();
@@ -148,9 +148,9 @@ class PrngTransitionLogicTest {
 	@Test
 	void followsHappyPathWithMaxIntegerRange() throws InterruptedException {
 		givenValidTxnCtx(Integer.MAX_VALUE);
-		given(properties.isPrngEnabled()).willReturn(true);
+		given(properties.isUtilPrngEnabled()).willReturn(true);
 		given(runningHashLeaf.nMinusThreeRunningHash()).willReturn(aFullHash);
-		given(accessor.getTxn()).willReturn(prngTxn);
+		given(accessor.getTxn()).willReturn(utilPrngTxn);
 		given(txnCtx.accessor()).willReturn(accessor);
 
 		subject.doStateTransition();
@@ -165,16 +165,16 @@ class PrngTransitionLogicTest {
 	void anyNegativeValueThrowsInPrecheck() {
 		givenValidTxnCtx(Integer.MIN_VALUE);
 
-		final var response = subject.semanticCheck().apply(prngTxn);
+		final var response = subject.semanticCheck().apply(utilPrngTxn);
 		assertEquals(INVALID_PRNG_RANGE, response);
 	}
 
 	@Test
 	void givenRangeZeroGivesBitString() throws InterruptedException {
 		givenValidTxnCtx(0);
-		given(properties.isPrngEnabled()).willReturn(true);
+		given(properties.isUtilPrngEnabled()).willReturn(true);
 		given(runningHashLeaf.nMinusThreeRunningHash()).willReturn(aFullHash);
-		given(accessor.getTxn()).willReturn(prngTxn);
+		given(accessor.getTxn()).willReturn(utilPrngTxn);
 		given(txnCtx.accessor()).willReturn(accessor);
 
 		subject.doStateTransition();
@@ -187,9 +187,9 @@ class PrngTransitionLogicTest {
 	@Test
 	void nullHashesReturnNoRandomNumber() throws InterruptedException {
 		givenValidTxnCtx(0);
-		given(properties.isPrngEnabled()).willReturn(true);
+		given(properties.isUtilPrngEnabled()).willReturn(true);
 		given(runningHashLeaf.nMinusThreeRunningHash()).willReturn(null);
-		given(accessor.getTxn()).willReturn(prngTxn);
+		given(accessor.getTxn()).willReturn(utilPrngTxn);
 		given(txnCtx.accessor()).willReturn(accessor);
 
 		subject.doStateTransition();
@@ -202,12 +202,12 @@ class PrngTransitionLogicTest {
 	void interruptedWhileGettingHash() throws InterruptedException {
 		final var sideEffectsTracker = mock(SideEffectsTracker.class);
 		logic = new PrngLogic(properties, () -> runningHashLeaf, sideEffectsTracker);
-		subject = new PrngTransitionLogic(txnCtx, logic);
+		subject = new UtilPrngTransitionLogic(txnCtx, logic);
 
 		givenValidTxnCtx(10);
-		given(properties.isPrngEnabled()).willReturn(true);
+		given(properties.isUtilPrngEnabled()).willReturn(true);
 		given(runningHashLeaf.nMinusThreeRunningHash()).willThrow(InterruptedException.class);
-		given(accessor.getTxn()).willReturn(prngTxn);
+		given(accessor.getTxn()).willReturn(utilPrngTxn);
 		given(txnCtx.accessor()).willReturn(accessor);
 
 		final var msg = assertThrows(IllegalStateException.class, () -> subject.doStateTransition());
@@ -218,13 +218,13 @@ class PrngTransitionLogicTest {
 	}
 
 	private void givenValidTxnCtx(int range) {
-		final var opBuilder = PrngTransactionBody.newBuilder()
+		final var opBuilder = UtilPrngTransactionBody.newBuilder()
 				.setRange(range);
-		prngTxn = TransactionBody.newBuilder().setPrng(opBuilder).build();
+		utilPrngTxn = TransactionBody.newBuilder().setUtilPrng(opBuilder).build();
 	}
 
 	private void givenValidTxnCtxWithoutRange() {
-		final var opBuilder = PrngTransactionBody.newBuilder();
-		prngTxn = TransactionBody.newBuilder().setPrng(opBuilder).build();
+		final var opBuilder = UtilPrngTransactionBody.newBuilder();
+		utilPrngTxn = TransactionBody.newBuilder().setUtilPrng(opBuilder).build();
 	}
 }

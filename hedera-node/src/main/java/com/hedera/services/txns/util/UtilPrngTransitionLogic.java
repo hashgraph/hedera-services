@@ -34,19 +34,19 @@ import java.util.function.Predicate;
  * Provides the state transition for generating a pseudorandom bytes or pseudorandom number.
  */
 @Singleton
-public class PrngTransitionLogic implements TransitionLogic {
+public class UtilPrngTransitionLogic implements TransitionLogic {
 	private final TransactionContext txnCtx;
 	private final PrngLogic prngLogic;
 
 	@Inject
-	public PrngTransitionLogic(final TransactionContext txnCtx, final PrngLogic prngLogic) {
+	public UtilPrngTransitionLogic(final TransactionContext txnCtx, final PrngLogic prngLogic) {
 		this.txnCtx = txnCtx;
 		this.prngLogic = prngLogic;
 	}
 
 	@Override
 	public void doStateTransition() {
-		final var op = txnCtx.accessor().getTxn().getPrng();
+		final var op = txnCtx.accessor().getTxn().getUtilPrng();
 		final var range = op.getRange();
 
 		prngLogic.generatePseudoRandom(range);
@@ -54,7 +54,7 @@ public class PrngTransitionLogic implements TransitionLogic {
 
 	@Override
 	public Predicate<TransactionBody> applicability() {
-		return TransactionBody::hasPrng;
+		return TransactionBody::hasUtilPrng;
 	}
 
 	@Override

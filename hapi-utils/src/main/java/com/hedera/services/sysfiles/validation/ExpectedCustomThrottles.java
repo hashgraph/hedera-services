@@ -45,7 +45,6 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileGetCont
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileGetInfo;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileUpdate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.GetVersionInfo;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.PRNG;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ScheduleCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ScheduleDelete;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ScheduleGetInfo;
@@ -71,6 +70,7 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUnpaus
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUpdate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TransactionGetReceipt;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TransactionGetRecord;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.UtilPrng;
 
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import java.util.Collections;
@@ -136,7 +136,7 @@ public final class ExpectedCustomThrottles {
                             TokenFeeScheduleUpdate,
                             TokenPause,
                             TokenUnpause,
-                            PRNG));
+                            UtilPrng));
 
     private ExpectedCustomThrottles() {
         throw new UnsupportedOperationException("Utility Class");

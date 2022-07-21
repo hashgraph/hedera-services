@@ -25,7 +25,6 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoDelet
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoUpdate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.EthereumTransaction;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.PRNG;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAccountWipe;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenBurn;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenCreate;
@@ -35,6 +34,7 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenMint;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenPause;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUnfreezeAccount;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUnpause;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.UtilPrng;
 import static com.hederahashgraph.api.proto.java.SubType.TOKEN_FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.SubType.TOKEN_NON_FUNGIBLE_UNIQUE;
 
@@ -56,7 +56,7 @@ import com.hedera.services.usage.crypto.CryptoTransferMeta;
 import com.hedera.services.usage.crypto.CryptoUpdateMeta;
 import com.hedera.services.usage.token.TokenOpsUsage;
 import com.hedera.services.usage.token.meta.FeeScheduleUpdateMeta;
-import com.hedera.services.usage.util.PrngMeta;
+import com.hedera.services.usage.util.UtilPrngMeta;
 import com.hedera.services.utils.MiscUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
@@ -449,8 +449,8 @@ public class SignedTxnAccessor implements TxnAccessor {
             setCryptoDeleteAllowanceUsageMeta();
         } else if (function == EthereumTransaction) {
             setEthTxDataMeta();
-        } else if (function == PRNG) {
-            setPrngUsageMeta();
+        } else if (function == UtilPrng) {
+            setUtilPrngUsageMeta();
         }
     }
 
@@ -547,9 +547,9 @@ public class SignedTxnAccessor implements TxnAccessor {
         SPAN_MAP_ACCESSOR.setCryptoDeleteAllowanceMeta(this, cryptoDeleteAllowanceMeta);
     }
 
-    private void setPrngUsageMeta() {
-        final var prngUsageMeta = new PrngMeta(txn.getPrng());
-        SPAN_MAP_ACCESSOR.setPrngMeta(this, prngUsageMeta);
+    private void setUtilPrngUsageMeta() {
+        final var utilPrngUsageMeta = new UtilPrngMeta(txn.getUtilPrng());
+        SPAN_MAP_ACCESSOR.setUtilPrngMeta(this, utilPrngUsageMeta);
     }
 
     private void setEthTxDataMeta() {

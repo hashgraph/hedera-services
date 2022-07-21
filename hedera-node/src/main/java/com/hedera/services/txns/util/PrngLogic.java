@@ -59,7 +59,7 @@ public class PrngLogic {
 	}
 
 	public void generatePseudoRandom(final int range) {
-		if (!properties.isPrngEnabled()) {
+		if (!properties.isUtilPrngEnabled()) {
 			return;
 		}
 
@@ -77,7 +77,7 @@ public class PrngLogic {
 	}
 
 	public ResponseCodeEnum validateSemantics(final TransactionBody prngTxn) {
-		final var range = prngTxn.getPrng().getRange();
+		final var range = prngTxn.getUtilPrng().getRange();
 		if (range < 0) {
 			return INVALID_PRNG_RANGE;
 		}

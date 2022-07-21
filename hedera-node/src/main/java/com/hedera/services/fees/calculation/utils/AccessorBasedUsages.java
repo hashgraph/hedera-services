@@ -44,7 +44,6 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoDelet
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoUpdate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileAppend;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.PRNG;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAccountWipe;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenBurn;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenCreate;
@@ -54,6 +53,7 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenMint;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenPause;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUnfreezeAccount;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUnpause;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.UtilPrng;
 
 @Singleton
 public class AccessorBasedUsages {
@@ -62,7 +62,7 @@ public class AccessorBasedUsages {
 			CryptoTransfer, CryptoCreate, CryptoUpdate, CryptoApproveAllowance, CryptoDeleteAllowance,
 			ConsensusSubmitMessage,
 			TokenFeeScheduleUpdate, TokenCreate, TokenBurn, TokenMint, TokenAccountWipe,
-			TokenFreezeAccount, TokenUnfreezeAccount, TokenPause, TokenUnpause, PRNG
+			TokenFreezeAccount, TokenUnfreezeAccount, TokenPause, TokenUnpause, UtilPrng
 	);
 
 	private final ExpandHandleSpanMapAccessor spanMapAccessor = new ExpandHandleSpanMapAccessor();
@@ -135,8 +135,8 @@ public class AccessorBasedUsages {
 			estimateTokenPause(sigUsage, accessor, baseMeta, into);
 		} else if (function == TokenUnpause) {
 			estimateTokenUnpause(sigUsage, accessor, baseMeta, into);
-		} else if (function == PRNG) {
-			estimatePrng(sigUsage, accessor, baseMeta, into);
+		} else if (function == UtilPrng) {
+			estimateUtilPrng(sigUsage, accessor, baseMeta, into);
 		}
 	}
 
@@ -297,13 +297,13 @@ public class AccessorBasedUsages {
 		tokenOpsUsage.tokenUnpauseUsage(sigUsage, baseMeta, tokenUnpauseMeta, into);
 	}
 
-	private void estimatePrng(
+	private void estimateUtilPrng(
 			SigUsage sigUsage,
 			TxnAccessor accessor,
 			BaseTransactionMeta baseMeta,
 			UsageAccumulator into
 	) {
-		final var prngMeta = accessor.getSpanMapAccessor().getPrngMeta(accessor);
+		final var prngMeta = accessor.getSpanMapAccessor().getUtilPrngMeta(accessor);
 		utilOpsUsage.prngUsage(sigUsage, baseMeta, prngMeta, into);
 	}
 }

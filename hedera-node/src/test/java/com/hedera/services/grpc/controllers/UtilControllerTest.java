@@ -21,13 +21,14 @@ package com.hedera.services.grpc.controllers;
  */
 
 import com.hedera.services.txns.submission.TxnResponseHelper;
+import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
 import io.grpc.stub.StreamObserver;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.PRNG;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.UtilPrng;
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.verify;
 
@@ -48,9 +49,9 @@ class UtilControllerTest {
 	@Test
 	void forwardsPrngAsExpected() {
 		// when:
-		subject.prng(txn, txnObserver);
+		subject.utilPrng(txn, txnObserver);
 
 		// expect:
-		verify(txnResponseHelper).submit(txn, txnObserver, PRNG);
+		verify(txnResponseHelper).submit(txn, txnObserver, UtilPrng);
 	}
 }

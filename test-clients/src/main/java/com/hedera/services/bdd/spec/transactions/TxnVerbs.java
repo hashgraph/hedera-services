@@ -67,7 +67,7 @@ import com.hedera.services.bdd.spec.transactions.token.HapiTokenUnpause;
 import com.hedera.services.bdd.spec.transactions.token.HapiTokenUpdate;
 import com.hedera.services.bdd.spec.transactions.token.HapiTokenWipe;
 import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
-import com.hedera.services.bdd.spec.transactions.util.HapiPrng;
+import com.hedera.services.bdd.spec.transactions.util.HapiUtilPrng;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TopicID;
@@ -542,11 +542,11 @@ public class TxnVerbs {
 	}
 
 	/* UTIL */
-	public static HapiPrng hapiPrng() {
-		return new HapiPrng();
+	public static HapiUtilPrng hapiPrng() {
+		return new HapiUtilPrng();
 	}
 
-	public static HapiPrng hapiPrng(int range) {
-		return new HapiPrng(range);
+	public static HapiUtilPrng hapiPrng(int range) {
+		return new HapiUtilPrng(range);
 	}
 }

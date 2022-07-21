@@ -29,7 +29,7 @@ import io.grpc.stub.StreamObserver;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.PRNG;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.UtilPrng;
 
 @Singleton
 public class UtilController extends UtilServiceGrpc.UtilServiceImplBase {
@@ -41,7 +41,7 @@ public class UtilController extends UtilServiceGrpc.UtilServiceImplBase {
 	}
 
 	@Override
-	public void prng(Transaction signedTxn, StreamObserver<TransactionResponse> observer) {
-		txnHelper.submit(signedTxn, observer, PRNG);
+	public void utilPrng(Transaction signedTxn, StreamObserver<TransactionResponse> observer) {
+		txnHelper.submit(signedTxn, observer, UtilPrng);
 	}
 }
