@@ -36,9 +36,9 @@ import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.services.store.contracts.precompile.utils.PrecompileUtils;
 import com.hedera.services.txns.util.PrngLogic;
-import com.hederahashgraph.api.proto.java.PrngTransactionBody;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.hederahashgraph.api.proto.java.UtilPrngTransactionBody;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.Optional;
@@ -205,6 +205,9 @@ public class PrngSystemPrecompiledContract extends AbstractPrecompiledContract {
     private void trackPrngOutput(
             final SideEffectsTracker effectsTracker, final Bytes input, final Bytes randomNum) {
         final var selector = input.getInt(0);
+        if (randomNum == null) {
+            return;
+        }
         if (selector == PSEUDORANDOM_SEED_GENERATOR_SELECTOR) {
             effectsTracker.trackRandomBytes(randomNum.toArray());
         }
@@ -216,8 +219,8 @@ public class PrngSystemPrecompiledContract extends AbstractPrecompiledContract {
         if (randomNum == null) {
             return txnBody;
         }
-        final var body = PrngTransactionBody.newBuilder();
-        return txnBody.setPrng(body.build());
+        final var body = UtilPrngTransactionBody.newBuilder();
+        return txnBody.setUtilPrng(body.build());
     }
 
     private void addContractCallResultToRecord(

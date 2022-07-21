@@ -134,7 +134,7 @@ public class GlobalDynamicProperties {
     private long maxNumTokenRels;
     private long maxNumTopics;
     private long maxNumSchedules;
-    private boolean prngEnabled;
+    private boolean utilPrngEnabled;
 
     @Inject
     public GlobalDynamicProperties(
@@ -267,7 +267,7 @@ public class GlobalDynamicProperties {
         maxNumTokens = properties.getLongProperty("tokens.maxNumber");
         maxNumTokenRels = properties.getLongProperty("tokens.maxAggregateRels");
         maxNumTopics = properties.getLongProperty("topics.maxNumber");
-        prngEnabled = properties.getBooleanProperty("prng.isEnabled");
+        utilPrngEnabled = properties.getBooleanProperty("utilPrng.isEnabled");
     }
 
     public int maxTokensPerAccount() {
@@ -650,8 +650,8 @@ public class GlobalDynamicProperties {
         return maxNumSchedules;
     }
 
-    public boolean isPrngEnabled() {
-        return prngEnabled;
+    public boolean isUtilPrngEnabled() {
+        return utilPrngEnabled;
     }
 
     public long maxNumTokenRels() {
