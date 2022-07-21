@@ -19,6 +19,7 @@ import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
 import static com.hedera.services.state.virtual.VirtualBlobKey.Type.CONTRACT_BYTECODE;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.fungible;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.fungibleTokenAddr;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.senderId;
 import static com.hedera.test.utils.TxnUtils.assertFailsRevertingWith;
 import static com.hedera.test.utils.TxnUtils.assertFailsWith;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
@@ -65,6 +66,7 @@ import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
@@ -256,6 +258,22 @@ class StaticEntityAccessTest {
         assertFailsWith(() -> subject.symbolOf(tokenId), INVALID_TOKEN_ID);
         assertFailsWith(() -> subject.decimalsOf(tokenId), INVALID_TOKEN_ID);
         assertFailsWith(() -> subject.balanceOf(accountId, tokenId), INVALID_TOKEN_ID);
+        assertFailsWith(() -> subject.adminKey(tokenId), INVALID_TOKEN_ID);
+        assertFailsWith(() -> subject.kycKey(tokenId), INVALID_TOKEN_ID);
+        assertFailsWith(() -> subject.freezeKey(tokenId), INVALID_TOKEN_ID);
+        assertFailsWith(() -> subject.pauseKey(tokenId), INVALID_TOKEN_ID);
+        assertFailsWith(() -> subject.feeScheduleKey(tokenId), INVALID_TOKEN_ID);
+        assertFailsWith(() -> subject.supplyKey(tokenId), INVALID_TOKEN_ID);
+        assertFailsWith(() -> subject.wipeKey(tokenId), INVALID_TOKEN_ID);
+        assertFailsWith(() -> subject.memo(tokenId), INVALID_TOKEN_ID);
+        assertFailsWith(() -> subject.maxSupply(tokenId), INVALID_TOKEN_ID);
+        assertFailsWith(() -> subject.expiry(tokenId), INVALID_TOKEN_ID);
+        assertFailsWith(() -> subject.autoRenewAccount(tokenId), INVALID_TOKEN_ID);
+        assertFailsWith(() -> subject.feeSchedule(tokenId), INVALID_TOKEN_ID);
+        assertFailsWith(() -> subject.accountsAreFrozenByDefault(tokenId), INVALID_TOKEN_ID);
+        assertFailsWith(() -> subject.isPaused(tokenId), INVALID_TOKEN_ID);
+        assertFailsWith(() -> subject.isDeleted(tokenId), INVALID_TOKEN_ID);
+        assertFailsWith(() -> subject.accountsKycGrantedByDefault(tokenId), INVALID_TOKEN_ID);
     }
 
     @Test
@@ -267,6 +285,23 @@ class StaticEntityAccessTest {
         assertEquals(decimals, subject.decimalsOf(tokenId));
         assertEquals(totalSupply, subject.supplyOf(tokenId));
         assertEquals(type, subject.typeOf(tokenId));
+
+        assertEquals(key, subject.adminKey(tokenId));
+        assertEquals(key, subject.kycKey(tokenId));
+        assertEquals(key, subject.freezeKey(tokenId));
+        assertEquals(key, subject.pauseKey(tokenId));
+        assertEquals(key, subject.feeScheduleKey(tokenId));
+        assertEquals(key, subject.supplyKey(tokenId));
+        assertEquals(key, subject.wipeKey(tokenId));
+        assertEquals(memo, subject.memo(tokenId));
+        assertEquals(maxSupply, subject.maxSupply(tokenId));
+        assertEquals(expiry, subject.expiry(tokenId));
+        assertEquals(senderId, subject.autoRenewAccount(tokenId));
+        assertEquals(new ArrayList<>(), subject.feeSchedule(tokenId));
+        assertFalse(subject.accountsAreFrozenByDefault(tokenId));
+        assertFalse(subject.isPaused(tokenId));
+        assertFalse(subject.isDeleted(tokenId));
+        assertTrue(subject.accountsKycGrantedByDefault(tokenId));
     }
 
     @Test
@@ -400,6 +435,9 @@ class StaticEntityAccessTest {
     private static final TokenType type = TokenType.NON_FUNGIBLE_UNIQUE;
     private static final String name = "Sunlight on a broken column";
     private static final String symbol = "THM1925";
+    private static final String memo = "MEMO";
+    private static final long maxSupply = 1000L;
+    private static final long expiry = 123456L;
     private static final EntityNum tokenNum = EntityNum.fromLong(666);
     private static final EntityNum accountNum = EntityNum.fromLong(888);
     private static final EntityNum treasuryNum = EntityNum.fromLong(999);
@@ -437,5 +475,19 @@ class StaticEntityAccessTest {
 
     {
         token.setTokenType(type);
+        token.setMaxSupply(maxSupply);
+        token.setMemo(memo);
+        token.setDeleted(false);
+        token.setPaused(false);
+        token.setFeeSchedule(new ArrayList<>());
+        token.setExpiry(expiry);
+        token.setAutoRenewAccount(senderId);
+        token.setAdminKey(key);
+        token.setKycKey(key);
+        token.setFreezeKey(key);
+        token.setFeeScheduleKey(key);
+        token.setWipeKey(key);
+        token.setPauseKey(key);
+        token.setSupplyKey(key);
     }
 }

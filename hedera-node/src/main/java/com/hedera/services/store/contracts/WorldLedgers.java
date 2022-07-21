@@ -24,8 +24,8 @@ import static com.hedera.services.ledger.properties.NftProperty.METADATA;
 import static com.hedera.services.ledger.properties.NftProperty.OWNER;
 import static com.hedera.services.ledger.properties.NftProperty.PACKED_CREATION_TIME;
 import static com.hedera.services.ledger.properties.NftProperty.SPENDER;
-import static com.hedera.services.ledger.properties.TokenProperty.ACCOUNTS_FROZEN_BY_DEFAULT;
-import static com.hedera.services.ledger.properties.TokenProperty.ACCOUNTS_KYC_GRANTED_BY_DEFAULT;
+import static com.hedera.services.ledger.properties.TokenProperty.ACC_FROZEN_BY_DEFAULT;
+import static com.hedera.services.ledger.properties.TokenProperty.ACC_KYC_GRANTED_BY_DEFAULT;
 import static com.hedera.services.ledger.properties.TokenProperty.ADMIN_KEY;
 import static com.hedera.services.ledger.properties.TokenProperty.AUTO_RENEW_ACCOUNT;
 import static com.hedera.services.ledger.properties.TokenProperty.AUTO_RENEW_PERIOD;
@@ -181,9 +181,7 @@ public class WorldLedgers {
 
     public boolean accountsFrozenByDefault(final TokenID tokenId) {
         return propertyOf(
-                tokenId,
-                ACCOUNTS_FROZEN_BY_DEFAULT,
-                StaticEntityAccess::accountsAreFrozenByDefault);
+                tokenId, ACC_FROZEN_BY_DEFAULT, StaticEntityAccess::accountsAreFrozenByDefault);
     }
 
     public long totalSupplyOf(final TokenID tokenId) {
@@ -205,7 +203,7 @@ public class WorldLedgers {
     public boolean accountsKycGrantedByDefault(final TokenID tokenId) {
         return propertyOf(
                 tokenId,
-                ACCOUNTS_KYC_GRANTED_BY_DEFAULT,
+                ACC_KYC_GRANTED_BY_DEFAULT,
                 StaticEntityAccess::accountsKycGrantedByDefault);
     }
 

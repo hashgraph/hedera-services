@@ -290,18 +290,7 @@ public enum TokenProperty implements BeanProperty<MerkleToken> {
             return MerkleToken::decimals;
         }
     },
-    ACCOUNTS_FROZEN_BY_DEFAULT {
-        @Override
-        public BiConsumer<MerkleToken, Object> setter() {
-            return (a, l) -> a.setAccountsFrozenByDefault((boolean) l);
-        }
-
-        @Override
-        public Function<MerkleToken, Object> getter() {
-            return MerkleToken::accountsAreFrozenByDefault;
-        }
-    },
-    ACCOUNTS_KYC_GRANTED_BY_DEFAULT {
+    ACC_KYC_GRANTED_BY_DEFAULT {
         @Override
         public BiConsumer<MerkleToken, Object> setter() {
             return (a, l) -> a.setAccountsKycGrantedByDefault((boolean) l);

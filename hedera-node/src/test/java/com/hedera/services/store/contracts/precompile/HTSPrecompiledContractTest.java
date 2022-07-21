@@ -27,6 +27,7 @@ import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_DISSOCIATE_TOKEN;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_DISSOCIATE_TOKENS;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_ERC_NAME;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_GET_TOKEN_INFO;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_MINT_TOKEN;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_REDIRECT_FOR_TOKEN;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_TRANSFER_NFT;
@@ -80,7 +81,11 @@ import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.services.store.contracts.WorldLedgers;
 import com.hedera.services.store.contracts.precompile.codec.DecodingFacade;
 import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
+import com.hedera.services.store.contracts.precompile.codec.Expiry;
+import com.hedera.services.store.contracts.precompile.codec.HederaToken;
 import com.hedera.services.store.contracts.precompile.codec.TokenCreateWrapper;
+import com.hedera.services.store.contracts.precompile.codec.TokenInfo;
+import com.hedera.services.store.contracts.precompile.codec.TokenInfoWrapper;
 import com.hedera.services.store.contracts.precompile.impl.AssociatePrecompile;
 import com.hedera.services.store.contracts.precompile.impl.BurnPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.DissociatePrecompile;
@@ -90,7 +95,9 @@ import com.hedera.services.store.contracts.precompile.impl.MultiDissociatePrecom
 import com.hedera.services.store.contracts.precompile.impl.TokenCreatePrecompile;
 import com.hedera.services.store.contracts.precompile.impl.TransferPrecompile;
 import com.hedera.services.store.contracts.precompile.proxy.RedirectViewExecutor;
+import com.hedera.services.store.contracts.precompile.proxy.ViewExecutor;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
+import com.hedera.services.store.contracts.precompile.utils.TokenInfoRetrievalUtils;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -104,6 +111,7 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.fee.FeeObject;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collections;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
@@ -111,10 +119,13 @@ import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.frame.BlockValues;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
+import org.mockito.MockedStatic;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
@@ -142,15 +153,24 @@ class HTSPrecompiledContractTest {
     @Mock private ExchangeRate exchangeRate;
     @Mock private InfrastructureFactory infrastructureFactory;
     @Mock private TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accounts;
+    @Mock private TokenInfoWrapper tokenInfoWrapper;
 
     private HTSPrecompiledContract subject;
     private PrecompilePricingUtils precompilePricingUtils;
+    private MockedStatic<TokenInfoRetrievalUtils> tokenInfoRetrievalUtils;
     @Mock private AssetsLoader assetLoader;
     @Mock private NetworkInfo networkInfo;
 
     private static final long viewTimestamp = 10L;
     private static final int CENTS_RATE = 12;
     private static final int HBAR_RATE = 1;
+    private static final String tokenName = "NAME";
+    private static final String symbol = "S";
+    private static final Address treasury =
+            Address.wrap(Bytes.fromHexString("0x00000000000000000000000000000000000005cc"));
+    private static final String memo = "MEMO";
+    private static final long maxSupply = 1000L;
+    private TokenInfo tokenInfo;
 
     public static final Id fungibleId = Id.fromGrpcToken(fungible);
     public static final Address fungibleTokenAddress = fungibleId.asEvmAddress();
@@ -159,6 +179,37 @@ class HTSPrecompiledContractTest {
 
     @BeforeEach
     void setUp() throws IOException {
+        final var token =
+                new HederaToken(
+                        "NAME",
+                        "FT",
+                        Address.wrap(
+                                Bytes.fromHexString("0x00000000000000000000000000000000000005cc")),
+                        "MEMO",
+                        false,
+                        1000L,
+                        false,
+                        new ArrayList<>(),
+                        new Expiry(0L, Address.ZERO, 0L));
+        tokenInfo =
+                new TokenInfo(
+                        token,
+                        1L,
+                        false,
+                        false,
+                        false,
+                        new ArrayList<>(),
+                        new ArrayList<>(),
+                        new ArrayList<>(),
+                        "0x03");
+
+        tokenInfoRetrievalUtils = Mockito.mockStatic(TokenInfoRetrievalUtils.class);
+        tokenInfoRetrievalUtils
+                .when(
+                        () ->
+                                TokenInfoRetrievalUtils.getTokenInfo(
+                                        fungible, wrappedLedgers, networkInfo))
+                .thenReturn(tokenInfo);
         precompilePricingUtils =
                 new PrecompilePricingUtils(
                         assetLoader, exchange, () -> feeCalculator, resourceCosts, stateView);
@@ -178,6 +229,11 @@ class HTSPrecompiledContractTest {
                         precompilePricingUtils,
                         infrastructureFactory,
                         networkInfo);
+    }
+
+    @AfterEach
+    void closeMocks() {
+        tokenInfoRetrievalUtils.close();
     }
 
     @Test
@@ -201,10 +257,10 @@ class HTSPrecompiledContractTest {
     }
 
     @Test
-    void computeCostedWorks() {
+    void computeCostedWorksForRedirectView() {
         given(worldUpdater.trackingLedgers()).willReturn(wrappedLedgers);
         given(wrappedLedgers.typeOf(fungible)).willReturn(TokenType.FUNGIBLE_COMMON);
-        Bytes input = prerequisites(ABI_ID_ERC_NAME);
+        Bytes input = prerequisitesForRedirect(ABI_ID_ERC_NAME);
         given(messageFrame.isStatic()).willReturn(true);
         given(messageFrame.getWorldUpdater()).willReturn(worldUpdater);
         given(worldUpdater.isInTransaction()).willReturn(false);
@@ -239,13 +295,61 @@ class HTSPrecompiledContractTest {
         assertEquals(Bytes.of(1), result.getValue());
     }
 
-    Bytes prerequisites(final int descriptor) {
+    @Test
+    void computeCostedWorksForView() {
+        given(worldUpdater.trackingLedgers()).willReturn(wrappedLedgers);
+        Bytes input = prerequisites(ABI_ID_GET_TOKEN_INFO);
+        given(decoder.decodeGetTokenInfo(input)).willReturn(tokenInfoWrapper);
+        given(tokenInfoWrapper.tokenID()).willReturn(fungible);
+        given(messageFrame.isStatic()).willReturn(true);
+        given(messageFrame.getWorldUpdater()).willReturn(worldUpdater);
+        given(worldUpdater.isInTransaction()).willReturn(false);
+
+        final var viewExecutor =
+                new ViewExecutor(
+                        input,
+                        messageFrame,
+                        encoder,
+                        decoder,
+                        precompilePricingUtils::computeViewFunctionGas,
+                        networkInfo);
+        given(infrastructureFactory.newViewExecutor(any(), any(), any(), any()))
+                .willReturn(viewExecutor);
+        given(feeCalculator.estimatePayment(any(), any(), any(), any(), any()))
+                .willReturn(mockFeeObject);
+        given(
+                        feeCalculator.estimatedGasPriceInTinybars(
+                                HederaFunctionality.ContractCall,
+                                Timestamp.newBuilder().setSeconds(viewTimestamp).build()))
+                .willReturn(1L);
+        given(mockFeeObject.getNodeFee()).willReturn(1L);
+        given(mockFeeObject.getNetworkFee()).willReturn(1L);
+        given(mockFeeObject.getServiceFee()).willReturn(1L);
+
+        final var encodedResult =
+                Bytes.fromHexString(
+                        "0x00000000000000000000000000000000000000000000000000000000000000160000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000012000000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000360000000000000000000000000000000000000000000000000000000000000038000000000000000000000000000000000000000000000000000000000000003a000000000000000000000000000000000000000000000000000000000000003c0000000000000000000000000000000000000000000000000000000000000016000000000000000000000000000000000000000000000000000000000000001a000000000000000000000000000000000000000000000000000000000000005cc00000000000000000000000000000000000000000000000000000000000001e0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000003e80000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000022000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000044e414d45000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002465400000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000044d454d4f00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000043078303300000000000000000000000000000000000000000000000000000000");
+        given(encoder.encodeGetTokenInfo(tokenInfo)).willReturn(encodedResult);
+
+        final var result = subject.computeCosted(input, messageFrame);
+
+        verify(messageFrame, never()).setRevertReason(any());
+        assertEquals(encodedResult, result.getValue());
+    }
+
+    Bytes prerequisitesForRedirect(final int descriptor) {
         given(messageFrame.getBlockValues()).willReturn(blockValues);
         given(blockValues.getTimestamp()).willReturn(viewTimestamp);
         return Bytes.concatenate(
                 Bytes.of(Integers.toBytes(ABI_ID_REDIRECT_FOR_TOKEN)),
                 fungibleTokenAddress,
                 Bytes.of(Integers.toBytes(descriptor)));
+    }
+
+    Bytes prerequisites(final int descriptor) {
+        given(messageFrame.getBlockValues()).willReturn(blockValues);
+        given(blockValues.getTimestamp()).willReturn(viewTimestamp);
+        return Bytes.concatenate(Bytes.of(Integers.toBytes(descriptor)), fungibleTokenAddress);
     }
 
     @Test
