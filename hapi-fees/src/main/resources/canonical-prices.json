@@ -197,6 +197,6 @@
 	"DEFAULT": 0
   },
   "UtilPrng": {
-	"DEFAULT": 0.01
+	"DEFAULT": 0.001
   }
 }
