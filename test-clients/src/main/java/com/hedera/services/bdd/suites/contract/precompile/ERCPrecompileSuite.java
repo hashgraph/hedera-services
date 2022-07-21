@@ -278,7 +278,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                         .contractCallResult(
                                                                 htsPrecompileResult()
                                                                         .forFunction(
-                                                                                FunctionType.NAME)
+                                                                                FunctionType.ERC_NAME)
                                                                         .withName(TOKEN_NAME)))));
     }
 
@@ -333,7 +333,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                         .contractCallResult(
                                                                 htsPrecompileResult()
                                                                         .forFunction(
-                                                                                FunctionType.SYMBOL)
+                                                                                FunctionType.ERC_SYMBOL)
                                                                         .withSymbol(tokenSymbol)))),
                         sourcing(
                                 () -> contractCallLocal(ERC_20_CONTRACT, SYMBOL, tokenAddr.get())));
@@ -393,7 +393,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                                 htsPrecompileResult()
                                                                         .forFunction(
                                                                                 FunctionType
-                                                                                        .DECIMALS)
+                                                                                        .ERC_DECIMALS)
                                                                         .withDecimals(decimals)))),
                         sourcing(
                                 () ->
@@ -454,7 +454,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                                 htsPrecompileResult()
                                                                         .forFunction(
                                                                                 FunctionType
-                                                                                        .TOTAL_SUPPLY)
+                                                                                        .ERC_TOTAL_SUPPLY)
                                                                         .withTotalSupply(
                                                                                 totalSupply)))),
                         sourcing(
@@ -543,7 +543,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                                 htsPrecompileResult()
                                                                         .forFunction(
                                                                                 FunctionType
-                                                                                        .BALANCE)
+                                                                                        .ERC_BALANCE)
                                                                         .withBalance(0)))),
                         childRecordsCheck(
                                 balanceTxn,
@@ -556,7 +556,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                                 htsPrecompileResult()
                                                                         .forFunction(
                                                                                 FunctionType
-                                                                                        .BALANCE)
+                                                                                        .ERC_BALANCE)
                                                                         .withBalance(3)))),
                         sourcing(
                                 () ->
@@ -1527,7 +1527,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                                 htsPrecompileResult()
                                                                         .forFunction(
                                                                                 FunctionType
-                                                                                        .ALLOWANCE)
+                                                                                        .ERC_ALLOWANCE)
                                                                         .withAllowance(2)))));
     }
 
@@ -1705,7 +1705,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                         .contractCallResult(
                                                                 htsPrecompileResult()
                                                                         .forFunction(
-                                                                                FunctionType.NAME)
+                                                                                FunctionType.ERC_NAME)
                                                                         .withName(TOKEN_NAME)))));
     }
 
@@ -1756,7 +1756,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                         .contractCallResult(
                                                                 htsPrecompileResult()
                                                                         .forFunction(
-                                                                                FunctionType.SYMBOL)
+                                                                                FunctionType.ERC_SYMBOL)
                                                                         .withSymbol(
                                                                                 tokenSymbol)))));
     }
@@ -1822,7 +1822,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                                 htsPrecompileResult()
                                                                         .forFunction(
                                                                                 FunctionType
-                                                                                        .TOKEN_URI)
+                                                                                        .ERC_TOKEN_URI)
                                                                         .withTokenUri(FIRST)))),
                         childRecordsCheck(
                                 nonExistingTokenURITxn,
@@ -1835,7 +1835,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                                 htsPrecompileResult()
                                                                         .forFunction(
                                                                                 FunctionType
-                                                                                        .TOKEN_URI)
+                                                                                        .ERC_TOKEN_URI)
                                                                         .withTokenUri(
                                                                                 ERC721MetadataNonExistingToken)))));
     }
@@ -1883,7 +1883,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                                 htsPrecompileResult()
                                                                         .forFunction(
                                                                                 FunctionType
-                                                                                        .TOTAL_SUPPLY)
+                                                                                        .ERC_TOTAL_SUPPLY)
                                                                         .withTotalSupply(1)))));
     }
 
@@ -1956,7 +1956,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                                 htsPrecompileResult()
                                                                         .forFunction(
                                                                                 FunctionType
-                                                                                        .BALANCE)
+                                                                                        .ERC_BALANCE)
                                                                         .withBalance(0)))),
                         childRecordsCheck(
                                 BALANCE_OF_TXN,
@@ -1969,7 +1969,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                                 htsPrecompileResult()
                                                                         .forFunction(
                                                                                 FunctionType
-                                                                                        .BALANCE)
+                                                                                        .ERC_BALANCE)
                                                                         .withBalance(1)))));
     }
 
@@ -2506,7 +2506,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                                                         htsPrecompileResult()
                                                                                                 .forFunction(
                                                                                                         FunctionType
-                                                                                                                .NAME)
+                                                                                                                .ERC_NAME)
                                                                                                 .withName(
                                                                                                         TOKEN_NAME)))),
                                                 childRecordsCheck(
@@ -2520,7 +2520,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                                                         htsPrecompileResult()
                                                                                                 .forFunction(
                                                                                                         FunctionType
-                                                                                                                .SYMBOL)
+                                                                                                                .ERC_SYMBOL)
                                                                                                 .withSymbol(
                                                                                                         tokenSymbol)))),
                                                 childRecordsCheck(
@@ -2534,7 +2534,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                                                         htsPrecompileResult()
                                                                                                 .forFunction(
                                                                                                         FunctionType
-                                                                                                                .DECIMALS)
+                                                                                                                .ERC_DECIMALS)
                                                                                                 .withDecimals(
                                                                                                         tokenDecimals)))),
                                                 childRecordsCheck(
@@ -2548,7 +2548,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                                                         htsPrecompileResult()
                                                                                                 .forFunction(
                                                                                                         FunctionType
-                                                                                                                .TOTAL_SUPPLY)
+                                                                                                                .ERC_TOTAL_SUPPLY)
                                                                                                 .withTotalSupply(
                                                                                                         tokenTotalSupply)))),
                                                 childRecordsCheck(
@@ -2562,7 +2562,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                                                         htsPrecompileResult()
                                                                                                 .forFunction(
                                                                                                         FunctionType
-                                                                                                                .BALANCE)
+                                                                                                                .ERC_BALANCE)
                                                                                                 .withBalance(
                                                                                                         tokenTransferAmount)))),
                                                 childRecordsCheck(
@@ -3153,7 +3153,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                                 htsPrecompileResult()
                                                                         .forFunction(
                                                                                 FunctionType
-                                                                                        .ALLOWANCE)
+                                                                                        .ERC_ALLOWANCE)
                                                                         .withAllowance(5L)))),
                         childRecordsCheck(
                                 "ALLOWANCE_AFTER_REVOKE_TXN",
@@ -3166,7 +3166,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                                 htsPrecompileResult()
                                                                         .forFunction(
                                                                                 FunctionType
-                                                                                        .ALLOWANCE)
+                                                                                        .ERC_ALLOWANCE)
                                                                         .withAllowance(0L)))));
     }
 
@@ -3410,7 +3410,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                                 htsPrecompileResult()
                                                                         .forFunction(
                                                                                 FunctionType
-                                                                                        .ALLOWANCE)
+                                                                                        .ERC_ALLOWANCE)
                                                                         .withAllowance(5L)))));
     }
 
@@ -3528,7 +3528,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                                                         htsPrecompileResult()
                                                                                                 .forFunction(
                                                                                                         FunctionType
-                                                                                                                .NAME)
+                                                                                                                .ERC_NAME)
                                                                                                 .withName(
                                                                                                         TOKEN_NAME)))),
                                                 childRecordsCheck(
@@ -3542,7 +3542,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                                                         htsPrecompileResult()
                                                                                                 .forFunction(
                                                                                                         FunctionType
-                                                                                                                .SYMBOL)
+                                                                                                                .ERC_SYMBOL)
                                                                                                 .withSymbol(
                                                                                                         tokenSymbol)))),
                                                 childRecordsCheck(
@@ -3556,7 +3556,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                                                         htsPrecompileResult()
                                                                                                 .forFunction(
                                                                                                         FunctionType
-                                                                                                                .TOKEN_URI)
+                                                                                                                .ERC_TOKEN_URI)
                                                                                                 .withTokenUri(
                                                                                                         FIRST)))),
                                                 childRecordsCheck(
@@ -3570,7 +3570,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                                                         htsPrecompileResult()
                                                                                                 .forFunction(
                                                                                                         FunctionType
-                                                                                                                .TOTAL_SUPPLY)
+                                                                                                                .ERC_TOTAL_SUPPLY)
                                                                                                 .withTotalSupply(
                                                                                                         tokenTotalSupply)))),
                                                 childRecordsCheck(
@@ -3584,7 +3584,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                                                         htsPrecompileResult()
                                                                                                 .forFunction(
                                                                                                         FunctionType
-                                                                                                                .BALANCE)
+                                                                                                                .ERC_BALANCE)
                                                                                                 .withBalance(
                                                                                                         1)))),
                                                 childRecordsCheck(
@@ -3735,7 +3735,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                                                         htsPrecompileResult()
                                                                                                 .forFunction(
                                                                                                         FunctionType
-                                                                                                                .GET_APPROVED)
+                                                                                                                .ERC_GET_APPROVED)
                                                                                                 .withSpender(
                                                                                                         new byte
                                                                                                                 [0])))),
@@ -3750,7 +3750,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                                                         htsPrecompileResult()
                                                                                                 .forFunction(
                                                                                                         FunctionType
-                                                                                                                .GET_APPROVED)
+                                                                                                                .ERC_GET_APPROVED)
                                                                                                 .withSpender(
                                                                                                         asAddress(
                                                                                                                 spec.registry()
@@ -3847,7 +3847,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                                 htsPrecompileResult()
                                                                         .forFunction(
                                                                                 FunctionType
-                                                                                        .BALANCE)
+                                                                                        .ERC_BALANCE)
                                                                         .withBalance(2)))),
                         childRecordsCheck(
                                 "NOT_ASSOCIATED",
@@ -3860,7 +3860,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                                 htsPrecompileResult()
                                                                         .forFunction(
                                                                                 FunctionType
-                                                                                        .BALANCE)
+                                                                                        .ERC_BALANCE)
                                                                         .withBalance(0)))));
     }
 
@@ -3986,7 +3986,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                                                         htsPrecompileResult()
                                                                                                 .forFunction(
                                                                                                         FunctionType
-                                                                                                                .GET_APPROVED)
+                                                                                                                .ERC_GET_APPROVED)
                                                                                                 .withSpender(
                                                                                                         asAddress(
                                                                                                                 spec.registry()
@@ -4137,7 +4137,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                                                         htsPrecompileResult()
                                                                                                 .forFunction(
                                                                                                         FunctionType
-                                                                                                                .IS_APPROVED_FOR_ALL)
+                                                                                                                .ERC_IS_APPROVED_FOR_ALL)
                                                                                                 .withIsApprovedForAll(
                                                                                                         false)))),
                                                 childRecordsCheck(
@@ -4151,7 +4151,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                                                         htsPrecompileResult()
                                                                                                 .forFunction(
                                                                                                         FunctionType
-                                                                                                                .IS_APPROVED_FOR_ALL)
+                                                                                                                .ERC_IS_APPROVED_FOR_ALL)
                                                                                                 .withIsApprovedForAll(
                                                                                                         false)))),
                                                 childRecordsCheck(
@@ -4165,7 +4165,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                                                         htsPrecompileResult()
                                                                                                 .forFunction(
                                                                                                         FunctionType
-                                                                                                                .IS_APPROVED_FOR_ALL)
+                                                                                                                .ERC_IS_APPROVED_FOR_ALL)
                                                                                                 .withIsApprovedForAll(
                                                                                                         true)))))));
     }
@@ -4317,7 +4317,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                                                         htsPrecompileResult()
                                                                                                 .forFunction(
                                                                                                         FunctionType
-                                                                                                                .IS_APPROVED_FOR_ALL)
+                                                                                                                .ERC_IS_APPROVED_FOR_ALL)
                                                                                                 .withIsApprovedForAll(
                                                                                                         true)))),
                                                 childRecordsCheck(
@@ -4331,7 +4331,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                                                         htsPrecompileResult()
                                                                                                 .forFunction(
                                                                                                         FunctionType
-                                                                                                                .IS_APPROVED_FOR_ALL)
+                                                                                                                .ERC_IS_APPROVED_FOR_ALL)
                                                                                                 .withIsApprovedForAll(
                                                                                                         false)))))));
     }
@@ -4436,7 +4436,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                                 htsPrecompileResult()
                                                                         .forFunction(
                                                                                 FunctionType
-                                                                                        .IS_APPROVED_FOR_ALL)
+                                                                                        .ERC_IS_APPROVED_FOR_ALL)
                                                                         .withIsApprovedForAll(
                                                                                 true)))),
                         childRecordsCheck(
@@ -4450,7 +4450,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                                 htsPrecompileResult()
                                                                         .forFunction(
                                                                                 FunctionType
-                                                                                        .IS_APPROVED_FOR_ALL)
+                                                                                        .ERC_IS_APPROVED_FOR_ALL)
                                                                         .withIsApprovedForAll(
                                                                                 false)))));
     }
@@ -4575,7 +4575,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                                                         htsPrecompileResult()
                                                                                                 .forFunction(
                                                                                                         FunctionType
-                                                                                                                .GET_APPROVED)
+                                                                                                                .ERC_GET_APPROVED)
                                                                                                 .withSpender(
                                                                                                         asAddress(
                                                                                                                 spec.registry()
@@ -4896,7 +4896,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                                 htsPrecompileResult()
                                                                         .forFunction(
                                                                                 FunctionType
-                                                                                        .ALLOWANCE)
+                                                                                        .ERC_ALLOWANCE)
                                                                         .withAllowance(2)))),
                         childRecordsCheck(
                                 allowanceTxn2,
@@ -4909,7 +4909,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                                 htsPrecompileResult()
                                                                         .forFunction(
                                                                                 FunctionType
-                                                                                        .ALLOWANCE)
+                                                                                        .ERC_ALLOWANCE)
                                                                         .withAllowance(0)))));
     }
 

@@ -54,26 +54,27 @@ class ParsingConstantsTest {
 
     @Test
     void functionTypeValidation() {
-        assertEquals("ALLOWANCE", FunctionType.ALLOWANCE.name());
-        assertEquals("APPROVE", FunctionType.APPROVE.name());
-        assertEquals("BALANCE", FunctionType.BALANCE.name());
-        assertEquals("BURN", FunctionType.BURN.name());
-        assertEquals("CREATE", FunctionType.CREATE.name());
-        assertEquals("DECIMALS", FunctionType.DECIMALS.name());
+        assertEquals("ALLOWANCE", FunctionType.ERC_ALLOWANCE.name());
+        assertEquals("APPROVE", FunctionType.ERC_APPROVE.name());
+        assertEquals("BALANCE", FunctionType.ERC_BALANCE.name());
+        assertEquals("BURN", FunctionType.HAPI_BURN.name());
+        assertEquals("CREATE", FunctionType.HAPI_CREATE.name());
+        assertEquals("DECIMALS", FunctionType.ERC_DECIMALS.name());
         assertEquals("ERC_TRANSFER", FunctionType.ERC_TRANSFER.name());
-        assertEquals("GET_APPROVED", FunctionType.GET_APPROVED.name());
-        assertEquals("GET_FUNGIBLE_TOKEN_INFO", FunctionType.GET_FUNGIBLE_TOKEN_INFO.name());
+        assertEquals("GET_APPROVED", FunctionType.ERC_GET_APPROVED.name());
+        assertEquals("GET_FUNGIBLE_TOKEN_INFO", FunctionType.HAPI_GET_FUNGIBLE_TOKEN_INFO.name());
         assertEquals(
-                "GET_NON_FUNGIBLE_TOKEN_INFO", FunctionType.GET_NON_FUNGIBLE_TOKEN_INFO.name());
-        assertEquals("GET_TOKEN_INFO", FunctionType.GET_TOKEN_INFO.name());
-        assertEquals("IS_APPROVED_FOR_ALL", FunctionType.IS_APPROVED_FOR_ALL.name());
-        assertEquals("MINT", FunctionType.MINT.name());
-        assertEquals("NAME", FunctionType.NAME.name());
+                "GET_NON_FUNGIBLE_TOKEN_INFO",
+                FunctionType.HAPI_GET_NON_FUNGIBLE_TOKEN_INFO.name());
+        assertEquals("GET_TOKEN_INFO", FunctionType.HAPI_GET_TOKEN_INFO.name());
+        assertEquals("IS_APPROVED_FOR_ALL", FunctionType.ERC_IS_APPROVED_FOR_ALL.name());
+        assertEquals("MINT", FunctionType.HAPI_MINT.name());
+        assertEquals("NAME", FunctionType.ERC_NAME.name());
         assertEquals("NOT_SPECIFIED", FunctionType.NOT_SPECIFIED.name());
         assertEquals("OWNER", FunctionType.OWNER.name());
-        assertEquals("SYMBOL", FunctionType.SYMBOL.name());
-        assertEquals("TOTAL_SUPPLY", FunctionType.TOTAL_SUPPLY.name());
-        assertEquals("TOKEN_URI", FunctionType.TOKEN_URI.name());
+        assertEquals("SYMBOL", FunctionType.ERC_SYMBOL.name());
+        assertEquals("TOTAL_SUPPLY", FunctionType.ERC_TOTAL_SUPPLY.name());
+        assertEquals("TOKEN_URI", FunctionType.ERC_TOKEN_URI.name());
     }
 
     @Test

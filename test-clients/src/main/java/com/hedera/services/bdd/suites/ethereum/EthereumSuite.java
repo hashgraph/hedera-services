@@ -725,7 +725,7 @@ public class EthereumSuite extends HapiApiSuite {
                                                                 htsPrecompileResult()
                                                                         .forFunction(
                                                                                 FunctionType
-                                                                                        .TOTAL_SUPPLY)
+                                                                                        .ERC_TOTAL_SUPPLY)
                                                                         .withTotalSupply(
                                                                                 totalSupply)))));
     }

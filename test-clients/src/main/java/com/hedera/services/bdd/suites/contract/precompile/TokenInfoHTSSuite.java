@@ -238,7 +238,7 @@ public class TokenInfoHTSSuite extends HapiApiSuite {
                                                                                     htsPrecompileResult()
                                                                                             .forFunction(
                                                                                                     FunctionType
-                                                                                                            .GET_TOKEN_INFO)
+                                                                                                            .HAPI_GET_TOKEN_INFO)
                                                                                             .withStatus(
                                                                                                     SUCCESS)
                                                                                             .withTokenInfo(
@@ -348,7 +348,7 @@ public class TokenInfoHTSSuite extends HapiApiSuite {
                                                                                     htsPrecompileResult()
                                                                                             .forFunction(
                                                                                                     FunctionType
-                                                                                                            .GET_FUNGIBLE_TOKEN_INFO)
+                                                                                                            .HAPI_GET_FUNGIBLE_TOKEN_INFO)
                                                                                             .withStatus(
                                                                                                     SUCCESS)
                                                                                             .withDecimals(
@@ -501,7 +501,7 @@ public class TokenInfoHTSSuite extends HapiApiSuite {
                                                                                     htsPrecompileResult()
                                                                                             .forFunction(
                                                                                                     FunctionType
-                                                                                                            .GET_NON_FUNGIBLE_TOKEN_INFO)
+                                                                                                            .HAPI_GET_NON_FUNGIBLE_TOKEN_INFO)
                                                                                             .withStatus(
                                                                                                     SUCCESS)
                                                                                             .withSerialNumber(

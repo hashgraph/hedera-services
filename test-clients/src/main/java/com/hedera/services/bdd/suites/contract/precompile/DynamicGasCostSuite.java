@@ -980,7 +980,7 @@ public class DynamicGasCostSuite extends HapiApiSuite {
                                                         .contractCallResult(
                                                                 htsPrecompileResult()
                                                                         .forFunction(
-                                                                                FunctionType.MINT)
+                                                                                FunctionType.HAPI_MINT)
                                                                         .withTotalSupply(0)
                                                                         .withSerialNumbers()
                                                                         .withStatus(

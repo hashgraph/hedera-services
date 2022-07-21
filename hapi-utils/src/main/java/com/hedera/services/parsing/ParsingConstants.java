@@ -91,6 +91,9 @@ public final class ParsingConstants {
     public static final TupleType getNonFungibleTokenInfoType =
             TupleType.parse(RESPONSE_STATUS_AT_BEGINNING + NON_FUNGIBLE_TOKEN_INFO + ")");
     public static final TupleType isApprovedForAllType = booleanTuple;
+    public static final TupleType hapiAllowanceOfType = TupleType.parse("(int32,uint256)");
+    public static final TupleType hapiGetApprovedType = TupleType.parse("(int32,bytes32)");
+    public static final TupleType hapiIsApprovedForAllType = TupleType.parse("(int32,bool)");
     public static final TupleType mintReturnType = TupleType.parse("(int32,uint64,int64[])");
     public static final TupleType nameType = stringTuple;
     public static final TupleType notSpecifiedType = TupleType.parse(INT32);
@@ -100,24 +103,29 @@ public final class ParsingConstants {
     public static final TupleType totalSupplyType = bigIntegerTuple;
 
     public enum FunctionType {
-        ALLOWANCE,
-        APPROVE,
-        BALANCE,
-        BURN,
-        CREATE,
-        DECIMALS,
+        ERC_TOTAL_SUPPLY,
+        ERC_DECIMALS,
+        ERC_BALANCE,
+        ERC_OWNER,
+        ERC_TOKEN_URI,
+        ERC_NAME,
+        ERC_SYMBOL,
         ERC_TRANSFER,
-        GET_APPROVED,
-        GET_FUNGIBLE_TOKEN_INFO,
-        GET_NON_FUNGIBLE_TOKEN_INFO,
-        GET_TOKEN_INFO,
-        IS_APPROVED_FOR_ALL,
-        MINT,
-        NAME,
-        NOT_SPECIFIED,
-        OWNER,
-        SYMBOL,
-        TOTAL_SUPPLY,
-        TOKEN_URI
+        ERC_ALLOWANCE,
+        ERC_APPROVE,
+        ERC_GET_APPROVED,
+        ERC_IS_APPROVED_FOR_ALL,
+        HAPI_CREATE,
+        HAPI_MINT,
+        HAPI_BURN,
+        HAPI_ALLOWANCE,
+        HAPI_APPROVE,
+        HAPI_APPROVE_NFT,
+        HAPI_GET_APPROVED,
+        HAPI_GET_FUNGIBLE_TOKEN_INFO,
+        HAPI_GET_TOKEN_INFO,
+        HAPI_GET_NON_FUNGIBLE_TOKEN_INFO,
+        HAPI_IS_APPROVED_FOR_ALL,
+        NOT_SPECIFIED
     }
 }

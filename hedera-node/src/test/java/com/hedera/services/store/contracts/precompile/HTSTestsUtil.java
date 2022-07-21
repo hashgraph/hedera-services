@@ -80,7 +80,7 @@ public class HTSTestsUtil {
     public static final EntityId treasuryEntityId =
             EntityId.fromAddress(
                     Address.wrap(
-                            Bytes.wrap("0x00000000000000000000000000000000000005cc".getBytes())));
+                            Bytes.fromHexString("0x00000000000000000000000000000000000005cc")));
     public static final EntityId tokenAddressConvertedToEntityId =
             EntityId.fromAddress(tokenAddress);
     public static final ContractID parentContractAddressConvertedToContractId =
@@ -127,9 +127,11 @@ public class HTSTestsUtil {
     public static final Association multiAssociateOp =
             Association.singleAssociation(accountMerkleId, tokenMerkleId);
     public static final Address recipientAddress = Address.ALTBN128_ADD;
+
     public static final Address contractAddress = Address.ALTBN128_MUL;
     public static final ContractID contractId =
             EntityIdUtils.contractIdFromEvmAddress(contractAddress);
+    public static final EntityId ownerEntity = EntityId.fromAddress(contractAddress);
 
     public static final BurnWrapper nonFungibleBurn =
             BurnWrapper.forNonFungible(nonFungible, targetSerialNos);

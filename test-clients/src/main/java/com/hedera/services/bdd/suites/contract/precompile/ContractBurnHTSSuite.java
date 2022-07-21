@@ -163,7 +163,7 @@ public class ContractBurnHTSSuite extends HapiApiSuite {
                                                         .contractCallResult(
                                                                 htsPrecompileResult()
                                                                         .forFunction(
-                                                                                FunctionType.BURN)
+                                                                                FunctionType.HAPI_BURN)
                                                                         .withStatus(SUCCESS)
                                                                         .withTotalSupply(49)))
                                         .newTotalSupply(49)
@@ -186,7 +186,7 @@ public class ContractBurnHTSSuite extends HapiApiSuite {
                                                         .contractCallResult(
                                                                 htsPrecompileResult()
                                                                         .forFunction(
-                                                                                FunctionType.BURN)
+                                                                                FunctionType.HAPI_BURN)
                                                                         .withStatus(SUCCESS)
                                                                         .withTotalSupply(48)))
                                         .newTotalSupply(48)
@@ -250,7 +250,7 @@ public class ContractBurnHTSSuite extends HapiApiSuite {
                                                         .contractCallResult(
                                                                 htsPrecompileResult()
                                                                         .forFunction(
-                                                                                FunctionType.BURN)
+                                                                                FunctionType.HAPI_BURN)
                                                                         .withStatus(SUCCESS)
                                                                         .withTotalSupply(1)))
                                         .newTotalSupply(1)))
@@ -320,7 +320,7 @@ public class ContractBurnHTSSuite extends HapiApiSuite {
                                                         .contractCallResult(
                                                                 htsPrecompileResult()
                                                                         .forFunction(
-                                                                                FunctionType.MINT)
+                                                                                FunctionType.HAPI_MINT)
                                                                         .withStatus(SUCCESS)
                                                                         .withTotalSupply(51)
                                                                         .withSerialNumbers()))
@@ -335,7 +335,7 @@ public class ContractBurnHTSSuite extends HapiApiSuite {
                                                         .contractCallResult(
                                                                 htsPrecompileResult()
                                                                         .forFunction(
-                                                                                FunctionType.BURN)
+                                                                                FunctionType.HAPI_BURN)
                                                                         .withStatus(SUCCESS)
                                                                         .withTotalSupply(50)))
                                         .tokenTransfers(
@@ -422,7 +422,7 @@ public class ContractBurnHTSSuite extends HapiApiSuite {
                                                         .contractCallResult(
                                                                 htsPrecompileResult()
                                                                         .forFunction(
-                                                                                FunctionType.BURN)
+                                                                                FunctionType.HAPI_BURN)
                                                                         .withStatus(SUCCESS)
                                                                         .withTotalSupply(1))),
                                 recordWith()

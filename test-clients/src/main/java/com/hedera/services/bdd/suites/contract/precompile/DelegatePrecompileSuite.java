@@ -226,7 +226,7 @@ public class DelegatePrecompileSuite extends HapiApiSuite {
                                                         .contractCallResult(
                                                                 htsPrecompileResult()
                                                                         .forFunction(
-                                                                                FunctionType.BURN)
+                                                                                FunctionType.HAPI_BURN)
                                                                         .withStatus(SUCCESS)
                                                                         .withTotalSupply(1)))
                                         .newTotalSupply(1)),
@@ -286,7 +286,7 @@ public class DelegatePrecompileSuite extends HapiApiSuite {
                                                         .contractCallResult(
                                                                 htsPrecompileResult()
                                                                         .forFunction(
-                                                                                FunctionType.MINT)
+                                                                                FunctionType.HAPI_MINT)
                                                                         .withStatus(SUCCESS)
                                                                         .withTotalSupply(51)
                                                                         .withSerialNumbers()))

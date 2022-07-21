@@ -253,7 +253,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                         .contractCallResult(
                                                                 htsPrecompileResult()
                                                                         .forFunction(
-                                                                                FunctionType.BURN)
+                                                                                FunctionType.HAPI_BURN)
                                                                         .withStatus(SUCCESS)
                                                                         .withTotalSupply(49)))
                                         .tokenTransfers(
@@ -278,7 +278,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                         .contractCallResult(
                                                                 htsPrecompileResult()
                                                                         .forFunction(
-                                                                                FunctionType.BURN)
+                                                                                FunctionType.HAPI_BURN)
                                                                         .withStatus(SUCCESS)
                                                                         .withTotalSupply(48)))
                                         .tokenTransfers(
@@ -497,7 +497,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                         .contractCallResult(
                                                                 htsPrecompileResult()
                                                                         .forFunction(
-                                                                                FunctionType.BURN)
+                                                                                FunctionType.HAPI_BURN)
                                                                         .withStatus(
                                                                                 INVALID_SIGNATURE)))),
                         getAccountBalance(TOKEN_TREASURY).hasTokenBalance(VANILLA_TOKEN, 2));
@@ -558,7 +558,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                         .contractCallResult(
                                                                 htsPrecompileResult()
                                                                         .forFunction(
-                                                                                FunctionType.MINT)
+                                                                                FunctionType.HAPI_MINT)
                                                                         .withStatus(
                                                                                 INVALID_SIGNATURE)
                                                                         .withSerialNumbers()))),
@@ -1041,7 +1041,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                         .contractCallResult(
                                                                 htsPrecompileResult()
                                                                         .forFunction(
-                                                                                FunctionType.MINT)
+                                                                                FunctionType.HAPI_MINT)
                                                                         .withStatus(SUCCESS)
                                                                         .withTotalSupply(10)
                                                                         .withSerialNumbers()))
@@ -1113,7 +1113,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                         .contractCallResult(
                                                                 htsPrecompileResult()
                                                                         .forFunction(
-                                                                                FunctionType.MINT)
+                                                                                FunctionType.HAPI_MINT)
                                                                         .withStatus(SUCCESS)
                                                                         .withTotalSupply(10)
                                                                         .withSerialNumbers()))
@@ -1586,7 +1586,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                         .contractCallResult(
                                                                 htsPrecompileResult()
                                                                         .forFunction(
-                                                                                FunctionType.BURN)
+                                                                                FunctionType.HAPI_BURN)
                                                                         .withStatus(SUCCESS)
                                                                         .withTotalSupply(49)))
                                         .tokenTransfers(
@@ -2990,7 +2990,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                         .contractCallResult(
                                                                 htsPrecompileResult()
                                                                         .forFunction(
-                                                                                FunctionType.BURN)
+                                                                                FunctionType.HAPI_BURN)
                                                                         .withStatus(SUCCESS)
                                                                         .withTotalSupply(49)))
                                         .tokenTransfers(
@@ -3067,7 +3067,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                         .contractCallResult(
                                                                 htsPrecompileResult()
                                                                         .forFunction(
-                                                                                FunctionType.BURN)
+                                                                                FunctionType.HAPI_BURN)
                                                                         .withStatus(
                                                                                 INVALID_SIGNATURE)))),
                         childRecordsCheck(
@@ -3080,7 +3080,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                         .contractCallResult(
                                                                 htsPrecompileResult()
                                                                         .forFunction(
-                                                                                FunctionType.BURN)
+                                                                                FunctionType.HAPI_BURN)
                                                                         .withStatus(SUCCESS)
                                                                         .withTotalSupply(99)))
                                         .newTotalSupply(99)),
@@ -3260,7 +3260,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                         .contractCallResult(
                                                                 htsPrecompileResult()
                                                                         .forFunction(
-                                                                                FunctionType.MINT)
+                                                                                FunctionType.HAPI_MINT)
                                                                         .withStatus(SUCCESS)
                                                                         .withTotalSupply(51)
                                                                         .withSerialNumbers()))
@@ -3276,7 +3276,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                         .contractCallResult(
                                                                 htsPrecompileResult()
                                                                         .forFunction(
-                                                                                FunctionType.BURN)
+                                                                                FunctionType.HAPI_BURN)
                                                                         .withStatus(SUCCESS)
                                                                         .withTotalSupply(50)))
                                         .tokenTransfers(
@@ -3294,7 +3294,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                         .contractCallResult(
                                                                 htsPrecompileResult()
                                                                         .forFunction(
-                                                                                FunctionType.MINT)
+                                                                                FunctionType.HAPI_MINT)
                                                                         .withStatus(SUCCESS)
                                                                         .withTotalSupply(51)
                                                                         .withSerialNumbers()))
@@ -3310,7 +3310,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                         .contractCallResult(
                                                                 htsPrecompileResult()
                                                                         .forFunction(
-                                                                                FunctionType.BURN)
+                                                                                FunctionType.HAPI_BURN)
                                                                         .withStatus(SUCCESS)
                                                                         .withTotalSupply(50)))
                                         .tokenTransfers(
@@ -3328,7 +3328,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                         .contractCallResult(
                                                                 htsPrecompileResult()
                                                                         .forFunction(
-                                                                                FunctionType.MINT)
+                                                                                FunctionType.HAPI_MINT)
                                                                         .withStatus(SUCCESS)
                                                                         .withTotalSupply(51)
                                                                         .withSerialNumbers()))
@@ -3344,7 +3344,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                         .contractCallResult(
                                                                 htsPrecompileResult()
                                                                         .forFunction(
-                                                                                FunctionType.BURN)
+                                                                                FunctionType.HAPI_BURN)
                                                                         .withStatus(SUCCESS)
                                                                         .withTotalSupply(50)))
                                         .tokenTransfers(
@@ -3362,7 +3362,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                         .contractCallResult(
                                                                 htsPrecompileResult()
                                                                         .forFunction(
-                                                                                FunctionType.MINT)
+                                                                                FunctionType.HAPI_MINT)
                                                                         .withStatus(SUCCESS)
                                                                         .withTotalSupply(51)
                                                                         .withSerialNumbers()))
@@ -3378,7 +3378,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                         .contractCallResult(
                                                                 htsPrecompileResult()
                                                                         .forFunction(
-                                                                                FunctionType.BURN)
+                                                                                FunctionType.HAPI_BURN)
                                                                         .withStatus(SUCCESS)
                                                                         .withTotalSupply(50)))
                                         .tokenTransfers(
@@ -3396,7 +3396,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                         .contractCallResult(
                                                                 htsPrecompileResult()
                                                                         .forFunction(
-                                                                                FunctionType.MINT)
+                                                                                FunctionType.HAPI_MINT)
                                                                         .withStatus(SUCCESS)
                                                                         .withTotalSupply(51)
                                                                         .withSerialNumbers()))
@@ -3412,7 +3412,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                         .contractCallResult(
                                                                 htsPrecompileResult()
                                                                         .forFunction(
-                                                                                FunctionType.BURN)
+                                                                                FunctionType.HAPI_BURN)
                                                                         .withStatus(SUCCESS)
                                                                         .withTotalSupply(50)))
                                         .tokenTransfers(
@@ -3430,7 +3430,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                         .contractCallResult(
                                                                 htsPrecompileResult()
                                                                         .forFunction(
-                                                                                FunctionType.MINT)
+                                                                                FunctionType.HAPI_MINT)
                                                                         .withStatus(SUCCESS)
                                                                         .withTotalSupply(51)
                                                                         .withSerialNumbers()))
@@ -3446,7 +3446,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                         .contractCallResult(
                                                                 htsPrecompileResult()
                                                                         .forFunction(
-                                                                                FunctionType.BURN)
+                                                                                FunctionType.HAPI_BURN)
                                                                         .withStatus(SUCCESS)
                                                                         .withTotalSupply(50)))
                                         .tokenTransfers(
@@ -3464,7 +3464,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                         .contractCallResult(
                                                                 htsPrecompileResult()
                                                                         .forFunction(
-                                                                                FunctionType.MINT)
+                                                                                FunctionType.HAPI_MINT)
                                                                         .withStatus(SUCCESS)
                                                                         .withTotalSupply(51)
                                                                         .withSerialNumbers()))
@@ -3480,7 +3480,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                         .contractCallResult(
                                                                 htsPrecompileResult()
                                                                         .forFunction(
-                                                                                FunctionType.BURN)
+                                                                                FunctionType.HAPI_BURN)
                                                                         .withStatus(SUCCESS)
                                                                         .withTotalSupply(50)))
                                         .tokenTransfers(
@@ -3498,7 +3498,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                         .contractCallResult(
                                                                 htsPrecompileResult()
                                                                         .forFunction(
-                                                                                FunctionType.MINT)
+                                                                                FunctionType.HAPI_MINT)
                                                                         .withStatus(SUCCESS)
                                                                         .withTotalSupply(51)
                                                                         .withSerialNumbers()))
@@ -3514,7 +3514,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                         .contractCallResult(
                                                                 htsPrecompileResult()
                                                                         .forFunction(
-                                                                                FunctionType.BURN)
+                                                                                FunctionType.HAPI_BURN)
                                                                         .withStatus(SUCCESS)
                                                                         .withTotalSupply(50)))
                                         .tokenTransfers(

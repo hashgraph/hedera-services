@@ -15,26 +15,11 @@
  */
 package com.hedera.services.store.contracts.precompile.codec;
 
-import static com.hedera.services.parsing.ParsingConstants.FunctionType.MINT;
-import static com.hedera.services.parsing.ParsingConstants.allowanceOfType;
-import static com.hedera.services.parsing.ParsingConstants.approveOfType;
-import static com.hedera.services.parsing.ParsingConstants.balanceOfType;
-import static com.hedera.services.parsing.ParsingConstants.burnReturnType;
-import static com.hedera.services.parsing.ParsingConstants.createReturnType;
-import static com.hedera.services.parsing.ParsingConstants.decimalsType;
-import static com.hedera.services.parsing.ParsingConstants.ercTransferType;
-import static com.hedera.services.parsing.ParsingConstants.getApprovedType;
+import static com.hedera.services.parsing.ParsingConstants.FunctionType.HAPI_MINT;
 import static com.hedera.services.parsing.ParsingConstants.getFungibleTokenInfoType;
 import static com.hedera.services.parsing.ParsingConstants.getNonFungibleTokenInfoType;
 import static com.hedera.services.parsing.ParsingConstants.getTokenInfoType;
-import static com.hedera.services.parsing.ParsingConstants.isApprovedForAllType;
-import static com.hedera.services.parsing.ParsingConstants.mintReturnType;
-import static com.hedera.services.parsing.ParsingConstants.nameType;
 import static com.hedera.services.parsing.ParsingConstants.notSpecifiedType;
-import static com.hedera.services.parsing.ParsingConstants.ownerOfType;
-import static com.hedera.services.parsing.ParsingConstants.symbolType;
-import static com.hedera.services.parsing.ParsingConstants.tokenUriType;
-import static com.hedera.services.parsing.ParsingConstants.totalSupplyType;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.esaulpaugh.headlong.abi.Tuple;
@@ -56,6 +41,29 @@ import org.hyperledger.besu.evm.log.LogTopic;
 public class EncodingFacade {
     public static final Bytes SUCCESS_RESULT = resultFrom(SUCCESS);
     private static final long[] NO_MINTED_SERIAL_NUMBERS = new long[0];
+    private static final String STRING_RETURN_TYPE = "(string)";
+    public static final String UINT256_RETURN_TYPE = "(uint256)";
+    public static final String BOOL_RETURN_TYPE = "(bool)";
+    private static final TupleType mintReturnType = TupleType.parse("(int32,uint64,int64[])");
+    private static final TupleType burnReturnType = TupleType.parse("(int32,uint64)");
+    private static final TupleType createReturnType = TupleType.parse("(int32,address)");
+    private static final TupleType totalSupplyType = TupleType.parse(UINT256_RETURN_TYPE);
+    private static final TupleType balanceOfType = TupleType.parse(UINT256_RETURN_TYPE);
+    private static final TupleType allowanceOfType = TupleType.parse(UINT256_RETURN_TYPE);
+    private static final TupleType hapiAllowanceOfType = TupleType.parse("(int32,uint256)");
+    private static final TupleType approveOfType = TupleType.parse(BOOL_RETURN_TYPE);
+    private static final TupleType hapiApproveOfType = TupleType.parse("(int32,bool)");
+    private static final TupleType hapiApproveNftType = TupleType.parse("(int32)");
+    private static final TupleType decimalsType = TupleType.parse("(uint8)");
+    private static final TupleType ownerOfType = TupleType.parse("(address)");
+    private static final TupleType getApprovedType = TupleType.parse("(address)");
+    private static final TupleType hapiGetApprovedType = TupleType.parse("(int32,address)");
+    private static final TupleType nameType = TupleType.parse(STRING_RETURN_TYPE);
+    private static final TupleType symbolType = TupleType.parse(STRING_RETURN_TYPE);
+    private static final TupleType tokenUriType = TupleType.parse(STRING_RETURN_TYPE);
+    private static final TupleType ercTransferType = TupleType.parse(BOOL_RETURN_TYPE);
+    private static final TupleType isApprovedForAllType = TupleType.parse(BOOL_RETURN_TYPE);
+    private static final TupleType hapiIsApprovedForAllType = TupleType.parse("(int32,bool)");
 
     @Inject
     public EncodingFacade() {
@@ -68,68 +76,105 @@ public class EncodingFacade {
 
     public Bytes encodeTokenUri(final String tokenUri) {
         return functionResultBuilder()
-                .forFunction(FunctionType.TOKEN_URI)
+                .forFunction(FunctionType.ERC_TOKEN_URI)
                 .withTokenUri(tokenUri)
                 .build();
     }
 
     public Bytes encodeSymbol(final String symbol) {
-        return functionResultBuilder().forFunction(FunctionType.SYMBOL).withSymbol(symbol).build();
+        return functionResultBuilder()
+                .forFunction(FunctionType.ERC_SYMBOL)
+                .withSymbol(symbol)
+                .build();
     }
 
     public Bytes encodeName(final String name) {
-        return functionResultBuilder().forFunction(FunctionType.NAME).withName(name).build();
+        return functionResultBuilder().forFunction(FunctionType.ERC_NAME).withName(name).build();
     }
 
     public Bytes encodeOwner(final Address address) {
-        return functionResultBuilder().forFunction(FunctionType.OWNER).withOwner(address).build();
+        return functionResultBuilder()
+                .forFunction(FunctionType.ERC_OWNER)
+                .withOwner(address)
+                .build();
     }
 
-    public Bytes encodeGetApproved(final Address spender) {
+    public Bytes encodeGetApproved(final Address approved) {
         return functionResultBuilder()
-                .forFunction(FunctionType.GET_APPROVED)
-                .withSpender(spender)
+                .forFunction(FunctionType.ERC_GET_APPROVED)
+                .withApproved(approved)
+                .build();
+    }
+
+    public Bytes encodeGetApproved(final int status, final Address approved) {
+        return functionResultBuilder()
+                .forFunction(FunctionType.HAPI_GET_APPROVED)
+                .withStatus(status)
+                .withApproved(approved)
                 .build();
     }
 
     public Bytes encodeBalance(final long balance) {
         return functionResultBuilder()
-                .forFunction(FunctionType.BALANCE)
+                .forFunction(FunctionType.ERC_BALANCE)
                 .withBalance(balance)
                 .build();
     }
 
     public Bytes encodeAllowance(final long allowance) {
         return functionResultBuilder()
-                .forFunction(FunctionType.ALLOWANCE)
+                .forFunction(FunctionType.ERC_ALLOWANCE)
+                .withAllowance(allowance)
+                .build();
+    }
+
+    public Bytes encodeAllowance(final int responseCode, final long allowance) {
+        return functionResultBuilder()
+                .forFunction(FunctionType.HAPI_ALLOWANCE)
+                .withStatus(responseCode)
                 .withAllowance(allowance)
                 .build();
     }
 
     public Bytes encodeApprove(final boolean approve) {
         return functionResultBuilder()
-                .forFunction(FunctionType.APPROVE)
+                .forFunction(FunctionType.ERC_APPROVE)
                 .withApprove(approve)
+                .build();
+    }
+
+    public Bytes encodeApprove(final int responseCode, final boolean approve) {
+        return functionResultBuilder()
+                .forFunction(FunctionType.HAPI_APPROVE)
+                .withStatus(responseCode)
+                .withApprove(approve)
+                .build();
+    }
+
+    public Bytes encodeApproveNFT(final int responseCode) {
+        return functionResultBuilder()
+                .forFunction(FunctionType.HAPI_APPROVE_NFT)
+                .withStatus(responseCode)
                 .build();
     }
 
     public Bytes encodeDecimals(final int decimals) {
         return functionResultBuilder()
-                .forFunction(FunctionType.DECIMALS)
+                .forFunction(FunctionType.ERC_DECIMALS)
                 .withDecimals(decimals)
                 .build();
     }
 
     public Bytes encodeTotalSupply(final long totalSupply) {
         return functionResultBuilder()
-                .forFunction(FunctionType.TOTAL_SUPPLY)
+                .forFunction(FunctionType.ERC_TOTAL_SUPPLY)
                 .withTotalSupply(totalSupply)
                 .build();
     }
 
     public Bytes encodeMintSuccess(final long totalSupply, final long[] serialNumbers) {
         return functionResultBuilder()
-                .forFunction(MINT)
+                .forFunction(HAPI_MINT)
                 .withStatus(SUCCESS.getNumber())
                 .withTotalSupply(totalSupply)
                 .withSerialNumbers(serialNumbers != null ? serialNumbers : NO_MINTED_SERIAL_NUMBERS)
@@ -138,7 +183,7 @@ public class EncodingFacade {
 
     public Bytes encodeMintFailure(final ResponseCodeEnum status) {
         return functionResultBuilder()
-                .forFunction(MINT)
+                .forFunction(HAPI_MINT)
                 .withStatus(status.getNumber())
                 .withTotalSupply(0L)
                 .withSerialNumbers(NO_MINTED_SERIAL_NUMBERS)
@@ -147,7 +192,7 @@ public class EncodingFacade {
 
     public Bytes encodeBurnSuccess(final long totalSupply) {
         return functionResultBuilder()
-                .forFunction(FunctionType.BURN)
+                .forFunction(FunctionType.HAPI_BURN)
                 .withStatus(SUCCESS.getNumber())
                 .withTotalSupply(totalSupply)
                 .build();
@@ -155,7 +200,7 @@ public class EncodingFacade {
 
     public Bytes encodeBurnFailure(final ResponseCodeEnum status) {
         return functionResultBuilder()
-                .forFunction(FunctionType.BURN)
+                .forFunction(FunctionType.HAPI_BURN)
                 .withStatus(status.getNumber())
                 .withTotalSupply(0L)
                 .build();
@@ -170,7 +215,7 @@ public class EncodingFacade {
 
     public Bytes encodeCreateSuccess(final Address newTokenAddress) {
         return functionResultBuilder()
-                .forFunction(FunctionType.CREATE)
+                .forFunction(FunctionType.HAPI_CREATE)
                 .withStatus(SUCCESS.getNumber())
                 .withNewTokenAddress(newTokenAddress)
                 .build();
@@ -178,7 +223,7 @@ public class EncodingFacade {
 
     public Bytes encodeCreateFailure(final ResponseCodeEnum status) {
         return functionResultBuilder()
-                .forFunction(FunctionType.CREATE)
+                .forFunction(FunctionType.HAPI_CREATE)
                 .withStatus(status.getNumber())
                 .withNewTokenAddress(Address.ZERO)
                 .build();
@@ -186,14 +231,22 @@ public class EncodingFacade {
 
     public Bytes encodeIsApprovedForAll(final boolean isApprovedForAllStatus) {
         return functionResultBuilder()
-                .forFunction(FunctionType.IS_APPROVED_FOR_ALL)
+                .forFunction(FunctionType.ERC_IS_APPROVED_FOR_ALL)
+                .withIsApprovedForAllStatus(isApprovedForAllStatus)
+                .build();
+    }
+
+    public Bytes encodeIsApprovedForAll(final int status, final boolean isApprovedForAllStatus) {
+        return functionResultBuilder()
+                .forFunction(FunctionType.HAPI_IS_APPROVED_FOR_ALL)
+                .withStatus(status)
                 .withIsApprovedForAllStatus(isApprovedForAllStatus)
                 .build();
     }
 
     public Bytes encodeGetTokenInfo(final TokenInfo tokenInfo) {
         return functionResultBuilder()
-                .forFunction(FunctionType.GET_TOKEN_INFO)
+                .forFunction(FunctionType.HAPI_GET_TOKEN_INFO)
                 .withStatus(SUCCESS.getNumber())
                 .withTokenInfo(tokenInfo)
                 .build();
@@ -201,7 +254,7 @@ public class EncodingFacade {
 
     public Bytes encodeGetFungibleTokenInfo(final FungibleTokenInfo fungibleTokenInfo) {
         return functionResultBuilder()
-                .forFunction(FunctionType.GET_FUNGIBLE_TOKEN_INFO)
+                .forFunction(FunctionType.HAPI_GET_FUNGIBLE_TOKEN_INFO)
                 .withStatus(SUCCESS.getNumber())
                 .withDecimals(fungibleTokenInfo.decimals())
                 .withTokenInfo(fungibleTokenInfo.tokenInfo())
@@ -210,14 +263,14 @@ public class EncodingFacade {
 
     public Bytes encodeGetNonFungibleTokenInfo(final NonFungibleTokenInfo nonFungibleTokenInfo) {
         return functionResultBuilder()
-                .forFunction(FunctionType.GET_NON_FUNGIBLE_TOKEN_INFO)
+                .forFunction(FunctionType.HAPI_GET_NON_FUNGIBLE_TOKEN_INFO)
                 .withStatus(SUCCESS.getNumber())
                 .withTokenInfo(nonFungibleTokenInfo.tokenInfo())
                 .withSerialNumber(nonFungibleTokenInfo.serialNumber())
                 .withCreationTime(nonFungibleTokenInfo.creationTime())
                 .withTokenUri(nonFungibleTokenInfo.metadata())
                 .withOwner(nonFungibleTokenInfo.ownerId())
-                .withSpender(nonFungibleTokenInfo.spenderId())
+                .withApproved(nonFungibleTokenInfo.spenderId())
                 .build();
     }
 
@@ -241,7 +294,7 @@ public class EncodingFacade {
         private int decimals;
         private long creationTime;
         private Address owner;
-        private Address spender;
+        private Address approved;
         private String name;
         private String symbol;
         private String metadata;
@@ -250,24 +303,29 @@ public class EncodingFacade {
         private FunctionResultBuilder forFunction(final FunctionType functionType) {
             this.tupleType =
                     switch (functionType) {
-                        case CREATE -> createReturnType;
-                        case MINT -> mintReturnType;
-                        case BURN -> burnReturnType;
-                        case TOTAL_SUPPLY -> totalSupplyType;
-                        case DECIMALS -> decimalsType;
-                        case BALANCE -> balanceOfType;
-                        case OWNER -> ownerOfType;
-                        case NAME -> nameType;
-                        case SYMBOL -> symbolType;
-                        case TOKEN_URI -> tokenUriType;
+                        case HAPI_CREATE -> createReturnType;
+                        case HAPI_MINT -> mintReturnType;
+                        case HAPI_BURN -> burnReturnType;
+                        case ERC_TOTAL_SUPPLY -> totalSupplyType;
+                        case ERC_DECIMALS -> decimalsType;
+                        case ERC_BALANCE -> balanceOfType;
+                        case ERC_OWNER -> ownerOfType;
+                        case ERC_NAME -> nameType;
+                        case ERC_SYMBOL -> symbolType;
+                        case ERC_TOKEN_URI -> tokenUriType;
                         case ERC_TRANSFER -> ercTransferType;
-                        case ALLOWANCE -> allowanceOfType;
-                        case APPROVE -> approveOfType;
-                        case GET_APPROVED -> getApprovedType;
-                        case IS_APPROVED_FOR_ALL -> isApprovedForAllType;
-                        case GET_TOKEN_INFO -> getTokenInfoType;
-                        case GET_FUNGIBLE_TOKEN_INFO -> getFungibleTokenInfoType;
-                        case GET_NON_FUNGIBLE_TOKEN_INFO -> getNonFungibleTokenInfoType;
+                        case ERC_ALLOWANCE -> allowanceOfType;
+                        case ERC_APPROVE -> approveOfType;
+                        case ERC_GET_APPROVED -> getApprovedType;
+                        case ERC_IS_APPROVED_FOR_ALL -> isApprovedForAllType;
+                        case HAPI_ALLOWANCE -> hapiAllowanceOfType;
+                        case HAPI_APPROVE -> hapiApproveOfType;
+                        case HAPI_APPROVE_NFT -> hapiApproveNftType;
+                        case HAPI_GET_APPROVED -> hapiGetApprovedType;
+                        case HAPI_IS_APPROVED_FOR_ALL -> hapiIsApprovedForAllType;
+                        case HAPI_GET_TOKEN_INFO -> getTokenInfoType;
+                        case HAPI_GET_FUNGIBLE_TOKEN_INFO -> getFungibleTokenInfoType;
+                        case HAPI_GET_NON_FUNGIBLE_TOKEN_INFO -> getNonFungibleTokenInfoType;
                         default -> notSpecifiedType;
                     };
 
@@ -320,8 +378,8 @@ public class EncodingFacade {
             return this;
         }
 
-        private FunctionResultBuilder withSpender(final Address spender) {
-            this.spender = spender;
+        private FunctionResultBuilder withApproved(final Address approved) {
+            this.approved = approved;
             return this;
         }
 
@@ -370,26 +428,33 @@ public class EncodingFacade {
         private Bytes build() {
             final var result =
                     switch (functionType) {
-                        case CREATE -> Tuple.of(
+                        case HAPI_CREATE -> Tuple.of(
                                 status, convertBesuAddressToHeadlongAddress(newTokenAddress));
-                        case MINT -> Tuple.of(
+                        case HAPI_MINT -> Tuple.of(
                                 status, BigInteger.valueOf(totalSupply), serialNumbers);
-                        case BURN -> Tuple.of(status, BigInteger.valueOf(totalSupply));
-                        case TOTAL_SUPPLY -> Tuple.of(BigInteger.valueOf(totalSupply));
-                        case DECIMALS -> Tuple.of(decimals);
-                        case BALANCE -> Tuple.of(BigInteger.valueOf(balance));
-                        case OWNER -> Tuple.of(convertBesuAddressToHeadlongAddress(owner));
-                        case NAME -> Tuple.of(name);
-                        case SYMBOL -> Tuple.of(symbol);
-                        case TOKEN_URI -> Tuple.of(metadata);
+                        case HAPI_BURN -> Tuple.of(status, BigInteger.valueOf(totalSupply));
+                        case ERC_TOTAL_SUPPLY -> Tuple.of(BigInteger.valueOf(totalSupply));
+                        case ERC_DECIMALS -> Tuple.of(decimals);
+                        case ERC_BALANCE -> Tuple.of(BigInteger.valueOf(balance));
+                        case ERC_OWNER -> Tuple.of(convertBesuAddressToHeadlongAddress(owner));
+                        case ERC_NAME -> Tuple.of(name);
+                        case ERC_SYMBOL -> Tuple.of(symbol);
+                        case ERC_TOKEN_URI -> Tuple.of(metadata);
                         case ERC_TRANSFER -> Tuple.of(ercFungibleTransferStatus);
-                        case ALLOWANCE -> Tuple.of(BigInteger.valueOf(allowance));
-                        case APPROVE -> Tuple.of(approve);
-                        case GET_APPROVED -> Tuple.of(convertBesuAddressToHeadlongAddress(spender));
-                        case IS_APPROVED_FOR_ALL -> Tuple.of(isApprovedForAllStatus);
-                        case GET_TOKEN_INFO -> getTupleForGetTokenInfo();
-                        case GET_FUNGIBLE_TOKEN_INFO -> getTupleForGetFungibleTokenInfo();
-                        case GET_NON_FUNGIBLE_TOKEN_INFO -> getTupleForGetNonFungibleTokenInfo();
+                        case ERC_ALLOWANCE -> Tuple.of(BigInteger.valueOf(allowance));
+                        case ERC_APPROVE -> Tuple.of(approve);
+                        case ERC_GET_APPROVED -> Tuple.of(
+                                convertBesuAddressToHeadlongAddress(approved));
+                        case ERC_IS_APPROVED_FOR_ALL -> Tuple.of(isApprovedForAllStatus);
+                        case HAPI_APPROVE -> Tuple.of(status, approve);
+                        case HAPI_APPROVE_NFT -> Tuple.of(status);
+                        case HAPI_ALLOWANCE -> Tuple.of(status, BigInteger.valueOf(allowance));
+                        case HAPI_GET_APPROVED -> Tuple.of(
+                                status, convertBesuAddressToHeadlongAddress(approved));
+                        case HAPI_IS_APPROVED_FOR_ALL -> Tuple.of(status, isApprovedForAllStatus);
+                        case HAPI_GET_TOKEN_INFO -> getTupleForGetTokenInfo();
+                        case HAPI_GET_FUNGIBLE_TOKEN_INFO -> getTupleForGetFungibleTokenInfo();
+                        case HAPI_GET_NON_FUNGIBLE_TOKEN_INFO -> getTupleForGetNonFungibleTokenInfo();
                         default -> Tuple.of(status);
                     };
 
@@ -413,7 +478,7 @@ public class EncodingFacade {
                             convertBesuAddressToHeadlongAddress(owner),
                             creationTime,
                             metadata.getBytes(),
-                            convertBesuAddressToHeadlongAddress(spender)));
+                            convertBesuAddressToHeadlongAddress(approved)));
         }
 
         private Tuple getTupleForTokenInfo() {

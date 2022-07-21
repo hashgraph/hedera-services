@@ -29,6 +29,9 @@ import static com.hedera.services.parsing.ParsingConstants.burnReturnType;
 import static com.hedera.services.parsing.ParsingConstants.decimalsType;
 import static com.hedera.services.parsing.ParsingConstants.ercTransferType;
 import static com.hedera.services.parsing.ParsingConstants.getApprovedType;
+import static com.hedera.services.parsing.ParsingConstants.hapiAllowanceOfType;
+import static com.hedera.services.parsing.ParsingConstants.hapiGetApprovedType;
+import static com.hedera.services.parsing.ParsingConstants.hapiIsApprovedForAllType;
 import static com.hedera.services.parsing.ParsingConstants.isApprovedForAllType;
 import static com.hedera.services.parsing.ParsingConstants.mintReturnType;
 import static com.hedera.services.parsing.ParsingConstants.nameType;
@@ -41,6 +44,7 @@ import static com.hedera.services.parsing.ParsingConstants.totalSupplyType;
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.esaulpaugh.headlong.abi.TupleType;
 import com.hedera.services.bdd.suites.utils.contracts.ContractCallResult;
+import com.hedera.services.parsing.ParsingConstants;
 import com.hedera.services.parsing.ParsingConstants.FunctionType;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.math.BigInteger;
@@ -49,37 +53,38 @@ import org.apache.tuweni.bytes.Bytes;
 public class HTSPrecompileResult implements ContractCallResult {
     private HTSPrecompileResult() {}
 
+    public static final String TOKEN_INFO_REPLACED_ADDRESS =
+        "("
+            + HEDERA_TOKEN.replace(removeBrackets(ADDRESS), removeBrackets(BYTES32))
+            + ",int64,bool,bool,bool,"
+            + FIXED_FEE.replace(removeBrackets(ADDRESS), removeBrackets(BYTES32))
+            + ARRAY_BRACKETS
+            + ","
+            + FRACTIONAL_FEE.replace("address", "bytes32")
+            + ARRAY_BRACKETS
+            + ","
+            + ROYALTY_FEE.replace("address", "bytes32")
+            + ARRAY_BRACKETS
+            + ",string"
+            + ")";
+    public static final String FUNGIBLE_TOKEN_INFO_REPLACED_ADDRESS =
+        "(" + TOKEN_INFO_REPLACED_ADDRESS + ",int32" + ")";
+    public static final String NON_FUNGIBLE_TOKEN_INFO_REPLACED_ADDRESS =
+        "(" + TOKEN_INFO_REPLACED_ADDRESS + ",int64,bytes32,int64,bytes,bytes32" + ")";
+
+    public static final TupleType getTokenInfoTypeReplacedAddress =
+        TupleType.parse(RESPONSE_STATUS_AT_BEGINNING + TOKEN_INFO_REPLACED_ADDRESS + ")");
+    public static final TupleType getFungibleTokenInfoTypeReplacedAddress =
+        TupleType.parse(
+            RESPONSE_STATUS_AT_BEGINNING + FUNGIBLE_TOKEN_INFO_REPLACED_ADDRESS + ")");
+    public static final TupleType getNonFungibleTokenInfoTypeReplacedAddress =
+        TupleType.parse(
+            RESPONSE_STATUS_AT_BEGINNING + NON_FUNGIBLE_TOKEN_INFO_REPLACED_ADDRESS + ")");
+
+
     public static HTSPrecompileResult htsPrecompileResult() {
         return new HTSPrecompileResult();
     }
-
-    public static final String TOKEN_INFO_REPLACED_ADDRESS =
-            "("
-                    + HEDERA_TOKEN.replace(removeBrackets(ADDRESS), removeBrackets(BYTES32))
-                    + ",int64,bool,bool,bool,"
-                    + FIXED_FEE.replace(removeBrackets(ADDRESS), removeBrackets(BYTES32))
-                    + ARRAY_BRACKETS
-                    + ","
-                    + FRACTIONAL_FEE.replace("address", "bytes32")
-                    + ARRAY_BRACKETS
-                    + ","
-                    + ROYALTY_FEE.replace("address", "bytes32")
-                    + ARRAY_BRACKETS
-                    + ",string"
-                    + ")";
-    public static final String FUNGIBLE_TOKEN_INFO_REPLACED_ADDRESS =
-            "(" + TOKEN_INFO_REPLACED_ADDRESS + ",int32" + ")";
-    public static final String NON_FUNGIBLE_TOKEN_INFO_REPLACED_ADDRESS =
-            "(" + TOKEN_INFO_REPLACED_ADDRESS + ",int64,bytes32,int64,bytes,bytes32" + ")";
-
-    public static final TupleType getTokenInfoTypeReplacedAddress =
-            TupleType.parse(RESPONSE_STATUS_AT_BEGINNING + TOKEN_INFO_REPLACED_ADDRESS + ")");
-    public static final TupleType getFungibleTokenInfoTypeReplacedAddress =
-            TupleType.parse(
-                    RESPONSE_STATUS_AT_BEGINNING + FUNGIBLE_TOKEN_INFO_REPLACED_ADDRESS + ")");
-    public static final TupleType getNonFungibleTokenInfoTypeReplacedAddress =
-            TupleType.parse(
-                    RESPONSE_STATUS_AT_BEGINNING + NON_FUNGIBLE_TOKEN_INFO_REPLACED_ADDRESS + ")");
 
     private FunctionType functionType = FunctionType.NOT_SPECIFIED;
     private TupleType tupleType = notSpecifiedType;
@@ -90,7 +95,7 @@ public class HTSPrecompileResult implements ContractCallResult {
     private int decimals;
     private long creationTime;
     private byte[] owner;
-    private byte[] spender;
+    private byte[] approved;
     private String name;
     private String symbol;
     private String metadata;
@@ -101,26 +106,28 @@ public class HTSPrecompileResult implements ContractCallResult {
     private TokenInfo tokenInfo;
 
     public HTSPrecompileResult forFunction(final FunctionType functionType) {
-        this.tupleType =
-                switch (functionType) {
-                    case MINT -> mintReturnType;
-                    case BURN -> burnReturnType;
-                    case TOTAL_SUPPLY -> totalSupplyType;
-                    case DECIMALS -> decimalsType;
-                    case BALANCE -> balanceOfType;
-                    case OWNER -> ownerOfType;
-                    case GET_APPROVED -> getApprovedType;
-                    case NAME -> nameType;
-                    case SYMBOL -> symbolType;
-                    case TOKEN_URI -> tokenUriType;
-                    case ERC_TRANSFER -> ercTransferType;
-                    case ALLOWANCE -> allowanceOfType;
-                    case IS_APPROVED_FOR_ALL -> isApprovedForAllType;
-                    case GET_TOKEN_INFO -> getTokenInfoTypeReplacedAddress;
-                    case GET_FUNGIBLE_TOKEN_INFO -> getFungibleTokenInfoTypeReplacedAddress;
-                    case GET_NON_FUNGIBLE_TOKEN_INFO -> getNonFungibleTokenInfoTypeReplacedAddress;
-                    default -> notSpecifiedType;
-                };
+        tupleType = switch (functionType) {
+            case HAPI_MINT -> mintReturnType;
+            case HAPI_BURN ->  burnReturnType;
+            case ERC_TOTAL_SUPPLY ->  totalSupplyType;
+            case ERC_DECIMALS ->  decimalsType;
+            case ERC_BALANCE -> balanceOfType;
+            case ERC_OWNER ->  ownerOfType;
+            case ERC_GET_APPROVED ->  getApprovedType;
+            case ERC_NAME -> nameType;
+            case ERC_SYMBOL -> symbolType;
+            case ERC_TOKEN_URI ->  tokenUriType;
+            case ERC_TRANSFER ->  ercTransferType;
+            case ERC_ALLOWANCE ->  allowanceOfType;
+            case ERC_IS_APPROVED_FOR_ALL ->  isApprovedForAllType;
+            case HAPI_GET_APPROVED ->  hapiGetApprovedType;
+            case HAPI_ALLOWANCE ->  hapiAllowanceOfType;
+            case HAPI_IS_APPROVED_FOR_ALL ->  hapiIsApprovedForAllType;
+            case HAPI_GET_TOKEN_INFO ->  getTokenInfoTypeReplacedAddress;
+            case HAPI_GET_FUNGIBLE_TOKEN_INFO ->  getFungibleTokenInfoTypeReplacedAddress;
+            case HAPI_GET_NON_FUNGIBLE_TOKEN_INFO ->  getNonFungibleTokenInfoTypeReplacedAddress;
+            default ->  notSpecifiedType;
+        };
 
         this.functionType = functionType;
         return this;
@@ -157,7 +164,13 @@ public class HTSPrecompileResult implements ContractCallResult {
     }
 
     public HTSPrecompileResult withSpender(final byte[] spender) {
-        this.spender = spender;
+        this.approved = spender;
+        return this;
+    }
+
+    public HTSPrecompileResult withApproved(final ResponseCodeEnum status, final byte[] approved) {
+        this.status = status;
+        this.approved = approved;
         return this;
     }
 
@@ -202,6 +215,13 @@ public class HTSPrecompileResult implements ContractCallResult {
         return this;
     }
 
+    public HTSPrecompileResult withIsApprovedForAll(
+        final ResponseCodeEnum status, final boolean isApprovedForAllStatus) {
+        this.status = status;
+        this.isApprovedForAllStatus = isApprovedForAllStatus;
+        return this;
+    }
+
     public HTSPrecompileResult withTokenInfo(final TokenInfo tokenInfo) {
         this.tokenInfo = tokenInfo;
         return this;
@@ -209,31 +229,38 @@ public class HTSPrecompileResult implements ContractCallResult {
 
     @Override
     public Bytes getBytes() {
-        if (FunctionType.OWNER.equals(functionType)) {
+        if (ParsingConstants.FunctionType.ERC_OWNER.equals(functionType)) {
             return Bytes.wrap(expandByteArrayTo32Length(owner));
-        } else if (FunctionType.GET_APPROVED.equals(functionType)) {
-            return Bytes.wrap(expandByteArrayTo32Length(spender));
+        } else if (ParsingConstants.FunctionType.ERC_GET_APPROVED.equals(functionType)) {
+            return Bytes.wrap(expandByteArrayTo32Length(approved));
         }
 
-        Tuple result =
-                switch (functionType) {
-                    case MINT -> Tuple.of(
-                            status.getNumber(), BigInteger.valueOf(totalSupply), serialNumbers);
-                    case BURN -> Tuple.of(status.getNumber(), BigInteger.valueOf(totalSupply));
-                    case TOTAL_SUPPLY -> Tuple.of(BigInteger.valueOf(totalSupply));
-                    case DECIMALS -> Tuple.of(decimals);
-                    case BALANCE -> Tuple.of(BigInteger.valueOf(balance));
-                    case NAME -> Tuple.of(name);
-                    case SYMBOL -> Tuple.of(symbol);
-                    case TOKEN_URI -> Tuple.of(metadata);
-                    case ERC_TRANSFER -> Tuple.of(ercFungibleTransferStatus);
-                    case IS_APPROVED_FOR_ALL -> Tuple.of(isApprovedForAllStatus);
-                    case ALLOWANCE -> Tuple.of(BigInteger.valueOf(allowance));
-                    case GET_TOKEN_INFO -> getTupleForGetTokenInfo();
-                    case GET_FUNGIBLE_TOKEN_INFO -> getTupleForGetFungibleTokenInfo();
-                    case GET_NON_FUNGIBLE_TOKEN_INFO -> getTupleForGetNonFungibleTokenInfo();
-                    default -> Tuple.of(status.getNumber());
-                };
+        final Tuple result =
+
+        switch (functionType) {
+            case HAPI_MINT ->
+                    Tuple.of(status.getNumber(), BigInteger.valueOf(totalSupply), serialNumbers);
+            case HAPI_BURN ->  Tuple.of(status.getNumber(), BigInteger.valueOf(totalSupply));
+            case ERC_TOTAL_SUPPLY ->  Tuple.of(BigInteger.valueOf(totalSupply));
+            case ERC_DECIMALS -> Tuple.of(decimals);
+            case ERC_BALANCE ->  Tuple.of(BigInteger.valueOf(balance));
+            case ERC_NAME -> Tuple.of(name);
+            case ERC_SYMBOL ->  Tuple.of(symbol);
+            case ERC_TOKEN_URI -> Tuple.of(metadata);
+            case ERC_TRANSFER ->  Tuple.of(ercFungibleTransferStatus);
+            case ERC_IS_APPROVED_FOR_ALL -> Tuple.of(isApprovedForAllStatus);
+            case ERC_ALLOWANCE ->  Tuple.of(BigInteger.valueOf(allowance));
+            case HAPI_IS_APPROVED_FOR_ALL ->
+                Tuple.of(status.getNumber(), isApprovedForAllStatus);
+            case HAPI_ALLOWANCE ->
+                    Tuple.of(status.getNumber(), BigInteger.valueOf(allowance));
+            case HAPI_GET_APPROVED ->
+                    Tuple.of(status.getNumber(), expandByteArrayTo32Length(approved));
+            case HAPI_GET_TOKEN_INFO -> getTupleForGetTokenInfo();
+            case HAPI_GET_FUNGIBLE_TOKEN_INFO -> getTupleForGetFungibleTokenInfo();
+            case HAPI_GET_NON_FUNGIBLE_TOKEN_INFO -> getTupleForGetNonFungibleTokenInfo();
+            default -> Tuple.of(status.getNumber());
+        };
 
         return Bytes.wrap(tupleType.encode(result).array());
     }
@@ -255,7 +282,7 @@ public class HTSPrecompileResult implements ContractCallResult {
                         expandByteArrayTo32Length(owner),
                         creationTime,
                         metadata.getBytes(),
-                        expandByteArrayTo32Length(spender)));
+                        expandByteArrayTo32Length(approved)));
     }
 
     private Tuple getTupleForTokenInfo() {
