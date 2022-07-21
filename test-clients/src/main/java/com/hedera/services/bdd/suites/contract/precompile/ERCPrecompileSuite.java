@@ -278,7 +278,8 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                         .contractCallResult(
                                                                 htsPrecompileResult()
                                                                         .forFunction(
-                                                                                FunctionType.ERC_NAME)
+                                                                                FunctionType
+                                                                                        .ERC_NAME)
                                                                         .withName(TOKEN_NAME)))));
     }
 
@@ -333,7 +334,8 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                         .contractCallResult(
                                                                 htsPrecompileResult()
                                                                         .forFunction(
-                                                                                FunctionType.ERC_SYMBOL)
+                                                                                FunctionType
+                                                                                        .ERC_SYMBOL)
                                                                         .withSymbol(tokenSymbol)))),
                         sourcing(
                                 () -> contractCallLocal(ERC_20_CONTRACT, SYMBOL, tokenAddr.get())));
@@ -1705,7 +1707,8 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                         .contractCallResult(
                                                                 htsPrecompileResult()
                                                                         .forFunction(
-                                                                                FunctionType.ERC_NAME)
+                                                                                FunctionType
+                                                                                        .ERC_NAME)
                                                                         .withName(TOKEN_NAME)))));
     }
 
@@ -1756,7 +1759,8 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                         .contractCallResult(
                                                                 htsPrecompileResult()
                                                                         .forFunction(
-                                                                                FunctionType.ERC_SYMBOL)
+                                                                                FunctionType
+                                                                                        .ERC_SYMBOL)
                                                                         .withSymbol(
                                                                                 tokenSymbol)))));
     }
