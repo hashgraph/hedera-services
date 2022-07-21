@@ -70,6 +70,7 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.UncheckedSubmitBody;
 import com.hederahashgraph.api.proto.java.UtilPrngTransactionBody;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.time.Clock;
 import java.time.Instant;
@@ -167,7 +168,7 @@ public class TxnFactory {
     }
 
     public <T, B extends Message.Builder> T body(Class<T> tClass, Consumer<B> def)
-            throws Throwable {
+            throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
         Method newBuilder = tClass.getMethod("newBuilder");
         B opBuilder = (B) newBuilder.invoke(null);
         String defaultBodyMethod = String.format("defaultDef_%s", tClass.getSimpleName());
