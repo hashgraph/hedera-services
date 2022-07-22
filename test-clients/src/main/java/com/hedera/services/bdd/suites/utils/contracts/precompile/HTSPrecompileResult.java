@@ -25,6 +25,8 @@ import org.apache.tuweni.bytes.Bytes;
 public class HTSPrecompileResult implements ContractCallResult {
     private HTSPrecompileResult() {}
 
+    public static final String INT_BOOL_PAIR_RETURN_TYPE = "(int32,bool)";
+
     private static final TupleType mintReturnType = TupleType.parse("(int32,uint64,int64[])");
     private static final TupleType notSpecifiedType = TupleType.parse("(int32)");
     private static final TupleType burnReturnType = TupleType.parse("(int32,uint64)");
@@ -41,9 +43,9 @@ public class HTSPrecompileResult implements ContractCallResult {
     private static final TupleType isApprovedForAllType = TupleType.parse("(bool)");
     private static final TupleType hapiAllowanceOfType = TupleType.parse("(int32,uint256)");
     private static final TupleType hapiGetApprovedType = TupleType.parse("(int32,bytes32)");
-    private static final TupleType hapiIsApprovedForAllType = TupleType.parse("(int32,bool)");
-    private static final TupleType getTokenDefaultFreezeStatusType = TupleType.parse("(int32,bool)");
-    private static final TupleType getTokenDefaultKycStatusType = TupleType.parse("(int32,bool)");
+    private static final TupleType hapiIsApprovedForAllType = TupleType.parse(INT_BOOL_PAIR_RETURN_TYPE);
+    private static final TupleType getTokenDefaultFreezeStatusType = TupleType.parse(INT_BOOL_PAIR_RETURN_TYPE);
+    private static final TupleType getTokenDefaultKycStatusType = TupleType.parse(INT_BOOL_PAIR_RETURN_TYPE);
 
     public static HTSPrecompileResult htsPrecompileResult() {
         return new HTSPrecompileResult();

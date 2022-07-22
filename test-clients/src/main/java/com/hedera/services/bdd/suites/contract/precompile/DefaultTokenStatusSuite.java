@@ -50,10 +50,9 @@ public class DefaultTokenStatusSuite extends HapiApiSuite {
   @Override
   public List<HapiApiSpec> getSpecsInSuite() {
     return List.of(
-        new HapiApiSpec[] {
             getTokenDefaultFreezeStatus(),
             getTokenDefaultKycStatus()
-        });
+        );
   }
 
   private HapiApiSpec getTokenDefaultFreezeStatus() {

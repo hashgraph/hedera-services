@@ -56,6 +56,7 @@ public class DecodingFacade {
     private static final String INT_OUTPUT = "(int)";
     private static final String BOOL_OUTPUT = "(bool)";
     private static final String STRING_OUTPUT = "(string)";
+    private static final String BYTES32_RAW_TYPE = "(bytes32)";
     private static final String ADDRESS_PAIR_RAW_TYPE = "(bytes32,bytes32)";
     private static final String ADDRESS_TRIPLE_RAW_TYPE = "(bytes32,bytes32,bytes32)";
     private static final String UINT256_RAW_TYPE = "(uint256)";
@@ -120,14 +121,14 @@ public class DecodingFacade {
     private static final Bytes GET_TOKEN_DEFAULT_FREEZE_STATUS_SELECTOR =
             Bytes.wrap(GET_TOKEN_DEFAULT_FREEZE_STATUS_FUNCTION.selector());
     private static final ABIType<Tuple> GET_TOKEN_DEFAULT_FREEZE_STATUS_DECODER =
-            TypeFactory.create("(bytes32)");
+            TypeFactory.create(BYTES32_RAW_TYPE);
 
     private static final Function GET_TOKEN_DEFAULT_KYC_STATUS_FUNCTION =
         new Function("getTokenDefaultKycStatus(address)", INT_OUTPUT);
     private static final Bytes GET_TOKEN_DEFAULT_KYC_STATUS_SELECTOR =
         Bytes.wrap(GET_TOKEN_DEFAULT_KYC_STATUS_FUNCTION.selector());
     private static final ABIType<Tuple> GET_TOKEN_DEFAULT_KYC_STATUS_DECODER =
-        TypeFactory.create("(bytes32)");
+        TypeFactory.create(BYTES32_RAW_TYPE);
 
     private static final Function ASSOCIATE_TOKENS_FUNCTION =
             new Function("associateTokens(address,address[])", INT_OUTPUT);
@@ -168,7 +169,7 @@ public class DecodingFacade {
             new Function("balanceOf(address)", INT_OUTPUT);
     private static final Bytes BALANCE_OF_TOKEN_SELECTOR =
             Bytes.wrap(BALANCE_OF_TOKEN_FUNCTION.selector());
-    private static final ABIType<Tuple> BALANCE_OF_TOKEN_DECODER = TypeFactory.create("(bytes32)");
+    private static final ABIType<Tuple> BALANCE_OF_TOKEN_DECODER = TypeFactory.create(BYTES32_RAW_TYPE);
 
     private static final Function OWNER_OF_NFT_FUNCTION =
             new Function("ownerOf(uint256)", INT_OUTPUT);
