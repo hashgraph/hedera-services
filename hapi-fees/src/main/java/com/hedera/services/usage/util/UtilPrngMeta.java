@@ -18,18 +18,18 @@ package com.hedera.services.usage.util;
 import static com.hederahashgraph.fee.FeeBuilder.INT_SIZE;
 
 import com.google.common.base.MoreObjects;
-import com.hederahashgraph.api.proto.java.PrngTransactionBody;
+import com.hederahashgraph.api.proto.java.UtilPrngTransactionBody;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 
-public class PrngMeta {
+public class UtilPrngMeta {
     private final long msgBytesUsed;
 
-    public PrngMeta(PrngTransactionBody txn) {
+    public UtilPrngMeta(UtilPrngTransactionBody txn) {
         msgBytesUsed = txn.getRange() > 0 ? INT_SIZE : 0;
     }
 
-    public PrngMeta(PrngMeta.Builder builder) {
+    public UtilPrngMeta(UtilPrngMeta.Builder builder) {
         msgBytesUsed = builder.msgBytes;
     }
 
@@ -40,7 +40,7 @@ public class PrngMeta {
     public static class Builder {
         private long msgBytes;
 
-        public PrngMeta.Builder msgBytesUsed(long msgBytes) {
+        public UtilPrngMeta.Builder msgBytesUsed(long msgBytes) {
             this.msgBytes = msgBytes;
             return this;
         }
@@ -49,13 +49,13 @@ public class PrngMeta {
             // empty here on purpose.
         }
 
-        public PrngMeta build() {
-            return new PrngMeta(this);
+        public UtilPrngMeta build() {
+            return new UtilPrngMeta(this);
         }
     }
 
-    public static PrngMeta.Builder newBuilder() {
-        return new PrngMeta.Builder();
+    public static UtilPrngMeta.Builder newBuilder() {
+        return new UtilPrngMeta.Builder();
     }
 
     @Override

@@ -209,7 +209,7 @@ public class PrecompilePricingUtils {
         DELETE_NFT_APPROVE(CryptoDeleteAllowance, DEFAULT),
         PAUSE(TokenPause, DEFAULT),
         UNPAUSE(TokenUnpause, DEFAULT),
-        PRNG(HederaFunctionality.PRNG, DEFAULT);
+        PRNG(HederaFunctionality.UtilPrng, DEFAULT);
 
         final HederaFunctionality functionality;
         final SubType subtype;

@@ -1,24 +1,5 @@
 [
   {
-	"inputs": [
-	  {
-		"internalType": "uint32",
-		"name": "range",
-		"type": "uint32"
-	  }
-	],
-	"name": "getPseudorandomNumber",
-	"outputs": [
-	  {
-		"internalType": "uint32",
-		"name": "randomNum",
-		"type": "uint32"
-	  }
-	],
-	"stateMutability": "nonpayable",
-	"type": "function"
-  },
-  {
 	"inputs": [],
 	"name": "getPseudorandomSeed",
 	"outputs": [

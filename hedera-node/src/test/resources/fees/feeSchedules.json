@@ -861,7 +861,7 @@
 	  },
 	  {
 		"transactionFeeSchedule" : {
-		  "hederaFunctionality" : "PRNG",
+		  "hederaFunctionality" : "UtilPrng",
 		  "fees" : [ {
 			"subType" : "DEFAULT",
 			"nodedata" : {
@@ -3692,7 +3692,7 @@
 	  },
 	  {
 		"transactionFeeSchedule" : {
-		  "hederaFunctionality" : "PRNG",
+		  "hederaFunctionality" : "UtilPrng",
 		  "fees" : [ {
 			"subType" : "DEFAULT",
 			"nodedata" : {

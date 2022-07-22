@@ -16,7 +16,7 @@
 			"CryptoGetAccountRecords",
 			"CryptoApproveAllowance",
 			"CryptoDeleteAllowance",
-			"PRNG",
+			"UtilPrng",
 			"ConsensusCreateTopic",
 			"ConsensusSubmitMessage",
 			"ConsensusUpdateTopic",
