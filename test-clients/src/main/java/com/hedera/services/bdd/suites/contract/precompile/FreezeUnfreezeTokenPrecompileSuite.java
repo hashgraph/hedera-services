@@ -231,10 +231,10 @@ public class FreezeUnfreezeTokenPrecompileSuite extends HapiApiSuite {
                                         allRunFor(
                                                 spec,
                                                 contractCall(
-                                                        FREEZE_CONTRACT,
-                                                        TOKEN_FREEZE_FUNC,
-                                                        asAddress(vanillaTokenID.get()),
-                                                        asAddress(accountID.get()))
+                                                                FREEZE_CONTRACT,
+                                                                TOKEN_FREEZE_FUNC,
+                                                                asAddress(vanillaTokenID.get()),
+                                                                asAddress(accountID.get()))
                                                         .logged()
                                                         .payingWith(ACCOUNT)
                                                         .gas(GAS_TO_OFFER),
@@ -367,10 +367,10 @@ public class FreezeUnfreezeTokenPrecompileSuite extends HapiApiSuite {
                                         allRunFor(
                                                 spec,
                                                 contractCall(
-                                                        FREEZE_CONTRACT,
-                                                        TOKEN_UNFREEZE_FUNC,
-                                                        asAddress(nftTokenID.get()),
-                                                        asAddress(accountID.get()))
+                                                                FREEZE_CONTRACT,
+                                                                TOKEN_UNFREEZE_FUNC,
+                                                                asAddress(nftTokenID.get()),
+                                                                asAddress(accountID.get()))
                                                         .payingWith(ACCOUNT)
                                                         .gas(GAS_TO_OFFER)
                                                         .via(ACCOUNT_HAS_NO_KEY_TXN)
@@ -384,10 +384,10 @@ public class FreezeUnfreezeTokenPrecompileSuite extends HapiApiSuite {
                                                         .payingWith(ACCOUNT)
                                                         .gas(GAS_TO_OFFER),
                                                 contractCall(
-                                                        FREEZE_CONTRACT,
-                                                        TOKEN_UNFREEZE_FUNC,
-                                                        asAddress(nftTokenID.get()),
-                                                        asAddress(accountID.get()))
+                                                                FREEZE_CONTRACT,
+                                                                TOKEN_UNFREEZE_FUNC,
+                                                                asAddress(nftTokenID.get()),
+                                                                asAddress(accountID.get()))
                                                         .payingWith(ACCOUNT)
                                                         .gas(GAS_TO_OFFER),
                                                 contractCall(
