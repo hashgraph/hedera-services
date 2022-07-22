@@ -63,7 +63,9 @@ public class FreezeUnfreezeTokenPrecompileSuite extends HapiApiSuite {
     private static final String IS_FROZEN_FUNC = "isTokenFrozen";
     private static final String TOKEN_FREEZE_FUNC = "tokenFreeze";
     private static final String TOKEN_UNFREEZE_FUNC = "tokenUnfreeze";
-    static final String isFrozenTxn = "isFrozenTxn";
+    private static final String IS_FROZEN_TXN = "isFrozenTxn";
+    private static final String ACCOUNT_HAS_NO_KEY_TXN = "accountHasNoFreezeKey";
+    private static final String NO_FREEZE_KEY_TXN = "tokenHasNoFreezeKeyTxn";
     private static final String ACCOUNT = "anybody";
     private static final String ACCOUNT_WITHOUT_KEY = "accountWithoutKey";
     private static final String TOKEN_WITHOUT_KEY = "withoutKey";
@@ -72,6 +74,7 @@ public class FreezeUnfreezeTokenPrecompileSuite extends HapiApiSuite {
     private static final long GAS_TO_OFFER = 4_000_000L;
 
     final AtomicReference<AccountID> accountID = new AtomicReference<>();
+    final AtomicReference<TokenID> nftTokenID = new AtomicReference<>();
     final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
     final AtomicReference<TokenID> withoutKeyID = new AtomicReference<>();
 
@@ -129,7 +132,7 @@ public class FreezeUnfreezeTokenPrecompileSuite extends HapiApiSuite {
                                                                 asAddress(accountID.get()))
                                                         .logged()
                                                         .payingWith(ACCOUNT)
-                                                        .via("accountHasNoFreezeKey")
+                                                        .via(ACCOUNT_HAS_NO_KEY_TXN)
                                                         .gas(GAS_TO_OFFER)
                                                         .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
                                                 contractCall(
@@ -139,7 +142,7 @@ public class FreezeUnfreezeTokenPrecompileSuite extends HapiApiSuite {
                                                                 asAddress(accountID.get()))
                                                         .logged()
                                                         .payingWith(ACCOUNT)
-                                                        .via("tokenHasNoFreezeKeyTxn")
+                                                        .via(NO_FREEZE_KEY_TXN)
                                                         .gas(GAS_TO_OFFER)
                                                         .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
                                                 cryptoUpdate(ACCOUNT).key(FREEZE_KEY),
@@ -158,11 +161,11 @@ public class FreezeUnfreezeTokenPrecompileSuite extends HapiApiSuite {
                                                                 asAddress(accountID.get()))
                                                         .logged()
                                                         .payingWith(ACCOUNT)
-                                                        .via(isFrozenTxn)
+                                                        .via(IS_FROZEN_TXN)
                                                         .gas(GAS_TO_OFFER))))
                 .then(
                         childRecordsCheck(
-                                "accountHasNoFreezeKey",
+                                ACCOUNT_HAS_NO_KEY_TXN,
                                 CONTRACT_REVERT_EXECUTED,
                                 recordWith()
                                         .status(INVALID_SIGNATURE)
@@ -173,7 +176,7 @@ public class FreezeUnfreezeTokenPrecompileSuite extends HapiApiSuite {
                                                                         .withStatus(
                                                                                 INVALID_SIGNATURE)))),
                         childRecordsCheck(
-                                "tokenHasNoFreezeKeyTxn",
+                                NO_FREEZE_KEY_TXN,
                                 CONTRACT_REVERT_EXECUTED,
                                 recordWith()
                                         .status(TOKEN_HAS_NO_FREEZE_KEY)
@@ -184,7 +187,7 @@ public class FreezeUnfreezeTokenPrecompileSuite extends HapiApiSuite {
                                                                         .withStatus(
                                                                                 TOKEN_HAS_NO_FREEZE_KEY)))),
                         childRecordsCheck(
-                                isFrozenTxn,
+                                IS_FROZEN_TXN,
                                 SUCCESS,
                                 recordWith()
                                         .status(SUCCESS)
@@ -235,7 +238,7 @@ public class FreezeUnfreezeTokenPrecompileSuite extends HapiApiSuite {
                                                                 asAddress(accountID.get()))
                                                         .logged()
                                                         .payingWith(ACCOUNT)
-                                                        .via("tokenHasNoFreezeKeyTxn")
+                                                        .via(NO_FREEZE_KEY_TXN)
                                                         .gas(GAS_TO_OFFER)
                                                         .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
                                                 contractCall(
@@ -245,7 +248,7 @@ public class FreezeUnfreezeTokenPrecompileSuite extends HapiApiSuite {
                                                                 asAddress(accountID.get()))
                                                         .logged()
                                                         .payingWith(ACCOUNT)
-                                                        .via("accountHasNoFreezeKey")
+                                                        .via(ACCOUNT_HAS_NO_KEY_TXN)
                                                         .gas(GAS_TO_OFFER)
                                                         .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
                                                 cryptoUpdate(ACCOUNT).key(FREEZE_KEY),
@@ -264,11 +267,11 @@ public class FreezeUnfreezeTokenPrecompileSuite extends HapiApiSuite {
                                                                 asAddress(accountID.get()))
                                                         .logged()
                                                         .payingWith(ACCOUNT)
-                                                        .via(isFrozenTxn)
+                                                        .via(IS_FROZEN_TXN)
                                                         .gas(GAS_TO_OFFER))))
                 .then(
                         childRecordsCheck(
-                                "tokenHasNoFreezeKeyTxn",
+                                NO_FREEZE_KEY_TXN,
                                 CONTRACT_REVERT_EXECUTED,
                                 recordWith()
                                         .status(TOKEN_HAS_NO_FREEZE_KEY)
@@ -279,7 +282,7 @@ public class FreezeUnfreezeTokenPrecompileSuite extends HapiApiSuite {
                                                                         .withStatus(
                                                                                 TOKEN_HAS_NO_FREEZE_KEY)))),
                         childRecordsCheck(
-                                "accountHasNoFreezeKey",
+                                ACCOUNT_HAS_NO_KEY_TXN,
                                 CONTRACT_REVERT_EXECUTED,
                                 recordWith()
                                         .status(INVALID_SIGNATURE)
@@ -290,7 +293,7 @@ public class FreezeUnfreezeTokenPrecompileSuite extends HapiApiSuite {
                                                                         .withStatus(
                                                                                 INVALID_SIGNATURE)))),
                         childRecordsCheck(
-                                isFrozenTxn,
+                                IS_FROZEN_TXN,
                                 SUCCESS,
                                 recordWith()
                                         .status(SUCCESS)
@@ -307,9 +310,6 @@ public class FreezeUnfreezeTokenPrecompileSuite extends HapiApiSuite {
     }
 
     private HapiApiSpec freezeNftTokenHappyPath() {
-        final AtomicReference<AccountID> accountID = new AtomicReference<>();
-        final AtomicReference<TokenID> nftTokenID = new AtomicReference<>();
-        final var isFrozenNftTxn = "isFrozenNftTxn";
 
         return defaultHapiSpec("freezeNftTokenHappyPath")
                 .given(
@@ -353,11 +353,11 @@ public class FreezeUnfreezeTokenPrecompileSuite extends HapiApiSuite {
                                                                 asAddress(accountID.get()))
                                                         .logged()
                                                         .payingWith(ACCOUNT)
-                                                        .via(isFrozenNftTxn)
+                                                        .via(IS_FROZEN_TXN)
                                                         .gas(GAS_TO_OFFER))))
                 .then(
                         childRecordsCheck(
-                                isFrozenNftTxn,
+                                IS_FROZEN_TXN,
                                 SUCCESS,
                                 recordWith()
                                         .status(SUCCESS)
@@ -374,9 +374,7 @@ public class FreezeUnfreezeTokenPrecompileSuite extends HapiApiSuite {
     }
 
     private HapiApiSpec unFreezeNftTokenHappyPath() {
-        final AtomicReference<AccountID> accountID = new AtomicReference<>();
         final AtomicReference<TokenID> nftTokenID = new AtomicReference<>();
-        final var isFrozenNftTxn = "isFrozenNftTxn";
 
         return defaultHapiSpec("unFreezeNftTokenHappyPath")
                 .given(
@@ -420,11 +418,11 @@ public class FreezeUnfreezeTokenPrecompileSuite extends HapiApiSuite {
                                                                 asAddress(accountID.get()))
                                                         .logged()
                                                         .payingWith(ACCOUNT)
-                                                        .via(isFrozenNftTxn)
+                                                        .via(IS_FROZEN_TXN)
                                                         .gas(GAS_TO_OFFER))))
                 .then(
                         childRecordsCheck(
-                                isFrozenNftTxn,
+                                IS_FROZEN_TXN,
                                 SUCCESS,
                                 recordWith()
                                         .status(SUCCESS)
