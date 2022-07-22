@@ -59,7 +59,7 @@ public class EncodingFacade {
     private static final TupleType tokenUriType = TupleType.parse(STRING_RETURN_TYPE);
     private static final TupleType ercTransferType = TupleType.parse(BOOL_RETURN_TYPE);
     private static final TupleType isApprovedForAllType = TupleType.parse(BOOL_RETURN_TYPE);
-    private static final TupleType hapiIsApprovedForAllType = TupleType.parse("(int32,bool)");
+    private static final TupleType hapiIsApprovedForAllType = TupleType.parse(INT_BOOL_PAIR_RETURN_TYPE);
     private static final TupleType getTokenDefaultFreezeStatusType = TupleType.parse(INT_BOOL_PAIR_RETURN_TYPE);
     private static final TupleType getTokenDefaultKycStatusType = TupleType.parse(INT_BOOL_PAIR_RETURN_TYPE);
 
