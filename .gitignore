@@ -39,6 +39,9 @@ hs_err_pid*
 # Maven wrapper
 .mvn/wrapper/maven-wrapper.jar
 
+# Local runtime assets
+hedera-node/swirlds-tmp
+
 *.sh
 !run/generate-changelog.sh
 !run/new-release-branch.sh

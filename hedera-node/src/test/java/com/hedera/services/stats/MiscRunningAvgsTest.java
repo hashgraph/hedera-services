@@ -15,8 +15,10 @@
  */
 package com.hedera.services.stats;
 
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.verify;
+import static org.mockito.internal.verification.VerificationModeFactory.times;
 
 import com.swirlds.common.metrics.RunningAverageMetric;
 import com.swirlds.common.system.Platform;
@@ -53,7 +55,7 @@ class MiscRunningAvgsTest {
 
         subject.registerWith(platform);
 
-        verify(platform).addAppMetrics(gasPerSec, waitMs, retries, submitSizes, queueSize, hashS);
+        verify(platform, times(6)).getOrCreateMetric(any());
     }
 
     @Test
@@ -67,12 +69,12 @@ class MiscRunningAvgsTest {
         subject.hashQueueSizeRecordStream(5);
         subject.recordGasPerConsSec(6L);
 
-        verify(retries).recordValue(1.0);
-        verify(waitMs).recordValue(2.0);
-        verify(submitSizes).recordValue(3.0);
-        verify(queueSize).recordValue(4.0);
-        verify(hashS).recordValue(5);
-        verify(gasPerSec).recordValue(6L);
+        verify(retries).update(1.0);
+        verify(waitMs).update(2.0);
+        verify(submitSizes).update(3.0);
+        verify(queueSize).update(4.0);
+        verify(hashS).update(5);
+        verify(gasPerSec).update(6L);
     }
 
     private void setMocks() {

@@ -19,6 +19,7 @@ import static com.hedera.services.stats.ServicesStatsManager.GAUGE_FORMAT;
 import static com.hedera.services.stats.ServicesStatsManager.STAT_CATEGORY;
 
 import com.hedera.services.state.validation.UsageLimits;
+import com.hedera.services.utils.NonAtomicReference;
 import com.swirlds.common.metrics.DoubleGauge;
 import com.swirlds.common.system.Platform;
 import java.util.List;
@@ -38,38 +39,67 @@ public class EntityUtilGauges {
     public EntityUtilGauges(final UsageLimits usageLimits) {
         utils =
                 List.of(
-                        new UtilGauge(usageLimits::percentAccountsUsed, gaugeFor("accounts")),
-                        new UtilGauge(usageLimits::percentContractsUsed, gaugeFor("contracts")),
-                        new UtilGauge(usageLimits::percentFilesUsed, gaugeFor("files")),
-                        new UtilGauge(usageLimits::percentNftsUsed, gaugeFor("nfts")),
-                        new UtilGauge(usageLimits::percentSchedulesUsed, gaugeFor("schedules")),
+                        new UtilGauge(
+                                usageLimits::percentAccountsUsed,
+                                gaugeConfigFor("accounts"),
+                                new NonAtomicReference<>()),
+                        new UtilGauge(
+                                usageLimits::percentContractsUsed,
+                                gaugeConfigFor("contracts"),
+                                new NonAtomicReference<>()),
+                        new UtilGauge(
+                                usageLimits::percentFilesUsed,
+                                gaugeConfigFor("files"),
+                                new NonAtomicReference<>()),
+                        new UtilGauge(
+                                usageLimits::percentNftsUsed,
+                                gaugeConfigFor("nfts"),
+                                new NonAtomicReference<>()),
+                        new UtilGauge(
+                                usageLimits::percentSchedulesUsed,
+                                gaugeConfigFor("schedules"),
+                                new NonAtomicReference<>()),
                         new UtilGauge(
                                 usageLimits::percentStorageSlotsUsed,
-                                gaugeFor("storageSlots", "storage slots")),
-                        new UtilGauge(usageLimits::percentTokensUsed, gaugeFor("tokens")),
+                                gaugeConfigFor("storageSlots", "storage slots"),
+                                new NonAtomicReference<>()),
+                        new UtilGauge(
+                                usageLimits::percentTokensUsed,
+                                gaugeConfigFor("tokens"),
+                                new NonAtomicReference<>()),
                         new UtilGauge(
                                 usageLimits::percentTokenRelsUsed,
-                                gaugeFor("tokenAssociations", "token associations")),
-                        new UtilGauge(usageLimits::percentTopicsUsed, gaugeFor("topics")));
+                                gaugeConfigFor("tokenAssociations", "token associations"),
+                                new NonAtomicReference<>()),
+                        new UtilGauge(
+                                usageLimits::percentTopicsUsed,
+                                gaugeConfigFor("topics"),
+                                new NonAtomicReference<>()));
     }
 
     public void registerWith(final Platform platform) {
-        utils.forEach(util -> platform.addAppMetrics(util.gauge()));
+        utils.forEach(
+                util -> {
+                    final var gauge = platform.getOrCreateMetric(util.config());
+                    util.gauge().set(gauge);
+                });
     }
 
     public void updateAll() {
-        utils.forEach(util -> util.gauge().set(util.valueSource().getAsDouble()));
+        utils.forEach(util -> util.gauge().get().set(util.valueSource().getAsDouble()));
     }
 
-    private static DoubleGauge gaugeFor(final String utilType) {
-        return gaugeFor(utilType, null);
+    private static DoubleGauge.Config gaugeConfigFor(final String utilType) {
+        return gaugeConfigFor(utilType, null);
     }
 
-    private static DoubleGauge gaugeFor(final String utilType, @Nullable final String forDesc) {
-        return new DoubleGauge(
-                STAT_CATEGORY,
-                String.format(UTIL_NAME_TPL, utilType),
-                String.format(UTIL_DESCRIPTION_TPL, Optional.ofNullable(forDesc).orElse(utilType)),
-                GAUGE_FORMAT);
+    private static DoubleGauge.Config gaugeConfigFor(
+            final String utilType, @Nullable final String forDesc) {
+        return new DoubleGauge.Config(STAT_CATEGORY, String.format(UTIL_NAME_TPL, utilType))
+                .withDescription(
+                        String.format(
+                                UTIL_DESCRIPTION_TPL,
+                                Optional.ofNullable(forDesc).orElse(utilType)))
+                .withFormat(GAUGE_FORMAT);
     }
 }

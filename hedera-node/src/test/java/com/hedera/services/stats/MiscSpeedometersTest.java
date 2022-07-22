@@ -15,9 +15,11 @@
  */
 package com.hedera.services.stats;
 
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.verify;
+import static org.mockito.internal.verification.VerificationModeFactory.times;
 
 import com.swirlds.common.metrics.SpeedometerMetric;
 import com.swirlds.common.system.Platform;
@@ -40,6 +42,7 @@ class MiscSpeedometersTest {
     @BeforeEach
     void setup() {
         platform = mock(Platform.class);
+        given(platform.getOrCreateMetric(any())).willReturn(syncVerifies).willReturn(txnRejections);
 
         subject = new MiscSpeedometers(halfLife);
     }
@@ -51,15 +54,17 @@ class MiscSpeedometersTest {
 
         subject.registerWith(platform);
 
-        verify(platform).addAppMetrics(syncVerifies, txnRejections);
+        verify(platform, times(2)).getOrCreateMetric(any());
     }
 
     @Test
     void cyclesExpectedSpeedometers() {
+        subject.registerWith(platform);
+
         subject.cycleSyncVerifications();
         subject.cyclePlatformTxnRejections();
 
-        assertNotEquals(0.0, subject.getPlatformTxnRejections().getStatsBuffered().getMean());
-        assertNotEquals(0.0, subject.getSyncVerifications().getStatsBuffered().getMean());
+        verify(syncVerifies).cycle();
+        verify(txnRejections).cycle();
     }
 }
