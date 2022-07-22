@@ -85,34 +85,34 @@ class RecordStreamFileWriter implements LinkedObjectStream<RecordStreamObject> {
 
     /** a messageDigest object for digesting sidecar files and generating sidecar file hash */
     private final MessageDigest sidecarStreamDigest;
-
-    /**
-     * Output stream for digesting metaData. Metadata should be written to this stream. Any data
-     * written to this stream is used to generate a running metadata hash.
-     */
-    private SerializableDataOutputStream dosMeta = null;
-
-    /**
-     * current runningHash before consuming the object added by calling {@link
-     * #addObject(RecordStreamObject)} method
-     */
-    private RunningHash runningHash;
-
     /** signer for generating signatures */
     private final Signer signer;
-
     /**
      * The desired amount of time that data should be written into a file before starting a new
      * file.
      */
     private final long logPeriodMs;
-
+    /** the path to which we write record stream files and signature files */
+    private final String dirPath;
+    /** the path to which we write sidecar record stream files */
+    private final String sidecarDirPath;
+    private final EnumSet<SidecarType> sidecarTypesInCurrentSidecar;
+    /** the max file size of a sidecar file */
+    private final int maxSidecarFileSize;
+    /**
+     * Output stream for digesting metaData. Metadata should be written to this stream. Any data
+     * written to this stream is used to generate a running metadata hash.
+     */
+    private SerializableDataOutputStream dosMeta = null;
+    /**
+     * current runningHash before consuming the object added by calling {@link
+     * #addObject(RecordStreamObject)} method
+     */
+    private RunningHash runningHash;
     /** The previous object that was passed to the stream. */
     private RecordStreamObject previousObject;
-
     /** Tracks if the previous object was held back in the previous file due to its alignment. */
     private boolean previousHeldBackByAlignment;
-
     /**
      * if it is true, we don't write object stream file until the first complete window. This is
      * suitable for streaming after reconnect, so that reconnect node can generate the same stream
@@ -122,18 +122,25 @@ class RecordStreamFileWriter implements LinkedObjectStream<RecordStreamObject> {
      * streaming after restart, so that no object would be missing in the nodes' stream files
      */
     private boolean startWriteAtCompleteWindow;
+    /**
+     * The id that the next sidecar file of the current period will have.
+     * Initialized to 1 at the start of each period.
+     * Incremented by 1 with each new sidecar file.
+     */
+    private int sidecarFileId;
 
-    /** the path to which we write record stream files and signature files */
-    private final String dirPath;
+    /**
+     * Used to keep track of the size that the current {@code sidecarFileBuilder} will be on disk and
+     * externalizing it before it goes over {@code maxSidecarFileSize}
+     */
+    private int currentSidecarFileSize;
 
-    /** the path to which we write sidecar record stream files */
-    private final String sidecarDirPath;
+    /** The instant of the first transaction in the current period */
+    private Instant firstTxnInstant;
 
     private int recordFileVersion;
     private RecordStreamFile.Builder recordStreamFileBuilder;
     private SidecarFile.Builder sidecarFileBuilder;
-    private final EnumSet<SidecarType> sidecarTypesInCurrentSidecar;
-    private int sidecarFileId;
 
     public RecordStreamFileWriter(
             final String dirPath,
@@ -141,7 +148,8 @@ class RecordStreamFileWriter implements LinkedObjectStream<RecordStreamObject> {
             final Signer signer,
             final boolean startWriteAtCompleteWindow,
             final RecordStreamType streamType,
-            final String sidecarDirPath)
+            final String sidecarDirPath,
+            final int maxSidecarFileSize)
             throws NoSuchAlgorithmException {
         this.dirPath = dirPath;
         this.logPeriodMs = logPeriodMs;
@@ -154,6 +162,7 @@ class RecordStreamFileWriter implements LinkedObjectStream<RecordStreamObject> {
         this.sidecarDirPath = sidecarDirPath;
         this.sidecarTypesInCurrentSidecar = EnumSet.noneOf(SidecarType.class);
         this.sidecarFileId = 1;
+        this.maxSidecarFileSize = maxSidecarFileSize;
     }
 
     @Override
@@ -238,14 +247,7 @@ class RecordStreamFileWriter implements LinkedObjectStream<RecordStreamObject> {
     public void closeCurrentAndSign() {
         if (recordStreamFileBuilder != null) {
             // generate recordFile name
-            final var firstTxnTimestamp =
-                    recordStreamFileBuilder
-                            .getRecordStreamItems(0)
-                            .getRecord()
-                            .getConsensusTimestamp();
-            final var firstTxnInstant =
-                    Instant.ofEpochSecond(
-                            firstTxnTimestamp.getSeconds(), firstTxnTimestamp.getNanos());
+            assertFirstTxnInstantIsKnown();
             final var recordFile = new File(generateRecordFilePath(firstTxnInstant));
             final var recordFileNameShort = recordFile.getName(); // for logging purposes
             if (recordFile.exists() && !recordFile.isDirectory()) {
@@ -290,14 +292,10 @@ class RecordStreamFileWriter implements LinkedObjectStream<RecordStreamObject> {
                     return;
                 }
 
-                // create sidecar file and add the SidecarMetadata to RecordStreamFile
-                // only if there have been any sidecar records for the current period
+                // create sidecar file
                 if (sidecarFileBuilder.getSidecarRecordsCount() > 0) {
                     try {
-                        final var sidecarFile =
-                                new File(generateSidecarFilePath(firstTxnInstant, sidecarFileId));
-                        createSidecarFile(sidecarFileBuilder, sidecarFile);
-                        recordStreamFileBuilder.addSidecars(createSidecarMetadata(sidecarFileId));
+                        finalizeCurrentSidecar();
                     } catch (IOException e) {
                         Thread.currentThread().interrupt();
                         LOG.warn(
@@ -372,10 +370,10 @@ class RecordStreamFileWriter implements LinkedObjectStream<RecordStreamObject> {
         // the record file version in it, save the version and
         // perform the whole file creation in {@link #closeCurrentAndSign()} method
         recordFileVersion = fileHeader[0];
-        // reinitialize sidecar builder
-        sidecarFileBuilder = SidecarFile.newBuilder();
-        sidecarTypesInCurrentSidecar.clear();
-        // add known values to recordStreamFile proto
+        // reset fields
+        firstTxnInstant = null;
+        resetSidecarFields();
+        sidecarFileId = 1;
         recordStreamFileBuilder =
                 RecordStreamFile.newBuilder().setBlockNumber(object.getStreamAlignment());
         recordStreamFileBuilder.setHapiProtoVersion(
@@ -407,8 +405,7 @@ class RecordStreamFileWriter implements LinkedObjectStream<RecordStreamObject> {
             Thread.currentThread().interrupt();
             LOG.error(
                     EXCEPTION.getMarker(),
-                    "beginNew :: Exception when getting startRunningHash for writing to metadata"
-                            + " stream",
+                    "beginNew :: Exception when getting startRunningHash for writing to metadata stream",
                     e);
         }
     }
@@ -427,7 +424,28 @@ class RecordStreamFileWriter implements LinkedObjectStream<RecordStreamObject> {
 
         final var sidecars = object.getSidecars();
         if (!sidecars.isEmpty()) {
-            for (final var sidecar : sidecars) {
+            for (final var sidecarBuilder : sidecars) {
+                // build() and getSerializedSize() would have been called anyway by the proto
+                // library downstream, so we do not incur any performance loses calling them here
+                // getSerializedSize() caches its result internally
+                final var sidecar = sidecarBuilder.build();
+                final var sidecarSizeInBytes = sidecar.getSerializedSize();
+                if (currentSidecarFileSize + sidecarSizeInBytes >= maxSidecarFileSize) {
+                    assertFirstTxnInstantIsKnown();
+                    try {
+                        finalizeCurrentSidecar();
+                    } catch (IOException e) {
+                        Thread.currentThread().interrupt();
+                        LOG.warn(
+                                EXCEPTION.getMarker(),
+                                "consume :: {} when creating sidecar files",
+                                e.getClass().getSimpleName(),
+                                e);
+                        return;
+                    }
+                    resetSidecarFields();
+                    sidecarFileId++;
+                }
                 if (sidecar.getSidecarRecordsCase() != SidecarRecordsCase.SIDECARRECORDS_NOT_SET) {
                     if (sidecar.getSidecarRecordsCase() == SidecarRecordsCase.STATE_CHANGES) {
                         sidecarTypesInCurrentSidecar.add(SidecarType.CONTRACT_STATE_CHANGE);
@@ -436,6 +454,7 @@ class RecordStreamFileWriter implements LinkedObjectStream<RecordStreamObject> {
                     } else if (sidecar.getSidecarRecordsCase() == SidecarRecordsCase.BYTECODE) {
                         sidecarTypesInCurrentSidecar.add(SidecarType.CONTRACT_BYTECODE);
                     }
+                    currentSidecarFileSize += sidecarSizeInBytes;
                     sidecarFileBuilder.addSidecarRecords(sidecar);
                 } else {
                     LOG.warn("A sidecar record without an actual sidecar has been received");
@@ -507,6 +526,10 @@ class RecordStreamFileWriter implements LinkedObjectStream<RecordStreamObject> {
                 "RecordStreamFileWriter finished writing the last object, is stopped");
     }
 
+    public boolean getStartWriteAtCompleteWindow() {
+        return this.startWriteAtCompleteWindow;
+    }
+
     public void setStartWriteAtCompleteWindow(final boolean startWriteAtCompleteWindow) {
         this.startWriteAtCompleteWindow = startWriteAtCompleteWindow;
         LOG.debug(
@@ -515,8 +538,17 @@ class RecordStreamFileWriter implements LinkedObjectStream<RecordStreamObject> {
                 startWriteAtCompleteWindow);
     }
 
-    public boolean getStartWriteAtCompleteWindow() {
-        return this.startWriteAtCompleteWindow;
+    private void assertFirstTxnInstantIsKnown() {
+        if (firstTxnInstant == null) {
+            final var firstTxnTimestamp =
+                recordStreamFileBuilder
+                    .getRecordStreamItems(0)
+                    .getRecord()
+                    .getConsensusTimestamp();
+            firstTxnInstant =
+                Instant.ofEpochSecond(
+                    firstTxnTimestamp.getSeconds(), firstTxnTimestamp.getNanos());
+        }
     }
 
     /**
@@ -609,11 +641,27 @@ class RecordStreamFileWriter implements LinkedObjectStream<RecordStreamObject> {
         }
     }
 
-    private SidecarMetadata.Builder createSidecarMetadata(final int sidecarId) {
+    private SidecarMetadata.Builder createSidecarMetadata() {
         return SidecarMetadata.newBuilder()
                 .setHash(toProto(sidecarStreamDigest.digest()))
-                .setId(sidecarId)
+                .setId(sidecarFileId)
                 .addAllTypes(sidecarTypesInCurrentSidecar);
+    }
+
+    private void finalizeCurrentSidecar() throws IOException {
+        final var sidecarFile = new File(generateSidecarFilePath(firstTxnInstant, sidecarFileId));
+        createSidecarFile(sidecarFileBuilder, sidecarFile);
+        recordStreamFileBuilder.addSidecars(createSidecarMetadata());
+    }
+
+    private void resetSidecarFields() {
+        sidecarFileBuilder = SidecarFile.newBuilder();
+        sidecarTypesInCurrentSidecar.clear();
+        currentSidecarFileSize = 0;
+    }
+
+    public int getMaxSidecarFileSize() {
+        return this.maxSidecarFileSize;
     }
 
     @VisibleForTesting

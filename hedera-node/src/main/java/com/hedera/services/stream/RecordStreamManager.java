@@ -125,7 +125,8 @@ public class RecordStreamManager {
                                 platform,
                                 startWriteAtCompleteWindow,
                                 streamType,
-                                nodeScopedSidecarDir);
+                                nodeScopedSidecarDir,
+                                globalDynamicProperties.getSidecarMaxSizeMb());
             } else {
                 v5StreamFileWriter =
                         new TimestampStreamFileWriter<>(

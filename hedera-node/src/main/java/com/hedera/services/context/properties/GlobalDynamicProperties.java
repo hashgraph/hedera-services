@@ -136,6 +136,7 @@ public class GlobalDynamicProperties {
     private long maxNumSchedules;
     private boolean prngEnabled;
     private Set<SidecarType> enabledSidecars;
+    private int sidecarMaxSizeMb;
 
     @Inject
     public GlobalDynamicProperties(
@@ -269,6 +270,7 @@ public class GlobalDynamicProperties {
         maxNumTokenRels = properties.getLongProperty("tokens.maxAggregateRels");
         maxNumTopics = properties.getLongProperty("topics.maxNumber");
         prngEnabled = properties.getBooleanProperty("prng.isEnabled");
+        sidecarMaxSizeMb = properties.getIntProperty("hedera.recordStream.sidecarMaxSizeMb");
     }
 
     public int maxTokensPerAccount() {
@@ -657,5 +659,9 @@ public class GlobalDynamicProperties {
 
     public Set<SidecarType> enabledSidecars() {
         return enabledSidecars;
+    }
+
+    public int getSidecarMaxSizeMb() {
+        return sidecarMaxSizeMb;
     }
 }
