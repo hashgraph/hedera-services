@@ -116,11 +116,6 @@ public class ExpirableTxnRecord implements FastCopyable, SerializableHashable {
     private byte[] pseudoRandomBytes = MISSING_PSEUDORANDOM_BYTES;
     private int pseudoRandomNumber = MISSING_NUMBER;
 
-    @Override
-    public void release() {
-        /* No-op */
-    }
-
     public ExpirableTxnRecord() {
         /* RuntimeConstructable */
     }

@@ -20,6 +20,24 @@ package com.hedera.services.stream;
  * ‍
  */
 
+import static com.swirlds.common.crypto.SignatureType.RSA;
+import static com.swirlds.common.stream.LinkedObjectStreamUtilities.generateSigFilePath;
+import static com.swirlds.common.stream.LinkedObjectStreamUtilities.generateStreamFileNameFromInstant;
+import static com.swirlds.common.stream.StreamAligned.NO_ALIGNMENT;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mockStatic;
+import static org.mockito.Mockito.verify;
+
 import com.google.protobuf.ByteString;
 import com.hedera.services.config.MockGlobalDynamicProps;
 import com.hedera.services.recordstreaming.RecordStreamingUtils;
@@ -38,21 +56,10 @@ import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.HashingOutputStream;
+import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.stream.LinkedObjectStreamUtilities;
 import com.swirlds.common.stream.Signer;
-import org.hamcrest.Matchers;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
-import org.mockito.MockedConstruction;
-import org.mockito.MockedStatic;
-import org.mockito.Mockito;
-import org.mockito.junit.jupiter.MockitoExtension;
-
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -67,23 +74,17 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.stream.Stream;
-
-import static com.swirlds.common.stream.LinkedObjectStreamUtilities.generateSigFilePath;
-import static com.swirlds.common.stream.LinkedObjectStreamUtilities.generateStreamFileNameFromInstant;
-import static com.swirlds.common.stream.StreamAligned.NO_ALIGNMENT;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.mockStatic;
-import static org.mockito.Mockito.verify;
+import org.hamcrest.Matchers;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.MockedConstruction;
+import org.mockito.MockedStatic;
+import org.mockito.Mockito;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith({ MockitoExtension.class, LogCaptureExtension.class })
 class RecordStreamFileWriterTest {
@@ -116,10 +117,10 @@ class RecordStreamFileWriterTest {
 		final var secondBlockEntireFileSignature = "entireSignatureBlock2".getBytes(StandardCharsets.UTF_8);
 		final var secondBlockMetadataSignature = "metadataSignatureBlock2".getBytes(StandardCharsets.UTF_8);
 		given(signer.sign(any()))
-				.willReturn(firstBlockEntireFileSignature)
-				.willReturn(firstBlockMetadataSignature)
-				.willReturn(secondBlockEntireFileSignature)
-				.willReturn(secondBlockMetadataSignature);
+				.willReturn(new Signature(RSA, firstBlockEntireFileSignature))
+				.willReturn(new Signature(RSA, firstBlockMetadataSignature))
+				.willReturn(new Signature(RSA, secondBlockEntireFileSignature))
+				.willReturn(new Signature(RSA, secondBlockMetadataSignature));
 		final var firstTransactionInstant = LocalDateTime.of(2022, 5, 26, 11, 2, 55).toInstant(ZoneOffset.UTC);
 		// set initial running hash
 		messageDigest.digest("yumyum".getBytes(StandardCharsets.UTF_8));
@@ -161,8 +162,8 @@ class RecordStreamFileWriterTest {
 		final var secondBlockEntireFileSignature = "entireSignatureBlock2".getBytes(StandardCharsets.UTF_8);
 		final var secondBlockMetadataSignature = "metadataSignatureBlock2".getBytes(StandardCharsets.UTF_8);
 		given(signer.sign(any()))
-				.willReturn(secondBlockEntireFileSignature)
-				.willReturn(secondBlockMetadataSignature);
+				.willReturn(new Signature(RSA, secondBlockEntireFileSignature))
+				.willReturn(new Signature(RSA, secondBlockMetadataSignature));
 		final var firstTransactionInstant = LocalDateTime.of(2022, 5, 24, 11, 2, 55).toInstant(ZoneOffset.UTC);
 		// set initial running hash
 		messageDigest.digest("yumyum".getBytes(StandardCharsets.UTF_8));
@@ -200,8 +201,8 @@ class RecordStreamFileWriterTest {
 		final var firstBlockEntireFileSignature = "entireSignatureBlock1".getBytes(StandardCharsets.UTF_8);
 		final var firstBlockMetadataSignature = "metadataSignatureBlock1".getBytes(StandardCharsets.UTF_8);
 		given(signer.sign(any()))
-				.willReturn(firstBlockEntireFileSignature)
-				.willReturn(firstBlockMetadataSignature);
+				.willReturn(new Signature(RSA, firstBlockEntireFileSignature))
+				.willReturn(new Signature(RSA, firstBlockMetadataSignature));
 		final var firstTransactionInstant = LocalDateTime.of(2022, 9, 24, 11, 2, 55).toInstant(ZoneOffset.UTC);
 		// set initial running hash
 		messageDigest.digest("yumyum".getBytes(StandardCharsets.UTF_8));
@@ -238,8 +239,8 @@ class RecordStreamFileWriterTest {
 		final var firstBlockEntireFileSignature = "entireSignatureBlock1".getBytes(StandardCharsets.UTF_8);
 		final var firstBlockMetadataSignature = "metadataSignatureBlock1".getBytes(StandardCharsets.UTF_8);
 		given(signer.sign(any()))
-				.willReturn(firstBlockEntireFileSignature)
-				.willReturn(firstBlockMetadataSignature);
+				.willReturn(new Signature(RSA, firstBlockEntireFileSignature))
+				.willReturn(new Signature(RSA, firstBlockMetadataSignature));
 		final var firstTransactionInstant = LocalDateTime.of(2022, 10, 24, 16, 2, 55).toInstant(ZoneOffset.UTC);
 		// set initial running hash
 		messageDigest.digest("yumyum".getBytes(StandardCharsets.UTF_8));
@@ -663,10 +664,10 @@ class RecordStreamFileWriterTest {
 		final var secondBlockEntireFileSignature = "entireSignatureBlock2".getBytes(StandardCharsets.UTF_8);
 		final var secondBlockMetadataSignature = "metadataSignatureBlock2".getBytes(StandardCharsets.UTF_8);
 		given(signer.sign(any()))
-				.willReturn(firstBlockEntireFileSignature)
-				.willReturn(firstBlockMetadataSignature)
-				.willReturn(secondBlockEntireFileSignature)
-				.willReturn(secondBlockMetadataSignature);
+				.willReturn(new Signature(RSA, firstBlockEntireFileSignature))
+				.willReturn(new Signature(RSA, firstBlockMetadataSignature))
+				.willReturn(new Signature(RSA, secondBlockEntireFileSignature))
+				.willReturn(new Signature(RSA, secondBlockMetadataSignature));
 		final var firstTransactionInstant = LocalDateTime.of(2022, 5, 11, 16, 2, 55).toInstant(ZoneOffset.UTC);
 
 		// when

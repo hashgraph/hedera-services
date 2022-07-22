@@ -229,11 +229,6 @@ public class ContractValue implements VirtualValue {
 		return immutableValue;
 	}
 
-	@Override
-	public void release() {
-		// nothing to do
-	}
-
 	// =================================================================================================================
 	// Serialization Methods
 

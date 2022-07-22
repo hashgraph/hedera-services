@@ -20,6 +20,24 @@ package com.hedera.services.state.exports;
  * ‍
  */
 
+import static com.hedera.services.state.exports.SignedStateBalancesExporter.SINGLE_ACCOUNT_BALANCES_COMPARATOR;
+import static com.hedera.services.utils.EntityNum.fromAccountId;
+import static com.hedera.services.utils.EntityNum.fromTokenId;
+import static com.hedera.services.utils.EntityNumPair.fromAccountTokenRel;
+import static com.hedera.test.utils.IdUtils.asAccount;
+import static com.hedera.test.utils.IdUtils.asToken;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.willThrow;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+
 import com.hedera.services.ServicesState;
 import com.hedera.services.config.MockGlobalDynamicProps;
 import com.hedera.services.context.properties.PropertySource;
@@ -40,20 +58,15 @@ import com.hedera.test.extensions.LoggingTarget;
 import com.hedera.test.factories.accounts.MerkleAccountFactory;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
-import com.swirlds.common.system.address.Address;
-import com.swirlds.common.system.address.AddressBook;
-import com.swirlds.common.system.NodeId;
 import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
+import com.swirlds.common.crypto.Signature;
+import com.swirlds.common.crypto.SignatureType;
+import com.swirlds.common.system.NodeId;
+import com.swirlds.common.system.address.Address;
+import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.merkle.map.MerkleMap;
-import org.hamcrest.Matchers;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
-
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -64,25 +77,14 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Function;
 import java.util.function.UnaryOperator;
-
-import static com.hedera.services.state.exports.SignedStateBalancesExporter.SINGLE_ACCOUNT_BALANCES_COMPARATOR;
-import static com.hedera.services.utils.EntityNum.fromAccountId;
-import static com.hedera.services.utils.EntityNum.fromTokenId;
-import static com.hedera.services.utils.EntityNumPair.fromAccountTokenRel;
-import static com.hedera.test.utils.IdUtils.asAccount;
-import static com.hedera.test.utils.IdUtils.asToken;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.BDDMockito.willThrow;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
+import org.hamcrest.Matchers;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 
 @ExtendWith(LogCaptureExtension.class)
 class SignedStateBalancesExporterTest {
@@ -125,7 +127,7 @@ class SignedStateBalancesExporterTest {
 
 	private ServicesState state;
 	private PropertySource properties;
-	private UnaryOperator<byte[]> signer;
+	private Function<byte[], Signature> signer;
 	private SigFileWriter sigFileWriter;
 	private FileHashReader hashReader;
 	private DirectoryAssurance assurance;
@@ -214,7 +216,7 @@ class SignedStateBalancesExporterTest {
 		given(state.addressBook()).willReturn(book);
 
 		signer = mock(UnaryOperator.class);
-		given(signer.apply(fileHash)).willReturn(sig);
+		given(signer.apply(fileHash)).willReturn(new Signature(SignatureType.RSA, sig));
 
 		systemExits = mock(SystemExits.class);
 

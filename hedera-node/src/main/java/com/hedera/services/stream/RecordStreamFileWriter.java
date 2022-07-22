@@ -20,6 +20,14 @@ package com.hedera.services.stream;
  * ‍
  */
 
+import static com.swirlds.common.stream.LinkedObjectStreamUtilities.generateSigFilePath;
+import static com.swirlds.common.stream.LinkedObjectStreamUtilities.generateStreamFileNameFromInstant;
+import static com.swirlds.common.stream.LinkedObjectStreamUtilities.getPeriod;
+import static com.swirlds.common.stream.StreamAligned.NO_ALIGNMENT;
+import static com.swirlds.logging.LogMarker.EXCEPTION;
+import static com.swirlds.logging.LogMarker.OBJECT_STREAM;
+import static com.swirlds.logging.LogMarker.OBJECT_STREAM_FILE;
+
 import com.google.common.annotations.VisibleForTesting;
 import com.google.protobuf.CodedOutputStream;
 import com.hedera.services.legacy.proto.utils.ByteStringUtils;
@@ -40,9 +48,6 @@ import com.swirlds.common.stream.LinkedObjectStream;
 import com.swirlds.common.stream.Signer;
 import com.swirlds.common.stream.StreamAligned;
 import com.swirlds.logging.LogMarker;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
 import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -52,14 +57,8 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
 import java.util.concurrent.ExecutionException;
-
-import static com.swirlds.common.stream.LinkedObjectStreamUtilities.generateSigFilePath;
-import static com.swirlds.common.stream.LinkedObjectStreamUtilities.generateStreamFileNameFromInstant;
-import static com.swirlds.common.stream.LinkedObjectStreamUtilities.getPeriod;
-import static com.swirlds.common.stream.StreamAligned.NO_ALIGNMENT;
-import static com.swirlds.logging.LogMarker.EXCEPTION;
-import static com.swirlds.logging.LogMarker.OBJECT_STREAM;
-import static com.swirlds.logging.LogMarker.OBJECT_STREAM_FILE;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 class RecordStreamFileWriter implements LinkedObjectStream<RecordStreamObject> {
 	private static final Logger LOG = LogManager.getLogger(RecordStreamFileWriter.class);
@@ -480,11 +479,12 @@ class RecordStreamFileWriter implements LinkedObjectStream<RecordStreamObject> {
 
 	private SignatureObject generateSignatureObject(final byte[] hash) {
 		final var signature = signer.sign(hash);
+		final var sigBytes = signature.getSignatureBytes();
 		return SignatureObject.newBuilder()
 				.setType(SignatureType.SHA_384_WITH_RSA)
-				.setLength(signature.length)
-				.setChecksum(101 - signature.length) // simple checksum to detect if at wrong place in the stream
-				.setSignature(ByteStringUtils.wrapUnsafely(signature))
+				.setLength(sigBytes.length)
+				.setChecksum(101 - sigBytes.length) // simple checksum to detect if at wrong place in the stream
+				.setSignature(ByteStringUtils.wrapUnsafely(sigBytes))
 				.setHashObject(toProto(hash))
 				.build();
 	}

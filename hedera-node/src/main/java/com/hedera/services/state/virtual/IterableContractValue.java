@@ -20,24 +20,23 @@ package com.hedera.services.state.virtual;
  * ‍
  */
 
+import static com.hedera.services.state.virtual.KeyPackingUtils.computeNonZeroBytes;
+import static com.hedera.services.state.virtual.KeyPackingUtils.serializePackedBytesToBuffer;
+
 import com.google.common.annotations.VisibleForTesting;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.jasperdb.files.DataFileCommon;
 import com.swirlds.virtualmap.VirtualValue;
-import org.apache.tuweni.bytes.Bytes32;
-import org.apache.tuweni.units.bigints.UInt256;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
-
 import java.io.IOException;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.Objects;
-
-import static com.hedera.services.state.virtual.KeyPackingUtils.computeNonZeroBytes;
-import static com.hedera.services.state.virtual.KeyPackingUtils.serializePackedBytesToBuffer;
+import org.apache.tuweni.bytes.Bytes32;
+import org.apache.tuweni.units.bigints.UInt256;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Representation of a 256bit unsigned int, stored internally as a big-endian byte array.
@@ -280,11 +279,6 @@ public class IterableContractValue implements VirtualValue {
 		final var readOnlyThat = new IterableContractValue(uint256Value, prevUint256Key, nextUint256Key);
 		readOnlyThat.isImmutable = true;
 		return readOnlyThat;
-	}
-
-	@Override
-	public void release() {
-		// nothing to do
 	}
 
 	// =================================================================================================================
