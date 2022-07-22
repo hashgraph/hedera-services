@@ -15,23 +15,22 @@
  */
 package com.hedera.services.bdd.spec.assertions;
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.spec.HapiPropertySource;
-import com.hedera.services.bdd.spec.queries.crypto.ExpectedTokenRel;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.Key;
-import org.junit.jupiter.api.Assertions;
-
-import java.util.List;
-import java.util.Optional;
-import java.util.function.Function;
-
 import static com.hedera.services.bdd.suites.HapiApiSuite.ONE_HBAR;
 import static com.hederahashgraph.api.proto.java.CryptoGetInfoResponse.AccountInfo;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiPropertySource;
+import com.hedera.services.bdd.spec.queries.crypto.ExpectedTokenRel;
+import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.Key;
+import java.util.List;
+import java.util.Optional;
+import java.util.function.Function;
+import org.junit.jupiter.api.Assertions;
 
 public class AccountInfoAsserts extends BaseErroringAssertsProvider<AccountInfo> {
     public static AccountInfoAsserts accountWith() {
@@ -102,37 +101,47 @@ public class AccountInfoAsserts extends BaseErroringAssertsProvider<AccountInfo>
 
     public AccountInfoAsserts noStakedAccountId() {
         registerProvider(
-                (spec, o) -> assertEquals(
-                        AccountID.getDefaultInstance(),
-                        ((AccountInfo) o).getStakingInfo().getStakedAccountId(),
-                        "Bad stakedAccountId id!"));
+                (spec, o) ->
+                        assertEquals(
+                                AccountID.getDefaultInstance(),
+                                ((AccountInfo) o).getStakingInfo().getStakedAccountId(),
+                                "Bad stakedAccountId id!"));
         return this;
     }
 
     public AccountInfoAsserts someStakePeriodStart() {
         registerProvider(
-                (spec, o) -> assertNotEquals(
-                        0,
-                        ((AccountInfo) o).getStakingInfo().getStakePeriodStart().getSeconds(),
-                        "Wrong stakePeriodStart"));
+                (spec, o) ->
+                        assertNotEquals(
+                                0,
+                                ((AccountInfo) o)
+                                        .getStakingInfo()
+                                        .getStakePeriodStart()
+                                        .getSeconds(),
+                                "Wrong stakePeriodStart"));
         return this;
     }
 
     public AccountInfoAsserts noStakePeriodStart() {
         registerProvider(
-                (spec, o) -> assertEquals(
-                        0,
-                        ((AccountInfo) o).getStakingInfo().getStakePeriodStart().getSeconds(),
-                        "Wrong stakePeriodStart"));
+                (spec, o) ->
+                        assertEquals(
+                                0,
+                                ((AccountInfo) o)
+                                        .getStakingInfo()
+                                        .getStakePeriodStart()
+                                        .getSeconds(),
+                                "Wrong stakePeriodStart"));
         return this;
     }
 
     public AccountInfoAsserts noStakingNodeId() {
         registerProvider(
-                (spec, o) -> assertEquals(
-                        0,
-                        ((AccountInfo) o).getStakingInfo().getStakedNodeId(),
-                        "Bad stakedNodeId id!"));
+                (spec, o) ->
+                        assertEquals(
+                                0,
+                                ((AccountInfo) o).getStakingInfo().getStakedNodeId(),
+                                "Bad stakedNodeId id!"));
         return this;
     }
 
