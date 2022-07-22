@@ -100,20 +100,18 @@ public class TokenAssociationSpecs extends HapiApiSuite {
     @Override
     public List<HapiApiSpec> getSpecsInSuite() {
         return List.of(
-                new HapiApiSpec[] {
-                    treasuryAssociationIsAutomatic(),
-                    dissociateHasExpectedSemantics(),
-                    associatedContractsMustHaveAdminKeys(),
-                    expiredAndDeletedTokensStillAppearInContractInfo(),
-                    dissociationFromExpiredTokensAsExpected(),
-                    accountInfoQueriesAsExpected(),
-                    handlesUseOfDefaultTokenId(),
-                    contractInfoQueriesAsExpected(),
-                    dissociateHasExpectedSemanticsForDeletedTokens(),
-                    dissociateHasExpectedSemanticsForDissociatedContracts(),
-                    canDissociateFromDeletedTokenWithAlreadyDissociatedTreasury(),
-                    multiAssociationWithSameRepeatedTokenAsExpected(),
-                });
+                treasuryAssociationIsAutomatic(),
+                dissociateHasExpectedSemantics(),
+                associatedContractsMustHaveAdminKeys(),
+                expiredAndDeletedTokensStillAppearInContractInfo(),
+                dissociationFromExpiredTokensAsExpected(),
+                accountInfoQueriesAsExpected(),
+                handlesUseOfDefaultTokenId(),
+                contractInfoQueriesAsExpected(),
+                dissociateHasExpectedSemanticsForDeletedTokens(),
+                dissociateHasExpectedSemanticsForDissociatedContracts(),
+                canDissociateFromDeletedTokenWithAlreadyDissociatedTreasury(),
+                multiAssociationWithSameRepeatedTokenAsExpected());
     }
 
     @Override
@@ -213,6 +211,7 @@ public class TokenAssociationSpecs extends HapiApiSuite {
     }
 
     public HapiApiSpec accountInfoQueriesAsExpected() {
+        final var account = "account";
         return defaultHapiSpec("InfoQueriesAsExpected")
                 .given(
                         newKeyNamed("simple"),
@@ -220,18 +219,18 @@ public class TokenAssociationSpecs extends HapiApiSuite {
                         tokenCreate("b").decimals(2),
                         tokenCreate("c").decimals(3),
                         tokenCreate("tbd").adminKey("simple").decimals(4),
-                        cryptoCreate("account").balance(0L))
+                        cryptoCreate(account).balance(0L))
                 .when(
-                        tokenAssociate("account", "a", "b", "c", "tbd"),
-                        getAccountInfo("account")
+                        tokenAssociate(account, "a", "b", "c", "tbd"),
+                        getAccountInfo(account)
                                 .hasToken(relationshipWith("a").decimals(1))
                                 .hasToken(relationshipWith("b").decimals(2))
                                 .hasToken(relationshipWith("c").decimals(3))
                                 .hasToken(relationshipWith("tbd").decimals(4)),
-                        tokenDissociate("account", "b"),
+                        tokenDissociate(account, "b"),
                         tokenDelete("tbd"))
                 .then(
-                        getAccountInfo("account")
+                        getAccountInfo(account)
                                 .hasToken(relationshipWith("a").decimals(1))
                                 .hasNoTokenRelationship("b")
                                 .hasToken(relationshipWith("c").decimals(3))
@@ -397,7 +396,7 @@ public class TokenAssociationSpecs extends HapiApiSuite {
                                                                                     + " send 100"
                                                                                     + " tokens"
                                                                                     + " back!");
-                                                                    } catch (Throwable error) {
+                                                                    } catch (Exception error) {
                                                                         return List.of(error);
                                                                     }
                                                                     return Collections.emptyList();

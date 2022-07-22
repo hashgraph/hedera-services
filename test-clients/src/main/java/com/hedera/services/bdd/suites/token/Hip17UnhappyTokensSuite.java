@@ -98,25 +98,24 @@ public class Hip17UnhappyTokensSuite extends HapiApiSuite {
     @Override
     public List<HapiApiSpec> getSpecsInSuite() {
         return List.of(
-                new HapiApiSpec[] {
-                    canStillGetNftInfoWhenDeleted(),
-                    cannotWipeNftWhenDeleted(),
-                    cannotBurnNftWhenDeleted(),
-                    cannotMintNftWhenDeleted(),
-                    cannotDissociateNftWhenDeleted(),
-                    cannotAssociateNftWhenDeleted(),
-                    cannotUpdateNftWhenDeleted(),
-                    cannotUpdateNftFeeScheduleWhenDeleted(),
-                    cannotTransferNftWhenDeleted(),
-                    cannotFreezeNftWhenDeleted(),
-                    cannotUnfreezeNftWhenDeleted(),
+                canStillGetNftInfoWhenDeleted(),
+                cannotWipeNftWhenDeleted(),
+                cannotBurnNftWhenDeleted(),
+                cannotMintNftWhenDeleted(),
+                cannotDissociateNftWhenDeleted(),
+                cannotAssociateNftWhenDeleted(),
+                cannotUpdateNftWhenDeleted(),
+                cannotUpdateNftFeeScheduleWhenDeleted(),
+                cannotTransferNftWhenDeleted(),
+                cannotFreezeNftWhenDeleted(),
+                cannotUnfreezeNftWhenDeleted()
 
-                    // TODO: when auto removal and expiry implemented, enable the following and
-                    // also add all those scenarios like above to complete the matrix.
-                    // cannotGetNftInfoWhenExpired()
-                    // cannotGetNftInfoWhenAutoRemoved(),
-                    // autoRemovalCasesSuiteCleanup()
-                });
+                // TODO: when auto removal and expiry implemented, enable the following and
+                // also add all those scenarios like above to complete the matrix.
+                // cannotGetNftInfoWhenExpired()
+                // cannotGetNftInfoWhenAutoRemoved(),
+                // autoRemovalCasesSuiteCleanup()
+                );
     }
 
     private HapiApiSpec canStillGetNftInfoWhenDeleted() {
