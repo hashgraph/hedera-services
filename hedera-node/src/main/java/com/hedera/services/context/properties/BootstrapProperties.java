@@ -300,7 +300,8 @@ public final class BootstrapProperties implements PropertySource {
                     "hedera.allowances.maxAccountLimit",
                     "hedera.allowances.isEnabled",
                     "entities.limitTokenAssociations",
-                    "prng.isEnabled");
+                    "prng.isEnabled",
+								    "hedera.recordStream.enableTraceabilityMigration");
 
     static final Set<String> NODE_PROPS =
             Set.of(
@@ -402,6 +403,7 @@ public final class BootstrapProperties implements PropertySource {
                     entry("hedera.recordStream.recordFileVersion", AS_INT),
                     entry("hedera.recordStream.signatureFileVersion", AS_INT),
                     entry("hedera.recordStream.queueCapacity", AS_INT),
+                    entry("hedera.recordStream.enableTraceabilityMigration", AS_BOOLEAN),
                     entry("hedera.shard", AS_LONG),
                     entry("hedera.transaction.maxMemoUtf8Bytes", AS_INT),
                     entry("hedera.transaction.maxValidDuration", AS_LONG),

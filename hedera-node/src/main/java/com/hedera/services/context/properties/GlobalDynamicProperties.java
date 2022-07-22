@@ -136,6 +136,7 @@ public class GlobalDynamicProperties {
     private long maxNumSchedules;
     private boolean prngEnabled;
     private Set<SidecarType> enabledSidecars;
+    private boolean enableTraceabilityMigration;
 
     @Inject
     public GlobalDynamicProperties(
@@ -269,6 +270,8 @@ public class GlobalDynamicProperties {
         maxNumTokenRels = properties.getLongProperty("tokens.maxAggregateRels");
         maxNumTopics = properties.getLongProperty("topics.maxNumber");
         prngEnabled = properties.getBooleanProperty("prng.isEnabled");
+        enableTraceabilityMigration =
+                properties.getBooleanProperty("hedera.recordStream.enableTraceabilityMigration");
     }
 
     public int maxTokensPerAccount() {
@@ -657,5 +660,9 @@ public class GlobalDynamicProperties {
 
     public Set<SidecarType> enabledSidecars() {
         return enabledSidecars;
+    }
+
+    public boolean isTraceabilityMigrationEnabled() {
+        return enableTraceabilityMigration;
     }
 }
