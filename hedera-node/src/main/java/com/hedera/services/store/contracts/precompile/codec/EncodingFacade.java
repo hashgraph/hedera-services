@@ -202,6 +202,7 @@ public class EncodingFacade {
     public Bytes encodeGetTokenDefaultKycStatus(final boolean defaultKycStatus) {
         return functionResultBuilder()
             .forFunction(FunctionType.GET_TOKEN_DEFAULT_KYC_STATUS)
+            .withStatus(SUCCESS.getNumber())
             .withGetTokenDefaultKycStatus(defaultKycStatus)
             .build();
     }
