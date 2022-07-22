@@ -13,43 +13,43 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.hedera.services.parsing;
+package com.hedera.services.contracts;
 
-import static com.hedera.services.parsing.ParsingConstants.ADDRESS;
-import static com.hedera.services.parsing.ParsingConstants.BOOL;
-import static com.hedera.services.parsing.ParsingConstants.FUNGIBLE_TOKEN_INFO;
-import static com.hedera.services.parsing.ParsingConstants.INT32;
-import static com.hedera.services.parsing.ParsingConstants.NON_FUNGIBLE_TOKEN_INFO;
-import static com.hedera.services.parsing.ParsingConstants.RESPONSE_STATUS_AT_BEGINNING;
-import static com.hedera.services.parsing.ParsingConstants.STRING;
-import static com.hedera.services.parsing.ParsingConstants.TOKEN_INFO;
-import static com.hedera.services.parsing.ParsingConstants.UINT256;
-import static com.hedera.services.parsing.ParsingConstants.UINT8;
-import static com.hedera.services.parsing.ParsingConstants.allowanceOfType;
-import static com.hedera.services.parsing.ParsingConstants.approveOfType;
-import static com.hedera.services.parsing.ParsingConstants.balanceOfType;
-import static com.hedera.services.parsing.ParsingConstants.burnReturnType;
-import static com.hedera.services.parsing.ParsingConstants.createReturnType;
-import static com.hedera.services.parsing.ParsingConstants.decimalsType;
-import static com.hedera.services.parsing.ParsingConstants.ercTransferType;
-import static com.hedera.services.parsing.ParsingConstants.getApprovedType;
-import static com.hedera.services.parsing.ParsingConstants.getFungibleTokenInfoType;
-import static com.hedera.services.parsing.ParsingConstants.getNonFungibleTokenInfoType;
-import static com.hedera.services.parsing.ParsingConstants.getTokenInfoType;
-import static com.hedera.services.parsing.ParsingConstants.hapiAllowanceOfType;
-import static com.hedera.services.parsing.ParsingConstants.hapiGetApprovedType;
-import static com.hedera.services.parsing.ParsingConstants.hapiIsApprovedForAllType;
-import static com.hedera.services.parsing.ParsingConstants.isApprovedForAllType;
-import static com.hedera.services.parsing.ParsingConstants.mintReturnType;
-import static com.hedera.services.parsing.ParsingConstants.nameType;
-import static com.hedera.services.parsing.ParsingConstants.notSpecifiedType;
-import static com.hedera.services.parsing.ParsingConstants.ownerOfType;
-import static com.hedera.services.parsing.ParsingConstants.symbolType;
-import static com.hedera.services.parsing.ParsingConstants.tokenUriType;
+import static com.hedera.services.contracts.ParsingConstants.ADDRESS;
+import static com.hedera.services.contracts.ParsingConstants.BOOL;
+import static com.hedera.services.contracts.ParsingConstants.FUNGIBLE_TOKEN_INFO;
+import static com.hedera.services.contracts.ParsingConstants.INT32;
+import static com.hedera.services.contracts.ParsingConstants.NON_FUNGIBLE_TOKEN_INFO;
+import static com.hedera.services.contracts.ParsingConstants.RESPONSE_STATUS_AT_BEGINNING;
+import static com.hedera.services.contracts.ParsingConstants.STRING;
+import static com.hedera.services.contracts.ParsingConstants.TOKEN_INFO;
+import static com.hedera.services.contracts.ParsingConstants.UINT256;
+import static com.hedera.services.contracts.ParsingConstants.UINT8;
+import static com.hedera.services.contracts.ParsingConstants.allowanceOfType;
+import static com.hedera.services.contracts.ParsingConstants.approveOfType;
+import static com.hedera.services.contracts.ParsingConstants.balanceOfType;
+import static com.hedera.services.contracts.ParsingConstants.burnReturnType;
+import static com.hedera.services.contracts.ParsingConstants.createReturnType;
+import static com.hedera.services.contracts.ParsingConstants.decimalsType;
+import static com.hedera.services.contracts.ParsingConstants.ercTransferType;
+import static com.hedera.services.contracts.ParsingConstants.getApprovedType;
+import static com.hedera.services.contracts.ParsingConstants.getFungibleTokenInfoType;
+import static com.hedera.services.contracts.ParsingConstants.getNonFungibleTokenInfoType;
+import static com.hedera.services.contracts.ParsingConstants.getTokenInfoType;
+import static com.hedera.services.contracts.ParsingConstants.hapiAllowanceOfType;
+import static com.hedera.services.contracts.ParsingConstants.hapiGetApprovedType;
+import static com.hedera.services.contracts.ParsingConstants.hapiIsApprovedForAllType;
+import static com.hedera.services.contracts.ParsingConstants.isApprovedForAllType;
+import static com.hedera.services.contracts.ParsingConstants.mintReturnType;
+import static com.hedera.services.contracts.ParsingConstants.nameType;
+import static com.hedera.services.contracts.ParsingConstants.notSpecifiedType;
+import static com.hedera.services.contracts.ParsingConstants.ownerOfType;
+import static com.hedera.services.contracts.ParsingConstants.symbolType;
+import static com.hedera.services.contracts.ParsingConstants.tokenUriType;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.esaulpaugh.headlong.abi.TupleType;
-import com.hedera.services.parsing.ParsingConstants.FunctionType;
+import com.hedera.services.contracts.ParsingConstants.FunctionType;
 import org.junit.jupiter.api.Test;
 
 class ParsingConstantsTest {

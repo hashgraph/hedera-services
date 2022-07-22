@@ -16,6 +16,8 @@
 package com.hedera.services.store.contracts.precompile;
 
 import static com.hedera.services.state.EntityCreator.EMPTY_MEMO;
+import static com.hedera.services.state.merkle.internals.BitPackUtils.signedLowOrder32From;
+import static com.hedera.services.state.merkle.internals.BitPackUtils.unsignedHighOrder32From;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_GET_FUNGIBLE_TOKEN_INFO;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_GET_NON_FUNGIBLE_TOKEN_INFO;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_GET_TOKEN_INFO;
@@ -26,9 +28,11 @@ import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.invali
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.invalidTokenIdResult;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.parentContractAddress;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.parentContractAddressConvertedToContractId;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.payer;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.payerAddress;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.payerId;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.payerIdConvertedToAddress;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.sender;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.senderAddress;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.senderId;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.senderIdConvertedToAddress;
@@ -70,26 +74,27 @@ import com.hedera.services.state.submerkle.FcCustomFee;
 import com.hedera.services.state.submerkle.FcCustomFee.FeeType;
 import com.hedera.services.state.submerkle.FixedFeeSpec;
 import com.hedera.services.state.submerkle.FractionalFeeSpec;
+import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.state.submerkle.RoyaltyFeeSpec;
 import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.services.store.contracts.WorldLedgers;
 import com.hedera.services.store.contracts.precompile.codec.DecodingFacade;
 import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
-import com.hedera.services.store.contracts.precompile.codec.Expiry;
-import com.hedera.services.store.contracts.precompile.codec.FixedFee;
-import com.hedera.services.store.contracts.precompile.codec.FractionalFee;
-import com.hedera.services.store.contracts.precompile.codec.FungibleTokenInfo;
-import com.hedera.services.store.contracts.precompile.codec.HederaToken;
-import com.hedera.services.store.contracts.precompile.codec.KeyValue;
-import com.hedera.services.store.contracts.precompile.codec.NonFungibleTokenInfo;
-import com.hedera.services.store.contracts.precompile.codec.RoyaltyFee;
-import com.hedera.services.store.contracts.precompile.codec.TokenInfo;
-import com.hedera.services.store.contracts.precompile.codec.TokenKey;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.utils.EntityIdUtils;
+import com.hederahashgraph.api.proto.java.CustomFee;
+import com.hederahashgraph.api.proto.java.Duration;
+import com.hederahashgraph.api.proto.java.FixedFee;
+import com.hederahashgraph.api.proto.java.FractionalFee;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.NftID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.RoyaltyFee;
+import com.hederahashgraph.api.proto.java.TokenID;
+import com.hederahashgraph.api.proto.java.TokenInfo;
+import com.hederahashgraph.api.proto.java.TokenNftInfo;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.fee.FeeObject;
 import java.util.ArrayList;
@@ -165,10 +170,8 @@ class GetTokenInfoPrecompilesTest {
 
     // Key properties
     private final boolean freezeDefault = false;
-    private final KeyValue keyValue =
-            new KeyValue(false, parentContractAddress, new byte[] {}, new byte[] {}, null);
-    private final TokenKey tokenKey = new TokenKey(TokenKeyType.ADMIN_KEY.value(), keyValue);
-    private final List<TokenKey> tokenKeys = new ArrayList<>();
+    private final Key tokenKey = Key.newBuilder().setContractID(parentContractAddressConvertedToContractId).build();
+    private final List<Key> tokenKeys = new ArrayList<>();
 
     // Expiry properties
     private final long expiryPeriod = 10200L;
@@ -189,6 +192,7 @@ class GetTokenInfoPrecompilesTest {
     // Fee properties
     private final Address feeCollector = payerIdConvertedToAddress;
     private final Address feeToken = tokenAddress;
+    private final TokenID feeTokenId = EntityIdUtils.tokenIdFromEvmAddress(feeToken);
     private final EntityId feeTokenEntityId = tokenAddressConvertedToEntityId;
     private final EntityId feeCollectorEntityId = payerId;
     private final long amount = 100L;
@@ -199,11 +203,10 @@ class GetTokenInfoPrecompilesTest {
     private final boolean isNetOfTransfers = false;
 
     // Info objects
-    private final Expiry expiry =
-            new Expiry(expiryPeriod, autoRenewAccountAddress, autoRenewPeriod);
+//    private final Expiry expiry =
+//            new Expiry(expiryPeriod, autoRenewAccountAddress, autoRenewPeriod);
     private TokenInfo tokenInfo;
-    private FungibleTokenInfo fungibleTokenInfo;
-    private NonFungibleTokenInfo nonFungibleTokenInfo;
+    private TokenNftInfo nonFungibleTokenInfo;
 
     @BeforeEach
     void setUp() {
@@ -229,11 +232,21 @@ class GetTokenInfoPrecompilesTest {
                 .thenReturn(feeToken);
 
         tokenKeys.add(tokenKey);
-        tokenInfo = createTokenInfo(tokenKeys, true, false);
-        fungibleTokenInfo = new FungibleTokenInfo(tokenInfo, decimals);
-        nonFungibleTokenInfo =
-                new NonFungibleTokenInfo(
-                        tokenInfo, serialNumber, ownerId, creationTime, metadata, spenderId);
+        tokenInfo = createTokenInfoWithSingleKey( 1, false);
+//        nonFungibleTokenInfo =
+//                new NonFungibleTokenInfo(
+//                        tokenInfo, serialNumber, ownerId, creationTime, metadata, spenderId);
+
+        nonFungibleTokenInfo = TokenNftInfo.newBuilder()
+            .setLedgerId(networkInfo.ledgerId())
+            .setNftID(NftID.newBuilder().setTokenID(tokenMerkleId).setSerialNumber(serialNumber).build())
+            .setAccountID(payer)
+            .setCreationTime(new RichInstant(
+            unsignedHighOrder32From(creationTime),
+            signedLowOrder32From(creationTime)).toGrpc())
+            .setMetadata(fromString(metadata))
+            .setSpenderId(sender)
+            .build();
 
         subject =
                 new HTSPrecompiledContract(
@@ -249,8 +262,7 @@ class GetTokenInfoPrecompilesTest {
                         () -> feeCalculator,
                         stateView,
                         precompilePricingUtils,
-                        infrastructureFactory,
-                        networkInfo);
+                        infrastructureFactory);
         given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
@@ -308,14 +320,14 @@ class GetTokenInfoPrecompilesTest {
         givenMinimalTokenContext(TokenSupplyType.INFINITE);
         givenKeyContext(key, FREEZE_KEY);
 
-        final var tokenKeys = new ArrayList<TokenKey>();
-        final var tokenKey =
-                new TokenKey(
-                        FREEZE_KEY.value(),
-                        new KeyValue(
-                                false, parentContractAddress, new byte[] {}, new byte[] {}, null));
-        tokenKeys.add(tokenKey);
-        tokenInfo = createTokenInfo(tokenKeys, false, false);
+        final var tokenKeys = new ArrayList<Key>();
+//        final var tokenKey =
+//                new TokenKey(
+//                        FREEZE_KEY.value(),
+//                        new KeyValue(
+//                                false, parentContractAddress, ByteString.EMPTY, ByteString.EMPTY, null));
+//        tokenKeys.add(tokenKey);
+        tokenInfo = createTokenInfoWithSingleKey(0, false);
 
         given(key.getEd25519()).willReturn(new byte[] {});
         given(key.getECDSASecp256k1Key()).willReturn(new byte[] {});
@@ -361,14 +373,14 @@ class GetTokenInfoPrecompilesTest {
         givenMinimalTokenContext(TokenSupplyType.INFINITE);
         givenKeyContext(key, FREEZE_KEY);
 
-        final var tokenKeys = new ArrayList<TokenKey>();
-        final var tokenKey =
-                new TokenKey(
-                        FREEZE_KEY.value(),
-                        new KeyValue(
-                                false, null, new byte[] {}, new byte[] {}, parentContractAddress));
-        tokenKeys.add(tokenKey);
-        tokenInfo = createTokenInfo(tokenKeys, false, false);
+//        final var tokenKeys = new ArrayList<TokenKey>();
+//        final var tokenKey =
+//                new TokenKey(
+//                        FREEZE_KEY.value(),
+//                        new KeyValue(
+//                                false, null, new byte[] {}, new byte[] {}, parentContractAddress));
+//        tokenKeys.add(tokenKey);
+        tokenInfo = createTokenInfoWithSingleKey(0, false);
 
         given(key.getEd25519()).willReturn(new byte[] {});
         given(key.getECDSASecp256k1Key()).willReturn(new byte[] {});
@@ -414,23 +426,27 @@ class GetTokenInfoPrecompilesTest {
 
         givenMinimalTokenContext(TokenSupplyType.FINITE);
 
-        final TokenKey adminKey = new TokenKey(TokenKeyType.ADMIN_KEY.value(), keyValue);
-        final TokenKey kycKey = new TokenKey(TokenKeyType.KYC_KEY.value(), keyValue);
-        final TokenKey freezeKey = new TokenKey(FREEZE_KEY.value(), keyValue);
-        final TokenKey wipeKey = new TokenKey(TokenKeyType.WIPE_KEY.value(), keyValue);
-        final TokenKey supplyKey = new TokenKey(TokenKeyType.SUPPLY_KEY.value(), keyValue);
-        final TokenKey feeScheduleKey =
-                new TokenKey(TokenKeyType.FEE_SCHEDULE_KEY.value(), keyValue);
-        final TokenKey pauseKey = new TokenKey(TokenKeyType.PAUSE_KEY.value(), keyValue);
-        final List<TokenKey> tokenKeys = new ArrayList<>();
-        tokenKeys.add(adminKey);
-        tokenKeys.add(kycKey);
-        tokenKeys.add(freezeKey);
-        tokenKeys.add(wipeKey);
-        tokenKeys.add(supplyKey);
-        tokenKeys.add(feeScheduleKey);
-        tokenKeys.add(pauseKey);
-        tokenInfo = createTokenInfo(tokenKeys, true, false);
+//        final TokenKey adminKey = new TokenKey(TokenKeyType.ADMIN_KEY.value(), keyValue);
+//        private final KeyValue keyValue =
+//            new KeyValue(false, parentContractAddress, ByteString.EMPTY, ByteString.EMPTY, null);
+
+        final var adminKey = Key.newBuilder().setContractID(parentContractAddressConvertedToContractId).build();
+//        final TokenKey kycKey = new TokenKey(TokenKeyType.KYC_KEY.value(), keyValue);
+//        final TokenKey freezeKey = new TokenKey(FREEZE_KEY.value(), keyValue);
+//        final TokenKey wipeKey = new TokenKey(TokenKeyType.WIPE_KEY.value(), keyValue);
+//        final TokenKey supplyKey = new TokenKey(TokenKeyType.SUPPLY_KEY.value(), keyValue);
+//        final TokenKey feeScheduleKey =
+//                new TokenKey(TokenKeyType.FEE_SCHEDULE_KEY.value(), keyValue);
+//        final TokenKey pauseKey = new TokenKey(TokenKeyType.PAUSE_KEY.value(), keyValue);
+//        final List<TokenKey> tokenKeys = new ArrayList<>();
+//        tokenKeys.add(adminKey);
+//        tokenKeys.add(kycKey);
+//        tokenKeys.add(freezeKey);
+//        tokenKeys.add(wipeKey);
+//        tokenKeys.add(supplyKey);
+//        tokenKeys.add(feeScheduleKey);
+//        tokenKeys.add(pauseKey);
+        tokenInfo = createTokenInfoWithAllKeys( 1, false);
 
         givenKeyContextAllKeysActive(key);
         givenMinimalKeyContext();
@@ -469,7 +485,7 @@ class GetTokenInfoPrecompilesTest {
         given(wrappedLedgers.decimalsOf(tokenMerkleId)).willReturn(decimals);
         givenMinimalKeyContext();
 
-        given(encoder.encodeGetFungibleTokenInfo(fungibleTokenInfo)).willReturn(successResult);
+        given(encoder.encodeGetFungibleTokenInfo(tokenInfo)).willReturn(successResult);
 
         givenMinimalContextForSuccessfulCall(pretendArguments);
         givenReadOnlyFeeSchedule();
@@ -505,7 +521,7 @@ class GetTokenInfoPrecompilesTest {
         givenMinimalUniqueTokenContext();
         givenMinimalKeyContext();
 
-        given(encoder.encodeGetNonFungibleTokenInfo(nonFungibleTokenInfo))
+        given(encoder.encodeGetNonFungibleTokenInfo(tokenInfo, nonFungibleTokenInfo))
                 .willReturn(successResult);
 
         givenMinimalContextForSuccessfulCall(pretendArguments);
@@ -645,7 +661,7 @@ class GetTokenInfoPrecompilesTest {
         givenRoyaltyFeeContext(true);
         givenMinimalKeyContext();
 
-        given(encoder.encodeGetNonFungibleTokenInfo(nonFungibleTokenInfo))
+        given(encoder.encodeGetNonFungibleTokenInfo(tokenInfo, nonFungibleTokenInfo))
                 .willReturn(successResult);
 
         givenMinimalContextForSuccessfulCall(pretendArguments);
@@ -683,7 +699,7 @@ class GetTokenInfoPrecompilesTest {
         givenRoyaltyFeeContext(false);
         givenMinimalKeyContext();
 
-        given(encoder.encodeGetNonFungibleTokenInfo(nonFungibleTokenInfo))
+        given(encoder.encodeGetNonFungibleTokenInfo(tokenInfo, nonFungibleTokenInfo))
                 .willReturn(successResult);
 
         givenMinimalContextForSuccessfulCall(pretendArguments);
@@ -813,7 +829,7 @@ class GetTokenInfoPrecompilesTest {
         givenKeyContext(key, TokenKeyType.ADMIN_KEY);
         givenMinimalKeyContext();
 
-        tokenInfo = createTokenInfo(tokenKeys, true, true);
+        tokenInfo = createTokenInfoWithSingleKey( 1, true);
         given(encoder.encodeGetTokenInfo(tokenInfo)).willReturn(successResult);
 
         givenMinimalContextForSuccessfulCall(pretendArguments);
@@ -849,8 +865,8 @@ class GetTokenInfoPrecompilesTest {
         given(wrappedLedgers.decimalsOf(tokenMerkleId)).willReturn(decimals);
         givenMinimalKeyContext();
 
-        fungibleTokenInfo = new FungibleTokenInfo(createTokenInfo(tokenKeys, true, true), decimals);
-        given(encoder.encodeGetFungibleTokenInfo(fungibleTokenInfo)).willReturn(successResult);
+        tokenInfo = createTokenInfoWithSingleKey( 1, true);
+        given(encoder.encodeGetFungibleTokenInfo(tokenInfo)).willReturn(successResult);
 
         givenMinimalContextForSuccessfulCall(pretendArguments);
         givenReadOnlyFeeSchedule();
@@ -887,15 +903,16 @@ class GetTokenInfoPrecompilesTest {
         givenMinimalUniqueTokenContext();
         givenMinimalKeyContext();
 
-        nonFungibleTokenInfo =
-                new NonFungibleTokenInfo(
-                        createTokenInfo(tokenKeys, true, true),
-                        serialNumber,
-                        ownerId,
-                        creationTime,
-                        metadata,
-                        spenderId);
-        given(encoder.encodeGetNonFungibleTokenInfo(nonFungibleTokenInfo))
+        tokenInfo = createTokenInfoWithSingleKey(1, true);
+//        nonFungibleTokenInfo =
+//                new NonFungibleTokenInfo(
+//                        createTokenInfo(tokenKeys, true, true),
+//                        serialNumber,
+//                        ownerId,
+//                        creationTime,
+//                        metadata,
+//                        spenderId);
+        given(encoder.encodeGetNonFungibleTokenInfo(tokenInfo, nonFungibleTokenInfo))
                 .willReturn(successResult);
 
         givenMinimalContextForSuccessfulCall(pretendArguments);
@@ -1043,10 +1060,10 @@ class GetTokenInfoPrecompilesTest {
     }
 
     private void givenFixedFeeContextWithDenomination() {
-        final var fixedFee = new FixedFee(amount, feeToken, false, false, feeCollector);
+//        final var fixedFee = new FixedFee(amount, feeToken, false, false, feeCollector);
         final List<FixedFee> fixedFees = new ArrayList<>();
-        fixedFees.add(fixedFee);
-        tokenInfo = createTokenInfo(fixedFees, new ArrayList<>(), new ArrayList<>(), tokenKeys);
+//        fixedFees.add(fixedFee);
+//        tokenInfo = createTokenInfo(fixedFees, new ArrayList<>(), new ArrayList<>(), tokenKeys);
 
         given(customFixedFee.getFeeCollector()).willReturn(feeCollectorEntityId);
         given(customFixedFee.getFeeType()).willReturn(FeeType.FIXED_FEE);
@@ -1059,133 +1076,207 @@ class GetTokenInfoPrecompilesTest {
     }
 
     private void givenFixedFeeContextWithoutDenomination() {
+//        final var fixedFee =
+//                new FixedFee(
+//                        amount, Address.wrap(Bytes.wrap(new byte[20])), true, false, feeCollector);
         final var fixedFee =
-                new FixedFee(
-                        amount, Address.wrap(Bytes.wrap(new byte[20])), true, false, feeCollector);
+            FixedFee.newBuilder().setAmount(amount);
+
+        final var customFee = CustomFee.newBuilder().setFixedFee(fixedFee).setFeeCollectorAccountId(payer).build();
         final List<FixedFee> fixedFees = new ArrayList<>();
-        fixedFees.add(fixedFee);
-        tokenInfo = createTokenInfo(fixedFees, new ArrayList<>(), new ArrayList<>(), tokenKeys);
+//        fixedFees.add(fixedFee);
+        final var customFees = new ArrayList<CustomFee>();
+        customFees.add(customFee);
+        final var tokenInfoBuilder = createTokenInfoBuilder(fixedFees, new ArrayList<>(), new ArrayList<>(), tokenKeys);
+        tokenInfo = tokenInfoBuilder.addAllCustomFees(customFees).build();
 
         given(customFixedFee.getFeeCollector()).willReturn(feeCollectorEntityId);
         given(customFixedFee.getFeeType()).willReturn(FeeType.FIXED_FEE);
         given(customFixedFee.getFixedFeeSpec()).willReturn(fixedFeeSpec);
         given(fixedFeeSpec.getUnitsToCollect()).willReturn(amount);
         given(fixedFeeSpec.getTokenDenomination()).willReturn(null);
-        final List<FcCustomFee> customFees = new ArrayList<>();
-        customFees.add(customFixedFee);
-        given(wrappedLedgers.feeSchedule(tokenMerkleId)).willReturn(customFees);
+//        final List<FcCustomFee> customFees = new ArrayList<>();
+//        customFees.add(customFixedFee);
+        given(stateView.infoForToken(tokenMerkleId)).willReturn(Optional.of(tokenInfo));
     }
 
     private void givenFractionalFeeContext() {
-        final var fractionalFee =
-                new FractionalFee(
-                        numerator,
-                        denominator,
-                        minimumAmount,
-                        maximumAmount,
-                        isNetOfTransfers,
-                        feeCollector);
-        final List<FractionalFee> fractionalFees = new ArrayList<>();
-        fractionalFees.add(fractionalFee);
-        tokenInfo =
-                createTokenInfo(new ArrayList<>(), fractionalFees, new ArrayList<>(), tokenKeys);
-
-        given(customFractionalFee.getFeeCollector()).willReturn(feeCollectorEntityId);
-        given(customFractionalFee.getFeeType()).willReturn(FeeType.FRACTIONAL_FEE);
-        given(customFractionalFee.getFractionalFeeSpec()).willReturn(fractionalFeeSpec);
-        given(fractionalFeeSpec.getNumerator()).willReturn(numerator);
-        given(fractionalFeeSpec.getDenominator()).willReturn(denominator);
-        given(fractionalFeeSpec.getMinimumAmount()).willReturn(minimumAmount);
-        given(fractionalFeeSpec.getMaximumUnitsToCollect()).willReturn(maximumAmount);
-        given(fractionalFeeSpec.isNetOfTransfers()).willReturn(isNetOfTransfers);
-        final List<FcCustomFee> customFees = new ArrayList<>();
-        customFees.add(customFractionalFee);
-        given(wrappedLedgers.feeSchedule(tokenMerkleId)).willReturn(customFees);
+//        final var fractionalFee =
+//                new FractionalFee(
+//                        numerator,
+//                        denominator,
+//                        minimumAmount,
+//                        maximumAmount,
+//                        isNetOfTransfers,
+//                        feeCollector);
+//        final List<FractionalFee> fractionalFees = new ArrayList<>();
+//        fractionalFees.add(fractionalFee);
+//        tokenInfo =
+//                createTokenInfo(new ArrayList<>(), fractionalFees, new ArrayList<>(), tokenKeys);
+//
+//        given(customFractionalFee.getFeeCollector()).willReturn(feeCollectorEntityId);
+//        given(customFractionalFee.getFeeType()).willReturn(FeeType.FRACTIONAL_FEE);
+//        given(customFractionalFee.getFractionalFeeSpec()).willReturn(fractionalFeeSpec);
+//        given(fractionalFeeSpec.getNumerator()).willReturn(numerator);
+//        given(fractionalFeeSpec.getDenominator()).willReturn(denominator);
+//        given(fractionalFeeSpec.getMinimumAmount()).willReturn(minimumAmount);
+//        given(fractionalFeeSpec.getMaximumUnitsToCollect()).willReturn(maximumAmount);
+//        given(fractionalFeeSpec.isNetOfTransfers()).willReturn(isNetOfTransfers);
+//        final List<FcCustomFee> customFees = new ArrayList<>();
+//        customFees.add(customFractionalFee);
+//        given(wrappedLedgers.feeSchedule(tokenMerkleId)).willReturn(customFees);
     }
 
     private void givenRoyaltyFeeContext(final boolean hasFallbackFee) {
-        RoyaltyFee royaltyFee;
-        if (hasFallbackFee) {
-            royaltyFee =
-                    new RoyaltyFee(numerator, denominator, amount, feeToken, false, feeCollector);
-        } else {
-            royaltyFee = new RoyaltyFee(numerator, denominator, 0L, null, false, feeCollector);
-        }
-        final List<RoyaltyFee> royaltyFees = new ArrayList<>();
-        royaltyFees.add(royaltyFee);
-
-        tokenInfo = createTokenInfo(new ArrayList<>(), new ArrayList<>(), royaltyFees, tokenKeys);
-        nonFungibleTokenInfo =
-                new NonFungibleTokenInfo(
-                        tokenInfo, serialNumber, ownerId, creationTime, metadata, spenderId);
-        given(customRoyaltyFee.getFeeCollector()).willReturn(feeCollectorEntityId);
-        given(customRoyaltyFee.getFeeType()).willReturn(FeeType.ROYALTY_FEE);
-        given(customRoyaltyFee.getRoyaltyFeeSpec()).willReturn(royaltyFeeSpec);
-        given(royaltyFeeSpec.numerator()).willReturn(numerator);
-        given(royaltyFeeSpec.denominator()).willReturn(denominator);
-        if (hasFallbackFee) {
-            given(royaltyFeeSpec.hasFallbackFee()).willReturn(true);
-            given(royaltyFeeSpec.fallbackFee()).willReturn(fixedFeeSpec);
-            given(fixedFeeSpec.getUnitsToCollect()).willReturn(amount);
-            given(fixedFeeSpec.getTokenDenomination()).willReturn(feeTokenEntityId);
-        }
-        final List<FcCustomFee> customFees = new ArrayList<>();
-        customFees.add(customRoyaltyFee);
-        given(wrappedLedgers.feeSchedule(tokenMerkleId)).willReturn(customFees);
+//        RoyaltyFee royaltyFee;
+//        if (hasFallbackFee) {
+//            final var fraction = Fraction.newBuilder().setNumerator(numerator).setDenominator(denominator).build();
+//            final var fallbackFee = FixedFee.newBuilder().setAmount(amount).setDenominatingTokenId(feeToken).build();
+//            royaltyFee =
+//                RoyaltyFee.newBuilder().setExchangeValueFraction(fraction).setFallbackFee(fallbackFee).build();
+//        } else {
+//            royaltyFee = new RoyaltyFee(numerator, denominator, 0L, null, false, feeCollector);
+//        }
+//        final List<RoyaltyFee> royaltyFees = new ArrayList<>();
+//        royaltyFees.add(royaltyFee);
+//
+//        tokenInfo = createTokenInfo(new ArrayList<>(), new ArrayList<>(), royaltyFees, tokenKeys);
+//        nonFungibleTokenInfo =
+//                new NonFungibleTokenInfo(
+//                        tokenInfo, serialNumber, ownerId, creationTime, metadata, spenderId);
+//        given(customRoyaltyFee.getFeeCollector()).willReturn(feeCollectorEntityId);
+//        given(customRoyaltyFee.getFeeType()).willReturn(FeeType.ROYALTY_FEE);
+//        given(customRoyaltyFee.getRoyaltyFeeSpec()).willReturn(royaltyFeeSpec);
+//        given(royaltyFeeSpec.numerator()).willReturn(numerator);
+//        given(royaltyFeeSpec.denominator()).willReturn(denominator);
+//        if (hasFallbackFee) {
+//            given(royaltyFeeSpec.hasFallbackFee()).willReturn(true);
+//            given(royaltyFeeSpec.fallbackFee()).willReturn(fixedFeeSpec);
+//            given(fixedFeeSpec.getUnitsToCollect()).willReturn(amount);
+//            given(fixedFeeSpec.getTokenDenomination()).willReturn(feeTokenEntityId);
+//        }
+//        final List<FcCustomFee> customFees = new ArrayList<>();
+//        customFees.add(customRoyaltyFee);
+//        given(wrappedLedgers.feeSchedule(tokenMerkleId)).willReturn(customFees);
     }
 
-    private TokenInfo createTokenInfo(
+    private TokenInfo.Builder createTokenInfoBuilder(
             final List<FixedFee> fixedFees,
             final List<FractionalFee> fractionalFees,
             final List<RoyaltyFee> royaltyFees,
-            final List<TokenKey> tokenKeys) {
-        final HederaToken hederaToken =
-                new HederaToken(
-                        name,
-                        symbol,
-                        EntityIdUtils.asTypedEvmAddress(treasury),
-                        memo,
-                        true,
-                        maxSupply,
-                        freezeDefault,
-                        tokenKeys,
-                        expiry);
-        return new TokenInfo(
-                hederaToken,
-                totalSupply,
-                deleted,
-                defaultKycStatus,
-                pauseStatus,
-                fixedFees,
-                fractionalFees,
-                royaltyFees,
-                ledgerId);
+            final List<Key> tokenKeys) {
+//        final HederaToken hederaToken =
+//                new HederaToken(
+//                        name,
+//                        symbol,
+//                        EntityIdUtils.asTypedEvmAddress(treasury),
+//                        memo,
+//                        true,
+//                        maxSupply,
+//                        freezeDefault,
+//                        tokenKeys,
+//                        expiry);
+//        return new TokenInfo(
+//                hederaToken,
+//                totalSupply,
+//                deleted,
+//                defaultKycStatus,
+//                pauseStatus,
+//                fixedFees,
+//                fractionalFees,
+//                royaltyFees,
+//                ledgerId);
+        return TokenInfo.newBuilder()
+            .setLedgerId(fromString("0x03"))
+            .setSupplyTypeValue(0)
+            .setTokenId(tokenMerkleId)
+            .setDeleted(false)
+            .setSymbol(symbol)
+            .setName(name)
+            .setMemo(memo)
+            .setDecimals(decimals)
+            .setTreasury(EntityIdUtils.asAccount(treasury))
+            .setTotalSupply(totalSupply)
+            .setMaxSupply(maxSupply)
+            .setAdminKey(tokenKey);
+
+//        tokenInfoBuilder.setAdminKey(tokenKey);
+
     }
 
-    private TokenInfo createTokenInfo(
-            final List<TokenKey> tokenKeys,
-            final boolean tokenSupplyType,
+    private TokenInfo createTokenInfoWithSingleKey(
+            final int tokenSupplyType,
             final boolean isDeleted) {
-        final HederaToken hederaToken =
-                new HederaToken(
-                        name,
-                        symbol,
-                        EntityIdUtils.asTypedEvmAddress(treasury),
-                        memo,
-                        tokenSupplyType,
-                        maxSupply,
-                        freezeDefault,
-                        tokenKeys,
-                        expiry);
-        return new TokenInfo(
-                hederaToken,
-                totalSupply,
-                isDeleted,
-                defaultKycStatus,
-                pauseStatus,
-                new ArrayList<>(),
-                new ArrayList<>(),
-                new ArrayList<>(),
-                ledgerId);
+//        final HederaToken hederaToken =
+//                new HederaToken(
+//                        name,
+//                        symbol,
+//                        EntityIdUtils.asTypedEvmAddress(treasury),
+//                        memo,
+//                        tokenSupplyType,
+//                        maxSupply,
+//                        freezeDefault,
+//                        tokenKeys,
+//                        expiry);
+//        return new TokenInfo(
+//                hederaToken,
+//                totalSupply,
+//                isDeleted,
+//                defaultKycStatus,
+//                pauseStatus,
+//                new ArrayList<>(),
+//                new ArrayList<>(),
+//                new ArrayList<>(),
+//                ledgerId);
+
+        final var tokenInfoBuilder = TokenInfo.newBuilder()
+            .setLedgerId(fromString("0x03"))
+            .setSupplyTypeValue(tokenSupplyType)
+            .setExpiry(new RichInstant(
+                unsignedHighOrder32From(expiryPeriod),
+                signedLowOrder32From(expiryPeriod)).toGrpc())
+            .setAutoRenewAccount(sender)
+            .setAutoRenewPeriod(Duration.newBuilder().setSeconds(autoRenewPeriod).build())
+            .setTokenId(tokenMerkleId)
+            .setDeleted(isDeleted)
+            .setSymbol(symbol)
+            .setName(name)
+            .setMemo(memo)
+            .setDecimals(decimals)
+            .setTreasury(EntityIdUtils.asAccount(treasury))
+            .setTotalSupply(totalSupply)
+            .setMaxSupply(maxSupply);
+
+        tokenInfoBuilder.setAdminKey(tokenKey);
+        return tokenInfoBuilder.build();
+    }
+
+    private TokenInfo createTokenInfoWithAllKeys(  final int tokenSupplyType,
+        final boolean isDeleted) {
+        final var tokenInfoBuilder = TokenInfo.newBuilder()
+            .setLedgerId(fromString("0x03"))
+            .setSupplyTypeValue(tokenSupplyType)
+            .setTokenId(tokenMerkleId)
+            .setDeleted(isDeleted)
+            .setSymbol(symbol)
+            .setName(name)
+            .setMemo(memo)
+            .setTreasury(EntityIdUtils.asAccount(treasury))
+            .setTotalSupply(totalSupply)
+            .setMaxSupply(maxSupply);
+
+        tokenInfoBuilder.setAdminKey(tokenKey);
+        tokenInfoBuilder.setKycKey(tokenKey);
+        tokenInfoBuilder.setWipeKey(tokenKey);
+        tokenInfoBuilder.setPauseKey(tokenKey);
+        tokenInfoBuilder.setFeeScheduleKey(tokenKey);
+        tokenInfoBuilder.setFreezeKey(tokenKey);
+        tokenInfoBuilder.setSupplyKey(tokenKey);
+
+        return tokenInfoBuilder.build();
+    }
+
+    private ByteString fromString(final String value) {
+        return ByteString.copyFrom(Bytes.fromHexString(value).toArray());
     }
 }

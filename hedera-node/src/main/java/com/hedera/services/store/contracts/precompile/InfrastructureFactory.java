@@ -17,8 +17,8 @@ package com.hedera.services.store.contracts.precompile;
 
 import static com.hedera.services.ledger.ids.ExceptionalEntityIdSource.NOOP_ID_SOURCE;
 
-import com.hedera.services.config.NetworkInfo;
 import com.hedera.services.context.SideEffectsTracker;
+import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.TransactionalLedger;
@@ -194,8 +194,8 @@ public class InfrastructureFactory {
             final Bytes input,
             final MessageFrame frame,
             final ViewGasCalculator gasCalculator,
-            final NetworkInfo networkInfo) {
-        return new ViewExecutor(input, frame, encoder, decoder, gasCalculator, networkInfo);
+            final StateView stateView) {
+        return new ViewExecutor(input, frame, encoder, decoder, gasCalculator, stateView);
     }
 
     public ApproveAllowanceLogic newApproveAllowanceLogic(

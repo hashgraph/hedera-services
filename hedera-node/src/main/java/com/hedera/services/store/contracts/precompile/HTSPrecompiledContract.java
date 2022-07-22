@@ -48,7 +48,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.hedera.services.config.NetworkInfo;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
@@ -151,7 +150,6 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
     private final SyntheticTxnFactory syntheticTxnFactory;
     private final InfrastructureFactory infrastructureFactory;
     private final ImpliedTransfersMarshal impliedTransfersMarshal;
-    private final NetworkInfo networkInfo;
 
     private Precompile precompile;
     private TransactionBody.Builder transactionBody;
@@ -178,8 +176,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
             final Provider<FeeCalculator> feeCalculator,
             final StateView currentView,
             final PrecompilePricingUtils precompilePricingUtils,
-            final InfrastructureFactory infrastructureFactory,
-            final NetworkInfo networkInfo) {
+            final InfrastructureFactory infrastructureFactory) {
         super("HTS", gasCalculator);
         this.decoder = decoder;
         this.encoder = encoder;
@@ -193,7 +190,6 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
         this.currentView = currentView;
         this.precompilePricingUtils = precompilePricingUtils;
         this.infrastructureFactory = infrastructureFactory;
-        this.networkInfo = networkInfo;
     }
 
     public Pair<Long, Bytes> computeCosted(final Bytes input, final MessageFrame frame) {
@@ -201,25 +197,24 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
             if (!isTokenProxyRedirect(input) && !isViewFunction(input)) {
                 frame.setRevertReason(STATIC_CALL_REVERT_REASON);
                 return Pair.of(defaultGas(), null);
-            } else if (isTokenProxyRedirect(input)) {
-                final var proxyUpdater = (HederaStackedWorldStateUpdater) frame.getWorldUpdater();
-                if (!proxyUpdater.isInTransaction()) {
+            }
+
+            final var proxyUpdater = (HederaStackedWorldStateUpdater) frame.getWorldUpdater();
+            if(!proxyUpdater.isInTransaction()) {
+             if (isTokenProxyRedirect(input)) {
                     final var executor =
-                            infrastructureFactory.newRedirectExecutor(
-                                    input, frame, precompilePricingUtils::computeViewFunctionGas);
+                        infrastructureFactory.newRedirectExecutor(
+                            input, frame, precompilePricingUtils::computeViewFunctionGas);
                     return executor.computeCosted();
-                }
             } else if (isViewFunction(input)) {
-                final var proxyUpdater = (HederaStackedWorldStateUpdater) frame.getWorldUpdater();
-                if (!proxyUpdater.isInTransaction()) {
                     final var executor =
-                            infrastructureFactory.newViewExecutor(
-                                    input,
-                                    frame,
-                                    precompilePricingUtils::computeViewFunctionGas,
-                                    networkInfo);
+                        infrastructureFactory.newViewExecutor(
+                            input,
+                            frame,
+                            precompilePricingUtils::computeViewFunctionGas,
+                            currentView);
                     return executor.computeCosted();
-                }
+            }
             }
         }
         final var result = computePrecompile(input, frame);
@@ -614,7 +609,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
                             encoder,
                             decoder,
                             precompilePricingUtils,
-                            networkInfo);
+                        currentView);
                     case AbiConstants
                             .ABI_ID_GET_FUNGIBLE_TOKEN_INFO -> new FungibleTokenInfoPrecompile(
                             null,
@@ -623,7 +618,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
                             encoder,
                             decoder,
                             precompilePricingUtils,
-                            networkInfo);
+                        currentView);
                     case AbiConstants
                             .ABI_ID_GET_NON_FUNGIBLE_TOKEN_INFO -> new NonFungibleTokenInfoPrecompile(
                             null,
@@ -632,7 +627,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
                             encoder,
                             decoder,
                             precompilePricingUtils,
-                            networkInfo);
+                        currentView);
                     default -> null;
                 };
         if (precompile != null) {

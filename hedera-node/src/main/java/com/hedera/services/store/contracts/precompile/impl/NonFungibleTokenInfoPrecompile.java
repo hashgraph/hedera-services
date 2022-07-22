@@ -15,14 +15,17 @@
  */
 package com.hedera.services.store.contracts.precompile.impl;
 
-import com.hedera.services.config.NetworkInfo;
+import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
+
+import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.store.contracts.WorldLedgers;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.store.contracts.precompile.codec.DecodingFacade;
 import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
-import com.hedera.services.store.contracts.precompile.utils.TokenInfoRetrievalUtils;
+import com.hederahashgraph.api.proto.java.NftID;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionBody.Builder;
 import java.util.function.UnaryOperator;
@@ -38,8 +41,8 @@ public class NonFungibleTokenInfoPrecompile extends AbstractTokenInfoPrecompile 
             EncodingFacade encoder,
             DecodingFacade decoder,
             PrecompilePricingUtils pricingUtils,
-            NetworkInfo networkInfo) {
-        super(tokenId, syntheticTxnFactory, ledgers, encoder, decoder, pricingUtils, networkInfo);
+            StateView stateView) {
+        super(tokenId, syntheticTxnFactory, ledgers, encoder, decoder, pricingUtils, stateView);
     }
 
     @Override
@@ -52,8 +55,15 @@ public class NonFungibleTokenInfoPrecompile extends AbstractTokenInfoPrecompile 
 
     @Override
     public Bytes getSuccessResultFor(final ExpirableTxnRecord.Builder childRecord) {
+
+        final var tokenInfo = stateView.infoForToken(tokenId).orElse(null);
+        validateTrue(tokenInfo != null, ResponseCodeEnum.INVALID_TOKEN_ID);
+
+        final var nftID = NftID.newBuilder().setTokenID(tokenId).setSerialNumber(serialNumber).build();
+        final var nonFungibleTokenInfo = stateView.infoForNft(nftID).orElse(null);
+        validateTrue(nonFungibleTokenInfo != null, ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER);
+
         return encoder.encodeGetNonFungibleTokenInfo(
-                TokenInfoRetrievalUtils.getNonFungibleTokenInfo(
-                        tokenId, serialNumber, ledgers, networkInfo));
+            tokenInfo, nonFungibleTokenInfo);
     }
 }

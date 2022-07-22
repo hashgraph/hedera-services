@@ -15,39 +15,47 @@
  */
 package com.hedera.services.bdd.suites.utils.contracts.precompile;
 
-import static com.hedera.services.parsing.ParsingConstants.ADDRESS;
-import static com.hedera.services.parsing.ParsingConstants.ARRAY_BRACKETS;
-import static com.hedera.services.parsing.ParsingConstants.BYTES32;
-import static com.hedera.services.parsing.ParsingConstants.FIXED_FEE;
-import static com.hedera.services.parsing.ParsingConstants.FRACTIONAL_FEE;
-import static com.hedera.services.parsing.ParsingConstants.HEDERA_TOKEN;
-import static com.hedera.services.parsing.ParsingConstants.RESPONSE_STATUS_AT_BEGINNING;
-import static com.hedera.services.parsing.ParsingConstants.ROYALTY_FEE;
-import static com.hedera.services.parsing.ParsingConstants.allowanceOfType;
-import static com.hedera.services.parsing.ParsingConstants.balanceOfType;
-import static com.hedera.services.parsing.ParsingConstants.burnReturnType;
-import static com.hedera.services.parsing.ParsingConstants.decimalsType;
-import static com.hedera.services.parsing.ParsingConstants.ercTransferType;
-import static com.hedera.services.parsing.ParsingConstants.getApprovedType;
-import static com.hedera.services.parsing.ParsingConstants.hapiAllowanceOfType;
-import static com.hedera.services.parsing.ParsingConstants.hapiGetApprovedType;
-import static com.hedera.services.parsing.ParsingConstants.hapiIsApprovedForAllType;
-import static com.hedera.services.parsing.ParsingConstants.isApprovedForAllType;
-import static com.hedera.services.parsing.ParsingConstants.mintReturnType;
-import static com.hedera.services.parsing.ParsingConstants.nameType;
-import static com.hedera.services.parsing.ParsingConstants.notSpecifiedType;
-import static com.hedera.services.parsing.ParsingConstants.ownerOfType;
-import static com.hedera.services.parsing.ParsingConstants.symbolType;
-import static com.hedera.services.parsing.ParsingConstants.tokenUriType;
-import static com.hedera.services.parsing.ParsingConstants.totalSupplyType;
+import static com.hedera.services.contracts.ParsingConstants.ADDRESS;
+import static com.hedera.services.contracts.ParsingConstants.ARRAY_BRACKETS;
+import static com.hedera.services.contracts.ParsingConstants.BYTES32;
+import static com.hedera.services.contracts.ParsingConstants.FIXED_FEE;
+import static com.hedera.services.contracts.ParsingConstants.FRACTIONAL_FEE;
+import static com.hedera.services.contracts.ParsingConstants.HEDERA_TOKEN;
+import static com.hedera.services.contracts.ParsingConstants.RESPONSE_STATUS_AT_BEGINNING;
+import static com.hedera.services.contracts.ParsingConstants.ROYALTY_FEE;
+import static com.hedera.services.contracts.ParsingConstants.allowanceOfType;
+import static com.hedera.services.contracts.ParsingConstants.balanceOfType;
+import static com.hedera.services.contracts.ParsingConstants.burnReturnType;
+import static com.hedera.services.contracts.ParsingConstants.decimalsType;
+import static com.hedera.services.contracts.ParsingConstants.ercTransferType;
+import static com.hedera.services.contracts.ParsingConstants.getApprovedType;
+import static com.hedera.services.contracts.ParsingConstants.hapiAllowanceOfType;
+import static com.hedera.services.contracts.ParsingConstants.hapiGetApprovedType;
+import static com.hedera.services.contracts.ParsingConstants.hapiIsApprovedForAllType;
+import static com.hedera.services.contracts.ParsingConstants.isApprovedForAllType;
+import static com.hedera.services.contracts.ParsingConstants.mintReturnType;
+import static com.hedera.services.contracts.ParsingConstants.nameType;
+import static com.hedera.services.contracts.ParsingConstants.notSpecifiedType;
+import static com.hedera.services.contracts.ParsingConstants.ownerOfType;
+import static com.hedera.services.contracts.ParsingConstants.symbolType;
+import static com.hedera.services.contracts.ParsingConstants.tokenUriType;
+import static com.hedera.services.contracts.ParsingConstants.totalSupplyType;
 
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.esaulpaugh.headlong.abi.TupleType;
+import com.hedera.services.bdd.suites.contract.Utils;
 import com.hedera.services.bdd.suites.utils.contracts.ContractCallResult;
-import com.hedera.services.parsing.ParsingConstants;
-import com.hedera.services.parsing.ParsingConstants.FunctionType;
+import com.hedera.services.contracts.ParsingConstants;
+import com.hedera.services.contracts.ParsingConstants.FunctionType;
+import com.hederahashgraph.api.proto.java.FixedFee;
+import com.hederahashgraph.api.proto.java.FractionalFee;
+import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.RoyaltyFee;
+import com.hederahashgraph.api.proto.java.TokenInfo;
+import com.hederahashgraph.api.proto.java.TokenNftInfo;
 import java.math.BigInteger;
+import java.util.ArrayList;
 import org.apache.tuweni.bytes.Bytes;
 
 public class HTSPrecompileResult implements ContractCallResult {
@@ -103,6 +111,7 @@ public class HTSPrecompileResult implements ContractCallResult {
     private boolean ercFungibleTransferStatus;
     private boolean isApprovedForAllStatus;
     private TokenInfo tokenInfo;
+    private TokenNftInfo nonFungibleTokenInfo;
 
     public HTSPrecompileResult forFunction(final FunctionType functionType) {
         tupleType =
@@ -227,6 +236,11 @@ public class HTSPrecompileResult implements ContractCallResult {
         return this;
     }
 
+    private HTSPrecompileResult withNftTokenInfo(final TokenNftInfo nonFungibleTokenInfo) {
+        this.nonFungibleTokenInfo = nonFungibleTokenInfo;
+        return this;
+    }
+
     @Override
     public Bytes getBytes() {
         if (ParsingConstants.FunctionType.ERC_OWNER.equals(functionType)) {
@@ -285,128 +299,115 @@ public class HTSPrecompileResult implements ContractCallResult {
     }
 
     private Tuple getTupleForTokenInfo() {
+        final var fixedFees = new ArrayList<Tuple>();
+        final var fractionalFees = new ArrayList<Tuple>();
+        final var royaltyFees = new ArrayList<Tuple>();
+
+        for(final var customFee : tokenInfo.getCustomFeesList()) {
+            final var feeCollector = expandByteArrayTo32Length(Utils.asAddress(customFee.getFeeCollectorAccountId()));
+            if (customFee.getFixedFee().getAmount() > 0) {
+                fixedFees.add(getFixedFeeTuple(customFee.getFixedFee(), feeCollector));
+            } else if (customFee.getFractionalFee().getMinimumAmount() > 0){
+                fractionalFees.add(getFractionalFeeTuple(customFee.getFractionalFee(), feeCollector));
+            } else if(customFee.getRoyaltyFee().getExchangeValueFraction().getNumerator() > 0) {
+                royaltyFees.add(getRoyaltyFeeTuple(customFee.getRoyaltyFee(), feeCollector));
+            }
+        }
         return Tuple.of(
-                getHederaTokenTuple(),
-                tokenInfo.totalSupply(),
-                tokenInfo.deleted(),
-                tokenInfo.defaultKycStatus(),
-                tokenInfo.pauseStatus(),
-                getFixedFeesTuples(),
-                getFractionalFeesTuples(),
-                getRoyaltyFeesTuples(),
-                tokenInfo.ledgerId());
+            getHederaTokenTuple(),
+            tokenInfo.getTotalSupply(),
+            tokenInfo.getDeleted(),
+            tokenInfo.getDefaultKycStatus().getNumber() == 1,
+            tokenInfo.getPauseStatus().getNumber() == 1,
+            fixedFees,
+            fractionalFees,
+            royaltyFees,
+            Bytes.wrap(tokenInfo.getLedgerId().toByteArray()).toString());
     }
 
-    private Tuple[] getFixedFeesTuples() {
-        final var fixedFees = tokenInfo.fixedFees();
-        final Tuple[] fixedFeesTuples = new Tuple[fixedFees.size()];
-        for (int i = 0; i < fixedFees.size(); i++) {
-            final var fixedFee = fixedFees.get(i);
-            final var fixedFeeTuple =
-                    Tuple.of(
-                            fixedFee.amount(),
-                            fixedFee.tokenId() != null
-                                    ? fixedFee.tokenId().toArray()
-                                    : new byte[32],
-                            fixedFee.useHbarsForPayment(),
-                            fixedFee.useCurrentTokenForPayment(),
-                            fixedFee.feeCollector() != null
-                                    ? fixedFee.feeCollector().toArray()
-                                    : new byte[32]);
-            fixedFeesTuples[i] = fixedFeeTuple;
-        }
-
-        return fixedFeesTuples;
+    private Tuple getFixedFeeTuple(final FixedFee fixedFee, final byte[] feeCollector) {
+        return Tuple.of(
+            fixedFee.getAmount(),
+            expandByteArrayTo32Length(Utils.asAddress(fixedFee.getDenominatingTokenId())),
+            fixedFee.getDenominatingTokenId().getTokenNum() == 0,
+            false,
+            feeCollector);
     }
 
-    private Tuple[] getFractionalFeesTuples() {
-        final var fractionalFees = tokenInfo.fractionalFees();
-        final Tuple[] fractionalFeesTuples = new Tuple[fractionalFees.size()];
-        for (int i = 0; i < fractionalFees.size(); i++) {
-            final var fractionalFee = fractionalFees.get(i);
-            final var fractionalFeeTuple =
-                    Tuple.of(
-                            fractionalFee.numerator(),
-                            fractionalFee.denominator(),
-                            fractionalFee.minimumAmount(),
-                            fractionalFee.maximumAmount(),
-                            fractionalFee.netOfTransfers(),
-                            fractionalFee.feeCollector() != null
-                                    ? fractionalFee.feeCollector().toArray()
-                                    : new byte[32]);
-            fractionalFeesTuples[i] = fractionalFeeTuple;
-        }
-
-        return fractionalFeesTuples;
+    private Tuple getFractionalFeeTuple(final FractionalFee fractionalFee, final byte[] feeCollector) {
+        return Tuple.of(
+            fractionalFee.getFractionalAmount().getNumerator(),
+            fractionalFee.getFractionalAmount().getDenominator(),
+            fractionalFee.getMinimumAmount(),
+            fractionalFee.getMaximumAmount(),
+            fractionalFee.getNetOfTransfers(),
+            feeCollector);
     }
 
-    private Tuple[] getRoyaltyFeesTuples() {
-        final var royaltyFees = tokenInfo.royaltyFees();
-        final Tuple[] royaltyFeesTuples = new Tuple[royaltyFees.size()];
-        for (int i = 0; i < royaltyFees.size(); i++) {
-            final var royaltyFee = royaltyFees.get(i);
-            final var royaltyFeeTuple =
-                    Tuple.of(
-                            royaltyFee.numerator(),
-                            royaltyFee.denominator(),
-                            royaltyFee.amount(),
-                            royaltyFee.tokenId() != null
-                                    ? royaltyFee.tokenId().toArray()
-                                    : new byte[32],
-                            royaltyFee.useHbarsForPayment(),
-                            royaltyFee.feeCollector() != null
-                                    ? royaltyFee.feeCollector().toArray()
-                                    : new byte[32]);
-            royaltyFeesTuples[i] = royaltyFeeTuple;
-        }
-
-        return royaltyFeesTuples;
+    private Tuple getRoyaltyFeeTuple(final RoyaltyFee royaltyFee, final byte[] feeCollector) {
+        return Tuple.of(
+            royaltyFee.getExchangeValueFraction().getNumerator(),
+            royaltyFee.getExchangeValueFraction().getDenominator(),
+            royaltyFee.getFallbackFee().getAmount(),
+            expandByteArrayTo32Length(Utils.asAddress(royaltyFee.getFallbackFee().getDenominatingTokenId())),
+            royaltyFee.getFallbackFee().getDenominatingTokenId().getTokenNum() == 0,
+            feeCollector);
     }
 
     private Tuple getHederaTokenTuple() {
-        final var hederaToken = tokenInfo.token();
-        final var expiry = hederaToken.expiry();
+        final var expiry = tokenInfo.getExpiry().getSeconds();
+        final var autoRenewPeriod = tokenInfo.getAutoRenewPeriod().getSeconds();
         final var expiryTuple =
-                Tuple.of(
-                        expiry.second(),
-                        expiry.autoRenewAccount().toArray(),
-                        expiry.autoRenewPeriod());
+            Tuple.of(
+                expiry,
+                tokenInfo.getAutoRenewAccount().toByteArray(),
+                autoRenewPeriod);
 
         return Tuple.of(
-                hederaToken.name(),
-                hederaToken.symbol(),
-                hederaToken.treasury().toArray(),
-                hederaToken.memo(),
-                hederaToken.tokenSupplyType(),
-                hederaToken.maxSupply(),
-                hederaToken.freezeDefault(),
-                getTokenKeysTuples(),
-                expiryTuple);
+            tokenInfo.getName(),
+            tokenInfo.getSymbol(),
+            tokenInfo.getTreasury().toByteArray(),
+            tokenInfo.getMemo(),
+            tokenInfo.getSupplyType().getNumber() == 1,
+            tokenInfo.getMaxSupply(),
+            tokenInfo.getDefaultFreezeStatus().getNumber() == 1,
+            getTokenKeysTuples(),
+            expiryTuple);
     }
 
     private Tuple[] getTokenKeysTuples() {
-        final var hederaToken = tokenInfo.token();
-        final var tokenKeys = hederaToken.tokenKeys();
-        final Tuple[] tokenKeysTuples = new Tuple[tokenKeys.size()];
-        for (int i = 0; i < tokenKeys.size(); i++) {
-            final var key = tokenKeys.get(i);
-            final var keyValue = key.key();
-            Tuple keyValueTuple =
-                    Tuple.of(
-                            keyValue.inheritAccountKey(),
-                            keyValue.contractId() != null
-                                    ? keyValue.contractId().toArray()
-                                    : new byte[32],
-                            keyValue.ed25519().toByteArray(),
-                            keyValue.ECDSA_secp256k1().toByteArray(),
-                            keyValue.delegatableContractId() != null
-                                    ? keyValue.delegatableContractId().toArray()
-                                    : new byte[32]);
-            tokenKeysTuples[i] = (Tuple.of(BigInteger.valueOf(key.keyType()), keyValueTuple));
-        }
+        final var adminKey = tokenInfo.getAdminKey();
+        final var kycKey = tokenInfo.getKycKey();
+        final var freezeKey = tokenInfo.getFreezeKey();
+        final var wipeKey = tokenInfo.getWipeKey();
+        final var supplyKey = tokenInfo.getSupplyKey();
+        final var feeScheduleKey = tokenInfo.getFeeScheduleKey();
+        final var pauseKey = tokenInfo.getPauseKey();
+
+        final Tuple[] tokenKeysTuples = new Tuple[TokenKeyType.values().length];
+        tokenKeysTuples[0] = getKeyTuple(adminKey);
+        tokenKeysTuples[1] = getKeyTuple(kycKey);
+        tokenKeysTuples[2] = getKeyTuple(freezeKey);
+        tokenKeysTuples[3] = getKeyTuple(wipeKey);
+        tokenKeysTuples[4] = getKeyTuple(supplyKey);
+        tokenKeysTuples[5] = getKeyTuple(feeScheduleKey);
+        tokenKeysTuples[6] = getKeyTuple(pauseKey);
 
         return tokenKeysTuples;
     }
+
+    private static Tuple getKeyTuple(final Key key) {
+        return Tuple.of(
+            false,
+            key.getContractID().getContractNum() > 0
+                ? key.getContractID().toByteArray()
+                : null,
+            key.getEd25519(),
+            key.getECDSASecp256K1(),
+            key.getDelegatableContractId().getContractNum() > 0
+                ? key.getDelegatableContractId().toByteArray()
+                : null);
+}
 
     private static String removeBrackets(final String type) {
         final var typeWithRemovedOpenBracket = type.replace("(", "");

@@ -52,17 +52,13 @@ import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hedera.services.bdd.suites.contract.Utils;
-import com.hedera.services.bdd.suites.utils.contracts.precompile.Expiry;
-import com.hedera.services.bdd.suites.utils.contracts.precompile.FixedFee;
-import com.hedera.services.bdd.suites.utils.contracts.precompile.FractionalFee;
-import com.hedera.services.bdd.suites.utils.contracts.precompile.HederaToken;
-import com.hedera.services.bdd.suites.utils.contracts.precompile.KeyValue;
-import com.hedera.services.bdd.suites.utils.contracts.precompile.RoyaltyFee;
-import com.hedera.services.bdd.suites.utils.contracts.precompile.TokenInfo;
-import com.hedera.services.bdd.suites.utils.contracts.precompile.TokenKey;
 import com.hedera.services.bdd.suites.utils.contracts.precompile.TokenKeyType;
-import com.hedera.services.parsing.ParsingConstants.FunctionType;
+import com.hedera.services.contracts.ParsingConstants.FunctionType;
+import com.hederahashgraph.api.proto.java.FixedFee;
+import com.hederahashgraph.api.proto.java.FractionalFee;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.RoyaltyFee;
+import com.hederahashgraph.api.proto.java.TokenInfo;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import com.hederahashgraph.api.proto.java.TokenType;
 import java.nio.charset.StandardCharsets;
@@ -129,17 +125,19 @@ public class TokenInfoHTSSuite extends HapiApiSuite {
 
     List<HapiApiSpec> negativeSpecs() {
         return List.of(
-                getInfoOnDeletedFungibleTokenWorks(),
-                getInfoOnInvalidFungibleTokenFails(),
-                getInfoOnDeletedNonFungibleTokenFails(),
-                getInfoOnInvalidNonFungibleTokenFails());
+//                getInfoOnDeletedFungibleTokenWorks(),
+//                getInfoOnInvalidFungibleTokenFails(),
+//                getInfoOnDeletedNonFungibleTokenFails(),
+//                getInfoOnInvalidNonFungibleTokenFails()
+        );
     }
 
     List<HapiApiSpec> positiveSpecs() {
         return List.of(
-                happyPathGetTokenInfo(),
-                happyPathGetFungibleTokenInfo(),
-                happyPathGetNonFungibleTokenInfo());
+                happyPathGetTokenInfo()
+//                happyPathGetFungibleTokenInfo(),
+//                happyPathGetNonFungibleTokenInfo()
+        );
     }
 
     private HapiApiSpec happyPathGetTokenInfo() {
@@ -208,7 +206,8 @@ public class TokenInfoHTSSuite extends HapiApiSuite {
                                                                         asAddress(
                                                                                 spec.registry()
                                                                                         .getTokenID(
-                                                                                                PRIMARY_TOKEN_NAME))))))))
+                                                                                                PRIMARY_TOKEN_NAME)))))
+                                        )))
                 .then(
                         withOpContext(
                                 (spec, opLog) -> {

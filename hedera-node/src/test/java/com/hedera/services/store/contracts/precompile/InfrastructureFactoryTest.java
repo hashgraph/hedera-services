@@ -18,8 +18,8 @@ package com.hedera.services.store.contracts.precompile;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.mockito.BDDMockito.given;
 
-import com.hedera.services.config.NetworkInfo;
 import com.hedera.services.context.SideEffectsTracker;
+import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.TransactionalLedger;
@@ -92,7 +92,7 @@ class InfrastructureFactoryTest {
     @Mock private MessageFrame frame;
     @Mock private ViewGasCalculator gasCalculator;
     @Mock private HederaStackedWorldStateUpdater worldStateUpdater;
-    @Mock private NetworkInfo networkInfo;
+    @Mock private StateView stateView;
 
     private InfrastructureFactory subject;
 
@@ -245,7 +245,7 @@ class InfrastructureFactoryTest {
 
         assertInstanceOf(
                 ViewExecutor.class,
-                subject.newViewExecutor(Bytes.EMPTY, frame, gasCalculator, networkInfo));
+                subject.newViewExecutor(Bytes.EMPTY, frame, gasCalculator, stateView));
     }
 
     @Test

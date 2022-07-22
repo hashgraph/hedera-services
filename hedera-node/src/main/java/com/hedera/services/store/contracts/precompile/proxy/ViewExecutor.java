@@ -15,19 +15,19 @@
  */
 package com.hedera.services.store.contracts.precompile.proxy;
 
+import static com.hedera.services.exceptions.ValidationUtils.validateTrueOrRevert;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_GET_FUNGIBLE_TOKEN_INFO;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_GET_NON_FUNGIBLE_TOKEN_INFO;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_GET_TOKEN_INFO;
 import static com.hedera.services.utils.MiscUtils.asSecondsTimestamp;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 
-import com.hedera.services.config.NetworkInfo;
+import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.exceptions.InvalidTransactionException;
-import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
-import com.hedera.services.store.contracts.WorldLedgers;
 import com.hedera.services.store.contracts.precompile.codec.DecodingFacade;
 import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
-import com.hedera.services.store.contracts.precompile.utils.TokenInfoRetrievalUtils;
+import com.hederahashgraph.api.proto.java.NftID;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.evm.frame.MessageFrame;
@@ -37,12 +37,10 @@ public class ViewExecutor {
 
     private final Bytes input;
     private final MessageFrame frame;
-    private final WorldLedgers ledgers;
     private final EncodingFacade encoder;
     private final DecodingFacade decoder;
     private final ViewGasCalculator gasCalculator;
-    private final HederaStackedWorldStateUpdater updater;
-    private final NetworkInfo networkInfo;
+    private final StateView stateView;
 
     public ViewExecutor(
             final Bytes input,
@@ -50,16 +48,13 @@ public class ViewExecutor {
             final EncodingFacade encoder,
             final DecodingFacade decoder,
             final ViewGasCalculator gasCalculator,
-            final NetworkInfo networkInfo) {
+            final StateView stateView) {
         this.input = input;
         this.frame = frame;
         this.encoder = encoder;
         this.decoder = decoder;
         this.gasCalculator = gasCalculator;
-
-        this.updater = (HederaStackedWorldStateUpdater) frame.getWorldUpdater();
-        this.ledgers = updater.trackingLedgers();
-        this.networkInfo = networkInfo;
+        this.stateView = stateView;
     }
 
     public Pair<Long, Bytes> computeCosted() {
@@ -82,21 +77,29 @@ public class ViewExecutor {
     private Bytes answerGiven(final int selector) {
         if (selector == ABI_ID_GET_TOKEN_INFO) {
             final var wrapper = decoder.decodeGetTokenInfo(input);
-            final var tokenInfo =
-                    TokenInfoRetrievalUtils.getTokenInfo(wrapper.tokenID(), ledgers, networkInfo);
+            final var tokenInfo = stateView.infoForToken(wrapper.tokenID()).orElse(null);
+
+            validateTrueOrRevert(tokenInfo != null, ResponseCodeEnum.INVALID_TOKEN_ID);
+
             return encoder.encodeGetTokenInfo(tokenInfo);
         } else if (selector == ABI_ID_GET_FUNGIBLE_TOKEN_INFO) {
             final var wrapper = decoder.decodeGetFungibleTokenInfo(input);
-            final var fungibleTokenInfo =
-                    TokenInfoRetrievalUtils.getFungibleTokenInfo(
-                            wrapper.tokenID(), ledgers, networkInfo);
-            return encoder.encodeGetFungibleTokenInfo(fungibleTokenInfo);
+            final var tokenInfo = stateView.infoForToken(wrapper.tokenID()).orElse(null);
+
+            validateTrueOrRevert(tokenInfo != null, ResponseCodeEnum.INVALID_TOKEN_ID);
+
+            return encoder.encodeGetFungibleTokenInfo(tokenInfo);
         } else if (selector == ABI_ID_GET_NON_FUNGIBLE_TOKEN_INFO) {
             final var wrapper = decoder.decodeGetNonFungibleTokenInfo(input);
-            final var nonFungibleTokenInfo =
-                    TokenInfoRetrievalUtils.getNonFungibleTokenInfo(
-                            wrapper.tokenID(), wrapper.serialNumber(), ledgers, networkInfo);
-            return encoder.encodeGetNonFungibleTokenInfo(nonFungibleTokenInfo);
+            final var tokenInfo = stateView.infoForToken(wrapper.tokenID()).orElse(null);
+
+            validateTrueOrRevert(tokenInfo != null, ResponseCodeEnum.INVALID_TOKEN_ID);
+
+            final var nftID = NftID.newBuilder().setTokenID(wrapper.tokenID()).setSerialNumber(wrapper.serialNumber()).build();
+            final var nonFungibleTokenInfo = stateView.infoForNft(nftID).orElse(null);
+            validateTrueOrRevert(nonFungibleTokenInfo != null, ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER);
+
+            return encoder.encodeGetNonFungibleTokenInfo(tokenInfo, nonFungibleTokenInfo);
         } else {
             // Only view functions can be used inside a ContractCallLocal
             throw new InvalidTransactionException(NOT_SUPPORTED);

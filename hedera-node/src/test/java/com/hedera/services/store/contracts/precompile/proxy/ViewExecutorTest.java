@@ -19,45 +19,37 @@ import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_GET_NON_FUNGIBLE_TOKEN_INFO;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_GET_TOKEN_INFO;
 import static com.hedera.services.store.contracts.precompile.proxy.RedirectViewExecutor.MINIMUM_TINYBARS_COST;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
 import com.esaulpaugh.headlong.util.Integers;
-import com.hedera.services.config.NetworkInfo;
-import com.hedera.services.exceptions.InvalidTransactionException;
-import com.hedera.services.state.submerkle.EntityId;
-import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
-import com.hedera.services.store.contracts.WorldLedgers;
+import com.google.protobuf.ByteString;
+import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.store.contracts.precompile.codec.DecodingFacade;
 import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
-import com.hedera.services.store.contracts.precompile.codec.Expiry;
-import com.hedera.services.store.contracts.precompile.codec.HederaToken;
-import com.hedera.services.store.contracts.precompile.codec.TokenInfo;
 import com.hedera.services.store.contracts.precompile.codec.TokenInfoWrapper;
-import com.hedera.services.store.contracts.precompile.utils.TokenInfoRetrievalUtils;
 import com.hedera.services.store.models.Id;
-import com.hedera.services.store.models.NftId;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.NftID;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenID;
-import java.util.ArrayList;
+import com.hederahashgraph.api.proto.java.TokenInfo;
+import com.hederahashgraph.api.proto.java.TokenNftInfo;
+import java.util.Optional;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.frame.BlockValues;
 import org.hyperledger.besu.evm.frame.MessageFrame;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.MockedStatic;
-import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
@@ -67,17 +59,13 @@ class ViewExecutorTest {
     @Mock private EncodingFacade encodingFacade;
     @Mock private DecodingFacade decodingFacade;
     @Mock private ViewGasCalculator viewGasCalculator;
-    @Mock private HederaStackedWorldStateUpdater stackedWorldStateUpdater;
-    @Mock private WorldLedgers worldLedgers;
     @Mock private BlockValues blockValues;
-    @Mock private WorldLedgers wrappedLedgers;
-    @Mock private NetworkInfo networkInfo;
+    @Mock private StateView stateView;
 
     public static final AccountID account = IdUtils.asAccount("0.0.777");
     public static final AccountID spender = IdUtils.asAccount("0.0.888");
     public static final TokenID fungible = IdUtils.asToken("0.0.888");
     public static final TokenID nonfungibletoken = IdUtils.asToken("0.0.999");
-    public static final NftId nonfungible = new NftId(0, 0, 999, 1);
     public static final Id fungibleId = Id.fromGrpcToken(fungible);
     public static final Id nonfungibleId = Id.fromGrpcToken(nonfungibletoken);
     public static final Address fungibleTokenAddress = fungibleId.asEvmAddress();
@@ -87,8 +75,6 @@ class ViewExecutorTest {
                     Bytes.fromHexString("0x00000000000000000000000000000000000005cc").toArray());
     public static final AccountID autoRenewAccount =
             EntityIdUtils.accountIdFromEvmAddress(Address.ZERO);
-    public static final EntityId treasuryEntityId = EntityId.fromGrpcAccountId(treasury);
-    public static final EntityId autoRenewEntityId = EntityId.fromGrpcAccountId(autoRenewAccount);
 
     private static final long timestamp = 10L;
     private static final Timestamp resultingTimestamp =
@@ -99,49 +85,28 @@ class ViewExecutorTest {
     private Bytes tokenInfoEncoded;
 
     ViewExecutor subject;
-    MockedStatic<TokenInfoRetrievalUtils> tokenInfoRetrievalUtils;
 
     @BeforeEach
     void setUp() {
-        final var token =
-                new HederaToken(
-                        "NAME",
-                        "FT",
-                        Address.wrap(
-                                Bytes.fromHexString("0x00000000000000000000000000000000000005cc")),
-                        "MEMO",
-                        false,
-                        1000L,
-                        false,
-                        new ArrayList<>(),
-                        new Expiry(0L, Address.ZERO, 0L));
-        tokenInfo =
-                new TokenInfo(
-                        token,
-                        1L,
-                        false,
-                        false,
-                        false,
-                        new ArrayList<>(),
-                        new ArrayList<>(),
-                        new ArrayList<>(),
-                        "0x03");
+        tokenInfo = TokenInfo.newBuilder()
+            .setLedgerId(fromString("0x03"))
+            .setSupplyTypeValue(1)
+            .setTokenId(fungible)
+            .setDeleted(false)
+            .setSymbol("FT")
+            .setName("NAME")
+            .setMemo("MEMO")
+            .setTreasury(EntityIdUtils.accountIdFromEvmAddress(Address.wrap(
+                Bytes.fromHexString("0x00000000000000000000000000000000000005cc"))))
+            .setTotalSupply(1L)
+            .setMaxSupply(1000L).build();
         tokenInfoEncoded =
                 Bytes.fromHexString(
                         "0x00000000000000000000000000000000000000000000000000000000000000160000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000012000000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000360000000000000000000000000000000000000000000000000000000000000038000000000000000000000000000000000000000000000000000000000000003a000000000000000000000000000000000000000000000000000000000000003c0000000000000000000000000000000000000000000000000000000000000016000000000000000000000000000000000000000000000000000000000000001a000000000000000000000000000000000000000000000000000000000000005cc00000000000000000000000000000000000000000000000000000000000001e0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000003e80000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000022000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000044e414d45000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002465400000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000044d454d4f00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000043078303300000000000000000000000000000000000000000000000000000000");
-
-        tokenInfoRetrievalUtils = Mockito.mockStatic(TokenInfoRetrievalUtils.class);
-        tokenInfoRetrievalUtils
-                .when(
-                        () ->
-                                TokenInfoRetrievalUtils.getTokenInfo(
-                                        fungible, wrappedLedgers, networkInfo))
-                .thenReturn(tokenInfo);
     }
 
-    @AfterEach
-    void closeMocks() {
-        tokenInfoRetrievalUtils.close();
+    private ByteString fromString(final String value) {
+        return ByteString.copyFrom(Bytes.fromHexString(value).toArray());
     }
 
     @Test
@@ -150,6 +115,8 @@ class ViewExecutorTest {
 
         final var tokenInfoWrapper = TokenInfoWrapper.forToken(fungible);
         given(decodingFacade.decodeGetTokenInfo(input)).willReturn(tokenInfoWrapper);
+
+        given(stateView.infoForToken(fungible)).willReturn(Optional.of(tokenInfo));
         given(encodingFacade.encodeGetTokenInfo(any())).willReturn(tokenInfoEncoded);
 
         assertEquals(Pair.of(gas, tokenInfoEncoded), subject.computeCosted());
@@ -159,8 +126,10 @@ class ViewExecutorTest {
     void computeGetFungibleTokenInfo() {
         final var input = prerequisites(ABI_ID_GET_FUNGIBLE_TOKEN_INFO, fungibleTokenAddress);
 
-        final var tokenInfoWrapper = TokenInfoWrapper.forToken(fungible);
+        final var tokenInfoWrapper = TokenInfoWrapper.forFungibleToken(fungible);
         given(decodingFacade.decodeGetFungibleTokenInfo(input)).willReturn(tokenInfoWrapper);
+
+        given(stateView.infoForToken(fungible)).willReturn(Optional.of(tokenInfo));
         given(encodingFacade.encodeGetFungibleTokenInfo(any())).willReturn(tokenInfoEncoded);
 
         assertEquals(Pair.of(gas, tokenInfoEncoded), subject.computeCosted());
@@ -173,9 +142,19 @@ class ViewExecutorTest {
 
         final var tokenInfoWrapper = TokenInfoWrapper.forNonFungibleToken(nonfungibletoken, 1L);
         given(decodingFacade.decodeGetNonFungibleTokenInfo(input)).willReturn(tokenInfoWrapper);
-        given(encodingFacade.encodeGetNonFungibleTokenInfo(any())).willReturn(tokenInfoEncoded);
+
+        given(stateView.infoForToken(nonfungibletoken)).willReturn(Optional.of(tokenInfo));
+        given(stateView.infoForNft(NftID.newBuilder().setTokenID(nonfungibletoken).setSerialNumber(1L).build())).willReturn(Optional.of(
+            TokenNftInfo.newBuilder().build()));
+        given(encodingFacade.encodeGetNonFungibleTokenInfo(any(), any())).willReturn(tokenInfoEncoded);
 
         assertEquals(Pair.of(gas, tokenInfoEncoded), subject.computeCosted());
+    }
+
+    @Test
+    void computeCostedNOT_SUPPORTED() {
+        prerequisites(0xffffffff, fungibleTokenAddress);
+        assertNull(subject.computeCosted().getRight());
     }
 
     @Test
@@ -185,22 +164,17 @@ class ViewExecutorTest {
         final var tokenInfoWrapper = TokenInfoWrapper.forToken(fungible);
         given(decodingFacade.decodeGetTokenInfo(input)).willReturn(tokenInfoWrapper);
 
-        given(TokenInfoRetrievalUtils.getTokenInfo(any(), any(), any()))
-                .willThrow(new InvalidTransactionException(INVALID_TOKEN_ID, true));
+        given(stateView.infoForToken(any())).willReturn(Optional.empty());
 
         assertEquals(Pair.of(gas, null), subject.computeCosted());
         verify(frame).setState(MessageFrame.State.REVERT);
     }
 
     Bytes prerequisites(final int descriptor, final Bytes tokenAddress) {
-        given(frame.getWorldUpdater()).willReturn(stackedWorldStateUpdater);
-        given(stackedWorldStateUpdater.trackingLedgers()).willReturn(worldLedgers);
         Bytes input = Bytes.concatenate(Bytes.of(Integers.toBytes(descriptor)), tokenAddress);
         given(frame.getBlockValues()).willReturn(blockValues);
         given(blockValues.getTimestamp()).willReturn(timestamp);
         given(viewGasCalculator.compute(resultingTimestamp, MINIMUM_TINYBARS_COST)).willReturn(gas);
-        given(frame.getWorldUpdater()).willReturn(stackedWorldStateUpdater);
-        given(stackedWorldStateUpdater.trackingLedgers()).willReturn(worldLedgers);
         this.subject =
                 new ViewExecutor(
                         input,
@@ -208,7 +182,7 @@ class ViewExecutorTest {
                         encodingFacade,
                         decodingFacade,
                         viewGasCalculator,
-                        networkInfo);
+                    stateView);
         return input;
     }
 }

@@ -15,7 +15,7 @@
  */
 package com.hedera.services.store.contracts.precompile.impl;
 
-import com.hedera.services.config.NetworkInfo;
+import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.store.contracts.WorldLedgers;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.store.contracts.precompile.codec.DecodingFacade;
@@ -25,7 +25,7 @@ import com.hederahashgraph.api.proto.java.TokenID;
 
 public abstract class AbstractTokenInfoPrecompile extends AbstractReadOnlyPrecompile {
 
-    protected final NetworkInfo networkInfo;
+    protected final StateView stateView;
 
     protected AbstractTokenInfoPrecompile(
             final TokenID tokenId,
@@ -34,8 +34,8 @@ public abstract class AbstractTokenInfoPrecompile extends AbstractReadOnlyPrecom
             final EncodingFacade encoder,
             final DecodingFacade decoder,
             final PrecompilePricingUtils pricingUtils,
-            final NetworkInfo networkInfo) {
+            final StateView stateView) {
         super(tokenId, syntheticTxnFactory, ledgers, encoder, decoder, pricingUtils);
-        this.networkInfo = networkInfo;
+        this.stateView = stateView;
     }
 }

@@ -68,7 +68,6 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import com.esaulpaugh.headlong.util.Integers;
-import com.hedera.services.config.NetworkInfo;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
@@ -178,7 +177,6 @@ class CreatePrecompileTest {
     @Mock private InfrastructureFactory infrastructureFactory;
     @Mock private AssetsLoader assetLoader;
     @Mock private HbarCentExchange exchange;
-    @Mock private NetworkInfo networkInfo;
 
     private HTSPrecompiledContract subject;
     private UpdateTrackingLedgerAccount senderMutableAccount;
@@ -212,8 +210,7 @@ class CreatePrecompileTest {
                         () -> feeCalculator,
                         stateView,
                         precompilePricingUtils,
-                        infrastructureFactory,
-                        networkInfo);
+                        infrastructureFactory);
         given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));

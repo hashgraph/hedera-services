@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.hedera.services.parsing;
+package com.hedera.services.contracts;
 
 import com.esaulpaugh.headlong.abi.TupleType;
 

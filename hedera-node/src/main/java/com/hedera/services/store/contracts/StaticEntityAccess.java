@@ -54,6 +54,7 @@ import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
+import com.hederahashgraph.api.proto.java.TokenInfo;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
 import java.util.List;
@@ -214,6 +215,57 @@ public class StaticEntityAccess implements EntityAccess {
     public String symbolOf(final TokenID tokenId) {
         final var token = lookupToken(tokenId);
         return token.symbol();
+    }
+
+    /**
+     * Returns combined info for the given token.
+     *
+     * @param tokenId the token of interest
+     * @param ledgerId the ledgerId of interest
+     * @return the token's combined info
+     */
+    public TokenInfo tokenInfoOf(final TokenID tokenId, final String ledgerId) {
+//        final var token = lookupToken(tokenId);
+//
+//        final var name = token.name();
+//        final var symbol = token.symbol();
+//        final var treasury = token.treasury().toEvmAddress();
+//        final var memo = token.memo();
+//        final var tokenSupplyType = TokenSupplyType.FINITE.equals(token.supplyType());
+//        final var maxSupply = token.maxSupply();
+//        final var freezeDefault = token.accountsAreFrozenByDefault();
+//
+//        final var keys = new ArrayList<TokenKey>();
+//        keys.add(getTokenKey(token.adminKey(), TokenKeyType.ADMIN_KEY.value()));
+//        keys.add(getTokenKey(token.kycKey(), TokenKeyType.KYC_KEY.value()));
+//        keys.add(getTokenKey(token.freezeKey(), TokenKeyType.FREEZE_KEY.value()));
+//        keys.add(getTokenKey(token.wipeKey(), TokenKeyType.WIPE_KEY.value()));
+//        keys.add(getTokenKey(token.supplyKey(), TokenKeyType.SUPPLY_KEY.value()));
+//        keys.add(getTokenKey(token.feeScheduleKey(), TokenKeyType.FEE_SCHEDULE_KEY.value()));
+//        keys.add(getTokenKey(token.pauseKey(), TokenKeyType.PAUSE_KEY.value()));
+//
+//        final var expiry = getExpiry(token);
+//
+//        final var hederaToken = new HederaToken(name, symbol, treasury, memo, tokenSupplyType, maxSupply, freezeDefault, keys, expiry);
+//
+//        final var totalSupply = token.totalSupply();
+//        final var deleted = token.isDeleted();
+//        final var defaultKycStatus = token.accountsKycGrantedByDefault();
+//        final var paused = token.isPaused();
+//
+//        final var fixedFees = new ArrayList<FixedFee>();
+//        final var fractionalFees = new ArrayList<FractionalFee>();
+//        for(final var fee : token.customFeeSchedule()) {
+//            final var feeType = fee.getFeeType();
+//            if( FeeType.FIXED_FEE.equals(feeType)) {
+//                fixedFees.add(getFixedFee(fee));
+//            } else if(FeeType.FRACTIONAL_FEE.equals(feeType)) {
+//                fractionalFees.add(getFractionalFee(fee));
+//            }
+//        }
+
+//        return new TokenInfo(hederaToken, totalSupply, deleted, defaultKycStatus, paused, fixedFees, fractionalFees, new ArrayList<>(), ledgerId);
+        return null;
     }
 
     /**

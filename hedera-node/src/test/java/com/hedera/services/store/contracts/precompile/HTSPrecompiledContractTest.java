@@ -59,7 +59,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import com.esaulpaugh.headlong.util.Integers;
-import com.hedera.services.config.NetworkInfo;
+import com.google.protobuf.ByteString;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.contracts.sources.TxnAwareEvmSigsVerifier;
@@ -81,10 +81,7 @@ import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.services.store.contracts.WorldLedgers;
 import com.hedera.services.store.contracts.precompile.codec.DecodingFacade;
 import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
-import com.hedera.services.store.contracts.precompile.codec.Expiry;
-import com.hedera.services.store.contracts.precompile.codec.HederaToken;
 import com.hedera.services.store.contracts.precompile.codec.TokenCreateWrapper;
-import com.hedera.services.store.contracts.precompile.codec.TokenInfo;
 import com.hedera.services.store.contracts.precompile.codec.TokenInfoWrapper;
 import com.hedera.services.store.contracts.precompile.impl.AssociatePrecompile;
 import com.hedera.services.store.contracts.precompile.impl.BurnPrecompile;
@@ -97,7 +94,6 @@ import com.hedera.services.store.contracts.precompile.impl.TransferPrecompile;
 import com.hedera.services.store.contracts.precompile.proxy.RedirectViewExecutor;
 import com.hedera.services.store.contracts.precompile.proxy.ViewExecutor;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
-import com.hedera.services.store.contracts.precompile.utils.TokenInfoRetrievalUtils;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -107,11 +103,11 @@ import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenAssociateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenDissociateTransactionBody;
+import com.hederahashgraph.api.proto.java.TokenInfo;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.fee.FeeObject;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Collections;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
@@ -119,13 +115,10 @@ import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.frame.BlockValues;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.MockedStatic;
-import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
@@ -157,9 +150,7 @@ class HTSPrecompiledContractTest {
 
     private HTSPrecompiledContract subject;
     private PrecompilePricingUtils precompilePricingUtils;
-    private MockedStatic<TokenInfoRetrievalUtils> tokenInfoRetrievalUtils;
     @Mock private AssetsLoader assetLoader;
-    @Mock private NetworkInfo networkInfo;
 
     private static final long viewTimestamp = 10L;
     private static final int CENTS_RATE = 12;
@@ -173,37 +164,43 @@ class HTSPrecompiledContractTest {
 
     @BeforeEach
     void setUp() throws IOException {
-        final var token =
-                new HederaToken(
-                        "NAME",
-                        "FT",
-                        Address.wrap(
-                                Bytes.fromHexString("0x00000000000000000000000000000000000005cc")),
-                        "MEMO",
-                        false,
-                        1000L,
-                        false,
-                        new ArrayList<>(),
-                        new Expiry(0L, Address.ZERO, 0L));
-        tokenInfo =
-                new TokenInfo(
-                        token,
-                        1L,
-                        false,
-                        false,
-                        false,
-                        new ArrayList<>(),
-                        new ArrayList<>(),
-                        new ArrayList<>(),
-                        "0x03");
+//        final var token =
+//                new HederaToken(
+//                        "NAME",
+//                        "FT",
+//                        Address.wrap(
+//                                Bytes.fromHexString("0x00000000000000000000000000000000000005cc")),
+//                        "MEMO",
+//                        false,
+//                        1000L,
+//                        false,
+//                        new ArrayList<>(),
+//                        new Expiry(0L, Address.ZERO, 0L));
+//        tokenInfo =
+//                new TokenInfo(
+//                        token,
+//                        1L,
+//                        false,
+//                        false,
+//                        false,
+//                        new ArrayList<>(),
+//                        new ArrayList<>(),
+//                        new ArrayList<>(),
+//                        "0x03");
 
-        tokenInfoRetrievalUtils = Mockito.mockStatic(TokenInfoRetrievalUtils.class);
-        tokenInfoRetrievalUtils
-                .when(
-                        () ->
-                                TokenInfoRetrievalUtils.getTokenInfo(
-                                        fungible, wrappedLedgers, networkInfo))
-                .thenReturn(tokenInfo);
+        tokenInfo = TokenInfo.newBuilder()
+            .setLedgerId(fromString("0x03"))
+            .setSupplyTypeValue(1)
+            .setTokenId(fungible)
+            .setDeleted(false)
+            .setSymbol("FT")
+            .setName("NAME")
+            .setMemo("MEMO")
+            .setTreasury(EntityIdUtils.accountIdFromEvmAddress(Address.wrap(
+                Bytes.fromHexString("0x00000000000000000000000000000000000005cc"))))
+            .setTotalSupply(1L)
+            .setMaxSupply(1000L).build();
+
         precompilePricingUtils =
                 new PrecompilePricingUtils(
                         assetLoader, exchange, () -> feeCalculator, resourceCosts, stateView);
@@ -221,13 +218,11 @@ class HTSPrecompiledContractTest {
                         () -> feeCalculator,
                         stateView,
                         precompilePricingUtils,
-                        infrastructureFactory,
-                        networkInfo);
+                        infrastructureFactory);
     }
 
-    @AfterEach
-    void closeMocks() {
-        tokenInfoRetrievalUtils.close();
+    private ByteString fromString(final String value) {
+        return ByteString.copyFrom(Bytes.fromHexString(value).toArray());
     }
 
     @Test
@@ -306,7 +301,7 @@ class HTSPrecompiledContractTest {
                         encoder,
                         decoder,
                         precompilePricingUtils::computeViewFunctionGas,
-                        networkInfo);
+                        stateView);
         given(infrastructureFactory.newViewExecutor(any(), any(), any(), any()))
                 .willReturn(viewExecutor);
         given(feeCalculator.estimatePayment(any(), any(), any(), any(), any()))
