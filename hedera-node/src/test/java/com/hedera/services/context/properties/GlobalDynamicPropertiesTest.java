@@ -164,6 +164,7 @@ class GlobalDynamicPropertiesTest {
         assertEquals(63, subject.getMaxPurgedKvPairsPerTouch());
         assertEquals(64, subject.getMaxReturnedNftsPerTouch());
         assertEquals(86, subject.maxNumTokenRels());
+        assertEquals(82, subject.getSidecarMaxSizeMb());
     }
 
     @Test
@@ -285,6 +286,7 @@ class GlobalDynamicPropertiesTest {
         assertEquals(74, subject.getStakingRewardPercent());
         assertEquals(79, subject.recordFileVersion());
         assertEquals(80, subject.recordSignatureFileVersion());
+        assertEquals(83, subject.getSidecarMaxSizeMb());
     }
 
     @Test
@@ -473,6 +475,8 @@ class GlobalDynamicPropertiesTest {
                         (i + 80) % 2 == 0
                                 ? Set.of(SidecarType.CONTRACT_STATE_CHANGE)
                                 : Set.of(SidecarType.CONTRACT_BYTECODE));
+        given(properties.getIntProperty("hedera.recordStream.sidecarMaxSizeMb"))
+            .willReturn((i + 81));
     }
 
     private Set<EntityType> typesFor(final int i) {
