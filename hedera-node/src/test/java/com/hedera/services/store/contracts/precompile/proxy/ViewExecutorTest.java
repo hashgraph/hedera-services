@@ -88,18 +88,23 @@ class ViewExecutorTest {
 
     @BeforeEach
     void setUp() {
-        tokenInfo = TokenInfo.newBuilder()
-            .setLedgerId(fromString("0x03"))
-            .setSupplyTypeValue(1)
-            .setTokenId(fungible)
-            .setDeleted(false)
-            .setSymbol("FT")
-            .setName("NAME")
-            .setMemo("MEMO")
-            .setTreasury(EntityIdUtils.accountIdFromEvmAddress(Address.wrap(
-                Bytes.fromHexString("0x00000000000000000000000000000000000005cc"))))
-            .setTotalSupply(1L)
-            .setMaxSupply(1000L).build();
+        tokenInfo =
+                TokenInfo.newBuilder()
+                        .setLedgerId(fromString("0x03"))
+                        .setSupplyTypeValue(1)
+                        .setTokenId(fungible)
+                        .setDeleted(false)
+                        .setSymbol("FT")
+                        .setName("NAME")
+                        .setMemo("MEMO")
+                        .setTreasury(
+                                EntityIdUtils.accountIdFromEvmAddress(
+                                        Address.wrap(
+                                                Bytes.fromHexString(
+                                                        "0x00000000000000000000000000000000000005cc"))))
+                        .setTotalSupply(1L)
+                        .setMaxSupply(1000L)
+                        .build();
         tokenInfoEncoded =
                 Bytes.fromHexString(
                         "0x00000000000000000000000000000000000000000000000000000000000000160000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000012000000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000360000000000000000000000000000000000000000000000000000000000000038000000000000000000000000000000000000000000000000000000000000003a000000000000000000000000000000000000000000000000000000000000003c0000000000000000000000000000000000000000000000000000000000000016000000000000000000000000000000000000000000000000000000000000001a000000000000000000000000000000000000000000000000000000000000005cc00000000000000000000000000000000000000000000000000000000000001e0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000003e80000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000022000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000044e414d45000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002465400000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000044d454d4f00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000043078303300000000000000000000000000000000000000000000000000000000");
@@ -144,9 +149,15 @@ class ViewExecutorTest {
         given(decodingFacade.decodeGetNonFungibleTokenInfo(input)).willReturn(tokenInfoWrapper);
 
         given(stateView.infoForToken(nonfungibletoken)).willReturn(Optional.of(tokenInfo));
-        given(stateView.infoForNft(NftID.newBuilder().setTokenID(nonfungibletoken).setSerialNumber(1L).build())).willReturn(Optional.of(
-            TokenNftInfo.newBuilder().build()));
-        given(encodingFacade.encodeGetNonFungibleTokenInfo(any(), any())).willReturn(tokenInfoEncoded);
+        given(
+                        stateView.infoForNft(
+                                NftID.newBuilder()
+                                        .setTokenID(nonfungibletoken)
+                                        .setSerialNumber(1L)
+                                        .build()))
+                .willReturn(Optional.of(TokenNftInfo.newBuilder().build()));
+        given(encodingFacade.encodeGetNonFungibleTokenInfo(any(), any()))
+                .willReturn(tokenInfoEncoded);
 
         assertEquals(Pair.of(gas, tokenInfoEncoded), subject.computeCosted());
     }
@@ -177,12 +188,7 @@ class ViewExecutorTest {
         given(viewGasCalculator.compute(resultingTimestamp, MINIMUM_TINYBARS_COST)).willReturn(gas);
         this.subject =
                 new ViewExecutor(
-                        input,
-                        frame,
-                        encodingFacade,
-                        decodingFacade,
-                        viewGasCalculator,
-                    stateView);
+                        input, frame, encodingFacade, decodingFacade, viewGasCalculator, stateView);
         return input;
     }
 }

@@ -125,19 +125,19 @@ public class TokenInfoHTSSuite extends HapiApiSuite {
 
     List<HapiApiSpec> negativeSpecs() {
         return List.of(
-//                getInfoOnDeletedFungibleTokenWorks(),
-//                getInfoOnInvalidFungibleTokenFails(),
-//                getInfoOnDeletedNonFungibleTokenFails(),
-//                getInfoOnInvalidNonFungibleTokenFails()
-        );
+                //                getInfoOnDeletedFungibleTokenWorks(),
+                //                getInfoOnInvalidFungibleTokenFails(),
+                //                getInfoOnDeletedNonFungibleTokenFails(),
+                //                getInfoOnInvalidNonFungibleTokenFails()
+                );
     }
 
     List<HapiApiSpec> positiveSpecs() {
         return List.of(
                 happyPathGetTokenInfo()
-//                happyPathGetFungibleTokenInfo(),
-//                happyPathGetNonFungibleTokenInfo()
-        );
+                //                happyPathGetFungibleTokenInfo(),
+                //                happyPathGetNonFungibleTokenInfo()
+                );
     }
 
     private HapiApiSpec happyPathGetTokenInfo() {
@@ -206,8 +206,7 @@ public class TokenInfoHTSSuite extends HapiApiSuite {
                                                                         asAddress(
                                                                                 spec.registry()
                                                                                         .getTokenID(
-                                                                                                PRIMARY_TOKEN_NAME)))))
-                                        )))
+                                                                                                PRIMARY_TOKEN_NAME))))))))
                 .then(
                         withOpContext(
                                 (spec, opLog) -> {

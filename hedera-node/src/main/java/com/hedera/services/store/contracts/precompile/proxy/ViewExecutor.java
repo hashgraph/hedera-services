@@ -95,9 +95,14 @@ public class ViewExecutor {
 
             validateTrueOrRevert(tokenInfo != null, ResponseCodeEnum.INVALID_TOKEN_ID);
 
-            final var nftID = NftID.newBuilder().setTokenID(wrapper.tokenID()).setSerialNumber(wrapper.serialNumber()).build();
+            final var nftID =
+                    NftID.newBuilder()
+                            .setTokenID(wrapper.tokenID())
+                            .setSerialNumber(wrapper.serialNumber())
+                            .build();
             final var nonFungibleTokenInfo = stateView.infoForNft(nftID).orElse(null);
-            validateTrueOrRevert(nonFungibleTokenInfo != null, ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER);
+            validateTrueOrRevert(
+                    nonFungibleTokenInfo != null, ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER);
 
             return encoder.encodeGetNonFungibleTokenInfo(tokenInfo, nonFungibleTokenInfo);
         } else {

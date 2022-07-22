@@ -200,21 +200,21 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
             }
 
             final var proxyUpdater = (HederaStackedWorldStateUpdater) frame.getWorldUpdater();
-            if(!proxyUpdater.isInTransaction()) {
-             if (isTokenProxyRedirect(input)) {
+            if (!proxyUpdater.isInTransaction()) {
+                if (isTokenProxyRedirect(input)) {
                     final var executor =
-                        infrastructureFactory.newRedirectExecutor(
-                            input, frame, precompilePricingUtils::computeViewFunctionGas);
+                            infrastructureFactory.newRedirectExecutor(
+                                    input, frame, precompilePricingUtils::computeViewFunctionGas);
                     return executor.computeCosted();
-            } else if (isViewFunction(input)) {
+                } else if (isViewFunction(input)) {
                     final var executor =
-                        infrastructureFactory.newViewExecutor(
-                            input,
-                            frame,
-                            precompilePricingUtils::computeViewFunctionGas,
-                            currentView);
+                            infrastructureFactory.newViewExecutor(
+                                    input,
+                                    frame,
+                                    precompilePricingUtils::computeViewFunctionGas,
+                                    currentView);
                     return executor.computeCosted();
-            }
+                }
             }
         }
         final var result = computePrecompile(input, frame);
@@ -609,7 +609,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
                             encoder,
                             decoder,
                             precompilePricingUtils,
-                        currentView);
+                            currentView);
                     case AbiConstants
                             .ABI_ID_GET_FUNGIBLE_TOKEN_INFO -> new FungibleTokenInfoPrecompile(
                             null,
@@ -618,7 +618,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
                             encoder,
                             decoder,
                             precompilePricingUtils,
-                        currentView);
+                            currentView);
                     case AbiConstants
                             .ABI_ID_GET_NON_FUNGIBLE_TOKEN_INFO -> new NonFungibleTokenInfoPrecompile(
                             null,
@@ -627,7 +627,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
                             encoder,
                             decoder,
                             precompilePricingUtils,
-                        currentView);
+                            currentView);
                     default -> null;
                 };
         if (precompile != null) {

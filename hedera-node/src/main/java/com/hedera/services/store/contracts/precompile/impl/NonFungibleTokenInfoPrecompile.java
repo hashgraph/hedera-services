@@ -59,11 +59,12 @@ public class NonFungibleTokenInfoPrecompile extends AbstractTokenInfoPrecompile 
         final var tokenInfo = stateView.infoForToken(tokenId).orElse(null);
         validateTrue(tokenInfo != null, ResponseCodeEnum.INVALID_TOKEN_ID);
 
-        final var nftID = NftID.newBuilder().setTokenID(tokenId).setSerialNumber(serialNumber).build();
+        final var nftID =
+                NftID.newBuilder().setTokenID(tokenId).setSerialNumber(serialNumber).build();
         final var nonFungibleTokenInfo = stateView.infoForNft(nftID).orElse(null);
-        validateTrue(nonFungibleTokenInfo != null, ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER);
+        validateTrue(
+                nonFungibleTokenInfo != null, ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER);
 
-        return encoder.encodeGetNonFungibleTokenInfo(
-            tokenInfo, nonFungibleTokenInfo);
+        return encoder.encodeGetNonFungibleTokenInfo(tokenInfo, nonFungibleTokenInfo);
     }
 }

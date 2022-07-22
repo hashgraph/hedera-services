@@ -265,12 +265,13 @@ public class EncodingFacade {
                 .build();
     }
 
-    public Bytes encodeGetNonFungibleTokenInfo(final TokenInfo tokenInfo, final TokenNftInfo nonFungibleTokenInfo) {
+    public Bytes encodeGetNonFungibleTokenInfo(
+            final TokenInfo tokenInfo, final TokenNftInfo nonFungibleTokenInfo) {
         return functionResultBuilder()
                 .forFunction(FunctionType.HAPI_GET_NON_FUNGIBLE_TOKEN_INFO)
                 .withStatus(SUCCESS.getNumber())
                 .withTokenInfo(tokenInfo)
-            .withNftTokenInfo(nonFungibleTokenInfo)
+                .withNftTokenInfo(nonFungibleTokenInfo)
                 .build();
     }
 
@@ -481,10 +482,14 @@ public class EncodingFacade {
                     Tuple.of(
                             getTupleForTokenInfo(),
                             nonFungibleTokenInfo.getNftID().getSerialNumber(),
-                            convertBesuAddressToHeadlongAddress(EntityIdUtils.asTypedEvmAddress(nonFungibleTokenInfo.getAccountID())),
-                        nonFungibleTokenInfo.getCreationTime().getSeconds(),
-                        nonFungibleTokenInfo.getMetadata().toByteArray(),
-                            convertBesuAddressToHeadlongAddress(EntityIdUtils.asTypedEvmAddress(nonFungibleTokenInfo.getSpenderId()))));
+                            convertBesuAddressToHeadlongAddress(
+                                    EntityIdUtils.asTypedEvmAddress(
+                                            nonFungibleTokenInfo.getAccountID())),
+                            nonFungibleTokenInfo.getCreationTime().getSeconds(),
+                            nonFungibleTokenInfo.getMetadata().toByteArray(),
+                            convertBesuAddressToHeadlongAddress(
+                                    EntityIdUtils.asTypedEvmAddress(
+                                            nonFungibleTokenInfo.getSpenderId()))));
         }
 
         private Tuple getTupleForTokenInfo() {
@@ -492,13 +497,18 @@ public class EncodingFacade {
             final var fractionalFees = new ArrayList<Tuple>();
             final var royaltyFees = new ArrayList<Tuple>();
 
-            for(final var customFee : tokenInfo.getCustomFeesList()) {
-                final var feeCollector = convertBesuAddressToHeadlongAddress(EntityIdUtils.asTypedEvmAddress(customFee.getFeeCollectorAccountId()));
+            for (final var customFee : tokenInfo.getCustomFeesList()) {
+                final var feeCollector =
+                        convertBesuAddressToHeadlongAddress(
+                                EntityIdUtils.asTypedEvmAddress(
+                                        customFee.getFeeCollectorAccountId()));
                 if (customFee.getFixedFee().getAmount() > 0) {
                     fixedFees.add(getFixedFeeTuple(customFee.getFixedFee(), feeCollector));
-                } else if (customFee.getFractionalFee().getMinimumAmount() > 0){
-                    fractionalFees.add(getFractionalFeeTuple(customFee.getFractionalFee(), feeCollector));
-                } else if(customFee.getRoyaltyFee().getExchangeValueFraction().getNumerator() > 0) {
+                } else if (customFee.getFractionalFee().getMinimumAmount() > 0) {
+                    fractionalFees.add(
+                            getFractionalFeeTuple(customFee.getFractionalFee(), feeCollector));
+                } else if (customFee.getRoyaltyFee().getExchangeValueFraction().getNumerator()
+                        > 0) {
                     royaltyFees.add(getRoyaltyFeeTuple(customFee.getRoyaltyFee(), feeCollector));
                 }
             }
@@ -508,37 +518,46 @@ public class EncodingFacade {
                     tokenInfo.getDeleted(),
                     tokenInfo.getDefaultKycStatus().getNumber() == 1,
                     tokenInfo.getPauseStatus().getNumber() == 1,
-                fixedFees,
+                    fixedFees,
                     fractionalFees,
-                royaltyFees,
+                    royaltyFees,
                     Bytes.wrap(tokenInfo.getLedgerId().toByteArray()).toString());
         }
 
-        private Tuple getFixedFeeTuple(final com.hederahashgraph.api.proto.java.FixedFee fixedFee, final com.esaulpaugh.headlong.abi.Address feeCollector) {
+        private Tuple getFixedFeeTuple(
+                final com.hederahashgraph.api.proto.java.FixedFee fixedFee,
+                final com.esaulpaugh.headlong.abi.Address feeCollector) {
             return Tuple.of(
-                fixedFee.getAmount(),
-                convertBesuAddressToHeadlongAddress(EntityIdUtils.asTypedEvmAddress(fixedFee.getDenominatingTokenId())),
-                fixedFee.getDenominatingTokenId().getTokenNum() == 0,
-                false,
-                feeCollector);
+                    fixedFee.getAmount(),
+                    convertBesuAddressToHeadlongAddress(
+                            EntityIdUtils.asTypedEvmAddress(fixedFee.getDenominatingTokenId())),
+                    fixedFee.getDenominatingTokenId().getTokenNum() == 0,
+                    false,
+                    feeCollector);
         }
 
-        private Tuple getFractionalFeeTuple(final com.hederahashgraph.api.proto.java.FractionalFee fractionalFee, final com.esaulpaugh.headlong.abi.Address feeCollector) {
+        private Tuple getFractionalFeeTuple(
+                final com.hederahashgraph.api.proto.java.FractionalFee fractionalFee,
+                final com.esaulpaugh.headlong.abi.Address feeCollector) {
             return Tuple.of(
-                fractionalFee.getFractionalAmount().getNumerator(),
-                fractionalFee.getFractionalAmount().getDenominator(),
-                fractionalFee.getMinimumAmount(),
-                fractionalFee.getMaximumAmount(),
-                fractionalFee.getNetOfTransfers(),
-                feeCollector);
+                    fractionalFee.getFractionalAmount().getNumerator(),
+                    fractionalFee.getFractionalAmount().getDenominator(),
+                    fractionalFee.getMinimumAmount(),
+                    fractionalFee.getMaximumAmount(),
+                    fractionalFee.getNetOfTransfers(),
+                    feeCollector);
         }
 
-        private Tuple getRoyaltyFeeTuple(final com.hederahashgraph.api.proto.java.RoyaltyFee royaltyFee, final com.esaulpaugh.headlong.abi.Address feeCollector) {
+        private Tuple getRoyaltyFeeTuple(
+                final com.hederahashgraph.api.proto.java.RoyaltyFee royaltyFee,
+                final com.esaulpaugh.headlong.abi.Address feeCollector) {
             return Tuple.of(
-                royaltyFee.getExchangeValueFraction().getNumerator(),
-                royaltyFee.getExchangeValueFraction().getDenominator(),
-                royaltyFee.getFallbackFee().getAmount(),
-                convertBesuAddressToHeadlongAddress(EntityIdUtils.asTypedEvmAddress(royaltyFee.getFallbackFee().getDenominatingTokenId())),
+                    royaltyFee.getExchangeValueFraction().getNumerator(),
+                    royaltyFee.getExchangeValueFraction().getDenominator(),
+                    royaltyFee.getFallbackFee().getAmount(),
+                    convertBesuAddressToHeadlongAddress(
+                            EntityIdUtils.asTypedEvmAddress(
+                                    royaltyFee.getFallbackFee().getDenominatingTokenId())),
                     royaltyFee.getFallbackFee().getDenominatingTokenId().getTokenNum() == 0,
                     feeCollector);
         }
@@ -548,18 +567,21 @@ public class EncodingFacade {
             final var autoRenewPeriod = tokenInfo.getAutoRenewPeriod().getSeconds();
             final var expiryTuple =
                     Tuple.of(
-                        expiry,
-                            convertBesuAddressToHeadlongAddress(EntityIdUtils.asTypedEvmAddress(tokenInfo.getAutoRenewAccount())),
-                        autoRenewPeriod);
+                            expiry,
+                            convertBesuAddressToHeadlongAddress(
+                                    EntityIdUtils.asTypedEvmAddress(
+                                            tokenInfo.getAutoRenewAccount())),
+                            autoRenewPeriod);
 
             return Tuple.of(
                     tokenInfo.getName(),
-                tokenInfo.getSymbol(),
-                    convertBesuAddressToHeadlongAddress(EntityIdUtils.asTypedEvmAddress(tokenInfo.getTreasury())),
-                tokenInfo.getMemo(),
-                   tokenInfo.getSupplyType().getNumber() == 1,
-                tokenInfo.getMaxSupply(),
-                tokenInfo.getDefaultFreezeStatus().getNumber() == 1,
+                    tokenInfo.getSymbol(),
+                    convertBesuAddressToHeadlongAddress(
+                            EntityIdUtils.asTypedEvmAddress(tokenInfo.getTreasury())),
+                    tokenInfo.getMemo(),
+                    tokenInfo.getSupplyType().getNumber() == 1,
+                    tokenInfo.getMaxSupply(),
+                    tokenInfo.getDefaultFreezeStatus().getNumber() == 1,
                     getTokenKeysTuples(),
                     expiryTuple);
         }
@@ -572,7 +594,6 @@ public class EncodingFacade {
             final var supplyKey = tokenInfo.getSupplyKey();
             final var feeScheduleKey = tokenInfo.getFeeScheduleKey();
             final var pauseKey = tokenInfo.getPauseKey();
-
 
             final Tuple[] tokenKeysTuples = new Tuple[TokenKeyType.values().length];
             tokenKeysTuples[0] = getKeyTuple(adminKey);
@@ -587,18 +608,16 @@ public class EncodingFacade {
         }
 
         private static Tuple getKeyTuple(final Key key) {
-                return Tuple.of(
+            return Tuple.of(
                     false,
                     key.getContractID().getContractNum() > 0
-                        ? EntityIdUtils.asTypedEvmAddress(
-                        key.getContractID())
-                        : null,
+                            ? EntityIdUtils.asTypedEvmAddress(key.getContractID())
+                            : null,
                     key.getEd25519(),
                     key.getECDSASecp256K1(),
                     key.getDelegatableContractId().getContractNum() > 0
-                        ? EntityIdUtils.asTypedEvmAddress(
-                        key.getDelegatableContractId())
-                        : null);
+                            ? EntityIdUtils.asTypedEvmAddress(key.getDelegatableContractId())
+                            : null);
         }
     }
 

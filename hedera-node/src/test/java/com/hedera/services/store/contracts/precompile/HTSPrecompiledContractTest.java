@@ -164,42 +164,48 @@ class HTSPrecompiledContractTest {
 
     @BeforeEach
     void setUp() throws IOException {
-//        final var token =
-//                new HederaToken(
-//                        "NAME",
-//                        "FT",
-//                        Address.wrap(
-//                                Bytes.fromHexString("0x00000000000000000000000000000000000005cc")),
-//                        "MEMO",
-//                        false,
-//                        1000L,
-//                        false,
-//                        new ArrayList<>(),
-//                        new Expiry(0L, Address.ZERO, 0L));
-//        tokenInfo =
-//                new TokenInfo(
-//                        token,
-//                        1L,
-//                        false,
-//                        false,
-//                        false,
-//                        new ArrayList<>(),
-//                        new ArrayList<>(),
-//                        new ArrayList<>(),
-//                        "0x03");
+        //        final var token =
+        //                new HederaToken(
+        //                        "NAME",
+        //                        "FT",
+        //                        Address.wrap(
+        //
+        // Bytes.fromHexString("0x00000000000000000000000000000000000005cc")),
+        //                        "MEMO",
+        //                        false,
+        //                        1000L,
+        //                        false,
+        //                        new ArrayList<>(),
+        //                        new Expiry(0L, Address.ZERO, 0L));
+        //        tokenInfo =
+        //                new TokenInfo(
+        //                        token,
+        //                        1L,
+        //                        false,
+        //                        false,
+        //                        false,
+        //                        new ArrayList<>(),
+        //                        new ArrayList<>(),
+        //                        new ArrayList<>(),
+        //                        "0x03");
 
-        tokenInfo = TokenInfo.newBuilder()
-            .setLedgerId(fromString("0x03"))
-            .setSupplyTypeValue(1)
-            .setTokenId(fungible)
-            .setDeleted(false)
-            .setSymbol("FT")
-            .setName("NAME")
-            .setMemo("MEMO")
-            .setTreasury(EntityIdUtils.accountIdFromEvmAddress(Address.wrap(
-                Bytes.fromHexString("0x00000000000000000000000000000000000005cc"))))
-            .setTotalSupply(1L)
-            .setMaxSupply(1000L).build();
+        tokenInfo =
+                TokenInfo.newBuilder()
+                        .setLedgerId(fromString("0x03"))
+                        .setSupplyTypeValue(1)
+                        .setTokenId(fungible)
+                        .setDeleted(false)
+                        .setSymbol("FT")
+                        .setName("NAME")
+                        .setMemo("MEMO")
+                        .setTreasury(
+                                EntityIdUtils.accountIdFromEvmAddress(
+                                        Address.wrap(
+                                                Bytes.fromHexString(
+                                                        "0x00000000000000000000000000000000000005cc"))))
+                        .setTotalSupply(1L)
+                        .setMaxSupply(1000L)
+                        .build();
 
         precompilePricingUtils =
                 new PrecompilePricingUtils(

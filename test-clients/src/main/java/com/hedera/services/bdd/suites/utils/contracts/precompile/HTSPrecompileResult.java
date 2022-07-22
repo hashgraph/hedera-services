@@ -303,76 +303,78 @@ public class HTSPrecompileResult implements ContractCallResult {
         final var fractionalFees = new ArrayList<Tuple>();
         final var royaltyFees = new ArrayList<Tuple>();
 
-        for(final var customFee : tokenInfo.getCustomFeesList()) {
-            final var feeCollector = expandByteArrayTo32Length(Utils.asAddress(customFee.getFeeCollectorAccountId()));
+        for (final var customFee : tokenInfo.getCustomFeesList()) {
+            final var feeCollector =
+                    expandByteArrayTo32Length(
+                            Utils.asAddress(customFee.getFeeCollectorAccountId()));
             if (customFee.getFixedFee().getAmount() > 0) {
                 fixedFees.add(getFixedFeeTuple(customFee.getFixedFee(), feeCollector));
-            } else if (customFee.getFractionalFee().getMinimumAmount() > 0){
-                fractionalFees.add(getFractionalFeeTuple(customFee.getFractionalFee(), feeCollector));
-            } else if(customFee.getRoyaltyFee().getExchangeValueFraction().getNumerator() > 0) {
+            } else if (customFee.getFractionalFee().getMinimumAmount() > 0) {
+                fractionalFees.add(
+                        getFractionalFeeTuple(customFee.getFractionalFee(), feeCollector));
+            } else if (customFee.getRoyaltyFee().getExchangeValueFraction().getNumerator() > 0) {
                 royaltyFees.add(getRoyaltyFeeTuple(customFee.getRoyaltyFee(), feeCollector));
             }
         }
         return Tuple.of(
-            getHederaTokenTuple(),
-            tokenInfo.getTotalSupply(),
-            tokenInfo.getDeleted(),
-            tokenInfo.getDefaultKycStatus().getNumber() == 1,
-            tokenInfo.getPauseStatus().getNumber() == 1,
-            fixedFees,
-            fractionalFees,
-            royaltyFees,
-            Bytes.wrap(tokenInfo.getLedgerId().toByteArray()).toString());
+                getHederaTokenTuple(),
+                tokenInfo.getTotalSupply(),
+                tokenInfo.getDeleted(),
+                tokenInfo.getDefaultKycStatus().getNumber() == 1,
+                tokenInfo.getPauseStatus().getNumber() == 1,
+                fixedFees,
+                fractionalFees,
+                royaltyFees,
+                Bytes.wrap(tokenInfo.getLedgerId().toByteArray()).toString());
     }
 
     private Tuple getFixedFeeTuple(final FixedFee fixedFee, final byte[] feeCollector) {
         return Tuple.of(
-            fixedFee.getAmount(),
-            expandByteArrayTo32Length(Utils.asAddress(fixedFee.getDenominatingTokenId())),
-            fixedFee.getDenominatingTokenId().getTokenNum() == 0,
-            false,
-            feeCollector);
+                fixedFee.getAmount(),
+                expandByteArrayTo32Length(Utils.asAddress(fixedFee.getDenominatingTokenId())),
+                fixedFee.getDenominatingTokenId().getTokenNum() == 0,
+                false,
+                feeCollector);
     }
 
-    private Tuple getFractionalFeeTuple(final FractionalFee fractionalFee, final byte[] feeCollector) {
+    private Tuple getFractionalFeeTuple(
+            final FractionalFee fractionalFee, final byte[] feeCollector) {
         return Tuple.of(
-            fractionalFee.getFractionalAmount().getNumerator(),
-            fractionalFee.getFractionalAmount().getDenominator(),
-            fractionalFee.getMinimumAmount(),
-            fractionalFee.getMaximumAmount(),
-            fractionalFee.getNetOfTransfers(),
-            feeCollector);
+                fractionalFee.getFractionalAmount().getNumerator(),
+                fractionalFee.getFractionalAmount().getDenominator(),
+                fractionalFee.getMinimumAmount(),
+                fractionalFee.getMaximumAmount(),
+                fractionalFee.getNetOfTransfers(),
+                feeCollector);
     }
 
     private Tuple getRoyaltyFeeTuple(final RoyaltyFee royaltyFee, final byte[] feeCollector) {
         return Tuple.of(
-            royaltyFee.getExchangeValueFraction().getNumerator(),
-            royaltyFee.getExchangeValueFraction().getDenominator(),
-            royaltyFee.getFallbackFee().getAmount(),
-            expandByteArrayTo32Length(Utils.asAddress(royaltyFee.getFallbackFee().getDenominatingTokenId())),
-            royaltyFee.getFallbackFee().getDenominatingTokenId().getTokenNum() == 0,
-            feeCollector);
+                royaltyFee.getExchangeValueFraction().getNumerator(),
+                royaltyFee.getExchangeValueFraction().getDenominator(),
+                royaltyFee.getFallbackFee().getAmount(),
+                expandByteArrayTo32Length(
+                        Utils.asAddress(royaltyFee.getFallbackFee().getDenominatingTokenId())),
+                royaltyFee.getFallbackFee().getDenominatingTokenId().getTokenNum() == 0,
+                feeCollector);
     }
 
     private Tuple getHederaTokenTuple() {
         final var expiry = tokenInfo.getExpiry().getSeconds();
         final var autoRenewPeriod = tokenInfo.getAutoRenewPeriod().getSeconds();
         final var expiryTuple =
-            Tuple.of(
-                expiry,
-                tokenInfo.getAutoRenewAccount().toByteArray(),
-                autoRenewPeriod);
+                Tuple.of(expiry, tokenInfo.getAutoRenewAccount().toByteArray(), autoRenewPeriod);
 
         return Tuple.of(
-            tokenInfo.getName(),
-            tokenInfo.getSymbol(),
-            tokenInfo.getTreasury().toByteArray(),
-            tokenInfo.getMemo(),
-            tokenInfo.getSupplyType().getNumber() == 1,
-            tokenInfo.getMaxSupply(),
-            tokenInfo.getDefaultFreezeStatus().getNumber() == 1,
-            getTokenKeysTuples(),
-            expiryTuple);
+                tokenInfo.getName(),
+                tokenInfo.getSymbol(),
+                tokenInfo.getTreasury().toByteArray(),
+                tokenInfo.getMemo(),
+                tokenInfo.getSupplyType().getNumber() == 1,
+                tokenInfo.getMaxSupply(),
+                tokenInfo.getDefaultFreezeStatus().getNumber() == 1,
+                getTokenKeysTuples(),
+                expiryTuple);
     }
 
     private Tuple[] getTokenKeysTuples() {
@@ -398,16 +400,14 @@ public class HTSPrecompileResult implements ContractCallResult {
 
     private static Tuple getKeyTuple(final Key key) {
         return Tuple.of(
-            false,
-            key.getContractID().getContractNum() > 0
-                ? key.getContractID().toByteArray()
-                : null,
-            key.getEd25519(),
-            key.getECDSASecp256K1(),
-            key.getDelegatableContractId().getContractNum() > 0
-                ? key.getDelegatableContractId().toByteArray()
-                : null);
-}
+                false,
+                key.getContractID().getContractNum() > 0 ? key.getContractID().toByteArray() : null,
+                key.getEd25519(),
+                key.getECDSASecp256K1(),
+                key.getDelegatableContractId().getContractNum() > 0
+                        ? key.getDelegatableContractId().toByteArray()
+                        : null);
+    }
 
     private static String removeBrackets(final String type) {
         final var typeWithRemovedOpenBracket = type.replace("(", "");
