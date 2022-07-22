@@ -91,6 +91,7 @@ class GlobalDynamicPropertiesTest {
         assertTrue(subject.areContractAutoAssociationsEnabled());
         assertTrue(subject.isStakingEnabled());
         assertTrue(subject.isPrngEnabled());
+        assertTrue(subject.isTraceabilityMigrationEnabled());
     }
 
     @Test
@@ -232,6 +233,7 @@ class GlobalDynamicPropertiesTest {
         assertFalse(subject.areContractAutoAssociationsEnabled());
         assertFalse(subject.isStakingEnabled());
         assertFalse(subject.isPrngEnabled());
+        assertFalse(subject.isTraceabilityMigrationEnabled());
     }
 
     @Test
@@ -473,6 +475,8 @@ class GlobalDynamicPropertiesTest {
                         (i + 80) % 2 == 0
                                 ? Set.of(SidecarType.CONTRACT_STATE_CHANGE)
                                 : Set.of(SidecarType.CONTRACT_BYTECODE));
+        given(properties.getBooleanProperty("hedera.recordStream.enableTraceabilityMigration"))
+            .willReturn((i + 81) % 2 == 0);
     }
 
     private Set<EntityType> typesFor(final int i) {
