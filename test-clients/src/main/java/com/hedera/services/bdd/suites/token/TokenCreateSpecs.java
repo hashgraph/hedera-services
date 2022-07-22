@@ -107,7 +107,7 @@ public class TokenCreateSpecs extends HapiApiSuite {
     private static final String A_TOKEN = "TokenA";
     private static final String B_TOKEN = "TokenB";
     private static final String FIRST_USER = "Client1";
-    private static final String sentinelValue = "0.0.0";
+    private static final String SENTINEL_VALUE = "0.0.0";
 
     private static final long defaultMaxLifetime =
             Long.parseLong(HapiSpecSetup.getDefaultNodeProps().get("entities.maxLifetime"));
@@ -199,11 +199,11 @@ public class TokenCreateSpecs extends HapiApiSuite {
                                                 fractionalCollector))
                                 .withCustom(
                                         fixedHtsFee(
-                                                2L, sentinelValue, selfDenominatedFixedCollector))
+                                                2L, SENTINEL_VALUE, selfDenominatedFixedCollector))
                                 .withCustom(
                                         fixedHtsFee(
                                                 3L,
-                                                sentinelValue,
+                                                SENTINEL_VALUE,
                                                 otherSelfDenominatedFixedCollector))
                                 .signedBy(
                                         DEFAULT_PAYER,
@@ -283,7 +283,7 @@ public class TokenCreateSpecs extends HapiApiSuite {
         return defaultHapiSpec("WorksAsExpectedWithDefaultTokenId")
                 .given()
                 .when()
-                .then(getTokenInfo(sentinelValue).hasCostAnswerPrecheck(INVALID_TOKEN_ID));
+                .then(getTokenInfo(SENTINEL_VALUE).hasCostAnswerPrecheck(INVALID_TOKEN_ID));
     }
 
     public HapiApiSpec cannotCreateWithExcessiveLifetime() {
@@ -846,7 +846,7 @@ public class TokenCreateSpecs extends HapiApiSuite {
                                 .treasury(tokenCollector)
                                 .withCustom(fixedHbarFee(hbarAmount, hbarCollector))
                                 .withCustom(fixedHtsFee(htsAmount, feeDenom, htsCollector))
-                                .withCustom(fixedHtsFee(htsAmount, sentinelValue, htsCollector))
+                                .withCustom(fixedHtsFee(htsAmount, SENTINEL_VALUE, htsCollector))
                                 .withCustom(
                                         fractionalFee(
                                                 numerator,

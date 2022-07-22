@@ -184,6 +184,7 @@ public class TokenAssociationSpecs extends HapiApiSuite {
     }
 
     public HapiApiSpec contractInfoQueriesAsExpected() {
+        final var contract = "contract";
         return defaultHapiSpec("ContractInfoQueriesAsExpected")
                 .given(
                         newKeyNamed("simple"),
@@ -191,18 +192,18 @@ public class TokenAssociationSpecs extends HapiApiSuite {
                         tokenCreate("b"),
                         tokenCreate("c"),
                         tokenCreate("tbd").adminKey("simple"),
-                        createDefaultContract("contract"))
+                        createDefaultContract(contract))
                 .when(
-                        tokenAssociate("contract", "a", "b", "c", "tbd"),
-                        getContractInfo("contract")
+                        tokenAssociate(contract, "a", "b", "c", "tbd"),
+                        getContractInfo(contract)
                                 .hasToken(relationshipWith("a"))
                                 .hasToken(relationshipWith("b"))
                                 .hasToken(relationshipWith("c"))
                                 .hasToken(relationshipWith("tbd")),
-                        tokenDissociate("contract", "b"),
+                        tokenDissociate(contract, "b"),
                         tokenDelete("tbd"))
                 .then(
-                        getContractInfo("contract")
+                        getContractInfo(contract)
                                 .hasToken(relationshipWith("a"))
                                 .hasNoTokenRelationship("b")
                                 .hasToken(relationshipWith("c"))
