@@ -24,6 +24,8 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenDelete;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUnpause;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
@@ -35,6 +37,7 @@ import static com.hedera.services.bdd.suites.token.TokenAssociationSpecs.VANILLA
 import static com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult.htsPrecompileResult;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELETED;
 import static com.hederahashgraph.api.proto.java.TokenPauseStatus.Paused;
 import static com.hederahashgraph.api.proto.java.TokenPauseStatus.Unpaused;
 import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
@@ -64,6 +67,9 @@ public class PauseUnpauseTokenAccountPrecompileSuite extends HapiApiSuite {
     private static final String PAUSE_TOKEN_ACCOUNT_FUNCTION_NAME = "pauseTokenAccount";
     private static final String UNPAUSE_TOKEN_ACCOUNT_FUNCTION_NAME = "unpauseTokenAccount";
     private static final String PAUSE_FUNGIBLE_TXN = "pauseFungibleTxn";
+    private static final String UNPAUSE_FUNGIBLE_TXN = "unpauseFungibleTxn";
+    private static final String PAUSE_NONFUNGIBLE_TXN = "pauseNonFungibleTxn";
+    private static final String UNPAUSE_NONFUNGIBLE_TXN = "unpauseNonFungibleTxn";
 
     public static void main(String... args) {
         new PauseUnpauseTokenAccountPrecompileSuite().runSuiteSync();
@@ -96,6 +102,7 @@ public class PauseUnpauseTokenAccountPrecompileSuite extends HapiApiSuite {
                                 .tokenType(FUNGIBLE_COMMON)
                                 .treasury(TOKEN_TREASURY)
                                 .pauseKey(PAUSE_KEY)
+                                .adminKey(PAUSE_KEY)
                                 .initialSupply(1_000)
                                 .exposingCreatedIdTo(id -> tokenID.set(asToken(id))),
                         uploadInitCode(PAUSE_UNPAUSE_CONTRACT),
@@ -121,7 +128,19 @@ public class PauseUnpauseTokenAccountPrecompileSuite extends HapiApiSuite {
                                                                 asHexedAddress(tokenID.get()))
                                                         .payingWith(ACCOUNT)
                                                         .via(PAUSE_FUNGIBLE_TXN)
-                                                        .gas(GAS_TO_OFFER))))
+                                                        .gas(GAS_TO_OFFER),
+                                                getTokenInfo(VANILLA_TOKEN).hasPauseStatus(Paused),
+                                                tokenUnpause(VANILLA_TOKEN),
+                                                tokenDelete(VANILLA_TOKEN),
+                                                contractCall(
+                                                                PAUSE_UNPAUSE_CONTRACT,
+                                                                PAUSE_TOKEN_ACCOUNT_FUNCTION_NAME,
+                                                                asHexedAddress(tokenID.get()))
+                                                        .payingWith(ACCOUNT)
+                                                        .via(
+                                                                "pauseFungibleAccountIsDeletedFailingTxn")
+                                                        .gas(GAS_TO_OFFER)
+                                                        .hasKnownStatus(CONTRACT_REVERT_EXECUTED))))
                 .then(
                         childRecordsCheck(
                                 "pauseFungibleAccountDoesNotOwnPauseKeyFailingTxn",
@@ -134,7 +153,17 @@ public class PauseUnpauseTokenAccountPrecompileSuite extends HapiApiSuite {
                                                                 htsPrecompileResult()
                                                                         .withStatus(
                                                                                 INVALID_SIGNATURE)))),
-                        getTokenInfo(VANILLA_TOKEN).hasPauseStatus(Paused));
+                        childRecordsCheck(
+                                "pauseFungibleAccountIsDeletedFailingTxn",
+                                CONTRACT_REVERT_EXECUTED,
+                                recordWith()
+                                        .status(TOKEN_WAS_DELETED)
+                                        .contractCallResult(
+                                                resultWith()
+                                                        .contractCallResult(
+                                                                htsPrecompileResult()
+                                                                        .withStatus(
+                                                                                TOKEN_WAS_DELETED)))));
     }
 
     private HapiApiSpec unpauseFungibleTokenHappyPath() {
@@ -173,7 +202,7 @@ public class PauseUnpauseTokenAccountPrecompileSuite extends HapiApiSuite {
                                                                 UNPAUSE_TOKEN_ACCOUNT_FUNCTION_NAME,
                                                                 asHexedAddress(tokenID.get()))
                                                         .payingWith(ACCOUNT)
-                                                        .via("unpauseFungibleTxn")
+                                                        .via(UNPAUSE_FUNGIBLE_TXN)
                                                         .gas(GAS_TO_OFFER))))
                 .then(
                         childRecordsCheck(
@@ -202,6 +231,7 @@ public class PauseUnpauseTokenAccountPrecompileSuite extends HapiApiSuite {
                                 .tokenType(NON_FUNGIBLE_UNIQUE)
                                 .treasury(TOKEN_TREASURY)
                                 .pauseKey(PAUSE_KEY)
+                                .adminKey(PAUSE_KEY)
                                 .initialSupply(0)
                                 .exposingCreatedIdTo(id -> tokenID.set(asToken(id))),
                         uploadInitCode(PAUSE_UNPAUSE_CONTRACT),
@@ -226,8 +256,20 @@ public class PauseUnpauseTokenAccountPrecompileSuite extends HapiApiSuite {
                                                                 PAUSE_TOKEN_ACCOUNT_FUNCTION_NAME,
                                                                 asHexedAddress(tokenID.get()))
                                                         .payingWith(ACCOUNT)
-                                                        .via(PAUSE_FUNGIBLE_TXN)
-                                                        .gas(GAS_TO_OFFER))))
+                                                        .via(PAUSE_NONFUNGIBLE_TXN)
+                                                        .gas(GAS_TO_OFFER),
+                                                getTokenInfo(VANILLA_TOKEN).hasPauseStatus(Paused),
+                                                tokenUnpause(VANILLA_TOKEN),
+                                                tokenDelete(VANILLA_TOKEN),
+                                                contractCall(
+                                                                PAUSE_UNPAUSE_CONTRACT,
+                                                                PAUSE_TOKEN_ACCOUNT_FUNCTION_NAME,
+                                                                asHexedAddress(tokenID.get()))
+                                                        .payingWith(ACCOUNT)
+                                                        .via(
+                                                                "pauseNonFungibleAccountIsDeletedFailingTxn")
+                                                        .gas(GAS_TO_OFFER)
+                                                        .hasKnownStatus(CONTRACT_REVERT_EXECUTED))))
                 .then(
                         childRecordsCheck(
                                 "pauseNonFungibleAccountDoesNotOwnPauseKeyFailingTxn",
@@ -240,7 +282,17 @@ public class PauseUnpauseTokenAccountPrecompileSuite extends HapiApiSuite {
                                                                 htsPrecompileResult()
                                                                         .withStatus(
                                                                                 INVALID_SIGNATURE)))),
-                        getTokenInfo(VANILLA_TOKEN).hasPauseStatus(Paused));
+                        childRecordsCheck(
+                                "pauseNonFungibleAccountIsDeletedFailingTxn",
+                                CONTRACT_REVERT_EXECUTED,
+                                recordWith()
+                                        .status(TOKEN_WAS_DELETED)
+                                        .contractCallResult(
+                                                resultWith()
+                                                        .contractCallResult(
+                                                                htsPrecompileResult()
+                                                                        .withStatus(
+                                                                                TOKEN_WAS_DELETED)))));
     }
 
     private HapiApiSpec unpauseNonFungibleTokenHappyPath() {
@@ -279,7 +331,7 @@ public class PauseUnpauseTokenAccountPrecompileSuite extends HapiApiSuite {
                                                                 UNPAUSE_TOKEN_ACCOUNT_FUNCTION_NAME,
                                                                 asHexedAddress(tokenID.get()))
                                                         .payingWith(ACCOUNT)
-                                                        .via(PAUSE_FUNGIBLE_TXN)
+                                                        .via(UNPAUSE_NONFUNGIBLE_TXN)
                                                         .gas(GAS_TO_OFFER))))
                 .then(
                         childRecordsCheck(
