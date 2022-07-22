@@ -35,6 +35,7 @@ import static com.hedera.services.bdd.suites.HapiApiSuite.ONE_HBAR;
 import static com.hederahashgraph.api.proto.java.CryptoGetInfoResponse.AccountInfo;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class AccountInfoAsserts extends BaseErroringAssertsProvider<AccountInfo> {
@@ -93,7 +94,7 @@ public class AccountInfoAsserts extends BaseErroringAssertsProvider<AccountInfo>
 		return this;
 	}
 
-	public AccountInfoAsserts noStakedAccountId(){
+	public AccountInfoAsserts noStakedAccountId() {
 		registerProvider((spec, o) -> {
 			assertEquals(AccountID.getDefaultInstance(),
 					((AccountInfo) o).getStakingInfo().getStakedAccountId(),
@@ -102,7 +103,25 @@ public class AccountInfoAsserts extends BaseErroringAssertsProvider<AccountInfo>
 		return this;
 	}
 
-	public AccountInfoAsserts noStakingNodeId(){
+	public AccountInfoAsserts someStakePeriodStart() {
+		registerProvider((spec, o) -> {
+			assertNotEquals(0,
+					((AccountInfo) o).getStakingInfo().getStakePeriodStart().getSeconds(),
+					"Wrong stakePeriodStart");
+		});
+		return this;
+	}
+
+	public AccountInfoAsserts noStakePeriodStart() {
+		registerProvider((spec, o) -> {
+			assertEquals(0,
+					((AccountInfo) o).getStakingInfo().getStakePeriodStart().getSeconds(),
+					"Wrong stakePeriodStart");
+		});
+		return this;
+	}
+
+	public AccountInfoAsserts noStakingNodeId() {
 		registerProvider((spec, o) -> {
 			assertEquals(0, ((AccountInfo) o).getStakingInfo().getStakedNodeId(),
 					"Bad stakedNodeId id!");
@@ -119,7 +138,7 @@ public class AccountInfoAsserts extends BaseErroringAssertsProvider<AccountInfo>
 		return this;
 	}
 
-	public AccountInfoAsserts isDeclinedReward(boolean isDeclined){
+	public AccountInfoAsserts isDeclinedReward(boolean isDeclined) {
 		registerProvider((spec, o) -> {
 			assertEquals(isDeclined,
 					((AccountInfo) o).getStakingInfo().getDeclineReward(),

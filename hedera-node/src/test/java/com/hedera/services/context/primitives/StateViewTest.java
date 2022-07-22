@@ -253,6 +253,7 @@ class StateViewTest {
 		tokenAccount.setAlias(TxnHandlingScenario.TOKEN_ADMIN_KT.asKey().getEd25519());
 		tokenAccount.setHeadTokenId(tokenId.getTokenNum());
 		tokenAccount.setNumAssociations(1);
+		tokenAccount.setStakePeriodStart(1);
 		tokenAccount.setNumPositiveBalances(0);
 		tokenAccount.setStakedId(10L);
 		tokenAccount.setDeclineReward(true);
@@ -860,8 +861,8 @@ class StateViewTest {
 						.build())
 				.build();
 
-		final var actualResponse = subject.infoForAccount(accountWithAlias, aliasManager, maxTokensFprAccountInfo,
-				rewardCalculator);
+		final var actualResponse = subject.infoForAccount(
+				accountWithAlias, aliasManager, maxTokensFprAccountInfo, rewardCalculator);
 		mockedStatic.close();
 		assertEquals(expectedResponse, actualResponse.get());
 	}

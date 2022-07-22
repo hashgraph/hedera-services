@@ -32,6 +32,7 @@ import java.util.List;
 import static com.hederahashgraph.api.proto.java.ContractGetInfoResponse.ContractInfo;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ContractInfoAsserts extends BaseErroringAssertsProvider<ContractInfo> {
@@ -70,6 +71,24 @@ public class ContractInfoAsserts extends BaseErroringAssertsProvider<ContractInf
 	public ContractInfoAsserts nonNullContractId() {
 		registerProvider((spec, o) -> {
 			assertTrue(object2ContractInfo(o).hasContractID(), "Null contractId!");
+		});
+		return this;
+	}
+
+	public ContractInfoAsserts noStakePeriodStart() {
+		registerProvider((spec, o) -> {
+			assertEquals(0,
+					object2ContractInfo(o).getStakingInfo().getStakePeriodStart().getSeconds(),
+					"Wrong stakePeriodStart");
+		});
+		return this;
+	}
+
+	public ContractInfoAsserts someStakePeriodStart() {
+		registerProvider((spec, o) -> {
+			assertNotEquals(0,
+					object2ContractInfo(o).getStakingInfo().getStakePeriodStart().getSeconds(),
+					"Wrong stakePeriodStart");
 		});
 		return this;
 	}
@@ -269,7 +288,7 @@ public class ContractInfoAsserts extends BaseErroringAssertsProvider<ContractInf
 		return this;
 	}
 
-	public ContractInfoAsserts noStakedAccountId(){
+	public ContractInfoAsserts noStakedAccountId() {
 		registerProvider((spec, o) -> {
 			assertEquals(AccountID.getDefaultInstance(),
 					(object2ContractInfo(o)).getStakingInfo().getStakedAccountId(),
@@ -278,7 +297,7 @@ public class ContractInfoAsserts extends BaseErroringAssertsProvider<ContractInf
 		return this;
 	}
 
-	public ContractInfoAsserts noStakingNodeId(){
+	public ContractInfoAsserts noStakingNodeId() {
 		registerProvider((spec, o) -> {
 			assertEquals(0, (object2ContractInfo(o)).getStakingInfo().getStakedNodeId(),
 					"Bad stakedNodeId id!");

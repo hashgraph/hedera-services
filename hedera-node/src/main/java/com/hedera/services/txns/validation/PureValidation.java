@@ -62,7 +62,22 @@ public final class PureValidation {
 		}
 	}
 
+	public static ResponseCodeEnum queryableAccountOrContractStatus(
+			final EntityNum entityNum,
+			final MerkleMap<EntityNum, MerkleAccount> accounts
+	) {
+		return internalQueryableAccountStatus(true, entityNum, accounts);
+	}
+
 	public static ResponseCodeEnum queryableAccountStatus(
+			final EntityNum entityNum,
+			final MerkleMap<EntityNum, MerkleAccount> accounts
+	) {
+		return internalQueryableAccountStatus(false, entityNum, accounts);
+	}
+
+	private static ResponseCodeEnum internalQueryableAccountStatus(
+			final boolean contractIsOk,
 			final EntityNum entityNum,
 			final MerkleMap<EntityNum, MerkleAccount> accounts
 	) {
@@ -73,7 +88,7 @@ public final class PureValidation {
 					if (v.isDeleted()) {
 						return ACCOUNT_DELETED;
 					}
-					return v.isSmartContract() ? INVALID_ACCOUNT_ID : OK;
+					return (contractIsOk || !v.isSmartContract()) ? OK : INVALID_ACCOUNT_ID;
 				})
 				.orElse(INVALID_ACCOUNT_ID);
 	}
@@ -157,7 +172,7 @@ public final class PureValidation {
 			final MerkleMap<EntityNum, MerkleAccount> accounts,
 			final NodeInfo nodeInfo) {
 		if (idCase.matches(STAKED_ACCOUNT_ID_CASE)) {
-			return queryableAccountStatus(EntityNum.fromAccountId(stakedAccountId), accounts) == OK;
+			return queryableAccountOrContractStatus(EntityNum.fromAccountId(stakedAccountId), accounts) == OK;
 		} else {
 			return nodeInfo.isValidId(stakedNodeId);
 		}
