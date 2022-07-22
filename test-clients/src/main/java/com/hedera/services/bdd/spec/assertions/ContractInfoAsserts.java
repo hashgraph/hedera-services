@@ -15,21 +15,23 @@
  */
 package com.hedera.services.bdd.spec.assertions;
 
-import static com.hederahashgraph.api.proto.java.ContractGetInfoResponse.ContractInfo;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.queries.crypto.ExpectedTokenRel;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoGetInfoResponse;
 import com.hederahashgraph.api.proto.java.Key;
+
 import java.util.List;
 
+import static com.hederahashgraph.api.proto.java.ContractGetInfoResponse.ContractInfo;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 public class ContractInfoAsserts extends BaseErroringAssertsProvider<ContractInfo> {
+    private static final String BAD_MEMO = "Bad memo";
     public static ContractInfoAsserts infoKnownFor(String contract) {
         return contractWith().knownInfoFor(contract);
     }
@@ -66,7 +68,7 @@ public class ContractInfoAsserts extends BaseErroringAssertsProvider<ContractInf
                             otherExpectedInfo.getAutoRenewPeriod(),
                             actual.getAutoRenewPeriod(),
                             "Bad auto renew period!");
-                    assertEquals(otherExpectedInfo.getMemo(), actual.getMemo(), "Bad memo!");
+                    assertEquals(otherExpectedInfo.getMemo(), actual.getMemo(), BAD_MEMO);
                 });
         return this;
     }
@@ -175,36 +177,28 @@ public class ContractInfoAsserts extends BaseErroringAssertsProvider<ContractInf
 
     public ContractInfoAsserts solidityAddress(String contract) {
         registerProvider(
-                (spec, o) -> {
-                    assertEquals(
-                            TxnUtils.solidityIdFrom(spec.registry().getContractId(contract)),
-                            TxnUtils.solidityIdFrom(object2ContractInfo(o).getContractID()),
-                            "Bad Solidity address");
-                });
+                (spec, o) -> assertEquals(
+                        TxnUtils.solidityIdFrom(spec.registry().getContractId(contract)),
+                        TxnUtils.solidityIdFrom(object2ContractInfo(o).getContractID()),
+                        "Bad Solidity address"));
         return this;
     }
 
     public ContractInfoAsserts isDeleted() {
         registerProvider(
-                (spec, o) -> {
-                    assertEquals(true, object2ContractInfo(o).getDeleted(), "Bad deletion status!");
-                });
+                (spec, o) -> assertTrue(object2ContractInfo(o).getDeleted(), "Bad deletion status!"));
         return this;
     }
 
     public ContractInfoAsserts memo(String expectedMemo) {
         registerProvider(
-                (spec, o) -> {
-                    assertEquals(expectedMemo, object2ContractInfo(o).getMemo(), "Bad memo!");
-                });
+                (spec, o) -> assertEquals(expectedMemo, object2ContractInfo(o).getMemo(), BAD_MEMO));
         return this;
     }
 
     public ContractInfoAsserts balance(long balance) {
         registerProvider(
-                (spec, o) -> {
-                    assertEquals(balance, object2ContractInfo(o).getBalance(), "Bad balance!");
-                });
+                (spec, o) -> assertEquals(balance, object2ContractInfo(o).getBalance(), "Bad balance!"));
         return this;
     }
 
@@ -232,12 +226,10 @@ public class ContractInfoAsserts extends BaseErroringAssertsProvider<ContractInf
 
     public ContractInfoAsserts expiry(long expectedExpiry) {
         registerProvider(
-                (spec, o) -> {
-                    assertEquals(
-                            expectedExpiry,
-                            object2ContractInfo(o).getExpirationTime().getSeconds(),
-                            "Bad expiry time!");
-                });
+                (spec, o) -> assertEquals(
+                        expectedExpiry,
+                        object2ContractInfo(o).getExpirationTime().getSeconds(),
+                        "Bad expiry time!"));
         return this;
     }
 
@@ -251,7 +243,7 @@ public class ContractInfoAsserts extends BaseErroringAssertsProvider<ContractInf
                             actual.getAutoRenewPeriod(),
                             "Bad auto renew period!");
                     assertEquals(expected.getAdminKey(), actual.getAdminKey(), "Bad admin key!");
-                    assertEquals(expected.getMemo(), actual.getMemo(), "Bad memo!");
+                    assertEquals(expected.getMemo(), actual.getMemo(), BAD_MEMO);
                 });
         return this;
     }

@@ -15,22 +15,24 @@
  */
 package com.hedera.services.bdd.spec.assertions;
 
+import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiPropertySource;
+import com.hedera.services.bdd.spec.queries.crypto.ExpectedTokenRel;
+import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.Key;
+import org.junit.jupiter.api.Assertions;
+
+import java.util.List;
+import java.util.Optional;
+import java.util.function.Function;
+import java.util.function.ToLongFunction;
+
 import static com.hedera.services.bdd.suites.HapiApiSuite.ONE_HBAR;
 import static com.hederahashgraph.api.proto.java.CryptoGetInfoResponse.AccountInfo;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-
-import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.spec.HapiPropertySource;
-import com.hedera.services.bdd.spec.queries.crypto.ExpectedTokenRel;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.Key;
-import java.util.List;
-import java.util.Optional;
-import java.util.function.Function;
-import org.junit.jupiter.api.Assertions;
 
 public class AccountInfoAsserts extends BaseErroringAssertsProvider<AccountInfo> {
     public static AccountInfoAsserts accountWith() {
@@ -79,12 +81,10 @@ public class AccountInfoAsserts extends BaseErroringAssertsProvider<AccountInfo>
 
     public AccountInfoAsserts accountId(String account) {
         registerProvider(
-                (spec, o) -> {
-                    assertEquals(
-                            spec.registry().getAccountID(account),
-                            ((AccountInfo) o).getAccountID(),
-                            "Bad account Id!");
-                });
+                (spec, o) -> assertEquals(
+                        spec.registry().getAccountID(account),
+                        ((AccountInfo) o).getAccountID(),
+                        "Bad account Id!"));
         return this;
     }
 
@@ -329,7 +329,7 @@ public class AccountInfoAsserts extends BaseErroringAssertsProvider<AccountInfo>
     }
 
     public static Function<HapiApiSpec, Function<Long, Optional<String>>> changeFromSnapshot(
-            String snapshot, Function<HapiApiSpec, Long> expDeltaFn) {
+            String snapshot, ToLongFunction<HapiApiSpec> expDeltaFn) {
         return approxChangeFromSnapshot(snapshot, expDeltaFn, 0L);
     }
 
@@ -344,10 +344,10 @@ public class AccountInfoAsserts extends BaseErroringAssertsProvider<AccountInfo>
     }
 
     public static Function<HapiApiSpec, Function<Long, Optional<String>>> approxChangeFromSnapshot(
-            String snapshot, Function<HapiApiSpec, Long> expDeltaFn, long epsilon) {
+            String snapshot, ToLongFunction<HapiApiSpec> expDeltaFn, long epsilon) {
         return spec ->
                 actual -> {
-                    long expDelta = expDeltaFn.apply(spec);
+                    long expDelta = expDeltaFn.applyAsLong(spec);
                     long actualDelta = actual - spec.registry().getBalanceSnapshot(snapshot);
                     if (Math.abs(actualDelta - expDelta) <= epsilon) {
                         return Optional.empty();
@@ -363,23 +363,19 @@ public class AccountInfoAsserts extends BaseErroringAssertsProvider<AccountInfo>
 
     public AccountInfoAsserts sendThreshold(long amount) {
         registerProvider(
-                (spec, o) -> {
-                    assertEquals(
-                            amount,
-                            ((AccountInfo) o).getGenerateSendRecordThreshold(),
-                            "Bad send threshold!");
-                });
+                (spec, o) -> assertEquals(
+                        amount,
+                        ((AccountInfo) o).getGenerateSendRecordThreshold(),
+                        "Bad send threshold!"));
         return this;
     }
 
     public AccountInfoAsserts receiveThreshold(long amount) {
         registerProvider(
-                (spec, o) -> {
-                    assertEquals(
-                            amount,
-                            ((AccountInfo) o).getGenerateReceiveRecordThreshold(),
-                            "Bad receive threshold!");
-                });
+                (spec, o) -> assertEquals(
+                        amount,
+                        ((AccountInfo) o).getGenerateReceiveRecordThreshold(),
+                        "Bad receive threshold!"));
         return this;
     }
 
@@ -413,31 +409,25 @@ public class AccountInfoAsserts extends BaseErroringAssertsProvider<AccountInfo>
 
     public AccountInfoAsserts autoRenew(long period) {
         registerProvider(
-                (spec, o) -> {
-                    assertEquals(
-                            period,
-                            ((AccountInfo) o).getAutoRenewPeriod().getSeconds(),
-                            "Bad auto-renew period!");
-                });
+                (spec, o) -> assertEquals(
+                        period,
+                        ((AccountInfo) o).getAutoRenewPeriod().getSeconds(),
+                        "Bad auto-renew period!"));
         return this;
     }
 
     public AccountInfoAsserts nonce(long nonce) {
         registerProvider(
-                (spec, o) -> {
-                    assertEquals(nonce, ((AccountInfo) o).getEthereumNonce(), "Bad nonce!");
-                });
+                (spec, o) -> assertEquals(nonce, ((AccountInfo) o).getEthereumNonce(), "Bad nonce!"));
         return this;
     }
 
     public AccountInfoAsserts pendingRewards(long reward) {
         registerProvider(
-                (spec, o) -> {
-                    assertEquals(
-                            reward,
-                            ((AccountInfo) o).getStakingInfo().getPendingReward(),
-                            "Bad pending rewards!");
-                });
+                (spec, o) -> assertEquals(
+                        reward,
+                        ((AccountInfo) o).getStakingInfo().getPendingReward(),
+                        "Bad pending rewards!"));
         return this;
     }
 }
