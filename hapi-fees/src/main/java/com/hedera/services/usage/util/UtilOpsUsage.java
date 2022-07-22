@@ -30,10 +30,10 @@ public class UtilOpsUsage {
     public void prngUsage(
             final SigUsage sigUsage,
             final BaseTransactionMeta baseMeta,
-            final PrngMeta prngMeta,
+            final UtilPrngMeta utilPrngMeta,
             final UsageAccumulator accumulator) {
         accumulator.resetForTransaction(baseMeta, sigUsage);
-        var baseSize = prngMeta.getMsgBytesUsed();
+        var baseSize = utilPrngMeta.getMsgBytesUsed();
         accumulator.addBpt(baseSize);
     }
 }
