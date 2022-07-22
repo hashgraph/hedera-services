@@ -18,6 +18,7 @@ package com.hedera.services.store.contracts.precompile;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.mockito.BDDMockito.given;
 
+import com.hedera.services.config.NetworkInfo;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.SigImpactHistorian;
@@ -40,6 +41,7 @@ import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.services.store.contracts.precompile.codec.DecodingFacade;
 import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
 import com.hedera.services.store.contracts.precompile.proxy.RedirectViewExecutor;
+import com.hedera.services.store.contracts.precompile.proxy.ViewExecutor;
 import com.hedera.services.store.contracts.precompile.proxy.ViewGasCalculator;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.tokens.HederaTokenStore;
@@ -90,6 +92,7 @@ class InfrastructureFactoryTest {
     @Mock private MessageFrame frame;
     @Mock private ViewGasCalculator gasCalculator;
     @Mock private HederaStackedWorldStateUpdater worldStateUpdater;
+    @Mock private NetworkInfo networkInfo;
 
     private InfrastructureFactory subject;
 
@@ -234,6 +237,15 @@ class InfrastructureFactoryTest {
         assertInstanceOf(
                 RedirectViewExecutor.class,
                 subject.newRedirectExecutor(Bytes.EMPTY, frame, gasCalculator));
+    }
+
+    @Test
+    void canCreateNewViewExecutor() {
+        given(frame.getWorldUpdater()).willReturn(worldStateUpdater);
+
+        assertInstanceOf(
+                ViewExecutor.class,
+                subject.newViewExecutor(Bytes.EMPTY, frame, gasCalculator, networkInfo));
     }
 
     @Test

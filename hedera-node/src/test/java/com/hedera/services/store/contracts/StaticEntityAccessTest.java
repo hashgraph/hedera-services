@@ -337,6 +337,9 @@ class StaticEntityAccessTest {
     void failsIfNftIdNotPresent() {
         assertFailsRevertingWith(
                 () -> subject.approvedSpenderOf(nft), INVALID_TOKEN_NFT_SERIAL_NUMBER);
+        assertFailsRevertingWith(
+                () -> subject.packedCreationTime(nft), INVALID_TOKEN_NFT_SERIAL_NUMBER);
+        assertFailsRevertingWith(() -> subject.spender(nft), INVALID_TOKEN_NFT_SERIAL_NUMBER);
     }
 
     @Test
@@ -344,6 +347,22 @@ class StaticEntityAccessTest {
         given(nfts.get(nftKey)).willReturn(withApprovedSpender);
         final var expected = withApprovedSpender.getSpender().toEvmAddress();
         final var actual = subject.approvedSpenderOf(nft);
+        assertEquals(expected, actual);
+    }
+
+    @Test
+    void returnsSpender() {
+        given(nfts.get(nftKey)).willReturn(withApprovedSpender);
+        final var expected = withApprovedSpender.getSpender();
+        final var actual = subject.spender(nft);
+        assertEquals(expected, actual);
+    }
+
+    @Test
+    void returnsPackedCreationTime() {
+        given(nfts.get(nftKey)).willReturn(withApprovedSpender);
+        final var expected = withApprovedSpender.getPackedCreationTime();
+        final var actual = subject.packedCreationTime(nft);
         assertEquals(expected, actual);
     }
 
@@ -438,6 +457,7 @@ class StaticEntityAccessTest {
     private static final long someExpiry = 1_234_567L;
     private static final long totalSupply = 4242;
     private static final long balance = 2424;
+    private static final long packedCreationTime = 234352525L;
     private static final TokenType type = TokenType.NON_FUNGIBLE_UNIQUE;
     private static final String name = "Sunlight on a broken column";
     private static final String symbol = "THM1925";
@@ -463,6 +483,7 @@ class StaticEntityAccessTest {
 
     static {
         withApprovedSpender.setSpender(spenderNum.toEntityId());
+        withApprovedSpender.setPackedCreationTime(packedCreationTime);
     }
 
     private static final Address treasuryAddress = treasuryNum.toEvmAddress();
