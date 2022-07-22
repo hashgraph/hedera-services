@@ -90,10 +90,11 @@ public class AccountInfoAsserts extends BaseErroringAssertsProvider<AccountInfo>
 
     public AccountInfoAsserts stakedAccountId(String idLiteral) {
         registerProvider(
-                (spec, o) -> assertEquals(
-                        HapiPropertySource.asAccount(idLiteral),
-                        ((AccountInfo) o).getStakingInfo().getStakedAccountId(),
-                        "Bad stakedAccountId id!"));
+                (spec, o) ->
+                        assertEquals(
+                                HapiPropertySource.asAccount(idLiteral),
+                                ((AccountInfo) o).getStakingInfo().getStakedAccountId(),
+                                "Bad stakedAccountId id!"));
         return this;
     }
 
@@ -145,19 +146,21 @@ public class AccountInfoAsserts extends BaseErroringAssertsProvider<AccountInfo>
 
     public AccountInfoAsserts stakedNodeId(long idLiteral) {
         registerProvider(
-                (spec, o) -> assertEquals(
-                        idLiteral,
-                        ((AccountInfo) o).getStakingInfo().getStakedNodeId(),
-                        "Bad stakedNodeId id!"));
+                (spec, o) ->
+                        assertEquals(
+                                idLiteral,
+                                ((AccountInfo) o).getStakingInfo().getStakedNodeId(),
+                                "Bad stakedNodeId id!"));
         return this;
     }
 
     public AccountInfoAsserts isDeclinedReward(boolean isDeclined) {
         registerProvider(
-                (spec, o) -> assertEquals(
-                        isDeclined,
-                        ((AccountInfo) o).getStakingInfo().getDeclineReward(),
-                        "Bad isDeclinedReward!"));
+                (spec, o) ->
+                        assertEquals(
+                                isDeclined,
+                                ((AccountInfo) o).getStakingInfo().getDeclineReward(),
+                                "Bad isDeclinedReward!"));
         return this;
     }
 
@@ -176,23 +179,26 @@ public class AccountInfoAsserts extends BaseErroringAssertsProvider<AccountInfo>
 
     public AccountInfoAsserts key(String key) {
         registerProvider(
-                (spec, o) -> assertEquals(
-                        spec.registry().getKey(key), ((AccountInfo) o).getKey(), "Bad key!"));
+                (spec, o) ->
+                        assertEquals(
+                                spec.registry().getKey(key),
+                                ((AccountInfo) o).getKey(),
+                                "Bad key!"));
         return this;
     }
 
     public AccountInfoAsserts key(Key key) {
-        registerProvider(
-                (spec, o) -> assertEquals(key, ((AccountInfo) o).getKey(), "Bad key!"));
+        registerProvider((spec, o) -> assertEquals(key, ((AccountInfo) o).getKey(), "Bad key!"));
         return this;
     }
 
     public AccountInfoAsserts receiverSigReq(Boolean isReq) {
         registerProvider(
-                (spec, o) -> assertEquals(
-                        isReq,
-                        ((AccountInfo) o).getReceiverSigRequired(),
-                        "Bad receiver sig requirement!"));
+                (spec, o) ->
+                        assertEquals(
+                                isReq,
+                                ((AccountInfo) o).getReceiverSigRequired(),
+                                "Bad receiver sig requirement!"));
         return this;
     }
 
@@ -233,7 +239,7 @@ public class AccountInfoAsserts extends BaseErroringAssertsProvider<AccountInfo>
                             expectedTinyBarsToSubtract,
                             actualSubtractedTinybars,
                             (allowedPercentDiff / 100.0) * expectedTinyBarsToSubtract,
-                        errorMsgIfOutsideTolerance);
+                            errorMsgIfOutsideTolerance);
                 });
         return this;
     }
@@ -261,10 +267,11 @@ public class AccountInfoAsserts extends BaseErroringAssertsProvider<AccountInfo>
 
     public AccountInfoAsserts alias(String alias) {
         registerProvider(
-                (spec, o) -> assertEquals(
-                        spec.registry().getKey(alias).toByteString(),
-                        ((AccountInfo) o).getAlias(),
-                        "Bad Alias!"));
+                (spec, o) ->
+                        assertEquals(
+                                spec.registry().getKey(alias).toByteString(),
+                                ((AccountInfo) o).getAlias(),
+                                "Bad Alias!"));
         return this;
     }
 
@@ -286,8 +293,7 @@ public class AccountInfoAsserts extends BaseErroringAssertsProvider<AccountInfo>
     }
 
     public AccountInfoAsserts memo(String memo) {
-        registerProvider(
-                (spec, o) -> assertEquals(memo, ((AccountInfo) o).getMemo(), "Bad memo!"));
+        registerProvider((spec, o) -> assertEquals(memo, ((AccountInfo) o).getMemo(), "Bad memo!"));
         return this;
     }
 
