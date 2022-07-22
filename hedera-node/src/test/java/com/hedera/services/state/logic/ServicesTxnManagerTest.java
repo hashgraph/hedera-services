@@ -26,9 +26,7 @@ import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.accounts.staking.RewardCalculator;
 import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.records.RecordCache;
-import com.hedera.services.state.merkle.MerkleStakingInfo;
 import com.hedera.services.state.migration.MigrationRecordsManager;
-import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.accessors.SignedTxnAccessor;
 import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
@@ -38,7 +36,6 @@ import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Transaction;
-import com.swirlds.merkle.map.MerkleMap;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -125,11 +122,22 @@ class ServicesTxnManagerTest {
 	}
 
 	@Test
-	void onlyCallsMigrationRecordsManagerOnce() {
+	void onlyCallsMigrationRecordsManagerOnceIfTraceabilityMigrationIsExecutedAlongAllOtherMigrations() {
+		given(migrationRecordsManager.areAllMigrationsSansTraceabilityFinished()).willReturn(false);
 		subject.process(accessor, consensusTime, submittingMember);
 		subject.process(accessor, consensusTime, submittingMember);
 
 		verify(migrationRecordsManager, times(1)).publishMigrationRecords(consensusTime);
+	}
+
+	@Test
+	void callsMigrationManagerUntilTraceabilityMigrationIsComplete() {
+		given(migrationRecordsManager.areAllMigrationsSansTraceabilityFinished()).willReturn(true).willReturn(false);
+		subject.process(accessor, consensusTime, submittingMember);
+		subject.process(accessor, consensusTime, submittingMember);
+		subject.process(accessor, consensusTime, submittingMember);
+
+		verify(migrationRecordsManager, times(2)).publishMigrationRecords(consensusTime);
 	}
 
 	@Test
