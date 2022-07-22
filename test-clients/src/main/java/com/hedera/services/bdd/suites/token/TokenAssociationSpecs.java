@@ -134,7 +134,7 @@ public class TokenAssociationSpecs extends HapiApiSuite {
                                         id -> civilianMirrorAddr.set(asHexedSolidityAddress(id))),
                         tokenCreate(nfToken)
                                 .tokenType(NON_FUNGIBLE_UNIQUE)
-                                .supplyKey(MULTI_KEY)
+                                .supplyKey(GENESIS)
                                 .initialSupply(0)
                                 .exposingCreatedIdTo(
                                         idLit ->
