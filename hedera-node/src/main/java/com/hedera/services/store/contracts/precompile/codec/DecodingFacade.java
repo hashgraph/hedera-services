@@ -61,6 +61,7 @@ public class DecodingFacade {
     private static final String UINT256_RAW_TYPE = "(uint256)";
     private static final String ADDRESS_UINT256_RAW_TYPE = "(bytes32,uint256)";
     private static final String ADDRESS_ADDRESS_UINT256_RAW_TYPE = "(bytes32,bytes32,uint256)";
+    public static final String ADDRESS_RAW_TYPE = "(bytes32)";
 
     private static final List<SyntheticTxnFactory.NftExchange> NO_NFT_EXCHANGES =
             Collections.emptyList();
@@ -114,6 +115,12 @@ public class DecodingFacade {
     private static final Bytes BURN_TOKEN_SELECTOR = Bytes.wrap(BURN_TOKEN_FUNCTION.selector());
     private static final ABIType<Tuple> BURN_TOKEN_DECODER =
             TypeFactory.create("(bytes32,int64,int64[])");
+
+    private static final Function DELETE_TOKEN_FUNCTION =
+            new Function("deleteToken(address)", INT_OUTPUT);
+    private static final Bytes DELETE_TOKEN_SELECTOR = Bytes.wrap(DELETE_TOKEN_FUNCTION.selector());
+    private static final ABIType<Tuple> DELETE_TOKEN_DECODER =
+            TypeFactory.create(ADDRESS_RAW_TYPE);
 
     private static final Function ASSOCIATE_TOKENS_FUNCTION =
             new Function("associateTokens(address,address[])", INT_OUTPUT);
@@ -385,6 +392,14 @@ public class DecodingFacade {
             return BurnWrapper.forNonFungible(
                     tokenID, Arrays.stream(serialNumbers).boxed().toList());
         }
+    }
+
+    public DeleteWrapper decodeDelete(final Bytes input) {
+        final Tuple decodedArguments =
+                decodeFunctionCall(input, DELETE_TOKEN_SELECTOR, DELETE_TOKEN_DECODER);
+        final var tokenID = convertAddressBytesToTokenID(decodedArguments.get(0));
+
+        return new DeleteWrapper(tokenID);
     }
 
     public BalanceOfWrapper decodeBalanceOf(
