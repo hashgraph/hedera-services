@@ -119,8 +119,7 @@ public class DecodingFacade {
     private static final Function DELETE_TOKEN_FUNCTION =
             new Function("deleteToken(address)", INT_OUTPUT);
     private static final Bytes DELETE_TOKEN_SELECTOR = Bytes.wrap(DELETE_TOKEN_FUNCTION.selector());
-    private static final ABIType<Tuple> DELETE_TOKEN_DECODER =
-            TypeFactory.create(ADDRESS_RAW_TYPE);
+    private static final ABIType<Tuple> DELETE_TOKEN_DECODER = TypeFactory.create(ADDRESS_RAW_TYPE);
 
     private static final Function ASSOCIATE_TOKENS_FUNCTION =
             new Function("associateTokens(address,address[])", INT_OUTPUT);
