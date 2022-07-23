@@ -57,7 +57,7 @@ class TokenDeleteTransitionLogicTest {
 	private TypedTokenStore typedTokenStore;
 	private AccountStore accountStore;
 	private Token token;
-	private Account treasury = new Account(new Id(0, 0, 1234));
+	private final Account treasury = new Account(new Id(0, 0, 1234));
 
 	private TransactionBody tokenDeleteTxn;
 	private SigImpactHistorian sigImpactHistorian;
@@ -70,8 +70,10 @@ class TokenDeleteTransitionLogicTest {
 		typedTokenStore = mock(TypedTokenStore.class);
 		accountStore = mock(AccountStore.class);
 		sigImpactHistorian = mock(SigImpactHistorian.class);
-		subject = new TokenDeleteTransitionLogic(txnCtx, accountStore, typedTokenStore, sigImpactHistorian);
 		token = mock(Token.class);
+		DeleteLogic deleteLogic = new DeleteLogic(
+				accountStore,typedTokenStore,sigImpactHistorian);
+		subject = new TokenDeleteTransitionLogic(txnCtx, deleteLogic);
 	}
 
 	@Test
