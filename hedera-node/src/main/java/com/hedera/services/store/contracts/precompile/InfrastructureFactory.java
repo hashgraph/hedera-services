@@ -48,6 +48,7 @@ import com.hedera.services.txns.crypto.validators.DeleteAllowanceChecks;
 import com.hedera.services.txns.token.AssociateLogic;
 import com.hedera.services.txns.token.BurnLogic;
 import com.hedera.services.txns.token.CreateLogic;
+import com.hedera.services.txns.token.DeleteLogic;
 import com.hedera.services.txns.token.DissociateLogic;
 import com.hedera.services.txns.token.MintLogic;
 import com.hedera.services.txns.token.process.DissociationFactory;
@@ -134,6 +135,11 @@ public class InfrastructureFactory {
     public BurnLogic newBurnLogic(
             final AccountStore accountStore, final TypedTokenStore tokenStore) {
         return new BurnLogic(validator, tokenStore, accountStore, dynamicProperties);
+    }
+
+    public DeleteLogic newDeleteLogic(
+            final AccountStore accountStore, final TypedTokenStore tokenStore) {
+        return new DeleteLogic(accountStore, tokenStore, sigImpactHistorian);
     }
 
     public MintLogic newMintLogic(

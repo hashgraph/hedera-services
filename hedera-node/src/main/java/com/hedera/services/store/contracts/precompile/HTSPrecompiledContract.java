@@ -72,6 +72,7 @@ import com.hedera.services.store.contracts.precompile.impl.AssociatePrecompile;
 import com.hedera.services.store.contracts.precompile.impl.BalanceOfPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.BurnPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.DecimalsPrecompile;
+import com.hedera.services.store.contracts.precompile.impl.DeleteTokenPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.DissociatePrecompile;
 import com.hedera.services.store.contracts.precompile.impl.ERCTransferPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.GetApprovedPrecompile;
@@ -402,6 +403,15 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
                                             encoder,
                                             decoder,
                                             precompilePricingUtils));
+                    case AbiConstants.ABI_ID_DELETE_TOKEN -> new DeleteTokenPrecompile(
+                            ledgers,
+                            decoder,
+                            updater.aliases(),
+                            sigsVerifier,
+                            sideEffectsTracker,
+                            syntheticTxnFactory,
+                            infrastructureFactory,
+                            precompilePricingUtils);
                     case AbiConstants.ABI_ID_REDIRECT_FOR_TOKEN -> {
                         final var target = DescriptorUtils.getRedirectTarget(input);
                         final var tokenId = target.tokenId();

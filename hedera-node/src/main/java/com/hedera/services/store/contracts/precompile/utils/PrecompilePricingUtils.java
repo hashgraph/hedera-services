@@ -23,6 +23,7 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoDelet
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAssociateToAccount;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenBurn;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenDelete;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenDissociateFromAccount;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenGetInfo;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenMint;
@@ -200,6 +201,7 @@ public class PrecompilePricingUtils {
         MINT_FUNGIBLE(TokenMint, TOKEN_FUNGIBLE_COMMON),
         MINT_NFT(TokenMint, TOKEN_NON_FUNGIBLE_UNIQUE),
         BURN_FUNGIBLE(TokenBurn, TOKEN_FUNGIBLE_COMMON),
+        DELETE(TokenDelete, DEFAULT),
         BURN_NFT(TokenBurn, TOKEN_NON_FUNGIBLE_UNIQUE),
         ASSOCIATE(TokenAssociateToAccount, DEFAULT),
         DISSOCIATE(TokenDissociateFromAccount, DEFAULT),

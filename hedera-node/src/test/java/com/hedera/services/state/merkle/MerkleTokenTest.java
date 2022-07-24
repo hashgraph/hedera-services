@@ -485,7 +485,7 @@ class MerkleTokenTest {
 		subject.setPauseKey(pauseKey);
 		subject.setPaused(isPaused);
 		final var desired = "MerkleToken{number=123456 <-> 0.0.123456, " +
-				"tokenType=FUNGIBLE_COMMON, supplyType=INFINITE, deleted=true, " +
+				"tokenID=FUNGIBLE_COMMON, supplyType=INFINITE, deleted=true, " +
 				"expiry=1234567," +
 				" " +
 				"symbol=NotAnHbar, name=NotAnHbarName, memo=NotAMemo, treasury=1.2.3, maxSupply=0, " +
