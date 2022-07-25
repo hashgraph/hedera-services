@@ -29,6 +29,7 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.txns.crypto.AutoCreationLogic;
 import com.hedera.services.usage.state.UsageAccumulator;
 import com.hedera.services.utils.accessors.SignedTxnAccessor;
+import com.hedera.services.utils.accessors.TokenWipeAccessor;
 import com.hedera.services.utils.accessors.TxnAccessor;
 import com.hedera.test.factories.keys.KeyTree;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
@@ -514,9 +515,9 @@ class UsageBasedFeeCalculatorTest {
 				.wiping(tokenId, receiver)
 				.txnValidStart(at)
 				.get();
-
+		accessor = new TokenWipeAccessor(signedTxn.toByteArray(), null, null);
 		invokesAccessorBasedUsagesForTxnInHandle(signedTxn, TokenAccountWipe, SubType.TOKEN_NON_FUNGIBLE_UNIQUE,
-				TokenType.NON_FUNGIBLE_UNIQUE);
+				TokenType.NON_FUNGIBLE_UNIQUE, true);
 	}
 
 	@Test
@@ -634,12 +635,21 @@ class UsageBasedFeeCalculatorTest {
 		into.addRbs(feeData.getServicedata().getRbh() * HRS_DIVISOR);
 		into.addSbs(feeData.getServicedata().getSbh() * HRS_DIVISOR);
 	}
+	void invokesAccessorBasedUsagesForTxnInHandle(final Transaction signedTxn,
+			final HederaFunctionality function,
+			final SubType subType,
+			final TokenType tokenType){
+		invokesAccessorBasedUsagesForTxnInHandle(signedTxn, function, subType, tokenType, false);
+	}
 
 	void invokesAccessorBasedUsagesForTxnInHandle(final Transaction signedTxn,
 			final HederaFunctionality function,
 			final SubType subType,
-			final TokenType tokenType) throws Throwable {
-		accessor = SignedTxnAccessor.uncheckedFrom(signedTxn);
+			final TokenType tokenType,
+			final boolean isCustomAccessor) {
+		if(!isCustomAccessor){
+			accessor = SignedTxnAccessor.uncheckedFrom(signedTxn);
+		}
 		// and:
 		final var expectedFees = getFeeObject(currentPrices.get(subType), resourceUsage, currentRate);
 

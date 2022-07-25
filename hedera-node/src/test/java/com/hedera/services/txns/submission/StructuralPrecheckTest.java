@@ -15,19 +15,9 @@
  */
 package com.hedera.services.txns.submission;
 
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_OVERSIZE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_TOO_MANY_LAYERS;
-import static java.util.stream.Collectors.joining;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.mockito.Mockito.mock;
-
 import com.google.protobuf.ByteString;
 import com.google.protobuf.GeneratedMessageV3;
+import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.domain.process.TxnValidityAndFeeReq;
 import com.hedera.services.context.primitives.SignedStateViewFactory;
@@ -46,12 +36,25 @@ import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
-import java.util.List;
-import java.util.function.Function;
-import java.util.stream.IntStream;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
+import java.util.List;
+import java.util.function.Function;
+import java.util.stream.IntStream;
+
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_OVERSIZE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_TOO_MANY_LAYERS;
+import static java.util.stream.Collectors.joining;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.mock;
 
 class StructuralPrecheckTest {
     private static final int pretendSizeLimit = 1_000;
@@ -67,6 +70,9 @@ class StructuralPrecheckTest {
     private SignedStateViewFactory viewFactory = mock(SignedStateViewFactory.class);
     private AccessorFactory accessorFactory = mock(AccessorFactory.class);
 
+    private SignedTxnAccessor accessor = mock(SignedTxnAccessor.class);
+    private Transaction txn;
+
     @BeforeEach
     void setUp() {
         subject =
@@ -75,69 +81,82 @@ class StructuralPrecheckTest {
     }
 
     @Test
-    void mustHaveBodyBytes() {
-        final var assess = subject.assess(Transaction.getDefaultInstance());
+    void mustHaveBodyBytes() throws InvalidProtocolBufferException {
+        txn = Transaction.getDefaultInstance();
+        given(accessorFactory.constructSpecializedAccessor(txn.toByteArray())).willReturn(accessor);
+        given(accessor.getTxn()).willReturn(txn.getBody());
+
+        final var assess = subject.assess(txn);
 
         assertExpectedFail(INVALID_TRANSACTION_BODY, assess);
         assertEquals(0, counters.receivedDeprecatedTxnSoFar());
     }
 
     @Test
-    void cantMixSignedBytesWithBodyBytes() {
-        final var assess =
-                subject.assess(
-                        Transaction.newBuilder()
-                                .setSignedTransactionBytes(ByteString.copyFromUtf8("w/e"))
-                                .setBodyBytes(ByteString.copyFromUtf8("doesn't matter"))
-                                .build());
+    void cantMixSignedBytesWithBodyBytes() throws InvalidProtocolBufferException {
+        txn = Transaction.newBuilder()
+                .setSignedTransactionBytes(ByteString.copyFromUtf8("w/e"))
+                .setBodyBytes(ByteString.copyFromUtf8("doesn't matter"))
+                .build();
+        given(accessorFactory.constructSpecializedAccessor(txn.toByteArray())).willReturn(accessor);
+        given(accessor.getTxn()).willReturn(txn.getBody());
+
+        final var assess = subject.assess(txn);
 
         assertExpectedFail(INVALID_TRANSACTION, assess);
         assertEquals(1, counters.receivedDeprecatedTxnSoFar());
     }
 
     @Test
-    void cantMixSignedBytesWithSigMap() {
+    void cantMixSignedBytesWithSigMap() throws InvalidProtocolBufferException {
+        txn = Transaction.newBuilder()
+                .setSignedTransactionBytes(ByteString.copyFromUtf8("w/e"))
+                .setSigMap(SignatureMap.getDefaultInstance())
+                .build();
+        given(accessorFactory.constructSpecializedAccessor(txn.toByteArray())).willReturn(accessor);
+        given(accessor.getTxn()).willReturn(txn.getBody());
+
         final var assess =
-                subject.assess(
-                        Transaction.newBuilder()
-                                .setSignedTransactionBytes(ByteString.copyFromUtf8("w/e"))
-                                .setSigMap(SignatureMap.getDefaultInstance())
-                                .build());
+                subject.assess(txn);
 
         assertExpectedFail(INVALID_TRANSACTION, assess);
         assertEquals(1, counters.receivedDeprecatedTxnSoFar());
     }
 
     @Test
-    void cantBeOversize() {
-        final var assess =
-                subject.assess(
-                        Transaction.newBuilder()
-                                .setSignedTransactionBytes(
-                                        ByteString.copyFromUtf8(
-                                                IntStream.range(0, pretendSizeLimit)
-                                                        .mapToObj(i -> "A")
-                                                        .collect(joining())))
-                                .build());
+    void cantBeOversize() throws InvalidProtocolBufferException {
+        txn =  Transaction.newBuilder()
+                .setSignedTransactionBytes(
+                        ByteString.copyFromUtf8(
+                                IntStream.range(0, pretendSizeLimit)
+                                        .mapToObj(i -> "A")
+                                        .collect(joining())))
+                .build();
+        given(accessorFactory.constructSpecializedAccessor(txn.toByteArray())).willReturn(accessor);
+        given(accessor.getTxn()).willReturn(txn.getBody());
+
+        final var assess = subject.assess(txn);
 
         assertExpectedFail(TRANSACTION_OVERSIZE, assess);
         assertEquals(0, counters.receivedDeprecatedTxnSoFar());
     }
 
     @Test
-    void mustParseViaAccessor() {
-        final var assess =
-                subject.assess(
-                        Transaction.newBuilder()
-                                .setSignedTransactionBytes(ByteString.copyFromUtf8("NONSENSE"))
-                                .build());
+    void mustParseViaAccessor() throws InvalidProtocolBufferException {
+        txn = Transaction.newBuilder()
+                .setSignedTransactionBytes(ByteString.copyFromUtf8("NONSENSE"))
+                .build();
+        given(accessorFactory.constructSpecializedAccessor(txn.toByteArray())).willReturn(accessor);
+        given(accessor.getTxn()).willReturn(txn.getBody());
+
+        final var assess = subject.assess(txn);
 
         assertExpectedFail(INVALID_TRANSACTION_BODY, assess);
         assertEquals(0, counters.receivedDeprecatedTxnSoFar());
     }
 
     @Test
-    void cantBeUndulyNested() {
+    void cantBeUndulyNested() throws InvalidProtocolBufferException {
         final var weirdlyNestedKey = TxnUtils.nestKeys(Key.newBuilder(), pretendMaxMessageDepth);
         final var hostTxn =
                 TransactionBody.newBuilder()
@@ -145,7 +164,8 @@ class StructuralPrecheckTest {
                                 CryptoCreateTransactionBody.newBuilder().setKey(weirdlyNestedKey));
         final var signedTxn =
                 Transaction.newBuilder().setBodyBytes(hostTxn.build().toByteString()).build();
-
+        given(accessorFactory.constructSpecializedAccessor(signedTxn.toByteArray())).willReturn(accessor);
+        given(accessor.getTxn()).willReturn(hostTxn.build());
         final var assess = subject.assess(signedTxn);
 
         assertExpectedFail(TRANSACTION_TOO_MANY_LAYERS, assess);
@@ -153,7 +173,7 @@ class StructuralPrecheckTest {
     }
 
     @Test
-    void cantOmitAFunction() {
+    void cantOmitAFunction() throws InvalidProtocolBufferException {
         final var hostTxn =
                 TransactionBody.newBuilder()
                         .setTransactionID(
@@ -162,6 +182,8 @@ class StructuralPrecheckTest {
         final var signedTxn =
                 Transaction.newBuilder().setBodyBytes(hostTxn.build().toByteString()).build();
 
+        given(accessorFactory.constructSpecializedAccessor(signedTxn.toByteArray())).willReturn(accessor);
+        given(accessor.getTxn()).willReturn(hostTxn.build());
         final var assess = subject.assess(signedTxn);
 
         assertExpectedFail(INVALID_TRANSACTION_BODY, assess);
@@ -170,7 +192,7 @@ class StructuralPrecheckTest {
     }
 
     @Test
-    void canBeOk() {
+    void canBeOk() throws InvalidProtocolBufferException {
         final var reasonablyNestedKey = TxnUtils.nestKeys(Key.newBuilder(), 2);
         final var hostTxn =
                 TransactionBody.newBuilder()
@@ -179,6 +201,8 @@ class StructuralPrecheckTest {
                                         .setKey(reasonablyNestedKey));
         final var signedTxn =
                 Transaction.newBuilder().setBodyBytes(hostTxn.build().toByteString()).build();
+        given(accessorFactory.constructSpecializedAccessor(signedTxn.toByteArray())).willReturn(accessor);
+        given(accessor.getTxn()).willReturn(hostTxn.build());
 
         final var assess = subject.assess(signedTxn);
 
@@ -200,7 +224,7 @@ class StructuralPrecheckTest {
     }
 
     @Test
-    void validateCounterForDeprecatedTransactions() {
+    void validateCounterForDeprecatedTransactions() throws InvalidProtocolBufferException {
         final var hostTxn =
                 TransactionBody.newBuilder()
                         .setTransactionID(
@@ -208,6 +232,9 @@ class StructuralPrecheckTest {
                                         .setAccountID(IdUtils.asAccount("0.0.2")));
         var signedTxn =
                 Transaction.newBuilder().setBodyBytes(hostTxn.build().toByteString()).build();
+        given(accessorFactory.constructSpecializedAccessor(signedTxn.toByteArray())).willReturn(accessor);
+        given(accessor.getTxn()).willReturn(hostTxn.build());
+
         subject.assess(signedTxn);
         assertEquals(1, counters.receivedDeprecatedTxnSoFar());
 
@@ -225,7 +252,7 @@ class StructuralPrecheckTest {
     }
 
     @Test
-    void txnWithNoDeprecatedFieldsDoesntIncrement() {
+    void txnWithNoDeprecatedFieldsDoesntIncrement() throws InvalidProtocolBufferException {
         final var hostTxn =
                 TransactionBody.newBuilder()
                         .setTransactionID(
@@ -235,6 +262,9 @@ class StructuralPrecheckTest {
                 Transaction.newBuilder()
                         .setSignedTransactionBytes(hostTxn.build().toByteString())
                         .build();
+        given(accessorFactory.constructSpecializedAccessor(signedTxn.toByteArray())).willReturn(accessor);
+        given(accessor.getTxn()).willReturn(hostTxn.build());
+
         subject.assess(signedTxn);
         assertEquals(0, counters.receivedDeprecatedTxnSoFar());
     }

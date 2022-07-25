@@ -37,6 +37,7 @@ import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.verify;
 import static org.mockito.Mockito.doThrow;
 
+import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.exceptions.InvalidTransactionException;
@@ -50,11 +51,13 @@ import com.hedera.services.store.models.Token;
 import com.hedera.services.store.models.TokenRelationship;
 import com.hedera.services.txns.validation.ContextOptionValidator;
 import com.hedera.services.txns.validation.OptionValidator;
-import com.hedera.services.utils.accessors.SignedTxnAccessor;
+import com.hedera.services.utils.accessors.SwirldsTxnAccessor;
+import com.hedera.services.utils.accessors.TokenWipeAccessor;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenWipeAccountTransactionBody;
+import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -67,11 +70,13 @@ class TokenWipeTransitionLogicTest {
     private long totalAmount = 1000L;
 
     private TransactionContext txnCtx;
-    private SignedTxnAccessor accessor;
+    private TokenWipeAccessor accessor;
+    private SwirldsTxnAccessor swirldsTxnAccessor;
     private MerkleToken merkleToken;
     private Token token;
 
-    private TransactionBody tokenWipeTxn;
+    private TransactionBody tokenWipeTxnBody;
+    private Transaction tokenWipeTxn;
     private TokenWipeTransitionLogic subject;
     private TypedTokenStore typedTokenStore;
     private AccountStore accountStore;
@@ -81,7 +86,7 @@ class TokenWipeTransitionLogicTest {
 
     @BeforeEach
     private void setup() {
-        accessor = mock(SignedTxnAccessor.class);
+        swirldsTxnAccessor = mock(SwirldsTxnAccessor.class);
         merkleToken = mock(MerkleToken.class);
         token = mock(Token.class);
         account = mock(Account.class);
@@ -93,11 +98,11 @@ class TokenWipeTransitionLogicTest {
         validator = mock(ContextOptionValidator.class);
         dynamicProperties = mock(GlobalDynamicProperties.class);
         subject = new TokenWipeTransitionLogic(typedTokenStore, accountStore, txnCtx);
-        given(txnCtx.accessor()).willReturn(accessor);
+        given(txnCtx.swirldsTxnAccessor()).willReturn(swirldsTxnAccessor);
     }
 
     @Test
-    void capturesInvalidWipe() {
+    void capturesInvalidWipe() throws InvalidProtocolBufferException {
         givenValidCommonTxnCtx();
         // and:
         doThrow(new InvalidTransactionException(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT))
@@ -113,7 +118,7 @@ class TokenWipeTransitionLogicTest {
     }
 
     @Test
-    void followsHappyPathForCommon() {
+    void followsHappyPathForCommon() throws InvalidProtocolBufferException {
         givenValidCommonTxnCtx();
 
         // when:
@@ -124,16 +129,16 @@ class TokenWipeTransitionLogicTest {
     }
 
     @Test
-    void rejectsUniqueWhenNftsNotEnabled() {
+    void rejectsUniqueWhenNftsNotEnabled() throws InvalidProtocolBufferException {
         givenValidUniqueTxnCtx();
         given(dynamicProperties.areNftsEnabled()).willReturn(false);
 
         // expect:
-        assertEquals(NOT_SUPPORTED, subject.semanticCheck().apply(tokenWipeTxn));
+        assertEquals(NOT_SUPPORTED, subject.validateSemantics(accessor));
     }
 
     @Test
-    void followsHappyPathForUnique() {
+    void followsHappyPathForUnique() throws InvalidProtocolBufferException {
         givenValidUniqueTxnCtx();
         // needed only in the context of this test
         Account acc = mock(Account.class);
@@ -154,16 +159,16 @@ class TokenWipeTransitionLogicTest {
     }
 
     @Test
-    void hasCorrectApplicability() {
+    void hasCorrectApplicability() throws InvalidProtocolBufferException {
         givenValidCommonTxnCtx();
 
         // expect:
-        assertTrue(subject.applicability().test(tokenWipeTxn));
+        assertTrue(subject.applicability().test(tokenWipeTxnBody));
         assertFalse(subject.applicability().test(TransactionBody.getDefaultInstance()));
     }
 
     @Test
-    void setsFailInvalidIfUnhandledException() {
+    void setsFailInvalidIfUnhandledException() throws InvalidProtocolBufferException {
         givenValidCommonTxnCtx();
         // and:
         doThrow(InvalidTransactionException.class).when(token).wipe(any(), anyLong());
@@ -173,58 +178,59 @@ class TokenWipeTransitionLogicTest {
     }
 
     @Test
-    void acceptsValidCommonTxn() {
+    void acceptsValidCommonTxn() throws InvalidProtocolBufferException {
         givenValidCommonTxnCtx();
 
         // expect:
-        assertEquals(OK, subject.semanticCheck().apply(tokenWipeTxn));
+        assertEquals(OK, subject.validateSemantics(accessor));
     }
 
     @Test
-    void acceptsValidUniqueTxn() {
+    void acceptsValidUniqueTxn() throws InvalidProtocolBufferException {
         givenValidUniqueTxnCtx();
 
         // expect:
-        assertEquals(OK, subject.semanticCheck().apply(tokenWipeTxn));
+        assertEquals(OK, subject.validateSemantics(accessor));
     }
 
     @Test
-    void rejectsMissingToken() {
+    void rejectsMissingToken() throws InvalidProtocolBufferException {
         givenMissingToken();
 
         // expect:
-        assertEquals(INVALID_TOKEN_ID, subject.semanticCheck().apply(tokenWipeTxn));
+        assertEquals(INVALID_TOKEN_ID, subject.validateSemantics(accessor));
     }
 
     @Test
-    void rejectsMissingAccount() {
+    void rejectsMissingAccount() throws InvalidProtocolBufferException {
         givenMissingAccount();
 
         // expect:
-        assertEquals(INVALID_ACCOUNT_ID, subject.semanticCheck().apply(tokenWipeTxn));
+        assertEquals(INVALID_ACCOUNT_ID, subject.validateSemantics(accessor));
     }
 
     @Test
-    void rejectsInvalidZeroAmount() {
+    void rejectsInvalidZeroAmount() throws InvalidProtocolBufferException {
         givenInvalidZeroWipeAmount();
 
         // expect:
-        assertEquals(INVALID_WIPING_AMOUNT, subject.semanticCheck().apply(tokenWipeTxn));
+        assertEquals(INVALID_WIPING_AMOUNT, subject.validateSemantics(accessor));
     }
 
     @Test
-    void rejectsInvalidNegativeAmount() {
+    void rejectsInvalidNegativeAmount() throws InvalidProtocolBufferException {
         givenInvalidNegativeWipeAmount();
 
+
         // expect:
-        assertEquals(INVALID_WIPING_AMOUNT, subject.semanticCheck().apply(tokenWipeTxn));
+        assertEquals(INVALID_WIPING_AMOUNT, subject.validateSemantics(accessor));
     }
 
     @Test
-    void rejectsBothAmountAndSerialNumbers() {
+    void rejectsBothAmountAndSerialNumbers() throws InvalidProtocolBufferException {
         given(dynamicProperties.areNftsEnabled()).willReturn(true);
 
-        tokenWipeTxn =
+        tokenWipeTxnBody =
                 TransactionBody.newBuilder()
                         .setTokenWipe(
                                 TokenWipeAccountTransactionBody.newBuilder()
@@ -233,15 +239,16 @@ class TokenWipeTransitionLogicTest {
                                         .setAmount(10)
                                         .addAllSerialNumbers(List.of(1L, 2L)))
                         .build();
+        addToTxn();
 
-        assertEquals(INVALID_TRANSACTION_BODY, subject.semanticCheck().apply(tokenWipeTxn));
+        assertEquals(INVALID_TRANSACTION_BODY, subject.validateSemantics(accessor));
     }
 
     @Test
-    void rejectsInvalidNftId() {
+    void rejectsInvalidNftId() throws InvalidProtocolBufferException {
         given(dynamicProperties.areNftsEnabled()).willReturn(true);
 
-        tokenWipeTxn =
+        tokenWipeTxnBody =
                 TransactionBody.newBuilder()
                         .setTokenWipe(
                                 TokenWipeAccountTransactionBody.newBuilder()
@@ -249,21 +256,22 @@ class TokenWipeTransitionLogicTest {
                                         .setAccount(accountID)
                                         .addAllSerialNumbers(List.of(-1L)))
                         .build();
+        addToTxn();
         given(validator.maxBatchSizeWipeCheck(anyInt())).willReturn(OK);
 
-        assertEquals(INVALID_NFT_ID, subject.semanticCheck().apply(tokenWipeTxn));
+        assertEquals(INVALID_NFT_ID, subject.validateSemantics(accessor));
     }
 
     @Test
-    void propagatesErrorOnInvalidBatch() {
+    void propagatesErrorOnInvalidBatch() throws InvalidProtocolBufferException {
         givenValidUniqueTxnCtx();
         given(validator.maxBatchSizeWipeCheck(anyInt())).willReturn(BATCH_SIZE_LIMIT_EXCEEDED);
 
-        assertEquals(BATCH_SIZE_LIMIT_EXCEEDED, subject.semanticCheck().apply(tokenWipeTxn));
+        assertEquals(BATCH_SIZE_LIMIT_EXCEEDED, subject.validateSemantics(accessor));
     }
 
-    private void givenValidCommonTxnCtx() {
-        tokenWipeTxn =
+    private void givenValidCommonTxnCtx() throws InvalidProtocolBufferException {
+        tokenWipeTxnBody =
                 TransactionBody.newBuilder()
                         .setTokenWipe(
                                 TokenWipeAccountTransactionBody.newBuilder()
@@ -271,7 +279,7 @@ class TokenWipeTransitionLogicTest {
                                         .setAccount(accountID)
                                         .setAmount(wipeAmount))
                         .build();
-        given(accessor.getTxn()).willReturn(tokenWipeTxn);
+        addToTxn();
         given(txnCtx.accessor()).willReturn(accessor);
         given(merkleToken.totalSupply()).willReturn(totalAmount);
         given(merkleToken.tokenType()).willReturn(TokenType.FUNGIBLE_COMMON);
@@ -282,8 +290,8 @@ class TokenWipeTransitionLogicTest {
                 .willReturn(new TokenRelationship(token, account));
     }
 
-    private void givenValidUniqueTxnCtx() {
-        tokenWipeTxn =
+    private void givenValidUniqueTxnCtx() throws InvalidProtocolBufferException {
+        tokenWipeTxnBody =
                 TransactionBody.newBuilder()
                         .setTokenWipe(
                                 TokenWipeAccountTransactionBody.newBuilder()
@@ -291,7 +299,7 @@ class TokenWipeTransitionLogicTest {
                                         .setAccount(accountID)
                                         .addAllSerialNumbers(List.of(1L, 2L, 3L)))
                         .build();
-        given(accessor.getTxn()).willReturn(tokenWipeTxn);
+        addToTxn();
         given(txnCtx.accessor()).willReturn(accessor);
         given(merkleToken.totalSupply()).willReturn(totalAmount);
         given(merkleToken.tokenType()).willReturn(TokenType.NON_FUNGIBLE_UNIQUE);
@@ -302,22 +310,30 @@ class TokenWipeTransitionLogicTest {
         given(validator.maxBatchSizeWipeCheck(anyInt())).willReturn(OK);
     }
 
-    private void givenMissingToken() {
-        tokenWipeTxn =
+    private void givenMissingToken() throws InvalidProtocolBufferException {
+        tokenWipeTxnBody =
                 TransactionBody.newBuilder()
                         .setTokenWipe(TokenWipeAccountTransactionBody.newBuilder())
                         .build();
+        addToTxn();
     }
 
-    private void givenMissingAccount() {
-        tokenWipeTxn =
+    private void givenMissingAccount() throws InvalidProtocolBufferException {
+        tokenWipeTxnBody =
                 TransactionBody.newBuilder()
                         .setTokenWipe(TokenWipeAccountTransactionBody.newBuilder().setToken(id))
                         .build();
+        addToTxn();
     }
 
-    private void givenInvalidZeroWipeAmount() {
-        tokenWipeTxn =
+    private void addToTxn() throws InvalidProtocolBufferException {
+        tokenWipeTxn = Transaction.newBuilder().setBodyBytes(tokenWipeTxnBody.toByteString()).build();
+        accessor = new TokenWipeAccessor(tokenWipeTxn.toByteArray(), dynamicProperties, validator);
+        given(swirldsTxnAccessor.getDelegate()).willReturn(accessor);
+    }
+
+    private void givenInvalidZeroWipeAmount() throws InvalidProtocolBufferException {
+        tokenWipeTxnBody =
                 TransactionBody.newBuilder()
                         .setTokenWipe(
                                 TokenWipeAccountTransactionBody.newBuilder()
@@ -325,10 +341,11 @@ class TokenWipeTransitionLogicTest {
                                         .setAccount(accountID)
                                         .setAmount(0))
                         .build();
+        addToTxn();
     }
 
-    private void givenInvalidNegativeWipeAmount() {
-        tokenWipeTxn =
+    private void givenInvalidNegativeWipeAmount() throws InvalidProtocolBufferException {
+        tokenWipeTxnBody =
                 TransactionBody.newBuilder()
                         .setTokenWipe(
                                 TokenWipeAccountTransactionBody.newBuilder()
@@ -336,5 +353,6 @@ class TokenWipeTransitionLogicTest {
                                         .setAccount(accountID)
                                         .setAmount(-1))
                         .build();
+        addToTxn();
     }
 }
