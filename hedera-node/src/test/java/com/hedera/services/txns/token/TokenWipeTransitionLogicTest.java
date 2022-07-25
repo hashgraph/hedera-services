@@ -221,7 +221,6 @@ class TokenWipeTransitionLogicTest {
     void rejectsInvalidNegativeAmount() throws InvalidProtocolBufferException {
         givenInvalidNegativeWipeAmount();
 
-
         // expect:
         assertEquals(INVALID_WIPING_AMOUNT, subject.validateSemantics(accessor));
     }
@@ -327,7 +326,8 @@ class TokenWipeTransitionLogicTest {
     }
 
     private void addToTxn() throws InvalidProtocolBufferException {
-        tokenWipeTxn = Transaction.newBuilder().setBodyBytes(tokenWipeTxnBody.toByteString()).build();
+        tokenWipeTxn =
+                Transaction.newBuilder().setBodyBytes(tokenWipeTxnBody.toByteString()).build();
         accessor = new TokenWipeAccessor(tokenWipeTxn.toByteArray(), dynamicProperties, validator);
         given(swirldsTxnAccessor.getDelegate()).willReturn(accessor);
     }

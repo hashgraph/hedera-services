@@ -32,7 +32,6 @@ import com.hedera.services.txns.submission.annotations.MaxProtoMsgDepth;
 import com.hedera.services.txns.submission.annotations.MaxSignedTxnSize;
 import com.hedera.services.utils.accessors.AccessorFactory;
 import com.hedera.services.utils.accessors.SignedTxnAccessor;
-import com.hedera.services.utils.accessors.TxnAccessor;
 import com.hederahashgraph.api.proto.java.Transaction;
 import java.util.List;
 import javax.inject.Inject;
@@ -100,7 +99,9 @@ public final class StructuralPrecheck {
 
         try {
             // get latest signed state to be used for precheck
-            final var accessor = (SignedTxnAccessor) accessorFactory.constructSpecializedAccessor(signedTxn.toByteArray());
+            final var accessor =
+                    (SignedTxnAccessor)
+                            accessorFactory.constructSpecializedAccessor(signedTxn.toByteArray());
             final var signedStateView = stateViewFactory.latestSignedStateView();
             if (signedStateView.isPresent()) {
                 accessor.setStateView(signedStateView.get());

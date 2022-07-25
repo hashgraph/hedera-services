@@ -33,6 +33,7 @@ public class TokenWipeAccessor extends SignedTxnAccessor {
     private final TokenWipeAccountTransactionBody body;
     private final GlobalDynamicProperties dynamicProperties;
     private final OptionValidator validator;
+
     public TokenWipeAccessor(
             final byte[] txn,
             final GlobalDynamicProperties dynamicProperties,

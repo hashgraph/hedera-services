@@ -15,6 +15,19 @@
  */
 package com.hedera.services.txns.submission;
 
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_OVERSIZE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_TOO_MANY_LAYERS;
+import static java.util.stream.Collectors.joining;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.willCallRealMethod;
+import static org.mockito.Mockito.mock;
+
 import com.google.protobuf.ByteString;
 import com.google.protobuf.GeneratedMessageV3;
 import com.google.protobuf.InvalidProtocolBufferException;
@@ -36,26 +49,12 @@ import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
-import org.apache.commons.lang3.tuple.Pair;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-
 import java.util.List;
 import java.util.function.Function;
 import java.util.stream.IntStream;
-
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_OVERSIZE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_TOO_MANY_LAYERS;
-import static java.util.stream.Collectors.joining;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.BDDMockito.willCallRealMethod;
-import static org.mockito.Mockito.mock;
+import org.apache.commons.lang3.tuple.Pair;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 class StructuralPrecheckTest {
     private static final int pretendSizeLimit = 1_000;
@@ -78,7 +77,11 @@ class StructuralPrecheckTest {
     void setUp() {
         subject =
                 new StructuralPrecheck(
-                        pretendSizeLimit, pretendMaxMessageDepth, counters, viewFactory, accessorFactory);
+                        pretendSizeLimit,
+                        pretendMaxMessageDepth,
+                        counters,
+                        viewFactory,
+                        accessorFactory);
     }
 
     @Test
@@ -95,10 +98,11 @@ class StructuralPrecheckTest {
 
     @Test
     void cantMixSignedBytesWithBodyBytes() throws InvalidProtocolBufferException {
-        txn = Transaction.newBuilder()
-                .setSignedTransactionBytes(ByteString.copyFromUtf8("w/e"))
-                .setBodyBytes(ByteString.copyFromUtf8("doesn't matter"))
-                .build();
+        txn =
+                Transaction.newBuilder()
+                        .setSignedTransactionBytes(ByteString.copyFromUtf8("w/e"))
+                        .setBodyBytes(ByteString.copyFromUtf8("doesn't matter"))
+                        .build();
         willCallRealMethod().given(accessorFactory).constructSpecializedAccessor(txn.toByteArray());
         given(accessor.getTxn()).willReturn(txn.getBody());
 
@@ -110,15 +114,15 @@ class StructuralPrecheckTest {
 
     @Test
     void cantMixSignedBytesWithSigMap() throws InvalidProtocolBufferException {
-        txn = Transaction.newBuilder()
-                .setSignedTransactionBytes(ByteString.copyFromUtf8("w/e"))
-                .setSigMap(SignatureMap.getDefaultInstance())
-                .build();
+        txn =
+                Transaction.newBuilder()
+                        .setSignedTransactionBytes(ByteString.copyFromUtf8("w/e"))
+                        .setSigMap(SignatureMap.getDefaultInstance())
+                        .build();
         willCallRealMethod().given(accessorFactory).constructSpecializedAccessor(txn.toByteArray());
         given(accessor.getTxn()).willReturn(txn.getBody());
 
-        final var assess =
-                subject.assess(txn);
+        final var assess = subject.assess(txn);
 
         assertExpectedFail(INVALID_TRANSACTION, assess);
         assertEquals(1, counters.receivedDeprecatedTxnSoFar());
@@ -126,13 +130,14 @@ class StructuralPrecheckTest {
 
     @Test
     void cantBeOversize() throws InvalidProtocolBufferException {
-        txn =  Transaction.newBuilder()
-                .setSignedTransactionBytes(
-                        ByteString.copyFromUtf8(
-                                IntStream.range(0, pretendSizeLimit)
-                                        .mapToObj(i -> "A")
-                                        .collect(joining())))
-                .build();
+        txn =
+                Transaction.newBuilder()
+                        .setSignedTransactionBytes(
+                                ByteString.copyFromUtf8(
+                                        IntStream.range(0, pretendSizeLimit)
+                                                .mapToObj(i -> "A")
+                                                .collect(joining())))
+                        .build();
         willCallRealMethod().given(accessorFactory).constructSpecializedAccessor(txn.toByteArray());
         given(accessor.getTxn()).willReturn(txn.getBody());
 
@@ -144,9 +149,10 @@ class StructuralPrecheckTest {
 
     @Test
     void mustParseViaAccessor() throws InvalidProtocolBufferException {
-        txn = Transaction.newBuilder()
-                .setSignedTransactionBytes(ByteString.copyFromUtf8("NONSENSE"))
-                .build();
+        txn =
+                Transaction.newBuilder()
+                        .setSignedTransactionBytes(ByteString.copyFromUtf8("NONSENSE"))
+                        .build();
         willCallRealMethod().given(accessorFactory).constructSpecializedAccessor(txn.toByteArray());
         given(accessor.getTxn()).willReturn(txn.getBody());
 
@@ -165,7 +171,9 @@ class StructuralPrecheckTest {
                                 CryptoCreateTransactionBody.newBuilder().setKey(weirdlyNestedKey));
         final var signedTxn =
                 Transaction.newBuilder().setBodyBytes(hostTxn.build().toByteString()).build();
-        willCallRealMethod().given(accessorFactory).constructSpecializedAccessor(signedTxn.toByteArray());
+        willCallRealMethod()
+                .given(accessorFactory)
+                .constructSpecializedAccessor(signedTxn.toByteArray());
         given(accessor.getTxn()).willReturn(hostTxn.build());
         final var assess = subject.assess(signedTxn);
 
@@ -183,7 +191,9 @@ class StructuralPrecheckTest {
         final var signedTxn =
                 Transaction.newBuilder().setBodyBytes(hostTxn.build().toByteString()).build();
 
-        willCallRealMethod().given(accessorFactory).constructSpecializedAccessor(signedTxn.toByteArray());
+        willCallRealMethod()
+                .given(accessorFactory)
+                .constructSpecializedAccessor(signedTxn.toByteArray());
         given(accessor.getTxn()).willReturn(hostTxn.build());
         final var assess = subject.assess(signedTxn);
 
@@ -202,7 +212,9 @@ class StructuralPrecheckTest {
                                         .setKey(reasonablyNestedKey));
         final var signedTxn =
                 Transaction.newBuilder().setBodyBytes(hostTxn.build().toByteString()).build();
-        willCallRealMethod().given(accessorFactory).constructSpecializedAccessor(signedTxn.toByteArray());
+        willCallRealMethod()
+                .given(accessorFactory)
+                .constructSpecializedAccessor(signedTxn.toByteArray());
         given(accessor.getTxn()).willReturn(hostTxn.build());
 
         final var assess = subject.assess(signedTxn);
@@ -233,7 +245,9 @@ class StructuralPrecheckTest {
                                         .setAccountID(IdUtils.asAccount("0.0.2")));
         var signedTxn =
                 Transaction.newBuilder().setBodyBytes(hostTxn.build().toByteString()).build();
-        willCallRealMethod().given(accessorFactory).constructSpecializedAccessor(signedTxn.toByteArray());
+        willCallRealMethod()
+                .given(accessorFactory)
+                .constructSpecializedAccessor(signedTxn.toByteArray());
         given(accessor.getTxn()).willReturn(hostTxn.build());
 
         subject.assess(signedTxn);
@@ -263,7 +277,9 @@ class StructuralPrecheckTest {
                 Transaction.newBuilder()
                         .setSignedTransactionBytes(hostTxn.build().toByteString())
                         .build();
-        willCallRealMethod().given(accessorFactory).constructSpecializedAccessor(signedTxn.toByteArray());
+        willCallRealMethod()
+                .given(accessorFactory)
+                .constructSpecializedAccessor(signedTxn.toByteArray());
         given(accessor.getTxn()).willReturn(hostTxn.build());
 
         subject.assess(signedTxn);
