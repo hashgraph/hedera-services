@@ -142,16 +142,18 @@ public enum TokenOpsUsageUtils {
         return retrieveRawDataFrom(subType, op::getSerialNumbersCount, TokenBurnMeta::new);
     }
 
-	public TokenWipeMeta tokenWipeUsageFrom(final TokenWipeAccountTransactionBody op) {
-		final var subType = op.getSerialNumbersCount() > 0 ? TOKEN_NON_FUNGIBLE_UNIQUE : TOKEN_FUNGIBLE_COMMON;
-		return tokenWipeUsageFrom(op, subType);
-	}
+    public TokenWipeMeta tokenWipeUsageFrom(final TokenWipeAccountTransactionBody op) {
+        final var subType =
+                op.getSerialNumbersCount() > 0 ? TOKEN_NON_FUNGIBLE_UNIQUE : TOKEN_FUNGIBLE_COMMON;
+        return tokenWipeUsageFrom(op, subType);
+    }
 
-	public TokenWipeMeta tokenWipeUsageFrom(final TokenWipeAccountTransactionBody op, final SubType subType) {
-		return retrieveRawDataFrom(subType, op::getSerialNumbersCount, TokenWipeMeta::new);
-	}
+    public TokenWipeMeta tokenWipeUsageFrom(
+            final TokenWipeAccountTransactionBody op, final SubType subType) {
+        return retrieveRawDataFrom(subType, op::getSerialNumbersCount, TokenWipeMeta::new);
+    }
 
-    public <R> R retrieveRawDataFrom(
+    public static <R> R retrieveRawDataFrom(
             SubType subType, IntSupplier getDataForNFT, Producer<R> producer) {
         int serialNumsCount = 0;
         int bpt = 0;

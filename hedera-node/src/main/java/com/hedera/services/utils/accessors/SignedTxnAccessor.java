@@ -15,6 +15,30 @@
  */
 package com.hedera.services.utils.accessors;
 
+import static com.hedera.services.legacy.proto.utils.CommonUtils.noThrowSha384HashOf;
+import static com.hedera.services.usage.token.TokenOpsUsageUtils.TOKEN_OPS_USAGE_UTILS;
+import static com.hedera.services.utils.EntityIdUtils.isAlias;
+import static com.hedera.services.utils.MiscUtils.FUNCTION_EXTRACTOR;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusSubmitMessage;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoApproveAllowance;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoCreate;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoDeleteAllowance;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoUpdate;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.EthereumTransaction;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAccountWipe;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenBurn;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenCreate;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenFeeScheduleUpdate;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenFreezeAccount;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenMint;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenPause;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUnfreezeAccount;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUnpause;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.UtilPrng;
+import static com.hederahashgraph.api.proto.java.SubType.TOKEN_FUNGIBLE_COMMON;
+import static com.hederahashgraph.api.proto.java.SubType.TOKEN_NON_FUNGIBLE_UNIQUE;
+
 import com.google.common.base.MoreObjects;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
@@ -48,44 +72,16 @@ import com.hederahashgraph.api.proto.java.SubType;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.function.LongPredicate;
 import org.apache.commons.codec.binary.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.bouncycastle.util.Arrays;
 
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.function.LongPredicate;
-
-import static com.hedera.services.legacy.proto.utils.CommonUtils.noThrowSha384HashOf;
-import static com.hedera.services.usage.token.TokenOpsUsageUtils.TOKEN_OPS_USAGE_UTILS;
-import static com.hedera.services.utils.EntityIdUtils.isAlias;
-import static com.hedera.services.utils.MiscUtils.FUNCTION_EXTRACTOR;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusSubmitMessage;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCreate;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoApproveAllowance;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoCreate;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoDeleteAllowance;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoUpdate;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.EthereumTransaction;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAccountWipe;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenBurn;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenCreate;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenFeeScheduleUpdate;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenFreezeAccount;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenMint;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenPause;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUnfreezeAccount;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUnpause;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.UtilPrng;
-import static com.hederahashgraph.api.proto.java.SubType.TOKEN_FUNGIBLE_COMMON;
-import static com.hederahashgraph.api.proto.java.SubType.TOKEN_NON_FUNGIBLE_UNIQUE;
-
-/**
- * Encapsulates access to several commonly referenced parts of a gRPC {@link Transaction}.
- */
+/** Encapsulates access to several commonly referenced parts of a gRPC {@link Transaction}. */
 public class SignedTxnAccessor implements TxnAccessor {
     public static final LongPredicate IS_THROTTLE_EXEMPT = num -> num >= 1 && num <= 100L;
     private static final Logger log = LogManager.getLogger(SignedTxnAccessor.class);
@@ -121,9 +117,9 @@ public class SignedTxnAccessor implements TxnAccessor {
     private boolean throttleExempt;
     private boolean congestionExempt;
 
-	private AccountID payer;
-	private ScheduleID scheduleRef;
-	private StateView view;
+    private AccountID payer;
+    private ScheduleID scheduleRef;
+    private StateView view;
 
     public static SignedTxnAccessor uncheckedFrom(Transaction validSignedTxn) {
         try {
@@ -213,8 +209,15 @@ public class SignedTxnAccessor implements TxnAccessor {
 
     @Override
     public <T extends TxnAccessor> T castToSpecialized() {
-        // This will have all the custom accessor casts in future PR. Not currently used
-        return (T) this;
+        final var function = getFunction();
+        try {
+            if (function == TokenAccountWipe) {
+                return (T) new TokenWipeAccessor(txn.toByteArray());
+            }
+            return (T) this;
+        } catch (InvalidProtocolBufferException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Override
@@ -355,6 +358,7 @@ public class SignedTxnAccessor implements TxnAccessor {
                 .add("pubKeyToSigBytes", pubKeyToSigBytes)
                 .add("payer", payer)
                 .add("scheduleRef", scheduleRef)
+                .add("view", view)
                 .toString();
     }
 
@@ -414,22 +418,22 @@ public class SignedTxnAccessor implements TxnAccessor {
         return MiscUtils.getGasLimitForContractTx(
                 getTxn(), getFunction(), () -> getSpanMapAccessor().getEthTxDataMeta(this));
     }
-	@Override
-	public void setStateView(final StateView view) {
-		this.view = view;
-	}
 
-	protected EntityNum lookUpAlias(ByteString alias) {
-		return view.aliases().get(alias);
-	}
+    @Override
+    public void setStateView(final StateView view) {
+        this.view = view;
+    }
 
-	protected EntityNum unaliased(final AccountID idOrAlias) {
-		if (isAlias(idOrAlias)) {
-			return lookUpAlias(idOrAlias.getAlias());
-		}
-		return EntityNum.fromAccountId(idOrAlias);
-	}
+    protected EntityNum lookUpAlias(ByteString alias) {
+        return view.aliases().get(alias);
+    }
 
+    protected EntityNum unaliased(final AccountID idOrAlias) {
+        if (isAlias(idOrAlias)) {
+            return lookUpAlias(idOrAlias.getAlias());
+        }
+        return EntityNum.fromAccountId(idOrAlias);
+    }
 
     private void setBaseUsageMeta() {
         if (function == CryptoTransfer) {
@@ -454,8 +458,6 @@ public class SignedTxnAccessor implements TxnAccessor {
             setTokenCreateUsageMeta();
         } else if (function == TokenBurn) {
             setTokenBurnUsageMeta();
-        } else if (function == TokenAccountWipe) {
-            setTokenWipeUsageMeta();
         } else if (function == TokenFreezeAccount) {
             setTokenFreezeUsageMeta();
         } else if (function == TokenUnfreezeAccount) {
@@ -516,11 +518,6 @@ public class SignedTxnAccessor implements TxnAccessor {
     private void setTokenBurnUsageMeta() {
         final var tokenBurnMeta = TOKEN_OPS_USAGE_UTILS.tokenBurnUsageFrom(txn);
         SPAN_MAP_ACCESSOR.setTokenBurnMeta(this, tokenBurnMeta);
-    }
-
-    private void setTokenWipeUsageMeta() {
-        final var tokenWipeMeta = TOKEN_OPS_USAGE_UTILS.tokenWipeUsageFrom(txn.getTokenWipe());
-        SPAN_MAP_ACCESSOR.setTokenWipeMeta(this, tokenWipeMeta);
     }
 
     private void setTokenFreezeUsageMeta() {

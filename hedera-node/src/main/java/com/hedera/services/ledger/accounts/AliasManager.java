@@ -15,6 +15,7 @@
  */
 package com.hedera.services.ledger.accounts;
 
+import static com.hedera.services.utils.EntityIdUtils.isAlias;
 import static com.hedera.services.utils.EntityNum.MISSING_NUM;
 import static com.hedera.services.utils.MiscUtils.forEach;
 import static com.swirlds.common.utility.CommonUtils.hex;
@@ -29,8 +30,8 @@ import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.proto.utils.ByteStringUtils;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.utils.EntityNum;
-import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.Key;
 import com.swirlds.merkle.map.MerkleMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -45,17 +46,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.hyperledger.besu.datatypes.Address;
 import org.jetbrains.annotations.Nullable;
-
-import javax.inject.Inject;
-import javax.inject.Singleton;
-import java.util.Map;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Predicate;
-import java.util.function.Supplier;
-
-import static com.hedera.services.utils.EntityIdUtils.isAlias;
-import static com.hedera.services.utils.EntityNum.MISSING_NUM;
-import static com.hedera.services.utils.MiscUtils.forEach;
 
 /**
  * Handles a map with all the accounts that are auto-created. The map will be re-built on restart,
@@ -261,15 +251,15 @@ public class AliasManager extends AbstractContractAliases implements ContractAli
         return aliases.get();
     }
 
-	@VisibleForTesting
-	Map<ByteString, EntityNum> getAliases() {
-		return curAliases();
-	}
+    @VisibleForTesting
+    Map<ByteString, EntityNum> getAliases() {
+        return curAliases();
+    }
 
-	public EntityNum unaliased(final AccountID grpcId) {
-		if (isAlias(grpcId)) {
-			return lookupIdBy(grpcId.getAlias());
-		}
-		return EntityNum.fromAccountId(grpcId);
-	}
+    public EntityNum unaliased(final AccountID grpcId) {
+        if (isAlias(grpcId)) {
+            return lookupIdBy(grpcId.getAlias());
+        }
+        return EntityNum.fromAccountId(grpcId);
+    }
 }

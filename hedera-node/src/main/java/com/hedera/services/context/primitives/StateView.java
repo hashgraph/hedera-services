@@ -26,7 +26,6 @@ import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.getNftGra
 import static com.hedera.services.utils.EntityIdUtils.asAccount;
 import static com.hedera.services.utils.EntityIdUtils.asHexedEvmAddress;
 import static com.hedera.services.utils.EntityIdUtils.readableId;
-import static com.hedera.services.utils.EntityIdUtils.unaliased;
 import static com.hedera.services.utils.EntityNum.fromAccountId;
 import static com.hedera.services.utils.MiscUtils.asKeyUnchecked;
 import static com.swirlds.common.utility.CommonUtils.hex;
@@ -833,11 +832,11 @@ public class StateView {
         return stateChildren == null ? EMPTY_CTX : stateChildren.networkCtx();
     }
 
-	public MerkleMap<EntityNum, MerkleStakingInfo> stakingInfo() {
-		return stateChildren == null ? emptyMm() : stateChildren.stakingInfo();
-	}
+    public MerkleMap<EntityNum, MerkleStakingInfo> stakingInfo() {
+        return stateChildren == null ? emptyMm() : stateChildren.stakingInfo();
+    }
 
-	public Map<ByteString, EntityNum> aliases() {
-		return stateChildren.aliases();
-	}
+    public Map<ByteString, EntityNum> aliases() {
+        return stateChildren.aliases();
+    }
 }
