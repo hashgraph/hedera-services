@@ -23,7 +23,7 @@ import org.junit.jupiter.api.Test;
 
 class UtilOpsSchedulesTest extends FeeSchedulesTestHelper {
     @Test
-    void computesExpectedPriceForPrng() throws IOException {
-        testCanonicalPriceFor(HederaFunctionality.PRNG, DEFAULT);
+    void computesExpectedPriceForUtilPrng() throws IOException {
+        testCanonicalPriceFor(HederaFunctionality.UtilPrng, DEFAULT);
     }
 }

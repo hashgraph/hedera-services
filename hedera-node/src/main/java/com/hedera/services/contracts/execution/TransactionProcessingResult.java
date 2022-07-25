@@ -1,3 +1,18 @@
+/*
+ * Copyright (C) 2021-2022 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package com.hedera.services.contracts.execution;
 
 /*
@@ -36,35 +51,31 @@ import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 import org.hyperledger.besu.evm.log.Log;
 
 /**
- * Model object holding all the necessary data to build and externalise the result of a single EVM transaction
+ * Model object holding all the necessary data to build and externalise the result of a single EVM
+ * transaction
  */
 public class TransactionProcessingResult {
-	/**
-	 * The status of the transaction after being processed.
-	 */
-	public enum Status {
-		/**
-		 * The transaction was successfully processed.
-		 */
-		SUCCESSFUL,
+    /** The status of the transaction after being processed. */
+    public enum Status {
+        /** The transaction was successfully processed. */
+        SUCCESSFUL,
 
-		/**
-		 * The transaction failed to be completely processed.
-		 */
-		FAILED
-	}
+        /** The transaction failed to be completely processed. */
+        FAILED
+    }
 
-	private final long gasUsed;
-	private final long sbhRefund;
-	private final long gasPrice;
-	private final Status status;
-	private final Bytes output;
-	private final List<Log> logs;
-	private final Optional<Bytes> revertReason;
-	private final Optional<Address> recipient;
-	private final Optional<ExceptionalHaltReason> haltReason;
-	private final Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> stateChanges;
-	private final List<SolidityAction> actions;
+    private final long gasUsed;
+    private final long sbhRefund;
+    private final long gasPrice;
+    private final Status status;
+    private final Bytes output;
+    private final List<Log> logs;
+    private final Optional<Bytes> revertReason;
+    private final Optional<Address> recipient;
+    private final Optional<ExceptionalHaltReason> haltReason;
+    private final Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> stateChanges;
+		private final List<SolidityAction> actions;
+
 
 	private List<ContractID> createdContracts = Collections.emptyList();
 
@@ -141,81 +152,81 @@ public class TransactionProcessingResult {
 		this.actions = actions;
 	}
 
-	/**
-	 * Adds a list of created contracts to be externalised as part of the
-	 * {@link com.hedera.services.state.submerkle.ExpirableTxnRecord}
-	 *
-	 * @param createdContracts
-	 * 		the list of contractIDs created
-	 */
-	public void setCreatedContracts(List<ContractID> createdContracts) {
-		this.createdContracts = createdContracts;
-	}
+    /**
+     * Adds a list of created contracts to be externalised as part of the {@link
+     * com.hedera.services.state.submerkle.ExpirableTxnRecord}
+     *
+     * @param createdContracts the list of contractIDs created
+     */
+    public void setCreatedContracts(List<ContractID> createdContracts) {
+        this.createdContracts = createdContracts;
+    }
 
-	/**
-	 * Returns whether or not the transaction was successfully processed.
-	 *
-	 * @return {@code true} if the transaction was successfully processed; otherwise {@code false}
-	 */
-	public boolean isSuccessful() {
-		return status == Status.SUCCESSFUL;
-	}
+    /**
+     * Returns whether or not the transaction was successfully processed.
+     *
+     * @return {@code true} if the transaction was successfully processed; otherwise {@code false}
+     */
+    public boolean isSuccessful() {
+        return status == Status.SUCCESSFUL;
+    }
 
-	public long getGasPrice() {
-		return gasPrice;
-	}
+    public long getGasPrice() {
+        return gasPrice;
+    }
 
-	public long getGasUsed() {
-		return gasUsed;
-	}
+    public long getGasUsed() {
+        return gasUsed;
+    }
 
-	public long getSbhRefund() {
-		return sbhRefund;
-	}
+    public long getSbhRefund() {
+        return sbhRefund;
+    }
 
-	public Bytes getOutput() {
-		return output;
-	}
+    public Bytes getOutput() {
+        return output;
+    }
 
-	public List<Log> getLogs() {
-		return logs;
-	}
+    public List<Log> getLogs() {
+        return logs;
+    }
 
-	public Optional<Address> getRecipient() {
-		return recipient;
-	}
+    public Optional<Address> getRecipient() {
+        return recipient;
+    }
 
-	public Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> getStateChanges() {
-		return stateChanges;
-	}
+    public Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> getStateChanges() {
+        return stateChanges;
+    }
 
-	public List<ContractID> getCreatedContracts() {
-		return createdContracts;
-	}
+    public List<ContractID> getCreatedContracts() {
+        return createdContracts;
+    }
 
-	public List<SolidityAction> getActions() {
-		return actions;
-	}
+    /**
+     * Returns the exceptional halt reason
+     *
+     * @return the halt reason
+     */
+    public Optional<ExceptionalHaltReason> getHaltReason() {
+        return haltReason;
+    }
 
-	/**
-	 * Returns the exceptional halt reason
-	 *
-	 * @return the halt reason
-	 */
-	public Optional<ExceptionalHaltReason> getHaltReason() {
-		return haltReason;
-	}
+		public List<SolidityAction> getActions() {
+			return actions;
+		}
 
-	public Optional<Bytes> getRevertReason() {
-		return revertReason;
-	}
+    public Optional<Bytes> getRevertReason() {
+        return revertReason;
+    }
 
-	/**
-	 * Converts the {@link TransactionProcessingResult} into {@link ContractFunctionResult} gRPC model.
-	 *
-	 * @return the {@link ContractFunctionResult} model to externalise
-	 */
-	public ContractFunctionResult toGrpc() {
-		return EvmFnResult.fromCall(this).toGrpc();
-	}
+    /**
+     * Converts the {@link TransactionProcessingResult} into {@link ContractFunctionResult} gRPC
+     * model.
+     *
+     * @return the {@link ContractFunctionResult} model to externalise
+     */
+    public ContractFunctionResult toGrpc() {
+        return EvmFnResult.fromCall(this).toGrpc();
+    }
 }

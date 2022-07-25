@@ -1,11 +1,6 @@
-package com.hedera.services.records;
-
-/*-
- * ‌
- * Hedera Services Node
- * ​
- * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,17 +12,16 @@ package com.hedera.services.records;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+package com.hedera.services.records;
 
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.stream.proto.TransactionSidecarRecord;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-
 import java.util.List;
 
-public record InProgressChildRecord(int sourceId,
-									TransactionBody.Builder syntheticBody,
-									ExpirableTxnRecord.Builder recordBuilder,
-									List<TransactionSidecarRecord.Builder> sidecars) {
-}
+public record InProgressChildRecord(
+        int sourceId,
+        TransactionBody.Builder syntheticBody,
+        ExpirableTxnRecord.Builder recordBuilder,
+        List<TransactionSidecarRecord.Builder> sidecars) {}

@@ -45,7 +45,7 @@ dependencyResolutionManagement {
             version("eddsa-version", "0.3.0")
             version("grpc-version", "1.39.0")
             version("guava-version", "31.1-jre")
-            version("hapi-version", "0.28.0-revised-SNAPSHOT")
+            version("hapi-version", "0.29.0-utilprng-SNAPSHOT")
             version("headlong-version", "6.1.1")
             version("jackson-version", "2.12.6.1")
             version("javax-annotation-version", "1.3.2")
@@ -54,7 +54,7 @@ dependencyResolutionManagement {
             version("log4j-version", "2.17.2")
             version("netty-version", "4.1.66.Final")
             version("protobuf-java-version", "3.19.4")
-            version("swirlds-version", "0.27.1")
+            version("swirlds-version", "0.28.0-alpha.3")
             version("tuweni-version", "2.2.0")
 
             // List of bundles provided for us. When applicable, favor using these over individual libraries.
