@@ -18,11 +18,14 @@ package com.hedera.services.bdd.suites.contract.precompile;
 import static com.google.protobuf.ByteString.copyFromUtf8;
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asToken;
+import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
+import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
@@ -30,10 +33,15 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.asHexedAddress;
 import static com.hedera.services.bdd.suites.token.TokenAssociationSpecs.VANILLA_TOKEN;
+import static com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult.htsPrecompileResult;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELETED;
 import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
@@ -68,13 +76,15 @@ public class DeleteTokenPrecompileSuite extends HapiApiSuite {
 
     @Override
     public List<HapiApiSpec> getSpecsInSuite() {
-        return allOf(List.of(deleteFungibleTokenHappyPath(), deleteNftTokenHappyPath()));
+        return allOf(
+                List.of(deleteFungibleTokenWithNegativeCases(), deleteNftTokenWithNegativeCases()));
     }
 
-    private HapiApiSpec deleteFungibleTokenHappyPath() {
+    private HapiApiSpec deleteFungibleTokenWithNegativeCases() {
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
+        final var tokenAlreadyDeletedTxn = "tokenAlreadyDeletedTxn";
 
-        return defaultHapiSpec("deleteFungibleTokenHappyPath")
+        return defaultHapiSpec("deleteFungibleTokenWithNegativeCases")
                 .given(
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(ACCOUNT)
@@ -105,18 +115,45 @@ public class DeleteTokenPrecompileSuite extends HapiApiSuite {
                                                                         vanillaTokenID.get()))
                                                         .payingWith(ACCOUNT)
                                                         .gas(GAS_TO_OFFER)
-                                                        .via(DELETE_TXN))))
-                .then(getTokenInfo(VANILLA_TOKEN).isDeleted().logged());
+                                                        .via(DELETE_TXN),
+                                                getTokenInfo(VANILLA_TOKEN).isDeleted().logged(),
+                                                cryptoTransfer(
+                                                                moving(500, VANILLA_TOKEN)
+                                                                        .between(
+                                                                                TOKEN_TREASURY,
+                                                                                ACCOUNT))
+                                                        .hasKnownStatus(TOKEN_WAS_DELETED),
+                                                contractCall(
+                                                                DELETE_TOKEN_CONTRACT,
+                                                                TOKEN_DELETE_FUNCTION,
+                                                                asHexedAddress(
+                                                                        vanillaTokenID.get()))
+                                                        .payingWith(ACCOUNT)
+                                                        .gas(GAS_TO_OFFER)
+                                                        .via(tokenAlreadyDeletedTxn)
+                                                        .hasKnownStatus(CONTRACT_REVERT_EXECUTED))))
+                .then(
+                        childRecordsCheck(
+                                tokenAlreadyDeletedTxn,
+                                CONTRACT_REVERT_EXECUTED,
+                                recordWith()
+                                        .status(TOKEN_WAS_DELETED)
+                                        .contractCallResult(
+                                                resultWith()
+                                                        .contractCallResult(
+                                                                htsPrecompileResult()
+                                                                        .withStatus(
+                                                                                TOKEN_WAS_DELETED)))));
     }
 
-    private HapiApiSpec deleteNftTokenHappyPath() {
+    private HapiApiSpec deleteNftTokenWithNegativeCases() {
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
+        final var notAnAdminTxn = "notAnAdminTxn";
 
-        return defaultHapiSpec("deleteNftTokenHappyPath")
+        return defaultHapiSpec("deleteNftTokenWithNegativeCases")
                 .given(
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(ACCOUNT)
-                                .key(MULTI_KEY)
                                 .balance(100 * ONE_HBAR)
                                 .exposingCreatedIdTo(accountID::set),
                         cryptoCreate(TOKEN_TREASURY),
@@ -145,8 +182,29 @@ public class DeleteTokenPrecompileSuite extends HapiApiSuite {
                                                                         vanillaTokenID.get()))
                                                         .payingWith(ACCOUNT)
                                                         .gas(GAS_TO_OFFER)
-                                                        .via(DELETE_TXN))))
-                .then(getTokenInfo(VANILLA_TOKEN).isDeleted().logged());
+                                                        .via(notAnAdminTxn)
+                                                        .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
+                                                cryptoUpdate(ACCOUNT).key(MULTI_KEY),
+                                                contractCall(
+                                                                DELETE_TOKEN_CONTRACT,
+                                                                TOKEN_DELETE_FUNCTION,
+                                                                asHexedAddress(
+                                                                        vanillaTokenID.get()))
+                                                        .payingWith(ACCOUNT)
+                                                        .gas(GAS_TO_OFFER),
+                                                getTokenInfo(VANILLA_TOKEN).isDeleted().logged())))
+                .then(
+                        childRecordsCheck(
+                                notAnAdminTxn,
+                                CONTRACT_REVERT_EXECUTED,
+                                recordWith()
+                                        .status(INVALID_SIGNATURE)
+                                        .contractCallResult(
+                                                resultWith()
+                                                        .contractCallResult(
+                                                                htsPrecompileResult()
+                                                                        .withStatus(
+                                                                                INVALID_SIGNATURE)))));
     }
 
     @Override
