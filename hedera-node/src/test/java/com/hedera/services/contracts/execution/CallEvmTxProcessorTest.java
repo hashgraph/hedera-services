@@ -50,6 +50,7 @@ import java.util.ArrayDeque;
 import java.util.Collections;
 import java.util.Deque;
 import java.util.EnumSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -306,56 +307,56 @@ class CallEvmTxProcessorTest {
         verify(updater, never()).getFinalStateChanges();
     }
 
-	@Test
-	void assertSuccessExecutionPopulatesContractActionsWhenEnabled() {
-		givenValidMock();
-		given(globalDynamicProperties.fundingAccount()).willReturn(new Id(0, 0, 1010).asGrpcAccount());
-		givenSenderWithBalance(350_000L);
-		given(aliasManager.resolveForEvm(receiverAddress)).willReturn(receiverAddress);
-		given(storageExpiry.hapiCallOracle()).willReturn(oracle);
-    given(globalDynamicProperties.chainIdBytes32()).willReturn(Bytes32.ZERO);
+    @Test
+    void assertSuccessExecutionPopulatesContractActionsWhenEnabled() {
+        givenValidMock();
+        given(globalDynamicProperties.fundingAccount())
+                .willReturn(new Id(0, 0, 1010).asGrpcAccount());
+        givenSenderWithBalance(350_000L);
+        given(aliasManager.resolveForEvm(receiverAddress)).willReturn(receiverAddress);
+        given(storageExpiry.hapiCallOracle()).willReturn(oracle);
+        given(globalDynamicProperties.chainIdBytes32()).willReturn(Bytes32.ZERO);
 
-      final var action =
-				new SolidityAction(
-						ContractActionType.CALL,
-						EntityId.fromAddress(Address.ALTBN128_ADD),
-						null,
-						500L,
-						"input".getBytes(),
-						EntityId.fromAddress(Address.BLAKE2B_F_COMPRESSION),
-						null,
-						0L,
-						0);
-		final var action2 =
-				new SolidityAction(
-						ContractActionType.CREATE,
-						null,
-						EntityId.fromAddress(Address.ALTBN128_ADD),
-						5555L,
-						"input2".getBytes(),
-						null,
-						EntityId.fromAddress(Address.BLAKE2B_F_COMPRESSION),
-						666L,
-						1);
-		fakeHederaTracer.addAction(action);
-		fakeHederaTracer.addAction(action2);
+        final var action =
+                new SolidityAction(
+                        ContractActionType.CALL,
+                        EntityId.fromAddress(Address.ALTBN128_ADD),
+                        null,
+                        500L,
+                        "input".getBytes(),
+                        EntityId.fromAddress(Address.BLAKE2B_F_COMPRESSION),
+                        null,
+                        0L,
+                        0);
+        final var action2 =
+                new SolidityAction(
+                        ContractActionType.CREATE,
+                        null,
+                        EntityId.fromAddress(Address.ALTBN128_ADD),
+                        5555L,
+                        "input2".getBytes(),
+                        null,
+                        EntityId.fromAddress(Address.BLAKE2B_F_COMPRESSION),
+                        666L,
+                        1);
+        fakeHederaTracer.addAction(action);
+        fakeHederaTracer.addAction(action2);
 
-		final var result = callEvmTxProcessor.execute(
-				sender, receiverAddress, 33_333L, 1234L, Bytes.EMPTY, consensusTime);
+        final var result =
+                callEvmTxProcessor.execute(
+                        sender, receiverAddress, 33_333L, 1234L, Bytes.EMPTY, consensusTime);
 
-		assertTrue(fakeHederaTracer.hasBeenReset());
-		assertEquals(2, result.getActions().size());
-		assertEquals(action, result.getActions().get(0));
-		assertEquals(action2, result.getActions().get(1));
-	}
+        assertTrue(fakeHederaTracer.hasBeenReset());
+        assertEquals(List.of(action, action2), result.getActions());
+    }
 
-	@Test
-	void throwsWhenSenderCannotCoverUpfrontCost() {
-		givenInvalidMock();
-		givenSenderWithBalance(123);
-    given(globalDynamicProperties.chainIdBytes32()).willReturn(Bytes32.ZERO);
+    @Test
+    void throwsWhenSenderCannotCoverUpfrontCost() {
+        givenInvalidMock();
+        givenSenderWithBalance(123);
+        given(globalDynamicProperties.chainIdBytes32()).willReturn(Bytes32.ZERO);
 
-      assertFailsWith(
+        assertFailsWith(
                 () ->
                         callEvmTxProcessor.execute(
                                 sender,
