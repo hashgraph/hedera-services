@@ -482,10 +482,6 @@ public class TokenInfoHTSSuite extends HapiApiSuite {
                                                     .getTokenGetNftInfo()
                                                     .getNft()
                                                     .getCreationTime();
-                                    final var packedCreationTime =
-                                            packedTime(
-                                                    creationTime.getSeconds(),
-                                                    creationTime.getNanos());
 
                                     final var ownerId = spec.registry().getAccountID(owner);
                                     final var spenderId = spec.registry().getAccountID(spender);
@@ -982,10 +978,6 @@ public class TokenInfoHTSSuite extends HapiApiSuite {
         }
 
         return keyBuilder.build();
-    }
-
-    private static long packedTime(long seconds, int nanos) {
-        return seconds << 32 | (nanos & MASK_INT_AS_UNSIGNED_LONG);
     }
 
     private ByteString fromString(final String value) {
