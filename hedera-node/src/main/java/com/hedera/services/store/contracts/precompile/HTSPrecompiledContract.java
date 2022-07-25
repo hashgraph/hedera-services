@@ -335,6 +335,73 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
                             precompilePricingUtils,
                             feeCalculator,
                             currentView);
+                    case AbiConstants.ABI_ID_ALLOWANCE -> checkFeatureFlag(
+                            dynamicProperties.areAllowancesEnabled(),
+                            () ->
+                                    new AllowancePrecompile(
+                                            syntheticTxnFactory,
+                                            ledgers,
+                                            encoder,
+                                            decoder,
+                                            precompilePricingUtils));
+                    case AbiConstants.ABI_ID_APPROVE -> checkFeatureFlag(
+                            dynamicProperties.areAllowancesEnabled(),
+                            () ->
+                                    new ApprovePrecompile(
+                                            true,
+                                            ledgers,
+                                            decoder,
+                                            encoder,
+                                            currentView,
+                                            sideEffectsTracker,
+                                            syntheticTxnFactory,
+                                            infrastructureFactory,
+                                            precompilePricingUtils,
+                                            senderAddress));
+                    case AbiConstants.ABI_ID_APPROVE_NFT -> checkFeatureFlag(
+                            dynamicProperties.areAllowancesEnabled(),
+                            () ->
+                                    new ApprovePrecompile(
+                                            false,
+                                            ledgers,
+                                            decoder,
+                                            encoder,
+                                            currentView,
+                                            sideEffectsTracker,
+                                            syntheticTxnFactory,
+                                            infrastructureFactory,
+                                            precompilePricingUtils,
+                                            senderAddress));
+                    case AbiConstants.ABI_ID_SET_APPROVAL_FOR_ALL -> checkFeatureFlag(
+                            dynamicProperties.areAllowancesEnabled(),
+                            () ->
+                                    new SetApprovalForAllPrecompile(
+                                            ledgers,
+                                            decoder,
+                                            currentView,
+                                            sideEffectsTracker,
+                                            syntheticTxnFactory,
+                                            infrastructureFactory,
+                                            precompilePricingUtils,
+                                            senderAddress));
+                    case AbiConstants.ABI_ID_GET_APPROVED -> checkFeatureFlag(
+                            dynamicProperties.areAllowancesEnabled(),
+                            () ->
+                                    new GetApprovedPrecompile(
+                                            syntheticTxnFactory,
+                                            ledgers,
+                                            encoder,
+                                            decoder,
+                                            precompilePricingUtils));
+                    case AbiConstants.ABI_ID_IS_APPROVED_FOR_ALL -> checkFeatureFlag(
+                            dynamicProperties.areAllowancesEnabled(),
+                            () ->
+                                    new IsApprovedForAllPrecompile(
+                                            syntheticTxnFactory,
+                                            ledgers,
+                                            encoder,
+                                            decoder,
+                                            precompilePricingUtils));
                     case AbiConstants.ABI_ID_REDIRECT_FOR_TOKEN -> {
                         final var target = DescriptorUtils.getRedirectTarget(input);
                         final var tokenId = target.tokenId();

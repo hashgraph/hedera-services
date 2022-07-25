@@ -102,7 +102,7 @@ public class ContractCallLocalAnswer extends AbstractAnswer {
 						if (entityAccess.isTokenAccount(EntityIdUtils.asTypedEvmAddress(op.getContractID()))) {
 							return OK;
 						} else {
-							final var target = unaliased(op.getContractID(), aliasManager);
+							final var target = EntityIdUtils.unaliased(op.getContractID(), aliasManager);
 							return validator.queryableContractStatus(target, view.contracts());
 						}
 					}

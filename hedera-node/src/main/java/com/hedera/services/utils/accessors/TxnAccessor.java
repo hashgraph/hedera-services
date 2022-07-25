@@ -75,10 +75,14 @@ public interface TxnAccessor {
 	 */
 	boolean throttleExempt();
 
+	void markThrottleExempt();
+
 	/**
 	 * @return true if the transaction should not be charged congestion pricing.
 	 */
 	boolean congestionExempt();
+
+	void markCongestionExempt();
 
 	TransactionBody getTxn();
 

@@ -75,7 +75,7 @@ public class AccessorFactory {
 	private TxnAccessor constructSpecializedAccessor(
 			byte[] signedTxnWrapperBytes) throws InvalidProtocolBufferException {
 		final var body = extractTransactionBody(Transaction.parseFrom(signedTxnWrapperBytes));
-		final var function = MiscUtils.functionExtractor.apply(body);
+		final var function = MiscUtils.FUNCTION_EXTRACTOR.apply(body);
 		if (function == TokenAccountWipe) {
 			return new TokenWipeAccessor(signedTxnWrapperBytes, dynamicProperties, validator);
 		}

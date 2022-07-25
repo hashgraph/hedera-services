@@ -25,6 +25,7 @@ import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.txns.validation.OptionValidator;
+import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractDeleteTransactionBody;
@@ -71,14 +72,14 @@ public class DeletionLogic {
 	}
 
 	public ResponseCodeEnum precheckValidity(final ContractDeleteTransactionBody op) {
-		final var id = unaliased(op.getContractID(), aliasManager);
+		final var id = EntityIdUtils.unaliased(op.getContractID(), aliasManager);
 		return validator.queryableContractStatus(id, contracts.get());
 	}
 
 	public ContractID performFor(final ContractDeleteTransactionBody op) {
 		obtainer = null;
 
-		final var id = unaliased(op.getContractID(), aliasManager);
+		final var id = EntityIdUtils.unaliased(op.getContractID(), aliasManager);
 		final var tbd = id.toGrpcAccountId();
 		validateFalse(ledger.isKnownTreasury(tbd), ACCOUNT_IS_TREASURY);
 		validateFalse(ledger.hasAnyFungibleTokenBalance(tbd), TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES);
@@ -113,7 +114,7 @@ public class DeletionLogic {
 			validateFalse(obtainerExpired, ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
 			return op.getTransferAccountID();
 		} else {
-			return unaliased(op.getTransferContractID(), aliasManager).toGrpcAccountId();
+			return EntityIdUtils.unaliased(op.getTransferContractID(), aliasManager).toGrpcAccountId();
 		}
 	}
 }

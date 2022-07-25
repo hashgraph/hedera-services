@@ -93,7 +93,7 @@ public class GetBytecodeAnswer implements AnswerService {
 
 	@Override
 	public ResponseCodeEnum checkValidity(Query query, StateView view) {
-		final var id = unaliased(query.getContractGetBytecode().getContractID(), aliasManager);
+		final var id = EntityIdUtils.unaliased(query.getContractGetBytecode().getContractID(), aliasManager);
 
 		return validator.queryableContractStatus(id, view.contracts());
 	}

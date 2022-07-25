@@ -15,35 +15,11 @@
  */
 package com.hedera.services.utils.accessors;
 
-import static com.hedera.services.legacy.proto.utils.CommonUtils.noThrowSha384HashOf;
-import static com.hedera.services.usage.token.TokenOpsUsageUtils.TOKEN_OPS_USAGE_UTILS;
-import static com.hedera.services.utils.MiscUtils.FUNCTION_EXTRACTOR;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusSubmitMessage;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoApproveAllowance;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoCreate;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoDeleteAllowance;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoUpdate;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.EthereumTransaction;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.PRNG;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAccountWipe;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenBurn;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenCreate;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenFeeScheduleUpdate;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenFreezeAccount;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenMint;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenPause;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUnfreezeAccount;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUnpause;
-import static com.hederahashgraph.api.proto.java.SubType.TOKEN_FUNGIBLE_COMMON;
-import static com.hederahashgraph.api.proto.java.SubType.TOKEN_NON_FUNGIBLE_UNIQUE;
-
 import com.google.common.base.MoreObjects;
-import com.google.common.primitives.Longs;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
-import com.hedera.services.ethereum.EthTxData;
 import com.hedera.services.context.primitives.StateView;
+import com.hedera.services.ethereum.EthTxData;
 import com.hedera.services.grpc.marshalling.AliasResolver;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.sigs.sourcing.PojoSigMapPubKeyToSigBytes;
@@ -59,11 +35,10 @@ import com.hedera.services.usage.crypto.CryptoTransferMeta;
 import com.hedera.services.usage.crypto.CryptoUpdateMeta;
 import com.hedera.services.usage.token.TokenOpsUsage;
 import com.hedera.services.usage.token.meta.FeeScheduleUpdateMeta;
-import com.hedera.services.usage.util.PrngMeta;
-import com.hedera.services.utils.MiscUtils;
+import com.hedera.services.usage.util.UtilPrngMeta;
 import com.hedera.services.utils.EntityNum;
+import com.hedera.services.utils.MiscUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ScheduleID;
@@ -73,22 +48,20 @@ import com.hederahashgraph.api.proto.java.SubType;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.function.LongPredicate;
 import org.apache.commons.codec.binary.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.bouncycastle.util.Arrays;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.LongPredicate;
 
 import static com.hedera.services.legacy.proto.utils.CommonUtils.noThrowSha384HashOf;
 import static com.hedera.services.usage.token.TokenOpsUsageUtils.TOKEN_OPS_USAGE_UTILS;
 import static com.hedera.services.utils.EntityIdUtils.isAlias;
-import static com.hedera.services.utils.MiscUtils.functionExtractor;
+import static com.hedera.services.utils.MiscUtils.FUNCTION_EXTRACTOR;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusSubmitMessage;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoApproveAllowance;
@@ -96,6 +69,7 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoCreat
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoDeleteAllowance;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoUpdate;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.EthereumTransaction;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAccountWipe;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenBurn;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenCreate;
@@ -105,6 +79,7 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenMint;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenPause;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUnfreezeAccount;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUnpause;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.UtilPrng;
 import static com.hederahashgraph.api.proto.java.SubType.TOKEN_FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.SubType.TOKEN_NON_FUNGIBLE_UNIQUE;
 
@@ -455,11 +430,6 @@ public class SignedTxnAccessor implements TxnAccessor {
 		return EntityNum.fromAccountId(idOrAlias);
 	}
 
-	@Override
-	public long getGasLimitForContractTx() {
-		return getFunction() == ContractCreate ? getTxn().getContractCreateInstance().getGas() :
-				getTxn().getContractCall().getGas();
-	}
 
     private void setBaseUsageMeta() {
         if (function == CryptoTransfer) {
@@ -504,8 +474,8 @@ public class SignedTxnAccessor implements TxnAccessor {
             setCryptoDeleteAllowanceUsageMeta();
         } else if (function == EthereumTransaction) {
             setEthTxDataMeta();
-        } else if (function == PRNG) {
-            setPrngUsageMeta();
+        } else if (function == UtilPrng) {
+            setUtilPrngUsageMeta();
         }
     }
 
@@ -549,7 +519,7 @@ public class SignedTxnAccessor implements TxnAccessor {
     }
 
     private void setTokenWipeUsageMeta() {
-        final var tokenWipeMeta = TOKEN_OPS_USAGE_UTILS.tokenWipeUsageFrom(txn);
+        final var tokenWipeMeta = TOKEN_OPS_USAGE_UTILS.tokenWipeUsageFrom(txn.getTokenWipe());
         SPAN_MAP_ACCESSOR.setTokenWipeMeta(this, tokenWipeMeta);
     }
 
@@ -602,9 +572,9 @@ public class SignedTxnAccessor implements TxnAccessor {
         SPAN_MAP_ACCESSOR.setCryptoDeleteAllowanceMeta(this, cryptoDeleteAllowanceMeta);
     }
 
-    private void setPrngUsageMeta() {
-        final var prngUsageMeta = new PrngMeta(txn.getPrng());
-        SPAN_MAP_ACCESSOR.setPrngMeta(this, prngUsageMeta);
+    private void setUtilPrngUsageMeta() {
+        final var utilPrngUsageMeta = new UtilPrngMeta(txn.getUtilPrng());
+        SPAN_MAP_ACCESSOR.setUtilPrngMeta(this, utilPrngUsageMeta);
     }
 
     private void setEthTxDataMeta() {

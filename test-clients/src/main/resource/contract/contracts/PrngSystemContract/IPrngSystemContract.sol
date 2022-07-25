@@ -3,9 +3,6 @@ pragma solidity >=0.4.9 <0.9.0;
 
 interface IPrngSystemContract {
     // Generates a 256-bit pseudorandom seed using the first 256-bits of running hash of n-3 transaction record.
+    // Users can generate a pseudorandom number in a specified range using the seed by (integer value of seed % range)
     function getPseudorandomSeed() external returns (bytes32);
-
-    // Given an unsigned 32-bit integer "range", generates a pseudorandom number X within 0 <= X < range.
-    // Uses the first 32-bits of running hash of n-3 transaction record to generate the pseudorandom number.
-    function getPseudorandomNumber(uint32 range) external returns (uint32);
 }

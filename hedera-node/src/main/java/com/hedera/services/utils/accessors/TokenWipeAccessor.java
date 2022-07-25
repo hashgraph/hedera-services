@@ -73,7 +73,7 @@ public class TokenWipeAccessor extends SignedTxnAccessor {
 
 	private void setTokenWipeUsageMeta() {
 		final var tokenWipeMeta = TOKEN_OPS_USAGE_UTILS.tokenWipeUsageFrom(body);
-		SPAN_MAP_ACCESSOR.setTokenWipeMeta(this, tokenWipeMeta);
+		getSpanMapAccessor().setTokenWipeMeta(this, tokenWipeMeta);
 	}
 }
 

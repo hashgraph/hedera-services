@@ -31,6 +31,7 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.txns.contract.helpers.UpdateCustomizerFactory;
 import com.hedera.services.txns.validation.OptionValidator;
+import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -98,7 +99,7 @@ public class ContractUpdateTransitionLogic implements TransitionLogic {
 		try {
 			final var contractUpdateTxn = txnCtx.accessor().getTxn();
 			final var op = contractUpdateTxn.getContractUpdateInstance();
-			final var id = unaliased(op.getContractID(), aliasManager);
+			final var id = EntityIdUtils.unaliased(op.getContractID(), aliasManager);
 			final var target = contracts.get().get(id);
 
 			var result = customizerFactory.customizerFor(target, validator, op);
@@ -160,7 +161,7 @@ public class ContractUpdateTransitionLogic implements TransitionLogic {
 	public ResponseCodeEnum validate(TransactionBody contractUpdateTxn) {
 		final var op = contractUpdateTxn.getContractUpdateInstance();
 
-		final var id = unaliased(op.getContractID(), aliasManager);
+		final var id = EntityIdUtils.unaliased(op.getContractID(), aliasManager);
 		var status = validator.queryableContractStatus(id, contracts.get());
 		if (status != OK) {
 			return status;

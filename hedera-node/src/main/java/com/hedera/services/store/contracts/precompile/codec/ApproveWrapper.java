@@ -20,7 +20,7 @@ import com.hederahashgraph.api.proto.java.TokenID;
 import java.math.BigInteger;
 
 public record ApproveWrapper(
-        TokenID token,
+        TokenID tokenId,
         AccountID spender,
         BigInteger amount,
         BigInteger serialNumber,

@@ -337,10 +337,6 @@ public final class EntityIdUtils {
 		return unaliased(idOrAlias, aliasManager, null);
 	}
 
-	public static EntityNum unaliased(final AccountID idOrAlias, final AliasManager aliasManager) {
-		return aliasManager.unaliased(idOrAlias);
-	}
-
 	public static EntityNum unaliased(
 			final ContractID idOrAlias,
 			final AliasManager aliasManager,
