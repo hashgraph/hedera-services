@@ -242,7 +242,7 @@ public class HTSPrecompileResult implements ContractCallResult {
         return Bytes.wrap(tupleType.encode(result).array());
     }
 
-    private static byte[] expandByteArrayTo32Length(final byte[] bytesToExpand) {
+    public static byte[] expandByteArrayTo32Length(final byte[] bytesToExpand) {
         byte[] expandedArray = new byte[32];
 
         System.arraycopy(

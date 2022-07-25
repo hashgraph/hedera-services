@@ -40,7 +40,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-public class GetTokenDefaultKycStatusTest {
+class GetTokenDefaultKycStatusTest {
   @Mock
   private GlobalDynamicProperties dynamicProperties;
   @Mock private GasCalculator gasCalculator;

@@ -15,10 +15,12 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hedera.services.bdd.suites.contract.Utils.asToken;
 import static com.hedera.services.bdd.suites.token.TokenAssociationSpecs.VANILLA_TOKEN;
+import static com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult.expandByteArrayTo32Length;
 import static com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult.htsPrecompileResult;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 
+import com.esaulpaugh.headlong.abi.Tuple;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult.FunctionType;
@@ -81,7 +83,9 @@ public class DefaultTokenStatusSuite extends HapiApiSuite {
                         contractCall(
                             TOKEN_DEFAULT_KYC_FREEZE_STATUS_CONTRACT,
                             GET_TOKEN_DEFAULT_FREEZE,
-                            asAddress(vanillaTokenID.get()))
+                            Tuple.singleton(
+                                expandByteArrayTo32Length(
+                            asAddress(vanillaTokenID.get()))))
                             .payingWith(ACCOUNT)
                             .via("GetTokenDefaultFreezeStatusTx")
                             .gas(GAS_TO_OFFER)
@@ -130,7 +134,9 @@ public class DefaultTokenStatusSuite extends HapiApiSuite {
                         contractCall(
                             TOKEN_DEFAULT_KYC_FREEZE_STATUS_CONTRACT,
                             GET_TOKEN_DEFAULT_KYC,
-                            asAddress(vanillaTokenID.get()))
+                            Tuple.singleton(
+                                expandByteArrayTo32Length(
+                            asAddress(vanillaTokenID.get()))))
                             .payingWith(ACCOUNT)
                             .via("GetTokenDefaultKycStatusTx")
                             .gas(GAS_TO_OFFER)
