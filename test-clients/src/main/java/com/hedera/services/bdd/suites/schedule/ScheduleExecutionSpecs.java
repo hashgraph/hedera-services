@@ -585,7 +585,6 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
     }
 
     private HapiApiSpec scheduledUniqueMintExecutesProperly() {
-        String successTxn = "successTxn", signTxn = "signTxn";
         return defaultHapiSpec("ScheduledUniqueMintExecutesProperly")
                 .given(
                         cryptoCreate("treasury"),
@@ -667,7 +666,6 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
     }
 
     private HapiApiSpec scheduledMintExecutesProperly() {
-        String successTxn = "successTxn", signTxn = "signTxn";
         return defaultHapiSpec("ScheduledMintExecutesProperly")
                 .given(
                         cryptoCreate("treasury"),
@@ -742,7 +740,6 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
     }
 
     private HapiApiSpec scheduledBurnExecutesProperly() {
-        String successTxn = "successTxn", signTxn = "signTxn";
         return defaultHapiSpec("ScheduledBurnExecutesProperly")
                 .given(
                         cryptoCreate("treasury"),
@@ -825,7 +822,8 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
         final String xTreasury = "xt";
         final String xCivilian = "xc";
         final String deadXCivilian = "deadxc";
-        final String successTxn = "good", failedTxn = "bad";
+        final String successTxn = "good";
+        final String failedTxn = "bad";
         final AtomicReference<Map<AccountID, Long>> successFeesObs = new AtomicReference<>();
         final AtomicReference<Map<AccountID, Long>> failureFeesObs = new AtomicReference<>();
 
@@ -877,8 +875,11 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
         String xToken = "XXX";
         String validSchedule = "withLiveToken";
         String invalidSchedule = "withDeletedToken";
-        String schedulePayer = PAYER, xTreasury = "xt", xCivilian = "xc";
-        String successTxn = "good", failedTxn = "bad";
+        String schedulePayer = PAYER;
+        String xTreasury = "xt";
+        String xCivilian = "xc";
+        String successTxn = "good";
+        String failedTxn = "bad";
         AtomicReference<Map<AccountID, Long>> successFeesObs = new AtomicReference<>();
         AtomicReference<Map<AccountID, Long>> failureFeesObs = new AtomicReference<>();
 
@@ -935,8 +936,11 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
         String xToken = "XXX";
         String validSchedule = "withUnfrozenAccount";
         String invalidSchedule = "withFrozenAccount";
-        String schedulePayer = PAYER, xTreasury = "xt", xCivilian = "xc";
-        String successTxn = "good", failedTxn = "bad";
+        String schedulePayer = PAYER;
+        String xTreasury = "xt";
+        String xCivilian = "xc";
+        String successTxn = "good";
+        String failedTxn = "bad";
         AtomicReference<Map<AccountID, Long>> successFeesObs = new AtomicReference<>();
         AtomicReference<Map<AccountID, Long>> failureFeesObs = new AtomicReference<>();
 
@@ -996,8 +1000,11 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
         String xToken = "XXX";
         String validSchedule = "withKycedToken";
         String invalidSchedule = "withNonKycedToken";
-        String schedulePayer = PAYER, xTreasury = "xt", xCivilian = "xc";
-        String successTxn = "good", failedTxn = "bad";
+        String schedulePayer = PAYER;
+        String xTreasury = "xt";
+        String xCivilian = "xc";
+        String successTxn = "good";
+        String failedTxn = "bad";
         AtomicReference<Map<AccountID, Long>> successFeesObs = new AtomicReference<>();
         AtomicReference<Map<AccountID, Long>> failureFeesObs = new AtomicReference<>();
 
@@ -1054,8 +1061,12 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
         String xToken = "XXX";
         String validSchedule = "withAssociatedToken";
         String invalidSchedule = "withUnassociatedToken";
-        String schedulePayer = PAYER, xTreasury = "xt", xCivilian = "xc", nonXCivilian = "nxc";
-        String successTxn = "good", failedTxn = "bad";
+        String schedulePayer = PAYER;
+        String xTreasury = "xt";
+        String xCivilian = "xc";
+        String nonXCivilian = "nxc";
+        String successTxn = "good";
+        String failedTxn = "bad";
         AtomicReference<Map<AccountID, Long>> successFeesObs = new AtomicReference<>();
         AtomicReference<Map<AccountID, Long>> failureFeesObs = new AtomicReference<>();
 
@@ -1103,11 +1114,14 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
     }
 
     private HapiApiSpec scheduledXferFailingWithNonNetZeroTokenTransferPaysServiceFeeButNoImpact() {
-        String xToken = "XXX", yToken = "YYY";
+        String xToken = "XXX";
         String validSchedule = "withZeroNetTokenChange";
         String invalidSchedule = "withNonZeroNetTokenChange";
-        String schedulePayer = PAYER, xTreasury = "xt", xCivilian = "xc";
-        String successTxn = "good", failedTxn = "bad";
+        String schedulePayer = PAYER;
+        String xTreasury = "xt";
+        String xCivilian = "xc";
+        String successTxn = "good";
+        String failedTxn = "bad";
         AtomicReference<Map<AccountID, Long>> successFeesObs = new AtomicReference<>();
         AtomicReference<Map<AccountID, Long>> failureFeesObs = new AtomicReference<>();
 
@@ -1155,11 +1169,15 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
     }
 
     private HapiApiSpec scheduledXferFailingWithRepeatedTokenIdPaysServiceFeeButNoImpact() {
-        String xToken = "XXX", yToken = "YYY";
+        String xToken = "XXX";
+        String yToken = "YYY";
         String validSchedule = "withNoRepeats";
         String invalidSchedule = "withRepeats";
-        String schedulePayer = PAYER, xTreasury = "xt", yTreasury = "yt";
-        String successTxn = "good", failedTxn = "bad";
+        String schedulePayer = PAYER;
+        String xTreasury = "xt";
+        String yTreasury = "yt";
+        String successTxn = "good";
+        String failedTxn = "bad";
         AtomicReference<Map<AccountID, Long>> successFeesObs = new AtomicReference<>();
         AtomicReference<Map<AccountID, Long>> failureFeesObs = new AtomicReference<>();
 
@@ -1219,8 +1237,12 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
         String xToken = "XXX", yToken = "YYY";
         String validSchedule = "withNonEmptyTransfers";
         String invalidSchedule = "withEmptyTransfer";
-        String schedulePayer = PAYER, xTreasury = "xt", yTreasury = "yt", xyCivilian = "xyt";
-        String successTxn = "good", failedTxn = "bad";
+        String schedulePayer = PAYER;
+        String xTreasury = "xt";
+        String yTreasury = "yt";
+        String xyCivilian = "xyt";
+        String successTxn = "good";
+        String failedTxn = "bad";
         AtomicReference<Map<AccountID, Long>> successFeesObs = new AtomicReference<>();
         AtomicReference<Map<AccountID, Long>> failureFeesObs = new AtomicReference<>();
 
@@ -1286,7 +1308,8 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
         String validSchedule = "withValidSize";
         String invalidSchedule = "withInvalidSize";
         String schedulePayer = PAYER;
-        String successTxn = "good", failedTxn = "bad";
+        String successTxn = "good";
+        String failedTxn = "bad";
         AtomicReference<Map<AccountID, Long>> successFeesObs = new AtomicReference<>();
         AtomicReference<Map<AccountID, Long>> failureFeesObs = new AtomicReference<>();
         var maxValidLen =
@@ -1333,7 +1356,8 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
         String validSchedule = "withValidChunkTxnId";
         String invalidSchedule = "withInvalidChunkTxnId";
         String schedulePayer = PAYER;
-        String successTxn = "good", failedTxn = "bad";
+        String successTxn = "good";
+        String failedTxn = "bad";
         AtomicReference<Map<AccountID, Long>> successFeesObs = new AtomicReference<>();
         AtomicReference<Map<AccountID, Long>> failureFeesObs = new AtomicReference<>();
         AtomicReference<TransactionID> initialTxnId = new AtomicReference<>();
@@ -1404,7 +1428,8 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
         String validSchedule = "withValidChunkNumber";
         String invalidSchedule = "withInvalidChunkNumber";
         String schedulePayer = PAYER;
-        String successTxn = "good", failedTxn = "bad";
+        String successTxn = "good";
+        String failedTxn = "bad";
         AtomicReference<Map<AccountID, Long>> successFeesObs = new AtomicReference<>();
         AtomicReference<Map<AccountID, Long>> failureFeesObs = new AtomicReference<>();
         AtomicReference<TransactionID> initialTxnId = new AtomicReference<>();
@@ -1960,7 +1985,9 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
     public HapiApiSpec executionWithTokenInsufficientAccountBalanceFails() {
         String xToken = "XXX";
         String invalidSchedule = "withInsufficientTokenTransfer";
-        String schedulePayer = PAYER, xTreasury = "xt", civilian = "xa";
+        String schedulePayer = PAYER;
+        String xTreasury = "xt";
+        String civilian = "xa";
         String failedTxn = "bad";
         return defaultHapiSpec("ExecutionWithTokenInsufficientAccountBalanceFails")
                 .given(
@@ -2654,6 +2681,7 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
         var defaultThrottles = protoDefsFromResource("testSystemFiles/throttles-dev.json");
         var contract = "Multipurpose";
         final var minCongestionPeriod = "fees.minCongestionPeriod";
+        final var percentCongestionMultiplier = "fees.percentCongestionMultipliers";
 
         AtomicLong normalPrice = new AtomicLong();
 
@@ -2698,7 +2726,7 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
                                 .payingWith(EXCHANGE_RATE_CONTROL)
                                 .overridingProps(
                                         Map.of(
-                                                "fees.percentCongestionMultipliers",
+                                                percentCongestionMultiplier,
                                                 "1,7x",
                                                 minCongestionPeriod,
                                                 "1")),
@@ -2744,9 +2772,9 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
                                 .payingWith(EXCHANGE_RATE_CONTROL)
                                 .overridingProps(
                                         Map.of(
-                                                "fees.percentCongestionMultipliers",
+                                                percentCongestionMultiplier,
                                                 HapiSpecSetup.getDefaultNodeProps()
-                                                        .get("fees.percentCongestionMultipliers"),
+                                                        .get(percentCongestionMultiplier),
                                                 minCongestionPeriod,
                                                 HapiSpecSetup.getDefaultNodeProps()
                                                         .get(minCongestionPeriod),
