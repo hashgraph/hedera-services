@@ -15,28 +15,6 @@
  */
 package com.hedera.services.contracts.execution;
 
-/*
- * -
- * ‌
- * Hedera Services Node
- * ​
- * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
- * ​
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *       http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- * ‍
- *
- */
-
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.contracts.execution.traceability.HederaOperationTracer;
 import com.hedera.services.store.contracts.CodeCache;
@@ -68,31 +46,30 @@ public class CreateEvmTxProcessor extends EvmTxProcessor {
     private final CodeCache codeCache;
     private final StorageExpiry storageExpiry;
 
-	@Inject
-	public CreateEvmTxProcessor(
-			final HederaMutableWorldState worldState,
-			final LivePricesSource livePricesSource,
-			final CodeCache codeCache,
-			final GlobalDynamicProperties globalDynamicProperties,
-			final GasCalculator gasCalculator,
-			final Set<Operation> hederaOperations,
-			final Map<String, PrecompiledContract> precompiledContractMap,
-			final StorageExpiry storageExpiry,
-			final InHandleBlockMetaSource blockMetaSource,
-			final HederaOperationTracer hederaOperationTracer
-	) {
-		super(
-				worldState,
-				livePricesSource,
-				globalDynamicProperties,
-				gasCalculator,
-				hederaOperations,
-				precompiledContractMap,
-				blockMetaSource,
-				hederaOperationTracer);
-		this.codeCache = codeCache;
-		this.storageExpiry = storageExpiry;
-	}
+    @Inject
+    public CreateEvmTxProcessor(
+            final HederaMutableWorldState worldState,
+            final LivePricesSource livePricesSource,
+            final CodeCache codeCache,
+            final GlobalDynamicProperties globalDynamicProperties,
+            final GasCalculator gasCalculator,
+            final Set<Operation> hederaOperations,
+            final Map<String, PrecompiledContract> precompiledContractMap,
+            final StorageExpiry storageExpiry,
+            final InHandleBlockMetaSource blockMetaSource,
+            final HederaOperationTracer hederaOperationTracer) {
+        super(
+                worldState,
+                livePricesSource,
+                globalDynamicProperties,
+                gasCalculator,
+                hederaOperations,
+                precompiledContractMap,
+                blockMetaSource,
+                hederaOperationTracer);
+        this.codeCache = codeCache;
+        this.storageExpiry = storageExpiry;
+    }
 
     public TransactionProcessingResult execute(
             final Account sender,

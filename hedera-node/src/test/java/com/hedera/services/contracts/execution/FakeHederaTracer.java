@@ -23,9 +23,9 @@ import java.util.List;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 
 /**
- * A fake implementation of HederaOperationTracer for unit tests. This is needed since
- * EvmProcessor's tests need a tracer that executes the operations in traceExecution(frame,
- * operation), otherwise the tests hang.
+ * A fake implementation of a {@code HederaOperationTracer} for unit tests. This is needed since
+ * tests of {@code EvmTxProcessor} need a tracer that executes the EVM operations in
+ * {@code traceExecution(MessageFrame, ExecuteOperation)}, otherwise the tests hang.
  */
 public class FakeHederaTracer implements HederaOperationTracer {
 

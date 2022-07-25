@@ -17,9 +17,9 @@ package com.hedera.services.contracts.execution;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import com.hedera.services.contracts.execution.traceability.ContractActionType;
 import com.hedera.services.contracts.execution.traceability.SolidityAction;
 import com.hedera.services.legacy.proto.utils.ByteStringUtils;
-import com.hedera.services.contracts.execution.traceability.ContractActionType;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.stream.proto.ContractAction;
 import com.hedera.services.utils.EntityIdUtils;
@@ -39,7 +39,7 @@ class SolidityActionTest {
     ;
 
     @Test
-    void toGrpcWhenCallingAccountAndRecipientAccountAndOutput() {
+    void toGrpcWhenCallingAccountAndRecipientAccountAndOutputAreSet() {
         final var actual =
                 new SolidityAction(
                         ContractActionType.CALL,
@@ -71,7 +71,7 @@ class SolidityActionTest {
     }
 
     @Test
-    void toGrpcWhenCallingContractAndRecipientContractAndRevertReason() {
+    void toGrpcWhenCallingContractAndRecipientContractAndRevertReasonAreSet() {
         final var actual =
                 new SolidityAction(
                         ContractActionType.CALL,
@@ -105,7 +105,7 @@ class SolidityActionTest {
     }
 
     @Test
-    void toGrpcWhenInvalidRecipientAndError() {
+    void toGrpcWhenInvalidRecipientAndErrorAreSet() {
         final var actual =
                 new SolidityAction(
                         ContractActionType.CALL, null, sender, gas, input, null, null, value, 0);

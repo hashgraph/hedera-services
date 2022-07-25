@@ -65,6 +65,34 @@ class EvmFnResultTest {
             List.of(new EntityId(2L, 3L, 4L), new EntityId(3L, 4L, 5L));
     private static final List<ContractID> grpcCreatedContractIds =
             createdContractIds.stream().map(EntityId::toGrpcContractId).toList();
+    private static final EntityId[] contracts =
+            new EntityId[] {
+                new EntityId(1L, 2L, 3L), new EntityId(2L, 3L, 4L), new EntityId(3L, 4L, 5L),
+            };
+    private static final byte[][] topics =
+            new byte[][] {
+                "alpha000000000000000000000000000".getBytes(),
+                "bravo000000000000000000000000000".getBytes(),
+                "charlie0000000000000000000000000".getBytes(),
+            };
+    private static final byte[][] otherTopics =
+            new byte[][] {
+                "alpha999999999999999999999999999".getBytes(),
+                "bravo999999999999999999999999999".getBytes(),
+                "charlie9999999999999999999999999".getBytes(),
+            };
+    private static final byte[][] blooms =
+            new byte[][] {
+                "tulip".getBytes(), "lily".getBytes(), "cynthia".getBytes(),
+            };
+    private static final byte[][] data =
+            new byte[][] {
+                "one".getBytes(), "two".getBytes(), "three".getBytes(),
+            };
+    private static final Log aLog = besuLog(123L, data[0], topics);
+    private static final Log bLog = besuLog(456L, data[1], otherTopics);
+    private static final List<Log> besuLogs = List.of(aLog, bLog);
+    private static final byte[] realBloom = bloomForAll(besuLogs);
     private final List<EvmLog> logs = List.of(logFrom(0), logFrom(1));
     private final Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> stateChanges =
             new TreeMap<>(
@@ -73,8 +101,27 @@ class EvmFnResultTest {
                             Map.of(Bytes.of(7), Pair.of(Bytes.of(8), null)),
                             Address.fromHexString("0x9"),
                             Map.of(Bytes.of(10), Pair.of(Bytes.of(11), Bytes.of(12)))));
-
     private EvmFnResult subject;
+
+    private static EvmLog logFrom(final int s) {
+        return new EvmLog(contracts[s], blooms[s], List.of(topics[s], topics[s + 1 % 3]), data[s]);
+    }
+
+    private static Log besuLog(final long num, byte[] data, byte[][] topics) {
+        final var logger = EntityNum.fromLong(num);
+        final var l =
+                new Log(
+                        logger.toEvmAddress(),
+                        Bytes.wrap(data),
+                        Arrays.stream(topics)
+                                .map(bytes -> LogTopic.of(Bytes.wrap(bytes)))
+                                .toList());
+        return l;
+    }
+
+    static byte[] bloomForAll(final List<Log> logs) {
+        return LogsBloomFilter.builder().insertLogs(logs).build().toArray();
+    }
 
     @BeforeEach
     void setup() {
@@ -128,11 +175,15 @@ class EvmFnResultTest {
                         new byte[0],
                         null);
 
-		final var input = TransactionProcessingResult.failed(
-				gasUsed, 0, 0,
-				Optional.of(HederaMessageCallProcessor.INVALID_TRANSFER),
-				Optional.empty(),
-				Collections.emptyMap(), Collections.emptyList());
+        final var input =
+                TransactionProcessingResult.failed(
+                        gasUsed,
+                        0,
+                        0,
+                        Optional.of(HederaMessageCallProcessor.INVALID_TRANSFER),
+                        Optional.empty(),
+                        Collections.emptyMap(),
+                        Collections.emptyList());
 
         final var actual = EvmFnResult.fromCall(input);
 
@@ -156,14 +207,17 @@ class EvmFnResultTest {
                         new byte[0],
                         null);
 
-		final var input = TransactionProcessingResult.successful(
-				besuLogs,
-				gasUsed, 0, 0,
-				Bytes.wrap(result),
-				recipient,
-				Collections.emptyMap(),
-				Collections.emptyList());
-		input.setCreatedContracts(grpcCreatedContractIds);
+        final var input =
+                TransactionProcessingResult.successful(
+                        besuLogs,
+                        gasUsed,
+                        0,
+                        0,
+                        Bytes.wrap(result),
+                        recipient,
+                        Collections.emptyMap(),
+                        Collections.emptyList());
+        input.setCreatedContracts(grpcCreatedContractIds);
 
         final var actual = EvmFnResult.fromCall(input);
 
@@ -196,14 +250,17 @@ class EvmFnResultTest {
                         new byte[0],
                         null);
 
-		final var input = TransactionProcessingResult.successful(
-				besuLogs,
-				gasUsed, 0, 0,
-				Bytes.wrap(result),
-				recipient,
-				Collections.emptyMap(),
-				Collections.emptyList());
-		input.setCreatedContracts(grpcCreatedContractIds);
+        final var input =
+                TransactionProcessingResult.successful(
+                        besuLogs,
+                        gasUsed,
+                        0,
+                        0,
+                        Bytes.wrap(result),
+                        recipient,
+                        Collections.emptyMap(),
+                        Collections.emptyList());
+        input.setCreatedContracts(grpcCreatedContractIds);
 
         final var actual = EvmFnResult.fromCreate(input, evmAddress);
 
@@ -536,59 +593,5 @@ class EvmFnResultTest {
         assertEquals(3, subject.getAmount());
         assertArrayEquals(oneByte, subject.getFunctionParameters());
         assertEquals(senderId, subject.getSenderId());
-    }
-
-    private static EvmLog logFrom(final int s) {
-        return new EvmLog(contracts[s], blooms[s], List.of(topics[s], topics[s + 1 % 3]), data[s]);
-    }
-
-    private static final EntityId[] contracts =
-            new EntityId[] {
-                new EntityId(1L, 2L, 3L), new EntityId(2L, 3L, 4L), new EntityId(3L, 4L, 5L),
-            };
-
-    private static final byte[][] topics =
-            new byte[][] {
-                "alpha000000000000000000000000000".getBytes(),
-                "bravo000000000000000000000000000".getBytes(),
-                "charlie0000000000000000000000000".getBytes(),
-            };
-
-    private static final byte[][] otherTopics =
-            new byte[][] {
-                "alpha999999999999999999999999999".getBytes(),
-                "bravo999999999999999999999999999".getBytes(),
-                "charlie9999999999999999999999999".getBytes(),
-            };
-
-    private static final byte[][] blooms =
-            new byte[][] {
-                "tulip".getBytes(), "lily".getBytes(), "cynthia".getBytes(),
-            };
-
-    private static final byte[][] data =
-            new byte[][] {
-                "one".getBytes(), "two".getBytes(), "three".getBytes(),
-            };
-
-    private static final Log aLog = besuLog(123L, data[0], topics);
-    private static final Log bLog = besuLog(456L, data[1], otherTopics);
-    private static final List<Log> besuLogs = List.of(aLog, bLog);
-    private static final byte[] realBloom = bloomForAll(besuLogs);
-
-    private static Log besuLog(final long num, byte[] data, byte[][] topics) {
-        final var logger = EntityNum.fromLong(num);
-        final var l =
-                new Log(
-                        logger.toEvmAddress(),
-                        Bytes.wrap(data),
-                        Arrays.stream(topics)
-                                .map(bytes -> LogTopic.of(Bytes.wrap(bytes)))
-                                .toList());
-        return l;
-    }
-
-    static byte[] bloomForAll(final List<Log> logs) {
-        return LogsBloomFilter.builder().insertLogs(logs).build().toArray();
     }
 }

@@ -65,14 +65,26 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class TransactionRecordServiceTest {
-	private static final Long GAS_USED = 1234L;
-	private static final Long SBH_REFUND = 234L;
-	private static final Long NON_THRESHOLD_FEE = GAS_USED - SBH_REFUND;
-	private static final Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> stateChanges =
-			new TreeMap<>(Map.of(Address.fromHexString("0x9"), Map.of(Bytes.of(10), Pair.of(Bytes.of(11), Bytes.of(12)))));
-	private static final List<SolidityAction> actions =
-			List.of(new SolidityAction(ContractActionType.CALL, EntityId.fromAddress(Address.ALTBN128_ADD),
-					null, 100, null, null, EntityId.fromAddress(Address.BLS12_PAIRING), 55, 0));
+    private static final Long GAS_USED = 1234L;
+    private static final Long SBH_REFUND = 234L;
+    private static final Long NON_THRESHOLD_FEE = GAS_USED - SBH_REFUND;
+    private static final Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> stateChanges =
+            new TreeMap<>(
+                    Map.of(
+                            Address.fromHexString("0x9"),
+                            Map.of(Bytes.of(10), Pair.of(Bytes.of(11), Bytes.of(12)))));
+    private static final List<SolidityAction> actions =
+            List.of(
+                    new SolidityAction(
+                            ContractActionType.CALL,
+                            EntityId.fromAddress(Address.ALTBN128_ADD),
+                            null,
+                            100,
+                            null,
+                            null,
+                            EntityId.fromAddress(Address.BLS12_PAIRING),
+                            55,
+                            0));
 
     @Mock private TransactionContext txnCtx;
     @Mock private TransactionProcessingResult processingResult;
@@ -121,8 +133,8 @@ class TransactionRecordServiceTest {
         given(processingResult.getRecipient()).willReturn(recipient);
         given(processingResult.getOutput()).willReturn(Bytes.fromHexStringLenient("0xabcd"));
         given(processingResult.getStateChanges()).willReturn(stateChanges);
-				given(processingResult.getActions()).willReturn(actions);
-				final var contractBytecodeSidecar =
+        given(processingResult.getActions()).willReturn(actions);
+        final var contractBytecodeSidecar =
                 SidecarUtils.createContractBytecodeSidecarFrom(
                         IdUtils.asContract("0.0.5"),
                         "initCode".getBytes(),
@@ -131,52 +143,60 @@ class TransactionRecordServiceTest {
         // when:
         subject.externalizeSuccessfulEvmCreate(processingResult, mockAddr, contractBytecodeSidecar);
 
-		// then:
-		verify(txnCtx).setStatus(SUCCESS);
-		verify(txnCtx).setCreateResult(captor.capture());
-		verify(txnCtx).addFeeChargedToPayer(NON_THRESHOLD_FEE);
-		assertArrayEquals(mockAddr, captor.getValue().getEvmAddress());
-		verify(txnCtx, times(3)).addSidecarRecord(contextCaptor.capture());
-		final var sidecars = contextCaptor.getAllValues();
-		assertEquals(3, sidecars.size());
-		assertEquals(SidecarUtils.createStateChangesSidecarFrom(stateChanges).build(), sidecars.get(0).build());
-		assertEquals(SidecarUtils.createContractActionsSidecar(actions).build(), sidecars.get(1).build());
-		assertEquals(contractBytecodeSidecar.build(), sidecars.get(2).build());
-	}
+        // then:
+        verify(txnCtx).setStatus(SUCCESS);
+        verify(txnCtx).setCreateResult(captor.capture());
+        verify(txnCtx).addFeeChargedToPayer(NON_THRESHOLD_FEE);
+        assertArrayEquals(mockAddr, captor.getValue().getEvmAddress());
+        verify(txnCtx, times(3)).addSidecarRecord(contextCaptor.capture());
+        final var sidecars = contextCaptor.getAllValues();
+        assertEquals(3, sidecars.size());
+        assertEquals(
+                SidecarUtils.createStateChangesSidecarFrom(stateChanges).build(),
+                sidecars.get(0).build());
+        assertEquals(
+                SidecarUtils.createContractActionsSidecar(actions).build(),
+                sidecars.get(1).build());
+        assertEquals(contractBytecodeSidecar.build(), sidecars.get(2).build());
+    }
 
-	@Test
-	void externalisesEvmCallTransactionWithSidecarsSuccessfully() {
-		// given:
-		givenProcessingResult(true, null);
-		final var recipient = Optional.of(EntityNum.fromLong(1234).toEvmAddress());
-		given(processingResult.getRecipient()).willReturn(recipient);
-		given(processingResult.getOutput()).willReturn(Bytes.fromHexStringLenient("0xabcd"));
-		given(processingResult.getStateChanges()).willReturn(stateChanges);
-		given(processingResult.getActions()).willReturn(actions);
-		final var contextCaptor = ArgumentCaptor.forClass(TransactionSidecarRecord.Builder.class);
+    @Test
+    void externalisesEvmCallTransactionWithSidecarsSuccessfully() {
+        // given:
+        givenProcessingResult(true, null);
+        final var recipient = Optional.of(EntityNum.fromLong(1234).toEvmAddress());
+        given(processingResult.getRecipient()).willReturn(recipient);
+        given(processingResult.getOutput()).willReturn(Bytes.fromHexStringLenient("0xabcd"));
+        given(processingResult.getStateChanges()).willReturn(stateChanges);
+        given(processingResult.getActions()).willReturn(actions);
+        final var contextCaptor = ArgumentCaptor.forClass(TransactionSidecarRecord.Builder.class);
 
-		// when:
-		subject.externaliseEvmCallTransaction(processingResult);
-		// then:
-		verify(txnCtx).setStatus(SUCCESS);
-		verify(txnCtx).setCallResult(any());
-		verify(txnCtx).addFeeChargedToPayer(NON_THRESHOLD_FEE);
-		verify(txnCtx, times(2)).addSidecarRecord(contextCaptor.capture());
-		final var sidecars = contextCaptor.getAllValues();
-		assertEquals(2, sidecars.size());
-		assertEquals(SidecarUtils.createStateChangesSidecarFrom(stateChanges).build(), sidecars.get(0).build());
-		assertEquals(SidecarUtils.createContractActionsSidecar(actions).build(), sidecars.get(1).build());
-	}
+        // when:
+        subject.externaliseEvmCallTransaction(processingResult);
+        // then:
+        verify(txnCtx).setStatus(SUCCESS);
+        verify(txnCtx).setCallResult(any());
+        verify(txnCtx).addFeeChargedToPayer(NON_THRESHOLD_FEE);
+        verify(txnCtx, times(2)).addSidecarRecord(contextCaptor.capture());
+        final var sidecars = contextCaptor.getAllValues();
+        assertEquals(2, sidecars.size());
+        assertEquals(
+                SidecarUtils.createStateChangesSidecarFrom(stateChanges).build(),
+                sidecars.get(0).build());
+        assertEquals(
+                SidecarUtils.createContractActionsSidecar(actions).build(),
+                sidecars.get(1).build());
+    }
 
-	@Test
-	void externalisesEvmCallTransactionWithoutSidecarsSuccessfully() {
-		// given:
-		givenProcessingResult(true, null);
-		final var recipient = Optional.of(EntityNum.fromLong(1234).toEvmAddress());
-		given(processingResult.getRecipient()).willReturn(recipient);
-		given(processingResult.getOutput()).willReturn(Bytes.fromHexStringLenient("0xabcd"));
-		given(processingResult.getStateChanges()).willReturn(Collections.emptyMap());
-		given(processingResult.getActions()).willReturn(Collections.emptyList());
+    @Test
+    void externalisesEvmCallTransactionWithoutSidecarsSuccessfully() {
+        // given:
+        givenProcessingResult(true, null);
+        final var recipient = Optional.of(EntityNum.fromLong(1234).toEvmAddress());
+        given(processingResult.getRecipient()).willReturn(recipient);
+        given(processingResult.getOutput()).willReturn(Bytes.fromHexStringLenient("0xabcd"));
+        given(processingResult.getStateChanges()).willReturn(Collections.emptyMap());
+        given(processingResult.getActions()).willReturn(Collections.emptyList());
 
         // when:
         subject.externaliseEvmCallTransaction(processingResult);

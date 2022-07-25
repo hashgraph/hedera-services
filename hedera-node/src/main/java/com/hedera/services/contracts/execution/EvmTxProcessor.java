@@ -112,24 +112,23 @@ abstract class EvmTxProcessor {
 		private final HederaOperationTracer hederaTracer;
 		protected final GlobalDynamicProperties dynamicProperties;
 
-	protected EvmTxProcessor(
-			final LivePricesSource livePricesSource,
-			final GlobalDynamicProperties dynamicProperties,
-			final GasCalculator gasCalculator,
-			final Set<Operation> hederaOperations,
-			final Map<String, PrecompiledContract> precompiledContractMap,
-			final HederaOperationTracer hederaOperationTracer
-	) {
-		this(
-				null,
-				livePricesSource,
-				dynamicProperties,
-				gasCalculator,
-				hederaOperations,
-				precompiledContractMap,
-				null,
-				hederaOperationTracer);
-	}
+    protected EvmTxProcessor(
+            final LivePricesSource livePricesSource,
+            final GlobalDynamicProperties dynamicProperties,
+            final GasCalculator gasCalculator,
+            final Set<Operation> hederaOperations,
+            final Map<String, PrecompiledContract> precompiledContractMap,
+            final HederaOperationTracer hederaOperationTracer) {
+        this(
+                null,
+                livePricesSource,
+                dynamicProperties,
+                gasCalculator,
+                hederaOperations,
+                precompiledContractMap,
+                null,
+                hederaOperationTracer);
+    }
 
     protected void setBlockMetaSource(final BlockMetaSource blockMetaSource) {
         this.blockMetaSource = blockMetaSource;
@@ -139,21 +138,20 @@ abstract class EvmTxProcessor {
         this.worldState = worldState;
     }
 
-	protected EvmTxProcessor(
-			final HederaMutableWorldState worldState,
-			final LivePricesSource livePricesSource,
-			final GlobalDynamicProperties dynamicProperties,
-			final GasCalculator gasCalculator,
-			final Set<Operation> hederaOperations,
-			final Map<String, PrecompiledContract> precompiledContractMap,
-			final BlockMetaSource blockMetaSource,
-			final HederaOperationTracer hederaTracer
-	) {
-		this.worldState = worldState;
-		this.livePricesSource = livePricesSource;
-		this.dynamicProperties = dynamicProperties;
-		this.gasCalculator = gasCalculator;
-		this.hederaTracer = hederaTracer;
+    protected EvmTxProcessor(
+            final HederaMutableWorldState worldState,
+            final LivePricesSource livePricesSource,
+            final GlobalDynamicProperties dynamicProperties,
+            final GasCalculator gasCalculator,
+            final Set<Operation> hederaOperations,
+            final Map<String, PrecompiledContract> precompiledContractMap,
+            final BlockMetaSource blockMetaSource,
+            final HederaOperationTracer hederaTracer) {
+        this.worldState = worldState;
+        this.livePricesSource = livePricesSource;
+        this.dynamicProperties = dynamicProperties;
+        this.gasCalculator = gasCalculator;
+        this.hederaTracer = hederaTracer;
 
         operationRegistry = new OperationRegistry();
         // We always register the latest ChainIdOperation before any execute(), so use ZERO here
@@ -319,10 +317,11 @@ abstract class EvmTxProcessor {
                 buildInitialFrame(commonInitialFrame, receiver, payload, value);
         messageFrameStack.addFirst(initialFrame);
 
-		hederaTracer.reset(dynamicProperties.enabledSidecars().contains(SidecarType.CONTRACT_ACTION));
-		while (!messageFrameStack.isEmpty()) {
-			process(messageFrameStack.peekFirst(), hederaTracer);
-		}
+        hederaTracer.reset(
+                dynamicProperties.enabledSidecars().contains(SidecarType.CONTRACT_ACTION));
+        while (!messageFrameStack.isEmpty()) {
+            process(messageFrameStack.peekFirst(), hederaTracer);
+        }
 
         var gasUsedByTransaction = calculateGasUsedByTX(gasLimit, initialFrame);
         final long sbhRefund = updater.getSbhRefund();
@@ -366,27 +365,27 @@ abstract class EvmTxProcessor {
             updater.commit();
         }
 
-		// Externalise result
-		if (initialFrame.getState() == MessageFrame.State.COMPLETED_SUCCESS) {
-			return TransactionProcessingResult.successful(
-					initialFrame.getLogs(),
-					gasUsedByTransaction,
-					sbhRefund,
-					gasPrice,
-					initialFrame.getOutputData(),
-					mirrorReceiver,
-					stateChanges,
-					hederaTracer.getActions());
-		} else {
-			return TransactionProcessingResult.failed(
-					gasUsedByTransaction,
-					sbhRefund,
-					gasPrice,
-					initialFrame.getRevertReason(),
-					initialFrame.getExceptionalHaltReason(),
-					stateChanges,
-					hederaTracer.getActions());
-		}
+        // Externalise result
+        if (initialFrame.getState() == MessageFrame.State.COMPLETED_SUCCESS) {
+            return TransactionProcessingResult.successful(
+                    initialFrame.getLogs(),
+                    gasUsedByTransaction,
+                    sbhRefund,
+                    gasPrice,
+                    initialFrame.getOutputData(),
+                    mirrorReceiver,
+                    stateChanges,
+                    hederaTracer.getActions());
+        } else {
+            return TransactionProcessingResult.failed(
+                    gasUsedByTransaction,
+                    sbhRefund,
+                    gasPrice,
+                    initialFrame.getRevertReason(),
+                    initialFrame.getExceptionalHaltReason(),
+                    stateChanges,
+                    hederaTracer.getActions());
+        }
 	}
 
     private void ensureLatestChainId() {

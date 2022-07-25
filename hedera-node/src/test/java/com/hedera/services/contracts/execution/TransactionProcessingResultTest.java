@@ -15,28 +15,6 @@
  */
 package com.hedera.services.contracts.execution;
 
-/*
- * -
- * ‌
- * Hedera Services Node
- * ​
- * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
- * ​
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *       http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- * ‍
- *
- */
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -45,11 +23,11 @@ import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Collections;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 import org.hyperledger.besu.evm.log.Log;
@@ -58,14 +36,6 @@ import org.hyperledger.besu.evm.log.LogsBloomFilter;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @ExtendWith(MockitoExtension.class)
 class TransactionProcessingResultTest {
@@ -122,16 +92,17 @@ class TransactionProcessingResultTest {
                 EntityIdUtils.contractIdFromEvmAddress(recipient.getId().asEvmAddress().toArray()));
         expect.addAllCreatedContractIDs(listOfCreatedContracts);
 
-		var result = TransactionProcessingResult.successful(
-				logList,
-				GAS_USAGE,
-				GAS_REFUND,
-				1234L,
-				Bytes.EMPTY,
-				recipient.getId().asEvmAddress(),
-				Collections.emptyMap(),
-				Collections.emptyList());
-		result.setCreatedContracts(listOfCreatedContracts);
+        var result =
+                TransactionProcessingResult.successful(
+                        logList,
+                        GAS_USAGE,
+                        GAS_REFUND,
+                        1234L,
+                        Bytes.EMPTY,
+                        recipient.getId().asEvmAddress(),
+                        Collections.emptyMap(),
+                        Collections.emptyList());
+        result.setCreatedContracts(listOfCreatedContracts);
 
         assertEquals(expect.getGasUsed(), result.getGasUsed());
 
@@ -170,8 +141,15 @@ class TransactionProcessingResultTest {
                 EntityIdUtils.contractIdFromEvmAddress(recipient.getId().asEvmAddress().toArray()));
         expect.setErrorMessageBytes(ByteString.copyFrom(revertReason.get().toArray()));
 
-		var result = TransactionProcessingResult.failed(GAS_USAGE, GAS_REFUND, GAS_PRICE, revertReason,
-				Optional.of(exception),Map.of(), new ArrayList<>());
+        var result =
+                TransactionProcessingResult.failed(
+                        GAS_USAGE,
+                        GAS_REFUND,
+                        GAS_PRICE,
+                        revertReason,
+                        Optional.of(exception),
+                        Map.of(),
+                        new ArrayList<>());
 
         assertEquals(expect.getGasUsed(), result.getGasUsed());
         assertEquals(GAS_PRICE, result.getGasPrice());
@@ -180,62 +158,66 @@ class TransactionProcessingResultTest {
         assertEquals(revertReason.get().toString(), result.toGrpc().getErrorMessage());
     }
 
-	@Test
-	void assertGasPrice() {
-		var result = TransactionProcessingResult.successful(
-				List.of(log),
-				GAS_USAGE,
-				GAS_REFUND,
-				GAS_PRICE,
-				Bytes.EMPTY,
-				recipient.getId().asEvmAddress(),
-				Map.of(),
-				new ArrayList<>());
+    @Test
+    void assertGasPrice() {
+        var result =
+                TransactionProcessingResult.successful(
+                        List.of(log),
+                        GAS_USAGE,
+                        GAS_REFUND,
+                        GAS_PRICE,
+                        Bytes.EMPTY,
+                        recipient.getId().asEvmAddress(),
+                        Map.of(),
+                        new ArrayList<>());
 
         assertEquals(GAS_PRICE, result.getGasPrice());
     }
 
-	@Test
-	void assertSbhRefund() {
-		var result = TransactionProcessingResult.successful(
-				List.of(log),
-				GAS_USAGE,
-				GAS_REFUND,
-				GAS_PRICE,
-				Bytes.EMPTY,
-				recipient.getId().asEvmAddress(),
-				Map.of(),
-				new ArrayList<>());
+    @Test
+    void assertSbhRefund() {
+        var result =
+                TransactionProcessingResult.successful(
+                        List.of(log),
+                        GAS_USAGE,
+                        GAS_REFUND,
+                        GAS_PRICE,
+                        Bytes.EMPTY,
+                        recipient.getId().asEvmAddress(),
+                        Map.of(),
+                        new ArrayList<>());
 
         assertEquals(GAS_REFUND, result.getSbhRefund());
     }
 
-	@Test
-	void assertGasUsage() {
-		var result = TransactionProcessingResult.successful(
-				List.of(log),
-				GAS_USAGE,
-				GAS_REFUND,
-				GAS_PRICE,
-				Bytes.EMPTY,
-				recipient.getId().asEvmAddress(),
-				Map.of(),
-				new ArrayList<>());
+    @Test
+    void assertGasUsage() {
+        var result =
+                TransactionProcessingResult.successful(
+                        List.of(log),
+                        GAS_USAGE,
+                        GAS_REFUND,
+                        GAS_PRICE,
+                        Bytes.EMPTY,
+                        recipient.getId().asEvmAddress(),
+                        Map.of(),
+                        new ArrayList<>());
 
         assertEquals(GAS_USAGE, result.getGasUsed());
     }
 
-	@Test
-	void assertSuccessfulStatus() {
-		var result = TransactionProcessingResult.successful(
-				List.of(log),
-				GAS_USAGE,
-				GAS_REFUND,
-				GAS_PRICE,
-				Bytes.EMPTY,
-				recipient.getId().asEvmAddress(),
-				Map.of(),
-				new ArrayList<>());
+    @Test
+    void assertSuccessfulStatus() {
+        var result =
+                TransactionProcessingResult.successful(
+                        List.of(log),
+                        GAS_USAGE,
+                        GAS_REFUND,
+                        GAS_PRICE,
+                        Bytes.EMPTY,
+                        recipient.getId().asEvmAddress(),
+                        Map.of(),
+                        new ArrayList<>());
 
         assertTrue(result.isSuccessful());
     }

@@ -46,33 +46,32 @@ public class CallEvmTxProcessor extends EvmTxProcessor {
     private final AliasManager aliasManager;
     private final StorageExpiry storageExpiry;
 
-	@Inject
-	public CallEvmTxProcessor(
-			final HederaMutableWorldState worldState,
-			final LivePricesSource livePricesSource,
-			final CodeCache codeCache,
-			final GlobalDynamicProperties dynamicProperties,
-			final GasCalculator gasCalculator,
-			final Set<Operation> hederaOperations,
-			final Map<String, PrecompiledContract> precompiledContractMap,
-			final AliasManager aliasManager,
-			final StorageExpiry storageExpiry,
-			final InHandleBlockMetaSource blockMetaSource,
-			final HederaOperationTracer hederaOperationTracer
-	) {
-		super(
-				worldState,
-				livePricesSource,
-				dynamicProperties,
-				gasCalculator,
-				hederaOperations,
-				precompiledContractMap,
-				blockMetaSource,
-				hederaOperationTracer);
-		this.codeCache = codeCache;
-		this.aliasManager = aliasManager;
-		this.storageExpiry = storageExpiry;
-	}
+    @Inject
+    public CallEvmTxProcessor(
+            final HederaMutableWorldState worldState,
+            final LivePricesSource livePricesSource,
+            final CodeCache codeCache,
+            final GlobalDynamicProperties dynamicProperties,
+            final GasCalculator gasCalculator,
+            final Set<Operation> hederaOperations,
+            final Map<String, PrecompiledContract> precompiledContractMap,
+            final AliasManager aliasManager,
+            final StorageExpiry storageExpiry,
+            final InHandleBlockMetaSource blockMetaSource,
+            final HederaOperationTracer hederaOperationTracer) {
+        super(
+                worldState,
+                livePricesSource,
+                dynamicProperties,
+                gasCalculator,
+                hederaOperations,
+                precompiledContractMap,
+                blockMetaSource,
+                hederaOperationTracer);
+        this.codeCache = codeCache;
+        this.aliasManager = aliasManager;
+        this.storageExpiry = storageExpiry;
+    }
 
     public TransactionProcessingResult execute(
             final Account sender,

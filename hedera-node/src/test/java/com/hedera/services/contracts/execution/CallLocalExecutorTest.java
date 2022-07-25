@@ -88,10 +88,17 @@ class CallLocalExecutorTest {
         given(aliasManager.lookupIdBy(target.getEvmAddress()))
                 .willReturn(EntityNum.fromLong(contractID.num()));
 
-		final var transactionProcessingResult = TransactionProcessingResult
-				.successful(new ArrayList<>(), 0, 0, 1, Bytes.EMPTY,
-						callerID.asEvmAddress(), new TreeMap<>(), new ArrayList<>());
-		final var expected = response(OK, transactionProcessingResult);
+        final var transactionProcessingResult =
+                TransactionProcessingResult.successful(
+                        new ArrayList<>(),
+                        0,
+                        0,
+                        1,
+                        Bytes.EMPTY,
+                        callerID.asEvmAddress(),
+                        new TreeMap<>(),
+                        new ArrayList<>());
+        final var expected = response(OK, transactionProcessingResult);
 
         given(accountStore.loadAccount(any())).willReturn(new Account(callerID));
         given(accountStore.loadContract(contractID)).willReturn(new Account(contractID));
@@ -117,10 +124,17 @@ class CallLocalExecutorTest {
         given(aliasManager.lookupIdBy(sender.getAlias()))
                 .willReturn(EntityNum.fromLong(senderID.num()));
 
-		final var transactionProcessingResult = TransactionProcessingResult
-				.successful(new ArrayList<>(), 0, 0, 1, Bytes.EMPTY,
-						callerID.asEvmAddress(), new TreeMap<>(), new ArrayList<>());
-		final var expected = response(OK,transactionProcessingResult);
+        final var transactionProcessingResult =
+                TransactionProcessingResult.successful(
+                        new ArrayList<>(),
+                        0,
+                        0,
+                        1,
+                        Bytes.EMPTY,
+                        callerID.asEvmAddress(),
+                        new TreeMap<>(),
+                        new ArrayList<>());
+        final var expected = response(OK, transactionProcessingResult);
 
         given(accountStore.loadAccount(any())).willReturn(new Account(callerID));
         given(accountStore.loadContract(contractID)).willReturn(new Account(contractID));
@@ -136,13 +150,20 @@ class CallLocalExecutorTest {
         assertEquals(expected, result);
     }
 
-	@Test
-	void processingSuccessful() {
-		// setup:
-		final var transactionProcessingResult = TransactionProcessingResult
-				.successful(new ArrayList<>(), 0, 0, 1, Bytes.EMPTY, callerID.asEvmAddress(),
-						Collections.emptyMap(), new ArrayList<>());
-		final var expected = response(OK, transactionProcessingResult);
+    @Test
+    void processingSuccessful() {
+        // setup:
+        final var transactionProcessingResult =
+                TransactionProcessingResult.successful(
+                        new ArrayList<>(),
+                        0,
+                        0,
+                        1,
+                        Bytes.EMPTY,
+                        callerID.asEvmAddress(),
+                        Collections.emptyMap(),
+                        new ArrayList<>());
+        final var expected = response(OK, transactionProcessingResult);
 
         given(accountStore.loadAccount(any())).willReturn(new Account(callerID));
         given(accountStore.loadContract(any())).willReturn(new Account(contractID));
@@ -158,13 +179,20 @@ class CallLocalExecutorTest {
         assertEquals(expected, result);
     }
 
-	@Test
-	void processingSuccessfulCallingToken() {
-		// setup:
-		final var transactionProcessingResult = TransactionProcessingResult
-				.successful(new ArrayList<>(), 0, 0, 1, Bytes.EMPTY, callerID.asEvmAddress(),
-						Collections.emptyMap(), new ArrayList<>());
-		final var expected = response(OK, transactionProcessingResult);
+    @Test
+    void processingSuccessfulCallingToken() {
+        // setup:
+        final var transactionProcessingResult =
+                TransactionProcessingResult.successful(
+                        new ArrayList<>(),
+                        0,
+                        0,
+                        1,
+                        Bytes.EMPTY,
+                        callerID.asEvmAddress(),
+                        Collections.emptyMap(),
+                        new ArrayList<>());
+        final var expected = response(OK, transactionProcessingResult);
 
         given(entityAccess.isTokenAccount(any())).willReturn(true);
         given(evmTxProcessor.execute(any(), any(), anyLong(), anyLong(), any(), any()))
@@ -179,13 +207,20 @@ class CallLocalExecutorTest {
         assertEquals(expected, result);
     }
 
-	@Test
-	void processingReturnsModificationHaltReason() {
-		// setup:
-		final var transactionProcessingResult = TransactionProcessingResult
-				.failed(0, 0, 1, Optional.empty(),
-						Optional.of(ExceptionalHaltReason.ILLEGAL_STATE_CHANGE), Collections.emptyMap(), Collections.emptyList());
-		final var expected = response(LOCAL_CALL_MODIFICATION_EXCEPTION, transactionProcessingResult);
+    @Test
+    void processingReturnsModificationHaltReason() {
+        // setup:
+        final var transactionProcessingResult =
+                TransactionProcessingResult.failed(
+                        0,
+                        0,
+                        1,
+                        Optional.empty(),
+                        Optional.of(ExceptionalHaltReason.ILLEGAL_STATE_CHANGE),
+                        Collections.emptyMap(),
+                        Collections.emptyList());
+        final var expected =
+                response(LOCAL_CALL_MODIFICATION_EXCEPTION, transactionProcessingResult);
 
         given(accountStore.loadAccount(any())).willReturn(new Account(callerID));
         given(accountStore.loadContract(any())).willReturn(new Account(contractID));
@@ -201,13 +236,19 @@ class CallLocalExecutorTest {
         assertEquals(expected, result);
     }
 
-	@Test
-	void processingReturnsInvalidSolidityAddressHaltReason() {
-		// setup:
-		final var transactionProcessingResult = TransactionProcessingResult
-				.failed(0, 0, 1, Optional.empty(),
-						Optional.of(HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS), Collections.emptyMap(),  Collections.emptyList());
-		final var expected = response(INVALID_SOLIDITY_ADDRESS, transactionProcessingResult);
+    @Test
+    void processingReturnsInvalidSolidityAddressHaltReason() {
+        // setup:
+        final var transactionProcessingResult =
+                TransactionProcessingResult.failed(
+                        0,
+                        0,
+                        1,
+                        Optional.empty(),
+                        Optional.of(HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS),
+                        Collections.emptyMap(),
+                        Collections.emptyList());
+        final var expected = response(INVALID_SOLIDITY_ADDRESS, transactionProcessingResult);
 
         given(accountStore.loadAccount(any())).willReturn(new Account(callerID));
         given(accountStore.loadContract(any())).willReturn(new Account(contractID));
@@ -223,13 +264,19 @@ class CallLocalExecutorTest {
         assertEquals(expected, result);
     }
 
-	@Test
-	void processingReturnsRevertReason() {
-		// setup:
-		final var transactionProcessingResult = TransactionProcessingResult
-				.failed(0, 0, 1, Optional.of(Bytes.of("out of gas".getBytes())),
-						Optional.empty(), Collections.emptyMap(), Collections.emptyList());
-		final var expected = response(CONTRACT_REVERT_EXECUTED, transactionProcessingResult);
+    @Test
+    void processingReturnsRevertReason() {
+        // setup:
+        final var transactionProcessingResult =
+                TransactionProcessingResult.failed(
+                        0,
+                        0,
+                        1,
+                        Optional.of(Bytes.of("out of gas".getBytes())),
+                        Optional.empty(),
+                        Collections.emptyMap(),
+                        Collections.emptyList());
+        final var expected = response(CONTRACT_REVERT_EXECUTED, transactionProcessingResult);
 
         given(accountStore.loadAccount(any())).willReturn(new Account(callerID));
         given(accountStore.loadContract(any())).willReturn(new Account(contractID));

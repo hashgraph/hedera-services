@@ -25,16 +25,6 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 
-import static com.hedera.test.utils.TxnUtils.assertFailsWith;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.mock;
-
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.store.contracts.CodeCache;
@@ -98,9 +88,17 @@ class CallLocalEvmTxProcessorTest {
     private void setup() {
         CommonProcessorSetup.setup(gasCalculator);
 
-		callLocalEvmTxProcessor = new CallLocalEvmTxProcessor(
-				codeCache, livePricesSource, globalDynamicProperties,
-				gasCalculator, operations, precompiledContractMap, aliasManager, storageExpiry, new FakeHederaTracer());
+        callLocalEvmTxProcessor =
+                new CallLocalEvmTxProcessor(
+                        codeCache,
+                        livePricesSource,
+                        globalDynamicProperties,
+                        gasCalculator,
+                        operations,
+                        precompiledContractMap,
+                        aliasManager,
+                        storageExpiry,
+                        new FakeHederaTracer());
 
         callLocalEvmTxProcessor.setWorldState(worldState);
         callLocalEvmTxProcessor.setBlockMetaSource(blockMetaSource);

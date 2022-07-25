@@ -48,29 +48,28 @@ public class CallLocalEvmTxProcessor extends EvmTxProcessor {
     private final AliasManager aliasManager;
     private final StorageExpiry storageExpiry;
 
-	@Inject
-	public CallLocalEvmTxProcessor(
-			final CodeCache codeCache,
-			final LivePricesSource livePricesSource,
-			final GlobalDynamicProperties dynamicProperties,
-			final GasCalculator gasCalculator,
-			final Set<Operation> hederaOperations,
-			final Map<String, PrecompiledContract> precompiledContractMap,
-			final AliasManager aliasManager,
-			final StorageExpiry storageExpiry,
-			final HederaOperationTracer hederaOperationTracer
-	) {
-		super(
-				livePricesSource,
-				dynamicProperties,
-				gasCalculator,
-				hederaOperations,
-				precompiledContractMap,
-				hederaOperationTracer);
-		this.codeCache = codeCache;
-		this.aliasManager = aliasManager;
-		this.storageExpiry = storageExpiry;
-	}
+    @Inject
+    public CallLocalEvmTxProcessor(
+            final CodeCache codeCache,
+            final LivePricesSource livePricesSource,
+            final GlobalDynamicProperties dynamicProperties,
+            final GasCalculator gasCalculator,
+            final Set<Operation> hederaOperations,
+            final Map<String, PrecompiledContract> precompiledContractMap,
+            final AliasManager aliasManager,
+            final StorageExpiry storageExpiry,
+            final HederaOperationTracer hederaOperationTracer) {
+        super(
+                livePricesSource,
+                dynamicProperties,
+                gasCalculator,
+                hederaOperations,
+                precompiledContractMap,
+                hederaOperationTracer);
+        this.codeCache = codeCache;
+        this.aliasManager = aliasManager;
+        this.storageExpiry = storageExpiry;
+    }
 
     @Override
     public void setWorldState(final HederaMutableWorldState worldState) {

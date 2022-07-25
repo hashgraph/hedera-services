@@ -27,18 +27,6 @@ import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
-import static com.hedera.test.utils.TxnUtils.assertFailsWith;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_GAS;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.store.contracts.CodeCache;
 import com.hedera.services.store.contracts.HederaWorldState;
@@ -105,10 +93,18 @@ class CreateEvmTxProcessorTest {
     private void setup() {
         CommonProcessorSetup.setup(gasCalculator);
 
-		createEvmTxProcessor = new CreateEvmTxProcessor(
-				worldState,
-				livePricesSource, codeCache, globalDynamicProperties,
-				gasCalculator, operations, precompiledContractMap, storageExpiry, blockMetaSource, new FakeHederaTracer());
+        createEvmTxProcessor =
+                new CreateEvmTxProcessor(
+                        worldState,
+                        livePricesSource,
+                        codeCache,
+                        globalDynamicProperties,
+                        gasCalculator,
+                        operations,
+                        precompiledContractMap,
+                        storageExpiry,
+                        blockMetaSource,
+                        new FakeHederaTracer());
 	}
 
     @Test
