@@ -205,6 +205,14 @@ class DecodingFacadeTest {
             Bytes.fromHexString(
                     "0xe1f21c67000000000000000000000000000000000000000000000000000000000000123400000000000000000000000000000000000000000000000000000000000003f0000000000000000000000000000000000000000000000000000000000000000a");
 
+    public static final Bytes GET_TOKEN_DEFAULT_FREEZE_STATUS_INPUT =
+        Bytes.fromHexString(
+            "0xa7daa18d00000000000000000000000000000000000000000000000000000000000003ff");
+
+    public static final Bytes GET_TOKEN_DEFAULT_KYC_STATUS_INPUT =
+        Bytes.fromHexString(
+            "0x335e04c10000000000000000000000000000000000000000000000000000000000000404");
+
     @Mock private WorldLedgers ledgers;
 
     @Test
@@ -508,6 +516,20 @@ class DecodingFacadeTest {
         assertEquals(2, decodedInput.serialNos().size());
         assertEquals(123, decodedInput.serialNos().get(0));
         assertEquals(234, decodedInput.serialNos().get(1));
+    }
+
+    @Test
+    void decodeGetTokenDefaultFreezeStatusInput() {
+        final var decodedInput = subject.decodeTokenDefaultFreezeStatus(GET_TOKEN_DEFAULT_FREEZE_STATUS_INPUT);
+
+        assertTrue(decodedInput.tokenID().getTokenNum() > 0);
+    }
+
+    @Test
+    void decodeGetTokenDefaultKycStatusInput() {
+        final var decodedInput = subject.decodeTokenDefaultKycStatus(GET_TOKEN_DEFAULT_KYC_STATUS_INPUT);
+
+        assertTrue(decodedInput.tokenID().getTokenNum() > 0);
     }
 
     @Test

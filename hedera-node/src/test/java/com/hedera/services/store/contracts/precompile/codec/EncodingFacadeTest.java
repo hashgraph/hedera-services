@@ -266,6 +266,18 @@ class EncodingFacadeTest {
     }
 
     @Test
+    void decodeReturnResultForGetTokenDefaultFreezeStatus() {
+        final var decodedResult = subject.encodeGetTokenDefaultFreezeStatus(true);
+        assertEquals(RETURN_SUCCESS_TRUE, decodedResult);
+    }
+
+    @Test
+    void decodeReturnResultForGetTokenDefaultKycStatus() {
+        final var decodedResult = subject.encodeGetTokenDefaultKycStatus(true);
+        assertEquals(RETURN_SUCCESS_TRUE, decodedResult);
+    }
+
+    @Test
     void decodeReturnResultForOwner() {
         final var decodedResult = subject.encodeOwner(senderAddress);
         assertEquals(RETURN_ADDRESS, decodedResult);
