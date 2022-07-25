@@ -90,8 +90,8 @@ class HederaTracerTest {
         // trace top level frame
         subject.traceExecution(topLevelMessageFrame, eo);
 
-        assertEquals(1, subject.getFinalizedActions().size());
-        final var topLevelAction = subject.getFinalizedActions().get(0);
+        assertEquals(1, subject.getActions().size());
+        final var topLevelAction = subject.getActions().get(0);
         assertEquals(CALL, topLevelAction.getCallType());
         assertEquals(EntityId.fromAddress(originator), topLevelAction.getCallingAccount());
         assertNull(topLevelAction.getCallingContract());
@@ -124,8 +124,8 @@ class HederaTracerTest {
         // trace child frame
         subject.traceExecution(topLevelMessageFrame, eo);
         // assert child frame action is initialized as expected
-        assertEquals(2, subject.getFinalizedActions().size());
-        final var childFrame1 = subject.getFinalizedActions().get(1);
+        assertEquals(2, subject.getActions().size());
+        final var childFrame1 = subject.getActions().get(1);
         assertEquals(CREATE, childFrame1.getCallType());
         assertNull(childFrame1.getCallingAccount());
         assertEquals(EntityId.fromAddress(contract), childFrame1.getCallingContract());
@@ -160,8 +160,8 @@ class HederaTracerTest {
         subject.traceExecution(topLevelMessageFrame, eo);
         verify(eo, times(7)).execute();
         // assert call depth is correct
-        assertEquals(3, subject.getFinalizedActions().size());
-        assertEquals(1, subject.getFinalizedActions().get(2).getCallDepth());
+        assertEquals(3, subject.getActions().size());
+        assertEquals(1, subject.getActions().get(2).getCallDepth());
     }
 
     @Test
@@ -175,7 +175,7 @@ class HederaTracerTest {
         given(messageFrame.getOutputData()).willReturn(output);
         subject.traceExecution(messageFrame, eo);
         // then
-        final var actions = subject.getFinalizedActions();
+        final var actions = subject.getActions();
         final var solidityAction = actions.get(0);
         assertEquals(initialGas - remainingGasAfterExecution, solidityAction.getGasUsed());
         assertEquals(output.toArrayUnsafe(), solidityAction.getOutput());
@@ -191,7 +191,7 @@ class HederaTracerTest {
         given(messageFrame.getRemainingGas()).willReturn(remainingGasAfterExecution);
         subject.traceExecution(messageFrame, eo);
         // then
-        final var actions = subject.getFinalizedActions();
+        final var actions = subject.getActions();
         final var solidityAction = actions.get(0);
         assertEquals(initialGas - remainingGasAfterExecution, solidityAction.getGasUsed());
         assertArrayEquals(new byte[0], solidityAction.getOutput());
@@ -209,7 +209,7 @@ class HederaTracerTest {
         given(messageFrame.getRevertReason()).willReturn(Optional.of(revertReason));
         subject.traceExecution(messageFrame, eo);
         // then
-        final var solidityAction = subject.getFinalizedActions().get(0);
+        final var solidityAction = subject.getActions().get(0);
         assertEquals(initialGas - remainingGasAfterExecution, solidityAction.getGasUsed());
         assertEquals(revertReason.toArrayUnsafe(), solidityAction.getRevertReason());
     }
@@ -225,7 +225,7 @@ class HederaTracerTest {
         given(messageFrame.getRevertReason()).willReturn(Optional.empty());
         subject.traceExecution(messageFrame, eo);
         // then
-        final var solidityAction = subject.getFinalizedActions().get(0);
+        final var solidityAction = subject.getActions().get(0);
         assertEquals(initialGas - remainingGasAfterExecution, solidityAction.getGasUsed());
         assertNull(solidityAction.getRevertReason());
     }
@@ -238,7 +238,7 @@ class HederaTracerTest {
         given(messageFrame.getState()).willReturn(State.EXCEPTIONAL_HALT);
         subject.traceExecution(messageFrame, eo);
         // then
-        final var solidityAction = subject.getFinalizedActions().get(0);
+        final var solidityAction = subject.getActions().get(0);
         assertEquals(initialGas, solidityAction.getGasUsed());
         assertNull(solidityAction.getError());
         assertNull(solidityAction.getInvalidSolidityAddress());
@@ -254,7 +254,7 @@ class HederaTracerTest {
         given(messageFrame.getExceptionalHaltReason()).willReturn(codeTooLarge);
         subject.traceExecution(messageFrame, eo);
         // then
-        final var solidityAction = subject.getFinalizedActions().get(0);
+        final var solidityAction = subject.getActions().get(0);
         assertEquals(initialGas, solidityAction.getGasUsed());
         assertArrayEquals(
                 codeTooLarge.get().getDescription().getBytes(StandardCharsets.UTF_8),
@@ -280,7 +280,7 @@ class HederaTracerTest {
         given(messageFrame.getExceptionalHaltReason()).willReturn(invalidSolidityAddress);
         subject.traceExecution(messageFrame, eo);
         // then
-        final var solidityAction = subject.getFinalizedActions().get(0);
+        final var solidityAction = subject.getActions().get(0);
         assertEquals(initialGas, solidityAction.getGasUsed());
         assertArrayEquals(
                 invalidSolidityAddress.get().getDescription().getBytes(StandardCharsets.UTF_8),
@@ -301,7 +301,7 @@ class HederaTracerTest {
         given(messageFrame.getExceptionalHaltReason()).willReturn(invalidSolidityAddress);
         subject.traceExecution(messageFrame, eo);
         // then
-        final var solidityAction = subject.getFinalizedActions().get(0);
+        final var solidityAction = subject.getActions().get(0);
         assertEquals(initialGas, solidityAction.getGasUsed());
         assertArrayEquals(
                 invalidSolidityAddress.get().getDescription().getBytes(StandardCharsets.UTF_8),
@@ -330,7 +330,7 @@ class HederaTracerTest {
         given(messageFrame.getOutputData()).willReturn(output);
         subject.tracePrecompileResult(messageFrame, ContractActionType.PRECOMPILE);
         // then
-        final var solidityAction = subject.getFinalizedActions().get(0);
+        final var solidityAction = subject.getActions().get(0);
         assertEquals(ContractActionType.PRECOMPILE, solidityAction.getCallType());
         assertNull(solidityAction.getRecipientAccount());
         assertEquals(EntityId.fromAddress(contract), solidityAction.getRecipientContract());
@@ -357,7 +357,7 @@ class HederaTracerTest {
         given(messageFrame.getOutputData()).willReturn(output);
         subject.tracePrecompileResult(messageFrame, ContractActionType.SYSTEM);
         // then
-        final var solidityAction = subject.getFinalizedActions().get(0);
+        final var solidityAction = subject.getActions().get(0);
         assertEquals(ContractActionType.SYSTEM, solidityAction.getCallType());
         assertNull(solidityAction.getRecipientAccount());
         assertEquals(EntityId.fromAddress(contract), solidityAction.getRecipientContract());
@@ -373,7 +373,7 @@ class HederaTracerTest {
         subject.traceExecution(messageFrame, eo);
         subject.tracePrecompileResult(messageFrame, ContractActionType.SYSTEM);
         // then
-        assertTrue(subject.getFinalizedActions().isEmpty());
+        assertTrue(subject.getActions().isEmpty());
     }
 
     @Test
@@ -391,7 +391,7 @@ class HederaTracerTest {
 
         subject.traceExecution(messageFrame, eo);
 
-        assertTrue(subject.getFinalizedActions().isEmpty());
+        assertTrue(subject.getActions().isEmpty());
     }
 
     private void givenTracedExecutingFrame(final Type frameType) {

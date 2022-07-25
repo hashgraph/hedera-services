@@ -47,7 +47,7 @@ public class FakeHederaTracer implements HederaOperationTracer {
     }
 
     @Override
-    public List<SolidityAction> getFinalizedActions() {
+    public List<SolidityAction> getActions() {
         return actions;
     }
 

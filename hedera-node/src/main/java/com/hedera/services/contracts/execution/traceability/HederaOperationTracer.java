@@ -19,12 +19,35 @@ import java.util.List;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.tracing.OperationTracer;
 
-// Add javadocs
+/**
+ * Hedera-specific EVM operation tracer interface with added functionality for contract actions
+ * traceability.
+ */
 public interface HederaOperationTracer extends OperationTracer {
 
+    /**
+     * Trace the result from a precompile execution. Must be called after the result has been
+     * reflected in the associated message frame.
+     *
+     * @param frame the frame associated with this precompile call
+     * @param type the type of precompile called; expected values are {@link
+     *     ContractActionType.PRECOMPILE} and {@link ContractActionType.SYSTEM}
+     */
     void tracePrecompileResult(final MessageFrame frame, final ContractActionType type);
 
-    List<SolidityAction> getFinalizedActions();
+    /**
+     * Obtain the list of contract actions created during current EVM transaction execution
+     *
+     * @return the list of contract actions created from this EVM transaction execution
+     */
+    List<SolidityAction> getActions();
 
+    /**
+     * Resets the tracer for a new EVM transaction.
+     * Must be called before each new EVM transaction begins its execution.
+     *
+     * @param areActionSidecarsEnabled specifies if actions should be tracked for traceability
+     *     during this EVM transaction
+     */
     void reset(boolean areActionSidecarsEnabled);
 }
