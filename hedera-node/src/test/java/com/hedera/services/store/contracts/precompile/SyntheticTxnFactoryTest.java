@@ -495,6 +495,7 @@ class SyntheticTxnFactoryTest {
                 1L, txnBody.getCryptoDeleteAllowance().getNftAllowances(0).getSerialNumbers(0));
         assertEquals(sender, txnBody.getCryptoDeleteAllowance().getNftAllowances(0).getOwner());
     }
+
     @Test
     void createsExpectedDeleteFungibleTokenCall() {
         final var deleteWrapper = new DeleteWrapper(fungible);
@@ -512,7 +513,6 @@ class SyntheticTxnFactoryTest {
 
         assertEquals(nonFungible, txnBody.getTokenDeletion().getToken());
     }
-
 
     @Test
     void createsExpectedFungibleBurn() {

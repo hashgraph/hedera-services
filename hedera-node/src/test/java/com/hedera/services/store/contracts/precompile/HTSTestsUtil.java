@@ -102,8 +102,7 @@ public class HTSTestsUtil {
     public static final OwnerOfAndTokenURIWrapper ownerOfAndTokenUriWrapper =
             new OwnerOfAndTokenURIWrapper(serialNumber);
 
-    public static final DeleteWrapper tokenDeleteWrapper =
-            new DeleteWrapper(fungible);
+    public static final DeleteWrapper tokenDeleteWrapper = new DeleteWrapper(fungible);
 
     public static final Association multiAssociateOp =
             Association.singleAssociation(accountMerkleId, tokenMerkleId);

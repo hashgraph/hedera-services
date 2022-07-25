@@ -512,6 +512,7 @@ class DecodingFacadeTest {
         assertEquals(123, decodedInput.serialNos().get(0));
         assertEquals(234, decodedInput.serialNos().get(1));
     }
+
     @Test
     void decodeTokenFreezeWithValidInput() {
         final var decodedInput = subject.decodeDelete(DELETE_INPUT);
