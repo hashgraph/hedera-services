@@ -11,11 +11,4 @@ contract PrngSystemContract {
         require(success);
         randomBytes = abi.decode(result, (bytes32));
     }
-
-    function getPseudorandomNumber(uint32 range) external returns (uint32 randomNum) {
-        (bool success, bytes memory result) = PRECOMPILE_ADDRESS.call(
-            abi.encodeWithSelector(IPrngSystemContract.getPseudorandomNumber.selector, range));
-        require(success);
-        randomNum = abi.decode(result, (uint32));
-    }
 }

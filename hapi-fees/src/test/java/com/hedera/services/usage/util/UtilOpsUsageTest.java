@@ -21,12 +21,12 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.usage.BaseTransactionMeta;
 import com.hedera.services.usage.SigUsage;
 import com.hedera.services.usage.state.UsageAccumulator;
-import com.hederahashgraph.api.proto.java.PrngTransactionBody;
 import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.SignaturePair;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
+import com.hederahashgraph.api.proto.java.UtilPrngTransactionBody;
 import org.junit.jupiter.api.Test;
 
 class UtilOpsUsageTest {
@@ -35,14 +35,14 @@ class UtilOpsUsageTest {
 
     @Test
     void estimatesAutoRenewAsExpected() {
-        final var op = PrngTransactionBody.newBuilder().setRange(10).build();
+        final var op = UtilPrngTransactionBody.newBuilder().setRange(10).build();
         final var txn =
                 TransactionBody.newBuilder()
                         .setTransactionID(
                                 TransactionID.newBuilder()
                                         .setTransactionValidStart(
                                                 Timestamp.newBuilder().setSeconds(now)))
-                        .setPrng(op)
+                        .setUtilPrng(op)
                         .build();
 
         final ByteString canonicalSig =
@@ -56,7 +56,7 @@ class UtilOpsUsageTest {
                                         .setEd25519(canonicalSig))
                         .build();
         final SigUsage singleSigUsage = new SigUsage(1, onePairSigMap.getSerializedSize(), 1);
-        final var opMeta = new PrngMeta(txn.getPrng());
+        final var opMeta = new UtilPrngMeta(txn.getUtilPrng());
         final var baseMeta = new BaseTransactionMeta(0, 0);
 
         var actual = new UsageAccumulator();

@@ -9,7 +9,7 @@
 		  "operations": [
 			"CryptoCreate",
 			"CryptoTransfer",
-			"PRNG",
+			"UtilPrng",
 			"CryptoUpdate",
 			"CryptoDelete",
 			"CryptoGetInfo",
