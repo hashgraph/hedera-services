@@ -103,7 +103,7 @@ public class SignedStateViewFactory {
 	 * 		a services state
 	 * @return if the given state is usable
 	 */
-	boolean isUsable(final ServicesState state) {
+	public static boolean isUsable(final ServicesState state) {
 		if (state == null) {
 			return false;
 		}

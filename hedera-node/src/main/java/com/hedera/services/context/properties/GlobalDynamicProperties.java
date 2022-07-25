@@ -101,7 +101,7 @@ public class GlobalDynamicProperties {
     private long htsDefaultGasCost;
     private int changeHistorianMemorySecs;
     private boolean autoCreationEnabled;
-    private boolean expandSigsFromLastSignedState;
+    private boolean expandSigsFromImmutableState;
     private long maxAggregateContractKvPairs;
     private int maxIndividualContractKvPairs;
     private int maxMostRecentQueryableRecords;
@@ -222,8 +222,8 @@ public class GlobalDynamicProperties {
         htsDefaultGasCost = properties.getLongProperty("contracts.precompile.htsDefaultGasCost");
         changeHistorianMemorySecs = properties.getIntProperty("ledger.changeHistorian.memorySecs");
         autoCreationEnabled = properties.getBooleanProperty("autoCreation.enabled");
-        expandSigsFromLastSignedState =
-                properties.getBooleanProperty("sigs.expandFromLastSignedState");
+        expandSigsFromImmutableState =
+                properties.getBooleanProperty("sigs.expandFromImmutableState");
         maxAggregateContractKvPairs = properties.getLongProperty("contracts.maxKvPairs.aggregate");
         maxIndividualContractKvPairs = properties.getIntProperty("contracts.maxKvPairs.individual");
         maxMostRecentQueryableRecords =
@@ -514,8 +514,8 @@ public class GlobalDynamicProperties {
         return autoCreationEnabled;
     }
 
-    public boolean expandSigsFromLastSignedState() {
-        return expandSigsFromLastSignedState;
+    public boolean expandSigsFromImmutableState() {
+        return expandSigsFromImmutableState;
     }
 
     public long maxAggregateContractKvPairs() {

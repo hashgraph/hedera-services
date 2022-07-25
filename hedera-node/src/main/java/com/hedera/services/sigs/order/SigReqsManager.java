@@ -15,12 +15,13 @@
  */
 package com.hedera.services.sigs.order;
 
+import static com.hedera.services.context.primitives.SignedStateViewFactory.isUsable;
+
+import com.hedera.services.ServicesState;
 import com.hedera.services.config.FileNumbers;
 import com.hedera.services.context.MutableStateChildren;
 import com.hedera.services.context.StateChildren;
-import com.hedera.services.context.primitives.SignedStateViewFactory;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.exceptions.NoValidSignedStateException;
 import com.hedera.services.sigs.ExpansionHelper;
 import com.hedera.services.sigs.Rationalization;
 import com.hedera.services.sigs.metadata.SigMetadataLookup;
@@ -36,9 +37,9 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 
 /**
- * Used by {@link com.hedera.services.sigs.EventExpansion#expandAllSigs(Event)} to expand the
- * cryptographic signatures <i>linked</i> to a given transaction. Linked signatures are derived from
- * two pieces of information:
+ * Used by {@link com.hedera.services.sigs.EventExpansion#expandAllSigs(Event, ServicesState)} to
+ * expand the cryptographic signatures <i>linked</i> to a given transaction. Linked signatures are
+ * derived from two pieces of information:
  *
  * <ol>
  *   <li>The list of Hedera keys required to sign the transaction for it to be valid; and,
@@ -46,7 +47,7 @@ import javax.inject.Singleton;
  *       SignatureMap}.
  * </ol>
  *
- * We prefer to lookup the Hedera keys from the latest signed state, since if the entities with
+ * We prefer to look up the Hedera keys from an immutable state, since if the entities with
  * those keys are unchanged between {@code expandSignatures} and {@code handleTransaction}, we can
  * skip the otherwise necessary step of re-expanding signatures in {@link
  * Rationalization#performFor(SwirldsTxnAccessor)}.
@@ -64,7 +65,6 @@ public class SigReqsManager {
     private final SignatureWaivers signatureWaivers;
     private final MutableStateChildren workingState;
     private final GlobalDynamicProperties dynamicProperties;
-    private final SignedStateViewFactory stateViewFactory;
     // Convenience wrapper for the latest state children received from
     // Platform#getLastCompleteSwirldState()
     private final MutableStateChildren signedChildren = new MutableStateChildren();
@@ -72,7 +72,7 @@ public class SigReqsManager {
     private SigReqsFactory sigReqsFactory = SigRequirements::new;
     private StateChildrenLookupsFactory lookupsFactory = StateChildrenSigMetadataLookup::new;
 
-    // Used to expand signatures when sigs.expandFromLastSignedState=true and an
+    // Used to expand signatures when sigs.expandFromImmutableState=true and an
     // initialized, signed state of the current version is available
     private SigRequirements signedSigReqs;
     // Used to expand signatures when one or more of the above conditions is not met
@@ -84,14 +84,12 @@ public class SigReqsManager {
             final ExpansionHelper expansionHelper,
             final SignatureWaivers signatureWaivers,
             final MutableStateChildren workingState,
-            final GlobalDynamicProperties dynamicProperties,
-            final SignedStateViewFactory stateViewFactory) {
+            final GlobalDynamicProperties dynamicProperties) {
         this.fileNumbers = fileNumbers;
         this.workingState = workingState;
         this.expansionHelper = expansionHelper;
         this.signatureWaivers = signatureWaivers;
         this.dynamicProperties = dynamicProperties;
-        this.stateViewFactory = stateViewFactory;
     }
 
     /**
@@ -99,11 +97,12 @@ public class SigReqsManager {
      * signatures linked to the given transaction; prefers the implementation backed by the latest
      * signed state as returned from {@link Platform#getLastCompleteSwirldState()}.
      *
+     * @param sourceState an immutable state appropriate for signature expansion
      * @param accessor a transaction that needs linked signatures expanded
      */
-    public void expandSigsInto(final SwirldsTxnAccessor accessor) {
-        if (dynamicProperties.expandSigsFromLastSignedState()
-                && tryExpandFromSignedState(accessor)) {
+    public void expandSigs(final ServicesState sourceState, final SwirldsTxnAccessor accessor) {
+        if (dynamicProperties.expandSigsFromImmutableState()
+                && tryExpandFromImmutable(sourceState, accessor)) {
             return;
         }
         expandFromWorkingState(accessor);
@@ -126,33 +125,24 @@ public class SigReqsManager {
      * @param accessor the transaction to expand signatures for
      * @return whether the expansion attempt succeeded
      */
-    private boolean tryExpandFromSignedState(final SwirldsTxnAccessor accessor) {
-        /* Update our children (e.g., MerkleMaps and VirtualMaps) from the current signed state.
-         * Because event intake is single-threaded, there's no risk of another thread getting
-         * inconsistent results while we are doing this. Also, note that MutableStateChildren
-         * uses weak references, so we won't keep this signed state from GC eligibility.
-         *
-         * We use the updateFromMaybeUninitializedState() variant here, because during a
-         * reconnect the latest signed state may have never received an init() call. In that
-         * case, any "rebuilt" children of the ServicesState will be null. (This isn't a
-         * problem for any existing SigRequirements code, however.) */
-        try {
-            stateViewFactory.tryToUpdateToLatestSignedChildren(signedChildren);
-        } catch (NoValidSignedStateException ignore) {
+    private boolean tryExpandFromImmutable(
+            final ServicesState sourceState, final SwirldsTxnAccessor accessor) {
+        if (!isUsable(sourceState)) {
             return false;
         }
-        expandFromSignedState(accessor);
-        return true;
+        try {
+            // Update our children (e.g., MerkleMaps and VirtualMaps) from the current signed state.
+            // Because event intake is single-threaded, there's no risk of another thread getting
+            // inconsistent results while we are doing this. Also, note that MutableStateChildren
+            // uses weak references, so we won't keep this signed state from GC eligibility.
+            signedChildren.updateFromSigned(sourceState, sourceState.getTimeOfLastHandledTxn());
+            expandFromSignedState(accessor);
+            return true;
+        } catch (Exception ignore) {
+            return false;
+        }
     }
 
-    /**
-     * Tries to expand the platform signatures linked to a transaction from latest completed signed
-     * state that cannot have been signed before the given consensus time. Returns whether the
-     * expansion attempt was successful. (If this fails, we will next try to expand signatures from
-     * the working state.)
-     *
-     * @param accessor
-     */
     private void expandFromSignedState(final SwirldsTxnAccessor accessor) {
         ensureSignedStateSigReqsIsConstructed();
         expansionHelper.expandIn(accessor, signedSigReqs, accessor.getPkToSigsFn());
