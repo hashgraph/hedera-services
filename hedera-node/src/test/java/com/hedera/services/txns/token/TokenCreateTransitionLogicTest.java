@@ -35,6 +35,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MISSING_TOKEN_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_FREEZE_KEY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_SUPPLY_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_SYMBOL_TOO_LONG;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -170,7 +171,7 @@ class TokenCreateTransitionLogicTest {
 
     @Test
     void uniqueNotSupportedIfNftsNotEnabled() {
-        givenValidTxnCtx(false, false, true);
+        givenValidTxnCtx(false, false, true, true);
 
         // expect:
         assertEquals(NOT_SUPPORTED, subject.semanticCheck().apply(tokenCreateTxn));
@@ -179,13 +180,14 @@ class TokenCreateTransitionLogicTest {
     @Test
     void uniqueSupportedIfNftsEnabled() {
         given(dynamicProperties.areNftsEnabled()).willReturn(true);
-        givenValidTxnCtx(false, false, true);
+        givenValidTxnCtx(false, false, true, true);
         given(validator.memoCheck(any())).willReturn(OK);
         given(validator.tokenNameCheck(any())).willReturn(OK);
         given(validator.tokenSymbolCheck(any())).willReturn(OK);
+        given(validator.isValidAutoRenewPeriod(any())).willReturn(true);
 
         // expect:
-        assertEquals(INVALID_TOKEN_INITIAL_SUPPLY, subject.semanticCheck().apply(tokenCreateTxn));
+        assertEquals(OK, subject.semanticCheck().apply(tokenCreateTxn));
     }
 
     @Test
@@ -374,6 +376,17 @@ class TokenCreateTransitionLogicTest {
         assertEquals(INVALID_TOKEN_INITIAL_SUPPLY, subject.semanticCheck().apply(tokenCreateTxn));
     }
 
+    @Test
+    void rejectsMissingSupplyKeyOnNftCreate() {
+        givenTxnCtxWithoutSupplyKeyForNft();
+        given(dynamicProperties.areNftsEnabled()).willReturn(true);
+        given(validator.memoCheck(any())).willReturn(OK);
+        given(validator.tokenNameCheck(any())).willReturn(OK);
+        given(validator.tokenSymbolCheck(any())).willReturn(OK);
+
+        assertEquals(TOKEN_HAS_NO_SUPPLY_KEY, subject.semanticCheck().apply(tokenCreateTxn));
+    }
+
     private void givenInvalidSupplyTypeAndSupply() {
         var builder =
                 TransactionBody.newBuilder()
@@ -400,10 +413,15 @@ class TokenCreateTransitionLogicTest {
     }
 
     private void givenValidTxnCtx() {
-        givenValidTxnCtx(false, false, false);
+        givenValidTxnCtx(false, false, false, true);
     }
 
-    private void givenValidTxnCtx(boolean withKyc, boolean withFreeze, boolean isUnique) {
+    private void givenTxnCtxWithoutSupplyKeyForNft() {
+        givenValidTxnCtx(false, false, true, false);
+    }
+
+    private void givenValidTxnCtx(
+            boolean withKyc, boolean withFreeze, boolean isUnique, boolean withSupplyKey) {
         final var expiry = Timestamp.newBuilder().setSeconds(thisSecond + thisSecond).build();
         final var memo = "...descending into thin air, where no arms / outstretch to catch her";
         var builder =
@@ -419,6 +437,8 @@ class TokenCreateTransitionLogicTest {
                                         .setExpiry(expiry));
         if (isUnique) {
             builder.getTokenCreationBuilder().setTokenType(TokenType.NON_FUNGIBLE_UNIQUE);
+            builder.getTokenCreationBuilder().setInitialSupply(0L);
+            builder.getTokenCreationBuilder().setDecimals(0);
         }
         if (withFreeze) {
             builder.getTokenCreationBuilder()
@@ -426,6 +446,10 @@ class TokenCreateTransitionLogicTest {
         }
         if (withKyc) {
             builder.getTokenCreationBuilder().setKycKey(TxnHandlingScenario.TOKEN_KYC_KT.asKey());
+        }
+        if (withSupplyKey) {
+            builder.getTokenCreationBuilder()
+                    .setSupplyKey(TxnHandlingScenario.TOKEN_SUPPLY_KT.asKey());
         }
         tokenCreateTxn = builder.build();
     }
