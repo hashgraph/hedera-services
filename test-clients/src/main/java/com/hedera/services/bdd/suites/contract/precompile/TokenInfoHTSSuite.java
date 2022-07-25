@@ -95,7 +95,6 @@ public class TokenInfoHTSSuite extends HapiApiSuite {
     private static final String FUNGIBLE_TOKEN_INFO_TXN = "FungibleTokenInfoTxn";
     private static final String NON_FUNGIBLE_TOKEN_INFO_TXN = "NonFungibleTokenInfoTxn";
     private static final String GET_TOKEN_INFO_TXN = "GetTokenInfo";
-    private static final String LEDGER_ID = "0x03";
     private static final String SYMBOL = "T";
     private static final String FUNGIBLE_SYMBOL = "FT";
     private static final String NON_FUNGIBLE_SYMBOL = "NFT";
@@ -131,17 +130,16 @@ public class TokenInfoHTSSuite extends HapiApiSuite {
 
     List<HapiApiSpec> negativeSpecs() {
         return List.of(
-                //                                getInfoOnDeletedFungibleTokenWorks(),
-                //                                getInfoOnInvalidFungibleTokenFails(),
-                //                                getInfoOnDeletedNonFungibleTokenFails(),
-                //                                getInfoOnInvalidNonFungibleTokenFails()
-                );
+                getInfoOnDeletedFungibleTokenWorks(),
+                getInfoOnInvalidFungibleTokenFails(),
+                getInfoOnDeletedNonFungibleTokenFails(),
+                getInfoOnInvalidNonFungibleTokenFails());
     }
 
     List<HapiApiSpec> positiveSpecs() {
         return List.of(
-                //                happyPathGetTokenInfo(),
-                //                                happyPathGetFungibleTokenInfo(),
+                happyPathGetTokenInfo(),
+                happyPathGetFungibleTokenInfo(),
                 happyPathGetNonFungibleTokenInfo());
     }
 

@@ -98,9 +98,7 @@ public class HTSPrecompileResult implements ContractCallResult {
     private ResponseCodeEnum status;
     private long totalSupply;
     private long[] serialNumbers;
-    private long serialNumber;
     private int decimals;
-    private long creationTime;
     private byte[] owner;
     private byte[] approved;
     private String name;
@@ -195,16 +193,6 @@ public class HTSPrecompileResult implements ContractCallResult {
 
     public HTSPrecompileResult withTokenUri(final String tokenUri) {
         this.metadata = tokenUri;
-        return this;
-    }
-
-    public HTSPrecompileResult withSerialNumber(final long serialNumber) {
-        this.serialNumber = serialNumber;
-        return this;
-    }
-
-    public HTSPrecompileResult withCreationTime(final long creationTime) {
-        this.creationTime = creationTime;
         return this;
     }
 
@@ -383,31 +371,35 @@ public class HTSPrecompileResult implements ContractCallResult {
     }
 
     private Tuple[] getTokenKeysTuples() {
-        final var adminKey = tokenInfo.getAdminKey();
-        final var kycKey = tokenInfo.getKycKey();
-        final var freezeKey = tokenInfo.getFreezeKey();
-        final var wipeKey = tokenInfo.getWipeKey();
-        final var supplyKey = tokenInfo.getSupplyKey();
-        final var feeScheduleKey = tokenInfo.getFeeScheduleKey();
-        final var pauseKey = tokenInfo.getPauseKey();
+        final var adminKeyToConvert = tokenInfo.getAdminKey();
+        final var kycKeyToConvert = tokenInfo.getKycKey();
+        final var freezeKeyToConvert = tokenInfo.getFreezeKey();
+        final var wipeKeyToConvert = tokenInfo.getWipeKey();
+        final var supplyKeyToConvert = tokenInfo.getSupplyKey();
+        final var feeScheduleKeyToConvert = tokenInfo.getFeeScheduleKey();
+        final var pauseKeyToConvert = tokenInfo.getPauseKey();
 
-        final Tuple[] tokenKeysTuples = new Tuple[TokenKeyType.values().length];
-        tokenKeysTuples[0] =
-                getKeyTuple(BigInteger.valueOf(TokenKeyType.ADMIN_KEY.value()), adminKey);
-        tokenKeysTuples[1] = getKeyTuple(BigInteger.valueOf(TokenKeyType.KYC_KEY.value()), kycKey);
-        tokenKeysTuples[2] =
-                getKeyTuple(BigInteger.valueOf(TokenKeyType.FREEZE_KEY.value()), freezeKey);
-        tokenKeysTuples[3] =
-                getKeyTuple(BigInteger.valueOf(TokenKeyType.WIPE_KEY.value()), wipeKey);
-        tokenKeysTuples[4] =
-                getKeyTuple(BigInteger.valueOf(TokenKeyType.SUPPLY_KEY.value()), supplyKey);
-        tokenKeysTuples[5] =
+        final Tuple[] tokenKeys = new Tuple[TokenKeyType.values().length];
+        tokenKeys[0] =
+                getKeyTuple(BigInteger.valueOf(TokenKeyType.ADMIN_KEY.value()), adminKeyToConvert);
+        tokenKeys[1] =
+                getKeyTuple(BigInteger.valueOf(TokenKeyType.KYC_KEY.value()), kycKeyToConvert);
+        tokenKeys[2] =
                 getKeyTuple(
-                        BigInteger.valueOf(TokenKeyType.FEE_SCHEDULE_KEY.value()), feeScheduleKey);
-        tokenKeysTuples[6] =
-                getKeyTuple(BigInteger.valueOf(TokenKeyType.PAUSE_KEY.value()), pauseKey);
+                        BigInteger.valueOf(TokenKeyType.FREEZE_KEY.value()), freezeKeyToConvert);
+        tokenKeys[3] =
+                getKeyTuple(BigInteger.valueOf(TokenKeyType.WIPE_KEY.value()), wipeKeyToConvert);
+        tokenKeys[4] =
+                getKeyTuple(
+                        BigInteger.valueOf(TokenKeyType.SUPPLY_KEY.value()), supplyKeyToConvert);
+        tokenKeys[5] =
+                getKeyTuple(
+                        BigInteger.valueOf(TokenKeyType.FEE_SCHEDULE_KEY.value()),
+                        feeScheduleKeyToConvert);
+        tokenKeys[6] =
+                getKeyTuple(BigInteger.valueOf(TokenKeyType.PAUSE_KEY.value()), pauseKeyToConvert);
 
-        return tokenKeysTuples;
+        return tokenKeys;
     }
 
     private static Tuple getKeyTuple(final BigInteger keyType, final Key key) {
