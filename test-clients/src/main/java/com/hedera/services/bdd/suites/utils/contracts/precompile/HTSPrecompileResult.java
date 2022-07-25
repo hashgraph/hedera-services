@@ -236,7 +236,7 @@ public class HTSPrecompileResult implements ContractCallResult {
         return this;
     }
 
-    private HTSPrecompileResult withNftTokenInfo(final TokenNftInfo nonFungibleTokenInfo) {
+    public HTSPrecompileResult withNftTokenInfo(final TokenNftInfo nonFungibleTokenInfo) {
         this.nonFungibleTokenInfo = nonFungibleTokenInfo;
         return this;
     }
@@ -291,11 +291,13 @@ public class HTSPrecompileResult implements ContractCallResult {
                 status.getNumber(),
                 Tuple.of(
                         getTupleForTokenInfo(),
-                        serialNumber,
-                        expandByteArrayTo32Length(owner),
-                        creationTime,
-                        metadata.getBytes(),
-                        expandByteArrayTo32Length(approved)));
+                        nonFungibleTokenInfo.getNftID().getSerialNumber(),
+                        expandByteArrayTo32Length(
+                                Utils.asAddress(nonFungibleTokenInfo.getAccountID())),
+                        nonFungibleTokenInfo.getCreationTime().getSeconds(),
+                        nonFungibleTokenInfo.getMetadata().toByteArray(),
+                        expandByteArrayTo32Length(
+                                Utils.asAddress(nonFungibleTokenInfo.getSpenderId()))));
     }
 
     private Tuple getTupleForTokenInfo() {
@@ -322,9 +324,9 @@ public class HTSPrecompileResult implements ContractCallResult {
                 tokenInfo.getDeleted(),
                 tokenInfo.getDefaultKycStatus().getNumber() == 1,
                 tokenInfo.getPauseStatus().getNumber() == 1,
-                fixedFees,
-                fractionalFees,
-                royaltyFees,
+                fixedFees.toArray(new Tuple[fixedFees.size()]),
+                fractionalFees.toArray(new Tuple[fractionalFees.size()]),
+                royaltyFees.toArray(new Tuple[royaltyFees.size()]),
                 Bytes.wrap(tokenInfo.getLedgerId().toByteArray()).toString());
     }
 
@@ -363,12 +365,15 @@ public class HTSPrecompileResult implements ContractCallResult {
         final var expiry = tokenInfo.getExpiry().getSeconds();
         final var autoRenewPeriod = tokenInfo.getAutoRenewPeriod().getSeconds();
         final var expiryTuple =
-                Tuple.of(expiry, tokenInfo.getAutoRenewAccount().toByteArray(), autoRenewPeriod);
+                Tuple.of(
+                        expiry,
+                        expandByteArrayTo32Length(Utils.asAddress(tokenInfo.getAutoRenewAccount())),
+                        autoRenewPeriod);
 
         return Tuple.of(
                 tokenInfo.getName(),
                 tokenInfo.getSymbol(),
-                tokenInfo.getTreasury().toByteArray(),
+                expandByteArrayTo32Length(Utils.asAddress(tokenInfo.getTreasury())),
                 tokenInfo.getMemo(),
                 tokenInfo.getSupplyType().getNumber() == 1,
                 tokenInfo.getMaxSupply(),
@@ -387,26 +392,38 @@ public class HTSPrecompileResult implements ContractCallResult {
         final var pauseKey = tokenInfo.getPauseKey();
 
         final Tuple[] tokenKeysTuples = new Tuple[TokenKeyType.values().length];
-        tokenKeysTuples[0] = getKeyTuple(adminKey);
-        tokenKeysTuples[1] = getKeyTuple(kycKey);
-        tokenKeysTuples[2] = getKeyTuple(freezeKey);
-        tokenKeysTuples[3] = getKeyTuple(wipeKey);
-        tokenKeysTuples[4] = getKeyTuple(supplyKey);
-        tokenKeysTuples[5] = getKeyTuple(feeScheduleKey);
-        tokenKeysTuples[6] = getKeyTuple(pauseKey);
+        tokenKeysTuples[0] =
+                getKeyTuple(BigInteger.valueOf(TokenKeyType.ADMIN_KEY.value()), adminKey);
+        tokenKeysTuples[1] = getKeyTuple(BigInteger.valueOf(TokenKeyType.KYC_KEY.value()), kycKey);
+        tokenKeysTuples[2] =
+                getKeyTuple(BigInteger.valueOf(TokenKeyType.FREEZE_KEY.value()), freezeKey);
+        tokenKeysTuples[3] =
+                getKeyTuple(BigInteger.valueOf(TokenKeyType.WIPE_KEY.value()), wipeKey);
+        tokenKeysTuples[4] =
+                getKeyTuple(BigInteger.valueOf(TokenKeyType.SUPPLY_KEY.value()), supplyKey);
+        tokenKeysTuples[5] =
+                getKeyTuple(
+                        BigInteger.valueOf(TokenKeyType.FEE_SCHEDULE_KEY.value()), feeScheduleKey);
+        tokenKeysTuples[6] =
+                getKeyTuple(BigInteger.valueOf(TokenKeyType.PAUSE_KEY.value()), pauseKey);
 
         return tokenKeysTuples;
     }
 
-    private static Tuple getKeyTuple(final Key key) {
+    private static Tuple getKeyTuple(final BigInteger keyType, final Key key) {
         return Tuple.of(
-                false,
-                key.getContractID().getContractNum() > 0 ? key.getContractID().toByteArray() : null,
-                key.getEd25519(),
-                key.getECDSASecp256K1(),
-                key.getDelegatableContractId().getContractNum() > 0
-                        ? key.getDelegatableContractId().toByteArray()
-                        : null);
+                keyType,
+                Tuple.of(
+                        false,
+                        key.getContractID().getContractNum() > 0
+                                ? expandByteArrayTo32Length(Utils.asAddress(key.getContractID()))
+                                : new byte[32],
+                        key.getEd25519().toByteArray(),
+                        key.getECDSASecp256K1().toByteArray(),
+                        key.getDelegatableContractId().getContractNum() > 0
+                                ? expandByteArrayTo32Length(
+                                        Utils.asAddress(key.getDelegatableContractId()))
+                                : new byte[32]));
     }
 
     private static String removeBrackets(final String type) {
