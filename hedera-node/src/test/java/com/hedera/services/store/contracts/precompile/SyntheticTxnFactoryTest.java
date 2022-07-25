@@ -50,6 +50,7 @@ import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.store.contracts.precompile.codec.ApproveWrapper;
 import com.hedera.services.store.contracts.precompile.codec.Association;
 import com.hedera.services.store.contracts.precompile.codec.BurnWrapper;
+import com.hedera.services.store.contracts.precompile.codec.DeleteWrapper;
 import com.hedera.services.store.contracts.precompile.codec.Dissociation;
 import com.hedera.services.store.contracts.precompile.codec.MintWrapper;
 import com.hedera.services.store.contracts.precompile.codec.SetApprovalForAllWrapper;
@@ -494,6 +495,24 @@ class SyntheticTxnFactoryTest {
                 1L, txnBody.getCryptoDeleteAllowance().getNftAllowances(0).getSerialNumbers(0));
         assertEquals(sender, txnBody.getCryptoDeleteAllowance().getNftAllowances(0).getOwner());
     }
+    @Test
+    void createsExpectedDeleteFungibleTokenCall() {
+        final var deleteWrapper = new DeleteWrapper(fungible);
+        final var result = subject.createDelete(deleteWrapper);
+        final var txnBody = result.build();
+
+        assertEquals(fungible, txnBody.getTokenDeletion().getToken());
+    }
+
+    @Test
+    void createsExpectedDeleteNonFungibleTokenCall() {
+        final var deleteWrapper = new DeleteWrapper(nonFungible);
+        final var result = subject.createDelete(deleteWrapper);
+        final var txnBody = result.build();
+
+        assertEquals(nonFungible, txnBody.getTokenDeletion().getToken());
+    }
+
 
     @Test
     void createsExpectedFungibleBurn() {

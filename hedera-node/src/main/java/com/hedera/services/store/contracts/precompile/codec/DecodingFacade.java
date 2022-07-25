@@ -160,7 +160,7 @@ public class DecodingFacade {
             new Function("balanceOf(address)", INT_OUTPUT);
     private static final Bytes BALANCE_OF_TOKEN_SELECTOR =
             Bytes.wrap(BALANCE_OF_TOKEN_FUNCTION.selector());
-    private static final ABIType<Tuple> BALANCE_OF_TOKEN_DECODER = TypeFactory.create("(bytes32)");
+    private static final ABIType<Tuple> BALANCE_OF_TOKEN_DECODER = TypeFactory.create(ADDRESS_RAW_TYPE);
 
     private static final Function OWNER_OF_NFT_FUNCTION =
             new Function("ownerOf(uint256)", INT_OUTPUT);
