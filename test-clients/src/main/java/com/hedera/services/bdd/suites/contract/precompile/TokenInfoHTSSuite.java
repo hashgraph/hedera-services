@@ -112,7 +112,6 @@ public class TokenInfoHTSSuite extends HapiApiSuite {
     private static final int MINIMUM_TO_COLLECT = 5;
     private static final int MAXIMUM_TO_COLLECT = 400;
     private static final int MAX_SUPPLY = 1000;
-    private static final long MASK_INT_AS_UNSIGNED_LONG = (1L << 32) - 1;
 
     public static void main(String... args) {
         new TokenInfoHTSSuite().runSuiteSync();
@@ -747,51 +746,8 @@ public class TokenInfoHTSSuite extends HapiApiSuite {
             final String symbol,
             final long expirySecond) {
         final var autoRenewAccount = spec.registry().getAccountID(AUTO_RENEW_ACCOUNT);
-        //        final var expiry =
-        //                new Expiry(
-        //                        expirySecond,
-        //
-        // Bytes.wrap(expandByteArrayTo32Length(Utils.asAddress(autoRenewAccount))),
-        //                        THREE_MONTHS_IN_SECONDS);
-        final var treasury = spec.registry().getAccountID(TOKEN_TREASURY);
-        //        final var token =
-        //                new HederaToken(
-        //                        tokenName,
-        //                        symbol,
-        //                        Bytes.wrap(expandByteArrayTo32Length(Utils.asAddress(treasury))),
-        //                        MEMO,
-        //                        true,
-        //                        MAX_SUPPLY,
-        //                        false,
-        //                        getTokenKeys(spec),
-        //                        expiry);
 
-        //        final var fixedFees = new ArrayList<FixedFee>();
-        //        final var fixedFeeCollector =
-        //                Bytes.wrap(
-        //                        expandByteArrayTo32Length(
-        //
-        // Utils.asAddress(spec.registry().getAccountID(HTS_COLLECTOR))));
-        //        final var fixedFee =
-        //                new FixedFee(500L, Bytes.wrap(new byte[32]), true, false,
-        // fixedFeeCollector);
-        //        fixedFees.add(fixedFee);
-        //
-        //        final var fractionalFees = new ArrayList<FractionalFee>();
-        //        final var fractionalFeeCollector =
-        //                Bytes.wrap(
-        //                        expandByteArrayTo32Length(
-        //
-        // Utils.asAddress(spec.registry().getAccountID(TOKEN_TREASURY))));
-        //        final var fractionalFee =
-        //                new FractionalFee(
-        //                        NUMERATOR,
-        //                        DENOMINATOR,
-        //                        MINIMUM_TO_COLLECT,
-        //                        MAXIMUM_TO_COLLECT,
-        //                        false,
-        //                        fractionalFeeCollector);
-        //        fractionalFees.add(fractionalFee);
+        final var treasury = spec.registry().getAccountID(TOKEN_TREASURY);
 
         final var fixedFee = FixedFee.newBuilder().setAmount(500L).build();
         final var customFixedFee =
@@ -817,16 +773,6 @@ public class TokenInfoHTSSuite extends HapiApiSuite {
         final var customFees = new ArrayList<CustomFee>();
         customFees.add(customFixedFee);
         customFees.add(customFractionalFee);
-        //        return new TokenInfo(
-        //                token,
-        //                500L,
-        //                false,
-        //                false,
-        //                false,
-        //                fixedFees,
-        //                fractionalFees,
-        //                new ArrayList<>(),
-        //                LEDGER_ID);
 
         return TokenInfo.newBuilder()
                 .setLedgerId(fromString("0x03"))
@@ -835,12 +781,9 @@ public class TokenInfoHTSSuite extends HapiApiSuite {
                 .setAutoRenewAccount(autoRenewAccount)
                 .setAutoRenewPeriod(
                         Duration.newBuilder().setSeconds(THREE_MONTHS_IN_SECONDS).build())
-                //              .setTokenId(tokenMerkleId)
-                //              .setDeleted(isDeleted)
                 .setSymbol(symbol)
                 .setName(tokenName)
                 .setMemo(MEMO)
-                //              .setDecimals(decimals)
                 .setTreasury(treasury)
                 .setTotalSupply(500L)
                 .setMaxSupply(MAX_SUPPLY)
@@ -858,40 +801,7 @@ public class TokenInfoHTSSuite extends HapiApiSuite {
     private TokenInfo getTokenInfoStructForNonFungibleToken(
             final HapiApiSpec spec, final long expirySecond) {
         final var autoRenewAccount = spec.registry().getAccountID(AUTO_RENEW_ACCOUNT);
-        //        final var expiry =
-        //                new Expiry(
-        //                        expirySecond,
-        //
-        // Bytes.wrap(expandByteArrayTo32Length(Utils.asAddress(autoRenewAccount))),
-        //                        THREE_MONTHS_IN_SECONDS);
         final var treasury = spec.registry().getAccountID(TOKEN_TREASURY);
-        //        final var token =
-        //                new HederaToken(
-        //                        NON_FUNGIBLE_TOKEN_NAME,
-        //                        NON_FUNGIBLE_SYMBOL,
-        //                        Bytes.wrap(expandByteArrayTo32Length(Utils.asAddress(treasury))),
-        //                        MEMO,
-        //                        true,
-        //                        10L,
-        //                        false,
-        //                        getTokenKeys(spec),
-        //                        expiry);
-
-        //        final var royaltyFees = new ArrayList<RoyaltyFee>();
-        //        final var royaltyFeeCollector =
-        //                Bytes.wrap(
-        //                        expandByteArrayTo32Length(
-        //
-        // Utils.asAddress(spec.registry().getAccountID(HTS_COLLECTOR))));
-        //        final var tokenDenomAddress =
-        //                Bytes.wrap(
-        //                        expandByteArrayTo32Length(
-        //                                Utils.asAddress(spec.registry().getTokenID(FEE_DENOM))));
-        //        final var royaltyFee =
-        //                new RoyaltyFee(
-        //                        NUMERATOR, DENOMINATOR, 100, tokenDenomAddress, false,
-        // royaltyFeeCollector);
-        //        royaltyFees.add(royaltyFee);
 
         final var fraction =
                 Fraction.newBuilder().setNumerator(NUMERATOR).setDenominator(DENOMINATOR).build();
@@ -911,17 +821,6 @@ public class TokenInfoHTSSuite extends HapiApiSuite {
                         .setFeeCollectorAccountId(spec.registry().getAccountID(HTS_COLLECTOR))
                         .build();
 
-        //        return new TokenInfo(
-        //                token,
-        //                1L,
-        //                false,
-        //                false,
-        //                false,
-        //                new ArrayList<>(),
-        //                new ArrayList<>(),
-        //                royaltyFees,
-        //                LEDGER_ID);
-
         return TokenInfo.newBuilder()
                 .setLedgerId(fromString("0x03"))
                 .setSupplyTypeValue(TokenSupplyType.FINITE_VALUE)
@@ -929,12 +828,9 @@ public class TokenInfoHTSSuite extends HapiApiSuite {
                 .setAutoRenewAccount(autoRenewAccount)
                 .setAutoRenewPeriod(
                         Duration.newBuilder().setSeconds(THREE_MONTHS_IN_SECONDS).build())
-                //              .setTokenId(tokenMerkleId)
-                //              .setDeleted(isDeleted)
                 .setSymbol(NON_FUNGIBLE_SYMBOL)
                 .setName(NON_FUNGIBLE_TOKEN_NAME)
                 .setMemo(MEMO)
-                //                                      .setDecimals(decimals)
                 .setTreasury(treasury)
                 .setTotalSupply(1L)
                 .setMaxSupply(10L)
@@ -947,16 +843,6 @@ public class TokenInfoHTSSuite extends HapiApiSuite {
                 .setFeeScheduleKey(getTokenKeyFromSpec(spec, TokenKeyType.FEE_SCHEDULE_KEY))
                 .setPauseKey(getTokenKeyFromSpec(spec, TokenKeyType.PAUSE_KEY))
                 .build();
-    }
-
-    private void setTokenKeys(final HapiApiSpec spec, final TokenInfo.Builder tokenInfo) {
-        tokenInfo.setAdminKey(getTokenKeyFromSpec(spec, TokenKeyType.ADMIN_KEY));
-        tokenInfo.setAdminKey(getTokenKeyFromSpec(spec, TokenKeyType.KYC_KEY));
-        tokenInfo.setAdminKey(getTokenKeyFromSpec(spec, TokenKeyType.FREEZE_KEY));
-        tokenInfo.setAdminKey(getTokenKeyFromSpec(spec, TokenKeyType.WIPE_KEY));
-        tokenInfo.setAdminKey(getTokenKeyFromSpec(spec, TokenKeyType.SUPPLY_KEY));
-        tokenInfo.setAdminKey(getTokenKeyFromSpec(spec, TokenKeyType.FEE_SCHEDULE_KEY));
-        tokenInfo.setAdminKey(getTokenKeyFromSpec(spec, TokenKeyType.PAUSE_KEY));
     }
 
     private Key getTokenKeyFromSpec(final HapiApiSpec spec, final TokenKeyType type) {
