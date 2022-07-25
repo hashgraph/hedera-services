@@ -98,7 +98,7 @@ import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
-import com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult;
+import com.hedera.services.contracts.ParsingConstants.FunctionType;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.NftTransfer;
@@ -776,9 +776,8 @@ public class DynamicGasCostSuite extends HapiApiSuite {
                                                                         .contractCallResult(
                                                                                 htsPrecompileResult()
                                                                                         .forFunction(
-                                                                                                HTSPrecompileResult
-                                                                                                        .FunctionType
-                                                                                                        .OWNER)
+                                                                                                FunctionType
+                                                                                                        .ERC_OWNER)
                                                                                         .withOwner(
                                                                                                 unhex(
                                                                                                         userAliasAddr
@@ -981,9 +980,8 @@ public class DynamicGasCostSuite extends HapiApiSuite {
                                                         .contractCallResult(
                                                                 htsPrecompileResult()
                                                                         .forFunction(
-                                                                                HTSPrecompileResult
-                                                                                        .FunctionType
-                                                                                        .MINT)
+                                                                                FunctionType
+                                                                                        .HAPI_MINT)
                                                                         .withTotalSupply(0)
                                                                         .withSerialNumbers()
                                                                         .withStatus(

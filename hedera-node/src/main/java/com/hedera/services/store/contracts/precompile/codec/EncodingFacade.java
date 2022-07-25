@@ -15,12 +15,22 @@
  */
 package com.hedera.services.store.contracts.precompile.codec;
 
-import static com.hedera.services.store.contracts.precompile.codec.EncodingFacade.FunctionType.HAPI_MINT;
+import static com.hedera.services.contracts.ParsingConstants.FunctionType.HAPI_MINT;
+import static com.hedera.services.contracts.ParsingConstants.getFungibleTokenInfoType;
+import static com.hedera.services.contracts.ParsingConstants.getNonFungibleTokenInfoType;
+import static com.hedera.services.contracts.ParsingConstants.getTokenInfoType;
+import static com.hedera.services.contracts.ParsingConstants.notSpecifiedType;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.esaulpaugh.headlong.abi.TupleType;
+import com.hedera.services.contracts.ParsingConstants.FunctionType;
+import com.hedera.services.store.contracts.precompile.TokenKeyType;
+import com.hedera.services.utils.EntityIdUtils;
+import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.TokenInfo;
+import com.hederahashgraph.api.proto.java.TokenNftInfo;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
@@ -239,27 +249,30 @@ public class EncodingFacade {
                 .build();
     }
 
-    protected enum FunctionType {
-        ERC_TOTAL_SUPPLY,
-        ERC_DECIMALS,
-        ERC_BALANCE,
-        ERC_OWNER,
-        ERC_TOKEN_URI,
-        ERC_NAME,
-        ERC_SYMBOL,
-        ERC_TRANSFER,
-        ERC_ALLOWANCE,
-        ERC_APPROVE,
-        ERC_GET_APPROVED,
-        ERC_IS_APPROVED_FOR_ALL,
-        HAPI_CREATE,
-        HAPI_MINT,
-        HAPI_BURN,
-        HAPI_ALLOWANCE,
-        HAPI_APPROVE,
-        HAPI_APPROVE_NFT,
-        HAPI_GET_APPROVED,
-        HAPI_IS_APPROVED_FOR_ALL
+    public Bytes encodeGetTokenInfo(final com.hederahashgraph.api.proto.java.TokenInfo tokenInfo) {
+        return functionResultBuilder()
+                .forFunction(FunctionType.HAPI_GET_TOKEN_INFO)
+                .withStatus(SUCCESS.getNumber())
+                .withTokenInfo(tokenInfo)
+                .build();
+    }
+
+    public Bytes encodeGetFungibleTokenInfo(final TokenInfo tokenInfo) {
+        return functionResultBuilder()
+                .forFunction(FunctionType.HAPI_GET_FUNGIBLE_TOKEN_INFO)
+                .withStatus(SUCCESS.getNumber())
+                .withTokenInfo(tokenInfo)
+                .build();
+    }
+
+    public Bytes encodeGetNonFungibleTokenInfo(
+            final TokenInfo tokenInfo, final TokenNftInfo nonFungibleTokenInfo) {
+        return functionResultBuilder()
+                .forFunction(FunctionType.HAPI_GET_NON_FUNGIBLE_TOKEN_INFO)
+                .withStatus(SUCCESS.getNumber())
+                .withTokenInfo(tokenInfo)
+                .withNftTokenInfo(nonFungibleTokenInfo)
+                .build();
     }
 
     private FunctionResultBuilder functionResultBuilder() {
@@ -278,12 +291,16 @@ public class EncodingFacade {
         private long allowance;
         private boolean approve;
         private long[] serialNumbers;
+        private long serialNumber;
         private int decimals;
+        private long creationTime;
         private Address owner;
         private Address approved;
         private String name;
         private String symbol;
         private String metadata;
+        private TokenInfo tokenInfo;
+        private TokenNftInfo nonFungibleTokenInfo;
 
         private FunctionResultBuilder forFunction(final FunctionType functionType) {
             this.tupleType =
@@ -308,6 +325,10 @@ public class EncodingFacade {
                         case HAPI_APPROVE_NFT -> hapiApproveNftType;
                         case HAPI_GET_APPROVED -> hapiGetApprovedType;
                         case HAPI_IS_APPROVED_FOR_ALL -> hapiIsApprovedForAllType;
+                        case HAPI_GET_TOKEN_INFO -> getTokenInfoType;
+                        case HAPI_GET_FUNGIBLE_TOKEN_INFO -> getFungibleTokenInfoType;
+                        case HAPI_GET_NON_FUNGIBLE_TOKEN_INFO -> getNonFungibleTokenInfoType;
+                        default -> notSpecifiedType;
                     };
 
             this.functionType = functionType;
@@ -379,6 +400,16 @@ public class EncodingFacade {
             return this;
         }
 
+        private FunctionResultBuilder withSerialNumber(final long serialNumber) {
+            this.serialNumber = serialNumber;
+            return this;
+        }
+
+        private FunctionResultBuilder withCreationTime(final long creationTime) {
+            this.creationTime = creationTime;
+            return this;
+        }
+
         private FunctionResultBuilder withErcFungibleTransferStatus(
                 final boolean ercFungibleTransferStatus) {
             this.ercFungibleTransferStatus = ercFungibleTransferStatus;
@@ -388,6 +419,16 @@ public class EncodingFacade {
         private FunctionResultBuilder withIsApprovedForAllStatus(
                 final boolean isApprovedForAllStatus) {
             this.isApprovedForAllStatus = isApprovedForAllStatus;
+            return this;
+        }
+
+        private FunctionResultBuilder withTokenInfo(final TokenInfo tokenInfo) {
+            this.tokenInfo = tokenInfo;
+            return this;
+        }
+
+        private FunctionResultBuilder withNftTokenInfo(final TokenNftInfo nonFungibleTokenInfo) {
+            this.nonFungibleTokenInfo = nonFungibleTokenInfo;
             return this;
         }
 
@@ -418,9 +459,165 @@ public class EncodingFacade {
                         case HAPI_GET_APPROVED -> Tuple.of(
                                 status, convertBesuAddressToHeadlongAddress(approved));
                         case HAPI_IS_APPROVED_FOR_ALL -> Tuple.of(status, isApprovedForAllStatus);
+                        case HAPI_GET_TOKEN_INFO -> getTupleForGetTokenInfo();
+                        case HAPI_GET_FUNGIBLE_TOKEN_INFO -> getTupleForGetFungibleTokenInfo();
+                        case HAPI_GET_NON_FUNGIBLE_TOKEN_INFO -> getTupleForGetNonFungibleTokenInfo();
+                        default -> Tuple.of(status);
                     };
 
             return Bytes.wrap(tupleType.encode(result).array());
+        }
+
+        private Tuple getTupleForGetTokenInfo() {
+            return Tuple.of(status, getTupleForTokenInfo());
+        }
+
+        private Tuple getTupleForGetFungibleTokenInfo() {
+            return Tuple.of(status, Tuple.of(getTupleForTokenInfo(), tokenInfo.getDecimals()));
+        }
+
+        private Tuple getTupleForGetNonFungibleTokenInfo() {
+            return Tuple.of(
+                    status,
+                    Tuple.of(
+                            getTupleForTokenInfo(),
+                            nonFungibleTokenInfo.getNftID().getSerialNumber(),
+                            convertBesuAddressToHeadlongAddress(
+                                    EntityIdUtils.asTypedEvmAddress(
+                                            nonFungibleTokenInfo.getAccountID())),
+                            nonFungibleTokenInfo.getCreationTime().getSeconds(),
+                            nonFungibleTokenInfo.getMetadata().toByteArray(),
+                            convertBesuAddressToHeadlongAddress(
+                                    EntityIdUtils.asTypedEvmAddress(
+                                            nonFungibleTokenInfo.getSpenderId()))));
+        }
+
+        private Tuple getTupleForTokenInfo() {
+            final var fixedFees = new ArrayList<Tuple>();
+            final var fractionalFees = new ArrayList<Tuple>();
+            final var royaltyFees = new ArrayList<Tuple>();
+
+            for (final var customFee : tokenInfo.getCustomFeesList()) {
+                final var feeCollector =
+                        convertBesuAddressToHeadlongAddress(
+                                EntityIdUtils.asTypedEvmAddress(
+                                        customFee.getFeeCollectorAccountId()));
+                if (customFee.getFixedFee().getAmount() > 0) {
+                    fixedFees.add(getFixedFeeTuple(customFee.getFixedFee(), feeCollector));
+                } else if (customFee.getFractionalFee().getMinimumAmount() > 0) {
+                    fractionalFees.add(
+                            getFractionalFeeTuple(customFee.getFractionalFee(), feeCollector));
+                } else if (customFee.getRoyaltyFee().getExchangeValueFraction().getNumerator()
+                        > 0) {
+                    royaltyFees.add(getRoyaltyFeeTuple(customFee.getRoyaltyFee(), feeCollector));
+                }
+            }
+            return Tuple.of(
+                    getHederaTokenTuple(),
+                    tokenInfo.getTotalSupply(),
+                    tokenInfo.getDeleted(),
+                    tokenInfo.getDefaultKycStatus().getNumber() == 1,
+                    tokenInfo.getPauseStatus().getNumber() == 1,
+                    fixedFees,
+                    fractionalFees,
+                    royaltyFees,
+                    Bytes.wrap(tokenInfo.getLedgerId().toByteArray()).toString());
+        }
+
+        private Tuple getFixedFeeTuple(
+                final com.hederahashgraph.api.proto.java.FixedFee fixedFee,
+                final com.esaulpaugh.headlong.abi.Address feeCollector) {
+            return Tuple.of(
+                    fixedFee.getAmount(),
+                    convertBesuAddressToHeadlongAddress(
+                            EntityIdUtils.asTypedEvmAddress(fixedFee.getDenominatingTokenId())),
+                    fixedFee.getDenominatingTokenId().getTokenNum() == 0,
+                    false,
+                    feeCollector);
+        }
+
+        private Tuple getFractionalFeeTuple(
+                final com.hederahashgraph.api.proto.java.FractionalFee fractionalFee,
+                final com.esaulpaugh.headlong.abi.Address feeCollector) {
+            return Tuple.of(
+                    fractionalFee.getFractionalAmount().getNumerator(),
+                    fractionalFee.getFractionalAmount().getDenominator(),
+                    fractionalFee.getMinimumAmount(),
+                    fractionalFee.getMaximumAmount(),
+                    fractionalFee.getNetOfTransfers(),
+                    feeCollector);
+        }
+
+        private Tuple getRoyaltyFeeTuple(
+                final com.hederahashgraph.api.proto.java.RoyaltyFee royaltyFee,
+                final com.esaulpaugh.headlong.abi.Address feeCollector) {
+            return Tuple.of(
+                    royaltyFee.getExchangeValueFraction().getNumerator(),
+                    royaltyFee.getExchangeValueFraction().getDenominator(),
+                    royaltyFee.getFallbackFee().getAmount(),
+                    convertBesuAddressToHeadlongAddress(
+                            EntityIdUtils.asTypedEvmAddress(
+                                    royaltyFee.getFallbackFee().getDenominatingTokenId())),
+                    royaltyFee.getFallbackFee().getDenominatingTokenId().getTokenNum() == 0,
+                    feeCollector);
+        }
+
+        private Tuple getHederaTokenTuple() {
+            final var expiry = tokenInfo.getExpiry().getSeconds();
+            final var autoRenewPeriod = tokenInfo.getAutoRenewPeriod().getSeconds();
+            final var expiryTuple =
+                    Tuple.of(
+                            expiry,
+                            convertBesuAddressToHeadlongAddress(
+                                    EntityIdUtils.asTypedEvmAddress(
+                                            tokenInfo.getAutoRenewAccount())),
+                            autoRenewPeriod);
+
+            return Tuple.of(
+                    tokenInfo.getName(),
+                    tokenInfo.getSymbol(),
+                    convertBesuAddressToHeadlongAddress(
+                            EntityIdUtils.asTypedEvmAddress(tokenInfo.getTreasury())),
+                    tokenInfo.getMemo(),
+                    tokenInfo.getSupplyType().getNumber() == 1,
+                    tokenInfo.getMaxSupply(),
+                    tokenInfo.getDefaultFreezeStatus().getNumber() == 1,
+                    getTokenKeysTuples(),
+                    expiryTuple);
+        }
+
+        private Tuple[] getTokenKeysTuples() {
+            final var adminKey = tokenInfo.getAdminKey();
+            final var kycKey = tokenInfo.getKycKey();
+            final var freezeKey = tokenInfo.getFreezeKey();
+            final var wipeKey = tokenInfo.getWipeKey();
+            final var supplyKey = tokenInfo.getSupplyKey();
+            final var feeScheduleKey = tokenInfo.getFeeScheduleKey();
+            final var pauseKey = tokenInfo.getPauseKey();
+
+            final Tuple[] tokenKeysTuples = new Tuple[TokenKeyType.values().length];
+            tokenKeysTuples[0] = getKeyTuple(adminKey);
+            tokenKeysTuples[1] = getKeyTuple(kycKey);
+            tokenKeysTuples[2] = getKeyTuple(freezeKey);
+            tokenKeysTuples[3] = getKeyTuple(wipeKey);
+            tokenKeysTuples[4] = getKeyTuple(supplyKey);
+            tokenKeysTuples[5] = getKeyTuple(feeScheduleKey);
+            tokenKeysTuples[6] = getKeyTuple(pauseKey);
+
+            return tokenKeysTuples;
+        }
+
+        private static Tuple getKeyTuple(final Key key) {
+            return Tuple.of(
+                    false,
+                    key.getContractID().getContractNum() > 0
+                            ? EntityIdUtils.asTypedEvmAddress(key.getContractID())
+                            : null,
+                    key.getEd25519(),
+                    key.getECDSASecp256K1(),
+                    key.getDelegatableContractId().getContractNum() > 0
+                            ? EntityIdUtils.asTypedEvmAddress(key.getDelegatableContractId())
+                            : null);
         }
     }
 

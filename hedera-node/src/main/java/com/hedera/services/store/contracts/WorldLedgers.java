@@ -22,12 +22,32 @@ import static com.hedera.services.ledger.properties.AccountProperty.ALIAS;
 import static com.hedera.services.ledger.properties.AccountProperty.APPROVE_FOR_ALL_NFTS_ALLOWANCES;
 import static com.hedera.services.ledger.properties.NftProperty.METADATA;
 import static com.hedera.services.ledger.properties.NftProperty.OWNER;
+import static com.hedera.services.ledger.properties.NftProperty.PACKED_CREATION_TIME;
+import static com.hedera.services.ledger.properties.NftProperty.SPENDER;
+import static com.hedera.services.ledger.properties.TokenProperty.ACC_FROZEN_BY_DEFAULT;
+import static com.hedera.services.ledger.properties.TokenProperty.ACC_KYC_GRANTED_BY_DEFAULT;
+import static com.hedera.services.ledger.properties.TokenProperty.ADMIN_KEY;
+import static com.hedera.services.ledger.properties.TokenProperty.AUTO_RENEW_ACCOUNT;
+import static com.hedera.services.ledger.properties.TokenProperty.AUTO_RENEW_PERIOD;
 import static com.hedera.services.ledger.properties.TokenProperty.DECIMALS;
+import static com.hedera.services.ledger.properties.TokenProperty.EXPIRY;
+import static com.hedera.services.ledger.properties.TokenProperty.FEE_SCHEDULE;
+import static com.hedera.services.ledger.properties.TokenProperty.FEE_SCHEDULE_KEY;
+import static com.hedera.services.ledger.properties.TokenProperty.FREEZE_KEY;
+import static com.hedera.services.ledger.properties.TokenProperty.IS_DELETED;
+import static com.hedera.services.ledger.properties.TokenProperty.IS_PAUSED;
+import static com.hedera.services.ledger.properties.TokenProperty.KYC_KEY;
+import static com.hedera.services.ledger.properties.TokenProperty.MAX_SUPPLY;
+import static com.hedera.services.ledger.properties.TokenProperty.MEMO;
 import static com.hedera.services.ledger.properties.TokenProperty.NAME;
+import static com.hedera.services.ledger.properties.TokenProperty.PAUSE_KEY;
+import static com.hedera.services.ledger.properties.TokenProperty.SUPPLY_KEY;
+import static com.hedera.services.ledger.properties.TokenProperty.SUPPLY_TYPE;
 import static com.hedera.services.ledger.properties.TokenProperty.SYMBOL;
 import static com.hedera.services.ledger.properties.TokenProperty.TOKEN_TYPE;
 import static com.hedera.services.ledger.properties.TokenProperty.TOTAL_SUPPLY;
 import static com.hedera.services.ledger.properties.TokenProperty.TREASURY;
+import static com.hedera.services.ledger.properties.TokenProperty.WIPE_KEY;
 import static com.hedera.services.ledger.properties.TokenRelProperty.TOKEN_BALANCE;
 import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
 import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.URI_QUERY_NON_EXISTING_TOKEN_ERROR;
@@ -50,17 +70,22 @@ import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.NftProperty;
 import com.hedera.services.ledger.properties.TokenProperty;
 import com.hedera.services.ledger.properties.TokenRelProperty;
+import com.hedera.services.legacy.core.jproto.JKey;
+import com.hedera.services.state.enums.TokenSupplyType;
 import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.state.submerkle.FcCustomFee;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
 import com.hedera.services.store.models.NftId;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
+import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.BiFunction;
 import javax.annotation.Nullable;
@@ -122,6 +147,14 @@ public class WorldLedgers {
         }
     }
 
+    public long packedCreationTimeOf(final NftId nftId) {
+        return nftPropertyOf(nftId, PACKED_CREATION_TIME, StaticEntityAccess::packedCreationTime);
+    }
+
+    public EntityId spenderOf(final NftId nftId) {
+        return nftPropertyOf(nftId, SPENDER, StaticEntityAccess::spender);
+    }
+
     public String nameOf(final TokenID tokenId) {
         return propertyOf(tokenId, NAME, StaticEntityAccess::nameOf);
     }
@@ -130,12 +163,93 @@ public class WorldLedgers {
         return propertyOf(tokenId, SYMBOL, StaticEntityAccess::symbolOf);
     }
 
+    public EntityId treasury(final TokenID tokenId) {
+        return propertyOf(tokenId, TREASURY, StaticEntityAccess::treasury);
+    }
+
+    public String memo(final TokenID tokenId) {
+        return propertyOf(tokenId, MEMO, StaticEntityAccess::memo);
+    }
+
+    public TokenSupplyType supplyType(final TokenID tokenId) {
+        return propertyOf(tokenId, SUPPLY_TYPE, StaticEntityAccess::supplyType);
+    }
+
+    public long maxSupply(final TokenID tokenId) {
+        return propertyOf(tokenId, MAX_SUPPLY, StaticEntityAccess::maxSupply);
+    }
+
+    public boolean accountsFrozenByDefault(final TokenID tokenId) {
+        return propertyOf(
+                tokenId, ACC_FROZEN_BY_DEFAULT, StaticEntityAccess::accountsAreFrozenByDefault);
+    }
+
     public long totalSupplyOf(final TokenID tokenId) {
         return propertyOf(tokenId, TOTAL_SUPPLY, StaticEntityAccess::supplyOf);
     }
 
+    public boolean isDeleted(final TokenID tokenId) {
+        return propertyOf(tokenId, IS_DELETED, StaticEntityAccess::isDeleted);
+    }
+
+    public boolean isPaused(final TokenID tokenId) {
+        return propertyOf(tokenId, IS_PAUSED, StaticEntityAccess::isPaused);
+    }
+
+    public List<FcCustomFee> feeSchedule(final TokenID tokenId) {
+        return propertyOf(tokenId, FEE_SCHEDULE, StaticEntityAccess::feeSchedule);
+    }
+
+    public boolean accountsKycGrantedByDefault(final TokenID tokenId) {
+        return propertyOf(
+                tokenId,
+                ACC_KYC_GRANTED_BY_DEFAULT,
+                StaticEntityAccess::accountsKycGrantedByDefault);
+    }
+
+    public long expiry(final TokenID tokenId) {
+        return propertyOf(tokenId, EXPIRY, StaticEntityAccess::expiry);
+    }
+
+    public EntityId autoRenewAccount(final TokenID tokenId) {
+        return propertyOf(tokenId, AUTO_RENEW_ACCOUNT, StaticEntityAccess::autoRenewAccount);
+    }
+
+    public long autoRenewPeriod(final TokenID tokenId) {
+        return propertyOf(tokenId, AUTO_RENEW_PERIOD, StaticEntityAccess::autoRenewPeriod);
+    }
+
     public int decimalsOf(final TokenID tokenId) {
         return propertyOf(tokenId, DECIMALS, StaticEntityAccess::decimalsOf);
+    }
+
+    public Optional<JKey> adminKey(final TokenID tokenId) {
+        return Optional.ofNullable(propertyOf(tokenId, ADMIN_KEY, StaticEntityAccess::adminKey));
+    }
+
+    public Optional<JKey> kycKey(final TokenID tokenId) {
+        return Optional.ofNullable(propertyOf(tokenId, KYC_KEY, StaticEntityAccess::kycKey));
+    }
+
+    public Optional<JKey> freezeKey(final TokenID tokenId) {
+        return Optional.ofNullable(propertyOf(tokenId, FREEZE_KEY, StaticEntityAccess::freezeKey));
+    }
+
+    public Optional<JKey> wipeKey(final TokenID tokenId) {
+        return Optional.ofNullable(propertyOf(tokenId, WIPE_KEY, StaticEntityAccess::wipeKey));
+    }
+
+    public Optional<JKey> supplyKey(final TokenID tokenId) {
+        return Optional.ofNullable(propertyOf(tokenId, SUPPLY_KEY, StaticEntityAccess::supplyKey));
+    }
+
+    public Optional<JKey> feeScheduleKey(final TokenID tokenId) {
+        return Optional.ofNullable(
+                propertyOf(tokenId, FEE_SCHEDULE_KEY, StaticEntityAccess::feeScheduleKey));
+    }
+
+    public Optional<JKey> pauseKey(final TokenID tokenId) {
+        return Optional.ofNullable(propertyOf(tokenId, PAUSE_KEY, StaticEntityAccess::pauseKey));
     }
 
     public TokenType typeOf(final TokenID tokenId) {
@@ -376,8 +490,25 @@ public class WorldLedgers {
         }
     }
 
+    private <T> T nftPropertyOf(
+            final NftId nftId,
+            final NftProperty property,
+            final BiFunction<StaticEntityAccess, NftId, T> staticGetter) {
+        if (staticEntityAccess != null) {
+            return staticGetter.apply(staticEntityAccess, nftId);
+        } else {
+            return getNftTokenMeta(nftId, property);
+        }
+    }
+
     private <T> T getTokenMeta(final TokenID tokenId, final TokenProperty property) {
         final var value = (T) tokensLedger.get(tokenId, property);
+        validateTrue(value != null, INVALID_TOKEN_ID);
+        return value;
+    }
+
+    private <T> T getNftTokenMeta(final NftId nftId, final NftProperty nftProperty) {
+        final var value = (T) nftsLedger.get(nftId, nftProperty);
         validateTrue(value != null, INVALID_TOKEN_ID);
         return value;
     }

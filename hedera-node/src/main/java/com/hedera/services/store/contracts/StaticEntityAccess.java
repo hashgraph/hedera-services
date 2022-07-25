@@ -33,11 +33,15 @@ import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.accounts.ContractAliases;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.ledger.properties.AccountProperty;
+import com.hedera.services.legacy.core.jproto.JKey;
+import com.hedera.services.state.enums.TokenSupplyType;
 import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
+import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.state.submerkle.FcCustomFee;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
 import com.hedera.services.state.virtual.ContractKey;
 import com.hedera.services.state.virtual.IterableContractValue;
@@ -50,8 +54,10 @@ import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
+import com.hederahashgraph.api.proto.java.TokenInfo;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
+import java.util.List;
 import java.util.Objects;
 import java.util.function.Function;
 import javax.annotation.Nullable;
@@ -212,6 +218,115 @@ public class StaticEntityAccess implements EntityAccess {
     }
 
     /**
+     * Returns combined info for the given token.
+     *
+     * @param tokenId the token of interest
+     * @param ledgerId the ledgerId of interest
+     * @return the token's combined info
+     */
+    public TokenInfo tokenInfoOf(final TokenID tokenId, final String ledgerId) {
+        //        final var token = lookupToken(tokenId);
+        //
+        //        final var name = token.name();
+        //        final var symbol = token.symbol();
+        //        final var treasury = token.treasury().toEvmAddress();
+        //        final var memo = token.memo();
+        //        final var tokenSupplyType = TokenSupplyType.FINITE.equals(token.supplyType());
+        //        final var maxSupply = token.maxSupply();
+        //        final var freezeDefault = token.accountsAreFrozenByDefault();
+        //
+        //        final var keys = new ArrayList<TokenKey>();
+        //        keys.add(getTokenKey(token.adminKey(), TokenKeyType.ADMIN_KEY.value()));
+        //        keys.add(getTokenKey(token.kycKey(), TokenKeyType.KYC_KEY.value()));
+        //        keys.add(getTokenKey(token.freezeKey(), TokenKeyType.FREEZE_KEY.value()));
+        //        keys.add(getTokenKey(token.wipeKey(), TokenKeyType.WIPE_KEY.value()));
+        //        keys.add(getTokenKey(token.supplyKey(), TokenKeyType.SUPPLY_KEY.value()));
+        //        keys.add(getTokenKey(token.feeScheduleKey(),
+        // TokenKeyType.FEE_SCHEDULE_KEY.value()));
+        //        keys.add(getTokenKey(token.pauseKey(), TokenKeyType.PAUSE_KEY.value()));
+        //
+        //        final var expiry = getExpiry(token);
+        //
+        //        final var hederaToken = new HederaToken(name, symbol, treasury, memo,
+        // tokenSupplyType, maxSupply, freezeDefault, keys, expiry);
+        //
+        //        final var totalSupply = token.totalSupply();
+        //        final var deleted = token.isDeleted();
+        //        final var defaultKycStatus = token.accountsKycGrantedByDefault();
+        //        final var paused = token.isPaused();
+        //
+        //        final var fixedFees = new ArrayList<FixedFee>();
+        //        final var fractionalFees = new ArrayList<FractionalFee>();
+        //        for(final var fee : token.customFeeSchedule()) {
+        //            final var feeType = fee.getFeeType();
+        //            if( FeeType.FIXED_FEE.equals(feeType)) {
+        //                fixedFees.add(getFixedFee(fee));
+        //            } else if(FeeType.FRACTIONAL_FEE.equals(feeType)) {
+        //                fractionalFees.add(getFractionalFee(fee));
+        //            }
+        //        }
+
+        //        return new TokenInfo(hederaToken, totalSupply, deleted, defaultKycStatus, paused,
+        // fixedFees, fractionalFees, new ArrayList<>(), ledgerId);
+        return null;
+    }
+
+    /**
+     * Returns the treasury of the given token.
+     *
+     * @param tokenId the token of interest
+     * @return the token's treasury
+     */
+    public EntityId treasury(final TokenID tokenId) {
+        final var token = lookupToken(tokenId);
+        return token.treasury();
+    }
+
+    /**
+     * Returns the memo of the given token.
+     *
+     * @param tokenId the token of interest
+     * @return the token's memo
+     */
+    public String memo(final TokenID tokenId) {
+        final var token = lookupToken(tokenId);
+        return token.memo();
+    }
+
+    /**
+     * Returns the supplyType of the given token.
+     *
+     * @param tokenId the token of interest
+     * @return the token's supplyType
+     */
+    public TokenSupplyType supplyType(final TokenID tokenId) {
+        final var token = lookupToken(tokenId);
+        return token.supplyType();
+    }
+
+    /**
+     * Returns the maxSupply of the given token.
+     *
+     * @param tokenId the token of interest
+     * @return the token's maxSupply
+     */
+    public long maxSupply(final TokenID tokenId) {
+        final var token = lookupToken(tokenId);
+        return token.maxSupply();
+    }
+
+    /**
+     * Returns the accountsFrozenByDefault flag of the given token.
+     *
+     * @param tokenId the token of interest
+     * @return the token's accountsFrozenByDefault
+     */
+    public boolean accountsAreFrozenByDefault(final TokenID tokenId) {
+        final var token = lookupToken(tokenId);
+        return token.accountsAreFrozenByDefault();
+    }
+
+    /**
      * Returns the supply of the given token.
      *
      * @param tokenId the token of interest
@@ -223,6 +338,83 @@ public class StaticEntityAccess implements EntityAccess {
     }
 
     /**
+     * Returns the accountsKycGrantedByDefault flag of the given token.
+     *
+     * @param tokenId the token of interest
+     * @return the token's accountsKycGrantedByDefault flag
+     */
+    public boolean accountsKycGrantedByDefault(final TokenID tokenId) {
+        final var token = lookupToken(tokenId);
+        return token.accountsKycGrantedByDefault();
+    }
+
+    /**
+     * Returns the isDeleted flag of the given token.
+     *
+     * @param tokenId the token of interest
+     * @return the token's isDeleted flag
+     */
+    public boolean isDeleted(final TokenID tokenId) {
+        final var token = lookupToken(tokenId);
+        return token.isDeleted();
+    }
+
+    /**
+     * Returns the isPaused flag of the given token.
+     *
+     * @param tokenId the token of interest
+     * @return the token's isPaused flag
+     */
+    public boolean isPaused(final TokenID tokenId) {
+        final var token = lookupToken(tokenId);
+        return token.isPaused();
+    }
+
+    /**
+     * Returns the feeSchedule of the given token.
+     *
+     * @param tokenId the token of interest
+     * @return the token's feeSchedule
+     */
+    public List<FcCustomFee> feeSchedule(final TokenID tokenId) {
+        final var token = lookupToken(tokenId);
+        return token.customFeeSchedule();
+    }
+
+    /**
+     * Returns the expiry of the given token.
+     *
+     * @param tokenId the token of interest
+     * @return the token's expiry
+     */
+    public long expiry(final TokenID tokenId) {
+        final var token = lookupToken(tokenId);
+        return token.expiry();
+    }
+
+    /**
+     * Returns the autoRenewAccount of the given token.
+     *
+     * @param tokenId the token of interest
+     * @return the token's autoRenewAccount
+     */
+    public EntityId autoRenewAccount(final TokenID tokenId) {
+        final var token = lookupToken(tokenId);
+        return token.autoRenewAccount();
+    }
+
+    /**
+     * Returns the autoRenewPeriod of the given token.
+     *
+     * @param tokenId the token of interest
+     * @return the token's autoRenewPeriod
+     */
+    public long autoRenewPeriod(final TokenID tokenId) {
+        final var token = lookupToken(tokenId);
+        return token.autoRenewPeriod();
+    }
+
+    /**
      * Returns the decimals of the given token.
      *
      * @param tokenId the token of interest
@@ -231,6 +423,83 @@ public class StaticEntityAccess implements EntityAccess {
     public int decimalsOf(final TokenID tokenId) {
         final var token = lookupToken(tokenId);
         return token.decimals();
+    }
+
+    /**
+     * Returns the adminKey of the given token.
+     *
+     * @param tokenId the token of interest
+     * @return the token's adminKey
+     */
+    public JKey adminKey(final TokenID tokenId) {
+        final var token = lookupToken(tokenId);
+        return token.adminKey().orElse(null);
+    }
+
+    /**
+     * Returns the kycKey of the given token.
+     *
+     * @param tokenId the token of interest
+     * @return the token's kycKey
+     */
+    public JKey kycKey(final TokenID tokenId) {
+        final var token = lookupToken(tokenId);
+        return token.kycKey().orElse(null);
+    }
+
+    /**
+     * Returns the freezeKey of the given token.
+     *
+     * @param tokenId the token of interest
+     * @return the token's freezeKey
+     */
+    public JKey freezeKey(final TokenID tokenId) {
+        final var token = lookupToken(tokenId);
+        return token.freezeKey().orElse(null);
+    }
+
+    /**
+     * Returns the wipeKey of the given token.
+     *
+     * @param tokenId the token of interest
+     * @return the token's wipeKey
+     */
+    public JKey wipeKey(final TokenID tokenId) {
+        final var token = lookupToken(tokenId);
+        return token.wipeKey().orElse(null);
+    }
+
+    /**
+     * Returns the supplyKey of the given token.
+     *
+     * @param tokenId the token of interest
+     * @return the token's supplyKey
+     */
+    public JKey supplyKey(final TokenID tokenId) {
+        final var token = lookupToken(tokenId);
+        return token.supplyKey().orElse(null);
+    }
+
+    /**
+     * Returns the feeScheduleKey of the given token.
+     *
+     * @param tokenId the token of interest
+     * @return the token's feeScheduleKey
+     */
+    public JKey feeScheduleKey(final TokenID tokenId) {
+        final var token = lookupToken(tokenId);
+        return token.feeScheduleKey().orElse(null);
+    }
+
+    /**
+     * Returns the feeScheduleKey of the given token.
+     *
+     * @param tokenId the token of interest
+     * @return the token's feeScheduleKey
+     */
+    public JKey pauseKey(final TokenID tokenId) {
+        final var token = lookupToken(tokenId);
+        return token.pauseKey().orElse(null);
     }
 
     /**
@@ -288,6 +557,30 @@ public class StaticEntityAccess implements EntityAccess {
         final var nft = nfts.get(EntityNumPair.fromNftId(nftId));
         validateTrueOrRevert(nft != null, INVALID_TOKEN_NFT_SERIAL_NUMBER);
         return nft.getSpender().toEvmAddress();
+    }
+
+    /**
+     * Returns the packedCreationTime of the given token.
+     *
+     * @param nftId the NFT of interest
+     * @return the token's packedCreationTime
+     */
+    public long packedCreationTime(final NftId nftId) {
+        final var nft = nfts.get(EntityNumPair.fromNftId(nftId));
+        validateTrueOrRevert(nft != null, INVALID_TOKEN_NFT_SERIAL_NUMBER);
+        return nft.getPackedCreationTime();
+    }
+
+    /**
+     * Returns the spender of the given token.
+     *
+     * @param nftId the NFT of interest
+     * @return the token's spender
+     */
+    public EntityId spender(final NftId nftId) {
+        final var nft = nfts.get(EntityNumPair.fromNftId(nftId));
+        validateTrueOrRevert(nft != null, INVALID_TOKEN_NFT_SERIAL_NUMBER);
+        return nft.getSpender();
     }
 
     /**
