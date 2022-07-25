@@ -15,7 +15,7 @@
  */
 package com.hedera.services.txns;
 
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.verify;
 
@@ -24,13 +24,13 @@ import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.txns.span.ExpandHandleSpan;
 import com.hedera.services.txns.span.SpanMapManager;
 import com.hedera.services.utils.accessors.AccessorFactory;
+import com.hedera.services.utils.accessors.SwirldsTxnAccessor;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.swirlds.common.system.transaction.internal.SwirldTransaction;
-import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -43,9 +43,6 @@ class ExpandHandleSpanTest {
     @Mock private AliasManager aliasManager;
 
     private final AccessorFactory accessorFactory = new AccessorFactory(aliasManager);
-
-    private final long duration = 20;
-    private final TimeUnit testUnit = TimeUnit.MILLISECONDS;
 
     private final byte[] validTxnBytes =
             Transaction.newBuilder()
@@ -71,7 +68,7 @@ class ExpandHandleSpanTest {
 
     @BeforeEach
     void setUp() {
-        subject = new ExpandHandleSpan(duration, testUnit, handleSpanMap, accessorFactory);
+        subject = new ExpandHandleSpan(handleSpanMap, accessorFactory);
     }
 
     @Test
@@ -82,9 +79,11 @@ class ExpandHandleSpanTest {
     }
 
     @Test
-    void expandsOnTracking() {
-        assertDoesNotThrow(() -> subject.track(validTxn));
-        assertDoesNotThrow(() -> subject.accessorFor(validTxn));
+    void expandsOnTracking() throws InvalidProtocolBufferException {
+        subject.track(validTxn);
+
+        final SwirldsTxnAccessor accessor = validTxn.getMetadata();
+        assertSame(accessor, subject.accessorFor(validTxn));
     }
 
     @Test

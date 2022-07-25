@@ -20,6 +20,9 @@ package com.hedera.services.txns;
  * ‍
  */
 
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.SystemDelete;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.SystemUndelete;
+
 import com.hedera.services.fees.annotations.FunctionKey;
 import com.hedera.services.legacy.handler.SmartContractRequestHandler;
 import com.hedera.services.txns.consensus.ConsensusLogicModule;
@@ -47,13 +50,8 @@ import dagger.Binds;
 import dagger.Module;
 import dagger.Provides;
 import dagger.multibindings.IntoMap;
-
-import javax.inject.Singleton;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
-
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.SystemDelete;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.SystemUndelete;
+import javax.inject.Singleton;
 
 @Module(includes = {
 		FileLogicModule.class,
@@ -82,7 +80,7 @@ public interface TransactionsModule {
 	@Provides
 	@Singleton
 	static ExpandHandleSpan provideExpandHandleSpan(SpanMapManager spanMapManager, AccessorFactory factory) {
-		return new ExpandHandleSpan(10, TimeUnit.SECONDS, spanMapManager, factory);
+		return new ExpandHandleSpan(spanMapManager, factory);
 	}
 
 	@Provides
