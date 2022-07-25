@@ -19,8 +19,6 @@ import static com.hedera.services.ledger.properties.AccountProperty.ALIAS;
 import static com.hedera.services.ledger.properties.AccountProperty.APPROVE_FOR_ALL_NFTS_ALLOWANCES;
 import static com.hedera.services.ledger.properties.NftProperty.METADATA;
 import static com.hedera.services.ledger.properties.NftProperty.OWNER;
-import static com.hedera.services.ledger.properties.NftProperty.PACKED_CREATION_TIME;
-import static com.hedera.services.ledger.properties.NftProperty.SPENDER;
 import static com.hedera.services.ledger.properties.TokenProperty.DECIMALS;
 import static com.hedera.services.ledger.properties.TokenProperty.NAME;
 import static com.hedera.services.ledger.properties.TokenProperty.SYMBOL;
@@ -30,8 +28,6 @@ import static com.hedera.services.ledger.properties.TokenRelProperty.TOKEN_BALAN
 import static com.hedera.services.state.enums.TokenType.FUNGIBLE_COMMON;
 import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
 import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.URI_QUERY_NON_EXISTING_TOKEN_ERROR;
-import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.senderId;
-import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.treasuryEntityId;
 import static com.hedera.test.utils.TxnUtils.assertFailsWith;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
@@ -62,8 +58,6 @@ import com.hedera.services.ledger.properties.ChangeSummaryManager;
 import com.hedera.services.ledger.properties.NftProperty;
 import com.hedera.services.ledger.properties.TokenProperty;
 import com.hedera.services.ledger.properties.TokenRelProperty;
-import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.state.enums.TokenSupplyType;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
@@ -76,9 +70,7 @@ import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.swirlds.fchashmap.FCHashMap;
-import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Optional;
 import java.util.Set;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
@@ -94,7 +86,6 @@ class WorldLedgersTest {
     private static final NftId target = new NftId(0, 0, 123, 456);
     private static final TokenID nft = target.tokenId();
     private static final TokenID fungibleToken = TokenID.newBuilder().setTokenNum(789).build();
-    private static final EntityId spender = new EntityId(0, 0, 555);
     private static final EntityId treasury = new EntityId(0, 0, 666);
     private static final EntityId notTreasury = new EntityId(0, 0, 777);
     private static final AccountID accountID = treasury.toGrpcAccountId();
@@ -136,7 +127,6 @@ class WorldLedgersTest {
     @Mock private ContractAliases aliases;
     @Mock private StaticEntityAccess staticEntityAccess;
     @Mock private SideEffectsTracker sideEffectsTracker;
-    @Mock private JKey key;
 
     private WorldLedgers subject;
 
@@ -190,36 +180,6 @@ class WorldLedgersTest {
         given(nftsLedger.get(nftId, METADATA)).willReturn("There, the eyes are".getBytes());
 
         assertEquals("There, the eyes are", subject.metadataOf(nftId));
-    }
-
-    @Test
-    void packedCreationTimeOfWorksWithStatic() {
-        subject = WorldLedgers.staticLedgersWith(aliases, staticEntityAccess);
-        given(staticEntityAccess.packedCreationTime(nftId)).willReturn(packedCreationTime);
-
-        assertEquals(packedCreationTime, subject.packedCreationTimeOf(nftId));
-    }
-
-    @Test
-    void packedCreationTimeOfWorks() {
-        given(nftsLedger.get(nftId, PACKED_CREATION_TIME)).willReturn(packedCreationTime);
-
-        assertEquals(packedCreationTime, subject.packedCreationTimeOf(nftId));
-    }
-
-    @Test
-    void spenderOfWorksWithStatic() {
-        subject = WorldLedgers.staticLedgersWith(aliases, staticEntityAccess);
-        given(staticEntityAccess.spender(nftId)).willReturn(spender);
-
-        assertEquals(spender, subject.spenderOf(nftId));
-    }
-
-    @Test
-    void spenderOfWorks() {
-        given(nftsLedger.get(nftId, SPENDER)).willReturn(spender);
-
-        assertEquals(spender, subject.spenderOf(nftId));
     }
 
     @Test
@@ -567,26 +527,6 @@ class WorldLedgersTest {
         given(staticEntityAccess.balanceOf(accountID, fungibleToken)).willReturn(balance);
         given(staticEntityAccess.typeOf(fungibleToken)).willReturn(FUNGIBLE_COMMON);
 
-        given(staticEntityAccess.adminKey(fungibleToken)).willReturn(key);
-        given(staticEntityAccess.kycKey(fungibleToken)).willReturn(key);
-        given(staticEntityAccess.freezeKey(fungibleToken)).willReturn(key);
-        given(staticEntityAccess.pauseKey(fungibleToken)).willReturn(key);
-        given(staticEntityAccess.wipeKey(fungibleToken)).willReturn(key);
-        given(staticEntityAccess.supplyKey(fungibleToken)).willReturn(key);
-        given(staticEntityAccess.feeScheduleKey(fungibleToken)).willReturn(key);
-        given(staticEntityAccess.treasury(fungibleToken)).willReturn(treasuryEntityId);
-        given(staticEntityAccess.memo(fungibleToken)).willReturn(memo);
-        given(staticEntityAccess.supplyType(fungibleToken)).willReturn(TokenSupplyType.FINITE);
-        given(staticEntityAccess.maxSupply(fungibleToken)).willReturn(maxSupply);
-        given(staticEntityAccess.accountsAreFrozenByDefault(fungibleToken)).willReturn(false);
-        given(staticEntityAccess.accountsKycGrantedByDefault(fungibleToken)).willReturn(false);
-        given(staticEntityAccess.isDeleted(fungibleToken)).willReturn(false);
-        given(staticEntityAccess.isPaused(fungibleToken)).willReturn(false);
-        given(staticEntityAccess.feeSchedule(fungibleToken)).willReturn(new ArrayList<>());
-        given(staticEntityAccess.expiry(fungibleToken)).willReturn(expiry);
-        given(staticEntityAccess.autoRenewAccount(fungibleToken)).willReturn(senderId);
-        given(staticEntityAccess.autoRenewPeriod(fungibleToken)).willReturn(autoRenewPeriod);
-
         subject = WorldLedgers.staticLedgersWith(aliases, staticEntityAccess);
 
         assertEquals(name, subject.nameOf(fungibleToken));
@@ -595,25 +535,6 @@ class WorldLedgersTest {
         assertEquals(balance, subject.balanceOf(accountID, fungibleToken));
         assertEquals(totalSupply, subject.totalSupplyOf(fungibleToken));
         assertEquals(FUNGIBLE_COMMON, subject.typeOf(fungibleToken));
-        assertEquals(Optional.of(key), subject.adminKey(fungibleToken));
-        assertEquals(Optional.of(key), subject.kycKey(fungibleToken));
-        assertEquals(Optional.of(key), subject.wipeKey(fungibleToken));
-        assertEquals(Optional.of(key), subject.pauseKey(fungibleToken));
-        assertEquals(Optional.of(key), subject.feeScheduleKey(fungibleToken));
-        assertEquals(Optional.of(key), subject.supplyKey(fungibleToken));
-        assertEquals(Optional.of(key), subject.freezeKey(fungibleToken));
-        assertEquals(treasuryEntityId, subject.treasury(fungibleToken));
-        assertEquals(memo, subject.memo(fungibleToken));
-        assertEquals(TokenSupplyType.FINITE, subject.supplyType(fungibleToken));
-        assertEquals(maxSupply, subject.maxSupply(fungibleToken));
-        assertFalse(subject.accountsFrozenByDefault(fungibleToken));
-        assertFalse(subject.accountsKycGrantedByDefault(fungibleToken));
-        assertFalse(subject.isDeleted(fungibleToken));
-        assertFalse(subject.isPaused(fungibleToken));
-        assertEquals(new ArrayList<>(), subject.feeSchedule(fungibleToken));
-        assertEquals(expiry, subject.expiry(fungibleToken));
-        assertEquals(senderId, subject.autoRenewAccount(fungibleToken));
-        assertEquals(autoRenewPeriod, subject.autoRenewPeriod(fungibleToken));
     }
 
     @Test
@@ -623,25 +544,6 @@ class WorldLedgersTest {
         assertFailsWith(() -> subject.decimalsOf(fungibleToken), INVALID_TOKEN_ID);
         assertFailsWith(() -> subject.totalSupplyOf(fungibleToken), INVALID_TOKEN_ID);
         assertFailsWith(() -> subject.balanceOf(accountID, fungibleToken), INVALID_TOKEN_ID);
-        assertFailsWith(() -> subject.adminKey(fungibleToken), INVALID_TOKEN_ID);
-        assertFailsWith(() -> subject.kycKey(fungibleToken), INVALID_TOKEN_ID);
-        assertFailsWith(() -> subject.freezeKey(fungibleToken), INVALID_TOKEN_ID);
-        assertFailsWith(() -> subject.supplyKey(fungibleToken), INVALID_TOKEN_ID);
-        assertFailsWith(() -> subject.feeScheduleKey(fungibleToken), INVALID_TOKEN_ID);
-        assertFailsWith(() -> subject.pauseKey(fungibleToken), INVALID_TOKEN_ID);
-        assertFailsWith(() -> subject.wipeKey(fungibleToken), INVALID_TOKEN_ID);
-        assertFailsWith(() -> subject.isDeleted(fungibleToken), INVALID_TOKEN_ID);
-        assertFailsWith(() -> subject.isPaused(fungibleToken), INVALID_TOKEN_ID);
-        assertFailsWith(() -> subject.treasury(fungibleToken), INVALID_TOKEN_ID);
-        assertFailsWith(() -> subject.memo(fungibleToken), INVALID_TOKEN_ID);
-        assertFailsWith(() -> subject.supplyType(fungibleToken), INVALID_TOKEN_ID);
-        assertFailsWith(() -> subject.maxSupply(fungibleToken), INVALID_TOKEN_ID);
-        assertFailsWith(() -> subject.accountsFrozenByDefault(fungibleToken), INVALID_TOKEN_ID);
-        assertFailsWith(() -> subject.accountsKycGrantedByDefault(fungibleToken), INVALID_TOKEN_ID);
-        assertFailsWith(() -> subject.feeSchedule(fungibleToken), INVALID_TOKEN_ID);
-        assertFailsWith(() -> subject.expiry(fungibleToken), INVALID_TOKEN_ID);
-        assertFailsWith(() -> subject.autoRenewAccount(fungibleToken), INVALID_TOKEN_ID);
-        assertFailsWith(() -> subject.autoRenewPeriod(fungibleToken), INVALID_TOKEN_ID);
     }
 
     @Test
@@ -687,9 +589,4 @@ class WorldLedgersTest {
     private static final long balance = 2424;
     private static final String name = "Sunlight on a broken column";
     private static final String symbol = "THM1925";
-    private static final String memo = "MEMO";
-    private static final long maxSupply = 1000L;
-    private static final long expiry = 123456L;
-    private static final long autoRenewPeriod = 2345353L;
-    private static final long packedCreationTime = 12345567L;
 }

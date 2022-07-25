@@ -65,15 +65,4 @@ public enum NftProperty implements BeanProperty<MerkleUniqueToken> {
             return MerkleUniqueToken::getSpender;
         }
     },
-    PACKED_CREATION_TIME {
-        @Override
-        public BiConsumer<MerkleUniqueToken, Object> setter() {
-            return (t, o) -> t.setPackedCreationTime((long) o);
-        }
-
-        @Override
-        public Function<MerkleUniqueToken, Object> getter() {
-            return MerkleUniqueToken::getPackedCreationTime;
-        }
-    },
 }
