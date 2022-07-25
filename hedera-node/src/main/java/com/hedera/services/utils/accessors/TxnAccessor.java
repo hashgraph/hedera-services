@@ -38,11 +38,6 @@ import java.util.Map;
  * {@link Transaction}.
  */
 public interface TxnAccessor {
-    // --- Used to complete transaction-specific logic ---
-    default <T extends TxnAccessor> T castToSpecialized() {
-        return null;
-    }
-
     // --- Used to calculate and charge fee for any transaction ---
     long getOfferedFee();
 

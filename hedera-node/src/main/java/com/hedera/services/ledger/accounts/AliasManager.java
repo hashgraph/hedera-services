@@ -255,11 +255,4 @@ public class AliasManager extends AbstractContractAliases implements ContractAli
     Map<ByteString, EntityNum> getAliases() {
         return curAliases();
     }
-
-    public EntityNum unaliased(final AccountID grpcId) {
-        if (isAlias(grpcId)) {
-            return lookupIdBy(grpcId.getAlias());
-        }
-        return EntityNum.fromAccountId(grpcId);
-    }
 }
