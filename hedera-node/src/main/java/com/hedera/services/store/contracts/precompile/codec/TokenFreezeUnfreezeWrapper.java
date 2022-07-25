@@ -18,4 +18,21 @@ package com.hedera.services.store.contracts.precompile.codec;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
 
-public record TokenFreezeUnfreezeWrapper(TokenID token, AccountID account) {}
+public record TokenFreezeUnfreezeWrapper(TokenID token, AccountID account) {
+
+    public static TokenFreezeUnfreezeWrapper forIsFrozen(TokenID token, AccountID account) {
+        return createWrapper(token, account);
+    }
+
+    public static TokenFreezeUnfreezeWrapper forFreeze(TokenID token, AccountID account) {
+        return createWrapper(token, account);
+    }
+
+    public static TokenFreezeUnfreezeWrapper forUnfreeze(TokenID token, AccountID account) {
+        return createWrapper(token, account);
+    }
+
+    private static TokenFreezeUnfreezeWrapper createWrapper(TokenID token, AccountID account) {
+        return new TokenFreezeUnfreezeWrapper(token, account);
+    }
+}

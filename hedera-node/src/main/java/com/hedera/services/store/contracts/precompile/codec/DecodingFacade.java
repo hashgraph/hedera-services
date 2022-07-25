@@ -875,7 +875,7 @@ public class DecodingFacade {
         final var tokenID = convertAddressBytesToTokenID(decodedArguments.get(0));
         final var accountID =
                 convertLeftPaddedAddressToAccountId(decodedArguments.get(1), aliasResolver);
-        return new TokenFreezeUnfreezeWrapper(tokenID, accountID);
+        return TokenFreezeUnfreezeWrapper.forIsFrozen(tokenID, accountID);
     }
 
     public TokenFreezeUnfreezeWrapper decodeFreeze(
@@ -887,7 +887,7 @@ public class DecodingFacade {
         final var tokenID = convertAddressBytesToTokenID(decodedArguments.get(0));
         final var accountID =
                 convertLeftPaddedAddressToAccountId(decodedArguments.get(1), aliasResolver);
-        return new TokenFreezeUnfreezeWrapper(tokenID, accountID);
+        return TokenFreezeUnfreezeWrapper.forFreeze(tokenID, accountID);
     }
 
     public TokenFreezeUnfreezeWrapper decodeUnFreeze(
@@ -899,7 +899,7 @@ public class DecodingFacade {
         final var tokenID = convertAddressBytesToTokenID(decodedArguments.get(0));
         final var accountID =
                 convertLeftPaddedAddressToAccountId(decodedArguments.get(1), aliasResolver);
-        return new TokenFreezeUnfreezeWrapper(tokenID, accountID);
+        return TokenFreezeUnfreezeWrapper.forUnfreeze(tokenID, accountID);
     }
 
     private TokenCreateWrapper decodeTokenCreateWithoutFees(
