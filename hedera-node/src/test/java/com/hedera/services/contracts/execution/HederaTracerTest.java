@@ -1,30 +1,23 @@
-package com.hedera.services.contracts.execution;
-
 /*
- * -
- * ‌
- * Hedera Services Node
- * ​
- * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
- * ​
+ * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *       http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
- *
  */
+package com.hedera.services.contracts.execution;
 
 import static com.hedera.services.contracts.operation.HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS;
-import static com.hedera.services.state.enums.ContractActionType.CALL;
-import static com.hedera.services.state.enums.ContractActionType.CREATE;
+import static com.hedera.services.contracts.execution.traceability.ContractActionType.CALL;
+import static com.hedera.services.contracts.execution.traceability.ContractActionType.CREATE;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -34,7 +27,8 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
-import com.hedera.services.state.enums.ContractActionType;
+import com.hedera.services.contracts.execution.traceability.HederaTracer;
+import com.hedera.services.contracts.execution.traceability.ContractActionType;
 import com.hedera.services.state.submerkle.EntityId;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayDeque;
@@ -59,7 +53,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class HederaTracerTest {
 
-    private static final Code code =  Code.createLegacyCode(Bytes.of(4), Hash.EMPTY);
+    private static final Code code = Code.createLegacyCode(Bytes.of(4), Hash.EMPTY);
     private static final Wei value = Wei.of(1L);
     private static final long initialGas = 1000L;
     private static final Bytes input = Bytes.of("inputData".getBytes());
@@ -68,11 +62,9 @@ class HederaTracerTest {
     private static final Address contract = Address.fromHexString("0x2");
     private static final Address accountReceiver = Address.fromHexString("0x3");
 
-    @Mock
-    private MessageFrame messageFrame;
+    @Mock private MessageFrame messageFrame;
 
-    @Mock
-    private OperationTracer.ExecuteOperation eo;
+    @Mock private OperationTracer.ExecuteOperation eo;
 
     private HederaTracer subject;
 
@@ -264,7 +256,9 @@ class HederaTracerTest {
         // then
         final var solidityAction = subject.getFinalizedActions().get(0);
         assertEquals(initialGas, solidityAction.getGasUsed());
-        assertArrayEquals(codeTooLarge.get().getDescription().getBytes(StandardCharsets.UTF_8), solidityAction.getError());
+        assertArrayEquals(
+                codeTooLarge.get().getDescription().getBytes(StandardCharsets.UTF_8),
+                solidityAction.getError());
         assertNull(solidityAction.getInvalidSolidityAddress());
     }
 
@@ -288,10 +282,13 @@ class HederaTracerTest {
         // then
         final var solidityAction = subject.getFinalizedActions().get(0);
         assertEquals(initialGas, solidityAction.getGasUsed());
-        assertArrayEquals(invalidSolidityAddress.get().getDescription().getBytes(StandardCharsets.UTF_8), solidityAction.getError());
+        assertArrayEquals(
+                invalidSolidityAddress.get().getDescription().getBytes(StandardCharsets.UTF_8),
+                solidityAction.getError());
         assertNull(solidityAction.getRecipientAccount());
         assertNull(solidityAction.getRecipientContract());
-        assertArrayEquals(accountReceiver.toArrayUnsafe(), solidityAction.getInvalidSolidityAddress());
+        assertArrayEquals(
+                accountReceiver.toArrayUnsafe(), solidityAction.getInvalidSolidityAddress());
     }
 
     @Test
@@ -306,7 +303,9 @@ class HederaTracerTest {
         // then
         final var solidityAction = subject.getFinalizedActions().get(0);
         assertEquals(initialGas, solidityAction.getGasUsed());
-        assertArrayEquals(invalidSolidityAddress.get().getDescription().getBytes(StandardCharsets.UTF_8), solidityAction.getError());
+        assertArrayEquals(
+                invalidSolidityAddress.get().getDescription().getBytes(StandardCharsets.UTF_8),
+                solidityAction.getError());
         assertNull(solidityAction.getRecipientAccount());
         assertNull(solidityAction.getRecipientContract());
         assertArrayEquals(contract.toArrayUnsafe(), solidityAction.getInvalidSolidityAddress());

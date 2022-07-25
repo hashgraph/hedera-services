@@ -16,7 +16,7 @@
 package com.hedera.services.utils;
 
 import com.google.protobuf.BytesValue;
-import com.hedera.services.contracts.execution.SolidityAction;
+import com.hedera.services.contracts.execution.traceability.SolidityAction;
 import com.hedera.services.legacy.proto.utils.ByteStringUtils;
 import com.hedera.services.stream.proto.ContractActions;
 import com.hedera.services.stream.proto.ContractBytecode;
@@ -92,13 +92,12 @@ public class SidecarUtils {
         return grpc;
     }
 
-	public static TransactionSidecarRecord.Builder createContractActionsSidecar(
-			final List<SolidityAction> actions
-	) {
-		final var actionsBuilder = ContractActions.newBuilder();
-		for (final var action : actions) {
-			actionsBuilder.addContractActions(action.toGrpc());
-		}
-		return TransactionSidecarRecord.newBuilder().setActions(actionsBuilder.build());
-	}
+    public static TransactionSidecarRecord.Builder createContractActionsSidecar(
+            final List<SolidityAction> actions) {
+        final var actionsBuilder = ContractActions.newBuilder();
+        for (final var action : actions) {
+            actionsBuilder.addContractActions(action.toGrpc());
+        }
+        return TransactionSidecarRecord.newBuilder().setActions(actionsBuilder.build());
+    }
 }
