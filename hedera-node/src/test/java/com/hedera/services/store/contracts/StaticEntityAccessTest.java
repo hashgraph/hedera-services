@@ -269,8 +269,8 @@ class StaticEntityAccessTest {
         assertEquals(decimals, subject.decimalsOf(tokenId));
         assertEquals(totalSupply, subject.supplyOf(tokenId));
         assertEquals(type, subject.typeOf(tokenId));
-        assertFalse(accountsFrozenByDefault);
-        assertTrue(accountsKycGrantedByDefault);
+        assertEquals(accountsFrozenByDefault, subject.defaultFreezeStatus(tokenId));
+        assertEquals(accountsKycGrantedByDefault, subject.defaultKycStatus(tokenId));
     }
 
     @Test
