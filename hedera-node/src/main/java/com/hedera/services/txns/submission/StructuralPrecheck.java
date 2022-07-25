@@ -30,7 +30,9 @@ import com.hedera.services.context.primitives.SignedStateViewFactory;
 import com.hedera.services.stats.HapiOpCounters;
 import com.hedera.services.txns.submission.annotations.MaxProtoMsgDepth;
 import com.hedera.services.txns.submission.annotations.MaxSignedTxnSize;
+import com.hedera.services.utils.accessors.AccessorFactory;
 import com.hedera.services.utils.accessors.SignedTxnAccessor;
+import com.hedera.services.utils.accessors.TxnAccessor;
 import com.hederahashgraph.api.proto.java.Transaction;
 import java.util.List;
 import javax.inject.Inject;
@@ -54,17 +56,20 @@ public final class StructuralPrecheck {
     private final int maxProtoMessageDepth;
     private HapiOpCounters opCounters;
     private final SignedStateViewFactory stateViewFactory;
+    private final AccessorFactory accessorFactory;
 
     @Inject
     public StructuralPrecheck(
             @MaxSignedTxnSize final int maxSignedTxnSize,
             @MaxProtoMsgDepth final int maxProtoMessageDepth,
             final HapiOpCounters counters,
-            final SignedStateViewFactory stateViewFactory) {
+            final SignedStateViewFactory stateViewFactory,
+            final AccessorFactory accessorFactory) {
         this.maxSignedTxnSize = maxSignedTxnSize;
         this.maxProtoMessageDepth = maxProtoMessageDepth;
         this.opCounters = counters;
         this.stateViewFactory = stateViewFactory;
+        this.accessorFactory = accessorFactory;
     }
 
     public Pair<TxnValidityAndFeeReq, SignedTxnAccessor> assess(final Transaction signedTxn) {
@@ -95,7 +100,7 @@ public final class StructuralPrecheck {
 
         try {
             // get latest signed state to be used for precheck
-            final var accessor = new SignedTxnAccessor(signedTxn);
+            final var accessor = (SignedTxnAccessor) accessorFactory.constructSpecializedAccessor(signedTxn.toByteArray());
             final var signedStateView = stateViewFactory.latestSignedStateView();
             if (signedStateView.isPresent()) {
                 accessor.setStateView(signedStateView.get());

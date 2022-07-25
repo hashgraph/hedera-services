@@ -33,6 +33,7 @@ import com.hedera.services.context.domain.process.TxnValidityAndFeeReq;
 import com.hedera.services.context.primitives.SignedStateViewFactory;
 import com.hedera.services.stats.HapiOpCounters;
 import com.hedera.services.stats.MiscRunningAvgs;
+import com.hedera.services.utils.accessors.AccessorFactory;
 import com.hedera.services.utils.accessors.SignedTxnAccessor;
 import com.hedera.test.utils.IdUtils;
 import com.hedera.test.utils.TxnUtils;
@@ -64,12 +65,13 @@ class StructuralPrecheckTest {
     private HapiOpCounters counters = new HapiOpCounters(runningAvgs, txnCtx, statNameFn);
 
     private SignedStateViewFactory viewFactory = mock(SignedStateViewFactory.class);
+    private AccessorFactory accessorFactory = mock(AccessorFactory.class);
 
     @BeforeEach
     void setUp() {
         subject =
                 new StructuralPrecheck(
-                        pretendSizeLimit, pretendMaxMessageDepth, counters, viewFactory);
+                        pretendSizeLimit, pretendMaxMessageDepth, counters, viewFactory, accessorFactory);
     }
 
     @Test

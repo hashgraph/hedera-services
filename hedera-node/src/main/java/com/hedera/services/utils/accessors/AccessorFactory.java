@@ -71,7 +71,7 @@ public class AccessorFactory {
      * @param signedTxnWrapperBytes
      * @return
      */
-    private TxnAccessor constructSpecializedAccessor(byte[] signedTxnWrapperBytes)
+    public TxnAccessor constructSpecializedAccessor(byte[] signedTxnWrapperBytes)
             throws InvalidProtocolBufferException {
         final var body = extractTransactionBody(Transaction.parseFrom(signedTxnWrapperBytes));
         final var function = MiscUtils.FUNCTION_EXTRACTOR.apply(body);

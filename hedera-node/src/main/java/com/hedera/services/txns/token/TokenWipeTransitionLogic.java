@@ -48,8 +48,7 @@ public class TokenWipeTransitionLogic implements TransitionLogic {
     @Override
     public void doStateTransition() {
         /* --- Translate from gRPC types --- */
-        final var accessor = (TokenWipeAccessor) txnCtx.swirldsTxnAccessor();
-        final var op = accessor.getTxn().getTokenWipe();
+        final var accessor = (TokenWipeAccessor) txnCtx.swirldsTxnAccessor().getDelegate();
         final var targetTokenId = accessor.targetToken();
         final var targetAccountId = accessor.accountToWipe();
         final var serialNums = accessor.serialNums();

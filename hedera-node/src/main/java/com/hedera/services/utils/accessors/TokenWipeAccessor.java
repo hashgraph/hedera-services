@@ -33,15 +33,6 @@ public class TokenWipeAccessor extends SignedTxnAccessor {
     private final TokenWipeAccountTransactionBody body;
     private final GlobalDynamicProperties dynamicProperties;
     private final OptionValidator validator;
-
-    public TokenWipeAccessor(final byte[] txn) throws InvalidProtocolBufferException {
-        super(txn);
-        this.body = getTxn().getTokenWipe();
-        this.dynamicProperties = null;
-        this.validator = null;
-        setTokenWipeUsageMeta();
-    }
-
     public TokenWipeAccessor(
             final byte[] txn,
             final GlobalDynamicProperties dynamicProperties,

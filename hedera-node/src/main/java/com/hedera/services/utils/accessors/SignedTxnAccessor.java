@@ -208,19 +208,6 @@ public class SignedTxnAccessor implements TxnAccessor {
     }
 
     @Override
-    public <T extends TxnAccessor> T castToSpecialized() {
-        final var function = getFunction();
-        try {
-            if (function == TokenAccountWipe) {
-                return (T) new TokenWipeAccessor(txn.toByteArray());
-            }
-            return (T) this;
-        } catch (InvalidProtocolBufferException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    @Override
     public long getOfferedFee() {
         return txn.getTransactionFee();
     }

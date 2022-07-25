@@ -399,7 +399,7 @@ class PlatformTxnAccessorTest {
                 someTxn.getConsensusSubmitMessage().getMessage().size(),
                 subject.availSubmitUsageMeta().numMsgBytes());
 
-        assertEquals(delegate, subject.castToSpecialized());
+        assertEquals(delegate, subject.getDelegate());
 
         subject.countAutoCreationsWith(aliasManager);
 

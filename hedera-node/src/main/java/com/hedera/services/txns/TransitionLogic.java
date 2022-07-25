@@ -77,9 +77,8 @@ public interface TransitionLogic {
      * @return {@code OK} if the transaction is valid, otherwise an appropriate error code
      */
     default ResponseCodeEnum validateSemantics(TxnAccessor accessor) {
-        final var specializedAccessor = accessor.castToSpecialized();
-        if (specializedAccessor.supportsPrecheck()) {
-            return specializedAccessor.doPrecheck();
+        if (accessor.supportsPrecheck()) {
+            return accessor.doPrecheck();
         }
         return semanticCheck().apply(accessor.getTxn());
     }
