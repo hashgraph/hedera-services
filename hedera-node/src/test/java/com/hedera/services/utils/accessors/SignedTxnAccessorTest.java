@@ -361,24 +361,24 @@ class SignedTxnAccessorTest {
     }
 
     @Test
-    void detectsUniqueTokenWipeSubtypeFromGrpcSyntax() {
+    void detectsUniqueTokenWipeSubtypeFromGrpcSyntax() throws InvalidProtocolBufferException {
         final var op =
                 TokenWipeAccountTransactionBody.newBuilder()
                         .addAllSerialNumbers(List.of(1L, 2L, 3L))
                         .build();
         final var txn = buildTransactionFrom(TransactionBody.newBuilder().setTokenWipe(op).build());
 
-        final var subject = SignedTxnAccessor.uncheckedFrom(txn);
+        final var subject = new TokenWipeAccessor(txn.toByteArray(), null, null);
 
         assertEquals(TOKEN_NON_FUNGIBLE_UNIQUE, subject.getSubType());
     }
 
     @Test
-    void detectsCommonTokenWipeSubtypeFromGrpcSyntax() {
+    void detectsCommonTokenWipeSubtypeFromGrpcSyntax() throws InvalidProtocolBufferException {
         final var op = TokenWipeAccountTransactionBody.newBuilder().setAmount(1234L).build();
         final var txn = buildTransactionFrom(TransactionBody.newBuilder().setTokenWipe(op).build());
 
-        final var subject = SignedTxnAccessor.uncheckedFrom(txn);
+        final var subject = new TokenWipeAccessor(txn.toByteArray(), null, null);
 
         assertEquals(TOKEN_FUNGIBLE_COMMON, subject.getSubType());
     }
@@ -927,7 +927,7 @@ class SignedTxnAccessorTest {
                     + " 52, 53, 54, 55, 56, 57, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 48, 49, 50,"
                     + " 51, 52, 53, 54, 55, 56, 57, 48, 49, 50, 51]]]}, used=[false]},"
                     + " payer=accountNum: 2\n"
-                    + ", scheduleRef=null}";
+                    + ", scheduleRef=null, view=null}";
 
         assertEquals(expectedString, subject.toLoggableString());
     }

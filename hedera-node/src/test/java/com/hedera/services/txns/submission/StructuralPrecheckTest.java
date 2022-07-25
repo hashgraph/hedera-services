@@ -54,6 +54,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.willCallRealMethod;
 import static org.mockito.Mockito.mock;
 
 class StructuralPrecheckTest {
@@ -83,7 +84,7 @@ class StructuralPrecheckTest {
     @Test
     void mustHaveBodyBytes() throws InvalidProtocolBufferException {
         txn = Transaction.getDefaultInstance();
-        given(accessorFactory.constructSpecializedAccessor(txn.toByteArray())).willReturn(accessor);
+        willCallRealMethod().given(accessorFactory).constructSpecializedAccessor(txn.toByteArray());
         given(accessor.getTxn()).willReturn(txn.getBody());
 
         final var assess = subject.assess(txn);
@@ -98,7 +99,7 @@ class StructuralPrecheckTest {
                 .setSignedTransactionBytes(ByteString.copyFromUtf8("w/e"))
                 .setBodyBytes(ByteString.copyFromUtf8("doesn't matter"))
                 .build();
-        given(accessorFactory.constructSpecializedAccessor(txn.toByteArray())).willReturn(accessor);
+        willCallRealMethod().given(accessorFactory).constructSpecializedAccessor(txn.toByteArray());
         given(accessor.getTxn()).willReturn(txn.getBody());
 
         final var assess = subject.assess(txn);
@@ -113,7 +114,7 @@ class StructuralPrecheckTest {
                 .setSignedTransactionBytes(ByteString.copyFromUtf8("w/e"))
                 .setSigMap(SignatureMap.getDefaultInstance())
                 .build();
-        given(accessorFactory.constructSpecializedAccessor(txn.toByteArray())).willReturn(accessor);
+        willCallRealMethod().given(accessorFactory).constructSpecializedAccessor(txn.toByteArray());
         given(accessor.getTxn()).willReturn(txn.getBody());
 
         final var assess =
@@ -132,7 +133,7 @@ class StructuralPrecheckTest {
                                         .mapToObj(i -> "A")
                                         .collect(joining())))
                 .build();
-        given(accessorFactory.constructSpecializedAccessor(txn.toByteArray())).willReturn(accessor);
+        willCallRealMethod().given(accessorFactory).constructSpecializedAccessor(txn.toByteArray());
         given(accessor.getTxn()).willReturn(txn.getBody());
 
         final var assess = subject.assess(txn);
@@ -146,7 +147,7 @@ class StructuralPrecheckTest {
         txn = Transaction.newBuilder()
                 .setSignedTransactionBytes(ByteString.copyFromUtf8("NONSENSE"))
                 .build();
-        given(accessorFactory.constructSpecializedAccessor(txn.toByteArray())).willReturn(accessor);
+        willCallRealMethod().given(accessorFactory).constructSpecializedAccessor(txn.toByteArray());
         given(accessor.getTxn()).willReturn(txn.getBody());
 
         final var assess = subject.assess(txn);
@@ -164,7 +165,7 @@ class StructuralPrecheckTest {
                                 CryptoCreateTransactionBody.newBuilder().setKey(weirdlyNestedKey));
         final var signedTxn =
                 Transaction.newBuilder().setBodyBytes(hostTxn.build().toByteString()).build();
-        given(accessorFactory.constructSpecializedAccessor(signedTxn.toByteArray())).willReturn(accessor);
+        willCallRealMethod().given(accessorFactory).constructSpecializedAccessor(signedTxn.toByteArray());
         given(accessor.getTxn()).willReturn(hostTxn.build());
         final var assess = subject.assess(signedTxn);
 
@@ -182,7 +183,7 @@ class StructuralPrecheckTest {
         final var signedTxn =
                 Transaction.newBuilder().setBodyBytes(hostTxn.build().toByteString()).build();
 
-        given(accessorFactory.constructSpecializedAccessor(signedTxn.toByteArray())).willReturn(accessor);
+        willCallRealMethod().given(accessorFactory).constructSpecializedAccessor(signedTxn.toByteArray());
         given(accessor.getTxn()).willReturn(hostTxn.build());
         final var assess = subject.assess(signedTxn);
 
@@ -201,7 +202,7 @@ class StructuralPrecheckTest {
                                         .setKey(reasonablyNestedKey));
         final var signedTxn =
                 Transaction.newBuilder().setBodyBytes(hostTxn.build().toByteString()).build();
-        given(accessorFactory.constructSpecializedAccessor(signedTxn.toByteArray())).willReturn(accessor);
+        willCallRealMethod().given(accessorFactory).constructSpecializedAccessor(signedTxn.toByteArray());
         given(accessor.getTxn()).willReturn(hostTxn.build());
 
         final var assess = subject.assess(signedTxn);
@@ -232,7 +233,7 @@ class StructuralPrecheckTest {
                                         .setAccountID(IdUtils.asAccount("0.0.2")));
         var signedTxn =
                 Transaction.newBuilder().setBodyBytes(hostTxn.build().toByteString()).build();
-        given(accessorFactory.constructSpecializedAccessor(signedTxn.toByteArray())).willReturn(accessor);
+        willCallRealMethod().given(accessorFactory).constructSpecializedAccessor(signedTxn.toByteArray());
         given(accessor.getTxn()).willReturn(hostTxn.build());
 
         subject.assess(signedTxn);
@@ -262,7 +263,7 @@ class StructuralPrecheckTest {
                 Transaction.newBuilder()
                         .setSignedTransactionBytes(hostTxn.build().toByteString())
                         .build();
-        given(accessorFactory.constructSpecializedAccessor(signedTxn.toByteArray())).willReturn(accessor);
+        willCallRealMethod().given(accessorFactory).constructSpecializedAccessor(signedTxn.toByteArray());
         given(accessor.getTxn()).willReturn(hostTxn.build());
 
         subject.assess(signedTxn);

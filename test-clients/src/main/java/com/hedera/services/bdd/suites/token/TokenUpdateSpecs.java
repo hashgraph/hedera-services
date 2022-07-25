@@ -25,11 +25,13 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.burnToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.grantTokenKyc;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenFeeScheduleUpdate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUnfreeze;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.wipeTokenAccount;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHbarFee;
@@ -95,33 +97,31 @@ public class TokenUpdateSpecs extends HapiApiSuite {
     @Override
     public List<HapiApiSpec> getSpecsInSuite() {
         return List.of(
-                new HapiApiSpec[] {
-                    //						symbolChanges(),
-                    //						standardImmutabilitySemanticsHold(),
-                    //						validAutoRenewWorks(),
-                    //						tooLongNameCheckHolds(),
-                    //						tooLongSymbolCheckHolds(),
-                    //						nameChanges(),
-                    keysChange(),
-                    //						validatesAlreadyDeletedToken(),
-                    //						treasuryEvolves(),
-                    //						deletedAutoRenewAccountCheckHolds(),
-                    //						renewalPeriodCheckHolds(),
-                    //						invalidTreasuryCheckHolds(),
-                    //						newTreasuryMustSign(),
-                    //						newTreasuryAutoAssociationWorks(),
-                    //						tokensCanBeMadeImmutableWithEmptyKeyList(),
-                    //						updateNftTreasuryHappyPath(),
-                    //						updateTokenTreasuryRequiresZeroTokenBalance(),
-                    //						validatesMissingAdminKey(),
-                    //						validatesMissingRef(),
-                    //						validatesNewExpiry(),
-                    //						/* HIP-18 */
-                    //						customFeesOnlyUpdatableWithKey(),
-                    //						updateUniqueTreasuryWithNfts(),
-                    //						updateHappyPath(),
-                    //						safeToUpdateCustomFeesWithNewFallbackWhileTransferring()
-                });
+                symbolChanges(),
+                standardImmutabilitySemanticsHold(),
+                validAutoRenewWorks(),
+                tooLongNameCheckHolds(),
+                tooLongSymbolCheckHolds(),
+                nameChanges(),
+                keysChange(),
+                validatesAlreadyDeletedToken(),
+                treasuryEvolves(),
+                deletedAutoRenewAccountCheckHolds(),
+                renewalPeriodCheckHolds(),
+                invalidTreasuryCheckHolds(),
+                newTreasuryMustSign(),
+                newTreasuryAutoAssociationWorks(),
+                tokensCanBeMadeImmutableWithEmptyKeyList(),
+                updateNftTreasuryHappyPath(),
+                updateTokenTreasuryRequiresZeroTokenBalance(),
+                validatesMissingAdminKey(),
+                validatesMissingRef(),
+                validatesNewExpiry(),
+                /* HIP-18 */
+                customFeesOnlyUpdatableWithKey(),
+                updateUniqueTreasuryWithNfts(),
+                updateHappyPath(),
+                safeToUpdateCustomFeesWithNewFallbackWhileTransferring());
     }
 
     private HapiApiSpec validatesNewExpiry() {
@@ -241,27 +241,22 @@ public class TokenUpdateSpecs extends HapiApiSuite {
                                 .feeScheduleKey("oldFeeScheduleKey"))
                 .when(
                         getTokenInfo("tbu").logged(),
-                        //						tokenUpdate("tbu")
-                        //								.adminKey("newAdminKey")
-                        //								.kycKey("freezeThenKycKey")
-                        //								.freezeKey("kycThenFreezeKey")
-                        //								.wipeKey("supplyThenWipeKey")
-                        //								.supplyKey("wipeThenSupplyKey")
-                        //								.feeScheduleKey("newFeeScheduleKey"),
+                        tokenUpdate("tbu")
+                                .adminKey("newAdminKey")
+                                .kycKey("freezeThenKycKey")
+                                .freezeKey("kycThenFreezeKey")
+                                .wipeKey("supplyThenWipeKey")
+                                .supplyKey("wipeThenSupplyKey")
+                                .feeScheduleKey("newFeeScheduleKey"),
                         tokenAssociate("misc", "tbu"))
                 .then(
-                        //						getTokenInfo("tbu").logged(),
-                        //						grantTokenKyc("tbu", "misc")
-                        //								.signedBy(GENESIS, "freezeThenKycKey"),
-                        //						tokenUnfreeze("tbu", "misc")
-                        //								.signedBy(GENESIS, "kycThenFreezeKey"),
-                        //						getAccountInfo("misc").logged(),
-                        //						cryptoTransfer(moving(5, "tbu")
-                        //								.between(TOKEN_TREASURY, "misc")),
-                        //						mintToken("tbu", 10)
-                        //								.signedBy(GENESIS, "wipeThenSupplyKey"),
-                        //						burnToken("tbu", 10)
-                        //								.signedBy(GENESIS, "wipeThenSupplyKey"),
+                        getTokenInfo("tbu").logged(),
+                        grantTokenKyc("tbu", "misc").signedBy(GENESIS, "freezeThenKycKey"),
+                        tokenUnfreeze("tbu", "misc").signedBy(GENESIS, "kycThenFreezeKey"),
+                        getAccountInfo("misc").logged(),
+                        cryptoTransfer(moving(5, "tbu").between(TOKEN_TREASURY, "misc")),
+                        mintToken("tbu", 10).signedBy(GENESIS, "wipeThenSupplyKey"),
+                        burnToken("tbu", 10).signedBy(GENESIS, "wipeThenSupplyKey"),
                         wipeTokenAccount("tbu", "misc", 5).signedBy(GENESIS, "wipeThenSupplyKey"),
                         getAccountInfo(TOKEN_TREASURY).logged());
     }

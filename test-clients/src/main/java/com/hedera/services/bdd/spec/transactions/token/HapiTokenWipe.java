@@ -128,16 +128,14 @@ public class HapiTokenWipe extends HapiTxnOp<HapiTokenWipe> {
     }
 
     @Override
-    protected void updateStateOf(HapiApiSpec spec) {}
+    protected void updateStateOf(HapiApiSpec spec) {/* no-op. */}
 
     @Override
     protected MoreObjects.ToStringHelper toStringHelper() {
-        MoreObjects.ToStringHelper helper =
-                super.toStringHelper()
+        return super.toStringHelper()
                         .add("token", token)
                         .add("account", account)
                         .add("amount", amount)
                         .add("serialNumbers", serialNumbers);
-        return helper;
     }
 }

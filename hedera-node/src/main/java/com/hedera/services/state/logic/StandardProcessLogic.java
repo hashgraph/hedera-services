@@ -18,7 +18,6 @@ package com.hedera.services.state.logic;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.primitives.StateView;
-import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.records.ConsensusTimeTracker;
 import com.hedera.services.state.expiry.EntityAutoRenewal;
@@ -29,11 +28,12 @@ import com.hedera.services.txns.schedule.ScheduleProcessing;
 import com.hedera.services.txns.span.ExpandHandleSpan;
 import com.hedera.services.utils.accessors.TxnAccessor;
 import com.swirlds.common.system.transaction.SwirldTransaction;
-import java.time.Instant;
-import javax.inject.Inject;
-import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+
+import javax.inject.Inject;
+import javax.inject.Singleton;
+import java.time.Instant;
 
 @Singleton
 public class StandardProcessLogic implements ProcessLogic {
@@ -48,7 +48,6 @@ public class StandardProcessLogic implements ProcessLogic {
     private final SigImpactHistorian sigImpactHistorian;
     private final TransactionContext txnCtx;
     private final ExecutionTimeTracker executionTimeTracker;
-    private final GlobalDynamicProperties dynamicProperties;
     private final StateView workingView;
     private final ScheduleProcessing scheduleProcessing;
     private final RecordStreaming recordStreaming;
@@ -66,7 +65,6 @@ public class StandardProcessLogic implements ProcessLogic {
             final ScheduleProcessing scheduleProcessing,
             final ExecutionTimeTracker executionTimeTracker,
             final RecordStreaming recordStreaming,
-            final GlobalDynamicProperties dynamicProperties,
             final StateView workingView) {
         this.expiries = expiries;
         this.invariantChecks = invariantChecks;
@@ -79,7 +77,6 @@ public class StandardProcessLogic implements ProcessLogic {
         this.scheduleProcessing = scheduleProcessing;
         this.sigImpactHistorian = sigImpactHistorian;
         this.recordStreaming = recordStreaming;
-        this.dynamicProperties = dynamicProperties;
         this.workingView = workingView;
     }
 
