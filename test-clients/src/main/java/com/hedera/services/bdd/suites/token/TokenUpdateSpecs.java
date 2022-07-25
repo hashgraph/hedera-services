@@ -80,6 +80,9 @@ public class TokenUpdateSpecs extends HapiApiSuite {
     private static final Logger log = LogManager.getLogger(TokenUpdateSpecs.class);
     private static final int MAX_NAME_LENGTH = 100;
     private static final int MAX_SYMBOL_LENGTH = 100;
+    private static final String PAYER = "payer";
+    private static final String TREASURY_UPDATE_TXN = "treasuryUpdateTxn";
+    private static final String INVALID_TREASURY = "invalidTreasury";
 
     private static String TOKEN_TREASURY = "treasury";
     private static final long defaultMaxLifetime =
@@ -151,19 +154,20 @@ public class TokenUpdateSpecs extends HapiApiSuite {
     }
 
     private HapiApiSpec tokensCanBeMadeImmutableWithEmptyKeyList() {
+        final var mutableForNow = "mutableForNow";
         return defaultHapiSpec("TokensCanBeMadeImmutableWithEmptyKeyList")
                 .given(
                         newKeyNamed("initialAdmin"),
                         cryptoCreate("neverToBe").balance(0L),
-                        tokenCreate("mutableForNow").adminKey("initialAdmin"))
+                        tokenCreate(mutableForNow).adminKey("initialAdmin"))
                 .when(
-                        tokenUpdate("mutableForNow")
+                        tokenUpdate(mutableForNow)
                                 .improperlyEmptyingAdminKey()
                                 .hasPrecheck(INVALID_ADMIN_KEY),
-                        tokenUpdate("mutableForNow").properlyEmptyingAdminKey())
+                        tokenUpdate(mutableForNow).properlyEmptyingAdminKey())
                 .then(
-                        getTokenInfo("mutableForNow"),
-                        tokenUpdate("mutableForNow")
+                        getTokenInfo(mutableForNow),
+                        tokenUpdate(mutableForNow)
                                 .treasury("neverToBe")
                                 .signedBy(GENESIS, "neverToBe")
                                 .hasKnownStatus(TOKEN_IS_IMMUTABLE));
@@ -171,33 +175,34 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 
     private HapiApiSpec standardImmutabilitySemanticsHold() {
         long then = Instant.now().getEpochSecond() + 1_234_567L;
+        final var immutable = "immutable";
         return defaultHapiSpec("StandardImmutabilitySemanticsHold")
-                .given(tokenCreate("immutable").expiry(then))
+                .given(tokenCreate(immutable).expiry(then))
                 .when(
-                        tokenUpdate("immutable")
+                        tokenUpdate(immutable)
                                 .treasury(ADDRESS_BOOK_CONTROL)
                                 .hasKnownStatus(TOKEN_IS_IMMUTABLE),
-                        tokenUpdate("immutable")
+                        tokenUpdate(immutable)
                                 .expiry(then - 1)
                                 .hasKnownStatus(INVALID_EXPIRATION_TIME),
-                        tokenUpdate("immutable").expiry(then + 1))
-                .then(getTokenInfo("immutable").logged());
+                        tokenUpdate(immutable).expiry(then + 1))
+                .then(getTokenInfo(immutable).logged());
     }
 
     private HapiApiSpec validatesMissingRef() {
         return defaultHapiSpec("ValidatesMissingRef")
-                .given(cryptoCreate("payer"))
+                .given(cryptoCreate(PAYER))
                 .when()
                 .then(
                         tokenUpdate("0.0.0")
                                 .fee(ONE_HBAR)
-                                .payingWith("payer")
-                                .signedBy("payer")
+                                .payingWith(PAYER)
+                                .signedBy(PAYER)
                                 .hasKnownStatus(INVALID_TOKEN_ID),
                         tokenUpdate("1.2.3")
                                 .fee(ONE_HBAR)
-                                .payingWith("payer")
-                                .signedBy("payer")
+                                .payingWith(PAYER)
+                                .signedBy(PAYER)
                                 .hasKnownStatus(INVALID_TOKEN_ID));
     }
 
@@ -205,14 +210,14 @@ public class TokenUpdateSpecs extends HapiApiSuite {
         return defaultHapiSpec("ValidatesMissingAdminKey")
                 .given(
                         cryptoCreate(TOKEN_TREASURY).balance(0L),
-                        cryptoCreate("payer"),
+                        cryptoCreate(PAYER),
                         tokenCreate("tbd").treasury(TOKEN_TREASURY))
                 .when()
                 .then(
                         tokenUpdate("tbd")
                                 .autoRenewAccount(GENESIS)
-                                .payingWith("payer")
-                                .signedBy("payer", GENESIS)
+                                .payingWith(PAYER)
+                                .signedBy(PAYER, GENESIS)
                                 .hasKnownStatus(TOKEN_IS_IMMUTABLE));
     }
 
@@ -317,11 +322,11 @@ public class TokenUpdateSpecs extends HapiApiSuite {
                         getAccountInfo("oldTreasury").logged(),
                         getAccountInfo("newTreasury").logged(),
                         tokenAssociate("newTreasury", "tbu"),
-                        tokenUpdate("tbu").treasury("newTreasury").via("treasuryUpdateTxn"))
+                        tokenUpdate("tbu").treasury("newTreasury").via(TREASURY_UPDATE_TXN))
                 .then(
                         getAccountInfo("oldTreasury").logged(),
                         getAccountInfo("newTreasury").logged(),
-                        getTxnRecord("treasuryUpdateTxn").logged());
+                        getTxnRecord(TREASURY_UPDATE_TXN).logged());
     }
 
     public HapiApiSpec validAutoRenewWorks() {
@@ -440,13 +445,13 @@ public class TokenUpdateSpecs extends HapiApiSuite {
                 .given(
                         newKeyNamed("adminKey"),
                         cryptoCreate(TOKEN_TREASURY).balance(0L),
-                        cryptoCreate("invalidTreasury").balance(0L))
+                        cryptoCreate(INVALID_TREASURY).balance(0L))
                 .when(
-                        cryptoDelete("invalidTreasury"),
+                        cryptoDelete(INVALID_TREASURY),
                         tokenCreate("tbu").adminKey("adminKey").treasury(TOKEN_TREASURY))
                 .then(
                         tokenUpdate("tbu")
-                                .treasury("invalidTreasury")
+                                .treasury(INVALID_TREASURY)
                                 .hasKnownStatus(ACCOUNT_DELETED));
     }
 
@@ -739,7 +744,7 @@ public class TokenUpdateSpecs extends HapiApiSuite {
                         tokenUpdate("tbu").treasury("newTreasury"),
                         burnToken("tbu", List.of(1L)),
                         getTokenInfo("tbu").hasTreasury("newTreasury"),
-                        tokenUpdate("tbu").treasury("newTreasury").via("treasuryUpdateTxn"))
+                        tokenUpdate("tbu").treasury("newTreasury").via(TREASURY_UPDATE_TXN))
                 .then(
                         getAccountInfo("oldTreasury").logged(),
                         getAccountInfo("newTreasury").logged(),
