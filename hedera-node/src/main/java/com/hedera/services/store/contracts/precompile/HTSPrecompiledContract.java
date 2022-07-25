@@ -404,18 +404,12 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
                                             encoder,
                                             decoder,
                                             precompilePricingUtils));
-                    case AbiConstants.ABI_ID_GET_TOKEN_DEFAULT_FREEZE_STATUS -> new GetTokenDefaultFreezeStatus(
-                        syntheticTxnFactory,
-                        ledgers,
-                        encoder,
-                        decoder,
-                        precompilePricingUtils);
-                    case AbiConstants.ABI_ID_GET_TOKEN_DEFAULT_KYC_STATUS -> new GetTokenDefaultKycStatus(
-                        syntheticTxnFactory,
-                        ledgers,
-                        encoder,
-                        decoder,
-                        precompilePricingUtils);
+                    case AbiConstants
+                            .ABI_ID_GET_TOKEN_DEFAULT_FREEZE_STATUS -> new GetTokenDefaultFreezeStatus(
+                            syntheticTxnFactory, ledgers, encoder, decoder, precompilePricingUtils);
+                    case AbiConstants
+                            .ABI_ID_GET_TOKEN_DEFAULT_KYC_STATUS -> new GetTokenDefaultKycStatus(
+                            syntheticTxnFactory, ledgers, encoder, decoder, precompilePricingUtils);
                     case AbiConstants.ABI_ID_REDIRECT_FOR_TOKEN -> {
                         final var target = DescriptorUtils.getRedirectTarget(input);
                         final var tokenId = target.tokenId();

@@ -124,11 +124,11 @@ public class DecodingFacade {
             TypeFactory.create(BYTES32_RAW_TYPE);
 
     private static final Function GET_TOKEN_DEFAULT_KYC_STATUS_FUNCTION =
-        new Function("getTokenDefaultKycStatus(address)", INT_OUTPUT);
+            new Function("getTokenDefaultKycStatus(address)", INT_OUTPUT);
     private static final Bytes GET_TOKEN_DEFAULT_KYC_STATUS_SELECTOR =
-        Bytes.wrap(GET_TOKEN_DEFAULT_KYC_STATUS_FUNCTION.selector());
+            Bytes.wrap(GET_TOKEN_DEFAULT_KYC_STATUS_FUNCTION.selector());
     private static final ABIType<Tuple> GET_TOKEN_DEFAULT_KYC_STATUS_DECODER =
-        TypeFactory.create(BYTES32_RAW_TYPE);
+            TypeFactory.create(BYTES32_RAW_TYPE);
 
     private static final Function ASSOCIATE_TOKENS_FUNCTION =
             new Function("associateTokens(address,address[])", INT_OUTPUT);
@@ -169,7 +169,8 @@ public class DecodingFacade {
             new Function("balanceOf(address)", INT_OUTPUT);
     private static final Bytes BALANCE_OF_TOKEN_SELECTOR =
             Bytes.wrap(BALANCE_OF_TOKEN_FUNCTION.selector());
-    private static final ABIType<Tuple> BALANCE_OF_TOKEN_DECODER = TypeFactory.create(BYTES32_RAW_TYPE);
+    private static final ABIType<Tuple> BALANCE_OF_TOKEN_DECODER =
+            TypeFactory.create(BYTES32_RAW_TYPE);
 
     private static final Function OWNER_OF_NFT_FUNCTION =
             new Function("ownerOf(uint256)", INT_OUTPUT);
@@ -404,7 +405,10 @@ public class DecodingFacade {
 
     public GetTokenDefaultFreezeStatusWrapper decodeTokenDefaultFreezeStatus(final Bytes input) {
         final Tuple decodedArguments =
-            decodeFunctionCall(input, GET_TOKEN_DEFAULT_FREEZE_STATUS_SELECTOR, GET_TOKEN_DEFAULT_FREEZE_STATUS_DECODER);
+                decodeFunctionCall(
+                        input,
+                        GET_TOKEN_DEFAULT_FREEZE_STATUS_SELECTOR,
+                        GET_TOKEN_DEFAULT_FREEZE_STATUS_DECODER);
 
         final var tokenID = convertAddressBytesToTokenID(decodedArguments.get(0));
 
@@ -413,7 +417,10 @@ public class DecodingFacade {
 
     public GetTokenDefaultKycStatusWrapper decodeTokenDefaultKycStatus(final Bytes input) {
         final Tuple decodedArguments =
-            decodeFunctionCall(input, GET_TOKEN_DEFAULT_KYC_STATUS_SELECTOR, GET_TOKEN_DEFAULT_KYC_STATUS_DECODER);
+                decodeFunctionCall(
+                        input,
+                        GET_TOKEN_DEFAULT_KYC_STATUS_SELECTOR,
+                        GET_TOKEN_DEFAULT_KYC_STATUS_DECODER);
 
         final var tokenID = convertAddressBytesToTokenID(decodedArguments.get(0));
 

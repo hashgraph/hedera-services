@@ -43,9 +43,12 @@ public class HTSPrecompileResult implements ContractCallResult {
     private static final TupleType isApprovedForAllType = TupleType.parse("(bool)");
     private static final TupleType hapiAllowanceOfType = TupleType.parse("(int32,uint256)");
     private static final TupleType hapiGetApprovedType = TupleType.parse("(int32,bytes32)");
-    private static final TupleType hapiIsApprovedForAllType = TupleType.parse(INT_BOOL_PAIR_RETURN_TYPE);
-    private static final TupleType getTokenDefaultFreezeStatusType = TupleType.parse(INT_BOOL_PAIR_RETURN_TYPE);
-    private static final TupleType getTokenDefaultKycStatusType = TupleType.parse(INT_BOOL_PAIR_RETURN_TYPE);
+    private static final TupleType hapiIsApprovedForAllType =
+            TupleType.parse(INT_BOOL_PAIR_RETURN_TYPE);
+    private static final TupleType getTokenDefaultFreezeStatusType =
+            TupleType.parse(INT_BOOL_PAIR_RETURN_TYPE);
+    private static final TupleType getTokenDefaultKycStatusType =
+            TupleType.parse(INT_BOOL_PAIR_RETURN_TYPE);
 
     public static HTSPrecompileResult htsPrecompileResult() {
         return new HTSPrecompileResult();
@@ -196,7 +199,8 @@ public class HTSPrecompileResult implements ContractCallResult {
         return this;
     }
 
-    public HTSPrecompileResult withTokenDefaultFreezeStatus(final boolean tokenDefaultFreezeStatus) {
+    public HTSPrecompileResult withTokenDefaultFreezeStatus(
+            final boolean tokenDefaultFreezeStatus) {
         this.tokenDefaultFreezeStatus = tokenDefaultFreezeStatus;
         return this;
     }
@@ -235,8 +239,10 @@ public class HTSPrecompileResult implements ContractCallResult {
                     Tuple.of(status.getNumber(), BigInteger.valueOf(allowance));
             case HAPI_GET_APPROVED -> result =
                     Tuple.of(status.getNumber(), expandByteArrayTo32Length(approved));
-            case GET_TOKEN_DEFAULT_FREEZE_STATUS -> result = Tuple.of(status.getNumber(), tokenDefaultFreezeStatus);
-            case GET_TOKEN_DEFAULT_KYC_STATUS -> result = Tuple.of(status.getNumber(), tokenDefaultKycStatus);
+            case GET_TOKEN_DEFAULT_FREEZE_STATUS -> result =
+                    Tuple.of(status.getNumber(), tokenDefaultFreezeStatus);
+            case GET_TOKEN_DEFAULT_KYC_STATUS -> result =
+                    Tuple.of(status.getNumber(), tokenDefaultKycStatus);
             default -> result = Tuple.of(status.getNumber());
         }
         return Bytes.wrap(tupleType.encode(result).array());
