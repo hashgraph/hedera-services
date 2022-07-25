@@ -30,11 +30,11 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import com.hedera.services.context.TransactionContext;
-import com.hedera.services.contracts.execution.SolidityAction;
 import com.hedera.services.contracts.execution.TransactionProcessingResult;
+import com.hedera.services.contracts.execution.traceability.ContractActionType;
+import com.hedera.services.contracts.execution.traceability.SolidityAction;
 import com.hedera.services.contracts.operation.HederaExceptionalHaltReason;
 import com.hedera.services.ethereum.EthTxData;
-import com.hedera.services.state.enums.ContractActionType;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.EvmFnResult;
 import com.hedera.services.store.models.Id;

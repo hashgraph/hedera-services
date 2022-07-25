@@ -227,11 +227,11 @@ class HederaTracerTest {
         // then
         final var solidityAction = subject.getActions().get(0);
         assertEquals(initialGas - remainingGasAfterExecution, solidityAction.getGasUsed());
-        assertNull(solidityAction.getRevertReason());
+        assertArrayEquals(new byte[0], solidityAction.getRevertReason());
     }
 
     @Test
-    void finalizesExceptionallyHaltedFrameWithoutRevertReasonAsExpected() {
+    void finalizesExceptionallyHaltedFrameWithoutHaltReasonAsExpected() {
         // given
         givenTracedExecutingFrame(Type.MESSAGE_CALL);
         // when
@@ -240,7 +240,7 @@ class HederaTracerTest {
         // then
         final var solidityAction = subject.getActions().get(0);
         assertEquals(initialGas, solidityAction.getGasUsed());
-        assertNull(solidityAction.getError());
+        assertArrayEquals(new byte[0], solidityAction.getError());
         assertNull(solidityAction.getInvalidSolidityAddress());
     }
 

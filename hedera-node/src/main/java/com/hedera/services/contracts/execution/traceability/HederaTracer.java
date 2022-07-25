@@ -29,18 +29,11 @@ import java.util.List;
 import java.util.Optional;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.hyperledger.besu.evm.Code;
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.frame.MessageFrame.State;
-import org.hyperledger.besu.evm.tracing.OperationTracer;
 
-/**
- * Custom {@link OperationTracer} that populates exceptional halt reasons in the {@link
- * MessageFrame}
- */
 @Singleton
 public class HederaTracer implements HederaOperationTracer {
 
@@ -52,7 +45,6 @@ public class HederaTracer implements HederaOperationTracer {
     public HederaTracer() {
         this.currentActionsStack = new ArrayDeque<>();
         this.allActions = new ArrayList<>();
-        this.areActionSidecarsEnabled = false;
     }
 
     @Override
@@ -133,20 +125,21 @@ public class HederaTracer implements HederaOperationTracer {
         } else if (frameState == State.REVERT) {
             // deliberate failures do not burn extra gas
             action.setGasUsed(action.getGas() - frame.getRemainingGas());
-            // set the revert reason in the action if present
+            // set the revert reason in the action
             frame.getRevertReason()
-                    .ifPresent(bytes -> action.setRevertReason(bytes.toArrayUnsafe()));
+                .ifPresentOrElse(bytes -> action.setRevertReason(bytes.toArrayUnsafe()),
+                    () -> action.setRevertReason(new byte[0]));
         } else if (frameState == State.EXCEPTIONAL_HALT) {
             // exceptional exits always burn all gas
             action.setGasUsed(action.getGas());
-            // exceptional halt state always has an exceptional halt reason set
+            // set error in action
             final var exceptionalHaltReasonOptional = frame.getExceptionalHaltReason();
             if (exceptionalHaltReasonOptional.isPresent()) {
                 final var exceptionalHaltReason = exceptionalHaltReasonOptional.get();
                 // set the result as error
                 action.setError(
                         exceptionalHaltReason.getDescription().getBytes(StandardCharsets.UTF_8));
-                // if receiver was an invalid address, clear set receiver
+                // if recipient was an invalid address, clear current recipient
                 // and set invalid solidity address field
                 if (exceptionalHaltReason.equals(INVALID_SOLIDITY_ADDRESS)) {
                     if (action.getRecipientAccount() != null) {
@@ -159,6 +152,8 @@ public class HederaTracer implements HederaOperationTracer {
                         action.setRecipientContract(null);
                     }
                 }
+            } else {
+                action.setError(new byte[0]);
             }
         }
     }
