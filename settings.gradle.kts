@@ -54,7 +54,7 @@ dependencyResolutionManagement {
             version("log4j-version", "2.17.2")
             version("netty-version", "4.1.66.Final")
             version("protobuf-java-version", "3.19.4")
-            version("swirlds-version", "0.29.0-adhoc.xf9ad1beb")
+            version("swirlds-version", "v0.29.0-alpha.1")
             version("tuweni-version", "2.2.0")
 
             // List of bundles provided for us. When applicable, favor using these over individual libraries.
