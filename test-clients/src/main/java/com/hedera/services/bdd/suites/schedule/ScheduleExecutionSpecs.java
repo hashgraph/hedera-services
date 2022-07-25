@@ -822,8 +822,8 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
         final String xTreasury = "xt";
         final String xCivilian = "xc";
         final String deadXCivilian = "deadxc";
-        final String successTxn = "good";
-        final String failedTxn = "bad";
+        final String successTx = "good";
+        final String failedTx = "bad";
         final AtomicReference<Map<AccountID, Long>> successFeesObs = new AtomicReference<>();
         final AtomicReference<Map<AccountID, Long>> failureFeesObs = new AtomicReference<>();
 
@@ -841,12 +841,12 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
                                         validSchedule,
                                         cryptoTransfer(
                                                 moving(1, xToken).between(xTreasury, xCivilian)))
-                                .via(successTxn)
+                                .via(successTx)
                                 .alsoSigningWith(xTreasury, schedulePayer)
                                 .designatingPayer(schedulePayer),
                         getAccountBalance(xTreasury).hasTokenBalance(xToken, 100),
                         getAccountBalance(xCivilian).hasTokenBalance(xToken, 1),
-                        getTxnRecord(successTxn)
+                        getTxnRecord(successTx)
                                 .scheduled()
                                 .logged()
                                 .revealingDebitsTo(successFeesObs::set),
@@ -856,11 +856,11 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
                                         cryptoTransfer(
                                                 moving(1, xToken)
                                                         .between(xTreasury, deadXCivilian)))
-                                .via(failedTxn)
+                                .via(failedTx)
                                 .alsoSigningWith(xTreasury, schedulePayer)
                                 .designatingPayer(schedulePayer))
                 .then(
-                        getTxnRecord(failedTxn)
+                        getTxnRecord(failedTx)
                                 .scheduled()
                                 .hasPriority(recordWith().status(ACCOUNT_DELETED))
                                 .revealingDebitsTo(failureFeesObs::set),
@@ -878,8 +878,8 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
         String schedulePayer = PAYER;
         String xTreasury = "xt";
         String xCivilian = "xc";
-        String successTxn = "good";
-        String failedTxn = "bad";
+        String successTx = "good";
+        String failedTx = "bad";
         AtomicReference<Map<AccountID, Long>> successFeesObs = new AtomicReference<>();
         AtomicReference<Map<AccountID, Long>> failureFeesObs = new AtomicReference<>();
 
@@ -901,12 +901,12 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
                                                         moving(1, xToken)
                                                                 .between(xTreasury, xCivilian))
                                                 .memo(randomUppercase(100)))
-                                .via(successTxn)
+                                .via(successTx)
                                 .alsoSigningWith(xTreasury, schedulePayer)
                                 .designatingPayer(schedulePayer),
                         getAccountBalance(xTreasury).hasTokenBalance(xToken, 100),
                         getAccountBalance(xCivilian).hasTokenBalance(xToken, 1),
-                        getTxnRecord(successTxn)
+                        getTxnRecord(successTx)
                                 .scheduled()
                                 .logged()
                                 .revealingDebitsTo(successFeesObs::set),
@@ -917,11 +917,11 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
                                                         moving(1, xToken)
                                                                 .between(xTreasury, xCivilian))
                                                 .memo(randomUppercase(100)))
-                                .via(failedTxn)
+                                .via(failedTx)
                                 .alsoSigningWith(xTreasury, schedulePayer)
                                 .designatingPayer(schedulePayer))
                 .then(
-                        getTxnRecord(failedTxn)
+                        getTxnRecord(failedTx)
                                 .scheduled()
                                 .hasPriority(recordWith().status(TOKEN_WAS_DELETED))
                                 .revealingDebitsTo(failureFeesObs::set),
@@ -939,8 +939,8 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
         String schedulePayer = PAYER;
         String xTreasury = "xt";
         String xCivilian = "xc";
-        String successTxn = "good";
-        String failedTxn = "bad";
+        String successTx = "good";
+        String failedTx = "bad";
         AtomicReference<Map<AccountID, Long>> successFeesObs = new AtomicReference<>();
         AtomicReference<Map<AccountID, Long>> failureFeesObs = new AtomicReference<>();
 
@@ -965,12 +965,12 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
                                                         moving(1, xToken)
                                                                 .between(xTreasury, xCivilian))
                                                 .memo(randomUppercase(100)))
-                                .via(successTxn)
+                                .via(successTx)
                                 .alsoSigningWith(xTreasury, schedulePayer)
                                 .designatingPayer(schedulePayer),
                         getAccountBalance(xTreasury).hasTokenBalance(xToken, 100),
                         getAccountBalance(xCivilian).hasTokenBalance(xToken, 1),
-                        getTxnRecord(successTxn)
+                        getTxnRecord(successTx)
                                 .scheduled()
                                 .logged()
                                 .revealingDebitsTo(successFeesObs::set),
@@ -981,11 +981,11 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
                                                         moving(1, xToken)
                                                                 .between(xTreasury, xCivilian))
                                                 .memo(randomUppercase(100)))
-                                .via(failedTxn)
+                                .via(failedTx)
                                 .alsoSigningWith(xTreasury, schedulePayer)
                                 .designatingPayer(schedulePayer))
                 .then(
-                        getTxnRecord(failedTxn)
+                        getTxnRecord(failedTx)
                                 .scheduled()
                                 .hasPriority(recordWith().status(ACCOUNT_FROZEN_FOR_TOKEN))
                                 .revealingDebitsTo(failureFeesObs::set),
@@ -1003,8 +1003,8 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
         String schedulePayer = PAYER;
         String xTreasury = "xt";
         String xCivilian = "xc";
-        String successTxn = "good";
-        String failedTxn = "bad";
+        String successTx = "good";
+        String failedTx = "bad";
         AtomicReference<Map<AccountID, Long>> successFeesObs = new AtomicReference<>();
         AtomicReference<Map<AccountID, Long>> failureFeesObs = new AtomicReference<>();
 
@@ -1025,12 +1025,12 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
                                                         moving(1, xToken)
                                                                 .between(xTreasury, xCivilian))
                                                 .memo(randomUppercase(100)))
-                                .via(successTxn)
+                                .via(successTx)
                                 .alsoSigningWith(xTreasury, schedulePayer)
                                 .designatingPayer(schedulePayer),
                         getAccountBalance(xTreasury).hasTokenBalance(xToken, 100),
                         getAccountBalance(xCivilian).hasTokenBalance(xToken, 1),
-                        getTxnRecord(successTxn)
+                        getTxnRecord(successTx)
                                 .scheduled()
                                 .logged()
                                 .revealingDebitsTo(successFeesObs::set),
@@ -1041,11 +1041,11 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
                                                         moving(1, xToken)
                                                                 .between(xTreasury, xCivilian))
                                                 .memo(randomUppercase(100)))
-                                .via(failedTxn)
+                                .via(failedTx)
                                 .alsoSigningWith(xTreasury, schedulePayer)
                                 .designatingPayer(schedulePayer))
                 .then(
-                        getTxnRecord(failedTxn)
+                        getTxnRecord(failedTx)
                                 .scheduled()
                                 .hasPriority(recordWith().status(ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN))
                                 .revealingDebitsTo(failureFeesObs::set),
@@ -1065,8 +1065,8 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
         String xTreasury = "xt";
         String xCivilian = "xc";
         String nonXCivilian = "nxc";
-        String successTxn = "good";
-        String failedTxn = "bad";
+        String successTx = "good";
+        String failedTx = "bad";
         AtomicReference<Map<AccountID, Long>> successFeesObs = new AtomicReference<>();
         AtomicReference<Map<AccountID, Long>> failureFeesObs = new AtomicReference<>();
 
@@ -1084,12 +1084,12 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
                                         validSchedule,
                                         cryptoTransfer(
                                                 moving(1, xToken).between(xTreasury, xCivilian)))
-                                .via(successTxn)
+                                .via(successTx)
                                 .alsoSigningWith(xTreasury, schedulePayer)
                                 .designatingPayer(schedulePayer),
                         getAccountBalance(xTreasury).hasTokenBalance(xToken, 100),
                         getAccountBalance(xCivilian).hasTokenBalance(xToken, 1),
-                        getTxnRecord(successTxn)
+                        getTxnRecord(successTx)
                                 .scheduled()
                                 .logged()
                                 .revealingDebitsTo(successFeesObs::set),
@@ -1097,11 +1097,11 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
                                         invalidSchedule,
                                         cryptoTransfer(
                                                 moving(1, xToken).between(xTreasury, nonXCivilian)))
-                                .via(failedTxn)
+                                .via(failedTx)
                                 .alsoSigningWith(xTreasury, schedulePayer)
                                 .designatingPayer(schedulePayer))
                 .then(
-                        getTxnRecord(failedTxn)
+                        getTxnRecord(failedTx)
                                 .scheduled()
                                 .hasPriority(recordWith().status(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT))
                                 .revealingDebitsTo(failureFeesObs::set),
@@ -1120,8 +1120,8 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
         String schedulePayer = PAYER;
         String xTreasury = "xt";
         String xCivilian = "xc";
-        String successTxn = "good";
-        String failedTxn = "bad";
+        String successTx = "good";
+        String failedTx = "bad";
         AtomicReference<Map<AccountID, Long>> successFeesObs = new AtomicReference<>();
         AtomicReference<Map<AccountID, Long>> failureFeesObs = new AtomicReference<>();
 
@@ -1137,12 +1137,12 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
                                         validSchedule,
                                         cryptoTransfer(
                                                 moving(1, xToken).between(xTreasury, xCivilian)))
-                                .via(successTxn)
+                                .via(successTx)
                                 .alsoSigningWith(xTreasury, schedulePayer)
                                 .designatingPayer(schedulePayer),
                         getAccountBalance(xTreasury).hasTokenBalance(xToken, 100),
                         getAccountBalance(xCivilian).hasTokenBalance(xToken, 1),
-                        getTxnRecord(successTxn)
+                        getTxnRecord(successTx)
                                 .scheduled()
                                 .logged()
                                 .revealingDebitsTo(successFeesObs::set),
@@ -1152,11 +1152,11 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
                                                         moving(1, xToken)
                                                                 .between(xTreasury, xCivilian))
                                                 .breakingNetZeroInvariant())
-                                .via(failedTxn)
+                                .via(failedTx)
                                 .alsoSigningWith(xTreasury, schedulePayer)
                                 .designatingPayer(schedulePayer))
                 .then(
-                        getTxnRecord(failedTxn)
+                        getTxnRecord(failedTx)
                                 .scheduled()
                                 .hasPriority(recordWith().status(TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN))
                                 .revealingDebitsTo(failureFeesObs::set),
@@ -1176,8 +1176,8 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
         String schedulePayer = PAYER;
         String xTreasury = "xt";
         String yTreasury = "yt";
-        String successTxn = "good";
-        String failedTxn = "bad";
+        String successTx = "good";
+        String failedTx = "bad";
         AtomicReference<Map<AccountID, Long>> successFeesObs = new AtomicReference<>();
         AtomicReference<Map<AccountID, Long>> failureFeesObs = new AtomicReference<>();
 
@@ -1196,14 +1196,14 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
                                         cryptoTransfer(
                                                 moving(1, xToken).between(xTreasury, yTreasury),
                                                 moving(1, yToken).between(yTreasury, xTreasury)))
-                                .via(successTxn)
+                                .via(successTx)
                                 .alsoSigningWith(xTreasury, yTreasury, schedulePayer)
                                 .designatingPayer(schedulePayer),
                         getAccountBalance(xTreasury).hasTokenBalance(xToken, 100),
                         getAccountBalance(xTreasury).hasTokenBalance(yToken, 1),
                         getAccountBalance(yTreasury).hasTokenBalance(yToken, 100),
                         getAccountBalance(yTreasury).hasTokenBalance(xToken, 1),
-                        getTxnRecord(successTxn)
+                        getTxnRecord(successTx)
                                 .scheduled()
                                 .logged()
                                 .revealingDebitsTo(successFeesObs::set),
@@ -1214,11 +1214,11 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
                                                                 .between(xTreasury, yTreasury))
                                                 .appendingTokenFromTo(
                                                         xToken, xTreasury, yTreasury, 1))
-                                .via(failedTxn)
+                                .via(failedTx)
                                 .alsoSigningWith(xTreasury, schedulePayer)
                                 .designatingPayer(schedulePayer))
                 .then(
-                        getTxnRecord(failedTxn)
+                        getTxnRecord(failedTx)
                                 .scheduled()
                                 .hasPriority(recordWith().status(TOKEN_ID_REPEATED_IN_TOKEN_LIST))
                                 .revealingDebitsTo(failureFeesObs::set),
@@ -1241,8 +1241,8 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
         String xTreasury = "xt";
         String yTreasury = "yt";
         String xyCivilian = "xyt";
-        String successTxn = "good";
-        String failedTxn = "bad";
+        String successTx = "good";
+        String failedTx = "bad";
         AtomicReference<Map<AccountID, Long>> successFeesObs = new AtomicReference<>();
         AtomicReference<Map<AccountID, Long>> failureFeesObs = new AtomicReference<>();
 
@@ -1263,14 +1263,14 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
                                         cryptoTransfer(
                                                 moving(1, xToken).between(xTreasury, yTreasury),
                                                 moving(1, yToken).between(yTreasury, xTreasury)))
-                                .via(successTxn)
+                                .via(successTx)
                                 .alsoSigningWith(xTreasury, yTreasury, schedulePayer)
                                 .designatingPayer(schedulePayer),
                         getAccountBalance(xTreasury).hasTokenBalance(xToken, 100),
                         getAccountBalance(xTreasury).hasTokenBalance(yToken, 1),
                         getAccountBalance(yTreasury).hasTokenBalance(yToken, 100),
                         getAccountBalance(yTreasury).hasTokenBalance(xToken, 1),
-                        getTxnRecord(successTxn)
+                        getTxnRecord(successTx)
                                 .scheduled()
                                 .logged()
                                 .revealingDebitsTo(successFeesObs::set),
@@ -1283,11 +1283,11 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
                                                                         yTreasury,
                                                                         xyCivilian))
                                                 .withEmptyTokenTransfers(yToken))
-                                .via(failedTxn)
+                                .via(failedTx)
                                 .alsoSigningWith(xTreasury, yTreasury, schedulePayer)
                                 .designatingPayer(schedulePayer))
                 .then(
-                        getTxnRecord(failedTxn)
+                        getTxnRecord(failedTx)
                                 .scheduled()
                                 .hasPriority(
                                         recordWith().status(EMPTY_TOKEN_TRANSFER_ACCOUNT_AMOUNTS))
@@ -1308,8 +1308,8 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
         String validSchedule = "withValidSize";
         String invalidSchedule = "withInvalidSize";
         String schedulePayer = PAYER;
-        String successTxn = "good";
-        String failedTxn = "bad";
+        String successTx = "good";
+        String failedTx = "bad";
         AtomicReference<Map<AccountID, Long>> successFeesObs = new AtomicReference<>();
         AtomicReference<Map<AccountID, Long>> failureFeesObs = new AtomicReference<>();
         var maxValidLen =
@@ -1324,10 +1324,10 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
                                         submitMessageTo(immutableTopic)
                                                 .message(randomUppercase(maxValidLen)))
                                 .designatingPayer(schedulePayer)
-                                .via(successTxn)
+                                .via(successTx)
                                 .signedBy(DEFAULT_PAYER, schedulePayer),
                         getTopicInfo(immutableTopic).hasSeqNo(1L),
-                        getTxnRecord(successTxn)
+                        getTxnRecord(successTx)
                                 .scheduled()
                                 .logged()
                                 .revealingDebitsTo(successFeesObs::set),
@@ -1336,11 +1336,11 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
                                         submitMessageTo(immutableTopic)
                                                 .message(randomUppercase(maxValidLen + 1)))
                                 .designatingPayer(schedulePayer)
-                                .via(failedTxn)
+                                .via(failedTx)
                                 .signedBy(DEFAULT_PAYER, schedulePayer))
                 .then(
                         getTopicInfo(immutableTopic).hasSeqNo(1L),
-                        getTxnRecord(failedTxn)
+                        getTxnRecord(failedTx)
                                 .scheduled()
                                 .hasPriority(recordWith().status(MESSAGE_SIZE_TOO_LARGE))
                                 .revealingDebitsTo(failureFeesObs::set),
@@ -1356,8 +1356,8 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
         String validSchedule = "withValidChunkTxnId";
         String invalidSchedule = "withInvalidChunkTxnId";
         String schedulePayer = PAYER;
-        String successTxn = "good";
-        String failedTxn = "bad";
+        String successTx = "good";
+        String failedTx = "bad";
         AtomicReference<Map<AccountID, Long>> successFeesObs = new AtomicReference<>();
         AtomicReference<Map<AccountID, Long>> failureFeesObs = new AtomicReference<>();
         AtomicReference<TransactionID> initialTxnId = new AtomicReference<>();
@@ -1369,11 +1369,11 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
                 .when(
                         withOpContext(
                                 (spec, opLog) -> {
-                                    var subOp = usableTxnIdNamed(successTxn).payerId(schedulePayer);
+                                    var subOp = usableTxnIdNamed(successTx).payerId(schedulePayer);
                                     var secondSubOp =
                                             usableTxnIdNamed("wontWork").payerId(schedulePayer);
                                     allRunFor(spec, subOp, secondSubOp);
-                                    initialTxnId.set(spec.registry().getTxnId(successTxn));
+                                    initialTxnId.set(spec.registry().getTxnId(successTx));
                                     irrelevantTxnId.set(spec.registry().getTxnId("wontWork"));
                                 }),
                         sourcing(
@@ -1387,11 +1387,11 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
                                                                         scheduledVersionOf(
                                                                                 initialTxnId
                                                                                         .get())))
-                                                .txnId(successTxn)
+                                                .txnId(successTx)
                                                 .logged()
                                                 .signedBy(schedulePayer)),
                         getTopicInfo(immutableTopic).hasSeqNo(1L),
-                        getTxnRecord(successTxn)
+                        getTxnRecord(successTx)
                                 .scheduled()
                                 .logged()
                                 .revealingDebitsTo(successFeesObs::set),
@@ -1407,12 +1407,12 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
                                                                                 irrelevantTxnId
                                                                                         .get())))
                                                 .designatingPayer(schedulePayer)
-                                                .via(failedTxn)
+                                                .via(failedTx)
                                                 .logged()
                                                 .signedBy(DEFAULT_PAYER, schedulePayer)))
                 .then(
                         getTopicInfo(immutableTopic).hasSeqNo(1L),
-                        getTxnRecord(failedTxn)
+                        getTxnRecord(failedTx)
                                 .scheduled()
                                 .hasPriority(recordWith().status(INVALID_CHUNK_TRANSACTION_ID))
                                 .revealingDebitsTo(failureFeesObs::set),
@@ -1428,8 +1428,8 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
         String validSchedule = "withValidChunkNumber";
         String invalidSchedule = "withInvalidChunkNumber";
         String schedulePayer = PAYER;
-        String successTxn = "good";
-        String failedTxn = "bad";
+        String successTx = "good";
+        String failedTx = "bad";
         AtomicReference<Map<AccountID, Long>> successFeesObs = new AtomicReference<>();
         AtomicReference<Map<AccountID, Long>> failureFeesObs = new AtomicReference<>();
         AtomicReference<TransactionID> initialTxnId = new AtomicReference<>();
@@ -1440,9 +1440,9 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
                 .when(
                         withOpContext(
                                 (spec, opLog) -> {
-                                    var subOp = usableTxnIdNamed(successTxn).payerId(schedulePayer);
+                                    var subOp = usableTxnIdNamed(successTx).payerId(schedulePayer);
                                     allRunFor(spec, subOp);
-                                    initialTxnId.set(spec.registry().getTxnId(successTxn));
+                                    initialTxnId.set(spec.registry().getTxnId(successTx));
                                 }),
                         sourcing(
                                 () ->
@@ -1455,11 +1455,11 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
                                                                         scheduledVersionOf(
                                                                                 initialTxnId
                                                                                         .get())))
-                                                .txnId(successTxn)
+                                                .txnId(successTx)
                                                 .logged()
                                                 .signedBy(schedulePayer)),
                         getTopicInfo(immutableTopic).hasSeqNo(1L),
-                        getTxnRecord(successTxn)
+                        getTxnRecord(successTx)
                                 .scheduled()
                                 .logged()
                                 .revealingDebitsTo(successFeesObs::set),
@@ -1467,12 +1467,12 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
                                         invalidSchedule,
                                         submitMessageTo(immutableTopic)
                                                 .chunkInfo(3, 111, schedulePayer))
-                                .via(failedTxn)
+                                .via(failedTx)
                                 .logged()
                                 .payingWith(schedulePayer))
                 .then(
                         getTopicInfo(immutableTopic).hasSeqNo(1L),
-                        getTxnRecord(failedTxn)
+                        getTxnRecord(failedTx)
                                 .scheduled()
                                 .hasPriority(recordWith().status(INVALID_CHUNK_NUMBER))
                                 .revealingDebitsTo(failureFeesObs::set),
