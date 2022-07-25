@@ -39,9 +39,9 @@ import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 
 public class PausePrecompile extends AbstractWritePrecompile {
-    protected PauseWrapper pauseOp;
-    protected final ContractAliases aliases;
-    protected final EvmSigsVerifier sigsVerifier;
+    private PauseWrapper pauseOp;
+    private final ContractAliases aliases;
+    private final EvmSigsVerifier sigsVerifier;
 
     public PausePrecompile(
             WorldLedgers ledgers,

@@ -426,17 +426,13 @@ public class SyntheticTxnFactory {
 
     public TransactionBody.Builder createPause(final PauseWrapper pauseWrapper) {
         final var builder = TokenPauseTransactionBody.newBuilder();
-
         builder.setToken(pauseWrapper.token());
-
         return TransactionBody.newBuilder().setTokenPause(builder);
     }
 
     public TransactionBody.Builder createUnpause(final UnpauseWrapper unpauseWrapper) {
         final var builder = TokenUnpauseTransactionBody.newBuilder();
-
         builder.setToken(unpauseWrapper.token());
-
         return TransactionBody.newBuilder().setTokenUnpause(builder);
     }
 

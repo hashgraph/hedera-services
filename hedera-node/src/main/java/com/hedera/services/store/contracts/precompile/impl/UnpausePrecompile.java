@@ -39,9 +39,9 @@ import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 
 public class UnpausePrecompile extends AbstractWritePrecompile {
-    protected UnpauseWrapper unpauseOp;
-    protected final ContractAliases aliases;
-    protected final EvmSigsVerifier sigsVerifier;
+    private UnpauseWrapper unpauseOp;
+    private final ContractAliases aliases;
+    private final EvmSigsVerifier sigsVerifier;
 
     public UnpausePrecompile(
             WorldLedgers ledgers,

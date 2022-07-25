@@ -33,6 +33,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.asHexedAddress;
 import static com.hedera.services.bdd.suites.contract.Utils.asToken;
+import static com.hedera.services.bdd.suites.token.TokenAssociationSpecs.MULTI_KEY;
 import static com.hedera.services.bdd.suites.token.TokenAssociationSpecs.VANILLA_TOKEN;
 import static com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult.htsPrecompileResult;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
@@ -95,14 +96,14 @@ public class PauseUnpauseTokenAccountPrecompileSuite extends HapiApiSuite {
 
         return defaultHapiSpec("PauseFungibleTokenHappyPath")
                 .given(
-                        newKeyNamed(PAUSE_KEY),
+                        newKeyNamed(MULTI_KEY),
                         cryptoCreate(TOKEN_TREASURY),
                         cryptoCreate(ACCOUNT).balance(INITIAL_BALANCE),
                         tokenCreate(VANILLA_TOKEN)
                                 .tokenType(FUNGIBLE_COMMON)
                                 .treasury(TOKEN_TREASURY)
-                                .pauseKey(PAUSE_KEY)
-                                .adminKey(PAUSE_KEY)
+                                .pauseKey(MULTI_KEY)
+                                .adminKey(MULTI_KEY)
                                 .initialSupply(1_000)
                                 .exposingCreatedIdTo(id -> tokenID.set(asToken(id))),
                         uploadInitCode(PAUSE_UNPAUSE_CONTRACT),
@@ -121,7 +122,7 @@ public class PauseUnpauseTokenAccountPrecompileSuite extends HapiApiSuite {
                                                                 "pauseFungibleAccountDoesNotOwnPauseKeyFailingTxn")
                                                         .gas(GAS_TO_OFFER)
                                                         .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
-                                                cryptoUpdate(ACCOUNT).key(PAUSE_KEY),
+                                                cryptoUpdate(ACCOUNT).key(MULTI_KEY),
                                                 contractCall(
                                                                 PAUSE_UNPAUSE_CONTRACT,
                                                                 PAUSE_TOKEN_ACCOUNT_FUNCTION_NAME,
@@ -224,14 +225,14 @@ public class PauseUnpauseTokenAccountPrecompileSuite extends HapiApiSuite {
 
         return defaultHapiSpec("PauseNonFungibleTokenHappyPath")
                 .given(
-                        newKeyNamed(PAUSE_KEY),
+                        newKeyNamed(MULTI_KEY),
                         cryptoCreate(TOKEN_TREASURY),
                         cryptoCreate(ACCOUNT).balance(INITIAL_BALANCE),
                         tokenCreate(VANILLA_TOKEN)
                                 .tokenType(NON_FUNGIBLE_UNIQUE)
                                 .treasury(TOKEN_TREASURY)
-                                .pauseKey(PAUSE_KEY)
-                                .adminKey(PAUSE_KEY)
+                                .pauseKey(MULTI_KEY)
+                                .adminKey(MULTI_KEY)
                                 .initialSupply(0)
                                 .exposingCreatedIdTo(id -> tokenID.set(asToken(id))),
                         uploadInitCode(PAUSE_UNPAUSE_CONTRACT),
@@ -250,7 +251,7 @@ public class PauseUnpauseTokenAccountPrecompileSuite extends HapiApiSuite {
                                                                 "pauseNonFungibleAccountDoesNotOwnPauseKeyFailingTxn")
                                                         .gas(GAS_TO_OFFER)
                                                         .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
-                                                cryptoUpdate(ACCOUNT).key(PAUSE_KEY),
+                                                cryptoUpdate(ACCOUNT).key(MULTI_KEY),
                                                 contractCall(
                                                                 PAUSE_UNPAUSE_CONTRACT,
                                                                 PAUSE_TOKEN_ACCOUNT_FUNCTION_NAME,

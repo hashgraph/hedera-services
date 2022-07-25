@@ -342,12 +342,6 @@ public class TxnVerbs {
         return new HapiContractCall(abi, contract, params);
     }
 
-    public static HapiContractCall contractCall(
-            String contract, String functionName, String param) {
-        final var abi = getABIFor(FUNCTION, functionName, contract);
-        return new HapiContractCall(abi, contract, param);
-    }
-
     /**
      * This method allows the developer to invoke a contract function by the name of the called
      * contract and the name of the desired function and make an ethereum call
@@ -411,17 +405,6 @@ public class TxnVerbs {
         if (constructorParams.length > 0) {
             final var constructorABI = getABIFor(CONSTRUCTOR, EMPTY, contractName);
             return new HapiContractCreate(contractName, constructorABI, constructorParams)
-                    .bytecode(contractName);
-        } else {
-            return new HapiContractCreate(contractName).bytecode(contractName);
-        }
-    }
-
-    public static HapiContractCreate contractCreate(
-            final String contractName, final String constructorParam) {
-        if (constructorParam != null) {
-            final var constructorABI = getABIFor(CONSTRUCTOR, EMPTY, contractName);
-            return new HapiContractCreate(contractName, constructorABI, constructorParam)
                     .bytecode(contractName);
         } else {
             return new HapiContractCreate(contractName).bytecode(contractName);
