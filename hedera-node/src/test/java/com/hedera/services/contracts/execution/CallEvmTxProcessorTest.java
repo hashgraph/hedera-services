@@ -30,8 +30,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
-import com.google.protobuf.ByteString;
-import com.google.protobuf.BytesValue;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.ledger.accounts.AliasManager;
@@ -39,14 +37,16 @@ import com.hedera.services.store.contracts.CodeCache;
 import com.hedera.services.store.contracts.HederaWorldState;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
+import com.hedera.services.stream.proto.SidecarType;
 import com.hedera.services.txns.contract.helpers.StorageExpiry;
-import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.math.BigInteger;
 import java.time.Instant;
 import java.util.ArrayDeque;
+import java.util.Collections;
 import java.util.Deque;
+import java.util.EnumSet;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -247,11 +247,12 @@ class CallEvmTxProcessorTest {
     }
 
     @Test
-    void assertSuccessExecutionPopulatesStorageChanges() {
+    void assertSuccessExecutionPopulatesStateChanges() {
         givenValidMock();
         given(globalDynamicProperties.fundingAccount())
                 .willReturn(new Id(0, 0, 1010).asGrpcAccount());
-        given(globalDynamicProperties.shouldEnableTraceability()).willReturn(true);
+        given(globalDynamicProperties.enabledSidecars())
+                .willReturn(EnumSet.of(SidecarType.CONTRACT_STATE_CHANGE));
         givenSenderWithBalance(350_000L);
         given(aliasManager.resolveForEvm(receiverAddress)).willReturn(receiverAddress);
         final var contractAddress = "0xffff";
@@ -276,28 +277,13 @@ class CallEvmTxProcessorTest {
 
         assertTrue(result.isSuccessful());
         assertEquals(receiver.getId().asGrpcContract(), result.toGrpc().getContractID());
-        assertEquals(1, result.toGrpc().getStateChangesCount());
-        final var contractStateChange = result.toGrpc().getStateChanges(0);
-        assertEquals(
-                EntityIdUtils.contractIdFromEvmAddress(Address.fromHexString(contractAddress)),
-                contractStateChange.getContractID());
-        assertEquals(
-                ByteString.copyFrom(
-                        Bytes.wrap(UInt256.valueOf(slot)).trimLeadingZeros().toArrayUnsafe()),
-                contractStateChange.getStorageChanges(0).getSlot());
-        assertEquals(
-                ByteString.copyFrom(
-                        Bytes.wrap(UInt256.valueOf(oldSlotValue))
-                                .trimLeadingZeros()
-                                .toArrayUnsafe()),
-                contractStateChange.getStorageChanges(0).getValueRead());
-        assertEquals(
-                BytesValue.of(
-                        ByteString.copyFrom(
-                                Bytes.wrap(UInt256.valueOf(newSlotValue))
-                                        .trimLeadingZeros()
-                                        .toArrayUnsafe())),
-                contractStateChange.getStorageChanges(0).getValueWritten());
+        assertEquals(1, result.getStateChanges().size());
+        final var contractStateChange =
+                result.getStateChanges()
+                        .get(Address.fromHexString(contractAddress))
+                        .get(UInt256.valueOf(slot));
+        assertEquals(UInt256.valueOf(oldSlotValue), contractStateChange.getLeft());
+        assertEquals(UInt256.valueOf(newSlotValue), contractStateChange.getRight());
     }
 
     @Test
@@ -305,7 +291,7 @@ class CallEvmTxProcessorTest {
         givenValidMock();
         given(globalDynamicProperties.fundingAccount())
                 .willReturn(new Id(0, 0, 1010).asGrpcAccount());
-        given(globalDynamicProperties.shouldEnableTraceability()).willReturn(false);
+        given(globalDynamicProperties.enabledSidecars()).willReturn(Collections.emptySet());
         givenSenderWithBalance(350_000L);
         given(aliasManager.resolveForEvm(receiverAddress)).willReturn(receiverAddress);
         given(storageExpiry.hapiCallOracle()).willReturn(oracle);
@@ -317,7 +303,7 @@ class CallEvmTxProcessorTest {
 
         assertTrue(result.isSuccessful());
         assertEquals(receiver.getId().asGrpcContract(), result.toGrpc().getContractID());
-        assertEquals(0, result.toGrpc().getStateChangesCount());
+        assertEquals(0, result.getStateChanges().size());
 
         verify(updater, never()).getFinalStateChanges();
     }
