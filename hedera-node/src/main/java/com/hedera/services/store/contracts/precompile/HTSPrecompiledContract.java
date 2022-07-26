@@ -87,6 +87,7 @@ import com.hedera.services.store.contracts.precompile.impl.OwnerOfPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.SetApprovalForAllPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.SymbolPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.TokenCreatePrecompile;
+import com.hedera.services.store.contracts.precompile.impl.TokenGetCustomFeesPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.TokenInfoPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.TokenURIPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.TotalSupplyPrecompile;
@@ -628,6 +629,15 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
                             decoder,
                             precompilePricingUtils,
                             currentView);
+                    case AbiConstants
+                        .ABI_ID_GET_TOKEN_CUSTOM_FEES -> new TokenGetCustomFeesPrecompile(
+                        null,
+                        syntheticTxnFactory,
+                        ledgers,
+                        encoder,
+                        decoder,
+                        precompilePricingUtils,
+                        currentView);
                     default -> null;
                 };
         if (precompile != null) {

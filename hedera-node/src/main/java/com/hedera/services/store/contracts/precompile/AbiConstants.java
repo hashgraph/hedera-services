@@ -131,4 +131,6 @@ public final class AbiConstants {
     public static final int ABI_ID_GET_TOKEN_INFO = 0x1f69565f;
     // getNonFungibleTokenInfo(address token, int64 serialNumber)
     public static final int ABI_ID_GET_NON_FUNGIBLE_TOKEN_INFO = 0x287e1da8;
+    //getTokenCustomFees(address)
+    public static final int ABI_ID_GET_TOKEN_CUSTOM_FEES = 0xae7611a0;
 }

@@ -35,4 +35,22 @@ contract TokenInfoContract is HederaTokenService {
 
         nonFungibleTokenInfo = retrievedTokenInfo;
     }
+
+    function getCustomFeesForToken(address token) external returns (
+        IHederaTokenService.FixedFee[] memory fixedFees,
+        IHederaTokenService.FractionalFee[] memory fractionalFees,
+        IHederaTokenService.RoyaltyFee[] memory royaltyFees) {
+        (int responseCode,
+        IHederaTokenService.FixedFee[] memory retrievedFixedFees,
+        IHederaTokenService.FractionalFee[] memory retrievedFractionalFees,
+        IHederaTokenService.RoyaltyFee[] memory retrievedRoyaltyFees) = HederaTokenService.getTokenCustomFees(token);
+
+        if (responseCode != HederaResponseCodes.SUCCESS) {
+            revert ();
+        }
+
+        fixedFees = retrievedFixedFees;
+        fractionalFees = retrievedFractionalFees;
+        royaltyFees = retrievedRoyaltyFees;
+    }
 }

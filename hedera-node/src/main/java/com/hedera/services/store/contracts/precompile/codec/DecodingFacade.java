@@ -364,6 +364,13 @@ public class DecodingFacade {
     private static final ABIType<Tuple> GET_NON_FUNGIBLE_TOKEN_INFO_DECODER =
             TypeFactory.create("(bytes32,int64)");
 
+    private static final Function TOKEN_GET_CUSTOM_FEES_FUNCTION =
+        new Function("getTokenCustomFees(address)");
+    private static final Bytes TOKEN_GET_CUSTOM_FEES_SELECTOR =
+        Bytes.wrap(TOKEN_GET_CUSTOM_FEES_FUNCTION.selector());
+    private static final ABIType<Tuple> TOKEN_GET_CUSTOM_FEES_DECODER =
+        TypeFactory.create(BYTES32);
+
     @Inject
     public DecodingFacade() {
         // empty constructor
@@ -900,6 +907,14 @@ public class DecodingFacade {
         final var tokenID = convertAddressBytesToTokenID(decodedArguments.get(0));
         final var serialNumber = (long) decodedArguments.get(1);
         return TokenInfoWrapper.forNonFungibleToken(tokenID, serialNumber);
+    }
+
+    public TokenGetCustomFeesWrapper decodeTokenGetCustomFees(final Bytes input) {
+        final Tuple decodedArguments =
+            decodeFunctionCall(input, TOKEN_GET_CUSTOM_FEES_SELECTOR, TOKEN_GET_CUSTOM_FEES_DECODER);
+
+        final var tokenID = convertAddressBytesToTokenID(decodedArguments.get(0));
+        return new TokenGetCustomFeesWrapper(tokenID);
     }
 
     private TokenCreateWrapper decodeTokenCreateWithoutFees(

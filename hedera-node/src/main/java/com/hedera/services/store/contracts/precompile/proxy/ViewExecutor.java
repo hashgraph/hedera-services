@@ -15,9 +15,11 @@
  */
 package com.hedera.services.store.contracts.precompile.proxy;
 
+import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hedera.services.exceptions.ValidationUtils.validateTrueOrRevert;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_GET_FUNGIBLE_TOKEN_INFO;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_GET_NON_FUNGIBLE_TOKEN_INFO;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_GET_TOKEN_CUSTOM_FEES;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_GET_TOKEN_INFO;
 import static com.hedera.services.utils.MiscUtils.asSecondsTimestamp;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
@@ -105,6 +107,12 @@ public class ViewExecutor {
                     nonFungibleTokenInfo != null, ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER);
 
             return encoder.encodeGetNonFungibleTokenInfo(tokenInfo, nonFungibleTokenInfo);
+        } else if (selector == ABI_ID_GET_TOKEN_CUSTOM_FEES) {
+            final var wrapper = decoder.decodeTokenGetCustomFees(input);
+            final var customFees = stateView.tokenCustomFees(wrapper.tokenID());
+            validateTrue(
+                    customFees != null && !customFees.isEmpty(), ResponseCodeEnum.INVALID_TOKEN_ID);
+            return encoder.encodeTokenGetCustomFees(customFees);
         } else {
             // Only view functions can be used inside a ContractCallLocal
             throw new InvalidTransactionException(NOT_SUPPORTED);

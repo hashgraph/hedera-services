@@ -64,6 +64,17 @@ public final class ParsingConstants {
                     + ARRAY_BRACKETS
                     + ",string"
                     + ")";
+    public static final String CUSTOM_FEES =
+            "("
+                    + FIXED_FEE
+                    + ARRAY_BRACKETS
+                    + ","
+                    + FRACTIONAL_FEE
+                    + ARRAY_BRACKETS
+                    + ","
+                    + ROYALTY_FEE
+                    + ARRAY_BRACKETS
+                    + ")";
     public static final String RESPONSE_STATUS_AT_BEGINNING = "(int32,";
 
     public static final String FUNGIBLE_TOKEN_INFO = "(" + TOKEN_INFO + ",int32" + ")";
@@ -95,6 +106,18 @@ public final class ParsingConstants {
             TupleType.parse(RESPONSE_STATUS_AT_BEGINNING + TOKEN_INFO + ")");
     public static final TupleType getNonFungibleTokenInfoType =
             TupleType.parse(RESPONSE_STATUS_AT_BEGINNING + NON_FUNGIBLE_TOKEN_INFO + ")");
+    public static final TupleType tokenGetCustomFees =
+            TupleType.parse(
+                    RESPONSE_STATUS_AT_BEGINNING
+                            + FIXED_FEE
+                            + ARRAY_BRACKETS
+                            + ","
+                            + FRACTIONAL_FEE
+                            + ARRAY_BRACKETS
+                            + ","
+                            + ROYALTY_FEE
+                            + ARRAY_BRACKETS
+                            + ")");
     public static final TupleType isApprovedForAllType = booleanTuple;
     public static final TupleType ercTransferType = booleanTuple;
     public static final TupleType hapiAllowanceOfType = TupleType.parse("(int32,uint256)");
@@ -127,6 +150,7 @@ public final class ParsingConstants {
         HAPI_GET_TOKEN_INFO,
         HAPI_GET_NON_FUNGIBLE_TOKEN_INFO,
         HAPI_IS_APPROVED_FOR_ALL,
+        HAPI_GET_TOKEN_CUSTOM_FEES,
         NOT_SPECIFIED
     }
 }
