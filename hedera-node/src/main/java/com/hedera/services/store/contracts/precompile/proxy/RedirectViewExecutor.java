@@ -52,7 +52,7 @@ public class RedirectViewExecutor {
     private final WorldLedgers ledgers;
     private final EncodingFacade encoder;
     private final DecodingFacade decoder;
-    private final RedirectGasCalculator gasCalculator;
+    private final ViewGasCalculator gasCalculator;
     private final HederaStackedWorldStateUpdater updater;
 
     public RedirectViewExecutor(
@@ -60,7 +60,7 @@ public class RedirectViewExecutor {
             final MessageFrame frame,
             final EncodingFacade encoder,
             final DecodingFacade decoder,
-            final RedirectGasCalculator gasCalculator) {
+            final ViewGasCalculator gasCalculator) {
         this.input = input;
         this.frame = frame;
         this.encoder = encoder;

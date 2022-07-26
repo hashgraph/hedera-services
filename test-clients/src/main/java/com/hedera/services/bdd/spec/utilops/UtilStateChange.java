@@ -31,7 +31,7 @@ import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer;
 import com.hedera.services.bdd.spec.utilops.inventory.NewSpecKey;
-import com.hederahashgraph.api.proto.java.ContractStateChange;
+import com.hedera.services.stream.proto.ContractStateChange;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -53,12 +53,12 @@ public class UtilStateChange {
         for (StateChange stateChange : stateChanges) {
             final var addition =
                     ContractStateChange.newBuilder()
-                            .setContractID(
+                            .setContractId(
                                     TxnUtils.asContractId(stateChange.getContractID(), spec));
 
             for (StorageChange storageChange : stateChange.getStorageChanges()) {
                 var newStorageChange =
-                        com.hederahashgraph.api.proto.java.StorageChange.newBuilder()
+                        com.hedera.services.stream.proto.StorageChange.newBuilder()
                                 .setSlot(storageChange.getSlot())
                                 .setValueRead(storageChange.getValueRead());
 

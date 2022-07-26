@@ -26,6 +26,7 @@ import com.hedera.services.recordstreaming.RecordStreamingUtils;
 import com.hederahashgraph.api.proto.java.NodeAddressBook;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
+import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
@@ -64,7 +65,7 @@ public class RecordFileChecker extends UtilOp {
     }
 
     @SuppressWarnings("java:S5960")
-    private void lookForFile(HapiApiSpec spec) throws InvalidProtocolBufferException {
+    private void lookForFile(HapiApiSpec spec) throws IOException {
         var addressBook = downloadBook(spec);
 
         for (var address : addressBook.getNodeAddressList()) {
