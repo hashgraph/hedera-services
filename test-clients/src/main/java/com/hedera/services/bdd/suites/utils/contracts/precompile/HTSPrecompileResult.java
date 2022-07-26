@@ -256,16 +256,6 @@ public class HTSPrecompileResult implements ContractCallResult {
         return this;
     }
 
-    public HTSPrecompileResult withTokenInfo(final TokenInfo tokenInfo) {
-        this.tokenInfo = tokenInfo;
-        return this;
-    }
-
-    public HTSPrecompileResult withNftTokenInfo(final TokenNftInfo nonFungibleTokenInfo) {
-        this.nonFungibleTokenInfo = nonFungibleTokenInfo;
-        return this;
-    }
-
     @Override
     public Bytes getBytes() {
         if (ParsingConstants.FunctionType.ERC_OWNER.equals(functionType)) {

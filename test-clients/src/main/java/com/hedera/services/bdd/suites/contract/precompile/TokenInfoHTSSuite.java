@@ -785,30 +785,29 @@ public class TokenInfoHTSSuite extends HapiApiSuite {
                                                         .gas(1_000_000L))))
                 .then(
                         withOpContext(
-                                (spec, opLog) -> {
-                                    allRunFor(
-                                            spec,
-                                            getTxnRecord(TOKEN_INFO_TXN)
-                                                    .andAllChildRecords()
-                                                    .logged(),
-                                            childRecordsCheck(
-                                                    TOKEN_INFO_TXN,
-                                                    SUCCESS,
-                                                    recordWith()
-                                                            .status(SUCCESS)
-                                                            .contractCallResult(
-                                                                    resultWith()
-                                                                            .contractCallResult(
-                                                                                    htsPrecompileResult()
-                                                                                            .forFunction(
-                                                                                                    FunctionType
-                                                                                                            .HAPI_GET_TOKEN_CUSTOM_FEES)
-                                                                                            .withStatus(
-                                                                                                    SUCCESS)
-                                                                                            .withCustomFees(
-                                                                                                    getCustomFees(
-                                                                                                            spec))))));
-                                }));
+                                (spec, opLog) ->
+                                        allRunFor(
+                                                spec,
+                                                getTxnRecord(TOKEN_INFO_TXN)
+                                                        .andAllChildRecords()
+                                                        .logged(),
+                                                childRecordsCheck(
+                                                        TOKEN_INFO_TXN,
+                                                        SUCCESS,
+                                                        recordWith()
+                                                                .status(SUCCESS)
+                                                                .contractCallResult(
+                                                                        resultWith()
+                                                                                .contractCallResult(
+                                                                                        htsPrecompileResult()
+                                                                                                .forFunction(
+                                                                                                        FunctionType
+                                                                                                                .HAPI_GET_TOKEN_CUSTOM_FEES)
+                                                                                                .withStatus(
+                                                                                                        SUCCESS)
+                                                                                                .withCustomFees(
+                                                                                                        getCustomFees(
+                                                                                                                spec))))))));
     }
 
     private HapiApiSpec happyPathGetNonFungibleTokenCustomFees() {
