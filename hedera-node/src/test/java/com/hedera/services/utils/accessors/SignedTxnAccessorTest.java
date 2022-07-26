@@ -19,6 +19,7 @@ import static com.hedera.services.state.submerkle.FcCustomFee.fixedFee;
 import static com.hedera.services.state.submerkle.FcCustomFee.fractionalFee;
 import static com.hedera.services.txns.ethereum.TestingConstants.TRUFFLE0_PRIVATE_ECDSA_KEY;
 import static com.hedera.test.utils.IdUtils.asAccount;
+import static com.hedera.test.utils.IdUtils.asAliasAccount;
 import static com.hedera.test.utils.IdUtils.asToken;
 import static com.hedera.test.utils.IdUtils.asTopic;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
@@ -44,10 +45,12 @@ import com.google.protobuf.ByteString;
 import com.google.protobuf.Int32Value;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.StringValue;
+import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.ethereum.EthTxData;
 import com.hedera.services.ethereum.EthTxSigs;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.legacy.proto.utils.CommonUtils;
+import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.FcCustomFee;
 import com.hedera.services.usage.token.TokenOpsUsage;
@@ -102,7 +105,10 @@ import com.swirlds.common.system.transaction.SwirldTransaction;
 import java.math.BigInteger;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Function;
+
+import com.swirlds.merkle.map.MerkleMap;
 import org.bouncycastle.util.encoders.Hex;
 import org.junit.jupiter.api.Test;
 
@@ -360,29 +366,6 @@ class SignedTxnAccessorTest {
         final var subject = SignedTxnAccessor.uncheckedFrom(txn);
 
         assertEquals(TOKEN_NON_FUNGIBLE_UNIQUE, subject.getSubType());
-    }
-
-    @Test
-    void detectsUniqueTokenWipeSubtypeFromGrpcSyntax() throws InvalidProtocolBufferException {
-        final var op =
-                TokenWipeAccountTransactionBody.newBuilder()
-                        .addAllSerialNumbers(List.of(1L, 2L, 3L))
-                        .build();
-        final var txn = buildTransactionFrom(TransactionBody.newBuilder().setTokenWipe(op).build());
-
-        final var subject = new TokenWipeAccessor(txn.toByteArray(), null, null);
-
-        assertEquals(TOKEN_NON_FUNGIBLE_UNIQUE, subject.getSubType());
-    }
-
-    @Test
-    void detectsCommonTokenWipeSubtypeFromGrpcSyntax() throws InvalidProtocolBufferException {
-        final var op = TokenWipeAccountTransactionBody.newBuilder().setAmount(1234L).build();
-        final var txn = buildTransactionFrom(TransactionBody.newBuilder().setTokenWipe(op).build());
-
-        final var subject = new TokenWipeAccessor(txn.toByteArray(), null, null);
-
-        assertEquals(TOKEN_FUNGIBLE_COMMON, subject.getSubType());
     }
 
     @Test
@@ -955,6 +938,37 @@ class SignedTxnAccessorTest {
 
         assertEquals(expectedString, subject.toLoggableString());
     }
+    @Test
+    void setterAndGetterForStateViewWorks(){
+        final var op = ContractCallTransactionBody.newBuilder().build();
+        final var txn =
+                buildTransactionFrom(TransactionBody.newBuilder().setContractCall(op).build());
+
+        final var subject = SignedTxnAccessor.uncheckedFrom(txn);
+        final var stateView = mock(StateView.class);
+
+        subject.setStateView(stateView);
+
+        assertEquals(stateView, subject.getStateView());
+    }
+
+    @Test
+    void looksUpAliases(){
+        final var stateView = mock(StateView.class);
+        final var alias = ByteString.copyFromUtf8("someString");
+        final Map<ByteString, EntityNum> accountsMap = new HashMap<>();
+        accountsMap.put(alias, EntityNum.fromLong(10L));
+        given(stateView.aliases()).willReturn(accountsMap);
+
+        final var op = ContractCallTransactionBody.newBuilder().build();
+        final var txn =
+                buildTransactionFrom(TransactionBody.newBuilder().setContractCall(op).build());
+        final var subject = SignedTxnAccessor.uncheckedFrom(txn);
+        subject.setStateView(stateView);
+
+        assertEquals(EntityNum.fromLong(10L), subject.lookUpAlias(alias));
+        assertEquals(EntityNum.fromLong(10L), subject.unaliased(asAliasAccount(alias)));
+    }
 
     private Transaction signedCryptoCreateTxn() {
         return buildTransactionFrom(cryptoCreateOp());
@@ -1109,19 +1123,19 @@ class SignedTxnAccessorTest {
         return buildTransactionFrom(txnBody);
     }
 
-    private Transaction buildTransactionFrom(final TransactionBody transactionBody) {
+    public static Transaction buildTransactionFrom(final TransactionBody transactionBody) {
         return buildTransactionFrom(signedTransactionFrom(transactionBody).toByteString());
     }
 
-    private Transaction buildTransactionFrom(final ByteString signedTransactionBytes) {
+    private static Transaction buildTransactionFrom(final ByteString signedTransactionBytes) {
         return Transaction.newBuilder().setSignedTransactionBytes(signedTransactionBytes).build();
     }
 
-    private SignedTransaction signedTransactionFrom(final TransactionBody txnBody) {
+    private static SignedTransaction signedTransactionFrom(final TransactionBody txnBody) {
         return signedTransactionFrom(txnBody, SignatureMap.getDefaultInstance());
     }
 
-    private SignedTransaction signedTransactionFrom(
+    private static SignedTransaction signedTransactionFrom(
             final TransactionBody txnBody, final SignatureMap sigMap) {
         return SignedTransaction.newBuilder()
                 .setBodyBytes(txnBody.toByteString())

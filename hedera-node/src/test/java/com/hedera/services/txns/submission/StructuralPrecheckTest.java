@@ -24,6 +24,7 @@ import static java.util.stream.Collectors.joining;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willCallRealMethod;
 import static org.mockito.Mockito.mock;
@@ -34,6 +35,7 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.domain.process.TxnValidityAndFeeReq;
 import com.hedera.services.context.primitives.SignedStateViewFactory;
+import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.stats.HapiOpCounters;
 import com.hedera.services.stats.MiscRunningAvgs;
 import com.hedera.services.utils.accessors.AccessorFactory;
@@ -50,6 +52,7 @@ import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.IntStream;
 import org.apache.commons.lang3.tuple.Pair;
@@ -195,6 +198,7 @@ class StructuralPrecheckTest {
                 .given(accessorFactory)
                 .constructSpecializedAccessor(signedTxn.toByteArray());
         given(accessor.getTxn()).willReturn(hostTxn.build());
+
         final var assess = subject.assess(signedTxn);
 
         assertExpectedFail(INVALID_TRANSACTION_BODY, assess);
@@ -203,7 +207,7 @@ class StructuralPrecheckTest {
     }
 
     @Test
-    void canBeOk() throws InvalidProtocolBufferException {
+    void canBeOkAndSetsStateView() throws InvalidProtocolBufferException {
         final var reasonablyNestedKey = TxnUtils.nestKeys(Key.newBuilder(), 2);
         final var hostTxn =
                 TransactionBody.newBuilder()
@@ -212,15 +216,19 @@ class StructuralPrecheckTest {
                                         .setKey(reasonablyNestedKey));
         final var signedTxn =
                 Transaction.newBuilder().setBodyBytes(hostTxn.build().toByteString()).build();
+        final var view = mock(StateView.class);
+
         willCallRealMethod()
                 .given(accessorFactory)
                 .constructSpecializedAccessor(signedTxn.toByteArray());
         given(accessor.getTxn()).willReturn(hostTxn.build());
+        given(viewFactory.latestSignedStateView()).willReturn(Optional.of(view));
 
         final var assess = subject.assess(signedTxn);
 
         assertEquals(OK, assess.getLeft().getValidity());
         assertNotNull(assess.getRight());
+        assertEquals(view, assess.getRight().getStateView());
         assertEquals(HederaFunctionality.CryptoCreate, assess.getRight().getFunction());
         assertEquals(1, counters.receivedDeprecatedTxnSoFar());
     }

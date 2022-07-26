@@ -150,4 +150,6 @@ public interface TxnAccessor {
     }
 
     void setStateView(StateView view);
+
+    StateView getStateView();
 }

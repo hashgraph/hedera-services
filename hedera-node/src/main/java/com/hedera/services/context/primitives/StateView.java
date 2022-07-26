@@ -102,6 +102,7 @@ import com.swirlds.virtualmap.VirtualKey;
 import com.swirlds.virtualmap.VirtualMap;
 import com.swirlds.virtualmap.VirtualValue;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -123,6 +124,8 @@ public class StateView {
     static final byte[] EMPTY_BYTES = new byte[0];
     static final MerkleMap<?, ?> EMPTY_MM = new MerkleMap<>();
     static final VirtualMap<?, ?> EMPTY_VM = new VirtualMap<>();
+
+    static final Map<ByteString, EntityNum> EMPTY_HM = new HashMap<>();
     static final MerkleNetworkContext EMPTY_CTX = new MerkleNetworkContext();
 
     public static final JKey EMPTY_WACL = new JKeyList();
@@ -837,6 +840,6 @@ public class StateView {
     }
 
     public Map<ByteString, EntityNum> aliases() {
-        return stateChildren.aliases();
+        return stateChildren == null ? EMPTY_HM :stateChildren.aliases();
     }
 }

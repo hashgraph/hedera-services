@@ -153,7 +153,7 @@ public enum TokenOpsUsageUtils {
         return retrieveRawDataFrom(subType, op::getSerialNumbersCount, TokenWipeMeta::new);
     }
 
-    public static <R> R retrieveRawDataFrom(
+    public <R> R retrieveRawDataFrom(
             SubType subType, IntSupplier getDataForNFT, Producer<R> producer) {
         int serialNumsCount = 0;
         int bpt = 0;

@@ -15,6 +15,7 @@
  */
 package com.hedera.services.utils.accessors;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.MoreObjects;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.primitives.StateView;
@@ -321,5 +322,10 @@ public class PlatformTxnAccessor implements SwirldsTxnAccessor {
     @Override
     public SubmitMessageMeta availSubmitUsageMeta() {
         return delegate.availSubmitUsageMeta();
+    }
+
+    @Override
+    public StateView getStateView(){
+        return delegate.getStateView();
     }
 }

@@ -36,6 +36,7 @@ import static org.mockito.Mockito.mock;
 
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
+import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.legacy.proto.utils.CommonUtils;
 import com.hedera.services.sigs.order.LinkedRefs;
@@ -331,6 +332,7 @@ class PlatformTxnAccessorTest {
                         .build();
         SwirldTransaction platformTxn = new SwirldTransaction(signedTxnWithBody.toByteArray());
         final var aliasManager = mock(AliasManager.class);
+        final var stateView = mock(StateView.class);
 
         var signedAccessor = SignedTxnAccessor.from(platformTxn.getContents());
         // when:
@@ -375,6 +377,7 @@ class PlatformTxnAccessorTest {
         subject.setPayer(payer);
         subject.setLinkedRefs(refs);
         subject.setSigMeta(sigMeta);
+        subject.setStateView(stateView);
 
         assertTrue(delegate.isTriggeredTxn());
         assertTrue(subject.isTriggeredTxn());
@@ -407,6 +410,11 @@ class PlatformTxnAccessorTest {
         signedAccessor.markThrottleExempt();
         assertTrue(subject.congestionExempt());
         assertTrue(subject.throttleExempt());
+
+        assertEquals(delegate.throttleExempt(), subject.throttleExempt());
+        assertEquals(delegate.congestionExempt(), subject.congestionExempt());
+        assertEquals(delegate.getStateView(), subject.getStateView());
+        assertEquals(stateView, subject.getStateView());
     }
 
     @Test

@@ -39,6 +39,7 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.UtilPrng;
 import static com.hederahashgraph.api.proto.java.SubType.TOKEN_FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.SubType.TOKEN_NON_FUNGIBLE_UNIQUE;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.MoreObjects;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
@@ -582,5 +583,10 @@ public class SignedTxnAccessor implements TxnAccessor {
             return SPAN_MAP_ACCESSOR.getTokenWipeMeta(this).getSubType();
         }
         return SubType.DEFAULT;
+    }
+
+    @Override
+    public StateView getStateView(){
+        return view;
     }
 }
