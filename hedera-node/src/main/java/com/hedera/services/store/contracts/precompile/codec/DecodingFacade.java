@@ -70,7 +70,6 @@ public class DecodingFacade {
     private static final String UINT256_RAW_TYPE = "(uint256)";
     private static final String ADDRESS_UINT256_RAW_TYPE = "(bytes32,uint256)";
     private static final String ADDRESS_ADDRESS_UINT256_RAW_TYPE = "(bytes32,bytes32,uint256)";
-    public static final String ADDRESS_RAW_TYPE = "(bytes32)";
 
     private static final List<SyntheticTxnFactory.NftExchange> NO_NFT_EXCHANGES =
             Collections.emptyList();
@@ -124,10 +123,9 @@ public class DecodingFacade {
     private static final ABIType<Tuple> BURN_TOKEN_DECODER =
             TypeFactory.create("(bytes32,int64,int64[])");
 
-    private static final Function DELETE_TOKEN_FUNCTION =
-            new Function("deleteToken(address)", INT_OUTPUT);
+    private static final Function DELETE_TOKEN_FUNCTION = new Function("deleteToken(address)", INT);
     private static final Bytes DELETE_TOKEN_SELECTOR = Bytes.wrap(DELETE_TOKEN_FUNCTION.selector());
-    private static final ABIType<Tuple> DELETE_TOKEN_DECODER = TypeFactory.create(ADDRESS_RAW_TYPE);
+    private static final ABIType<Tuple> DELETE_TOKEN_DECODER = TypeFactory.create(BYTES32);
 
     private static final Function ASSOCIATE_TOKENS_FUNCTION =
             new Function("associateTokens(address,address[])", INT);
@@ -167,8 +165,7 @@ public class DecodingFacade {
             new Function("balanceOf(address)", INT);
     private static final Bytes BALANCE_OF_TOKEN_SELECTOR =
             Bytes.wrap(BALANCE_OF_TOKEN_FUNCTION.selector());
-    private static final ABIType<Tuple> BALANCE_OF_TOKEN_DECODER =
-            TypeFactory.create(ADDRESS_RAW_TYPE);
+    private static final ABIType<Tuple> BALANCE_OF_TOKEN_DECODER = TypeFactory.create(BYTES32);
 
     private static final Function OWNER_OF_NFT_FUNCTION = new Function("ownerOf(uint256)", INT);
     private static final Bytes OWNER_OF_NFT_SELECTOR = Bytes.wrap(OWNER_OF_NFT_FUNCTION.selector());
