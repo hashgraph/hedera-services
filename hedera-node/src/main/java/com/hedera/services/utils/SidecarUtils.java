@@ -88,4 +88,12 @@ public class SidecarUtils {
         }
         return grpc;
     }
+
+  public static TransactionSidecarRecord.Builder createContractBytecodeSidecarForFailedCreate(final byte[] initCode) {
+    return TransactionSidecarRecord.newBuilder()
+        .setBytecode(
+            ContractBytecode.newBuilder()
+                .setInitcode(ByteStringUtils.wrapUnsafely(initCode))
+                .build());
+  }
 }
