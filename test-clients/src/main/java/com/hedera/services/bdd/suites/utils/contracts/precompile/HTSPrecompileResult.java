@@ -277,8 +277,10 @@ public class HTSPrecompileResult implements ContractCallResult {
                     case HAPI_GET_TOKEN_INFO -> getTupleForGetTokenInfo();
                     case HAPI_GET_FUNGIBLE_TOKEN_INFO -> getTupleForGetFungibleTokenInfo();
                     case HAPI_GET_NON_FUNGIBLE_TOKEN_INFO -> getTupleForGetNonFungibleTokenInfo();
-                    case GET_TOKEN_DEFAULT_FREEZE_STATUS -> Tuple.of(status.getNumber(), tokenDefaultFreezeStatus);
-                    case GET_TOKEN_DEFAULT_KYC_STATUS -> Tuple.of(status.getNumber(), tokenDefaultKycStatus);
+                    case GET_TOKEN_DEFAULT_FREEZE_STATUS -> Tuple.of(
+                            status.getNumber(), tokenDefaultFreezeStatus);
+                    case GET_TOKEN_DEFAULT_KYC_STATUS -> Tuple.of(
+                            status.getNumber(), tokenDefaultKycStatus);
                     default -> Tuple.of(status.getNumber());
                 };
 

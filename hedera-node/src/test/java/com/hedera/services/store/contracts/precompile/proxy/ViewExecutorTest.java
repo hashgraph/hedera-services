@@ -232,7 +232,13 @@ class ViewExecutorTest {
         given(viewGasCalculator.compute(resultingTimestamp, MINIMUM_TINYBARS_COST)).willReturn(gas);
         this.subject =
                 new ViewExecutor(
-                        input, frame, encodingFacade, decodingFacade, viewGasCalculator, stateView, ledgers);
+                        input,
+                        frame,
+                        encodingFacade,
+                        decodingFacade,
+                        viewGasCalculator,
+                        stateView,
+                        ledgers);
         return input;
     }
 
@@ -248,7 +254,13 @@ class ViewExecutorTest {
         given(viewGasCalculator.compute(resultingTimestamp, MINIMUM_TINYBARS_COST)).willReturn(gas);
         this.subject =
                 new ViewExecutor(
-                        input, frame, encodingFacade, decodingFacade, viewGasCalculator, stateView, ledgers);
+                        input,
+                        frame,
+                        encodingFacade,
+                        decodingFacade,
+                        viewGasCalculator,
+                        stateView,
+                        ledgers);
         return input;
     }
 }

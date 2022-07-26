@@ -100,11 +100,12 @@ public final class ParsingConstants {
     public static final TupleType ercTransferType = booleanTuple;
     public static final TupleType hapiAllowanceOfType = TupleType.parse("(int32,uint256)");
     public static final TupleType hapiGetApprovedType = TupleType.parse("(int32,bytes32)");
-    public static final TupleType hapiIsApprovedForAllType = TupleType.parse(INT_BOOL_PAIR_RETURN_TYPE);
+    public static final TupleType hapiIsApprovedForAllType =
+            TupleType.parse(INT_BOOL_PAIR_RETURN_TYPE);
     public static final TupleType getTokenDefaultFreezeStatusType =
-        TupleType.parse(INT_BOOL_PAIR_RETURN_TYPE);
+            TupleType.parse(INT_BOOL_PAIR_RETURN_TYPE);
     public static final TupleType getTokenDefaultKycStatusType =
-        TupleType.parse(INT_BOOL_PAIR_RETURN_TYPE);
+            TupleType.parse(INT_BOOL_PAIR_RETURN_TYPE);
 
     public static final TupleType notSpecifiedType = TupleType.parse(INT32);
 

@@ -104,14 +104,14 @@ public class DefaultTokenStatusSuite extends HapiApiSuite {
                                                         .payingWith(ACCOUNT)
                                                         .via("GetTokenDefaultFreezeStatusTx")
                                                         .gas(GAS_TO_OFFER),
-                                            contractCallLocal(
-                                                TOKEN_DEFAULT_KYC_FREEZE_STATUS_CONTRACT,
-                                                GET_TOKEN_DEFAULT_FREEZE,
-                                                Tuple.singleton(
-                                                    expandByteArrayTo32Length(
-                                                        asAddress(
-                                                            vanillaTokenID
-                                                                .get())))))))
+                                                contractCallLocal(
+                                                        TOKEN_DEFAULT_KYC_FREEZE_STATUS_CONTRACT,
+                                                        GET_TOKEN_DEFAULT_FREEZE,
+                                                        Tuple.singleton(
+                                                                expandByteArrayTo32Length(
+                                                                        asAddress(
+                                                                                vanillaTokenID
+                                                                                        .get())))))))
                 .then(
                         childRecordsCheck(
                                 "GetTokenDefaultFreezeStatusTx",
@@ -162,14 +162,14 @@ public class DefaultTokenStatusSuite extends HapiApiSuite {
                                                         .payingWith(ACCOUNT)
                                                         .via("GetTokenDefaultKycStatusTx")
                                                         .gas(GAS_TO_OFFER),
-                contractCallLocal(
-                    TOKEN_DEFAULT_KYC_FREEZE_STATUS_CONTRACT,
-                    GET_TOKEN_DEFAULT_KYC,
-                    Tuple.singleton(
-                        expandByteArrayTo32Length(
-                            asAddress(
-                                vanillaTokenID
-                                    .get())))))))
+                                                contractCallLocal(
+                                                        TOKEN_DEFAULT_KYC_FREEZE_STATUS_CONTRACT,
+                                                        GET_TOKEN_DEFAULT_KYC,
+                                                        Tuple.singleton(
+                                                                expandByteArrayTo32Length(
+                                                                        asAddress(
+                                                                                vanillaTokenID
+                                                                                        .get())))))))
                 .then(
                         childRecordsCheck(
                                 "GetTokenDefaultKycStatusTx",

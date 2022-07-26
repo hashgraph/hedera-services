@@ -113,8 +113,7 @@ public class ViewExecutor {
             return encoder.encodeGetNonFungibleTokenInfo(tokenInfo, nonFungibleTokenInfo);
         } else if (selector == ABI_ID_GET_TOKEN_DEFAULT_FREEZE_STATUS) {
             final var wrapper = decoder.decodeTokenDefaultFreezeStatus(input);
-            final var defaultFreezeStatus =
-                ledgers.defaultFreezeStatus(wrapper.tokenID());
+            final var defaultFreezeStatus = ledgers.defaultFreezeStatus(wrapper.tokenID());
 
             return encoder.encodeGetTokenDefaultFreezeStatus(defaultFreezeStatus);
         } else if (selector == ABI_ID_GET_TOKEN_DEFAULT_KYC_STATUS) {

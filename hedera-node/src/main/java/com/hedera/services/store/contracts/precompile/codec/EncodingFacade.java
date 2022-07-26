@@ -493,9 +493,9 @@ public class EncodingFacade {
                         case HAPI_GET_FUNGIBLE_TOKEN_INFO -> getTupleForGetFungibleTokenInfo();
                         case HAPI_GET_NON_FUNGIBLE_TOKEN_INFO -> getTupleForGetNonFungibleTokenInfo();
                         case GET_TOKEN_DEFAULT_FREEZE_STATUS -> Tuple.of(
-                            status, tokenDefaultFreezeStatus);
+                                status, tokenDefaultFreezeStatus);
                         case GET_TOKEN_DEFAULT_KYC_STATUS -> Tuple.of(
-                            status, tokenDefaultKycStatus);
+                                status, tokenDefaultKycStatus);
                         default -> Tuple.of(status);
                     };
 
