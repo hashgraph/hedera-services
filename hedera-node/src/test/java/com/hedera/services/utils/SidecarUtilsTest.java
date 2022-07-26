@@ -80,6 +80,25 @@ class SidecarUtilsTest {
     }
 
     @Test
+    void contractBytecodesForFailedCreatesAreCreatedAsExpected() {
+        // given
+        final var initCode = "initCode".getBytes();
+
+        // when
+        final var bytecodeSidecar =
+            SidecarUtils.createContractBytecodeSidecarForFailedCreate(initCode).build();
+
+        // then
+        final var expectedBytecodes =
+            ContractBytecode.newBuilder()
+                .setInitcode(ByteString.copyFrom(initCode))
+                .build();
+        final var expectedTransactionSidecarRecord =
+            TransactionSidecarRecord.newBuilder().setBytecode(expectedBytecodes).build();
+        assertEquals(expectedTransactionSidecarRecord, bytecodeSidecar);
+    }
+
+    @Test
     void stateChangesAreCreatedAsExpected() {
         // given
         final Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> stateChanges = new TreeMap<>();
