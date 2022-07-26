@@ -113,6 +113,7 @@ class NodeLocalPropertiesTest {
         assertEquals(29, subject.prefetchQueueCapacity());
         assertEquals(30, subject.prefetchThreadPoolSize());
         assertEquals(31, subject.prefetchCodeCacheTtlSecs());
+        assertEquals(logDir(32), subject.sidecarDir());
     }
 
     @Test
@@ -145,6 +146,7 @@ class NodeLocalPropertiesTest {
         assertEquals(25L, subject.nettyStartRetryIntervalMs());
         assertEquals(83L, subject.entityUtilStatsUpdateIntervalMs());
         assertEquals(84L, subject.throttleUtilStatsUpdateIntervalMs());
+        assertEquals(logDir(32), subject.sidecarDir());
     }
 
     private void givenPropsWithSeed(int i) {
@@ -200,6 +202,8 @@ class NodeLocalPropertiesTest {
                 .willReturn(i + 81L);
         given(properties.getLongProperty("stats.throttleUtils.gaugeUpdateIntervalMs"))
                 .willReturn(i + 82L);
+        given(properties.getStringProperty("hedera.recordStream.sidecarDir"))
+                .willReturn(logDir(i + 30));
     }
 
     static String logDir(int num) {

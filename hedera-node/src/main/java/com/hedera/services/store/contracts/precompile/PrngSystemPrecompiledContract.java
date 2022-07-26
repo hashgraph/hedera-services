@@ -21,10 +21,7 @@ import static com.hedera.services.store.contracts.precompile.utils.PrecompilePri
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_GAS;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PRNG_RANGE;
 
-import com.esaulpaugh.headlong.abi.LongType;
-import com.esaulpaugh.headlong.abi.TypeFactory;
 import com.google.common.annotations.VisibleForTesting;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
@@ -39,9 +36,9 @@ import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.services.store.contracts.precompile.utils.PrecompileUtils;
 import com.hedera.services.txns.util.PrngLogic;
-import com.hederahashgraph.api.proto.java.PrngTransactionBody;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.hederahashgraph.api.proto.java.UtilPrngTransactionBody;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.Optional;
@@ -51,7 +48,6 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes;
-import org.apache.tuweni.bytes.Bytes32;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 import org.hyperledger.besu.evm.frame.MessageFrame;
@@ -68,11 +64,8 @@ import org.hyperledger.besu.evm.precompile.PrecompiledContract;
 public class PrngSystemPrecompiledContract extends AbstractPrecompiledContract {
     private static final Logger log = LogManager.getLogger(PrngSystemPrecompiledContract.class);
     private static final String PRECOMPILE_NAME = "PRNG";
-    private static final LongType WORD_DECODER = TypeFactory.create("uint32");
     // random256BitGenerator(uint256)
     static final int PSEUDORANDOM_SEED_GENERATOR_SELECTOR = 0xd83bf9a1;
-    // randomNumberGeneratorInRange(uint32)
-    static final int PSEUDORANDOM_NUM_IN_RANGE_GENERATOR_SELECTOR = 0xb781b004;
     public static final String PRNG_PRECOMPILE_ADDRESS = "0x169";
     private final PrngLogic prngLogic;
     private final EntityCreator creator;
@@ -131,7 +124,7 @@ public class PrngSystemPrecompiledContract extends AbstractPrecompiledContract {
         final var parentUpdater = updater.parentUpdater();
         if (parentUpdater.isPresent()) {
             final var parent = (AbstractLedgerWorldUpdater) parentUpdater.get();
-            parent.manageInProgressRecord(recordsHistorian, childRecord, body(randomNum, input));
+            parent.manageInProgressRecord(recordsHistorian, childRecord, body(randomNum));
         } else {
             throw new InvalidTransactionException(
                     "PRNG precompile frame had no parent updater", FAIL_INVALID);
@@ -151,11 +144,6 @@ public class PrngSystemPrecompiledContract extends AbstractPrecompiledContract {
                     PrecompiledContract.PrecompileContractResult.halt(
                             null, Optional.ofNullable(ExceptionalHaltReason.INVALID_OPERATION)),
                     e.getResponseCode());
-        } catch (IllegalArgumentException e) {
-            return Pair.of(
-                    PrecompiledContract.PrecompileContractResult.halt(
-                            null, Optional.ofNullable(ExceptionalHaltReason.INVALID_OPERATION)),
-                    INVALID_PRNG_RANGE);
         } catch (Exception e) {
             log.warn("Internal precompile failure", e);
             return Pair.of(
@@ -170,8 +158,6 @@ public class PrngSystemPrecompiledContract extends AbstractPrecompiledContract {
         final var selector = input.getInt(0);
         return switch (selector) {
             case PSEUDORANDOM_SEED_GENERATOR_SELECTOR -> random256BitGenerator();
-            case PSEUDORANDOM_NUM_IN_RANGE_GENERATOR_SELECTOR -> randomNumberGeneratorInRange(
-                    input);
             default -> null;
         };
     }
@@ -182,20 +168,6 @@ public class PrngSystemPrecompiledContract extends AbstractPrecompiledContract {
             return null;
         }
         return Bytes.wrap(hashBytes, 0, 32);
-    }
-
-    private Bytes randomNumberGeneratorInRange(final Bytes input) {
-        final var range = rangeValueFrom(input);
-
-        validateTrue(range >= 0, INVALID_PRNG_RANGE);
-
-        final var hashBytes = prngLogic.getNMinus3RunningHashBytes();
-        if (isEmptyOrNull(hashBytes)) {
-            return null;
-        }
-
-        final var randomNum = prngLogic.randomNumFromBytes(hashBytes, range);
-        return padded(randomNum);
     }
 
     private boolean isEmptyOrNull(final byte[] hashBytes) {
@@ -233,33 +205,22 @@ public class PrngSystemPrecompiledContract extends AbstractPrecompiledContract {
     private void trackPrngOutput(
             final SideEffectsTracker effectsTracker, final Bytes input, final Bytes randomNum) {
         final var selector = input.getInt(0);
-        if (selector == PSEUDORANDOM_NUM_IN_RANGE_GENERATOR_SELECTOR) {
-            effectsTracker.trackRandomNumber(randomNum.toBigInteger().intValue());
-        } else if (selector == PSEUDORANDOM_SEED_GENERATOR_SELECTOR) {
+        if (randomNum == null) {
+            return;
+        }
+        if (selector == PSEUDORANDOM_SEED_GENERATOR_SELECTOR) {
             effectsTracker.trackRandomBytes(randomNum.toArray());
         }
     }
 
     @VisibleForTesting
-    TransactionBody.Builder body(final Bytes randomNum, final Bytes input) {
+    TransactionBody.Builder body(final Bytes randomNum) {
         final var txnBody = TransactionBody.newBuilder();
         if (randomNum == null) {
             return txnBody;
         }
-        final var body = PrngTransactionBody.newBuilder();
-        final var selector = input.getInt(0);
-        if (selector == PSEUDORANDOM_NUM_IN_RANGE_GENERATOR_SELECTOR) {
-            body.setRange(randomNum.toBigInteger().intValue());
-        }
-        return txnBody.setPrng(body.build());
-    }
-
-    private Bytes padded(final int result) {
-        return Bytes32.leftPad(Bytes.ofUnsignedInt(result));
-    }
-
-    private int rangeValueFrom(final Bytes input) {
-        return WORD_DECODER.decode(input.slice(4, 32).toArrayUnsafe()).intValue();
+        final var body = UtilPrngTransactionBody.newBuilder();
+        return txnBody.setUtilPrng(body.build());
     }
 
     private void addContractCallResultToRecord(

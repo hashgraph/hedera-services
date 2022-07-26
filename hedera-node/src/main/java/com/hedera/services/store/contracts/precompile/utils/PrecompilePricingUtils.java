@@ -210,7 +210,7 @@ public class PrecompilePricingUtils {
         FREEZE(TokenFreezeAccount, DEFAULT),
         UNFREEZE(TokenUnfreezeAccount, DEFAULT),
 
-        PRNG(HederaFunctionality.PRNG, DEFAULT);
+        PRNG(HederaFunctionality.UtilPrng, DEFAULT);
 
         final HederaFunctionality functionality;
         final SubType subtype;
