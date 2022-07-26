@@ -98,7 +98,8 @@ public class MigrationRecordsManager {
     private final EntityAccess entityAccess;
     private Supplier<SideEffectsTracker> sideEffectsFactory = SideEffectsTracker::new;
     // helper flag in the highly unlikely case when the traceability migration
-    // cannot be executed alongside the rest of the migrations (ContractCall/Create as first txn)
+    // cannot be executed alongside the rest of the migrations (ContractCall/Create/Eth as first
+    // txn)
     private boolean areAllMigrationsSansTraceabilityFinished;
 
     @Inject
