@@ -15,6 +15,7 @@
  */
 package com.hedera.services.stream;
 
+import static com.swirlds.common.utility.Units.MB_TO_BYTES;
 import static com.swirlds.common.utility.Units.SECONDS_TO_MILLISECONDS;
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
@@ -126,7 +127,7 @@ public class RecordStreamManager {
                                 startWriteAtCompleteWindow,
                                 streamType,
                                 nodeScopedSidecarDir,
-                                globalDynamicProperties.getSidecarMaxSizeMb());
+                                globalDynamicProperties.getSidecarMaxSizeMb() * MB_TO_BYTES);
             } else {
                 v5StreamFileWriter =
                         new TimestampStreamFileWriter<>(

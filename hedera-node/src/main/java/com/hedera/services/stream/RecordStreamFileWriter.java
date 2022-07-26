@@ -135,7 +135,7 @@ class RecordStreamFileWriter implements LinkedObjectStream<RecordStreamObject> {
      */
     private int currentSidecarFileSize;
 
-    /** the max file size a sidecar file can have */
+    /** the max file size (in bytes) a sidecar file can have */
     private final int maxSidecarFileSize;
 
     /** The instant of the first transaction in the current period */
