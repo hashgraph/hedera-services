@@ -125,14 +125,14 @@ public class DecodingFacade {
             TypeFactory.create("(bytes32,int64,int64[])");
 
     private static final Function GET_TOKEN_DEFAULT_FREEZE_STATUS_FUNCTION =
-            new Function("getTokenDefaultFreezeStatus(address)", INT_OUTPUT);
+            new Function("getTokenDefaultFreezeStatus(address)", INT);
     private static final Bytes GET_TOKEN_DEFAULT_FREEZE_STATUS_SELECTOR =
             Bytes.wrap(GET_TOKEN_DEFAULT_FREEZE_STATUS_FUNCTION.selector());
     private static final ABIType<Tuple> GET_TOKEN_DEFAULT_FREEZE_STATUS_DECODER =
             TypeFactory.create(BYTES32_RAW_TYPE);
 
     private static final Function GET_TOKEN_DEFAULT_KYC_STATUS_FUNCTION =
-            new Function("getTokenDefaultKycStatus(address)", INT_OUTPUT);
+            new Function("getTokenDefaultKycStatus(address)", INT);
     private static final Bytes GET_TOKEN_DEFAULT_KYC_STATUS_SELECTOR =
             Bytes.wrap(GET_TOKEN_DEFAULT_KYC_STATUS_FUNCTION.selector());
     private static final ABIType<Tuple> GET_TOKEN_DEFAULT_KYC_STATUS_DECODER =

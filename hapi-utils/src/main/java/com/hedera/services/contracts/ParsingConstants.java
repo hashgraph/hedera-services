@@ -23,6 +23,7 @@ public final class ParsingConstants {
     }
 
     // data types
+    public static final String INT_BOOL_PAIR_RETURN_TYPE = "(int32,bool)";
     public static final String ADDRESS = "(address)";
     public static final String ARRAY_BRACKETS = "[]";
     public static final String BOOL = "(bool)";
@@ -100,6 +101,10 @@ public final class ParsingConstants {
     public static final TupleType hapiAllowanceOfType = TupleType.parse("(int32,uint256)");
     public static final TupleType hapiGetApprovedType = TupleType.parse("(int32,bytes32)");
     public static final TupleType hapiIsApprovedForAllType = TupleType.parse("(int32,bool)");
+    public static final TupleType getTokenDefaultFreezeStatusType =
+        TupleType.parse(INT_BOOL_PAIR_RETURN_TYPE);
+    public static final TupleType getTokenDefaultKycStatusType =
+        TupleType.parse(INT_BOOL_PAIR_RETURN_TYPE);
 
     public static final TupleType notSpecifiedType = TupleType.parse(INT32);
 
@@ -127,6 +132,8 @@ public final class ParsingConstants {
         HAPI_GET_TOKEN_INFO,
         HAPI_GET_NON_FUNGIBLE_TOKEN_INFO,
         HAPI_IS_APPROVED_FOR_ALL,
+        GET_TOKEN_DEFAULT_FREEZE_STATUS,
+        GET_TOKEN_DEFAULT_KYC_STATUS,
         NOT_SPECIFIED
     }
 }

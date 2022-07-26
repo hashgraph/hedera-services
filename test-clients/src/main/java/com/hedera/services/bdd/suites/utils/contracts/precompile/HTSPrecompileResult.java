@@ -29,6 +29,8 @@ import static com.hedera.services.contracts.ParsingConstants.burnReturnType;
 import static com.hedera.services.contracts.ParsingConstants.decimalsType;
 import static com.hedera.services.contracts.ParsingConstants.ercTransferType;
 import static com.hedera.services.contracts.ParsingConstants.getApprovedType;
+import static com.hedera.services.contracts.ParsingConstants.getTokenDefaultFreezeStatusType;
+import static com.hedera.services.contracts.ParsingConstants.getTokenDefaultKycStatusType;
 import static com.hedera.services.contracts.ParsingConstants.hapiAllowanceOfType;
 import static com.hedera.services.contracts.ParsingConstants.hapiGetApprovedType;
 import static com.hedera.services.contracts.ParsingConstants.hapiIsApprovedForAllType;
@@ -135,8 +137,8 @@ public class HTSPrecompileResult implements ContractCallResult {
                     case HAPI_GET_TOKEN_INFO -> getTokenInfoTypeReplacedAddress;
                     case HAPI_GET_FUNGIBLE_TOKEN_INFO -> getFungibleTokenInfoTypeReplacedAddress;
                     case HAPI_GET_NON_FUNGIBLE_TOKEN_INFO -> getNonFungibleTokenInfoTypeReplacedAddress;
-                    case GET_TOKEN_DEFAULT_FREEZE_STATUS -> tupleType = getTokenDefaultFreezeStatusType;
-                    case GET_TOKEN_DEFAULT_KYC_STATUS -> tupleType = getTokenDefaultKycStatusType;
+                    case GET_TOKEN_DEFAULT_FREEZE_STATUS -> getTokenDefaultFreezeStatusType;
+                    case GET_TOKEN_DEFAULT_KYC_STATUS -> getTokenDefaultKycStatusType;
                     default -> notSpecifiedType;
                 };
 
