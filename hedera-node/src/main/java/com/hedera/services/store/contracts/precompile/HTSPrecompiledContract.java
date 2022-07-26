@@ -40,6 +40,7 @@ package com.hedera.services.store.contracts.precompile;
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hedera.services.state.EntityCreator.EMPTY_MEMO;
 import static com.hedera.services.store.contracts.precompile.utils.DescriptorUtils.isTokenProxyRedirect;
+import static com.hedera.services.store.contracts.precompile.utils.DescriptorUtils.isViewFunction;
 import static com.hedera.services.utils.EntityIdUtils.contractIdFromEvmAddress;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_GAS;
@@ -74,6 +75,7 @@ import com.hedera.services.store.contracts.precompile.impl.BurnPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.DecimalsPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.DissociatePrecompile;
 import com.hedera.services.store.contracts.precompile.impl.ERCTransferPrecompile;
+import com.hedera.services.store.contracts.precompile.impl.FungibleTokenInfoPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.FreezeTokenPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.GetApprovedPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.IsApprovedForAllPrecompile;
@@ -82,10 +84,12 @@ import com.hedera.services.store.contracts.precompile.impl.MintPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.MultiAssociatePrecompile;
 import com.hedera.services.store.contracts.precompile.impl.MultiDissociatePrecompile;
 import com.hedera.services.store.contracts.precompile.impl.NamePrecompile;
+import com.hedera.services.store.contracts.precompile.impl.NonFungibleTokenInfoPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.OwnerOfPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.SetApprovalForAllPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.SymbolPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.TokenCreatePrecompile;
+import com.hedera.services.store.contracts.precompile.impl.TokenInfoPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.TokenURIPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.TotalSupplyPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.TransferPrecompile;
@@ -193,15 +197,25 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
     public Pair<Long, Bytes> computeCosted(final Bytes input, final MessageFrame frame) {
         if (frame.isStatic()) {
-            if (!isTokenProxyRedirect(input)) {
+            if (!isTokenProxyRedirect(input) && !isViewFunction(input)) {
                 frame.setRevertReason(STATIC_CALL_REVERT_REASON);
                 return Pair.of(defaultGas(), null);
-            } else {
-                final var proxyUpdater = (HederaStackedWorldStateUpdater) frame.getWorldUpdater();
-                if (!proxyUpdater.isInTransaction()) {
+            }
+
+            final var proxyUpdater = (HederaStackedWorldStateUpdater) frame.getWorldUpdater();
+            if (!proxyUpdater.isInTransaction()) {
+                if (isTokenProxyRedirect(input)) {
                     final var executor =
                             infrastructureFactory.newRedirectExecutor(
                                     input, frame, precompilePricingUtils::computeViewFunctionGas);
+                    return executor.computeCosted();
+                } else if (isViewFunction(input)) {
+                    final var executor =
+                            infrastructureFactory.newViewExecutor(
+                                    input,
+                                    frame,
+                                    precompilePricingUtils::computeViewFunctionGas,
+                                    currentView);
                     return executor.computeCosted();
                 }
             }
@@ -618,6 +632,32 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
                                     feeCalculator,
                                     precompilePricingUtils)
                             : null;
+                    case AbiConstants.ABI_ID_GET_TOKEN_INFO -> new TokenInfoPrecompile(
+                            null,
+                            syntheticTxnFactory,
+                            ledgers,
+                            encoder,
+                            decoder,
+                            precompilePricingUtils,
+                            currentView);
+                    case AbiConstants
+                            .ABI_ID_GET_FUNGIBLE_TOKEN_INFO -> new FungibleTokenInfoPrecompile(
+                            null,
+                            syntheticTxnFactory,
+                            ledgers,
+                            encoder,
+                            decoder,
+                            precompilePricingUtils,
+                            currentView);
+                    case AbiConstants
+                            .ABI_ID_GET_NON_FUNGIBLE_TOKEN_INFO -> new NonFungibleTokenInfoPrecompile(
+                            null,
+                            syntheticTxnFactory,
+                            ledgers,
+                            encoder,
+                            decoder,
+                            precompilePricingUtils,
+                            currentView);
                     default -> null;
                 };
         if (precompile != null) {
