@@ -24,6 +24,7 @@ import static com.hedera.services.ledger.properties.TokenProperty.NAME;
 import static com.hedera.services.ledger.properties.TokenProperty.SYMBOL;
 import static com.hedera.services.ledger.properties.TokenProperty.TOKEN_TYPE;
 import static com.hedera.services.ledger.properties.TokenProperty.TOTAL_SUPPLY;
+import static com.hedera.services.ledger.properties.TokenRelProperty.IS_FROZEN;
 import static com.hedera.services.ledger.properties.TokenRelProperty.TOKEN_BALANCE;
 import static com.hedera.services.state.enums.TokenType.FUNGIBLE_COMMON;
 import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
@@ -526,6 +527,7 @@ class WorldLedgersTest {
         given(staticEntityAccess.nameOf(fungibleToken)).willReturn(name);
         given(staticEntityAccess.balanceOf(accountID, fungibleToken)).willReturn(balance);
         given(staticEntityAccess.typeOf(fungibleToken)).willReturn(FUNGIBLE_COMMON);
+        given(staticEntityAccess.isFrozen(accountID, fungibleToken)).willReturn(true);
 
         subject = WorldLedgers.staticLedgersWith(aliases, staticEntityAccess);
 
@@ -535,6 +537,7 @@ class WorldLedgersTest {
         assertEquals(balance, subject.balanceOf(accountID, fungibleToken));
         assertEquals(totalSupply, subject.totalSupplyOf(fungibleToken));
         assertEquals(FUNGIBLE_COMMON, subject.typeOf(fungibleToken));
+        assertTrue(subject.isFrozen(accountID, fungibleToken));
     }
 
     @Test
@@ -544,12 +547,14 @@ class WorldLedgersTest {
         assertFailsWith(() -> subject.decimalsOf(fungibleToken), INVALID_TOKEN_ID);
         assertFailsWith(() -> subject.totalSupplyOf(fungibleToken), INVALID_TOKEN_ID);
         assertFailsWith(() -> subject.balanceOf(accountID, fungibleToken), INVALID_TOKEN_ID);
+        assertFailsWith(() -> subject.isFrozen(accountID, fungibleToken), INVALID_TOKEN_ID);
     }
 
     @Test
     void failsIfAccountMissingFromLedgers() {
         given(tokensLedger.exists(fungibleToken)).willReturn(true);
         assertFailsWith(() -> subject.balanceOf(accountID, fungibleToken), INVALID_ACCOUNT_ID);
+        assertFailsWith(() -> subject.isFrozen(accountID, fungibleToken), INVALID_ACCOUNT_ID);
     }
 
     @Test
@@ -560,6 +565,16 @@ class WorldLedgersTest {
         given(tokenRelsLedger.exists(key)).willReturn(true);
         given(tokenRelsLedger.get(key, TOKEN_BALANCE)).willReturn(balance);
         assertEquals(balance, subject.balanceOf(accountID, fungibleToken));
+    }
+
+    @Test
+    void getsTokenIsFrozenStatusWhenPresent() {
+        final var key = Pair.of(accountID, fungibleToken);
+        given(tokensLedger.exists(fungibleToken)).willReturn(true);
+        given(accountsLedger.exists(accountID)).willReturn(true);
+        given(tokenRelsLedger.exists(key)).willReturn(true);
+        given(tokenRelsLedger.get(key, IS_FROZEN)).willReturn(true);
+        assertTrue(subject.isFrozen(accountID, fungibleToken));
     }
 
     @Test

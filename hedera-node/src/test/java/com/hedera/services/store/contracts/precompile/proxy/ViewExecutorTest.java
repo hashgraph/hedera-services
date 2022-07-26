@@ -18,6 +18,7 @@ package com.hedera.services.store.contracts.precompile.proxy;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_GET_FUNGIBLE_TOKEN_INFO;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_GET_NON_FUNGIBLE_TOKEN_INFO;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_GET_TOKEN_INFO;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_IS_FROZEN;
 import static com.hedera.services.store.contracts.precompile.proxy.RedirectViewExecutor.MINIMUM_TINYBARS_COST;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -31,6 +32,7 @@ import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.store.contracts.WorldLedgers;
 import com.hedera.services.store.contracts.precompile.codec.DecodingFacade;
 import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
+import com.hedera.services.store.contracts.precompile.codec.TokenFreezeUnfreezeWrapper;
 import com.hedera.services.store.contracts.precompile.codec.TokenInfoWrapper;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.utils.EntityIdUtils;
@@ -69,8 +71,10 @@ class ViewExecutorTest {
     public static final TokenID fungible = IdUtils.asToken("0.0.888");
     public static final TokenID nonfungibletoken = IdUtils.asToken("0.0.999");
     public static final Id fungibleId = Id.fromGrpcToken(fungible);
+    public static final Id accountId = Id.fromGrpcAccount(account);
     public static final Id nonfungibleId = Id.fromGrpcToken(nonfungibletoken);
     public static final Address fungibleTokenAddress = fungibleId.asEvmAddress();
+    public static final Address accountAddress = accountId.asEvmAddress();
     public static final Address nonfungibleTokenAddress = nonfungibleId.asEvmAddress();
     public static final AccountID treasury =
             EntityIdUtils.accountIdFromEvmAddress(
@@ -85,6 +89,7 @@ class ViewExecutorTest {
     private static final Bytes answer = Bytes.of(1);
     private TokenInfo tokenInfo;
     private Bytes tokenInfoEncoded;
+    private Bytes isFrozenEncoded;
 
     ViewExecutor subject;
 
@@ -110,6 +115,10 @@ class ViewExecutorTest {
         tokenInfoEncoded =
                 Bytes.fromHexString(
                         "0x00000000000000000000000000000000000000000000000000000000000000160000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000012000000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000360000000000000000000000000000000000000000000000000000000000000038000000000000000000000000000000000000000000000000000000000000003a000000000000000000000000000000000000000000000000000000000000003c0000000000000000000000000000000000000000000000000000000000000016000000000000000000000000000000000000000000000000000000000000001a000000000000000000000000000000000000000000000000000000000000005cc00000000000000000000000000000000000000000000000000000000000001e0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000003e80000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000022000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000044e414d45000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002465400000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000044d454d4f00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000043078303300000000000000000000000000000000000000000000000000000000");
+        isFrozenEncoded =
+                Bytes.fromHexString(
+                        "0x00000000000000000000000000000000000000000000000000000000000000160000000000000000000000000000000000000"
+                            + "000000000000000000000000001");
     }
 
     private ByteString fromString(final String value) {
@@ -118,7 +127,8 @@ class ViewExecutorTest {
 
     @Test
     void computeGetTokenInfo() {
-        final var input = prerequisites(ABI_ID_GET_TOKEN_INFO, fungibleTokenAddress);
+        final var input =
+                prerequisites(ABI_ID_GET_TOKEN_INFO, fungibleTokenAddress, Optional.empty());
 
         final var tokenInfoWrapper = TokenInfoWrapper.forToken(fungible);
         given(decodingFacade.decodeGetTokenInfo(input)).willReturn(tokenInfoWrapper);
@@ -131,7 +141,10 @@ class ViewExecutorTest {
 
     @Test
     void computeGetFungibleTokenInfo() {
-        final var input = prerequisites(ABI_ID_GET_FUNGIBLE_TOKEN_INFO, fungibleTokenAddress);
+        final var input =
+                Bytes.fromHexString(
+                        "0x46de0fb1000000000000000000000000000000000000000000000000000000000000050"
+                            + "e000000000000000000000000000000000000000000000000000000000000050c");
 
         final var tokenInfoWrapper = TokenInfoWrapper.forFungibleToken(fungible);
         given(decodingFacade.decodeGetFungibleTokenInfo(input)).willReturn(tokenInfoWrapper);
@@ -145,7 +158,10 @@ class ViewExecutorTest {
     @Test
     void computeGetNonFungibleTokenInfo() {
         final var input =
-                prerequisites(ABI_ID_GET_NON_FUNGIBLE_TOKEN_INFO, nonfungibleTokenAddress);
+                prerequisites(
+                        ABI_ID_GET_NON_FUNGIBLE_TOKEN_INFO,
+                        nonfungibleTokenAddress,
+                        Optional.empty());
 
         final var tokenInfoWrapper = TokenInfoWrapper.forNonFungibleToken(nonfungibletoken, 1L);
         given(decodingFacade.decodeGetNonFungibleTokenInfo(input)).willReturn(tokenInfoWrapper);
@@ -165,14 +181,28 @@ class ViewExecutorTest {
     }
 
     @Test
+    void computeIsFrozen() {
+        final var input =
+                prerequisites(ABI_ID_IS_FROZEN, fungibleTokenAddress, Optional.of(accountAddress));
+
+        final var isFrozenWrapper = TokenFreezeUnfreezeWrapper.forIsFrozen(fungible, account);
+        given(decodingFacade.decodeIsFrozen(any(), any())).willReturn(isFrozenWrapper);
+        given(ledgers.isFrozen(account, fungible)).willReturn(true);
+        given(encodingFacade.encodeIsFrozen(true)).willReturn(isFrozenEncoded);
+
+        assertEquals(Pair.of(gas, isFrozenEncoded), subject.computeCosted());
+    }
+
+    @Test
     void computeCostedNOT_SUPPORTED() {
-        prerequisites(0xffffffff, fungibleTokenAddress);
+        prerequisites(0xffffffff, fungibleTokenAddress, Optional.empty());
         assertNull(subject.computeCosted().getRight());
     }
 
     @Test
     void getTokenInfoRevertsFrameAndReturnsNullOnRevertingException() {
-        final var input = prerequisites(ABI_ID_GET_TOKEN_INFO, fungibleTokenAddress);
+        final var input =
+                prerequisites(ABI_ID_GET_TOKEN_INFO, fungibleTokenAddress, Optional.empty());
 
         final var tokenInfoWrapper = TokenInfoWrapper.forToken(fungible);
         given(decodingFacade.decodeGetTokenInfo(input)).willReturn(tokenInfoWrapper);
@@ -185,7 +215,9 @@ class ViewExecutorTest {
 
     @Test
     void getFungibleTokenInfoRevertsFrameAndReturnsNullOnRevertingException() {
-        final var input = prerequisites(ABI_ID_GET_FUNGIBLE_TOKEN_INFO, fungibleTokenAddress);
+        final var input =
+                prerequisites(
+                        ABI_ID_GET_FUNGIBLE_TOKEN_INFO, fungibleTokenAddress, Optional.empty());
 
         final var tokenInfoWrapper = TokenInfoWrapper.forFungibleToken(fungible);
         given(decodingFacade.decodeGetFungibleTokenInfo(input)).willReturn(tokenInfoWrapper);
@@ -225,8 +257,15 @@ class ViewExecutorTest {
         verify(frame).setState(MessageFrame.State.REVERT);
     }
 
-    Bytes prerequisites(final int descriptor, final Bytes tokenAddress) {
-        Bytes input = Bytes.concatenate(Bytes.of(Integers.toBytes(descriptor)), tokenAddress);
+    Bytes prerequisites(
+            final int descriptor, final Bytes tokenAddress, final Optional<Bytes> accountAddress) {
+        Bytes input =
+                !accountAddress.isEmpty()
+                        ? Bytes.concatenate(Bytes.of(Integers.toBytes(descriptor)), tokenAddress)
+                        : Bytes.concatenate(
+                                Bytes.of(Integers.toBytes(descriptor)),
+                                tokenAddress,
+                                accountAddress.get());
         given(frame.getBlockValues()).willReturn(blockValues);
         given(blockValues.getTimestamp()).willReturn(timestamp);
         given(viewGasCalculator.compute(resultingTimestamp, MINIMUM_TINYBARS_COST)).willReturn(gas);
