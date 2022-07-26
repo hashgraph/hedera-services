@@ -28,18 +28,17 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.util.List;
 import javax.inject.Inject;
 
-public class UnFreezeLogic implements TokenFreezeUnfreezeLogic {
+public class UnfreezeLogic {
     private final TypedTokenStore tokenStore;
     private final AccountStore accountStore;
 
     @Inject
-    public UnFreezeLogic(final TypedTokenStore tokenStore, final AccountStore accountStore) {
+    public UnfreezeLogic(final TypedTokenStore tokenStore, final AccountStore accountStore) {
         this.tokenStore = tokenStore;
         this.accountStore = accountStore;
     }
 
-    @Override
-    public void doFreezeUnfreeze(Id targetTokenId, Id targetAccountId) {
+    public void unfreeze(Id targetTokenId, Id targetAccountId) {
         /* --- Load the model objects --- */
         final var loadedToken = tokenStore.loadToken(targetTokenId);
         final var loadedAccount = accountStore.loadAccount(targetAccountId);

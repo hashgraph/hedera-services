@@ -31,12 +31,16 @@ import com.hedera.services.store.contracts.precompile.utils.KeyActivationUtils;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.services.store.models.Id;
 import java.util.Objects;
+
+import com.hedera.services.txns.token.FreezeLogic;
+import com.hedera.services.txns.token.UnfreezeLogic;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 
 /* --- Constructor functional interfaces for mocking --- */
 public abstract class AbstractFreezeUnfreezePrecompile extends AbstractWritePrecompile {
 
-    private final boolean isFreeze;
+    private final boolean hasFreezeLogic;
     protected final ContractAliases aliases;
     protected final EvmSigsVerifier sigsVerifier;
     protected TokenFreezeUnfreezeWrapper freezeUnfreezeOp;
@@ -50,7 +54,7 @@ public abstract class AbstractFreezeUnfreezePrecompile extends AbstractWritePrec
             SyntheticTxnFactory syntheticTxnFactory,
             InfrastructureFactory infrastructureFactory,
             PrecompilePricingUtils pricingUtils,
-            boolean isFreeze) {
+            boolean hasFreezeLogic) {
         super(
                 ledgers,
                 decoder,
@@ -60,7 +64,7 @@ public abstract class AbstractFreezeUnfreezePrecompile extends AbstractWritePrec
                 pricingUtils);
         this.aliases = aliases;
         this.sigsVerifier = sigsVerifier;
-        this.isFreeze = isFreeze;
+        this.hasFreezeLogic = hasFreezeLogic;
     }
 
     @Override
@@ -89,14 +93,27 @@ public abstract class AbstractFreezeUnfreezePrecompile extends AbstractWritePrec
                         ledgers.nfts(),
                         ledgers.tokenRels());
 
-        final var freezingLogic =
-                isFreeze
-                        ? infrastructureFactory.newFreezeLogic(accountStore, tokenStore)
-                        : infrastructureFactory.newUnFreezeLogic(accountStore, tokenStore);
-        final var validity = freezingLogic.validate(transactionBody.build());
-        validateTrue(validity == OK, validity);
-
         /* --- Execute the transaction and capture its results --- */
-        freezingLogic.doFreezeUnfreeze(tokenId, accountId);
+        if(hasFreezeLogic){
+            final var freezeLogic = infrastructureFactory.newFreezeLogic(accountStore, tokenStore);
+            executeForFreeze(freezeLogic, tokenId, accountId);
+        }else {
+            final var unfreezeLogic = infrastructureFactory.newUnfreezeLogic(accountStore, tokenStore);
+            executeForUnfreeze(unfreezeLogic, tokenId, accountId);
+        }
+    }
+
+    private void executeForFreeze(FreezeLogic freezeLogic, Id tokenId, Id accountId){
+        validateLogic(freezeLogic.validate(transactionBody.build()));
+        freezeLogic.freeze(tokenId, accountId);
+    }
+
+    private void executeForUnfreeze(UnfreezeLogic unfreezeLogic, Id tokenId, Id accountId){
+        validateLogic(unfreezeLogic.validate(transactionBody.build()));
+        unfreezeLogic.unfreeze(tokenId, accountId);
+    }
+
+    private void validateLogic(ResponseCodeEnum validity){
+        validateTrue(validity == OK, validity);
     }
 }

@@ -57,7 +57,7 @@ public class UnfreezeTokenPrecompile extends AbstractFreezeUnfreezePrecompile {
 
     @Override
     public TransactionBody.Builder body(Bytes input, UnaryOperator<byte[]> aliasResolver) {
-        freezeUnfreezeOp = decoder.decodeUnFreeze(input, aliasResolver);
+        freezeUnfreezeOp = decoder.decodeUnfreeze(input, aliasResolver);
         transactionBody = syntheticTxnFactory.createUnFreeze(freezeUnfreezeOp);
         return transactionBody;
     }

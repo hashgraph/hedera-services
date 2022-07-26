@@ -797,7 +797,7 @@ class DecodingFacadeTest {
 
     @Test
     void decodeTokenUnFreezeWithValidInput() {
-        final var decodedInput = subject.decodeUnFreeze(UNFREEZE_INPUT, identity());
+        final var decodedInput = subject.decodeUnfreeze(UNFREEZE_INPUT, identity());
 
         assertEquals(TokenID.newBuilder().setTokenNum(1304).build(), decodedInput.token());
     }

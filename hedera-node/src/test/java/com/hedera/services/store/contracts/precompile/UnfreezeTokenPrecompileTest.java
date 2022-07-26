@@ -59,7 +59,7 @@ import com.hedera.services.store.contracts.precompile.codec.DecodingFacade;
 import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.services.store.models.NftId;
-import com.hedera.services.txns.token.UnFreezeLogic;
+import com.hedera.services.txns.token.UnfreezeLogic;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ExchangeRate;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
@@ -105,7 +105,7 @@ class UnfreezeTokenPrecompileTest {
     @Mock private StateView stateView;
     @Mock private ContractAliases aliases;
     @Mock private HederaStackedWorldStateUpdater worldUpdater;
-    @Mock private UnFreezeLogic unFreezeLogic;
+    @Mock private UnfreezeLogic unFreezeLogic;
     @Mock private WorldLedgers wrappedLedgers;
     @Mock private UsagePricesProvider resourceCosts;
     @Mock private HbarCentExchange exchange;
@@ -189,7 +189,7 @@ class UnfreezeTokenPrecompileTest {
                 .willReturn(new FeeObject(TEST_NODE_FEE, TEST_NETWORK_FEE, TEST_SERVICE_FEE));
         given(feeCalculator.estimatedGasPriceInTinybars(any(), any()))
                 .willReturn(DEFAULT_GAS_PRICE);
-        given(decoder.decodeUnFreeze(any(), any())).willReturn(tokenFreezeUnFreezeWrapper);
+        given(decoder.decodeUnfreeze(any(), any())).willReturn(tokenFreezeUnFreezeWrapper);
         given(syntheticTxnFactory.createUnFreeze(tokenFreezeUnFreezeWrapper))
                 .willReturn(
                         TransactionBody.newBuilder()
@@ -230,10 +230,10 @@ class UnfreezeTokenPrecompileTest {
         given(infrastructureFactory.newAccountStore(accounts)).willReturn(accountStore);
         given(infrastructureFactory.newTokenStore(accountStore, null, tokens, nfts, tokenRels))
                 .willReturn(tokenStore);
-        given(infrastructureFactory.newUnFreezeLogic(accountStore, tokenStore))
+        given(infrastructureFactory.newUnfreezeLogic(accountStore, tokenStore))
                 .willReturn(unFreezeLogic);
         given(unFreezeLogic.validate(any())).willReturn(OK);
-        given(decoder.decodeUnFreeze(any(), any())).willReturn(tokenFreezeUnFreezeWrapper);
+        given(decoder.decodeUnfreeze(any(), any())).willReturn(tokenFreezeUnFreezeWrapper);
         given(syntheticTxnFactory.createUnFreeze(tokenFreezeUnFreezeWrapper))
                 .willReturn(
                         TransactionBody.newBuilder()

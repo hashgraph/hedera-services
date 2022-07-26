@@ -53,7 +53,7 @@ import com.hedera.services.txns.token.CreateLogic;
 import com.hedera.services.txns.token.DissociateLogic;
 import com.hedera.services.txns.token.FreezeLogic;
 import com.hedera.services.txns.token.MintLogic;
-import com.hedera.services.txns.token.UnFreezeLogic;
+import com.hedera.services.txns.token.UnfreezeLogic;
 import com.hedera.services.txns.token.process.DissociationFactory;
 import com.hedera.services.txns.token.validators.CreateChecks;
 import com.hedera.services.txns.validation.OptionValidator;
@@ -290,6 +290,6 @@ class InfrastructureFactoryTest {
         final var tokenStore =
                 subject.newTokenStore(
                         accountStore, subject.newSideEffects(), tokens, uniqueTokens, tokenRels);
-        assertInstanceOf(UnFreezeLogic.class, subject.newUnFreezeLogic(accountStore, tokenStore));
+        assertInstanceOf(UnfreezeLogic.class, subject.newUnfreezeLogic(accountStore, tokenStore));
     }
 }

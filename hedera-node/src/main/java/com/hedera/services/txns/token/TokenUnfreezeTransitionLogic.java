@@ -28,10 +28,10 @@ import javax.inject.Singleton;
 @Singleton
 public class TokenUnfreezeTransitionLogic implements TransitionLogic {
     private final TransactionContext txnCtx;
-    private final UnFreezeLogic unFreezeLogic;
+    private final UnfreezeLogic unFreezeLogic;
 
     @Inject
-    public TokenUnfreezeTransitionLogic(TransactionContext txnCtx, UnFreezeLogic unFreezeLogic) {
+    public TokenUnfreezeTransitionLogic(TransactionContext txnCtx, UnfreezeLogic unFreezeLogic) {
         this.txnCtx = txnCtx;
         this.unFreezeLogic = unFreezeLogic;
     }
@@ -44,7 +44,7 @@ public class TokenUnfreezeTransitionLogic implements TransitionLogic {
         final var targetTokenId = Id.fromGrpcToken(op.getToken());
         final var targetAccountId = Id.fromGrpcAccount(op.getAccount());
         /* --- Do the business logic --- */
-        unFreezeLogic.doFreezeUnfreeze(targetTokenId, targetAccountId);
+        unFreezeLogic.unfreeze(targetTokenId, targetAccountId);
     }
 
     @Override

@@ -890,7 +890,7 @@ public class DecodingFacade {
         return TokenFreezeUnfreezeWrapper.forFreeze(tokenID, accountID);
     }
 
-    public TokenFreezeUnfreezeWrapper decodeUnFreeze(
+    public TokenFreezeUnfreezeWrapper decodeUnfreeze(
             final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
         final Tuple decodedArguments =
                 decodeFunctionCall(

@@ -75,7 +75,7 @@ class TokenUnfreezeTransitionLogicTest {
         accountStore = mock(AccountStore.class);
         tokenStore = mock(TypedTokenStore.class);
         txnCtx = mock(TransactionContext.class);
-        UnFreezeLogic unFreezeLogic = new UnFreezeLogic(tokenStore, accountStore);
+        UnfreezeLogic unFreezeLogic = new UnfreezeLogic(tokenStore, accountStore);
         subject = new TokenUnfreezeTransitionLogic(txnCtx, unFreezeLogic);
     }
 

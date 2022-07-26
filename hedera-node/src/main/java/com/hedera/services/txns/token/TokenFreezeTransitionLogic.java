@@ -45,7 +45,7 @@ public class TokenFreezeTransitionLogic implements TransitionLogic {
         final var targetTokenId = Id.fromGrpcToken(op.getToken());
         final var targetAccountId = Id.fromGrpcAccount(op.getAccount());
         /* --- Do the business logic --- */
-        freezeLogic.doFreezeUnfreeze(targetTokenId, targetAccountId);
+        freezeLogic.freeze(targetTokenId, targetAccountId);
     }
 
     @Override
