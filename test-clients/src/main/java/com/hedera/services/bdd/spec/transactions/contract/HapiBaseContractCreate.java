@@ -1,24 +1,25 @@
-package com.hedera.services.bdd.spec.transactions.contract;
-
-/*-
- * ‌
- * Hedera Services Test Clients
- * ​
- * Copyright (C) 2018 - 2022 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2022 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+package com.hedera.services.bdd.spec.transactions.contract;
+
+import static com.hedera.services.bdd.spec.transactions.TxnFactory.bannerWith;
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.equivAccount;
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.solidityIdFrom;
+import static com.hedera.services.bdd.spec.transactions.contract.HapiContractCall.doGasLookup;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.google.common.base.MoreObjects;
 import com.hedera.services.bdd.spec.HapiApiSpec;
@@ -29,16 +30,10 @@ import com.hedera.services.bdd.spec.keys.SigControl;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hedera.services.bdd.spec.transactions.TxnVerbs;
 import com.hedera.services.bdd.spec.transactions.file.HapiFileCreate;
-import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractGetInfoResponse;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.Transaction;
-import com.hederahashgraph.api.proto.java.TransactionResponse;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
 import java.util.List;
 import java.util.Optional;
 import java.util.OptionalLong;
@@ -47,14 +42,10 @@ import java.util.function.Function;
 import java.util.function.LongConsumer;
 import java.util.function.ObjLongConsumer;
 import java.util.function.Supplier;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
-import static com.hedera.services.bdd.spec.transactions.TxnFactory.bannerWith;
-import static com.hedera.services.bdd.spec.transactions.TxnUtils.equivAccount;
-import static com.hedera.services.bdd.spec.transactions.TxnUtils.solidityIdFrom;
-import static com.hedera.services.bdd.spec.transactions.contract.HapiContractCall.doGasLookup;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
-
-public abstract class HapiBaseContractCreate <T extends HapiTxnOp<T>> extends HapiTxnOp<T> {
+public abstract class HapiBaseContractCreate<T extends HapiTxnOp<T>> extends HapiTxnOp<T> {
 
     static final Key MISSING_ADMIN_KEY = Key.getDefaultInstance();
     static final Logger log = LogManager.getLogger(HapiContractCreate.class);
@@ -107,7 +98,11 @@ public abstract class HapiBaseContractCreate <T extends HapiTxnOp<T>> extends Ha
     protected void updateStateOf(HapiApiSpec spec) throws Throwable {
         if (actualStatus != SUCCESS) {
             if (gasObserver.isPresent()) {
-                doGasLookup(gas -> gasObserver.get().accept(actualStatus, gas), spec, txnSubmitted, true);
+                doGasLookup(
+                        gas -> gasObserver.get().accept(actualStatus, gas),
+                        spec,
+                        txnSubmitted,
+                        true);
             }
             return;
         }
@@ -116,14 +111,23 @@ public abstract class HapiBaseContractCreate <T extends HapiTxnOp<T>> extends Ha
         if (shouldAlsoRegisterAsAccount) {
             spec.registry().saveAccountId(contract, equivAccount(lastReceipt.getContractID()));
         }
-        spec.registry().saveKey(contract, (omitAdminKey || useDeprecatedAdminKey) ? MISSING_ADMIN_KEY : adminKey);
+        spec.registry()
+                .saveKey(
+                        contract,
+                        (omitAdminKey || useDeprecatedAdminKey) ? MISSING_ADMIN_KEY : adminKey);
         spec.registry().saveContractId(contract, newId);
-        final var otherInfoBuilder = ContractGetInfoResponse.ContractInfo.newBuilder()
-                .setContractAccountID(solidityIdFrom(lastReceipt.getContractID()))
-                .setMemo(memo.orElse(spec.setup().defaultMemo()))
-                .setAutoRenewPeriod(
-                        Duration.newBuilder().setSeconds(
-                                autoRenewPeriodSecs.orElse(spec.setup().defaultAutoRenewPeriod().getSeconds())).build());
+        final var otherInfoBuilder =
+                ContractGetInfoResponse.ContractInfo.newBuilder()
+                        .setContractAccountID(solidityIdFrom(lastReceipt.getContractID()))
+                        .setMemo(memo.orElse(spec.setup().defaultMemo()))
+                        .setAutoRenewPeriod(
+                                Duration.newBuilder()
+                                        .setSeconds(
+                                                autoRenewPeriodSecs.orElse(
+                                                        spec.setup()
+                                                                .defaultAutoRenewPeriod()
+                                                                .getSeconds()))
+                                        .build());
         if (!omitAdminKey && !useDeprecatedAdminKey) {
             otherInfoBuilder.setAdminKey(adminKey);
         }
@@ -131,11 +135,13 @@ public abstract class HapiBaseContractCreate <T extends HapiTxnOp<T>> extends Ha
         spec.registry().saveContractInfo(contract, otherInfo);
         successCb.ifPresent(cb -> cb.accept(spec.registry()));
         if (advertiseCreation) {
-            String banner = "\n\n" + bannerWith(
-                    String.format(
-                            "Created contract '%s' with id '0.0.%d'.",
-                            contract,
-                            lastReceipt.getContractID().getContractNum()));
+            String banner =
+                    "\n\n"
+                            + bannerWith(
+                                    String.format(
+                                            "Created contract '%s' with id '0.0.%d'.",
+                                            contract,
+                                            lastReceipt.getContractID().getContractNum()));
             log.info(banner);
         }
         if (gasObserver.isPresent()) {
@@ -149,7 +155,12 @@ public abstract class HapiBaseContractCreate <T extends HapiTxnOp<T>> extends Ha
         } else {
             KeyGenerator generator = effectiveKeyGen();
             if (adminKeyControl.isEmpty()) {
-                adminKey = spec.keys().generate(spec, adminKeyType.orElse(KeyFactory.KeyType.SIMPLE), generator);
+                adminKey =
+                        spec.keys()
+                                .generate(
+                                        spec,
+                                        adminKeyType.orElse(KeyFactory.KeyType.SIMPLE),
+                                        generator);
             } else {
                 adminKey = spec.keys().generateSubjectTo(spec, adminKeyControl.get(), generator);
             }
@@ -158,9 +169,8 @@ public abstract class HapiBaseContractCreate <T extends HapiTxnOp<T>> extends Ha
 
     protected void setBytecodeToDefaultContract(HapiApiSpec spec) throws Throwable {
         String implicitBytecodeFile = contract + "Bytecode";
-        HapiFileCreate fileCreate = TxnVerbs
-                .fileCreate(implicitBytecodeFile)
-                .path(spec.setup().defaultContractPath());
+        HapiFileCreate fileCreate =
+                TxnVerbs.fileCreate(implicitBytecodeFile).path(spec.setup().defaultContractPath());
         Optional<Throwable> opError = fileCreate.execFor(spec);
         if (opError.isPresent()) {
             throw opError.get();
@@ -170,20 +180,19 @@ public abstract class HapiBaseContractCreate <T extends HapiTxnOp<T>> extends Ha
 
     @Override
     protected MoreObjects.ToStringHelper toStringHelper() {
-        MoreObjects.ToStringHelper helper = super.toStringHelper()
-                .add("contract", contract);
+        MoreObjects.ToStringHelper helper = super.toStringHelper().add("contract", contract);
         bytecodeFile.ifPresent(f -> helper.add("bytecode", f));
         memo.ifPresent(m -> helper.add("memo", m));
         autoRenewPeriodSecs.ifPresent(p -> helper.add("autoRenewPeriod", p));
         adminKeyControl.ifPresent(c -> helper.add("customKeyShape", Boolean.TRUE));
         Optional.ofNullable(lastReceipt)
-                .ifPresent(receipt -> helper.add("created", receipt.getContractID().getContractNum()));
+                .ifPresent(
+                        receipt -> helper.add("created", receipt.getContractID().getContractNum()));
         return helper;
     }
 
     public long numOfCreatedContract() {
-        return Optional
-                .ofNullable(lastReceipt)
+        return Optional.ofNullable(lastReceipt)
                 .map(receipt -> receipt.getContractID().getContractNum())
                 .orElse(-1L);
     }

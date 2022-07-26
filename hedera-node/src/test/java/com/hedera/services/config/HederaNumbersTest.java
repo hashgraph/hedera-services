@@ -1,11 +1,6 @@
-package com.hedera.services.config;
-
-/*-
- * ‌
- * Hedera Services Node
- * ​
- * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,35 +12,35 @@ package com.hedera.services.config;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
-
-import com.hedera.services.context.properties.PropertySource;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+package com.hedera.services.config;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 
+import com.hedera.services.context.properties.PropertySource;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
 class HederaNumbersTest {
-	PropertySource properties;
-	HederaNumbers subject;
+    PropertySource properties;
+    HederaNumbers subject;
 
-	@BeforeEach
-	private void setup() {
-		properties = mock(PropertySource.class);
-		given(properties.getLongProperty("hedera.shard")).willReturn(1L);
-		given(properties.getLongProperty("hedera.realm")).willReturn(2L);
+    @BeforeEach
+    private void setup() {
+        properties = mock(PropertySource.class);
+        given(properties.getLongProperty("hedera.shard")).willReturn(1L);
+        given(properties.getLongProperty("hedera.realm")).willReturn(2L);
 
-		subject = new HederaNumbers(properties);
-	}
+        subject = new HederaNumbers(properties);
+    }
 
-	@Test
-	void hasExpectedNumbers() {
-		// expect:
-		assertEquals(1L, subject.shard());
-		assertEquals(2L, subject.realm());
-		assertEquals(750L, subject.numReservedSystemEntities());
-	}
+    @Test
+    void hasExpectedNumbers() {
+        // expect:
+        assertEquals(1L, subject.shard());
+        assertEquals(2L, subject.realm());
+        assertEquals(750L, subject.numReservedSystemEntities());
+    }
 }
