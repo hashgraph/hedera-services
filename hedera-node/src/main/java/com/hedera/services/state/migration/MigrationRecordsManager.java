@@ -131,15 +131,6 @@ public class MigrationRecordsManager {
         this.entityAccess = entityAccess;
     }
 
-    @VisibleForTesting
-    static void setExpiryJustEnabled(boolean expiryJustEnabled) {
-        MigrationRecordsManager.expiryJustEnabled = expiryJustEnabled;
-    }
-
-    public boolean areAllMigrationsSansTraceabilityFinished() {
-        return areAllMigrationsSansTraceabilityFinished;
-    }
-
     /**
      * If appropriate, publish the migration records for this upgrade. Only needs to be called once
      * per restart, but that call must be made from {@code handleTransaction} inside an active
@@ -296,7 +287,8 @@ public class MigrationRecordsManager {
                                 var contractStorageKey = account.getFirstContractStorageKey();
                                 if (contractStorageKey == null) {
                                     log.debug(
-                                            "Contract 0.0.{} has no iterable storage - no state changes will be published.",
+                                            "Contract 0.0.{} has no iterable storage - no state"
+                                                    + " changes will be published.",
                                             contractId.getContractNum());
                                 } else {
                                     final var contractStateChangeBuilder =
@@ -345,14 +337,23 @@ public class MigrationRecordsManager {
         return contractKeyBytes;
     }
 
+    public boolean areAllMigrationsSansTraceabilityFinished() {
+        return areAllMigrationsSansTraceabilityFinished;
+    }
+
     private boolean isSidecarGeneratingFunction(final HederaFunctionality function) {
         return function == HederaFunctionality.ContractCall
-            || function == HederaFunctionality.ContractCreate
-            || function == HederaFunctionality.ContractCallLocal;
+                || function == HederaFunctionality.ContractCreate
+                || function == HederaFunctionality.EthereumTransaction;
     }
 
     @VisibleForTesting
     void setSideEffectsFactory(Supplier<SideEffectsTracker> sideEffectsFactory) {
         this.sideEffectsFactory = sideEffectsFactory;
+    }
+
+    @VisibleForTesting
+    static void setExpiryJustEnabled(boolean expiryJustEnabled) {
+        MigrationRecordsManager.expiryJustEnabled = expiryJustEnabled;
     }
 }

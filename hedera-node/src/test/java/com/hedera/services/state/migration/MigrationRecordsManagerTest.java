@@ -241,12 +241,12 @@ class MigrationRecordsManagerTest {
 	}
 
 	@Test
-	void ifTransactionIsContractCallLocalThenDontPerformTraceabilityMigration() {
+	void ifTransactionIsEthereumTxnThenDontPerformTraceabilityMigration() {
 		given(consensusTimeTracker.unlimitedPreceding()).willReturn(true);
 		given(networkCtx.areMigrationRecordsStreamed()).willReturn(false);
 		given(networkCtx.consensusTimeOfLastHandledTxn()).willReturn(now);
 		MigrationRecordsManager.setExpiryJustEnabled(false);
-		given(txnAccessor.getFunction()).willReturn(HederaFunctionality.ContractCallLocal);
+		given(txnAccessor.getFunction()).willReturn(HederaFunctionality.EthereumTransaction);
 		given(transactionContext.accessor()).willReturn(txnAccessor);
 		given(dynamicProperties.isTraceabilityMigrationEnabled()).willReturn(true);
 		accounts.clear();
