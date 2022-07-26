@@ -1,11 +1,6 @@
-package com.hedera.services.grpc.marshalling;
-
-/*-
- * ‌
- * Hedera Services Node
- * ​
- * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2021 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,8 +12,12 @@ package com.hedera.services.grpc.marshalling;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+package com.hedera.services.grpc.marshalling;
+
+import static com.hedera.services.grpc.marshalling.AdjustmentUtils.adjustedChange;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 
 import com.hedera.services.ledger.BalanceChange;
 import com.hedera.services.store.models.Id;
@@ -28,56 +27,51 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import static com.hedera.services.grpc.marshalling.AdjustmentUtils.adjustedChange;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-
 @ExtendWith(MockitoExtension.class)
 class AdjustmentUtilsTest {
-	@Mock
-	private BalanceChangeManager changeManager;
+    @Mock private BalanceChangeManager changeManager;
 
-	@Test
-	void includesNewHtsChange() {
-		final var account = new Id(1, 2, 3);
-		final var denom = new Id(2, 3, 4);
-		final var chargingToken = new Id(3, 4, 5);
-		final var amount = 123L;
-		final var expectedChange = BalanceChange.tokenAdjust(account, denom, amount);
+    @Test
+    void includesNewHtsChange() {
+        final var account = new Id(1, 2, 3);
+        final var denom = new Id(2, 3, 4);
+        final var chargingToken = new Id(3, 4, 5);
+        final var amount = 123L;
+        final var expectedChange = BalanceChange.tokenAdjust(account, denom, amount);
 
-		final var change = adjustedChange(account, chargingToken, denom, amount, changeManager);
+        final var change = adjustedChange(account, chargingToken, denom, amount, changeManager);
 
-		Assertions.assertEquals(expectedChange, change);
-		verify(changeManager).includeChange(expectedChange);
-	}
+        Assertions.assertEquals(expectedChange, change);
+        verify(changeManager).includeChange(expectedChange);
+    }
 
-	@Test
-	void alsoIncludesAnyHtsDebit() {
-		final var account = new Id(1, 2, 3);
-		final var denom = new Id(2, 3, 4);
-		final var chargingToken = new Id(3, 4, 5);
-		final var amount = -123L;
-		final var expectedChange = BalanceChange.tokenAdjust(account, denom, amount);
+    @Test
+    void alsoIncludesAnyHtsDebit() {
+        final var account = new Id(1, 2, 3);
+        final var denom = new Id(2, 3, 4);
+        final var chargingToken = new Id(3, 4, 5);
+        final var amount = -123L;
+        final var expectedChange = BalanceChange.tokenAdjust(account, denom, amount);
 
-		final var change = adjustedChange(account, chargingToken, denom, amount, changeManager);
+        final var change = adjustedChange(account, chargingToken, denom, amount, changeManager);
 
-		Assertions.assertEquals(expectedChange, change);
-		verify(changeManager, never()).changeFor(account, denom);
-		verify(changeManager).includeChange(expectedChange);
-	}
+        Assertions.assertEquals(expectedChange, change);
+        verify(changeManager, never()).changeFor(account, denom);
+        verify(changeManager).includeChange(expectedChange);
+    }
 
-	@Test
-	void includesExemptHtsDebitWhenSelfDenominated() {
-		final var account = new Id(1, 2, 3);
-		final var denom = new Id(2, 3, 4);
-		final var amount = -123L;
-		final var expectedChange = BalanceChange.tokenAdjust(account, denom, amount);
-		expectedChange.setExemptFromCustomFees(true);
+    @Test
+    void includesExemptHtsDebitWhenSelfDenominated() {
+        final var account = new Id(1, 2, 3);
+        final var denom = new Id(2, 3, 4);
+        final var amount = -123L;
+        final var expectedChange = BalanceChange.tokenAdjust(account, denom, amount);
+        expectedChange.setExemptFromCustomFees(true);
 
-		final var change = adjustedChange(account, denom, denom, amount, changeManager);
+        final var change = adjustedChange(account, denom, denom, amount, changeManager);
 
-		Assertions.assertEquals(expectedChange, change);
-		verify(changeManager, never()).changeFor(account, denom);
-		verify(changeManager).includeChange(expectedChange);
-	}
+        Assertions.assertEquals(expectedChange, change);
+        verify(changeManager, never()).changeFor(account, denom);
+        verify(changeManager).includeChange(expectedChange);
+    }
 }

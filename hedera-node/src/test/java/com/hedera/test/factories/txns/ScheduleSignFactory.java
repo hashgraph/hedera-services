@@ -1,11 +1,6 @@
-package com.hedera.test.factories.txns;
-
-/*-
- * ‌
- * Hedera Services Node
- * ​
- * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2020-2021 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,8 +12,8 @@ package com.hedera.test.factories.txns;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+package com.hedera.test.factories.txns;
 
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.ScheduleSignTransactionBody;
@@ -26,34 +21,32 @@ import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
 public class ScheduleSignFactory extends SignedTxnFactory<ScheduleSignFactory> {
-	private ScheduleSignFactory() {
-	}
+    private ScheduleSignFactory() {}
 
-	private ScheduleID id;
+    private ScheduleID id;
 
-	public static ScheduleSignFactory newSignedScheduleSign() {
-		return new ScheduleSignFactory();
-	}
+    public static ScheduleSignFactory newSignedScheduleSign() {
+        return new ScheduleSignFactory();
+    }
 
-	public ScheduleSignFactory signing(ScheduleID id) {
-		this.id = id;
-		return this;
-	}
+    public ScheduleSignFactory signing(ScheduleID id) {
+        this.id = id;
+        return this;
+    }
 
-	@Override
-	protected ScheduleSignFactory self() {
-		return this;
-	}
+    @Override
+    protected ScheduleSignFactory self() {
+        return this;
+    }
 
-	@Override
-	protected long feeFor(Transaction signedTxn, int numPayerKeys) {
-		return 0;
-	}
+    @Override
+    protected long feeFor(Transaction signedTxn, int numPayerKeys) {
+        return 0;
+    }
 
-	@Override
-	protected void customizeTxn(TransactionBody.Builder txn) {
-		var op = ScheduleSignTransactionBody.newBuilder()
-				.setScheduleID(id);
-		txn.setScheduleSign(op);
-	}
+    @Override
+    protected void customizeTxn(TransactionBody.Builder txn) {
+        var op = ScheduleSignTransactionBody.newBuilder().setScheduleID(id);
+        txn.setScheduleSign(op);
+    }
 }

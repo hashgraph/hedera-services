@@ -1,11 +1,6 @@
-package com.hedera.services.bdd.spec.persistence;
-
-/*-
- * ‌
- * Hedera Services Test Clients
- * ​
- * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2020-2021 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,20 +12,20 @@ package com.hedera.services.bdd.spec.persistence;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+package com.hedera.services.bdd.spec.persistence;
 
 import java.util.ArrayList;
 import java.util.List;
 
 public class SpecKeyList {
-	List<SpecKey> listOf = new ArrayList<>();
+    List<SpecKey> listOf = new ArrayList<>();
 
-	public List<SpecKey> getListOf() {
-		return listOf;
-	}
+    public List<SpecKey> getListOf() {
+        return listOf;
+    }
 
-	public void setListOf(List<SpecKey> listOf) {
-		this.listOf = listOf;
-	}
+    public void setListOf(List<SpecKey> listOf) {
+        this.listOf = listOf;
+    }
 }
