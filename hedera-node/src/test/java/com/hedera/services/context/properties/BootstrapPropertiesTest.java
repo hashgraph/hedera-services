@@ -258,7 +258,7 @@ class BootstrapPropertiesTest {
                     entry("tokens.maxNumber", 1_000_000L),
                     entry("topics.maxNumber", 1_000_000L),
                     entry("tokens.maxAggregateRels", 10_000_000L),
-                    entry("prng.isEnabled", true),
+                    entry("utilPrng.isEnabled", true),
                     entry("contracts.sidecars", EnumSet.noneOf(SidecarType.class)),
                     entry("hedera.recordStream.enableTraceabilityMigration", true));
 
