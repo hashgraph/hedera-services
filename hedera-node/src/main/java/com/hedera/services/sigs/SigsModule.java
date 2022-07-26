@@ -1,24 +1,19 @@
-package com.hedera.services.sigs;
-
-/*-
- * ‌
- * Hedera Services Node
- * ​
- * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2021-2022 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *    http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+package com.hedera.services.sigs;
 
 import com.hedera.services.config.FileNumbers;
 import com.hedera.services.context.MutableStateChildren;
@@ -38,66 +33,65 @@ import com.hedera.services.sigs.utils.PrecheckUtils;
 import com.hedera.services.sigs.verification.SyncVerifier;
 import com.hedera.services.state.logic.PayerSigValidity;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.swirlds.common.system.Platform;
 import com.swirlds.common.crypto.TransactionSignature;
+import com.swirlds.common.system.Platform;
 import dagger.Binds;
 import dagger.Module;
 import dagger.Provides;
-
-import javax.inject.Singleton;
 import java.util.function.BiPredicate;
 import java.util.function.Predicate;
+import javax.inject.Singleton;
 
 @Module
 public interface SigsModule {
-	@Binds
-	@Singleton
-	EvmSigsVerifier provideSoliditySigsVerifier(TxnAwareEvmSigsVerifier txnAwareEvmSigsVerifier);
+    @Binds
+    @Singleton
+    EvmSigsVerifier provideSoliditySigsVerifier(TxnAwareEvmSigsVerifier txnAwareEvmSigsVerifier);
 
-	@Binds
-	@Singleton
-	SignatureWaivers provideSignatureWaivers(PolicyBasedSigWaivers policyBasedSigWaivers);
+    @Binds
+    @Singleton
+    SignatureWaivers provideSignatureWaivers(PolicyBasedSigWaivers policyBasedSigWaivers);
 
-	@Provides
-	@Singleton
-	static SyncVerifier provideSyncVerifier(Platform platform) {
-		return platform.getCryptography()::verifySync;
-	}
+    @Provides
+    @Singleton
+    static SyncVerifier provideSyncVerifier(Platform platform) {
+        return platform.getCryptography()::verifySync;
+    }
 
-	@Provides
-	@Singleton
-	static BiPredicate<JKey, TransactionSignature> provideValidityTest(SyncVerifier syncVerifier) {
-		return new OnlyIfSigVerifiableValid(syncVerifier);
-	}
+    @Provides
+    @Singleton
+    static BiPredicate<JKey, TransactionSignature> provideValidityTest(SyncVerifier syncVerifier) {
+        return new OnlyIfSigVerifiableValid(syncVerifier);
+    }
 
-	@Provides
-	@Singleton
-	@WorkingStateSigReqs
-	static SigRequirements provideWorkingStateSigReqs(
-			final FileNumbers fileNumbers,
-			final SignatureWaivers signatureWaivers,
-			final MutableStateChildren workingState
-	) {
-		final var sigMetaLookup = new StateChildrenSigMetadataLookup(
-				fileNumbers, workingState, TokenMetaUtils::signingMetaFrom);
-		return new SigRequirements(sigMetaLookup, signatureWaivers);
-	}
+    @Provides
+    @Singleton
+    @WorkingStateSigReqs
+    static SigRequirements provideWorkingStateSigReqs(
+            final FileNumbers fileNumbers,
+            final SignatureWaivers signatureWaivers,
+            final MutableStateChildren workingState) {
+        final var sigMetaLookup =
+                new StateChildrenSigMetadataLookup(
+                        fileNumbers, workingState, TokenMetaUtils::signingMetaFrom);
+        return new SigRequirements(sigMetaLookup, signatureWaivers);
+    }
 
-	@Provides
-	@Singleton
-	static Predicate<TransactionBody> provideQueryPaymentTest(final NodeInfo nodeInfo) {
-		return PrecheckUtils.queryPaymentTestFor(nodeInfo);
-	}
+    @Provides
+    @Singleton
+    static Predicate<TransactionBody> provideQueryPaymentTest(final NodeInfo nodeInfo) {
+        return PrecheckUtils.queryPaymentTestFor(nodeInfo);
+    }
 
-	@Provides
-	@Singleton
-	static PayerSigValidity providePayerSigValidity() {
-		return HederaKeyActivation::payerSigIsActive;
-	}
+    @Provides
+    @Singleton
+    static PayerSigValidity providePayerSigValidity() {
+        return HederaKeyActivation::payerSigIsActive;
+    }
 
-	@Provides
-	@Singleton
-	static ExpansionHelper provideExpansionHelper() {
-		return HederaToPlatformSigOps::expandIn;
-	}
+    @Provides
+    @Singleton
+    static ExpansionHelper provideExpansionHelper() {
+        return HederaToPlatformSigOps::expandIn;
+    }
 }

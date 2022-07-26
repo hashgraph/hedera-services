@@ -1,33 +1,19 @@
-package com.hedera.services.yahcli.suites;
-
-/*-
- * ‌
- * Hedera Services Test Clients
- * ​
- * Copyright (C) 2018 - 2020 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2021-2022 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *    http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
-
-import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.suites.HapiApiSuite;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.atomic.AtomicLong;
+package com.hedera.services.yahcli.suites;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.customHapiSpec;
 import static com.hedera.services.bdd.spec.persistence.SpecKey.adminKeyFor;
@@ -53,103 +39,114 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_ALREA
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_ALREADY_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_IS_IMMUTABLE;
 
+import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.suites.HapiApiSuite;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicLong;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 public class SchedulesValidationSuite extends HapiApiSuite {
-	private static final Logger log = LogManager.getLogger(SchedulesValidationSuite.class);
+    private static final Logger log = LogManager.getLogger(SchedulesValidationSuite.class);
 
-	private final Map<String, String> specConfig;
+    private final Map<String, String> specConfig;
 
-	public SchedulesValidationSuite(Map<String, String> specConfig) {
-		this.specConfig = specConfig;
-	}
+    public SchedulesValidationSuite(Map<String, String> specConfig) {
+        this.specConfig = specConfig;
+    }
 
-	@Override
-	public List<HapiApiSpec> getSpecsInSuite() {
-		return List.of(new HapiApiSpec[] {
-				validateScheduling(),
-		});
-	}
+    @Override
+    public List<HapiApiSpec> getSpecsInSuite() {
+        return List.of(
+                new HapiApiSpec[] {
+                    validateScheduling(),
+                });
+    }
 
-	private HapiApiSpec validateScheduling() {
-		String inSpecSchedule = "forImmediateExecution";
-		AtomicLong seqNo = new AtomicLong();
+    private HapiApiSpec validateScheduling() {
+        String inSpecSchedule = "forImmediateExecution";
+        AtomicLong seqNo = new AtomicLong();
 
-		return customHapiSpec("ValidateScheduling").withProperties(specConfig)
-				.given(
-						getScheduleInfo(MUTABLE_SCHEDULE)
-								.payingWith(PAYER)
-								.isNotExecuted()
-								.hasEntityMemo("When love with one another so / Inter-animates two souls")
-								.hasAdminKey(MUTABLE_SCHEDULE),
-						getScheduleInfo(IMMUTABLE_SCHEDULE)
-								.payingWith(PAYER)
-								.isNotExecuted()
-								.hasEntityMemo(
-										"That abler soul, which thence doth flow / Defects of loneliness controls"),
-						getTopicInfo(TOPIC).savingSeqNoTo(seqNo::set),
-						scheduleDelete(IMMUTABLE_SCHEDULE)
-								.payingWith(PAYER)
-								.hasKnownStatus(SCHEDULE_IS_IMMUTABLE),
-						logIt(checkBoxed("Schedule creation looks good"))
-				).when(
-						scheduleDelete(MUTABLE_SCHEDULE)
-								.signedBy(PAYER)
-								.payingWith(PAYER)
-								.hasKnownStatus(INVALID_SIGNATURE),
-						scheduleDelete(MUTABLE_SCHEDULE)
-								.signedBy(PAYER, adminKeyFor(MUTABLE_SCHEDULE))
-								.payingWith(PAYER),
-						scheduleSign(MUTABLE_SCHEDULE)
-								.alsoSigningWith(SENDER)
-								.payingWith(PAYER)
-								.hasKnownStatus(SCHEDULE_ALREADY_DELETED),
-						scheduleSign(IMMUTABLE_SCHEDULE)
-								.alsoSigningWith(SENDER)
-								.savingScheduledTxnId()
-								.payingWith(PAYER),
-						scheduleCreate(inSpecSchedule,
-								submitMessageTo(TOPIC).message("We then who are this new soul know")
-						)
-								.payingWith(PAYER)
-								.adminKey(adminKeyFor(MUTABLE_SCHEDULE))
-								.alsoSigningWith(submitKeyFor(TOPIC))
-								.withEntityMemo("Of what we are composed and made")
-								.savingExpectedScheduledTxnId(),
-						scheduleCreate(inSpecSchedule,
-								submitMessageTo(TOPIC).message("We then who are this new soul know")
-						)
-								.payingWith(PAYER)
-								.designatingPayer(PAYER)
-								.adminKey(adminKeyFor(MUTABLE_SCHEDULE))
-								.alsoSigningWith(submitKeyFor(TOPIC))
-								.withEntityMemo("Of what we are composed and made")
-								.hasKnownStatus(IDENTICAL_SCHEDULE_ALREADY_CREATED),
-						scheduleDelete(inSpecSchedule)
-								.signedBy(PAYER, adminKeyFor(MUTABLE_SCHEDULE))
-								.payingWith(PAYER)
-								.hasKnownStatus(SCHEDULE_ALREADY_EXECUTED),
-						logIt(checkBoxed("Schedule management and execution look good"))
-				).then(
-						getTopicInfo(TOPIC)
-								.payingWith(PAYER)
-								.hasSeqNo(() -> seqNo.get() + 1)
-								.logged(),
-						getScheduleInfo(inSpecSchedule)
-								.payingWith(PAYER)
-								.isExecuted(),
-						getTxnRecord(correspondingScheduledTxnId(IMMUTABLE_SCHEDULE))
-								.payingWith(PAYER)
-								.logged()
-								.assertingNothingAboutHashes(),
-						getTxnRecord(correspondingScheduledTxnId(inSpecSchedule))
-								.payingWith(PAYER)
-								.logged()
-								.assertingNothingAboutHashes(),
-						logIt(checkBoxed("Schedule records look good"))
-				);
-	}
+        return customHapiSpec("ValidateScheduling")
+                .withProperties(specConfig)
+                .given(
+                        getScheduleInfo(MUTABLE_SCHEDULE)
+                                .payingWith(PAYER)
+                                .isNotExecuted()
+                                .hasEntityMemo(
+                                        "When love with one another so / Inter-animates two souls")
+                                .hasAdminKey(MUTABLE_SCHEDULE),
+                        getScheduleInfo(IMMUTABLE_SCHEDULE)
+                                .payingWith(PAYER)
+                                .isNotExecuted()
+                                .hasEntityMemo(
+                                        "That abler soul, which thence doth flow / Defects of"
+                                                + " loneliness controls"),
+                        getTopicInfo(TOPIC).savingSeqNoTo(seqNo::set),
+                        scheduleDelete(IMMUTABLE_SCHEDULE)
+                                .payingWith(PAYER)
+                                .hasKnownStatus(SCHEDULE_IS_IMMUTABLE),
+                        logIt(checkBoxed("Schedule creation looks good")))
+                .when(
+                        scheduleDelete(MUTABLE_SCHEDULE)
+                                .signedBy(PAYER)
+                                .payingWith(PAYER)
+                                .hasKnownStatus(INVALID_SIGNATURE),
+                        scheduleDelete(MUTABLE_SCHEDULE)
+                                .signedBy(PAYER, adminKeyFor(MUTABLE_SCHEDULE))
+                                .payingWith(PAYER),
+                        scheduleSign(MUTABLE_SCHEDULE)
+                                .alsoSigningWith(SENDER)
+                                .payingWith(PAYER)
+                                .hasKnownStatus(SCHEDULE_ALREADY_DELETED),
+                        scheduleSign(IMMUTABLE_SCHEDULE)
+                                .alsoSigningWith(SENDER)
+                                .savingScheduledTxnId()
+                                .payingWith(PAYER),
+                        scheduleCreate(
+                                        inSpecSchedule,
+                                        submitMessageTo(TOPIC)
+                                                .message("We then who are this new soul know"))
+                                .payingWith(PAYER)
+                                .adminKey(adminKeyFor(MUTABLE_SCHEDULE))
+                                .alsoSigningWith(submitKeyFor(TOPIC))
+                                .withEntityMemo("Of what we are composed and made")
+                                .savingExpectedScheduledTxnId(),
+                        scheduleCreate(
+                                        inSpecSchedule,
+                                        submitMessageTo(TOPIC)
+                                                .message("We then who are this new soul know"))
+                                .payingWith(PAYER)
+                                .designatingPayer(PAYER)
+                                .adminKey(adminKeyFor(MUTABLE_SCHEDULE))
+                                .alsoSigningWith(submitKeyFor(TOPIC))
+                                .withEntityMemo("Of what we are composed and made")
+                                .hasKnownStatus(IDENTICAL_SCHEDULE_ALREADY_CREATED),
+                        scheduleDelete(inSpecSchedule)
+                                .signedBy(PAYER, adminKeyFor(MUTABLE_SCHEDULE))
+                                .payingWith(PAYER)
+                                .hasKnownStatus(SCHEDULE_ALREADY_EXECUTED),
+                        logIt(checkBoxed("Schedule management and execution look good")))
+                .then(
+                        getTopicInfo(TOPIC)
+                                .payingWith(PAYER)
+                                .hasSeqNo(() -> seqNo.get() + 1)
+                                .logged(),
+                        getScheduleInfo(inSpecSchedule).payingWith(PAYER).isExecuted(),
+                        getTxnRecord(correspondingScheduledTxnId(IMMUTABLE_SCHEDULE))
+                                .payingWith(PAYER)
+                                .logged()
+                                .assertingNothingAboutHashes(),
+                        getTxnRecord(correspondingScheduledTxnId(inSpecSchedule))
+                                .payingWith(PAYER)
+                                .logged()
+                                .assertingNothingAboutHashes(),
+                        logIt(checkBoxed("Schedule records look good")));
+    }
 
-	@Override
-	protected Logger getResultsLogger() {
-		return log;
-	}
+    @Override
+    protected Logger getResultsLogger() {
+        return log;
+    }
 }
