@@ -40,15 +40,22 @@ import com.swirlds.virtualmap.VirtualMap;
 import com.swirlds.virtualmap.internal.cache.VirtualNodeCache;
 import com.swirlds.virtualmap.internal.merkle.VirtualMapState;
 import com.swirlds.virtualmap.internal.merkle.VirtualRootNode;
+import java.time.Instant;
 
 public class Constructables {
 
     public static final int ADDEND = 17;
     public static final int MULTIPLIER = 31;
     public static final long SEED = 1_234_567L;
+    public static final long PRETEND_FEE = 2L;
+    public static final long PRETEND_AMOUNT = 1L;
+    public static final long SECS_PER_DAY = 24 * 60 * 60;
+    // Midnight of Jan 1, 1971
+    public static final Instant SOME_TIME = Instant.ofEpochSecond(31536000L);
     public static final AccountID FUNDING_ID = accountIdWith(98L);
     public static final AccountID STAKING_REWARD_ID = accountIdWith(800L);
     public static final int FIRST_USER_I = 1001;
+    public static final int FIRST_NODE_I = 3;
 
     private Constructables() {
         throw new UnsupportedOperationException();

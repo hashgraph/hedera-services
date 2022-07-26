@@ -1,11 +1,19 @@
 package com.hedera.services.ledger;
 
+import static com.hedera.services.ledger.properties.AccountProperty.BALANCE;
+import static com.hedera.services.ledger.properties.AccountProperty.STAKED_ID;
+import static com.hedera.services.setup.Constructables.FIRST_NODE_I;
+import static com.hedera.services.setup.Constructables.FIRST_USER_I;
+import static com.hedera.services.setup.Constructables.FUNDING_ID;
+import static com.hedera.services.setup.Constructables.PRETEND_AMOUNT;
+import static com.hedera.services.setup.Constructables.PRETEND_FEE;
+import static com.hedera.services.setup.Constructables.SECS_PER_DAY;
+import static com.hedera.services.setup.Constructables.SOME_TIME;
 import static com.hedera.services.setup.InfrastructureInitializer.initializeStakeableAccounts;
 import static com.hedera.services.setup.InfrastructureManager.loadOrCreateBundle;
 import static com.hedera.services.setup.InfrastructureType.ACCOUNTS_MM;
 import static com.hedera.services.setup.InfrastructureType.STAKING_INFOS_MM;
 
-import com.hedera.services.ledger.accounts.staking.EndOfStakingPeriodCalculator;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.setup.Constructables;
 import com.hedera.services.setup.InfrastructureBundle;
@@ -31,17 +39,24 @@ import org.openjdk.jmh.annotations.Warmup;
 @Measurement(iterations = 3, time = 30)
 public class StakingActivityBench {
     private int i;
-    private int n;
+    private long n;
+    private int round;
     private AccountID[] ids;
 
-    @Param("39")
-    int nodeIds;
+    @Param("3")
+    int numNodes;
 
-    @Param("10000")
+    @Param("1000")
     int stakeableAccounts;
 
     @Param("10000")
     int actionsPerRound;
+
+    @Param("10")
+    int roundsPerPeriod;
+
+    @Param("5")
+    int meanDaysBeforeNewStakePeriodStart;
 
     @Param("0.50")
     double stakeToNodeProb;
@@ -49,8 +64,9 @@ public class StakingActivityBench {
     @Param("0.40")
     double stakeToAccountProb;
 
+    private int callsBetweenStakingChange;
+    private StakingActivityApp app;
     private InfrastructureBundle bundle;
-    private EndOfStakingPeriodCalculator endOfPeriodCalcs;
     private TransactionalLedger<AccountID, AccountProperty, MerkleAccount> ledger;
 
     @Setup(Level.Trial)
@@ -59,39 +75,94 @@ public class StakingActivityBench {
         Constructables.registerForAccounts();
         Constructables.registerForStakingInfo();
 
-        final var app = DaggerStakingActivityApp.builder().bundle(bundle).build();
-
         bundle = loadOrCreateBundle(activeConfig(), requiredInfra());
+        app = DaggerStakingActivityApp.builder().bundle(bundle).build();
         ledger = app.stakingLedger();
-        endOfPeriodCalcs = app.endOfPeriodCalcs();
 
         ids = new AccountID[stakeableAccounts + 1001];
         for (int j = 1; j < stakeableAccounts + 1001; j++) {
             ids[j] = AccountID.newBuilder().setAccountNum(j).build();
         }
-        i = n = 0;
+        i = 0;
+        n = 0;
 
         initializeStakeableAccounts(
                 new SplittableRandom(Constructables.SEED),
                 activeConfig(),
                 app.backingAccounts(),
-                app.stakingInfos(),
+                app.stakingInfos().get(),
                 ledger);
+
+        app.networkCtx().get().setStakingRewardsActivated(true);
+
+        final var actionsPerDay = (long) actionsPerRound * roundsPerPeriod;
+        final var avgDailyActionsPerAccount = actionsPerDay / stakeableAccounts;
+        callsBetweenStakingChange =
+                (int) (meanDaysBeforeNewStakePeriodStart * avgDailyActionsPerAccount);
+        System.out.println(
+                "A staking change will occur every ~"
+                        + callsBetweenStakingChange
+                        + " benchmark invocations");
     }
 
     @Setup(Level.Invocation)
     public void simulateRoundBoundary() {
         if (n > 0 && n % actionsPerRound == 0) {
             bundle.newRound();
+            round++;
+            if (round % roundsPerPeriod == 0) {
+                final var period = round / roundsPerPeriod;
+                final var now = SOME_TIME.plusSeconds(period * SECS_PER_DAY);
+                app.txnCtx().resetFor(null, now, 0L);
+                app.endOfPeriodCalcs().updateNodes(now);
+                System.out.println("--- END OF PERIOD @ " + now + " ---");
+                System.out.println(app.stakingInfos().get());
+            }
         }
     }
 
     @Benchmark
     public void stakingActivities() {
+        advanceI();
         ledger.begin();
+        // Also the staker in the case of a changed staking election
+        final var payerId = advanceToNextId();
+        // Also the stakee in the case of a changed staking election
+        final var countpartyId = advanceToNextId();
+        final var nodeI = Math.floorMod(i, numNodes);
+        ledger.set(FUNDING_ID, BALANCE, (long) ledger.get(FUNDING_ID, BALANCE) + PRETEND_FEE / 2);
+        final var nodeId = ids[FIRST_NODE_I + nodeI];
+        ledger.set(nodeId, BALANCE, (long) ledger.get(nodeId, BALANCE) + PRETEND_FEE / 2);
+        if (n % callsBetweenStakingChange == 0) {
+            ledger.set(payerId, BALANCE, (long) ledger.get(payerId, BALANCE) - PRETEND_FEE);
+            if (n % 3 == 0) {
+                if (!payerId.equals(countpartyId)) {
+                    ledger.set(payerId, STAKED_ID, countpartyId.getAccountNum());
+                }
+            } else {
+                ledger.set(payerId, STAKED_ID, -nodeI - 1L);
+            }
+        } else {
+            ledger.set(
+                    payerId,
+                    BALANCE,
+                    (long) ledger.get(payerId, BALANCE) - PRETEND_FEE - PRETEND_AMOUNT);
+            ledger.set(
+                    countpartyId,
+                    BALANCE,
+                    (long) ledger.get(countpartyId, BALANCE) + PRETEND_AMOUNT);
+        }
         ledger.commit();
 
         n++;
+    }
+
+    private AccountID advanceToNextId() {
+        return ids[FIRST_USER_I + Math.floorMod(i, stakeableAccounts)];
+    }
+
+    private void advanceI() {
+        i = i * Constructables.MULTIPLIER + Constructables.ADDEND;
     }
 
     // --- Helpers ---
@@ -100,7 +171,7 @@ public class StakingActivityBench {
                 "stakeableAccounts", stakeableAccounts,
                 "stakeToNodeProb", stakeToNodeProb,
                 "stakeToAccountProb", stakeToAccountProb,
-                "nodeIds", nodeIds);
+                "nodeIds", numNodes);
     }
 
     private List<InfrastructureType> requiredInfra() {

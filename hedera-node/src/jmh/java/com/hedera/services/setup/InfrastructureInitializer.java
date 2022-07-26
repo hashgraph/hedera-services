@@ -71,15 +71,21 @@ public class InfrastructureInitializer {
         final var stakeToAccountProb = (double) config.get("stakeToAccountProb");
         final var stakeProb = stakeToNodeProb + stakeToAccountProb;
         final var initialBalance = 1_000 * 100_000_000L;
+        final var firstNodeNum = (long) Constructables.FIRST_NODE_I;
         final var firstAccountNum = (long) Constructables.FIRST_USER_I;
 
+        for (int i = 0; i < numNodeIds; i++) {
+            final var account = accountWith(0);
+            final var num = firstNodeNum + i;
+            backingAccounts.put(accountIdWith(num), account);
+        }
         for (int i = 0; i < numAccounts; i++) {
             final var account = accountWith(initialBalance);
             final var num = firstAccountNum + i;
             backingAccounts.put(accountIdWith(num), account);
         }
         backingAccounts.put(FUNDING_ID, accountWith(0L));
-        backingAccounts.put(STAKING_REWARD_ID, accountWith(250_000_000L * 100_000_000L));
+        backingAccounts.put(STAKING_REWARD_ID, accountWith(0L));
 
         for (int i = 0; i < numNodeIds; i++) {
             final var stakingInfo = new MerkleStakingInfo();
@@ -103,6 +109,8 @@ public class InfrastructureInitializer {
             }
         }
         stakingLedger.commit();
+
+        backingAccounts.put(STAKING_REWARD_ID, accountWith(250_000_000L * 100_000_000L));
     }
 
     private static void initSomeAccounts(

@@ -51,4 +51,8 @@ public class MockAccountNumbers extends AccountNumbers {
     return (num == 2) || (num == 50);
   }
 
+  @Override
+  public long stakingRewardAccount() {
+    return 800;
+  }
 }

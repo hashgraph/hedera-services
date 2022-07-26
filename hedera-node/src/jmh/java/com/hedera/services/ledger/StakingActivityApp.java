@@ -1,5 +1,6 @@
 package com.hedera.services.ledger;
 
+import com.hedera.services.context.TransactionContext;
 import com.hedera.services.ledger.accounts.staking.EndOfStakingPeriodCalculator;
 import com.hedera.services.ledger.backing.BackingStore;
 import com.hedera.services.ledger.properties.AccountProperty;
@@ -9,6 +10,7 @@ import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.merkle.MerkleStakingInfo;
 import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.Transaction;
 import com.swirlds.merkle.map.MerkleMap;
 import dagger.BindsInstance;
 import dagger.Component;
@@ -18,10 +20,11 @@ import javax.inject.Singleton;
 @Singleton
 @Component(modules = StakingActivityModule.class)
 public interface StakingActivityApp {
-  BackingStore<AccountID, MerkleAccount> backingAccounts();
+  TransactionContext txnCtx();
   EndOfStakingPeriodCalculator endOfPeriodCalcs();
   Supplier<MerkleNetworkContext> networkCtx();
-  MerkleMap<EntityNum, MerkleStakingInfo> stakingInfos();
+  BackingStore<AccountID, MerkleAccount> backingAccounts();
+  Supplier<MerkleMap<EntityNum, MerkleStakingInfo>> stakingInfos();
   TransactionalLedger<AccountID, AccountProperty, MerkleAccount> stakingLedger();
 
   @Component.Builder
