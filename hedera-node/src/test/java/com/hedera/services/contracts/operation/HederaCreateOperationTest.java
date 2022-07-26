@@ -40,6 +40,7 @@ package com.hedera.services.contracts.operation;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.BDDMockito.given;
 
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.contracts.gascalculator.StorageGasCalculator;
 import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.state.EntityCreator;
@@ -70,6 +71,7 @@ class HederaCreateOperationTest {
     @Mock private EntityCreator creator;
     @Mock private RecordsHistorian recordsHistorian;
     @Mock private StorageGasCalculator storageGasCalculator;
+    @Mock private GlobalDynamicProperties dynamicProperties;
 
     private HederaCreateOperation subject;
 
@@ -81,7 +83,8 @@ class HederaCreateOperationTest {
                         creator,
                         syntheticTxnFactory,
                         recordsHistorian,
-                        storageGasCalculator);
+                        storageGasCalculator,
+                        dynamicProperties);
     }
 
     @Test

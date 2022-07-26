@@ -22,6 +22,7 @@ import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.EvmFnResult;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.state.submerkle.FcAssessedCustomFee;
+import com.hedera.services.stream.proto.TransactionSidecarRecord;
 import com.hedera.services.utils.accessors.SignedTxnAccessor;
 import com.hedera.services.utils.accessors.SwirldsTxnAccessor;
 import com.hedera.services.utils.accessors.TxnAccessor;
@@ -133,6 +134,13 @@ public interface TransactionContext {
     SwirldsTxnAccessor swirldsTxnAccessor();
 
     /**
+     * Gets the list of sidecars that the current top-level txn produced.
+     *
+     * @return list of all the sidecar record for the current txn.
+     */
+    List<TransactionSidecarRecord.Builder> sidecars();
+
+    /**
      * Set a new status for the current txn's processing.
      *
      * @param status the new status of processing the current txn.
@@ -189,6 +197,14 @@ public interface TransactionContext {
     void setCallResult(EvmFnResult result);
 
     /**
+     * Record that the current transaction produced sidecar records which will be externalized in
+     * sidecar files in the record stream.
+     *
+     * @param sidecar a single sidecar record associated with the current top-level txn
+     */
+    void addSidecarRecord(TransactionSidecarRecord.Builder sidecar);
+
+    /**
      * Add call context information to an already set call result
      *
      * @param callContext the context to add to the call result
@@ -207,7 +223,7 @@ public interface TransactionContext {
      *
      * @param amount the extra amount deducted from the current txn's payer.
      */
-    void addNonThresholdFeeChargedToPayer(long amount);
+    void addFeeChargedToPayer(long amount);
 
     /**
      * Record that the payer of the current txn is known to have an active signature (that is, the

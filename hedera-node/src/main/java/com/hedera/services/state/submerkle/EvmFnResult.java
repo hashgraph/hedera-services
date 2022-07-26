@@ -27,11 +27,8 @@ import com.google.protobuf.ByteString;
 import com.google.protobuf.BytesValue;
 import com.hedera.services.contracts.execution.TransactionProcessingResult;
 import com.hedera.services.ethereum.EthTxData;
-import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import com.hederahashgraph.api.proto.java.ContractID;
-import com.hederahashgraph.api.proto.java.ContractStateChange;
-import com.hederahashgraph.api.proto.java.StorageChange;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
@@ -40,10 +37,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
-import java.util.TreeMap;
-import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.log.Log;
@@ -55,7 +49,8 @@ public class EvmFnResult implements SelfSerializable {
     static final int RELEASE_0240_VERSION = 3;
     static final int RELEASE_0250_VERSION = 4;
     static final int RELEASE_0260_VERSION = 5;
-    static final int CURRENT_VERSION = RELEASE_0260_VERSION;
+    static final int RELEASE_0290_VERSION = 6;
+    static final int CURRENT_VERSION = RELEASE_0290_VERSION;
 
     static final long RUNTIME_CONSTRUCTABLE_ID = 0x2055c5c03ff84eb4L;
 
@@ -74,7 +69,6 @@ public class EvmFnResult implements SelfSerializable {
     private EntityId contractId;
     private List<EntityId> createdContractIds = Collections.emptyList();
     private List<EvmLog> logs = Collections.emptyList();
-    private Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> stateChanges = Collections.emptyMap();
     private long gas;
     private long amount;
     private byte[] functionParameters = EMPTY;
@@ -105,7 +99,6 @@ public class EvmFnResult implements SelfSerializable {
                     result.getGasUsed(),
                     result.getOutput(),
                     recipient,
-                    result.getStateChanges(),
                     serializableIdsFrom(result.getCreatedContracts()),
                     evmAddress);
         } else {
@@ -113,7 +106,7 @@ public class EvmFnResult implements SelfSerializable {
                     result.getRevertReason()
                             .map(Object::toString)
                             .orElse(result.getHaltReason().map(Object::toString).orElse(null));
-            return failure(result.getGasUsed(), error, result.getStateChanges());
+            return failure(result.getGasUsed(), error);
         }
     }
 
@@ -126,7 +119,6 @@ public class EvmFnResult implements SelfSerializable {
             final List<EvmLog> logs,
             final List<EntityId> createdContractIds,
             final byte[] evmAddress,
-            final Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> stateChanges,
             final long gas,
             final long amount,
             final byte[] functionParameters,
@@ -139,7 +131,6 @@ public class EvmFnResult implements SelfSerializable {
         this.logs = logs;
         this.createdContractIds = createdContractIds;
         this.evmAddress = evmAddress;
-        this.stateChanges = stateChanges;
         this.gas = gas;
         this.amount = amount;
         this.functionParameters = functionParameters;
@@ -174,22 +165,21 @@ public class EvmFnResult implements SelfSerializable {
         // Added in 0.23
         evmAddress = in.readByteArray(MAX_ADDRESS_BYTES);
         // Added in 0.24
-        int numAffectedContracts = in.readInt();
-        final Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> state = new TreeMap<>();
-        while (numAffectedContracts-- > 0) {
-            final byte[] contractAddress = in.readByteArray(MAX_ADDRESS_BYTES);
-            int numAffectedSlots = in.readInt();
-            final Map<Bytes, Pair<Bytes, Bytes>> storage = new TreeMap<>();
-            state.put(Address.fromHexString(hex(contractAddress)), storage);
-            while (numAffectedSlots-- > 0) {
-                final var slot = Bytes.wrap(in.readByteArray(32));
-                final var left = Bytes.wrap(in.readByteArray(32));
-                final var hasRight = in.readBoolean();
-                final var right = hasRight ? Bytes.wrap(in.readByteArray(32)) : null;
-                storage.put(slot, Pair.of(left, right));
+        if (version < RELEASE_0290_VERSION) {
+            int numAffectedContracts = in.readInt();
+            while (numAffectedContracts-- > 0) {
+                in.readByteArray(MAX_ADDRESS_BYTES);
+                int numAffectedSlots = in.readInt();
+                while (numAffectedSlots-- > 0) {
+                    in.readByteArray(32);
+                    in.readByteArray(32);
+                    final var hasRight = in.readBoolean();
+                    if (hasRight) {
+                        in.readByteArray(32);
+                    }
+                }
             }
         }
-        stateChanges = state;
         if (version >= RELEASE_0250_VERSION) {
             gas = in.readLong();
             amount = in.readLong();
@@ -210,23 +200,6 @@ public class EvmFnResult implements SelfSerializable {
         out.writeSerializableList(logs, true, true);
         out.writeSerializableList(createdContractIds, true, true);
         out.writeByteArray(evmAddress);
-        out.writeInt(stateChanges.size());
-        for (Map.Entry<Address, Map<Bytes, Pair<Bytes, Bytes>>> entry : stateChanges.entrySet()) {
-            out.writeByteArray(entry.getKey().trimLeadingZeros().toArrayUnsafe());
-            Map<Bytes, Pair<Bytes, Bytes>> slots = entry.getValue();
-            out.writeInt(slots.size());
-            for (var slot : slots.entrySet()) {
-                out.writeByteArray(slot.getKey().trimLeadingZeros().toArrayUnsafe());
-                out.writeByteArray(slot.getValue().getLeft().trimLeadingZeros().toArrayUnsafe());
-                Bytes right = slot.getValue().getRight();
-                if (right == null) {
-                    out.writeBoolean(false);
-                } else {
-                    out.writeBoolean(true);
-                    out.writeByteArray(right.trimLeadingZeros().toArrayUnsafe());
-                }
-            }
-        }
         out.writeLong(gas);
         out.writeLong(amount);
         out.writeByteArray(functionParameters);
@@ -251,7 +224,6 @@ public class EvmFnResult implements SelfSerializable {
                 && Objects.equals(logs, that.logs)
                 && Objects.equals(createdContractIds, that.createdContractIds)
                 && Arrays.equals(evmAddress, that.evmAddress)
-                && this.stateChanges.equals(that.stateChanges)
                 && gas == that.gas
                 && amount == that.amount
                 && Arrays.equals(functionParameters, that.functionParameters)
@@ -276,7 +248,6 @@ public class EvmFnResult implements SelfSerializable {
                 .add("contractId", contractId)
                 .add("createdContractIds", createdContractIds)
                 .add("logs", logs)
-                .add("stateChanges", stateChanges)
                 .add("evmAddress", hex(evmAddress))
                 .add("gas", gas)
                 .add("amount", amount)
@@ -318,10 +289,6 @@ public class EvmFnResult implements SelfSerializable {
         return createdContractIds;
     }
 
-    public Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> getStateChanges() {
-        return stateChanges;
-    }
-
     public byte[] getEvmAddress() {
         return evmAddress;
     }
@@ -344,10 +311,6 @@ public class EvmFnResult implements SelfSerializable {
 
     public void setEvmAddress(final byte[] evmAddress) {
         this.evmAddress = evmAddress;
-    }
-
-    public void setStateChanges(final Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> stateChanges) {
-        this.stateChanges = stateChanges;
     }
 
     public void setGas(final long gas) {
@@ -394,17 +357,6 @@ public class EvmFnResult implements SelfSerializable {
         if (evmAddress.length > 0) {
             grpc.setEvmAddress(BytesValue.newBuilder().setValue(ByteString.copyFrom(evmAddress)));
         }
-        stateChanges.forEach(
-                (address, slotAccesses) -> {
-                    final var builder =
-                            ContractStateChange.newBuilder()
-                                    .setContractID(
-                                            EntityIdUtils.contractIdFromEvmAddress(
-                                                    address.toArrayUnsafe()));
-                    slotAccesses.forEach(
-                            (slot, access) -> builder.addStorageChanges(trimmedGrpc(slot, access)));
-                    grpc.addStateChanges(builder);
-                });
         grpc.setGas(gas);
         grpc.setAmount(amount);
         grpc.setFunctionParameters(ByteString.copyFrom(functionParameters));
@@ -412,23 +364,6 @@ public class EvmFnResult implements SelfSerializable {
             grpc.setSenderId(senderId.toGrpcAccountId());
         }
         return grpc.build();
-    }
-
-    static StorageChange.Builder trimmedGrpc(final Bytes slot, final Pair<Bytes, Bytes> access) {
-        final var grpc =
-                StorageChange.newBuilder()
-                        .setSlot(ByteString.copyFrom(slot.trimLeadingZeros().toArrayUnsafe()))
-                        .setValueRead(
-                                ByteString.copyFrom(
-                                        access.getLeft().trimLeadingZeros().toArrayUnsafe()));
-        if (access.getRight() != null) {
-            grpc.setValueWritten(
-                    BytesValue.newBuilder()
-                            .setValue(
-                                    ByteString.copyFrom(
-                                            access.getRight().trimLeadingZeros().toArrayUnsafe())));
-        }
-        return grpc;
     }
 
     private static byte[] bloomFor(final List<Log> logs) {
@@ -453,7 +388,6 @@ public class EvmFnResult implements SelfSerializable {
             final long gasUsed,
             final Bytes output,
             final Address recipient,
-            final Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> stateChanges,
             final List<EntityId> createdContractIds,
             final byte[] evmAddress) {
         return new EvmFnResult(
@@ -465,17 +399,13 @@ public class EvmFnResult implements SelfSerializable {
                 EvmLog.fromBesu(logs),
                 createdContractIds,
                 evmAddress,
-                stateChanges,
                 0L,
                 0L,
                 EMPTY,
                 null);
     }
 
-    private static EvmFnResult failure(
-            final long gasUsed,
-            final String error,
-            final Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> stateChanges) {
+    private static EvmFnResult failure(final long gasUsed, final String error) {
         return new EvmFnResult(
                 null,
                 EMPTY,
@@ -485,7 +415,6 @@ public class EvmFnResult implements SelfSerializable {
                 Collections.emptyList(),
                 Collections.emptyList(),
                 EMPTY,
-                stateChanges,
                 0L,
                 0L,
                 EMPTY,

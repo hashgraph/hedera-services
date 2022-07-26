@@ -22,6 +22,7 @@ import com.esaulpaugh.headlong.util.Integers;
 import com.hedera.services.config.HederaNumbers;
 import com.hedera.services.context.annotations.CompositeProps;
 import com.hedera.services.fees.calculation.CongestionMultipliers;
+import com.hedera.services.stream.proto.SidecarType;
 import com.hedera.services.sysfiles.domain.KnownBlockValues;
 import com.hedera.services.sysfiles.domain.throttling.ThrottleReqOpsScaleFactor;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -110,7 +111,6 @@ public class GlobalDynamicProperties {
     private boolean exportPrecompileResults;
     private boolean create2Enabled;
     private boolean redirectTokenCalls;
-    private boolean enableTraceability;
     private boolean enableAllowances;
     private boolean limitTokenAssociations;
     private boolean enableHTSPrecompileCreate;
@@ -135,6 +135,7 @@ public class GlobalDynamicProperties {
     private long maxNumTopics;
     private long maxNumSchedules;
     private boolean utilPrngEnabled;
+    private Set<SidecarType> enabledSidecars;
 
     @Inject
     public GlobalDynamicProperties(
@@ -236,7 +237,7 @@ public class GlobalDynamicProperties {
                 properties.getBooleanProperty("contracts.precompile.exportRecordResults");
         create2Enabled = properties.getBooleanProperty("contracts.allowCreate2");
         redirectTokenCalls = properties.getBooleanProperty("contracts.redirectTokenCalls");
-        enableTraceability = properties.getBooleanProperty("contracts.enableTraceability");
+        enabledSidecars = properties.getSidecarsProperty("contracts.sidecars");
         enableAllowances = properties.getBooleanProperty("hedera.allowances.isEnabled");
         final var autoRenewTargetTypes = properties.getTypesProperty("autoRenew.targetTypes");
         expireAccounts = autoRenewTargetTypes.contains(ACCOUNT);
@@ -542,10 +543,6 @@ public class GlobalDynamicProperties {
         return exportPrecompileResults;
     }
 
-    public boolean shouldEnableTraceability() {
-        return enableTraceability;
-    }
-
     public boolean isCreate2Enabled() {
         return create2Enabled;
     }
@@ -656,5 +653,9 @@ public class GlobalDynamicProperties {
 
     public long maxNumTokenRels() {
         return maxNumTokenRels;
+    }
+
+    public Set<SidecarType> enabledSidecars() {
+        return enabledSidecars;
     }
 }

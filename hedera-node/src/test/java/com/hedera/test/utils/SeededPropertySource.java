@@ -109,16 +109,26 @@ public class SeededPropertySource {
     }
 
     public EvmFnResult nextEvmResult() {
+        final var contractId = nextEntityId();
+        final var result = nextBytes(32);
+        final var error = nextString(64);
+        final var bloom = nextBytes(256);
+        final var gasUsed = nextUnsignedLong();
+        final var logs = nextEvmLogs(3);
+        final var createdContractIds = nextEntityIds(2);
+        final var evmAddress = nextBytes(20);
+        // call nextStateChanges(), even though state changes are not part of EvmFnResult anymore,
+        // in order to advance SEEDED_RANDOM and get correct values for subsequent fields
+        nextStateChanges(2, 5);
         return new EvmFnResult(
-                nextEntityId(),
-                nextBytes(32),
-                nextString(64),
-                nextBytes(256),
-                nextUnsignedLong(),
-                nextEvmLogs(3),
-                nextEntityIds(2),
-                nextBytes(20),
-                nextStateChanges(2, 5),
+                contractId,
+                result,
+                error,
+                bloom,
+                gasUsed,
+                logs,
+                createdContractIds,
+                evmAddress,
                 nextUnsignedLong(),
                 nextUnsignedLong(),
                 nextBytes(128),
@@ -683,16 +693,24 @@ public class SeededPropertySource {
     }
 
     public EvmFnResult nextEvmFnResult() {
+        final var contractId = nextEntityId();
+        final var result = nextBytes(128);
+        final var error = nextString(32);
+        final var bloom = nextBytes(32);
+        final var gasUsed = nextUnsignedLong();
+        final var evmAddress = nextBytes(20);
+        // call nextStateChanges(), even though state changes are not part of EvmFnResult anymore,
+        // in order to advance SEEDED_RANDOM and get correct values for subsequent fields
+        nextStateChanges(5, 10);
         return new EvmFnResult(
-                nextEntityId(),
-                nextBytes(128),
-                nextString(32),
-                nextBytes(32),
-                nextUnsignedLong(),
+                contractId,
+                result,
+                error,
+                bloom,
+                gasUsed,
                 List.of(),
                 List.of(),
-                nextBytes(20),
-                nextStateChanges(5, 10),
+                evmAddress,
                 nextUnsignedLong(),
                 nextUnsignedLong(),
                 nextBytes(64),

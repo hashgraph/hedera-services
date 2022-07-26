@@ -15,7 +15,6 @@
  */
 package com.hedera.test.utils;
 
-import static com.hedera.services.utils.EntityIdUtils.asEvmAddress;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.google.protobuf.ByteString;
@@ -23,7 +22,6 @@ import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.EvmFnResult;
 import com.hedera.services.state.submerkle.EvmLog;
 import com.hedera.services.sysfiles.serdes.ThrottlesJsonToProtoSerde;
-import com.hedera.services.utils.BytesComparator;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import com.hederahashgraph.api.proto.java.ContractLoginfo;
 import com.hederahashgraph.api.proto.java.ThrottleDefinitions;
@@ -37,12 +35,7 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
-import java.util.TreeMap;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
-import org.apache.commons.lang3.tuple.Pair;
-import org.apache.tuweni.bytes.Bytes;
-import org.hyperledger.besu.datatypes.Address;
 
 public class SerdeUtils {
     public static byte[] serOutcome(ThrowingConsumer<DataOutputStream> serializer)
@@ -100,44 +93,6 @@ public class SerdeUtils {
                 that.hasEvmAddress()
                         ? that.getEvmAddress().getValue().toByteArray()
                         : EvmFnResult.EMPTY,
-                that.getStateChangesList().stream()
-                        .collect(
-                                Collectors.toMap(
-                                        csc ->
-                                                Address.wrap(
-                                                        Bytes.wrap(
-                                                                asEvmAddress(csc.getContractID()))),
-                                        csc ->
-                                                csc.getStorageChangesList().stream()
-                                                        .collect(
-                                                                Collectors.toMap(
-                                                                        sc ->
-                                                                                Bytes.wrap(
-                                                                                                sc.getSlot()
-                                                                                                        .toByteArray())
-                                                                                        .trimLeadingZeros(),
-                                                                        sc ->
-                                                                                Pair.of(
-                                                                                        Bytes.wrap(
-                                                                                                        sc.getValueRead()
-                                                                                                                .toByteArray())
-                                                                                                .trimLeadingZeros(),
-                                                                                        !sc
-                                                                                                        .hasValueWritten()
-                                                                                                ? null
-                                                                                                : Bytes
-                                                                                                        .wrap(
-                                                                                                                sc.getValueWritten()
-                                                                                                                        .getValue()
-                                                                                                                        .toByteArray())
-                                                                                                        .trimLeadingZeros()),
-                                                                        (l, r) -> l,
-                                                                        () ->
-                                                                                new TreeMap<>(
-                                                                                        BytesComparator
-                                                                                                .INSTANCE))),
-                                        (l, r) -> l,
-                                        () -> new TreeMap<>(BytesComparator.INSTANCE))),
                 that.getGas(),
                 that.getAmount(),
                 that.getFunctionParameters().isEmpty()
