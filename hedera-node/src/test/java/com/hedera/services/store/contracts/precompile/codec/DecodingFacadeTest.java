@@ -220,7 +220,7 @@ class DecodingFacadeTest {
     private static final Bytes NON_FUNGIBLE_UNPAUSE_INPUT =
             Bytes.fromHexString(
                     "0x3b3bff0f0000000000000000000000000000000000000000000000000000000000000449");
-                    
+
     public static final Bytes GET_TOKEN_INFO_INPUT =
             Bytes.fromHexString(
                     "0x1f69565f000000000000000000000000000000000000000000000000000000000000000a");

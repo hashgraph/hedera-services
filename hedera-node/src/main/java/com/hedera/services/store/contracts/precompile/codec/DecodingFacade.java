@@ -183,8 +183,7 @@ public class DecodingFacade {
     private static final ABIType<Tuple> ERC_TRANSFER_FROM_DECODER =
             TypeFactory.create(ADDRESS_ADDRESS_UINT256_RAW_TYPE);
 
-    private static final Function PAUSE_TOKEN_FUNCTION =
-            new Function("pauseToken(address)", INT);
+    private static final Function PAUSE_TOKEN_FUNCTION = new Function("pauseToken(address)", INT);
     private static final Bytes PAUSE_TOKEN_SELECTOR = Bytes.wrap(PAUSE_TOKEN_FUNCTION.selector());
     private static final ABIType<Tuple> PAUSE_TOKEN_DECODER = TypeFactory.create(ADDRESS_RAW_TYPE);
 
