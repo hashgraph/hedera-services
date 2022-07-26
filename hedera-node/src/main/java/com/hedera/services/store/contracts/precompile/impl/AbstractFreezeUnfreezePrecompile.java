@@ -30,11 +30,10 @@ import com.hedera.services.store.contracts.precompile.codec.TokenFreezeUnfreezeW
 import com.hedera.services.store.contracts.precompile.utils.KeyActivationUtils;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.services.store.models.Id;
-import java.util.Objects;
-
 import com.hedera.services.txns.token.FreezeLogic;
 import com.hedera.services.txns.token.UnfreezeLogic;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import java.util.Objects;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 
 /* --- Constructor functional interfaces for mocking --- */
@@ -94,26 +93,27 @@ public abstract class AbstractFreezeUnfreezePrecompile extends AbstractWritePrec
                         ledgers.tokenRels());
 
         /* --- Execute the transaction and capture its results --- */
-        if(hasFreezeLogic){
+        if (hasFreezeLogic) {
             final var freezeLogic = infrastructureFactory.newFreezeLogic(accountStore, tokenStore);
             executeForFreeze(freezeLogic, tokenId, accountId);
-        }else {
-            final var unfreezeLogic = infrastructureFactory.newUnfreezeLogic(accountStore, tokenStore);
+        } else {
+            final var unfreezeLogic =
+                    infrastructureFactory.newUnfreezeLogic(accountStore, tokenStore);
             executeForUnfreeze(unfreezeLogic, tokenId, accountId);
         }
     }
 
-    private void executeForFreeze(FreezeLogic freezeLogic, Id tokenId, Id accountId){
+    private void executeForFreeze(FreezeLogic freezeLogic, Id tokenId, Id accountId) {
         validateLogic(freezeLogic.validate(transactionBody.build()));
         freezeLogic.freeze(tokenId, accountId);
     }
 
-    private void executeForUnfreeze(UnfreezeLogic unfreezeLogic, Id tokenId, Id accountId){
+    private void executeForUnfreeze(UnfreezeLogic unfreezeLogic, Id tokenId, Id accountId) {
         validateLogic(unfreezeLogic.validate(transactionBody.build()));
         unfreezeLogic.unfreeze(tokenId, accountId);
     }
 
-    private void validateLogic(ResponseCodeEnum validity){
+    private void validateLogic(ResponseCodeEnum validity) {
         validateTrue(validity == OK, validity);
     }
 }
