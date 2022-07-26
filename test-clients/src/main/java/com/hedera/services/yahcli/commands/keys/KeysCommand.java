@@ -31,7 +31,8 @@ import java.util.concurrent.Callable;
 		subcommands = {
 				picocli.CommandLine.HelpCommand.class,
 				NewPemCommand.class,
-				ExtractPublicCommand.class
+				ExtractPublicCommand.class,
+				ExtractDetailsCommand.class
 		},
 		description = "Generates and inspects keys of various kinds")
 public class KeysCommand implements Callable<Integer> {
