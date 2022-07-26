@@ -1,19 +1,35 @@
-/*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
- *
+package com.hedera.services.records;
+
+/*-
+ * ‌
+ * Hedera Services Node
+ * ​
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
+ * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ * ‍
  */
-package com.hedera.services.records;
+
+import com.hedera.services.state.submerkle.ExpirableTxnRecord;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.Timestamp;
+import com.hederahashgraph.api.proto.java.TransactionReceipt;
+import com.hederahashgraph.api.proto.java.TransactionRecord;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+import java.time.Instant;
+import java.util.List;
 
 import static com.hedera.services.state.submerkle.ExpirableTxnRecordTestHelper.fromGprc;
 import static com.hedera.services.txns.diligence.DuplicateClassification.BELIEVED_UNIQUE;
@@ -31,266 +47,300 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.mock;
 
-import com.hedera.services.state.submerkle.ExpirableTxnRecord;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.Timestamp;
-import com.hederahashgraph.api.proto.java.TransactionReceipt;
-import com.hederahashgraph.api.proto.java.TransactionRecord;
-import java.time.Instant;
-import java.util.List;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-
 class TxnIdRecentHistoryTest {
-    private static final Instant now = Instant.now();
+	private static final Instant now = Instant.now();
 
-    private TxnIdRecentHistory subject;
+	private TxnIdRecentHistory subject;
 
-    @BeforeEach
-    void setup() {
-        subject = new TxnIdRecentHistory();
-    }
+	@BeforeEach
+	void setup() {
+		subject = new TxnIdRecentHistory();
+	}
 
-    @Test
-    void safeToExpireFromEmptyHistory() {
-        subject.observe(recordOf(0, 0, INVALID_NODE_ACCOUNT), INVALID_NODE_ACCOUNT);
-        assertEquals(BELIEVED_UNIQUE, subject.currentDuplicityFor(1));
-        subject.observe(recordOf(1, 0, SUCCESS), SUCCESS);
 
-        subject.forgetExpiredAt(expiryAtOffset(0));
-        assertDoesNotThrow(() -> subject.forgetExpiredAt(expiryAtOffset(1)));
-    }
+	@Test
+	void safeToExpireFromEmptyHistory() {
+		subject.observe(
+				recordOf(0, 0, INVALID_NODE_ACCOUNT),
+				INVALID_NODE_ACCOUNT);
+		assertEquals(BELIEVED_UNIQUE, subject.currentDuplicityFor(1));
+		subject.observe(
+				recordOf(1, 0, SUCCESS),
+				SUCCESS);
 
-    @Test
-    void getsMemory() {
-        subject.classifiableRecords = List.of(mock(ExpirableTxnRecord.class));
-        assertFalse(subject.isForgotten());
+		subject.forgetExpiredAt(expiryAtOffset(0));
+		assertDoesNotThrow(() -> subject.forgetExpiredAt(expiryAtOffset(1)));
+	}
 
-        subject.classifiableRecords = null;
-        subject.unclassifiableRecords = List.of(mock(ExpirableTxnRecord.class));
-        assertFalse(subject.isForgotten());
+	@Test
+	void getsMemory() {
+		subject.classifiableRecords = List.of(mock(ExpirableTxnRecord.class));
+		assertFalse(subject.isForgotten());
 
-        subject.unclassifiableRecords = null;
-        assertTrue(subject.isForgotten());
-    }
+		subject.classifiableRecords = null;
+		subject.unclassifiableRecords = List.of(mock(ExpirableTxnRecord.class));
+		assertFalse(subject.isForgotten());
 
-    @Test
-    void classifiesAsExpected() {
-        subject.observe(recordOf(0, 0, INVALID_NODE_ACCOUNT), INVALID_NODE_ACCOUNT);
-        assertEquals(BELIEVED_UNIQUE, subject.currentDuplicityFor(1));
+		subject.unclassifiableRecords = null;
+		assertTrue(subject.isForgotten());
+	}
 
-        subject.observe(recordOf(1, 1, SUCCESS), SUCCESS);
-        assertEquals(NODE_DUPLICATE, subject.currentDuplicityFor(1));
-        assertEquals(DUPLICATE, subject.currentDuplicityFor(2));
-    }
+	@Test
+	void classifiesAsExpected() {
+		subject.observe(
+				recordOf(0, 0, INVALID_NODE_ACCOUNT),
+				INVALID_NODE_ACCOUNT);
+		assertEquals(BELIEVED_UNIQUE, subject.currentDuplicityFor(1));
 
-    @Test
-    void restoresFromStagedAsExpected() {
-        subject.stage(recordOf(2, 7, INVALID_NODE_ACCOUNT));
-        subject.stage(recordOf(1, 1, SUCCESS));
-        subject.stage(recordOf(1, 0, INVALID_PAYER_SIGNATURE));
-        subject.stage(recordOf(2, 3, DUPLICATE_TRANSACTION));
-        subject.stage(recordOf(1, 2, DUPLICATE_TRANSACTION));
-        subject.stage(recordOf(3, 5, DUPLICATE_TRANSACTION));
-        subject.stage(recordOf(1, 6, INVALID_PAYER_SIGNATURE));
-        subject.stage(recordOf(2, 4, DUPLICATE_TRANSACTION));
+		subject.observe(
+				recordOf(1, 1, SUCCESS),
+				SUCCESS);
+		assertEquals(NODE_DUPLICATE, subject.currentDuplicityFor(1));
+		assertEquals(DUPLICATE, subject.currentDuplicityFor(2));
+	}
 
-        subject.observeStaged();
+	@Test
+	void restoresFromStagedAsExpected() {
+		subject.stage(recordOf(2, 7, INVALID_NODE_ACCOUNT));
+		subject.stage(recordOf(1, 1, SUCCESS));
+		subject.stage(recordOf(1, 0, INVALID_PAYER_SIGNATURE));
+		subject.stage(recordOf(2, 3, DUPLICATE_TRANSACTION));
+		subject.stage(recordOf(1, 2, DUPLICATE_TRANSACTION));
+		subject.stage(recordOf(3, 5, DUPLICATE_TRANSACTION));
+		subject.stage(recordOf(1, 6, INVALID_PAYER_SIGNATURE));
+		subject.stage(recordOf(2, 4, DUPLICATE_TRANSACTION));
 
-        assertEquals(
-                List.of(
-                        memoIdentifying(1, 1, SUCCESS),
-                        memoIdentifying(2, 3, DUPLICATE_TRANSACTION),
-                        memoIdentifying(3, 5, DUPLICATE_TRANSACTION),
-                        memoIdentifying(1, 2, DUPLICATE_TRANSACTION),
-                        memoIdentifying(2, 4, DUPLICATE_TRANSACTION)),
-                subject.classifiableRecords.stream().map(sr -> sr.getMemo()).collect(toList()));
-        assertEquals(
-                List.of(
-                        memoIdentifying(1, 0, INVALID_PAYER_SIGNATURE),
-                        memoIdentifying(1, 6, INVALID_PAYER_SIGNATURE),
-                        memoIdentifying(2, 7, INVALID_NODE_ACCOUNT)),
-                subject.unclassifiableRecords.stream().map(sr -> sr.getMemo()).collect(toList()));
-        assertNull(subject.memory);
-    }
+		subject.observeStaged();
 
-    @Test
-    void prioritizesClassifiableRecords() {
-        givenSomeWellKnownHistoryWithListOfSizeGreaterThanOne();
+		assertEquals(
+				List.of(
+						memoIdentifying(1, 1, SUCCESS),
+						memoIdentifying(2, 3, DUPLICATE_TRANSACTION),
+						memoIdentifying(3, 5, DUPLICATE_TRANSACTION),
+						memoIdentifying(1, 2, DUPLICATE_TRANSACTION),
+						memoIdentifying(2, 4, DUPLICATE_TRANSACTION)
+				), subject.classifiableRecords.stream().map(sr -> sr.getMemo()).collect(toList()));
+		assertEquals(
+				List.of(
+						memoIdentifying(1, 0, INVALID_PAYER_SIGNATURE),
+						memoIdentifying(1, 6, INVALID_PAYER_SIGNATURE),
+						memoIdentifying(2, 7, INVALID_NODE_ACCOUNT)
+				), subject.unclassifiableRecords.stream().map(sr -> sr.getMemo()).collect(toList()));
+		assertNull(subject.memory);
+	}
 
-        final var priority = subject.priorityRecord();
+	@Test
+	void prioritizesClassifiableRecords() {
+		givenSomeWellKnownHistoryWithListOfSizeGreaterThanOne();
 
-        assertEquals(memoIdentifying(1, 1, SUCCESS), priority.getMemo());
-    }
+		final var priority = subject.priorityRecord();
 
-    @Test
-    void returnsEmptyIfForgotten() {
-        assertNull(subject.priorityRecord());
-    }
+		assertEquals(
+				memoIdentifying(1, 1, SUCCESS),
+				priority.getMemo());
+	}
 
-    @Test
-    void recognizesEmptyDuplicates() {
-        assertTrue(subject.allDuplicateRecords().isEmpty());
-    }
+	@Test
+	void returnsEmptyIfForgotten() {
+		assertNull(subject.priorityRecord());
+	}
 
-    @Test
-    void returnsUnclassifiableIfOnlyAvailable() {
-        subject.observe(recordOf(1, 0, INVALID_PAYER_SIGNATURE), INVALID_PAYER_SIGNATURE);
+	@Test
+	void recognizesEmptyDuplicates() {
+		assertTrue(subject.allDuplicateRecords().isEmpty());
+	}
 
-        final var priority = subject.priorityRecord();
+	@Test
+	void returnsUnclassifiableIfOnlyAvailable() {
+		subject.observe(
+				recordOf(1, 0, INVALID_PAYER_SIGNATURE),
+				INVALID_PAYER_SIGNATURE);
 
-        assertEquals(memoIdentifying(1, 0, INVALID_PAYER_SIGNATURE), priority.getMemo());
-    }
+		final var priority = subject.priorityRecord();
 
-    @Test
-    void nothingHappensWithNoHistory() {
-        assertDoesNotThrow(() -> subject.forgetExpiredAt(expiryAtOffset(1)));
-    }
+		assertEquals(
+				memoIdentifying(1, 0, INVALID_PAYER_SIGNATURE),
+				priority.getMemo());
+	}
 
-    @Test
-    void forgetsFromListOfSizeGreaterThanOneAsExpected() {
-        givenSomeWellKnownHistoryWithListOfSizeGreaterThanOne();
+	@Test
+	void nothingHappensWithNoHistory() {
+		assertDoesNotThrow(() -> subject.forgetExpiredAt(expiryAtOffset(1)));
+	}
 
-        subject.forgetExpiredAt(expiryAtOffset(4));
+	@Test
+	void forgetsFromListOfSizeGreaterThanOneAsExpected() {
+		givenSomeWellKnownHistoryWithListOfSizeGreaterThanOne();
 
-        assertEquals(
-                List.of(memoIdentifying(3, 5, DUPLICATE_TRANSACTION)),
-                subject.classifiableRecords.stream()
-                        .map(ExpirableTxnRecord::getMemo)
-                        .collect(toList()));
-        assertEquals(
-                List.of(
-                        memoIdentifying(1, 6, INVALID_PAYER_SIGNATURE),
-                        memoIdentifying(2, 7, INVALID_NODE_ACCOUNT)),
-                subject.unclassifiableRecords.stream()
-                        .map(ExpirableTxnRecord::getMemo)
-                        .collect(toList()));
-    }
+		subject.forgetExpiredAt(expiryAtOffset(4));
 
-    @Test
-    void canStillClassifyDuplicatesAfterSomeHistoryIsExpired() {
-        givenSomeWellKnownHistoryWithListOfSizeGreaterThanOne();
+		assertEquals(
+				List.of(
+						memoIdentifying(3, 5, DUPLICATE_TRANSACTION)
+				), subject.classifiableRecords.stream().map(ExpirableTxnRecord::getMemo).collect(toList()));
+		assertEquals(
+				List.of(
+						memoIdentifying(1, 6, INVALID_PAYER_SIGNATURE),
+						memoIdentifying(2, 7, INVALID_NODE_ACCOUNT)
+				), subject.unclassifiableRecords.stream().map(ExpirableTxnRecord::getMemo).collect(toList()));
+	}
 
-        subject.forgetExpiredAt(expiryAtOffset(4));
+	@Test
+	void canStillClassifyDuplicatesAfterSomeHistoryIsExpired() {
+		givenSomeWellKnownHistoryWithListOfSizeGreaterThanOne();
 
-        assertEquals(DUPLICATE, subject.currentDuplicityFor(2));
-        assertEquals(NODE_DUPLICATE, subject.currentDuplicityFor(3));
-    }
+		subject.forgetExpiredAt(expiryAtOffset(4));
 
-    @Test
-    void forgetsAsExpectedFromListOfSizeOne() {
-        givenSomeWellKnownHistoryWithListOfSizeOne();
+		assertEquals(DUPLICATE, subject.currentDuplicityFor(2));
+		assertEquals(NODE_DUPLICATE, subject.currentDuplicityFor(3));
+	}
 
-        subject.forgetExpiredAt(expiryAtOffset(4));
+	@Test
+	void forgetsAsExpectedFromListOfSizeOne() {
+		givenSomeWellKnownHistoryWithListOfSizeOne();
 
-        assertEquals(
-                List.of(memoIdentifying(3, 5, DUPLICATE_TRANSACTION)),
-                subject.classifiableRecords.stream()
-                        .map(ExpirableTxnRecord::getMemo)
-                        .collect(toList()));
-        assertEquals(0, subject.unclassifiableRecords.size());
-    }
+		subject.forgetExpiredAt(expiryAtOffset(4));
 
-    @Test
-    void forgetsNothingFromListOfSizeOneWhenNotExpired() {
-        givenJustOneUnclassifiableRecordHistory();
+		assertEquals(
+				List.of(
+						memoIdentifying(3, 5, DUPLICATE_TRANSACTION)
+				), subject.classifiableRecords.stream().map(ExpirableTxnRecord::getMemo).collect(toList()));
+		assertEquals(0, subject.unclassifiableRecords.size());
+	}
 
-        subject.forgetExpiredAt(expiryAtOffset(-1));
+	@Test
+	void forgetsNothingFromListOfSizeOneWhenNotExpired() {
+		givenJustOneUnclassifiableRecordHistory();
 
-        assertEquals(1, subject.unclassifiableRecords.size());
-    }
+		subject.forgetExpiredAt(expiryAtOffset(-1));
 
-    @Test
-    void omitsPriorityWhenUnclassifiable() {
-        subject.observe(recordOf(1, 0, INVALID_PAYER_SIGNATURE), INVALID_PAYER_SIGNATURE);
-        subject.observe(recordOf(2, 1, INVALID_NODE_ACCOUNT), INVALID_NODE_ACCOUNT);
+		assertEquals(1, subject.unclassifiableRecords.size());
+	}
 
-        final var duplicates = subject.allDuplicateRecords();
+	@Test
+	void omitsPriorityWhenUnclassifiable() {
+		subject.observe(
+				recordOf(1, 0, INVALID_PAYER_SIGNATURE),
+				INVALID_PAYER_SIGNATURE);
+		subject.observe(
+				recordOf(2, 1, INVALID_NODE_ACCOUNT),
+				INVALID_NODE_ACCOUNT);
 
-        assertEquals(
-                List.of(memoIdentifying(2, 1, INVALID_NODE_ACCOUNT)),
-                duplicates.stream().map(ExpirableTxnRecord::getMemo).collect(toList()));
-    }
+		final var duplicates = subject.allDuplicateRecords();
 
-    @Test
-    void returnsOrderedDuplicates() {
-        givenSomeWellKnownHistoryWithListOfSizeGreaterThanOne();
+		assertEquals(
+				List.of(
+						memoIdentifying(2, 1, INVALID_NODE_ACCOUNT)
+				), duplicates.stream().map(ExpirableTxnRecord::getMemo).collect(toList()));
+	}
 
-        final var records = subject.allDuplicateRecords();
+	@Test
+	void returnsOrderedDuplicates() {
+		givenSomeWellKnownHistoryWithListOfSizeGreaterThanOne();
 
-        assertEquals(
-                List.of(
-                        memoIdentifying(1, 0, INVALID_PAYER_SIGNATURE),
-                        memoIdentifying(1, 2, DUPLICATE_TRANSACTION),
-                        memoIdentifying(2, 3, DUPLICATE_TRANSACTION),
-                        memoIdentifying(2, 4, DUPLICATE_TRANSACTION),
-                        memoIdentifying(3, 5, DUPLICATE_TRANSACTION),
-                        memoIdentifying(1, 6, INVALID_PAYER_SIGNATURE),
-                        memoIdentifying(2, 7, INVALID_NODE_ACCOUNT)),
-                records.stream().map(ExpirableTxnRecord::getMemo).collect(toList()));
-    }
+		final var records = subject.allDuplicateRecords();
 
-    @Test
-    void forgetsFromExpiredClassifiableListOfSizeOne() {
-        subject.observe(recordOf(1, 1, SUCCESS), SUCCESS);
+		assertEquals(
+				List.of(
+						memoIdentifying(1, 0, INVALID_PAYER_SIGNATURE),
+						memoIdentifying(1, 2, DUPLICATE_TRANSACTION),
+						memoIdentifying(2, 3, DUPLICATE_TRANSACTION),
+						memoIdentifying(2, 4, DUPLICATE_TRANSACTION),
+						memoIdentifying(3, 5, DUPLICATE_TRANSACTION),
+						memoIdentifying(1, 6, INVALID_PAYER_SIGNATURE),
+						memoIdentifying(2, 7, INVALID_NODE_ACCOUNT)
+				), records.stream().map(ExpirableTxnRecord::getMemo).collect(toList()));
+	}
 
-        subject.forgetExpiredAt(expiryAtOffset(1));
+	@Test
+	void forgetsFromExpiredClassifiableListOfSizeOne() {
+		subject.observe(
+				recordOf(1, 1, SUCCESS),
+				SUCCESS);
 
-        assertTrue(subject.isForgotten());
+		subject.forgetExpiredAt(expiryAtOffset(1));
 
-        subject.observe(recordOf(1, 1, SUCCESS), SUCCESS);
-        subject.forgetExpiredAt(expiryAtOffset(0));
-        assertEquals(NODE_DUPLICATE, subject.currentDuplicityFor(1));
-    }
+		assertTrue(subject.isForgotten());
 
-    private void givenSomeWellKnownHistoryWithListOfSizeGreaterThanOne() {
-        subject.observe(recordOf(1, 0, INVALID_PAYER_SIGNATURE), INVALID_PAYER_SIGNATURE);
-        subject.observe(recordOf(1, 1, SUCCESS), SUCCESS);
-        subject.observe(recordOf(1, 2, DUPLICATE_TRANSACTION), DUPLICATE_TRANSACTION);
-        subject.observe(recordOf(2, 3, DUPLICATE_TRANSACTION), DUPLICATE_TRANSACTION);
-        subject.observe(recordOf(2, 4, DUPLICATE_TRANSACTION), DUPLICATE_TRANSACTION);
-        subject.observe(recordOf(3, 5, DUPLICATE_TRANSACTION), DUPLICATE_TRANSACTION);
-        subject.observe(recordOf(1, 6, INVALID_PAYER_SIGNATURE), INVALID_PAYER_SIGNATURE);
-        subject.observe(recordOf(2, 7, INVALID_NODE_ACCOUNT), INVALID_NODE_ACCOUNT);
-    }
+		subject.observe(
+				recordOf(1, 1, SUCCESS),
+				SUCCESS);
+		subject.forgetExpiredAt(expiryAtOffset(0));
+		assertEquals(NODE_DUPLICATE, subject.currentDuplicityFor(1));
+	}
 
-    private void givenSomeWellKnownHistoryWithListOfSizeOne() {
-        subject.observe(recordOf(1, 0, INVALID_PAYER_SIGNATURE), INVALID_PAYER_SIGNATURE);
-        subject.observe(recordOf(1, 1, SUCCESS), SUCCESS);
-        subject.observe(recordOf(1, 2, DUPLICATE_TRANSACTION), DUPLICATE_TRANSACTION);
-        subject.observe(recordOf(3, 5, DUPLICATE_TRANSACTION), DUPLICATE_TRANSACTION);
-    }
+	private void givenSomeWellKnownHistoryWithListOfSizeGreaterThanOne() {
+		subject.observe(
+				recordOf(1, 0, INVALID_PAYER_SIGNATURE),
+				INVALID_PAYER_SIGNATURE);
+		subject.observe(
+				recordOf(1, 1, SUCCESS),
+				SUCCESS);
+		subject.observe(
+				recordOf(1, 2, DUPLICATE_TRANSACTION),
+				DUPLICATE_TRANSACTION);
+		subject.observe(
+				recordOf(2, 3, DUPLICATE_TRANSACTION),
+				DUPLICATE_TRANSACTION);
+		subject.observe(
+				recordOf(2, 4, DUPLICATE_TRANSACTION),
+				DUPLICATE_TRANSACTION);
+		subject.observe(
+				recordOf(3, 5, DUPLICATE_TRANSACTION),
+				DUPLICATE_TRANSACTION);
+		subject.observe(
+				recordOf(1, 6, INVALID_PAYER_SIGNATURE),
+				INVALID_PAYER_SIGNATURE);
+		subject.observe(
+				recordOf(2, 7, INVALID_NODE_ACCOUNT),
+				INVALID_NODE_ACCOUNT);
+	}
 
-    private void givenJustOneUnclassifiableRecordHistory() {
-        subject.observe(recordOf(1, 0, INVALID_PAYER_SIGNATURE), INVALID_PAYER_SIGNATURE);
-    }
+	private void givenSomeWellKnownHistoryWithListOfSizeOne() {
+		subject.observe(
+				recordOf(1, 0, INVALID_PAYER_SIGNATURE),
+				INVALID_PAYER_SIGNATURE);
+		subject.observe(
+				recordOf(1, 1, SUCCESS),
+				SUCCESS);
+		subject.observe(
+				recordOf(1, 2, DUPLICATE_TRANSACTION),
+				DUPLICATE_TRANSACTION);
+		subject.observe(
+				recordOf(3, 5, DUPLICATE_TRANSACTION),
+				DUPLICATE_TRANSACTION);
+	}
 
-    private static final ExpirableTxnRecord recordOf(
-            final long submittingMember,
-            final long consensusOffsetSecs,
-            final ResponseCodeEnum status) {
-        final var payerRecord =
-                TransactionRecord.newBuilder()
-                        .setConsensusTimestamp(
-                                Timestamp.newBuilder().setSeconds(consensusOffsetSecs))
-                        .setMemo(memoIdentifying(submittingMember, consensusOffsetSecs, status))
-                        .setReceipt(TransactionReceipt.newBuilder().setStatus(status))
-                        .build();
-        final var expirableRecord = fromGprc(payerRecord);
-        expirableRecord.setExpiry(expiryAtOffset(consensusOffsetSecs));
-        expirableRecord.setSubmittingMember(submittingMember);
-        return expirableRecord;
-    }
+	private void givenJustOneUnclassifiableRecordHistory() {
+		subject.observe(
+				recordOf(1, 0, INVALID_PAYER_SIGNATURE),
+				INVALID_PAYER_SIGNATURE);
+	}
 
-    private static final long expiryAtOffset(final long l) {
-        return now.getEpochSecond() + 1 + l;
-    }
+	private static final ExpirableTxnRecord recordOf(
+			final long submittingMember,
+			final long consensusOffsetSecs,
+			final ResponseCodeEnum status) {
+		final var payerRecord = TransactionRecord.newBuilder()
+				.setConsensusTimestamp(Timestamp.newBuilder().setSeconds(consensusOffsetSecs))
+				.setMemo(memoIdentifying(submittingMember, consensusOffsetSecs, status))
+				.setReceipt(TransactionReceipt.newBuilder().setStatus(status))
+				.build();
+		final var expirableRecord = fromGprc(payerRecord);
+		expirableRecord.setExpiry(expiryAtOffset(consensusOffsetSecs));
+		expirableRecord.setSubmittingMember(submittingMember);
+		return expirableRecord;
+	}
 
-    private static final String memoIdentifying(
-            final long submittingMember,
-            final long consensusOffsetSecs,
-            final ResponseCodeEnum status) {
-        return String.format(
-                "%d submitted @ %d past -> %s", submittingMember, consensusOffsetSecs, status);
-    }
+	private static final long expiryAtOffset(final long l) {
+		return now.getEpochSecond() + 1 + l;
+	}
+
+	private static final String memoIdentifying(
+			final long submittingMember,
+			final long consensusOffsetSecs,
+			final ResponseCodeEnum status
+	) {
+		return String.format("%d submitted @ %d past -> %s", submittingMember, consensusOffsetSecs, status);
+	}
 }

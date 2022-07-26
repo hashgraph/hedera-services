@@ -1,19 +1,36 @@
-/*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
- *
+package com.hedera.services.grpc.controllers;
+
+/*-
+ * ‌
+ * Hedera Services Node
+ * ​
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
+ * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
- *
+ * 
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ * 
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ * ‍
  */
-package com.hedera.services.grpc.controllers;
+
+import com.hedera.services.queries.answering.QueryResponseHelper;
+import com.hedera.services.queries.crypto.CryptoAnswers;
+import com.hedera.services.queries.meta.MetaAnswers;
+import com.hedera.services.txns.submission.TxnResponseHelper;
+import com.hederahashgraph.api.proto.java.Query;
+import com.hederahashgraph.api.proto.java.Response;
+import com.hederahashgraph.api.proto.java.Transaction;
+import com.hederahashgraph.api.proto.java.TransactionResponse;
+import io.grpc.stub.StreamObserver;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoAddLiveHash;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoApproveAllowance;
@@ -34,194 +51,180 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.Transaction
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.verify;
 
-import com.hedera.services.queries.answering.QueryResponseHelper;
-import com.hedera.services.queries.crypto.CryptoAnswers;
-import com.hedera.services.queries.meta.MetaAnswers;
-import com.hedera.services.txns.submission.TxnResponseHelper;
-import com.hederahashgraph.api.proto.java.Query;
-import com.hederahashgraph.api.proto.java.Response;
-import com.hederahashgraph.api.proto.java.Transaction;
-import com.hederahashgraph.api.proto.java.TransactionResponse;
-import io.grpc.stub.StreamObserver;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-
 class CryptoControllerTest {
-    Query query = Query.getDefaultInstance();
-    Transaction txn = Transaction.getDefaultInstance();
-    MetaAnswers metaAnswers;
-    CryptoAnswers cryptoAnswers;
-    TxnResponseHelper txnResponseHelper;
-    QueryResponseHelper queryResponseHelper;
-    StreamObserver<Response> queryObserver;
-    StreamObserver<TransactionResponse> txnObserver;
+	Query query = Query.getDefaultInstance();
+	Transaction txn = Transaction.getDefaultInstance();
+	MetaAnswers metaAnswers;
+	CryptoAnswers cryptoAnswers;
+	TxnResponseHelper txnResponseHelper;
+	QueryResponseHelper queryResponseHelper;
+	StreamObserver<Response> queryObserver;
+	StreamObserver<TransactionResponse> txnObserver;
 
-    CryptoController subject;
+	CryptoController subject;
 
-    @BeforeEach
-    private void setup() {
-        txnObserver = mock(StreamObserver.class);
-        queryObserver = mock(StreamObserver.class);
+	@BeforeEach
+	private void setup() {
+		txnObserver = mock(StreamObserver.class);
+		queryObserver = mock(StreamObserver.class);
 
-        metaAnswers = mock(MetaAnswers.class);
-        cryptoAnswers = mock(CryptoAnswers.class);
-        txnResponseHelper = mock(TxnResponseHelper.class);
-        queryResponseHelper = mock(QueryResponseHelper.class);
+		metaAnswers = mock(MetaAnswers.class);
+		cryptoAnswers = mock(CryptoAnswers.class);
+		txnResponseHelper = mock(TxnResponseHelper.class);
+		queryResponseHelper = mock(QueryResponseHelper.class);
 
-        subject =
-                new CryptoController(
-                        metaAnswers, cryptoAnswers, txnResponseHelper, queryResponseHelper);
-    }
+		subject = new CryptoController(metaAnswers, cryptoAnswers, txnResponseHelper, queryResponseHelper);
+	}
 
-    @Test
-    void forwardsAccountInfoAsExpected() {
-        // when:
-        subject.getAccountInfo(query, queryObserver);
+	@Test
+	void forwardsAccountInfoAsExpected() {
+		// when:
+		subject.getAccountInfo(query, queryObserver);
 
-        // expect:
-        verify(cryptoAnswers).getAccountInfo();
-        verify(queryResponseHelper).answer(query, queryObserver, null, CryptoGetInfo);
-    }
+		// expect:
+		verify(cryptoAnswers).getAccountInfo();
+		verify(queryResponseHelper).answer(query, queryObserver, null, CryptoGetInfo);
+	}
 
-    @Test
-    void forwardsGetBalanceAsExpected() {
-        // when:
-        subject.cryptoGetBalance(query, queryObserver);
+	@Test
+	void forwardsGetBalanceAsExpected() {
+		// when:
+		subject.cryptoGetBalance(query, queryObserver);
 
-        // expect:
-        verify(cryptoAnswers).getAccountBalance();
-        verify(queryResponseHelper).answer(query, queryObserver, null, CryptoGetAccountBalance);
-    }
+		// expect:
+		verify(cryptoAnswers).getAccountBalance();
+		verify(queryResponseHelper).answer(query, queryObserver, null, CryptoGetAccountBalance);
+	}
 
-    @Test
-    void forwardsGetRecordsAsExpected() {
-        // when:
-        subject.getAccountRecords(query, queryObserver);
+	@Test
+	void forwardsGetRecordsAsExpected() {
+		// when:
+		subject.getAccountRecords(query, queryObserver);
 
-        // expect:
-        verify(cryptoAnswers).getAccountRecords();
-        verify(queryResponseHelper).answer(query, queryObserver, null, CryptoGetAccountRecords);
-    }
+		// expect:
+		verify(cryptoAnswers).getAccountRecords();
+		verify(queryResponseHelper).answer(query, queryObserver, null, CryptoGetAccountRecords);
+	}
 
-    @Test
-    void forwardsGetStakersAsExpected() {
-        // when:
-        subject.getStakersByAccountID(query, queryObserver);
+	@Test
+	void forwardsGetStakersAsExpected() {
+		// when:
+		subject.getStakersByAccountID(query, queryObserver);
 
-        // expect:
-        verify(cryptoAnswers).getStakers();
-        verify(queryResponseHelper).answer(query, queryObserver, null, CryptoGetStakers);
-    }
+		// expect:
+		verify(cryptoAnswers).getStakers();
+		verify(queryResponseHelper).answer(query, queryObserver, null, CryptoGetStakers);
+	}
 
-    @Test
-    void forwardsGetLiveHashAsExpected() {
-        // when:
-        subject.getLiveHash(query, queryObserver);
+	@Test
+	void forwardsGetLiveHashAsExpected() {
+		// when:
+		subject.getLiveHash(query, queryObserver);
 
-        // expect:
-        verify(cryptoAnswers).getLiveHash();
-        verify(queryResponseHelper).answer(query, queryObserver, null, CryptoGetLiveHash);
-    }
+		// expect:
+		verify(cryptoAnswers).getLiveHash();
+		verify(queryResponseHelper).answer(query, queryObserver, null, CryptoGetLiveHash);
+	}
 
-    @Test
-    void forwardsGetReceiptAsExpected() {
-        // when:
-        subject.getTransactionReceipts(query, queryObserver);
+	@Test
+	void forwardsGetReceiptAsExpected() {
+		// when:
+		subject.getTransactionReceipts(query, queryObserver);
 
-        // expect:
-        verify(metaAnswers).getTxnReceipt();
-        verify(queryResponseHelper).answer(query, queryObserver, null, TransactionGetReceipt);
-    }
+		// expect:
+		verify(metaAnswers).getTxnReceipt();
+		verify(queryResponseHelper).answer(query, queryObserver, null, TransactionGetReceipt);
+	}
 
-    @Test
-    void forwardsGetRecordAsExpected() {
-        // when:
-        subject.getTxRecordByTxID(query, queryObserver);
+	@Test
+	void forwardsGetRecordAsExpected() {
+		// when:
+		subject.getTxRecordByTxID(query, queryObserver);
 
-        // expect:
-        verify(metaAnswers).getTxnRecord();
-        verify(queryResponseHelper).answer(query, queryObserver, null, TransactionGetRecord);
-    }
+		// expect:
+		verify(metaAnswers).getTxnRecord();
+		verify(queryResponseHelper).answer(query, queryObserver, null, TransactionGetRecord);
+	}
 
-    @Test
-    void forwardsGetFastRecordAsExpected() {
-        // when:
-        subject.getFastTransactionRecord(query, queryObserver);
+	@Test
+	void forwardsGetFastRecordAsExpected() {
+		// when:
+		subject.getFastTransactionRecord(query, queryObserver);
 
-        // expect:
-        verify(metaAnswers).getFastTxnRecord();
-        verify(queryResponseHelper).answer(query, queryObserver, null, NONE);
-    }
+		// expect:
+		verify(metaAnswers).getFastTxnRecord();
+		verify(queryResponseHelper).answer(query, queryObserver, null, NONE);
+	}
 
-    @Test
-    void forwardsTransferAsExpected() {
-        // when:
-        subject.cryptoTransfer(txn, txnObserver);
+	@Test
+	void forwardsTransferAsExpected() {
+		// when:
+		subject.cryptoTransfer(txn, txnObserver);
 
-        // expect:
-        verify(txnResponseHelper).submit(txn, txnObserver, CryptoTransfer);
-    }
+		// expect:
+		verify(txnResponseHelper).submit(txn, txnObserver, CryptoTransfer);
+	}
 
-    @Test
-    void forwardsCreateAsExpected() {
-        // when:
-        subject.createAccount(txn, txnObserver);
+	@Test
+	void forwardsCreateAsExpected() {
+		// when:
+		subject.createAccount(txn, txnObserver);
 
-        // expect:
-        verify(txnResponseHelper).submit(txn, txnObserver, CryptoCreate);
-    }
+		// expect:
+		verify(txnResponseHelper).submit(txn, txnObserver, CryptoCreate);
+	}
 
-    @Test
-    void forwardsDeleteAsExpected() {
-        // when:
-        subject.cryptoDelete(txn, txnObserver);
+	@Test
+	void forwardsDeleteAsExpected() {
+		// when:
+		subject.cryptoDelete(txn, txnObserver);
 
-        // expect:
-        verify(txnResponseHelper).submit(txn, txnObserver, CryptoDelete);
-    }
+		// expect:
+		verify(txnResponseHelper).submit(txn, txnObserver, CryptoDelete);
+	}
 
-    @Test
-    void forwardsUpdateAsExpected() {
-        // when:
-        subject.updateAccount(txn, txnObserver);
+	@Test
+	void forwardsUpdateAsExpected() {
+		// when:
+		subject.updateAccount(txn, txnObserver);
 
-        // expect:
-        verify(txnResponseHelper).submit(txn, txnObserver, CryptoUpdate);
-    }
+		// expect:
+		verify(txnResponseHelper).submit(txn, txnObserver, CryptoUpdate);
+	}
 
-    @Test
-    void forwardsAddLiveHashAsExpected() {
-        // when:
-        subject.addLiveHash(txn, txnObserver);
+	@Test
+	void forwardsAddLiveHashAsExpected() {
+		// when:
+		subject.addLiveHash(txn, txnObserver);
 
-        // expect:
-        verify(txnResponseHelper).submit(txn, txnObserver, CryptoAddLiveHash);
-    }
+		// expect:
+		verify(txnResponseHelper).submit(txn, txnObserver, CryptoAddLiveHash);
+	}
 
-    @Test
-    void forwardsDeleteLiveHashAsExpected() {
-        // when:
-        subject.deleteLiveHash(txn, txnObserver);
+	@Test
+	void forwardsDeleteLiveHashAsExpected() {
+		// when:
+		subject.deleteLiveHash(txn, txnObserver);
 
-        // expect:
-        verify(txnResponseHelper).submit(txn, txnObserver, CryptoDeleteLiveHash);
-    }
+		// expect:
+		verify(txnResponseHelper).submit(txn, txnObserver, CryptoDeleteLiveHash);
+	}
 
-    @Test
-    void forwardsApproveAsExpected() {
-        // when:
-        subject.approveAllowances(txn, txnObserver);
+	@Test
+	void forwardsApproveAsExpected() {
+		// when:
+		subject.approveAllowances(txn, txnObserver);
 
-        // expect:
-        verify(txnResponseHelper).submit(txn, txnObserver, CryptoApproveAllowance);
-    }
+		// expect:
+		verify(txnResponseHelper).submit(txn, txnObserver, CryptoApproveAllowance);
+	}
 
-    @Test
-    void forwardsDeleteAllowanceAsExpected() {
-        // when:
-        subject.deleteAllowances(txn, txnObserver);
+	@Test
+	void forwardsDeleteAllowanceAsExpected() {
+		// when:
+		subject.deleteAllowances(txn, txnObserver);
 
-        // expect:
-        verify(txnResponseHelper).submit(txn, txnObserver, CryptoDeleteAllowance);
-    }
+		// expect:
+		verify(txnResponseHelper).submit(txn, txnObserver, CryptoDeleteAllowance);
+	}
 }

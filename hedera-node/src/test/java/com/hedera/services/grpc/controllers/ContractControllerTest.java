@@ -1,19 +1,36 @@
-/*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
- *
+package com.hedera.services.grpc.controllers;
+
+/*-
+ * ‌
+ * Hedera Services Node
+ * ​
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
+ * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ * ‍
  */
-package com.hedera.services.grpc.controllers;
+
+import com.hedera.services.queries.answering.QueryResponseHelper;
+import com.hedera.services.queries.contract.ContractAnswers;
+import com.hedera.services.txns.submission.TxnResponseHelper;
+import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import com.hederahashgraph.api.proto.java.Query;
+import com.hederahashgraph.api.proto.java.Response;
+import com.hederahashgraph.api.proto.java.Transaction;
+import com.hederahashgraph.api.proto.java.TransactionResponse;
+import io.grpc.stub.StreamObserver;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCallLocal;
@@ -29,152 +46,139 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.SystemUndel
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.verify;
 
-import com.hedera.services.queries.answering.QueryResponseHelper;
-import com.hedera.services.queries.contract.ContractAnswers;
-import com.hedera.services.txns.submission.TxnResponseHelper;
-import com.hederahashgraph.api.proto.java.HederaFunctionality;
-import com.hederahashgraph.api.proto.java.Query;
-import com.hederahashgraph.api.proto.java.Response;
-import com.hederahashgraph.api.proto.java.Transaction;
-import com.hederahashgraph.api.proto.java.TransactionResponse;
-import io.grpc.stub.StreamObserver;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-
 class ContractControllerTest {
-    Query query = Query.getDefaultInstance();
-    Transaction txn = Transaction.getDefaultInstance();
-    ContractAnswers contractAnswers;
-    TxnResponseHelper txnResponseHelper;
-    QueryResponseHelper queryResponseHelper;
-    StreamObserver<Response> queryObserver;
-    StreamObserver<TransactionResponse> txnObserver;
+	Query query = Query.getDefaultInstance();
+	Transaction txn = Transaction.getDefaultInstance();
+	ContractAnswers contractAnswers;
+	TxnResponseHelper txnResponseHelper;
+	QueryResponseHelper queryResponseHelper;
+	StreamObserver<Response> queryObserver;
+	StreamObserver<TransactionResponse> txnObserver;
 
-    ContractController subject;
+	ContractController subject;
 
-    @BeforeEach
-    private void setup() {
-        txnObserver = mock(StreamObserver.class);
-        queryObserver = mock(StreamObserver.class);
+	@BeforeEach
+	private void setup() {
+		txnObserver = mock(StreamObserver.class);
+		queryObserver = mock(StreamObserver.class);
 
-        contractAnswers = mock(ContractAnswers.class);
-        txnResponseHelper = mock(TxnResponseHelper.class);
-        queryResponseHelper = mock(QueryResponseHelper.class);
+		contractAnswers = mock(ContractAnswers.class);
+		txnResponseHelper = mock(TxnResponseHelper.class);
+		queryResponseHelper = mock(QueryResponseHelper.class);
 
-        subject = new ContractController(contractAnswers, txnResponseHelper, queryResponseHelper);
-    }
+		subject = new ContractController(contractAnswers, txnResponseHelper, queryResponseHelper);
+	}
 
-    @Test
-    void forwardsCreate() {
-        // when:
-        subject.createContract(txn, txnObserver);
+	@Test
+	void forwardsCreate() {
+		// when:
+		subject.createContract(txn, txnObserver);
 
-        // expect:
-        verify(txnResponseHelper).submit(txn, txnObserver, ContractCreate);
-    }
+		// expect:
+		verify(txnResponseHelper).submit(txn, txnObserver, ContractCreate);
+	}
 
-    @Test
-    void forwardsUpdate() {
-        // when:
-        subject.updateContract(txn, txnObserver);
+	@Test
+	void forwardsUpdate() {
+		// when:
+		subject.updateContract(txn, txnObserver);
 
-        // expect:
-        verify(txnResponseHelper).submit(txn, txnObserver, ContractUpdate);
-    }
+		// expect:
+		verify(txnResponseHelper).submit(txn, txnObserver, ContractUpdate);
+	}
 
-    @Test
-    void forwardsCall() {
-        // when:
-        subject.contractCallMethod(txn, txnObserver);
+	@Test
+	void forwardsCall() {
+		// when:
+		subject.contractCallMethod(txn, txnObserver);
 
-        // expect:
-        verify(txnResponseHelper).submit(txn, txnObserver, ContractCall);
-    }
+		// expect:
+		verify(txnResponseHelper).submit(txn, txnObserver, ContractCall);
+	}
 
-    @Test
-    void forwardsGetInfo() {
-        // when:
-        subject.getContractInfo(query, queryObserver);
+	@Test
+	void forwardsGetInfo() {
+		// when:
+		subject.getContractInfo(query, queryObserver);
 
-        // expect:
-        verify(contractAnswers).getContractInfo();
-        verify(queryResponseHelper).answer(query, queryObserver, null, ContractGetInfo);
-    }
+		// expect:
+		verify(contractAnswers).getContractInfo();
+		verify(queryResponseHelper).answer(query, queryObserver, null, ContractGetInfo);
+	}
 
-    @Test
-    void forwardsLocalCall() {
-        // when:
-        subject.contractCallLocalMethod(query, queryObserver);
+	@Test
+	void forwardsLocalCall() {
+		// when:
+		subject.contractCallLocalMethod(query, queryObserver);
 
-        // expect:
-        verify(contractAnswers).contractCallLocal();
-        verify(queryResponseHelper).answer(query, queryObserver, null, ContractCallLocal);
-    }
+		// expect:
+		verify(contractAnswers).contractCallLocal();
+		verify(queryResponseHelper).answer(query, queryObserver, null, ContractCallLocal);
+	}
 
-    @Test
-    void forwardsGetBytecode() {
-        // when:
-        subject.contractGetBytecode(query, queryObserver);
+	@Test
+	void forwardsGetBytecode() {
+		// when:
+		subject.contractGetBytecode(query, queryObserver);
 
-        // expect:
-        verify(contractAnswers).getBytecode();
-        verify(queryResponseHelper)
-                .answer(query, queryObserver, null, HederaFunctionality.ContractGetBytecode);
-    }
+		// expect:
+		verify(contractAnswers).getBytecode();
+		verify(queryResponseHelper).answer(query, queryObserver, null, HederaFunctionality.ContractGetBytecode);
+	}
 
-    @Test
-    void forwardsGetBySolidity() {
-        // when:
-        subject.getBySolidityID(query, queryObserver);
+	@Test
+	void forwardsGetBySolidity() {
+		// when:
+		subject.getBySolidityID(query, queryObserver);
 
-        // expect:
-        verify(contractAnswers).getBySolidityId();
-        verify(queryResponseHelper).answer(query, queryObserver, null, GetBySolidityID);
-    }
+		// expect:
+		verify(contractAnswers).getBySolidityId();
+		verify(queryResponseHelper).answer(query, queryObserver, null, GetBySolidityID);
+	}
 
-    @Test
-    void forwardsGetRecord() {
-        // when:
-        subject.getTxRecordByContractID(query, queryObserver);
+	@Test
+	void forwardsGetRecord() {
+		// when:
+		subject.getTxRecordByContractID(query, queryObserver);
 
-        // expect:
-        verify(contractAnswers).getContractRecords();
-        verify(queryResponseHelper).answer(query, queryObserver, null, ContractGetRecords);
-    }
+		// expect:
+		verify(contractAnswers).getContractRecords();
+		verify(queryResponseHelper).answer(query, queryObserver, null, ContractGetRecords);
+	}
 
-    @Test
-    void forwardsDelete() {
-        // when:
-        subject.deleteContract(txn, txnObserver);
+	@Test
+	void forwardsDelete() {
+		// when:
+		subject.deleteContract(txn, txnObserver);
 
-        // expect:
-        verify(txnResponseHelper).submit(txn, txnObserver, ContractDelete);
-    }
+		// expect:
+		verify(txnResponseHelper).submit(txn, txnObserver, ContractDelete);
+	}
 
-    @Test
-    void forwardsSystemDelete() {
-        // when:
-        subject.systemDelete(txn, txnObserver);
+	@Test
+	void forwardsSystemDelete() {
+		// when:
+		subject.systemDelete(txn, txnObserver);
 
-        // expect:
-        verify(txnResponseHelper).submit(txn, txnObserver, SystemDelete);
-    }
+		// expect:
+		verify(txnResponseHelper).submit(txn, txnObserver, SystemDelete);
+	}
 
-    @Test
-    void forwardsSystemUndelete() {
-        // when:
-        subject.systemUndelete(txn, txnObserver);
+	@Test
+	void forwardsSystemUndelete() {
+		// when:
+		subject.systemUndelete(txn, txnObserver);
 
-        // expect:
-        verify(txnResponseHelper).submit(txn, txnObserver, SystemUndelete);
-    }
+		// expect:
+		verify(txnResponseHelper).submit(txn, txnObserver, SystemUndelete);
+	}
 
-    @Test
-    void forwardsCallEthereum() {
-        // when:
-        subject.callEthereum(txn, txnObserver);
+	@Test
+	void forwardsCallEthereum() {
+		// when:
+		subject.callEthereum(txn, txnObserver);
 
-        // expect:
-        verify(txnResponseHelper).submit(txn, txnObserver, EthereumTransaction);
-    }
+		// expect:
+		verify(txnResponseHelper).submit(txn, txnObserver, EthereumTransaction);
+	}
 }

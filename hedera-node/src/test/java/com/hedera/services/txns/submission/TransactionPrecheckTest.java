@@ -1,38 +1,24 @@
-/*
- * Copyright (C) 2021-2022 Hedera Hashgraph, LLC
- *
+package com.hedera.services.txns.submission;
+
+/*-
+ * ‌
+ * Hedera Services Node
+ * ​
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
+ * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ * ‍
  */
-package com.hedera.services.txns.submission;
-
-import static com.hedera.services.txns.submission.PresolvencyFlaws.WELL_KNOWN_FLAWS;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PLATFORM_NOT_ACTIVE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_TOO_MANY_LAYERS;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.mockito.BDDMockito.any;
-import static org.mockito.BDDMockito.eq;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.BDDMockito.never;
-import static org.mockito.BDDMockito.verify;
 
 import com.hedera.services.context.CurrentPlatformStatus;
 import com.hedera.services.context.domain.process.TxnValidityAndFeeReq;
@@ -54,271 +40,287 @@ import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import static com.hedera.services.txns.submission.PresolvencyFlaws.WELL_KNOWN_FLAWS;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PLATFORM_NOT_ACTIVE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_TOO_MANY_LAYERS;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.mockito.BDDMockito.any;
+import static org.mockito.BDDMockito.eq;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.never;
+import static org.mockito.BDDMockito.verify;
+
 @ExtendWith(MockitoExtension.class)
 class TransactionPrecheckTest {
-    private static final long reqFee = 1234L;
+	private static final long reqFee = 1234L;
 
-    @Mock private QueryFeeCheck queryFeeCheck;
-    @Mock private CurrentPlatformStatus currentPlatformStatus;
-    @Mock private SystemPrecheck systemPrecheck;
-    @Mock private SyntaxPrecheck syntaxPrecheck;
-    @Mock private SemanticPrecheck semanticPrecheck;
-    @Mock private SolvencyPrecheck solvencyPrecheck;
-    @Mock private StructuralPrecheck structuralPrecheck;
+	@Mock
+	private QueryFeeCheck queryFeeCheck;
+	@Mock
+	private CurrentPlatformStatus currentPlatformStatus;
+	@Mock
+	private SystemPrecheck systemPrecheck;
+	@Mock
+	private SyntaxPrecheck syntaxPrecheck;
+	@Mock
+	private SemanticPrecheck semanticPrecheck;
+	@Mock
+	private SolvencyPrecheck solvencyPrecheck;
+	@Mock
+	private StructuralPrecheck structuralPrecheck;
 
-    private TransactionPrecheck subject;
+	private TransactionPrecheck subject;
 
-    @BeforeEach
-    void setUp() {
-        final var stagedPrechecks =
-                new StagedPrechecks(
-                        syntaxPrecheck,
-                        systemPrecheck,
-                        semanticPrecheck,
-                        solvencyPrecheck,
-                        structuralPrecheck);
-        subject = new TransactionPrecheck(queryFeeCheck, stagedPrechecks, currentPlatformStatus);
-    }
 
-    @Test
-    void abortsOnInactivePlatform() {
-        given(currentPlatformStatus.get()).willReturn(PlatformStatus.MAINTENANCE);
+	@BeforeEach
+	void setUp() {
+		final var stagedPrechecks = new StagedPrechecks(
+				syntaxPrecheck,
+				systemPrecheck,
+				semanticPrecheck,
+				solvencyPrecheck,
+				structuralPrecheck);
+		subject = new TransactionPrecheck(queryFeeCheck, stagedPrechecks, currentPlatformStatus);
+	}
 
-        final var topLevelResponse = subject.performForTopLevel(Transaction.getDefaultInstance());
-        final var queryPaymentResponse =
-                subject.performForQueryPayment(Transaction.getDefaultInstance());
+	@Test
+	void abortsOnInactivePlatform() {
+		given(currentPlatformStatus.get()).willReturn(PlatformStatus.MAINTENANCE);
 
-        assertFailure(PLATFORM_NOT_ACTIVE, topLevelResponse);
-        assertFailure(PLATFORM_NOT_ACTIVE, queryPaymentResponse);
-    }
+		final var topLevelResponse = subject.performForTopLevel(Transaction.getDefaultInstance());
+		final var queryPaymentResponse = subject.performForQueryPayment(Transaction.getDefaultInstance());
 
-    @Test
-    void abortsOnStructuralFlaw() {
-        givenActivePlatform();
-        given(structuralPrecheck.assess(any()))
-                .willReturn(WELL_KNOWN_FLAWS.get(TRANSACTION_TOO_MANY_LAYERS));
+		assertFailure(PLATFORM_NOT_ACTIVE, topLevelResponse);
+		assertFailure(PLATFORM_NOT_ACTIVE, queryPaymentResponse);
+	}
 
-        final var topLevelResponse = subject.performForTopLevel(Transaction.getDefaultInstance());
-        final var queryPaymentResponse =
-                subject.performForQueryPayment(Transaction.getDefaultInstance());
+	@Test
+	void abortsOnStructuralFlaw() {
+		givenActivePlatform();
+		given(structuralPrecheck.assess(any())).willReturn(WELL_KNOWN_FLAWS.get(TRANSACTION_TOO_MANY_LAYERS));
 
-        assertFailure(TRANSACTION_TOO_MANY_LAYERS, topLevelResponse);
-        assertFailure(TRANSACTION_TOO_MANY_LAYERS, queryPaymentResponse);
-    }
+		final var topLevelResponse = subject.performForTopLevel(Transaction.getDefaultInstance());
+		final var queryPaymentResponse = subject.performForQueryPayment(Transaction.getDefaultInstance());
 
-    @Test
-    void abortsOnStructuralFlawWithBadAccessor() {
-        givenActivePlatform();
-        final Pair<TxnValidityAndFeeReq, SignedTxnAccessor> dummyPair =
-                Pair.of(new TxnValidityAndFeeReq(OK), null);
-        given(structuralPrecheck.assess(any())).willReturn(dummyPair);
+		assertFailure(TRANSACTION_TOO_MANY_LAYERS, topLevelResponse);
+		assertFailure(TRANSACTION_TOO_MANY_LAYERS, queryPaymentResponse);
+	}
 
-        final var topLevelResponse = subject.performForTopLevel(Transaction.getDefaultInstance());
-        final var queryPaymentResponse =
-                subject.performForQueryPayment(Transaction.getDefaultInstance());
+	@Test
+	void abortsOnStructuralFlawWithBadAccessor() {
+		givenActivePlatform();
+		final Pair<TxnValidityAndFeeReq, SignedTxnAccessor> dummyPair =
+				Pair.of(new TxnValidityAndFeeReq(OK), null);
+		given(structuralPrecheck.assess(any())).willReturn(dummyPair);
 
-        assertFailure(OK, topLevelResponse);
-        assertFailure(OK, queryPaymentResponse);
-        verify(syntaxPrecheck, never()).validate(any());
-    }
+		final var topLevelResponse = subject.performForTopLevel(Transaction.getDefaultInstance());
+		final var queryPaymentResponse = subject.performForQueryPayment(Transaction.getDefaultInstance());
 
-    @ParameterizedTest
-    @CsvSource({
-        "INVALID_TRANSACTION_ID",
-        "TRANSACTION_ID_FIELD_NOT_ALLOWED",
-        "DUPLICATE_TRANSACTION",
-        "INSUFFICIENT_TX_FEE",
-        "PAYER_ACCOUNT_NOT_FOUND",
-        "INVALID_NODE_ACCOUNT",
-        "MEMO_TOO_LONG",
-        "INVALID_ZERO_BYTE_IN_STRING",
-        "INVALID_TRANSACTION_DURATION",
-        "TRANSACTION_EXPIRED",
-        "INVALID_TRANSACTION_START"
-    })
-    void abortsOnSyntaxError(
-            @ConvertWith(ResponseCodeConverter.class) final ResponseCodeEnum syntaxError) {
-        givenActivePlatform();
-        givenStructuralSoundness();
-        given(syntaxPrecheck.validate(any())).willReturn(syntaxError);
+		assertFailure(OK, topLevelResponse);
+		assertFailure(OK, queryPaymentResponse);
+		verify(syntaxPrecheck, never()).validate(any());
+	}
 
-        final var topLevelResponse = subject.performForTopLevel(Transaction.getDefaultInstance());
-        final var queryPaymentResponse =
-                subject.performForQueryPayment(Transaction.getDefaultInstance());
+	@ParameterizedTest
+	@CsvSource({
+			"INVALID_TRANSACTION_ID",
+			"TRANSACTION_ID_FIELD_NOT_ALLOWED",
+			"DUPLICATE_TRANSACTION",
+			"INSUFFICIENT_TX_FEE",
+			"PAYER_ACCOUNT_NOT_FOUND",
+			"INVALID_NODE_ACCOUNT",
+			"MEMO_TOO_LONG",
+			"INVALID_ZERO_BYTE_IN_STRING",
+			"INVALID_TRANSACTION_DURATION",
+			"TRANSACTION_EXPIRED",
+			"INVALID_TRANSACTION_START"
+	})
+	void abortsOnSyntaxError(@ConvertWith(ResponseCodeConverter.class) final ResponseCodeEnum syntaxError) {
+		givenActivePlatform();
+		givenStructuralSoundness();
+		given(syntaxPrecheck.validate(any())).willReturn(syntaxError);
 
-        assertFailure(syntaxError, topLevelResponse);
-        assertFailure(syntaxError, queryPaymentResponse);
-    }
+		final var topLevelResponse = subject.performForTopLevel(Transaction.getDefaultInstance());
+		final var queryPaymentResponse = subject.performForQueryPayment(Transaction.getDefaultInstance());
 
-    @Test
-    void abortsOnSemanticErrorForTopLevel() {
-        givenActivePlatform();
-        givenStructuralSoundness();
-        givenValidSyntax();
-        given(semanticPrecheck.validate(any(), any(), eq(NOT_SUPPORTED))).willReturn(NOT_SUPPORTED);
+		assertFailure(syntaxError, topLevelResponse);
+		assertFailure(syntaxError, queryPaymentResponse);
+	}
 
-        final var topLevelResponse = subject.performForTopLevel(Transaction.getDefaultInstance());
+	@Test
+	void abortsOnSemanticErrorForTopLevel() {
+		givenActivePlatform();
+		givenStructuralSoundness();
+		givenValidSyntax();
+		given(semanticPrecheck.validate(any(), any(), eq(NOT_SUPPORTED))).willReturn(NOT_SUPPORTED);
 
-        assertFailure(NOT_SUPPORTED, topLevelResponse);
-    }
+		final var topLevelResponse = subject.performForTopLevel(Transaction.getDefaultInstance());
 
-    @Test
-    void abortsOnSemanticErrorForQueryPayment() {
-        givenActivePlatform();
-        givenStructuralSoundness();
-        givenValidSyntax();
-        given(semanticPrecheck.validate(any(), eq(CryptoTransfer), eq(INSUFFICIENT_TX_FEE)))
-                .willReturn(INSUFFICIENT_TX_FEE);
+		assertFailure(NOT_SUPPORTED, topLevelResponse);
+	}
 
-        final var queryPaymentResponse =
-                subject.performForQueryPayment(Transaction.getDefaultInstance());
+	@Test
+	void abortsOnSemanticErrorForQueryPayment() {
+		givenActivePlatform();
+		givenStructuralSoundness();
+		givenValidSyntax();
+		given(semanticPrecheck.validate(any(), eq(CryptoTransfer), eq(INSUFFICIENT_TX_FEE)))
+				.willReturn(INSUFFICIENT_TX_FEE);
 
-        assertFailure(INSUFFICIENT_TX_FEE, queryPaymentResponse);
-    }
+		final var queryPaymentResponse = subject.performForQueryPayment(Transaction.getDefaultInstance());
 
-    @Test
-    void presolvencyFlawsCanResolveEvenUnexpectedError() {
-        final var response = PresolvencyFlaws.responseForFlawed(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT);
+		assertFailure(INSUFFICIENT_TX_FEE, queryPaymentResponse);
+	}
 
-        assertFailure(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT, response);
-    }
+	@Test
+	void presolvencyFlawsCanResolveEvenUnexpectedError() {
+		final var response = PresolvencyFlaws.responseForFlawed(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT);
 
-    @Test
-    void abortsOnInsolvencyForTopLevel() {
-        givenActivePlatform();
-        givenStructuralSoundness();
-        givenValidSyntax();
-        givenValidSemantics();
-        given(solvencyPrecheck.assessSansSvcFees(any()))
-                .willReturn(new TxnValidityAndFeeReq(INSUFFICIENT_TX_FEE, reqFee));
+		assertFailure(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT, response);
+	}
 
-        final var topLevelResponse = subject.performForTopLevel(Transaction.getDefaultInstance());
+	@Test
+	void abortsOnInsolvencyForTopLevel() {
+		givenActivePlatform();
+		givenStructuralSoundness();
+		givenValidSyntax();
+		givenValidSemantics();
+		given(solvencyPrecheck.assessSansSvcFees(any()))
+				.willReturn(new TxnValidityAndFeeReq(INSUFFICIENT_TX_FEE, reqFee));
 
-        assertFailure(INSUFFICIENT_TX_FEE, reqFee, topLevelResponse);
-    }
+		final var topLevelResponse = subject.performForTopLevel(Transaction.getDefaultInstance());
 
-    @Test
-    void abortsOnInsolvencyForQueryPayment() {
-        givenActivePlatform();
-        givenStructuralSoundness();
-        givenValidSyntax();
-        givenValidSemantics();
-        given(solvencyPrecheck.assessWithSvcFees(any()))
-                .willReturn(new TxnValidityAndFeeReq(INSUFFICIENT_TX_FEE, reqFee));
+		assertFailure(INSUFFICIENT_TX_FEE, reqFee, topLevelResponse);
+	}
 
-        final var queryPaymentResponse =
-                subject.performForQueryPayment(Transaction.getDefaultInstance());
+	@Test
+	void abortsOnInsolvencyForQueryPayment() {
+		givenActivePlatform();
+		givenStructuralSoundness();
+		givenValidSyntax();
+		givenValidSemantics();
+		given(solvencyPrecheck.assessWithSvcFees(any()))
+				.willReturn(new TxnValidityAndFeeReq(INSUFFICIENT_TX_FEE, reqFee));
 
-        assertFailure(INSUFFICIENT_TX_FEE, reqFee, queryPaymentResponse);
-    }
+		final var queryPaymentResponse = subject.performForQueryPayment(Transaction.getDefaultInstance());
 
-    @Test
-    void abortsOnFailedSystemChecksForTopLevel() {
-        givenActivePlatform();
-        givenStructuralSoundness();
-        givenValidSyntax();
-        givenValidSemantics();
-        givenNodeAndNetworkSolvency();
-        given(systemPrecheck.screen(any())).willReturn(BUSY);
+		assertFailure(INSUFFICIENT_TX_FEE, reqFee, queryPaymentResponse);
+	}
 
-        final var topLevelResponse = subject.performForTopLevel(Transaction.getDefaultInstance());
+	@Test
+	void abortsOnFailedSystemChecksForTopLevel() {
+		givenActivePlatform();
+		givenStructuralSoundness();
+		givenValidSyntax();
+		givenValidSemantics();
+		givenNodeAndNetworkSolvency();
+		given(systemPrecheck.screen(any())).willReturn(BUSY);
 
-        assertFailure(BUSY, reqFee, topLevelResponse);
-    }
+		final var topLevelResponse = subject.performForTopLevel(Transaction.getDefaultInstance());
 
-    @Test
-    void doesntPerformSystemChecksForQueryPayments() {
-        givenActivePlatform();
-        givenStructuralSoundness();
-        givenValidSyntax();
-        givenValidSemantics();
-        givenFullSolvency();
-        givenValidQueryPaymentXfers();
+		assertFailure(BUSY, reqFee, topLevelResponse);
+	}
 
-        final var queryPaymentResponse =
-                subject.performForQueryPayment(Transaction.getDefaultInstance());
+	@Test
+	void doesntPerformSystemChecksForQueryPayments() {
+		givenActivePlatform();
+		givenStructuralSoundness();
+		givenValidSyntax();
+		givenValidSemantics();
+		givenFullSolvency();
+		givenValidQueryPaymentXfers();
 
-        assertSuccess(reqFee, queryPaymentResponse);
-    }
+		final var queryPaymentResponse = subject.performForQueryPayment(Transaction.getDefaultInstance());
 
-    @Test
-    void rejectsInvalidQueryPaymentXfers() {
-        givenActivePlatform();
-        givenStructuralSoundness();
-        givenValidSyntax();
-        givenValidSemantics();
-        givenFullSolvency();
-        given(queryFeeCheck.validateQueryPaymentTransfers(any()))
-                .willReturn(INSUFFICIENT_PAYER_BALANCE);
+		assertSuccess(reqFee, queryPaymentResponse);
+	}
 
-        final var queryPaymentResponse =
-                subject.performForQueryPayment(Transaction.getDefaultInstance());
+	@Test
+	void rejectsInvalidQueryPaymentXfers() {
+		givenActivePlatform();
+		givenStructuralSoundness();
+		givenValidSyntax();
+		givenValidSemantics();
+		givenFullSolvency();
+		given(queryFeeCheck.validateQueryPaymentTransfers(any())).willReturn(INSUFFICIENT_PAYER_BALANCE);
 
-        assertFailure(INSUFFICIENT_PAYER_BALANCE, reqFee, queryPaymentResponse);
-    }
+		final var queryPaymentResponse = subject.performForQueryPayment(Transaction.getDefaultInstance());
 
-    private void givenValidQueryPaymentXfers() {
-        given(queryFeeCheck.validateQueryPaymentTransfers(any())).willReturn(OK);
-    }
+		assertFailure(INSUFFICIENT_PAYER_BALANCE, reqFee, queryPaymentResponse);
+	}
 
-    private void givenActivePlatform() {
-        given(currentPlatformStatus.get()).willReturn(PlatformStatus.ACTIVE);
-    }
+	private void givenValidQueryPaymentXfers() {
+		given(queryFeeCheck.validateQueryPaymentTransfers(any())).willReturn(OK);
+	}
 
-    private void givenStructuralSoundness() {
-        given(structuralPrecheck.assess(any()))
-                .willReturn(
-                        Pair.of(
-                                new TxnValidityAndFeeReq(OK),
-                                SignedTxnAccessor.uncheckedFrom(Transaction.getDefaultInstance())));
-    }
+	private void givenActivePlatform() {
+		given(currentPlatformStatus.get()).willReturn(PlatformStatus.ACTIVE);
+	}
 
-    private void givenFullSolvency() {
-        given(solvencyPrecheck.assessWithSvcFees(any()))
-                .willReturn(new TxnValidityAndFeeReq(OK, reqFee));
-    }
+	private void givenStructuralSoundness() {
+		given(structuralPrecheck.assess(any()))
+				.willReturn(Pair.of(
+						new TxnValidityAndFeeReq(OK),
+						SignedTxnAccessor.uncheckedFrom(Transaction.getDefaultInstance()))
+				);
+	}
 
-    private void givenNodeAndNetworkSolvency() {
-        given(solvencyPrecheck.assessSansSvcFees(any()))
-                .willReturn(new TxnValidityAndFeeReq(OK, reqFee));
-    }
+	private void givenFullSolvency() {
+		given(solvencyPrecheck.assessWithSvcFees(any())).willReturn(new TxnValidityAndFeeReq(OK, reqFee));
+	}
 
-    private void givenValidSyntax() {
-        given(syntaxPrecheck.validate(any())).willReturn(OK);
-    }
+	private void givenNodeAndNetworkSolvency() {
+		given(solvencyPrecheck.assessSansSvcFees(any())).willReturn(new TxnValidityAndFeeReq(OK, reqFee));
+	}
 
-    private void givenValidSemantics() {
-        given(semanticPrecheck.validate(any(), any(), any())).willReturn(OK);
-    }
+	private void givenValidSyntax() {
+		given(syntaxPrecheck.validate(any())).willReturn(OK);
+	}
 
-    private void assertSuccess(
-            final long reqFee, final Pair<TxnValidityAndFeeReq, SignedTxnAccessor> response) {
-        assertEquals(OK, response.getLeft().getValidity());
-        assertEquals(reqFee, response.getLeft().getRequiredFee());
-        assertNotNull(response.getRight());
-    }
+	private void givenValidSemantics() {
+		given(semanticPrecheck.validate(any(), any(), any())).willReturn(OK);
+	}
 
-    private void assertFailure(
-            final ResponseCodeEnum abort,
-            final Pair<TxnValidityAndFeeReq, SignedTxnAccessor> response) {
-        assertFailure(abort, 0L, response);
-    }
+	private void assertSuccess(
+			final long reqFee,
+			final Pair<TxnValidityAndFeeReq, SignedTxnAccessor> response
+	) {
+		assertEquals(OK, response.getLeft().getValidity());
+		assertEquals(reqFee, response.getLeft().getRequiredFee());
+		assertNotNull(response.getRight());
+	}
 
-    private void assertFailure(
-            final ResponseCodeEnum abort,
-            final long reqFee,
-            final Pair<TxnValidityAndFeeReq, SignedTxnAccessor> response) {
-        final var req = response.getLeft();
-        assertEquals(abort, req.getValidity());
-        assertEquals(reqFee, req.getRequiredFee());
-        assertNull(response.getRight());
-    }
+	private void assertFailure(
+			final ResponseCodeEnum abort,
+			final Pair<TxnValidityAndFeeReq, SignedTxnAccessor> response
+	) {
+		assertFailure(abort, 0L, response);
+	}
 
-    private static final class ResponseCodeConverter implements ArgumentConverter {
-        @Override
-        public Object convert(Object arg, ParameterContext parameterContext)
-                throws ArgumentConversionException {
-            return ResponseCodeEnum.valueOf((String) arg);
-        }
-    }
+	private void assertFailure(
+			final ResponseCodeEnum abort,
+			final long reqFee,
+			final Pair<TxnValidityAndFeeReq, SignedTxnAccessor> response
+	) {
+		final var req = response.getLeft();
+		assertEquals(abort, req.getValidity());
+		assertEquals(reqFee, req.getRequiredFee());
+		assertNull(response.getRight());
+	}
+
+	private static final class ResponseCodeConverter implements ArgumentConverter {
+		@Override
+		public Object convert(Object arg, ParameterContext parameterContext) throws ArgumentConversionException {
+			return ResponseCodeEnum.valueOf((String) arg);
+		}
+	}
 }

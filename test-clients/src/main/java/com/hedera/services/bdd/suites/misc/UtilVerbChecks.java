@@ -1,19 +1,32 @@
-/*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
- *
+package com.hedera.services.bdd.suites.misc;
+
+/*-
+ * ‌
+ * Hedera Services Test Clients
+ * ​
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
+ * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ * ‍
  */
-package com.hedera.services.bdd.suites.misc;
+
+import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.suites.HapiApiSuite;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
+import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
@@ -29,76 +42,74 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoGetIn
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.suites.HapiApiSuite;
-import java.util.List;
-import java.util.concurrent.TimeUnit;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 public class UtilVerbChecks extends HapiApiSuite {
-    private static final Logger log = LogManager.getLogger(UtilVerbChecks.class);
+	private static final Logger log = LogManager.getLogger(UtilVerbChecks.class);
 
-    public static void main(String... args) throws Exception {
-        new UtilVerbChecks().runSuiteSync();
-    }
+	public static void main(String... args) throws Exception {
+		new UtilVerbChecks().runSuiteSync();
+	}
 
-    @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
-        return List.of(
-                new HapiApiSpec[] {
-                    //						testLivenessTimeout(),
-                    testMakingFree(),
-                    //						testDissociation(),
-                });
-    }
+	@Override
+	public List<HapiApiSpec> getSpecsInSuite() {
+		return List.of(new HapiApiSpec[] {
+//						testLivenessTimeout(),
+						testMakingFree(),
+//						testDissociation(),
+				}
+		);
+	}
 
-    private HapiApiSpec testMakingFree() {
-        return defaultHapiSpec("TestMakingFree")
-                .given(
-                        cryptoCreate("civilian"),
-                        getAccountInfo("0.0.2")
-                                .payingWith("civilian")
-                                .nodePayment(0L)
-                                .hasAnswerOnlyPrecheck(INSUFFICIENT_TX_FEE))
-                .when(makeFree(CryptoGetInfo))
-                .then(
-                        getAccountInfo("0.0.2")
-                                .payingWith("civilian")
-                                .nodePayment(0L)
-                                .hasAnswerOnlyPrecheck(OK));
-    }
+	private HapiApiSpec testMakingFree() {
+		return defaultHapiSpec("TestMakingFree")
+				.given(
+						cryptoCreate("civilian"),
+						getAccountInfo("0.0.2")
+								.payingWith("civilian")
+								.nodePayment(0L)
+								.hasAnswerOnlyPrecheck(INSUFFICIENT_TX_FEE)
+				).when(
+						makeFree(CryptoGetInfo)
+				).then(
+						getAccountInfo("0.0.2")
+								.payingWith("civilian")
+								.nodePayment(0L)
+								.hasAnswerOnlyPrecheck(OK)
+				);
+	}
 
-    private HapiApiSpec testDissociation() {
-        return defaultHapiSpec("TestDissociation")
-                .given(
-                        cryptoCreate("t"),
-                        tokenCreate("a").treasury("t"),
-                        tokenCreate("b").treasury("t"),
-                        cryptoCreate("somebody"),
-                        tokenAssociate("somebody", "a", "b"),
-                        cryptoTransfer(moving(1, "a").between("t", "somebody")),
-                        cryptoTransfer(moving(2, "b").between("t", "somebody")))
-                .when(ensureDissociated("somebody", List.of("a", "b")))
-                .then(
-                        getAccountInfo("somebody")
-                                .hasNoTokenRelationship("a")
-                                .hasNoTokenRelationship("b"));
-    }
+	private HapiApiSpec testDissociation() {
+		return defaultHapiSpec("TestDissociation")
+				.given(
+						cryptoCreate("t"),
+						tokenCreate("a").treasury("t"),
+						tokenCreate("b").treasury("t"),
+						cryptoCreate("somebody"),
+						tokenAssociate("somebody", "a", "b"),
+						cryptoTransfer(moving(1, "a").between("t", "somebody")),
+						cryptoTransfer(moving(2, "b").between("t", "somebody"))
+				).when(
+						ensureDissociated("somebody", List.of("a", "b"))
+				).then(
+						getAccountInfo("somebody")
+								.hasNoTokenRelationship("a")
+								.hasNoTokenRelationship("b")
+				);
+	}
 
-    private HapiApiSpec testLivenessTimeout() {
-        return defaultHapiSpec("TestLivenessTimeout")
-                .given()
-                .when()
-                .then(
-                        withLiveNode("0.0.3")
-                                .within(300, TimeUnit.SECONDS)
-                                .loggingAvailabilityEvery(30)
-                                .sleepingBetweenRetriesFor(10));
-    }
+	private HapiApiSpec testLivenessTimeout() {
+		return defaultHapiSpec("TestLivenessTimeout")
+				.given().when().then(
+						withLiveNode("0.0.3")
+								.within(300, TimeUnit.SECONDS)
+								.loggingAvailabilityEvery(30)
+								.sleepingBetweenRetriesFor(10)
+				);
+	}
 
-    @Override
-    protected Logger getResultsLogger() {
-        return log;
-    }
+
+	@Override
+	protected Logger getResultsLogger() {
+		return log;
+	}
 }
