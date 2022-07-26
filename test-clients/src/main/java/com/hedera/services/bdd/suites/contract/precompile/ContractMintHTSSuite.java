@@ -70,7 +70,7 @@ import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.utilops.CustomSpecAssert;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hedera.services.bdd.suites.utils.contracts.FunctionParameters;
-import com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult;
+import com.hedera.services.contracts.ParsingConstants.FunctionType;
 import com.hedera.services.pricing.AssetsLoader;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.SubType;
@@ -187,9 +187,8 @@ public class ContractMintHTSSuite extends HapiApiSuite {
                                                         .contractCallResult(
                                                                 htsPrecompileResult()
                                                                         .forFunction(
-                                                                                HTSPrecompileResult
-                                                                                        .FunctionType
-                                                                                        .MINT)
+                                                                                FunctionType
+                                                                                        .HAPI_MINT)
                                                                         .withStatus(SUCCESS)
                                                                         .withTotalSupply(2469134L)
                                                                         .withSerialNumbers()))
@@ -248,9 +247,8 @@ public class ContractMintHTSSuite extends HapiApiSuite {
                                                         .contractCallResult(
                                                                 htsPrecompileResult()
                                                                         .forFunction(
-                                                                                HTSPrecompileResult
-                                                                                        .FunctionType
-                                                                                        .MINT)
+                                                                                FunctionType
+                                                                                        .HAPI_MINT)
                                                                         .withStatus(SUCCESS)
                                                                         .withTotalSupply(1)
                                                                         .withSerialNumbers(1)))
@@ -266,9 +264,8 @@ public class ContractMintHTSSuite extends HapiApiSuite {
                                                         .contractCallResult(
                                                                 htsPrecompileResult()
                                                                         .forFunction(
-                                                                                HTSPrecompileResult
-                                                                                        .FunctionType
-                                                                                        .MINT)
+                                                                                FunctionType
+                                                                                        .HAPI_MINT)
                                                                         .withStatus(SUCCESS)
                                                                         .withTotalSupply(2)
                                                                         .withSerialNumbers(2)))
@@ -331,9 +328,8 @@ public class ContractMintHTSSuite extends HapiApiSuite {
                                                         .contractCallResult(
                                                                 htsPrecompileResult()
                                                                         .forFunction(
-                                                                                HTSPrecompileResult
-                                                                                        .FunctionType
-                                                                                        .MINT)
+                                                                                FunctionType
+                                                                                        .HAPI_MINT)
                                                                         .withStatus(SUCCESS)
                                                                         .withTotalSupply(10)
                                                                         .withSerialNumbers()))
@@ -402,9 +398,8 @@ public class ContractMintHTSSuite extends HapiApiSuite {
                                                         .contractCallResult(
                                                                 htsPrecompileResult()
                                                                         .forFunction(
-                                                                                HTSPrecompileResult
-                                                                                        .FunctionType
-                                                                                        .MINT)
+                                                                                FunctionType
+                                                                                        .HAPI_MINT)
                                                                         .withStatus(SUCCESS)
                                                                         .withTotalSupply(2L)
                                                                         .withSerialNumbers(1L, 2L)))
@@ -506,9 +501,8 @@ public class ContractMintHTSSuite extends HapiApiSuite {
                                                                             .contractCallResult(
                                                                                     htsPrecompileResult()
                                                                                             .forFunction(
-                                                                                                    HTSPrecompileResult
-                                                                                                            .FunctionType
-                                                                                                            .MINT)
+                                                                                                    FunctionType
+                                                                                                            .HAPI_MINT)
                                                                                             .withStatus(
                                                                                                     SUCCESS)
                                                                                             .withTotalSupply(
@@ -627,9 +621,8 @@ public class ContractMintHTSSuite extends HapiApiSuite {
                                                         .contractCallResult(
                                                                 htsPrecompileResult()
                                                                         .forFunction(
-                                                                                HTSPrecompileResult
-                                                                                        .FunctionType
-                                                                                        .MINT)
+                                                                                FunctionType
+                                                                                        .HAPI_MINT)
                                                                         .withStatus(
                                                                                 INSUFFICIENT_GAS)
                                                                         .withTotalSupply(0L)
@@ -824,9 +817,8 @@ public class ContractMintHTSSuite extends HapiApiSuite {
                                                         .contractCallResult(
                                                                 htsPrecompileResult()
                                                                         .forFunction(
-                                                                                HTSPrecompileResult
-                                                                                        .FunctionType
-                                                                                        .MINT)
+                                                                                FunctionType
+                                                                                        .HAPI_MINT)
                                                                         .withStatus(
                                                                                 INSUFFICIENT_GAS)
                                                                         .withTotalSupply(0L)

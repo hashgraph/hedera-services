@@ -18,6 +18,6 @@ package com.hedera.services.store.contracts.precompile.proxy;
 import com.hederahashgraph.api.proto.java.Timestamp;
 
 @FunctionalInterface
-public interface RedirectGasCalculator {
+public interface ViewGasCalculator {
     long compute(final Timestamp now, final long minimumTinybarCost);
 }

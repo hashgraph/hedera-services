@@ -36,7 +36,6 @@ public class HederaCreate2Operation extends AbstractRecordingCreateOperation {
     private static final Bytes PREFIX = Bytes.fromHexString("0xFF");
 
     private final StorageGasCalculator storageGasCalculator;
-    private final GlobalDynamicProperties dynamicProperties;
 
     @Inject
     public HederaCreate2Operation(
@@ -55,9 +54,9 @@ public class HederaCreate2Operation extends AbstractRecordingCreateOperation {
                 gasCalculator,
                 creator,
                 syntheticTxnFactory,
-                recordsHistorian);
+                recordsHistorian,
+                dynamicProperties);
         this.storageGasCalculator = storageGasCalculator;
-        this.dynamicProperties = dynamicProperties;
     }
 
     @Override
