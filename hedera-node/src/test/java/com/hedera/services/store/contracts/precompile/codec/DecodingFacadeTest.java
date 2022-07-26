@@ -205,6 +205,18 @@ class DecodingFacadeTest {
             Bytes.fromHexString(
                     "0xe1f21c67000000000000000000000000000000000000000000000000000000000000123400000000000000000000000000000000000000000000000000000000000003f0000000000000000000000000000000000000000000000000000000000000000a");
 
+    public static final Bytes GET_TOKEN_INFO_INPUT =
+            Bytes.fromHexString(
+                    "0x1f69565f000000000000000000000000000000000000000000000000000000000000000a");
+
+    public static final Bytes GET_FUNGIBLE_TOKEN_INFO_INPUT =
+            Bytes.fromHexString(
+                    "0x3f28a19b000000000000000000000000000000000000000000000000000000000000000b");
+
+    public static final Bytes GET_NON_FUNGIBLE_TOKEN_INFO_INPUT =
+            Bytes.fromHexString(
+                    "0x287e1da8000000000000000000000000000000000000000000000000000000000000000c0000000000000000000000000000000000000000000000000000000000000001");
+
     public static final Bytes GET_TOKEN_DEFAULT_FREEZE_STATUS_INPUT =
             Bytes.fromHexString(
                     "0xa7daa18d00000000000000000000000000000000000000000000000000000000000003ff");
@@ -809,6 +821,31 @@ class DecodingFacadeTest {
                         subject.decodeFungibleCreate(
                                 CREATE_FUNGIBLE_NO_FEES_TOKEN_KEY_EXCEEDING_INTEGER_MAX_INVALID_INPUT,
                                 identity));
+    }
+
+    @Test
+    void decodeGetTokenInfoAsExpected() {
+        final var decodedInput = subject.decodeGetTokenInfo(GET_TOKEN_INFO_INPUT);
+
+        assertEquals(TokenID.newBuilder().setTokenNum(10).build(), decodedInput.tokenID());
+        assertEquals(-1, decodedInput.serialNumber());
+    }
+
+    @Test
+    void decodeGetFungibleTokenInfoAsExpected() {
+        final var decodedInput = subject.decodeGetFungibleTokenInfo(GET_FUNGIBLE_TOKEN_INFO_INPUT);
+
+        assertEquals(TokenID.newBuilder().setTokenNum(11).build(), decodedInput.tokenID());
+        assertEquals(-1, decodedInput.serialNumber());
+    }
+
+    @Test
+    void decodeGetNonFungibleTokenInfoAsExpected() {
+        final var decodedInput =
+                subject.decodeGetNonFungibleTokenInfo(GET_NON_FUNGIBLE_TOKEN_INFO_INPUT);
+
+        assertEquals(TokenID.newBuilder().setTokenNum(12).build(), decodedInput.tokenID());
+        assertEquals(1, decodedInput.serialNumber());
     }
 
     private void assertExpectedFungibleTokenCreateStruct(final TokenCreateWrapper decodedInput) {

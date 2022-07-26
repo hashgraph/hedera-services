@@ -157,8 +157,7 @@ abstract contract HederaTokenService is HederaResponseCodes {
         uint initialTotalSupply,
         uint decimals) nonEmptyExpiry(token)
     internal returns (int responseCode, address tokenAddress) {
-
-        (bool success, bytes memory result) = precompileAddress.call{value : msg.value}(
+        (bool success, bytes memory result) = precompileAddress.call{value: msg.value}(
             abi.encodeWithSelector(IHederaTokenService.createFungibleToken.selector,
             token, initialTotalSupply, decimals));
 
@@ -182,8 +181,7 @@ abstract contract HederaTokenService is HederaResponseCodes {
         IHederaTokenService.FixedFee[] memory fixedFees,
         IHederaTokenService.FractionalFee[] memory fractionalFees) nonEmptyExpiry(token)
     internal returns (int responseCode, address tokenAddress) {
-
-        (bool success, bytes memory result) = precompileAddress.call{value : msg.value}(
+        (bool success, bytes memory result) = precompileAddress.call{value: msg.value}(
             abi.encodeWithSelector(IHederaTokenService.createFungibleTokenWithCustomFees.selector,
             token, initialTotalSupply, decimals, fixedFees, fractionalFees));
         (responseCode, tokenAddress) = success ? abi.decode(result, (int32, address)) : (HederaResponseCodes.UNKNOWN, address(0));
@@ -195,8 +193,7 @@ abstract contract HederaTokenService is HederaResponseCodes {
     /// @return tokenAddress the created token's address
     function createNonFungibleToken(IHederaTokenService.HederaToken memory token) nonEmptyExpiry(token)
     internal returns (int responseCode, address tokenAddress) {
-
-        (bool success, bytes memory result) = precompileAddress.call{value : msg.value}(
+        (bool success, bytes memory result) = precompileAddress.call{value: msg.value}(
             abi.encodeWithSelector(IHederaTokenService.createNonFungibleToken.selector, token));
         (responseCode, tokenAddress) = success ? abi.decode(result, (int32, address)) : (HederaResponseCodes.UNKNOWN, address(0));
     }
@@ -212,11 +209,37 @@ abstract contract HederaTokenService is HederaResponseCodes {
         IHederaTokenService.FixedFee[] memory fixedFees,
         IHederaTokenService.RoyaltyFee[] memory royaltyFees) nonEmptyExpiry(token)
     internal returns (int responseCode, address tokenAddress) {
-
-        (bool success, bytes memory result) = precompileAddress.call{value : msg.value}(
+        (bool success, bytes memory result) = precompileAddress.call{value: msg.value}(
             abi.encodeWithSelector(IHederaTokenService.createNonFungibleTokenWithCustomFees.selector,
             token, fixedFees, royaltyFees));
         (responseCode, tokenAddress) = success ? abi.decode(result, (int32, address)) : (HederaResponseCodes.UNKNOWN, address(0));
+    }
+
+    /// Retrieves fungible specific token info for a fungible token
+    /// @param token The ID of the token as a solidity address
+    function getFungibleTokenInfo(address token) internal returns (int responseCode, IHederaTokenService.FungibleTokenInfo memory tokenInfo) {
+        (bool success, bytes memory result) = precompileAddress.call(
+            abi.encodeWithSelector(IHederaTokenService.getFungibleTokenInfo.selector, token));
+        IHederaTokenService.FungibleTokenInfo memory defaultTokenInfo;
+        (responseCode, tokenInfo) = success ? abi.decode(result, (int32, IHederaTokenService.FungibleTokenInfo)) : (HederaResponseCodes.UNKNOWN, defaultTokenInfo);
+    }
+
+    /// Retrieves general token info for a given token
+    /// @param token The ID of the token as a solidity address
+    function getTokenInfo(address token) internal returns (int responseCode, IHederaTokenService.TokenInfo memory tokenInfo) {
+        (bool success, bytes memory result) = precompileAddress.call(
+            abi.encodeWithSelector(IHederaTokenService.getTokenInfo.selector, token));
+        IHederaTokenService.TokenInfo memory defaultTokenInfo;
+        (responseCode, tokenInfo) = success ? abi.decode(result, (int32, IHederaTokenService.TokenInfo)) : (HederaResponseCodes.UNKNOWN, defaultTokenInfo);
+    }
+
+    /// Retrieves non-fungible specific token info for a given NFT
+    /// @param token The ID of the token as a solidity address
+    function getNonFungibleTokenInfo(address token, int64 serialNumber) internal returns (int responseCode, IHederaTokenService.NonFungibleTokenInfo memory tokenInfo) {
+        (bool success, bytes memory result) = precompileAddress.call(
+            abi.encodeWithSelector(IHederaTokenService.getNonFungibleTokenInfo.selector, token, serialNumber));
+        IHederaTokenService.NonFungibleTokenInfo memory defaultTokenInfo;
+        (responseCode, tokenInfo) = success ? abi.decode(result, (int32, IHederaTokenService.NonFungibleTokenInfo)) : (HederaResponseCodes.UNKNOWN, defaultTokenInfo);
     }
 
     /// Allows spender to withdraw from your account multiple times, up to the value amount. If this function is called

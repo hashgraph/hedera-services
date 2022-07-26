@@ -48,7 +48,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.suites.HapiApiSuite;
-import com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult;
+import com.hedera.services.contracts.ParsingConstants.FunctionType;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenType;
@@ -226,9 +226,8 @@ public class DelegatePrecompileSuite extends HapiApiSuite {
                                                         .contractCallResult(
                                                                 htsPrecompileResult()
                                                                         .forFunction(
-                                                                                HTSPrecompileResult
-                                                                                        .FunctionType
-                                                                                        .BURN)
+                                                                                FunctionType
+                                                                                        .HAPI_BURN)
                                                                         .withStatus(SUCCESS)
                                                                         .withTotalSupply(1)))
                                         .newTotalSupply(1)),
@@ -288,9 +287,8 @@ public class DelegatePrecompileSuite extends HapiApiSuite {
                                                         .contractCallResult(
                                                                 htsPrecompileResult()
                                                                         .forFunction(
-                                                                                HTSPrecompileResult
-                                                                                        .FunctionType
-                                                                                        .MINT)
+                                                                                FunctionType
+                                                                                        .HAPI_MINT)
                                                                         .withStatus(SUCCESS)
                                                                         .withTotalSupply(51)
                                                                         .withSerialNumbers()))
