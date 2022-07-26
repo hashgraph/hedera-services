@@ -283,10 +283,10 @@ public class EncodingFacade {
 
     public Bytes encodeTokenGetCustomFees(final List<CustomFee> customFees) {
         return functionResultBuilder()
-            .forFunction(FunctionType.HAPI_GET_TOKEN_CUSTOM_FEES)
-            .withStatus(SUCCESS.getNumber())
-            .withCustomFees(customFees)
-            .build();
+                .forFunction(FunctionType.HAPI_GET_TOKEN_CUSTOM_FEES)
+                .withStatus(SUCCESS.getNumber())
+                .withCustomFees(customFees)
+                .build();
     }
 
     private FunctionResultBuilder functionResultBuilder() {
@@ -534,25 +534,27 @@ public class EncodingFacade {
             for (final var customFee : customFees) {
                 extractAllFees(fixedFees, fractionalFees, royaltyFees, customFee);
             }
-            return Tuple.of(responseCode,
-                fixedFees.toArray(new Tuple[fixedFees.size()]),
+            return Tuple.of(
+                    responseCode,
+                    fixedFees.toArray(new Tuple[fixedFees.size()]),
                     fractionalFees.toArray(new Tuple[fractionalFees.size()]),
-                        royaltyFees.toArray(new Tuple[royaltyFees.size()]));
+                    royaltyFees.toArray(new Tuple[royaltyFees.size()]));
         }
 
-        private void extractAllFees(final ArrayList<Tuple> fixedFees, final ArrayList<Tuple> fractionalFees,
-            final ArrayList<Tuple> royaltyFees, final CustomFee customFee) {
+        private void extractAllFees(
+                final ArrayList<Tuple> fixedFees,
+                final ArrayList<Tuple> fractionalFees,
+                final ArrayList<Tuple> royaltyFees,
+                final CustomFee customFee) {
             final var feeCollector =
-                convertBesuAddressToHeadlongAddress(
-                    EntityIdUtils.asTypedEvmAddress(
-                        customFee.getFeeCollectorAccountId()));
+                    convertBesuAddressToHeadlongAddress(
+                            EntityIdUtils.asTypedEvmAddress(customFee.getFeeCollectorAccountId()));
             if (customFee.getFixedFee().getAmount() > 0) {
                 fixedFees.add(getFixedFeeTuple(customFee.getFixedFee(), feeCollector));
             } else if (customFee.getFractionalFee().getMinimumAmount() > 0) {
                 fractionalFees.add(
-                    getFractionalFeeTuple(customFee.getFractionalFee(), feeCollector));
-            } else if (customFee.getRoyaltyFee().getExchangeValueFraction().getNumerator()
-                > 0) {
+                        getFractionalFeeTuple(customFee.getFractionalFee(), feeCollector));
+            } else if (customFee.getRoyaltyFee().getExchangeValueFraction().getNumerator() > 0) {
                 royaltyFees.add(getRoyaltyFeeTuple(customFee.getRoyaltyFee(), feeCollector));
             }
         }

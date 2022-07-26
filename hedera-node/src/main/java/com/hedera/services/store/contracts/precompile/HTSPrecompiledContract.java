@@ -630,14 +630,14 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
                             precompilePricingUtils,
                             currentView);
                     case AbiConstants
-                        .ABI_ID_GET_TOKEN_CUSTOM_FEES -> new TokenGetCustomFeesPrecompile(
-                        null,
-                        syntheticTxnFactory,
-                        ledgers,
-                        encoder,
-                        decoder,
-                        precompilePricingUtils,
-                        currentView);
+                            .ABI_ID_GET_TOKEN_CUSTOM_FEES -> new TokenGetCustomFeesPrecompile(
+                            null,
+                            syntheticTxnFactory,
+                            ledgers,
+                            encoder,
+                            decoder,
+                            precompilePricingUtils,
+                            currentView);
                     default -> null;
                 };
         if (precompile != null) {

@@ -63,12 +63,12 @@ import org.apache.tuweni.bytes.Bytes;
 public class HTSPrecompileResult implements ContractCallResult {
     private HTSPrecompileResult() {}
 
-    public static final String FIXED_FEE_REPLACED_ADDRESS = FIXED_FEE.replace(removeBrackets(ADDRESS),
-        removeBrackets(BYTES32));
-    public static final String FRACTIONAL_FEE_REPLACED_ADDRESS = FRACTIONAL_FEE.replace("address",
-        "bytes32");
-    public static final String ROYALTY_FEE_REPLACED_ADDRESS = ROYALTY_FEE.replace("address",
-        "bytes32");
+    public static final String FIXED_FEE_REPLACED_ADDRESS =
+            FIXED_FEE.replace(removeBrackets(ADDRESS), removeBrackets(BYTES32));
+    public static final String FRACTIONAL_FEE_REPLACED_ADDRESS =
+            FRACTIONAL_FEE.replace("address", "bytes32");
+    public static final String ROYALTY_FEE_REPLACED_ADDRESS =
+            ROYALTY_FEE.replace("address", "bytes32");
     public static final String TOKEN_INFO_REPLACED_ADDRESS =
             "("
                     + HEDERA_TOKEN.replace(removeBrackets(ADDRESS), removeBrackets(BYTES32))
@@ -97,17 +97,17 @@ public class HTSPrecompileResult implements ContractCallResult {
             TupleType.parse(
                     RESPONSE_STATUS_AT_BEGINNING + NON_FUNGIBLE_TOKEN_INFO_REPLACED_ADDRESS + ")");
     public static final TupleType tokenGetCustomFeesReplacedAddress =
-        TupleType.parse(
-            RESPONSE_STATUS_AT_BEGINNING
-                + FIXED_FEE_REPLACED_ADDRESS
-                + ARRAY_BRACKETS
-                + ","
-                + FRACTIONAL_FEE_REPLACED_ADDRESS
-                + ARRAY_BRACKETS
-                + ","
-                + ROYALTY_FEE_REPLACED_ADDRESS
-                + ARRAY_BRACKETS
-                + ")");
+            TupleType.parse(
+                    RESPONSE_STATUS_AT_BEGINNING
+                            + FIXED_FEE_REPLACED_ADDRESS
+                            + ARRAY_BRACKETS
+                            + ","
+                            + FRACTIONAL_FEE_REPLACED_ADDRESS
+                            + ARRAY_BRACKETS
+                            + ","
+                            + ROYALTY_FEE_REPLACED_ADDRESS
+                            + ARRAY_BRACKETS
+                            + ")");
 
     public static HTSPrecompileResult htsPrecompileResult() {
         return new HTSPrecompileResult();
@@ -328,22 +328,24 @@ public class HTSPrecompileResult implements ContractCallResult {
         for (final var customFee : customFees) {
             extractFees(fixedFees, fractionalFees, royaltyFees, customFee);
         }
-        return Tuple.of(responseCode,
-            fixedFees.toArray(new Tuple[fixedFees.size()]),
-            fractionalFees.toArray(new Tuple[fractionalFees.size()]),
-            royaltyFees.toArray(new Tuple[royaltyFees.size()]));
+        return Tuple.of(
+                responseCode,
+                fixedFees.toArray(new Tuple[fixedFees.size()]),
+                fractionalFees.toArray(new Tuple[fractionalFees.size()]),
+                royaltyFees.toArray(new Tuple[royaltyFees.size()]));
     }
 
-    private void extractFees(final ArrayList<Tuple> fixedFees, final ArrayList<Tuple> fractionalFees,
-        final ArrayList<Tuple> royaltyFees, final CustomFee customFee) {
+    private void extractFees(
+            final ArrayList<Tuple> fixedFees,
+            final ArrayList<Tuple> fractionalFees,
+            final ArrayList<Tuple> royaltyFees,
+            final CustomFee customFee) {
         final var feeCollector =
-            expandByteArrayTo32Length(
-                Utils.asAddress(customFee.getFeeCollectorAccountId()));
+                expandByteArrayTo32Length(Utils.asAddress(customFee.getFeeCollectorAccountId()));
         if (customFee.getFixedFee().getAmount() > 0) {
             fixedFees.add(getFixedFeeTuple(customFee.getFixedFee(), feeCollector));
         } else if (customFee.getFractionalFee().getMinimumAmount() > 0) {
-            fractionalFees.add(
-                getFractionalFeeTuple(customFee.getFractionalFee(), feeCollector));
+            fractionalFees.add(getFractionalFeeTuple(customFee.getFractionalFee(), feeCollector));
         } else if (customFee.getRoyaltyFee().getExchangeValueFraction().getNumerator() > 0) {
             royaltyFees.add(getRoyaltyFeeTuple(customFee.getRoyaltyFee(), feeCollector));
         }
