@@ -124,8 +124,8 @@ public class RecordStreamManagerTest {
                         globalDynamicProperties);
 
         given(globalDynamicProperties.recordFileVersion()).willReturn(6);
-        given(globalDynamicProperties.getSidecarMaxSizeMb()).willReturn(256);
-        enableV6StreamingInstance =
+			given(globalDynamicProperties.getSidecarMaxSizeMb()).willReturn(256);
+			enableV6StreamingInstance =
                 new RecordStreamManager(
                         platform,
                         runningAvgsMock,
@@ -179,8 +179,8 @@ public class RecordStreamManagerTest {
         assertNotNull(enableV6StreamingInstance.getHashCalculator(), INITIALIZE_NOT_NULL);
         assertEquals(0, enableV6StreamingInstance.getHashQueueSize(), INITIALIZE_QUEUE_EMPTY);
         assertEquals(0, enableV6StreamingInstance.getWriteQueueSize(), INITIALIZE_QUEUE_EMPTY);
-        assertEquals(256, enableV6StreamingInstance.getProtobufStreamFileWriter().getMaxSidecarFileSize());
-    }
+				assertEquals(256, enableV6StreamingInstance.getProtobufStreamFileWriter().getMaxSidecarFileSize());
+		}
 
     @Test
     void setInitialHashTest() {
