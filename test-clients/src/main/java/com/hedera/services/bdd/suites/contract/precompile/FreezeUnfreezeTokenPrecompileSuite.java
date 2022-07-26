@@ -19,6 +19,7 @@ import static com.google.protobuf.ByteString.copyFromUtf8;
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocal;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountDetails;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
@@ -50,7 +51,7 @@ import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.queries.crypto.ExpectedTokenRel;
 import com.hedera.services.bdd.suites.HapiApiSuite;
-import com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult;
+import com.hedera.services.contracts.ParsingConstants;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenFreezeStatus;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -92,7 +93,8 @@ public class FreezeUnfreezeTokenPrecompileSuite extends HapiApiSuite {
         return allOf(
                 List.of(
                         freezeUnfreezeFungibleWithNegativeCases(),
-                        freezeUnfreezeNftsWithNegativeCases()));
+                        freezeUnfreezeNftsWithNegativeCases(),
+                        isFrozenHappyPathWithLocalCall()));
     }
 
     private HapiApiSpec freezeUnfreezeFungibleWithNegativeCases() {
@@ -292,10 +294,53 @@ public class FreezeUnfreezeTokenPrecompileSuite extends HapiApiSuite {
                                                         .contractCallResult(
                                                                 htsPrecompileResult()
                                                                         .forFunction(
-                                                                                HTSPrecompileResult
+                                                                                ParsingConstants
                                                                                         .FunctionType
-                                                                                        .IS_FROZEN)
+                                                                                        .HAPI_IS_FROZEN)
                                                                         .withStatus(SUCCESS)
                                                                         .withIsFrozen(false)))));
+    }
+
+    private HapiApiSpec isFrozenHappyPathWithLocalCall() {
+        final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
+
+        return defaultHapiSpec("isFrozenHappyPathWithLocalCall")
+                .given(
+                        newKeyNamed(FREEZE_KEY),
+                        newKeyNamed(MULTI_KEY),
+                        cryptoCreate(ACCOUNT)
+                                .balance(100 * ONE_HBAR)
+                                .key(FREEZE_KEY)
+                                .exposingCreatedIdTo(accountID::set),
+                        cryptoCreate(TOKEN_TREASURY),
+                        tokenCreate(VANILLA_TOKEN)
+                                .tokenType(FUNGIBLE_COMMON)
+                                .treasury(TOKEN_TREASURY)
+                                .freezeKey(FREEZE_KEY)
+                                .initialSupply(1_000)
+                                .exposingCreatedIdTo(id -> vanillaTokenID.set(asToken(id))),
+                        uploadInitCode(FREEZE_CONTRACT),
+                        contractCreate(FREEZE_CONTRACT),
+                        tokenAssociate(ACCOUNT, VANILLA_TOKEN),
+                        cryptoTransfer(moving(500, VANILLA_TOKEN).between(TOKEN_TREASURY, ACCOUNT)))
+                .when(
+                        withOpContext(
+                                (spec, opLog) ->
+                                        allRunFor(
+                                                spec,
+                                                contractCall(
+                                                                FREEZE_CONTRACT,
+                                                                TOKEN_FREEZE_FUNC,
+                                                                asAddress(vanillaTokenID.get()),
+                                                                asAddress(accountID.get()))
+                                                        .logged()
+                                                        .payingWith(ACCOUNT)
+                                                        .gas(GAS_TO_OFFER),
+                                                contractCallLocal(
+                                                        FREEZE_CONTRACT,
+                                                        IS_FROZEN_FUNC,
+                                                        asAddress(vanillaTokenID.get()),
+                                                        asAddress(accountID.get())))))
+                .then();
     }
 }

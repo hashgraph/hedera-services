@@ -38,6 +38,7 @@ import com.hedera.services.state.validation.UsageLimits;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
+import com.hedera.services.store.contracts.WorldLedgers;
 import com.hedera.services.store.contracts.precompile.codec.DecodingFacade;
 import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
 import com.hedera.services.store.contracts.precompile.proxy.RedirectViewExecutor;
@@ -81,6 +82,7 @@ class InfrastructureFactoryTest {
     @Mock private SigImpactHistorian sigImpactHistorian;
     @Mock private DissociationFactory dissociationFactory;
     @Mock private GlobalDynamicProperties dynamicProperties;
+    @Mock private WorldLedgers ledgers;
     @Mock private TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger;
 
     @Mock
@@ -245,7 +247,7 @@ class InfrastructureFactoryTest {
     void canCreateNewViewExecutor() {
         assertInstanceOf(
                 ViewExecutor.class,
-                subject.newViewExecutor(Bytes.EMPTY, frame, gasCalculator, stateView));
+                subject.newViewExecutor(Bytes.EMPTY, frame, gasCalculator, stateView, ledgers));
     }
 
     @Test

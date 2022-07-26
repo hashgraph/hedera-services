@@ -75,8 +75,8 @@ import com.hedera.services.store.contracts.precompile.impl.BurnPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.DecimalsPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.DissociatePrecompile;
 import com.hedera.services.store.contracts.precompile.impl.ERCTransferPrecompile;
-import com.hedera.services.store.contracts.precompile.impl.FungibleTokenInfoPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.FreezeTokenPrecompile;
+import com.hedera.services.store.contracts.precompile.impl.FungibleTokenInfoPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.GetApprovedPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.IsApprovedForAllPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.IsFrozenPrecompile;
@@ -215,7 +215,8 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
                                     input,
                                     frame,
                                     precompilePricingUtils::computeViewFunctionGas,
-                                    currentView);
+                                    currentView,
+                                    ledgers);
                     return executor.computeCosted();
                 }
             }
@@ -419,14 +420,14 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
                                             encoder,
                                             decoder,
                                             precompilePricingUtils));
-                    case AbiConstants.ABI_IS_TOKEN_FROZEN -> new IsFrozenPrecompile(
+                    case AbiConstants.ABI_ID_IS_FROZEN -> new IsFrozenPrecompile(
                             null,
                             syntheticTxnFactory,
                             ledgers,
                             encoder,
                             decoder,
                             precompilePricingUtils);
-                    case AbiConstants.ABI_FREEZE_TOKEN -> new FreezeTokenPrecompile(
+                    case AbiConstants.ABI_ID_FREEZE -> new FreezeTokenPrecompile(
                             ledgers,
                             decoder,
                             updater.aliases(),
@@ -436,7 +437,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
                             infrastructureFactory,
                             precompilePricingUtils,
                             true);
-                    case AbiConstants.ABI_UNFREEZE_TOKEN -> new UnfreezeTokenPrecompile(
+                    case AbiConstants.ABI_ID_UNFREEZE -> new UnfreezeTokenPrecompile(
                             ledgers,
                             decoder,
                             updater.aliases(),

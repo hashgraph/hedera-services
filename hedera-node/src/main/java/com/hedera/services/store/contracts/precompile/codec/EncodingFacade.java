@@ -135,7 +135,7 @@ public class EncodingFacade {
 
     public Bytes encodeIsFrozen(final boolean isFrozen) {
         return functionResultBuilder()
-                .forFunction(FunctionType.IS_FROZEN)
+                .forFunction(FunctionType.HAPI_IS_FROZEN)
                 .withStatus(SUCCESS.getNumber())
                 .withIsFrozen(isFrozen)
                 .build();
@@ -342,7 +342,7 @@ public class EncodingFacade {
                         case HAPI_GET_TOKEN_INFO -> getTokenInfoType;
                         case HAPI_GET_FUNGIBLE_TOKEN_INFO -> getFungibleTokenInfoType;
                         case HAPI_GET_NON_FUNGIBLE_TOKEN_INFO -> getNonFungibleTokenInfoType;
-                        case IS_FROZEN -> isTokenFrozenType;
+                        case HAPI_IS_FROZEN -> isTokenFrozenType;
                         default -> notSpecifiedType;
                     };
 
@@ -472,7 +472,7 @@ public class EncodingFacade {
                         case HAPI_GET_TOKEN_INFO -> getTupleForGetTokenInfo();
                         case HAPI_GET_FUNGIBLE_TOKEN_INFO -> getTupleForGetFungibleTokenInfo();
                         case HAPI_GET_NON_FUNGIBLE_TOKEN_INFO -> getTupleForGetNonFungibleTokenInfo();
-                        case IS_FROZEN -> Tuple.of(status, isFrozen);
+                        case HAPI_IS_FROZEN -> Tuple.of(status, isFrozen);
                         default -> Tuple.of(status);
                     };
 

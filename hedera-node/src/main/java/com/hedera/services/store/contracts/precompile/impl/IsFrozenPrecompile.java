@@ -15,7 +15,6 @@
  */
 package com.hedera.services.store.contracts.precompile.impl;
 
-import com.hedera.services.ledger.properties.TokenRelProperty;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.store.contracts.WorldLedgers;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
@@ -26,7 +25,6 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.util.function.UnaryOperator;
-import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
 
 public class IsFrozenPrecompile extends AbstractReadOnlyPrecompile {
@@ -52,10 +50,7 @@ public class IsFrozenPrecompile extends AbstractReadOnlyPrecompile {
 
     @Override
     public Bytes getSuccessResultFor(ExpirableTxnRecord.Builder childRecord) {
-        final boolean isFrozen =
-                (Boolean)
-                        ledgers.tokenRels()
-                                .get(Pair.of(accountId, tokenId), TokenRelProperty.IS_FROZEN);
+        final boolean isFrozen = ledgers.isFrozen(accountId, tokenId);
         return encoder.encodeIsFrozen(isFrozen);
     }
 }

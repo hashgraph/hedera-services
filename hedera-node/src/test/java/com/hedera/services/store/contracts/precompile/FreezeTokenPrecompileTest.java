@@ -16,7 +16,7 @@
 package com.hedera.services.store.contracts.precompile;
 
 import static com.hedera.services.state.EntityCreator.EMPTY_MEMO;
-import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_FREEZE_TOKEN;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_FREEZE;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.DEFAULT_GAS_PRICE;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.TEST_CONSENSUS_TIME;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.contractAddr;
@@ -161,7 +161,7 @@ class FreezeTokenPrecompileTest {
     @Test
     void computeCallsSuccessfullyForFreezeFungibleToken() {
         // given
-        final var input = Bytes.of(Integers.toBytes(ABI_FREEZE_TOKEN));
+        final var input = Bytes.of(Integers.toBytes(ABI_ID_FREEZE));
         givenFrameContext();
         givenLedgers();
         givenMinimalContextForSuccessfulCall();
@@ -180,7 +180,7 @@ class FreezeTokenPrecompileTest {
     @Test
     void gasRequirementReturnsCorrectValueForFreezeToken() {
         // given
-        final var input = Bytes.of(Integers.toBytes(ABI_FREEZE_TOKEN));
+        final var input = Bytes.of(Integers.toBytes(ABI_ID_FREEZE));
         givenMinimalFrameContext();
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));

@@ -15,7 +15,7 @@
  */
 package com.hedera.services.store.contracts.precompile;
 
-import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_IS_TOKEN_FROZEN;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_IS_FROZEN;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.accountAddr;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.contractAddress;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.fungibleTokenAddr;
@@ -151,14 +151,15 @@ class IsFrozenPrecompileTest {
                             + "00000000000000000000000000000000000000000000000000001");
         final Bytes pretendArguments =
                 Bytes.concatenate(
-                        Bytes.of(Integers.toBytes(ABI_IS_TOKEN_FROZEN)),
+                        Bytes.of(Integers.toBytes(ABI_ID_IS_FROZEN)),
                         fungibleTokenAddr,
                         accountAddr);
         givenMinimalFrameContext();
         givenMinimalFeesContext();
         givenLedgers();
+        given(wrappedLedgers.isFrozen(any(), any())).willReturn(true);
         givenMinimalContextForSuccessfulCall();
-        Bytes input = Bytes.of(Integers.toBytes(ABI_IS_TOKEN_FROZEN));
+        Bytes input = Bytes.of(Integers.toBytes(ABI_ID_IS_FROZEN));
         given(syntheticTxnFactory.createTransactionCall(1L, pretendArguments))
                 .willReturn(mockSynthBodyBuilder);
         given(decoder.decodeIsFrozen(any(), any())).willReturn(tokenFreezeUnFreezeWrapper);

@@ -23,6 +23,7 @@ import static com.hedera.services.contracts.ParsingConstants.EXPIRY;
 import static com.hedera.services.contracts.ParsingConstants.FIXED_FEE;
 import static com.hedera.services.contracts.ParsingConstants.FRACTIONAL_FEE;
 import static com.hedera.services.contracts.ParsingConstants.INT;
+import static com.hedera.services.contracts.ParsingConstants.INT_BOOL_PAIR;
 import static com.hedera.services.contracts.ParsingConstants.ROYALTY_FEE;
 import static com.hedera.services.contracts.ParsingConstants.STRING;
 import static com.hedera.services.contracts.ParsingConstants.TOKEN_KEY;
@@ -65,7 +66,6 @@ public class DecodingFacade {
     private static final int ADDRESS_BYTES_LENGTH = 20;
     private static final int ADDRESS_SKIP_BYTES_LENGTH = 12;
     private static final int FUNCTION_SELECTOR_BYTES_LENGTH = 4;
-    private static final String INT_BOOL_PAIR_OUTPUT = "(int,bool)";
     private static final String ADDRESS_PAIR_RAW_TYPE = "(bytes32,bytes32)";
     private static final String ADDRESS_TRIPLE_RAW_TYPE = "(bytes32,bytes32,bytes32)";
     private static final String UINT256_RAW_TYPE = "(uint256)";
@@ -182,7 +182,7 @@ public class DecodingFacade {
             TypeFactory.create(ADDRESS_ADDRESS_UINT256_RAW_TYPE);
 
     private static final Function IS_FROZEN_TOKEN_FUNCTION =
-            new Function("isFrozen(address,address)", INT_BOOL_PAIR_OUTPUT);
+            new Function("isFrozen(address,address)", INT_BOOL_PAIR);
     private static final Bytes IS_FROZEN_TOKEN_FUNCTION_SELECTOR =
             Bytes.wrap(IS_FROZEN_TOKEN_FUNCTION.selector());
     private static final ABIType<Tuple> IS_FROZEN_TOKEN_DECODER =
@@ -340,7 +340,7 @@ public class DecodingFacade {
             TypeFactory.create(ADDRESS_UINT256_RAW_TYPE);
 
     private static final Function HAPI_IS_APPROVED_FOR_ALL =
-            new Function("isApprovedForAll(address,address,address)", INT_BOOL_PAIR_OUTPUT);
+            new Function("isApprovedForAll(address,address,address)", INT_BOOL_PAIR);
     private static final Bytes HAPI_IS_APPROVED_FOR_ALL_SELECTOR =
             Bytes.wrap(HAPI_IS_APPROVED_FOR_ALL.selector());
     private static final ABIType<Tuple> HAPI_IS_APPROVED_FOR_ALL_DECODER =
@@ -354,7 +354,7 @@ public class DecodingFacade {
             TypeFactory.create("(bytes32,bytes32,bool)");
 
     private static final Function HAPI_TOKEN_APPROVE_FUNCTION =
-            new Function("approve(address,address,uint256)", INT_BOOL_PAIR_OUTPUT);
+            new Function("approve(address,address,uint256)", INT_BOOL_PAIR);
     private static final Bytes HAPI_TOKEN_APPROVE_SELECTOR =
             Bytes.wrap(HAPI_TOKEN_APPROVE_FUNCTION.selector());
     private static final ABIType<Tuple> HAPI_TOKEN_APPROVE_DECODER =

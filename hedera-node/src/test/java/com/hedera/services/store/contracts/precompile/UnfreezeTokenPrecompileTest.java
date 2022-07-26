@@ -16,7 +16,7 @@
 package com.hedera.services.store.contracts.precompile;
 
 import static com.hedera.services.state.EntityCreator.EMPTY_MEMO;
-import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_UNFREEZE_TOKEN;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_UNFREEZE;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.DEFAULT_GAS_PRICE;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.TEST_CONSENSUS_TIME;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.contractAddr;
@@ -160,7 +160,7 @@ class UnfreezeTokenPrecompileTest {
     @Test
     void computeCallsSuccessfullyForUnFreezeFungibleToken() {
         // given
-        final var input = Bytes.of(Integers.toBytes(ABI_UNFREEZE_TOKEN));
+        final var input = Bytes.of(Integers.toBytes(ABI_ID_UNFREEZE));
         givenFrameContext();
         givenLedgers();
         givenMinimalContextForSuccessfulCall();
@@ -179,7 +179,7 @@ class UnfreezeTokenPrecompileTest {
     @Test
     void gasRequirementReturnsCorrectValueForUnfreezeToken() {
         // given
-        final var input = Bytes.of(Integers.toBytes(ABI_UNFREEZE_TOKEN));
+        final var input = Bytes.of(Integers.toBytes(ABI_ID_UNFREEZE));
         givenMinimalFrameContext();
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));

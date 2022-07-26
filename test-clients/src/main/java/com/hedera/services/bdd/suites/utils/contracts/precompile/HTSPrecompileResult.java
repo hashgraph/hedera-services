@@ -33,6 +33,7 @@ import static com.hedera.services.contracts.ParsingConstants.hapiAllowanceOfType
 import static com.hedera.services.contracts.ParsingConstants.hapiGetApprovedType;
 import static com.hedera.services.contracts.ParsingConstants.hapiIsApprovedForAllType;
 import static com.hedera.services.contracts.ParsingConstants.isApprovedForAllType;
+import static com.hedera.services.contracts.ParsingConstants.isFrozenType;
 import static com.hedera.services.contracts.ParsingConstants.mintReturnType;
 import static com.hedera.services.contracts.ParsingConstants.nameType;
 import static com.hedera.services.contracts.ParsingConstants.notSpecifiedType;
@@ -134,7 +135,7 @@ public class HTSPrecompileResult implements ContractCallResult {
                     case HAPI_GET_TOKEN_INFO -> getTokenInfoTypeReplacedAddress;
                     case HAPI_GET_FUNGIBLE_TOKEN_INFO -> getFungibleTokenInfoTypeReplacedAddress;
                     case HAPI_GET_NON_FUNGIBLE_TOKEN_INFO -> getNonFungibleTokenInfoTypeReplacedAddress;
-                    case IS_FROZEN -> isFrozenType;
+                    case HAPI_IS_FROZEN -> isFrozenType;
                     default -> notSpecifiedType;
                 };
 
@@ -267,7 +268,7 @@ public class HTSPrecompileResult implements ContractCallResult {
                     case HAPI_GET_TOKEN_INFO -> getTupleForGetTokenInfo();
                     case HAPI_GET_FUNGIBLE_TOKEN_INFO -> getTupleForGetFungibleTokenInfo();
                     case HAPI_GET_NON_FUNGIBLE_TOKEN_INFO -> getTupleForGetNonFungibleTokenInfo();
-                    case IS_FROZEN -> Tuple.of(status.getNumber(), isFrozen);
+                    case HAPI_IS_FROZEN -> Tuple.of(status.getNumber(), isFrozen);
                     default -> Tuple.of(status.getNumber());
                 };
 
