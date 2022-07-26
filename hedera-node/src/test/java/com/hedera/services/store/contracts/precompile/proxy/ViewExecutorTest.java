@@ -169,7 +169,7 @@ class ViewExecutorTest {
     }
 
     @Test
-    void revertsFrameAndReturnsNullOnRevertingException() {
+    void getTokenInfoRevertsFrameAndReturnsNullOnRevertingException() {
         final var input = prerequisites(ABI_ID_GET_TOKEN_INFO, fungibleTokenAddress);
 
         final var tokenInfoWrapper = TokenInfoWrapper.forToken(fungible);
@@ -181,8 +181,66 @@ class ViewExecutorTest {
         verify(frame).setState(MessageFrame.State.REVERT);
     }
 
+    @Test
+    void getFungibleTokenInfoRevertsFrameAndReturnsNullOnRevertingException() {
+        final var input = prerequisites(ABI_ID_GET_FUNGIBLE_TOKEN_INFO, fungibleTokenAddress);
+
+        final var tokenInfoWrapper = TokenInfoWrapper.forFungibleToken(fungible);
+        given(decodingFacade.decodeGetFungibleTokenInfo(input)).willReturn(tokenInfoWrapper);
+
+        given(stateView.infoForToken(any())).willReturn(Optional.empty());
+
+        assertEquals(Pair.of(gas, null), subject.computeCosted());
+        verify(frame).setState(MessageFrame.State.REVERT);
+    }
+
+    @Test
+    void getNonFungibleTokenInfoRevertsFrameAndReturnsNullOnRevertingException() {
+        final var input =
+                prerequisitesForNft(ABI_ID_GET_NON_FUNGIBLE_TOKEN_INFO, fungibleTokenAddress, 1L);
+
+        final var tokenInfoWrapper = TokenInfoWrapper.forNonFungibleToken(nonfungibletoken, 1L);
+        given(decodingFacade.decodeGetNonFungibleTokenInfo(input)).willReturn(tokenInfoWrapper);
+
+        given(stateView.infoForToken(any())).willReturn(Optional.empty());
+
+        assertEquals(Pair.of(gas, null), subject.computeCosted());
+        verify(frame).setState(MessageFrame.State.REVERT);
+    }
+
+    @Test
+    void getNonFungibleTokenInfoRevertsFrameAndReturnsNullOnRevertingExceptionForInvalidId() {
+        final var input =
+                prerequisitesForNft(ABI_ID_GET_NON_FUNGIBLE_TOKEN_INFO, fungibleTokenAddress, 1L);
+
+        final var tokenInfoWrapper = TokenInfoWrapper.forNonFungibleToken(nonfungibletoken, 1L);
+        given(decodingFacade.decodeGetNonFungibleTokenInfo(input)).willReturn(tokenInfoWrapper);
+
+        given(stateView.infoForToken(any())).willReturn(Optional.of(tokenInfo));
+        given(stateView.infoForNft(any())).willReturn(Optional.empty());
+
+        assertEquals(Pair.of(gas, null), subject.computeCosted());
+        verify(frame).setState(MessageFrame.State.REVERT);
+    }
+
     Bytes prerequisites(final int descriptor, final Bytes tokenAddress) {
         Bytes input = Bytes.concatenate(Bytes.of(Integers.toBytes(descriptor)), tokenAddress);
+        given(frame.getBlockValues()).willReturn(blockValues);
+        given(blockValues.getTimestamp()).willReturn(timestamp);
+        given(viewGasCalculator.compute(resultingTimestamp, MINIMUM_TINYBARS_COST)).willReturn(gas);
+        this.subject =
+                new ViewExecutor(
+                        input, frame, encodingFacade, decodingFacade, viewGasCalculator, stateView);
+        return input;
+    }
+
+    Bytes prerequisitesForNft(
+            final int descriptor, final Bytes tokenAddress, final long serialNumber) {
+        Bytes input =
+                Bytes.concatenate(
+                        Bytes.of(Integers.toBytes(descriptor)),
+                        tokenAddress,
+                        Bytes.of(Integers.toBytes(serialNumber)));
         given(frame.getBlockValues()).willReturn(blockValues);
         given(blockValues.getTimestamp()).willReturn(timestamp);
         given(viewGasCalculator.compute(resultingTimestamp, MINIMUM_TINYBARS_COST)).willReturn(gas);

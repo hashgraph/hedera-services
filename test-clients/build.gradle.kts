@@ -20,6 +20,7 @@
 
 plugins {
     id("com.hedera.hashgraph.hedera-conventions")
+    id("com.hedera.hashgraph.shadow-jar")
 }
 
 description = "Hedera Services Test Clients for End to End Tests (EET)"
@@ -86,13 +87,16 @@ tasks.eet {
     systemProperty("networkWorkspaceDir", File(project.buildDir, "network/eet"))
 }
 
-val copyApp = tasks.register<Copy>("copyApp") {
-    from(tasks.jar)
-    into(File(project.buildDir, "libs"))
-    rename { "SuiteRunner.jar" }
-    shouldRunAfter(tasks.assemble)
+tasks.shadowJar {
+    archiveFileName.set("SuiteRunner.jar")
+
+    manifest {
+        attributes(
+            "Main-Class" to "com.hedera.services.bdd.suites.SuiteRunner",
+        )
+    }
 }
 
 tasks.assemble {
-    dependsOn(copyApp)
+    dependsOn(tasks.shadowJar)
 }

@@ -289,16 +289,5 @@ public enum TokenProperty implements BeanProperty<MerkleToken> {
         public Function<MerkleToken, Object> getter() {
             return MerkleToken::decimals;
         }
-    },
-    ACC_KYC_GRANTED_BY_DEFAULT {
-        @Override
-        public BiConsumer<MerkleToken, Object> setter() {
-            return (a, l) -> a.setAccountsKycGrantedByDefault((boolean) l);
-        }
-
-        @Override
-        public Function<MerkleToken, Object> getter() {
-            return MerkleToken::accountsKycGrantedByDefault;
-        }
     }
 }

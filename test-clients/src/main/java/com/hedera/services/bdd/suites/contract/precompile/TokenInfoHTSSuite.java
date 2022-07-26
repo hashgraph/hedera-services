@@ -51,14 +51,20 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
 import com.hedera.services.bdd.suites.HapiApiSuite;
-import com.hedera.services.bdd.suites.contract.Utils;
 import com.hedera.services.bdd.suites.utils.contracts.precompile.TokenKeyType;
 import com.hedera.services.contracts.ParsingConstants.FunctionType;
+import com.hederahashgraph.api.proto.java.CustomFee;
+import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.FixedFee;
+import com.hederahashgraph.api.proto.java.Fraction;
 import com.hederahashgraph.api.proto.java.FractionalFee;
+import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.NftID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.RoyaltyFee;
+import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenInfo;
+import com.hederahashgraph.api.proto.java.TokenNftInfo;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import com.hederahashgraph.api.proto.java.TokenType;
 import java.nio.charset.StandardCharsets;
@@ -89,7 +95,6 @@ public class TokenInfoHTSSuite extends HapiApiSuite {
     private static final String FUNGIBLE_TOKEN_INFO_TXN = "FungibleTokenInfoTxn";
     private static final String NON_FUNGIBLE_TOKEN_INFO_TXN = "NonFungibleTokenInfoTxn";
     private static final String GET_TOKEN_INFO_TXN = "GetTokenInfo";
-    private static final String LEDGER_ID = "0x03";
     private static final String SYMBOL = "T";
     private static final String FUNGIBLE_SYMBOL = "FT";
     private static final String NON_FUNGIBLE_SYMBOL = "NFT";
@@ -107,7 +112,6 @@ public class TokenInfoHTSSuite extends HapiApiSuite {
     private static final int MINIMUM_TO_COLLECT = 5;
     private static final int MAXIMUM_TO_COLLECT = 400;
     private static final int MAX_SUPPLY = 1000;
-    private static final long MASK_INT_AS_UNSIGNED_LONG = (1L << 32) - 1;
 
     public static void main(String... args) {
         new TokenInfoHTSSuite().runSuiteSync();
@@ -125,19 +129,17 @@ public class TokenInfoHTSSuite extends HapiApiSuite {
 
     List<HapiApiSpec> negativeSpecs() {
         return List.of(
-                //                getInfoOnDeletedFungibleTokenWorks(),
-                //                getInfoOnInvalidFungibleTokenFails(),
-                //                getInfoOnDeletedNonFungibleTokenFails(),
-                //                getInfoOnInvalidNonFungibleTokenFails()
-                );
+                getInfoOnDeletedFungibleTokenWorks(),
+                getInfoOnInvalidFungibleTokenFails(),
+                getInfoOnDeletedNonFungibleTokenFails(),
+                getInfoOnInvalidNonFungibleTokenFails());
     }
 
     List<HapiApiSpec> positiveSpecs() {
         return List.of(
-                happyPathGetTokenInfo()
-                //                happyPathGetFungibleTokenInfo(),
-                //                happyPathGetNonFungibleTokenInfo()
-                );
+                happyPathGetTokenInfo(),
+                happyPathGetFungibleTokenInfo(),
+                happyPathGetNonFungibleTokenInfo());
     }
 
     private HapiApiSpec happyPathGetTokenInfo() {
@@ -463,6 +465,12 @@ public class TokenInfoHTSSuite extends HapiApiSuite {
                                                     .getTokenInfo()
                                                     .getExpiry()
                                                     .getSeconds();
+                                    final var tokenId =
+                                            getTokenInfoQuery
+                                                    .getResponse()
+                                                    .getTokenGetInfo()
+                                                    .getTokenInfo()
+                                                    .getTokenId();
 
                                     final var getNftTokenInfoQuery =
                                             getTokenNftInfo(NON_FUNGIBLE_TOKEN_NAME, 1L);
@@ -473,15 +481,23 @@ public class TokenInfoHTSSuite extends HapiApiSuite {
                                                     .getTokenGetNftInfo()
                                                     .getNft()
                                                     .getCreationTime();
-                                    final var packedCreationTime =
-                                            packedTime(
-                                                    creationTime.getSeconds(),
-                                                    creationTime.getNanos());
 
-                                    final var ownerBytes =
-                                            Utils.asAddress(spec.registry().getAccountID(owner));
-                                    final var spenderBytes =
-                                            Utils.asAddress(spec.registry().getAccountID(spender));
+                                    final var ownerId = spec.registry().getAccountID(owner);
+                                    final var spenderId = spec.registry().getAccountID(spender);
+
+                                    final var nftTokenInfo =
+                                            TokenNftInfo.newBuilder()
+                                                    .setLedgerId(fromString("0x03"))
+                                                    .setNftID(
+                                                            NftID.newBuilder()
+                                                                    .setTokenID(tokenId)
+                                                                    .setSerialNumber(1L)
+                                                                    .build())
+                                                    .setAccountID(ownerId)
+                                                    .setCreationTime(creationTime)
+                                                    .setMetadata(meta)
+                                                    .setSpenderId(spenderId)
+                                                    .build();
 
                                     allRunFor(
                                             spec,
@@ -502,20 +518,12 @@ public class TokenInfoHTSSuite extends HapiApiSuite {
                                                                                                             .HAPI_GET_NON_FUNGIBLE_TOKEN_INFO)
                                                                                             .withStatus(
                                                                                                     SUCCESS)
-                                                                                            .withSerialNumber(
-                                                                                                    1L)
-                                                                                            .withCreationTime(
-                                                                                                    packedCreationTime)
-                                                                                            .withTokenUri(
-                                                                                                    META)
-                                                                                            .withOwner(
-                                                                                                    ownerBytes)
-                                                                                            .withSpender(
-                                                                                                    spenderBytes)
                                                                                             .withTokenInfo(
                                                                                                     getTokenInfoStructForNonFungibleToken(
                                                                                                             spec,
-                                                                                                            expirySecond))))));
+                                                                                                            expirySecond))
+                                                                                            .withNftTokenInfo(
+                                                                                                    nftTokenInfo)))));
                                 }));
     }
 
@@ -738,141 +746,128 @@ public class TokenInfoHTSSuite extends HapiApiSuite {
             final String symbol,
             final long expirySecond) {
         final var autoRenewAccount = spec.registry().getAccountID(AUTO_RENEW_ACCOUNT);
-        final var expiry =
-                new Expiry(
-                        expirySecond,
-                        Bytes.wrap(expandByteArrayTo32Length(Utils.asAddress(autoRenewAccount))),
-                        THREE_MONTHS_IN_SECONDS);
+
         final var treasury = spec.registry().getAccountID(TOKEN_TREASURY);
-        final var token =
-                new HederaToken(
-                        tokenName,
-                        symbol,
-                        Bytes.wrap(expandByteArrayTo32Length(Utils.asAddress(treasury))),
-                        MEMO,
-                        true,
-                        MAX_SUPPLY,
-                        false,
-                        getTokenKeys(spec),
-                        expiry);
 
-        final var fixedFees = new ArrayList<FixedFee>();
-        final var fixedFeeCollector =
-                Bytes.wrap(
-                        expandByteArrayTo32Length(
-                                Utils.asAddress(spec.registry().getAccountID(HTS_COLLECTOR))));
-        final var fixedFee =
-                new FixedFee(500L, Bytes.wrap(new byte[32]), true, false, fixedFeeCollector);
-        fixedFees.add(fixedFee);
+        final var fixedFee = FixedFee.newBuilder().setAmount(500L).build();
+        final var customFixedFee =
+                CustomFee.newBuilder()
+                        .setFixedFee(fixedFee)
+                        .setFeeCollectorAccountId(spec.registry().getAccountID(HTS_COLLECTOR))
+                        .build();
 
-        final var fractionalFees = new ArrayList<FractionalFee>();
-        final var fractionalFeeCollector =
-                Bytes.wrap(
-                        expandByteArrayTo32Length(
-                                Utils.asAddress(spec.registry().getAccountID(TOKEN_TREASURY))));
+        final var fraction =
+                Fraction.newBuilder().setNumerator(NUMERATOR).setDenominator(DENOMINATOR).build();
         final var fractionalFee =
-                new FractionalFee(
-                        NUMERATOR,
-                        DENOMINATOR,
-                        MINIMUM_TO_COLLECT,
-                        MAXIMUM_TO_COLLECT,
-                        false,
-                        fractionalFeeCollector);
-        fractionalFees.add(fractionalFee);
+                FractionalFee.newBuilder()
+                        .setFractionalAmount(fraction)
+                        .setMinimumAmount(MINIMUM_TO_COLLECT)
+                        .setMaximumAmount(MAXIMUM_TO_COLLECT)
+                        .build();
+        final var customFractionalFee =
+                CustomFee.newBuilder()
+                        .setFractionalFee(fractionalFee)
+                        .setFeeCollectorAccountId(spec.registry().getAccountID(TOKEN_TREASURY))
+                        .build();
 
-        return new TokenInfo(
-                token,
-                500L,
-                false,
-                false,
-                false,
-                fixedFees,
-                fractionalFees,
-                new ArrayList<>(),
-                LEDGER_ID);
+        final var customFees = new ArrayList<CustomFee>();
+        customFees.add(customFixedFee);
+        customFees.add(customFractionalFee);
+
+        return TokenInfo.newBuilder()
+                .setLedgerId(fromString("0x03"))
+                .setSupplyTypeValue(TokenSupplyType.FINITE_VALUE)
+                .setExpiry(Timestamp.newBuilder().setSeconds(expirySecond))
+                .setAutoRenewAccount(autoRenewAccount)
+                .setAutoRenewPeriod(
+                        Duration.newBuilder().setSeconds(THREE_MONTHS_IN_SECONDS).build())
+                .setSymbol(symbol)
+                .setName(tokenName)
+                .setMemo(MEMO)
+                .setTreasury(treasury)
+                .setTotalSupply(500L)
+                .setMaxSupply(MAX_SUPPLY)
+                .addAllCustomFees(customFees)
+                .setAdminKey(getTokenKeyFromSpec(spec, TokenKeyType.ADMIN_KEY))
+                .setKycKey(getTokenKeyFromSpec(spec, TokenKeyType.KYC_KEY))
+                .setFreezeKey(getTokenKeyFromSpec(spec, TokenKeyType.FREEZE_KEY))
+                .setWipeKey(getTokenKeyFromSpec(spec, TokenKeyType.WIPE_KEY))
+                .setSupplyKey(getTokenKeyFromSpec(spec, TokenKeyType.SUPPLY_KEY))
+                .setFeeScheduleKey(getTokenKeyFromSpec(spec, TokenKeyType.FEE_SCHEDULE_KEY))
+                .setPauseKey(getTokenKeyFromSpec(spec, TokenKeyType.PAUSE_KEY))
+                .build();
     }
 
     private TokenInfo getTokenInfoStructForNonFungibleToken(
             final HapiApiSpec spec, final long expirySecond) {
         final var autoRenewAccount = spec.registry().getAccountID(AUTO_RENEW_ACCOUNT);
-        final var expiry =
-                new Expiry(
-                        expirySecond,
-                        Bytes.wrap(expandByteArrayTo32Length(Utils.asAddress(autoRenewAccount))),
-                        THREE_MONTHS_IN_SECONDS);
         final var treasury = spec.registry().getAccountID(TOKEN_TREASURY);
-        final var token =
-                new HederaToken(
-                        NON_FUNGIBLE_TOKEN_NAME,
-                        NON_FUNGIBLE_SYMBOL,
-                        Bytes.wrap(expandByteArrayTo32Length(Utils.asAddress(treasury))),
-                        MEMO,
-                        true,
-                        10L,
-                        false,
-                        getTokenKeys(spec),
-                        expiry);
 
-        final var royaltyFees = new ArrayList<RoyaltyFee>();
-        final var royaltyFeeCollector =
-                Bytes.wrap(
-                        expandByteArrayTo32Length(
-                                Utils.asAddress(spec.registry().getAccountID(HTS_COLLECTOR))));
-        final var tokenDenomAddress =
-                Bytes.wrap(
-                        expandByteArrayTo32Length(
-                                Utils.asAddress(spec.registry().getTokenID(FEE_DENOM))));
+        final var fraction =
+                Fraction.newBuilder().setNumerator(NUMERATOR).setDenominator(DENOMINATOR).build();
+        final var fallbackFee =
+                FixedFee.newBuilder()
+                        .setAmount(100L)
+                        .setDenominatingTokenId(spec.registry().getTokenID(FEE_DENOM))
+                        .build();
         final var royaltyFee =
-                new RoyaltyFee(
-                        NUMERATOR, DENOMINATOR, 100, tokenDenomAddress, false, royaltyFeeCollector);
-        royaltyFees.add(royaltyFee);
+                RoyaltyFee.newBuilder()
+                        .setExchangeValueFraction(fraction)
+                        .setFallbackFee(fallbackFee)
+                        .build();
+        final var customRoyaltyFee =
+                CustomFee.newBuilder()
+                        .setRoyaltyFee(royaltyFee)
+                        .setFeeCollectorAccountId(spec.registry().getAccountID(HTS_COLLECTOR))
+                        .build();
 
-        return new TokenInfo(
-                token,
-                1L,
-                false,
-                false,
-                false,
-                new ArrayList<>(),
-                new ArrayList<>(),
-                royaltyFees,
-                LEDGER_ID);
+        return TokenInfo.newBuilder()
+                .setLedgerId(fromString("0x03"))
+                .setSupplyTypeValue(TokenSupplyType.FINITE_VALUE)
+                .setExpiry(Timestamp.newBuilder().setSeconds(expirySecond))
+                .setAutoRenewAccount(autoRenewAccount)
+                .setAutoRenewPeriod(
+                        Duration.newBuilder().setSeconds(THREE_MONTHS_IN_SECONDS).build())
+                .setSymbol(NON_FUNGIBLE_SYMBOL)
+                .setName(NON_FUNGIBLE_TOKEN_NAME)
+                .setMemo(MEMO)
+                .setTreasury(treasury)
+                .setTotalSupply(1L)
+                .setMaxSupply(10L)
+                .addAllCustomFees(List.of(customRoyaltyFee))
+                .setAdminKey(getTokenKeyFromSpec(spec, TokenKeyType.ADMIN_KEY))
+                .setKycKey(getTokenKeyFromSpec(spec, TokenKeyType.KYC_KEY))
+                .setFreezeKey(getTokenKeyFromSpec(spec, TokenKeyType.FREEZE_KEY))
+                .setWipeKey(getTokenKeyFromSpec(spec, TokenKeyType.WIPE_KEY))
+                .setSupplyKey(getTokenKeyFromSpec(spec, TokenKeyType.SUPPLY_KEY))
+                .setFeeScheduleKey(getTokenKeyFromSpec(spec, TokenKeyType.FEE_SCHEDULE_KEY))
+                .setPauseKey(getTokenKeyFromSpec(spec, TokenKeyType.PAUSE_KEY))
+                .build();
     }
 
-    private List<TokenKey> getTokenKeys(final HapiApiSpec spec) {
-        final var tokenKeys = new ArrayList<TokenKey>();
-        tokenKeys.add(getTokenKeyFromSpec(spec, TokenKeyType.ADMIN_KEY));
-        tokenKeys.add(getTokenKeyFromSpec(spec, TokenKeyType.KYC_KEY));
-        tokenKeys.add(getTokenKeyFromSpec(spec, TokenKeyType.FREEZE_KEY));
-        tokenKeys.add(getTokenKeyFromSpec(spec, TokenKeyType.WIPE_KEY));
-        tokenKeys.add(getTokenKeyFromSpec(spec, TokenKeyType.SUPPLY_KEY));
-        tokenKeys.add(getTokenKeyFromSpec(spec, TokenKeyType.FEE_SCHEDULE_KEY));
-        tokenKeys.add(getTokenKeyFromSpec(spec, TokenKeyType.PAUSE_KEY));
-        return tokenKeys;
-    }
-
-    private TokenKey getTokenKeyFromSpec(final HapiApiSpec spec, final TokenKeyType type) {
+    private Key getTokenKeyFromSpec(final HapiApiSpec spec, final TokenKeyType type) {
         final var key = spec.registry().getKey(type.name());
-        final var keyValue =
-                new KeyValue(
-                        false,
-                        key.getContractID().getContractNum() > 0
-                                ? Bytes.wrap(
-                                        expandByteArrayTo32Length(
-                                                Utils.asAddress(key.getContractID())))
-                                : null,
-                        key.getEd25519(),
-                        key.getECDSASecp256K1(),
-                        key.getDelegatableContractId().getContractNum() > 0
-                                ? Bytes.wrap(
-                                        expandByteArrayTo32Length(
-                                                Utils.asAddress(key.getDelegatableContractId())))
-                                : null);
-        return new TokenKey(type.value(), keyValue);
+
+        final var keyBuilder = Key.newBuilder();
+
+        if (key.getContractID().getContractNum() > 0) {
+            keyBuilder.setContractID(key.getContractID());
+        }
+        if (key.getEd25519().toByteArray().length > 0) {
+            keyBuilder.setEd25519(key.getEd25519());
+        }
+        if (key.getECDSASecp256K1().toByteArray().length > 0) {
+            keyBuilder.setECDSASecp256K1(key.getECDSASecp256K1());
+        }
+        if (key.getDelegatableContractId().getContractNum() > 0) {
+            keyBuilder.setDelegatableContractId(key.getDelegatableContractId());
+        }
+
+        return keyBuilder.build();
     }
 
-    private static long packedTime(long seconds, int nanos) {
-        return seconds << 32 | (nanos & MASK_INT_AS_UNSIGNED_LONG);
+    private ByteString fromString(final String value) {
+        return ByteString.copyFrom(Bytes.fromHexString(value).toArray());
     }
 
     @Override

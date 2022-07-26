@@ -241,8 +241,6 @@ class InfrastructureFactoryTest {
 
     @Test
     void canCreateNewViewExecutor() {
-        given(frame.getWorldUpdater()).willReturn(worldStateUpdater);
-
         assertInstanceOf(
                 ViewExecutor.class,
                 subject.newViewExecutor(Bytes.EMPTY, frame, gasCalculator, stateView));

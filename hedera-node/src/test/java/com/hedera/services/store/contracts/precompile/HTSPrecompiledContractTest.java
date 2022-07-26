@@ -109,6 +109,7 @@ import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.fee.FeeObject;
 import java.io.IOException;
 import java.util.Collections;
+import java.util.Optional;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
@@ -159,36 +160,9 @@ class HTSPrecompiledContractTest {
 
     public static final Id fungibleId = Id.fromGrpcToken(fungible);
     public static final Address fungibleTokenAddress = fungibleId.asEvmAddress();
-    //	private Address tokenAddress =
-    // Address.fromHexString("0x0102030405060708090a0b0c0d0e0f1011121314");
 
     @BeforeEach
     void setUp() throws IOException {
-        //        final var token =
-        //                new HederaToken(
-        //                        "NAME",
-        //                        "FT",
-        //                        Address.wrap(
-        //
-        // Bytes.fromHexString("0x00000000000000000000000000000000000005cc")),
-        //                        "MEMO",
-        //                        false,
-        //                        1000L,
-        //                        false,
-        //                        new ArrayList<>(),
-        //                        new Expiry(0L, Address.ZERO, 0L));
-        //        tokenInfo =
-        //                new TokenInfo(
-        //                        token,
-        //                        1L,
-        //                        false,
-        //                        false,
-        //                        false,
-        //                        new ArrayList<>(),
-        //                        new ArrayList<>(),
-        //                        new ArrayList<>(),
-        //                        "0x03");
-
         tokenInfo =
                 TokenInfo.newBuilder()
                         .setLedgerId(fromString("0x03"))
@@ -292,7 +266,6 @@ class HTSPrecompiledContractTest {
 
     @Test
     void computeCostedWorksForView() {
-        given(worldUpdater.trackingLedgers()).willReturn(wrappedLedgers);
         Bytes input = prerequisites(ABI_ID_GET_TOKEN_INFO);
         given(decoder.decodeGetTokenInfo(input)).willReturn(tokenInfoWrapper);
         given(tokenInfoWrapper.tokenID()).willReturn(fungible);
@@ -321,10 +294,11 @@ class HTSPrecompiledContractTest {
         given(mockFeeObject.getNetworkFee()).willReturn(1L);
         given(mockFeeObject.getServiceFee()).willReturn(1L);
 
+        given(stateView.infoForToken(fungible)).willReturn(Optional.of(tokenInfo));
         final var encodedResult =
                 Bytes.fromHexString(
                         "0x00000000000000000000000000000000000000000000000000000000000000160000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000012000000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000360000000000000000000000000000000000000000000000000000000000000038000000000000000000000000000000000000000000000000000000000000003a000000000000000000000000000000000000000000000000000000000000003c0000000000000000000000000000000000000000000000000000000000000016000000000000000000000000000000000000000000000000000000000000001a000000000000000000000000000000000000000000000000000000000000005cc00000000000000000000000000000000000000000000000000000000000001e0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000003e80000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000022000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000044e414d45000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002465400000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000044d454d4f00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000043078303300000000000000000000000000000000000000000000000000000000");
-        given(encoder.encodeGetTokenInfo(tokenInfo)).willReturn(encodedResult);
+        given(encoder.encodeGetTokenInfo(any())).willReturn(encodedResult);
 
         final var result = subject.computeCosted(input, messageFrame);
 

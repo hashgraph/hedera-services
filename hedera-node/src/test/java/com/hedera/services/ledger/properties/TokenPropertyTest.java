@@ -16,7 +16,6 @@
 package com.hedera.services.ledger.properties;
 
 import static com.hedera.services.ledger.properties.TokenProperty.ACC_FROZEN_BY_DEFAULT;
-import static com.hedera.services.ledger.properties.TokenProperty.ACC_KYC_GRANTED_BY_DEFAULT;
 import static com.hedera.services.ledger.properties.TokenProperty.ADMIN_KEY;
 import static com.hedera.services.ledger.properties.TokenProperty.AUTO_RENEW_ACCOUNT;
 import static com.hedera.services.ledger.properties.TokenProperty.AUTO_RENEW_PERIOD;
@@ -68,7 +67,6 @@ class TokenPropertyTest {
     final String name = "testName";
     final EntityId treasury = new EntityId(0, 0, 0);
     final boolean accountsFrozenByDefault = false;
-    final boolean accountsKycGrantedByDefault = false;
     final long expiry = 1L;
     final long autoRenewPeriod = 3L;
     final EntityId autoRenewAccount = new EntityId(0, 0, 1);
@@ -98,7 +96,6 @@ class TokenPropertyTest {
         NAME.setter().accept(target, name);
         TREASURY.setter().accept(target, treasury);
         ACC_FROZEN_BY_DEFAULT.setter().accept(target, accountsFrozenByDefault);
-        ACC_KYC_GRANTED_BY_DEFAULT.setter().accept(target, accountsKycGrantedByDefault);
         EXPIRY.setter().accept(target, expiry);
         AUTO_RENEW_PERIOD.setter().accept(target, autoRenewPeriod);
         AUTO_RENEW_ACCOUNT.setter().accept(target, autoRenewAccount);
@@ -123,7 +120,6 @@ class TokenPropertyTest {
         final var nameGetter = NAME.getter();
         final var treasuryGetter = TREASURY.getter();
         final var accountsFrozenByDefaultGetter = ACC_FROZEN_BY_DEFAULT.getter();
-        final var accountsKycGrantedByDefaultGetter = ACC_KYC_GRANTED_BY_DEFAULT.getter();
         final var expiryGetter = EXPIRY.getter();
         final var autoRenewPeriodGetter = AUTO_RENEW_PERIOD.getter();
         final var autoRenewAccountGetter = AUTO_RENEW_ACCOUNT.getter();
@@ -149,7 +145,6 @@ class TokenPropertyTest {
         assertEquals(name, nameGetter.apply(target));
         assertEquals(treasury, treasuryGetter.apply(target));
         assertEquals(accountsFrozenByDefault, accountsFrozenByDefaultGetter.apply(target));
-        assertEquals(accountsKycGrantedByDefault, accountsKycGrantedByDefaultGetter.apply(target));
         assertEquals(expiry, expiryGetter.apply(target));
         assertEquals(autoRenewPeriod, autoRenewPeriodGetter.apply(target));
         assertEquals(autoRenewAccount, autoRenewAccountGetter.apply(target));
@@ -182,7 +177,6 @@ class TokenPropertyTest {
         final var nameSetter = NAME.setter();
         final var treasurySetter = TREASURY.setter();
         final var accountsFrozenByDefaultSetter = ACC_FROZEN_BY_DEFAULT.setter();
-        final var accountsKycGrantedByDefaultSetter = ACC_KYC_GRANTED_BY_DEFAULT.setter();
         final var expirySetter = EXPIRY.setter();
         final var autoRenewPeriodSetter = AUTO_RENEW_PERIOD.setter();
         final var autoRenewAccountSetter = AUTO_RENEW_ACCOUNT.setter();
@@ -208,7 +202,6 @@ class TokenPropertyTest {
         nameSetter.accept(target, name);
         treasurySetter.accept(target, treasury);
         accountsFrozenByDefaultSetter.accept(target, accountsFrozenByDefault);
-        accountsKycGrantedByDefaultSetter.accept(target, accountsKycGrantedByDefault);
         expirySetter.accept(target, expiry);
         autoRenewPeriodSetter.accept(target, autoRenewPeriod);
         autoRenewAccountSetter.accept(target, autoRenewAccount);
@@ -234,7 +227,6 @@ class TokenPropertyTest {
         assertEquals(name, target.name());
         assertEquals(treasury, target.treasury());
         assertEquals(accountsFrozenByDefault, target.accountsAreFrozenByDefault());
-        assertEquals(accountsKycGrantedByDefault, target.accountsKycGrantedByDefault());
         assertEquals(expiry, target.expiry());
         assertEquals(autoRenewPeriod, target.autoRenewPeriod());
         assertEquals(autoRenewAccount, target.autoRenewAccount());

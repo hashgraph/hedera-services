@@ -27,8 +27,12 @@ import com.esaulpaugh.headlong.abi.TupleType;
 import com.hedera.services.contracts.ParsingConstants.FunctionType;
 import com.hedera.services.store.contracts.precompile.TokenKeyType;
 import com.hedera.services.utils.EntityIdUtils;
+import com.hederahashgraph.api.proto.java.ContractID;
+import com.hederahashgraph.api.proto.java.FixedFee;
+import com.hederahashgraph.api.proto.java.FractionalFee;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.RoyaltyFee;
 import com.hederahashgraph.api.proto.java.TokenInfo;
 import com.hederahashgraph.api.proto.java.TokenNftInfo;
 import java.math.BigInteger;
@@ -291,9 +295,7 @@ public class EncodingFacade {
         private long allowance;
         private boolean approve;
         private long[] serialNumbers;
-        private long serialNumber;
         private int decimals;
-        private long creationTime;
         private Address owner;
         private Address approved;
         private String name;
@@ -397,16 +399,6 @@ public class EncodingFacade {
 
         private FunctionResultBuilder withTokenUri(final String tokenUri) {
             this.metadata = tokenUri;
-            return this;
-        }
-
-        private FunctionResultBuilder withSerialNumber(final long serialNumber) {
-            this.serialNumber = serialNumber;
-            return this;
-        }
-
-        private FunctionResultBuilder withCreationTime(final long creationTime) {
-            this.creationTime = creationTime;
             return this;
         }
 
@@ -518,15 +510,14 @@ public class EncodingFacade {
                     tokenInfo.getDeleted(),
                     tokenInfo.getDefaultKycStatus().getNumber() == 1,
                     tokenInfo.getPauseStatus().getNumber() == 1,
-                    fixedFees,
-                    fractionalFees,
-                    royaltyFees,
+                    fixedFees.toArray(new Tuple[fixedFees.size()]),
+                    fractionalFees.toArray(new Tuple[fractionalFees.size()]),
+                    royaltyFees.toArray(new Tuple[royaltyFees.size()]),
                     Bytes.wrap(tokenInfo.getLedgerId().toByteArray()).toString());
         }
 
         private Tuple getFixedFeeTuple(
-                final com.hederahashgraph.api.proto.java.FixedFee fixedFee,
-                final com.esaulpaugh.headlong.abi.Address feeCollector) {
+                final FixedFee fixedFee, final com.esaulpaugh.headlong.abi.Address feeCollector) {
             return Tuple.of(
                     fixedFee.getAmount(),
                     convertBesuAddressToHeadlongAddress(
@@ -537,7 +528,7 @@ public class EncodingFacade {
         }
 
         private Tuple getFractionalFeeTuple(
-                final com.hederahashgraph.api.proto.java.FractionalFee fractionalFee,
+                final FractionalFee fractionalFee,
                 final com.esaulpaugh.headlong.abi.Address feeCollector) {
             return Tuple.of(
                     fractionalFee.getFractionalAmount().getNumerator(),
@@ -549,7 +540,7 @@ public class EncodingFacade {
         }
 
         private Tuple getRoyaltyFeeTuple(
-                final com.hederahashgraph.api.proto.java.RoyaltyFee royaltyFee,
+                final RoyaltyFee royaltyFee,
                 final com.esaulpaugh.headlong.abi.Address feeCollector) {
             return Tuple.of(
                     royaltyFee.getExchangeValueFraction().getNumerator(),
@@ -596,28 +587,54 @@ public class EncodingFacade {
             final var pauseKey = tokenInfo.getPauseKey();
 
             final Tuple[] tokenKeysTuples = new Tuple[TokenKeyType.values().length];
-            tokenKeysTuples[0] = getKeyTuple(adminKey);
-            tokenKeysTuples[1] = getKeyTuple(kycKey);
-            tokenKeysTuples[2] = getKeyTuple(freezeKey);
-            tokenKeysTuples[3] = getKeyTuple(wipeKey);
-            tokenKeysTuples[4] = getKeyTuple(supplyKey);
-            tokenKeysTuples[5] = getKeyTuple(feeScheduleKey);
-            tokenKeysTuples[6] = getKeyTuple(pauseKey);
+            tokenKeysTuples[0] =
+                    getKeyTuple(BigInteger.valueOf(TokenKeyType.ADMIN_KEY.value()), adminKey);
+            tokenKeysTuples[1] =
+                    getKeyTuple(BigInteger.valueOf(TokenKeyType.KYC_KEY.value()), kycKey);
+            tokenKeysTuples[2] =
+                    getKeyTuple(BigInteger.valueOf(TokenKeyType.FREEZE_KEY.value()), freezeKey);
+            tokenKeysTuples[3] =
+                    getKeyTuple(BigInteger.valueOf(TokenKeyType.WIPE_KEY.value()), wipeKey);
+            tokenKeysTuples[4] =
+                    getKeyTuple(BigInteger.valueOf(TokenKeyType.SUPPLY_KEY.value()), supplyKey);
+            tokenKeysTuples[5] =
+                    getKeyTuple(
+                            BigInteger.valueOf(TokenKeyType.FEE_SCHEDULE_KEY.value()),
+                            feeScheduleKey);
+            tokenKeysTuples[6] =
+                    getKeyTuple(BigInteger.valueOf(TokenKeyType.PAUSE_KEY.value()), pauseKey);
 
             return tokenKeysTuples;
         }
 
-        private static Tuple getKeyTuple(final Key key) {
+        private static Tuple getKeyTuple(final BigInteger keyType, final Key key) {
             return Tuple.of(
-                    false,
-                    key.getContractID().getContractNum() > 0
-                            ? EntityIdUtils.asTypedEvmAddress(key.getContractID())
-                            : null,
-                    key.getEd25519(),
-                    key.getECDSASecp256K1(),
-                    key.getDelegatableContractId().getContractNum() > 0
-                            ? EntityIdUtils.asTypedEvmAddress(key.getDelegatableContractId())
-                            : null);
+                    keyType,
+                    Tuple.of(
+                            false,
+                            key.getContractID().getContractNum() > 0
+                                    ? convertBesuAddressToHeadlongAddress(
+                                            EntityIdUtils.asTypedEvmAddress(key.getContractID()))
+                                    : convertBesuAddressToHeadlongAddress(
+                                            EntityIdUtils.asTypedEvmAddress(
+                                                    ContractID.newBuilder()
+                                                            .setShardNum(0L)
+                                                            .setRealmNum(0L)
+                                                            .setContractNum(0L)
+                                                            .build())),
+                            key.getEd25519().toByteArray(),
+                            key.getECDSASecp256K1().toByteArray(),
+                            key.getDelegatableContractId().getContractNum() > 0
+                                    ? convertBesuAddressToHeadlongAddress(
+                                            EntityIdUtils.asTypedEvmAddress(
+                                                    key.getDelegatableContractId()))
+                                    : convertBesuAddressToHeadlongAddress(
+                                            EntityIdUtils.asTypedEvmAddress(
+                                                    ContractID.newBuilder()
+                                                            .setShardNum(0L)
+                                                            .setRealmNum(0L)
+                                                            .setContractNum(0L)
+                                                            .build()))));
         }
     }
 

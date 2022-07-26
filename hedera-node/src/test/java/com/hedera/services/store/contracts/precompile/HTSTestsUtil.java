@@ -56,7 +56,6 @@ public class HTSTestsUtil {
     public static final TokenID token = IdUtils.asToken("0.0.1");
     public static final AccountID payer = IdUtils.asAccount("0.0.12345");
     public static final AccountID sender = IdUtils.asAccount("0.0.2");
-    public static final Address payerAddress = EntityIdUtils.asTypedEvmAddress(payer);
     public static final EntityId payerId = EntityId.fromGrpcAccountId(payer);
     public static final EntityId senderId = EntityId.fromGrpcAccountId(sender);
     public static final Address payerIdConvertedToAddress =
@@ -81,8 +80,8 @@ public class HTSTestsUtil {
             EntityId.fromAddress(
                     Address.wrap(
                             Bytes.fromHexString("0x00000000000000000000000000000000000005cc")));
-    public static final EntityId tokenAddressConvertedToEntityId =
-            EntityId.fromAddress(tokenAddress);
+    public static final TokenID tokenAddressConvertedToTokenId =
+            EntityIdUtils.tokenIdFromEvmAddress(tokenAddress);
     public static final ContractID parentContractAddressConvertedToContractId =
             EntityIdUtils.contractIdFromEvmAddress(parentContractAddress);
     public static final Address parentRecipientAddress = Address.BLS12_G1ADD;
@@ -98,8 +97,6 @@ public class HTSTestsUtil {
             UInt256.valueOf(ResponseCodeEnum.INVALID_TOKEN_ID_VALUE);
     public static final Bytes invalidSerialNumberResult =
             UInt256.valueOf(ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER_VALUE);
-    public static final Bytes tokenWasDeletedResult =
-            UInt256.valueOf(ResponseCodeEnum.TOKEN_WAS_DELETED_VALUE);
     public static final Bytes invalidSigResult =
             UInt256.valueOf(ResponseCodeEnum.INVALID_SIGNATURE_VALUE);
     public static final Bytes missingNftResult =
