@@ -46,7 +46,7 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
-import com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult;
+import com.hedera.services.contracts.ParsingConstants.FunctionType;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import com.hederahashgraph.api.proto.java.TokenType;
 import java.util.List;
@@ -152,8 +152,7 @@ public class ApproveAllowanceSuite extends HapiApiSuite {
                                                         .contractCallResult(
                                                                 htsPrecompileResult()
                                                                         .forFunction(
-                                                                                HTSPrecompileResult
-                                                                                        .FunctionType
+                                                                                FunctionType
                                                                                         .HAPI_ALLOWANCE)
                                                                         .withStatus(SUCCESS)
                                                                         .withAllowance(2)))));
@@ -361,8 +360,7 @@ public class ApproveAllowanceSuite extends HapiApiSuite {
                                                         .contractCallResult(
                                                                 htsPrecompileResult()
                                                                         .forFunction(
-                                                                                HTSPrecompileResult
-                                                                                        .FunctionType
+                                                                                FunctionType
                                                                                         .HAPI_IS_APPROVED_FOR_ALL)
                                                                         .withIsApprovedForAll(
                                                                                 SUCCESS, true)))),
@@ -376,8 +374,7 @@ public class ApproveAllowanceSuite extends HapiApiSuite {
                                                         .contractCallResult(
                                                                 htsPrecompileResult()
                                                                         .forFunction(
-                                                                                HTSPrecompileResult
-                                                                                        .FunctionType
+                                                                                FunctionType
                                                                                         .HAPI_IS_APPROVED_FOR_ALL)
                                                                         .withIsApprovedForAll(
                                                                                 SUCCESS, false)))));
@@ -451,8 +448,7 @@ public class ApproveAllowanceSuite extends HapiApiSuite {
                                                                                 .contractCallResult(
                                                                                         htsPrecompileResult()
                                                                                                 .forFunction(
-                                                                                                        HTSPrecompileResult
-                                                                                                                .FunctionType
+                                                                                                        FunctionType
                                                                                                                 .HAPI_GET_APPROVED)
                                                                                                 .withApproved(
                                                                                                         SUCCESS,

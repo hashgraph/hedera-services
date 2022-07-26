@@ -19,6 +19,7 @@ import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.mockito.BDDMockito.given;
 
 import com.hedera.services.context.SideEffectsTracker;
+import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.TransactionalLedger;
@@ -39,8 +40,9 @@ import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.services.store.contracts.precompile.codec.DecodingFacade;
 import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
-import com.hedera.services.store.contracts.precompile.proxy.RedirectGasCalculator;
 import com.hedera.services.store.contracts.precompile.proxy.RedirectViewExecutor;
+import com.hedera.services.store.contracts.precompile.proxy.ViewExecutor;
+import com.hedera.services.store.contracts.precompile.proxy.ViewGasCalculator;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.tokens.HederaTokenStore;
 import com.hedera.services.txns.crypto.ApproveAllowanceLogic;
@@ -89,8 +91,9 @@ class InfrastructureFactoryTest {
     @Mock private BackingStore<NftId, MerkleUniqueToken> uniqueTokens;
     @Mock private BackingStore<Pair<AccountID, TokenID>, MerkleTokenRelStatus> tokenRels;
     @Mock private MessageFrame frame;
-    @Mock private RedirectGasCalculator gasCalculator;
+    @Mock private ViewGasCalculator gasCalculator;
     @Mock private HederaStackedWorldStateUpdater worldStateUpdater;
+    @Mock private StateView stateView;
 
     private InfrastructureFactory subject;
 
@@ -244,6 +247,13 @@ class InfrastructureFactoryTest {
         assertInstanceOf(
                 RedirectViewExecutor.class,
                 subject.newRedirectExecutor(Bytes.EMPTY, frame, gasCalculator));
+    }
+
+    @Test
+    void canCreateNewViewExecutor() {
+        assertInstanceOf(
+                ViewExecutor.class,
+                subject.newViewExecutor(Bytes.EMPTY, frame, gasCalculator, stateView));
     }
 
     @Test

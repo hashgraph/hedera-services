@@ -478,6 +478,7 @@ public final class TokenPauseSpecs extends HapiApiSuite {
                                 .treasury(TOKEN_TREASURY),
                         tokenCreate(NON_FUNGIBLE_UNIQUE_PRIMARY)
                                 .tokenType(NON_FUNGIBLE_UNIQUE)
+                                .supplyKey(GENESIS)
                                 .supplyType(TokenSupplyType.FINITE)
                                 .initialSupply(0)
                                 .maxSupply(100)

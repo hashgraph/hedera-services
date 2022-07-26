@@ -26,6 +26,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import com.hedera.services.context.TransactionContext;
@@ -36,11 +37,18 @@ import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.EvmFnResult;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.Topic;
+import com.hedera.services.stream.proto.TransactionSidecarRecord;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.ResponseCodeUtil;
+import com.hedera.services.utils.SidecarUtils;
+import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import java.util.Collections;
+import java.util.Map;
 import java.util.Optional;
+import java.util.TreeMap;
 import javax.annotation.Nullable;
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
@@ -49,6 +57,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
@@ -56,6 +65,11 @@ class TransactionRecordServiceTest {
     private static final Long GAS_USED = 1234L;
     private static final Long SBH_REFUND = 234L;
     private static final Long NON_THRESHOLD_FEE = GAS_USED - SBH_REFUND;
+    private static final Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> stateChanges =
+            new TreeMap<>(
+                    Map.of(
+                            Address.fromHexString("0x9"),
+                            Map.of(Bytes.of(10), Pair.of(Bytes.of(11), Bytes.of(12)))));
 
     @Mock private TransactionContext txnCtx;
     @Mock private TransactionProcessingResult processingResult;
@@ -85,23 +99,89 @@ class TransactionRecordServiceTest {
         // then:
         verify(txnCtx).setStatus(SUCCESS);
         verify(txnCtx).setCreateResult(captor.capture());
-        verify(txnCtx).addNonThresholdFeeChargedToPayer(NON_THRESHOLD_FEE);
+        verify(txnCtx).addFeeChargedToPayer(NON_THRESHOLD_FEE);
         assertArrayEquals(mockAddr, captor.getValue().getEvmAddress());
+        verify(txnCtx, Mockito.never())
+                .addSidecarRecord(any(TransactionSidecarRecord.Builder.class));
     }
 
     @Test
-    void externalisesEvmCallTransactionWithSuccess() {
+    void externalisesEvmCreateTransactionWithSidecarsWithSuccess() {
+        final var captor = ArgumentCaptor.forClass(EvmFnResult.class);
+        final var contextCaptor = ArgumentCaptor.forClass(TransactionSidecarRecord.Builder.class);
+        final var recipient = Optional.of(EntityNum.fromLong(1234).toEvmAddress());
+        final var mockAddr = Address.ALTBN128_ADD.toArrayUnsafe();
+        given(processingResult.isSuccessful()).willReturn(true);
+        given(processingResult.getGasPrice()).willReturn(1L);
+        given(processingResult.getSbhRefund()).willReturn(SBH_REFUND);
+        given(processingResult.getGasUsed()).willReturn(GAS_USED);
+        given(processingResult.getRecipient()).willReturn(recipient);
+        given(processingResult.getOutput()).willReturn(Bytes.fromHexStringLenient("0xabcd"));
+        given(processingResult.getStateChanges()).willReturn(stateChanges);
+        final var contractBytecodeSidecar =
+                SidecarUtils.createContractBytecodeSidecarFrom(
+                        IdUtils.asContract("0.0.5"),
+                        "initCode".getBytes(),
+                        "runtimeCode".getBytes());
+
+        // when:
+        subject.externalizeSuccessfulEvmCreate(processingResult, mockAddr, contractBytecodeSidecar);
+
+        // then:
+        verify(txnCtx).setStatus(SUCCESS);
+        verify(txnCtx).setCreateResult(captor.capture());
+        verify(txnCtx).addFeeChargedToPayer(NON_THRESHOLD_FEE);
+        assertArrayEquals(mockAddr, captor.getValue().getEvmAddress());
+        verify(txnCtx, times(2)).addSidecarRecord(contextCaptor.capture());
+        final var sidecars = contextCaptor.getAllValues();
+        assertEquals(2, sidecars.size());
+        assertEquals(
+                SidecarUtils.createStateChangesSidecarFrom(stateChanges).build(),
+                sidecars.get(0).build());
+        assertEquals(contractBytecodeSidecar.build(), sidecars.get(1).build());
+    }
+
+    @Test
+    void externalisesEvmCallTransactionWithSidecarsSuccessfully() {
         // given:
         givenProcessingResult(true, null);
         final var recipient = Optional.of(EntityNum.fromLong(1234).toEvmAddress());
         given(processingResult.getRecipient()).willReturn(recipient);
         given(processingResult.getOutput()).willReturn(Bytes.fromHexStringLenient("0xabcd"));
+        given(processingResult.getStateChanges()).willReturn(stateChanges);
+        final var contextCaptor = ArgumentCaptor.forClass(TransactionSidecarRecord.Builder.class);
+
         // when:
         subject.externaliseEvmCallTransaction(processingResult);
         // then:
         verify(txnCtx).setStatus(SUCCESS);
         verify(txnCtx).setCallResult(any());
-        verify(txnCtx).addNonThresholdFeeChargedToPayer(NON_THRESHOLD_FEE);
+        verify(txnCtx).addFeeChargedToPayer(NON_THRESHOLD_FEE);
+        verify(txnCtx).addSidecarRecord(contextCaptor.capture());
+        final var sidecars = contextCaptor.getAllValues();
+        assertEquals(1, sidecars.size());
+        assertEquals(
+                SidecarUtils.createStateChangesSidecarFrom(stateChanges).build(),
+                sidecars.get(0).build());
+    }
+
+    @Test
+    void externalisesEvmCallTransactionWithoutSidecarsSuccessfully() {
+        // given:
+        givenProcessingResult(true, null);
+        final var recipient = Optional.of(EntityNum.fromLong(1234).toEvmAddress());
+        given(processingResult.getRecipient()).willReturn(recipient);
+        given(processingResult.getOutput()).willReturn(Bytes.fromHexStringLenient("0xabcd"));
+        given(processingResult.getStateChanges()).willReturn(Collections.emptyMap());
+
+        // when:
+        subject.externaliseEvmCallTransaction(processingResult);
+        // then:
+        verify(txnCtx).setStatus(SUCCESS);
+        verify(txnCtx).setCallResult(any());
+        verify(txnCtx).addFeeChargedToPayer(NON_THRESHOLD_FEE);
+        verify(txnCtx, Mockito.never())
+                .addSidecarRecord(any(TransactionSidecarRecord.Builder.class));
     }
 
     @Test
@@ -113,7 +193,7 @@ class TransactionRecordServiceTest {
         // then:
         verify(txnCtx).setStatus(CONTRACT_EXECUTION_EXCEPTION);
         verify(txnCtx).setCreateResult(any());
-        verify(txnCtx).addNonThresholdFeeChargedToPayer(NON_THRESHOLD_FEE);
+        verify(txnCtx).addFeeChargedToPayer(NON_THRESHOLD_FEE);
     }
 
     @Test
@@ -125,7 +205,7 @@ class TransactionRecordServiceTest {
         // then:
         verify(txnCtx).setStatus(OBTAINER_SAME_CONTRACT_ID);
         verify(txnCtx).setCreateResult(any());
-        verify(txnCtx).addNonThresholdFeeChargedToPayer(NON_THRESHOLD_FEE);
+        verify(txnCtx).addFeeChargedToPayer(NON_THRESHOLD_FEE);
     }
 
     @Test
@@ -137,7 +217,7 @@ class TransactionRecordServiceTest {
         // then:
         verify(txnCtx).setStatus(ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS);
         verify(txnCtx).setCreateResult(any());
-        verify(txnCtx).addNonThresholdFeeChargedToPayer(NON_THRESHOLD_FEE);
+        verify(txnCtx).addFeeChargedToPayer(NON_THRESHOLD_FEE);
     }
 
     @Test
@@ -149,7 +229,7 @@ class TransactionRecordServiceTest {
         // then:
         verify(txnCtx).setStatus(ResponseCodeEnum.INVALID_SIGNATURE);
         verify(txnCtx).setCreateResult(any());
-        verify(txnCtx).addNonThresholdFeeChargedToPayer(NON_THRESHOLD_FEE);
+        verify(txnCtx).addFeeChargedToPayer(NON_THRESHOLD_FEE);
     }
 
     @Test
@@ -175,28 +255,28 @@ class TransactionRecordServiceTest {
         given(processingResult.isSuccessful()).willReturn(true);
         assertEquals(
                 ResponseCodeEnum.SUCCESS,
-                ResponseCodeUtil.getStatus(processingResult, ResponseCodeEnum.SUCCESS));
+                ResponseCodeUtil.getStatusOrDefault(processingResult, ResponseCodeEnum.SUCCESS));
         given(processingResult.isSuccessful()).willReturn(false);
         given(processingResult.getHaltReason())
                 .willReturn(Optional.of(HederaExceptionalHaltReason.SELF_DESTRUCT_TO_SELF));
         assertEquals(
                 ResponseCodeEnum.OBTAINER_SAME_CONTRACT_ID,
-                ResponseCodeUtil.getStatus(processingResult, ResponseCodeEnum.SUCCESS));
+                ResponseCodeUtil.getStatusOrDefault(processingResult, ResponseCodeEnum.SUCCESS));
         given(processingResult.getHaltReason())
                 .willReturn(Optional.of(HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS));
         assertEquals(
                 ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS,
-                ResponseCodeUtil.getStatus(processingResult, ResponseCodeEnum.SUCCESS));
+                ResponseCodeUtil.getStatusOrDefault(processingResult, ResponseCodeEnum.SUCCESS));
         given(processingResult.getHaltReason())
                 .willReturn(Optional.of(HederaExceptionalHaltReason.INVALID_SIGNATURE));
         assertEquals(
                 ResponseCodeEnum.INVALID_SIGNATURE,
-                ResponseCodeUtil.getStatus(processingResult, ResponseCodeEnum.SUCCESS));
+                ResponseCodeUtil.getStatusOrDefault(processingResult, ResponseCodeEnum.SUCCESS));
         given(processingResult.getHaltReason())
                 .willReturn(Optional.of(ExceptionalHaltReason.INSUFFICIENT_GAS));
         assertEquals(
                 ResponseCodeEnum.INSUFFICIENT_GAS,
-                ResponseCodeUtil.getStatus(processingResult, ResponseCodeEnum.SUCCESS));
+                ResponseCodeUtil.getStatusOrDefault(processingResult, ResponseCodeEnum.SUCCESS));
     }
 
     private void givenProcessingResult(
