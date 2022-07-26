@@ -15,6 +15,7 @@
  */
 package com.hedera.services.txns;
 
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.verify;
@@ -84,6 +85,7 @@ class ExpandHandleSpanTest {
 
         final SwirldsTxnAccessor accessor = validTxn.getMetadata();
         assertSame(accessor, subject.accessorFor(validTxn));
+        assertNull(validTxn.getMetadata());
     }
 
     @Test

@@ -70,6 +70,7 @@ public class ExpandHandleSpan {
         final SwirldsTxnAccessor cachedAccessor = transaction.getMetadata();
         if (cachedAccessor != null) {
             spanMapManager.rationalizeSpan(cachedAccessor);
+            transaction.setMetadata(null);
             return cachedAccessor;
         } else {
             return spanAccessorFor(transaction);
