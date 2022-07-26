@@ -28,6 +28,7 @@ import static org.mockito.Mockito.verify;
 import com.esaulpaugh.headlong.util.Integers;
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.primitives.StateView;
+import com.hedera.services.store.contracts.WorldLedgers;
 import com.hedera.services.store.contracts.precompile.codec.DecodingFacade;
 import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
 import com.hedera.services.store.contracts.precompile.codec.TokenInfoWrapper;
@@ -61,6 +62,7 @@ class ViewExecutorTest {
     @Mock private ViewGasCalculator viewGasCalculator;
     @Mock private BlockValues blockValues;
     @Mock private StateView stateView;
+    @Mock private WorldLedgers ledgers;
 
     public static final AccountID account = IdUtils.asAccount("0.0.777");
     public static final AccountID spender = IdUtils.asAccount("0.0.888");
@@ -230,7 +232,7 @@ class ViewExecutorTest {
         given(viewGasCalculator.compute(resultingTimestamp, MINIMUM_TINYBARS_COST)).willReturn(gas);
         this.subject =
                 new ViewExecutor(
-                        input, frame, encodingFacade, decodingFacade, viewGasCalculator, stateView);
+                        input, frame, encodingFacade, decodingFacade, viewGasCalculator, stateView, ledgers);
         return input;
     }
 
@@ -246,7 +248,7 @@ class ViewExecutorTest {
         given(viewGasCalculator.compute(resultingTimestamp, MINIMUM_TINYBARS_COST)).willReturn(gas);
         this.subject =
                 new ViewExecutor(
-                        input, frame, encodingFacade, decodingFacade, viewGasCalculator, stateView);
+                        input, frame, encodingFacade, decodingFacade, viewGasCalculator, stateView, ledgers);
         return input;
     }
 }

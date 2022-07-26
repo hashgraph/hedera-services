@@ -280,8 +280,8 @@ class HTSPrecompiledContractTest {
                         encoder,
                         decoder,
                         precompilePricingUtils::computeViewFunctionGas,
-                        stateView);
-        given(infrastructureFactory.newViewExecutor(any(), any(), any(), any()))
+                        stateView, wrappedLedgers);
+        given(infrastructureFactory.newViewExecutor(any(), any(), any(), any(), any()))
                 .willReturn(viewExecutor);
         given(feeCalculator.estimatePayment(any(), any(), any(), any(), any()))
                 .willReturn(mockFeeObject);
