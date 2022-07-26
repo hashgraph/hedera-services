@@ -30,8 +30,7 @@ public interface HederaOperationTracer extends OperationTracer {
      * reflected in the associated message frame.
      *
      * @param frame the frame associated with this precompile call
-     * @param type the type of precompile called; expected values are {@link
-     *     ContractActionType.PRECOMPILE} and {@link ContractActionType.SYSTEM}
+     * @param type the type of precompile called; expected values are {@code PRECOMPILE} and {@code SYSTEM}
      */
     void tracePrecompileResult(final MessageFrame frame, final ContractActionType type);
 
