@@ -610,10 +610,10 @@ class RecordStreamFileWriterTest {
     }
 
     private void assertAllSidecarsAreInFile(
-            final List<TransactionSidecarRecord.Builder> sidecarFile,
-            final List<TransactionSidecarRecord> blockRSOs) {
-        for (int i = 0; i < sidecarFile.size(); i++) {
-            assertEquals(sidecarFile.get(i).build(), blockRSOs.get(i));
+            final List<TransactionSidecarRecord.Builder> expectedSidecars,
+            final List<TransactionSidecarRecord> actualSidecars) {
+        for (int i = 0; i < expectedSidecars.size(); i++) {
+            assertEquals(expectedSidecars.get(i).build(), actualSidecars.get(i));
         }
     }
 
