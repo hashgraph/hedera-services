@@ -159,12 +159,8 @@ public class ServicesTxnManager {
         try {
 
             final var accessor = txnCtx.accessor();
-            log.error(
-                    ERROR_LOG_TPL,
-                    context,
-                    accessor.getSignedTxnWrapper(),
-                    ledger.currentChangeSet(),
-                    e);
+            final var currentChangeSet = ledger.currentChangeSet();
+            log.error(ERROR_LOG_TPL, context, accessor.getSignedTxnWrapper(), currentChangeSet, e);
         } catch (Exception f) {
             log.error("Possibly CATASTROPHIC failure in {}", context, e);
             log.error("Full details could not be logged", f);
