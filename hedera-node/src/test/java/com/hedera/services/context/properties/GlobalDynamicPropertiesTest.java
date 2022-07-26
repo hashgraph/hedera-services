@@ -476,7 +476,7 @@ class GlobalDynamicPropertiesTest {
                                 ? Set.of(SidecarType.CONTRACT_STATE_CHANGE)
                                 : Set.of(SidecarType.CONTRACT_BYTECODE));
         given(properties.getBooleanProperty("hedera.recordStream.enableTraceabilityMigration"))
-            .willReturn((i + 81) % 2 == 0);
+                .willReturn((i + 81) % 2 == 0);
     }
 
     private Set<EntityType> typesFor(final int i) {

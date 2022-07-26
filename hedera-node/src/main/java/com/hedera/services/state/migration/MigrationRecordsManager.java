@@ -131,6 +131,11 @@ public class MigrationRecordsManager {
         this.entityAccess = entityAccess;
     }
 
+    @VisibleForTesting
+    static void setExpiryJustEnabled(boolean expiryJustEnabled) {
+        MigrationRecordsManager.expiryJustEnabled = expiryJustEnabled;
+    }
+
     /**
      * If appropriate, publish the migration records for this upgrade. Only needs to be called once
      * per restart, but that call must be made from {@code handleTransaction} inside an active
@@ -350,10 +355,5 @@ public class MigrationRecordsManager {
     @VisibleForTesting
     void setSideEffectsFactory(Supplier<SideEffectsTracker> sideEffectsFactory) {
         this.sideEffectsFactory = sideEffectsFactory;
-    }
-
-    @VisibleForTesting
-    static void setExpiryJustEnabled(boolean expiryJustEnabled) {
-        MigrationRecordsManager.expiryJustEnabled = expiryJustEnabled;
     }
 }

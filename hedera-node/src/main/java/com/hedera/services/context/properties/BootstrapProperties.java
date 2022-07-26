@@ -301,7 +301,7 @@ public final class BootstrapProperties implements PropertySource {
                     "hedera.allowances.isEnabled",
                     "entities.limitTokenAssociations",
                     "utilPrng.isEnabled",
-								    "hedera.recordStream.enableTraceabilityMigration");
+                    "hedera.recordStream.enableTraceabilityMigration");
 
     static final Set<String> NODE_PROPS =
             Set.of(

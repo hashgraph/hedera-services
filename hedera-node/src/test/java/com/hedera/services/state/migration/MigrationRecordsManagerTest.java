@@ -126,14 +126,10 @@ class MigrationRecordsManagerTest {
     @Mock private AccountNumbers accountNumbers;
     @Mock private TreasuryCloner treasuryCloner;
     @Mock private MerkleAccount merkleAccount;
-		@Mock
-		private TransactionContext transactionContext;
-		@Mock
-		private VirtualMap<ContractKey, IterableContractValue> contractStorage;
-		@Mock
-		private EntityAccess entityAccess;
-		@Mock
-		private TxnAccessor txnAccessor;
+    @Mock private TransactionContext transactionContext;
+    @Mock private VirtualMap<ContractKey, IterableContractValue> contractStorage;
+    @Mock private EntityAccess entityAccess;
+    @Mock private TxnAccessor txnAccessor;
     private MigrationRecordsManager subject;
 
     @BeforeEach
@@ -151,8 +147,11 @@ class MigrationRecordsManagerTest {
                         consensusTimeTracker,
                         () -> accounts,
                         factory,
-                        accountNumbers, transactionContext, dynamicProperties,
-										() -> contractStorage, entityAccess);
+                        accountNumbers,
+                        transactionContext,
+                        dynamicProperties,
+                        () -> contractStorage,
+                        entityAccess);
 
         subject.setSideEffectsFactory(
                 () ->
@@ -220,249 +219,291 @@ class MigrationRecordsManagerTest {
         assertEquals(rewardSynthBody, bodies.get(1).build());
         assertEquals(cloneSynthBody, bodies.get(2).build());
         assertEquals(cloneSynthBody, bodies.get(3).build());
-				assertFalse(subject.areAllMigrationsSansTraceabilityFinished());
+        assertFalse(subject.areAllMigrationsSansTraceabilityFinished());
     }
 
-	@Test
-	void ifTransactionIsContractCallThenDontPerformTraceabilityMigration() {
-		given(consensusTimeTracker.unlimitedPreceding()).willReturn(true);
-		given(networkCtx.areMigrationRecordsStreamed()).willReturn(false);
-		given(networkCtx.consensusTimeOfLastHandledTxn()).willReturn(now);
-		MigrationRecordsManager.setExpiryJustEnabled(false);
-		given(txnAccessor.getFunction()).willReturn(HederaFunctionality.ContractCall);
-		given(transactionContext.accessor()).willReturn(txnAccessor);
-		given(dynamicProperties.isTraceabilityMigrationEnabled()).willReturn(true);
-		accounts.clear();
+    @Test
+    void ifTransactionIsContractCallThenDontPerformTraceabilityMigration() {
+        given(consensusTimeTracker.unlimitedPreceding()).willReturn(true);
+        given(networkCtx.areMigrationRecordsStreamed()).willReturn(false);
+        given(networkCtx.consensusTimeOfLastHandledTxn()).willReturn(now);
+        MigrationRecordsManager.setExpiryJustEnabled(false);
+        given(txnAccessor.getFunction()).willReturn(HederaFunctionality.ContractCall);
+        given(transactionContext.accessor()).willReturn(txnAccessor);
+        given(dynamicProperties.isTraceabilityMigrationEnabled()).willReturn(true);
+        accounts.clear();
 
-		subject.publishMigrationRecords(now);
+        subject.publishMigrationRecords(now);
 
-		assertTrue(subject.areAllMigrationsSansTraceabilityFinished());
-		verify(transactionContext, never()).addSidecarRecord(any());
-	}
+        assertTrue(subject.areAllMigrationsSansTraceabilityFinished());
+        verify(transactionContext, never()).addSidecarRecord(any());
+    }
 
-	@Test
-	void ifTransactionIsEthereumTxnThenDontPerformTraceabilityMigration() {
-		given(consensusTimeTracker.unlimitedPreceding()).willReturn(true);
-		given(networkCtx.areMigrationRecordsStreamed()).willReturn(false);
-		given(networkCtx.consensusTimeOfLastHandledTxn()).willReturn(now);
-		MigrationRecordsManager.setExpiryJustEnabled(false);
-		given(txnAccessor.getFunction()).willReturn(HederaFunctionality.EthereumTransaction);
-		given(transactionContext.accessor()).willReturn(txnAccessor);
-		given(dynamicProperties.isTraceabilityMigrationEnabled()).willReturn(true);
-		accounts.clear();
+    @Test
+    void ifTransactionIsEthereumTxnThenDontPerformTraceabilityMigration() {
+        given(consensusTimeTracker.unlimitedPreceding()).willReturn(true);
+        given(networkCtx.areMigrationRecordsStreamed()).willReturn(false);
+        given(networkCtx.consensusTimeOfLastHandledTxn()).willReturn(now);
+        MigrationRecordsManager.setExpiryJustEnabled(false);
+        given(txnAccessor.getFunction()).willReturn(HederaFunctionality.EthereumTransaction);
+        given(transactionContext.accessor()).willReturn(txnAccessor);
+        given(dynamicProperties.isTraceabilityMigrationEnabled()).willReturn(true);
+        accounts.clear();
 
-		subject.publishMigrationRecords(now);
+        subject.publishMigrationRecords(now);
 
-		assertTrue(subject.areAllMigrationsSansTraceabilityFinished());
-		verify(transactionContext, never()).addSidecarRecord(any());
-	}
+        assertTrue(subject.areAllMigrationsSansTraceabilityFinished());
+        verify(transactionContext, never()).addSidecarRecord(any());
+    }
 
-	@Test
-	void ifTransactionIsContractCreateThenDontPerformTraceabilityMigration() {
-		given(consensusTimeTracker.unlimitedPreceding()).willReturn(true);
-		given(networkCtx.areMigrationRecordsStreamed()).willReturn(false);
-		given(networkCtx.consensusTimeOfLastHandledTxn()).willReturn(now);
-		MigrationRecordsManager.setExpiryJustEnabled(false);
-		given(txnAccessor.getFunction()).willReturn(HederaFunctionality.ContractCreate);
-		given(transactionContext.accessor()).willReturn(txnAccessor);
-		given(dynamicProperties.isTraceabilityMigrationEnabled()).willReturn(true);
-		accounts.clear();
+    @Test
+    void ifTransactionIsContractCreateThenDontPerformTraceabilityMigration() {
+        given(consensusTimeTracker.unlimitedPreceding()).willReturn(true);
+        given(networkCtx.areMigrationRecordsStreamed()).willReturn(false);
+        given(networkCtx.consensusTimeOfLastHandledTxn()).willReturn(now);
+        MigrationRecordsManager.setExpiryJustEnabled(false);
+        given(txnAccessor.getFunction()).willReturn(HederaFunctionality.ContractCreate);
+        given(transactionContext.accessor()).willReturn(txnAccessor);
+        given(dynamicProperties.isTraceabilityMigrationEnabled()).willReturn(true);
+        accounts.clear();
 
-		subject.publishMigrationRecords(now);
+        subject.publishMigrationRecords(now);
 
-		assertTrue(subject.areAllMigrationsSansTraceabilityFinished());
-		verify(transactionContext, never()).addSidecarRecord(any());
-	}
+        assertTrue(subject.areAllMigrationsSansTraceabilityFinished());
+        verify(transactionContext, never()).addSidecarRecord(any());
+    }
 
-	@Test
-	void ifContextIndicatesTraceabilityMigrationNeedsToBeStreamedThenDoesSo() {
-		final ArgumentCaptor<TransactionSidecarRecord.Builder> sidecarCaptor = forClass(TransactionSidecarRecord.Builder.class);
-		given(consensusTimeTracker.unlimitedPreceding()).willReturn(true);
-		given(networkCtx.areMigrationRecordsStreamed()).willReturn(false);
-		given(networkCtx.consensusTimeOfLastHandledTxn()).willReturn(now);
-		MigrationRecordsManager.setExpiryJustEnabled(false);
-		given(txnAccessor.getFunction()).willReturn(HederaFunctionality.ConsensusCreateTopic);
-		given(transactionContext.accessor()).willReturn(txnAccessor);
-		given(dynamicProperties.isTraceabilityMigrationEnabled()).willReturn(true);
-		accounts.clear();
+    @Test
+    void ifContextIndicatesTraceabilityMigrationNeedsToBeStreamedThenDoesSo() {
+        final ArgumentCaptor<TransactionSidecarRecord.Builder> sidecarCaptor =
+                forClass(TransactionSidecarRecord.Builder.class);
+        given(consensusTimeTracker.unlimitedPreceding()).willReturn(true);
+        given(networkCtx.areMigrationRecordsStreamed()).willReturn(false);
+        given(networkCtx.consensusTimeOfLastHandledTxn()).willReturn(now);
+        MigrationRecordsManager.setExpiryJustEnabled(false);
+        given(txnAccessor.getFunction()).willReturn(HederaFunctionality.ConsensusCreateTopic);
+        given(transactionContext.accessor()).willReturn(txnAccessor);
+        given(dynamicProperties.isTraceabilityMigrationEnabled()).willReturn(true);
+        accounts.clear();
 
-		// mock contract1 with 3 slots
-		final var contract1 = mock(MerkleAccount.class);
-		given(contract1.isSmartContract()).willReturn(true);
-		final var contract1Key1 = ContractKey.from(3L, UInt256.valueOf(1L));
-		final var contract1Key2 = ContractKey.from(3L, UInt256.valueOf(2L));
-		final var contract1Key3 = ContractKey.from(3L, UInt256.valueOf(155542L));
-		final var contract1Value1 = mock(IterableContractValue.class);
-		final var contract1Value2 = mock(IterableContractValue.class);
-		final var contract1Value3 = mock(IterableContractValue.class);
-		given(contract1.getFirstContractStorageKey()).willReturn(contract1Key1);
-		given(contract1Value1.getNextKeyScopedTo(3L)).willReturn(contract1Key2);
-		final var value1 = "value1".getBytes();
-		given(contract1Value1.getValue()).willReturn(value1);
-		given(contract1Value2.getNextKeyScopedTo(3L)).willReturn(contract1Key3);
-		final var value2 = "value2".getBytes();
-		given(contract1Value2.getValue()).willReturn(value2);
-		final var value3 = "value3".getBytes();
-		given(contract1Value3.getValue()).willReturn(value3);
-		given(contract1Value3.getNextKeyScopedTo(3L)).willReturn(null);
-		given(contractStorage.get(contract1Key1)).willReturn(contract1Value1);
-		given(contractStorage.get(contract1Key2)).willReturn(contract1Value2);
-		given(contractStorage.get(contract1Key3)).willReturn(contract1Value3);
-		final var entityNum1 = EntityNum.fromLong(3L);
-		final var runtimeBytes = "runtime".getBytes();
-		given(entityAccess.fetchCodeIfPresent(entityNum1.toGrpcAccountId())).willReturn(Bytes.of(runtimeBytes));
+        // mock contract1 with 3 slots
+        final var contract1 = mock(MerkleAccount.class);
+        given(contract1.isSmartContract()).willReturn(true);
+        final var contract1Key1 = ContractKey.from(3L, UInt256.valueOf(1L));
+        final var contract1Key2 = ContractKey.from(3L, UInt256.valueOf(2L));
+        final var contract1Key3 = ContractKey.from(3L, UInt256.valueOf(155542L));
+        final var contract1Value1 = mock(IterableContractValue.class);
+        final var contract1Value2 = mock(IterableContractValue.class);
+        final var contract1Value3 = mock(IterableContractValue.class);
+        given(contract1.getFirstContractStorageKey()).willReturn(contract1Key1);
+        given(contract1Value1.getNextKeyScopedTo(3L)).willReturn(contract1Key2);
+        final var value1 = "value1".getBytes();
+        given(contract1Value1.getValue()).willReturn(value1);
+        given(contract1Value2.getNextKeyScopedTo(3L)).willReturn(contract1Key3);
+        final var value2 = "value2".getBytes();
+        given(contract1Value2.getValue()).willReturn(value2);
+        final var value3 = "value3".getBytes();
+        given(contract1Value3.getValue()).willReturn(value3);
+        given(contract1Value3.getNextKeyScopedTo(3L)).willReturn(null);
+        given(contractStorage.get(contract1Key1)).willReturn(contract1Value1);
+        given(contractStorage.get(contract1Key2)).willReturn(contract1Value2);
+        given(contractStorage.get(contract1Key3)).willReturn(contract1Value3);
+        final var entityNum1 = EntityNum.fromLong(3L);
+        final var runtimeBytes = "runtime".getBytes();
+        given(entityAccess.fetchCodeIfPresent(entityNum1.toGrpcAccountId()))
+                .willReturn(Bytes.of(runtimeBytes));
 
-		// mock contract2 with 1 slot
-		final var contract2 = mock(MerkleAccount.class);
-		given(contract2.isSmartContract()).willReturn(true);
-		final var contract2Value1 = mock(IterableContractValue.class);
-		final var contract2Key1 = ContractKey.from(4L, UInt256.valueOf(257L));
-		given(contract2.getFirstContractStorageKey()).willReturn(contract2Key1);
-		given(contract2Value1.getNextKeyScopedTo(4L)).willReturn(null);
-		final var value4 = "value4".getBytes();
-		given(contract2Value1.getValue()).willReturn(value4);
-		given(contractStorage.get(contract2Key1)).willReturn(contract2Value1);
-		final var entityNum2 = EntityNum.fromLong(4L);
-		final var runtimeBytes2 = "runtime2".getBytes();
-		given(entityAccess.fetchCodeIfPresent(entityNum2.toGrpcAccountId())).willReturn(Bytes.of(runtimeBytes2));
+        // mock contract2 with 1 slot
+        final var contract2 = mock(MerkleAccount.class);
+        given(contract2.isSmartContract()).willReturn(true);
+        final var contract2Value1 = mock(IterableContractValue.class);
+        final var contract2Key1 = ContractKey.from(4L, UInt256.valueOf(257L));
+        given(contract2.getFirstContractStorageKey()).willReturn(contract2Key1);
+        given(contract2Value1.getNextKeyScopedTo(4L)).willReturn(null);
+        final var value4 = "value4".getBytes();
+        given(contract2Value1.getValue()).willReturn(value4);
+        given(contractStorage.get(contract2Key1)).willReturn(contract2Value1);
+        final var entityNum2 = EntityNum.fromLong(4L);
+        final var runtimeBytes2 = "runtime2".getBytes();
+        given(entityAccess.fetchCodeIfPresent(entityNum2.toGrpcAccountId()))
+                .willReturn(Bytes.of(runtimeBytes2));
 
-		accounts.put(entityNum1, contract1);
-		accounts.put(entityNum2, contract2);
+        accounts.put(entityNum1, contract1);
+        accounts.put(entityNum2, contract2);
 
-		subject.publishMigrationRecords(now);
+        subject.publishMigrationRecords(now);
 
-		assertFalse(subject.areAllMigrationsSansTraceabilityFinished());
-		verify(transactionContext, times(3)).addSidecarRecord(sidecarCaptor.capture());
-		final var sidecarRecords = sidecarCaptor.getAllValues();
-		assertEquals(SidecarUtils.createContractBytecodeSidecarFrom(
-						entityNum2.toGrpcContractID(), runtimeBytes2)
-				.setMigration(true)
-				.build(), sidecarRecords.get(0).build());
-		assertEquals(SidecarUtils.createContractBytecodeSidecarFrom(
-						entityNum1.toGrpcContractID(), runtimeBytes)
-				.setMigration(true)
-				.build(), sidecarRecords.get(1).build());
-		final var expectedStateChanges = ContractStateChanges.newBuilder()
-				.addContractStateChanges(ContractStateChange.newBuilder()
-						.setContractId(entityNum2.toGrpcContractID())
-						.addStorageChanges(StorageChange.newBuilder()
-								.setSlot(ByteStringUtils.wrapUnsafely(UInt256.valueOf(257L).toArrayUnsafe()))
-								.setValueRead(ByteStringUtils.wrapUnsafely(value4))
-								.build())
-						.build())
-				.addContractStateChanges(ContractStateChange.newBuilder()
-						.setContractId(entityNum1.toGrpcContractID())
-						.addStorageChanges(StorageChange.newBuilder()
-								.setSlot(ByteStringUtils.wrapUnsafely(UInt256.valueOf(1L).toArrayUnsafe()))
-								.setValueRead(ByteStringUtils.wrapUnsafely(value1))
-								.build())
-						.addStorageChanges(StorageChange.newBuilder()
-								.setSlot(ByteStringUtils.wrapUnsafely(UInt256.valueOf(2L).toArrayUnsafe()))
-								.setValueRead(ByteStringUtils.wrapUnsafely(value2))
-								.build())
-						.addStorageChanges(StorageChange.newBuilder()
-								.setSlot(ByteStringUtils.wrapUnsafely(UInt256.valueOf(155542L).toArrayUnsafe()))
-								.setValueRead(ByteStringUtils.wrapUnsafely(value3))
-								.build())
-						.build())
-				.build();
-		assertEquals(TransactionSidecarRecord.newBuilder()
-				.setStateChanges(expectedStateChanges)
-				.setMigration(true)
-				.build(), sidecarRecords.get(2).build());
-	}
+        assertFalse(subject.areAllMigrationsSansTraceabilityFinished());
+        verify(transactionContext, times(3)).addSidecarRecord(sidecarCaptor.capture());
+        final var sidecarRecords = sidecarCaptor.getAllValues();
+        assertEquals(
+                SidecarUtils.createContractBytecodeSidecarFrom(
+                                entityNum2.toGrpcContractID(), runtimeBytes2)
+                        .setMigration(true)
+                        .build(),
+                sidecarRecords.get(0).build());
+        assertEquals(
+                SidecarUtils.createContractBytecodeSidecarFrom(
+                                entityNum1.toGrpcContractID(), runtimeBytes)
+                        .setMigration(true)
+                        .build(),
+                sidecarRecords.get(1).build());
+        final var expectedStateChanges =
+                ContractStateChanges.newBuilder()
+                        .addContractStateChanges(
+                                ContractStateChange.newBuilder()
+                                        .setContractId(entityNum2.toGrpcContractID())
+                                        .addStorageChanges(
+                                                StorageChange.newBuilder()
+                                                        .setSlot(
+                                                                ByteStringUtils.wrapUnsafely(
+                                                                        UInt256.valueOf(257L)
+                                                                                .toArrayUnsafe()))
+                                                        .setValueRead(
+                                                                ByteStringUtils.wrapUnsafely(
+                                                                        value4))
+                                                        .build())
+                                        .build())
+                        .addContractStateChanges(
+                                ContractStateChange.newBuilder()
+                                        .setContractId(entityNum1.toGrpcContractID())
+                                        .addStorageChanges(
+                                                StorageChange.newBuilder()
+                                                        .setSlot(
+                                                                ByteStringUtils.wrapUnsafely(
+                                                                        UInt256.valueOf(1L)
+                                                                                .toArrayUnsafe()))
+                                                        .setValueRead(
+                                                                ByteStringUtils.wrapUnsafely(
+                                                                        value1))
+                                                        .build())
+                                        .addStorageChanges(
+                                                StorageChange.newBuilder()
+                                                        .setSlot(
+                                                                ByteStringUtils.wrapUnsafely(
+                                                                        UInt256.valueOf(2L)
+                                                                                .toArrayUnsafe()))
+                                                        .setValueRead(
+                                                                ByteStringUtils.wrapUnsafely(
+                                                                        value2))
+                                                        .build())
+                                        .addStorageChanges(
+                                                StorageChange.newBuilder()
+                                                        .setSlot(
+                                                                ByteStringUtils.wrapUnsafely(
+                                                                        UInt256.valueOf(155542L)
+                                                                                .toArrayUnsafe()))
+                                                        .setValueRead(
+                                                                ByteStringUtils.wrapUnsafely(
+                                                                        value3))
+                                                        .build())
+                                        .build())
+                        .build();
+        assertEquals(
+                TransactionSidecarRecord.newBuilder()
+                        .setStateChanges(expectedStateChanges)
+                        .setMigration(true)
+                        .build(),
+                sidecarRecords.get(2).build());
+    }
 
-	@Test
-	void traceabilityMigrationDoesNotAddAnySidecarsWhenAccountIsNotSmartContract() {
-		given(consensusTimeTracker.unlimitedPreceding()).willReturn(true);
-		given(networkCtx.areMigrationRecordsStreamed()).willReturn(false);
-		given(networkCtx.consensusTimeOfLastHandledTxn()).willReturn(now);
-		MigrationRecordsManager.setExpiryJustEnabled(false);
-		given(txnAccessor.getFunction()).willReturn(HederaFunctionality.ConsensusCreateTopic);
-		given(transactionContext.accessor()).willReturn(txnAccessor);
-		given(dynamicProperties.isTraceabilityMigrationEnabled()).willReturn(true);
+    @Test
+    void traceabilityMigrationDoesNotAddAnySidecarsWhenAccountIsNotSmartContract() {
+        given(consensusTimeTracker.unlimitedPreceding()).willReturn(true);
+        given(networkCtx.areMigrationRecordsStreamed()).willReturn(false);
+        given(networkCtx.consensusTimeOfLastHandledTxn()).willReturn(now);
+        MigrationRecordsManager.setExpiryJustEnabled(false);
+        given(txnAccessor.getFunction()).willReturn(HederaFunctionality.ConsensusCreateTopic);
+        given(transactionContext.accessor()).willReturn(txnAccessor);
+        given(dynamicProperties.isTraceabilityMigrationEnabled()).willReturn(true);
 
-		subject.publishMigrationRecords(now);
+        subject.publishMigrationRecords(now);
 
-		assertFalse(subject.areAllMigrationsSansTraceabilityFinished());
-		verify(transactionContext, never()).addSidecarRecord(any());
-	}
+        assertFalse(subject.areAllMigrationsSansTraceabilityFinished());
+        verify(transactionContext, never()).addSidecarRecord(any());
+    }
 
-	@Test
-	void traceabilityMigrationDoesNotAddAnySidecarsWhenSmartContractIsDeleted() {
-		given(consensusTimeTracker.unlimitedPreceding()).willReturn(true);
-		given(networkCtx.areMigrationRecordsStreamed()).willReturn(false);
-		given(networkCtx.consensusTimeOfLastHandledTxn()).willReturn(now);
-		MigrationRecordsManager.setExpiryJustEnabled(false);
-		given(txnAccessor.getFunction()).willReturn(HederaFunctionality.ConsensusCreateTopic);
-		given(transactionContext.accessor()).willReturn(txnAccessor);
-		given(dynamicProperties.isTraceabilityMigrationEnabled()).willReturn(true);
-		accounts.clear();
-		final var contract = mock(MerkleAccount.class);
-		given(contract.isSmartContract()).willReturn(true);
-		given(contract.isDeleted()).willReturn(true);
-		accounts.put(EntityNum.fromLong(1L), contract);
+    @Test
+    void traceabilityMigrationDoesNotAddAnySidecarsWhenSmartContractIsDeleted() {
+        given(consensusTimeTracker.unlimitedPreceding()).willReturn(true);
+        given(networkCtx.areMigrationRecordsStreamed()).willReturn(false);
+        given(networkCtx.consensusTimeOfLastHandledTxn()).willReturn(now);
+        MigrationRecordsManager.setExpiryJustEnabled(false);
+        given(txnAccessor.getFunction()).willReturn(HederaFunctionality.ConsensusCreateTopic);
+        given(transactionContext.accessor()).willReturn(txnAccessor);
+        given(dynamicProperties.isTraceabilityMigrationEnabled()).willReturn(true);
+        accounts.clear();
+        final var contract = mock(MerkleAccount.class);
+        given(contract.isSmartContract()).willReturn(true);
+        given(contract.isDeleted()).willReturn(true);
+        accounts.put(EntityNum.fromLong(1L), contract);
 
-		subject.publishMigrationRecords(now);
+        subject.publishMigrationRecords(now);
 
-		assertFalse(subject.areAllMigrationsSansTraceabilityFinished());
-		verify(transactionContext, never()).addSidecarRecord(any());
-	}
+        assertFalse(subject.areAllMigrationsSansTraceabilityFinished());
+        verify(transactionContext, never()).addSidecarRecord(any());
+    }
 
-	@Test
-	void traceabilityMigrationDoesNotAddStateChangesWhenSmartContractDoesNotHaveAnyStorage() {
-		final ArgumentCaptor<TransactionSidecarRecord.Builder> sidecarCaptor =
-				forClass(TransactionSidecarRecord.Builder.class);
-		given(consensusTimeTracker.unlimitedPreceding()).willReturn(true);
-		given(networkCtx.areMigrationRecordsStreamed()).willReturn(false);
-		given(networkCtx.consensusTimeOfLastHandledTxn()).willReturn(now);
-		MigrationRecordsManager.setExpiryJustEnabled(false);
-		given(txnAccessor.getFunction()).willReturn(HederaFunctionality.ConsensusCreateTopic);
-		given(transactionContext.accessor()).willReturn(txnAccessor);
-		given(dynamicProperties.isTraceabilityMigrationEnabled()).willReturn(true);
-		accounts.clear();
-		final var contract = mock(MerkleAccount.class);
-		given(contract.isSmartContract()).willReturn(true);
-		given(contract.getFirstContractStorageKey()).willReturn(null);
-		final var entityNum = EntityNum.fromLong(1L);
-		final var runtimeBytes = "runtime".getBytes();
-		given(entityAccess.fetchCodeIfPresent(entityNum.toGrpcAccountId())).willReturn(Bytes.of(runtimeBytes));
-		accounts.put(entityNum, contract);
+    @Test
+    void traceabilityMigrationDoesNotAddStateChangesWhenSmartContractDoesNotHaveAnyStorage() {
+        final ArgumentCaptor<TransactionSidecarRecord.Builder> sidecarCaptor =
+                forClass(TransactionSidecarRecord.Builder.class);
+        given(consensusTimeTracker.unlimitedPreceding()).willReturn(true);
+        given(networkCtx.areMigrationRecordsStreamed()).willReturn(false);
+        given(networkCtx.consensusTimeOfLastHandledTxn()).willReturn(now);
+        MigrationRecordsManager.setExpiryJustEnabled(false);
+        given(txnAccessor.getFunction()).willReturn(HederaFunctionality.ConsensusCreateTopic);
+        given(transactionContext.accessor()).willReturn(txnAccessor);
+        given(dynamicProperties.isTraceabilityMigrationEnabled()).willReturn(true);
+        accounts.clear();
+        final var contract = mock(MerkleAccount.class);
+        given(contract.isSmartContract()).willReturn(true);
+        given(contract.getFirstContractStorageKey()).willReturn(null);
+        final var entityNum = EntityNum.fromLong(1L);
+        final var runtimeBytes = "runtime".getBytes();
+        given(entityAccess.fetchCodeIfPresent(entityNum.toGrpcAccountId()))
+                .willReturn(Bytes.of(runtimeBytes));
+        accounts.put(entityNum, contract);
 
-		subject.publishMigrationRecords(now);
+        subject.publishMigrationRecords(now);
 
-		assertFalse(subject.areAllMigrationsSansTraceabilityFinished());
-		verify(transactionContext).addSidecarRecord(sidecarCaptor.capture());
-		final var sidecarRecords = sidecarCaptor.getValue();
-		assertEquals(SidecarUtils.createContractBytecodeSidecarFrom(
-						entityNum.toGrpcContractID(), runtimeBytes)
-				.setMigration(true)
-				.build(), sidecarRecords.build());
-	}
+        assertFalse(subject.areAllMigrationsSansTraceabilityFinished());
+        verify(transactionContext).addSidecarRecord(sidecarCaptor.capture());
+        final var sidecarRecords = sidecarCaptor.getValue();
+        assertEquals(
+                SidecarUtils.createContractBytecodeSidecarFrom(
+                                entityNum.toGrpcContractID(), runtimeBytes)
+                        .setMigration(true)
+                        .build(),
+                sidecarRecords.build());
+    }
 
-	@Test
-	void doNotPerformOtherMigrationOnSubsequentCallsIfOnlyTraceabilityNeedsFinishing() {
-		given(consensusTimeTracker.unlimitedPreceding()).willReturn(true);
-		given(networkCtx.areMigrationRecordsStreamed()).willReturn(false);
-		given(networkCtx.consensusTimeOfLastHandledTxn()).willReturn(now);
-		MigrationRecordsManager.setExpiryJustEnabled(true);
-		given(txnAccessor.getFunction()).willReturn(HederaFunctionality.ContractCreate)
-				.willReturn(HederaFunctionality.CryptoTransfer);
-		given(transactionContext.accessor()).willReturn(txnAccessor);
-		given(dynamicProperties.isTraceabilityMigrationEnabled()).willReturn(true);
-		given(merkleAccount.isSmartContract()).willReturn(true).willReturn(false);
+    @Test
+    void doNotPerformOtherMigrationOnSubsequentCallsIfOnlyTraceabilityNeedsFinishing() {
+        given(consensusTimeTracker.unlimitedPreceding()).willReturn(true);
+        given(networkCtx.areMigrationRecordsStreamed()).willReturn(false);
+        given(networkCtx.consensusTimeOfLastHandledTxn()).willReturn(now);
+        MigrationRecordsManager.setExpiryJustEnabled(true);
+        given(txnAccessor.getFunction())
+                .willReturn(HederaFunctionality.ContractCreate)
+                .willReturn(HederaFunctionality.CryptoTransfer);
+        given(transactionContext.accessor()).willReturn(txnAccessor);
+        given(dynamicProperties.isTraceabilityMigrationEnabled()).willReturn(true);
+        given(merkleAccount.isSmartContract()).willReturn(true).willReturn(false);
 
-		subject.publishMigrationRecords(now);
-		assertTrue(subject.areAllMigrationsSansTraceabilityFinished());
-		verify(transactionContext, never()).addSidecarRecord(any());
-		verify(networkCtx, never()).markMigrationRecordsStreamed();
+        subject.publishMigrationRecords(now);
+        assertTrue(subject.areAllMigrationsSansTraceabilityFinished());
+        verify(transactionContext, never()).addSidecarRecord(any());
+        verify(networkCtx, never()).markMigrationRecordsStreamed();
 
-		subject.publishMigrationRecords(now);
-		assertFalse(subject.areAllMigrationsSansTraceabilityFinished());
-		verify(networkCtx).markMigrationRecordsStreamed();
-		verify(treasuryCloner, times(1)).getClonesCreated();
-		verify(recordsHistorian, times(1)).trackPrecedingChildRecord(anyInt(), any(Builder.class), any(ExpirableTxnRecord.Builder.class));
-	}
+        subject.publishMigrationRecords(now);
+        assertFalse(subject.areAllMigrationsSansTraceabilityFinished());
+        verify(networkCtx).markMigrationRecordsStreamed();
+        verify(treasuryCloner, times(1)).getClonesCreated();
+        verify(recordsHistorian, times(1))
+                .trackPrecedingChildRecord(
+                        anyInt(), any(Builder.class), any(ExpirableTxnRecord.Builder.class));
+    }
 
     @Test
     void ifContextIndicatesContractRenewRecordsNeedToBeStreamedThenDoesSo() {
