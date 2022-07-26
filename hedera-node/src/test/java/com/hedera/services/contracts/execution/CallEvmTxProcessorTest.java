@@ -107,19 +107,27 @@ class CallEvmTxProcessorTest {
     private final long INTRINSIC_GAS_COST = 290_000L;
     private final long GAS_LIMIT = 300_000L;
 
-	private FakeHederaTracer fakeHederaTracer;
-	private CallEvmTxProcessor callEvmTxProcessor;
+    private FakeHederaTracer fakeHederaTracer;
+    private CallEvmTxProcessor callEvmTxProcessor;
 
     @BeforeEach
     private void setup() {
         CommonProcessorSetup.setup(gasCalculator);
 
 		fakeHederaTracer = new FakeHederaTracer();
-		callEvmTxProcessor = new CallEvmTxProcessor(
-				worldState, livePricesSource,
-				codeCache, globalDynamicProperties, gasCalculator,
-				operations, precompiledContractMap, aliasManager, storageExpiry, blockMetaSource,
-				fakeHederaTracer);
+        callEvmTxProcessor =
+                new CallEvmTxProcessor(
+                        worldState,
+                        livePricesSource,
+                        codeCache,
+                        globalDynamicProperties,
+                        gasCalculator,
+                        operations,
+                        precompiledContractMap,
+                        aliasManager,
+                        storageExpiry,
+                        blockMetaSource,
+                        fakeHederaTracer);
 	}
 
     @Test

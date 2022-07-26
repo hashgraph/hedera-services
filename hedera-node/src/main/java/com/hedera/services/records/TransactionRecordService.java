@@ -27,6 +27,7 @@ import com.hedera.services.state.submerkle.EvmFnResult;
 import com.hedera.services.store.models.Topic;
 import com.hedera.services.stream.proto.TransactionSidecarRecord;
 import com.hedera.services.utils.SidecarUtils;
+import com.hedera.services.utils.SidecarUtils;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -101,16 +102,16 @@ public class TransactionRecordService {
         addAllSidecarsToTxnContextFrom(result);
     }
 
-	private void addAllSidecarsToTxnContextFrom(final TransactionProcessingResult result) {
-		final var stateChanges = result.getStateChanges();
-		if (!stateChanges.isEmpty()) {
-			txnCtx.addSidecarRecord(SidecarUtils.createStateChangesSidecarFrom(stateChanges));
-		}
-		final var actions = result.getActions();
-		if (!actions.isEmpty()) {
-			txnCtx.addSidecarRecord(SidecarUtils.createContractActionsSidecar(actions));
-		}
-	}
+    private void addAllSidecarsToTxnContextFrom(final TransactionProcessingResult result) {
+        if (!result.getStateChanges().isEmpty()) {
+            txnCtx.addSidecarRecord(
+                    SidecarUtils.createStateChangesSidecarFrom(result.getStateChanges()));
+        }
+        final var actions = result.getActions();
+        if (!actions.isEmpty()) {
+            txnCtx.addSidecarRecord(SidecarUtils.createContractActionsSidecar(actions));
+        }
+    }
 
     public void updateForEvmCall(EthTxData callContext, EntityId senderId) {
         txnCtx.updateForEvmCall(callContext, senderId);
