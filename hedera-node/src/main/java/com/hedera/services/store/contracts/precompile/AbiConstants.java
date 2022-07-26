@@ -132,9 +132,9 @@ public final class AbiConstants {
     // getNonFungibleTokenInfo(address token, int64 serialNumber)
     public static final int ABI_ID_GET_NON_FUNGIBLE_TOKEN_INFO = 0x287e1da8;
 
-    // getTokenDefaultFreezeStatus(address)
+    // getTokenDefaultFreezeStatus(address token)
     public static final int ABI_ID_GET_TOKEN_DEFAULT_FREEZE_STATUS = 0xa7daa18d;
 
-    // getTokenDefaultKycStatus(address)
+    // getTokenDefaultKycStatus(address token)
     public static final int ABI_ID_GET_TOKEN_DEFAULT_KYC_STATUS = 0x335e04c1;
 }
