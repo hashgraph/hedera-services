@@ -142,9 +142,8 @@ class ViewExecutorTest {
     @Test
     void computeGetFungibleTokenInfo() {
         final var input =
-                Bytes.fromHexString(
-                        "0x46de0fb1000000000000000000000000000000000000000000000000000000000000050"
-                            + "e000000000000000000000000000000000000000000000000000000000000050c");
+                prerequisites(
+                        ABI_ID_GET_FUNGIBLE_TOKEN_INFO, fungibleTokenAddress, Optional.empty());
 
         final var tokenInfoWrapper = TokenInfoWrapper.forFungibleToken(fungible);
         given(decodingFacade.decodeGetFungibleTokenInfo(input)).willReturn(tokenInfoWrapper);
@@ -260,7 +259,7 @@ class ViewExecutorTest {
     Bytes prerequisites(
             final int descriptor, final Bytes tokenAddress, final Optional<Bytes> accountAddress) {
         Bytes input =
-                !accountAddress.isEmpty()
+                !accountAddress.isPresent()
                         ? Bytes.concatenate(Bytes.of(Integers.toBytes(descriptor)), tokenAddress)
                         : Bytes.concatenate(
                                 Bytes.of(Integers.toBytes(descriptor)),
