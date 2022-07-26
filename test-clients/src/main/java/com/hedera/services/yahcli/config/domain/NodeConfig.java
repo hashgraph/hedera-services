@@ -1,11 +1,6 @@
-package com.hedera.services.yahcli.config.domain;
-
-/*-
- * ‌
- * Hedera Services Test Clients
- * ​
- * Copyright (C) 2018 - 2020 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,44 +12,44 @@ package com.hedera.services.yahcli.config.domain;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+package com.hedera.services.yahcli.config.domain;
 
 public class NodeConfig {
-	private int id;
-	private long account;
-	private String ipv4Addr;
+    private int id;
+    private long account;
+    private String ipv4Addr;
 
-	public long getAccount() {
-		return account;
-	}
+    public long getAccount() {
+        return account;
+    }
 
-	public void setAccount(long account) {
-		this.account = account;
-	}
+    public void setAccount(long account) {
+        this.account = account;
+    }
 
-	public String getIpv4Addr() {
-		return ipv4Addr;
-	}
+    public String getIpv4Addr() {
+        return ipv4Addr;
+    }
 
-	public void setIpv4Addr(String ipv4Addr) {
-		this.ipv4Addr = ipv4Addr;
-	}
+    public void setIpv4Addr(String ipv4Addr) {
+        this.ipv4Addr = ipv4Addr;
+    }
 
-	public int getId() {
-		return id;
-	}
+    public int getId() {
+        return id;
+    }
 
-	public void setId(int id) {
-		this.id = id;
-	}
+    public void setId(int id) {
+        this.id = id;
+    }
 
-	@Override
-	public String toString() {
-		return String.format("%s:0.0.%d#%d", ipv4Addr, account, id);
-	}
+    @Override
+    public String toString() {
+        return String.format("%s:0.0.%d#%d", ipv4Addr, account, id);
+    }
 
-	public String asNodesItem() {
-		return String.format("%s:0.0.%d", ipv4Addr, account);
-	}
+    public String asNodesItem() {
+        return String.format("%s:0.0.%d", ipv4Addr, account);
+    }
 }
