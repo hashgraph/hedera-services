@@ -476,7 +476,7 @@ class GlobalDynamicPropertiesTest {
                                 ? Set.of(SidecarType.CONTRACT_STATE_CHANGE)
                                 : Set.of(SidecarType.CONTRACT_BYTECODE));
         given(properties.getIntProperty("hedera.recordStream.sidecarMaxSizeMb"))
-            .willReturn((i + 88));
+                .willReturn((i + 88));
     }
 
     private Set<EntityType> typesFor(final int i) {
