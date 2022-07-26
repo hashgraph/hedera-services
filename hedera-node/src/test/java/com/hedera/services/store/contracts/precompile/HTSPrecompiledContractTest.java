@@ -160,36 +160,9 @@ class HTSPrecompiledContractTest {
 
     public static final Id fungibleId = Id.fromGrpcToken(fungible);
     public static final Address fungibleTokenAddress = fungibleId.asEvmAddress();
-    //	private Address tokenAddress =
-    // Address.fromHexString("0x0102030405060708090a0b0c0d0e0f1011121314");
 
     @BeforeEach
     void setUp() throws IOException {
-        //        final var token =
-        //                new HederaToken(
-        //                        "NAME",
-        //                        "FT",
-        //                        Address.wrap(
-        //
-        // Bytes.fromHexString("0x00000000000000000000000000000000000005cc")),
-        //                        "MEMO",
-        //                        false,
-        //                        1000L,
-        //                        false,
-        //                        new ArrayList<>(),
-        //                        new Expiry(0L, Address.ZERO, 0L));
-        //        tokenInfo =
-        //                new TokenInfo(
-        //                        token,
-        //                        1L,
-        //                        false,
-        //                        false,
-        //                        false,
-        //                        new ArrayList<>(),
-        //                        new ArrayList<>(),
-        //                        new ArrayList<>(),
-        //                        "0x03");
-
         tokenInfo =
                 TokenInfo.newBuilder()
                         .setLedgerId(fromString("0x03"))
