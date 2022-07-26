@@ -57,8 +57,6 @@ public class PauseUnpauseTokenAccountPrecompileSuite extends HapiApiSuite {
             LogManager.getLogger(PauseUnpauseTokenAccountPrecompileSuite.class);
     private static final String PAUSE_UNPAUSE_CONTRACT = "PauseUnpauseTokenAccount";
 
-    private static final String PAUSE_KEY = "PAUSE_KEY";
-
     private static final String UNPAUSE_KEY = "UNPAUSE_KEY";
 
     private static final String ACCOUNT = "account";
