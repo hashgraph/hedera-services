@@ -608,11 +608,11 @@ class ContractCreateTransitionLogicTest {
         // setup:
         givenValidTxnCtx();
         List<ContractID> expectedCreatedContracts =
-            List.of(contractAccount.getId().asGrpcContract());
+                List.of(contractAccount.getId().asGrpcContract());
         // and:
         given(accountStore.loadAccount(senderAccount.getId())).willReturn(senderAccount);
         given(worldState.newContractAddress(senderAccount.getId().asEvmAddress()))
-            .willReturn(contractAccount.getId().asEvmAddress());
+                .willReturn(contractAccount.getId().asEvmAddress());
         given(worldState.getCreatedContractIds()).willReturn(expectedCreatedContracts);
         given(hfs.exists(bytecodeSrc)).willReturn(true);
         given(hfs.cat(bytecodeSrc)).willReturn(bytecode);
@@ -621,34 +621,34 @@ class ContractCreateTransitionLogicTest {
         given(txnCtx.accessor()).willReturn(accessor);
         given(txnCtx.consensusTime()).willReturn(consensusTime);
         var expiry =
-            RequestBuilder.getExpirationTime(
-                    consensusTime,
-                    Duration.newBuilder().setSeconds(customAutoRenewPeriod).build())
-                .getSeconds();
+                RequestBuilder.getExpirationTime(
+                                consensusTime,
+                                Duration.newBuilder().setSeconds(customAutoRenewPeriod).build())
+                        .getSeconds();
         var result =
-            TransactionProcessingResult.failed(
-                1234L, 0L, 124L, Optional.empty(), Optional.empty(), Map.of());
+                TransactionProcessingResult.failed(
+                        1234L, 0L, 124L, Optional.empty(), Optional.empty(), Map.of());
         given(
-            evmTxProcessor.execute(
-                senderAccount,
-                contractAccount.getId().asEvmAddress(),
-                gas,
-                balance,
-                Bytes.fromHexString(new String(bytecode)),
-                txnCtx.consensusTime(),
-                expiry))
-            .willReturn(result);
+                        evmTxProcessor.execute(
+                                senderAccount,
+                                contractAccount.getId().asEvmAddress(),
+                                gas,
+                                balance,
+                                Bytes.fromHexString(new String(bytecode)),
+                                txnCtx.consensusTime(),
+                                expiry))
+                .willReturn(result);
         given(properties.enabledSidecars()).willReturn(EnumSet.of(SidecarType.CONTRACT_BYTECODE));
         final var sidecarRecord =
-            TransactionSidecarRecord.newBuilder()
-                .setConsensusTimestamp(Timestamp.newBuilder().setSeconds(666L).build());
+                TransactionSidecarRecord.newBuilder()
+                        .setConsensusTimestamp(Timestamp.newBuilder().setSeconds(666L).build());
         final var sidecarUtilsMockedStatic = mockStatic(SidecarUtils.class);
         sidecarUtilsMockedStatic
-            .when(
-                () ->
-                    SidecarUtils.createContractBytecodeSidecarForFailedCreate(
-                        Bytes.fromHexString(new String(bytecode)).toArrayUnsafe()))
-            .thenReturn(sidecarRecord);
+                .when(
+                        () ->
+                                SidecarUtils.createContractBytecodeSidecarForFailedCreate(
+                                        Bytes.fromHexString(new String(bytecode)).toArrayUnsafe()))
+                .thenReturn(sidecarRecord);
 
         // when:
         subject.doStateTransition();
@@ -666,39 +666,39 @@ class ContractCreateTransitionLogicTest {
         // setup:
         givenValidTxnCtxWithInlineInitCode();
         List<ContractID> expectedCreatedContracts =
-            List.of(contractAccount.getId().asGrpcContract());
+                List.of(contractAccount.getId().asGrpcContract());
 
         // and:
         given(accountStore.loadAccount(senderAccount.getId())).willReturn(senderAccount);
         given(worldState.newContractAddress(senderAccount.getId().asEvmAddress()))
-            .willReturn(contractAccount.getId().asEvmAddress());
+                .willReturn(contractAccount.getId().asEvmAddress());
         given(worldState.getCreatedContractIds()).willReturn(expectedCreatedContracts);
         given(accessor.getTxn()).willReturn(contractCreateTxn);
         given(txnCtx.activePayer()).willReturn(ourAccount());
         given(txnCtx.accessor()).willReturn(accessor);
         given(txnCtx.consensusTime()).willReturn(consensusTime);
         var expiry =
-            RequestBuilder.getExpirationTime(
-                    consensusTime,
-                    Duration.newBuilder().setSeconds(customAutoRenewPeriod).build())
-                .getSeconds();
+                RequestBuilder.getExpirationTime(
+                                consensusTime,
+                                Duration.newBuilder().setSeconds(customAutoRenewPeriod).build())
+                        .getSeconds();
         var result =
-            TransactionProcessingResult.failed(
-                1234L, 0L, 124L, Optional.empty(), Optional.empty(), Map.of());
+                TransactionProcessingResult.failed(
+                        1234L, 0L, 124L, Optional.empty(), Optional.empty(), Map.of());
         given(
-            evmTxProcessor.execute(
-                senderAccount,
-                contractAccount.getId().asEvmAddress(),
-                gas,
-                balance,
-                Bytes.of(bytecode),
-                txnCtx.consensusTime(),
-                expiry))
-            .willReturn(result);
+                        evmTxProcessor.execute(
+                                senderAccount,
+                                contractAccount.getId().asEvmAddress(),
+                                gas,
+                                balance,
+                                Bytes.of(bytecode),
+                                txnCtx.consensusTime(),
+                                expiry))
+                .willReturn(result);
         given(
-            accountStore.loadAccountOrFailWith(
-                Id.fromGrpcAccount(autoRenewAccount), INVALID_AUTORENEW_ACCOUNT))
-            .willReturn(autoRenewModel);
+                        accountStore.loadAccountOrFailWith(
+                                Id.fromGrpcAccount(autoRenewAccount), INVALID_AUTORENEW_ACCOUNT))
+                .willReturn(autoRenewModel);
         given(autoRenewModel.isSmartContract()).willReturn(false);
         given(properties.enabledSidecars()).willReturn(EnumSet.of(SidecarType.CONTRACT_BYTECODE));
 
@@ -917,7 +917,7 @@ class ContractCreateTransitionLogicTest {
                                 contractAccount.getId().asEvmAddress(),
                                 gas,
                                 balance,
-                            Bytes.wrap(bytecode),
+                                Bytes.wrap(bytecode),
                                 txnCtx.consensusTime(),
                                 expiry))
                 .willReturn(result);

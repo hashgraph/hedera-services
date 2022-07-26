@@ -191,10 +191,10 @@ class TransactionRecordServiceTest {
         givenProcessingResult(false, null);
         given(processingResult.getStateChanges()).willReturn(stateChanges);
         final var contractBytecodeSidecar =
-            SidecarUtils.createContractBytecodeSidecarFrom(
-                IdUtils.asContract("0.0.5"),
-                "initCode".getBytes(),
-                "runtimeCode".getBytes());
+                SidecarUtils.createContractBytecodeSidecarFrom(
+                        IdUtils.asContract("0.0.5"),
+                        "initCode".getBytes(),
+                        "runtimeCode".getBytes());
         // when:
         subject.externalizeUnsuccessfulEvmCreate(processingResult, contractBytecodeSidecar);
         // then:
@@ -205,8 +205,8 @@ class TransactionRecordServiceTest {
         final var sidecars = contextCaptor.getAllValues();
         assertEquals(2, sidecars.size());
         assertEquals(
-            SidecarUtils.createStateChangesSidecarFrom(stateChanges).build(),
-            sidecars.get(0).build());
+                SidecarUtils.createStateChangesSidecarFrom(stateChanges).build(),
+                sidecars.get(0).build());
         assertEquals(contractBytecodeSidecar.build(), sidecars.get(1).build());
     }
 
@@ -226,8 +226,8 @@ class TransactionRecordServiceTest {
         final var sidecars = contextCaptor.getAllValues();
         assertEquals(1, sidecars.size());
         assertEquals(
-            SidecarUtils.createStateChangesSidecarFrom(stateChanges).build(),
-            sidecars.get(0).build());
+                SidecarUtils.createStateChangesSidecarFrom(stateChanges).build(),
+                sidecars.get(0).build());
     }
 
     @Test
@@ -241,7 +241,7 @@ class TransactionRecordServiceTest {
         verify(txnCtx).setCreateResult(any());
         verify(txnCtx).addFeeChargedToPayer(NON_THRESHOLD_FEE);
         verify(txnCtx, Mockito.never())
-            .addSidecarRecord(any(TransactionSidecarRecord.Builder.class));
+                .addSidecarRecord(any(TransactionSidecarRecord.Builder.class));
     }
 
     @Test

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -86,15 +86,13 @@ class SidecarUtilsTest {
 
         // when
         final var bytecodeSidecar =
-            SidecarUtils.createContractBytecodeSidecarForFailedCreate(initCode).build();
+                SidecarUtils.createContractBytecodeSidecarForFailedCreate(initCode).build();
 
         // then
         final var expectedBytecodes =
-            ContractBytecode.newBuilder()
-                .setInitcode(ByteString.copyFrom(initCode))
-                .build();
+                ContractBytecode.newBuilder().setInitcode(ByteString.copyFrom(initCode)).build();
         final var expectedTransactionSidecarRecord =
-            TransactionSidecarRecord.newBuilder().setBytecode(expectedBytecodes).build();
+                TransactionSidecarRecord.newBuilder().setBytecode(expectedBytecodes).build();
         assertEquals(expectedTransactionSidecarRecord, bytecodeSidecar);
     }
 
