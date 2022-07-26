@@ -841,6 +841,7 @@ class DecodingFacadeTest {
         final var decodedInput = subject.decodeUnpause(NON_FUNGIBLE_UNPAUSE_INPUT);
 
         assertTrue(decodedInput.token().getTokenNum() > 0);
+    }
 
     @Test
     void decodeGetTokenInfoAsExpected() {
