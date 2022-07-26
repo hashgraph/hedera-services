@@ -26,6 +26,7 @@ import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.validation.ContractStorageLimits;
 import com.hedera.services.state.validation.UsageLimits;
 import com.hedera.services.state.virtual.ContractKey;
 import com.hedera.services.state.virtual.IterableContractValue;
@@ -57,7 +58,7 @@ import org.apache.tuweni.units.bigints.UInt256;
 public class SizeLimitedStorage {
     public static final IterableContractValue ZERO_VALUE = IterableContractValue.from(ZERO);
 
-    private final UsageLimits usageLimits;
+    private final ContractStorageLimits usageLimits;
 
     // Used to upsert to a contract's doubly-linked list of storage mappings
     private final IterableStorageUpserter storageUpserter;
@@ -79,7 +80,7 @@ public class SizeLimitedStorage {
 
     @Inject
     public SizeLimitedStorage(
-            final UsageLimits usageLimits,
+            final ContractStorageLimits usageLimits,
             final IterableStorageUpserter storageUpserter,
             final IterableStorageRemover storageRemover,
             final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts,

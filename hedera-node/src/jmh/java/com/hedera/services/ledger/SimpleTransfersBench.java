@@ -50,10 +50,6 @@ import static com.hedera.services.setup.InfrastructureType.ACCOUNTS_LEDGER;
 public class SimpleTransfersBench {
 	private static final int NUM_NODES = 39;
 	private static final int FIRST_NODE_I = 3;
-	private static final int FIRST_USER_I = 1001;
-	private static final int ADDEND = 17;
-	private static final int MULTIPLIER = 31;
-	private static final AccountID FUNDING_ID = AccountID.newBuilder().setAccountNum(98).build();
 
 	@Param("100000")
 	int userAccounts;
@@ -89,15 +85,16 @@ public class SimpleTransfersBench {
 	// --- Benchmarks ---
 	@Benchmark
 	public void simpleTransfers() {
-		i = i * MULTIPLIER + ADDEND;
+		i = i * Constructables.MULTIPLIER + Constructables.ADDEND;
 		final var nodeId = ids[FIRST_NODE_I + Math.floorMod(i, NUM_NODES)];
-		i = i * MULTIPLIER + ADDEND;
-		final var senderId = ids[FIRST_USER_I + Math.floorMod(i, userAccounts)];
-		i = i * MULTIPLIER + ADDEND;
-		final var receiverId = ids[FIRST_USER_I + Math.floorMod(i, userAccounts)];
+		i = i * Constructables.MULTIPLIER + Constructables.ADDEND;
+		final var senderId = ids[Constructables.FIRST_USER_I + Math.floorMod(i, userAccounts)];
+		i = i * Constructables.MULTIPLIER + Constructables.ADDEND;
+		final var receiverId = ids[Constructables.FIRST_USER_I + Math.floorMod(i, userAccounts)];
 
 		ledger.begin();
-		ledger.set(FUNDING_ID, BALANCE, (long) ledger.get(FUNDING_ID, BALANCE) + 69_000);
+		ledger.set(
+				Constructables.FUNDING_ID, BALANCE, (long) ledger.get(Constructables.FUNDING_ID, BALANCE) + 69_000);
 		ledger.set(nodeId, BALANCE, (long) ledger.get(nodeId, BALANCE) + 420);
 		ledger.set(senderId, BALANCE, (long) ledger.get(senderId, BALANCE) - 69_421);
 		ledger.set(receiverId, BALANCE, (long) ledger.get(receiverId, BALANCE) + 1);

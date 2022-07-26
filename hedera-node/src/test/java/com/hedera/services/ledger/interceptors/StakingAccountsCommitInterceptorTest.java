@@ -53,6 +53,7 @@ import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.merkle.MerkleStakingInfo;
+import com.hedera.services.state.validation.AccountUsageTracking;
 import com.hedera.services.state.validation.UsageLimits;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.test.factories.accounts.MerkleAccountFactory;
@@ -75,7 +76,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class StakingAccountsCommitInterceptorTest {
-    @Mock private UsageLimits usageLimits;
+    @Mock private AccountUsageTracking usageTracking;
     @Mock private SideEffectsTracker sideEffectsTracker;
     @Mock private MerkleNetworkContext networkCtx;
     @Mock private GlobalDynamicProperties dynamicProperties;
@@ -118,7 +119,7 @@ class StakingAccountsCommitInterceptorTest {
                         stakeInfoManager,
                         accountNumbers,
                         txnCtx,
-                        usageLimits);
+                    usageTracking);
         reset();
     }
 
@@ -663,7 +664,7 @@ class StakingAccountsCommitInterceptorTest {
                         stakeInfoManager,
                         accountNumbers,
                         txnCtx,
-                        usageLimits);
+                    usageTracking);
 
         subject.preview(pendingChanges);
         verify(rewardCalculator, times(2))
@@ -718,7 +719,7 @@ class StakingAccountsCommitInterceptorTest {
                         stakeInfoManager,
                         accountNumbers,
                         txnCtx,
-                        usageLimits);
+                    usageTracking);
 
         subject.preview(pendingChanges);
         verify(rewardCalculator, times(2))
@@ -766,7 +767,7 @@ class StakingAccountsCommitInterceptorTest {
                         stakeInfoManager,
                         accountNumbers,
                         txnCtx,
-                        usageLimits);
+                    usageTracking);
 
         assertThrows(IllegalStateException.class, () -> subject.preview(pendingChanges));
     }
@@ -798,7 +799,7 @@ class StakingAccountsCommitInterceptorTest {
                         stakeInfoManager,
                         accountNumbers,
                         txnCtx,
-                        usageLimits);
+                    usageTracking);
 
         subject.getRewardsEarned()[1] = 0;
         subject.getRewardsEarned()[2] = 1;
@@ -846,7 +847,7 @@ class StakingAccountsCommitInterceptorTest {
                         stakeInfoManager,
                         accountNumbers,
                         txnCtx,
-                        usageLimits);
+                    usageTracking);
 
         subject.getRewardsEarned()[0] = -1;
         subject.getRewardsEarned()[1] = -1;

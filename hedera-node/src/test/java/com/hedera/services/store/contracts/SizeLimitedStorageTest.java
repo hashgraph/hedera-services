@@ -37,6 +37,7 @@ import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.validation.ContractStorageLimits;
 import com.hedera.services.state.validation.UsageLimits;
 import com.hedera.services.state.virtual.ContractKey;
 import com.hedera.services.state.virtual.IterableContractValue;
@@ -60,7 +61,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class SizeLimitedStorageTest {
-    @Mock private UsageLimits usageLimits;
+    @Mock private ContractStorageLimits usageLimits;
     @Mock private SizeLimitedStorage.IterableStorageUpserter storageUpserter;
     @Mock private SizeLimitedStorage.IterableStorageRemover storageRemover;
     @Mock private MerkleMap<EntityNum, MerkleAccount> accounts;

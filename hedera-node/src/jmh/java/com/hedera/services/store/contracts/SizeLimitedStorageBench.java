@@ -22,6 +22,7 @@ package com.hedera.services.store.contracts;
 
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.properties.AccountProperty;
+import com.hedera.services.mocks.MockStorageLimits;
 import com.hedera.services.setup.Constructables;
 import com.hedera.services.setup.EvmKeyValueSource;
 import com.hedera.services.setup.InfrastructureBundle;
@@ -45,7 +46,6 @@ import java.util.List;
 import java.util.Map;
 
 import static com.hedera.services.ledger.properties.AccountProperty.IS_SMART_CONTRACT;
-import static com.hedera.services.properties.MockDynamicProperties.mockPropertiesWith;
 import static com.hedera.services.setup.InfrastructureManager.loadOrCreateBundle;
 import static com.hedera.services.setup.InfrastructureType.ACCOUNTS_LEDGER;
 import static com.hedera.services.setup.InfrastructureType.ACCOUNTS_MM;
@@ -59,8 +59,6 @@ public class SizeLimitedStorageBench {
 	// Application-level config overrides
 	@Param("163840")
 	int maxContractKvPairs;
-	@Param("500000000")
-	int maxAggregateKvPairs;
 
 	// Config for the starting database to load/create
 	@Param("10")
@@ -90,9 +88,9 @@ public class SizeLimitedStorageBench {
 		registerConstructables();
 		bundle = loadOrCreateBundle(activeConfig(), requiredInfra());
 		subject = new SizeLimitedStorage(
+				new MockStorageLimits(),
 				IterableStorageUtils::overwritingUpsertMapping,
 				IterableStorageUtils::removeMapping,
-				mockPropertiesWith(maxContractKvPairs, maxAggregateKvPairs),
 				bundle.getterFor(ACCOUNTS_MM),
 				bundle.getterFor(CONTRACT_STORAGE_VM));
 	}

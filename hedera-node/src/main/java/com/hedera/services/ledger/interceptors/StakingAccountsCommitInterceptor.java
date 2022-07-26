@@ -43,7 +43,7 @@ import com.hedera.services.ledger.accounts.staking.StakePeriodManager;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
-import com.hedera.services.state.validation.UsageLimits;
+import com.hedera.services.state.validation.AccountUsageTracking;
 import com.hederahashgraph.api.proto.java.AccountID;
 import java.util.Arrays;
 import java.util.Map;
@@ -96,8 +96,8 @@ public class StakingAccountsCommitInterceptor extends AccountsCommitInterceptor 
             final StakeInfoManager stakeInfoManager,
             final AccountNumbers accountNumbers,
             final TransactionContext txnCtx,
-            final UsageLimits usageLimits) {
-        super(usageLimits, sideEffectsTracker);
+            final AccountUsageTracking usageTracking) {
+        super(usageTracking, sideEffectsTracker);
         this.txnCtx = txnCtx;
         this.networkCtx = networkCtx;
         this.accountNumbers = accountNumbers;

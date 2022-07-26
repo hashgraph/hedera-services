@@ -1,4 +1,4 @@
-package com.hedera.services.properties;
+package com.hedera.services.mocks;
 
 /*-
  * ‌
@@ -52,5 +52,10 @@ public class MockDynamicProperties extends GlobalDynamicProperties {
 	@Override
 	public int maxIndividualContractKvPairs() {
 		return maxContractKvPairs;
+	}
+
+	@Override
+	public boolean isStakingEnabled() {
+		return true;
 	}
 }

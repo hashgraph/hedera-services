@@ -15,13 +15,17 @@
  */
 package com.hedera.services.setup;
 
+import static com.hedera.services.setup.InfrastructureInitializer.accountIdWith;
+
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleAccountState;
+import com.hedera.services.state.merkle.MerkleStakingInfo;
 import com.hedera.services.state.virtual.ContractKey;
 import com.hedera.services.state.virtual.ContractKeySerializer;
 import com.hedera.services.state.virtual.ContractKeySupplier;
 import com.hedera.services.state.virtual.IterableContractValue;
 import com.hedera.services.state.virtual.IterableContractValueSupplier;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
@@ -34,12 +38,18 @@ import com.swirlds.merkle.tree.MerkleBinaryTree;
 import com.swirlds.merkle.tree.MerkleTreeInternalNode;
 import com.swirlds.virtualmap.VirtualMap;
 import com.swirlds.virtualmap.internal.cache.VirtualNodeCache;
-import com.swirlds.virtualmap.internal.merkle.VirtualInternalNode;
-import com.swirlds.virtualmap.internal.merkle.VirtualLeafNode;
 import com.swirlds.virtualmap.internal.merkle.VirtualMapState;
 import com.swirlds.virtualmap.internal.merkle.VirtualRootNode;
 
 public class Constructables {
+
+    public static final int ADDEND = 17;
+    public static final int MULTIPLIER = 31;
+    public static final long SEED = 1_234_567L;
+    public static final AccountID FUNDING_ID = accountIdWith(98L);
+    public static final AccountID STAKING_REWARD_ID = accountIdWith(800L);
+    public static final int FIRST_USER_I = 1001;
+
     private Constructables() {
         throw new UnsupportedOperationException();
     }
@@ -52,6 +62,15 @@ public class Constructables {
                     new ClassConstructorPair(MerkleAccountState.class, MerkleAccountState::new));
             ConstructableRegistry.registerConstructable(
                     new ClassConstructorPair(FCQueue.class, FCQueue::new));
+        } catch (ConstructableRegistryException e) {
+            throw new IllegalStateException(e);
+        }
+    }
+
+    public static void registerForStakingInfo() {
+        try {
+            ConstructableRegistry.registerConstructable(
+                    new ClassConstructorPair(MerkleStakingInfo.class, MerkleStakingInfo::new));
         } catch (ConstructableRegistryException e) {
             throw new IllegalStateException(e);
         }
@@ -94,10 +113,6 @@ public class Constructables {
                 new ClassConstructorPair(VirtualMap.class, VirtualMap::new));
         ConstructableRegistry.registerConstructable(
                 new ClassConstructorPair(VirtualMapState.class, VirtualMapState::new));
-        ConstructableRegistry.registerConstructable(
-                new ClassConstructorPair(VirtualInternalNode.class, VirtualInternalNode::new));
-        ConstructableRegistry.registerConstructable(
-                new ClassConstructorPair(VirtualLeafNode.class, VirtualLeafNode::new));
         ConstructableRegistry.registerConstructable(
                 new ClassConstructorPair(VirtualRootNode.class, VirtualRootNode::new));
         ConstructableRegistry.registerConstructable(
