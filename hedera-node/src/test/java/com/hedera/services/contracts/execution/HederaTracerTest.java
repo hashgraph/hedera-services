@@ -15,9 +15,9 @@
  */
 package com.hedera.services.contracts.execution;
 
-import static com.hedera.services.contracts.operation.HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS;
 import static com.hedera.services.contracts.execution.traceability.ContractActionType.CALL;
 import static com.hedera.services.contracts.execution.traceability.ContractActionType.CREATE;
+import static com.hedera.services.contracts.operation.HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -27,8 +27,8 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
-import com.hedera.services.contracts.execution.traceability.HederaTracer;
 import com.hedera.services.contracts.execution.traceability.ContractActionType;
+import com.hedera.services.contracts.execution.traceability.HederaTracer;
 import com.hedera.services.state.submerkle.EntityId;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayDeque;

@@ -105,7 +105,7 @@ class CreateEvmTxProcessorTest {
                         storageExpiry,
                         blockMetaSource,
                         new FakeHederaTracer());
-	}
+    }
 
     @Test
     void assertSuccessfulExecution() {

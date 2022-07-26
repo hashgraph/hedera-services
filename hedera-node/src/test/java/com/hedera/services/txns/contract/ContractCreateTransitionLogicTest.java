@@ -111,7 +111,7 @@ class ContractCreateTransitionLogicTest {
     private final FileID bytecodeSrc = IdUtils.asFile("0.0.75231");
     private final byte[] bytecode =
             ("6080604052603e8060116000396000f3fe6080604052600080fdfea265627a7a723158209dcac4560f0f51610e07"
-                            + "ac469a3401491cfed6040caf961950f8964fe5ca3fe264736f6c634300050b0032")
+                 + "ac469a3401491cfed6040caf961950f8964fe5ca3fe264736f6c634300050b0032")
                     .getBytes();
     private final int maxAutoAssociations = 10;
     private final Instant consensusTime = Instant.ofEpochSecond(1_234_567L);

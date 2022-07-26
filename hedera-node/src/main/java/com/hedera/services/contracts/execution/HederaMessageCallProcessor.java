@@ -54,49 +54,51 @@ public class HederaMessageCallProcessor extends MessageCallProcessor {
         hederaPrecompileList.forEach((k, v) -> hederaPrecompiles.put(Address.fromHexString(k), v));
     }
 
-	@Override
-	public void start(final MessageFrame frame, final OperationTracer operationTracer) {
-		final var hederaPrecompile = hederaPrecompiles.get(frame.getContractAddress());
-		if (hederaPrecompile != null) {
-			executeHederaPrecompile(hederaPrecompile, frame, operationTracer);
-			((HederaOperationTracer) operationTracer).tracePrecompileResult(frame, ContractActionType.SYSTEM);
-		} else {
-			super.start(frame, operationTracer);
-			if (frame.getState() != State.CODE_EXECUTING) {
-				// only a precompile execution will not set the state to CODE_EXECUTING after start()
-				((HederaOperationTracer) operationTracer).tracePrecompileResult(frame, ContractActionType.PRECOMPILE);
-			}
-		}
-	}
+    @Override
+    public void start(final MessageFrame frame, final OperationTracer operationTracer) {
+        final var hederaPrecompile = hederaPrecompiles.get(frame.getContractAddress());
+        if (hederaPrecompile != null) {
+            executeHederaPrecompile(hederaPrecompile, frame, operationTracer);
+            ((HederaOperationTracer) operationTracer)
+                    .tracePrecompileResult(frame, ContractActionType.SYSTEM);
+        } else {
+            super.start(frame, operationTracer);
+            if (frame.getState() != State.CODE_EXECUTING) {
+                // only a precompile execution will not set the state to CODE_EXECUTING after
+                // start()
+                ((HederaOperationTracer) operationTracer)
+                        .tracePrecompileResult(frame, ContractActionType.PRECOMPILE);
+            }
+        }
+    }
 
-	void executeHederaPrecompile(
-			final PrecompiledContract contract,
-			final MessageFrame frame,
-			final OperationTracer operationTracer
-	) {
-		final long gasRequirement;
-		final Bytes output;
-		if (contract instanceof HTSPrecompiledContract htsPrecompile) {
-			final var costedResult = htsPrecompile.computeCosted(frame.getInputData(), frame);
-			output = costedResult.getValue();
-			gasRequirement = costedResult.getKey();
-		} else {
-			output = contract.computePrecompile(frame.getInputData(), frame).getOutput();
-			gasRequirement = contract.gasRequirement(frame.getInputData());
-		}
-		operationTracer.tracePrecompileCall(frame, gasRequirement, output);
-		if (frame.getState() != REVERT) {
-			if (frame.getRemainingGas() < gasRequirement) {
-				frame.decrementRemainingGas(frame.getRemainingGas());
-				frame.setExceptionalHaltReason(Optional.of(INSUFFICIENT_GAS));
-				frame.setState(EXCEPTIONAL_HALT);
-			} else if (output != null) {
-				frame.decrementRemainingGas(gasRequirement);
-				frame.setOutputData(output);
-				frame.setState(COMPLETED_SUCCESS);
-			} else {
-				frame.setState(EXCEPTIONAL_HALT);
-			}
-		}
-	}
+    void executeHederaPrecompile(
+            final PrecompiledContract contract,
+            final MessageFrame frame,
+            final OperationTracer operationTracer) {
+        final long gasRequirement;
+        final Bytes output;
+        if (contract instanceof HTSPrecompiledContract htsPrecompile) {
+            final var costedResult = htsPrecompile.computeCosted(frame.getInputData(), frame);
+            output = costedResult.getValue();
+            gasRequirement = costedResult.getKey();
+        } else {
+            output = contract.computePrecompile(frame.getInputData(), frame).getOutput();
+            gasRequirement = contract.gasRequirement(frame.getInputData());
+        }
+        operationTracer.tracePrecompileCall(frame, gasRequirement, output);
+        if (frame.getState() != REVERT) {
+            if (frame.getRemainingGas() < gasRequirement) {
+                frame.decrementRemainingGas(frame.getRemainingGas());
+                frame.setExceptionalHaltReason(Optional.of(INSUFFICIENT_GAS));
+                frame.setState(EXCEPTIONAL_HALT);
+            } else if (output != null) {
+                frame.decrementRemainingGas(gasRequirement);
+                frame.setOutputData(output);
+                frame.setState(COMPLETED_SUCCESS);
+            } else {
+                frame.setState(EXCEPTIONAL_HALT);
+            }
+        }
+    }
 }

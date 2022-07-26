@@ -114,7 +114,7 @@ class CallEvmTxProcessorTest {
     private void setup() {
         CommonProcessorSetup.setup(gasCalculator);
 
-		fakeHederaTracer = new FakeHederaTracer();
+        fakeHederaTracer = new FakeHederaTracer();
         callEvmTxProcessor =
                 new CallEvmTxProcessor(
                         worldState,
@@ -128,7 +128,7 @@ class CallEvmTxProcessorTest {
                         storageExpiry,
                         blockMetaSource,
                         fakeHederaTracer);
-	}
+    }
 
     @Test
     void assertSuccessExecution() {

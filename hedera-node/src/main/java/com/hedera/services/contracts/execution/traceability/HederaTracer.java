@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,10 +15,9 @@
  */
 package com.hedera.services.contracts.execution.traceability;
 
-
-import static com.hedera.services.contracts.operation.HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS;
 import static com.hedera.services.contracts.execution.traceability.ContractActionType.CALL;
 import static com.hedera.services.contracts.execution.traceability.ContractActionType.CREATE;
+import static com.hedera.services.contracts.operation.HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS;
 
 import com.hedera.services.state.submerkle.EntityId;
 import java.nio.charset.StandardCharsets;
@@ -127,8 +126,9 @@ public class HederaTracer implements HederaOperationTracer {
             action.setGasUsed(action.getGas() - frame.getRemainingGas());
             // set the revert reason in the action
             frame.getRevertReason()
-                .ifPresentOrElse(bytes -> action.setRevertReason(bytes.toArrayUnsafe()),
-                    () -> action.setRevertReason(new byte[0]));
+                    .ifPresentOrElse(
+                            bytes -> action.setRevertReason(bytes.toArrayUnsafe()),
+                            () -> action.setRevertReason(new byte[0]));
         } else if (frameState == State.EXCEPTIONAL_HALT) {
             // exceptional exits always burn all gas
             action.setGasUsed(action.getGas());

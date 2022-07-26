@@ -15,17 +15,17 @@
  */
 package com.hedera.services.contracts.execution;
 
+import com.hedera.services.contracts.execution.traceability.ContractActionType;
 import com.hedera.services.contracts.execution.traceability.HederaOperationTracer;
 import com.hedera.services.contracts.execution.traceability.SolidityAction;
-import com.hedera.services.contracts.execution.traceability.ContractActionType;
 import java.util.ArrayList;
 import java.util.List;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 
 /**
  * A fake implementation of a {@code HederaOperationTracer} for unit tests. This is needed since
- * tests of {@code EvmTxProcessor} need a tracer that executes the EVM operations in
- * {@code traceExecution(MessageFrame, ExecuteOperation)}, otherwise the tests hang.
+ * tests of {@code EvmTxProcessor} need a tracer that executes the EVM operations in {@code
+ * traceExecution(MessageFrame, ExecuteOperation)}, otherwise the tests hang.
  */
 public class FakeHederaTracer implements HederaOperationTracer {
 

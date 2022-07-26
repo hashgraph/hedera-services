@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,8 +43,8 @@ public interface HederaOperationTracer extends OperationTracer {
     List<SolidityAction> getActions();
 
     /**
-     * Resets the tracer for a new EVM transaction.
-     * Must be called before each new EVM transaction begins its execution.
+     * Resets the tracer for a new EVM transaction. Must be called before each new EVM transaction
+     * begins its execution.
      *
      * @param areActionSidecarsEnabled specifies if actions should be tracked for traceability
      *     during this EVM transaction

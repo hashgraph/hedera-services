@@ -53,7 +53,7 @@ public class TransactionProcessingResult {
     private final Optional<Address> recipient;
     private final Optional<ExceptionalHaltReason> haltReason;
     private final Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> stateChanges;
-		private final List<SolidityAction> actions;
+    private final List<SolidityAction> actions;
 
     private List<ContractID> createdContracts = Collections.emptyList();
 
