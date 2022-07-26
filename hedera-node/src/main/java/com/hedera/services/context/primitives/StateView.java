@@ -840,6 +840,6 @@ public class StateView {
     }
 
     public Map<ByteString, EntityNum> aliases() {
-        return stateChildren == null ? EMPTY_HM :stateChildren.aliases();
+        return stateChildren == null ? EMPTY_HM : stateChildren.aliases();
     }
 }

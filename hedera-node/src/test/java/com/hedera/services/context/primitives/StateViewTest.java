@@ -1013,6 +1013,7 @@ class StateViewTest {
 
         assertEquals(aliases, actualAliases);
     }
+
     @Test
     void returnsEmptyOptionalIfContractMissing() {
         given(contracts.get(any())).willReturn(null);

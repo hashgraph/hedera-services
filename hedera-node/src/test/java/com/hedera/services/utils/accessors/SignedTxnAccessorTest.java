@@ -50,7 +50,6 @@ import com.hedera.services.ethereum.EthTxData;
 import com.hedera.services.ethereum.EthTxSigs;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.legacy.proto.utils.CommonUtils;
-import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.FcCustomFee;
 import com.hedera.services.usage.token.TokenOpsUsage;
@@ -107,8 +106,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
-
-import com.swirlds.merkle.map.MerkleMap;
 import org.bouncycastle.util.encoders.Hex;
 import org.junit.jupiter.api.Test;
 
@@ -884,62 +881,63 @@ class SignedTxnAccessorTest {
 
         final var expectedString =
                 "SignedTxnAccessor{sigMapSize=71, numSigPairs=1, numAutoCreations=-1, hash=[111,"
-                        + " -123, -70, 79, 75, -80, -114, -49, 88, -76, -82, -23, 43, 103, -21, 52,"
-                        + " -31, -60, 98, -55, -26, -18, -101, -108, -51, 24, 49, 72, 18, -69, 21, -84,"
-                        + " -68, -118, 31, -53, 91, -61, -71, -56, 100, -52, -104, 87, -85, -33, -73,"
-                        + " -124], txnBytes=[10, 4, 18, 2, 24, 2, 24, 10, 50, 3, 72, 105, 33, -38, 1,"
-                        + " 4, 10, 2, 24, 10], utf8MemoBytes=[72, 105, 33], memo=Hi!,"
-                        + " memoHasZeroByte=false, signedTxnWrapper=sigMap {\n"
-                        + "  sigPair {\n"
-                        + "    pubKeyPrefix: \"a\"\n"
-                        + "    ed25519:"
-                        + " \"0123456789012345678901234567890123456789012345678901234567890123\"\n"
-                        + "  }\n"
-                        + "}\n"
-                        + "bodyBytes: \"\\n"
-                        + "\\004\\022\\002\\030\\002\\030\\n"
-                        + "2\\003Hi!\\332\\001\\004\\n"
-                        + "\\002\\030\\n"
-                        + "\"\n"
-                        + ", hash=[111, -123, -70, 79, 75, -80, -114, -49, 88, -76, -82, -23, 43, 103,"
-                        + " -21, 52, -31, -60, 98, -55, -26, -18, -101, -108, -51, 24, 49, 72, 18, -69,"
-                        + " 21, -84, -68, -118, 31, -53, 91, -61, -71, -56, 100, -52, -104, 87, -85,"
-                        + " -33, -73, -124], txnBytes=[10, 4, 18, 2, 24, 2, 24, 10, 50, 3, 72, 105, 33,"
-                        + " -38, 1, 4, 10, 2, 24, 10], sigMap=sigPair {\n"
-                        + "  pubKeyPrefix: \"a\"\n"
-                        + "  ed25519:"
-                        + " \"0123456789012345678901234567890123456789012345678901234567890123\"\n"
-                        + "}\n"
-                        + ", txnId=accountID {\n"
-                        + "  accountNum: 2\n"
-                        + "}\n"
-                        + ", txn=transactionID {\n"
-                        + "  accountID {\n"
-                        + "    accountNum: 2\n"
-                        + "  }\n"
-                        + "}\n"
-                        + "transactionFee: 10\n"
-                        + "memo: \"Hi!\"\n"
-                        + "consensusSubmitMessage {\n"
-                        + "  topicID {\n"
-                        + "    topicNum: 10\n"
-                        + "  }\n"
-                        + "}\n"
-                        + ", submitMessageMeta=SubmitMessageMeta[numMsgBytes=0], xferUsageMeta=null,"
-                        + " txnUsageMeta=BaseTransactionMeta[memoUtf8Bytes=3, numExplicitTransfers=0],"
-                        + " function=ConsensusSubmitMessage,"
-                        + " pubKeyToSigBytes=PojoSigMapPubKeyToSigBytes{pojoSigMap=PojoSigMap{keyTypes=[ED25519],"
-                        + " rawMap=[[[97], [48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 48, 49, 50, 51, 52,"
-                        + " 53, 54, 55, 56, 57, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 48, 49, 50, 51,"
-                        + " 52, 53, 54, 55, 56, 57, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 48, 49, 50,"
-                        + " 51, 52, 53, 54, 55, 56, 57, 48, 49, 50, 51]]]}, used=[false]},"
-                        + " payer=accountNum: 2\n"
-                        + ", scheduleRef=null, view=null}";
+                    + " -123, -70, 79, 75, -80, -114, -49, 88, -76, -82, -23, 43, 103, -21, 52,"
+                    + " -31, -60, 98, -55, -26, -18, -101, -108, -51, 24, 49, 72, 18, -69, 21, -84,"
+                    + " -68, -118, 31, -53, 91, -61, -71, -56, 100, -52, -104, 87, -85, -33, -73,"
+                    + " -124], txnBytes=[10, 4, 18, 2, 24, 2, 24, 10, 50, 3, 72, 105, 33, -38, 1,"
+                    + " 4, 10, 2, 24, 10], utf8MemoBytes=[72, 105, 33], memo=Hi!,"
+                    + " memoHasZeroByte=false, signedTxnWrapper=sigMap {\n"
+                    + "  sigPair {\n"
+                    + "    pubKeyPrefix: \"a\"\n"
+                    + "    ed25519:"
+                    + " \"0123456789012345678901234567890123456789012345678901234567890123\"\n"
+                    + "  }\n"
+                    + "}\n"
+                    + "bodyBytes: \"\\n"
+                    + "\\004\\022\\002\\030\\002\\030\\n"
+                    + "2\\003Hi!\\332\\001\\004\\n"
+                    + "\\002\\030\\n"
+                    + "\"\n"
+                    + ", hash=[111, -123, -70, 79, 75, -80, -114, -49, 88, -76, -82, -23, 43, 103,"
+                    + " -21, 52, -31, -60, 98, -55, -26, -18, -101, -108, -51, 24, 49, 72, 18, -69,"
+                    + " 21, -84, -68, -118, 31, -53, 91, -61, -71, -56, 100, -52, -104, 87, -85,"
+                    + " -33, -73, -124], txnBytes=[10, 4, 18, 2, 24, 2, 24, 10, 50, 3, 72, 105, 33,"
+                    + " -38, 1, 4, 10, 2, 24, 10], sigMap=sigPair {\n"
+                    + "  pubKeyPrefix: \"a\"\n"
+                    + "  ed25519:"
+                    + " \"0123456789012345678901234567890123456789012345678901234567890123\"\n"
+                    + "}\n"
+                    + ", txnId=accountID {\n"
+                    + "  accountNum: 2\n"
+                    + "}\n"
+                    + ", txn=transactionID {\n"
+                    + "  accountID {\n"
+                    + "    accountNum: 2\n"
+                    + "  }\n"
+                    + "}\n"
+                    + "transactionFee: 10\n"
+                    + "memo: \"Hi!\"\n"
+                    + "consensusSubmitMessage {\n"
+                    + "  topicID {\n"
+                    + "    topicNum: 10\n"
+                    + "  }\n"
+                    + "}\n"
+                    + ", submitMessageMeta=SubmitMessageMeta[numMsgBytes=0], xferUsageMeta=null,"
+                    + " txnUsageMeta=BaseTransactionMeta[memoUtf8Bytes=3, numExplicitTransfers=0],"
+                    + " function=ConsensusSubmitMessage,"
+                    + " pubKeyToSigBytes=PojoSigMapPubKeyToSigBytes{pojoSigMap=PojoSigMap{keyTypes=[ED25519],"
+                    + " rawMap=[[[97], [48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 48, 49, 50, 51, 52,"
+                    + " 53, 54, 55, 56, 57, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 48, 49, 50, 51,"
+                    + " 52, 53, 54, 55, 56, 57, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 48, 49, 50,"
+                    + " 51, 52, 53, 54, 55, 56, 57, 48, 49, 50, 51]]]}, used=[false]},"
+                    + " payer=accountNum: 2\n"
+                    + ", scheduleRef=null, view=null}";
 
         assertEquals(expectedString, subject.toLoggableString());
     }
+
     @Test
-    void setterAndGetterForStateViewWorks(){
+    void setterAndGetterForStateViewWorks() {
         final var op = ContractCallTransactionBody.newBuilder().build();
         final var txn =
                 buildTransactionFrom(TransactionBody.newBuilder().setContractCall(op).build());
@@ -953,7 +951,7 @@ class SignedTxnAccessorTest {
     }
 
     @Test
-    void looksUpAliases(){
+    void looksUpAliases() {
         final var stateView = mock(StateView.class);
         final var alias = ByteString.copyFromUtf8("someString");
         final Map<ByteString, EntityNum> accountsMap = new HashMap<>();
