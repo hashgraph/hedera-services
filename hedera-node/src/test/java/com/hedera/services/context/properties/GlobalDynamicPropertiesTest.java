@@ -25,6 +25,7 @@ import static org.mockito.Mockito.mock;
 import com.esaulpaugh.headlong.util.Integers;
 import com.hedera.services.config.HederaNumbers;
 import com.hedera.services.fees.calculation.CongestionMultipliers;
+import com.hedera.services.stream.proto.SidecarType;
 import com.hedera.services.sysfiles.domain.KnownBlockValues;
 import com.hedera.services.sysfiles.domain.throttling.ThrottleReqOpsScaleFactor;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -200,6 +201,7 @@ class GlobalDynamicPropertiesTest {
         assertEquals(Set.of(HederaFunctionality.CryptoTransfer), subject.schedulingWhitelist());
         assertEquals(oddCongestion, subject.congestionMultipliers());
         assertEquals(upgradeArtifactLocs[1], subject.upgradeArtifactsLoc());
+        assertEquals(Set.of(SidecarType.CONTRACT_BYTECODE), subject.enabledSidecars());
     }
 
     @Test
@@ -333,6 +335,7 @@ class GlobalDynamicPropertiesTest {
         assertEquals(upgradeArtifactLocs[0], subject.upgradeArtifactsLoc());
         assertEquals(blockValues, subject.knownBlockValues());
         assertEquals(66L, subject.exchangeRateGasReq());
+        assertEquals(Set.of(SidecarType.CONTRACT_STATE_CHANGE), subject.enabledSidecars());
     }
 
     private void givenPropsWithSeed(int i) {
@@ -423,8 +426,6 @@ class GlobalDynamicPropertiesTest {
                 .willReturn((i + 58) % 2 == 0);
         given(properties.getBooleanProperty("contracts.redirectTokenCalls"))
                 .willReturn((i + 59) % 2 == 0);
-        given(properties.getBooleanProperty("contracts.enableTraceability"))
-                .willReturn((i + 59) % 2 == 0);
         given(properties.getBooleanProperty("hedera.allowances.isEnabled"))
                 .willReturn((i + 60) % 2 == 0);
         given(properties.getTypesProperty("autoRenew.targetTypes")).willReturn(typesFor(i));
@@ -467,6 +468,11 @@ class GlobalDynamicPropertiesTest {
         given(properties.getLongProperty("scheduling.maxNumber")).willReturn(i + 84L);
         given(properties.getLongProperty("tokens.maxAggregateRels")).willReturn(i + 85L);
         given(properties.getBooleanProperty("utilPrng.isEnabled")).willReturn((i + 79) % 2 == 0);
+        given(properties.getSidecarsProperty("contracts.sidecars"))
+                .willReturn(
+                        (i + 80) % 2 == 0
+                                ? Set.of(SidecarType.CONTRACT_STATE_CHANGE)
+                                : Set.of(SidecarType.CONTRACT_BYTECODE));
     }
 
     private Set<EntityType> typesFor(final int i) {

@@ -1742,6 +1742,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                 .tokenType(NON_FUNGIBLE_UNIQUE)
                                 .treasury(TOKEN_TREASURY)
                                 .initialSupply(0)
+                                .supplyKey(GENESIS)
                                 .kycKey(KYC_KEY)
                                 .exposingCreatedIdTo(id -> kycTokenID.set(asToken(id))),
                         uploadInitCode(ASSOCIATE_DISSOCIATE_CONTRACT),
@@ -2239,6 +2240,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                         cryptoCreate(TOKEN_TREASURY).exposingCreatedIdTo(treasuryID::set),
                         tokenCreate(FROZEN_TOKEN)
                                 .tokenType(NON_FUNGIBLE_UNIQUE)
+                                .supplyKey(GENESIS)
                                 .treasury(TOKEN_TREASURY)
                                 .initialSupply(0)
                                 .freezeDefault(true)
@@ -2319,6 +2321,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                         tokenCreate(KYC_TOKEN)
                                 .tokenType(NON_FUNGIBLE_UNIQUE)
                                 .treasury(TOKEN_TREASURY)
+                                .supplyKey(GENESIS)
                                 .initialSupply(0)
                                 .kycKey(KYC_KEY)
                                 .exposingCreatedIdTo(id -> kycTokenID.set(asToken(id))),
@@ -2394,6 +2397,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                         cryptoCreate(TOKEN_TREASURY),
                         tokenCreate(FROZEN_TOKEN)
                                 .tokenType(NON_FUNGIBLE_UNIQUE)
+                                .supplyKey(GENESIS)
                                 .treasury(TOKEN_TREASURY)
                                 .initialSupply(0)
                                 .freezeKey(FREEZE_KEY)
@@ -2489,6 +2493,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                         tokenCreate(VANILLA_TOKEN)
                                 .tokenType(NON_FUNGIBLE_UNIQUE)
                                 .treasury(TOKEN_TREASURY)
+                                .supplyKey(GENESIS)
                                 .initialSupply(0)
                                 .exposingCreatedIdTo(id -> vanillaTokenID.set(asToken(id))),
                         uploadInitCode(ASSOCIATE_DISSOCIATE_CONTRACT),
