@@ -94,9 +94,10 @@ class ViewExecutorTest {
     ViewExecutor subject;
 
     private static final Bytes RETURN_SUCCESS_TRUE =
-        Bytes.fromHexString(
-            "0x0000000000000000000000000000000000000000000000000000000000000016"
-                + "0000000000000000000000000000000000000000000000000000000000000001");
+            Bytes.fromHexString(
+                    "0x0000000000000000000000000000000000000000000000000000000000000016"
+                            + "0000000000000000000000000000000000000000000000000000000000000001");
+
     @BeforeEach
     void setUp() {
         tokenInfo =
@@ -127,11 +128,13 @@ class ViewExecutorTest {
 
     @Test
     void computeGetTokenDefaultFreezeStatus() {
-        final var input = prerequisites(ABI_ID_GET_TOKEN_DEFAULT_FREEZE_STATUS, fungibleTokenAddress);
+        final var input =
+                prerequisites(ABI_ID_GET_TOKEN_DEFAULT_FREEZE_STATUS, fungibleTokenAddress);
 
         final var wrapper = new GetTokenDefaultFreezeStatusWrapper(fungible);
         given(decodingFacade.decodeTokenDefaultFreezeStatus(input)).willReturn(wrapper);
-        given(encodingFacade.encodeGetTokenDefaultFreezeStatus(anyBoolean())).willReturn(RETURN_SUCCESS_TRUE);
+        given(encodingFacade.encodeGetTokenDefaultFreezeStatus(anyBoolean()))
+                .willReturn(RETURN_SUCCESS_TRUE);
 
         assertEquals(Pair.of(gas, RETURN_SUCCESS_TRUE), subject.computeCosted());
     }
@@ -142,7 +145,8 @@ class ViewExecutorTest {
 
         final var wrapper = new GetTokenDefaultKycStatusWrapper(fungible);
         given(decodingFacade.decodeTokenDefaultKycStatus(input)).willReturn(wrapper);
-        given(encodingFacade.encodeGetTokenDefaultKycStatus(anyBoolean())).willReturn(RETURN_SUCCESS_TRUE);
+        given(encodingFacade.encodeGetTokenDefaultKycStatus(anyBoolean()))
+                .willReturn(RETURN_SUCCESS_TRUE);
 
         assertEquals(Pair.of(gas, RETURN_SUCCESS_TRUE), subject.computeCosted());
     }
