@@ -36,6 +36,7 @@ import com.hedera.services.store.contracts.precompile.codec.SetApprovalForAllWra
 import com.hedera.services.store.contracts.precompile.codec.TokenCreateWrapper;
 import com.hedera.services.store.contracts.precompile.codec.TokenFreezeUnfreezeWrapper;
 import com.hedera.services.store.contracts.precompile.codec.TokenTransferWrapper;
+import com.hedera.services.store.contracts.precompile.codec.WipeWrapper;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.MiscUtils;
 import com.hederahashgraph.api.proto.java.AccountAmount;
@@ -70,6 +71,7 @@ import com.hederahashgraph.api.proto.java.TokenMintTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TokenType;
+import com.hederahashgraph.api.proto.java.TokenWipeAccountTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenUnfreezeAccountTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
@@ -423,6 +425,20 @@ public class SyntheticTxnFactory {
         return TransactionBody.newBuilder().setNodeStakeUpdate(txnBody);
     }
 
+    public TransactionBody.Builder createWipe(final WipeWrapper wipeWrapper) {
+        final var builder = TokenWipeAccountTransactionBody.newBuilder();
+
+        builder.setToken(wipeWrapper.token());
+        builder.setAccount(wipeWrapper.account());
+        if (wipeWrapper.type() == NON_FUNGIBLE_UNIQUE) {
+            builder.addAllSerialNumbers(wipeWrapper.serialNumbers());
+        } else {
+            builder.setAmount(wipeWrapper.amount());
+        }
+
+        return TransactionBody.newBuilder().setTokenWipe(builder);
+    }
+
     public TransactionBody.Builder createFreeze(final TokenFreezeUnfreezeWrapper freezeWrapper) {
         final var builder = TokenFreezeAccountTransactionBody.newBuilder();
         builder.setToken(freezeWrapper.token());
@@ -437,6 +453,7 @@ public class SyntheticTxnFactory {
         builder.setAccount(unFreezeWrapper.account());
         return TransactionBody.newBuilder().setTokenUnfreeze(builder);
     }
+
 
     public static class HbarTransfer {
         protected final long amount;

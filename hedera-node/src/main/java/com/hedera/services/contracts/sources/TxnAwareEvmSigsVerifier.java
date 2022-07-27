@@ -22,6 +22,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUN
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_FREEZE_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_SUPPLY_KEY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_WIPE_KEY;
 
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.keys.ActivationTest;
@@ -90,6 +91,21 @@ public class TxnAwareEvmSigsVerifier implements EvmSigsVerifier {
         validateTrue(supplyKey != null, TOKEN_HAS_NO_SUPPLY_KEY);
 
         return isActiveInFrame(supplyKey, isDelegateCall, activeContract, worldLedgers.aliases());
+    }
+
+    @Override
+    public boolean hasActiveWipeKey(
+            final boolean isDelegateCall,
+            @NotNull final Address tokenAddress,
+            @NotNull final Address activeContract,
+            @NotNull final WorldLedgers worldLedgers) {
+        final var tokenId = EntityIdUtils.tokenIdFromEvmAddress(tokenAddress);
+        validateTrue(worldLedgers.tokens().exists(tokenId), INVALID_TOKEN_ID);
+
+        final var wipeKey = (JKey) worldLedgers.tokens().get(tokenId, TokenProperty.WIPE_KEY);
+        validateTrue(wipeKey != null, TOKEN_HAS_NO_WIPE_KEY);
+
+        return isActiveInFrame(wipeKey, isDelegateCall, activeContract, worldLedgers.aliases());
     }
 
     @Override

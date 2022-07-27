@@ -117,6 +117,12 @@ public interface EvmSigsVerifier {
             Address activeContract,
             WorldLedgers worldLedgers);
 
+    boolean hasActiveWipeKey(
+            boolean isDelegateCall,
+            Address token,
+            Address activeContract,
+            WorldLedgers worldLedgers);
+
     boolean hasActiveFreezeKey(
             boolean isDelegateCall,
             Address token,
