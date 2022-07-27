@@ -17,53 +17,52 @@ package com.hedera.services.ledger.properties;
 
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.virtual.UniqueTokenValue;
-
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 
 public enum NftProperty implements BeanProperty<UniqueTokenValue> {
-	OWNER {
-		@Override
-		public BiConsumer<UniqueTokenValue, Object> setter() {
-			return (t, o) -> t.setOwner((EntityId) o);
-		}
+    OWNER {
+        @Override
+        public BiConsumer<UniqueTokenValue, Object> setter() {
+            return (t, o) -> t.setOwner((EntityId) o);
+        }
 
-		@Override
-		public Function<UniqueTokenValue, Object> getter() {
-			return UniqueTokenValue::getOwner;
-		}
-	},
-	CREATION_TIME {
-		@Override
-		public BiConsumer<UniqueTokenValue, Object> setter() {
-			return (t, o) -> t.setPackedCreationTime((long) o);
-		}
+        @Override
+        public Function<UniqueTokenValue, Object> getter() {
+            return UniqueTokenValue::getOwner;
+        }
+    },
+    CREATION_TIME {
+        @Override
+        public BiConsumer<UniqueTokenValue, Object> setter() {
+            return (t, o) -> t.setPackedCreationTime((long) o);
+        }
 
-		@Override
-		public Function<UniqueTokenValue, Object> getter() {
-			return UniqueTokenValue::getPackedCreationTime;
-		}
-	},
-	METADATA {
-		@Override
-		public BiConsumer<UniqueTokenValue, Object> setter() {
-			return (t, o) -> t.setMetadata((byte[]) o);
-		}
+        @Override
+        public Function<UniqueTokenValue, Object> getter() {
+            return UniqueTokenValue::getPackedCreationTime;
+        }
+    },
+    METADATA {
+        @Override
+        public BiConsumer<UniqueTokenValue, Object> setter() {
+            return (t, o) -> t.setMetadata((byte[]) o);
+        }
 
-		@Override
-		public Function<UniqueTokenValue, Object> getter() {
-			return UniqueTokenValue::getMetadata;
-		}
-	},
-	SPENDER {
-		@Override
-		public BiConsumer<UniqueTokenValue, Object> setter() {
-			return (t, o) -> t.setSpender((EntityId) o);
-		}
+        @Override
+        public Function<UniqueTokenValue, Object> getter() {
+            return UniqueTokenValue::getMetadata;
+        }
+    },
+    SPENDER {
+        @Override
+        public BiConsumer<UniqueTokenValue, Object> setter() {
+            return (t, o) -> t.setSpender((EntityId) o);
+        }
 
-		@Override
-		public Function<UniqueTokenValue, Object> getter() {
-			return UniqueTokenValue::getSpender;
-		}
-	},
+        @Override
+        public Function<UniqueTokenValue, Object> getter() {
+            return UniqueTokenValue::getSpender;
+        }
+    },
 }

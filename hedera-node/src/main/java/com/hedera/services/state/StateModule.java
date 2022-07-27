@@ -263,13 +263,12 @@ public interface StateModule {
         return workingState::schedules;
     }
 
-	@Provides
-	@Singleton
-	static Supplier<VirtualMap<UniqueTokenKey, UniqueTokenValue>> provideWorkingNfts(
-			final MutableStateChildren workingState
-	) {
-		return workingState::uniqueTokens;
-	}
+    @Provides
+    @Singleton
+    static Supplier<VirtualMap<UniqueTokenKey, UniqueTokenValue>> provideWorkingNfts(
+            final MutableStateChildren workingState) {
+        return workingState::uniqueTokens;
+    }
 
     @Provides
     @Singleton

@@ -15,6 +15,14 @@
  */
 package com.hedera.services.state.expiry.removal;
 
+import static com.hedera.test.utils.TxnUtils.asymmetricTtlOf;
+import static com.hedera.test.utils.TxnUtils.ttlOf;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+
 import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
@@ -30,23 +38,14 @@ import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.stream.Collectors;
-
-import static com.hedera.test.utils.TxnUtils.asymmetricTtlOf;
-import static com.hedera.test.utils.TxnUtils.ttlOf;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 class TreasuryReturnHelperTest {
@@ -63,14 +62,14 @@ class TreasuryReturnHelperTest {
         subject = new TreasuryReturnHelper(() -> tokens, () -> tokenRels);
     }
 
-	@Test
-	void returnsNullIfMissingEntity() {
-		final var key = new UniqueTokenKey(missingTokenNum.longValue(), 1L);
-		final var token = mock(MerkleToken.class);
-		final var nft = new UniqueTokenValue();
+    @Test
+    void returnsNullIfMissingEntity() {
+        final var key = new UniqueTokenKey(missingTokenNum.longValue(), 1L);
+        final var token = mock(MerkleToken.class);
+        final var nft = new UniqueTokenValue();
 
-		given(tokens.get(missingTokenNum)).willReturn(null);
-		given(uniqueTokens.getForModify(key)).willReturn(nft);
+        given(tokens.get(missingTokenNum)).willReturn(null);
+        given(uniqueTokens.getForModify(key)).willReturn(nft);
 
         assertNull(subject.updateNftReturns(key, uniqueTokens));
 
@@ -79,46 +78,46 @@ class TreasuryReturnHelperTest {
 
         assertNull(subject.updateNftReturns(key, uniqueTokens));
 
-		given(tokens.get(missingTokenNum)).willReturn(token);
-		given(token.tokenType()).willReturn(TokenType.NON_FUNGIBLE_UNIQUE);
-		given(uniqueTokens.getForModify(key)).willReturn(null);
+        given(tokens.get(missingTokenNum)).willReturn(token);
+        given(token.tokenType()).willReturn(TokenType.NON_FUNGIBLE_UNIQUE);
+        given(uniqueTokens.getForModify(key)).willReturn(null);
 
         assertNull(subject.updateNftReturns(key, uniqueTokens));
     }
 
-	@Test
-	void removesNftIfTokenIsDeleted() {
-		final var key = new UniqueTokenKey(missingTokenNum.longValue(), 1L);
-		final var nextKey = new UniqueTokenKey(nonFungibleTokenNum.longValue(), 2L);
-		final var nft  = new UniqueTokenValue();
-		final var token = mock(MerkleToken.class);
+    @Test
+    void removesNftIfTokenIsDeleted() {
+        final var key = new UniqueTokenKey(missingTokenNum.longValue(), 1L);
+        final var nextKey = new UniqueTokenKey(nonFungibleTokenNum.longValue(), 2L);
+        final var nft = new UniqueTokenValue();
+        final var token = mock(MerkleToken.class);
 
-		given(token.tokenType()).willReturn(TokenType.NON_FUNGIBLE_UNIQUE);
-		given(token.isDeleted()).willReturn(true);
-		given(tokens.get(missingTokenNum)).willReturn(token);
-		given(uniqueTokens.getForModify(key)).willReturn(nft);
-		nft.setNext(nextKey.toNftNumPair());
+        given(token.tokenType()).willReturn(TokenType.NON_FUNGIBLE_UNIQUE);
+        given(token.isDeleted()).willReturn(true);
+        given(tokens.get(missingTokenNum)).willReturn(token);
+        given(uniqueTokens.getForModify(key)).willReturn(nft);
+        nft.setNext(nextKey.toNftNumPair());
 
         assertEquals(nextKey, subject.updateNftReturns(key, uniqueTokens));
         verify(uniqueTokens).remove(key);
     }
 
-	@Test
-	void changesNftOwnerToTreasuryIfTokenIsNotDeleted() {
-		final var key = new UniqueTokenKey(missingTokenNum.longValue(), 1L);
-		final var nextKey = new UniqueTokenKey(nonFungibleTokenNum.longValue(), 2L);
-		final var nft = new UniqueTokenValue();
-		final var token = mock(MerkleToken.class);
+    @Test
+    void changesNftOwnerToTreasuryIfTokenIsNotDeleted() {
+        final var key = new UniqueTokenKey(missingTokenNum.longValue(), 1L);
+        final var nextKey = new UniqueTokenKey(nonFungibleTokenNum.longValue(), 2L);
+        final var nft = new UniqueTokenValue();
+        final var token = mock(MerkleToken.class);
 
-		given(tokens.get(missingTokenNum)).willReturn(token);
-		given(token.tokenType()).willReturn(TokenType.NON_FUNGIBLE_UNIQUE);
-		given(token.isDeleted()).willReturn(false);
-		given(uniqueTokens.getForModify(key)).willReturn(nft);
-		nft.setNext(nextKey.toNftNumPair());
+        given(tokens.get(missingTokenNum)).willReturn(token);
+        given(token.tokenType()).willReturn(TokenType.NON_FUNGIBLE_UNIQUE);
+        given(token.isDeleted()).willReturn(false);
+        given(uniqueTokens.getForModify(key)).willReturn(nft);
+        nft.setNext(nextKey.toNftNumPair());
 
-		assertEquals(nextKey, subject.updateNftReturns(key, uniqueTokens));
-		assertEquals(EntityId.MISSING_ENTITY_ID, nft.getOwner());
-	}
+        assertEquals(nextKey, subject.updateNftReturns(key, uniqueTokens));
+        assertEquals(EntityId.MISSING_ENTITY_ID, nft.getOwner());
+    }
 
     @Test
     void justReportsDebitIfTokenIsGoneSomehow() {

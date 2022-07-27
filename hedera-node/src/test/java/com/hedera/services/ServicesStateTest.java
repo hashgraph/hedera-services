@@ -15,6 +15,36 @@
  */
 package com.hedera.services;
 
+import static com.hedera.services.ServicesState.EMPTY_HASH;
+import static com.hedera.services.context.AppsManager.APPS;
+import static com.hedera.services.context.properties.SemanticVersions.SEMANTIC_VERSIONS;
+import static com.hedera.services.context.properties.SerializableSemVers.forHapiAndHedera;
+import static com.swirlds.common.system.InitTrigger.RECONNECT;
+import static com.swirlds.common.system.InitTrigger.RESTART;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.inOrder;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.when;
+import static org.mockito.internal.verification.VerificationModeFactory.times;
+
 import com.google.common.primitives.Ints;
 import com.google.common.primitives.Longs;
 import com.google.protobuf.ByteString;
@@ -75,16 +105,6 @@ import com.swirlds.platform.state.DualStateImpl;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SignedStateFileManager;
 import com.swirlds.virtualmap.VirtualMap;
-import org.apache.commons.io.FileUtils;
-import org.hamcrest.Matchers;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
-
 import java.io.File;
 import java.io.IOException;
 import java.security.PublicKey;
@@ -94,36 +114,15 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Function;
-
-import static com.hedera.services.ServicesState.EMPTY_HASH;
-import static com.hedera.services.context.AppsManager.APPS;
-import static com.hedera.services.context.properties.SemanticVersions.SEMANTIC_VERSIONS;
-import static com.hedera.services.context.properties.SerializableSemVers.forHapiAndHedera;
-import static com.swirlds.common.system.InitTrigger.RECONNECT;
-import static com.swirlds.common.system.InitTrigger.RESTART;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertInstanceOf;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.inOrder;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
-import static org.mockito.Mockito.when;
-import static org.mockito.internal.verification.VerificationModeFactory.times;
+import org.apache.commons.io.FileUtils;
+import org.hamcrest.Matchers;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith({MockitoExtension.class, LogCaptureExtension.class})
 class ServicesStateTest {
@@ -218,7 +217,7 @@ class ServicesStateTest {
         subject.setChild(StateChildIndices.TOKEN_ASSOCIATIONS, tokenAssociations);
         subject.setChild(StateChildIndices.NETWORK_CTX, networkContext);
         subject.setChild(StateChildIndices.SCHEDULE_TXS, mock(MerkleMap.class));
-		subject.setChild(StateChildIndices.UNIQUE_TOKENS, mock(MerkleMap.class));
+        subject.setChild(StateChildIndices.UNIQUE_TOKENS, mock(MerkleMap.class));
         subject.setMetadata(metadata);
 
         given(metadata.app()).willReturn(app);
@@ -263,7 +262,7 @@ class ServicesStateTest {
         subject.setChild(StateChildIndices.TOKEN_ASSOCIATIONS, tokenAssociations);
         subject.setChild(StateChildIndices.NETWORK_CTX, networkContext);
         subject.setChild(StateChildIndices.SCHEDULE_TXS, mock(MerkleMap.class));
-		subject.setChild(StateChildIndices.UNIQUE_TOKENS, mock(MerkleMap.class));
+        subject.setChild(StateChildIndices.UNIQUE_TOKENS, mock(MerkleMap.class));
         subject.setMetadata(metadata);
         given(networkContext.consensusTimeOfLastHandledTxn()).willReturn(consensusTime);
 
@@ -698,7 +697,7 @@ class ServicesStateTest {
         subject.setChild(StateChildIndices.SPECIAL_FILES, specialFiles);
         subject.setChild(StateChildIndices.NETWORK_CTX, networkContext);
         subject.setChild(StateChildIndices.ACCOUNTS, accounts);
-		subject.setChild(StateChildIndices.UNIQUE_TOKENS, mock(MerkleMap.class));
+        subject.setChild(StateChildIndices.UNIQUE_TOKENS, mock(MerkleMap.class));
         subject.setDeserializedStateVersion(StateVersions.RELEASE_025X_VERSION);
 
         final var when = Instant.ofEpochSecond(1_234_567L, 890);
@@ -865,7 +864,7 @@ class ServicesStateTest {
         recordsRunningHashLeaf.setRunningHash(new RunningHash(EMPTY_HASH));
         servicesState.setChild(
                 StateChildIndices.RECORD_STREAM_RUNNING_HASH, recordsRunningHashLeaf);
-		servicesState.setChild(StateChildIndices.UNIQUE_TOKENS, mock(VirtualMap.class));
+        servicesState.setChild(StateChildIndices.UNIQUE_TOKENS, mock(VirtualMap.class));
         final var platform = createMockPlatformWithCrypto();
         final var app = createApp(platform);
 

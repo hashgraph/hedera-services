@@ -64,27 +64,29 @@ public class TokenRelsLinkManager {
         final var curTokenRels = tokenRels.get();
         final var listMutation = new TokenRelsListMutation(primitiveNum, curTokenRels);
 
-		final var curAccounts = accounts.get();
-		final var mutableAccount = curAccounts.getForModify(accountNum);
-		var rootKey = rootKeyOf(primitiveNum, mutableAccount);
-		if (rootKey != null && dissociatedTokenNums != null) {
-			for (final var tokenNum : dissociatedTokenNums) {
-				final var tbdKey = EntityNumPair.fromNums(accountNum, tokenNum);
-				rootKey = removeInPlaceFromMapValueList(tbdKey, rootKey, listMutation);
-			}
-		}
-		if (newTokenRels != null) {
-			MerkleTokenRelStatus rootRel = null;
-			for (final var newRel : newTokenRels) {
-				final var literalTokenNum = newRel.getRelatedTokenNum();
-				final var newKey = EntityNumPair.fromLongs(primitiveNum, literalTokenNum);
-				rootKey = insertInPlaceAtMapValueListHead(newKey, newRel, rootKey, rootRel, listMutation);
-				rootRel = newRel;
-			}
-		}
-		final var newHeadTokenId = (rootKey == null) ? 0 : rootKey.getLowOrderAsLong();
-		mutableAccount.setHeadTokenId(newHeadTokenId);
-	}
+        final var curAccounts = accounts.get();
+        final var mutableAccount = curAccounts.getForModify(accountNum);
+        var rootKey = rootKeyOf(primitiveNum, mutableAccount);
+        if (rootKey != null && dissociatedTokenNums != null) {
+            for (final var tokenNum : dissociatedTokenNums) {
+                final var tbdKey = EntityNumPair.fromNums(accountNum, tokenNum);
+                rootKey = removeInPlaceFromMapValueList(tbdKey, rootKey, listMutation);
+            }
+        }
+        if (newTokenRels != null) {
+            MerkleTokenRelStatus rootRel = null;
+            for (final var newRel : newTokenRels) {
+                final var literalTokenNum = newRel.getRelatedTokenNum();
+                final var newKey = EntityNumPair.fromLongs(primitiveNum, literalTokenNum);
+                rootKey =
+                        insertInPlaceAtMapValueListHead(
+                                newKey, newRel, rootKey, rootRel, listMutation);
+                rootRel = newRel;
+            }
+        }
+        final var newHeadTokenId = (rootKey == null) ? 0 : rootKey.getLowOrderAsLong();
+        mutableAccount.setHeadTokenId(newHeadTokenId);
+    }
 
     @Nullable
     private EntityNumPair rootKeyOf(final long primitiveNum, final MerkleAccount account) {

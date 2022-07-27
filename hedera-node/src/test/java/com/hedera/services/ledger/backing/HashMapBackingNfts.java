@@ -22,22 +22,22 @@ import java.util.Map;
 import java.util.Set;
 
 public class HashMapBackingNfts implements BackingStore<NftId, UniqueTokenValue> {
-	private Map<NftId, UniqueTokenValue> nfts = new HashMap<>();
+    private Map<NftId, UniqueTokenValue> nfts = new HashMap<>();
 
-	@Override
-	public UniqueTokenValue getRef(NftId id) {
-		return nfts.get(id);
-	}
+    @Override
+    public UniqueTokenValue getRef(NftId id) {
+        return nfts.get(id);
+    }
 
-	@Override
-	public UniqueTokenValue getImmutableRef(NftId id) {
-		return nfts.get(id);
-	}
+    @Override
+    public UniqueTokenValue getImmutableRef(NftId id) {
+        return nfts.get(id);
+    }
 
-	@Override
-	public void put(NftId id, UniqueTokenValue nft) {
-		nfts.put(id, nft);
-	}
+    @Override
+    public void put(NftId id, UniqueTokenValue nft) {
+        nfts.put(id, nft);
+    }
 
     @Override
     public void remove(NftId id) {

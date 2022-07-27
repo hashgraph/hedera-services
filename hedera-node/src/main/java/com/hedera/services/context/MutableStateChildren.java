@@ -38,7 +38,6 @@ import com.hedera.services.utils.EntityNumPair;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
-
 import java.lang.ref.WeakReference;
 import java.time.Instant;
 import java.util.Map;

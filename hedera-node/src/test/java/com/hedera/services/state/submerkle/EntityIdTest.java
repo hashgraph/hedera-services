@@ -15,27 +15,6 @@
  */
 package com.hedera.services.state.submerkle;
 
-import com.google.common.primitives.Longs;
-import com.hedera.services.context.properties.StaticPropertiesHolder;
-import com.hedera.services.state.merkle.internals.BitPackUtils;
-import com.hedera.services.store.models.Id;
-import com.hedera.test.utils.IdUtils;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.ContractID;
-import com.hederahashgraph.api.proto.java.FileID;
-import com.hederahashgraph.api.proto.java.ScheduleID;
-import com.hederahashgraph.api.proto.java.TokenID;
-import com.hederahashgraph.api.proto.java.TopicID;
-import com.swirlds.common.io.streams.SerializableDataInputStream;
-import com.swirlds.common.io.streams.SerializableDataOutputStream;
-import org.apache.tuweni.bytes.Bytes;
-import org.hyperledger.besu.datatypes.Address;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-
-import java.io.IOException;
-import java.util.Arrays;
-
 import static com.google.common.truth.Truth.assertThat;
 import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
 import static com.hedera.services.utils.EntityIdUtils.tokenIdFromEvmAddress;
@@ -49,6 +28,26 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.Mockito.inOrder;
+
+import com.google.common.primitives.Longs;
+import com.hedera.services.context.properties.StaticPropertiesHolder;
+import com.hedera.services.state.merkle.internals.BitPackUtils;
+import com.hedera.services.store.models.Id;
+import com.hedera.test.utils.IdUtils;
+import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ContractID;
+import com.hederahashgraph.api.proto.java.FileID;
+import com.hederahashgraph.api.proto.java.ScheduleID;
+import com.hederahashgraph.api.proto.java.TokenID;
+import com.hederahashgraph.api.proto.java.TopicID;
+import com.swirlds.common.io.streams.SerializableDataInputStream;
+import com.swirlds.common.io.streams.SerializableDataOutputStream;
+import java.io.IOException;
+import java.util.Arrays;
+import org.apache.tuweni.bytes.Bytes;
+import org.hyperledger.besu.datatypes.Address;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 class EntityIdTest {
     private static final long shard = 1L;
@@ -236,11 +235,11 @@ class EntityIdTest {
         assertFalse(subject.matches(diffNum));
     }
 
-	@Test
-	void fromNumWorks() {
-		EntityId entityId = EntityId.fromNum(123L);
-		assertThat(entityId.num()).isEqualTo(123L);
-		assertThat(entityId.realm()).isEqualTo(StaticPropertiesHolder.STATIC_PROPERTIES.getRealm());
-		assertThat(entityId.shard()).isEqualTo(StaticPropertiesHolder.STATIC_PROPERTIES.getShard());
-	}
+    @Test
+    void fromNumWorks() {
+        EntityId entityId = EntityId.fromNum(123L);
+        assertThat(entityId.num()).isEqualTo(123L);
+        assertThat(entityId.realm()).isEqualTo(StaticPropertiesHolder.STATIC_PROPERTIES.getRealm());
+        assertThat(entityId.shard()).isEqualTo(StaticPropertiesHolder.STATIC_PROPERTIES.getShard());
+    }
 }

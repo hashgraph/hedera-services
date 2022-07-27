@@ -62,7 +62,7 @@ public interface StateChildren {
 
     MerkleSpecialFiles specialFiles();
 
-	VirtualMap<UniqueTokenKey, UniqueTokenValue> uniqueTokens();
+    VirtualMap<UniqueTokenKey, UniqueTokenValue> uniqueTokens();
 
     MerkleMap<EntityNum, MerkleStakingInfo> stakingInfo();
 

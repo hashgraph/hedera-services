@@ -94,19 +94,18 @@ public class EntityId implements SelfSerializable {
         return RUNTIME_CONSTRUCTABLE_ID;
     }
 
-	/**
-	 * Builds an entity id from just the entity number.
-	 *
-	 * @param num
-	 * 		the number of the entity id.
-	 * @return the equivalent entity id using the node's shard and realm.
-	 */
-	public static EntityId fromNum(long num) {
-		return new EntityId(
-				StaticPropertiesHolder.STATIC_PROPERTIES.getShard(),
-				StaticPropertiesHolder.STATIC_PROPERTIES.getRealm(),
-				num);
-	}
+    /**
+     * Builds an entity id from just the entity number.
+     *
+     * @param num the number of the entity id.
+     * @return the equivalent entity id using the node's shard and realm.
+     */
+    public static EntityId fromNum(long num) {
+        return new EntityId(
+                StaticPropertiesHolder.STATIC_PROPERTIES.getShard(),
+                StaticPropertiesHolder.STATIC_PROPERTIES.getRealm(),
+                num);
+    }
 
     @Override
     public int getVersion() {

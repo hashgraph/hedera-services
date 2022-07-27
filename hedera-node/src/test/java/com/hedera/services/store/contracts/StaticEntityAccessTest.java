@@ -351,7 +351,7 @@ class StaticEntityAccessTest {
     @Test
     void ownerOfTranslatesWildcardOwner() {
         given(nfts.get(nftKey)).willReturn(treasuryOwned);
-		given(tokens.get(nftKey.toEntityNumPair().getHiOrderAsNum())).willReturn(token);
+        given(tokens.get(nftKey.toEntityNumPair().getHiOrderAsNum())).willReturn(token);
         final var actual = subject.ownerOf(nft);
         assertEquals(treasuryAddress, actual);
     }
@@ -395,7 +395,7 @@ class StaticEntityAccessTest {
     private static final UniqueTokenValue treasuryOwned =
             new UniqueTokenValue(
                     MISSING_ENTITY_ID.num(),
-					MISSING_ENTITY_ID.num(),
+                    MISSING_ENTITY_ID.num(),
                     "There, the eyes are".getBytes(StandardCharsets.UTF_8),
                     new RichInstant(1, 2));
     private static final int decimals = 666666;
@@ -414,14 +414,14 @@ class StaticEntityAccessTest {
     private static final UniqueTokenValue accountOwned =
             new UniqueTokenValue(
                     accountNum.longValue(),
-					MISSING_ENTITY_ID.num(),
+                    MISSING_ENTITY_ID.num(),
                     "There, is a tree swinging".getBytes(StandardCharsets.UTF_8),
                     new RichInstant(2, 3));
 
     private static final UniqueTokenValue withApprovedSpender =
             new UniqueTokenValue(
                     accountNum.longValue(),
-					MISSING_ENTITY_ID.num(),
+                    MISSING_ENTITY_ID.num(),
                     "And voices are".getBytes(StandardCharsets.UTF_8),
                     new RichInstant(1, 2));
 

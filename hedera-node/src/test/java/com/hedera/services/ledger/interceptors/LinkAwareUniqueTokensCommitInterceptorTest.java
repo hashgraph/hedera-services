@@ -28,7 +28,6 @@ import com.hedera.services.state.virtual.UniqueTokenKey;
 import com.hedera.services.state.virtual.UniqueTokenValue;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.utils.EntityNum;
-import com.hedera.services.utils.EntityNumPair;
 import java.util.Collections;
 import java.util.EnumMap;
 import java.util.HashMap;
@@ -64,8 +63,7 @@ class LinkAwareUniqueTokensCommitInterceptorTest {
     @SuppressWarnings("unchecked")
     void zombieCommitIsNoOp() {
         var changes =
-                (EntityChangeSet<NftId, UniqueTokenValue, NftProperty>)
-                        mock(EntityChangeSet.class);
+                (EntityChangeSet<NftId, UniqueTokenValue, NftProperty>) mock(EntityChangeSet.class);
         given(changes.size()).willReturn(1);
         given(changes.entity(0)).willReturn(null);
         given(changes.changes(0)).willReturn(null);
@@ -80,8 +78,7 @@ class LinkAwareUniqueTokensCommitInterceptorTest {
     @SuppressWarnings("unchecked")
     void resultsInNoOpForNoOwnershipChanges() {
         var changes =
-                (EntityChangeSet<NftId, UniqueTokenValue, NftProperty>)
-                        mock(EntityChangeSet.class);
+                (EntityChangeSet<NftId, UniqueTokenValue, NftProperty>) mock(EntityChangeSet.class);
         var nft = mock(UniqueTokenValue.class);
 
         given(changes.size()).willReturn(1);
@@ -98,8 +95,7 @@ class LinkAwareUniqueTokensCommitInterceptorTest {
     @SuppressWarnings("unchecked")
     void resultsInNoOpForSameOwnershipChange() {
         var changes =
-                (EntityChangeSet<NftId, UniqueTokenValue, NftProperty>)
-                        mock(EntityChangeSet.class);
+                (EntityChangeSet<NftId, UniqueTokenValue, NftProperty>) mock(EntityChangeSet.class);
         var nft = mock(UniqueTokenValue.class);
         final long ownerNum = 1111L;
         final var owner = EntityNum.fromLong(ownerNum);
@@ -119,8 +115,7 @@ class LinkAwareUniqueTokensCommitInterceptorTest {
     @SuppressWarnings("unchecked")
     void nonTreasuryExitTriggersUpdateLinksAsExpected() {
         final var changes =
-                (EntityChangeSet<NftId, UniqueTokenValue, NftProperty>)
-                        mock(EntityChangeSet.class);
+                (EntityChangeSet<NftId, UniqueTokenValue, NftProperty>) mock(EntityChangeSet.class);
         final var nft = mock(UniqueTokenValue.class);
         final var change = (HashMap<NftProperty, Object>) mock(HashMap.class);
         final long ownerNum = 1111L;
@@ -148,8 +143,7 @@ class LinkAwareUniqueTokensCommitInterceptorTest {
     @SuppressWarnings("unchecked")
     void treasuryBurnDoesNotUpdateLinks() {
         final var changes =
-                (EntityChangeSet<NftId, UniqueTokenValue, NftProperty>)
-                        mock(EntityChangeSet.class);
+                (EntityChangeSet<NftId, UniqueTokenValue, NftProperty>) mock(EntityChangeSet.class);
         final var nft = mock(UniqueTokenValue.class);
         EntityNum owner = EntityNum.MISSING_NUM;
 
@@ -168,8 +162,7 @@ class LinkAwareUniqueTokensCommitInterceptorTest {
     @SuppressWarnings("unchecked")
     void nonOwnerUpdateDoesNotUpdateLinks() {
         final var changes =
-                (EntityChangeSet<NftId, UniqueTokenValue, NftProperty>)
-                        mock(EntityChangeSet.class);
+                (EntityChangeSet<NftId, UniqueTokenValue, NftProperty>) mock(EntityChangeSet.class);
         final var nft = mock(UniqueTokenValue.class);
         EntityNum owner = EntityNum.MISSING_NUM;
         final Map<NftProperty, Object> scopedChanges = new EnumMap<>(NftProperty.class);
@@ -190,14 +183,13 @@ class LinkAwareUniqueTokensCommitInterceptorTest {
     @SuppressWarnings("unchecked")
     void triggersUpdateLinksOnWipeAsExpected() {
         final var changes =
-                (EntityChangeSet<NftId, UniqueTokenValue, NftProperty>)
-                        mock(EntityChangeSet.class);
+                (EntityChangeSet<NftId, UniqueTokenValue, NftProperty>) mock(EntityChangeSet.class);
         final var nft = mock(UniqueTokenValue.class);
         final long ownerNum = 1111L;
         final long tokenNum = 2222L;
         final long serialNum = 2L;
         EntityNum owner = EntityNum.fromLong(ownerNum);
-		UniqueTokenKey nftKey = new UniqueTokenKey(tokenNum, serialNum);
+        UniqueTokenKey nftKey = new UniqueTokenKey(tokenNum, serialNum);
 
         given(changes.size()).willReturn(1);
         given(changes.entity(0)).willReturn(nft);
@@ -214,14 +206,13 @@ class LinkAwareUniqueTokensCommitInterceptorTest {
     @SuppressWarnings("unchecked")
     void triggersUpdateLinksOnMultiStageMintAndTransferAsExpected() {
         final var changes =
-                (EntityChangeSet<NftId, UniqueTokenValue, NftProperty>)
-                        mock(EntityChangeSet.class);
+                (EntityChangeSet<NftId, UniqueTokenValue, NftProperty>) mock(EntityChangeSet.class);
         final long ownerNum = 1111L;
         final long tokenNum = 2222L;
         final long serialNum = 2L;
         final Map<NftProperty, Object> scopedChanges = new EnumMap<>(NftProperty.class);
         EntityNum owner = EntityNum.fromLong(ownerNum);
-		final var nftKey = new UniqueTokenKey(tokenNum, serialNum);
+        final var nftKey = new UniqueTokenKey(tokenNum, serialNum);
         final var mintedNft = new UniqueTokenValue();
 
         given(changes.size()).willReturn(1);
@@ -262,8 +253,7 @@ class LinkAwareUniqueTokensCommitInterceptorTest {
     @SuppressWarnings("unchecked")
     void doesntTriggerUpdateLinkOnNormalTreasuryMint() {
         final var changes =
-                (EntityChangeSet<NftId, UniqueTokenValue, NftProperty>)
-                        mock(EntityChangeSet.class);
+                (EntityChangeSet<NftId, UniqueTokenValue, NftProperty>) mock(EntityChangeSet.class);
         final long tokenNum = 2222L;
         final long serialNum = 2L;
         final Map<NftProperty, Object> scopedChanges = new EnumMap<>(NftProperty.class);

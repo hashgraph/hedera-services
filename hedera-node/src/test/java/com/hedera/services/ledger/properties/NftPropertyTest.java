@@ -34,7 +34,7 @@ class NftPropertyTest {
     @Test
     void gettersWork() {
         // given:
-		final var aSubject = new UniqueTokenValue(aEntity.num(), 0, aMeta, aInstant);
+        final var aSubject = new UniqueTokenValue(aEntity.num(), 0, aMeta, aInstant);
 
         // expect:
         assertEquals(aEntity, NftProperty.OWNER.getter().apply(aSubject));
@@ -44,10 +44,10 @@ class NftPropertyTest {
                 NftProperty.CREATION_TIME.getter().apply(aSubject));
     }
 
-	@Test
-	void setterWorks() {
-		final var aSubject = new UniqueTokenValue(aEntity.num(), 0, aMeta, aInstant);
-		final var bSubject = new UniqueTokenValue(bEntity.num(), 0, bMeta, bInstant);
+    @Test
+    void setterWorks() {
+        final var aSubject = new UniqueTokenValue(aEntity.num(), 0, aMeta, aInstant);
+        final var bSubject = new UniqueTokenValue(bEntity.num(), 0, bMeta, bInstant);
 
         NftProperty.OWNER.setter().accept(aSubject, bEntity);
         NftProperty.CREATION_TIME

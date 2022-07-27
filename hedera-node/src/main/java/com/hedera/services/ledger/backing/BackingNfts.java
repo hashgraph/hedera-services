@@ -19,7 +19,6 @@ import com.hedera.services.state.virtual.UniqueTokenKey;
 import com.hedera.services.state.virtual.UniqueTokenValue;
 import com.hedera.services.store.models.NftId;
 import com.swirlds.virtualmap.VirtualMap;
-
 import java.util.Set;
 import java.util.function.Supplier;
 
@@ -42,8 +41,8 @@ public class BackingNfts implements BackingStore<NftId, UniqueTokenValue> {
 
     @Override
     public void put(NftId id, UniqueTokenValue nft) {
-		final var key = UniqueTokenKey.from(id);
-		delegate.get().put(key, nft);
+        final var key = UniqueTokenKey.from(id);
+        delegate.get().put(key, nft);
     }
 
     @Override
@@ -58,7 +57,7 @@ public class BackingNfts implements BackingStore<NftId, UniqueTokenValue> {
 
     @Override
     public Set<NftId> idSet() {
-		throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException();
     }
 
     @Override

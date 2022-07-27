@@ -264,27 +264,37 @@ class TypedTokenStoreTest {
         expectedReplacementToken.setMemo(memo);
         expectedReplacementToken.setAutoRenewPeriod(autoRenewPeriod);
 
-		// and:
-		final var expectedReplacementToken2 = new MerkleToken(
-				expiry, tokenSupply * 4, 0,
-				symbol, name,
-				freezeDefault, true,
-				new EntityId(0, 0, treasuryAccountNum));
-		expectedReplacementToken2.setAutoRenewAccount(treasuryId);
-		expectedReplacementToken2.setSupplyKey(supplyKey);
-		expectedReplacementToken2.setFreezeKey(freezeKey);
-		expectedReplacementToken2.setKycKey(kycKey);
-		expectedReplacementToken2.setPauseKey(pauseKey);
-		expectedReplacementToken2.setAccountsFrozenByDefault(!freezeDefault);
-		expectedReplacementToken2.setMemo(memo);
-		expectedReplacementToken2.setAutoRenewPeriod(autoRenewPeriod);
-		// and:
-		final var expectedNewUniqTokenId = NftId.withDefaultShardRealm(tokenEntityId.num(), mintedSerialNo);
-		final var expectedNewUniqTokenId2 = NftId.withDefaultShardRealm(tokenEntityId.num(), mintedSerialNo2);
-		final var expectedNewUniqToken = new UniqueTokenValue(MISSING_ENTITY_ID.num(), MISSING_ENTITY_ID.num(), nftMeta,
-				creationTime);
-		final var expectedPastUniqTokenId = NftId.withDefaultShardRealm(tokenEntityId.num(), wipedSerialNo);
-		final var expectedPastUniqTokenId2 = NftId.withDefaultShardRealm(tokenEntityId.num(), burnedSerialNo);
+        // and:
+        final var expectedReplacementToken2 =
+                new MerkleToken(
+                        expiry,
+                        tokenSupply * 4,
+                        0,
+                        symbol,
+                        name,
+                        freezeDefault,
+                        true,
+                        new EntityId(0, 0, treasuryAccountNum));
+        expectedReplacementToken2.setAutoRenewAccount(treasuryId);
+        expectedReplacementToken2.setSupplyKey(supplyKey);
+        expectedReplacementToken2.setFreezeKey(freezeKey);
+        expectedReplacementToken2.setKycKey(kycKey);
+        expectedReplacementToken2.setPauseKey(pauseKey);
+        expectedReplacementToken2.setAccountsFrozenByDefault(!freezeDefault);
+        expectedReplacementToken2.setMemo(memo);
+        expectedReplacementToken2.setAutoRenewPeriod(autoRenewPeriod);
+        // and:
+        final var expectedNewUniqTokenId =
+                NftId.withDefaultShardRealm(tokenEntityId.num(), mintedSerialNo);
+        final var expectedNewUniqTokenId2 =
+                NftId.withDefaultShardRealm(tokenEntityId.num(), mintedSerialNo2);
+        final var expectedNewUniqToken =
+                new UniqueTokenValue(
+                        MISSING_ENTITY_ID.num(), MISSING_ENTITY_ID.num(), nftMeta, creationTime);
+        final var expectedPastUniqTokenId =
+                NftId.withDefaultShardRealm(tokenEntityId.num(), wipedSerialNo);
+        final var expectedPastUniqTokenId2 =
+                NftId.withDefaultShardRealm(tokenEntityId.num(), burnedSerialNo);
 
         givenModifiableToken(merkleTokenId, merkleToken);
         givenToken(merkleTokenId, merkleToken);
@@ -384,10 +394,13 @@ class TypedTokenStoreTest {
         nft2.setCreationTime(MISSING_INSTANT);
         nft2.setSpender(autoRenewId);
 
-		final var mut1 = new UniqueTokenValue(treasuryId.num(), MISSING_ENTITY_ID.num(), meta1, MISSING_INSTANT);
-		final var mut2 = new UniqueTokenValue(miscId.num(), MISSING_ENTITY_ID.num(), meta2, MISSING_INSTANT);
-		given(uniqueTokens.getRef(nftId1)).willReturn(mut1);
-		given(uniqueTokens.getRef(nftId2)).willReturn(mut2);
+        final var mut1 =
+                new UniqueTokenValue(
+                        treasuryId.num(), MISSING_ENTITY_ID.num(), meta1, MISSING_INSTANT);
+        final var mut2 =
+                new UniqueTokenValue(miscId.num(), MISSING_ENTITY_ID.num(), meta2, MISSING_INSTANT);
+        given(uniqueTokens.getRef(nftId1)).willReturn(mut1);
+        given(uniqueTokens.getRef(nftId2)).willReturn(mut2);
 
         subject.persistNft(nft1);
         subject.persistNft(nft2);

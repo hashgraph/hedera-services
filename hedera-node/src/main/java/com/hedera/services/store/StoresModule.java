@@ -63,10 +63,9 @@ import com.swirlds.virtualmap.VirtualMap;
 import dagger.Binds;
 import dagger.Module;
 import dagger.Provides;
-import org.apache.commons.lang3.tuple.Pair;
-
-import javax.inject.Singleton;
 import java.util.function.Supplier;
+import javax.inject.Singleton;
+import org.apache.commons.lang3.tuple.Pair;
 
 @Module
 public interface StoresModule {

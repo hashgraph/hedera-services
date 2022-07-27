@@ -1,11 +1,6 @@
-package com.hedera.services.state.virtual;
-
-/*-
- * ‌
- * Hedera Services Node
- * ​
- * Copyright (C) 2018 - 2022 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2022 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,14 +12,13 @@ package com.hedera.services.state.virtual;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+package com.hedera.services.state.virtual;
 
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.jasperdb.files.DataFileCommon;
 import com.swirlds.jasperdb.files.hashmap.KeySerializer;
-
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Objects;
@@ -61,7 +55,8 @@ public class UniqueTokenKeySerializer implements KeySerializer<UniqueTokenKey> {
     }
 
     @Override
-    public int serialize(UniqueTokenKey tokenKey, SerializableDataOutputStream outputStream) throws IOException {
+    public int serialize(UniqueTokenKey tokenKey, SerializableDataOutputStream outputStream)
+            throws IOException {
         Objects.requireNonNull(tokenKey);
         Objects.requireNonNull(outputStream);
         return tokenKey.serializeTo(outputStream::write);
@@ -73,7 +68,8 @@ public class UniqueTokenKeySerializer implements KeySerializer<UniqueTokenKey> {
     }
 
     @Override
-    public boolean equals(ByteBuffer byteBuffer, int dataVersion, UniqueTokenKey uniqueTokenKey) throws IOException {
+    public boolean equals(ByteBuffer byteBuffer, int dataVersion, UniqueTokenKey uniqueTokenKey)
+            throws IOException {
         final var key = new UniqueTokenKey();
         key.deserialize(byteBuffer, dataVersion);
         return key.equals(uniqueTokenKey);
@@ -85,12 +81,14 @@ public class UniqueTokenKeySerializer implements KeySerializer<UniqueTokenKey> {
     }
 
     @Override
-    public void deserialize(SerializableDataInputStream serializableDataInputStream, int i) throws IOException {
+    public void deserialize(SerializableDataInputStream serializableDataInputStream, int i)
+            throws IOException {
         /* no state to load, so no-op */
     }
 
     @Override
-    public void serialize(SerializableDataOutputStream serializableDataOutputStream) throws IOException {
+    public void serialize(SerializableDataOutputStream serializableDataOutputStream)
+            throws IOException {
         /* no state to save, so no-op */
     }
 

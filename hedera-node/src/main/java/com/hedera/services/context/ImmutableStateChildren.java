@@ -139,10 +139,10 @@ public class ImmutableStateChildren implements StateChildren {
         return Objects.requireNonNull(specialFiles.get());
     }
 
-	@Override
-	public VirtualMap<UniqueTokenKey, UniqueTokenValue> uniqueTokens() {
-		return Objects.requireNonNull(uniqueTokens.get());
-	}
+    @Override
+    public VirtualMap<UniqueTokenKey, UniqueTokenValue> uniqueTokens() {
+        return Objects.requireNonNull(uniqueTokens.get());
+    }
 
     @Override
     public MerkleMap<EntityNum, MerkleStakingInfo> stakingInfo() {

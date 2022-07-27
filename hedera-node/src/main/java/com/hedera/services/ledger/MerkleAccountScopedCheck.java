@@ -46,16 +46,15 @@ import javax.annotation.Nullable;
 public class MerkleAccountScopedCheck implements LedgerCheck<MerkleAccount, AccountProperty> {
     private final OptionValidator validator;
 
-	private BalanceChange balanceChange;
-	private TransactionalLedger<NftId, NftProperty, UniqueTokenValue> nftsLedger;
+    private BalanceChange balanceChange;
+    private TransactionalLedger<NftId, NftProperty, UniqueTokenValue> nftsLedger;
 
-	public MerkleAccountScopedCheck(
-			final OptionValidator validator,
-			final TransactionalLedger<NftId, NftProperty, UniqueTokenValue> nftsLedger
-	) {
-		this.validator = validator;
-		this.nftsLedger = nftsLedger;
-	}
+    public MerkleAccountScopedCheck(
+            final OptionValidator validator,
+            final TransactionalLedger<NftId, NftProperty, UniqueTokenValue> nftsLedger) {
+        this.validator = validator;
+        this.nftsLedger = nftsLedger;
+    }
 
     @Override
     public ResponseCodeEnum checkUsing(

@@ -54,7 +54,7 @@ public class LinkAwareUniqueTokensCommitInterceptor
         for (int i = 0; i < n; i++) {
             final var entity = pendingChanges.entity(i);
             final var changes = pendingChanges.changes(i);
-			final var nftId = UniqueTokenKey.from(pendingChanges.id(i));
+            final var nftId = UniqueTokenKey.from(pendingChanges.id(i));
             if (entity != null) {
                 final var fromAccount = entity.getOwner();
                 if (changes == null) {
@@ -68,7 +68,8 @@ public class LinkAwareUniqueTokensCommitInterceptor
                     final var toAccount = (EntityId) changes.get(OWNER);
                     if (!Objects.equals(fromAccount, toAccount)) {
                         // NFT owner changed (could be a treasury exit or return)
-                        uniqueTokensLinkManager.updateLinks(fromAccount.asNum(), toAccount.asNum(), nftId);
+                        uniqueTokensLinkManager.updateLinks(
+                                fromAccount.asNum(), toAccount.asNum(), nftId);
                     }
                 }
             } else if (changes != null) {

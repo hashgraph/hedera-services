@@ -140,10 +140,10 @@ public class StateView {
     Map<FileID, byte[]> fileContents;
     Map<FileID, HFileMeta> fileAttrs;
 
-	private BackingStore<TokenID, MerkleToken> backingTokens = null;
-	private BackingStore<AccountID, MerkleAccount> backingAccounts = null;
-	private BackingStore<NftId, UniqueTokenValue> backingNfts = null;
-	private BackingStore<Pair<AccountID, TokenID>, MerkleTokenRelStatus> backingRels = null;
+    private BackingStore<TokenID, MerkleToken> backingTokens = null;
+    private BackingStore<AccountID, MerkleAccount> backingAccounts = null;
+    private BackingStore<NftId, UniqueTokenValue> backingNfts = null;
+    private BackingStore<Pair<AccountID, TokenID>, MerkleTokenRelStatus> backingRels = null;
 
     public StateView(
             @Nullable final ScheduleStore scheduleStore,
@@ -354,15 +354,15 @@ public class StateView {
         }
     }
 
-	public Optional<TokenNftInfo> infoForNft(final NftID target) {
-		final var currentNfts = uniqueTokens();
-		final var tokenId = EntityNum.fromTokenId(target.getTokenID());
-		final var targetKey = new UniqueTokenKey(tokenId.longValue(), target.getSerialNumber());
-		if (currentNfts == EMPTY_VM || !currentNfts.containsKey(targetKey)) {
-			return Optional.empty();
-		}
-		final var targetNft = currentNfts.get(targetKey);
-		var accountId = targetNft.getOwner().toGrpcAccountId();
+    public Optional<TokenNftInfo> infoForNft(final NftID target) {
+        final var currentNfts = uniqueTokens();
+        final var tokenId = EntityNum.fromTokenId(target.getTokenID());
+        final var targetKey = new UniqueTokenKey(tokenId.longValue(), target.getSerialNumber());
+        if (currentNfts == EMPTY_VM || !currentNfts.containsKey(targetKey)) {
+            return Optional.empty();
+        }
+        final var targetNft = currentNfts.get(targetKey);
+        var accountId = targetNft.getOwner().toGrpcAccountId();
 
         if (WILDCARD_OWNER.equals(accountId)) {
             var merkleToken = tokens().get(tokenId);
@@ -386,13 +386,13 @@ public class StateView {
         return Optional.of(info);
     }
 
-	public boolean nftExists(final NftID id) {
-		final var tokenNum = EntityNum.fromTokenId(id.getTokenID());
-		final var key = new UniqueTokenKey(tokenNum.longValue(), id.getSerialNumber());
-		final var currentNfts = uniqueTokens();
+    public boolean nftExists(final NftID id) {
+        final var tokenNum = EntityNum.fromTokenId(id.getTokenID());
+        final var key = new UniqueTokenKey(tokenNum.longValue(), id.getSerialNumber());
+        final var currentNfts = uniqueTokens();
 
-		return currentNfts != EMPTY_VM && currentNfts.containsKey(key);
-	}
+        return currentNfts != EMPTY_VM && currentNfts.containsKey(key);
+    }
 
     public Optional<TokenType> tokenType(final TokenID tokenId) {
         try {
@@ -675,9 +675,9 @@ public class StateView {
         return stateChildren == null ? emptyMm() : stateChildren.tokenAssociations();
     }
 
-	public VirtualMap<UniqueTokenKey, UniqueTokenValue> uniqueTokens() {
-		return stateChildren == null ? emptyVm() : stateChildren.uniqueTokens();
-	}
+    public VirtualMap<UniqueTokenKey, UniqueTokenValue> uniqueTokens() {
+        return stateChildren == null ? emptyVm() : stateChildren.uniqueTokens();
+    }
 
     public VirtualMap<VirtualBlobKey, VirtualBlobValue> storage() {
         return stateChildren == null ? emptyVm() : stateChildren.storage();
@@ -705,12 +705,12 @@ public class StateView {
         return backingAccounts;
     }
 
-	public BackingStore<NftId, UniqueTokenValue> asReadOnlyNftStore() {
-		if (backingNfts == null) {
-			backingNfts = new BackingNfts(stateChildren::uniqueTokens);
-		}
-		return backingNfts;
-	}
+    public BackingStore<NftId, UniqueTokenValue> asReadOnlyNftStore() {
+        if (backingNfts == null) {
+            backingNfts = new BackingNfts(stateChildren::uniqueTokens);
+        }
+        return backingNfts;
+    }
 
     public BackingStore<Pair<AccountID, TokenID>, MerkleTokenRelStatus>
             asReadOnlyAssociationStore() {

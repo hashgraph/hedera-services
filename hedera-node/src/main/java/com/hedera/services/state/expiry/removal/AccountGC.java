@@ -33,13 +33,12 @@ import com.hedera.services.utils.MapValueListUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
-
-import javax.inject.Inject;
-import javax.inject.Singleton;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.function.Supplier;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 
 /**
  * Responsible for "garbage collection" of an expired account whose grace period has ended; such an

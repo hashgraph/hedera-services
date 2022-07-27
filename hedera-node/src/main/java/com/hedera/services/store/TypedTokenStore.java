@@ -190,12 +190,15 @@ public class TypedTokenStore extends ReadOnlyTokenStore {
 
     private void persistMinted(List<UniqueToken> nfts) {
         for (final var nft : nfts) {
-			final var merkleNft = new UniqueTokenValue(
-					MISSING_ENTITY_ID.num(),
-					MISSING_ENTITY_ID.num(),
-					nft.getMetadata(),
-					nft.getCreationTime());
-			uniqueTokens.put(NftId.withDefaultShardRealm(nft.getTokenId().num(), nft.getSerialNumber()), merkleNft);
+            final var merkleNft =
+                    new UniqueTokenValue(
+                            MISSING_ENTITY_ID.num(),
+                            MISSING_ENTITY_ID.num(),
+                            nft.getMetadata(),
+                            nft.getCreationTime());
+            uniqueTokens.put(
+                    NftId.withDefaultShardRealm(nft.getTokenId().num(), nft.getSerialNumber()),
+                    merkleNft);
         }
     }
 
@@ -230,11 +233,12 @@ public class TypedTokenStore extends ReadOnlyTokenStore {
         mutableToken.setExpiry(token.getExpiry());
     }
 
-	private void mapModelChanges(UniqueToken nft, UniqueTokenValue mutableNft) {
-		mutableNft.setOwner(nft.getOwner().asEntityId());
-		mutableNft.setSpender(nft.getSpender().asEntityId());
-		mutableNft.setMetadata(nft.getMetadata());
-		final var creationTime = nft.getCreationTime();
-		mutableNft.setPackedCreationTime(packedTime(creationTime.getSeconds(), creationTime.getNanos()));
-	}
+    private void mapModelChanges(UniqueToken nft, UniqueTokenValue mutableNft) {
+        mutableNft.setOwner(nft.getOwner().asEntityId());
+        mutableNft.setSpender(nft.getSpender().asEntityId());
+        mutableNft.setMetadata(nft.getMetadata());
+        final var creationTime = nft.getCreationTime();
+        mutableNft.setPackedCreationTime(
+                packedTime(creationTime.getSeconds(), creationTime.getNanos()));
+    }
 }

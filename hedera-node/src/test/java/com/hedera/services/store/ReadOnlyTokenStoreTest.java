@@ -231,12 +231,12 @@ class ReadOnlyTokenStoreTest {
 
     @Test
     void loadsUniqueTokens() {
-		final var aToken = new Token(miscId);
-		final var merkleUniqueToken = mock(UniqueTokenValue.class);
-		final var serialNumbers = List.of(1L, 2L);
-		given(merkleUniqueToken.getOwner()).willReturn(new EntityId(Id.DEFAULT));
-		given(merkleUniqueToken.getSpender()).willReturn(new EntityId(Id.DEFAULT));
-		given(uniqueTokens.getImmutableRef(any())).willReturn(merkleUniqueToken);
+        final var aToken = new Token(miscId);
+        final var merkleUniqueToken = mock(UniqueTokenValue.class);
+        final var serialNumbers = List.of(1L, 2L);
+        given(merkleUniqueToken.getOwner()).willReturn(new EntityId(Id.DEFAULT));
+        given(merkleUniqueToken.getSpender()).willReturn(new EntityId(Id.DEFAULT));
+        given(uniqueTokens.getImmutableRef(any())).willReturn(merkleUniqueToken);
 
         subject.loadUniqueTokens(aToken, serialNumbers);
 

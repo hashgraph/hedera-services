@@ -15,6 +15,7 @@
  */
 package com.hedera.services.state.virtual;
 
+import static com.google.common.truth.Truth.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.hedera.services.state.submerkle.RichInstant;
@@ -25,9 +26,6 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import static com.google.common.truth.Truth.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class VirtualMapFactoryTest {
     private final ThrowingJdbFactoryBuilder jdbFactory = new ThrowingJdbFactoryBuilder();
@@ -48,26 +46,24 @@ class VirtualMapFactoryTest {
         assertThrows(UncheckedIOException.class, () -> subject.newScheduleEqualityStorage());
     }
 
-	@Test
-	void virtualizedUniqueTokenStorage_whenEmpty_canProperlyInsertAndFetchValues() {
-		VirtualMapFactory subject = new VirtualMapFactory(JasperDbBuilder::new);
+    @Test
+    void virtualizedUniqueTokenStorage_whenEmpty_canProperlyInsertAndFetchValues() {
+        VirtualMapFactory subject = new VirtualMapFactory(JasperDbBuilder::new);
 
-		var map = subject.newVirtualizedUniqueTokenStorage();
-		assertThat(map.isEmpty()).isTrue();
+        var map = subject.newVirtualizedUniqueTokenStorage();
+        assertThat(map.isEmpty()).isTrue();
 
-		map.put(new UniqueTokenKey(123L, 456L),
-				new UniqueTokenValue(
-						789L,
-						123L,
-						"hello world".getBytes(),
-						RichInstant.MISSING_INSTANT));
+        map.put(
+                new UniqueTokenKey(123L, 456L),
+                new UniqueTokenValue(
+                        789L, 123L, "hello world".getBytes(), RichInstant.MISSING_INSTANT));
 
-		assertThat(map.get(new UniqueTokenKey(123L, 111L))).isNull();
-		var value = map.get(new UniqueTokenKey(123L, 456L));
-		assertThat(value).isNotNull();
-		assertThat(value.getOwnerAccountNum()).isEqualTo(789L);
-		assertThat(value.getMetadata()).isEqualTo("hello world".getBytes());
-	}
+        assertThat(map.get(new UniqueTokenKey(123L, 111L))).isNull();
+        var value = map.get(new UniqueTokenKey(123L, 456L));
+        assertThat(value).isNotNull();
+        assertThat(value.getOwnerAccountNum()).isEqualTo(789L);
+        assertThat(value.getMetadata()).isEqualTo("hello world".getBytes());
+    }
 
     private static class ThrowingJdbFactoryBuilder
             implements VirtualMapFactory.JasperDbBuilderFactory {

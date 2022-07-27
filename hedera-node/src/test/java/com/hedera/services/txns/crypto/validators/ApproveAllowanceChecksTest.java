@@ -473,13 +473,13 @@ class ApproveAllowanceChecksTest {
     void returnsInvalidOwnerId() {
         given(dynamicProperties.maxAllowanceLimitPerTransaction()).willReturn(120);
 
-		final BackingStore<AccountID, MerkleAccount> store = mock(BackingAccounts.class);
-		final BackingStore<TokenID, MerkleToken> tokens = mock(BackingTokens.class);
-		final BackingStore<NftId, UniqueTokenValue> nfts = mock(BackingNfts.class);
-		given(view.asReadOnlyAccountStore()).willReturn(store);
-		given(view.asReadOnlyTokenStore()).willReturn(tokens);
-		given(view.asReadOnlyNftStore()).willReturn(nfts);
-		given(store.getImmutableRef(ownerId1)).willThrow(InvalidTransactionException.class);
+        final BackingStore<AccountID, MerkleAccount> store = mock(BackingAccounts.class);
+        final BackingStore<TokenID, MerkleToken> tokens = mock(BackingTokens.class);
+        final BackingStore<NftId, UniqueTokenValue> nfts = mock(BackingNfts.class);
+        given(view.asReadOnlyAccountStore()).willReturn(store);
+        given(view.asReadOnlyTokenStore()).willReturn(tokens);
+        given(view.asReadOnlyNftStore()).willReturn(nfts);
+        given(store.getImmutableRef(ownerId1)).willThrow(InvalidTransactionException.class);
 
         given(tokens.getImmutableRef(token1)).willReturn(merkleTokenFungible);
         given(tokens.getImmutableRef(token2)).willReturn(merkleTokenNFT);

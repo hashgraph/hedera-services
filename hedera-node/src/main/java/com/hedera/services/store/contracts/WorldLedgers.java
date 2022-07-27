@@ -15,37 +15,6 @@
  */
 package com.hedera.services.store.contracts;
 
-import com.google.protobuf.ByteString;
-import com.hedera.services.context.SideEffectsTracker;
-import com.hedera.services.ethereum.EthTxSigs;
-import com.hedera.services.ledger.SigImpactHistorian;
-import com.hedera.services.ledger.TransactionalLedger;
-import com.hedera.services.ledger.accounts.ContractAliases;
-import com.hedera.services.ledger.accounts.StackedContractAliases;
-import com.hedera.services.ledger.interceptors.AccountsCommitInterceptor;
-import com.hedera.services.ledger.properties.AccountProperty;
-import com.hedera.services.ledger.properties.NftProperty;
-import com.hedera.services.ledger.properties.TokenProperty;
-import com.hedera.services.ledger.properties.TokenRelProperty;
-import com.hedera.services.state.enums.TokenType;
-import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.merkle.MerkleToken;
-import com.hedera.services.state.merkle.MerkleTokenRelStatus;
-import com.hedera.services.state.submerkle.EntityId;
-import com.hedera.services.state.submerkle.FcTokenAllowanceId;
-import com.hedera.services.state.virtual.UniqueTokenValue;
-import com.hedera.services.store.models.NftId;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.TokenID;
-import org.apache.commons.lang3.tuple.Pair;
-import org.apache.tuweni.bytes.Bytes;
-import org.hyperledger.besu.datatypes.Address;
-
-import javax.annotation.Nullable;
-import java.util.Objects;
-import java.util.Set;
-import java.util.function.BiFunction;
-
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hedera.services.ledger.TransactionalLedger.activeLedgerWrapping;
 import static com.hedera.services.ledger.interceptors.AutoAssocTokenRelsCommitInterceptor.forKnownAutoAssociatingOp;
@@ -70,6 +39,36 @@ import static com.hedera.services.utils.EntityIdUtils.accountIdFromEvmAddress;
 import static com.hedera.services.utils.EntityIdUtils.tokenIdFromEvmAddress;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
+
+import com.google.protobuf.ByteString;
+import com.hedera.services.context.SideEffectsTracker;
+import com.hedera.services.ethereum.EthTxSigs;
+import com.hedera.services.ledger.SigImpactHistorian;
+import com.hedera.services.ledger.TransactionalLedger;
+import com.hedera.services.ledger.accounts.ContractAliases;
+import com.hedera.services.ledger.accounts.StackedContractAliases;
+import com.hedera.services.ledger.interceptors.AccountsCommitInterceptor;
+import com.hedera.services.ledger.properties.AccountProperty;
+import com.hedera.services.ledger.properties.NftProperty;
+import com.hedera.services.ledger.properties.TokenProperty;
+import com.hedera.services.ledger.properties.TokenRelProperty;
+import com.hedera.services.state.enums.TokenType;
+import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.merkle.MerkleToken;
+import com.hedera.services.state.merkle.MerkleTokenRelStatus;
+import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.state.submerkle.FcTokenAllowanceId;
+import com.hedera.services.state.virtual.UniqueTokenValue;
+import com.hedera.services.store.models.NftId;
+import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.TokenID;
+import java.util.Objects;
+import java.util.Set;
+import java.util.function.BiFunction;
+import javax.annotation.Nullable;
+import org.apache.commons.lang3.tuple.Pair;
+import org.apache.tuweni.bytes.Bytes;
+import org.hyperledger.besu.datatypes.Address;
 
 public class WorldLedgers {
     public static final ByteString ECDSA_KEY_ALIAS_PREFIX =

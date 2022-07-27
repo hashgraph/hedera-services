@@ -15,6 +15,9 @@
  */
 package com.hedera.services.store.contracts.precompile;
 
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.mockito.BDDMockito.given;
+
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
@@ -66,9 +69,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-
-import static org.junit.jupiter.api.Assertions.assertInstanceOf;
-import static org.mockito.BDDMockito.given;
 
 @ExtendWith(MockitoExtension.class)
 class InfrastructureFactoryTest {

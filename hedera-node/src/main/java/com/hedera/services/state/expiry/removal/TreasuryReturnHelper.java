@@ -29,9 +29,6 @@ import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
-
-import javax.inject.Inject;
-import javax.inject.Singleton;
 import java.util.List;
 import java.util.function.Supplier;
 import javax.inject.Inject;
@@ -77,9 +74,9 @@ public class TreasuryReturnHelper {
     UniqueTokenKey updateNftReturns(
             final UniqueTokenKey nftKey,
             final VirtualMap<UniqueTokenKey, UniqueTokenValue> currUniqueTokens) {
-		final var curTokens = tokens.get();
-		final var tokenNum = nftKey.toEntityNumPair().getHiOrderAsNum();
-		final var token = curTokens.get(tokenNum);
+        final var curTokens = tokens.get();
+        final var tokenNum = nftKey.toEntityNumPair().getHiOrderAsNum();
+        final var token = curTokens.get(tokenNum);
         final var uniqueToken = currUniqueTokens.getForModify(nftKey);
         if (token != null && token.tokenType() == NON_FUNGIBLE_UNIQUE && uniqueToken != null) {
             if (token.isDeleted()) {

@@ -15,77 +15,77 @@
  */
 package com.hedera.services.state.expiry;
 
+import static com.hedera.services.utils.NftNumPair.MISSING_NFT_NUM_PAIR;
+
 import com.hedera.services.state.virtual.UniqueTokenKey;
 import com.hedera.services.state.virtual.UniqueTokenValue;
 import com.hedera.services.utils.MapValueListMutation;
 import com.swirlds.virtualmap.VirtualMap;
 import org.jetbrains.annotations.Nullable;
 
-import static com.hedera.services.utils.NftNumPair.MISSING_NFT_NUM_PAIR;
+public class UniqueTokensListRemoval
+        implements MapValueListMutation<UniqueTokenKey, UniqueTokenValue> {
 
-public class UniqueTokensListRemoval implements MapValueListMutation<UniqueTokenKey, UniqueTokenValue> {
+    final VirtualMap<UniqueTokenKey, UniqueTokenValue> uniqueTokens;
 
-	final VirtualMap<UniqueTokenKey, UniqueTokenValue> uniqueTokens;
+    public UniqueTokensListRemoval(
+            final VirtualMap<UniqueTokenKey, UniqueTokenValue> uniqueTokens) {
+        this.uniqueTokens = uniqueTokens;
+    }
 
-	public UniqueTokensListRemoval(
-			final VirtualMap<UniqueTokenKey, UniqueTokenValue> uniqueTokens
-	) {
-		this.uniqueTokens = uniqueTokens;
-	}
+    @Nullable
+    @Override
+    public UniqueTokenValue get(final UniqueTokenKey key) {
+        return uniqueTokens.get(key);
+    }
 
-	@Nullable
-	@Override
-	public UniqueTokenValue get(final UniqueTokenKey key) {
-		return uniqueTokens.get(key);
-	}
-
-	@Nullable
-	@Override
-	public UniqueTokenValue getForModify(final UniqueTokenKey key) {
+    @Nullable
+    @Override
+    public UniqueTokenValue getForModify(final UniqueTokenKey key) {
         return uniqueTokens.getForModify(key);
     }
 
-	@Override
-	public void put(final UniqueTokenKey key, final UniqueTokenValue value) {
-		uniqueTokens.put(key, value);
-	}
+    @Override
+    public void put(final UniqueTokenKey key, final UniqueTokenValue value) {
+        uniqueTokens.put(key, value);
+    }
 
-	@Override
-	public void remove(final UniqueTokenKey key) {
-		uniqueTokens.remove(key);
-	}
+    @Override
+    public void remove(final UniqueTokenKey key) {
+        uniqueTokens.remove(key);
+    }
 
-	@Override
-	public void markAsHead(final UniqueTokenValue node) {
-		node.setPrev(MISSING_NFT_NUM_PAIR);
-	}
+    @Override
+    public void markAsHead(final UniqueTokenValue node) {
+        node.setPrev(MISSING_NFT_NUM_PAIR);
+    }
 
-	@Override
-	public void markAsTail(final UniqueTokenValue node) {
-		node.setNext(MISSING_NFT_NUM_PAIR);
-	}
+    @Override
+    public void markAsTail(final UniqueTokenValue node) {
+        node.setNext(MISSING_NFT_NUM_PAIR);
+    }
 
-	@Override
-	public void updatePrev(final UniqueTokenValue node, final UniqueTokenKey prev) {
-		node.setPrev(prev.toNftNumPair());
-	}
+    @Override
+    public void updatePrev(final UniqueTokenValue node, final UniqueTokenKey prev) {
+        node.setPrev(prev.toNftNumPair());
+    }
 
-	@Override
-	public void updateNext(final UniqueTokenValue node, final UniqueTokenKey next) {
-		node.setNext(next.toNftNumPair());
-	}
+    @Override
+    public void updateNext(final UniqueTokenValue node, final UniqueTokenKey next) {
+        node.setNext(next.toNftNumPair());
+    }
 
-	@Nullable
-	@Override
-	public UniqueTokenKey next(final UniqueTokenValue node) {
-		final var nextKey = node.getNext();
-		return nextKey.equals(MISSING_NFT_NUM_PAIR) ? null : UniqueTokenKey.from(nextKey);
-	}
+    @Nullable
+    @Override
+    public UniqueTokenKey next(final UniqueTokenValue node) {
+        final var nextKey = node.getNext();
+        return nextKey.equals(MISSING_NFT_NUM_PAIR) ? null : UniqueTokenKey.from(nextKey);
+    }
 
-	@Nullable
-	@Override
-	public UniqueTokenKey prev(final UniqueTokenValue node) {
-		final var prevKey = node.getPrev();
-		return prevKey.equals(MISSING_NFT_NUM_PAIR) ? null : UniqueTokenKey.from(prevKey);
-	}
+    @Nullable
+    @Override
+    public UniqueTokenKey prev(final UniqueTokenValue node) {
+        final var prevKey = node.getPrev();
+        return prevKey.equals(MISSING_NFT_NUM_PAIR) ? null : UniqueTokenKey.from(prevKey);
+    }
 }
