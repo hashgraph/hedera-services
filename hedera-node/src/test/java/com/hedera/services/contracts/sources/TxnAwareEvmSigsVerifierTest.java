@@ -176,7 +176,7 @@ class TxnAwareEvmSigsVerifierTest {
     }
 
     @Test
-    void throwsIfAskedToVerifyTokenWithoutWipeKey() {
+    void throwsIfAskedToVerifyTokenWithoutFreezeKey() {
         given(ledgers.tokens()).willReturn(tokensLedger);
         given(tokensLedger.exists(token)).willReturn(true);
         given(tokensLedger.get(token, TokenProperty.FREEZE_KEY)).willReturn(null);

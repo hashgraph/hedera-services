@@ -33,6 +33,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.assertionsHold;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
@@ -59,6 +60,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.Assertions;
 
 public class FreezeUnfreezeTokenPrecompileSuite extends HapiApiSuite {
     private static final Logger log =
@@ -90,11 +92,10 @@ public class FreezeUnfreezeTokenPrecompileSuite extends HapiApiSuite {
 
     @Override
     public List<HapiApiSpec> getSpecsInSuite() {
-        return allOf(
-                List.of(
-                        freezeUnfreezeFungibleWithNegativeCases(),
-                        freezeUnfreezeNftsWithNegativeCases(),
-                        isFrozenHappyPathWithLocalCall()));
+        return List.of(
+                freezeUnfreezeFungibleWithNegativeCases(),
+                freezeUnfreezeNftsWithNegativeCases(),
+                isFrozenHappyPathWithLocalCall());
     }
 
     private HapiApiSpec freezeUnfreezeFungibleWithNegativeCases() {
@@ -324,23 +325,29 @@ public class FreezeUnfreezeTokenPrecompileSuite extends HapiApiSuite {
                         tokenAssociate(ACCOUNT, VANILLA_TOKEN),
                         cryptoTransfer(moving(500, VANILLA_TOKEN).between(TOKEN_TREASURY, ACCOUNT)))
                 .when(
-                        withOpContext(
-                                (spec, opLog) ->
-                                        allRunFor(
-                                                spec,
-                                                contractCall(
-                                                                FREEZE_CONTRACT,
-                                                                TOKEN_FREEZE_FUNC,
-                                                                asAddress(vanillaTokenID.get()),
-                                                                asAddress(accountID.get()))
-                                                        .logged()
-                                                        .payingWith(ACCOUNT)
-                                                        .gas(GAS_TO_OFFER),
-                                                contractCallLocal(
-                                                        FREEZE_CONTRACT,
-                                                        IS_FROZEN_FUNC,
-                                                        asAddress(vanillaTokenID.get()),
-                                                        asAddress(accountID.get())))))
+                        assertionsHold(
+                                (spec, ctxLog) -> {
+                                    final var freezeCall =
+                                            contractCall(
+                                                            FREEZE_CONTRACT,
+                                                            TOKEN_FREEZE_FUNC,
+                                                            asAddress(vanillaTokenID.get()),
+                                                            asAddress(accountID.get()))
+                                                    .logged()
+                                                    .payingWith(ACCOUNT)
+                                                    .gas(GAS_TO_OFFER);
+                                    final var isFrozenLocalCall =
+                                            contractCallLocal(
+                                                            FREEZE_CONTRACT,
+                                                            IS_FROZEN_FUNC,
+                                                            asAddress(vanillaTokenID.get()),
+                                                            asAddress(accountID.get()))
+                                                    .saveResultTo(IS_FROZEN_FUNC)
+                                                    .payingWith(ACCOUNT);
+                                    allRunFor(spec, freezeCall, isFrozenLocalCall);
+                                    final byte[] val = spec.registry().getBytes(IS_FROZEN_FUNC);
+                                    Assertions.assertEquals(1, val[val.length - 1]);
+                                }))
                 .then();
     }
 }
