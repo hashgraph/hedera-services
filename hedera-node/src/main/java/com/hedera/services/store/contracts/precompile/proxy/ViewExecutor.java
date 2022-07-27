@@ -18,6 +18,8 @@ package com.hedera.services.store.contracts.precompile.proxy;
 import static com.hedera.services.exceptions.ValidationUtils.validateTrueOrRevert;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_GET_FUNGIBLE_TOKEN_INFO;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_GET_NON_FUNGIBLE_TOKEN_INFO;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_GET_TOKEN_DEFAULT_FREEZE_STATUS;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_GET_TOKEN_DEFAULT_KYC_STATUS;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_GET_TOKEN_INFO;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_IS_FROZEN;
 import static com.hedera.services.utils.MiscUtils.asSecondsTimestamp;
@@ -121,7 +123,19 @@ public class ViewExecutor {
 
                 return encoder.encodeIsFrozen(isFrozen);
             }
-                // Only view functions can be used inside a ContractCallLocal
+            case ABI_ID_GET_TOKEN_DEFAULT_FREEZE_STATUS -> {
+                final var wrapper = decoder.decodeTokenDefaultFreezeStatus(input);
+                final var defaultFreezeStatus = ledgers.defaultFreezeStatus(wrapper.tokenID());
+
+                return encoder.encodeGetTokenDefaultFreezeStatus(defaultFreezeStatus);
+            }
+            case ABI_ID_GET_TOKEN_DEFAULT_KYC_STATUS -> {
+                final var wrapper = decoder.decodeTokenDefaultKycStatus(input);
+                final var defaultKycStatus = ledgers.defaultKycStatus(wrapper.tokenID());
+
+                return encoder.encodeGetTokenDefaultKycStatus(defaultKycStatus);
+            }
+            // Only view functions can be used inside a ContractCallLocal
             default -> throw new InvalidTransactionException(NOT_SUPPORTED);
         }
     }

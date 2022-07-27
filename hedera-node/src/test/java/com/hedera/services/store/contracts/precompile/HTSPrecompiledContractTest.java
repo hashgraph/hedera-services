@@ -137,7 +137,6 @@ class HTSPrecompiledContractTest {
     @Mock private ImpliedTransfersMarshal impliedTransfers;
     @Mock private FeeCalculator feeCalculator;
     @Mock private StateView stateView;
-    @Mock private WorldLedgers ledgers;
 
     @Mock private HederaStackedWorldStateUpdater worldUpdater;
     @Mock private WorldLedgers wrappedLedgers;
@@ -282,7 +281,7 @@ class HTSPrecompiledContractTest {
                         decoder,
                         precompilePricingUtils::computeViewFunctionGas,
                         stateView,
-                        ledgers);
+                        wrappedLedgers);
         given(infrastructureFactory.newViewExecutor(any(), any(), any(), any(), any()))
                 .willReturn(viewExecutor);
         given(feeCalculator.estimatePayment(any(), any(), any(), any(), any()))
