@@ -42,7 +42,6 @@ import static com.hedera.services.state.merkle.internals.ByteUtils.getHashBytes;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.MoreObjects;
 import com.hedera.services.context.properties.BootstrapProperties;
-import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.EntityNum;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
@@ -88,7 +87,7 @@ public class MerkleStakingInfo extends PartialMerkleLeaf implements Keyed<Entity
     }
 
     public MerkleStakingInfo(final BootstrapProperties properties) {
-        this( properties.getIntProperty("staking.rewardHistory.numStoredPeriods"));
+        this(properties.getIntProperty("staking.rewardHistory.numStoredPeriods"));
     }
 
     public MerkleStakingInfo(final int numRewardablePeriods) {

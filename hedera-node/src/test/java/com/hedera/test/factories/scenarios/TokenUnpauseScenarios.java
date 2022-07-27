@@ -1,11 +1,6 @@
-package com.hedera.test.factories.scenarios;
-
-/*-
- * ‌
- * Hedera Services Node
- * ​
- * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,24 +12,24 @@ package com.hedera.test.factories.scenarios;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
-
-import com.hedera.services.utils.accessors.PlatformTxnAccessor;
+package com.hedera.test.factories.scenarios;
 
 import static com.hedera.test.factories.txns.PlatformTxnFactory.from;
 import static com.hedera.test.factories.txns.TokenUnpauseFactory.newSignedTokenUnpause;
 
+import com.hedera.services.utils.accessors.PlatformTxnAccessor;
+
 public enum TokenUnpauseScenarios implements TxnHandlingScenario {
-	VALID_UNPAUSE_WITH_EXTANT_TOKEN {
-		@Override
-		public PlatformTxnAccessor platformTxn() throws Throwable {
-			return PlatformTxnAccessor.from(from(
-					newSignedTokenUnpause()
-							.unPausing(KNOWN_TOKEN_WITH_PAUSE)
-							.nonPayerKts(TOKEN_PAUSE_KT)
-							.get()
-			));
-		}
-	},
+    VALID_UNPAUSE_WITH_EXTANT_TOKEN {
+        @Override
+        public PlatformTxnAccessor platformTxn() throws Throwable {
+            return PlatformTxnAccessor.from(
+                    from(
+                            newSignedTokenUnpause()
+                                    .unPausing(KNOWN_TOKEN_WITH_PAUSE)
+                                    .nonPayerKts(TOKEN_PAUSE_KT)
+                                    .get()));
+        }
+    },
 }

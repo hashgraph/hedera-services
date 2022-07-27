@@ -228,9 +228,10 @@ class MerkleStakingInfoTest {
 
     @Test
     void toStringWorks() {
-        final var expected = "MerkleStakingInfo{id=34, minStake=100, maxStake=10000, "
-            + "stakeToReward=345, stakeToNotReward=155, stakeRewardStart=1234, "
-            + "unclaimedStakeRewardStart=123, stake=500, rewardSumHistory=[2, 1, 0]}";
+        final var expected =
+                "MerkleStakingInfo{id=34, minStake=100, maxStake=10000, "
+                        + "stakeToReward=345, stakeToNotReward=155, stakeRewardStart=1234, "
+                        + "unclaimedStakeRewardStart=123, stake=500, rewardSumHistory=[2, 1, 0]}";
 
         assertEquals(expected, subject.toString());
     }
