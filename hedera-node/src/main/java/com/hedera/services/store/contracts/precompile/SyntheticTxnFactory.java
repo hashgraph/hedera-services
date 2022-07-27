@@ -425,7 +425,8 @@ public class SyntheticTxnFactory {
         return TransactionBody.newBuilder().setNodeStakeUpdate(txnBody);
     }
 
-    public TransactionBody.Builder createGrantKyc(final GrantRevokeKycWrapper grantRevokeKycWrapper) {
+    public TransactionBody.Builder createGrantKyc(
+            final GrantRevokeKycWrapper grantRevokeKycWrapper) {
         final var builder = TokenGrantKycTransactionBody.newBuilder();
 
         builder.setToken(grantRevokeKycWrapper.token());
@@ -434,7 +435,8 @@ public class SyntheticTxnFactory {
         return TransactionBody.newBuilder().setTokenGrantKyc(builder);
     }
 
-    public TransactionBody.Builder createRevokeKyc(final  GrantRevokeKycWrapper grantRevokeKycWrapper) {
+    public TransactionBody.Builder createRevokeKyc(
+            final GrantRevokeKycWrapper grantRevokeKycWrapper) {
         final var builder = TokenRevokeKycTransactionBody.newBuilder();
 
         builder.setToken(grantRevokeKycWrapper.token());

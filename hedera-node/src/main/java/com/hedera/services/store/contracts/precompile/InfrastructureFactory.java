@@ -214,12 +214,12 @@ public class InfrastructureFactory {
     }
 
     public GrantKycLogic newGrantKycLogic(
-        final AccountStore accountStore, final TypedTokenStore tokenStore) {
+            final AccountStore accountStore, final TypedTokenStore tokenStore) {
         return new GrantKycLogic(tokenStore, accountStore);
     }
 
     public RevokeKycLogic newRevokeKycLogic(
-        final AccountStore accountStore, final TypedTokenStore tokenStore) {
+            final AccountStore accountStore, final TypedTokenStore tokenStore) {
         return new RevokeKycLogic(tokenStore, accountStore);
     }
 

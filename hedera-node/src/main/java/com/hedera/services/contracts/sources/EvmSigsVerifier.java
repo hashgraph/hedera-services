@@ -118,10 +118,10 @@ public interface EvmSigsVerifier {
             WorldLedgers worldLedgers);
 
     boolean hasActiveKycKey(
-        boolean isDelegateCall,
-        Address token,
-        Address activeContract,
-        WorldLedgers worldLedgers);
+            boolean isDelegateCall,
+            Address token,
+            Address activeContract,
+            WorldLedgers worldLedgers);
 
     boolean hasActiveWipeKey(
             boolean isDelegateCall,

@@ -95,10 +95,10 @@ public class TxnAwareEvmSigsVerifier implements EvmSigsVerifier {
 
     @Override
     public boolean hasActiveKycKey(
-        final boolean isDelegateCall,
-        @NotNull final Address tokenAddress,
-        @NotNull final Address activeContract,
-        @NotNull final WorldLedgers worldLedgers) {
+            final boolean isDelegateCall,
+            @NotNull final Address tokenAddress,
+            @NotNull final Address activeContract,
+            @NotNull final WorldLedgers worldLedgers) {
         final var tokenId = EntityIdUtils.tokenIdFromEvmAddress(tokenAddress);
         validateTrue(worldLedgers.tokens().exists(tokenId), INVALID_TOKEN_ID);
 
