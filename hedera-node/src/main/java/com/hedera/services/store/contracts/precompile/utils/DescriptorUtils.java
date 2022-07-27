@@ -17,6 +17,7 @@ package com.hedera.services.store.contracts.precompile.utils;
 
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_GET_FUNGIBLE_TOKEN_INFO;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_GET_NON_FUNGIBLE_TOKEN_INFO;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_GET_TOKEN_CUSTOM_FEES;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_GET_TOKEN_DEFAULT_FREEZE_STATUS;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_GET_TOKEN_DEFAULT_KYC_STATUS;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_GET_TOKEN_INFO;
@@ -36,7 +37,8 @@ public class DescriptorUtils {
                 || ABI_ID_GET_FUNGIBLE_TOKEN_INFO == input.getInt(0)
                 || ABI_ID_GET_NON_FUNGIBLE_TOKEN_INFO == input.getInt(0)
                 || ABI_ID_GET_TOKEN_DEFAULT_FREEZE_STATUS == input.getInt(0)
-                || ABI_ID_GET_TOKEN_DEFAULT_KYC_STATUS == input.getInt(0);
+                || ABI_ID_GET_TOKEN_DEFAULT_KYC_STATUS == input.getInt(0)
+                || ABI_ID_GET_TOKEN_CUSTOM_FEES == input.getInt(0);
     }
 
     public static RedirectTarget getRedirectTarget(final Bytes input) {

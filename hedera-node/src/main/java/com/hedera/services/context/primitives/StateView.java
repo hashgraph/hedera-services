@@ -116,6 +116,7 @@ import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes;
 
 public class StateView {
+
     private static final Logger log = LogManager.getLogger(StateView.class);
 
     /* EVM storage maps from 256-bit (32-byte) keys to 256-bit (32-byte) values */
@@ -546,7 +547,7 @@ public class StateView {
             return token.grpcFeeSchedule();
         } catch (Exception unexpected) {
             log.warn(
-                    "Unexpected failure getting info for token {}!",
+                    "Unexpected failure getting custom fees for token {}!",
                     readableId(tokenId),
                     unexpected);
             return emptyList();

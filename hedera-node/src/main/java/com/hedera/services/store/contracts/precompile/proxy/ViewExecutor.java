@@ -126,7 +126,7 @@ public class ViewExecutor {
         } else if (selector == ABI_ID_GET_TOKEN_CUSTOM_FEES) {
             final var wrapper = decoder.decodeTokenGetCustomFees(input);
             final var customFees = stateView.tokenCustomFees(wrapper.tokenID());
-            validateTrue(
+            validateTrueOrRevert(
                     customFees != null && !customFees.isEmpty(), ResponseCodeEnum.INVALID_TOKEN_ID);
             return encoder.encodeTokenGetCustomFees(customFees);
         } else {

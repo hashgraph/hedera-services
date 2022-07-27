@@ -113,6 +113,7 @@ public class TokenInfoHTSSuite extends HapiApiSuite {
     private static final int MINIMUM_TO_COLLECT = 5;
     private static final int MAXIMUM_TO_COLLECT = 400;
     private static final int MAX_SUPPLY = 1000;
+    public static final String GET_CUSTOM_FEES_FOR_TOKEN = "getCustomFeesForToken";
 
     public static void main(String... args) {
         new TokenInfoHTSSuite().runSuiteSync();
@@ -125,7 +126,7 @@ public class TokenInfoHTSSuite extends HapiApiSuite {
 
     @Override
     public List<HapiApiSpec> getSpecsInSuite() {
-        return allOf(positiveSpecs());
+        return allOf(positiveSpecs(), negativeSpecs());
     }
 
     List<HapiApiSpec> negativeSpecs() {
@@ -137,7 +138,12 @@ public class TokenInfoHTSSuite extends HapiApiSuite {
     }
 
     List<HapiApiSpec> positiveSpecs() {
-        return List.of(happyPathGetTokenCustomFees());
+        return List.of(
+                happyPathGetTokenInfo(),
+                happyPathGetFungibleTokenInfo(),
+                happyPathGetNonFungibleTokenInfo(),
+                happyPathGetTokenCustomFees(),
+                happyPathGetNonFungibleTokenCustomFees());
     }
 
     private HapiApiSpec happyPathGetTokenInfo() {
@@ -769,7 +775,7 @@ public class TokenInfoHTSSuite extends HapiApiSuite {
                                                 spec,
                                                 contractCall(
                                                                 TOKEN_INFO_CONTRACT,
-                                                                "getCustomFeesForToken",
+                                                                GET_CUSTOM_FEES_FOR_TOKEN,
                                                                 Tuple.singleton(
                                                                         expandByteArrayTo32Length(
                                                                                 asAddress(
@@ -777,7 +783,16 @@ public class TokenInfoHTSSuite extends HapiApiSuite {
                                                                                                 .getTokenID(
                                                                                                         PRIMARY_TOKEN_NAME)))))
                                                         .via(TOKEN_INFO_TXN)
-                                                        .gas(1_000_000L))))
+                                                        .gas(1_000_000L),
+                                                contractCallLocal(
+                                                        TOKEN_INFO_CONTRACT,
+                                                        GET_CUSTOM_FEES_FOR_TOKEN,
+                                                        Tuple.singleton(
+                                                                expandByteArrayTo32Length(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getTokenID(
+                                                                                                PRIMARY_TOKEN_NAME))))))))
                 .then(
                         withOpContext(
                                 (spec, opLog) ->
@@ -859,7 +874,7 @@ public class TokenInfoHTSSuite extends HapiApiSuite {
                                                 spec,
                                                 contractCall(
                                                                 TOKEN_INFO_CONTRACT,
-                                                                "getCustomFeesForToken",
+                                                                GET_CUSTOM_FEES_FOR_TOKEN,
                                                                 Tuple.singleton(
                                                                         expandByteArrayTo32Length(
                                                                                 asAddress(
@@ -867,7 +882,16 @@ public class TokenInfoHTSSuite extends HapiApiSuite {
                                                                                                 .getTokenID(
                                                                                                         NON_FUNGIBLE_TOKEN_NAME)))))
                                                         .via(NON_FUNGIBLE_TOKEN_INFO_TXN)
-                                                        .gas(1_000_000L))))
+                                                        .gas(1_000_000L),
+                                                contractCallLocal(
+                                                        TOKEN_INFO_CONTRACT,
+                                                        GET_CUSTOM_FEES_FOR_TOKEN,
+                                                        Tuple.singleton(
+                                                                expandByteArrayTo32Length(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getTokenID(
+                                                                                                NON_FUNGIBLE_TOKEN_NAME))))))))
                 .then(
                         withOpContext(
                                 (spec, opLog) ->

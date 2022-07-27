@@ -135,6 +135,6 @@ public final class AbiConstants {
     public static final int ABI_ID_GET_TOKEN_DEFAULT_FREEZE_STATUS = 0xa7daa18d;
     // getTokenDefaultKycStatus(address token)
     public static final int ABI_ID_GET_TOKEN_DEFAULT_KYC_STATUS = 0x335e04c1;
-    // getTokenCustomFees(address)
+    // getTokenCustomFees(address token)
     public static final int ABI_ID_GET_TOKEN_CUSTOM_FEES = 0xae7611a0;
 }
