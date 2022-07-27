@@ -51,9 +51,9 @@ import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.swirlds.common.utility.CommonUtils;
 import java.math.BigInteger;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.ArrayList;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.api.BeforeEach;
@@ -141,7 +141,7 @@ class ContractCallTransitionLogicTest {
                         Bytes.EMPTY,
                         contractAccount.getId().asEvmAddress(),
                         Map.of(),
-                        new ArrayList<>());
+										List.of());
         given(
                         evmTxProcessor.execute(
                                 senderAccount,
@@ -187,7 +187,7 @@ class ContractCallTransitionLogicTest {
                         Bytes.EMPTY,
                         contractAccount.getId().asEvmAddress(),
                         Map.of(),
-                        new ArrayList<>());
+										List.of());
         given(
                         evmTxProcessor.executeEth(
                                 senderAccount,
@@ -237,7 +237,7 @@ class ContractCallTransitionLogicTest {
                         Bytes.EMPTY,
                         contractAccount.getId().asEvmAddress(),
                         Map.of(),
-                        new ArrayList<>());
+											List.of());
         given(
                         evmTxProcessor.execute(
                                 senderAccount,
@@ -300,7 +300,7 @@ class ContractCallTransitionLogicTest {
                         Bytes.EMPTY,
                         contractAccount.getId().asEvmAddress(),
                         Map.of(),
-                        new ArrayList<>());
+											List.of());
         given(
                         evmTxProcessor.execute(
                                 senderAccount,

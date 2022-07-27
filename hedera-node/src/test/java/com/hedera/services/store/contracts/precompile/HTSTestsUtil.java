@@ -27,8 +27,10 @@ import com.hedera.services.store.contracts.precompile.codec.MintWrapper;
 import com.hedera.services.store.contracts.precompile.codec.OwnerOfAndTokenURIWrapper;
 import com.hedera.services.store.contracts.precompile.codec.TokenCreateWrapper;
 import com.hedera.services.store.contracts.precompile.codec.TokenExpiryWrapper;
+import com.hedera.services.store.contracts.precompile.codec.TokenInfoWrapper;
 import com.hedera.services.store.contracts.precompile.codec.TokenTransferWrapper;
 import com.hedera.services.store.models.Id;
+import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -54,7 +56,12 @@ public class HTSTestsUtil {
     public static final TokenID token = IdUtils.asToken("0.0.1");
     public static final AccountID payer = IdUtils.asAccount("0.0.12345");
     public static final AccountID sender = IdUtils.asAccount("0.0.2");
+    public static final EntityId payerId = EntityId.fromGrpcAccountId(payer);
     public static final EntityId senderId = EntityId.fromGrpcAccountId(sender);
+    public static final Address payerIdConvertedToAddress =
+            EntityIdUtils.asTypedEvmAddress(payerId);
+    public static final Address senderIdConvertedToAddress =
+            EntityIdUtils.asTypedEvmAddress(senderId);
     public static final AccountID receiver = IdUtils.asAccount("0.0.3");
     public static final AccountID feeCollector = IdUtils.asAccount("0.0.4");
     public static final AccountID account = IdUtils.asAccount("0.0.3");
@@ -62,12 +69,21 @@ public class HTSTestsUtil {
     public static final ContractID precompiledContract = IdUtils.asContract("0.0.359");
     public static final TokenID nonFungible = IdUtils.asToken("0.0.777");
     public static final TokenID tokenMerkleId = IdUtils.asToken("0.0.777");
+    public static final Address tokenMerkleAddress = EntityIdUtils.asTypedEvmAddress(tokenMerkleId);
     public static final Id accountId = Id.fromGrpcAccount(account);
     public static final Address recipientAddr = Address.ALTBN128_ADD;
     public static final Address tokenAddress = Address.ECREC;
     public static final Address contractAddr = Address.ALTBN128_MUL;
     public static final Address senderAddress = Address.ALTBN128_PAIRING;
     public static final Address parentContractAddress = Address.BLAKE2B_F_COMPRESSION;
+    public static final EntityId treasuryEntityId =
+            EntityId.fromAddress(
+                    Address.wrap(
+                            Bytes.fromHexString("0x00000000000000000000000000000000000005cc")));
+    public static final TokenID tokenAddressConvertedToTokenId =
+            EntityIdUtils.tokenIdFromEvmAddress(tokenAddress);
+    public static final ContractID parentContractAddressConvertedToContractId =
+            EntityIdUtils.contractIdFromEvmAddress(parentContractAddress);
     public static final Address parentRecipientAddress = Address.BLS12_G1ADD;
     public static final Dissociation dissociateToken =
             Dissociation.singleDissociation(account, nonFungible);
@@ -77,6 +93,10 @@ public class HTSTestsUtil {
             Timestamp.newBuilder().setSeconds(TEST_CONSENSUS_TIME).build();
     public static final Bytes successResult = UInt256.valueOf(ResponseCodeEnum.SUCCESS_VALUE);
     public static final Bytes failResult = UInt256.valueOf(ResponseCodeEnum.FAIL_INVALID_VALUE);
+    public static final Bytes invalidTokenIdResult =
+            UInt256.valueOf(ResponseCodeEnum.INVALID_TOKEN_ID_VALUE);
+    public static final Bytes invalidSerialNumberResult =
+            UInt256.valueOf(ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER_VALUE);
     public static final Bytes invalidSigResult =
             UInt256.valueOf(ResponseCodeEnum.INVALID_SIGNATURE_VALUE);
     public static final Bytes missingNftResult =
@@ -106,6 +126,8 @@ public class HTSTestsUtil {
     public static final Address recipientAddress = Address.ALTBN128_ADD;
 
     public static final Address contractAddress = Address.ALTBN128_MUL;
+    public static final ContractID contractId =
+            EntityIdUtils.contractIdFromEvmAddress(contractAddress);
     public static final EntityId ownerEntity = EntityId.fromAddress(contractAddress);
 
     public static final BurnWrapper nonFungibleBurn =
@@ -355,6 +377,15 @@ public class HTSTestsUtil {
                 true,
                 keys,
                 new TokenExpiryWrapper(0L, null, 0L));
+    }
+
+    public static TokenInfoWrapper createTokenInfoWrapperForToken(final TokenID tokenId) {
+        return TokenInfoWrapper.forToken(tokenId);
+    }
+
+    public static TokenInfoWrapper createTokenInfoWrapperForNonFungibleToken(
+            final TokenID tokenId, final long serialNumber) {
+        return TokenInfoWrapper.forNonFungibleToken(tokenId, serialNumber);
     }
 
     public static final TokenCreateWrapper.FixedFeeWrapper fixedFee =

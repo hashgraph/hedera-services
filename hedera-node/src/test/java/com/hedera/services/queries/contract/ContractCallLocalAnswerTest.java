@@ -68,6 +68,10 @@ import com.hederahashgraph.api.proto.java.ResponseHeader;
 import com.hederahashgraph.api.proto.java.ResponseType;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.swirlds.merkle.map.MerkleMap;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Optional;
+import java.util.TreeMap;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
@@ -259,13 +263,7 @@ class ContractCallLocalAnswerTest {
 
         final var transactionProcessingResult =
                 TransactionProcessingResult.failed(
-                        0,
-                        0,
-                        1,
-                        Optional.empty(),
-                        Optional.empty(),
-                        new TreeMap<>(),
-                        new ArrayList<>());
+                        0, 0, 1, Optional.empty(), Optional.empty(), new TreeMap<>(), new ArrayList<>());
 
         Response response = subject.responseGiven(sensibleQuery, view, OK, 0L);
 
@@ -282,13 +280,7 @@ class ContractCallLocalAnswerTest {
 
         final var transactionProcessingResult =
                 TransactionProcessingResult.failed(
-                        0,
-                        0,
-                        1,
-                        Optional.empty(),
-                        Optional.empty(),
-                        new TreeMap<>(),
-                        new ArrayList<>());
+                        0, 0, 1, Optional.empty(), Optional.empty(), new TreeMap<>(), new ArrayList<>());
 
         given(accountStore.loadAccount(any())).willReturn(new Account(Id.fromGrpcContract(target)));
         given(accountStore.loadContract(any()))
