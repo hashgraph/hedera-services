@@ -141,7 +141,8 @@ public class HapiOpCounters {
             final Platform platform,
             final Map<HederaFunctionality, Counter> counters,
             final Map<HederaFunctionality, Counter.Config> configs) {
-        configs.forEach((function, config) -> counters.put(function, platform.getOrCreateMetric(config)));
+        configs.forEach(
+                (function, config) -> counters.put(function, platform.getOrCreateMetric(config)));
     }
 
     public void countReceived(final HederaFunctionality op) {

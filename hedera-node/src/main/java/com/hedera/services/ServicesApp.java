@@ -177,6 +177,7 @@ public interface ServicesApp {
     StateWriteToDiskCompleteListener stateWriteToDiskListener();
 
     IssListener issListener();
+
     NewSignedStateListener newSignedStateListener();
 
     Supplier<NotificationEngine> notificationEngine();

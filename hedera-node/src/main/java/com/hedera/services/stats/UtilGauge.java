@@ -20,6 +20,6 @@ import com.swirlds.common.metrics.DoubleGauge;
 import java.util.function.DoubleSupplier;
 
 public record UtilGauge(
-    DoubleSupplier valueSource,
-    DoubleGauge.Config config,
-    NonAtomicReference<DoubleGauge> gauge) {}
+        DoubleSupplier valueSource,
+        DoubleGauge.Config config,
+        NonAtomicReference<DoubleGauge> gauge) {}

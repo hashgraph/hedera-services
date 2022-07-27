@@ -102,7 +102,7 @@ public interface StateModule {
     @Binds
     @Singleton
     NewSignedStateListener bindNewSignedStateListener(
-        ServicesSignedStateListener servicesSignedStateListener);
+            ServicesSignedStateListener servicesSignedStateListener);
 
     @Binds
     @Singleton
