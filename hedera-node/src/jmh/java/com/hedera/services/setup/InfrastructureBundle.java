@@ -64,7 +64,10 @@ public class InfrastructureBundle {
                 });
     }
 
+<<<<<<< HEAD
     @SuppressWarnings("java:S106")
+=======
+>>>>>>> origin/master
     public void toStorage(final String dir) {
         refs.forEach(
                 (type, ref) -> {
@@ -79,8 +82,13 @@ public class InfrastructureBundle {
                     final var curRef = ref.get();
                     if (curRef instanceof FastCopyable fc) {
                         ref.set(fc.copy());
+<<<<<<< HEAD
                         if (curRef instanceof Releasable r) {
                             r.release();
+=======
+                        if (curRef instanceof Archivable a) {
+                            a.archive();
+>>>>>>> origin/master
                         } else if (curRef instanceof VirtualMap<?, ?> vm) {
                             vm.release();
                         }

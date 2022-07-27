@@ -95,8 +95,7 @@ public class RewardCalculator {
         return stakePeriodManager.epochSecondAtStartOfPeriod(stakePeriod);
     }
 
-    @VisibleForTesting
-    public long computeRewardFromDetails(
+    private long computeRewardFromDetails(
             final MerkleAccount account,
             final MerkleStakingInfo nodeStakingInfo,
             final long currentStakePeriod,

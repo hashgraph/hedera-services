@@ -19,15 +19,19 @@ import static java.util.stream.Collectors.toSet;
 
 import com.hedera.services.exceptions.UnparseablePropertyException;
 import com.hedera.services.fees.calculation.CongestionMultipliers;
+import com.hedera.services.stream.proto.SidecarType;
 import com.hedera.services.sysfiles.domain.KnownBlockValues;
 import com.hedera.services.sysfiles.domain.throttling.ThrottleReqOpsScaleFactor;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
@@ -54,6 +58,15 @@ public interface PropertySource {
     Function<String, Object> AS_THROTTLE_SCALE_FACTOR = ThrottleReqOpsScaleFactor::from;
     Function<String, Object> AS_ENTITY_NUM_RANGE = EntityIdUtils::parseEntityNumRange;
     Function<String, Object> AS_ENTITY_TYPES = EntityType::csvTypeSet;
+    Function<String, Object> AS_SIDECARS =
+            s ->
+                    s.isEmpty()
+                            ? Collections.emptySet()
+                            : Arrays.stream(s.split(","))
+                                    .map(SidecarType::valueOf)
+                                    .collect(
+                                            Collectors.toCollection(
+                                                    () -> EnumSet.noneOf(SidecarType.class)));
 
     boolean containsProperty(String name);
 
@@ -80,6 +93,11 @@ public interface PropertySource {
 
     @SuppressWarnings("unchecked")
     default Set<EntityType> getTypesProperty(String name) {
+        return getTypedProperty(Set.class, name);
+    }
+
+    @SuppressWarnings("unchecked")
+    default Set<SidecarType> getSidecarsProperty(String name) {
         return getTypedProperty(Set.class, name);
     }
 

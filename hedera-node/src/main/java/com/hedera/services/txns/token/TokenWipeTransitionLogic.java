@@ -15,24 +15,11 @@
  */
 package com.hedera.services.txns.token;
 
-import static com.hedera.services.txns.token.TokenOpsValidator.validateTokenOpsWith;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_WIPING_AMOUNT;
-
 import com.hedera.services.context.TransactionContext;
-import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.state.enums.TokenType;
-import com.hedera.services.store.AccountStore;
-import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.store.models.Id;
-import com.hedera.services.store.models.OwnershipTracker;
 import com.hedera.services.txns.TransitionLogic;
-import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.TokenWipeAccountTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import java.util.List;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import javax.inject.Inject;
@@ -42,23 +29,12 @@ import javax.inject.Singleton;
 @Singleton
 public class TokenWipeTransitionLogic implements TransitionLogic {
     private final TransactionContext txnCtx;
-    private final TypedTokenStore tokenStore;
-    private final AccountStore accountStore;
-    private final OptionValidator validator;
-    private final GlobalDynamicProperties dynamicProperties;
+    private final WipeLogic wipeLogic;
 
     @Inject
-    public TokenWipeTransitionLogic(
-            final OptionValidator validator,
-            final TypedTokenStore tokenStore,
-            final AccountStore accountStore,
-            final TransactionContext txnCtx,
-            final GlobalDynamicProperties dynamicProperties) {
+    public TokenWipeTransitionLogic(final TransactionContext txnCtx, final WipeLogic wipeLogic) {
         this.txnCtx = txnCtx;
-        this.tokenStore = tokenStore;
-        this.accountStore = accountStore;
-        this.validator = validator;
-        this.dynamicProperties = dynamicProperties;
+        this.wipeLogic = wipeLogic;
     }
 
     @Override
@@ -67,27 +43,10 @@ public class TokenWipeTransitionLogic implements TransitionLogic {
         final var op = txnCtx.accessor().getTxn().getTokenWipe();
         final var targetTokenId = Id.fromGrpcToken(op.getToken());
         final var targetAccountId = Id.fromGrpcAccount(op.getAccount());
+        final var amount = op.getAmount();
+        final var serialNumbersList = op.getSerialNumbersList();
 
-        /* --- Load the model objects --- */
-        final var token = tokenStore.loadToken(targetTokenId);
-        final var account = accountStore.loadAccount(targetAccountId);
-        final var accountRel = tokenStore.loadTokenRelationship(token, account);
-
-        /* --- Instantiate change trackers --- */
-        final var ownershipTracker = new OwnershipTracker();
-
-        /* --- Do the business logic --- */
-        if (token.getType().equals(TokenType.FUNGIBLE_COMMON)) {
-            token.wipe(accountRel, op.getAmount());
-        } else {
-            tokenStore.loadUniqueTokens(token, op.getSerialNumbersList());
-            token.wipe(ownershipTracker, accountRel, op.getSerialNumbersList());
-        }
-        /* --- Persist the updated models --- */
-        tokenStore.commitToken(token);
-        tokenStore.commitTokenRelationships(List.of(accountRel));
-        tokenStore.commitTrackers(ownershipTracker);
-        accountStore.commitAccount(account);
+        wipeLogic.wipe(targetTokenId, targetAccountId, amount, serialNumbersList);
     }
 
     @Override
@@ -101,21 +60,6 @@ public class TokenWipeTransitionLogic implements TransitionLogic {
     }
 
     public ResponseCodeEnum validate(TransactionBody txnBody) {
-        TokenWipeAccountTransactionBody op = txnBody.getTokenWipe();
-
-        if (!op.hasToken()) {
-            return INVALID_TOKEN_ID;
-        }
-
-        if (!op.hasAccount()) {
-            return INVALID_ACCOUNT_ID;
-        }
-        return validateTokenOpsWith(
-                op.getSerialNumbersCount(),
-                op.getAmount(),
-                dynamicProperties.areNftsEnabled(),
-                INVALID_WIPING_AMOUNT,
-                op.getSerialNumbersList(),
-                validator::maxBatchSizeWipeCheck);
+        return wipeLogic.validateSyntax(txnBody);
     }
 }

@@ -73,6 +73,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MISSING_TOKEN_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ROYALTY_FRACTION_CANNOT_EXCEED_ONE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_FREEZE_KEY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_SUPPLY_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NAME_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_FEE_COLLECTOR;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_SYMBOL_TOO_LONG;
@@ -106,6 +107,7 @@ public class TokenCreateSpecs extends HapiApiSuite {
     private static final String A_TOKEN = "TokenA";
     private static final String B_TOKEN = "TokenB";
     private static final String FIRST_USER = "Client1";
+    private static final String SENTINEL_VALUE = "0.0.0";
 
     private static final long defaultMaxLifetime =
             Long.parseLong(HapiSpecSetup.getDefaultNodeProps().get("entities.maxLifetime"));
@@ -122,36 +124,34 @@ public class TokenCreateSpecs extends HapiApiSuite {
     @Override
     public List<HapiApiSpec> getSpecsInSuite() {
         return List.of(
-                new HapiApiSpec[] {
-                    creationValidatesNonFungiblePrechecks(),
-                    creationValidatesMaxSupply(),
-                    creationValidatesMemo(),
-                    creationValidatesName(),
-                    creationValidatesSymbol(),
-                    treasuryHasCorrectBalance(),
-                    creationRequiresAppropriateSigs(),
-                    creationRequiresAppropriateSigsHappyPath(),
-                    initialSupplyMustBeSane(),
-                    creationYieldsExpectedToken(),
-                    creationSetsExpectedName(),
-                    creationValidatesTreasuryAccount(),
-                    autoRenewValidationWorks(),
-                    creationWithoutKYCSetsCorrectStatus(),
-                    creationValidatesExpiry(),
-                    creationValidatesFreezeDefaultWithNoFreezeKey(),
-                    creationSetsCorrectExpiry(),
-                    creationHappyPath(),
-                    worksAsExpectedWithDefaultTokenId(),
-                    cannotCreateWithExcessiveLifetime(),
-                    prechecksWork(),
-                    /* HIP-18 */
-                    onlyValidCustomFeeScheduleCanBeCreated(),
-                    feeCollectorSigningReqsWorkForTokenCreate(),
-                    createsFungibleInfiniteByDefault(),
-                    baseCreationsHaveExpectedPrices(),
-                    /* HIP-23 */
-                    validateNewTokenAssociations()
-                });
+                creationValidatesNonFungiblePrechecks(),
+                creationValidatesMaxSupply(),
+                creationValidatesMemo(),
+                creationValidatesName(),
+                creationValidatesSymbol(),
+                treasuryHasCorrectBalance(),
+                creationRequiresAppropriateSigs(),
+                creationRequiresAppropriateSigsHappyPath(),
+                initialSupplyMustBeSane(),
+                creationYieldsExpectedToken(),
+                creationSetsExpectedName(),
+                creationValidatesTreasuryAccount(),
+                autoRenewValidationWorks(),
+                creationWithoutKYCSetsCorrectStatus(),
+                creationValidatesExpiry(),
+                creationValidatesFreezeDefaultWithNoFreezeKey(),
+                creationSetsCorrectExpiry(),
+                creationHappyPath(),
+                worksAsExpectedWithDefaultTokenId(),
+                cannotCreateWithExcessiveLifetime(),
+                prechecksWork(),
+                /* HIP-18 */
+                onlyValidCustomFeeScheduleCanBeCreated(),
+                feeCollectorSigningReqsWorkForTokenCreate(),
+                createsFungibleInfiniteByDefault(),
+                baseCreationsHaveExpectedPrices(),
+                /* HIP-23 */
+                validateNewTokenAssociations());
     }
 
     private HapiApiSpec validateNewTokenAssociations() {
@@ -197,10 +197,14 @@ public class TokenCreateSpecs extends HapiApiSuite {
                                                 1L,
                                                 OptionalLong.of(5L),
                                                 fractionalCollector))
-                                .withCustom(fixedHtsFee(2L, "0.0.0", selfDenominatedFixedCollector))
                                 .withCustom(
                                         fixedHtsFee(
-                                                3L, "0.0.0", otherSelfDenominatedFixedCollector))
+                                                2L, SENTINEL_VALUE, selfDenominatedFixedCollector))
+                                .withCustom(
+                                        fixedHtsFee(
+                                                3L,
+                                                SENTINEL_VALUE,
+                                                otherSelfDenominatedFixedCollector))
                                 .signedBy(
                                         DEFAULT_PAYER,
                                         treasury,
@@ -279,7 +283,7 @@ public class TokenCreateSpecs extends HapiApiSuite {
         return defaultHapiSpec("WorksAsExpectedWithDefaultTokenId")
                 .given()
                 .when()
-                .then(getTokenInfo("0.0.0").hasCostAnswerPrecheck(INVALID_TOKEN_ID));
+                .then(getTokenInfo(SENTINEL_VALUE).hasCostAnswerPrecheck(INVALID_TOKEN_ID));
     }
 
     public HapiApiSpec cannotCreateWithExcessiveLifetime() {
@@ -298,14 +302,15 @@ public class TokenCreateSpecs extends HapiApiSuite {
     }
 
     public HapiApiSpec autoRenewValidationWorks() {
+        final var deletingAccount = "deletingAccount";
         return defaultHapiSpec("AutoRenewValidationWorks")
                 .given(
                         cryptoCreate("autoRenew").balance(0L),
-                        cryptoCreate("deletingAccount").balance(0L))
+                        cryptoCreate(deletingAccount).balance(0L))
                 .when(
-                        cryptoDelete("deletingAccount"),
+                        cryptoDelete(deletingAccount),
                         tokenCreate("primary")
-                                .autoRenewAccount("deletingAccount")
+                                .autoRenewAccount(deletingAccount)
                                 .hasKnownStatus(INVALID_AUTORENEW_ACCOUNT),
                         tokenCreate("primary")
                                 .signedBy(GENESIS)
@@ -458,6 +463,7 @@ public class TokenCreateSpecs extends HapiApiSuite {
         String memo = "JUMP";
         String saltedName = salted("primary");
         final var secondCreation = "secondCreation";
+        final var pauseKey = "pauseKey";
         return defaultHapiSpec("CreationHappyPath")
                 .given(
                         cryptoCreate(TOKEN_TREASURY).balance(0L),
@@ -468,7 +474,7 @@ public class TokenCreateSpecs extends HapiApiSuite {
                         newKeyNamed("supplyKey"),
                         newKeyNamed("wipeKey"),
                         newKeyNamed("feeScheduleKey"),
-                        newKeyNamed("pauseKey"))
+                        newKeyNamed(pauseKey))
                 .when(
                         tokenCreate("primary")
                                 .supplyType(TokenSupplyType.FINITE)
@@ -486,15 +492,16 @@ public class TokenCreateSpecs extends HapiApiSuite {
                                 .supplyKey("supplyKey")
                                 .wipeKey("wipeKey")
                                 .feeScheduleKey("feeScheduleKey")
-                                .pauseKey("pauseKey")
+                                .pauseKey(pauseKey)
                                 .via("createTxn"),
                         tokenCreate("non-fungible-unique-finite")
                                 .tokenType(NON_FUNGIBLE_UNIQUE)
                                 .supplyType(TokenSupplyType.FINITE)
-                                .pauseKey("pauseKey")
+                                .pauseKey(pauseKey)
                                 .initialSupply(0)
                                 .maxSupply(100)
                                 .treasury(TOKEN_TREASURY)
+                                .supplyKey(GENESIS)
                                 .via(secondCreation),
                         getTxnRecord(secondCreation)
                                 .logged()
@@ -627,6 +634,11 @@ public class TokenCreateSpecs extends HapiApiSuite {
                 .given()
                 .when()
                 .then(
+                        tokenCreate("primary")
+                                .tokenType(NON_FUNGIBLE_UNIQUE)
+                                .initialSupply(0)
+                                .decimals(0)
+                                .hasPrecheck(TOKEN_HAS_NO_SUPPLY_KEY),
                         tokenCreate("primary")
                                 .tokenType(NON_FUNGIBLE_UNIQUE)
                                 .initialSupply(1)
@@ -768,30 +780,35 @@ public class TokenCreateSpecs extends HapiApiSuite {
                                         CUSTOM_ROYALTY_FEE_ONLY_ALLOWED_FOR_NON_FUNGIBLE_UNIQUE),
                         tokenCreate(token)
                                 .tokenType(NON_FUNGIBLE_UNIQUE)
+                                .supplyKey(GENESIS)
                                 .initialSupply(0L)
                                 .treasury(tokenCollector)
                                 .withCustom(royaltyFeeNoFallback(-1, 2, tokenCollector))
                                 .hasKnownStatus(CUSTOM_FEE_MUST_BE_POSITIVE),
                         tokenCreate(token)
                                 .tokenType(NON_FUNGIBLE_UNIQUE)
+                                .supplyKey(GENESIS)
                                 .initialSupply(0L)
                                 .treasury(tokenCollector)
                                 .withCustom(royaltyFeeNoFallback(1, -2, tokenCollector))
                                 .hasKnownStatus(CUSTOM_FEE_MUST_BE_POSITIVE),
                         tokenCreate(token)
                                 .tokenType(NON_FUNGIBLE_UNIQUE)
+                                .supplyKey(GENESIS)
                                 .initialSupply(0L)
                                 .treasury(tokenCollector)
                                 .withCustom(royaltyFeeNoFallback(1, 0, tokenCollector))
                                 .hasKnownStatus(FRACTION_DIVIDES_BY_ZERO),
                         tokenCreate(token)
                                 .tokenType(NON_FUNGIBLE_UNIQUE)
+                                .supplyKey(GENESIS)
                                 .initialSupply(0L)
                                 .treasury(tokenCollector)
                                 .withCustom(royaltyFeeNoFallback(2, 1, tokenCollector))
                                 .hasKnownStatus(ROYALTY_FRACTION_CANNOT_EXCEED_ONE),
                         tokenCreate(token)
                                 .tokenType(NON_FUNGIBLE_UNIQUE)
+                                .supplyKey(GENESIS)
                                 .initialSupply(0L)
                                 .treasury(tokenCollector)
                                 .withCustom(
@@ -803,6 +820,7 @@ public class TokenCreateSpecs extends HapiApiSuite {
                                 .hasKnownStatus(CUSTOM_FEE_MUST_BE_POSITIVE),
                         tokenCreate(token)
                                 .tokenType(NON_FUNGIBLE_UNIQUE)
+                                .supplyKey(GENESIS)
                                 .initialSupply(0L)
                                 .treasury(tokenCollector)
                                 .withCustom(
@@ -814,6 +832,7 @@ public class TokenCreateSpecs extends HapiApiSuite {
                                 .hasKnownStatus(INVALID_TOKEN_ID_IN_CUSTOM_FEES),
                         tokenCreate(token)
                                 .tokenType(NON_FUNGIBLE_UNIQUE)
+                                .supplyKey(GENESIS)
                                 .initialSupply(0L)
                                 .treasury(htsCollector)
                                 .withCustom(
@@ -827,7 +846,7 @@ public class TokenCreateSpecs extends HapiApiSuite {
                                 .treasury(tokenCollector)
                                 .withCustom(fixedHbarFee(hbarAmount, hbarCollector))
                                 .withCustom(fixedHtsFee(htsAmount, feeDenom, htsCollector))
-                                .withCustom(fixedHtsFee(htsAmount, "0.0.0", htsCollector))
+                                .withCustom(fixedHtsFee(htsAmount, SENTINEL_VALUE, htsCollector))
                                 .withCustom(
                                         fractionalFee(
                                                 numerator,

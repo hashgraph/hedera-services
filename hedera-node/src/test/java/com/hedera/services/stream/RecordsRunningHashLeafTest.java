@@ -49,6 +49,7 @@ class RecordsRunningHashLeafTest {
     private static final Hash hash =
             new Hash(RandomUtils.nextBytes(DigestType.SHA_384.digestLength()));
     private static final RunningHash runningHash = new RunningHash(hash);
+    private static final RunningHash emptyRunningHash = new RunningHash();
     private static final RecordsRunningHashLeaf runningHashLeaf =
             new RecordsRunningHashLeaf(runningHash);
 
@@ -102,6 +103,12 @@ class RecordsRunningHashLeafTest {
         sameDiffWithoutNullValues.setRunningHash(hash2);
         sameDiffWithoutNullValues.setRunningHash(hash3);
         assertEquals(runningHashLeaf, sameDiffWithoutNullValues);
+
+        final var leafWithEmptyHash = new RecordsRunningHashLeaf(emptyRunningHash);
+        assertEquals(leafWithEmptyHash, leafWithEmptyHash);
+
+        assertNotEquals(null, runningHashLeaf);
+        assertNotEquals(runningHashLeaf, new Object());
     }
 
     @Test

@@ -71,6 +71,10 @@ public class InfrastructureManager {
         System.out.println("\n- And initializing bundle at " + dir + "...");
         initializeBundle(config, bundle);
         bundle.toStorage(dir);
+<<<<<<< HEAD
+=======
+        System.out.println("?? " + bundleExistsWith(config, types));
+>>>>>>> origin/master
         return bundle;
     }
 

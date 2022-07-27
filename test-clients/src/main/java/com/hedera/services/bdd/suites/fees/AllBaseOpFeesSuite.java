@@ -60,6 +60,8 @@ public class AllBaseOpFeesSuite extends HapiApiSuite {
 
     private static final String BASE_TXN = "baseTxn";
 
+    private static final String UNFREEZE = "unfreeze";
+
     private static final double EXPECTED_UNFREEZE_PRICE_USD = 0.001;
     private static final double EXPECTED_FREEZE_PRICE_USD = 0.001;
     private static final double EXPECTED_NFT_MINT_PRICE_USD = 0.05;
@@ -74,13 +76,11 @@ public class AllBaseOpFeesSuite extends HapiApiSuite {
     public List<HapiApiSpec> getSpecsInSuite() {
         return allOf(
                 List.of(
-                        new HapiApiSpec[] {
-                            baseNftFreezeUnfreezeChargedAsExpected(),
-                            baseCommonFreezeUnfreezeChargedAsExpected(),
-                            baseNftMintOperationIsChargedExpectedFee(),
-                            baseNftWipeOperationIsChargedExpectedFee(),
-                            baseNftBurnOperationIsChargedExpectedFee(),
-                        }));
+                        baseNftFreezeUnfreezeChargedAsExpected(),
+                        baseCommonFreezeUnfreezeChargedAsExpected(),
+                        baseNftMintOperationIsChargedExpectedFee(),
+                        baseNftWipeOperationIsChargedExpectedFee(),
+                        baseNftBurnOperationIsChargedExpectedFee()));
     }
 
     private HapiApiSpec baseNftMintOperationIsChargedExpectedFee() {
@@ -177,6 +177,7 @@ public class AllBaseOpFeesSuite extends HapiApiSuite {
                                 .freezeDefault(false)
                                 .treasury(TOKEN_TREASURY)
                                 .payingWith(TOKEN_TREASURY)
+                                .supplyKey(ADMIN_KEY)
                                 .via(BASE_TXN),
                         tokenAssociate(CIVILIAN_ACCT, UNIQUE_TOKEN))
                 .when(
@@ -189,12 +190,12 @@ public class AllBaseOpFeesSuite extends HapiApiSuite {
                                 .blankMemo()
                                 .payingWith(TOKEN_TREASURY)
                                 .signedBy(TOKEN_TREASURY)
-                                .via("unfreeze"))
+                                .via(UNFREEZE))
                 .then(
                         validateChargedUsdWithin(
                                 "freeze", EXPECTED_FREEZE_PRICE_USD, ALLOWED_DIFFERENCE_PERCENTAGE),
                         validateChargedUsdWithin(
-                                "unfreeze",
+                                UNFREEZE,
                                 EXPECTED_UNFREEZE_PRICE_USD,
                                 ALLOWED_DIFFERENCE_PERCENTAGE));
     }
@@ -228,12 +229,12 @@ public class AllBaseOpFeesSuite extends HapiApiSuite {
                                 .blankMemo()
                                 .payingWith(TOKEN_TREASURY)
                                 .signedBy(TOKEN_TREASURY)
-                                .via("unfreeze"))
+                                .via(UNFREEZE))
                 .then(
                         validateChargedUsdWithin(
                                 "freeze", EXPECTED_FREEZE_PRICE_USD, ALLOWED_DIFFERENCE_PERCENTAGE),
                         validateChargedUsdWithin(
-                                "unfreeze",
+                                UNFREEZE,
                                 EXPECTED_UNFREEZE_PRICE_USD,
                                 ALLOWED_DIFFERENCE_PERCENTAGE));
     }

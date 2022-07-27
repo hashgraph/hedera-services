@@ -61,6 +61,7 @@ import com.hedera.services.state.submerkle.FcTokenAssociation;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.state.submerkle.TxnId;
 import com.hedera.services.utils.EntityNum;
+import com.hedera.services.utils.SidecarUtils;
 import com.hedera.services.utils.accessors.SignedTxnAccessor;
 import com.hedera.services.utils.accessors.SwirldsTxnAccessor;
 import com.hedera.services.utils.accessors.TxnAccessor;
@@ -270,7 +271,7 @@ class BasicTransactionContextTest {
         given(accessor.getTxnId()).willReturn(txnId);
         given(accessor.getTxn()).willReturn(txn);
         // and:
-        subject.addNonThresholdFeeChargedToPayer(1_234L);
+        subject.addFeeChargedToPayer(1_234L);
         subject.setCallResult(result);
         subject.setStatus(SUCCESS);
         subject.setTargetedContract(contractCreated);
@@ -338,7 +339,7 @@ class BasicTransactionContextTest {
         given(accessor.getTxn()).willReturn(txn);
 
         // when:
-        subject.addNonThresholdFeeChargedToPayer(other);
+        subject.addFeeChargedToPayer(other);
 
         setUpBuildingExpirableTxnRecord();
         record = subject.recordSoFar().build();
@@ -695,6 +696,25 @@ class BasicTransactionContextTest {
         verify(narratedCharging).resetForTxn(swirldsTxnAccessor, memberId);
 
         assertEquals(swirldsTxnAccessor, subject.swirldsTxnAccessor());
+    }
+
+    @Test
+    void sidecarsArePopulatedAsExpected() {
+        final var sidecar =
+                SidecarUtils.createContractBytecodeSidecarFrom(
+                        asContract("0.0.5"), "runtimeCode".getBytes());
+        final var sidecar2 =
+                SidecarUtils.createContractBytecodeSidecarFrom(
+                        asContract("0.0.7"), "runtimeCode2".getBytes());
+
+        subject.addSidecarRecord(sidecar);
+        assertEquals(1, subject.sidecars().size());
+        subject.addSidecarRecord(sidecar2);
+        assertEquals(2, subject.sidecars().size());
+
+        final var sidecars = subject.sidecars();
+        assertEquals(sidecar, sidecars.get(0));
+        assertEquals(sidecar2, sidecars.get(1));
     }
 
     private ExpirableTxnRecord.Builder buildExpectedRecord(

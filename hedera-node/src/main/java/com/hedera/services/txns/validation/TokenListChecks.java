@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2021 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,6 +28,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_WIPE_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_SUPPLY_KEY;
 
 import com.hedera.services.sigs.utils.ImmutableKeyUtils;
 import com.hederahashgraph.api.proto.java.Key;
@@ -161,6 +162,14 @@ public final class TokenListChecks {
             final boolean hasKey, final Key key, final ResponseCodeEnum code) {
         if (hasKey) {
             return checkKey(key, code);
+        }
+        return OK;
+    }
+
+    public static ResponseCodeEnum nftSupplyKeyCheck(
+            final TokenType tokenType, final boolean supplyKey) {
+        if (tokenType == TokenType.NON_FUNGIBLE_UNIQUE && !supplyKey) {
+            return TOKEN_HAS_NO_SUPPLY_KEY;
         }
         return OK;
     }
