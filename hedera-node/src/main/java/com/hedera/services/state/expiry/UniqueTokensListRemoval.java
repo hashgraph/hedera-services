@@ -1,11 +1,6 @@
-package com.hedera.services.state.expiry;
-
-/*-
- * ‌
- * Hedera Services Node
- * ​
- * Copyright (C) 2018 - 2022 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2022 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,8 +12,8 @@ package com.hedera.services.state.expiry;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+package com.hedera.services.state.expiry;
 
 import com.hedera.services.state.virtual.UniqueTokenKey;
 import com.hedera.services.state.virtual.UniqueTokenValue;
@@ -47,9 +42,8 @@ public class UniqueTokensListRemoval implements MapValueListMutation<UniqueToken
 	@Nullable
 	@Override
 	public UniqueTokenValue getForModify(final UniqueTokenKey key) {
-		final var result = uniqueTokens.get(key);
-		return result == null ? null : new UniqueTokenValue(result);
-	}
+        return uniqueTokens.getForModify(key);
+    }
 
 	@Override
 	public void put(final UniqueTokenKey key, final UniqueTokenValue value) {

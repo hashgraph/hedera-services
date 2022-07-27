@@ -55,6 +55,7 @@ import com.hedera.services.store.contracts.precompile.codec.MintWrapper;
 import com.hedera.services.store.contracts.precompile.codec.SetApprovalForAllWrapper;
 import com.hedera.services.store.contracts.precompile.codec.TokenCreateWrapper;
 import com.hedera.services.store.contracts.precompile.codec.TokenTransferWrapper;
+import com.hedera.services.store.contracts.precompile.codec.WipeWrapper;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.test.factories.keys.KeyFactory;
@@ -468,7 +469,7 @@ class SyntheticTxnFactoryTest {
 
     @Test
     void createsAdjustAllowanceForAllNFT() {
-        var allowances = new SetApprovalForAllWrapper(receiver, true);
+        var allowances = new SetApprovalForAllWrapper(nonFungible, receiver, true);
 
         final var result = subject.createApproveAllowanceForAllNFT(allowances, token);
         final var txnBody = result.build();
@@ -810,6 +811,31 @@ class SyntheticTxnFactoryTest {
                         subject, differentReceiver.asGrpc().toBuilder()));
         assertFalse(
                 SyntheticTxnFactory.areSameBuilder(subject, differentSender.asGrpc().toBuilder()));
+    }
+
+    @Test
+    void createsExpectedFungibleWipe() {
+        final var amount = 1234L;
+        final var fungibleWipe = WipeWrapper.forFungible(fungible, a, amount);
+
+        final var result = subject.createWipe(fungibleWipe);
+        final var txnBody = result.build();
+
+        assertEquals(fungible, txnBody.getTokenWipe().getToken());
+        assertEquals(amount, txnBody.getTokenWipe().getAmount());
+        assertEquals(a, txnBody.getTokenWipe().getAccount());
+    }
+
+    @Test
+    void createsExpectedNftWipe() {
+        final var nftWipe = WipeWrapper.forNonFungible(nonFungible, a, targetSerialNos);
+
+        final var result = subject.createWipe(nftWipe);
+        final var txnBody = result.build();
+
+        assertEquals(nonFungible, txnBody.getTokenWipe().getToken());
+        assertEquals(a, txnBody.getTokenWipe().getAccount());
+        assertEquals(targetSerialNos, txnBody.getTokenWipe().getSerialNumbersList());
     }
 
     private AccountAmount aaWith(final AccountID account, final long amount) {

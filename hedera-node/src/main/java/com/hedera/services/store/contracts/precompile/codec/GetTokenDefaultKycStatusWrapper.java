@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,11 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.hedera.services.store.contracts.precompile.proxy;
+package com.hedera.services.store.contracts.precompile.codec;
 
-import com.hederahashgraph.api.proto.java.Timestamp;
+import com.hederahashgraph.api.proto.java.TokenID;
 
-@FunctionalInterface
-public interface RedirectGasCalculator {
-    long compute(final Timestamp now, final long minimumTinybarCost);
-}
+public record GetTokenDefaultKycStatusWrapper(TokenID tokenID) {}

@@ -1,11 +1,6 @@
-package com.hedera.services.ledger.interceptors;
-
-/*-
- * ‌
- * Hedera Services Node
- * ​
- * Copyright (C) 2018 - 2022 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2022 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,8 +12,13 @@ package com.hedera.services.ledger.interceptors;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+package com.hedera.services.ledger.interceptors;
+
+import static com.hedera.services.utils.EntityNum.MISSING_NUM;
+import static com.hedera.services.utils.MapValueListUtils.insertInPlaceAtMapValueListHead;
+import static com.hedera.services.utils.MapValueListUtils.linkInPlaceAtMapValueListHead;
+import static com.hedera.services.utils.MapValueListUtils.unlinkInPlaceFromMapValueList;
 
 import com.hedera.services.state.expiry.UniqueTokensListRemoval;
 import com.hedera.services.state.merkle.MerkleAccount;
@@ -27,22 +27,17 @@ import com.hedera.services.state.virtual.UniqueTokenKey;
 import com.hedera.services.state.virtual.UniqueTokenValue;
 import com.hedera.services.utils.EntityNum;
 import com.swirlds.merkle.map.MerkleMap;
+import java.util.function.Supplier;
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
+import javax.inject.Inject;
+
 import com.swirlds.virtualmap.VirtualMap;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
-import javax.inject.Inject;
-import java.util.function.Supplier;
-
-import static com.hedera.services.utils.EntityNum.MISSING_NUM;
-import static com.hedera.services.utils.MapValueListUtils.insertInPlaceAtMapValueListHead;
-import static com.hedera.services.utils.MapValueListUtils.linkInPlaceAtMapValueListHead;
-import static com.hedera.services.utils.MapValueListUtils.unlinkInPlaceFromMapValueList;
-
 public class UniqueTokensLinkManager {
-	private static final Logger log = LogManager.getLogger(UniqueTokensLinkManager.class);
+    private static final Logger log = LogManager.getLogger(UniqueTokensLinkManager.class);
 
 	private final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts;
 	private final Supplier<MerkleMap<EntityNum, MerkleToken>> tokens;
@@ -93,7 +88,7 @@ public class UniqueTokensLinkManager {
 			final var fromAccount = curAccounts.getForModify(from);
 			var rootKey = rootKeyOf(fromAccount);
 			if (rootKey != null) {
-				rootKey = unlinkInPlaceFromMapValueList(nftId, rootKey, listMutation, false);
+				rootKey = unlinkInPlaceFromMapValueList(nftId, rootKey, listMutation);
 			} else {
 				log.error("Invariant failure: {} owns NFT {}, but has no root link", from, nftId);
 			}
@@ -108,23 +103,25 @@ public class UniqueTokensLinkManager {
 			var nft = listMutation.getForModify(nftId);
 			var rootKey = rootKeyOf(toAccount);
 			if (nft != null) {
-				linkInPlaceAtMapValueListHead(nftId, nft, rootKey, null, listMutation, false);
+				linkInPlaceAtMapValueListHead(nftId, nft, rootKey, null, listMutation);
 			} else {
 				// This is "non-treasury mint" done via a multi-stage contract op; we need to
 				// create a NFT whose link pointers we can update, since it doesn't exist yet
 				insertedNft = new UniqueTokenValue();
-				insertInPlaceAtMapValueListHead(nftId, insertedNft, rootKey, null, listMutation, false);
+				insertInPlaceAtMapValueListHead(nftId, insertedNft, rootKey, null, listMutation);
 			}
 			toAccount.setHeadNftId(nftNumPair.tokenNum());
 			toAccount.setHeadNftSerialNum(nftNumPair.serialNum());
 		}
 
-		return insertedNft;
-	}
+        return insertedNft;
+    }
 
-	private boolean isValidAndNotTreasury(EntityNum accountNum, MerkleToken token) {
-		return accountNum!= null && !accountNum.equals(MISSING_NUM) && !accountNum.equals(token.treasuryNum());
-	}
+    private boolean isValidAndNotTreasury(EntityNum accountNum, MerkleToken token) {
+        return accountNum != null
+                && !accountNum.equals(MISSING_NUM)
+                && !accountNum.equals(token.treasuryNum());
+    }
 
 	@Nullable
 	private UniqueTokenKey rootKeyOf(final MerkleAccount account) {

@@ -44,6 +44,7 @@ import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.contracts.gascalculator.GasCalculatorHederaV18;
 import com.hedera.services.contracts.gascalculator.StorageGasCalculator;
 import com.hedera.services.store.contracts.HederaWorldUpdater;
+import com.hedera.services.stream.proto.SidecarType;
 import java.util.Optional;
 import java.util.OptionalLong;
 import javax.inject.Inject;
@@ -124,7 +125,7 @@ public class HederaSStoreOperation extends AbstractOperation {
                     optionalCost, Optional.of(ExceptionalHaltReason.INSUFFICIENT_GAS));
         }
 
-        if (dynamicProperties.shouldEnableTraceability()) {
+        if (dynamicProperties.enabledSidecars().contains(SidecarType.CONTRACT_STATE_CHANGE)) {
             cacheExistingValue(frame, account.getAddress(), key, currentValue);
         }
 

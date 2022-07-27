@@ -526,6 +526,8 @@ class WorldLedgersTest {
         given(staticEntityAccess.nameOf(fungibleToken)).willReturn(name);
         given(staticEntityAccess.balanceOf(accountID, fungibleToken)).willReturn(balance);
         given(staticEntityAccess.typeOf(fungibleToken)).willReturn(FUNGIBLE_COMMON);
+        given(staticEntityAccess.defaultFreezeStatus(fungibleToken)).willReturn(false);
+        given(staticEntityAccess.defaultKycStatus(fungibleToken)).willReturn(false);
 
         subject = WorldLedgers.staticLedgersWith(aliases, staticEntityAccess);
 
@@ -535,6 +537,8 @@ class WorldLedgersTest {
         assertEquals(balance, subject.balanceOf(accountID, fungibleToken));
         assertEquals(totalSupply, subject.totalSupplyOf(fungibleToken));
         assertEquals(FUNGIBLE_COMMON, subject.typeOf(fungibleToken));
+        assertFalse(subject.defaultFreezeStatus(fungibleToken));
+        assertFalse(subject.defaultKycStatus(fungibleToken));
     }
 
     @Test

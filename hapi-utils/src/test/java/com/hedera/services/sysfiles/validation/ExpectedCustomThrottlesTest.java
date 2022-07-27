@@ -45,7 +45,6 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileGetCont
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileGetInfo;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileUpdate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.GetVersionInfo;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.PRNG;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ScheduleCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ScheduleDelete;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ScheduleGetInfo;
@@ -71,6 +70,7 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUnpaus
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUpdate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TransactionGetReceipt;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TransactionGetRecord;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.UtilPrng;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -144,6 +144,6 @@ class ExpectedCustomThrottlesTest {
         assertTrue(ACTIVE_OPS.contains(TokenGetInfo), "Missing TokenGetInfo!");
         assertTrue(ACTIVE_OPS.contains(ScheduleGetInfo), "Missing ScheduleGetInfo!");
         assertTrue(ACTIVE_OPS.contains(EthereumTransaction), "Missing EthereumTransaction!");
-        assertTrue(ACTIVE_OPS.contains(PRNG), "Missing PRNG!");
+        assertTrue(ACTIVE_OPS.contains(UtilPrng), "Missing UtilPrng!");
     }
 }

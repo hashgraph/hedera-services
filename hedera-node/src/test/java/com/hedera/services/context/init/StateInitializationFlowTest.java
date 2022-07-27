@@ -1,11 +1,6 @@
-package com.hedera.services.context.init;
-
-/*-
- * ‌
- * Hedera Services Node
- * ​
- * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2021-2022 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,8 +12,14 @@ package com.hedera.services.context.init;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+package com.hedera.services.context.init;
+
+import static com.hedera.services.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 
 import com.hedera.services.ServicesState;
 import com.hedera.services.config.HederaNumbers;
@@ -45,132 +46,108 @@ import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.RunningHash;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
+import java.util.Set;
+import java.util.function.Consumer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.util.Set;
-import java.util.function.Consumer;
-
-import static com.hedera.services.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-
 @ExtendWith(MockitoExtension.class)
 class StateInitializationFlowTest {
-	private final HederaNumbers defaultNumbers = new MockHederaNumbers();
+    private final HederaNumbers defaultNumbers = new MockHederaNumbers();
 
-	@Mock
-	private Hash hash;
-	@Mock
-	private HederaFs hfs;
-	@Mock
-	private RunningHash runningHash;
-	@Mock
-	private ServicesState activeState;
-	@Mock
-	private RecordsRunningHashLeaf runningHashLeaf;
-	@Mock
-	private MutableStateChildren workingState;
-	@Mock
-	private RecordStreamManager recordStreamManager;
-	@Mock
-	private FileUpdateInterceptor aFileInterceptor;
-	@Mock
-	private FileUpdateInterceptor bFileInterceptor;
-	@Mock
-	private Consumer<HederaNumbers> staticNumbersHolder;
-	@Mock
-	private MerkleMap<EntityNum, MerkleAccount> accounts;
-	@Mock
-	private MerkleMap<EntityNum, MerkleTopic> topics;
-	@Mock
-	private MerkleMap<EntityNum, MerkleToken> tokens;
-	@Mock
-	private VirtualMap<UniqueTokenKey, UniqueTokenValue> uniqueTokens;
-	@Mock
-	private MerkleScheduledTransactions schedules;
-	@Mock
-	private VirtualMap<VirtualBlobKey, VirtualBlobValue> storage;
-	@Mock
-	private MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenAssociations;
-	@Mock
-	private VirtualMap<ContractKey, IterableContractValue> contractStorage;
+    @Mock private Hash hash;
+    @Mock private HederaFs hfs;
+    @Mock private RunningHash runningHash;
+    @Mock private ServicesState activeState;
+    @Mock private RecordsRunningHashLeaf runningHashLeaf;
+    @Mock private MutableStateChildren workingState;
+    @Mock private RecordStreamManager recordStreamManager;
+    @Mock private FileUpdateInterceptor aFileInterceptor;
+    @Mock private FileUpdateInterceptor bFileInterceptor;
+    @Mock private Consumer<HederaNumbers> staticNumbersHolder;
+    @Mock private MerkleMap<EntityNum, MerkleAccount> accounts;
+    @Mock private MerkleMap<EntityNum, MerkleTopic> topics;
+    @Mock private MerkleMap<EntityNum, MerkleToken> tokens;
+    @Mock private VirtualMap<UniqueTokenKey, UniqueTokenValue> uniqueTokens;
+    @Mock private MerkleScheduledTransactions schedules;
+    @Mock private VirtualMap<VirtualBlobKey, VirtualBlobValue> storage;
+    @Mock private MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenAssociations;
+    @Mock private VirtualMap<ContractKey, IterableContractValue> contractStorage;
 
-	private StateInitializationFlow subject;
+    private StateInitializationFlow subject;
 
-	@BeforeEach
-	void setUp() {
-		subject = new StateInitializationFlow(
-				hfs,
-				defaultNumbers,
-				recordStreamManager,
-				workingState,
-				Set.of(aFileInterceptor, bFileInterceptor));
-	}
+    @BeforeEach
+    void setUp() {
+        subject =
+                new StateInitializationFlow(
+                        hfs,
+                        defaultNumbers,
+                        recordStreamManager,
+                        workingState,
+                        Set.of(aFileInterceptor, bFileInterceptor));
+    }
 
-	@Test
-	void performsAsExpectedWithNoInterceptorsRegistered() {
-		setupMockNumInitialization();
+    @Test
+    void performsAsExpectedWithNoInterceptorsRegistered() {
+        setupMockNumInitialization();
 
-		given(runningHash.getHash()).willReturn(hash);
-		given(runningHashLeaf.getRunningHash()).willReturn(runningHash);
-		given(activeState.runningHashLeaf()).willReturn(runningHashLeaf);
+        given(runningHash.getHash()).willReturn(hash);
+        given(runningHashLeaf.getRunningHash()).willReturn(runningHash);
+        given(activeState.runningHashLeaf()).willReturn(runningHashLeaf);
 
-		// when:
-		subject.runWith(activeState);
+        // when:
+        subject.runWith(activeState);
 
-		// then:
-		verify(staticNumbersHolder).accept(defaultNumbers);
-		verify(workingState).updateFrom(activeState);
-		verify(recordStreamManager).setInitialHash(hash);
-		verify(hfs).register(aFileInterceptor);
-		verify(hfs).register(bFileInterceptor);
+        // then:
+        verify(staticNumbersHolder).accept(defaultNumbers);
+        verify(workingState).updateFrom(activeState);
+        verify(recordStreamManager).setInitialHash(hash);
+        verify(hfs).register(aFileInterceptor);
+        verify(hfs).register(bFileInterceptor);
 
-		cleanupMockNumInitialization();
-	}
+        cleanupMockNumInitialization();
+    }
 
-	@Test
-	void performsAsExpectedWithInterceptorsRegistered() {
-		setupMockNumInitialization();
+    @Test
+    void performsAsExpectedWithInterceptorsRegistered() {
+        setupMockNumInitialization();
 
-		given(runningHash.getHash()).willReturn(hash);
-		given(runningHashLeaf.getRunningHash()).willReturn(runningHash);
-		given(activeState.runningHashLeaf()).willReturn(runningHashLeaf);
-		given(hfs.numRegisteredInterceptors()).willReturn(5);
+        given(runningHash.getHash()).willReturn(hash);
+        given(runningHashLeaf.getRunningHash()).willReturn(runningHash);
+        given(activeState.runningHashLeaf()).willReturn(runningHashLeaf);
+        given(hfs.numRegisteredInterceptors()).willReturn(5);
 
-		// when:
-		subject.runWith(activeState);
+        // when:
+        subject.runWith(activeState);
 
-		// then:
-		verify(workingState).updateFrom(activeState);
-		verify(recordStreamManager).setInitialHash(hash);
-		verify(hfs, never()).register(any());
-		verify(staticNumbersHolder).accept(defaultNumbers);
+        // then:
+        verify(workingState).updateFrom(activeState);
+        verify(recordStreamManager).setInitialHash(hash);
+        verify(hfs, never()).register(any());
+        verify(staticNumbersHolder).accept(defaultNumbers);
 
-		cleanupMockNumInitialization();
-	}
+        cleanupMockNumInitialization();
+    }
 
-	private void givenMockMerkleMaps() {
-		given(activeState.accounts()).willReturn(accounts);
-		given(activeState.uniqueTokens()).willReturn(uniqueTokens);
-		given(activeState.tokenAssociations()).willReturn(tokenAssociations);
-		given(activeState.topics()).willReturn(topics);
-		given(activeState.tokens()).willReturn(tokens);
-		given(activeState.scheduleTxs()).willReturn(schedules);
-		given(activeState.storage()).willReturn(storage);
-		given(activeState.contractStorage()).willReturn(contractStorage);
-	}
+    private void givenMockMerkleMaps() {
+        given(activeState.accounts()).willReturn(accounts);
+        given(activeState.uniqueTokens()).willReturn(uniqueTokens);
+        given(activeState.tokenAssociations()).willReturn(tokenAssociations);
+        given(activeState.topics()).willReturn(topics);
+        given(activeState.tokens()).willReturn(tokens);
+        given(activeState.scheduleTxs()).willReturn(schedules);
+        given(activeState.storage()).willReturn(storage);
+        given(activeState.contractStorage()).willReturn(contractStorage);
+    }
 
-	private void setupMockNumInitialization() {
-		StateInitializationFlow.setStaticNumbersHolder(staticNumbersHolder);
-	}
+    private void setupMockNumInitialization() {
+        StateInitializationFlow.setStaticNumbersHolder(staticNumbersHolder);
+    }
 
-	private void cleanupMockNumInitialization() {
-		StateInitializationFlow.setStaticNumbersHolder(STATIC_PROPERTIES::setNumbersFrom);
-	}
+    private void cleanupMockNumInitialization() {
+        StateInitializationFlow.setStaticNumbersHolder(STATIC_PROPERTIES::setNumbersFrom);
+    }
 }

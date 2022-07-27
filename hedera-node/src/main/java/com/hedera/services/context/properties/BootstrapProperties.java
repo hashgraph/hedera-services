@@ -224,7 +224,7 @@ public final class BootstrapProperties implements PropertySource {
                     "contracts.maxKvPairs.individual",
                     "contracts.maxNumber",
                     "contracts.chainId",
-                    "contracts.enableTraceability",
+                    "contracts.sidecars",
                     "contracts.throttle.throttleByGas",
                     "contracts.maxRefundPercentOfGasLimit",
                     "contracts.scheduleThrottleMaxGasLimit",
@@ -300,7 +300,7 @@ public final class BootstrapProperties implements PropertySource {
                     "hedera.allowances.maxAccountLimit",
                     "hedera.allowances.isEnabled",
                     "entities.limitTokenAssociations",
-                    "prng.isEnabled");
+                    "utilPrng.isEnabled");
 
     static final Set<String> NODE_PROPS =
             Set.of(
@@ -316,6 +316,7 @@ public final class BootstrapProperties implements PropertySource {
                     "hedera.profiles.active",
                     "hedera.recordStream.isEnabled",
                     "hedera.recordStream.logDir",
+                    "hedera.recordStream.sidecarDir",
                     "hedera.recordStream.logPeriod",
                     "hedera.recordStream.queueCapacity",
                     "iss.resetPeriod",
@@ -482,7 +483,7 @@ public final class BootstrapProperties implements PropertySource {
                     entry("contracts.maxKvPairs.aggregate", AS_LONG),
                     entry("contracts.maxKvPairs.individual", AS_INT),
                     entry("contracts.chainId", AS_INT),
-                    entry("contracts.enableTraceability", AS_BOOLEAN),
+                    entry("contracts.sidecars", AS_SIDECARS),
                     entry("contracts.maxRefundPercentOfGasLimit", AS_INT),
                     entry("contracts.scheduleThrottleMaxGasLimit", AS_LONG),
                     entry("contracts.redirectTokenCalls", AS_BOOLEAN),
@@ -516,5 +517,5 @@ public final class BootstrapProperties implements PropertySource {
                     entry("hedera.allowances.maxAccountLimit", AS_INT),
                     entry("hedera.allowances.isEnabled", AS_BOOLEAN),
                     entry("entities.limitTokenAssociations", AS_BOOLEAN),
-                    entry("prng.isEnabled", AS_BOOLEAN));
+                    entry("utilPrng.isEnabled", AS_BOOLEAN));
 }
