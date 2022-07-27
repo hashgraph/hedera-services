@@ -15,6 +15,7 @@
  */
 package com.hedera.services.queries.contract;
 
+import static com.hedera.services.utils.EntityIdUtils.unaliased;
 import static com.hedera.services.utils.accessors.SignedTxnAccessor.uncheckedFrom;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractGetBytecode;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -87,9 +88,7 @@ public class GetBytecodeAnswer implements AnswerService {
 
     @Override
     public ResponseCodeEnum checkValidity(Query query, StateView view) {
-        final var id =
-                EntityIdUtils.unaliased(
-                        query.getContractGetBytecode().getContractID(), aliasManager);
+        final var id = unaliased(query.getContractGetBytecode().getContractID(), aliasManager);
 
         return validator.queryableContractStatus(id, view.contracts());
     }

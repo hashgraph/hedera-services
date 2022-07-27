@@ -17,6 +17,7 @@ package com.hedera.services.txns.contract.helpers;
 
 import static com.hedera.services.exceptions.ValidationUtils.validateFalse;
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
+import static com.hedera.services.utils.EntityIdUtils.unaliased;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_IS_TREASURY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_STILL_OWNS_NFTS;
@@ -64,14 +65,14 @@ public class DeletionLogic {
     }
 
     public ResponseCodeEnum precheckValidity(final ContractDeleteTransactionBody op) {
-        final var id = EntityIdUtils.unaliased(op.getContractID(), aliasManager);
+        final var id = unaliased(op.getContractID(), aliasManager);
         return validator.queryableContractStatus(id, contracts.get());
     }
 
     public ContractID performFor(final ContractDeleteTransactionBody op) {
         obtainer = null;
 
-        final var id = EntityIdUtils.unaliased(op.getContractID(), aliasManager);
+        final var id = unaliased(op.getContractID(), aliasManager);
         final var tbd = id.toGrpcAccountId();
         validateFalse(ledger.isKnownTreasury(tbd), ACCOUNT_IS_TREASURY);
         validateFalse(
@@ -107,8 +108,7 @@ public class DeletionLogic {
             validateFalse(obtainerExpired, ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
             return op.getTransferAccountID();
         } else {
-            return EntityIdUtils.unaliased(op.getTransferContractID(), aliasManager)
-                    .toGrpcAccountId();
+            return unaliased(op.getTransferContractID(), aliasManager).toGrpcAccountId();
         }
     }
 }

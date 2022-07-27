@@ -15,6 +15,7 @@
  */
 package com.hedera.services.queries.contract;
 
+import static com.hedera.services.utils.EntityIdUtils.unaliased;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCallLocal;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_NEGATIVE_GAS;
@@ -99,7 +100,7 @@ public class ContractCallLocalAnswer extends AbstractAnswer {
                             return OK;
                         } else {
                             final var target =
-                                    EntityIdUtils.unaliased(op.getContractID(), aliasManager);
+                                    unaliased(op.getContractID(), aliasManager);
                             return validator.queryableContractStatus(target, view.contracts());
                         }
                     }

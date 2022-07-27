@@ -18,6 +18,7 @@ package com.hedera.services.txns.contract;
 import static com.hedera.services.ledger.accounts.HederaAccountCustomizer.hasStakedId;
 import static com.hedera.services.ledger.accounts.staking.StakingUtils.validSentinel;
 import static com.hedera.services.ledger.properties.AccountProperty.MAX_AUTOMATIC_ASSOCIATIONS;
+import static com.hedera.services.utils.EntityIdUtils.unaliased;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EXISTING_AUTOMATIC_ASSOCIATIONS_EXCEED_GIVEN_LIMIT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
@@ -91,7 +92,7 @@ public class ContractUpdateTransitionLogic implements TransitionLogic {
         try {
             final var contractUpdateTxn = txnCtx.accessor().getTxn();
             final var op = contractUpdateTxn.getContractUpdateInstance();
-            final var id = EntityIdUtils.unaliased(op.getContractID(), aliasManager);
+            final var id = unaliased(op.getContractID(), aliasManager);
             final var target = contracts.get().get(id);
 
             var result = customizerFactory.customizerFor(target, validator, op);
@@ -152,7 +153,7 @@ public class ContractUpdateTransitionLogic implements TransitionLogic {
     public ResponseCodeEnum validate(TransactionBody contractUpdateTxn) {
         final var op = contractUpdateTxn.getContractUpdateInstance();
 
-        final var id = EntityIdUtils.unaliased(op.getContractID(), aliasManager);
+        final var id = unaliased(op.getContractID(), aliasManager);
         var status = validator.queryableContractStatus(id, contracts.get());
         if (status != OK) {
             return status;

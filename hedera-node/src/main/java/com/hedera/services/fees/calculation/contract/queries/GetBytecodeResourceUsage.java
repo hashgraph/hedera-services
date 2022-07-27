@@ -15,10 +15,11 @@
  */
 package com.hedera.services.fees.calculation.contract.queries;
 
+import static com.hedera.services.utils.EntityIdUtils.unaliased;
+
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.fees.calculation.QueryResourceUsageEstimator;
 import com.hedera.services.ledger.accounts.AliasManager;
-import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.ResponseType;
@@ -57,7 +58,7 @@ public final class GetBytecodeResourceUsage implements QueryResourceUsageEstimat
     public FeeData usageGivenType(
             final Query query, final StateView view, final ResponseType type) {
         final var op = query.getContractGetBytecode();
-        final var target = EntityIdUtils.unaliased(op.getContractID(), aliasManager);
+        final var target = unaliased(op.getContractID(), aliasManager);
         final var bytecode = view.bytecodeOf(target).orElse(EMPTY_BYTECODE);
         return usageEstimator.getContractByteCodeQueryFeeMatrices(bytecode.length, type);
     }

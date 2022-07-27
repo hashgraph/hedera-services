@@ -15,6 +15,7 @@
  */
 package com.hedera.services.queries.contract;
 
+import static com.hedera.services.utils.EntityIdUtils.unaliased;
 import static com.hedera.services.utils.accessors.SignedTxnAccessor.uncheckedFrom;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractGetInfo;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_DELETED;
@@ -28,7 +29,6 @@ import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.ledger.accounts.staking.RewardCalculator;
 import com.hedera.services.queries.AnswerService;
 import com.hedera.services.txns.validation.OptionValidator;
-import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.accessors.SignedTxnAccessor;
 import com.hederahashgraph.api.proto.java.ContractGetInfoQuery;
 import com.hederahashgraph.api.proto.java.ContractGetInfoResponse;
@@ -92,8 +92,7 @@ public class GetContractInfoAnswer implements AnswerService {
 
     @Override
     public ResponseCodeEnum checkValidity(final Query query, final StateView view) {
-        final var id =
-                EntityIdUtils.unaliased(query.getContractGetInfo().getContractID(), aliasManager);
+        final var id = unaliased(query.getContractGetInfo().getContractID(), aliasManager);
 
         final var validity =
                 validator.queryableContractStatus(id.toGrpcContractID(), view.contracts());
