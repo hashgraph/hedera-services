@@ -135,7 +135,7 @@ public class ViewExecutor {
 
                 return encoder.encodeGetTokenDefaultKycStatus(defaultKycStatus);
             }
-            // Only view functions can be used inside a ContractCallLocal
+                // Only view functions can be used inside a ContractCallLocal
             default -> throw new InvalidTransactionException(NOT_SUPPORTED);
         }
     }

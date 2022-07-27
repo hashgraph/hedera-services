@@ -97,7 +97,6 @@ class InfrastructureFactoryTest {
     @Mock private ViewGasCalculator gasCalculator;
     @Mock private HederaStackedWorldStateUpdater worldStateUpdater;
     @Mock private StateView stateView;
-    @Mock private WorldLedgers ledgers;
 
     private InfrastructureFactory subject;
 

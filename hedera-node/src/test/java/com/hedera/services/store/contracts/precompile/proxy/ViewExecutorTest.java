@@ -210,8 +210,7 @@ class ViewExecutorTest {
 
     @Test
     void computeIsFrozen() {
-        final var input =
-                prerequisites(ABI_ID_IS_FROZEN, fungibleTokenAddress, Optional.of(accountAddress));
+        final var input = prerequisites(ABI_ID_IS_FROZEN, fungibleTokenAddress);
 
         final var isFrozenWrapper = TokenFreezeUnfreezeWrapper.forIsFrozen(fungible, account);
         given(decodingFacade.decodeIsFrozen(any(), any())).willReturn(isFrozenWrapper);
