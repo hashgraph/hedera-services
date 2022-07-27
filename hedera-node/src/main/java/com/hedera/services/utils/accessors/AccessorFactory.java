@@ -52,16 +52,16 @@ public class AccessorFactory {
             boolean markThrottleExempt,
             boolean markCongestionExempt)
             throws InvalidProtocolBufferException {
-        final var accessor = constructSpecializedAccessor(signedTxnWrapperBytes);
-        accessor.setScheduleRef(parent);
-        accessor.setPayer(payer);
+        final var subtype = constructSpecializedAccessor(signedTxnWrapperBytes);
+        subtype.setScheduleRef(parent);
+        subtype.setPayer(payer);
         if (markThrottleExempt) {
-            accessor.markThrottleExempt();
+            subtype.markThrottleExempt();
         }
         if (markCongestionExempt) {
-            accessor.markCongestionExempt();
+            subtype.markCongestionExempt();
         }
-        return accessor;
+        return subtype;
     }
 
     /**

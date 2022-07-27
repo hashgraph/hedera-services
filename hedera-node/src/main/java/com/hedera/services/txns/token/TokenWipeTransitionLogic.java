@@ -16,17 +16,9 @@
 package com.hedera.services.txns.token;
 
 import com.hedera.services.context.TransactionContext;
-import com.hedera.services.state.enums.TokenType;
-import com.hedera.services.store.AccountStore;
-import com.hedera.services.store.TypedTokenStore;
-import com.hedera.services.store.models.OwnershipTracker;
-import com.hedera.services.store.models.Id;
 import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.utils.accessors.TokenWipeAccessor;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import java.util.List;
-import java.util.function.Function;
 import java.util.function.Predicate;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -35,17 +27,12 @@ import javax.inject.Singleton;
 @Singleton
 public class TokenWipeTransitionLogic implements TransitionLogic {
     private final TransactionContext txnCtx;
-    private final TypedTokenStore tokenStore;
-    private final AccountStore accountStore;
+    private final WipeLogic wipeLogic;
 
     @Inject
-    public TokenWipeTransitionLogic(
-            final TypedTokenStore tokenStore,
-            final AccountStore accountStore,
-            final TransactionContext txnCtx) {
+    public TokenWipeTransitionLogic(final TransactionContext txnCtx, final WipeLogic wipeLogic) {
         this.txnCtx = txnCtx;
-        this.tokenStore = tokenStore;
-        this.accountStore = accountStore;
+        this.wipeLogic = wipeLogic;
     }
 
     @Override
@@ -54,29 +41,10 @@ public class TokenWipeTransitionLogic implements TransitionLogic {
         final var accessor = (TokenWipeAccessor) txnCtx.swirldsTxnAccessor().getDelegate();
         final var targetTokenId = accessor.targetToken();
         final var targetAccountId = accessor.accountToWipe();
-        final var serialNums = accessor.serialNums();
+        final var serialNumbersList = accessor.serialNums();
         final var amount = accessor.amount();
 
-        /* --- Load the model objects --- */
-        final var token = tokenStore.loadToken(targetTokenId);
-        final var account = accountStore.loadAccount(targetAccountId);
-        final var accountRel = tokenStore.loadTokenRelationship(token, account);
-
-        /* --- Instantiate change trackers --- */
-        final var ownershipTracker = new OwnershipTracker();
-
-        /* --- Do the business logic --- */
-        if (token.getType().equals(TokenType.FUNGIBLE_COMMON)) {
-            token.wipe(accountRel, amount);
-        } else {
-            tokenStore.loadUniqueTokens(token, serialNums);
-            token.wipe(ownershipTracker, accountRel, serialNums);
-        }
-        /* --- Persist the updated models --- */
-        tokenStore.commitToken(token);
-        tokenStore.commitTokenRelationships(List.of(accountRel));
-        tokenStore.commitTrackers(ownershipTracker);
-        accountStore.commitAccount(account);
+        wipeLogic.wipe(targetTokenId, targetAccountId, amount, serialNumbersList);
     }
 
     @Override

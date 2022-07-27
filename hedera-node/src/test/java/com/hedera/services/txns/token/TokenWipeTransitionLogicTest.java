@@ -29,11 +29,13 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.verify;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.TransactionContext;
@@ -44,6 +46,7 @@ import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.store.models.Account;
+import com.hedera.services.store.models.OwnershipTracker;
 import com.hedera.services.store.models.Token;
 import com.hedera.services.store.models.TokenRelationship;
 import com.hedera.services.txns.validation.ContextOptionValidator;
@@ -93,7 +96,9 @@ class TokenWipeTransitionLogicTest {
         accountStore = mock(AccountStore.class);
         validator = mock(ContextOptionValidator.class);
         dynamicProperties = mock(GlobalDynamicProperties.class);
-        subject = new TokenWipeTransitionLogic(typedTokenStore, accountStore, txnCtx);
+        WipeLogic wipeLogic =
+                new WipeLogic(validator, typedTokenStore, accountStore, dynamicProperties);
+        subject = new TokenWipeTransitionLogic(txnCtx, wipeLogic);
         given(txnCtx.swirldsTxnAccessor()).willReturn(swirldsTxnAccessor);
     }
 
@@ -272,7 +277,7 @@ class TokenWipeTransitionLogicTest {
                                 TokenWipeAccountTransactionBody.newBuilder()
                                         .setToken(id)
                                         .setAccount(accountID)
-                                        .setAmount(wipeAmount))
+                                        .setAmount(totalAmount))
                         .build();
         addToTxn();
         given(txnCtx.accessor()).willReturn(accessor);
