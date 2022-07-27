@@ -26,11 +26,15 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenRevokeKycTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.util.List;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 
+@Singleton
 public class RevokeKycLogic {
     private final TypedTokenStore tokenStore;
     private final AccountStore accountStore;
 
+    @Inject
     public RevokeKycLogic(final TypedTokenStore tokenStore, final AccountStore accountStore) {
         this.tokenStore = tokenStore;
         this.accountStore = accountStore;
