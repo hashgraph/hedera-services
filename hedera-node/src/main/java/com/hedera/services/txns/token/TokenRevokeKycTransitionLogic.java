@@ -15,19 +15,11 @@
  */
 package com.hedera.services.txns.token;
 
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-
 import com.hedera.services.context.TransactionContext;
-import com.hedera.services.store.AccountStore;
-import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.txns.TransitionLogic;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.TokenRevokeKycTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import java.util.List;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import javax.inject.Inject;
