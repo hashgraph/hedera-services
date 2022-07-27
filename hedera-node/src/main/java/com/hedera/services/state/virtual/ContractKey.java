@@ -300,7 +300,7 @@ public final class ContractKey implements VirtualKey<ContractKey> {
     }
 
     /** get uint256KeyNonZeroBytes for tests */
-    public byte getUint256KeyNonZeroBytes() {
+		public byte getUint256KeyNonZeroBytes() {
         return uint256KeyNonZeroBytes;
     }
 

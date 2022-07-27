@@ -1,11 +1,6 @@
-package com.hedera.services.state.virtual;
-
-/*-
- * ‌
- * Hedera Services Node
- * ​
- * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2021-2022 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,41 +12,40 @@ package com.hedera.services.state.virtual;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+package com.hedera.services.state.virtual;
 
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.jasperdb.SelfSerializableSupplier;
-
 import java.io.IOException;
 
 public class VirtualBlobValueSupplier implements SelfSerializableSupplier<VirtualBlobValue> {
-	static final long CLASS_ID = 0xd08565ba3cf6c5bfL;
-	static final int CURRENT_VERSION = 1;
+    static final long CLASS_ID = 0xd08565ba3cf6c5bfL;
+    static final int CURRENT_VERSION = 1;
 
-	@Override
-	public void deserialize(SerializableDataInputStream in, int version) throws IOException {
-		/* No-op */
-	}
+    @Override
+    public void deserialize(SerializableDataInputStream in, int version) throws IOException {
+        /* No-op */
+    }
 
-	@Override
-	public void serialize(SerializableDataOutputStream out) throws IOException {
-		/* No-op */
-	}
+    @Override
+    public void serialize(SerializableDataOutputStream out) throws IOException {
+        /* No-op */
+    }
 
-	@Override
-	public long getClassId() {
-		return CLASS_ID;
-	}
+    @Override
+    public long getClassId() {
+        return CLASS_ID;
+    }
 
-	@Override
-	public int getVersion() {
-		return CURRENT_VERSION;
-	}
+    @Override
+    public int getVersion() {
+        return CURRENT_VERSION;
+    }
 
-	@Override
-	public VirtualBlobValue get() {
-		return new VirtualBlobValue();
-	}
+    @Override
+    public VirtualBlobValue get() {
+        return new VirtualBlobValue();
+    }
 }
