@@ -1,11 +1,6 @@
-package com.hedera.services.state;
-
-/*-
- * ‌
- * Hedera Services Node
- * ​
- * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,28 +12,27 @@ package com.hedera.services.state;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+package com.hedera.services.state;
 
 import com.swirlds.common.system.SwirldDualState;
-
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
 @Singleton
 public class DualStateAccessor {
-	private SwirldDualState dualState = null;
+    private SwirldDualState dualState = null;
 
-	@Inject
-	public DualStateAccessor() {
-		// Default constructor
-	}
+    @Inject
+    public DualStateAccessor() {
+        // Default constructor
+    }
 
-	public SwirldDualState getDualState() {
-		return dualState;
-	}
+    public SwirldDualState getDualState() {
+        return dualState;
+    }
 
-	public void setDualState(SwirldDualState dualState) {
-		this.dualState = dualState;
-	}
+    public void setDualState(SwirldDualState dualState) {
+        this.dualState = dualState;
+    }
 }

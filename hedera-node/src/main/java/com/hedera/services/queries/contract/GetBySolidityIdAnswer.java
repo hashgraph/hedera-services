@@ -1,11 +1,6 @@
-package com.hedera.services.queries.contract;
-
-/*-
- * ‌
- * Hedera Services Node
- * ​
- * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2021-2022 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,8 +12,12 @@ package com.hedera.services.queries.contract;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+package com.hedera.services.queries.contract;
+
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.GetBySolidityID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
+import static com.hederahashgraph.api.proto.java.ResponseType.COST_ANSWER;
 
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.queries.AbstractAnswer;
@@ -28,38 +27,34 @@ import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ResponseType;
-
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.GetBySolidityID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
-import static com.hederahashgraph.api.proto.java.ResponseType.COST_ANSWER;
-
 @Singleton
 public class GetBySolidityIdAnswer extends AbstractAnswer {
-	@Inject
-	public GetBySolidityIdAnswer() {
-		super(GetBySolidityID,
-				query -> null,
-				query -> query.getGetBySolidityID().getHeader().getResponseType(),
-				response -> response.getGetBySolidityID().getHeader().getNodeTransactionPrecheckCode(),
-				(query, view) -> NOT_SUPPORTED);
-	}
+    @Inject
+    public GetBySolidityIdAnswer() {
+        super(
+                GetBySolidityID,
+                query -> null,
+                query -> query.getGetBySolidityID().getHeader().getResponseType(),
+                response ->
+                        response.getGetBySolidityID().getHeader().getNodeTransactionPrecheckCode(),
+                (query, view) -> NOT_SUPPORTED);
+    }
 
-	@Override
-	public Response responseGiven(Query query, StateView view, ResponseCodeEnum validity, long cost) {
-		GetBySolidityIDQuery op = query.getGetBySolidityID();
-		ResponseType type = op.getHeader().getResponseType();
+    @Override
+    public Response responseGiven(
+            Query query, StateView view, ResponseCodeEnum validity, long cost) {
+        GetBySolidityIDQuery op = query.getGetBySolidityID();
+        ResponseType type = op.getHeader().getResponseType();
 
-		GetBySolidityIDResponse.Builder response = GetBySolidityIDResponse.newBuilder();
-		if (type == COST_ANSWER) {
-			response.setHeader(costAnswerHeader(NOT_SUPPORTED, 0L));
-		} else {
-			response.setHeader(answerOnlyHeader(NOT_SUPPORTED));
-		}
-		return Response.newBuilder()
-				.setGetBySolidityID(response)
-				.build();
-	}
+        GetBySolidityIDResponse.Builder response = GetBySolidityIDResponse.newBuilder();
+        if (type == COST_ANSWER) {
+            response.setHeader(costAnswerHeader(NOT_SUPPORTED, 0L));
+        } else {
+            response.setHeader(answerOnlyHeader(NOT_SUPPORTED));
+        }
+        return Response.newBuilder().setGetBySolidityID(response).build();
+    }
 }
