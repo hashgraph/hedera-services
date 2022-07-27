@@ -16,6 +16,7 @@
 package com.hedera.services.utils.accessors;
 
 import static com.hedera.services.txns.token.TokenOpsValidator.validateTokenOpsWith;
+import static com.hedera.services.txns.validation.ContextOptionValidator.batchSizeCheck;
 import static com.hedera.services.usage.token.TokenOpsUsageUtils.TOKEN_OPS_USAGE_UTILS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
@@ -35,8 +36,9 @@ import java.util.List;
  */
 public class TokenWipeAccessor extends SignedTxnAccessor {
     private final TokenWipeAccountTransactionBody body;
-    private final GlobalDynamicProperties dynamicProperties;
     private final OptionValidator validator;
+    private final boolean areNftsEnabled;
+    private final int maxBatchSizeWipe;
 
     public TokenWipeAccessor(
             final byte[] txn,
@@ -45,7 +47,8 @@ public class TokenWipeAccessor extends SignedTxnAccessor {
             throws InvalidProtocolBufferException {
         super(txn);
         this.body = getTxn().getTokenWipe();
-        this.dynamicProperties = dynamicProperties;
+        this.areNftsEnabled = dynamicProperties.areNftsEnabled();
+        this.maxBatchSizeWipe = dynamicProperties.maxBatchSizeWipe();
         this.validator = validator;
         setTokenWipeUsageMeta();
     }
@@ -73,6 +76,13 @@ public class TokenWipeAccessor extends SignedTxnAccessor {
 
     @Override
     public ResponseCodeEnum doPrecheck() {
+        return validateSyntax(body, areNftsEnabled, maxBatchSizeWipe);
+    }
+
+    public static ResponseCodeEnum validateSyntax(
+            final TokenWipeAccountTransactionBody body,
+            final boolean areNftsEnabled,
+            final int maxBatchSizeWipe) {
         if (!body.hasToken()) {
             return INVALID_TOKEN_ID;
         }
@@ -83,10 +93,10 @@ public class TokenWipeAccessor extends SignedTxnAccessor {
         return validateTokenOpsWith(
                 body.getSerialNumbersCount(),
                 body.getAmount(),
-                dynamicProperties.areNftsEnabled(),
+                areNftsEnabled,
                 INVALID_WIPING_AMOUNT,
                 body.getSerialNumbersList(),
-                validator::maxBatchSizeWipeCheck);
+                (a) -> batchSizeCheck(a, maxBatchSizeWipe));
     }
 
     private void setTokenWipeUsageMeta() {
