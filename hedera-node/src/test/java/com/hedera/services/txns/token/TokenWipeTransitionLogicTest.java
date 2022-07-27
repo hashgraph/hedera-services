@@ -29,12 +29,10 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
-import static org.mockito.BDDMockito.verify;
 import static org.mockito.Mockito.doThrow;
 
 import com.hedera.services.context.TransactionContext;
@@ -45,7 +43,6 @@ import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.store.models.Account;
-import com.hedera.services.store.models.OwnershipTracker;
 import com.hedera.services.store.models.Token;
 import com.hedera.services.store.models.TokenRelationship;
 import com.hedera.services.txns.validation.ContextOptionValidator;
@@ -61,10 +58,9 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 class TokenWipeTransitionLogicTest {
-    private AccountID accountID = IdUtils.asAccount("1.2.4");
-    private TokenID id = IdUtils.asToken("1.2.3");
-    private long wipeAmount = 100;
-    private long totalAmount = 1000L;
+    private final AccountID accountID = IdUtils.asAccount("1.2.4");
+    private final TokenID id = IdUtils.asToken("1.2.3");
+    private final long totalAmount = 1000L;
 
     private TransactionContext txnCtx;
     private SignedTxnAccessor accessor;
@@ -92,9 +88,9 @@ class TokenWipeTransitionLogicTest {
         accountStore = mock(AccountStore.class);
         validator = mock(ContextOptionValidator.class);
         dynamicProperties = mock(GlobalDynamicProperties.class);
-        subject =
-                new TokenWipeTransitionLogic(
-                        validator, typedTokenStore, accountStore, txnCtx, dynamicProperties);
+        WipeLogic wipeLogic =
+                new WipeLogic(validator, typedTokenStore, accountStore, dynamicProperties);
+        subject = new TokenWipeTransitionLogic(txnCtx, wipeLogic);
         given(txnCtx.accessor()).willReturn(accessor);
     }
 
@@ -115,44 +111,12 @@ class TokenWipeTransitionLogicTest {
     }
 
     @Test
-    void followsHappyPathForCommon() {
-        givenValidCommonTxnCtx();
-
-        // when:
-        subject.doStateTransition();
-
-        // then:
-        verify(token).wipe(any(), anyLong());
-    }
-
-    @Test
     void rejectsUniqueWhenNftsNotEnabled() {
         givenValidUniqueTxnCtx();
         given(dynamicProperties.areNftsEnabled()).willReturn(false);
 
         // expect:
         assertEquals(NOT_SUPPORTED, subject.semanticCheck().apply(tokenWipeTxn));
-    }
-
-    @Test
-    void followsHappyPathForUnique() {
-        givenValidUniqueTxnCtx();
-        // needed only in the context of this test
-        Account acc = mock(Account.class);
-        var treasury = mock(Account.class);
-        TokenRelationship treasuryRel = mock(TokenRelationship.class);
-        TokenRelationship accRel = mock(TokenRelationship.class);
-        given(token.getTreasury()).willReturn(treasury);
-        given(accountStore.loadAccount(any())).willReturn(acc);
-        given(typedTokenStore.loadTokenRelationship(token, acc)).willReturn(accRel);
-        given(typedTokenStore.loadTokenRelationship(token, token.getTreasury()))
-                .willReturn(treasuryRel);
-
-        // when:
-        subject.doStateTransition();
-
-        // then:
-        verify(token).wipe(any(OwnershipTracker.class), any(TokenRelationship.class), anyList());
     }
 
     @Test
@@ -265,6 +229,7 @@ class TokenWipeTransitionLogicTest {
     }
 
     private void givenValidCommonTxnCtx() {
+        long wipeAmount = 100;
         tokenWipeTxn =
                 TransactionBody.newBuilder()
                         .setTokenWipe(
