@@ -24,6 +24,7 @@ import com.hedera.services.context.properties.NodeLocalProperties;
 import com.hedera.services.throttles.DeterministicThrottle;
 import com.hedera.services.throttles.GasLimitDeterministicThrottle;
 import com.hedera.services.throttling.FunctionalityThrottling;
+import com.swirlds.common.metrics.DoubleGauge;
 import com.swirlds.common.system.Platform;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -42,6 +43,7 @@ class ThrottleGaugesTest {
     @Mock private FunctionalityThrottling hapiThrottling;
     @Mock private FunctionalityThrottling handleThrottling;
     @Mock private NodeLocalProperties nodeProperties;
+    @Mock private DoubleGauge pretendGauge;
 
     private ThrottleGauges subject;
 
@@ -57,7 +59,7 @@ class ThrottleGaugesTest {
 
         subject.registerWith(platform);
 
-        verify(platform, times(6)).addAppMetrics(any());
+        verify(platform, times(6)).getOrCreateMetric(any());
     }
 
     @Test
@@ -70,6 +72,7 @@ class ThrottleGaugesTest {
         given(bThrottle.percentUsed(any())).willReturn(50.0);
         given(consGasThrottle.percentUsed(any())).willReturn(33.0);
         given(hapiGasThrottle.percentUsed(any())).willReturn(13.0);
+        given(platform.getOrCreateMetric(any())).willReturn(pretendGauge);
 
         subject.registerWith(platform);
         subject.updateAll();
@@ -86,6 +89,7 @@ class ThrottleGaugesTest {
         givenThrottleCollabs();
         given(aThrottle.percentUsed(any())).willReturn(10.0);
         given(bThrottle.percentUsed(any())).willReturn(50.0);
+        given(platform.getOrCreateMetric(any())).willReturn(pretendGauge);
 
         subject.registerWith(platform);
         subject.updateAll();
@@ -101,7 +105,7 @@ class ThrottleGaugesTest {
 
         subject.registerWith(platform);
 
-        verify(platform, times(3)).addAppMetrics(any());
+        verify(platform, times(3)).getOrCreateMetric(any());
     }
 
     private void givenThrottleMocksWithGas() {

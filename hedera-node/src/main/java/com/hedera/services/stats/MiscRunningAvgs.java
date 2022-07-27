@@ -23,6 +23,7 @@ import com.swirlds.common.metrics.RunningAverageMetric;
 import com.swirlds.common.system.Platform;
 
 public class MiscRunningAvgs {
+    final double halfLife;
     private RunningAverageMetric gasPerConsSec;
     private RunningAverageMetric accountRetryWaitMs;
     private RunningAverageMetric accountLookupRetries;
@@ -31,82 +32,82 @@ public class MiscRunningAvgs {
     private RunningAverageMetric hashQueueSizeRecordStream;
 
     public MiscRunningAvgs(final double halfLife) {
-        gasPerConsSec =
-                new RunningAverageMetric(
-                        STAT_CATEGORY,
-                        Names.GAS_PER_CONSENSUS_SEC,
-                        Descriptions.GAS_PER_CONSENSUS_SEC,
-                        RUNNING_AVG_FORMAT,
-                        halfLife);
-        accountRetryWaitMs =
-                new RunningAverageMetric(
-                        STAT_CATEGORY,
-                        Names.ACCOUNT_RETRY_WAIT_MS,
-                        Descriptions.ACCOUNT_RETRY_WAIT_MS,
-                        RUNNING_AVG_FORMAT,
-                        halfLife);
-        accountLookupRetries =
-                new RunningAverageMetric(
-                        STAT_CATEGORY,
-                        Names.ACCOUNT_LOOKUP_RETRIES,
-                        Descriptions.ACCOUNT_LOOKUP_RETRIES,
-                        RUNNING_AVG_FORMAT,
-                        halfLife);
-        handledSubmitMessageSize =
-                new RunningAverageMetric(
-                        STAT_CATEGORY,
-                        Names.HANDLED_SUBMIT_MESSAGE_SIZE,
-                        Descriptions.HANDLED_SUBMIT_MESSAGE_SIZE,
-                        RUNNING_AVG_FORMAT,
-                        halfLife);
-        writeQueueSizeRecordStream =
-                new RunningAverageMetric(
-                        STAT_CATEGORY,
-                        Names.WRITE_QUEUE_SIZE_RECORD_STREAM,
-                        Descriptions.WRITE_QUEUE_SIZE_RECORD_STREAM,
-                        RUNNING_AVG_FORMAT,
-                        halfLife);
-        hashQueueSizeRecordStream =
-                new RunningAverageMetric(
-                        STAT_CATEGORY,
-                        Names.HASH_QUEUE_SIZE_RECORD_STREAM,
-                        Descriptions.HASH_QUEUE_SIZE_RECORD_STREAM,
-                        RUNNING_AVG_FORMAT,
-                        halfLife);
+        this.halfLife = halfLife;
     }
 
     public void registerWith(final Platform platform) {
-        platform.addAppMetrics(
-                gasPerConsSec,
-                accountRetryWaitMs,
-                accountLookupRetries,
-                handledSubmitMessageSize,
-                writeQueueSizeRecordStream,
-                hashQueueSizeRecordStream);
+        gasPerConsSec =
+                platform.getOrCreateMetric(
+                        new RunningAverageMetric.Config(
+                                STAT_CATEGORY,
+                                Names.GAS_PER_CONSENSUS_SEC,
+                                Descriptions.GAS_PER_CONSENSUS_SEC,
+                                RUNNING_AVG_FORMAT,
+                                halfLife));
+        accountRetryWaitMs =
+                platform.getOrCreateMetric(
+                        new RunningAverageMetric.Config(
+                                STAT_CATEGORY,
+                                Names.ACCOUNT_RETRY_WAIT_MS,
+                                Descriptions.ACCOUNT_RETRY_WAIT_MS,
+                                RUNNING_AVG_FORMAT,
+                                halfLife));
+        accountLookupRetries =
+                platform.getOrCreateMetric(
+                        new RunningAverageMetric.Config(
+                                STAT_CATEGORY,
+                                Names.ACCOUNT_LOOKUP_RETRIES,
+                                Descriptions.ACCOUNT_LOOKUP_RETRIES,
+                                RUNNING_AVG_FORMAT,
+                                halfLife));
+        handledSubmitMessageSize =
+                platform.getOrCreateMetric(
+                        new RunningAverageMetric.Config(
+                                STAT_CATEGORY,
+                                Names.HANDLED_SUBMIT_MESSAGE_SIZE,
+                                Descriptions.HANDLED_SUBMIT_MESSAGE_SIZE,
+                                RUNNING_AVG_FORMAT,
+                                halfLife));
+        writeQueueSizeRecordStream =
+                platform.getOrCreateMetric(
+                        new RunningAverageMetric.Config(
+                                STAT_CATEGORY,
+                                Names.WRITE_QUEUE_SIZE_RECORD_STREAM,
+                                Descriptions.WRITE_QUEUE_SIZE_RECORD_STREAM,
+                                RUNNING_AVG_FORMAT,
+                                halfLife));
+        hashQueueSizeRecordStream =
+                platform.getOrCreateMetric(
+                        new RunningAverageMetric.Config(
+                                STAT_CATEGORY,
+                                Names.HASH_QUEUE_SIZE_RECORD_STREAM,
+                                Descriptions.HASH_QUEUE_SIZE_RECORD_STREAM,
+                                RUNNING_AVG_FORMAT,
+                                halfLife));
     }
 
     public void recordAccountLookupRetries(final int num) {
-        accountLookupRetries.recordValue(num);
+        accountLookupRetries.update(num);
     }
 
     public void recordAccountRetryWaitMs(final double time) {
-        accountRetryWaitMs.recordValue(time);
+        accountRetryWaitMs.update(time);
     }
 
     public void recordHandledSubmitMessageSize(final int bytes) {
-        handledSubmitMessageSize.recordValue(bytes);
+        handledSubmitMessageSize.update(bytes);
     }
 
     public void writeQueueSizeRecordStream(final int num) {
-        writeQueueSizeRecordStream.recordValue(num);
+        writeQueueSizeRecordStream.update(num);
     }
 
     public void hashQueueSizeRecordStream(final int num) {
-        hashQueueSizeRecordStream.recordValue(num);
+        hashQueueSizeRecordStream.update(num);
     }
 
     public void recordGasPerConsSec(final long gas) {
-        gasPerConsSec.recordValue(gas);
+        gasPerConsSec.update(gas);
     }
 
     public static final class Names {

@@ -89,10 +89,8 @@ public class ServicesStatsManager {
         throttleGauges.registerWith(platform);
         opSpeedometers.registerWith(platform);
         entityUtilGauges.registerWith(platform);
-        storage.get().registerStatistics(platform::addAppMetrics);
-        bytecode.get().registerStatistics(platform::addAppMetrics);
-
-        platform.appStatInit();
+        storage.get().registerMetrics(platform.getMetrics());
+        bytecode.get().registerMetrics(platform.getMetrics());
 
         final var hapiOpsUpdateIntervalMs =
                 Math.max(

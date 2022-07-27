@@ -119,9 +119,8 @@ class ServicesStatsManagerTest {
         verify(runningAvgs).registerWith(platform);
         verify(throttleGauges).registerWith(platform);
         verify(entityUtilGauges).registerWith(platform);
-        verify(storage).registerStatistics(any());
-        verify(bytecode).registerStatistics(any());
-        verify(platform).appStatInit();
+        verify(storage).registerMetrics(any());
+        verify(bytecode).registerMetrics(any());
         // and:
         verify(thread).start();
         verify(thread)
