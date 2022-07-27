@@ -36,15 +36,13 @@ import javax.inject.Singleton;
 @Singleton
 public class TokenRevokeKycTransitionLogic implements TransitionLogic {
     private final TransactionContext txnCtx;
-    private final TypedTokenStore tokenStore;
-    private final AccountStore accountStore;
+    private final RevokeKycLogic revokeKycLogic;
 
     @Inject
     public TokenRevokeKycTransitionLogic(
-            TransactionContext txnCtx, TypedTokenStore tokenStore, AccountStore accountStore) {
+            final TransactionContext txnCtx, final RevokeKycLogic revokeKycLogic) {
         this.txnCtx = txnCtx;
-        this.tokenStore = tokenStore;
-        this.accountStore = accountStore;
+        this.revokeKycLogic = revokeKycLogic;
     }
 
     @Override
@@ -54,28 +52,14 @@ public class TokenRevokeKycTransitionLogic implements TransitionLogic {
 
         final var op = txnCtx.accessor().getTxn().getTokenRevokeKyc();
 
-        final var grpcTokenId = op.getToken();
-        final var grpcAccountId = op.getAccount();
-
         /* --- Convert to model ids --- */
 
-        final var targetTokenId = Id.fromGrpcToken(grpcTokenId);
-        final var targetAccountId = Id.fromGrpcAccount(grpcAccountId);
-
-        /* --- Load the model objects --- */
-
-        final var loadedToken = tokenStore.loadToken(targetTokenId);
-        final var loadedAccount = accountStore.loadAccount(targetAccountId);
-
-        final var tokenRelationship = tokenStore.loadTokenRelationship(loadedToken, loadedAccount);
+        final var targetTokenId = Id.fromGrpcToken(op.getToken());
+        final var targetAccountId = Id.fromGrpcAccount(op.getAccount());
 
         /* --- Do the business logic --- */
 
-        tokenRelationship.changeKycState(false);
-
-        /* --- Persist the updated models --- */
-
-        tokenStore.commitTokenRelationships(List.of(tokenRelationship));
+        revokeKycLogic.revokeKyc(targetTokenId, targetAccountId);
     }
 
     @Override
@@ -89,16 +73,6 @@ public class TokenRevokeKycTransitionLogic implements TransitionLogic {
     }
 
     public ResponseCodeEnum validate(TransactionBody txnBody) {
-        TokenRevokeKycTransactionBody op = txnBody.getTokenRevokeKyc();
-
-        if (!op.hasToken()) {
-            return INVALID_TOKEN_ID;
-        }
-
-        if (!op.hasAccount()) {
-            return INVALID_ACCOUNT_ID;
-        }
-
-        return OK;
+        return revokeKycLogic.validate(txnBody);
     }
 }
