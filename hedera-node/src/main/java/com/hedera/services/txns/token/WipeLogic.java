@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2022 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,48 +15,49 @@
  */
 package com.hedera.services.txns.token;
 
-import com.hedera.services.context.TransactionContext;
+import static com.hedera.services.txns.token.TokenOpsValidator.validateTokenOpsWith;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_WIPING_AMOUNT;
+
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.TypedTokenStore;
-import com.hedera.services.store.models.OwnershipTracker;
 import com.hedera.services.store.models.Id;
-import com.hedera.services.txns.TransitionLogic;
-import com.hedera.services.utils.accessors.TokenWipeAccessor;
+import com.hedera.services.store.models.OwnershipTracker;
+import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.TokenWipeAccountTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.util.List;
-import java.util.function.Function;
-import java.util.function.Predicate;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
-/** Provides the state transition for wiping [part of] a token balance. */
 @Singleton
-public class TokenWipeTransitionLogic implements TransitionLogic {
-    private final TransactionContext txnCtx;
+public class WipeLogic {
+    private final OptionValidator validator;
     private final TypedTokenStore tokenStore;
     private final AccountStore accountStore;
+    private final GlobalDynamicProperties dynamicProperties;
 
     @Inject
-    public TokenWipeTransitionLogic(
+    public WipeLogic(
+            final OptionValidator validator,
             final TypedTokenStore tokenStore,
             final AccountStore accountStore,
-            final TransactionContext txnCtx) {
-        this.txnCtx = txnCtx;
+            final GlobalDynamicProperties dynamicProperties) {
+        this.validator = validator;
         this.tokenStore = tokenStore;
         this.accountStore = accountStore;
+        this.dynamicProperties = dynamicProperties;
     }
 
-    @Override
-    public void doStateTransition() {
-        /* --- Translate from gRPC types --- */
-        final var accessor = (TokenWipeAccessor) txnCtx.swirldsTxnAccessor().getDelegate();
-        final var targetTokenId = accessor.targetToken();
-        final var targetAccountId = accessor.accountToWipe();
-        final var serialNums = accessor.serialNums();
-        final var amount = accessor.amount();
-
+    public void wipe(
+            final Id targetTokenId,
+            final Id targetAccountId,
+            final long amount,
+            final List<Long> serialNumbersList) {
         /* --- Load the model objects --- */
         final var token = tokenStore.loadToken(targetTokenId);
         final var account = accountStore.loadAccount(targetAccountId);
@@ -69,8 +70,8 @@ public class TokenWipeTransitionLogic implements TransitionLogic {
         if (token.getType().equals(TokenType.FUNGIBLE_COMMON)) {
             token.wipe(accountRel, amount);
         } else {
-            tokenStore.loadUniqueTokens(token, serialNums);
-            token.wipe(ownershipTracker, accountRel, serialNums);
+            tokenStore.loadUniqueTokens(token, serialNumbersList);
+            token.wipe(ownershipTracker, accountRel, serialNumbersList);
         }
         /* --- Persist the updated models --- */
         tokenStore.commitToken(token);
@@ -79,8 +80,22 @@ public class TokenWipeTransitionLogic implements TransitionLogic {
         accountStore.commitAccount(account);
     }
 
-    @Override
-    public Predicate<TransactionBody> applicability() {
-        return TransactionBody::hasTokenWipe;
+    public ResponseCodeEnum validateSyntax(final TransactionBody txn) {
+        TokenWipeAccountTransactionBody op = txn.getTokenWipe();
+
+        if (!op.hasToken()) {
+            return INVALID_TOKEN_ID;
+        }
+
+        if (!op.hasAccount()) {
+            return INVALID_ACCOUNT_ID;
+        }
+        return validateTokenOpsWith(
+                op.getSerialNumbersCount(),
+                op.getAmount(),
+                dynamicProperties.areNftsEnabled(),
+                INVALID_WIPING_AMOUNT,
+                op.getSerialNumbersList(),
+                validator::maxBatchSizeWipeCheck);
     }
 }
