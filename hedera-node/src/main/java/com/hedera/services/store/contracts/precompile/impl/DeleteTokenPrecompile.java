@@ -86,7 +86,7 @@ public class DeleteTokenPrecompile extends AbstractWritePrecompile {
                 KeyActivationUtils.validateKey(
                         frame,
                         tokenId.asEvmAddress(),
-                        sigsVerifier::hasActiveSupplyKey,
+                        sigsVerifier::hasActiveAdminKey,
                         ledgers,
                         aliases);
         validateTrue(hasRequiredSigs, INVALID_SIGNATURE);

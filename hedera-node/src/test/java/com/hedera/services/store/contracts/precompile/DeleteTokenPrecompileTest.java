@@ -237,7 +237,7 @@ class FreezeTokenPrecompileTest {
                         TransactionBody.newBuilder()
                                 .setTokenDeletion(TokenDeleteTransactionBody.newBuilder()));
         given(
-                        sigsVerifier.hasActiveSupplyKey(
+                        sigsVerifier.hasActiveAdminKey(
                                 true, fungibleTokenAddr, fungibleTokenAddr, wrappedLedgers))
                 .willReturn(true);
     }

@@ -19,6 +19,7 @@ import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hedera.services.ledger.properties.AccountProperty.IS_RECEIVER_SIG_REQUIRED;
 import static com.hedera.services.ledger.properties.AccountProperty.KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ADMIN_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_SUPPLY_KEY;
 
@@ -89,6 +90,21 @@ public class TxnAwareEvmSigsVerifier implements EvmSigsVerifier {
         validateTrue(supplyKey != null, TOKEN_HAS_NO_SUPPLY_KEY);
 
         return isActiveInFrame(supplyKey, isDelegateCall, activeContract, worldLedgers.aliases());
+    }
+
+    @Override
+    public boolean hasActiveAdminKey(
+            final boolean isDelegateCall,
+            @NotNull final Address tokenAddress,
+            @NotNull final Address activeContract,
+            @NotNull final WorldLedgers worldLedgers) {
+        final var tokenId = EntityIdUtils.tokenIdFromEvmAddress(tokenAddress);
+        validateTrue(worldLedgers.tokens().exists(tokenId), INVALID_TOKEN_ID);
+
+        final var adminKey = (JKey) worldLedgers.tokens().get(tokenId, TokenProperty.ADMIN_KEY);
+        validateTrue(adminKey != null, INVALID_ADMIN_KEY);
+
+        return isActiveInFrame(adminKey, isDelegateCall, activeContract, worldLedgers.aliases());
     }
 
     @Override

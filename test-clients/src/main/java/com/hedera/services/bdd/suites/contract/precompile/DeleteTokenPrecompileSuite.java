@@ -76,8 +76,7 @@ public class DeleteTokenPrecompileSuite extends HapiApiSuite {
 
     @Override
     public List<HapiApiSpec> getSpecsInSuite() {
-        return allOf(
-                List.of(deleteFungibleTokenWithNegativeCases(), deleteNftTokenWithNegativeCases()));
+        return List.of(deleteFungibleTokenWithNegativeCases(), deleteNftTokenWithNegativeCases());
     }
 
     private HapiApiSpec deleteFungibleTokenWithNegativeCases() {
@@ -96,7 +95,6 @@ public class DeleteTokenPrecompileSuite extends HapiApiSuite {
                                 .tokenType(FUNGIBLE_COMMON)
                                 .treasury(TOKEN_TREASURY)
                                 .adminKey(MULTI_KEY)
-                                .supplyKey(MULTI_KEY)
                                 .exposingCreatedIdTo(id -> vanillaTokenID.set(asToken(id)))
                                 .initialSupply(1110),
                         uploadInitCode(DELETE_TOKEN_CONTRACT),
