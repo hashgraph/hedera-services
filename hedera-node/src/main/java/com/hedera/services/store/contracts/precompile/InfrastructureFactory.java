@@ -36,6 +36,7 @@ import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.validation.UsageLimits;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.TypedTokenStore;
+import com.hedera.services.store.contracts.WorldLedgers;
 import com.hedera.services.store.contracts.precompile.codec.DecodingFacade;
 import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
 import com.hedera.services.store.contracts.precompile.proxy.RedirectViewExecutor;
@@ -194,8 +195,9 @@ public class InfrastructureFactory {
             final Bytes input,
             final MessageFrame frame,
             final ViewGasCalculator gasCalculator,
-            final StateView stateView) {
-        return new ViewExecutor(input, frame, encoder, decoder, gasCalculator, stateView);
+            final StateView stateView,
+            final WorldLedgers ledgers) {
+        return new ViewExecutor(input, frame, encoder, decoder, gasCalculator, stateView, ledgers);
     }
 
     public ApproveAllowanceLogic newApproveAllowanceLogic(

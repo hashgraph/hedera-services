@@ -189,6 +189,16 @@ public class StaticEntityAccess implements EntityAccess {
     // when processing
     // a non-static EVM call; then the WorldLedgers should get all such information from its ledgers
 
+    public boolean defaultFreezeStatus(final TokenID tokenId) {
+        final var token = lookupToken(tokenId);
+        return token.accountsAreFrozenByDefault();
+    }
+
+    public boolean defaultKycStatus(final TokenID tokenID) {
+        final var token = lookupToken(tokenID);
+        return token.accountsKycGrantedByDefault();
+    }
+
     /**
      * Returns the name of the given token.
      *
