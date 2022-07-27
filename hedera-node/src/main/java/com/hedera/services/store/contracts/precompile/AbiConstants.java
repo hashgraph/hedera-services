@@ -94,6 +94,10 @@ public final class AbiConstants {
     public static final int ABI_ID_ERC_OWNER_OF_NFT = 0x6352211e;
     // tokenURI(uint256 tokenId)
     public static final int ABI_ID_ERC_TOKEN_URI_NFT = 0xc87b56dd;
+    // wipeTokenAccount(address, address, uint32)
+    public static final int ABI_WIPE_TOKEN_ACCOUNT_FUNGIBLE = 0x9790686d;
+    // wipeTokenAccountNFT(address, address, int64[])
+    public static final int ABI_WIPE_TOKEN_ACCOUNT_NFT = 0xf7f38e26;
     // Transfer(address indexed from, address indexed to, uint256 indexed tokenId)
     // Transfer(address indexed from, address indexed to, uint256 value)
     public static final Bytes TRANSFER_EVENT =
