@@ -357,6 +357,26 @@ abstract contract HederaTokenService is HederaResponseCodes {
         : (HederaResponseCodes.UNKNOWN, false);
     }
 
+    /// Query token default freeze status
+    /// @param token The token address to check
+    /// @return responseCode The response code for the status of the request. SUCCESS is 22.
+    /// @return defaultFreezeStatus True if `token` default freeze status is frozen.
+    function getTokenDefaultFreezeStatus(address token) internal returns (int responseCode, bool defaultFreezeStatus) {
+        (bool success, bytes memory result) = precompileAddress.call(
+            abi.encodeWithSelector(IHederaTokenService.getTokenDefaultFreezeStatus.selector, token));
+        (responseCode, defaultFreezeStatus) = success ? abi.decode(result, (int32, bool)) : (HederaResponseCodes.UNKNOWN, false);
+    }
+
+    /// Query token default kyc status
+    /// @param token The token address to check
+    /// @return responseCode The response code for the status of the request. SUCCESS is 22.
+    /// @return defaultKycStatus True if `token` default kyc status is KycNotApplicable and false if Revoked.
+    function getTokenDefaultKycStatus(address token) internal returns (int responseCode, bool defaultKycStatus) {
+        (bool success, bytes memory result) = precompileAddress.call(
+            abi.encodeWithSelector(IHederaTokenService.getTokenDefaultKycStatus.selector, token));
+        (responseCode, defaultKycStatus) = success ? abi.decode(result, (int32, bool)) : (HederaResponseCodes.UNKNOWN, false);
+    }
+
     /**********************
      * ABI v1 calls       *
      **********************/

@@ -412,6 +412,22 @@ interface IHederaTokenService {
     /// @param serialNumber The serial number of the NFT for which to retrieve information
     function getNonFungibleTokenInfo(address token, int64 serialNumber) external returns (int responseCode, NonFungibleTokenInfo memory tokenInfo);
 
+    /// Query token default freeze status
+    /// @param token The token address to check
+    /// @return responseCode The response code for the status of the request. SUCCESS is 22.
+    /// @return defaultFreezeStatus True if `token` default freeze status is frozen.
+    function getTokenDefaultFreezeStatus(address token)
+        external
+        returns (int64 responseCode, bool defaultFreezeStatus);
+
+    /// Query token default kyc status
+    /// @param token The token address to check
+    /// @return responseCode The response code for the status of the request. SUCCESS is 22.
+    /// @return defaultKycStatus True if `token` default kyc status is KycNotApplicable and false if Revoked.
+    function getTokenDefaultKycStatus(address token)
+        external
+        returns (int64 responseCode, bool defaultKycStatus);
+
     /// Query token custom fees
     /// @param token The token address to check
     /// @return responseCode The response code for the status of the request. SUCCESS is 22.

@@ -19,6 +19,8 @@ import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hedera.services.exceptions.ValidationUtils.validateTrueOrRevert;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_GET_FUNGIBLE_TOKEN_INFO;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_GET_NON_FUNGIBLE_TOKEN_INFO;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_GET_TOKEN_DEFAULT_FREEZE_STATUS;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_GET_TOKEN_DEFAULT_KYC_STATUS;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_GET_TOKEN_CUSTOM_FEES;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_GET_TOKEN_INFO;
 import static com.hedera.services.utils.MiscUtils.asSecondsTimestamp;
@@ -26,6 +28,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.exceptions.InvalidTransactionException;
+import com.hedera.services.store.contracts.WorldLedgers;
 import com.hedera.services.store.contracts.precompile.codec.DecodingFacade;
 import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
 import com.hederahashgraph.api.proto.java.NftID;
@@ -43,6 +46,7 @@ public class ViewExecutor {
     private final DecodingFacade decoder;
     private final ViewGasCalculator gasCalculator;
     private final StateView stateView;
+    private final WorldLedgers ledgers;
 
     public ViewExecutor(
             final Bytes input,
@@ -50,13 +54,15 @@ public class ViewExecutor {
             final EncodingFacade encoder,
             final DecodingFacade decoder,
             final ViewGasCalculator gasCalculator,
-            final StateView stateView) {
+            final StateView stateView,
+            final WorldLedgers ledgers) {
         this.input = input;
         this.frame = frame;
         this.encoder = encoder;
         this.decoder = decoder;
         this.gasCalculator = gasCalculator;
         this.stateView = stateView;
+        this.ledgers = ledgers;
     }
 
     public Pair<Long, Bytes> computeCosted() {
@@ -107,6 +113,16 @@ public class ViewExecutor {
                     nonFungibleTokenInfo != null, ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER);
 
             return encoder.encodeGetNonFungibleTokenInfo(tokenInfo, nonFungibleTokenInfo);
+        } else if (selector == ABI_ID_GET_TOKEN_DEFAULT_FREEZE_STATUS) {
+            final var wrapper = decoder.decodeTokenDefaultFreezeStatus(input);
+            final var defaultFreezeStatus = ledgers.defaultFreezeStatus(wrapper.tokenID());
+
+            return encoder.encodeGetTokenDefaultFreezeStatus(defaultFreezeStatus);
+        } else if (selector == ABI_ID_GET_TOKEN_DEFAULT_KYC_STATUS) {
+            final var wrapper = decoder.decodeTokenDefaultKycStatus(input);
+            final var defaultKycStatus = ledgers.defaultKycStatus(wrapper.tokenID());
+
+            return encoder.encodeGetTokenDefaultKycStatus(defaultKycStatus);
         } else if (selector == ABI_ID_GET_TOKEN_CUSTOM_FEES) {
             final var wrapper = decoder.decodeTokenGetCustomFees(input);
             final var customFees = stateView.tokenCustomFees(wrapper.tokenID());

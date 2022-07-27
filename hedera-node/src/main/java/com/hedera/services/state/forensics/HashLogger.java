@@ -1,11 +1,6 @@
-package com.hedera.services.state.forensics;
-
-/*-
- * ‌
- * Hedera Services Node
- * ​
- * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2021-2022 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,30 +12,30 @@ package com.hedera.services.state.forensics;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+package com.hedera.services.state.forensics;
 
 import com.hedera.services.ServicesState;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import javax.inject.Inject;
-import javax.inject.Singleton;
-
 @Singleton
 public class HashLogger {
-	private static final Logger log = LogManager.getLogger(HashLogger.class);
+    private static final Logger log = LogManager.getLogger(HashLogger.class);
 
-	private static final String UNAVAILABLE_VIRTUAL_MAP_HASH = "<N/A>";
+    private static final String UNAVAILABLE_VIRTUAL_MAP_HASH = "<N/A>";
 
-	@Inject
-	public HashLogger() {
-		// Default Constructor
-	}
+    @Inject
+    public HashLogger() {
+        // Default Constructor
+    }
 
-	public void logHashesFor(ServicesState state) {
-		final var summaryTpl = """
-				[SwirldState Hashes] 
+    public void logHashesFor(ServicesState state) {
+        final var summaryTpl =
+                """
+				[SwirldState Hashes]
 				Overall                :: {}
 				Accounts               :: {}
 				Storage                :: {}
@@ -55,20 +50,21 @@ public class HashLogger {
 				  ↪ Running hash       :: {}
 				UniqueTokens           :: {}
 				ContractStorage        :: {}""";
-		log.info(summaryTpl,
-				state.getHash(),
-				state.accounts().getHash(),
-				UNAVAILABLE_VIRTUAL_MAP_HASH,
-				state.topics().getHash(),
-				state.tokens().getHash(),
-				state.tokenAssociations().getHash(),
-				state.specialFiles().getHash(),
-				state.scheduleTxs().getHash(),
-				state.networkCtx().getHash(),
-				state.addressBook().getHash(),
-				state.runningHashLeaf().getHash(),
-				state.runningHashLeaf().getRunningHash().getHash(),
-				state.uniqueTokens().getHash(),
-				UNAVAILABLE_VIRTUAL_MAP_HASH);
-	}
+        log.info(
+                summaryTpl,
+                state.getHash(),
+                state.accounts().getHash(),
+                UNAVAILABLE_VIRTUAL_MAP_HASH,
+                state.topics().getHash(),
+                state.tokens().getHash(),
+                state.tokenAssociations().getHash(),
+                state.specialFiles().getHash(),
+                state.scheduleTxs().getHash(),
+                state.networkCtx().getHash(),
+                state.addressBook().getHash(),
+                state.runningHashLeaf().getHash(),
+                state.runningHashLeaf().getRunningHash().getHash(),
+                state.uniqueTokens().getHash(),
+                UNAVAILABLE_VIRTUAL_MAP_HASH);
+    }
 }
