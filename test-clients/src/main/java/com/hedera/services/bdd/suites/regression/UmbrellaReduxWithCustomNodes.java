@@ -1,11 +1,6 @@
-package com.hedera.services.bdd.suites.regression;
-
-/*-
- * ‌
- * Hedera Services Test Clients
- * ​
- * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,25 +12,8 @@ package com.hedera.services.bdd.suites.regression;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
-
-import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.spec.HapiPropertySource;
-import com.hedera.services.bdd.spec.HapiSpecSetup;
-import com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts;
-import com.hedera.services.bdd.spec.props.NodeConnectInfo;
-import com.hedera.services.bdd.spec.queries.QueryVerbs;
-import com.hedera.services.bdd.suites.HapiApiSuite;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.atomic.AtomicReference;
+package com.hedera.services.bdd.suites.regression;
 
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createTopic;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
@@ -46,6 +24,22 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.regression.RegressionProviderFactory.factoryFrom;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+
+import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiPropertySource;
+import com.hedera.services.bdd.spec.HapiSpecSetup;
+import com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts;
+import com.hedera.services.bdd.spec.props.NodeConnectInfo;
+import com.hedera.services.bdd.spec.queries.QueryVerbs;
+import com.hedera.services.bdd.suites.HapiApiSuite;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 public class UmbrellaReduxWithCustomNodes extends HapiApiSuite {
     private static final Logger log = LogManager.getLogger(UmbrellaRedux.class);
@@ -66,81 +60,82 @@ public class UmbrellaReduxWithCustomNodes extends HapiApiSuite {
     private AtomicReference<TimeUnit> unit = new AtomicReference<>(MILLISECONDS);
 
     public static void main(String... args) {
-        if(args.length < 4){
+        if (args.length < 4) {
             HapiSpecSetup defaultSetup = HapiSpecSetup.getDefaultInstance();
             NodeConnectInfo nodeInfo = defaultSetup.nodes().get(0);
             nodeId += nodeInfo.getAccount().getAccountNum();
             nodeAddress = nodeInfo.getHost();
-            log.info("using default nodeId {} and node address {} -- RUNNING CUSTOM NET MIGRATION ",
-                    nodeId, nodeAddress);
-            payer +=  defaultSetup.defaultPayer().getAccountNum();
+            log.info(
+                    "using default nodeId {} and node address {} -- RUNNING CUSTOM NET MIGRATION ",
+                    nodeId,
+                    nodeAddress);
+            payer += defaultSetup.defaultPayer().getAccountNum();
             topic_running_hash_version = defaultSetup.defaultTopicRunningHashVersion();
-        }
-        else{
+        } else {
             nodeId += args[0];
             nodeAddress = args[1];
             payer += args[2];
             topic_running_hash_version = Integer.parseInt(args[3]);
         }
 
-        UmbrellaReduxWithCustomNodes umbrellaReduxWithCustomNodes = new UmbrellaReduxWithCustomNodes();
+        UmbrellaReduxWithCustomNodes umbrellaReduxWithCustomNodes =
+                new UmbrellaReduxWithCustomNodes();
         umbrellaReduxWithCustomNodes.runSuiteSync();
     }
+
     @Override
-	public List<HapiApiSpec> getSpecsInSuite() {
+    public List<HapiApiSpec> getSpecsInSuite() {
         return List.of(
-                new HapiApiSpec[]{
-                        UmbrellaReduxWithCustomNodes(),
-                        messageSubmissionSimple()
-                }
-        );
+                new HapiApiSpec[] {UmbrellaReduxWithCustomNodes(), messageSubmissionSimple()});
     }
 
     private HapiApiSpec messageSubmissionSimple() {
         return HapiApiSpec.customHapiSpec("messageSubmissionSimple")
-                .withProperties(Map.of(
-                        "default.topic.runningHash.version",topic_running_hash_version,
-                        "default.node",nodeId,
-                        "default.payer", payer,
-                        "nodes", nodeAddress + ":" + nodeId
-                ))
+                .withProperties(
+                        Map.of(
+                                "default.topic.runningHash.version", topic_running_hash_version,
+                                "default.node", nodeId,
+                                "default.payer", payer,
+                                "nodes", nodeAddress + ":" + nodeId))
                 .given(
                         newKeyNamed("submitKey"),
-                        createTopic("testTopic")
-                                .submitKeyName("submitKey")
-                )
-                .when(
-                        cryptoCreate("civilian").sendThreshold(1L)
-                )
+                        createTopic("testTopic").submitKeyName("submitKey"))
+                .when(cryptoCreate("civilian").sendThreshold(1L))
                 .then(
                         submitMessageTo("testTopic")
                                 .message("testmessage")
                                 .payingWith("civilian")
                                 .hasKnownStatus(SUCCESS)
                                 .via("messageSubmissionSimple"),
-                        QueryVerbs.getTxnRecord("messageSubmissionSimple").logged()
-                                .hasPriority(TransactionRecordAsserts
-                                        .recordWith()
-                                        .checkTopicRunningHashVersion(topic_running_hash_version)
-                                )
-                );
+                        QueryVerbs.getTxnRecord("messageSubmissionSimple")
+                                .logged()
+                                .hasPriority(
+                                        TransactionRecordAsserts.recordWith()
+                                                .checkTopicRunningHashVersion(
+                                                        topic_running_hash_version)));
     }
 
-    private HapiApiSpec UmbrellaReduxWithCustomNodes(){
+    private HapiApiSpec UmbrellaReduxWithCustomNodes() {
         return HapiApiSpec.customHapiSpec("UmbrellaReduxWithCustomNodes")
-                .withProperties(Map.of(
-                        "status.wait.timeout.ms", Integer.toString(1_000 * statusTimeoutSecs.get()),
-                        "default.node",nodeId,
-                        "default.payer", payer,
-                        "nodes", nodeAddress + ":" + nodeId))
-                .given().when().then(
+                .withProperties(
+                        Map.of(
+                                "status.wait.timeout.ms",
+                                Integer.toString(1_000 * statusTimeoutSecs.get()),
+                                "default.node",
+                                nodeId,
+                                "default.payer",
+                                payer,
+                                "nodes",
+                                nodeAddress + ":" + nodeId))
+                .given()
+                .when()
+                .then(
                         withOpContext((spec, opLog) -> configureFromCi(spec)),
                         runWithProvider(factoryFrom(props::get))
                                 .lasting(duration::get, unit::get)
                                 .maxOpsPerSec(maxOpsPerSec::get)
                                 .maxPendingOps(maxPendingOps::get)
-                                .backoffSleepSecs(backoffSleepSecs::get)
-                );
+                                .backoffSleepSecs(backoffSleepSecs::get));
     }
 
     private void configureFromCi(HapiApiSpec spec) {
@@ -172,5 +167,4 @@ public class UmbrellaReduxWithCustomNodes extends HapiApiSuite {
     protected Logger getResultsLogger() {
         return log;
     }
-
 }

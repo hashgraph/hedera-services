@@ -1,11 +1,6 @@
-package com.hedera.services.fees.calculation.crypto;
-
-/*-
- * ‌
- * Hedera Services Node
- * ​
- * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2021-2022 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,8 +12,10 @@ package com.hedera.services.fees.calculation.crypto;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+package com.hedera.services.fees.calculation.crypto;
+
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoDelete;
 
 import com.hedera.services.fees.annotations.FunctionKey;
 import com.hedera.services.fees.calculation.QueryResourceUsageEstimator;
@@ -30,33 +27,28 @@ import dagger.Module;
 import dagger.Provides;
 import dagger.multibindings.ElementsIntoSet;
 import dagger.multibindings.IntoMap;
-
 import java.util.List;
 import java.util.Set;
 
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoDelete;
-
 @Module
 public final class CryptoFeesModule {
-	@Provides
-	@ElementsIntoSet
-	public static Set<QueryResourceUsageEstimator> provideCryptoQueryEstimators(
-			final GetAccountInfoResourceUsage getAccountInfoResourceUsage,
-			final GetAccountRecordsResourceUsage getAccountRecordsResourceUsage
-	) {
-		return Set.of(getAccountInfoResourceUsage, getAccountRecordsResourceUsage);
-	}
+    @Provides
+    @ElementsIntoSet
+    public static Set<QueryResourceUsageEstimator> provideCryptoQueryEstimators(
+            final GetAccountInfoResourceUsage getAccountInfoResourceUsage,
+            final GetAccountRecordsResourceUsage getAccountRecordsResourceUsage) {
+        return Set.of(getAccountInfoResourceUsage, getAccountRecordsResourceUsage);
+    }
 
-	@Provides
-	@IntoMap
-	@FunctionKey(CryptoDelete)
-	public static List<TxnResourceUsageEstimator> provideCryptoDeleteEstimator(
-			final CryptoDeleteResourceUsage cryptoDeleteResourceUsage
-	) {
-		return List.of(cryptoDeleteResourceUsage);
-	}
+    @Provides
+    @IntoMap
+    @FunctionKey(CryptoDelete)
+    public static List<TxnResourceUsageEstimator> provideCryptoDeleteEstimator(
+            final CryptoDeleteResourceUsage cryptoDeleteResourceUsage) {
+        return List.of(cryptoDeleteResourceUsage);
+    }
 
-	private CryptoFeesModule() {
-		throw new UnsupportedOperationException("Dagger2 module");
-	}
+    private CryptoFeesModule() {
+        throw new UnsupportedOperationException("Dagger2 module");
+    }
 }
