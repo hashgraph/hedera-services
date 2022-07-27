@@ -123,6 +123,20 @@ public class DecodingFacade {
     private static final ABIType<Tuple> BURN_TOKEN_DECODER =
             TypeFactory.create("(bytes32,int64,int64[])");
 
+    private static final Function GET_TOKEN_DEFAULT_FREEZE_STATUS_FUNCTION =
+            new Function("getTokenDefaultFreezeStatus(address)", INT);
+    private static final Bytes GET_TOKEN_DEFAULT_FREEZE_STATUS_SELECTOR =
+            Bytes.wrap(GET_TOKEN_DEFAULT_FREEZE_STATUS_FUNCTION.selector());
+    private static final ABIType<Tuple> GET_TOKEN_DEFAULT_FREEZE_STATUS_DECODER =
+            TypeFactory.create(BYTES32);
+
+    private static final Function GET_TOKEN_DEFAULT_KYC_STATUS_FUNCTION =
+            new Function("getTokenDefaultKycStatus(address)", INT);
+    private static final Bytes GET_TOKEN_DEFAULT_KYC_STATUS_SELECTOR =
+            Bytes.wrap(GET_TOKEN_DEFAULT_KYC_STATUS_FUNCTION.selector());
+    private static final ABIType<Tuple> GET_TOKEN_DEFAULT_KYC_STATUS_DECODER =
+            TypeFactory.create(BYTES32);
+
     private static final Function DELETE_TOKEN_FUNCTION = new Function("deleteToken(address)", INT);
     private static final Bytes DELETE_TOKEN_SELECTOR = Bytes.wrap(DELETE_TOKEN_FUNCTION.selector());
     private static final ABIType<Tuple> DELETE_TOKEN_DECODER = TypeFactory.create(BYTES32);
@@ -165,7 +179,8 @@ public class DecodingFacade {
             new Function("balanceOf(address)", INT);
     private static final Bytes BALANCE_OF_TOKEN_SELECTOR =
             Bytes.wrap(BALANCE_OF_TOKEN_FUNCTION.selector());
-    private static final ABIType<Tuple> BALANCE_OF_TOKEN_DECODER = TypeFactory.create(BYTES32);
+    private static final ABIType<Tuple> BALANCE_OF_TOKEN_DECODER =
+            TypeFactory.create(BYTES32);
 
     private static final Function OWNER_OF_NFT_FUNCTION = new Function("ownerOf(uint256)", INT);
     private static final Bytes OWNER_OF_NFT_SELECTOR = Bytes.wrap(OWNER_OF_NFT_FUNCTION.selector());
@@ -418,6 +433,30 @@ public class DecodingFacade {
             return BurnWrapper.forNonFungible(
                     tokenID, Arrays.stream(serialNumbers).boxed().toList());
         }
+    }
+
+    public GetTokenDefaultFreezeStatusWrapper decodeTokenDefaultFreezeStatus(final Bytes input) {
+        final Tuple decodedArguments =
+                decodeFunctionCall(
+                        input,
+                        GET_TOKEN_DEFAULT_FREEZE_STATUS_SELECTOR,
+                        GET_TOKEN_DEFAULT_FREEZE_STATUS_DECODER);
+
+        final var tokenID = convertAddressBytesToTokenID(decodedArguments.get(0));
+
+        return new GetTokenDefaultFreezeStatusWrapper(tokenID);
+    }
+
+    public GetTokenDefaultKycStatusWrapper decodeTokenDefaultKycStatus(final Bytes input) {
+        final Tuple decodedArguments =
+                decodeFunctionCall(
+                        input,
+                        GET_TOKEN_DEFAULT_KYC_STATUS_SELECTOR,
+                        GET_TOKEN_DEFAULT_KYC_STATUS_DECODER);
+
+        final var tokenID = convertAddressBytesToTokenID(decodedArguments.get(0));
+
+        return new GetTokenDefaultKycStatusWrapper(tokenID);
     }
 
     public DeleteWrapper decodeDelete(final Bytes input) {

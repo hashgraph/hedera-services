@@ -1,11 +1,6 @@
-package com.hedera.services.bdd.spec.assertions;
-
-/*-
- * ‌
- * Hedera Services Test Clients
- * ​
- * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,20 +12,20 @@ package com.hedera.services.bdd.spec.assertions;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+package com.hedera.services.bdd.spec.assertions;
 
 import com.hederahashgraph.api.proto.java.TransactionID;
 
 public class SequentialID {
-	int currentTxnNonce = 0;
-	TransactionID parent;
+    int currentTxnNonce = 0;
+    TransactionID parent;
 
-	public SequentialID(TransactionID distributeTxId) {
-		parent = distributeTxId;
-	}
+    public SequentialID(TransactionID distributeTxId) {
+        parent = distributeTxId;
+    }
 
-	public TransactionID nextChild() {
-		return parent.toBuilder().setNonce(++currentTxnNonce).build();
-	}
+    public TransactionID nextChild() {
+        return parent.toBuilder().setNonce(++currentTxnNonce).build();
+    }
 }

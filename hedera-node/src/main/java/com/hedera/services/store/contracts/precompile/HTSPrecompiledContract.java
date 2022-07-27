@@ -78,6 +78,8 @@ import com.hedera.services.store.contracts.precompile.impl.DissociatePrecompile;
 import com.hedera.services.store.contracts.precompile.impl.ERCTransferPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.FungibleTokenInfoPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.GetApprovedPrecompile;
+import com.hedera.services.store.contracts.precompile.impl.GetTokenDefaultFreezeStatus;
+import com.hedera.services.store.contracts.precompile.impl.GetTokenDefaultKycStatus;
 import com.hedera.services.store.contracts.precompile.impl.IsApprovedForAllPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.MintPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.MultiAssociatePrecompile;
@@ -213,7 +215,8 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
                                     input,
                                     frame,
                                     precompilePricingUtils::computeViewFunctionGas,
-                                    currentView);
+                                    currentView,
+                                    ledgers);
                     return executor.computeCosted();
                 }
             }
@@ -417,6 +420,12 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
                                             encoder,
                                             decoder,
                                             precompilePricingUtils));
+                    case AbiConstants
+                            .ABI_ID_GET_TOKEN_DEFAULT_FREEZE_STATUS -> new GetTokenDefaultFreezeStatus(
+                            syntheticTxnFactory, ledgers, encoder, decoder, precompilePricingUtils);
+                    case AbiConstants
+                            .ABI_ID_GET_TOKEN_DEFAULT_KYC_STATUS -> new GetTokenDefaultKycStatus(
+                            syntheticTxnFactory, ledgers, encoder, decoder, precompilePricingUtils);
                     case AbiConstants.ABI_ID_DELETE_TOKEN -> new DeleteTokenPrecompile(
                             ledgers,
                             decoder,

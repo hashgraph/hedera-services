@@ -637,6 +637,11 @@ public class MerkleToken extends PartialMerkleLeaf implements Keyed<EntityNum>, 
         this.accountsFrozenByDefault = accountsFrozenByDefault;
     }
 
+    public void setAccountsKycGrantedByDefault(boolean accountsKycGrantedByDefault) {
+        throwIfImmutable("Cannot change this token's default Kyc status if it's immutable.");
+        this.accountsKycGrantedByDefault = accountsKycGrantedByDefault;
+    }
+
     public long getLastUsedSerialNumber() {
         return lastUsedSerialNumber;
     }

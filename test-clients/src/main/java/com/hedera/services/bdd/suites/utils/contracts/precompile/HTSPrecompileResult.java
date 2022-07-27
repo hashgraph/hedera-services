@@ -29,6 +29,8 @@ import static com.hedera.services.contracts.ParsingConstants.burnReturnType;
 import static com.hedera.services.contracts.ParsingConstants.decimalsType;
 import static com.hedera.services.contracts.ParsingConstants.ercTransferType;
 import static com.hedera.services.contracts.ParsingConstants.getApprovedType;
+import static com.hedera.services.contracts.ParsingConstants.getTokenDefaultFreezeStatusType;
+import static com.hedera.services.contracts.ParsingConstants.getTokenDefaultKycStatusType;
 import static com.hedera.services.contracts.ParsingConstants.hapiAllowanceOfType;
 import static com.hedera.services.contracts.ParsingConstants.hapiGetApprovedType;
 import static com.hedera.services.contracts.ParsingConstants.hapiIsApprovedForAllType;
@@ -110,6 +112,8 @@ public class HTSPrecompileResult implements ContractCallResult {
     private boolean isApprovedForAllStatus;
     private TokenInfo tokenInfo;
     private TokenNftInfo nonFungibleTokenInfo;
+    private boolean tokenDefaultFreezeStatus;
+    private boolean tokenDefaultKycStatus;
 
     public HTSPrecompileResult forFunction(final FunctionType functionType) {
         tupleType =
@@ -133,6 +137,8 @@ public class HTSPrecompileResult implements ContractCallResult {
                     case HAPI_GET_TOKEN_INFO -> getTokenInfoTypeReplacedAddress;
                     case HAPI_GET_FUNGIBLE_TOKEN_INFO -> getFungibleTokenInfoTypeReplacedAddress;
                     case HAPI_GET_NON_FUNGIBLE_TOKEN_INFO -> getNonFungibleTokenInfoTypeReplacedAddress;
+                    case GET_TOKEN_DEFAULT_FREEZE_STATUS -> getTokenDefaultFreezeStatusType;
+                    case GET_TOKEN_DEFAULT_KYC_STATUS -> getTokenDefaultKycStatusType;
                     default -> notSpecifiedType;
                 };
 
@@ -229,6 +235,17 @@ public class HTSPrecompileResult implements ContractCallResult {
         return this;
     }
 
+    public HTSPrecompileResult withTokenDefaultFreezeStatus(
+            final boolean tokenDefaultFreezeStatus) {
+        this.tokenDefaultFreezeStatus = tokenDefaultFreezeStatus;
+        return this;
+    }
+
+    public HTSPrecompileResult withTokenDefaultKycStatus(final boolean tokenDefaultKycStatus) {
+        this.tokenDefaultKycStatus = tokenDefaultKycStatus;
+        return this;
+    }
+
     @Override
     public Bytes getBytes() {
         if (ParsingConstants.FunctionType.ERC_OWNER.equals(functionType)) {
@@ -260,6 +277,10 @@ public class HTSPrecompileResult implements ContractCallResult {
                     case HAPI_GET_TOKEN_INFO -> getTupleForGetTokenInfo();
                     case HAPI_GET_FUNGIBLE_TOKEN_INFO -> getTupleForGetFungibleTokenInfo();
                     case HAPI_GET_NON_FUNGIBLE_TOKEN_INFO -> getTupleForGetNonFungibleTokenInfo();
+                    case GET_TOKEN_DEFAULT_FREEZE_STATUS -> Tuple.of(
+                            status.getNumber(), tokenDefaultFreezeStatus);
+                    case GET_TOKEN_DEFAULT_KYC_STATUS -> Tuple.of(
+                            status.getNumber(), tokenDefaultKycStatus);
                     default -> Tuple.of(status.getNumber());
                 };
 
