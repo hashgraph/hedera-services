@@ -231,7 +231,6 @@ class MigrationRecordsManagerTest {
         given(txnAccessor.getFunction()).willReturn(HederaFunctionality.ContractCall);
         given(transactionContext.accessor()).willReturn(txnAccessor);
         given(dynamicProperties.isTraceabilityMigrationEnabled()).willReturn(true);
-        accounts.clear();
 
         subject.publishMigrationRecords(now);
 
@@ -248,7 +247,6 @@ class MigrationRecordsManagerTest {
         given(txnAccessor.getFunction()).willReturn(HederaFunctionality.EthereumTransaction);
         given(transactionContext.accessor()).willReturn(txnAccessor);
         given(dynamicProperties.isTraceabilityMigrationEnabled()).willReturn(true);
-        accounts.clear();
 
         subject.publishMigrationRecords(now);
 
@@ -265,7 +263,6 @@ class MigrationRecordsManagerTest {
         given(txnAccessor.getFunction()).willReturn(HederaFunctionality.ContractCreate);
         given(transactionContext.accessor()).willReturn(txnAccessor);
         given(dynamicProperties.isTraceabilityMigrationEnabled()).willReturn(true);
-        accounts.clear();
 
         subject.publishMigrationRecords(now);
 
@@ -285,45 +282,45 @@ class MigrationRecordsManagerTest {
         given(transactionContext.accessor()).willReturn(txnAccessor);
         given(dynamicProperties.isTraceabilityMigrationEnabled()).willReturn(true);
         accounts.clear();
-
-        // mock contract1 with 3 slots
+        // mock contract with 3 slots
         final var contract1 = mock(MerkleAccount.class);
         given(contract1.isSmartContract()).willReturn(true);
-        final var contract1Key1 = ContractKey.from(3L, UInt256.valueOf(1L));
-        final var contract1Key2 = ContractKey.from(3L, UInt256.valueOf(2L));
-        final var contract1Key3 = ContractKey.from(3L, UInt256.valueOf(155542L));
+        final var contract1Num = 3L;
+        final var contract1Key1 = ContractKey.from(contract1Num, UInt256.valueOf(1L));
+        final var contract1Key2 = ContractKey.from(contract1Num, UInt256.valueOf(2L));
+        final var contract1Key3 = ContractKey.from(contract1Num, UInt256.valueOf(155542L));
         final var contract1Value1 = mock(IterableContractValue.class);
         final var contract1Value2 = mock(IterableContractValue.class);
         final var contract1Value3 = mock(IterableContractValue.class);
         given(contract1.getFirstContractStorageKey()).willReturn(contract1Key1);
-        given(contract1Value1.getNextKeyScopedTo(3L)).willReturn(contract1Key2);
+        given(contract1Value1.getNextKeyScopedTo(contract1Num)).willReturn(contract1Key2);
         final var value1 = "value1".getBytes();
         given(contract1Value1.getValue()).willReturn(value1);
-        given(contract1Value2.getNextKeyScopedTo(3L)).willReturn(contract1Key3);
+        given(contract1Value2.getNextKeyScopedTo(contract1Num)).willReturn(contract1Key3);
         final var value2 = "value2".getBytes();
         given(contract1Value2.getValue()).willReturn(value2);
         final var value3 = "value3".getBytes();
         given(contract1Value3.getValue()).willReturn(value3);
-        given(contract1Value3.getNextKeyScopedTo(3L)).willReturn(null);
+        given(contract1Value3.getNextKeyScopedTo(contract1Num)).willReturn(null);
         given(contractStorage.get(contract1Key1)).willReturn(contract1Value1);
         given(contractStorage.get(contract1Key2)).willReturn(contract1Value2);
         given(contractStorage.get(contract1Key3)).willReturn(contract1Value3);
-        final var entityNum1 = EntityNum.fromLong(3L);
+        final var entityNum1 = EntityNum.fromLong(contract1Num);
         final var runtimeBytes = "runtime".getBytes();
         given(entityAccess.fetchCodeIfPresent(entityNum1.toGrpcAccountId()))
                 .willReturn(Bytes.of(runtimeBytes));
-
-        // mock contract2 with 1 slot
+        // mock contract with 1 slot
         final var contract2 = mock(MerkleAccount.class);
         given(contract2.isSmartContract()).willReturn(true);
         final var contract2Value1 = mock(IterableContractValue.class);
-        final var contract2Key1 = ContractKey.from(4L, UInt256.valueOf(257L));
+        final var contrcat2Num = 4L;
+        final var contract2Key1 = ContractKey.from(contrcat2Num, UInt256.valueOf(257L));
         given(contract2.getFirstContractStorageKey()).willReturn(contract2Key1);
-        given(contract2Value1.getNextKeyScopedTo(4L)).willReturn(null);
+        given(contract2Value1.getNextKeyScopedTo(contrcat2Num)).willReturn(null);
         final var value4 = "value4".getBytes();
         given(contract2Value1.getValue()).willReturn(value4);
         given(contractStorage.get(contract2Key1)).willReturn(contract2Value1);
-        final var entityNum2 = EntityNum.fromLong(4L);
+        final var entityNum2 = EntityNum.fromLong(contrcat2Num);
         final var runtimeBytes2 = "runtime2".getBytes();
         given(entityAccess.fetchCodeIfPresent(entityNum2.toGrpcAccountId()))
                 .willReturn(Bytes.of(runtimeBytes2));
@@ -331,8 +328,10 @@ class MigrationRecordsManagerTest {
         accounts.put(entityNum1, contract1);
         accounts.put(entityNum2, contract2);
 
+        // when
         subject.publishMigrationRecords(now);
 
+        // then
         assertFalse(subject.areAllMigrationsSansTraceabilityFinished());
         verify(transactionContext, times(3)).addSidecarRecord(sidecarCaptor.capture());
         final var sidecarRecords = sidecarCaptor.getAllValues();
@@ -479,7 +478,7 @@ class MigrationRecordsManagerTest {
     }
 
     @Test
-    void doNotPerformOtherMigrationOnSubsequentCallsIfOnlyTraceabilityNeedsFinishing() {
+    void doesNotPerformOtherMigrationOnSubsequentCallsIfOnlyTraceabilityNeedsFinishing() {
         given(consensusTimeTracker.unlimitedPreceding()).willReturn(true);
         given(networkCtx.areMigrationRecordsStreamed()).willReturn(false);
         given(networkCtx.consensusTimeOfLastHandledTxn()).willReturn(now);
