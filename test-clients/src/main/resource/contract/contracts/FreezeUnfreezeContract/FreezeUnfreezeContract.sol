@@ -5,12 +5,13 @@ import "./hip-206/HederaResponseCodes.sol";
 
 contract FreezeUnfreezeContract is HederaTokenService {
 
-    function isTokenFrozen(address token, address account)external{
+    function isTokenFrozen(address token, address account)external returns(bool){
         (int response,bool frozen) = HederaTokenService.isFrozen(token, account);
 
         if (response != HederaResponseCodes.SUCCESS) {
             revert ("Token isFrozen failed!");
         }
+        return frozen;
     }
 
     function tokenFreeze(address token, address account)external{
