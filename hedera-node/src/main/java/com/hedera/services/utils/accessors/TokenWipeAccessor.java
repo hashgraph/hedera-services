@@ -29,6 +29,10 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenWipeAccountTransactionBody;
 import java.util.List;
 
+/**
+ * Specialized accessor for TokenWipe transaction. Uses the latest signed state view for looking up
+ * alias in the ServicesState.
+ */
 public class TokenWipeAccessor extends SignedTxnAccessor {
     private final TokenWipeAccountTransactionBody body;
     private final GlobalDynamicProperties dynamicProperties;
