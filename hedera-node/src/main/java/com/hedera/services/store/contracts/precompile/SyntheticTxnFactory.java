@@ -71,8 +71,8 @@ import com.hederahashgraph.api.proto.java.TokenMintTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TokenType;
-import com.hederahashgraph.api.proto.java.TokenWipeAccountTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenUnfreezeAccountTransactionBody;
+import com.hederahashgraph.api.proto.java.TokenWipeAccountTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import java.math.BigInteger;
@@ -453,7 +453,6 @@ public class SyntheticTxnFactory {
         builder.setAccount(unFreezeWrapper.account());
         return TransactionBody.newBuilder().setTokenUnfreeze(builder);
     }
-
 
     public static class HbarTransfer {
         protected final long amount;
