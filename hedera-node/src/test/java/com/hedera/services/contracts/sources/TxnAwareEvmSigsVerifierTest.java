@@ -42,6 +42,7 @@ import static com.hedera.services.ledger.properties.AccountProperty.IS_RECEIVER_
 import static com.hedera.services.ledger.properties.AccountProperty.KEY;
 import static com.hedera.test.utils.TxnUtils.assertFailsWith;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ADMIN_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_SUPPLY_KEY;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -184,6 +185,35 @@ class TxnAwareEvmSigsVerifierTest {
                         subject.hasActiveKey(
                                 true, PRETEND_ACCOUNT_ADDR, PRETEND_SENDER_ADDR, ledgers),
                 INVALID_ACCOUNT_ID);
+    }
+
+    @Test
+    void throwsIfAskedToVerifyTokenWithoutAdminKey() {
+        given(ledgers.tokens()).willReturn(tokensLedger);
+        given(tokensLedger.exists(token)).willReturn(true);
+        given(tokensLedger.get(token, TokenProperty.ADMIN_KEY)).willReturn(null);
+
+        assertFailsWith(
+                () ->
+                        subject.hasActiveAdminKey(
+                                true, PRETEND_TOKEN_ADDR, PRETEND_SENDER_ADDR, ledgers),
+                INVALID_ADMIN_KEY);
+    }
+
+    @Test
+    void testsAdminKeyIfPresent() {
+        given(txnCtx.swirldsTxnAccessor()).willReturn(accessor);
+        given(ledgers.tokens()).willReturn(tokensLedger);
+        given(tokensLedger.exists(token)).willReturn(true);
+        given(tokensLedger.get(token, TokenProperty.ADMIN_KEY)).willReturn(expectedKey);
+
+        given(accessor.getRationalizedPkToCryptoSigFn()).willReturn(pkToCryptoSigsFn);
+        given(activationTest.test(eq(expectedKey), eq(pkToCryptoSigsFn), any())).willReturn(true);
+
+        final var verdict =
+                subject.hasActiveAdminKey(true, PRETEND_TOKEN_ADDR, PRETEND_SENDER_ADDR, ledgers);
+
+        assertTrue(verdict);
     }
 
     @Test
