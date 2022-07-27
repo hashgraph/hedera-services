@@ -52,7 +52,9 @@ import com.hedera.services.txns.token.AssociateLogic;
 import com.hedera.services.txns.token.BurnLogic;
 import com.hedera.services.txns.token.CreateLogic;
 import com.hedera.services.txns.token.DissociateLogic;
+import com.hedera.services.txns.token.GrantKycLogic;
 import com.hedera.services.txns.token.MintLogic;
+import com.hedera.services.txns.token.RevokeKycLogic;
 import com.hedera.services.txns.token.WipeLogic;
 import com.hedera.services.txns.token.process.DissociationFactory;
 import com.hedera.services.txns.token.validators.CreateChecks;
@@ -209,6 +211,16 @@ public class InfrastructureFactory {
     public DeleteAllowanceLogic newDeleteAllowanceLogic(
             final AccountStore accountStore, final TypedTokenStore tokenStore) {
         return new DeleteAllowanceLogic(accountStore, tokenStore);
+    }
+
+    public GrantKycLogic newGrantKycLogic(
+        final AccountStore accountStore, final TypedTokenStore tokenStore) {
+        return new GrantKycLogic(tokenStore, accountStore);
+    }
+
+    public RevokeKycLogic newRevokeKycLogic(
+        final AccountStore accountStore, final TypedTokenStore tokenStore) {
+        return new RevokeKycLogic(tokenStore, accountStore);
     }
 
     public WipeLogic newWipeLogic(
