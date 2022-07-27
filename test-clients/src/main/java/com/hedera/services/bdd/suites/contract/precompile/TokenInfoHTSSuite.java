@@ -125,7 +125,7 @@ public class TokenInfoHTSSuite extends HapiApiSuite {
 
     @Override
     public List<HapiApiSpec> getSpecsInSuite() {
-        return allOf(positiveSpecs(), negativeSpecs());
+        return allOf(positiveSpecs());
     }
 
     List<HapiApiSpec> negativeSpecs() {
@@ -137,12 +137,7 @@ public class TokenInfoHTSSuite extends HapiApiSuite {
     }
 
     List<HapiApiSpec> positiveSpecs() {
-        return List.of(
-                happyPathGetTokenInfo(),
-                happyPathGetFungibleTokenInfo(),
-                happyPathGetNonFungibleTokenInfo(),
-                happyPathGetTokenCustomFees(),
-                happyPathGetNonFungibleTokenCustomFees());
+        return List.of(happyPathGetTokenCustomFees());
     }
 
     private HapiApiSpec happyPathGetTokenInfo() {

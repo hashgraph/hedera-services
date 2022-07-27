@@ -16,11 +16,15 @@
 package com.hedera.services.contracts;
 
 import static com.hedera.services.contracts.ParsingConstants.ADDRESS;
+import static com.hedera.services.contracts.ParsingConstants.ARRAY_BRACKETS;
 import static com.hedera.services.contracts.ParsingConstants.BOOL;
+import static com.hedera.services.contracts.ParsingConstants.FIXED_FEE;
+import static com.hedera.services.contracts.ParsingConstants.FRACTIONAL_FEE;
 import static com.hedera.services.contracts.ParsingConstants.FUNGIBLE_TOKEN_INFO;
 import static com.hedera.services.contracts.ParsingConstants.INT32;
 import static com.hedera.services.contracts.ParsingConstants.NON_FUNGIBLE_TOKEN_INFO;
 import static com.hedera.services.contracts.ParsingConstants.RESPONSE_STATUS_AT_BEGINNING;
+import static com.hedera.services.contracts.ParsingConstants.ROYALTY_FEE;
 import static com.hedera.services.contracts.ParsingConstants.STRING;
 import static com.hedera.services.contracts.ParsingConstants.TOKEN_INFO;
 import static com.hedera.services.contracts.ParsingConstants.UINT256;
@@ -45,6 +49,7 @@ import static com.hedera.services.contracts.ParsingConstants.nameType;
 import static com.hedera.services.contracts.ParsingConstants.notSpecifiedType;
 import static com.hedera.services.contracts.ParsingConstants.ownerOfType;
 import static com.hedera.services.contracts.ParsingConstants.symbolType;
+import static com.hedera.services.contracts.ParsingConstants.tokenGetCustomFees;
 import static com.hedera.services.contracts.ParsingConstants.tokenUriType;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -74,6 +79,7 @@ class ParsingConstantsTest {
                 "HAPI_GET_NON_FUNGIBLE_TOKEN_INFO",
                 FunctionType.HAPI_GET_NON_FUNGIBLE_TOKEN_INFO.name());
         assertEquals("HAPI_GET_TOKEN_INFO", FunctionType.HAPI_GET_TOKEN_INFO.name());
+        assertEquals("HAPI_GET_TOKEN_CUSTOM_FEES", FunctionType.HAPI_GET_TOKEN_CUSTOM_FEES.name());
         assertEquals("HAPI_MINT", FunctionType.HAPI_MINT.name());
         assertEquals("HAPI_BURN", FunctionType.HAPI_BURN.name());
         assertEquals("HAPI_CREATE", FunctionType.HAPI_CREATE.name());
@@ -103,6 +109,19 @@ class ParsingConstantsTest {
         assertEquals(
                 getNonFungibleTokenInfoType,
                 TupleType.parse(RESPONSE_STATUS_AT_BEGINNING + NON_FUNGIBLE_TOKEN_INFO + ")"));
+        assertEquals(
+                tokenGetCustomFees,
+                TupleType.parse(
+                        RESPONSE_STATUS_AT_BEGINNING
+                                + FIXED_FEE
+                                + ARRAY_BRACKETS
+                                + ","
+                                + FRACTIONAL_FEE
+                                + ARRAY_BRACKETS
+                                + ","
+                                + ROYALTY_FEE
+                                + ARRAY_BRACKETS
+                                + ")"));
         assertEquals(isApprovedForAllType, TupleType.parse(BOOL));
         assertEquals(mintReturnType, TupleType.parse("(int32,uint64,int64[])"));
         assertEquals(nameType, TupleType.parse(STRING));

@@ -64,17 +64,6 @@ public final class ParsingConstants {
                     + ARRAY_BRACKETS
                     + ",string"
                     + ")";
-    public static final String CUSTOM_FEES =
-            "("
-                    + FIXED_FEE
-                    + ARRAY_BRACKETS
-                    + ","
-                    + FRACTIONAL_FEE
-                    + ARRAY_BRACKETS
-                    + ","
-                    + ROYALTY_FEE
-                    + ARRAY_BRACKETS
-                    + ")";
     public static final String RESPONSE_STATUS_AT_BEGINNING = "(int32,";
 
     public static final String FUNGIBLE_TOKEN_INFO = "(" + TOKEN_INFO + ",int32" + ")";

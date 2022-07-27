@@ -1270,6 +1270,25 @@ class StateViewTest {
                 ((BackingTokenRels) subject.asReadOnlyAssociationStore()).getDelegate().get());
     }
 
+    @Test
+    void tokenCustomFeesWorks() {
+        given(tokens.get(tokenNum)).willReturn(token);
+        assertEquals(grpcCustomFees, subject.tokenCustomFees(tokenId));
+    }
+
+    @Test
+    void tokenCustomFeesFailsGracefully() {
+        given(tokens.get(tokenNum)).willThrow(IllegalArgumentException.class);
+        final var customFees = subject.tokenCustomFees(tokenId);
+        assertTrue(customFees.isEmpty());
+    }
+
+    @Test
+    void tokenCustomFeesMissingTokenIdReturnsEmptyList() {
+        final var customFees = subject.tokenCustomFees(missingTokenId);
+        assertTrue(customFees.isEmpty());
+    }
+
     private final Instant nftCreation = Instant.ofEpochSecond(1_234_567L, 8);
     private final byte[] nftMeta = "abcdefgh".getBytes();
     private final NftID targetNftId =

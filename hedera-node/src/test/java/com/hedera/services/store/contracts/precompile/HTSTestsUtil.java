@@ -27,6 +27,7 @@ import com.hedera.services.store.contracts.precompile.codec.MintWrapper;
 import com.hedera.services.store.contracts.precompile.codec.OwnerOfAndTokenURIWrapper;
 import com.hedera.services.store.contracts.precompile.codec.TokenCreateWrapper;
 import com.hedera.services.store.contracts.precompile.codec.TokenExpiryWrapper;
+import com.hedera.services.store.contracts.precompile.codec.TokenGetCustomFeesWrapper;
 import com.hedera.services.store.contracts.precompile.codec.TokenInfoWrapper;
 import com.hedera.services.store.contracts.precompile.codec.TokenTransferWrapper;
 import com.hedera.services.store.models.Id;
@@ -168,6 +169,8 @@ public class HTSTestsUtil {
             "Invalid operation for ERC-20 token!";
     public static final String NOT_SUPPORTED_NON_FUNGIBLE_OPERATION_REASON =
             "Invalid operation for ERC-721 token!";
+    public static final TokenGetCustomFeesWrapper customFeesWrapper =
+            new TokenGetCustomFeesWrapper(token);
 
     public static final Bytes ercTransferSuccessResult =
             Bytes.fromHexString(
