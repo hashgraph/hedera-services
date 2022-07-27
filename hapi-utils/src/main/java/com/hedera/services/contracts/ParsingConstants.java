@@ -98,7 +98,7 @@ public final class ParsingConstants {
     public static final TupleType getNonFungibleTokenInfoType =
             TupleType.parse(RESPONSE_STATUS_AT_BEGINNING + NON_FUNGIBLE_TOKEN_INFO + ")");
     public static final TupleType isApprovedForAllType = booleanTuple;
-    public static final TupleType isFrozenType = TupleType.parse("(int32,bool)");
+    public static final TupleType isFrozenType = TupleType.parse(INT_BOOL_PAIR_RETURN_TYPE);
     public static final TupleType ercTransferType = booleanTuple;
     public static final TupleType hapiAllowanceOfType = TupleType.parse("(int32,uint256)");
     public static final TupleType hapiGetApprovedType = TupleType.parse("(int32,bytes32)");
