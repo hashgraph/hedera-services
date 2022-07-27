@@ -118,26 +118,27 @@ class ServicesTxnManagerTest {
     }
 
     @Test
-    void onlyCallsMigrationRecordsManagerOnceIfTraceabilityMigrationIsExecutedAlongAllOtherMigrations() {
-			given(migrationRecordsManager.areAllMigrationsSansTraceabilityFinished()).willReturn(false);
+    void onlyCallsMigrationRecordsManagerOnceIfAllMigrationsAreExecutedTogether() {
+        given(migrationRecordsManager.areAllMigrationsSansTraceabilityFinished()).willReturn(false);
 
-			subject.process(accessor, consensusTime, submittingMember);
+        subject.process(accessor, consensusTime, submittingMember);
         subject.process(accessor, consensusTime, submittingMember);
 
         verify(migrationRecordsManager, times(1)).publishMigrationRecords(consensusTime);
     }
 
-	@Test
-	void callsMigrationManagerUntilTraceabilityMigrationIsComplete() {
-		given(migrationRecordsManager.areAllMigrationsSansTraceabilityFinished())
-				.willReturn(true)
-				.willReturn(false);
-		subject.process(accessor, consensusTime, submittingMember);
-		subject.process(accessor, consensusTime, submittingMember);
-		subject.process(accessor, consensusTime, submittingMember);
+    @Test
+    void callsMigrationManagerUntilTraceabilityMigrationIsComplete() {
+        given(migrationRecordsManager.areAllMigrationsSansTraceabilityFinished())
+                .willReturn(true)
+                .willReturn(false);
 
-		verify(migrationRecordsManager, times(2)).publishMigrationRecords(consensusTime);
-	}
+        subject.process(accessor, consensusTime, submittingMember);
+        subject.process(accessor, consensusTime, submittingMember);
+        subject.process(accessor, consensusTime, submittingMember);
+
+        verify(migrationRecordsManager, times(2)).publishMigrationRecords(consensusTime);
+    }
 
     @Test
     void warnsOnFailedRecordStreaming() {

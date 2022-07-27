@@ -95,15 +95,12 @@ public class ServicesTxnManager {
 
             if (needToPublishMigrationRecords) {
                 // The manager will only publish migration records if the MerkleNetworkContext (in
-                // state)
-                // shows that it needs to do so or traceability migration was not finished on the
-                //                first txn
-                //                 (a contract call/create/ethereum was first txn after upgrade);
-                // our responsibility here is just to give it the
-                // opportunity
+                // state) shows that it needs to do so or traceability migration was not finished
+                // on the first txn (a contract call/create/ethereum was first txn after upgrade);
+                // our responsibility here is just to give it the opportunity
                 migrationRecordsManager.publishMigrationRecords(consensusTime);
-							needToPublishMigrationRecords =
-									migrationRecordsManager.areAllMigrationsSansTraceabilityFinished();
+                needToPublishMigrationRecords =
+                        migrationRecordsManager.areAllMigrationsSansTraceabilityFinished();
             }
             if (accessor.isTriggeredTxn()) {
                 scopedTriggeredProcessing.run();
