@@ -1,5 +1,3 @@
-package com.hedera.services.state.virtual;
-
 /*-
  * ‌
  * Hedera Services Node
@@ -19,7 +17,12 @@ package com.hedera.services.state.virtual;
  * limitations under the License.
  * ‍
  */
+package com.hedera.services.state.virtual;
 
+import static com.google.common.truth.Truth.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
+import com.hedera.services.state.submerkle.RichInstant;
 import com.swirlds.jasperdb.JasperDbBuilder;
 import com.swirlds.virtualmap.VirtualKey;
 import com.swirlds.virtualmap.VirtualValue;
@@ -50,10 +53,31 @@ class VirtualMapFactoryTest {
 		assertThrows(UncheckedIOException.class, () -> subject.newScheduleEqualityStorage());
 	}
 
-	private static class ThrowingJdbFactoryBuilder implements VirtualMapFactory.JasperDbBuilderFactory {
-		@Override
-		public <K extends VirtualKey<? super K>, V extends VirtualValue> JasperDbBuilder<K, V> newJdbBuilder() {
-			throw new UncheckedIOException(new IOException("Oops!"));
-		}
-	}
+    @Test
+    void virtualizedUniqueTokenStorage_whenEmpty_canProperlyInsertAndFetchValues() {
+        VirtualMapFactory subject = new VirtualMapFactory(JasperDbBuilder::new);
+
+        var map = subject.newVirtualizedUniqueTokenStorage();
+        assertThat(map.isEmpty()).isTrue();
+
+        map.put(
+                new UniqueTokenKey(123L, 456L),
+                new UniqueTokenValue(
+                        789L, 123L, "hello world".getBytes(), RichInstant.MISSING_INSTANT));
+
+        assertThat(map.get(new UniqueTokenKey(123L, 111L))).isNull();
+        var value = map.get(new UniqueTokenKey(123L, 456L));
+        assertThat(value).isNotNull();
+        assertThat(value.getOwnerAccountNum()).isEqualTo(789L);
+        assertThat(value.getMetadata()).isEqualTo("hello world".getBytes());
+    }
+
+    private static class ThrowingJdbFactoryBuilder
+            implements VirtualMapFactory.JasperDbBuilderFactory {
+        @Override
+        public <K extends VirtualKey<? super K>, V extends VirtualValue>
+                JasperDbBuilder<K, V> newJdbBuilder() {
+            throw new UncheckedIOException(new IOException("Oops!"));
+        }
+    }
 }

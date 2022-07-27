@@ -45,8 +45,9 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
-import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.validation.UsageLimits;
+import com.hedera.services.state.virtual.UniqueTokenKey;
+import com.hedera.services.state.virtual.UniqueTokenValue;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.schedule.HederaScheduleStore;
 import com.hedera.services.store.schedule.ScheduleStore;
@@ -58,6 +59,7 @@ import com.hedera.services.utils.EntityNumPair;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.swirlds.merkle.map.MerkleMap;
+import com.swirlds.virtualmap.VirtualMap;
 import dagger.Binds;
 import dagger.Module;
 import dagger.Provides;
@@ -73,8 +75,8 @@ public interface StoresModule {
 
     @Binds
     @Singleton
-    BackingStore<NftId, MerkleUniqueToken> bindBackingNfts(
-            TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger);
+    BackingStore<NftId, UniqueTokenValue> bindBackingNfts(
+            TransactionalLedger<NftId, NftProperty, UniqueTokenValue> nftsLedger);
 
     @Binds
     @Singleton
@@ -82,14 +84,14 @@ public interface StoresModule {
 
     @Provides
     @Singleton
-    static TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> provideNftsLedger(
+    static TransactionalLedger<NftId, NftProperty, UniqueTokenValue> provideNftsLedger(
             final UsageLimits usageLimits,
             final UniqueTokensLinkManager uniqueTokensLinkManager,
-            final Supplier<MerkleMap<EntityNumPair, MerkleUniqueToken>> uniqueTokens) {
+            final Supplier<VirtualMap<UniqueTokenKey, UniqueTokenValue>> uniqueTokens) {
         final var uniqueTokensLedger =
                 new TransactionalLedger<>(
                         NftProperty.class,
-                        MerkleUniqueToken::new,
+                        UniqueTokenValue::new,
                         new BackingNfts(uniqueTokens),
                         new ChangeSummaryManager<>());
         final var interceptor =

@@ -30,9 +30,10 @@ import com.hedera.services.state.merkle.MerkleStakingInfo;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleTopic;
-import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.virtual.ContractKey;
 import com.hedera.services.state.virtual.IterableContractValue;
+import com.hedera.services.state.virtual.UniqueTokenKey;
+import com.hedera.services.state.virtual.UniqueTokenValue;
 import com.hedera.services.state.virtual.VirtualBlobKey;
 import com.hedera.services.state.virtual.VirtualBlobValue;
 import com.hedera.services.stream.RecordsRunningHashLeaf;
@@ -56,36 +57,21 @@ import static org.mockito.BDDMockito.given;
 
 @ExtendWith(MockitoExtension.class)
 class ImmutableStateChildrenTest {
-	@Mock
-	private ServicesState state;
-	@Mock
-	private MerkleMap<EntityNum, MerkleAccount> accounts;
-	@Mock
-	private VirtualMap<VirtualBlobKey, VirtualBlobValue> storage;
-	@Mock
-	private VirtualMap<ContractKey, IterableContractValue> contractStorage;
-	@Mock
-	private MerkleMap<EntityNum, MerkleTopic> topics;
-	@Mock
-	private MerkleMap<EntityNum, MerkleToken> tokens;
-	@Mock
-	private MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenAssociations;
-	@Mock
-	private MerkleScheduledTransactions scheduleTxs;
-	@Mock
-	private MerkleNetworkContext networkCtx;
-	@Mock
-	private AddressBook addressBook;
-	@Mock
-	private MerkleSpecialFiles specialFiles;
-	@Mock
-	private MerkleMap<EntityNumPair, MerkleUniqueToken> uniqueTokens;
-	@Mock
-	private RecordsRunningHashLeaf runningHashLeaf;
-	@Mock
-	private FCHashMap<ByteString, EntityNum> aliases;
-	@Mock
-	private MerkleMap<EntityNum, MerkleStakingInfo> stakingInfo;
+    @Mock private ServicesState state;
+    @Mock private MerkleMap<EntityNum, MerkleAccount> accounts;
+    @Mock private VirtualMap<VirtualBlobKey, VirtualBlobValue> storage;
+    @Mock private VirtualMap<ContractKey, IterableContractValue> contractStorage;
+    @Mock private MerkleMap<EntityNum, MerkleTopic> topics;
+    @Mock private MerkleMap<EntityNum, MerkleToken> tokens;
+    @Mock private MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenAssociations;
+    @Mock private MerkleScheduledTransactions scheduleTxs;
+    @Mock private MerkleNetworkContext networkCtx;
+    @Mock private AddressBook addressBook;
+    @Mock private MerkleSpecialFiles specialFiles;
+    @Mock private VirtualMap<UniqueTokenKey, UniqueTokenValue> uniqueTokens;
+    @Mock private RecordsRunningHashLeaf runningHashLeaf;
+    @Mock private FCHashMap<ByteString, EntityNum> aliases;
+    @Mock private MerkleMap<EntityNum, MerkleStakingInfo> stakingInfo;
 
 	private ImmutableStateChildren subject;
 

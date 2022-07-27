@@ -46,11 +46,14 @@ import com.hedera.services.state.migration.LongTermScheduledTransactionsMigratio
 import com.hedera.services.state.migration.ReleaseTwentySevenMigration;
 import com.hedera.services.state.migration.ReleaseTwentySixMigration;
 import com.hedera.services.state.migration.StateChildIndices;
+import com.hedera.services.state.migration.UniqueTokensMigrator;
 import com.hedera.services.state.org.StateMetadata;
 import com.hedera.services.state.submerkle.ExchangeRates;
 import com.hedera.services.state.submerkle.SequenceNumber;
 import com.hedera.services.state.virtual.ContractKey;
 import com.hedera.services.state.virtual.IterableContractValue;
+import com.hedera.services.state.virtual.UniqueTokenKey;
+import com.hedera.services.state.virtual.UniqueTokenValue;
 import com.hedera.services.state.virtual.VirtualBlobKey;
 import com.hedera.services.state.virtual.VirtualBlobValue;
 import com.hedera.services.state.virtual.VirtualMapFactory;
@@ -82,6 +85,7 @@ import com.swirlds.platform.state.DualStateImpl;
 import com.swirlds.virtualmap.VirtualMap;
 import com.swirlds.virtualmap.VirtualMapMigration;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -108,6 +112,8 @@ public class ServicesState extends PartialNaryMerkleInternal
     private int deserializedStateVersion = CURRENT_VERSION;
     /* All of the state that is not itself hashed or serialized, but only derived from such state */
     private StateMetadata metadata;
+    /* Tasks to run after init. */
+    private List<Runnable> postInitTasks = new ArrayList<>();
 
     /**
      * For scheduled transaction migration we need to initialize the new scheduled transactions'
@@ -140,10 +146,16 @@ public class ServicesState extends PartialNaryMerkleInternal
 
     /** Log out the sizes the state children. */
     private void logStateChildrenSizes() {
+        final var isLegacyUniqueToken =
+                getChild(StateChildIndices.UNIQUE_TOKENS) instanceof MerkleMap;
+        final var numUniqueTokens =
+                isLegacyUniqueToken ? legacyUniqueTokens().size() : uniqueTokens().size();
+        final var uniqueTokenStatus = isLegacyUniqueToken ? "(legacy)" : "";
         log.info(
-                "  (@ {}) # NFTs               = {}",
+                "  (@ {}) # NFTs {}              = {}",
                 StateChildIndices.UNIQUE_TOKENS,
-                uniqueTokens().size());
+                uniqueTokenStatus,
+                numUniqueTokens);
         log.info(
                 "  (@ {}) # token associations = {}",
                 StateChildIndices.TOKEN_ASSOCIATIONS,
@@ -216,6 +228,14 @@ public class ServicesState extends PartialNaryMerkleInternal
                 migrateFrom(deserializedVersion);
             }
         }
+        runPostInitTasks();
+    }
+
+    private void runPostInitTasks() {
+        for (Runnable task : postInitTasks) {
+            task.run();
+        }
+        postInitTasks.clear();
     }
 
     @Override
@@ -322,31 +342,45 @@ public class ServicesState extends PartialNaryMerkleInternal
             metadata = new StateMetadata(app, new FCHashMap<>());
             // Log state before migration.
             logStateChildrenSizes();
-            // This updates the working state accessor with our children
-            app.initializationFlow().runWith(this);
+            final Runnable initTask =
+                    () -> {
+                        // This updates the working state accessor with our children
+                        app.initializationFlow().runWith(this);
 
-            // Ensure the prefetch queue is created and thread pool is active instead of waiting
-            // for lazy-initialization to take place
-            app.prefetchProcessor();
-            log.info("Created prefetch processor");
+                        // Ensure the prefetch queue is created and thread pool is active instead of
+                        // waiting
+                        // for lazy-initialization to take place
+                        app.prefetchProcessor();
+                        log.info("Created prefetch processor");
 
-            logSummary();
-            log.info("  --> Context initialized accordingly on Services node {}", selfId);
+                        logSummary();
+                        log.info(
+                                "  --> Context initialized accordingly on Services node {}",
+                                selfId);
 
-            if (trigger == GENESIS) {
-                app.sysAccountsCreator()
-                        .ensureSystemAccounts(
-                                app.backingAccounts(), app.workingState().addressBook());
-                app.sysFilesManager().createManagedFilesIfMissing();
-            }
-            if (trigger != RECONNECT) {
-                // Once we have a dynamic address book, this will run unconditionally
-                app.sysFilesManager().updateStakeDetails();
-            }
-            if (trigger == RESTART) {
-                // Do this separately from ensureSystemAccounts(), as that call is expensive with a
-                // large saved state
-                app.treasuryCloner().ensureTreasuryClonesExist();
+                        if (trigger == GENESIS) {
+                            app.sysAccountsCreator()
+                                    .ensureSystemAccounts(
+                                            app.backingAccounts(),
+                                            app.workingState().addressBook());
+                            app.sysFilesManager().createManagedFilesIfMissing();
+                        }
+                        if (trigger != RECONNECT) {
+                            // Once we have a dynamic address book, this will run unconditionally
+                            app.sysFilesManager().updateStakeDetails();
+                        }
+                        if (trigger == RESTART) {
+                            // Do this separately from ensureSystemAccounts(), as that call is
+                            // expensive with a
+                            // large saved state
+                            app.treasuryCloner().ensureTreasuryClonesExist();
+                        }
+                    };
+
+            if (deployedVersion.equals(deserializedVersion)) {
+                initTask.run();
+            } else {
+                postInitTasks.add(initTask);
             }
         }
     }
@@ -379,7 +413,6 @@ public class ServicesState extends PartialNaryMerkleInternal
         topics().archive();
         tokens().archive();
         accounts().archive();
-        uniqueTokens().archive();
         tokenAssociations().archive();
         stakingInfo().archive();
     }
@@ -472,7 +505,11 @@ public class ServicesState extends PartialNaryMerkleInternal
         return getChild(StateChildIndices.RECORD_STREAM_RUNNING_HASH);
     }
 
-    public MerkleMap<EntityNumPair, MerkleUniqueToken> uniqueTokens() {
+    public MerkleMap<EntityNumPair, MerkleUniqueToken> legacyUniqueTokens() {
+        return getChild(StateChildIndices.UNIQUE_TOKENS);
+    }
+
+    public VirtualMap<UniqueTokenKey, UniqueTokenValue> uniqueTokens() {
         return getChild(StateChildIndices.UNIQUE_TOKENS);
     }
 
@@ -492,7 +529,9 @@ public class ServicesState extends PartialNaryMerkleInternal
             AddressBook addressBook, long seqStart, BootstrapProperties bootstrapProperties) {
         final var virtualMapFactory = new VirtualMapFactory(JasperDbBuilder::new);
 
-        setChild(StateChildIndices.UNIQUE_TOKENS, new MerkleMap<>());
+        setChild(
+                StateChildIndices.UNIQUE_TOKENS,
+                virtualMapFactory.newVirtualizedUniqueTokenStorage());
         setChild(StateChildIndices.TOKEN_ASSOCIATIONS, new MerkleMap<>());
         setChild(StateChildIndices.TOPICS, new MerkleMap<>());
         setChild(StateChildIndices.STORAGE, virtualMapFactory.newVirtualizedBlobs());
@@ -544,7 +583,7 @@ public class ServicesState extends PartialNaryMerkleInternal
                     KvPairIterationMigrator::new,
                     VirtualMapMigration::extractVirtualMapData,
                     vmFactory.apply(JasperDbBuilder::new).newVirtualizedIterableStorage());
-            ownedNftsLinkMigrator.buildAccountNftsOwnedLinkedList(accounts(), uniqueTokens());
+            ownedNftsLinkMigrator.buildAccountNftsOwnedLinkedList(accounts(), legacyUniqueTokens());
 
             // When enabling expiry, we will grant all contracts a ~90 day auto-renewal via the
             // autoRenewalMigrator
@@ -567,6 +606,10 @@ public class ServicesState extends PartialNaryMerkleInternal
             // it
             accounts().get(EntityNum.fromLong(800L)).forgetThirdChildIfPlaceholder();
             accounts().get(EntityNum.fromLong(801L)).forgetThirdChildIfPlaceholder();
+        }
+
+        if (getChild(StateChildIndices.UNIQUE_TOKENS) instanceof MerkleMap) {
+            UniqueTokensMigrator.migrateFromUniqueTokenMerkleMap(this);
         }
 
         // Keep the MutableStateChildren up-to-date (no harm done if they are already are)

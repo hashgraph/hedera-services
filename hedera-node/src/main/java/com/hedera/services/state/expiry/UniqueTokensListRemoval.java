@@ -20,77 +20,77 @@ package com.hedera.services.state.expiry;
  * ‍
  */
 
-import com.hedera.services.state.merkle.MerkleUniqueToken;
-import com.hedera.services.utils.EntityNumPair;
+import com.hedera.services.state.virtual.UniqueTokenKey;
+import com.hedera.services.state.virtual.UniqueTokenValue;
 import com.hedera.services.utils.MapValueListMutation;
-import com.swirlds.merkle.map.MerkleMap;
+import com.swirlds.virtualmap.VirtualMap;
 import org.jetbrains.annotations.Nullable;
 
 import static com.hedera.services.utils.NftNumPair.MISSING_NFT_NUM_PAIR;
 
-public class UniqueTokensListRemoval implements MapValueListMutation<EntityNumPair, MerkleUniqueToken> {
+public class UniqueTokensListRemoval
+        implements MapValueListMutation<UniqueTokenKey, UniqueTokenValue> {
 
-	final MerkleMap<EntityNumPair, MerkleUniqueToken> uniqueTokens;
+    final VirtualMap<UniqueTokenKey, UniqueTokenValue> uniqueTokens;
 
-	public UniqueTokensListRemoval(
-			final MerkleMap<EntityNumPair, MerkleUniqueToken> uniqueTokens
-	) {
-		this.uniqueTokens = uniqueTokens;
-	}
+    public UniqueTokensListRemoval(
+            final VirtualMap<UniqueTokenKey, UniqueTokenValue> uniqueTokens) {
+        this.uniqueTokens = uniqueTokens;
+    }
 
-	@Nullable
-	@Override
-	public MerkleUniqueToken get(final EntityNumPair key) {
-		return uniqueTokens.get(key);
-	}
+    @Nullable
+    @Override
+    public UniqueTokenValue get(final UniqueTokenKey key) {
+        return uniqueTokens.get(key);
+    }
 
-	@Nullable
-	@Override
-	public MerkleUniqueToken getForModify(final EntityNumPair key) {
-		return uniqueTokens.getForModify(key);
-	}
+    @Nullable
+    @Override
+    public UniqueTokenValue getForModify(final UniqueTokenKey key) {
+        return uniqueTokens.getForModify(key);
+    }
 
-	@Override
-	public void put(final EntityNumPair key, final MerkleUniqueToken value) {
-		uniqueTokens.put(key, value);
-	}
+    @Override
+    public void put(final UniqueTokenKey key, final UniqueTokenValue value) {
+        uniqueTokens.put(key, value);
+    }
 
-	@Override
-	public void remove(final EntityNumPair key) {
-		uniqueTokens.remove(key);
-	}
+    @Override
+    public void remove(final UniqueTokenKey key) {
+        uniqueTokens.remove(key);
+    }
 
-	@Override
-	public void markAsHead(final MerkleUniqueToken node) {
-		node.setPrev(MISSING_NFT_NUM_PAIR);
-	}
+    @Override
+    public void markAsHead(final UniqueTokenValue node) {
+        node.setPrev(MISSING_NFT_NUM_PAIR);
+    }
 
-	@Override
-	public void markAsTail(final MerkleUniqueToken node) {
-		node.setNext(MISSING_NFT_NUM_PAIR);
-	}
+    @Override
+    public void markAsTail(final UniqueTokenValue node) {
+        node.setNext(MISSING_NFT_NUM_PAIR);
+    }
 
-	@Override
-	public void updatePrev(final MerkleUniqueToken node, final EntityNumPair prev) {
-		node.setPrev(prev.asNftNumPair());
-	}
+    @Override
+    public void updatePrev(final UniqueTokenValue node, final UniqueTokenKey prev) {
+        node.setPrev(prev.toNftNumPair());
+    }
 
-	@Override
-	public void updateNext(final MerkleUniqueToken node, final EntityNumPair next) {
-		node.setNext(next.asNftNumPair());
-	}
+    @Override
+    public void updateNext(final UniqueTokenValue node, final UniqueTokenKey next) {
+        node.setNext(next.toNftNumPair());
+    }
 
-	@Nullable
-	@Override
-	public EntityNumPair next(final MerkleUniqueToken node) {
-		final var nextKey = node.getNext();
-		return nextKey.equals(MISSING_NFT_NUM_PAIR) ? null : nextKey.asEntityNumPair();
-	}
+    @Nullable
+    @Override
+    public UniqueTokenKey next(final UniqueTokenValue node) {
+        final var nextKey = node.getNext();
+        return nextKey.equals(MISSING_NFT_NUM_PAIR) ? null : UniqueTokenKey.from(nextKey);
+    }
 
-	@Nullable
-	@Override
-	public EntityNumPair prev(final MerkleUniqueToken node) {
-		final var prevKey = node.getPrev();
-		return prevKey.equals(MISSING_NFT_NUM_PAIR) ? null : prevKey.asEntityNumPair();
-	}
+    @Nullable
+    @Override
+    public UniqueTokenKey prev(final UniqueTokenValue node) {
+        final var prevKey = node.getPrev();
+        return prevKey.equals(MISSING_NFT_NUM_PAIR) ? null : UniqueTokenKey.from(prevKey);
+    }
 }

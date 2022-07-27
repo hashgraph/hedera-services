@@ -29,8 +29,8 @@ import com.hedera.services.ledger.properties.TokenRelProperty;
 import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
-import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
+import com.hedera.services.state.virtual.UniqueTokenValue;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.txns.crypto.AutoCreationLogic;
@@ -69,36 +69,39 @@ public class TransferLogic {
 			NUM_TREASURY_TITLES
 	);
 
-	private final TokenStore tokenStore;
-	private final AutoCreationLogic autoCreationLogic;
-	private final SideEffectsTracker sideEffectsTracker;
-	private final RecordsHistorian recordsHistorian;
-	private final GlobalDynamicProperties dynamicProperties;
-	private final MerkleAccountScopedCheck scopedCheck;
-	private final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
-	private final TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger;
-	private final TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus> tokenRelsLedger;
+    private final TokenStore tokenStore;
+    private final AutoCreationLogic autoCreationLogic;
+    private final SideEffectsTracker sideEffectsTracker;
+    private final RecordsHistorian recordsHistorian;
+    private final GlobalDynamicProperties dynamicProperties;
+    private final MerkleAccountScopedCheck scopedCheck;
+    private final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
+    private final TransactionalLedger<NftId, NftProperty, UniqueTokenValue> nftsLedger;
+    private final TransactionalLedger<
+                    Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus>
+            tokenRelsLedger;
 
-	@Inject
-	public TransferLogic(
-			final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger,
-			final TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger,
-			final TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus> tokenRelsLedger,
-			final TokenStore tokenStore,
-			final SideEffectsTracker sideEffectsTracker,
-			final GlobalDynamicProperties dynamicProperties,
-			final OptionValidator validator,
-			final @Nullable AutoCreationLogic autoCreationLogic,
-			final RecordsHistorian recordsHistorian
-	) {
-		this.tokenStore = tokenStore;
-		this.nftsLedger = nftsLedger;
-		this.accountsLedger = accountsLedger;
-		this.tokenRelsLedger = tokenRelsLedger;
-		this.recordsHistorian = recordsHistorian;
-		this.autoCreationLogic = autoCreationLogic;
-		this.dynamicProperties = dynamicProperties;
-		this.sideEffectsTracker = sideEffectsTracker;
+    @Inject
+    public TransferLogic(
+            final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger,
+            final TransactionalLedger<NftId, NftProperty, UniqueTokenValue> nftsLedger,
+            final TransactionalLedger<
+                            Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus>
+                    tokenRelsLedger,
+            final TokenStore tokenStore,
+            final SideEffectsTracker sideEffectsTracker,
+            final GlobalDynamicProperties dynamicProperties,
+            final OptionValidator validator,
+            final @Nullable AutoCreationLogic autoCreationLogic,
+            final RecordsHistorian recordsHistorian) {
+        this.tokenStore = tokenStore;
+        this.nftsLedger = nftsLedger;
+        this.accountsLedger = accountsLedger;
+        this.tokenRelsLedger = tokenRelsLedger;
+        this.recordsHistorian = recordsHistorian;
+        this.autoCreationLogic = autoCreationLogic;
+        this.dynamicProperties = dynamicProperties;
+        this.sideEffectsTracker = sideEffectsTracker;
 
 		scopedCheck = new MerkleAccountScopedCheck(validator, nftsLedger);
 	}
@@ -171,21 +174,22 @@ public class TransferLogic {
 		}
 	}
 
-	public static void dropTokenChanges(
-			final SideEffectsTracker sideEffectsTracker,
-			final TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger,
-			final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger,
-			final TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus> tokenRelsLedger
-	) {
-		if (tokenRelsLedger.isInTransaction()) {
-			tokenRelsLedger.rollback();
-		}
-		if (nftsLedger.isInTransaction()) {
-			nftsLedger.rollback();
-		}
-		accountsLedger.undoChangesOfType(TOKEN_TRANSFER_SIDE_EFFECTS);
-		sideEffectsTracker.resetTrackedTokenChanges();
-	}
+    public static void dropTokenChanges(
+            final SideEffectsTracker sideEffectsTracker,
+            final TransactionalLedger<NftId, NftProperty, UniqueTokenValue> nftsLedger,
+            final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger,
+            final TransactionalLedger<
+                            Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus>
+                    tokenRelsLedger) {
+        if (tokenRelsLedger.isInTransaction()) {
+            tokenRelsLedger.rollback();
+        }
+        if (nftsLedger.isInTransaction()) {
+            nftsLedger.rollback();
+        }
+        accountsLedger.undoChangesOfType(TOKEN_TRANSFER_SIDE_EFFECTS);
+        sideEffectsTracker.resetTrackedTokenChanges();
+    }
 
 
 	@SuppressWarnings("unchecked")

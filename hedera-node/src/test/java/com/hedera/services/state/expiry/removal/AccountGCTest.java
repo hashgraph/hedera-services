@@ -9,9 +9,9 @@ package com.hedera.services.state.expiry.removal;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -28,12 +28,14 @@ import com.hedera.services.ledger.backing.BackingStore;
 import com.hedera.services.state.expiry.TokenRelsListMutation;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
-import com.hedera.services.state.merkle.MerkleUniqueToken;
+import com.hedera.services.state.virtual.UniqueTokenKey;
+import com.hedera.services.state.virtual.UniqueTokenValue;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
 import com.hedera.test.factories.accounts.MerkleAccountFactory;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.swirlds.merkle.map.MerkleMap;
+import com.swirlds.virtualmap.VirtualMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -52,24 +54,15 @@ import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 class AccountGCTest {
-	@Mock
-	private AliasManager aliasManager;
-	@Mock
-	private SigImpactHistorian sigImpactHistorian;
-	@Mock
-	private TreasuryReturnHelper treasuryReturnHelper;
-	@Mock
-	private BackingStore<AccountID, MerkleAccount> backingAccounts;
-	@Mock
-	private MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenRels;
-	@Mock
-	private MerkleMap<EntityNumPair, MerkleUniqueToken> uniqueTokens;
-	@Mock
-	private GlobalDynamicProperties dynamicProperties;
-	@Mock
-	private AccountGC.RemovalFacilitation removalFacilitation;
-	@Mock
-	private TokenRelsListMutation listRemoval;
+    @Mock private AliasManager aliasManager;
+    @Mock private SigImpactHistorian sigImpactHistorian;
+    @Mock private TreasuryReturnHelper treasuryReturnHelper;
+    @Mock private BackingStore<AccountID, MerkleAccount> backingAccounts;
+    @Mock private MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenRels;
+    @Mock private VirtualMap<UniqueTokenKey, UniqueTokenValue> uniqueTokens;
+    @Mock private GlobalDynamicProperties dynamicProperties;
+    @Mock private AccountGC.RemovalFacilitation removalFacilitation;
+    @Mock private TokenRelsListMutation listRemoval;
 
 	private AccountGC subject;
 

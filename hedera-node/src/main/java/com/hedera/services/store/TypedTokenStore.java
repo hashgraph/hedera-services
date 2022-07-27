@@ -26,8 +26,8 @@ import com.hedera.services.ledger.backing.BackingStore;
 import com.hedera.services.records.TransactionRecordService;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
-import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.state.virtual.UniqueTokenValue;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.models.OwnershipTracker;
 import com.hedera.services.store.models.Token;
@@ -72,17 +72,16 @@ import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
 public class TypedTokenStore extends ReadOnlyTokenStore {
 	private final SideEffectsTracker sideEffectsTracker;
 
-	@Inject
-	public TypedTokenStore(
-			final AccountStore accountStore,
-			final BackingStore<TokenID, MerkleToken> tokens,
-			final BackingStore<NftId, MerkleUniqueToken> uniqueTokens,
-			final BackingStore<Pair<AccountID, TokenID>, MerkleTokenRelStatus> tokenRels,
-			final SideEffectsTracker sideEffectsTracker
-	) {
-		super(accountStore, tokens, uniqueTokens, tokenRels);
-		this.sideEffectsTracker = sideEffectsTracker;
-	}
+    @Inject
+    public TypedTokenStore(
+            final AccountStore accountStore,
+            final BackingStore<TokenID, MerkleToken> tokens,
+            final BackingStore<NftId, UniqueTokenValue> uniqueTokens,
+            final BackingStore<Pair<AccountID, TokenID>, MerkleTokenRelStatus> tokenRels,
+            final SideEffectsTracker sideEffectsTracker) {
+        super(accountStore, tokens, uniqueTokens, tokenRels);
+        this.sideEffectsTracker = sideEffectsTracker;
+    }
 
 	/**
 	 * Persists the given token relationships to the Swirlds state, inviting the injected
@@ -198,12 +197,19 @@ public class TypedTokenStore extends ReadOnlyTokenStore {
 		}
 	}
 
-	private void persistMinted(List<UniqueToken> nfts) {
-		for (final var nft : nfts) {
-			final var merkleNft = new MerkleUniqueToken(MISSING_ENTITY_ID, nft.getMetadata(), nft.getCreationTime());
-			uniqueTokens.put(NftId.withDefaultShardRealm(nft.getTokenId().num(), nft.getSerialNumber()), merkleNft);
-		}
-	}
+    private void persistMinted(List<UniqueToken> nfts) {
+        for (final var nft : nfts) {
+            final var merkleNft =
+                    new UniqueTokenValue(
+                            MISSING_ENTITY_ID.num(),
+                            MISSING_ENTITY_ID.num(),
+                            nft.getMetadata(),
+                            nft.getCreationTime());
+            uniqueTokens.put(
+                    NftId.withDefaultShardRealm(nft.getTokenId().num(), nft.getSerialNumber()),
+                    merkleNft);
+        }
+    }
 
 	private void mapModelChanges(Token token, MerkleToken mutableToken) {
 		final var newAutoRenewAccount = token.getAutoRenewAccount();
@@ -236,11 +242,12 @@ public class TypedTokenStore extends ReadOnlyTokenStore {
 		mutableToken.setExpiry(token.getExpiry());
 	}
 
-	private void mapModelChanges(UniqueToken nft, MerkleUniqueToken mutableNft) {
-		mutableNft.setOwner(nft.getOwner().asEntityId());
-		mutableNft.setSpender(nft.getSpender().asEntityId());
-		mutableNft.setMetadata(nft.getMetadata());
-		final var creationTime = nft.getCreationTime();
-		mutableNft.setPackedCreationTime(packedTime(creationTime.getSeconds(), creationTime.getNanos()));
-	}
+    private void mapModelChanges(UniqueToken nft, UniqueTokenValue mutableNft) {
+        mutableNft.setOwner(nft.getOwner().asEntityId());
+        mutableNft.setSpender(nft.getSpender().asEntityId());
+        mutableNft.setMetadata(nft.getMetadata());
+        final var creationTime = nft.getCreationTime();
+        mutableNft.setPackedCreationTime(
+                packedTime(creationTime.getSeconds(), creationTime.getNanos()));
+    }
 }

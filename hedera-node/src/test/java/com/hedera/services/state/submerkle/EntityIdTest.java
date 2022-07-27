@@ -1,5 +1,3 @@
-package com.hedera.services.state.submerkle;
-
 /*-
  * ‌
  * Hedera Services Node
@@ -19,8 +17,24 @@ package com.hedera.services.state.submerkle;
  * limitations under the License.
  * ‍
  */
+package com.hedera.services.state.submerkle;
+
+import static com.google.common.truth.Truth.assertThat;
+import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
+import static com.hedera.services.utils.EntityIdUtils.tokenIdFromEvmAddress;
+import static com.swirlds.common.utility.CommonUtils.unhex;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.mock;
+import static org.mockito.Mockito.inOrder;
 
 import com.google.common.primitives.Longs;
+import com.hedera.services.context.properties.StaticPropertiesHolder;
 import com.hedera.services.state.merkle.internals.BitPackUtils;
 import com.hedera.services.store.models.Id;
 import com.hedera.test.utils.IdUtils;
@@ -247,9 +261,17 @@ class EntityIdTest {
 		final var diffRealm = IdUtils.asAccount("1.3.3");
 		final var diffNum = IdUtils.asAccount("1.2.4");
 
-		assertTrue(subject.matches(subject.toGrpcAccountId()));
-		assertFalse(subject.matches(diffShard));
-		assertFalse(subject.matches(diffRealm));
-		assertFalse(subject.matches(diffNum));
-	}
+        assertTrue(subject.matches(subject.toGrpcAccountId()));
+        assertFalse(subject.matches(diffShard));
+        assertFalse(subject.matches(diffRealm));
+        assertFalse(subject.matches(diffNum));
+    }
+
+    @Test
+    void fromNumWorks() {
+        EntityId entityId = EntityId.fromNum(123L);
+        assertThat(entityId.num()).isEqualTo(123L);
+        assertThat(entityId.realm()).isEqualTo(StaticPropertiesHolder.STATIC_PROPERTIES.getRealm());
+        assertThat(entityId.shard()).isEqualTo(StaticPropertiesHolder.STATIC_PROPERTIES.getShard());
+    }
 }
