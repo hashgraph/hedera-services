@@ -219,6 +219,14 @@ class DecodingFacadeTest {
             Bytes.fromHexString(
                     "0x287e1da8000000000000000000000000000000000000000000000000000000000000000c0000000000000000000000000000000000000000000000000000000000000001");
 
+    public static final Bytes GET_TOKEN_DEFAULT_FREEZE_STATUS_INPUT =
+            Bytes.fromHexString(
+                    "0xa7daa18d00000000000000000000000000000000000000000000000000000000000003ff");
+
+    public static final Bytes GET_TOKEN_DEFAULT_KYC_STATUS_INPUT =
+            Bytes.fromHexString(
+                    "0x335e04c10000000000000000000000000000000000000000000000000000000000000404");
+
     private static final Bytes FUNGIBLE_WIPE_INPUT =
             Bytes.fromHexString(
                     "0x9790686d00000000000000000000000000000000000000000000000000000000000006aa00000000000000000000000000000000000000000000000000000000000006a8000000000000000000000000000000000000000000000000000000000000000a");
@@ -531,6 +539,22 @@ class DecodingFacadeTest {
         assertEquals(123, decodedInput.serialNos().get(0));
         assertEquals(234, decodedInput.serialNos().get(1));
         assertEquals(NON_FUNGIBLE_UNIQUE, decodedInput.type());
+    }
+
+    @Test
+    void decodeGetTokenDefaultFreezeStatusInput() {
+        final var decodedInput =
+                subject.decodeTokenDefaultFreezeStatus(GET_TOKEN_DEFAULT_FREEZE_STATUS_INPUT);
+
+        assertTrue(decodedInput.tokenID().getTokenNum() > 0);
+    }
+
+    @Test
+    void decodeGetTokenDefaultKycStatusInput() {
+        final var decodedInput =
+                subject.decodeTokenDefaultKycStatus(GET_TOKEN_DEFAULT_KYC_STATUS_INPUT);
+
+        assertTrue(decodedInput.tokenID().getTokenNum() > 0);
     }
 
     @Test

@@ -17,19 +17,25 @@ package com.hedera.services.store.contracts.precompile.proxy;
 
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_GET_FUNGIBLE_TOKEN_INFO;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_GET_NON_FUNGIBLE_TOKEN_INFO;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_GET_TOKEN_DEFAULT_FREEZE_STATUS;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_GET_TOKEN_DEFAULT_KYC_STATUS;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_GET_TOKEN_INFO;
 import static com.hedera.services.store.contracts.precompile.proxy.RedirectViewExecutor.MINIMUM_TINYBARS_COST;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
 import com.esaulpaugh.headlong.util.Integers;
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.primitives.StateView;
+import com.hedera.services.store.contracts.WorldLedgers;
 import com.hedera.services.store.contracts.precompile.codec.DecodingFacade;
 import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
+import com.hedera.services.store.contracts.precompile.codec.GetTokenDefaultFreezeStatusWrapper;
+import com.hedera.services.store.contracts.precompile.codec.GetTokenDefaultKycStatusWrapper;
 import com.hedera.services.store.contracts.precompile.codec.TokenInfoWrapper;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.utils.EntityIdUtils;
@@ -61,6 +67,7 @@ class ViewExecutorTest {
     @Mock private ViewGasCalculator viewGasCalculator;
     @Mock private BlockValues blockValues;
     @Mock private StateView stateView;
+    @Mock private WorldLedgers ledgers;
 
     public static final AccountID account = IdUtils.asAccount("0.0.777");
     public static final AccountID spender = IdUtils.asAccount("0.0.888");
@@ -85,6 +92,11 @@ class ViewExecutorTest {
     private Bytes tokenInfoEncoded;
 
     ViewExecutor subject;
+
+    private static final Bytes RETURN_SUCCESS_TRUE =
+            Bytes.fromHexString(
+                    "0x0000000000000000000000000000000000000000000000000000000000000016"
+                            + "0000000000000000000000000000000000000000000000000000000000000001");
 
     @BeforeEach
     void setUp() {
@@ -112,6 +124,31 @@ class ViewExecutorTest {
 
     private ByteString fromString(final String value) {
         return ByteString.copyFrom(Bytes.fromHexString(value).toArray());
+    }
+
+    @Test
+    void computeGetTokenDefaultFreezeStatus() {
+        final var input =
+                prerequisites(ABI_ID_GET_TOKEN_DEFAULT_FREEZE_STATUS, fungibleTokenAddress);
+
+        final var wrapper = new GetTokenDefaultFreezeStatusWrapper(fungible);
+        given(decodingFacade.decodeTokenDefaultFreezeStatus(input)).willReturn(wrapper);
+        given(encodingFacade.encodeGetTokenDefaultFreezeStatus(anyBoolean()))
+                .willReturn(RETURN_SUCCESS_TRUE);
+
+        assertEquals(Pair.of(gas, RETURN_SUCCESS_TRUE), subject.computeCosted());
+    }
+
+    @Test
+    void computeGetTokenDefaultKycStatus() {
+        final var input = prerequisites(ABI_ID_GET_TOKEN_DEFAULT_KYC_STATUS, fungibleTokenAddress);
+
+        final var wrapper = new GetTokenDefaultKycStatusWrapper(fungible);
+        given(decodingFacade.decodeTokenDefaultKycStatus(input)).willReturn(wrapper);
+        given(encodingFacade.encodeGetTokenDefaultKycStatus(anyBoolean()))
+                .willReturn(RETURN_SUCCESS_TRUE);
+
+        assertEquals(Pair.of(gas, RETURN_SUCCESS_TRUE), subject.computeCosted());
     }
 
     @Test
@@ -230,7 +267,13 @@ class ViewExecutorTest {
         given(viewGasCalculator.compute(resultingTimestamp, MINIMUM_TINYBARS_COST)).willReturn(gas);
         this.subject =
                 new ViewExecutor(
-                        input, frame, encodingFacade, decodingFacade, viewGasCalculator, stateView);
+                        input,
+                        frame,
+                        encodingFacade,
+                        decodingFacade,
+                        viewGasCalculator,
+                        stateView,
+                        ledgers);
         return input;
     }
 
@@ -246,7 +289,13 @@ class ViewExecutorTest {
         given(viewGasCalculator.compute(resultingTimestamp, MINIMUM_TINYBARS_COST)).willReturn(gas);
         this.subject =
                 new ViewExecutor(
-                        input, frame, encodingFacade, decodingFacade, viewGasCalculator, stateView);
+                        input,
+                        frame,
+                        encodingFacade,
+                        decodingFacade,
+                        viewGasCalculator,
+                        stateView,
+                        ledgers);
         return input;
     }
 }
