@@ -20,32 +20,10 @@
 
 plugins {
     id("com.hedera.hashgraph.hedera-conventions")
+    id("com.hedera.hashgraph.shadow-jar")
 }
 
 description = "Hedera Services Test Clients for End to End Tests (EET)"
-
-// Add the EET task for executing end-to-end tests
-testing {
-    suites {
-        @Suppress("UnstableApiUsage", "UNUSED_VARIABLE")
-        val eet by registering(JvmTestSuite::class) {
-            testType.set("end-to-end-test")
-            dependencies {
-                implementation(project)
-            }
-
-            // "shouldRunAfter" will only make sure if both test and eet are run concurrently,
-            // that "test" completes first. If you run "eet" directly, it doesn't force "test" to run.
-            targets {
-                all {
-                    testTask.configure {
-                        shouldRunAfter(tasks.test)
-                    }
-                }
-            }
-        }
-    }
-}
 
 tasks.test {
     // Disable these EET tests from being executed as part of the gradle "test" task. We should maybe remove them
@@ -59,13 +37,6 @@ sourceSets {
     main {
         resources {
             srcDir("src/main/resource")
-        }
-    }
-
-    // This can be removed after fixing #3412 (https://github.com/hashgraph/hedera-services/issues/3412)
-    getByName("eet") {
-        java {
-            srcDir("src/test/java")
         }
     }
 }
@@ -98,4 +69,34 @@ dependencies {
     implementation(libs.protobuf.java)
     implementation(testLibs.snakeyaml)
     implementation(libs.swirlds.common)
+    implementation(testLibs.testcontainers.core)
+    itestImplementation(project.parent!!.project("hedera-node"))
+    itestImplementation(libs.bundles.swirlds)
+    itestImplementation(testLibs.bundles.testcontainers)
+    eetImplementation(testLibs.bundles.testcontainers)
+}
+
+tasks.itest {
+    systemProperty("junit.jupiter.execution.parallel.enabled", false)
+    systemProperty("TAG", "services-node:" + project.version)
+    systemProperty("networkWorkspaceDir", File(project.buildDir, "network/itest"))
+}
+
+tasks.eet {
+    systemProperty("TAG", "services-node:" + project.version)
+    systemProperty("networkWorkspaceDir", File(project.buildDir, "network/eet"))
+}
+
+tasks.shadowJar {
+    archiveFileName.set("SuiteRunner.jar")
+
+    manifest {
+        attributes(
+            "Main-Class" to "com.hedera.services.bdd.suites.SuiteRunner",
+        )
+    }
+}
+
+tasks.assemble {
+    dependsOn(tasks.shadowJar)
 }

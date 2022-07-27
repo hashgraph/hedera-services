@@ -1,11 +1,6 @@
-package com.hedera.services.throttles;
-
-/*-
- * ‌
- * Hedera Services API Utilities
- * ​
- * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2021-2022 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,174 +12,185 @@ package com.hedera.services.throttles;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
-
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-
-import java.time.Instant;
+package com.hedera.services.throttles;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.time.Instant;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
 class GasLimitDeterministicThrottleTest {
 
-	private static final long DEFAULT_CAPACITY = 1_000_000;
-	private static final long ONE_SECOND_IN_NANOSECONDS = 1_000_000_000;
+    private static final long DEFAULT_CAPACITY = 1_000_000;
+    private static final long ONE_SECOND_IN_NANOSECONDS = 1_000_000_000;
 
-	GasLimitDeterministicThrottle subject;
+    GasLimitDeterministicThrottle subject;
 
-	@BeforeEach
-	void setup() {
-		subject = new GasLimitDeterministicThrottle(DEFAULT_CAPACITY);
-	}
+    @BeforeEach
+    void setup() {
+        subject = new GasLimitDeterministicThrottle(DEFAULT_CAPACITY);
+    }
 
-	@Test
-	void usesZeroElapsedNanosOnFirstDecision() {
-		// setup:
-		long gasLimitForTX = 100_000;
-		Instant now = Instant.ofEpochSecond(1_234_567L);
+    @Test
+    void usesZeroElapsedNanosOnFirstDecision() {
+        // setup:
+        long gasLimitForTX = 100_000;
+        Instant now = Instant.ofEpochSecond(1_234_567L);
 
-		// when:
-		var result = subject.allow(now, gasLimitForTX);
+        // when:
+        var result = subject.allow(now, gasLimitForTX);
 
-		// then:
-		assertTrue(result);
-		assertEquals(DEFAULT_CAPACITY - gasLimitForTX, subject.delegate().bucket().capacityFree());
-	}
+        // then:
+        assertTrue(result);
+        assertEquals(DEFAULT_CAPACITY - gasLimitForTX, subject.delegate().bucket().capacityFree());
+    }
 
-	@Test
-	void requiresMonotonicIncreasingTimeline() {
-		// setup:
-		long gasLimitForTX = 100_000;
-		Instant now = Instant.ofEpochSecond(1_234_567L);
-		Instant illegal = now.minusNanos(1);
+    @Test
+    void canGetPercentUsed() {
+        final var now = Instant.ofEpochSecond(1_234_567L);
+        final var capacity = 1_000_000;
+        final var subject = new GasLimitDeterministicThrottle(capacity);
+        assertEquals(0.0, subject.percentUsed(now));
+        subject.allow(now, capacity / 2);
+        assertEquals(50.0, subject.percentUsed(now));
+        assertEquals(50.0, subject.percentUsed(now.minusNanos(123)));
+    }
 
-		// when:
-		subject.allow(now, gasLimitForTX);
+    @Test
+    void requiresMonotonicIncreasingTimeline() {
+        // setup:
+        long gasLimitForTX = 100_000;
+        Instant now = Instant.ofEpochSecond(1_234_567L);
+        Instant illegal = now.minusNanos(1);
 
-		// then:
-		assertThrows(IllegalArgumentException.class, () -> subject.allow(illegal, gasLimitForTX));
-		assertDoesNotThrow(() -> subject.allow(now, gasLimitForTX));
-	}
+        // when:
+        subject.allow(now, gasLimitForTX);
 
-	@Test
-	void usesCorrectElapsedNanosOnSubsequentDecision() {
-		// setup:
-		long gasLimitForTX = 100_000;
+        // then:
+        assertThrows(IllegalArgumentException.class, () -> subject.allow(illegal, gasLimitForTX));
+        assertDoesNotThrow(() -> subject.allow(now, gasLimitForTX));
+    }
 
-		double elapsed = 1_234;
-		double toLeak = (elapsed / ONE_SECOND_IN_NANOSECONDS) * DEFAULT_CAPACITY;
+    @Test
+    void usesCorrectElapsedNanosOnSubsequentDecision() {
+        // setup:
+        long gasLimitForTX = 100_000;
 
-		Instant originalDecision = Instant.ofEpochSecond(1_234_567L, 0);
-		Instant now = Instant.ofEpochSecond(1_234_567L, (long) elapsed);
+        double elapsed = 1_234;
+        double toLeak = (elapsed / ONE_SECOND_IN_NANOSECONDS) * DEFAULT_CAPACITY;
 
-		// when:
-		subject.allow(originalDecision, gasLimitForTX);
-		// and:
-		var result = subject.allow(now, gasLimitForTX);
+        Instant originalDecision = Instant.ofEpochSecond(1_234_567L, 0);
+        Instant now = Instant.ofEpochSecond(1_234_567L, (long) elapsed);
 
-		// then:
-		assertTrue(result);
-		assertEquals(
-				(long) (DEFAULT_CAPACITY - gasLimitForTX - gasLimitForTX + toLeak),
-				subject.delegate().bucket().capacityFree());
-	}
+        // when:
+        subject.allow(originalDecision, gasLimitForTX);
+        // and:
+        var result = subject.allow(now, gasLimitForTX);
 
-	@Test
-	void capacityReturnsCorrectValue() {
-		assertEquals(DEFAULT_CAPACITY, subject.getCapacity());
-	}
+        // then:
+        assertTrue(result);
+        assertEquals(
+                (long) (DEFAULT_CAPACITY - gasLimitForTX - gasLimitForTX + toLeak),
+                subject.delegate().bucket().capacityFree());
+    }
 
-	@Test
-	void usedReturnsCorrectValue() {
-		assertEquals(0, subject.getUsed());
-	}
+    @Test
+    void capacityReturnsCorrectValue() {
+        assertEquals(DEFAULT_CAPACITY, subject.getCapacity());
+    }
 
-	@Test
-	void verifyLeakUnusedGas() {
-		subject.allow(Instant.now(), 100L);
-		assertEquals(999_900L, subject.delegate().bucket().capacityFree());
+    @Test
+    void usedReturnsCorrectValue() {
+        assertEquals(0, subject.getUsed());
+    }
 
-		subject.leakUnusedGasPreviouslyReserved(100L);
-		assertEquals(DEFAULT_CAPACITY, subject.delegate().bucket().capacityFree());
-	}
+    @Test
+    void verifyLeakUnusedGas() {
+        subject.allow(Instant.now(), 100L);
+        assertEquals(999_900L, subject.delegate().bucket().capacityFree());
 
-	@Test
-	void returnsExpectedState() {
-		final var originalDecision = Instant.ofEpochSecond(1_234_567L, 0);
+        subject.leakUnusedGasPreviouslyReserved(100L);
+        assertEquals(DEFAULT_CAPACITY, subject.delegate().bucket().capacityFree());
+    }
 
-		subject.allow(originalDecision, 1234);
-		final var state = subject.usageSnapshot();
+    @Test
+    void returnsExpectedState() {
+        final var originalDecision = Instant.ofEpochSecond(1_234_567L, 0);
 
-		assertEquals(1234, state.used());
-		assertEquals(originalDecision, state.lastDecisionTime());
-	}
+        subject.allow(originalDecision, 1234);
+        final var state = subject.usageSnapshot();
 
-	@Test
-	void resetsUsageToAsExpected() {
-		final long used = DEFAULT_CAPACITY / 2;
-		final var originalDecision = Instant.ofEpochSecond(1_234_567L, 0);
-		final var snapshot = new DeterministicThrottle.UsageSnapshot(used, originalDecision);
+        assertEquals(1234, state.used());
+        assertEquals(originalDecision, state.lastDecisionTime());
+    }
 
-		subject.resetUsageTo(snapshot);
+    @Test
+    void resetsUsageToAsExpected() {
+        final long used = DEFAULT_CAPACITY / 2;
+        final var originalDecision = Instant.ofEpochSecond(1_234_567L, 0);
+        final var snapshot = new DeterministicThrottle.UsageSnapshot(used, originalDecision);
 
-		assertEquals(used, subject.delegate().bucket().capacityUsed());
-		assertEquals(snapshot, subject.usageSnapshot());
-	}
+        subject.resetUsageTo(snapshot);
 
-	@Test
-	void resetsUsageAsExpected() {
-		// setup:
-		long gasLimitForTX = 100_000;
-		Instant now = Instant.ofEpochSecond(1_234_567L);
+        assertEquals(used, subject.delegate().bucket().capacityUsed());
+        assertEquals(snapshot, subject.usageSnapshot());
+    }
 
-		// when:
-		var result = subject.allow(now, gasLimitForTX);
-		subject.resetUsage();
+    @Test
+    void resetsUsageAsExpected() {
+        // setup:
+        long gasLimitForTX = 100_000;
+        Instant now = Instant.ofEpochSecond(1_234_567L);
 
-		// then:
-		assertTrue(result);
-		assertEquals(DEFAULT_CAPACITY, subject.delegate().bucket().capacityFree());
-	}
+        // when:
+        var result = subject.allow(now, gasLimitForTX);
+        subject.resetUsage();
 
-	@Test
-	void reclaimsLastAllowedUseAsExpected() {
-		// setup:
-		long gasLimitForTX = 100_000;
-		Instant now = Instant.ofEpochSecond(1_234_567L);
+        // then:
+        assertTrue(result);
+        assertEquals(DEFAULT_CAPACITY, subject.delegate().bucket().capacityFree());
+    }
 
-		// when:
-		var result = subject.allow(now, gasLimitForTX);
-		subject.resetLastAllowedUse();
-		var result2 = subject.allow(now, gasLimitForTX);
-		subject.reclaimLastAllowedUse();
+    @Test
+    void reclaimsLastAllowedUseAsExpected() {
+        // setup:
+        long gasLimitForTX = 100_000;
+        Instant now = Instant.ofEpochSecond(1_234_567L);
 
-		// then:
-		assertTrue(result);
-		assertTrue(result2);
-		assertEquals(gasLimitForTX, subject.getUsed());
-		assertEquals(DEFAULT_CAPACITY - gasLimitForTX, subject.delegate().bucket().capacityFree());
-	}
+        // when:
+        var result = subject.allow(now, gasLimitForTX);
+        subject.resetLastAllowedUse();
+        var result2 = subject.allow(now, gasLimitForTX);
+        subject.reclaimLastAllowedUse();
 
-	@Test
-	void resetsLastAllowedUseAsExpected() {
-		// setup:
-		long gasLimitForTX = 100_000;
-		Instant now = Instant.ofEpochSecond(1_234_567L);
+        // then:
+        assertTrue(result);
+        assertTrue(result2);
+        assertEquals(gasLimitForTX, subject.getUsed());
+        assertEquals(DEFAULT_CAPACITY - gasLimitForTX, subject.delegate().bucket().capacityFree());
+    }
 
-		// when:
-		var result = subject.allow(now, gasLimitForTX);
-		var result2 = subject.allow(now, gasLimitForTX);
-		subject.resetLastAllowedUse();
-		subject.reclaimLastAllowedUse();
+    @Test
+    void resetsLastAllowedUseAsExpected() {
+        // setup:
+        long gasLimitForTX = 100_000;
+        Instant now = Instant.ofEpochSecond(1_234_567L);
 
-		// then:
-		assertTrue(result);
-		assertTrue(result2);
-		assertEquals(DEFAULT_CAPACITY - (gasLimitForTX * 2), subject.delegate().bucket().capacityFree());
-	}
+        // when:
+        var result = subject.allow(now, gasLimitForTX);
+        var result2 = subject.allow(now, gasLimitForTX);
+        subject.resetLastAllowedUse();
+        subject.reclaimLastAllowedUse();
+
+        // then:
+        assertTrue(result);
+        assertTrue(result2);
+        assertEquals(
+                DEFAULT_CAPACITY - (gasLimitForTX * 2), subject.delegate().bucket().capacityFree());
+    }
 }

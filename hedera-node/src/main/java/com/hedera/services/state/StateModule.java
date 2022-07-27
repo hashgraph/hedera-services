@@ -1,11 +1,6 @@
-package com.hedera.services.state;
-
-/*-
- * ‌
- * Hedera Services Node
- * ​
- * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2021-2022 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,8 +12,8 @@ package com.hedera.services.state;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+package com.hedera.services.state;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.config.NetworkInfo;
@@ -28,10 +23,9 @@ import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.ethereum.EthTxData;
 import com.hedera.services.ethereum.EthTxSigs;
-import com.hedera.services.keys.LegacyEd25519KeyReader;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.ledger.ids.SeqNoEntityIdSource;
-import com.hedera.services.legacy.core.jproto.JKey;
+import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.state.expiry.ExpiringCreations;
 import com.hedera.services.state.exports.AccountsExporter;
 import com.hedera.services.state.exports.BalancesExporter;
@@ -77,17 +71,16 @@ import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.notification.NotificationFactory;
 import com.swirlds.common.notification.listeners.ReconnectCompleteListener;
 import com.swirlds.common.notification.listeners.StateWriteToDiskCompleteListener;
-import com.swirlds.common.system.AddressBook;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.Platform;
+import com.swirlds.common.system.address.AddressBook;
+import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.jasperdb.JasperDbBuilder;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
 import dagger.Binds;
 import dagger.Module;
 import dagger.Provides;
-
-import javax.inject.Singleton;
 import java.io.PrintStream;
 import java.nio.charset.Charset;
 import java.security.MessageDigest;
@@ -96,278 +89,258 @@ import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
-
-import static com.hedera.services.utils.MiscUtils.lookupInCustomStore;
+import javax.inject.Singleton;
 
 @Module(includes = HandleLogicModule.class)
 public interface StateModule {
-	@Binds
-	@Singleton
-	SystemExits bindSystemExits(JvmSystemExits systemExits);
+    @Binds
+    @Singleton
+    SystemExits bindSystemExits(JvmSystemExits systemExits);
 
-	@Binds
-	@Singleton
-	ReconnectCompleteListener bindReconnectListener(ReconnectListener reconnectListener);
+    @Binds
+    @Singleton
+    ReconnectCompleteListener bindReconnectListener(ReconnectListener reconnectListener);
 
-	@Binds
-	@Singleton
-	StateWriteToDiskCompleteListener bindStateWrittenToDiskListener(
-			StateWriteToDiskListener stateWriteToDiskListener);
+    @Binds
+    @Singleton
+    StateWriteToDiskCompleteListener bindStateWrittenToDiskListener(
+            StateWriteToDiskListener stateWriteToDiskListener);
 
-	@Binds
-	@Singleton
-	LedgerValidator bindLedgerValidator(BasedLedgerValidator basedLedgerValidator);
+    @Binds
+    @Singleton
+    LedgerValidator bindLedgerValidator(BasedLedgerValidator basedLedgerValidator);
 
-	@Binds
-	@Singleton
-	EntityCreator bindEntityCreator(ExpiringCreations creator);
+    @Binds
+    @Singleton
+    EntityCreator bindEntityCreator(ExpiringCreations creator);
 
-	@Binds
-	@Singleton
-	BalancesExporter bindBalancesExporter(SignedStateBalancesExporter signedStateBalancesExporter);
+    @Binds
+    @Singleton
+    BalancesExporter bindBalancesExporter(SignedStateBalancesExporter signedStateBalancesExporter);
 
-	@Binds
-	@Singleton
-	SystemFilesManager bindSysFilesManager(HfsSystemFilesManager hfsSystemFilesManager);
+    @Binds
+    @Singleton
+    SystemFilesManager bindSysFilesManager(HfsSystemFilesManager hfsSystemFilesManager);
 
-	@Binds
-	@Singleton
-	AccountsExporter bindAccountsExporter(ToStringAccountsExporter toStringAccountsExporter);
+    @Binds
+    @Singleton
+    AccountsExporter bindAccountsExporter(ToStringAccountsExporter toStringAccountsExporter);
 
-	@Binds
-	@Singleton
-	SystemAccountsCreator bindSystemAccountsCreator(BackedSystemAccountsCreator backedCreator);
+    @Binds
+    @Singleton
+    SystemAccountsCreator bindSystemAccountsCreator(BackedSystemAccountsCreator backedCreator);
 
-	@Binds
-	@Singleton
-	InvalidSignedStateListener bindIssListener(IssListener issListener);
+    @Binds
+    @Singleton
+    InvalidSignedStateListener bindIssListener(IssListener issListener);
 
-	@Provides
-	@Singleton
-	static VirtualMapFactory provideVirtualMapFactory() {
-		return new VirtualMapFactory(JasperDbBuilder::new);
-	}
+    @Provides
+    @Singleton
+    static VirtualMapFactory provideVirtualMapFactory() {
+        return new VirtualMapFactory(JasperDbBuilder::new);
+    }
 
-	@Provides
-	@Singleton
-	static Pause providePause() {
-		return SleepingPause.SLEEPING_PAUSE;
-	}
+    @Provides
+    @Singleton
+    static Pause providePause() {
+        return SleepingPause.SLEEPING_PAUSE;
+    }
 
-	@Provides
-	@Singleton
-	static Supplier<Charset> provideNativeCharset() {
-		return Charset::defaultCharset;
-	}
+    @Provides
+    @Singleton
+    static Supplier<Charset> provideNativeCharset() {
+        return Charset::defaultCharset;
+    }
 
-	@Provides
-	@Singleton
-	static NamedDigestFactory provideDigestFactory() {
-		return MessageDigest::getInstance;
-	}
+    @Provides
+    @Singleton
+    static NamedDigestFactory provideDigestFactory() {
+        return MessageDigest::getInstance;
+    }
 
-	@Provides
-	@Singleton
-	static Supplier<NotificationEngine> provideNotificationEngine() {
-		return NotificationFactory::getEngine;
-	}
+    @Provides
+    @Singleton
+    static Supplier<NotificationEngine> provideNotificationEngine() {
+        return NotificationFactory::getEngine;
+    }
 
-	@Provides
-	@Singleton
-	static Function<EthTxData, EthTxSigs> provideSigsFunction() {
-		return EthTxSigs::extractSignatures;
-	}
+    @Provides
+    @Singleton
+    static Function<EthTxData, EthTxSigs> provideSigsFunction() {
+        return EthTxSigs::extractSignatures;
+    }
 
-	@Provides
-	@Singleton
-	static Optional<PrintStream> providePrintStream(Platform platform) {
-		final var console = platform.createConsole(true);
-		return Optional.ofNullable(console).map(c -> c.out);
-	}
+    @Provides
+    @Singleton
+    static Optional<PrintStream> providePrintStream(Platform platform) {
+        final var console = platform.createConsole(true);
+        return Optional.ofNullable(console).map(c -> c.out);
+    }
 
-	@Provides
-	@Singleton
-	static UnaryOperator<byte[]> provideSigner(Platform platform) {
-		return platform::sign;
-	}
+    @Provides
+    @Singleton
+    static UnaryOperator<byte[]> provideSigner(Platform platform) {
+        return platform::sign;
+    }
 
-	@Provides
-	@Singleton
-	static NodeId provideNodeId(Platform platform) {
-		return platform.getSelfId();
-	}
+    @Provides
+    @Singleton
+    static NodeId provideNodeId(Platform platform) {
+        return platform.getSelfId();
+    }
 
-	@Provides
-	@Singleton
-	static StateView provideCurrentView(
-			final ScheduleStore scheduleStore,
-			final MutableStateChildren workingState,
-			final NetworkInfo networkInfo
-	) {
-		return new StateView(scheduleStore, workingState, networkInfo);
-	}
+    @Provides
+    @Singleton
+    static StateView provideCurrentView(
+            final ScheduleStore scheduleStore,
+            final MutableStateChildren workingState,
+            final NetworkInfo networkInfo) {
+        return new StateView(scheduleStore, workingState, networkInfo);
+    }
 
-	@Provides
-	@Singleton
-	static Supplier<StateView> provideStateViews(
-			final ScheduleStore scheduleStore,
-			final MutableStateChildren workingState,
-			final NetworkInfo networkInfo
-	) {
-		return () -> new StateView(scheduleStore, workingState, networkInfo);
-	}
+    @Provides
+    @Singleton
+    static Supplier<StateView> provideStateViews(
+            final ScheduleStore scheduleStore,
+            final MutableStateChildren workingState,
+            final NetworkInfo networkInfo) {
+        return () -> new StateView(scheduleStore, workingState, networkInfo);
+    }
 
-	@Provides
-	@Singleton
-	static MutableStateChildren provideWorkingState() {
-		return new MutableStateChildren();
-	}
+    @Provides
+    @Singleton
+    static MutableStateChildren provideWorkingState() {
+        return new MutableStateChildren();
+    }
 
-	@Provides
-	@Singleton
-	static Supplier<MerkleMap<EntityNum, MerkleAccount>> provideWorkingAccounts(
-			final MutableStateChildren workingState
-	) {
-		return workingState::accounts;
-	}
+    @Provides
+    @Singleton
+    static Supplier<MerkleMap<EntityNum, MerkleAccount>> provideWorkingAccounts(
+            final MutableStateChildren workingState) {
+        return workingState::accounts;
+    }
 
-	@Provides
-	@Singleton
-	static Supplier<MerkleMap<EntityNum, MerkleStakingInfo>> provideWorkingStakingInfo(
-			final MutableStateChildren workingState
-	) {
-		return workingState::stakingInfo;
-	}
+    @Provides
+    @Singleton
+    static Supplier<MerkleMap<EntityNum, MerkleStakingInfo>> provideWorkingStakingInfo(
+            final MutableStateChildren workingState) {
+        return workingState::stakingInfo;
+    }
 
-	@Provides
-	@Singleton
-	static Supplier<VirtualMap<VirtualBlobKey, VirtualBlobValue>> provideWorkingStorage(
-			final MutableStateChildren workingState
-	) {
-		return workingState::storage;
-	}
+    @Provides
+    @Singleton
+    static Supplier<VirtualMap<VirtualBlobKey, VirtualBlobValue>> provideWorkingStorage(
+            final MutableStateChildren workingState) {
+        return workingState::storage;
+    }
 
-	@Provides
-	@Singleton
-	static Supplier<MerkleMap<EntityNum, MerkleTopic>> provideWorkingTopics(
-			final MutableStateChildren workingState
-	) {
-		return workingState::topics;
-	}
+    @Provides
+    @Singleton
+    static Supplier<MerkleMap<EntityNum, MerkleTopic>> provideWorkingTopics(
+            final MutableStateChildren workingState) {
+        return workingState::topics;
+    }
 
-	@Provides
-	@Singleton
-	static Supplier<MerkleMap<EntityNum, MerkleToken>> provideWorkingTokens(
-			final MutableStateChildren workingState
-	) {
-		return workingState::tokens;
-	}
+    @Provides
+    @Singleton
+    static Supplier<MerkleMap<EntityNum, MerkleToken>> provideWorkingTokens(
+            final MutableStateChildren workingState) {
+        return workingState::tokens;
+    }
 
-	@Provides
-	@Singleton
-	static Supplier<MerkleMap<EntityNumPair, MerkleTokenRelStatus>> provideWorkingTokenAssociations(
-			final MutableStateChildren workingState
-	) {
-		return workingState::tokenAssociations;
-	}
+    @Provides
+    @Singleton
+    static Supplier<MerkleMap<EntityNumPair, MerkleTokenRelStatus>> provideWorkingTokenAssociations(
+            final MutableStateChildren workingState) {
+        return workingState::tokenAssociations;
+    }
 
-	@Provides
-	@Singleton
-	static Supplier<MerkleScheduledTransactions> provideWorkingSchedules(
-			final MutableStateChildren workingState
-	) {
-		return workingState::schedules;
-	}
+    @Provides
+    @Singleton
+    static Supplier<MerkleScheduledTransactions> provideWorkingSchedules(
+            final MutableStateChildren workingState) {
+        return workingState::schedules;
+    }
 
-	@Provides
-	@Singleton
-	static Supplier<MerkleMap<EntityNumPair, MerkleUniqueToken>> provideWorkingNfts(
-			final MutableStateChildren workingState
-	) {
-		return workingState::uniqueTokens;
-	}
+    @Provides
+    @Singleton
+    static Supplier<MerkleMap<EntityNumPair, MerkleUniqueToken>> provideWorkingNfts(
+            final MutableStateChildren workingState) {
+        return workingState::uniqueTokens;
+    }
 
-	@Provides
-	@Singleton
-	static Supplier<MerkleSpecialFiles> provideWorkingSpecialFiles(
-			final MutableStateChildren workingState
-	) {
-		return workingState::specialFiles;
-	}
+    @Provides
+    @Singleton
+    static Supplier<MerkleSpecialFiles> provideWorkingSpecialFiles(
+            final MutableStateChildren workingState) {
+        return workingState::specialFiles;
+    }
 
-	@Provides
-	@Singleton
-	static Supplier<VirtualMap<ContractKey, IterableContractValue>> provideWorkingContractStorage(
-			final MutableStateChildren workingState
-	) {
-		return workingState::contractStorage;
-	}
+    @Provides
+    @Singleton
+    static Supplier<VirtualMap<ContractKey, IterableContractValue>> provideWorkingContractStorage(
+            final MutableStateChildren workingState) {
+        return workingState::contractStorage;
+    }
 
-	@Provides
-	@Singleton
-	static Supplier<MerkleNetworkContext> provideWorkingNetworkCtx(
-			final MutableStateChildren workingState
-	) {
-		return workingState::networkCtx;
-	}
+    @Provides
+    @Singleton
+    static Supplier<MerkleNetworkContext> provideWorkingNetworkCtx(
+            final MutableStateChildren workingState) {
+        return workingState::networkCtx;
+    }
 
-	@Provides
-	@Singleton
-	static Supplier<RecordsRunningHashLeaf> provideRecordsRunningHashLeaf(
-			final MutableStateChildren workingState
-	) {
-		return workingState::runningHashLeaf;
-	}
+    @Provides
+    @Singleton
+    static Supplier<RecordsRunningHashLeaf> provideRecordsRunningHashLeaf(
+            final MutableStateChildren workingState) {
+        return workingState::runningHashLeaf;
+    }
 
-	@Provides
-	@Singleton
-	static Supplier<AddressBook> provideWorkingAddressBook(
-			final MutableStateChildren workingState
-	) {
-		return workingState::addressBook;
-	}
+    @Provides
+    @Singleton
+    static Supplier<AddressBook> provideWorkingAddressBook(
+            final MutableStateChildren workingState) {
+        return workingState::addressBook;
+    }
 
-	@Provides
-	@Singleton
-	static EntityIdSource provideWorkingEntityIdSource(
-			final MutableStateChildren workingState
-	) {
-		return new SeqNoEntityIdSource(() -> workingState.networkCtx().seqNo());
-	}
+    @Provides
+    @Singleton
+    static EntityIdSource provideWorkingEntityIdSource(final MutableStateChildren workingState) {
+        return new SeqNoEntityIdSource(() -> workingState.networkCtx().seqNo());
+    }
 
-	@Provides
-	@Singleton
-	static Supplier<ExchangeRates> provideWorkingMidnightRates(
-			final MutableStateChildren workingState
-	) {
-		return () -> workingState.networkCtx().midnightRates();
-	}
+    @Provides
+    @Singleton
+    static Supplier<ExchangeRates> provideWorkingMidnightRates(
+            final MutableStateChildren workingState) {
+        return () -> workingState.networkCtx().midnightRates();
+    }
 
-	@Provides
-	@Singleton
-	static Supplier<SequenceNumber> provideWorkingSeqNo(
-			final MutableStateChildren workingState
-	) {
-		return () -> workingState.networkCtx().seqNo();
-	}
+    @Provides
+    @Singleton
+    static Supplier<SequenceNumber> provideWorkingSeqNo(final MutableStateChildren workingState) {
+        return () -> workingState.networkCtx().seqNo();
+    }
 
-	@Provides
-	@Singleton
-	static Supplier<Map<ByteString, EntityNum>> provideWorkingAliases(
-			final MutableStateChildren workingState
-	) {
-		return workingState::aliases;
-	}
+    @Provides
+    @Singleton
+    static Supplier<Map<ByteString, EntityNum>> provideWorkingAliases(
+            final MutableStateChildren workingState) {
+        return workingState::aliases;
+    }
 
-	@Provides
-	@Singleton
-	static Supplier<JKey> provideSystemFileKey(
-			LegacyEd25519KeyReader b64KeyReader,
-			@CompositeProps PropertySource properties
-	) {
-		return () -> lookupInCustomStore(
-				b64KeyReader,
-				properties.getStringProperty("bootstrap.genesisB64Keystore.path"),
-				properties.getStringProperty("bootstrap.genesisB64Keystore.keyName"));
-	}
+    @Provides
+    @Singleton
+    static Supplier<JEd25519Key> provideSystemFileKey(@CompositeProps PropertySource properties) {
+        return () -> {
+            final var hexedEd25519Key = properties.getStringProperty("bootstrap.genesisPublicKey");
+            final var ed25519Key = new JEd25519Key(CommonUtils.unhex(hexedEd25519Key));
+            if (!ed25519Key.isValid()) {
+                throw new IllegalStateException(
+                        "'" + hexedEd25519Key + "' is not a possible Ed25519 public key");
+            }
+            return ed25519Key;
+        };
+    }
 }

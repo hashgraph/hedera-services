@@ -1,10 +1,5 @@
-package com.hedera.services.store.contracts.precompile.impl;
-
-/*-
- * ‌
- * Hedera Services Node
- *
- * Copyright (C) 2018 - 2022 Hedera Hashgraph, LLC
+/*
+ * Copyright (C) 2022 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,8 +12,8 @@ package com.hedera.services.store.contracts.precompile.impl;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+package com.hedera.services.store.contracts.precompile.impl;
 
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.store.contracts.WorldLedgers;
@@ -39,23 +34,23 @@ public abstract class AbstractWritePrecompile implements Precompile {
 	protected final PrecompilePricingUtils pricingUtils;
 	protected TransactionBody.Builder transactionBody;
 
-	protected AbstractWritePrecompile(
-			final WorldLedgers ledgers,
-			final DecodingFacade decoder,
-			final SideEffectsTracker sideEffects,
-			final SyntheticTxnFactory syntheticTxnFactory,
-			final InfrastructureFactory infrastructureFactory,
-			final PrecompilePricingUtils pricingUtils) {
-		this.ledgers = ledgers;
-		this.decoder = decoder;
-		this.sideEffects = sideEffects;
-		this.syntheticTxnFactory = syntheticTxnFactory;
-		this.infrastructureFactory = infrastructureFactory;
-		this.pricingUtils = pricingUtils;
-	}
+    protected AbstractWritePrecompile(
+            final WorldLedgers ledgers,
+            final DecodingFacade decoder,
+            final SideEffectsTracker sideEffects,
+            final SyntheticTxnFactory syntheticTxnFactory,
+            final InfrastructureFactory infrastructureFactory,
+            final PrecompilePricingUtils pricingUtils) {
+        this.ledgers = ledgers;
+        this.decoder = decoder;
+        this.sideEffects = sideEffects;
+        this.syntheticTxnFactory = syntheticTxnFactory;
+        this.infrastructureFactory = infrastructureFactory;
+        this.pricingUtils = pricingUtils;
+    }
 
-	@Override
-	public long getGasRequirement(long blockTimestamp) {
-		return pricingUtils.computeGasRequirement(blockTimestamp, this, transactionBody);
-	}
+    @Override
+    public long getGasRequirement(long blockTimestamp) {
+        return pricingUtils.computeGasRequirement(blockTimestamp, this, transactionBody);
+    }
 }

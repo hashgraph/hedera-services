@@ -1,11 +1,6 @@
-package com.hedera.services.usage.crypto;
-
-/*-
- * ‌
- * Hedera Services API Fees
- * ​
- * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,15 +12,8 @@ package com.hedera.services.usage.crypto;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
-
-import com.hedera.services.test.KeyUtils;
-import com.hederahashgraph.api.proto.java.CryptoGetInfoQuery;
-import com.hederahashgraph.api.proto.java.FeeComponents;
-import com.hederahashgraph.api.proto.java.Key;
-import com.hederahashgraph.api.proto.java.Query;
-import org.junit.jupiter.api.Test;
+package com.hedera.services.usage.crypto;
 
 import static com.hedera.services.usage.SingletonEstimatorUtils.ESTIMATOR_UTILS;
 import static com.hedera.services.usage.crypto.entities.CryptoEntitySizes.CRYPTO_ENTITY_SIZES;
@@ -35,37 +23,45 @@ import static com.hederahashgraph.fee.FeeBuilder.BASIC_QUERY_RES_HEADER;
 import static com.hederahashgraph.fee.FeeBuilder.getAccountKeyStorageSize;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import com.hedera.services.test.KeyUtils;
+import com.hederahashgraph.api.proto.java.CryptoGetInfoQuery;
+import com.hederahashgraph.api.proto.java.FeeComponents;
+import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.Query;
+import org.junit.jupiter.api.Test;
+
 class CryptoGetInfoUsageTest {
-	private final Query query = Query.newBuilder().setCryptoGetInfo(CryptoGetInfoQuery.getDefaultInstance()).build();
+    private final Query query =
+            Query.newBuilder().setCryptoGetInfo(CryptoGetInfoQuery.getDefaultInstance()).build();
 
-	private static final int NUM_TOKEN_ASSOCS = 3;
-	private static final Key KEY = KeyUtils.A_COMPLEX_KEY;
-	private static final String MEMO = "Hey there!";
+    private static final int NUM_TOKEN_ASSOCS = 3;
+    private static final Key KEY = KeyUtils.A_COMPLEX_KEY;
+    private static final String MEMO = "Hey there!";
 
-	private CryptoGetInfoUsage subject;
+    private CryptoGetInfoUsage subject;
 
-	@Test
-	void getsExpectedUsage() {
-		final var expectedTb = BASIC_QUERY_HEADER + BASIC_ENTITY_ID_SIZE;
-		final var expectedRb = BASIC_QUERY_RES_HEADER + NUM_TOKEN_ASSOCS * CRYPTO_ENTITY_SIZES.bytesInTokenAssocRepr()
-				+ CRYPTO_ENTITY_SIZES.fixedBytesInAccountRepr()
-				+ getAccountKeyStorageSize(KEY)
-				+ MEMO.length()
-				+ BASIC_ENTITY_ID_SIZE;
-		final var usage = FeeComponents.newBuilder()
-				.setBpt(expectedTb)
-				.setBpr(expectedRb)
-				.build();
-		final var expected = ESTIMATOR_UTILS.withDefaultQueryPartitioning(usage);
+    @Test
+    void getsExpectedUsage() {
+        final var expectedTb = BASIC_QUERY_HEADER + BASIC_ENTITY_ID_SIZE;
+        final var expectedRb =
+                BASIC_QUERY_RES_HEADER
+                        + NUM_TOKEN_ASSOCS * CRYPTO_ENTITY_SIZES.bytesInTokenAssocRepr()
+                        + CRYPTO_ENTITY_SIZES.fixedBytesInAccountRepr()
+                        + getAccountKeyStorageSize(KEY)
+                        + MEMO.length()
+                        + BASIC_ENTITY_ID_SIZE;
+        final var usage = FeeComponents.newBuilder().setBpt(expectedTb).setBpr(expectedRb).build();
+        final var expected = ESTIMATOR_UTILS.withDefaultQueryPartitioning(usage);
 
-		subject = CryptoGetInfoUsage.newEstimate(query);
+        subject = CryptoGetInfoUsage.newEstimate(query);
 
-		var actual = subject.givenCurrentKey(KEY)
-				.givenCurrentlyUsingProxy()
-				.givenCurrentMemo(MEMO)
-				.givenCurrentTokenAssocs(NUM_TOKEN_ASSOCS)
-				.get();
+        var actual =
+                subject.givenCurrentKey(KEY)
+                        .givenCurrentlyUsingProxy()
+                        .givenCurrentMemo(MEMO)
+                        .givenCurrentTokenAssocs(NUM_TOKEN_ASSOCS)
+                        .get();
 
-		assertEquals(expected, actual);
-	}
+        assertEquals(expected, actual);
+    }
 }

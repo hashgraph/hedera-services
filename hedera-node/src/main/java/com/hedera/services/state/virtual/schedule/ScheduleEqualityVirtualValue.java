@@ -1,11 +1,6 @@
-package com.hedera.services.state.virtual.schedule;
-
-/*-
- * ‌
- * Hedera Services Node
- * ​
- * Copyright (C) 2018 - 2022 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2022 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,15 +12,16 @@ package com.hedera.services.state.virtual.schedule;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+package com.hedera.services.state.virtual.schedule;
 
 import com.google.common.base.MoreObjects;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
+import com.swirlds.common.merkle.MerkleLeaf;
+import com.swirlds.common.merkle.impl.PartialMerkleLeaf;
+import com.swirlds.common.merkle.utility.Keyed;
 import com.swirlds.virtualmap.VirtualValue;
-
-import java.beans.Transient;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
@@ -36,186 +32,195 @@ import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.function.Supplier;
 
-public class ScheduleEqualityVirtualValue implements VirtualValue {
+/**
+ * This is currently used in a MerkleMap due to issues with virtual map in the 0.27 release. It
+ * should be moved back to VirtualMap in 0.28.
+ */
+public class ScheduleEqualityVirtualValue extends PartialMerkleLeaf
+        implements VirtualValue, Keyed<ScheduleEqualityVirtualKey>, MerkleLeaf {
 
-	static final int CURRENT_VERSION = 1;
+    static final int CURRENT_VERSION = 1;
 
-	static final long RUNTIME_CONSTRUCTABLE_ID = 0x1fe377366e3282f2L;
+    static final long RUNTIME_CONSTRUCTABLE_ID = 0x1fe377366e3282f2L;
 
-	/** Although extremely unlikely, we must handle the case where more than one schedule has the
-	 * same long equality hash. So this is a Map of string equality hash to schedule ID. */
-	private final SortedMap<String, Long> ids;
+    private long number;
 
-	private boolean immutable;
+    /**
+     * Although extremely unlikely, we must handle the case where more than one schedule has the
+     * same long equality hash. So this is a Map of string equality hash to schedule ID.
+     */
+    private final SortedMap<String, Long> ids;
 
+    public ScheduleEqualityVirtualValue() {
+        this(TreeMap::new, null);
+    }
 
-	public ScheduleEqualityVirtualValue() {
-		this(TreeMap::new);
-	}
+    public ScheduleEqualityVirtualValue(Map<String, Long> ids) {
+        this(ids, null);
+    }
 
-	public ScheduleEqualityVirtualValue(Map<String, Long> ids) {
-		this(() -> new TreeMap<>(ids));
-	}
+    public ScheduleEqualityVirtualValue(Map<String, Long> ids, ScheduleEqualityVirtualKey key) {
+        this(() -> new TreeMap<>(ids), key);
+    }
 
-	private ScheduleEqualityVirtualValue(Supplier<SortedMap<String, Long>> ids) {
-		this.ids = ids.get();
-	}
+    private ScheduleEqualityVirtualValue(
+            Supplier<SortedMap<String, Long>> ids, ScheduleEqualityVirtualKey key) {
+        this.ids = ids.get();
+        this.number = key == null ? -1 : key.getKeyAsLong();
+    }
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || ScheduleEqualityVirtualValue.class != o.getClass()) {
+            return false;
+        }
 
-	@Override
-	public boolean equals(Object o) {
-		if (this == o) {
-			return true;
-		}
-		if (o == null || ScheduleEqualityVirtualValue.class != o.getClass()) {
-			return false;
-		}
+        var that = (ScheduleEqualityVirtualValue) o;
+        return Objects.equals(this.ids, that.ids);
+    }
 
-		var that = (ScheduleEqualityVirtualValue) o;
-		return Objects.equals(this.ids, that.ids);
-	}
+    @Override
+    public int hashCode() {
+        return Objects.hashCode(ids);
+    }
 
-	@Override
-	public int hashCode() {
-		return Objects.hashCode(ids);
-	}
+    @Override
+    public String toString() {
+        var helper =
+                MoreObjects.toStringHelper(ScheduleEqualityVirtualValue.class)
+                        .add("ids", ids)
+                        .add("number", number);
+        return helper.toString();
+    }
 
-	@Override
-	public String toString() {
-		var helper = MoreObjects.toStringHelper(ScheduleEqualityVirtualValue.class)
-				.add("ids", ids);
-		return helper.toString();
-	}
+    @Override
+    public void deserialize(SerializableDataInputStream in, int version) throws IOException {
+        int s = in.readInt();
+        ids.clear();
+        for (int x = 0; x < s; ++x) {
+            byte[] keyBytes = new byte[in.readInt()];
+            in.readFully(keyBytes);
+            var k = new String(keyBytes, StandardCharsets.UTF_8);
+            ids.put(k, in.readLong());
+        }
+        number = in.readLong();
+    }
 
-	@Override
-	public void deserialize(SerializableDataInputStream in, int version) throws IOException {
-		int s = in.readInt();
-		ids.clear();
-		for (int x = 0; x <	s; ++x) {
-			byte[] keyBytes = new byte[in.readInt()];
-			in.readFully(keyBytes);
-			var key = new String(keyBytes, StandardCharsets.UTF_8);
-			ids.put(key, in.readLong());
-		}
-	}
+    @Override
+    public void deserialize(ByteBuffer in, int version) throws IOException {
+        int s = in.getInt();
+        ids.clear();
+        for (int x = 0; x < s; ++x) {
+            byte[] keyBytes = new byte[in.getInt()];
+            in.get(keyBytes);
+            var k = new String(keyBytes, StandardCharsets.UTF_8);
+            ids.put(k, in.getLong());
+        }
+        number = in.getLong();
+    }
 
-	@Override
-	public void deserialize(ByteBuffer in, int version) throws IOException {
-		int s = in.getInt();
-		ids.clear();
-		for (int x = 0; x <	s; ++x) {
-			byte[] keyBytes = new byte[in.getInt()];
-			in.get(keyBytes);
-			var key = new String(keyBytes, StandardCharsets.UTF_8);
-			ids.put(key, in.getLong());
-		}
-	}
+    @Override
+    public void serialize(SerializableDataOutputStream out) throws IOException {
+        out.writeInt(ids.size());
+        for (var e : ids.entrySet()) {
+            var keyBytes = e.getKey().getBytes(StandardCharsets.UTF_8);
+            out.writeInt(keyBytes.length);
+            out.write(keyBytes);
+            out.writeLong(e.getValue());
+        }
+        out.writeLong(number);
+    }
 
-	@Override
-	public void serialize(SerializableDataOutputStream out) throws IOException {
-		out.writeInt(ids.size());
-		for (var e : ids.entrySet()) {
-			var keyBytes = e.getKey().getBytes(StandardCharsets.UTF_8);
-			out.writeInt(keyBytes.length);
-			out.write(keyBytes);
-			out.writeLong(e.getValue());
-		}
-	}
+    @Override
+    public void serialize(ByteBuffer out) throws IOException {
+        out.putInt(ids.size());
+        for (var e : ids.entrySet()) {
+            var keyBytes = e.getKey().getBytes(StandardCharsets.UTF_8);
+            out.putInt(keyBytes.length);
+            out.put(keyBytes);
+            out.putLong(e.getValue());
+        }
+        out.putLong(number);
+    }
 
-	@Override
-	public void serialize(ByteBuffer out) throws IOException {
-		out.putInt(ids.size());
-		for (var e : ids.entrySet()) {
-			var keyBytes = e.getKey().getBytes(StandardCharsets.UTF_8);
-			out.putInt(keyBytes.length);
-			out.put(keyBytes);
-			out.putLong(e.getValue());
-		}
-	}
+    @Override
+    public int getVersion() {
+        return CURRENT_VERSION;
+    }
 
-	@Override
-	public long getClassId() {
-		return RUNTIME_CONSTRUCTABLE_ID;
-	}
+    @Override
+    public ScheduleEqualityVirtualValue copy() {
+        var fc = new ScheduleEqualityVirtualValue(ids, new ScheduleEqualityVirtualKey(number));
 
-	@Override
-	public int getVersion() {
-		return CURRENT_VERSION;
-	}
+        this.setImmutable(true);
 
-	@Override
-	public ScheduleEqualityVirtualValue copy() {
-		var fc = new ScheduleEqualityVirtualValue(ids);
+        return fc;
+    }
 
-		this.setImmutable(true);
+    @Override
+    public long getClassId() {
+        return RUNTIME_CONSTRUCTABLE_ID;
+    }
 
-		return fc;
-	}
+    public void add(String hash, long id) {
+        throwIfImmutable("Cannot add to ids if it's immutable.");
 
-	public void add(String hash, long id) {
-		throwIfImmutable("Cannot add to ids if it's immutable.");
+        var cur = ids.get(hash);
 
-		var cur = ids.get(hash);
+        if (cur != null && cur.longValue() != id) {
+            throw new IllegalStateException(
+                    "multiple ids with same hash during add! " + cur + " and " + id);
+        }
 
-		if (cur != null && cur.longValue() != id) {
-			throw new IllegalStateException("multiple ids with same hash during add! " + cur + " and " + id);
-		}
+        ids.put(hash, id);
+    }
 
-		ids.put(hash, id);
-	}
+    public void remove(String hash, long id) {
+        throwIfImmutable("Cannot remove from ids if it's immutable.");
 
-	public void remove(String hash, long id) {
-		throwIfImmutable("Cannot remove from ids if it's immutable.");
+        var cur = ids.get(hash);
 
-		var cur = ids.get(hash);
+        if (cur != null && cur.longValue() != id) {
+            throw new IllegalStateException(
+                    "multiple ids with same hash during remove! " + cur + " and " + id);
+        }
 
-		if (cur != null && cur.longValue() != id) {
-			throw new IllegalStateException("multiple ids with same hash during remove! " + cur + " and " + id);
-		}
+        ids.remove(hash);
+    }
 
-		ids.remove(hash);
-	}
+    public SortedMap<String, Long> getIds() {
+        return Collections.unmodifiableSortedMap(ids);
+    }
 
-	public SortedMap<String, Long> getIds() {
-		return Collections.unmodifiableSortedMap(ids);
-	}
+    /** {@inheritDoc} */
+    @Override
+    public ScheduleEqualityVirtualValue asReadOnly() {
+        var c =
+                new ScheduleEqualityVirtualValue(
+                        this::getIds, new ScheduleEqualityVirtualKey(number));
+        c.setImmutable(true);
+        return c;
+    }
 
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public final boolean isImmutable() {
-		return immutable;
-	}
+    /**
+     * Needed until getForModify works on VirtualMap
+     *
+     * @return a copy of this without marking this as immutable
+     */
+    public ScheduleEqualityVirtualValue asWritable() {
+        return new ScheduleEqualityVirtualValue(this.ids, new ScheduleEqualityVirtualKey(number));
+    }
 
-	@Transient
-	protected final void setImmutable(final boolean immutable) {
-		this.immutable = immutable;
-	}
+    @Override
+    public ScheduleEqualityVirtualKey getKey() {
+        return new ScheduleEqualityVirtualKey(number);
+    }
 
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public void release() {
-		// nothing to release
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public ScheduleEqualityVirtualValue asReadOnly() {
-		var c = new ScheduleEqualityVirtualValue(this::getIds);
-		c.setImmutable(true);
-		return c;
-	}
-
-	/**
-	 * Needed until getForModify works on VirtualMap
-	 * @return a copy of this without marking this as immutable
-	 */
-	public ScheduleEqualityVirtualValue asWritable() {
-		return new ScheduleEqualityVirtualValue(this.ids);
-	}
+    @Override
+    public void setKey(final ScheduleEqualityVirtualKey key) {
+        this.number = key == null ? -1 : key.getKeyAsLong();
+    }
 }

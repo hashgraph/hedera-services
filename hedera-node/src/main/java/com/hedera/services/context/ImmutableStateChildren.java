@@ -1,11 +1,6 @@
-package com.hedera.services.context;
-
-/*-
- * ‌
- * Hedera Services Node
- * ​
- * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2021-2022 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,8 +12,8 @@ package com.hedera.services.context;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+package com.hedera.services.context;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.ServicesState;
@@ -38,129 +33,128 @@ import com.hedera.services.state.virtual.VirtualBlobValue;
 import com.hedera.services.stream.RecordsRunningHashLeaf;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
-import com.swirlds.common.system.AddressBook;
+import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
-
 import java.lang.ref.WeakReference;
 import java.time.Instant;
 import java.util.Map;
 import java.util.Objects;
 
 /**
- * A {@link StateChildren} implementation for providing immutable access to the children of a
- * {@link ServicesState}. (Experience shows that making repeated, indirect calls to
- * {@link com.swirlds.common.merkle.utility.AbstractNaryMerkleInternal#getChild(int)} is
- * much more expensive, since the compiler does not seem to ever inline those calls.)
+ * A {@link StateChildren} implementation for providing immutable access to the children of a {@link
+ * ServicesState}. (Experience shows that making repeated, indirect calls to {@link
+ * com.swirlds.common.merkle.impl.PartialNaryMerkleInternal#getChild(int)} is much more expensive,
+ * since the compiler does not seem to ever inline those calls.)
  */
 public class ImmutableStateChildren implements StateChildren {
-	private final WeakReference<MerkleMap<EntityNum, MerkleAccount>> accounts;
-	private final WeakReference<MerkleMap<EntityNum, MerkleTopic>> topics;
-	private final WeakReference<MerkleMap<EntityNum, MerkleToken>> tokens;
-	private final WeakReference<MerkleMap<EntityNumPair, MerkleUniqueToken>> uniqueTokens;
-	private final WeakReference<MerkleScheduledTransactions> schedules;
-	private final WeakReference<VirtualMap<VirtualBlobKey, VirtualBlobValue>> storage;
-	private final WeakReference<VirtualMap<ContractKey, IterableContractValue>> contractStorage;
-	private final WeakReference<MerkleMap<EntityNumPair, MerkleTokenRelStatus>> tokenAssociations;
-	private final WeakReference<MerkleNetworkContext> networkCtx;
-	private final WeakReference<AddressBook> addressBook;
-	private final WeakReference<MerkleSpecialFiles> specialFiles;
-	private final WeakReference<RecordsRunningHashLeaf> runningHashLeaf;
-	private final WeakReference<Map<ByteString, EntityNum>> aliases;
-	private final WeakReference<MerkleMap<EntityNum, MerkleStakingInfo>> stakingInfo;
-	private final Instant signedAt;
+    private final WeakReference<MerkleMap<EntityNum, MerkleAccount>> accounts;
+    private final WeakReference<MerkleMap<EntityNum, MerkleTopic>> topics;
+    private final WeakReference<MerkleMap<EntityNum, MerkleToken>> tokens;
+    private final WeakReference<MerkleMap<EntityNumPair, MerkleUniqueToken>> uniqueTokens;
+    private final WeakReference<MerkleScheduledTransactions> schedules;
+    private final WeakReference<VirtualMap<VirtualBlobKey, VirtualBlobValue>> storage;
+    private final WeakReference<VirtualMap<ContractKey, IterableContractValue>> contractStorage;
+    private final WeakReference<MerkleMap<EntityNumPair, MerkleTokenRelStatus>> tokenAssociations;
+    private final WeakReference<MerkleNetworkContext> networkCtx;
+    private final WeakReference<AddressBook> addressBook;
+    private final WeakReference<MerkleSpecialFiles> specialFiles;
+    private final WeakReference<RecordsRunningHashLeaf> runningHashLeaf;
+    private final WeakReference<Map<ByteString, EntityNum>> aliases;
+    private final WeakReference<MerkleMap<EntityNum, MerkleStakingInfo>> stakingInfo;
+    private final Instant signedAt;
 
-	public ImmutableStateChildren(ServicesState state) {
-		this.signedAt = state.getTimeOfLastHandledTxn();
+    public ImmutableStateChildren(ServicesState state) {
+        this.signedAt = state.getTimeOfLastHandledTxn();
 
-		accounts = new WeakReference<>(state.accounts());
-		topics = new WeakReference<>(state.topics());
-		storage = new WeakReference<>(state.storage());
-		contractStorage = new WeakReference<>(state.contractStorage());
-		tokens = new WeakReference<>(state.tokens());
-		tokenAssociations = new WeakReference<>(state.tokenAssociations());
-		schedules = new WeakReference<>(state.scheduleTxs());
-		networkCtx = new WeakReference<>(state.networkCtx());
-		addressBook = new WeakReference<>(state.addressBook());
-		specialFiles = new WeakReference<>(state.specialFiles());
-		uniqueTokens = new WeakReference<>(state.uniqueTokens());
-		runningHashLeaf = new WeakReference<>(state.runningHashLeaf());
-		aliases = new WeakReference<>(state.aliases());
-		stakingInfo = new WeakReference<>(state.stakingInfo());
-	}
+        accounts = new WeakReference<>(state.accounts());
+        topics = new WeakReference<>(state.topics());
+        storage = new WeakReference<>(state.storage());
+        contractStorage = new WeakReference<>(state.contractStorage());
+        tokens = new WeakReference<>(state.tokens());
+        tokenAssociations = new WeakReference<>(state.tokenAssociations());
+        schedules = new WeakReference<>(state.scheduleTxs());
+        networkCtx = new WeakReference<>(state.networkCtx());
+        addressBook = new WeakReference<>(state.addressBook());
+        specialFiles = new WeakReference<>(state.specialFiles());
+        uniqueTokens = new WeakReference<>(state.uniqueTokens());
+        runningHashLeaf = new WeakReference<>(state.runningHashLeaf());
+        aliases = new WeakReference<>(state.aliases());
+        stakingInfo = new WeakReference<>(state.stakingInfo());
+    }
 
-	@Override
-	public Instant signedAt() {
-		return signedAt;
-	}
+    @Override
+    public Instant signedAt() {
+        return signedAt;
+    }
 
-	@Override
-	public MerkleMap<EntityNum, MerkleAccount> accounts() {
-		return Objects.requireNonNull(accounts.get());
-	}
+    @Override
+    public MerkleMap<EntityNum, MerkleAccount> accounts() {
+        return Objects.requireNonNull(accounts.get());
+    }
 
-	@Override
-	public MerkleMap<EntityNum, MerkleTopic> topics() {
-		return Objects.requireNonNull(topics.get());
-	}
+    @Override
+    public MerkleMap<EntityNum, MerkleTopic> topics() {
+        return Objects.requireNonNull(topics.get());
+    }
 
-	@Override
-	public MerkleMap<EntityNum, MerkleToken> tokens() {
-		return Objects.requireNonNull(tokens.get());
-	}
+    @Override
+    public MerkleMap<EntityNum, MerkleToken> tokens() {
+        return Objects.requireNonNull(tokens.get());
+    }
 
-	@Override
-	public VirtualMap<VirtualBlobKey, VirtualBlobValue> storage() {
-		return Objects.requireNonNull(storage.get());
-	}
+    @Override
+    public VirtualMap<VirtualBlobKey, VirtualBlobValue> storage() {
+        return Objects.requireNonNull(storage.get());
+    }
 
-	@Override
-	public VirtualMap<ContractKey, IterableContractValue> contractStorage() {
-		return Objects.requireNonNull(contractStorage.get());
-	}
+    @Override
+    public VirtualMap<ContractKey, IterableContractValue> contractStorage() {
+        return Objects.requireNonNull(contractStorage.get());
+    }
 
-	@Override
-	public MerkleScheduledTransactions schedules() {
-		return Objects.requireNonNull(schedules.get());
-	}
+    @Override
+    public MerkleScheduledTransactions schedules() {
+        return Objects.requireNonNull(schedules.get());
+    }
 
-	@Override
-	public MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenAssociations() {
-		return Objects.requireNonNull(tokenAssociations.get());
-	}
+    @Override
+    public MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenAssociations() {
+        return Objects.requireNonNull(tokenAssociations.get());
+    }
 
-	@Override
-	public MerkleNetworkContext networkCtx() {
-		return Objects.requireNonNull(networkCtx.get());
-	}
+    @Override
+    public MerkleNetworkContext networkCtx() {
+        return Objects.requireNonNull(networkCtx.get());
+    }
 
-	@Override
-	public AddressBook addressBook() {
-		return Objects.requireNonNull(addressBook.get());
-	}
+    @Override
+    public AddressBook addressBook() {
+        return Objects.requireNonNull(addressBook.get());
+    }
 
-	@Override
-	public MerkleSpecialFiles specialFiles() {
-		return Objects.requireNonNull(specialFiles.get());
-	}
+    @Override
+    public MerkleSpecialFiles specialFiles() {
+        return Objects.requireNonNull(specialFiles.get());
+    }
 
-	@Override
-	public MerkleMap<EntityNumPair, MerkleUniqueToken> uniqueTokens() {
-		return Objects.requireNonNull(uniqueTokens.get());
-	}
+    @Override
+    public MerkleMap<EntityNumPair, MerkleUniqueToken> uniqueTokens() {
+        return Objects.requireNonNull(uniqueTokens.get());
+    }
 
-	@Override
-	public MerkleMap<EntityNum, MerkleStakingInfo> stakingInfo() {
-		return Objects.requireNonNull(stakingInfo.get());
-	}
+    @Override
+    public MerkleMap<EntityNum, MerkleStakingInfo> stakingInfo() {
+        return Objects.requireNonNull(stakingInfo.get());
+    }
 
-	@Override
-	public RecordsRunningHashLeaf runningHashLeaf() {
-		return Objects.requireNonNull(runningHashLeaf.get());
-	}
+    @Override
+    public RecordsRunningHashLeaf runningHashLeaf() {
+        return Objects.requireNonNull(runningHashLeaf.get());
+    }
 
-	@Override
-	public Map<ByteString, EntityNum> aliases() {
-		return Objects.requireNonNull(aliases.get());
-	}
+    @Override
+    public Map<ByteString, EntityNum> aliases() {
+        return Objects.requireNonNull(aliases.get());
+    }
 }
