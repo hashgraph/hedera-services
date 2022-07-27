@@ -419,4 +419,28 @@ abstract contract HederaTokenService is HederaResponseCodes {
         responseCode = success ? abi.decode(result, (int32)) : HederaResponseCodes.UNKNOWN;
     }
 
+    /// Operation to wipe fungible tokens from account
+    /// @param token The token address
+    /// @param account The account address to revoke kyc
+    /// @param amount The number of tokens to wipe
+    /// @return responseCode The response code for the status of the request. SUCCESS is 22.
+    function wipeTokenAccount(address token, address account, uint32 amount) internal returns (int responseCode)
+    {
+        (bool success, bytes memory result) = precompileAddress.call(
+            abi.encodeWithSelector(IHederaTokenService.wipeTokenAccount.selector, token, account, amount));
+        (responseCode) = success ? abi.decode(result, (int32)) : HederaResponseCodes.UNKNOWN;
+    }
+
+    /// Operation to wipe non fungible tokens from account
+    /// @param token The token address
+    /// @param account The account address to revoke kyc
+    /// @param  serialNumbers The serial numbers of token to wipe
+    /// @return responseCode The response code for the status of the request. SUCCESS is 22.
+    function wipeTokenAccountNFT(address token, address account, int64[] memory serialNumbers) internal
+    returns (int responseCode)
+    {
+        (bool success, bytes memory result) = precompileAddress.call(
+            abi.encodeWithSelector(IHederaTokenService.wipeTokenAccountNFT.selector, token, account, serialNumbers));
+        (responseCode) = success ? abi.decode(result, (int32)) : HederaResponseCodes.UNKNOWN;
+    }
 }

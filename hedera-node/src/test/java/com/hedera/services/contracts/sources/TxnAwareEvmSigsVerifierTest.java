@@ -44,6 +44,7 @@ import static com.hedera.test.utils.TxnUtils.assertFailsWith;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_SUPPLY_KEY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_WIPE_KEY;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -441,6 +442,35 @@ class TxnAwareEvmSigsVerifierTest {
 
         assertTrue(validityTestForNormalCall.test(mockKey, mockSig));
         assertTrue(validityTestForDelegateCall.test(mockKey, mockSig));
+    }
+
+    @Test
+    void throwsIfAskedToVerifyTokenWithoutWipeKey() {
+        given(ledgers.tokens()).willReturn(tokensLedger);
+        given(tokensLedger.exists(token)).willReturn(true);
+        given(tokensLedger.get(token, TokenProperty.WIPE_KEY)).willReturn(null);
+
+        assertFailsWith(
+                () ->
+                        subject.hasActiveWipeKey(
+                                true, PRETEND_TOKEN_ADDR, PRETEND_SENDER_ADDR, ledgers),
+                TOKEN_HAS_NO_WIPE_KEY);
+    }
+
+    @Test
+    void testsWipeKeyIfPresent() {
+        given(txnCtx.swirldsTxnAccessor()).willReturn(accessor);
+        given(ledgers.tokens()).willReturn(tokensLedger);
+        given(tokensLedger.exists(token)).willReturn(true);
+        given(tokensLedger.get(token, TokenProperty.WIPE_KEY)).willReturn(expectedKey);
+
+        given(accessor.getRationalizedPkToCryptoSigFn()).willReturn(pkToCryptoSigsFn);
+        given(activationTest.test(eq(expectedKey), eq(pkToCryptoSigsFn), any())).willReturn(true);
+
+        final var verdict =
+                subject.hasActiveWipeKey(true, PRETEND_TOKEN_ADDR, PRETEND_SENDER_ADDR, ledgers);
+
+        assertTrue(verdict);
     }
 
     private void givenAccessorInCtx() {
