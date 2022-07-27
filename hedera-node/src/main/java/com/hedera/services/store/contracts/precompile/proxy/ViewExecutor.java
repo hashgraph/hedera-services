@@ -15,7 +15,6 @@
  */
 package com.hedera.services.store.contracts.precompile.proxy;
 
-import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hedera.services.exceptions.ValidationUtils.validateTrueOrRevert;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_GET_FUNGIBLE_TOKEN_INFO;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_GET_NON_FUNGIBLE_TOKEN_INFO;
