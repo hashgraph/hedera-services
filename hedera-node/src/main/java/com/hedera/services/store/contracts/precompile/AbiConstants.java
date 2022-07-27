@@ -40,7 +40,7 @@ public final class AbiConstants {
     public static final int ABI_ID_MINT_TOKEN = 0x278e0b88;
     // burnToken(address token, uint64 amount, int64[] memory serialNumbers)
     public static final int ABI_ID_BURN_TOKEN = 0xacb9cff9;
-    // deleteToken(address)
+    // deleteToken(address token)
     public static final int ABI_ID_DELETE_TOKEN = 0xf069f712;
     // associateTokens(address account, address[] memory tokens)
     public static final int ABI_ID_ASSOCIATE_TOKENS = 0x2e63879b;
