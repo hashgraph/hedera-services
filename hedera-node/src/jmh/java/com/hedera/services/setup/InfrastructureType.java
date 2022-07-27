@@ -1,6 +1,11 @@
-/*
- * Copyright (C) 2022 Hedera Hashgraph, LLC
- *
+package com.hedera.services.setup;
+
+/*-
+ * ‌
+ * Hedera Services JMH benchmarks
+ * ​
+ * Copyright (C) 2018 - 2022 Hedera Hashgraph, LLC
+ * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -12,8 +17,8 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ * ‍
  */
-package com.hedera.services.setup;
 
 import static com.hedera.services.setup.InfrastructureManager.CRYPTO;
 
@@ -74,7 +79,6 @@ public enum InfrastructureType {
             return EnumSet.of(InfrastructureType.ACCOUNTS_MM);
         }
     },
-<<<<<<< HEAD
     STAKING_INFOS_MM {
         private static final String MM_FILE_NAME = "staking_infos.mmap";
 
@@ -104,8 +108,6 @@ public enum InfrastructureType {
             mmToStorage((MerkleMap<EntityNum, MerkleStakingInfo>) fromBundle, dir);
         }
     },
-=======
->>>>>>> origin/master
     ACCOUNTS_MM {
         private static final String MM_FILE_NAME = "accounts.mmap";
 
@@ -125,37 +127,14 @@ public enum InfrastructureType {
         @SuppressWarnings("unchecked")
         public MerkleMap<EntityNum, MerkleAccount> fromStorage(
                 final String dir, final InfrastructureBundle bundle) {
-<<<<<<< HEAD
             return mmFromStorage(dir);
-=======
-            final var mMapLoc = locWithin(dir);
-            try (final var fin =
-                    new MerkleDataInputStream(Files.newInputStream(Paths.get(mMapLoc)))) {
-                fin.readProtocolVersion();
-                return fin.readMerkleTree(Integer.MAX_VALUE);
-            } catch (IOException e) {
-                throw new UncheckedIOException(e);
-            }
->>>>>>> origin/master
         }
 
         @Override
         @SuppressWarnings("unchecked")
         public void toStorage(
                 final Object fromBundle, final String dir, final InfrastructureBundle bundle) {
-<<<<<<< HEAD
             mmToStorage((MerkleMap<EntityNum, MerkleAccount>) fromBundle, dir);
-=======
-            final var accounts = (MerkleMap<EntityNum, MerkleAccount>) fromBundle;
-            final var mMapLoc = locWithin(dir);
-            try (final var mMapOut =
-                    new MerkleDataOutputStream(Files.newOutputStream(Paths.get(mMapLoc)))) {
-                mMapOut.writeProtocolVersion();
-                mMapOut.writeMerkleTree(accounts);
-            } catch (IOException e) {
-                throw new UncheckedIOException(e);
-            }
->>>>>>> origin/master
         }
     },
     CONTRACT_STORAGE_VM {
@@ -182,13 +161,8 @@ public enum InfrastructureType {
             final VirtualMap<ContractKey, IterableContractValue> kvStore = new VirtualMap<>();
             final var storage = new File(dir);
             try (final var fin =
-<<<<<<< HEAD
                     new MerkleDataInputStream(Files.newInputStream(Paths.get(vMaploc)))) {
                 kvStore.deserialize(fin, storage, 1);
-=======
-                    new MerkleDataInputStream(Files.newInputStream(Paths.get(vMaploc)), storage)) {
-                kvStore.deserializeExternal(fin, storage, null, 1);
->>>>>>> origin/master
             } catch (IOException e) {
                 throw new UncheckedIOException(e);
             }
@@ -205,11 +179,7 @@ public enum InfrastructureType {
             CRYPTO.digestTreeSync(contractStorage);
             try (final var fout =
                     new SerializableDataOutputStream(Files.newOutputStream(Paths.get(metaLoc)))) {
-<<<<<<< HEAD
                 contractStorage.serialize(fout, new File(dir));
-=======
-                contractStorage.serializeExternal(fout, new File(dir));
->>>>>>> origin/master
             } catch (IOException e) {
                 throw new UncheckedIOException(e);
             }
@@ -233,7 +203,6 @@ public enum InfrastructureType {
     public abstract <T> T abInitio(String dir, InfrastructureBundle bundle);
 
     public abstract <T> T fromStorage(String dir, InfrastructureBundle bundle);
-<<<<<<< HEAD
 
     protected <K, V extends MerkleNode & Keyed<K>> MerkleMap<K, V> mmFromStorage(final String dir) {
         final var mMapLoc = locWithin(dir);
@@ -256,6 +225,4 @@ public enum InfrastructureType {
             throw new UncheckedIOException(e);
         }
     }
-=======
->>>>>>> origin/master
 }

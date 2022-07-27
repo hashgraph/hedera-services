@@ -1,6 +1,11 @@
-/*
- * Copyright (C) 2022 Hedera Hashgraph, LLC
- *
+package com.hedera.services.setup;
+
+/*-
+ * ‌
+ * Hedera Services JMH benchmarks
+ * ​
+ * Copyright (C) 2018 - 2022 Hedera Hashgraph, LLC
+ * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -12,8 +17,8 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ * ‍
  */
-package com.hedera.services.setup;
 
 import com.google.common.primitives.Ints;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -33,7 +38,6 @@ public class EvmKeyValueSource {
 
     static {
         final var keyBytes = new byte[32];
-        final var mockId = AccountID.newBuilder().setAccountNum(1).build();
         for (int i = 0; i < NUM_KEYS; i++) {
             r.nextBytes(keyBytes);
             keys[i] = UInt256.fromBytes(Bytes.wrap(keyBytes));

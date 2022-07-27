@@ -1,6 +1,11 @@
-/*
- * Copyright (C) 2022 Hedera Hashgraph, LLC
- *
+package com.hedera.services.setup;
+
+/*-
+ * ‌
+ * Hedera Services JMH benchmarks
+ * ​
+ * Copyright (C) 2018 - 2022 Hedera Hashgraph, LLC
+ * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -12,17 +17,14 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ * ‍
  */
-package com.hedera.services.setup;
 
 import static com.hedera.services.ledger.properties.AccountProperty.BALANCE;
-<<<<<<< HEAD
 import static com.hedera.services.ledger.properties.AccountProperty.STAKED_ID;
 import static com.hedera.services.setup.Constructables.FUNDING_ID;
 import static com.hedera.services.setup.Constructables.NUM_REWARDABLE_PERIODS;
 import static com.hedera.services.setup.Constructables.STAKING_REWARD_ID;
-=======
->>>>>>> origin/master
 import static com.hedera.services.setup.InfrastructureType.ACCOUNTS_LEDGER;
 import static com.hedera.services.setup.InfrastructureType.ACCOUNTS_MM;
 import static com.hedera.services.setup.InfrastructureType.CONTRACT_STORAGE_VM;
@@ -40,15 +42,10 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
 import java.util.Map;
-<<<<<<< HEAD
 import java.util.SplittableRandom;
 
 public class InfrastructureInitializer {
 
-=======
-
-public class InfrastructureInitializer {
->>>>>>> origin/master
     public static void initializeBundle(
             final Map<String, Object> config, final InfrastructureBundle bundle) {
         if (config.containsKey("initContracts") && config.containsKey("initKvPairs")) {
@@ -57,17 +54,12 @@ public class InfrastructureInitializer {
                     bundle.get(CONTRACT_STORAGE_VM),
                     (int) config.get("initKvPairs"),
                     (int) config.get("initContracts"));
-<<<<<<< HEAD
         }
         if (config.containsKey("userAccounts")) {
-=======
-        } else if (config.containsKey("userAccounts")) {
->>>>>>> origin/master
             initSomeAccounts(bundle.get(ACCOUNTS_LEDGER), (int) config.get("userAccounts"));
         }
     }
 
-<<<<<<< HEAD
     public static void initializeStakeableAccounts(
             final SplittableRandom random,
             final Map<String, Object> config,
@@ -121,8 +113,6 @@ public class InfrastructureInitializer {
         stakingLedger.commit();
     }
 
-=======
->>>>>>> origin/master
     private static void initSomeAccounts(
             final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> ledger,
             final int userAccounts) {
@@ -204,11 +194,8 @@ public class InfrastructureInitializer {
         account.setBalanceUnchecked(balance);
         return account;
     }
-<<<<<<< HEAD
 
     public static AccountID accountIdWith(final long num) {
         return AccountID.newBuilder().setAccountNum(num).build();
     }
-=======
->>>>>>> origin/master
 }
