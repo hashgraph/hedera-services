@@ -3,7 +3,6 @@ package com.hedera.services.ledger;
 import static com.hedera.services.mocks.MockDynamicProperties.mockPropertiesWith;
 
 import com.hedera.services.config.AccountNumbers;
-import com.hedera.services.context.BasicTransactionContext;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.annotations.CompositeProps;
@@ -64,7 +63,6 @@ public interface StakingActivityModule {
 
     @Provides
     @Singleton
-    @MockProps
     static GlobalDynamicProperties provideGlobalDynamicProperties() {
         return mockPropertiesWith(500_000_000, 163_840);
     }
@@ -117,7 +115,7 @@ public interface StakingActivityModule {
             final BackingStore<AccountID, MerkleAccount> backingAccounts,
             final SideEffectsTracker sideEffectsTracker,
             final Supplier<MerkleNetworkContext> networkCtx,
-            final @MockProps GlobalDynamicProperties dynamicProperties,
+            final GlobalDynamicProperties dynamicProperties,
             final RewardCalculator rewardCalculator,
             final StakeChangeManager stakeChangeManager,
             final StakePeriodManager stakePeriodManager,

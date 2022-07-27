@@ -1,7 +1,10 @@
 package com.hedera.services.ledger;
 
+import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.ledger.accounts.staking.EndOfStakingPeriodCalculator;
+import com.hedera.services.ledger.accounts.staking.RewardCalculator;
+import com.hedera.services.ledger.accounts.staking.StakePeriodManager;
 import com.hedera.services.ledger.backing.BackingStore;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.setup.InfrastructureBundle;
@@ -20,10 +23,14 @@ import javax.inject.Singleton;
 @Singleton
 @Component(modules = StakingActivityModule.class)
 public interface StakingActivityApp {
+  RewardCalculator rewardCalculator();
+  StakePeriodManager periodManager();
   TransactionContext txnCtx();
+  SideEffectsTracker sideEffects();
   EndOfStakingPeriodCalculator endOfPeriodCalcs();
   Supplier<MerkleNetworkContext> networkCtx();
   BackingStore<AccountID, MerkleAccount> backingAccounts();
+  Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts();
   Supplier<MerkleMap<EntityNum, MerkleStakingInfo>> stakingInfos();
   TransactionalLedger<AccountID, AccountProperty, MerkleAccount> stakingLedger();
 

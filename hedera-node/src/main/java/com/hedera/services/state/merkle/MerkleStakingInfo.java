@@ -88,8 +88,10 @@ public class MerkleStakingInfo extends PartialMerkleLeaf implements Keyed<Entity
     }
 
     public MerkleStakingInfo(final BootstrapProperties properties) {
-        final var numRewardablePeriods =
-                properties.getIntProperty("staking.rewardHistory.numStoredPeriods");
+        this( properties.getIntProperty("staking.rewardHistory.numStoredPeriods"));
+    }
+
+    public MerkleStakingInfo(final int numRewardablePeriods) {
         rewardSumHistory = new long[numRewardablePeriods + 1];
     }
 
@@ -360,7 +362,7 @@ public class MerkleStakingInfo extends PartialMerkleLeaf implements Keyed<Entity
     @Override
     public String toString() {
         return MoreObjects.toStringHelper(MerkleStakingInfo.class)
-                .add("id", EntityIdUtils.asScopedSerialNoLiteral(number))
+                .add("id", number)
                 .add("minStake", minStake)
                 .add("maxStake", maxStake)
                 .add("stakeToReward", stakeToReward)

@@ -54,6 +54,7 @@ public class Constructables {
     public static final Instant SOME_TIME = Instant.ofEpochSecond(31536000L);
     public static final AccountID FUNDING_ID = accountIdWith(98L);
     public static final AccountID STAKING_REWARD_ID = accountIdWith(800L);
+    public static final int NUM_REWARDABLE_PERIODS = 365;
     public static final int FIRST_USER_I = 1001;
     public static final int FIRST_NODE_I = 3;
 

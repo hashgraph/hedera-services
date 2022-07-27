@@ -45,6 +45,11 @@ public class MockDynamicProperties extends GlobalDynamicProperties {
 	}
 
 	@Override
+	public long maxDailyStakeRewardThPerH() {
+		return 17_808L;
+	}
+
+	@Override
 	public long maxAggregateContractKvPairs() {
 		return maxAggregateKvPairs;
 	}

@@ -23,6 +23,7 @@ package com.hedera.services.setup;
 import static com.hedera.services.ledger.properties.AccountProperty.BALANCE;
 import static com.hedera.services.ledger.properties.AccountProperty.STAKED_ID;
 import static com.hedera.services.setup.Constructables.FUNDING_ID;
+import static com.hedera.services.setup.Constructables.NUM_REWARDABLE_PERIODS;
 import static com.hedera.services.setup.Constructables.STAKING_REWARD_ID;
 import static com.hedera.services.setup.InfrastructureType.ACCOUNTS_LEDGER;
 import static com.hedera.services.setup.InfrastructureType.ACCOUNTS_MM;
@@ -85,10 +86,11 @@ public class InfrastructureInitializer {
             backingAccounts.put(accountIdWith(num), account);
         }
         backingAccounts.put(FUNDING_ID, accountWith(0L));
-        backingAccounts.put(STAKING_REWARD_ID, accountWith(0L));
+        backingAccounts.put(STAKING_REWARD_ID, accountWith(250_000_000L * 100_000_000L));
 
         for (int i = 0; i < numNodeIds; i++) {
-            final var stakingInfo = new MerkleStakingInfo();
+            final var stakingInfo = new MerkleStakingInfo(NUM_REWARDABLE_PERIODS);
+            stakingInfo.setMaxStake(Long.MAX_VALUE);
             stakingInfos.put(EntityNum.fromInt(i), stakingInfo);
         }
 
@@ -109,8 +111,6 @@ public class InfrastructureInitializer {
             }
         }
         stakingLedger.commit();
-
-        backingAccounts.put(STAKING_REWARD_ID, accountWith(250_000_000L * 100_000_000L));
     }
 
     private static void initSomeAccounts(
