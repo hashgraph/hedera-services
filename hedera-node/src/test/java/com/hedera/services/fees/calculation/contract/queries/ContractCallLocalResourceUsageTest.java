@@ -136,7 +136,7 @@ class ContractCallLocalResourceUsageTest {
                         Bytes.EMPTY,
                         callerID.asEvmAddress(),
                         Collections.emptyMap(),
-										Collections.emptyList());
+                        Collections.emptyList());
         final var response = okResponse(transactionProcessingResult);
         final var estimateResponse = subject.dummyResponse(target);
         final var expected = expectedUsage();
