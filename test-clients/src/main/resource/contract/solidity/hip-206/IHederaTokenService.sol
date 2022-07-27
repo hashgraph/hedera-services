@@ -220,6 +220,52 @@ interface IHederaTokenService {
         address feeCollector;
     }
 
+    //TokenInfo defines the basic properties of a Fungible or Non-Fungible Hedera Token
+    struct TokenInfo {
+        //Basic properties of a Hedera Token
+        HederaToken token;
+        //The number of tokens (fungible) or serials (non-fungible) of the token
+        uint64 totalSupply;
+        //Specifies whether the token is deleted or not
+        bool deleted;
+        //Specifies whether the token kyc was defaulted with KycNotApplicable (true) or Revoked (false)
+        bool defaultKycStatus;
+        //Specifies whether the token is currently paused or not
+        bool pauseStatus;
+        //The fixed fees collected when transferring the token
+        FixedFee[] fixedFees;
+        //The fractional fees collected when transferring the token
+        FractionalFee[] fractionalFees;
+        //The royalty fees collected when transferring the token
+        RoyaltyFee[] royaltyFees;
+        //The ID of the network ledger
+        string ledgerId;
+    }
+
+    //FungibleTokenInfo defines the basic properties of a Fungible Hedera Token
+    struct FungibleTokenInfo {
+        //The shared hedera token info
+        TokenInfo tokenInfo;
+        //The number of decimal places a token is divisible by
+        uint32 decimals;
+    }
+
+    //NonFungibleTokenInfo defines the basic properties of a Non Fungible Hedera Token
+    struct NonFungibleTokenInfo {
+        //The shared hedera token info
+        TokenInfo tokenInfo;
+        //The serial number of the NFT
+        int64 serialNumber;
+        //The account id specifying the owner of the NFT
+        address ownerId;
+        //The epoch second at which the NFT was created
+        int64 creationTime;
+        //The unique metadata of the NFT
+        bytes metadata;
+        //The account id specifying an account that has been granted spending permissions on this NFT
+        address spenderId;
+    }
+
     /**********************
      * Direct HTS Calls   *
      **********************/
@@ -352,6 +398,19 @@ interface IHederaTokenService {
         FixedFee[] memory fixedFees,
         RoyaltyFee[] memory royaltyFees)
     external payable returns (int responseCode, address tokenAddress);
+
+    /// Retrieves fungible specific token info for a fungible token
+    /// @param token The ID of the token as a solidity address
+    function getFungibleTokenInfo(address token) external returns (int responseCode, FungibleTokenInfo memory tokenInfo);
+
+    /// Retrieves general token info for a given token
+    /// @param token The ID of the token as a solidity address
+    function getTokenInfo(address token) external returns (int responseCode, TokenInfo memory tokenInfo);
+
+    /// Retrieves non-fungible specific token info for a given NFT
+    /// @param token The ID of the token as a solidity address
+    /// @param serialNumber The serial number of the NFT for which to retrieve information
+    function getNonFungibleTokenInfo(address token, int64 serialNumber) external returns (int responseCode, NonFungibleTokenInfo memory tokenInfo);
 
 
     /**********************

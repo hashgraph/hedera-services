@@ -97,7 +97,7 @@ public class CallLocalExecutor {
                             callData,
                             Instant.now());
 
-            var status = ResponseCodeUtil.getStatus(result, OK);
+            var status = ResponseCodeUtil.getStatusOrDefault(result, OK);
 
             final var responseHeader =
                     RequestBuilder.getResponseHeader(status, 0L, ANSWER_ONLY, ByteString.EMPTY);

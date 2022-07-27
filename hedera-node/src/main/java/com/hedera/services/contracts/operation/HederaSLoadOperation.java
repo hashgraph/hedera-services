@@ -39,6 +39,7 @@ package com.hedera.services.contracts.operation;
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
+import com.hedera.services.stream.proto.SidecarType;
 import java.util.Optional;
 import java.util.OptionalLong;
 import javax.inject.Inject;
@@ -95,7 +96,9 @@ public class HederaSLoadOperation extends AbstractOperation {
                         optionalCost, Optional.of(ExceptionalHaltReason.INSUFFICIENT_GAS));
             } else {
                 UInt256 storageValue = account.getStorageValue(UInt256.fromBytes(key));
-                if (dynamicProperties.shouldEnableTraceability()) {
+                if (dynamicProperties
+                        .enabledSidecars()
+                        .contains(SidecarType.CONTRACT_STATE_CHANGE)) {
                     HederaOperationUtil.cacheExistingValue(frame, address, key, storageValue);
                 }
 
