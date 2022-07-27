@@ -418,13 +418,4 @@ abstract contract HederaTokenService is HederaResponseCodes {
             abi.encodeWithSelector(IHederaTokenService.unPauseToken.selector, token));
         (responseCode) = success ? abi.decode(result, (int32)) : HederaResponseCodes.UNKNOWN;
     }
-
-    modifier nonEmptyExpiry(IHederaTokenService.HederaToken memory token)
-    {
-        if (token.expiry.second == 0 && token.expiry.autoRenewPeriod == 0) {
-            token.expiry.autoRenewPeriod = defaultAutoRenewPeriod;
-        }
-        _;
-    }
-
 }
