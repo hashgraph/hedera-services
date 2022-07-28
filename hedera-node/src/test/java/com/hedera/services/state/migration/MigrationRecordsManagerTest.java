@@ -423,27 +423,6 @@ class MigrationRecordsManagerTest {
     }
 
     @Test
-    void traceabilityMigrationDoesNotAddAnySidecarsWhenSmartContractIsDeleted() {
-        given(consensusTimeTracker.unlimitedPreceding()).willReturn(true);
-        given(networkCtx.areMigrationRecordsStreamed()).willReturn(false);
-        given(networkCtx.consensusTimeOfLastHandledTxn()).willReturn(now);
-        MigrationRecordsManager.setExpiryJustEnabled(false);
-        given(txnAccessor.getFunction()).willReturn(HederaFunctionality.ConsensusCreateTopic);
-        given(transactionContext.accessor()).willReturn(txnAccessor);
-        given(dynamicProperties.isTraceabilityMigrationEnabled()).willReturn(true);
-        accounts.clear();
-        final var contract = mock(MerkleAccount.class);
-        given(contract.isSmartContract()).willReturn(true);
-        given(contract.isDeleted()).willReturn(true);
-        accounts.put(EntityNum.fromLong(1L), contract);
-
-        subject.publishMigrationRecords(now);
-
-        assertFalse(subject.areAllMigrationsSansTraceabilityFinished());
-        verify(transactionContext, never()).addSidecarRecord(any());
-    }
-
-    @Test
     void traceabilityMigrationDoesNotAddStateChangesWhenSmartContractDoesNotHaveAnyStorage() {
         final ArgumentCaptor<TransactionSidecarRecord.Builder> sidecarCaptor =
                 forClass(TransactionSidecarRecord.Builder.class);

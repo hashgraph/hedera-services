@@ -276,7 +276,7 @@ public class MigrationRecordsManager {
         accounts.get()
                 .forEach(
                         (id, account) -> {
-                            if (account.isSmartContract() && !account.isDeleted()) {
+                            if (account.isSmartContract()) {
                                 final var contractId = id.toGrpcContractID();
                                 // create bytecode sidecar
                                 final var runtimeCode =
