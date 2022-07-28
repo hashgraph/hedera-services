@@ -15,27 +15,6 @@
  */
 package com.hedera.services.store.contracts;
 
-/*
- * -
- * ‌
- * Hedera Services Node
- * ​
- * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
- * ​
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *       http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- * ‍
- *
- */
 
 import static com.hedera.services.ledger.properties.AccountProperty.NUM_NFTS_OWNED;
 import static com.hedera.services.ledger.properties.AccountProperty.NUM_POSITIVE_BALANCES;
@@ -101,6 +80,33 @@ class HederaStackedWorldStateUpdaterTest {
         subject =
                 new HederaStackedWorldStateUpdater(
                         updater, worldState, trackingLedgers, globalDynamicProperties);
+    }
+
+    @Test
+    void creationIsAllowedWhenNoLimitReached() {
+      given(globalDynamicProperties.maxFollowingRecords()).willReturn(5L);
+      given(globalDynamicProperties.maxInternalContractCreations()).willReturn(1);
+
+      assertTrue(subject.isNewCreationAllowed());
+    }
+
+    @Test
+    void creationNotAllowedWhenCreationLimitReached() {
+        given(globalDynamicProperties.maxInternalContractCreations()).willReturn(1);
+
+        subject.countIdsAllocatedByStacked(1);
+
+        assertFalse(subject.isNewCreationAllowed());
+    }
+
+    @Test
+    void creationNotAllowedWhenFollowingChildRecordsLimitReached() {
+        given(globalDynamicProperties.maxFollowingRecords()).willReturn(1L);
+        given(globalDynamicProperties.maxInternalContractCreations()).willReturn(4);
+
+        subject.countIdsAllocatedByStacked(2);
+
+        assertFalse(subject.isNewCreationAllowed());
     }
 
     @Test
