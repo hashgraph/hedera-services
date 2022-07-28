@@ -28,7 +28,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.any;
@@ -49,8 +48,6 @@ import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.OwnershipTracker;
 import com.hedera.services.store.models.Token;
 import com.hedera.services.store.models.TokenRelationship;
-import com.hedera.services.txns.validation.ContextOptionValidator;
-import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.accessors.SwirldsTxnAccessor;
 import com.hedera.services.utils.accessors.TokenWipeAccessor;
 import com.hedera.test.utils.IdUtils;
@@ -79,7 +76,6 @@ class TokenWipeTransitionLogicTest {
     private TokenWipeTransitionLogic subject;
     private TypedTokenStore typedTokenStore;
     private AccountStore accountStore;
-    private OptionValidator validator;
     private GlobalDynamicProperties dynamicProperties;
     private Account account;
 
@@ -94,12 +90,11 @@ class TokenWipeTransitionLogicTest {
 
         typedTokenStore = mock(TypedTokenStore.class);
         accountStore = mock(AccountStore.class);
-        validator = mock(ContextOptionValidator.class);
         dynamicProperties = mock(GlobalDynamicProperties.class);
-        WipeLogic wipeLogic =
-                new WipeLogic(validator, typedTokenStore, accountStore, dynamicProperties);
+        WipeLogic wipeLogic = new WipeLogic(typedTokenStore, accountStore, dynamicProperties);
         subject = new TokenWipeTransitionLogic(txnCtx, wipeLogic);
         given(txnCtx.swirldsTxnAccessor()).willReturn(swirldsTxnAccessor);
+        given(dynamicProperties.areNftsEnabled()).willReturn(true);
     }
 
     @Test
@@ -133,6 +128,7 @@ class TokenWipeTransitionLogicTest {
     void rejectsUniqueWhenNftsNotEnabled() throws InvalidProtocolBufferException {
         givenValidUniqueTxnCtx();
         given(dynamicProperties.areNftsEnabled()).willReturn(false);
+        accessor = new TokenWipeAccessor(tokenWipeTxn.toByteArray(), dynamicProperties);
 
         // expect:
         assertEquals(NOT_SUPPORTED, subject.validateSemantics(accessor));
@@ -228,8 +224,6 @@ class TokenWipeTransitionLogicTest {
 
     @Test
     void rejectsBothAmountAndSerialNumbers() throws InvalidProtocolBufferException {
-        given(dynamicProperties.areNftsEnabled()).willReturn(true);
-
         tokenWipeTxnBody =
                 TransactionBody.newBuilder()
                         .setTokenWipe(
@@ -246,8 +240,6 @@ class TokenWipeTransitionLogicTest {
 
     @Test
     void rejectsInvalidNftId() throws InvalidProtocolBufferException {
-        given(dynamicProperties.areNftsEnabled()).willReturn(true);
-
         tokenWipeTxnBody =
                 TransactionBody.newBuilder()
                         .setTokenWipe(
@@ -257,7 +249,6 @@ class TokenWipeTransitionLogicTest {
                                         .addAllSerialNumbers(List.of(-1L)))
                         .build();
         addToTxn();
-        given(validator.maxBatchSizeWipeCheck(anyInt())).willReturn(OK);
 
         assertEquals(INVALID_NFT_ID, subject.validateSemantics(accessor));
     }
@@ -265,7 +256,8 @@ class TokenWipeTransitionLogicTest {
     @Test
     void propagatesErrorOnInvalidBatch() throws InvalidProtocolBufferException {
         givenValidUniqueTxnCtx();
-        given(validator.maxBatchSizeWipeCheck(anyInt())).willReturn(BATCH_SIZE_LIMIT_EXCEEDED);
+        given(dynamicProperties.maxBatchSizeWipe()).willReturn(1);
+        accessor = new TokenWipeAccessor(tokenWipeTxn.toByteArray(), dynamicProperties);
 
         assertEquals(BATCH_SIZE_LIMIT_EXCEEDED, subject.validateSemantics(accessor));
     }
@@ -305,9 +297,6 @@ class TokenWipeTransitionLogicTest {
         given(merkleToken.tokenType()).willReturn(TokenType.NON_FUNGIBLE_UNIQUE);
         given(typedTokenStore.loadToken(any())).willReturn(token);
         given(token.getType()).willReturn(TokenType.NON_FUNGIBLE_UNIQUE);
-        given(dynamicProperties.areNftsEnabled()).willReturn(true);
-
-        given(validator.maxBatchSizeWipeCheck(anyInt())).willReturn(OK);
     }
 
     private void givenMissingToken() throws InvalidProtocolBufferException {
@@ -329,7 +318,9 @@ class TokenWipeTransitionLogicTest {
     private void addToTxn() throws InvalidProtocolBufferException {
         tokenWipeTxn =
                 Transaction.newBuilder().setBodyBytes(tokenWipeTxnBody.toByteString()).build();
-        accessor = new TokenWipeAccessor(tokenWipeTxn.toByteArray(), dynamicProperties, validator);
+        given(dynamicProperties.areNftsEnabled()).willReturn(true);
+        given(dynamicProperties.maxBatchSizeWipe()).willReturn(10);
+        accessor = new TokenWipeAccessor(tokenWipeTxn.toByteArray(), dynamicProperties);
         given(swirldsTxnAccessor.getDelegate()).willReturn(accessor);
     }
 

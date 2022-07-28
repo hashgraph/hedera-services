@@ -21,7 +21,6 @@ import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.OwnershipTracker;
-import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.accessors.TokenWipeAccessor;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenWipeAccountTransactionBody;
@@ -32,18 +31,15 @@ import javax.inject.Singleton;
 
 @Singleton
 public class WipeLogic {
-    private final OptionValidator validator;
     private final TypedTokenStore tokenStore;
     private final AccountStore accountStore;
     private final GlobalDynamicProperties dynamicProperties;
 
     @Inject
     public WipeLogic(
-            final OptionValidator validator,
             final TypedTokenStore tokenStore,
             final AccountStore accountStore,
             final GlobalDynamicProperties dynamicProperties) {
-        this.validator = validator;
         this.tokenStore = tokenStore;
         this.accountStore = accountStore;
         this.dynamicProperties = dynamicProperties;

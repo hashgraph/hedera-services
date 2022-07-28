@@ -54,6 +54,7 @@ import static org.mockito.BDDMockito.verify;
 import static org.mockito.BDDMockito.willThrow;
 
 import com.hedera.services.context.primitives.StateView;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.fees.FeeMultiplierSource;
 import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.fees.calculation.utils.PricedUsageCalculator;
@@ -575,7 +576,10 @@ class UsageBasedFeeCalculatorTest {
                         .wiping(tokenId, receiver)
                         .txnValidStart(at)
                         .get();
-        accessor = new TokenWipeAccessor(signedTxn.toByteArray(), null, null);
+        final var dynamicProperties = mock(GlobalDynamicProperties.class);
+        given(dynamicProperties.areNftsEnabled()).willReturn(true);
+        given(dynamicProperties.maxBatchSizeWipe()).willReturn(10);
+        accessor = new TokenWipeAccessor(signedTxn.toByteArray(), dynamicProperties);
         invokesAccessorBasedUsagesForTxnInHandle(
                 signedTxn,
                 TokenAccountWipe,

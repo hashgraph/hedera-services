@@ -213,7 +213,7 @@ public class InfrastructureFactory {
 
     public WipeLogic newWipeLogic(
             final AccountStore accountStore, final TypedTokenStore tokenStore) {
-        return new WipeLogic(validator, tokenStore, accountStore, dynamicProperties);
+        return new WipeLogic(tokenStore, accountStore, dynamicProperties);
     }
 
     public CreateChecks newCreateChecks() {

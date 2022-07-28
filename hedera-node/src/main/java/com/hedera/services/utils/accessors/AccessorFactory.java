@@ -76,7 +76,7 @@ public class AccessorFactory {
         final var body = extractTransactionBody(Transaction.parseFrom(signedTxnWrapperBytes));
         final var function = MiscUtils.FUNCTION_EXTRACTOR.apply(body);
         if (function == TokenAccountWipe) {
-            return new TokenWipeAccessor(signedTxnWrapperBytes, dynamicProperties, validator);
+            return new TokenWipeAccessor(signedTxnWrapperBytes, dynamicProperties);
         }
         return SignedTxnAccessor.from(signedTxnWrapperBytes);
     }

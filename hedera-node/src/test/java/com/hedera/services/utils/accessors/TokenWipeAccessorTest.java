@@ -27,7 +27,6 @@ import static org.mockito.BDDMockito.given;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.TokenWipeAccountTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.util.List;
@@ -39,7 +38,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class TokenWipeAccessorTest {
     @Mock private GlobalDynamicProperties properties;
-    @Mock private OptionValidator validator;
     private TokenWipeAccessor subject;
 
     @Test
@@ -50,7 +48,7 @@ class TokenWipeAccessorTest {
                         .build();
         final var txn = buildTransactionFrom(TransactionBody.newBuilder().setTokenWipe(op).build());
 
-        subject = new TokenWipeAccessor(txn.toByteArray(), properties, validator);
+        subject = new TokenWipeAccessor(txn.toByteArray(), properties);
 
         assertEquals(TOKEN_NON_FUNGIBLE_UNIQUE, subject.getSubType());
     }
@@ -60,7 +58,7 @@ class TokenWipeAccessorTest {
         final var op = TokenWipeAccountTransactionBody.newBuilder().setAmount(1234L).build();
         final var txn = buildTransactionFrom(TransactionBody.newBuilder().setTokenWipe(op).build());
 
-        subject = new TokenWipeAccessor(txn.toByteArray(), properties, validator);
+        subject = new TokenWipeAccessor(txn.toByteArray(), properties);
 
         assertEquals(TOKEN_FUNGIBLE_COMMON, subject.getSubType());
     }
@@ -77,7 +75,7 @@ class TokenWipeAccessorTest {
         final var txn = buildTransactionFrom(TransactionBody.newBuilder().setTokenWipe(op).build());
         given(properties.areNftsEnabled()).willReturn(true);
 
-        subject = new TokenWipeAccessor(txn.toByteArray(), properties, validator);
+        subject = new TokenWipeAccessor(txn.toByteArray(), properties);
 
         assertEquals(asModelId("0.0.123456"), subject.accountToWipe());
         assertEquals(asModelId("0.0.123"), subject.targetToken());

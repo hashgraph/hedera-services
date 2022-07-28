@@ -46,6 +46,7 @@ import com.google.protobuf.Int32Value;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.StringValue;
 import com.hedera.services.context.primitives.StateView;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ethereum.EthTxData;
 import com.hedera.services.ethereum.EthTxSigs;
 import com.hedera.services.ledger.accounts.AliasManager;
@@ -727,7 +728,12 @@ class SignedTxnAccessorTest {
                         .setAccount(asAccount("0.0.1000"))
                         .build();
         txn = buildTransactionFrom(TransactionBody.newBuilder().setTokenWipe(trueOp).build());
-        var subject = new TokenWipeAccessor(txn.toByteArray(), null, null);
+
+        final var dynamicProperties = mock(GlobalDynamicProperties.class);
+        given(dynamicProperties.areNftsEnabled()).willReturn(true);
+        given(dynamicProperties.maxBatchSizeWipe()).willReturn(10);
+
+        var subject = new TokenWipeAccessor(txn.toByteArray(), dynamicProperties);
 
         assertEquals(true, subject.supportsPrecheck());
         assertEquals(INVALID_TOKEN_ID, subject.doPrecheck());

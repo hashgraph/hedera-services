@@ -25,7 +25,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_WIPING
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.store.models.Id;
-import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenWipeAccountTransactionBody;
 import java.util.List;
@@ -36,20 +35,15 @@ import java.util.List;
  */
 public class TokenWipeAccessor extends SignedTxnAccessor {
     private final TokenWipeAccountTransactionBody body;
-    private final OptionValidator validator;
     private final boolean areNftsEnabled;
     private final int maxBatchSizeWipe;
 
-    public TokenWipeAccessor(
-            final byte[] txn,
-            final GlobalDynamicProperties dynamicProperties,
-            final OptionValidator validator)
+    public TokenWipeAccessor(final byte[] txn, final GlobalDynamicProperties dynamicProperties)
             throws InvalidProtocolBufferException {
         super(txn);
         this.body = getTxn().getTokenWipe();
         this.areNftsEnabled = dynamicProperties.areNftsEnabled();
         this.maxBatchSizeWipe = dynamicProperties.maxBatchSizeWipe();
-        this.validator = validator;
         setTokenWipeUsageMeta();
     }
 
@@ -96,7 +90,7 @@ public class TokenWipeAccessor extends SignedTxnAccessor {
                 areNftsEnabled,
                 INVALID_WIPING_AMOUNT,
                 body.getSerialNumbersList(),
-                (a) -> batchSizeCheck(a, maxBatchSizeWipe));
+                a -> batchSizeCheck(a, maxBatchSizeWipe));
     }
 
     private void setTokenWipeUsageMeta() {
