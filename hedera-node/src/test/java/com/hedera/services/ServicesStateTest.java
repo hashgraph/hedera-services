@@ -49,6 +49,7 @@ import com.google.common.primitives.Ints;
 import com.google.common.primitives.Longs;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
+import com.hedera.services.ServicesState.StorageLinksRepair;
 import com.hedera.services.context.MutableStateChildren;
 import com.hedera.services.context.init.ServicesInitFlow;
 import com.hedera.services.context.properties.BootstrapProperties;
@@ -126,6 +127,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith({MockitoExtension.class, LogCaptureExtension.class})
 class ServicesStateTest {
+
     private final String signedStateDir = "src/test/resources/signedState/";
     private final SoftwareVersion some025xVersion = forHapiAndHedera("0.25.0", "0.25.2");
     private final SoftwareVersion currentVersion = SEMANTIC_VERSIONS.deployedSoftwareVersion();
@@ -140,6 +142,7 @@ class ServicesStateTest {
     @Mock private AddressBook addressBook;
     @Mock private Address address;
     @Mock private ServicesApp app;
+    @Mock private StorageLinksRepair linkRepairs;
     @Mock private MerkleSpecialFiles specialFiles;
     @Mock private MerkleNetworkContext networkContext;
     @Mock private SwirldTransaction transaction;
@@ -210,7 +213,12 @@ class ServicesStateTest {
     void doesAllMigrationsExceptAutoRenewFromRelease025VersionIfExpiryNotJustEnabled() {
         mockMigrators();
         final var inOrder =
-                inOrder(iterableStorageMigrator, vmf, workingState, scheduledTxnsMigrator);
+                inOrder(
+                        iterableStorageMigrator,
+                        vmf,
+                        workingState,
+                        scheduledTxnsMigrator,
+                        linkRepairs);
 
         ServicesState.setExpiryJustEnabled(false);
         subject.setChild(StateChildIndices.ACCOUNTS, accounts);
@@ -238,6 +246,7 @@ class ServicesStateTest {
         inOrder.verify(iterableStorageMigrator)
                 .makeStorageIterable(eq(subject), any(), any(), eq(iterableStorage));
         inOrder.verify(scheduledTxnsMigrator).accept(subject);
+        inOrder.verify(linkRepairs).fixAnyBrokenLinks(eq(subject), any(), any());
         inOrder.verify(workingState).updatePrimitiveChildrenFrom(subject);
 
         verifyNoInteractions(autoRenewalMigrator);
@@ -974,6 +983,7 @@ class ServicesStateTest {
         ServicesState.setVmFactory(vmf);
         ServicesState.setScheduledTransactionsMigrator(scheduledTxnsMigrator);
         ServicesState.setStakingInfoBuilder(stakingInfoBuilder);
+        ServicesState.setStorageLinksRepair(linkRepairs);
     }
 
     private void unmockMigrators() {

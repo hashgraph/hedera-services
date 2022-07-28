@@ -43,14 +43,18 @@ import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.migration.KvPairIterationMigrator;
+import com.hedera.services.state.migration.LinkRepairs;
 import com.hedera.services.state.migration.LongTermScheduledTransactionsMigration;
 import com.hedera.services.state.migration.ReleaseTwentySevenMigration;
 import com.hedera.services.state.migration.ReleaseTwentySixMigration;
 import com.hedera.services.state.migration.StateChildIndices;
+import com.hedera.services.state.migration.StorageLinksFixer;
+import com.hedera.services.state.migration.VirtualMapDataAccess;
 import com.hedera.services.state.org.StateMetadata;
 import com.hedera.services.state.submerkle.ExchangeRates;
 import com.hedera.services.state.submerkle.SequenceNumber;
 import com.hedera.services.state.virtual.ContractKey;
+import com.hedera.services.state.virtual.ContractValue;
 import com.hedera.services.state.virtual.IterableContractValue;
 import com.hedera.services.state.virtual.VirtualBlobKey;
 import com.hedera.services.state.virtual.VirtualBlobValue;
@@ -95,6 +99,7 @@ import org.jetbrains.annotations.NotNull;
 /** The Merkle tree root of the Hedera Services world state. */
 public class ServicesState extends PartialNaryMerkleInternal
         implements MerkleInternal, SwirldState.SwirldState2 {
+
     private static final Logger log = LogManager.getLogger(ServicesState.class);
 
     private static final long RUNTIME_CONSTRUCTABLE_ID = 0x8e300b0dfdafbb1aL;
@@ -548,6 +553,7 @@ public class ServicesState extends PartialNaryMerkleInternal
             ReleaseTwentySixMigration::makeStorageIterable;
     private static ContractAutoRenewalMigrator autoRenewalMigrator =
             ReleaseTwentySixMigration::grantFreeAutoRenew;
+    private static StorageLinksRepair storageLinksRepair = StorageLinksFixer::fixAnyBrokenLinks;
     private static StakingInfoBuilder stakingInfoBuilder =
             ReleaseTwentySevenMigration::buildStakingInfoMap;
     private static Function<JasperDbBuilderFactory, VirtualMapFactory> vmFactory =
@@ -589,6 +595,10 @@ public class ServicesState extends PartialNaryMerkleInternal
             accounts().get(EntityNum.fromLong(801L)).forgetThirdChildIfPlaceholder();
         }
 
+        // Unconditionally repair links this upgrade
+        storageLinksRepair.fixAnyBrokenLinks(
+                this, LinkRepairs::new, VirtualMapMigration::extractVirtualMapData);
+
         // Keep the MutableStateChildren up-to-date (no harm done if they are already are)
         final var app = getMetadata().app();
         app.workingState().updatePrimitiveChildrenFrom(this);
@@ -598,6 +608,7 @@ public class ServicesState extends PartialNaryMerkleInternal
 
     @FunctionalInterface
     interface OwnedNftsLinkMigrator {
+
         void buildAccountNftsOwnedLinkedList(
                 MerkleMap<EntityNum, MerkleAccount> accounts,
                 MerkleMap<EntityNumPair, MerkleUniqueToken> uniqueTokens);
@@ -605,22 +616,34 @@ public class ServicesState extends PartialNaryMerkleInternal
 
     @FunctionalInterface
     interface StakingInfoBuilder {
+
         MerkleMap<EntityNum, MerkleStakingInfo> buildStakingInfoMap(
                 AddressBook addressBook, BootstrapProperties bootstrapProperties);
     }
 
     @FunctionalInterface
     interface ContractAutoRenewalMigrator {
+
         void grantFreeAutoRenew(ServicesState initializingState, Instant lastConsensusTime);
     }
 
     @FunctionalInterface
     interface IterableStorageMigrator {
+
         void makeStorageIterable(
                 ServicesState initializingState,
                 ReleaseTwentySixMigration.MigratorFactory migratorFactory,
-                ReleaseTwentySixMigration.MigrationUtility migrationUtility,
+                VirtualMapDataAccess<ContractKey, ContractValue> migrationUtility,
                 VirtualMap<ContractKey, IterableContractValue> iterableContractStorage);
+    }
+
+    @FunctionalInterface
+    interface StorageLinksRepair {
+
+        void fixAnyBrokenLinks(
+                ServicesState initializingState,
+                final StorageLinksFixer.LinkRepairsFactory repairsFactory,
+                final VirtualMapDataAccess<ContractKey, IterableContractValue> dataAccess);
     }
 
     @VisibleForTesting
@@ -671,6 +694,11 @@ public class ServicesState extends PartialNaryMerkleInternal
     @VisibleForTesting
     static void setExpiryJustEnabled(final boolean expiryJustEnabled) {
         ServicesState.expiryJustEnabled = expiryJustEnabled;
+    }
+
+    @VisibleForTesting
+    static void setStorageLinksRepair(StorageLinksRepair storageLinksRepair) {
+        ServicesState.storageLinksRepair = storageLinksRepair;
     }
 
     static void setScheduledTransactionsMigrator(
