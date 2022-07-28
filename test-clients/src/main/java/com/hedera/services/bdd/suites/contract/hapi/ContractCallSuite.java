@@ -2798,7 +2798,6 @@ public class ContractCallSuite extends HapiApiSuite {
                         + "\"nonpayable\", \"type\": \"function\" }";
         final var initcode = "farmInitcode";
         final var farm = "farm";
-        final var owner = "owner";
         final var dev = "dev";
         final var lp = "lp";
         final var sauce = "sauce";
@@ -2813,7 +2812,7 @@ public class ContractCallSuite extends HapiApiSuite {
                 .given(
                         newKeyNamed(adminKey),
                         fileCreate(initcode),
-                        cryptoCreate(owner)
+                        cryptoCreate(OWNER)
                                 .balance(ONE_MILLION_HBARS)
                                 .exposingCreatedIdTo(
                                         id -> ownerAddr.set(asHexedSolidityAddress(id))),
@@ -2876,7 +2875,7 @@ public class ContractCallSuite extends HapiApiSuite {
                                         contractCallWithFunctionAbi(
                                                         farm, addPoolAbi, 2392L, lpTokenAddr.get())
                                                 .via("add")
-                                                .payingWith(owner)
+                                                .payingWith(OWNER)
                                                 .gas(gasToOffer)),
                         newKeyNamed("contractControl").shape(KeyShape.CONTRACT.signedWith(farm)),
                         tokenUpdate(sauce).supplyKey("contractControl"),
