@@ -42,7 +42,6 @@ import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.migration.KvPairIterationMigrator;
-import com.hedera.services.state.migration.LongTermScheduledTransactionsMigration;
 import com.hedera.services.state.migration.ReleaseTwentySevenMigration;
 import com.hedera.services.state.migration.ReleaseTwentySixMigration;
 import com.hedera.services.state.migration.StateChildIndices;
@@ -114,16 +113,6 @@ public class ServicesState extends PartialNaryMerkleInternal
     private StateMetadata metadata;
     /* Tasks to run after init. */
     private List<Runnable> postInitTasks = new ArrayList<>();
-
-    /**
-     * For scheduled transaction migration we need to initialize the new scheduled transactions'
-     * storage _before_ the {@link #migrateFrom(SoftwareVersion)} call. There are things that call
-     * {@link #scheduleTxs()} before {@link #migrateFrom(SoftwareVersion)} is called, like
-     * initializationFlow, which would cause casting and other issues if not handled.
-     *
-     * <p>Remove this once we no longer need to handle migrations from pre-0.26.
-     */
-    private MerkleScheduledTransactions migrationSchedules;
 
     public ServicesState() {
         /* RuntimeConstructable */
@@ -261,12 +250,6 @@ public class ServicesState extends PartialNaryMerkleInternal
 
         // Immediately override the address book from the saved state
         setChild(StateChildIndices.ADDRESS_BOOK, addressBook);
-        // Create a placeholder that just reports the # of schedules in the saved state
-        if (getChild(StateChildIndices.SCHEDULE_TXS) instanceof MerkleMap) {
-            migrationSchedules =
-                    new MerkleScheduledTransactions(
-                            ((MerkleMap<?, ?>) getChild(StateChildIndices.SCHEDULE_TXS)).size());
-        }
 
         internalInit(platform, new BootstrapProperties(), dualState, trigger, deserializedVersion);
     }
@@ -482,11 +465,7 @@ public class ServicesState extends PartialNaryMerkleInternal
     }
 
     public MerkleScheduledTransactions scheduleTxs() {
-        MerkleNode scheduledTxns = getChild(StateChildIndices.SCHEDULE_TXS);
-        if (scheduledTxns instanceof MerkleMap) {
-            return migrationSchedules;
-        }
-        return (MerkleScheduledTransactions) scheduledTxns;
+        return getChild(StateChildIndices.SCHEDULE_TXS);
     }
 
     public MerkleNetworkContext networkCtx() {
@@ -572,8 +551,6 @@ public class ServicesState extends PartialNaryMerkleInternal
     private static Function<JasperDbBuilderFactory, VirtualMapFactory> vmFactory =
             VirtualMapFactory::new;
     private static Supplier<ServicesApp.Builder> appBuilder = DaggerServicesApp::builder;
-    private static Consumer<ServicesState> scheduledTxnsMigrator =
-            LongTermScheduledTransactionsMigration::migrateScheduledTransactions;
 
     @VisibleForTesting
     void migrateFrom(@NotNull final SoftwareVersion deserializedVersion) {
@@ -597,16 +574,13 @@ public class ServicesState extends PartialNaryMerkleInternal
                     stakingInfoBuilder.buildStakingInfoMap(
                             addressBook(), new BootstrapProperties()));
         }
-        // We know for a fact that we need to migrate scheduled transactions if they are a MerkleMap
-        if (getChild(StateChildIndices.SCHEDULE_TXS) instanceof MerkleMap) {
-            scheduledTxnsMigrator.accept(this);
-        }
         if (FIRST_028X_VERSION.isAfter(deserializedVersion)) {
             // These accounts were created with an (unnecessary) MerkleAccountTokens child; remove
             // it
             accounts().get(EntityNum.fromLong(800L)).forgetThirdChildIfPlaceholder();
             accounts().get(EntityNum.fromLong(801L)).forgetThirdChildIfPlaceholder();
         }
+        scheduleTxs().do0230MigrationIfNeeded();
 
         if (getChild(StateChildIndices.UNIQUE_TOKENS) instanceof MerkleMap) {
             UniqueTokensMigrator.migrateFromUniqueTokenMerkleMap(this);
@@ -694,10 +668,5 @@ public class ServicesState extends PartialNaryMerkleInternal
     @VisibleForTesting
     static void setExpiryJustEnabled(final boolean expiryJustEnabled) {
         ServicesState.expiryJustEnabled = expiryJustEnabled;
-    }
-
-    static void setScheduledTransactionsMigrator(
-            final Consumer<ServicesState> scheduledTxnsMigrator) {
-        ServicesState.scheduledTxnsMigrator = scheduledTxnsMigrator;
     }
 }

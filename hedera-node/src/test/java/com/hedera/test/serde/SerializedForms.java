@@ -27,8 +27,6 @@ import com.hedera.services.state.merkle.MerkleAccountStateSerdeTest;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.merkle.MerkleNetworkContextSerdeTest;
-import com.hedera.services.state.merkle.MerkleSchedule;
-import com.hedera.services.state.merkle.MerkleScheduleSerdeTest;
 import com.hedera.services.state.merkle.MerkleScheduledTransactionsState;
 import com.hedera.services.state.merkle.MerkleScheduledTransactionsStateSerdeTest;
 import com.hedera.services.state.merkle.MerkleSpecialFiles;
@@ -198,10 +196,6 @@ public class SerializedForms {
                             MerkleScheduledTransactionsState.class,
                             SeededPropertySource::nextScheduledTransactionsState,
                             MerkleScheduledTransactionsStateSerdeTest.NUM_TEST_CASES),
-                    entry(
-                            MerkleSchedule.class,
-                            MerkleScheduleSerdeTest::nextSchedule,
-                            MerkleScheduleSerdeTest.NUM_TEST_CASES),
                     entry(
                             MerkleSpecialFiles.class,
                             SeededPropertySource::nextMerkleSpecialFiles,

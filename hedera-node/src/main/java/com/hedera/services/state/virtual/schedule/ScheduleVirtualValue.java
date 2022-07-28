@@ -28,7 +28,6 @@ import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.exceptions.UnknownHederaFunctionality;
 import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.state.merkle.MerkleSchedule;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.state.virtual.EntityNumVirtualKey;
@@ -62,10 +61,10 @@ import javax.annotation.Nullable;
 
 /**
  * This is currently used in a MerkleMap due to issues with virtual map in the 0.27 release. It
- * should be moved back to VirtualMap in 0.28.
+ * should be moved back to VirtualMap in 0.30. Eventually implementing MerkleLeaf should be removed.
  */
 public class ScheduleVirtualValue extends PartialMerkleLeaf
-        implements VirtualValue, Keyed<EntityNumVirtualKey>, MerkleLeaf {
+        implements VirtualValue, Keyed<EntityNumVirtualKey>, MerkleLeaf, WritableCopyable {
 
     static final int CURRENT_VERSION = 1;
     static final long RUNTIME_CONSTRUCTABLE_ID = 0xadfd7f9e613385fcL;
@@ -121,19 +120,6 @@ public class ScheduleVirtualValue extends PartialMerkleLeaf
         for (byte[] signatory : toCopy.signatories) {
             this.witnessValidSignature(signatory);
         }
-    }
-
-    public ScheduleVirtualValue(MerkleSchedule toCopy) {
-        bodyBytes = toCopy.bodyBytes();
-        calculatedExpirationTime = new RichInstant(toCopy.expiry(), 0);
-        executed = toCopy.isExecuted();
-        deleted = toCopy.isDeleted();
-        resolutionTime = toCopy.getResolutionTime();
-        for (var sig : toCopy.signatories()) {
-            witnessValidSignature(sig);
-        }
-
-        initFromBodyBytes();
     }
 
     public static ScheduleVirtualValue from(byte[] bodyBytes, long consensusExpiry) {
