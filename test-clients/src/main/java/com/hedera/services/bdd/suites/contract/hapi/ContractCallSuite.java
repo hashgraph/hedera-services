@@ -47,6 +47,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
@@ -64,11 +65,14 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyListNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingAllOf;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.updateLargeFile;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hedera.services.bdd.suites.contract.Utils.asToken;
+import static com.hedera.services.bdd.suites.contract.Utils.extractByteCode;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIForContract;
 import static com.hedera.services.bdd.suites.contract.precompile.DynamicGasCostSuite.captureChildCreate2MetaFor;
@@ -96,6 +100,7 @@ import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.queries.QueryVerbs;
 import com.hedera.services.bdd.spec.queries.meta.HapiGetTxnRecord;
+import com.hedera.services.bdd.spec.transactions.contract.HapiContractCreate;
 import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
@@ -238,7 +243,8 @@ public class ContractCallSuite extends HapiApiSuite {
                 cannotUseMirrorAddressOfAliasedContractInPrecompileMethod(),
                 exchangeRatePrecompileWorks(),
                 canMintAndTransferInSameContractOperation(),
-                workingHoursDemo());
+                workingHoursDemo(),
+                lpFarmSimulation());
     }
 
     private HapiApiSpec whitelistingAliasedContract() {
@@ -2752,6 +2758,151 @@ public class ContractCallSuite extends HapiApiSuite {
                         getAccountBalance(RECEIVER).hasTinyBars(10_000L));
     }
 
+    private HapiApiSpec lpFarmSimulation() {
+        final var adminKey = "adminKey";
+        final var gasToOffer = 4_000_000;
+        final var farmInitcodeLoc = "src/main/resource/contract/bytecodes/farmInitcode.bin";
+        final var consAbi =
+                "{ \"inputs\": [ { \"internalType\": \"address\", \"name\": \"_devaddr\", \"type\": "
+                        + "\"address\" }, { \"internalType\": \"address\", \"name\": \"_rentPayer\", \"type\": \"address\" },  "
+                        + "   { \"internalType\": \"uint256\", \"name\": \"_saucePerSecond\", \"type\": \"uint256\" }, { "
+                        + "\"internalType\": \"uint256\", \"name\": \"_hbarPerSecond\", \"type\": \"uint256\" }, {"
+                        + " \"internalType\": \"uint256\", \"name\": \"_maxSauceSupply\", \"type\": \"uint256\" }, { "
+                        + "\"internalType\":"
+                        + " \"uint256\", \"name\": \"_depositFeeTinyCents\", \"type\": \"uint256\" } ], \"stateMutability\": "
+                        + "\"nonpayable\", \"type\": \"constructor\" }";
+        final var addPoolAbi =
+                "{ \"inputs\": [ { \"internalType\": \"uint256\", \"name\": \"_allocPoint\", \"type\":"
+                        + " "
+                        + "\"uint256\" }, { \"internalType\": \"address\", \"name\": \"_lpToken\", \"type\": \"address\" }      "
+                        + " "
+                        + "], \"name\": \"add\", \"outputs\": [], \"stateMutability\": \"nonpayable\", \"type\": \"function\" }";
+        final var depositAbi =
+                "{ \"inputs\": [ { \"internalType\": \"uint256\", \"name\": \"_pid\", \"type\": "
+                        + "\"uint256\" }, { \"internalType\": \"uint256\", \"name\": \"_amount\", \"type\": \"uint256\" } ], "
+                        + "\"name\": \"deposit\", \"outputs\": [], \"stateMutability\": \"payable\", \"type\": "
+                        + "\"function\" }";
+        final var withdrawAbi =
+                "{ \"inputs\": [ { \"internalType\": \"uint256\", \"name\": \"_pid\", \"type\": "
+                        + "\"uint256\" }, { \"internalType\": \"uint256\", \"name\": \"_amount\", \"type\": \"uint256\" } ], "
+                        + "\"name\": \"withdraw\", \"outputs\": [], \"stateMutability\": \"nonpayable\", \"type\": "
+                        + "\"function\" }";
+        final var setSauceAbi =
+                "{ \"inputs\": [ { \"internalType\": \"address\", \"name\": \"_sauce\", \"type\": "
+                        + "\"address\" } ], \"name\": \"setSauceAddress\", \"outputs\": [], \"stateMutability\": \"nonpayable\","
+                        + " "
+                        + "\"type\": \"function\" }";
+        final var transferAbi =
+                "{ \"inputs\": [ { \"internalType\": \"address\", \"name\": \"newOwner\", \"type\": "
+                        + "\"address\" } ], \"name\": \"transferOwnership\", \"outputs\": [], \"stateMutability\": "
+                        + "\"nonpayable\", \"type\": \"function\" }";
+        final var initcode = "farmInitcode";
+        final var farm = "farm";
+        final var owner = "owner";
+        final var dev = "dev";
+        final var lp = "lp";
+        final var sauce = "sauce";
+        final var rentPayer = "rentPayer";
+        final AtomicReference<String> devAddr = new AtomicReference<>();
+        final AtomicReference<String> ownerAddr = new AtomicReference<>();
+        final AtomicReference<String> sauceAddr = new AtomicReference<>();
+        final AtomicReference<String> lpTokenAddr = new AtomicReference<>();
+        final AtomicReference<String> rentPayerAddr = new AtomicReference<>();
+
+        return defaultHapiSpec("FarmSimulation")
+                .given(
+                        newKeyNamed(adminKey),
+                        fileCreate(initcode),
+                        cryptoCreate(owner)
+                                .balance(ONE_MILLION_HBARS)
+                                .exposingCreatedIdTo(
+                                        id -> ownerAddr.set(asHexedSolidityAddress(id))),
+                        cryptoCreate(dev)
+                                .balance(ONE_MILLION_HBARS)
+                                .exposingCreatedIdTo(id -> devAddr.set(asHexedSolidityAddress(id))),
+                        cryptoCreate(rentPayer)
+                                .balance(ONE_MILLION_HBARS)
+                                .exposingCreatedIdTo(
+                                        id -> rentPayerAddr.set(asHexedSolidityAddress(id))),
+                        updateLargeFile(GENESIS, initcode, extractByteCode(farmInitcodeLoc)),
+                        sourcing(
+                                () ->
+                                        new HapiContractCreate(
+                                                        farm,
+                                                        consAbi,
+                                                        devAddr.get(),
+                                                        rentPayerAddr.get(),
+                                                        4804540L,
+                                                        10000L,
+                                                        1000000000000000L,
+                                                        2500000000L)
+                                                .bytecode(initcode)),
+                        tokenCreate(sauce)
+                                .supplyType(TokenSupplyType.FINITE)
+                                .initialSupply(300_000_000)
+                                .maxSupply(1_000_000_000)
+                                .treasury(farm)
+                                .adminKey(adminKey)
+                                .supplyKey(adminKey)
+                                .exposingCreatedIdTo(
+                                        idLit ->
+                                                sauceAddr.set(
+                                                        asHexedSolidityAddress(
+                                                                HapiPropertySource.asToken(
+                                                                        idLit)))),
+                        tokenCreate(lp)
+                                .treasury(dev)
+                                .initialSupply(1_000_000_000)
+                                .exposingCreatedIdTo(
+                                        idLit ->
+                                                lpTokenAddr.set(
+                                                        asHexedSolidityAddress(
+                                                                HapiPropertySource.asToken(
+                                                                        idLit)))),
+                        tokenAssociate(dev, sauce),
+                        sourcing(
+                                () ->
+                                        contractCallWithFunctionAbi(
+                                                        farm, setSauceAbi, sauceAddr.get())
+                                                .gas(gasToOffer)),
+                        sourcing(
+                                () ->
+                                        contractCallWithFunctionAbi(
+                                                        farm, transferAbi, ownerAddr.get())
+                                                .gas(gasToOffer)))
+                .when(
+                        sourcing(
+                                () ->
+                                        contractCallWithFunctionAbi(
+                                                        farm, addPoolAbi, 2392L, lpTokenAddr.get())
+                                                .via("add")
+                                                .payingWith(owner)
+                                                .gas(gasToOffer)),
+                        newKeyNamed("contractControl").shape(KeyShape.CONTRACT.signedWith(farm)),
+                        tokenUpdate(sauce).supplyKey("contractControl"),
+                        sourcing(
+                                () ->
+                                        contractCallWithFunctionAbi(farm, depositAbi, 0L, 100_000)
+                                                .sending(ONE_HUNDRED_HBARS)
+                                                .payingWith(dev)
+                                                .gas(gasToOffer)),
+                        sleepFor(1000),
+                        sourcing(
+                                () ->
+                                        contractCallWithFunctionAbi(farm, depositAbi, 0L, 100_000)
+                                                .sending(ONE_HUNDRED_HBARS)
+                                                .payingWith(dev)
+                                                .gas(gasToOffer)
+                                                .via("second")),
+                        getTxnRecord("second").andAllChildRecords().logged())
+                .then(
+                        sourcing(
+                                () ->
+                                        contractCallWithFunctionAbi(farm, withdrawAbi, 0L, 200_000)
+                                                .payingWith(dev)
+                                                .gas(gasToOffer)));
+    }
+
     private String getNestedContractAddress(final String contract, final HapiApiSpec spec) {
         return HapiPropertySource.asHexedSolidityAddress(spec.registry().getContractId(contract));
     }
@@ -2777,8 +2928,8 @@ public class ContractCallSuite extends HapiApiSuite {
             "da71addf000000000000000000000000%s";
     private static final String EXPLICIT_JURISDICTIONS_ADD_PARAMS =
             "218c66ea0000000000000000000000000000000000000000000000000000000000000080000000000000000000000000"
-                + "0000000000000000000000000000000000000339000000000000000000000000123456789012345678901234"
-                + "5678901234567890000000000000000000000000123456789012345678901234567890123456789000000000"
-                + "000000000000000000000000000000000000000000000000000000026e790000000000000000000000000000"
-                + "00000000000000000000000000000000";
+                    + "0000000000000000000000000000000000000339000000000000000000000000123456789012345678901234"
+                    + "5678901234567890000000000000000000000000123456789012345678901234567890123456789000000000"
+                    + "000000000000000000000000000000000000000000000000000000026e790000000000000000000000000000"
+                    + "00000000000000000000000000000000";
 }
