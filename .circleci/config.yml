@@ -1013,6 +1013,29 @@ workflows:
             - attach_workspace:
                 at: /
 
+  GCP-Daily-Services-Update-Abort-4N-2C:
+    triggers:
+      - schedule:
+          cron: "15 22 * * *"
+          filters:
+            branches:
+              only:
+                - master
+    jobs:
+      - build-platform-and-services
+      - jrs-regression:
+          context: Slack
+          regression_path: /swirlds-platform/regression/assets
+          result_path: assets/results/4N_2C/Update
+          config_type: "daily"
+          workflow-name: "GCP-Daily-Services-Crypto-Update-Abort-4N-2C"
+          requires:
+            - build-platform-and-services
+          pre-steps:
+            - install-tools
+            - attach_workspace:
+                at: /
+
   GCP-Daily-Services-Comp-Update-DisPreUpdate-4N-2C:
     triggers:
       - schedule:
@@ -1401,61 +1424,38 @@ workflows:
                 at: /
 
 jobs:
-  build-artifact:
-    parameters:
-      sys-props:
-        type: string
-        description: System properties for mvn install
-        default: ''
-      mvn-args:
-        type: string
-        description: Args for mvn install
-        default: ''
-      workflow-name:
-        type: string
-        default: ""
-    executor:
-      name: build-executor
-      workflow-name:  << parameters.workflow-name >>
-    steps:
-      - checkout
-      - run:
-          name: prepare log dir
-          command: |
-            mkdir -p /repo/test-clients/output
-      - run:
-          name: mvn install
-          # use double quote otherwise the backslash of line continuation will be treated as part of mvn parameter
-          command: |
-            mvn --no-transfer-progress -Dsonar.branch.name=${CIRCLE_BRANCH} -Dsonar.login=${SONAR_TOKEN} clean install sonar:sonar \
-              | tee /repo/test-clients/output/hapi-client.log
-      - run:
-          name: Save Unit Test Results
-          command: |
-            set -x
-            JUNIT_PATH="${HOME}/junit"
-
-            if [[ ! -d "${JUNIT_PATH}" ]]; then
-              mkdir -pv "${JUNIT_PATH}"
-            fi
-            find . -type f -regex ".*/target/surefire-reports/.*xml" -exec cp -v {} "${JUNIT_PATH}" \;
-          when: always
-      - store_test_results:
-          path: ~/junit
-      - store_artifacts:
-          path: ~/junit
-
-      - run:
-          name: Upload codecov
-          command: |
-            apt update -y
-            apt install -y curl
-            bash <(wget -O - https://codecov.io/bash)
-      - persist_to_workspace:
-          root: /
-          paths:
-            - repo/
-            - root/.m2
+#  build-artifact:
+#    parameters:
+#      workflow-name:
+#        type: string
+#        default: ""
+#    executor:
+#      name: build-executor
+#      workflow-name:  << parameters.workflow-name >>
+#    steps:
+#      - checkout
+#      - run:
+#          name: prepare log dir
+#          command: |
+#            mkdir -p /repo/test-clients/output
+#      - run:
+#          name: gradle assemble
+#          # use double quote otherwise the backslash of line continuation will be treated as part of mvn parameter
+#          command: |
+#            ./gradlew assemble copyLib copyApp --scan --parallel \
+#              | tee /repo/test-clients/output/hapi-client.log
+#
+##      - run:
+##          name: Upload codecov
+##          command: |
+##            apt update -y
+##            apt install -y curl
+##            bash <(wget -O - https://codecov.io/bash)
+#      - persist_to_workspace:
+#          root: /
+#          paths:
+#            - repo/
+#            - root/.m2
 
   sonar-check:
     parameters:
@@ -1502,17 +1502,6 @@ jobs:
             - repo/
             - swirlds-platform/
 
-  javadoc-generation:
-    executor:
-      name: build-executor
-    steps:
-      - attach_workspace:
-          at: /
-      - run:
-          name: Generate javadocs
-          command: |
-            cd /repo; export JAVA_HOME="/usr/local/java/jdk-17"; mvn javadoc:javadoc
-
   build-platform-and-services:
     parameters:
       workflow-name:
@@ -1531,8 +1520,7 @@ jobs:
       - checkout
       - run:
           name: Build hedera-services repo
-          command: |
-                mvn --no-transfer-progress clean install -DskipTests ;
+          command: ./gradlew assemble copyApp copyLib
       - run:
           name: Checkout swirlds-platform repos and build
           command: |
@@ -1553,7 +1541,7 @@ jobs:
             # Build JRS
             cd /swirlds-platform/regression
             git checkout -b 02449-D-VM-Contract-Recovery origin/02449-D-VM-Contract-Recovery 
-            ./mvnw clean install
+            ./gradlew assemble --scan --parallel
 
       - run:
           name: Save PEM file to keys folder

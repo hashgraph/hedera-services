@@ -1,11 +1,6 @@
-package com.hedera.services.store.contracts;
-
-/*-
- * ‌
- * Hedera Services Node
- * ​
- * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2021-2022 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,33 +12,32 @@ package com.hedera.services.store.contracts;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+package com.hedera.services.store.contracts;
+
+import static com.hedera.services.store.contracts.WorldStateTokenAccount.proxyBytecodeFor;
+import static com.hedera.services.utils.EntityIdUtils.accountIdFromEvmAddress;
 
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.hedera.services.context.properties.NodeLocalProperties;
 import com.hedera.services.utils.BytesKey;
+import java.util.concurrent.TimeUnit;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Hash;
 import org.hyperledger.besu.evm.Code;
 
-import javax.inject.Inject;
-import javax.inject.Singleton;
-import java.util.concurrent.TimeUnit;
-
-import static com.hedera.services.store.contracts.WorldStateTokenAccount.proxyBytecodeFor;
-import static com.hedera.services.utils.EntityIdUtils.accountIdFromEvmAddress;
-
 /**
- * Weak reference cache with expiration TTL for EVM bytecode. This cache is primarily used
- * to store bytecode pre-fetched during prepare phase (aka expand signatures) to be used
- * later on during the handle phase (aka handle transaction). The cache also has the side
- * effect of eliminating bytecode reads from the underlying store if the contract is called
- * repeatedly during a short period of time.
- * <p>
- * This cache assumes that the bytecode values are immutable, hence no logic to determine
- * whether a value is stale is present.
+ * Weak reference cache with expiration TTL for EVM bytecode. This cache is primarily used to store
+ * bytecode pre-fetched during prepare phase (aka expand signatures) to be used later on during the
+ * handle phase (aka handle transaction). The cache also has the side effect of eliminating bytecode
+ * reads from the underlying store if the contract is called repeatedly during a short period of
+ * time.
+ *
+ * <p>This cache assumes that the bytecode values are immutable, hence no logic to determine whether
+ * a value is stale is present.
  */
 @Singleton
 public class CodeCache {
@@ -57,10 +51,11 @@ public class CodeCache {
 
     public CodeCache(final int cacheTTL, final EntityAccess entityAccess) {
         this.entityAccess = entityAccess;
-        this.cache = Caffeine.newBuilder()
-                .expireAfterAccess(cacheTTL, TimeUnit.SECONDS)
-                .softValues()
-                .build();
+        this.cache =
+                Caffeine.newBuilder()
+                        .expireAfterAccess(cacheTTL, TimeUnit.SECONDS)
+                        .softValues()
+                        .build();
     }
 
     public Code getIfPresent(final Address address) {
@@ -81,7 +76,7 @@ public class CodeCache {
 
         final var bytecode = entityAccess.fetchCodeIfPresent(accountIdFromEvmAddress(address));
         if (bytecode != null) {
-                code = Code.createLegacyCode(bytecode, Hash.hash(bytecode));
+            code = Code.createLegacyCode(bytecode, Hash.hash(bytecode));
             cache.put(cacheKey, code);
         }
 
@@ -92,7 +87,9 @@ public class CodeCache {
         cache.invalidate(new BytesKey(address.toArray()));
     }
 
-    public long size() { return cache.estimatedSize(); }
+    public long size() {
+        return cache.estimatedSize();
+    }
 
     /* --- Only used by unit tests --- */
     Cache<BytesKey, Code> getCache() {

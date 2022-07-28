@@ -1,11 +1,6 @@
-package com.hedera.services.txns.span;
-
-/*-
- * ‌
- * Hedera Services Node
- * ​
- * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,8 +12,14 @@ package com.hedera.services.txns.span;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+package com.hedera.services.txns.span;
+
+import static com.hedera.services.usage.token.TokenOpsUsageUtils.TOKEN_OPS_USAGE_UTILS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.mockito.BDDMockito.given;
 
 import com.hedera.services.ethereum.EthTxData;
 import com.hedera.services.ethereum.EthTxSigs;
@@ -27,8 +28,13 @@ import com.hedera.services.usage.crypto.CryptoApproveAllowanceMeta;
 import com.hedera.services.usage.crypto.CryptoCreateMeta;
 import com.hedera.services.usage.crypto.CryptoDeleteAllowanceMeta;
 import com.hedera.services.usage.crypto.CryptoUpdateMeta;
+import com.hedera.services.usage.util.UtilPrngMeta;
 import com.hedera.services.utils.accessors.TxnAccessor;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import java.math.BigInteger;
+import java.time.Instant;
+import java.util.HashMap;
+import java.util.Map;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -36,184 +42,198 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.math.BigInteger;
-import java.time.Instant;
-import java.util.HashMap;
-import java.util.Map;
-
-import static com.hedera.services.usage.token.TokenOpsUsageUtils.TOKEN_OPS_USAGE_UTILS;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.mockito.BDDMockito.given;
-
 @ExtendWith(MockitoExtension.class)
 class ExpandHandleSpanMapAccessorTest {
-	private final Map<String, Object> span = new HashMap<>();
+    private final Map<String, Object> span = new HashMap<>();
 
-	@Mock
-	private TxnAccessor accessor;
+    @Mock private TxnAccessor accessor;
 
-	private ExpandHandleSpanMapAccessor subject;
+    private ExpandHandleSpanMapAccessor subject;
 
-	@BeforeEach
-	void setUp() {
-		subject = new ExpandHandleSpanMapAccessor();
+    @BeforeEach
+    void setUp() {
+        subject = new ExpandHandleSpanMapAccessor();
 
-		given(accessor.getSpanMap()).willReturn(span);
-	}
+        given(accessor.getSpanMap()).willReturn(span);
+    }
 
-	@Test
-	void managesExpansionAsExpected() {
-		final var expansion = new EthTxExpansion(new LinkedRefs(), INSUFFICIENT_ACCOUNT_BALANCE);
+    @Test
+    void managesExpansionAsExpected() {
+        final var expansion = new EthTxExpansion(new LinkedRefs(), INSUFFICIENT_ACCOUNT_BALANCE);
 
-		subject.setEthTxExpansion(accessor, expansion);
+        subject.setEthTxExpansion(accessor, expansion);
 
-		assertSame(expansion, subject.getEthTxExpansion(accessor));
-	}
+        assertSame(expansion, subject.getEthTxExpansion(accessor));
+    }
 
-	@Test
-	void testsForImpliedXfersAsExpected() {
-		Assertions.assertDoesNotThrow(() -> subject.getImpliedTransfers(accessor));
-	}
+    @Test
+    void testsForImpliedXfersAsExpected() {
+        Assertions.assertDoesNotThrow(() -> subject.getImpliedTransfers(accessor));
+    }
 
-	@Test
-	void testsForTokenCreateMetaAsExpected() {
-		Assertions.assertDoesNotThrow(() -> subject.getTokenCreateMeta(accessor));
-	}
+    @Test
+    void testsForTokenCreateMetaAsExpected() {
+        Assertions.assertDoesNotThrow(() -> subject.getTokenCreateMeta(accessor));
+    }
 
-	@Test
-	void testsForTokenBurnMetaAsExpected() {
-		Assertions.assertDoesNotThrow(() -> subject.getTokenBurnMeta(accessor));
-	}
+    @Test
+    void testsForTokenBurnMetaAsExpected() {
+        Assertions.assertDoesNotThrow(() -> subject.getTokenBurnMeta(accessor));
+    }
 
-	@Test
-	void testsForTokenWipeMetaAsExpected() {
-		Assertions.assertDoesNotThrow(() -> subject.getTokenWipeMeta(accessor));
-	}
+    @Test
+    void testsForTokenWipeMetaAsExpected() {
+        Assertions.assertDoesNotThrow(() -> subject.getTokenWipeMeta(accessor));
+    }
 
-	@Test
-	void testsForTokenFreezeMetaAsExpected() {
-		final var tokenFreezeMeta = TOKEN_OPS_USAGE_UTILS.tokenFreezeUsageFrom();
+    @Test
+    void testsForUtilPrngMetaAsExpected() {
+        Assertions.assertDoesNotThrow(() -> subject.getUtilPrngMeta(accessor));
+    }
 
-		subject.setTokenFreezeMeta(accessor, tokenFreezeMeta);
+    @Test
+    void testsForTokenFreezeMetaAsExpected() {
+        final var tokenFreezeMeta = TOKEN_OPS_USAGE_UTILS.tokenFreezeUsageFrom();
 
-		assertEquals(48, subject.getTokenFreezeMeta(accessor).getBpt());
-	}
+        subject.setTokenFreezeMeta(accessor, tokenFreezeMeta);
 
-	@Test
-	void testsForTokenUnfreezeMetaAsExpected() {
-		final var tokenUnfreezeMeta = TOKEN_OPS_USAGE_UTILS.tokenUnfreezeUsageFrom();
+        assertEquals(48, subject.getTokenFreezeMeta(accessor).getBpt());
+    }
 
-		subject.setTokenUnfreezeMeta(accessor, tokenUnfreezeMeta);
+    @Test
+    void testsForTokenUnfreezeMetaAsExpected() {
+        final var tokenUnfreezeMeta = TOKEN_OPS_USAGE_UTILS.tokenUnfreezeUsageFrom();
 
-		assertEquals(48, subject.getTokenUnfreezeMeta(accessor).getBpt());
-	}
+        subject.setTokenUnfreezeMeta(accessor, tokenUnfreezeMeta);
 
-	@Test
-	void testsForTokenPauseMetaAsExpected() {
-		final var tokenPauseMeta = TOKEN_OPS_USAGE_UTILS.tokenPauseUsageFrom();
+        assertEquals(48, subject.getTokenUnfreezeMeta(accessor).getBpt());
+    }
 
-		subject.setTokenPauseMeta(accessor, tokenPauseMeta);
+    @Test
+    void testsForTokenPauseMetaAsExpected() {
+        final var tokenPauseMeta = TOKEN_OPS_USAGE_UTILS.tokenPauseUsageFrom();
 
-		assertEquals(24, subject.getTokenPauseMeta(accessor).getBpt());
-	}
+        subject.setTokenPauseMeta(accessor, tokenPauseMeta);
 
-	@Test
-	void testsForTokenUnpauseMetaAsExpected() {
-		final var tokenUnpauseMeta = TOKEN_OPS_USAGE_UTILS.tokenUnpauseUsageFrom();
+        assertEquals(24, subject.getTokenPauseMeta(accessor).getBpt());
+    }
 
-		subject.setTokenUnpauseMeta(accessor, tokenUnpauseMeta);
+    @Test
+    void testsForTokenUnpauseMetaAsExpected() {
+        final var tokenUnpauseMeta = TOKEN_OPS_USAGE_UTILS.tokenUnpauseUsageFrom();
 
-		assertEquals(24, subject.getTokenUnpauseMeta(accessor).getBpt());
-	}
+        subject.setTokenUnpauseMeta(accessor, tokenUnpauseMeta);
 
-	@Test
-	void testsForCryptoCreateMetaAsExpected() {
-		var opMeta = new CryptoCreateMeta.Builder()
-				.baseSize(1_234)
-				.lifeTime(1_234_567L)
-				.maxAutomaticAssociations(12)
-				.build();
+        assertEquals(24, subject.getTokenUnpauseMeta(accessor).getBpt());
+    }
 
-		subject.setCryptoCreateMeta(accessor, opMeta);
+    @Test
+    void testsForCryptoCreateMetaAsExpected() {
+        var opMeta =
+                new CryptoCreateMeta.Builder()
+                        .baseSize(1_234)
+                        .lifeTime(1_234_567L)
+                        .maxAutomaticAssociations(12)
+                        .build();
 
-		assertEquals(1_234, subject.getCryptoCreateMeta(accessor).getBaseSize());
-	}
+        subject.setCryptoCreateMeta(accessor, opMeta);
 
-	@Test
-	void testsForCryptoUpdateMetaAsExpected() {
-		final var opMeta = new CryptoUpdateMeta.Builder()
-				.keyBytesUsed(123)
-				.msgBytesUsed(1_234)
-				.memoSize(100)
-				.effectiveNow(1_234_000L)
-				.expiry(1_234_567L)
-				.hasProxy(false)
-				.maxAutomaticAssociations(3)
-				.hasMaxAutomaticAssociations(true)
-				.build();
+        assertEquals(1_234, subject.getCryptoCreateMeta(accessor).getBaseSize());
+    }
 
-		subject.setCryptoUpdate(accessor, opMeta);
+    @Test
+    void testsForCryptoUpdateMetaAsExpected() {
+        final var opMeta =
+                new CryptoUpdateMeta.Builder()
+                        .keyBytesUsed(123)
+                        .msgBytesUsed(1_234)
+                        .memoSize(100)
+                        .effectiveNow(1_234_000L)
+                        .expiry(1_234_567L)
+                        .hasProxy(false)
+                        .maxAutomaticAssociations(3)
+                        .hasMaxAutomaticAssociations(true)
+                        .build();
 
-		assertEquals(3, subject.getCryptoUpdateMeta(accessor).getMaxAutomaticAssociations());
-	}
+        subject.setCryptoUpdate(accessor, opMeta);
 
-	@Test
-	void testsForCryptoApproveMetaAsExpected() {
-		final var secs = Instant.now().getEpochSecond();
-		final var opMeta = CryptoApproveAllowanceMeta.newBuilder()
-				.msgBytesUsed(112)
-				.effectiveNow(secs)
-				.build();
+        assertEquals(3, subject.getCryptoUpdateMeta(accessor).getMaxAutomaticAssociations());
+    }
 
-		subject.setCryptoApproveMeta(accessor, opMeta);
-		
-		assertEquals(112, subject.getCryptoApproveMeta(accessor).getMsgBytesUsed());
-		assertEquals(secs, subject.getCryptoApproveMeta(accessor).getEffectiveNow());
-	}
+    @Test
+    void testsForCryptoApproveMetaAsExpected() {
+        final var secs = Instant.now().getEpochSecond();
+        final var opMeta =
+                CryptoApproveAllowanceMeta.newBuilder()
+                        .msgBytesUsed(112)
+                        .effectiveNow(secs)
+                        .build();
 
-	@Test
-	void testsForCryptoDeleteMetaAsExpected() {
-		final var now = Instant.now().getEpochSecond();
-		final var opMeta = CryptoDeleteAllowanceMeta.newBuilder()
-				.msgBytesUsed(112)
-				.effectiveNow(now)
-				.build();
+        subject.setCryptoApproveMeta(accessor, opMeta);
 
-		subject.setCryptoDeleteAllowanceMeta(accessor, opMeta);
-		assertEquals(112, subject.getCryptoDeleteAllowanceMeta(accessor).getMsgBytesUsed());
-		assertEquals(now, subject.getCryptoDeleteAllowanceMeta(accessor).getEffectiveNow());
-	}
+        assertEquals(112, subject.getCryptoApproveMeta(accessor).getMsgBytesUsed());
+        assertEquals(secs, subject.getCryptoApproveMeta(accessor).getEffectiveNow());
+    }
 
-	@Test
-	void testsForEthTxDataMeta() {
-		var oneByte = new byte[] { 1 };
-		var ethTxData =
-				new EthTxData(oneByte, EthTxData.EthTransactionType.EIP1559, oneByte, 1,
-						oneByte, oneByte, oneByte, 1,
-						oneByte, BigInteger.ONE, oneByte, oneByte, 1,
-						oneByte, oneByte, oneByte);
+    @Test
+    void testsForCryptoDeleteMetaAsExpected() {
+        final var now = Instant.now().getEpochSecond();
+        final var opMeta =
+                CryptoDeleteAllowanceMeta.newBuilder().msgBytesUsed(112).effectiveNow(now).build();
 
-		subject.setEthTxDataMeta(accessor, ethTxData);
-		assertEquals(ethTxData, subject.getEthTxDataMeta(accessor));
-	}
+        subject.setCryptoDeleteAllowanceMeta(accessor, opMeta);
+        assertEquals(112, subject.getCryptoDeleteAllowanceMeta(accessor).getMsgBytesUsed());
+        assertEquals(now, subject.getCryptoDeleteAllowanceMeta(accessor).getEffectiveNow());
+    }
 
-	@Test
-	void testsForEthTxSigs() {
-		var oneByte = new byte[] { 1 };
-		var ethTxSigs =
-				new EthTxSigs(oneByte, oneByte);
+    @Test
+    void testsForEthTxDataMeta() {
+        var oneByte = new byte[] {1};
+        var ethTxData =
+                new EthTxData(
+                        oneByte,
+                        EthTxData.EthTransactionType.EIP1559,
+                        oneByte,
+                        1,
+                        oneByte,
+                        oneByte,
+                        oneByte,
+                        1,
+                        oneByte,
+                        BigInteger.ONE,
+                        oneByte,
+                        oneByte,
+                        1,
+                        oneByte,
+                        oneByte,
+                        oneByte);
 
-		subject.setEthTxSigsMeta(accessor, ethTxSigs);
-		assertEquals(ethTxSigs, subject.getEthTxSigsMeta(accessor));
-	}
+        subject.setEthTxDataMeta(accessor, ethTxData);
+        assertEquals(ethTxData, subject.getEthTxDataMeta(accessor));
+    }
 
-	@Test
-	void testsForEthTxBody() {
-		var txBody = TransactionBody.newBuilder().build();
+    @Test
+    void testsForEthTxSigs() {
+        var oneByte = new byte[] {1};
+        var ethTxSigs = new EthTxSigs(oneByte, oneByte);
 
-		subject.setEthTxBodyMeta(accessor, txBody);
-		assertEquals(txBody, subject.getEthTxBodyMeta(accessor));
-	}
+        subject.setEthTxSigsMeta(accessor, ethTxSigs);
+        assertEquals(ethTxSigs, subject.getEthTxSigsMeta(accessor));
+    }
+
+    @Test
+    void testsForEthTxBody() {
+        var txBody = TransactionBody.newBuilder().build();
+
+        subject.setEthTxBodyMeta(accessor, txBody);
+        assertEquals(txBody, subject.getEthTxBodyMeta(accessor));
+    }
+
+    @Test
+    void testsForUtilPrngMetaBody() {
+        final var opMeta = UtilPrngMeta.newBuilder().msgBytesUsed(112).build();
+
+        subject.setUtilPrngMeta(accessor, opMeta);
+        assertEquals(112, subject.getUtilPrngMeta(accessor).getMsgBytesUsed());
+    }
 }

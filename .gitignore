@@ -73,6 +73,7 @@ hedera-node/build.sh
 hedera-node/settingsUsed.txt
 hedera-node/data/accountBalances/
 hedera-node/database/
+hedera-node/databases/
 hedera-node/data/apps/
 hedera-node/data/diskFs/
 hedera-node/data/config/*.bin

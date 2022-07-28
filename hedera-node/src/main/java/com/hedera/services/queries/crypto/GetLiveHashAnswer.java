@@ -1,11 +1,6 @@
-package com.hedera.services.queries.crypto;
-
-/*-
- * ‌
- * Hedera Services Node
- * ​
- * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,8 +12,12 @@ package com.hedera.services.queries.crypto;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+package com.hedera.services.queries.crypto;
+
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoGetLiveHash;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
+import static com.hederahashgraph.api.proto.java.ResponseType.COST_ANSWER;
 
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.queries.AnswerService;
@@ -30,66 +29,59 @@ import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ResponseType;
-
+import java.util.Optional;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import java.util.Optional;
-
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoGetLiveHash;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
-import static com.hederahashgraph.api.proto.java.ResponseType.COST_ANSWER;
-
 
 @Singleton
 public class GetLiveHashAnswer implements AnswerService {
-	@Inject
-	public GetLiveHashAnswer() {
-		// Default Constructor
-	}
+    @Inject
+    public GetLiveHashAnswer() {
+        // Default Constructor
+    }
 
-	@Override
-	public Response responseGiven(Query query, StateView view, ResponseCodeEnum validity, long cost) {
-		CryptoGetLiveHashQuery op = query.getCryptoGetLiveHash();
-		ResponseType type = op.getHeader().getResponseType();
+    @Override
+    public Response responseGiven(
+            Query query, StateView view, ResponseCodeEnum validity, long cost) {
+        CryptoGetLiveHashQuery op = query.getCryptoGetLiveHash();
+        ResponseType type = op.getHeader().getResponseType();
 
-		CryptoGetLiveHashResponse.Builder response = CryptoGetLiveHashResponse.newBuilder();
-		if (type == COST_ANSWER) {
-			response.setHeader(costAnswerHeader(NOT_SUPPORTED, 0L));
-		} else {
-			response.setHeader(answerOnlyHeader(NOT_SUPPORTED));
-		}
-		return Response.newBuilder()
-				.setCryptoGetLiveHash(response)
-				.build();
-	}
+        CryptoGetLiveHashResponse.Builder response = CryptoGetLiveHashResponse.newBuilder();
+        if (type == COST_ANSWER) {
+            response.setHeader(costAnswerHeader(NOT_SUPPORTED, 0L));
+        } else {
+            response.setHeader(answerOnlyHeader(NOT_SUPPORTED));
+        }
+        return Response.newBuilder().setCryptoGetLiveHash(response).build();
+    }
 
-	@Override
-	public ResponseCodeEnum extractValidityFrom(Response response) {
-		return response.getCryptoGetLiveHash().getHeader().getNodeTransactionPrecheckCode();
-	}
+    @Override
+    public ResponseCodeEnum extractValidityFrom(Response response) {
+        return response.getCryptoGetLiveHash().getHeader().getNodeTransactionPrecheckCode();
+    }
 
-	@Override
-	public ResponseCodeEnum checkValidity(Query query, StateView view) {
-		return NOT_SUPPORTED;
-	}
+    @Override
+    public ResponseCodeEnum checkValidity(Query query, StateView view) {
+        return NOT_SUPPORTED;
+    }
 
-	@Override
-	public HederaFunctionality canonicalFunction() {
-		return CryptoGetLiveHash;
-	}
+    @Override
+    public HederaFunctionality canonicalFunction() {
+        return CryptoGetLiveHash;
+    }
 
-	@Override
-	public Optional<SignedTxnAccessor> extractPaymentFrom(Query query) {
-		return Optional.empty();
-	}
+    @Override
+    public Optional<SignedTxnAccessor> extractPaymentFrom(Query query) {
+        return Optional.empty();
+    }
 
-	@Override
-	public boolean needsAnswerOnlyCost(Query query) {
-		return false;
-	}
+    @Override
+    public boolean needsAnswerOnlyCost(Query query) {
+        return false;
+    }
 
-	@Override
-	public boolean requiresNodePayment(Query query) {
-		return false;
-	}
+    @Override
+    public boolean requiresNodePayment(Query query) {
+        return false;
+    }
 }
