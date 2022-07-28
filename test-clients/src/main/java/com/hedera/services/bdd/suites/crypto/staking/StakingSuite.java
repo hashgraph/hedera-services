@@ -74,17 +74,25 @@ public class StakingSuite extends HapiApiSuite {
     public List<HapiApiSpec> getSpecsInSuite() {
         return List.of(
                 new HapiApiSpec[] {
+                    canOverrideMaxMinStakeRatios(),
                     // Need to run each separately
-                    rewardsWorkAsExpected(),
-                    rewardPaymentsNotRepeatedInSamePeriod(),
-                    getInfoQueriesReturnsPendingRewards(),
-                    secondOrderRewardSituationsWork()
+                    //                    rewardsWorkAsExpected(),
+                    //                    rewardPaymentsNotRepeatedInSamePeriod(),
+                    //                    getInfoQueriesReturnsPendingRewards(),
+                    //                    secondOrderRewardSituationsWork()
                     //						enabledRewards(),
                     //						previewnetPlannedTest(),
                     //						sendToCarol(),
                     //						endOfStakingPeriodRecTest(),
                     //						rewardsOfDeletedAreRedirectedToBeneficiary(),
                 });
+    }
+
+    private HapiApiSpec canOverrideMaxMinStakeRatios() {
+        return defaultHapiSpec("CanOverrideMaxMinStakeRatios")
+                .given(overriding("staking.nodeMaxToMinStakeRatios", "0:2,1:4"))
+                .when()
+                .then();
     }
 
     private HapiApiSpec secondOrderRewardSituationsWork() {
