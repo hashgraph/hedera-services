@@ -1618,10 +1618,10 @@ jobs:
         default: true
       slack_results_channel:
         type: string
-        default: "jeffrey-service-test"
+        default: "hedera-regression-test"
       slack_summary_channel:
         type: string
-        default: "jeffrey-service-test"
+        default: "hedera-regression-test"
       workflow-name:
         type: string
         default: ""
