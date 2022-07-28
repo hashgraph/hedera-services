@@ -43,10 +43,10 @@ import com.hedera.services.state.virtual.IterableContractValue;
 import com.hedera.services.store.contracts.EntityAccess;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.stream.proto.ContractStateChange;
-import com.hedera.services.stream.proto.ContractStateChange.Builder;
 import com.hedera.services.stream.proto.ContractStateChanges;
 import com.hedera.services.stream.proto.StorageChange;
 import com.hedera.services.stream.proto.TransactionSidecarRecord;
+import com.hedera.services.stream.proto.TransactionSidecarRecord.Builder;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.SidecarUtils;
@@ -298,16 +298,10 @@ public class MigrationRecordsManager {
                                         contractId.getContractNum());
                                 return;
                             }
-                            final var stateChanges =
-                                    generateMigrationStateChanges(
+                            final var stateChangesSidecar =
+                                    generateMigrationStateChangesSidecar(
                                             contractId, contractStorageMap, contractStorageKey);
-                            transactionContext.addSidecarRecord(
-                                    TransactionSidecarRecord.newBuilder()
-                                            .setStateChanges(
-                                                    ContractStateChanges.newBuilder()
-                                                            .addContractStateChanges(stateChanges)
-                                                            .build())
-                                            .setMigration(true));
+                            transactionContext.addSidecarRecord(stateChangesSidecar);
                             log.debug(
                                     "Published migration state changes for contract 0.0.{}",
                                     contractId.getContractNum());
@@ -325,12 +319,13 @@ public class MigrationRecordsManager {
         return bytecodeSidecar;
     }
 
-    private Builder generateMigrationStateChanges(
+    private Builder generateMigrationStateChangesSidecar(
             final ContractID contractId,
             final VirtualMap<ContractKey, IterableContractValue> contractStorageMap,
             ContractKey contractStorageKey) {
         final var contractStateChangeBuilder =
                 ContractStateChange.newBuilder().setContractId(contractId);
+
         IterableContractValue iterableValue;
         while (contractStorageKey != null) {
             iterableValue = contractStorageMap.get(contractStorageKey);
@@ -342,7 +337,13 @@ public class MigrationRecordsManager {
             contractStorageKey =
                     iterableValue.getNextKeyScopedTo(contractStorageKey.getContractId());
         }
-        return contractStateChangeBuilder;
+
+        return TransactionSidecarRecord.newBuilder()
+                .setStateChanges(
+                        ContractStateChanges.newBuilder()
+                                .addContractStateChanges(contractStateChangeBuilder)
+                                .build())
+                .setMigration(true);
     }
 
     private byte[] slotAsBytes(final ContractKey contractStorageKey) {
