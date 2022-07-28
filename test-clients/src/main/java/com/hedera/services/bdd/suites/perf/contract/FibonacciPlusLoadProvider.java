@@ -34,7 +34,7 @@ import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
 import static com.hedera.services.bdd.suites.perf.PerfUtilOps.mgmtOfBooleanProp;
 import static com.hedera.services.bdd.suites.perf.PerfUtilOps.mgmtOfIntProp;
 import static com.hedera.services.bdd.suites.perf.PerfUtilOps.stdMgmtOf;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_EXECUTION_EXCEPTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_GAS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static java.lang.Math.ceil;
