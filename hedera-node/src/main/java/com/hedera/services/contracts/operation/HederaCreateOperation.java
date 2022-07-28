@@ -78,5 +78,4 @@ public class HederaCreateOperation extends AbstractRecordingCreateOperation {
         frame.warmUpAddress(address);
         return address;
     }
-
 }

@@ -165,7 +165,7 @@ public class HederaStackedWorldStateUpdater
     @Override
     public boolean isNewCreationAllowed() {
         return numAllocatedIds < dynamicProperties.maxInternalContractCreations()
-            && numAllocatedIds < dynamicProperties.maxFollowingRecords();
+                && numAllocatedIds < dynamicProperties.maxFollowingRecords();
     }
 
     @Override

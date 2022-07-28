@@ -476,7 +476,7 @@ class GlobalDynamicPropertiesTest {
                                 ? Set.of(SidecarType.CONTRACT_STATE_CHANGE)
                                 : Set.of(SidecarType.CONTRACT_BYTECODE));
         given(properties.getIntProperty("contracts.maxInternalContractCreations"))
-            .willReturn(i + 81);
+                .willReturn(i + 81);
     }
 
     private Set<EntityType> typesFor(final int i) {

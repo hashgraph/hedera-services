@@ -15,7 +15,6 @@
  */
 package com.hedera.services.store.contracts;
 
-
 import static com.hedera.services.ledger.properties.AccountProperty.NUM_NFTS_OWNED;
 import static com.hedera.services.ledger.properties.AccountProperty.NUM_POSITIVE_BALANCES;
 import static com.hedera.services.ledger.properties.AccountProperty.NUM_TREASURY_TITLES;
@@ -84,10 +83,10 @@ class HederaStackedWorldStateUpdaterTest {
 
     @Test
     void creationIsAllowedWhenNoLimitReached() {
-      given(globalDynamicProperties.maxFollowingRecords()).willReturn(5L);
-      given(globalDynamicProperties.maxInternalContractCreations()).willReturn(1);
+        given(globalDynamicProperties.maxFollowingRecords()).willReturn(5L);
+        given(globalDynamicProperties.maxInternalContractCreations()).willReturn(1);
 
-      assertTrue(subject.isNewCreationAllowed());
+        assertTrue(subject.isNewCreationAllowed());
     }
 
     @Test

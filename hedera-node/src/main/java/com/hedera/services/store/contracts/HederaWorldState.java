@@ -252,7 +252,7 @@ public class HederaWorldState implements HederaMutableWorldState {
         @Override
         public boolean isNewCreationAllowed() {
             return numAllocatedIds < dynamicProperties.maxInternalContractCreations()
-                && numAllocatedIds < dynamicProperties.maxFollowingRecords();
+                    && numAllocatedIds < dynamicProperties.maxFollowingRecords();
         }
 
         @Override
