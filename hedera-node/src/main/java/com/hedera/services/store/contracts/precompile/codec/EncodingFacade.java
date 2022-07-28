@@ -16,6 +16,7 @@
 package com.hedera.services.store.contracts.precompile.codec;
 
 import static com.hedera.services.contracts.ParsingConstants.FunctionType.HAPI_MINT;
+import static com.hedera.services.contracts.ParsingConstants.INT_BOOL_PAIR_RETURN_TYPE;
 import static com.hedera.services.contracts.ParsingConstants.getFungibleTokenInfoType;
 import static com.hedera.services.contracts.ParsingConstants.getNonFungibleTokenInfoType;
 import static com.hedera.services.contracts.ParsingConstants.getTokenInfoType;
@@ -53,7 +54,6 @@ public class EncodingFacade {
     private static final String STRING_RETURN_TYPE = "(string)";
     public static final String UINT256_RETURN_TYPE = "(uint256)";
     public static final String BOOL_RETURN_TYPE = "(bool)";
-    public static final String INT_BOOL_PAIR_RETURN_TYPE = "(int32,bool)";
     private static final TupleType mintReturnType = TupleType.parse("(int32,uint64,int64[])");
     private static final TupleType burnReturnType = TupleType.parse("(int32,uint64)");
     private static final TupleType createReturnType = TupleType.parse("(int32,address)");

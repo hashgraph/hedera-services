@@ -199,7 +199,7 @@ public class InfrastructureFactory {
             final MessageFrame frame,
             final ViewGasCalculator gasCalculator,
             final StateView stateView,
-            WorldLedgers ledgers) {
+            final WorldLedgers ledgers) {
         return new ViewExecutor(input, frame, encoder, decoder, gasCalculator, stateView, ledgers);
     }
 

@@ -54,7 +54,7 @@ public class ViewExecutor {
             final DecodingFacade decoder,
             final ViewGasCalculator gasCalculator,
             final StateView stateView,
-            WorldLedgers ledgers) {
+            final WorldLedgers ledgers) {
         this.input = input;
         this.frame = frame;
         this.encoder = encoder;
