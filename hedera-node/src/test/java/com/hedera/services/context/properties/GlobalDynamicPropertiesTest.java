@@ -30,6 +30,7 @@ import com.hedera.services.sysfiles.domain.throttling.ThrottleReqOpsScaleFactor;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import java.util.EnumSet;
+import java.util.Map;
 import java.util.Set;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
@@ -90,6 +91,7 @@ class GlobalDynamicPropertiesTest {
         assertTrue(subject.areContractAutoAssociationsEnabled());
         assertTrue(subject.isStakingEnabled());
         assertTrue(subject.isUtilPrngEnabled());
+        assertTrue(subject.requireMinStakeToReward());
     }
 
     @Test
@@ -200,6 +202,7 @@ class GlobalDynamicPropertiesTest {
         assertEquals(Set.of(HederaFunctionality.CryptoTransfer), subject.schedulingWhitelist());
         assertEquals(oddCongestion, subject.congestionMultipliers());
         assertEquals(upgradeArtifactLocs[1], subject.upgradeArtifactsLoc());
+        assertEquals(Map.of(0L, 4L, 1L, 8L), subject.nodeMaxMinStakeRatios());
     }
 
     @Test
@@ -467,6 +470,10 @@ class GlobalDynamicPropertiesTest {
         given(properties.getLongProperty("scheduling.maxNumber")).willReturn(i + 84L);
         given(properties.getLongProperty("tokens.maxAggregateRels")).willReturn(i + 85L);
         given(properties.getBooleanProperty("utilPrng.isEnabled")).willReturn((i + 79) % 2 == 0);
+        given(properties.getBooleanProperty("staking.requireMinStakeToReward"))
+            .willReturn((i + 79) % 2 == 0);
+        given(properties.getNodeStakeRatiosProperty("staking.nodeMaxToMinStakeRatios"))
+            .willReturn(Map.of(0L, 4L, 1L, 8L));
     }
 
     private Set<EntityType> typesFor(final int i) {

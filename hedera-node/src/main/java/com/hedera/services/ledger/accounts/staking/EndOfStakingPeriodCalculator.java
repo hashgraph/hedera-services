@@ -120,7 +120,9 @@ public class EndOfStakingPeriodCalculator {
             // just-finished period
             final var nodeRewardRate =
                     stakingInfo.updateRewardSumHistory(
-                            perHbarRate, dynamicProperties.maxDailyStakeRewardThPerH());
+                            perHbarRate,
+                            dynamicProperties.maxDailyStakeRewardThPerH(),
+                            dynamicProperties.requireMinStakeToReward());
 
             final var oldStakeRewardStart = stakingInfo.getStakeRewardStart();
             final var pendingRewardHbars =
