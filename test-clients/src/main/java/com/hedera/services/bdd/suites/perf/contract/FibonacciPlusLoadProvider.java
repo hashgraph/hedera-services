@@ -351,7 +351,7 @@ public class FibonacciPlusLoadProvider extends HapiApiSuite {
                                                     })
                                             .hasKnownStatusFrom(
                                                     SUCCESS,
-                                                    CONTRACT_REVERT_EXECUTED,
+                                                    CONTRACT_EXECUTION_EXCEPTION,
                                                     INSUFFICIENT_GAS)
                                             .deferStatusResolution();
                         } else {
