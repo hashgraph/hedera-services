@@ -43,11 +43,14 @@ import com.hedera.services.state.virtual.IterableContractValue;
 import com.hedera.services.store.contracts.EntityAccess;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.stream.proto.ContractStateChange;
+import com.hedera.services.stream.proto.ContractStateChange.Builder;
 import com.hedera.services.stream.proto.ContractStateChanges;
 import com.hedera.services.stream.proto.StorageChange;
 import com.hedera.services.stream.proto.TransactionSidecarRecord;
+import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.SidecarUtils;
+import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
@@ -272,64 +275,69 @@ public class MigrationRecordsManager {
 
     private void publishTraceabilityMigrationRecords() {
         final var contractStorageMap = contractStorage.get();
-        accounts.get()
-                .forEach(
-                        (id, account) -> {
-                            if (account.isSmartContract()) {
-                                final var contractId = id.toGrpcContractID();
-                                // create bytecode sidecar
-                                final var runtimeCode =
-                                        entityAccess.fetchCodeIfPresent(id.toGrpcAccountId());
-                                final var bytecodeSidecar =
-                                        SidecarUtils.createContractBytecodeSidecarFrom(
-                                                contractId, runtimeCode.toArrayUnsafe());
-                                bytecodeSidecar.setMigration(true);
-                                transactionContext.addSidecarRecord(bytecodeSidecar);
-                                log.debug(
-                                        "Published synthetic bytecode sidecar for contract 0.0.{}",
-                                        contractId.getContractNum());
-                                // create state changes if contract has storage
-                                var contractStorageKey = account.getFirstContractStorageKey();
-                                if (contractStorageKey == null) {
-                                    log.debug(
-                                            "Contract 0.0.{} has no iterable storage - no state"
-                                                    + " changes will be published.",
-                                            contractId.getContractNum());
-                                } else {
-                                    final var contractStateChangeBuilder =
-                                            ContractStateChange.newBuilder()
-                                                    .setContractId(contractId);
-                                    IterableContractValue iterableValue;
-                                    while (contractStorageKey != null) {
-                                        iterableValue = contractStorageMap.get(contractStorageKey);
-                                        contractStateChangeBuilder.addStorageChanges(
-                                                StorageChange.newBuilder()
-                                                        .setSlot(
-                                                                ByteStringUtils.wrapUnsafely(
-                                                                        slotAsBytes(
-                                                                                contractStorageKey)))
-                                                        .setValueRead(
-                                                                ByteStringUtils.wrapUnsafely(
-                                                                        iterableValue.getValue()))
-                                                        .build());
-                                        contractStorageKey =
-                                                iterableValue.getNextKeyScopedTo(
-                                                        contractStorageKey.getContractId());
-                                    }
-                                    transactionContext.addSidecarRecord(
-                                            TransactionSidecarRecord.newBuilder()
-                                                    .setStateChanges(
-                                                            ContractStateChanges.newBuilder()
-                                                                    .addContractStateChanges(
-                                                                            contractStateChangeBuilder)
-                                                                    .build())
-                                                    .setMigration(true));
-                                    log.debug(
-                                            "Published synthetic state changes for contract 0.0.{}",
-                                            contractId.getContractNum());
-                                }
-                            }
-                        });
+        accounts.get().forEach((id, account) -> {
+            if (!account.isSmartContract()) {
+                return;
+            }
+            final var contractId = id.toGrpcContractID();
+            final var bytecodeSidecar =
+                    generateMigrationBytecodeSidecarFor(contractId);
+            transactionContext.addSidecarRecord(bytecodeSidecar);
+            log.debug(
+                    "Published migration bytecode sidecar for contract 0.0.{}",
+                    contractId.getContractNum());
+            var contractStorageKey = account.getFirstContractStorageKey();
+            if (contractStorageKey == null) {
+                log.debug(
+                        "Contract 0.0.{} has no iterable storage - no migration state"
+                                + " changes will be published.",
+                        contractId.getContractNum());
+                return;
+            }
+            final var stateChanges =
+                    generateMigrationStateChanges(
+                            contractId, contractStorageMap, contractStorageKey);
+            transactionContext.addSidecarRecord(
+                    TransactionSidecarRecord.newBuilder()
+                            .setStateChanges(
+                                    ContractStateChanges.newBuilder()
+                                            .addContractStateChanges(stateChanges)
+                                            .build())
+                            .setMigration(true));
+            log.debug(
+                    "Published migration state changes for contract 0.0.{}",
+                    contractId.getContractNum());
+        });
+    }
+
+    private TransactionSidecarRecord.Builder generateMigrationBytecodeSidecarFor(final ContractID contractId) {
+        final var runtimeCode =
+                entityAccess.fetchCodeIfPresent(EntityIdUtils.asAccount(contractId));
+        final var bytecodeSidecar =
+                SidecarUtils.createContractBytecodeSidecarFrom(
+                    contractId, runtimeCode.toArrayUnsafe());
+        bytecodeSidecar.setMigration(true);
+        return bytecodeSidecar;
+    }
+
+    private Builder generateMigrationStateChanges(
+        final ContractID contractId,
+        final VirtualMap<ContractKey, IterableContractValue> contractStorageMap,
+        ContractKey contractStorageKey) {
+        final var contractStateChangeBuilder =
+                ContractStateChange.newBuilder().setContractId(contractId);
+        IterableContractValue iterableValue;
+        while (contractStorageKey != null) {
+            iterableValue = contractStorageMap.get(contractStorageKey);
+            contractStateChangeBuilder.addStorageChanges(
+                    StorageChange.newBuilder()
+                            .setSlot(ByteStringUtils.wrapUnsafely(slotAsBytes(contractStorageKey)))
+                            .setValueRead(ByteStringUtils.wrapUnsafely(iterableValue.getValue()))
+                            .build());
+            contractStorageKey =
+                    iterableValue.getNextKeyScopedTo(contractStorageKey.getContractId());
+        }
+        return contractStateChangeBuilder;
     }
 
     private byte[] slotAsBytes(final ContractKey contractStorageKey) {
