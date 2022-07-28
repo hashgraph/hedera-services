@@ -262,7 +262,7 @@ public class TokenUpdateSpecs extends HapiApiSuite {
                         cryptoTransfer(moving(5, "tbu").between(TOKEN_TREASURY, "misc")),
                         mintToken("tbu", 10).signedBy(GENESIS, "wipeThenSupplyKey"),
                         burnToken("tbu", 10).signedBy(GENESIS, "wipeThenSupplyKey"),
-                        wipeTokenAccount("tbu", "misc", 5).signedBy(GENESIS, "wipeThenSupplyKey"),
+                        wipeTokenAccount("tbu", "misc", 5).signedBy(GENESIS, "supplyThenWipeKey"),
                         getAccountInfo(TOKEN_TREASURY).logged());
     }
 
