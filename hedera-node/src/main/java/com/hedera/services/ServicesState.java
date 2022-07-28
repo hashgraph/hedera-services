@@ -111,8 +111,8 @@ public class ServicesState extends PartialNaryMerkleInternal
     private int deserializedStateVersion = CURRENT_VERSION;
     /* All of the state that is not itself hashed or serialized, but only derived from such state */
     private StateMetadata metadata;
-    /* Tasks to run after init. */
-    private List<Runnable> postInitTasks = new ArrayList<>();
+    /* Tasks to run after migrate. */
+    private List<Runnable> postMigrateTasks = new ArrayList<>();
 
     /**
      * For scheduled transaction migration we need to initialize the new scheduled transactions'
@@ -226,14 +226,14 @@ public class ServicesState extends PartialNaryMerkleInternal
                 migrateFrom(deserializedVersion);
             }
         }
-        runPostInitTasks();
+        runPostMigrateTasks();
     }
 
-    private void runPostInitTasks() {
-        for (Runnable task : postInitTasks) {
+    private void runPostMigrateTasks() {
+        for (Runnable task : postMigrateTasks) {
             task.run();
         }
-        postInitTasks.clear();
+        postMigrateTasks.clear();
     }
 
     /* --- SwirldState --- */
@@ -365,7 +365,7 @@ public class ServicesState extends PartialNaryMerkleInternal
             if (deployedVersion.equals(deserializedVersion)) {
                 initTask.run();
             } else {
-                postInitTasks.add(initTask);
+                postMigrateTasks.add(initTask);
             }
         }
     }
