@@ -42,6 +42,8 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.units.bigints.UInt256;
 
 /**
@@ -55,6 +57,7 @@ import org.apache.tuweni.units.bigints.UInt256;
  */
 @Singleton
 public class SizeLimitedStorage {
+    private static final Logger log = LogManager.getLogger(SizeLimitedStorage.class);
     public static final IterableContractValue ZERO_VALUE = IterableContractValue.from(ZERO);
 
     private final ContractStorageLimits usageLimits;
@@ -355,10 +358,27 @@ public class SizeLimitedStorage {
                                     : firstKeyLookup(id);
                     for (final var changedKey : changeSet) {
                         final var newValue = newMappings.get(changedKey);
-                        firstKey =
-                                storageUpserter.upsertMapping(
-                                        changedKey, newValue, firstKey, firstValue, curStorage);
-                        firstValue = firstKey.equals(changedKey) ? newValue : null;
+                        final var preInsertSize = curStorage.size();
+                        try {
+                            firstKey =
+                                    storageUpserter.upsertMapping(
+                                            changedKey, newValue, firstKey, firstValue, curStorage);
+                        } catch (Exception irreparable) {
+                            log.error(
+                                    "Failed link management when upserting {} -> {}; will be unable"
+                                            + " to expire all slots for this contract",
+                                    changedKey,
+                                    newValue,
+                                    irreparable);
+                        }
+                        // If newValue was just added to the map, it is the mutable root value; but
+                        // if we only
+                        // updated the existing root value, then newValue is NOT the mutable root
+                        // value
+                        firstValue =
+                                (changedKey.equals(firstKey) && curStorage.size() > preInsertSize)
+                                        ? newValue
+                                        : null;
                     }
                     newFirstKeys.put(id, firstKey);
                 });
@@ -373,7 +393,16 @@ public class SizeLimitedStorage {
                 (id, zeroedOut) -> {
                     var firstKey = firstKeyLookup(id);
                     for (final var removedKey : zeroedOut) {
-                        firstKey = storageRemover.removeMapping(removedKey, firstKey, curStorage);
+                        try {
+                            firstKey =
+                                    storageRemover.removeMapping(removedKey, firstKey, curStorage);
+                        } catch (Exception irreparable) {
+                            log.error(
+                                    "Failed link management when removing {}; will be unable to"
+                                            + " expire all slots for this contract",
+                                    removedKey,
+                                    irreparable);
+                        }
                     }
                     newFirstKeys.put(id, firstKey);
                 });

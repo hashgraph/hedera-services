@@ -48,6 +48,7 @@ import org.apache.logging.log4j.Logger;
 
 @Singleton
 public class EndOfStakingPeriodCalculator {
+
     private static final Logger log = LogManager.getLogger(EndOfStakingPeriodCalculator.class);
     public static final String END_OF_STAKING_PERIOD_CALCULATIONS_MEMO =
             "End of staking period calculation record";
@@ -86,16 +87,11 @@ public class EndOfStakingPeriodCalculator {
         log.info("Updating node stakes for a just-finished period @ {}", consensusTime);
 
         if (!dynamicProperties.isStakingEnabled()) {
-            log.info(" * Staking not enabled, nothing to do");
+            log.info("Staking not enabled, nothing to do");
             return;
         }
 
         final var curNetworkCtx = networkCtx.get();
-        if (!curNetworkCtx.areRewardsActivated()) {
-            log.info(" * Rewards not active, nothing to do");
-            return;
-        }
-
         final var curStakingInfos = stakingInfos.get();
         final var rewardRate = rewardRateForEndingPeriod();
         final var totalStakedRewardStart = curNetworkCtx.getTotalStakedRewardStart();
@@ -106,7 +102,7 @@ public class EndOfStakingPeriodCalculator {
                         ? 0
                         : rewardRate / (totalStakedRewardStart / HBARS_TO_TINYBARS);
         log.info(
-                " * The reward rate for the period was {} tb ({} tb/hbar for nodes with in-range"
+                "The reward rate for the period was {} tb ({} tb/hbar for nodes with in-range"
                         + " stake, given {} total stake reward start)",
                 rewardRate,
                 perHbarRate,
@@ -132,7 +128,7 @@ public class EndOfStakingPeriodCalculator {
             final var newStakeRewardStart = stakingInfo.reviewElectionsAndRecomputeStakes();
             final var nodePendingRewards = pendingRewardHbars * nodeRewardRate;
             log.info(
-                    "  - For node{}, the tb/hbar reward rate was {} for {} pending, "
+                    "For node{}, the tb/hbar reward rate was {} for {} pending, "
                             + "with stake reward start {} -> {}",
                     nodeNum.longValue(),
                     nodeRewardRate,
@@ -158,7 +154,7 @@ public class EndOfStakingPeriodCalculator {
         curNetworkCtx.setTotalStakedRewardStart(newTotalStakedRewardStart);
         curNetworkCtx.setTotalStakedStart(newTotalStakedStart);
         log.info(
-                " * Total stake start is now {} ({} rewarded), pending rewards are {} vs 0.0.800"
+                "Total stake start is now {} ({} rewarded), pending rewards are {} vs 0.0.800"
                         + " balance {}",
                 newTotalStakedStart,
                 newTotalStakedRewardStart,
@@ -168,6 +164,7 @@ public class EndOfStakingPeriodCalculator {
         final var syntheticNodeStakeUpdateTxn =
                 syntheticTxnFactory.nodeStakeUpdate(
                         lastInstantOfPreviousPeriodFor(consensusTime), nodeStakingInfos);
+        log.info("Exporting:\n{}", nodeStakingInfos);
         recordsHistorian.trackPrecedingChildRecord(
                 DEFAULT_SOURCE_ID,
                 syntheticNodeStakeUpdateTxn,
