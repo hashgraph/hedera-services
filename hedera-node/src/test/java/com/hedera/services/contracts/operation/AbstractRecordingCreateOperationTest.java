@@ -130,13 +130,26 @@ class AbstractRecordingCreateOperationTest {
     @Test
     void returnsUnderflowWhenStackSizeTooSmall() {
         given(frame.stackSize()).willReturn(2);
+        given(frame.getWorldUpdater()).willReturn(updater);
+        given(updater.isNewCreationAllowed()).willReturn(true);
 
         assertSame(Subject.UNDERFLOW_RESPONSE, subject.execute(frame, evm));
     }
 
     @Test
+    void returnsInvalidWhenCreationLimitExceeded() {
+        subject.isEnabled = false;
+        given(frame.getWorldUpdater()).willReturn(updater);
+        given(updater.isNewCreationAllowed()).willReturn(false);
+
+        assertSame(Subject.INVALID_RESPONSE, subject.execute(frame, evm));
+    }
+
+    @Test
     void returnsInvalidWhenDisabled() {
         subject.isEnabled = false;
+        given(frame.getWorldUpdater()).willReturn(updater);
+        given(updater.isNewCreationAllowed()).willReturn(true);
 
         assertSame(Subject.INVALID_RESPONSE, subject.execute(frame, evm));
     }
@@ -145,6 +158,8 @@ class AbstractRecordingCreateOperationTest {
     void haltsOnStaticFrame() {
         given(frame.stackSize()).willReturn(3);
         given(frame.isStatic()).willReturn(true);
+        given(frame.getWorldUpdater()).willReturn(updater);
+        given(updater.isNewCreationAllowed()).willReturn(true);
 
         final var expected = haltWith(Subject.PRETEND_OPTIONAL_COST, ILLEGAL_STATE_CHANGE);
 
@@ -155,6 +170,8 @@ class AbstractRecordingCreateOperationTest {
     void haltsOnInsufficientGas() {
         given(frame.stackSize()).willReturn(3);
         given(frame.getRemainingGas()).willReturn(Subject.PRETEND_GAS_COST - 1);
+        given(frame.getWorldUpdater()).willReturn(updater);
+        given(updater.isNewCreationAllowed()).willReturn(true);
 
         final var expected = haltWith(Subject.PRETEND_OPTIONAL_COST, INSUFFICIENT_GAS);
 
@@ -172,6 +189,7 @@ class AbstractRecordingCreateOperationTest {
         given(updater.getAccount(recipient)).willReturn(recipientAccount);
         given(recipientAccount.getMutable()).willReturn(mutableAccount);
         given(mutableAccount.getBalance()).willReturn(Wei.ONE);
+        given(updater.isNewCreationAllowed()).willReturn(true);
 
         assertSameResult(EMPTY_HALT_RESULT, subject.execute(frame, evm));
         verify(frame).pushStackItem(UInt256.ZERO);
@@ -338,6 +356,7 @@ class AbstractRecordingCreateOperationTest {
         given(recipientAccount.getMutable()).willReturn(mutableAccount);
         given(mutableAccount.getBalance()).willReturn(Wei.of(value));
         given(frame.getMessageStackDepth()).willReturn(1023);
+        given(updater.isNewCreationAllowed()).willReturn(true);
     }
 
     private void assertSameResult(
@@ -390,11 +409,6 @@ class AbstractRecordingCreateOperationTest {
         @Override
         protected Address targetContractAddress(final MessageFrame frame) {
             return PRETEND_CONTRACT_ADDRESS;
-        }
-
-        @Override
-        protected boolean isContractCreationAllowed(MessageFrame frame) {
-            return true;
         }
     }
 }
