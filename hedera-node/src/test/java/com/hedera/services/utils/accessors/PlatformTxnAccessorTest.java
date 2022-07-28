@@ -406,8 +406,8 @@ class PlatformTxnAccessorTest {
 
         subject.countAutoCreationsWith(aliasManager);
 
-        signedAccessor.markCongestionExempt();
-        signedAccessor.markThrottleExempt();
+        subject.markCongestionExempt();
+        subject.markThrottleExempt();
         assertTrue(subject.congestionExempt());
         assertTrue(subject.throttleExempt());
 

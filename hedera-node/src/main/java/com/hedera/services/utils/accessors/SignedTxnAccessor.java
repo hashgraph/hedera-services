@@ -75,8 +75,8 @@ import com.hederahashgraph.api.proto.java.TransactionID;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Optional;
 import java.util.function.LongPredicate;
+import javax.annotation.Nullable;
 import org.apache.commons.codec.binary.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -134,23 +134,23 @@ public class SignedTxnAccessor implements TxnAccessor {
 
     public static SignedTxnAccessor from(byte[] signedTxnWrapperBytes)
             throws InvalidProtocolBufferException {
-        return new SignedTxnAccessor(signedTxnWrapperBytes, Optional.empty());
+        return new SignedTxnAccessor(signedTxnWrapperBytes, null);
     }
 
     public static SignedTxnAccessor from(
             byte[] signedTxnWrapperBytes, final Transaction signedTxnWrapper)
             throws InvalidProtocolBufferException {
-        return new SignedTxnAccessor(signedTxnWrapperBytes, Optional.of(signedTxnWrapper));
+        return new SignedTxnAccessor(signedTxnWrapperBytes, signedTxnWrapper);
     }
 
     protected SignedTxnAccessor(
-            byte[] signedTxnWrapperBytes, final Optional<Transaction> transaction)
+            byte[] signedTxnWrapperBytes, @Nullable final Transaction transaction)
             throws InvalidProtocolBufferException {
         this.signedTxnWrapperBytes = signedTxnWrapperBytes;
 
         final Transaction txnWrapper;
-        if (transaction.isPresent()) {
-            txnWrapper = transaction.get();
+        if (transaction != null) {
+            txnWrapper = transaction;
         } else {
             txnWrapper = Transaction.parseFrom(signedTxnWrapperBytes);
         }
