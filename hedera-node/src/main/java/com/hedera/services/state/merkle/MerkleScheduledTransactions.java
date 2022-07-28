@@ -17,16 +17,23 @@ package com.hedera.services.state.merkle;
 
 import com.google.common.base.MoreObjects;
 import com.hedera.services.state.virtual.EntityNumVirtualKey;
+import com.hedera.services.state.virtual.VirtualMapFactory;
 import com.hedera.services.state.virtual.schedule.ScheduleEqualityVirtualKey;
 import com.hedera.services.state.virtual.schedule.ScheduleEqualityVirtualValue;
 import com.hedera.services.state.virtual.schedule.ScheduleSecondVirtualValue;
 import com.hedera.services.state.virtual.schedule.ScheduleVirtualValue;
+import com.hedera.services.state.virtual.schedule.WritableCopyable;
 import com.hedera.services.state.virtual.temporal.SecondSinceEpocVirtualKey;
+import com.swirlds.common.Copyable;
 import com.swirlds.common.merkle.MerkleInternal;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.impl.PartialNaryMerkleInternal;
+import com.swirlds.jasperdb.JasperDbBuilder;
 import com.swirlds.merkle.map.MerkleMap;
+import com.swirlds.virtualmap.VirtualMap;
 import java.util.List;
+import java.util.function.Supplier;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -34,21 +41,21 @@ public class MerkleScheduledTransactions extends PartialNaryMerkleInternal
         implements MerkleInternal {
     private static final Logger log = LogManager.getLogger(MerkleScheduledTransactions.class);
 
-    private int pendingMigrationSize;
-
     static Runnable stackDump = Thread::dumpStack;
 
     public static final int RELEASE_0270_VERSION = 1;
-    static final int CURRENT_VERSION = RELEASE_0270_VERSION;
+
+    public static final int RELEASE_0230_VERSION = 2;
+    static final int CURRENT_VERSION = RELEASE_0230_VERSION;
 
     static final long RUNTIME_CONSTRUCTABLE_ID = 0x451acf2156692908L;
 
     /* Order of Merkle node children */
     public static final class ChildIndices {
-        private static final int STATE = 0;
+        static final int STATE = 0;
         static final int BY_ID = 1;
-        private static final int BY_EXPIRATION_SECOND = 2;
-        private static final int BY_EQUALITY = 3;
+        static final int BY_EXPIRATION_SECOND = 2;
+        static final int BY_EQUALITY = 3;
         static final int NUM_0270_CHILDREN = 4;
 
         ChildIndices() {
@@ -69,23 +76,14 @@ public class MerkleScheduledTransactions extends PartialNaryMerkleInternal
     }
 
     public MerkleScheduledTransactions() {
+		final var virtualMapFactory = getVirtualMapFactory();
         addDeserializedChildren(
                 List.of(
                         new MerkleScheduledTransactionsState(),
-                        new MerkleMap<EntityNumVirtualKey, ScheduleVirtualValue>(),
-                        new MerkleMap<SecondSinceEpocVirtualKey, ScheduleSecondVirtualValue>(),
-                        new MerkleMap<ScheduleEqualityVirtualKey, ScheduleEqualityVirtualValue>()),
+                        virtualMapFactory.newScheduleListStorage(),
+                        virtualMapFactory.newScheduleTemporalStorage(),
+                        virtualMapFactory.newScheduleEqualityStorage()),
                 CURRENT_VERSION);
-    }
-
-    /**
-     * @param pendingMigrationSize the size of the legacy schedules map
-     * @deprecated remove once 0.27 migration is no longer needed
-     */
-    @Deprecated(since = "0.27")
-    public MerkleScheduledTransactions(int pendingMigrationSize) {
-        this();
-        this.pendingMigrationSize = pendingMigrationSize;
     }
 
     /* --- MerkleInternal --- */
@@ -122,10 +120,10 @@ public class MerkleScheduledTransactions extends PartialNaryMerkleInternal
         setImmutable(true);
         return new MerkleScheduledTransactions(
                 List.of(
-                        state().copy(),
-                        byId().copy(),
-                        byExpirationSecond().copy(),
-                        byEquality().copy()),
+                        getCopyable(ChildIndices.STATE).copy(),
+                        getCopyable(ChildIndices.BY_ID).copy(),
+                        getCopyable(ChildIndices.BY_EXPIRATION_SECOND).copy(),
+                        getCopyable(ChildIndices.BY_EQUALITY).copy()),
                 this);
     }
 
@@ -137,9 +135,9 @@ public class MerkleScheduledTransactions extends PartialNaryMerkleInternal
     public String toString() {
         return MoreObjects.toStringHelper(MerkleScheduledTransactions.class)
                 .add("state", state())
-                .add("# schedules", byId().size())
-                .add("# seconds", byExpirationSecond().size())
-                .add("# equalities", byEquality().size())
+                .add("# schedules", getChildSize(ChildIndices.BY_ID))
+                .add("# seconds", getChildSize(ChildIndices.BY_EXPIRATION_SECOND))
+                .add("# equalities", getChildSize(ChildIndices.BY_EQUALITY))
                 .toString();
     }
 
@@ -148,24 +146,23 @@ public class MerkleScheduledTransactions extends PartialNaryMerkleInternal
         return getChild(ChildIndices.STATE);
     }
 
-    public MerkleMap<EntityNumVirtualKey, ScheduleVirtualValue> byId() {
-        return getChild(ChildIndices.BY_ID);
+    public VirtualMap<EntityNumVirtualKey, ScheduleVirtualValue> byId() {
+        return maybeMigrateMap(ChildIndices.BY_ID,
+                () -> getVirtualMapFactory().newScheduleListStorage());
     }
 
-    public MerkleMap<SecondSinceEpocVirtualKey, ScheduleSecondVirtualValue> byExpirationSecond() {
-        return getChild(ChildIndices.BY_EXPIRATION_SECOND);
+    public VirtualMap<SecondSinceEpocVirtualKey, ScheduleSecondVirtualValue> byExpirationSecond() {
+        return maybeMigrateMap(ChildIndices.BY_EXPIRATION_SECOND,
+                () -> getVirtualMapFactory().newScheduleTemporalStorage());
     }
 
-    public MerkleMap<ScheduleEqualityVirtualKey, ScheduleEqualityVirtualValue> byEquality() {
-        return getChild(ChildIndices.BY_EQUALITY);
+    public VirtualMap<ScheduleEqualityVirtualKey, ScheduleEqualityVirtualValue> byEquality() {
+        return maybeMigrateMap(ChildIndices.BY_EQUALITY,
+                () -> getVirtualMapFactory().newScheduleEqualityStorage());
     }
 
     public long getNumSchedules() {
-        var byIdSize = byId().size();
-        if (pendingMigrationSize > 0 && byIdSize <= 0) {
-            return pendingMigrationSize;
-        }
-        return byIdSize;
+        return getChildSize(ChildIndices.BY_ID);
     }
 
     public long getCurrentMinSecond() {
@@ -177,5 +174,64 @@ public class MerkleScheduledTransactions extends PartialNaryMerkleInternal
                 "Cannot change this MerkleScheduledTransactions' currentMinSecond if it's"
                         + " immutable.");
         state().setCurrentMinSecond(currentMinSecond);
+    }
+
+    public void do0230MigrationIfNeeded() {
+        if ((getChild(ChildIndices.BY_ID) instanceof MerkleMap<?,?>) ||
+                (getChild(ChildIndices.BY_EXPIRATION_SECOND) instanceof MerkleMap<?,?>) ||
+                (getChild(ChildIndices.BY_EQUALITY) instanceof MerkleMap<?,?>)) {
+            byId();
+            byExpirationSecond();
+            byEquality();
+        }
+    }
+
+    private Copyable getCopyable(int childIdx) {
+        return getChild(childIdx);
+    }
+
+    private long getChildSize(int childIdx) {
+        Object child = getChild(childIdx);
+
+        if (child instanceof MerkleMap<?,?>) {
+            return ((MerkleMap<?, ?>) child).size();
+        } else if (child instanceof VirtualMap<?,?>) {
+            return ((VirtualMap<?, ?>) child).size();
+        }
+
+        return 0;
+    }
+
+    private <K extends VirtualMap<?, ? extends WritableCopyable>> K maybeMigrateMap(
+            int childIdx, Supplier<K> newChildSup) {
+
+        Object child = getChild(childIdx);
+        if (child instanceof MerkleMap<?,?>) {
+
+            if (isImmutable()) {
+                throw new IllegalStateException("Migration not complete for child "
+                        + childIdx + " and this object is immutable.");
+            }
+
+            MerkleMap<?, ?> merkle = uncheckedCast(child);
+            var newChild = newChildSup.get();
+            child = newChild;
+            merkle.forEach((k, v) -> {
+                WritableCopyable value = uncheckedCast(v);
+                newChild.put(uncheckedCast(k), value.asWritable());
+            });
+            setChild(childIdx, newChild);
+        }
+
+        return uncheckedCast(child);
+    }
+
+    private static VirtualMapFactory getVirtualMapFactory() {
+        return new VirtualMapFactory(JasperDbBuilder::new);
+    }
+
+    @SuppressWarnings("unchecked")
+    private static <T> T uncheckedCast(Object obj) {
+        return (T) obj;
     }
 }
