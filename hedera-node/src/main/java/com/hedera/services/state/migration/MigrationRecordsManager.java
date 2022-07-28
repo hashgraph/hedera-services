@@ -272,7 +272,6 @@ public class MigrationRecordsManager {
 
     private void publishTraceabilityMigrationRecords() {
         final var contractStorageMap = contractStorage.get();
-        final var allContractsStateChangesBuilder = ContractStateChanges.newBuilder();
         accounts.get()
                 .forEach(
                         (id, account) -> {
@@ -317,20 +316,20 @@ public class MigrationRecordsManager {
                                                 iterableValue.getNextKeyScopedTo(
                                                         contractStorageKey.getContractId());
                                     }
-                                    allContractsStateChangesBuilder.addContractStateChanges(
-                                            contractStateChangeBuilder);
+                                    transactionContext.addSidecarRecord(
+                                            TransactionSidecarRecord.newBuilder()
+                                                    .setStateChanges(
+                                                            ContractStateChanges.newBuilder()
+                                                                    .addContractStateChanges(
+                                                                            contractStateChangeBuilder)
+                                                                    .build())
+                                                    .setMigration(true));
                                     log.debug(
                                             "Published synthetic state changes for contract 0.0.{}",
                                             contractId.getContractNum());
                                 }
                             }
                         });
-        if (allContractsStateChangesBuilder.getContractStateChangesCount() > 0) {
-            transactionContext.addSidecarRecord(
-                    TransactionSidecarRecord.newBuilder()
-                            .setStateChanges(allContractsStateChangesBuilder)
-                            .setMigration(true));
-        }
     }
 
     private byte[] slotAsBytes(final ContractKey contractStorageKey) {
