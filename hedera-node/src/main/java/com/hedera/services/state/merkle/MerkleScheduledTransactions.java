@@ -45,7 +45,7 @@ public class MerkleScheduledTransactions extends PartialNaryMerkleInternal
 
     public static final int RELEASE_0270_VERSION = 1;
 
-    public static final int RELEASE_0230_VERSION = 1;
+    public static final int RELEASE_0230_VERSION = 2;
     static final int CURRENT_VERSION = RELEASE_0230_VERSION;
 
     static final long RUNTIME_CONSTRUCTABLE_ID = 0x451acf2156692908L;
