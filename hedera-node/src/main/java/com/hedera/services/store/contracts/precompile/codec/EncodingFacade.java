@@ -278,10 +278,10 @@ public class EncodingFacade {
 
     public Bytes encodeIsKyc(final boolean isKyc) {
         return functionResultBuilder()
-            .forFunction(FunctionType.HAPI_IS_KYC)
-            .withStatus(SUCCESS.getNumber())
-            .withIsKyc(isKyc)
-            .build();
+                .forFunction(FunctionType.HAPI_IS_KYC)
+                .withStatus(SUCCESS.getNumber())
+                .withIsKyc(isKyc)
+                .build();
     }
 
     public Bytes encodeGetTokenInfo(final com.hederahashgraph.api.proto.java.TokenInfo tokenInfo) {

@@ -409,32 +409,32 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
                             .ABI_ID_GET_TOKEN_DEFAULT_KYC_STATUS -> new GetTokenDefaultKycStatus(
                             syntheticTxnFactory, ledgers, encoder, decoder, precompilePricingUtils);
                     case AbiConstants.ABI_ID_IS_KYC -> new IsKycPrecompile(
-                        null,
-                        syntheticTxnFactory,
-                        ledgers,
-                        encoder,
-                        decoder,
-                        precompilePricingUtils);
+                            null,
+                            syntheticTxnFactory,
+                            ledgers,
+                            encoder,
+                            decoder,
+                            precompilePricingUtils);
                     case AbiConstants.ABI_ID_GRANT_TOKEN_KYC -> new GrantKycPrecompile(
-                        ledgers,
-                        decoder,
-                        updater.aliases(),
-                        sigsVerifier,
-                        sideEffectsTracker,
-                        syntheticTxnFactory,
-                        infrastructureFactory,
-                        precompilePricingUtils,
-                        true);
+                            ledgers,
+                            decoder,
+                            updater.aliases(),
+                            sigsVerifier,
+                            sideEffectsTracker,
+                            syntheticTxnFactory,
+                            infrastructureFactory,
+                            precompilePricingUtils,
+                            true);
                     case AbiConstants.ABI_ID_REVOKE_TOKEN_KYC -> new RevokeKycPrecompile(
-                        ledgers,
-                        decoder,
-                        updater.aliases(),
-                        sigsVerifier,
-                        sideEffectsTracker,
-                        syntheticTxnFactory,
-                        infrastructureFactory,
-                        precompilePricingUtils,
-                        false);
+                            ledgers,
+                            decoder,
+                            updater.aliases(),
+                            sigsVerifier,
+                            sideEffectsTracker,
+                            syntheticTxnFactory,
+                            infrastructureFactory,
+                            precompilePricingUtils,
+                            false);
                     case AbiConstants.ABI_WIPE_TOKEN_ACCOUNT_FUNGIBLE -> new WipeFungiblePrecompile(
                             ledgers,
                             decoder,
