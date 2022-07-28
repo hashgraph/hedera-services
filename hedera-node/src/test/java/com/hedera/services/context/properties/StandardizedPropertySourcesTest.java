@@ -50,8 +50,8 @@ class StandardizedPropertySourcesTest {
     @SuppressWarnings("unchecked")
     void getsExpectedRatios() {
         final var prop = "0:3,1:-1,2:,3:1.1,4:NONSENSE,5:4,12345";
-        final Map<Long, Long> ratios = (Map<Long, Long>)
-            PropertySource.AS_NODE_STAKE_RATIOS.apply(prop);
+        final Map<Long, Long> ratios =
+                (Map<Long, Long>) PropertySource.AS_NODE_STAKE_RATIOS.apply(prop);
         final var expected = Map.of(0L, 3L, 5L, 4L);
         assertEquals(expected, ratios);
 

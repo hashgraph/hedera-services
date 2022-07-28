@@ -117,7 +117,7 @@ class ConfigCallbacksTest {
     }
 
     private void assertStakes(
-        final MerkleStakingInfo info, final long minStake, final long maxStake) {
+            final MerkleStakingInfo info, final long minStake, final long maxStake) {
         Assertions.assertEquals(minStake, info.getMinStake());
         Assertions.assertEquals(maxStake, info.getMaxStake());
     }
@@ -133,5 +133,4 @@ class ConfigCallbacksTest {
         ans.setMaxStake(maxStake);
         return ans;
     }
-
 }

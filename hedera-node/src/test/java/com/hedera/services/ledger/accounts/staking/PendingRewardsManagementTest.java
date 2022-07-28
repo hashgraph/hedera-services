@@ -82,7 +82,8 @@ class PendingRewardsManagementTest {
         given(
                         info.updateRewardSumHistory(
                                 rewardRate / (totalStakedRewardStart / HBARS_TO_TINYBARS),
-                                lastPeriodRewardRate, true))
+                                lastPeriodRewardRate,
+                                true))
                 .willReturn(lastPeriodRewardRate);
         given(info.reviewElectionsAndRecomputeStakes()).willReturn(updatedStakeRewardStart);
         given(dynamicProperties.isStakingEnabled()).willReturn(true);

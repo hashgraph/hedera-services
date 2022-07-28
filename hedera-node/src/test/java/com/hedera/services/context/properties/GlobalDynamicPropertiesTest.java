@@ -479,7 +479,7 @@ class GlobalDynamicPropertiesTest {
         given(properties.getBooleanProperty("staking.requireMinStakeToReward"))
                 .willReturn((i + 79) % 2 == 0);
         given(properties.getNodeStakeRatiosProperty("staking.nodeMaxToMinStakeRatios"))
-            .willReturn(Map.of(0L, 4L, 1L, 8L));
+                .willReturn(Map.of(0L, 4L, 1L, 8L));
     }
 
     private Set<EntityType> typesFor(final int i) {

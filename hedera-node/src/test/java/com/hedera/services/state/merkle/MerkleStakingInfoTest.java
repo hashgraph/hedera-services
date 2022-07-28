@@ -346,7 +346,7 @@ class MerkleStakingInfoTest {
         subject.setStake(0);
         subject.setStakeRewardStart(subject.getMinStake() - 1);
         final var pendingRewardRate =
-            subject.updateRewardSumHistory(rewardRate, Long.MAX_VALUE, false);
+                subject.updateRewardSumHistory(rewardRate, Long.MAX_VALUE, false);
 
         assertArrayEquals(new long[] {1000000002L, 2L, 1L}, subject.getRewardSumHistory());
         assertEquals(rewardRate, pendingRewardRate);
