@@ -70,7 +70,7 @@ public interface StakingActivityModule {
 
     @Binds
     @Singleton
-    TransactionContext TransactionContext(MockTransactionContext transactionContext);
+    TransactionContext bindTransactionContext(MockTransactionContext transactionContext);
 
     @Binds
     @Singleton
