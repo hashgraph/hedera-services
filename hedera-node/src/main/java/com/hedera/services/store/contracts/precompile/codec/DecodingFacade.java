@@ -68,6 +68,7 @@ public class DecodingFacade {
     private static final String ADDRESS_PAIR_RAW_TYPE = "(bytes32,bytes32)";
     private static final String ADDRESS_TRIPLE_RAW_TYPE = "(bytes32,bytes32,bytes32)";
     private static final String UINT256_RAW_TYPE = "(uint256)";
+    private static final String BYTES32_RAW_TYPE = "(bytes32)";
     private static final String ADDRESS_UINT256_RAW_TYPE = "(bytes32,uint256)";
     private static final String ADDRESS_ADDRESS_UINT256_RAW_TYPE = "(bytes32,bytes32,uint256)";
 
@@ -123,6 +124,20 @@ public class DecodingFacade {
     private static final ABIType<Tuple> BURN_TOKEN_DECODER =
             TypeFactory.create("(bytes32,int64,int64[])");
 
+    private static final Function GET_TOKEN_DEFAULT_FREEZE_STATUS_FUNCTION =
+            new Function("getTokenDefaultFreezeStatus(address)", INT);
+    private static final Bytes GET_TOKEN_DEFAULT_FREEZE_STATUS_SELECTOR =
+            Bytes.wrap(GET_TOKEN_DEFAULT_FREEZE_STATUS_FUNCTION.selector());
+    private static final ABIType<Tuple> GET_TOKEN_DEFAULT_FREEZE_STATUS_DECODER =
+            TypeFactory.create(BYTES32_RAW_TYPE);
+
+    private static final Function GET_TOKEN_DEFAULT_KYC_STATUS_FUNCTION =
+            new Function("getTokenDefaultKycStatus(address)", INT);
+    private static final Bytes GET_TOKEN_DEFAULT_KYC_STATUS_SELECTOR =
+            Bytes.wrap(GET_TOKEN_DEFAULT_KYC_STATUS_FUNCTION.selector());
+    private static final ABIType<Tuple> GET_TOKEN_DEFAULT_KYC_STATUS_DECODER =
+            TypeFactory.create(BYTES32_RAW_TYPE);
+
     private static final Function ASSOCIATE_TOKENS_FUNCTION =
             new Function("associateTokens(address,address[])", INT);
     private static final Bytes ASSOCIATE_TOKENS_SELECTOR =
@@ -161,7 +176,8 @@ public class DecodingFacade {
             new Function("balanceOf(address)", INT);
     private static final Bytes BALANCE_OF_TOKEN_SELECTOR =
             Bytes.wrap(BALANCE_OF_TOKEN_FUNCTION.selector());
-    private static final ABIType<Tuple> BALANCE_OF_TOKEN_DECODER = TypeFactory.create("(bytes32)");
+    private static final ABIType<Tuple> BALANCE_OF_TOKEN_DECODER =
+            TypeFactory.create(BYTES32_RAW_TYPE);
 
     private static final Function OWNER_OF_NFT_FUNCTION = new Function("ownerOf(uint256)", INT);
     private static final Bytes OWNER_OF_NFT_SELECTOR = Bytes.wrap(OWNER_OF_NFT_FUNCTION.selector());
@@ -172,6 +188,20 @@ public class DecodingFacade {
     private static final Bytes ERC_TRANSFER_SELECTOR = Bytes.wrap(ERC_TRANSFER_FUNCTION.selector());
     private static final ABIType<Tuple> ERC_TRANSFER_DECODER =
             TypeFactory.create(ADDRESS_UINT256_RAW_TYPE);
+
+    private static final Function WIPE_TOKEN_ACCOUNT_FUNCTION =
+            new Function("wipeTokenAccount(address,address,uint32)", INT);
+    private static final Bytes WIPE_TOKEN_ACCOUNT_SELECTOR =
+            Bytes.wrap(WIPE_TOKEN_ACCOUNT_FUNCTION.selector());
+    private static final ABIType<Tuple> WIPE_TOKEN_ACCOUNT_DECODER =
+            TypeFactory.create("(bytes32,bytes32,uint32)");
+
+    private static final Function WIPE_TOKEN_ACCOUNT_NFT_FUNCTION =
+            new Function("wipeTokenAccountNFT(address,address,int64[])", INT);
+    private static final Bytes WIPE_TOKEN_ACCOUNT_NFT_SELECTOR =
+            Bytes.wrap(WIPE_TOKEN_ACCOUNT_NFT_FUNCTION.selector());
+    private static final ABIType<Tuple> WIPE_TOKEN_ACCOUNT_NFT_DECODER =
+            TypeFactory.create("(bytes32,bytes32,int64[])");
 
     private static final Function ERC_TRANSFER_FROM_FUNCTION =
             new Function("transferFrom(address,address,uint256)");
@@ -414,6 +444,30 @@ public class DecodingFacade {
             return BurnWrapper.forNonFungible(
                     tokenID, Arrays.stream(serialNumbers).boxed().toList());
         }
+    }
+
+    public GetTokenDefaultFreezeStatusWrapper decodeTokenDefaultFreezeStatus(final Bytes input) {
+        final Tuple decodedArguments =
+                decodeFunctionCall(
+                        input,
+                        GET_TOKEN_DEFAULT_FREEZE_STATUS_SELECTOR,
+                        GET_TOKEN_DEFAULT_FREEZE_STATUS_DECODER);
+
+        final var tokenID = convertAddressBytesToTokenID(decodedArguments.get(0));
+
+        return new GetTokenDefaultFreezeStatusWrapper(tokenID);
+    }
+
+    public GetTokenDefaultKycStatusWrapper decodeTokenDefaultKycStatus(final Bytes input) {
+        final Tuple decodedArguments =
+                decodeFunctionCall(
+                        input,
+                        GET_TOKEN_DEFAULT_KYC_STATUS_SELECTOR,
+                        GET_TOKEN_DEFAULT_KYC_STATUS_DECODER);
+
+        final var tokenID = convertAddressBytesToTokenID(decodedArguments.get(0));
+
+        return new GetTokenDefaultKycStatusWrapper(tokenID);
     }
 
     public BalanceOfWrapper decodeBalanceOf(
@@ -932,6 +986,32 @@ public class DecodingFacade {
                 isFreezeDefault,
                 tokenKeys,
                 tokenExpiry);
+    }
+
+    public WipeWrapper decodeWipe(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
+        final Tuple decodedArguments =
+                decodeFunctionCall(input, WIPE_TOKEN_ACCOUNT_SELECTOR, WIPE_TOKEN_ACCOUNT_DECODER);
+
+        final var tokenID = convertAddressBytesToTokenID(decodedArguments.get(0));
+        final var accountID =
+                convertLeftPaddedAddressToAccountId(decodedArguments.get(1), aliasResolver);
+        final var fungibleAmount = (long) decodedArguments.get(2);
+
+        return WipeWrapper.forFungible(tokenID, accountID, fungibleAmount);
+    }
+
+    public WipeWrapper decodeWipeNFT(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
+        final Tuple decodedArguments =
+                decodeFunctionCall(
+                        input, WIPE_TOKEN_ACCOUNT_NFT_SELECTOR, WIPE_TOKEN_ACCOUNT_NFT_DECODER);
+
+        final var tokenID = convertAddressBytesToTokenID(decodedArguments.get(0));
+        final var accountID =
+                convertLeftPaddedAddressToAccountId(decodedArguments.get(1), aliasResolver);
+        final var serialNumbers = ((long[]) decodedArguments.get(2));
+
+        return WipeWrapper.forNonFungible(
+                tokenID, accountID, Arrays.stream(serialNumbers).boxed().toList());
     }
 
     private List<TokenKeyWrapper> decodeTokenKeys(

@@ -36,6 +36,7 @@ import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.validation.UsageLimits;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.TypedTokenStore;
+import com.hedera.services.store.contracts.WorldLedgers;
 import com.hedera.services.store.contracts.precompile.codec.DecodingFacade;
 import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
 import com.hedera.services.store.contracts.precompile.proxy.RedirectViewExecutor;
@@ -52,6 +53,7 @@ import com.hedera.services.txns.token.BurnLogic;
 import com.hedera.services.txns.token.CreateLogic;
 import com.hedera.services.txns.token.DissociateLogic;
 import com.hedera.services.txns.token.MintLogic;
+import com.hedera.services.txns.token.WipeLogic;
 import com.hedera.services.txns.token.process.DissociationFactory;
 import com.hedera.services.txns.token.validators.CreateChecks;
 import com.hedera.services.txns.validation.OptionValidator;
@@ -194,8 +196,9 @@ public class InfrastructureFactory {
             final Bytes input,
             final MessageFrame frame,
             final ViewGasCalculator gasCalculator,
-            final StateView stateView) {
-        return new ViewExecutor(input, frame, encoder, decoder, gasCalculator, stateView);
+            final StateView stateView,
+            final WorldLedgers ledgers) {
+        return new ViewExecutor(input, frame, encoder, decoder, gasCalculator, stateView, ledgers);
     }
 
     public ApproveAllowanceLogic newApproveAllowanceLogic(
@@ -206,6 +209,11 @@ public class InfrastructureFactory {
     public DeleteAllowanceLogic newDeleteAllowanceLogic(
             final AccountStore accountStore, final TypedTokenStore tokenStore) {
         return new DeleteAllowanceLogic(accountStore, tokenStore);
+    }
+
+    public WipeLogic newWipeLogic(
+            final AccountStore accountStore, final TypedTokenStore tokenStore) {
+        return new WipeLogic(validator, tokenStore, accountStore, dynamicProperties);
     }
 
     public CreateChecks newCreateChecks() {

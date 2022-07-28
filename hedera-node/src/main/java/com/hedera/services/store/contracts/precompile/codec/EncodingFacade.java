@@ -53,6 +53,7 @@ public class EncodingFacade {
     private static final String STRING_RETURN_TYPE = "(string)";
     public static final String UINT256_RETURN_TYPE = "(uint256)";
     public static final String BOOL_RETURN_TYPE = "(bool)";
+    public static final String INT_BOOL_PAIR_RETURN_TYPE = "(int32,bool)";
     private static final TupleType mintReturnType = TupleType.parse("(int32,uint64,int64[])");
     private static final TupleType burnReturnType = TupleType.parse("(int32,uint64)");
     private static final TupleType createReturnType = TupleType.parse("(int32,address)");
@@ -61,7 +62,7 @@ public class EncodingFacade {
     private static final TupleType allowanceOfType = TupleType.parse(UINT256_RETURN_TYPE);
     private static final TupleType hapiAllowanceOfType = TupleType.parse("(int32,uint256)");
     private static final TupleType approveOfType = TupleType.parse(BOOL_RETURN_TYPE);
-    private static final TupleType hapiApproveOfType = TupleType.parse("(int32,bool)");
+    private static final TupleType hapiApproveOfType = TupleType.parse(INT_BOOL_PAIR_RETURN_TYPE);
     private static final TupleType hapiApproveNftType = TupleType.parse("(int32)");
     private static final TupleType decimalsType = TupleType.parse("(uint8)");
     private static final TupleType ownerOfType = TupleType.parse("(address)");
@@ -72,7 +73,12 @@ public class EncodingFacade {
     private static final TupleType tokenUriType = TupleType.parse(STRING_RETURN_TYPE);
     private static final TupleType ercTransferType = TupleType.parse(BOOL_RETURN_TYPE);
     private static final TupleType isApprovedForAllType = TupleType.parse(BOOL_RETURN_TYPE);
-    private static final TupleType hapiIsApprovedForAllType = TupleType.parse("(int32,bool)");
+    private static final TupleType hapiIsApprovedForAllType =
+            TupleType.parse(INT_BOOL_PAIR_RETURN_TYPE);
+    private static final TupleType getTokenDefaultFreezeStatusType =
+            TupleType.parse(INT_BOOL_PAIR_RETURN_TYPE);
+    private static final TupleType getTokenDefaultKycStatusType =
+            TupleType.parse(INT_BOOL_PAIR_RETURN_TYPE);
 
     @Inject
     public EncodingFacade() {
@@ -253,6 +259,22 @@ public class EncodingFacade {
                 .build();
     }
 
+    public Bytes encodeGetTokenDefaultFreezeStatus(final boolean defaultFreezeStatus) {
+        return functionResultBuilder()
+                .forFunction(FunctionType.GET_TOKEN_DEFAULT_FREEZE_STATUS)
+                .withStatus(SUCCESS.getNumber())
+                .withGetTokenDefaultFreezeStatus(defaultFreezeStatus)
+                .build();
+    }
+
+    public Bytes encodeGetTokenDefaultKycStatus(final boolean defaultKycStatus) {
+        return functionResultBuilder()
+                .forFunction(FunctionType.GET_TOKEN_DEFAULT_KYC_STATUS)
+                .withStatus(SUCCESS.getNumber())
+                .withGetTokenDefaultKycStatus(defaultKycStatus)
+                .build();
+    }
+
     public Bytes encodeGetTokenInfo(final com.hederahashgraph.api.proto.java.TokenInfo tokenInfo) {
         return functionResultBuilder()
                 .forFunction(FunctionType.HAPI_GET_TOKEN_INFO)
@@ -290,6 +312,8 @@ public class EncodingFacade {
         private Address newTokenAddress;
         private boolean ercFungibleTransferStatus;
         private boolean isApprovedForAllStatus;
+        private boolean tokenDefaultFreezeStatus;
+        private boolean tokenDefaultKycStatus;
         private long totalSupply;
         private long balance;
         private long allowance;
@@ -330,6 +354,8 @@ public class EncodingFacade {
                         case HAPI_GET_TOKEN_INFO -> getTokenInfoType;
                         case HAPI_GET_FUNGIBLE_TOKEN_INFO -> getFungibleTokenInfoType;
                         case HAPI_GET_NON_FUNGIBLE_TOKEN_INFO -> getNonFungibleTokenInfoType;
+                        case GET_TOKEN_DEFAULT_FREEZE_STATUS -> getTokenDefaultFreezeStatusType;
+                        case GET_TOKEN_DEFAULT_KYC_STATUS -> getTokenDefaultKycStatusType;
                         default -> notSpecifiedType;
                     };
 
@@ -424,6 +450,18 @@ public class EncodingFacade {
             return this;
         }
 
+        private FunctionResultBuilder withGetTokenDefaultFreezeStatus(
+                final boolean tokenDefaultFreezeStatus) {
+            this.tokenDefaultFreezeStatus = tokenDefaultFreezeStatus;
+            return this;
+        }
+
+        private FunctionResultBuilder withGetTokenDefaultKycStatus(
+                final boolean tokenDefaultKycStatus) {
+            this.tokenDefaultKycStatus = tokenDefaultKycStatus;
+            return this;
+        }
+
         private Bytes build() {
             final var result =
                     switch (functionType) {
@@ -454,6 +492,10 @@ public class EncodingFacade {
                         case HAPI_GET_TOKEN_INFO -> getTupleForGetTokenInfo();
                         case HAPI_GET_FUNGIBLE_TOKEN_INFO -> getTupleForGetFungibleTokenInfo();
                         case HAPI_GET_NON_FUNGIBLE_TOKEN_INFO -> getTupleForGetNonFungibleTokenInfo();
+                        case GET_TOKEN_DEFAULT_FREEZE_STATUS -> Tuple.of(
+                                status, tokenDefaultFreezeStatus);
+                        case GET_TOKEN_DEFAULT_KYC_STATUS -> Tuple.of(
+                                status, tokenDefaultKycStatus);
                         default -> Tuple.of(status);
                     };
 
