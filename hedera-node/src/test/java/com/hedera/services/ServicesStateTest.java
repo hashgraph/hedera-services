@@ -129,7 +129,7 @@ class ServicesStateTest {
     private final String signedStateDir = "src/test/resources/signedState/";
     private final SoftwareVersion some025xVersion = forHapiAndHedera("0.25.0", "0.25.2");
     private final SoftwareVersion currentVersion = SEMANTIC_VERSIONS.deployedSoftwareVersion();
-    private final SoftwareVersion futureVersion = forHapiAndHedera("0.28.0", "0.28.0");
+    private final SoftwareVersion futureVersion = forHapiAndHedera("1.0.0", "1.0.0");
     private final Instant creationTime = Instant.ofEpochSecond(1_234_567L, 8);
     private final Instant consensusTime = Instant.ofEpochSecond(2_345_678L, 9);
     private final NodeId selfId = new NodeId(false, 1L);
