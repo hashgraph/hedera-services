@@ -177,10 +177,10 @@ class ServicesStateTest {
     void setUp() {
         SEMANTIC_VERSIONS
                 .deployedSoftwareVersion()
-                .setProto(SemanticVersion.newBuilder().setMinor(27).build());
+                .setProto(SemanticVersion.newBuilder().setMinor(28).build());
         SEMANTIC_VERSIONS
                 .deployedSoftwareVersion()
-                .setServices(SemanticVersion.newBuilder().setMinor(27).build());
+                .setServices(SemanticVersion.newBuilder().setMinor(28).build());
         subject = new ServicesState();
         setAllChildren();
     }
@@ -837,11 +837,11 @@ class ServicesStateTest {
     }
 
     @Test
-    void testLoading0253State() {
+    void testLoading0274State() {
         ClassLoaderHelper.loadClassPathDependencies();
         final AtomicReference<SignedState> ref = new AtomicReference<>();
         assertDoesNotThrow(
-                () -> ref.set(loadSignedState(signedStateDir + "v0.25.3/SignedState.swh")));
+                () -> ref.set(loadSignedState(signedStateDir + "v0.27.4/SignedState.swh")));
         final var mockPlatform = createMockPlatformWithCrypto();
         ref.get()
                 .getSwirldState()
