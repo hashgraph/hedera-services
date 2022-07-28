@@ -51,8 +51,8 @@ import com.hedera.services.state.EntityCreator;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
-import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.submerkle.CurrencyAdjustments;
+import com.hedera.services.state.virtual.UniqueTokenValue;
 import com.hedera.services.store.contracts.MutableEntityAccess;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.tokens.TokenStore;
@@ -110,7 +110,7 @@ public class HederaLedger {
     private final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
 
     private MutableEntityAccess mutableEntityAccess;
-    private TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger = null;
+    private TransactionalLedger<NftId, NftProperty, UniqueTokenValue> nftsLedger = null;
     private TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus>
             tokenRelsLedger = null;
 
@@ -148,7 +148,7 @@ public class HederaLedger {
     }
 
     public void setNftsLedger(
-            final TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger) {
+            final TransactionalLedger<NftId, NftProperty, UniqueTokenValue> nftsLedger) {
         this.nftsLedger = nftsLedger;
     }
 
@@ -163,7 +163,7 @@ public class HederaLedger {
         return accountsLedger;
     }
 
-    public TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> getNftsLedger() {
+    public TransactionalLedger<NftId, NftProperty, UniqueTokenValue> getNftsLedger() {
         return nftsLedger;
     }
 

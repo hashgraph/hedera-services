@@ -9,9 +9,9 @@ package com.hedera.services.ledger.properties;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -20,9 +20,9 @@ package com.hedera.services.ledger.properties;
  * ‍
  */
 
-import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.RichInstant;
+import com.hedera.services.state.virtual.UniqueTokenValue;
 import org.junit.jupiter.api.Test;
 
 import static com.hedera.services.state.merkle.internals.BitPackUtils.packedTime;
@@ -36,10 +36,10 @@ class NftPropertyTest {
 	private final RichInstant aInstant = new RichInstant(1_234_567L, 1);
 	private final RichInstant bInstant = new RichInstant(1_234_567L, 2);
 
-	@Test
-	void gettersWork() {
-		// given:
-		final var aSubject = new MerkleUniqueToken(aEntity, aMeta, aInstant);
+    @Test
+    void gettersWork() {
+        // given:
+        final var aSubject = new UniqueTokenValue(aEntity.num(), 0, aMeta, aInstant);
 
 		// expect:
 		assertEquals(aEntity, NftProperty.OWNER.getter().apply(aSubject));
@@ -47,10 +47,10 @@ class NftPropertyTest {
 		assertEquals(aSubject.getPackedCreationTime(), NftProperty.CREATION_TIME.getter().apply(aSubject));
 	}
 
-	@Test
-	void setterWorks() {
-		final var aSubject = new MerkleUniqueToken(aEntity, aMeta, aInstant);
-		final var bSubject = new MerkleUniqueToken(bEntity, bMeta, bInstant);
+    @Test
+    void setterWorks() {
+        final var aSubject = new UniqueTokenValue(aEntity.num(), 0, aMeta, aInstant);
+        final var bSubject = new UniqueTokenValue(bEntity.num(), 0, bMeta, bInstant);
 
 		NftProperty.OWNER.setter().accept(aSubject, bEntity);
 		NftProperty.CREATION_TIME.setter().accept(aSubject, packedTime(bInstant.getSeconds(), bInstant.getNanos()));

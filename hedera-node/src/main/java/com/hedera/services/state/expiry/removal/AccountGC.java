@@ -28,14 +28,16 @@ import com.hedera.services.ledger.backing.BackingStore;
 import com.hedera.services.state.expiry.TokenRelsListMutation;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
-import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.submerkle.CurrencyAdjustments;
 import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.state.virtual.UniqueTokenKey;
+import com.hedera.services.state.virtual.UniqueTokenValue;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
 import com.hedera.services.utils.MapValueListUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.swirlds.merkle.map.MerkleMap;
+import com.swirlds.virtualmap.VirtualMap;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -61,34 +63,33 @@ import java.util.function.Supplier;
  */
 @Singleton
 public class AccountGC {
-	private final AliasManager aliasManager;
-	private final SigImpactHistorian sigImpactHistorian;
-	private final TreasuryReturnHelper treasuryReturnHelper;
-	private final BackingStore<AccountID, MerkleAccount> backingAccounts;
-	private final Supplier<MerkleMap<EntityNumPair, MerkleTokenRelStatus>> tokenRels;
-	private final Supplier<MerkleMap<EntityNumPair, MerkleUniqueToken>> uniqueTokens;
-	private final GlobalDynamicProperties dynamicProperties;
+    private final AliasManager aliasManager;
+    private final SigImpactHistorian sigImpactHistorian;
+    private final TreasuryReturnHelper treasuryReturnHelper;
+    private final BackingStore<AccountID, MerkleAccount> backingAccounts;
+    private final Supplier<MerkleMap<EntityNumPair, MerkleTokenRelStatus>> tokenRels;
+    private final Supplier<VirtualMap<UniqueTokenKey, UniqueTokenValue>> uniqueTokens;
+    private final GlobalDynamicProperties dynamicProperties;
 
 	private RemovalFacilitation removalFacilitation = MapValueListUtils::removeInPlaceFromMapValueList;
 
-	@Inject
-	public AccountGC(
-			final AliasManager aliasManager,
-			final SigImpactHistorian sigImpactHistorian,
-			final TreasuryReturnHelper treasuryReturnHelper,
-			final BackingStore<AccountID, MerkleAccount> backingAccounts,
-			final Supplier<MerkleMap<EntityNumPair, MerkleTokenRelStatus>> tokenRels,
-			final Supplier<MerkleMap<EntityNumPair, MerkleUniqueToken>> uniqueTokens,
-			final GlobalDynamicProperties dynamicProperties
-	) {
-		this.tokenRels = tokenRels;
-		this.aliasManager = aliasManager;
-		this.backingAccounts = backingAccounts;
-		this.sigImpactHistorian = sigImpactHistorian;
-		this.treasuryReturnHelper = treasuryReturnHelper;
-		this.uniqueTokens = uniqueTokens;
-		this.dynamicProperties = dynamicProperties;
-	}
+    @Inject
+    public AccountGC(
+            final AliasManager aliasManager,
+            final SigImpactHistorian sigImpactHistorian,
+            final TreasuryReturnHelper treasuryReturnHelper,
+            final BackingStore<AccountID, MerkleAccount> backingAccounts,
+            final Supplier<MerkleMap<EntityNumPair, MerkleTokenRelStatus>> tokenRels,
+            final Supplier<VirtualMap<UniqueTokenKey, UniqueTokenValue>> uniqueTokens,
+            final GlobalDynamicProperties dynamicProperties) {
+        this.tokenRels = tokenRels;
+        this.aliasManager = aliasManager;
+        this.backingAccounts = backingAccounts;
+        this.sigImpactHistorian = sigImpactHistorian;
+        this.treasuryReturnHelper = treasuryReturnHelper;
+        this.uniqueTokens = uniqueTokens;
+        this.dynamicProperties = dynamicProperties;
+    }
 
 	public TreasuryReturns expireBestEffort(final EntityNum expiredAccountNum, final MerkleAccount account) {
 		List<EntityId> tokenTypes = Collections.emptyList();
@@ -135,18 +136,17 @@ public class AccountGC {
 		return new TreasuryReturns(tokenTypes, returnTransfers, done);
 	}
 
-	private void returnNftsToTreasury(
-			final long nftsOwned,
-			final long headNftNum,
-			final long headSerialNum,
-			final MerkleMap<EntityNumPair, MerkleUniqueToken> currUniqueTokens
-	) {
-		var nftKey = EntityNumPair.fromLongs(headNftNum, headSerialNum);
-		var i = Math.min(nftsOwned, dynamicProperties.getMaxReturnedNftsPerTouch());
-		while (nftKey != null && i-- > 0) {
-			nftKey = treasuryReturnHelper.updateNftReturns(nftKey, currUniqueTokens);
-		}
-	}
+    private void returnNftsToTreasury(
+            final long nftsOwned,
+            final long headNftNum,
+            final long headSerialNum,
+            final VirtualMap<UniqueTokenKey, UniqueTokenValue> currUniqueTokens) {
+        var nftKey = new UniqueTokenKey(headNftNum, headSerialNum);
+        var i = Math.min(nftsOwned, dynamicProperties.getMaxReturnedNftsPerTouch());
+        while (nftKey != null && i-- > 0) {
+            nftKey = treasuryReturnHelper.updateNftReturns(nftKey, currUniqueTokens);
+        }
+    }
 
 	private void doTreasuryReturnsWith(
 			final int expectedRels,

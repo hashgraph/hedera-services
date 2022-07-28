@@ -21,15 +21,16 @@ import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
 import com.hedera.services.ledger.CommitInterceptor;
 import com.hedera.services.ledger.EntityChangeSet;
 import com.hedera.services.ledger.properties.NftProperty;
-import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.validation.UsageLimits;
+import com.hedera.services.state.virtual.UniqueTokenKey;
+import com.hedera.services.state.virtual.UniqueTokenValue;
 import com.hedera.services.store.models.NftId;
 import java.util.Objects;
 
 /** Manages the "map value linked list" of each account's owned non-treasury NFTs. */
 public class LinkAwareUniqueTokensCommitInterceptor
-        implements CommitInterceptor<NftId, MerkleUniqueToken, NftProperty> {
+        implements CommitInterceptor<NftId, UniqueTokenValue, NftProperty> {
     private boolean burnOrMint;
 
     private final UsageLimits usageLimits;
@@ -44,7 +45,7 @@ public class LinkAwareUniqueTokensCommitInterceptor
     /** {@inheritDoc} */
     @Override
     public void preview(
-            final EntityChangeSet<NftId, MerkleUniqueToken, NftProperty> pendingChanges) {
+            final EntityChangeSet<NftId, UniqueTokenValue, NftProperty> pendingChanges) {
         burnOrMint = false;
         final var n = pendingChanges.size();
         if (n == 0) {
@@ -53,6 +54,7 @@ public class LinkAwareUniqueTokensCommitInterceptor
         for (int i = 0; i < n; i++) {
             final var entity = pendingChanges.entity(i);
             final var changes = pendingChanges.changes(i);
+            final var nftId = UniqueTokenKey.from(pendingChanges.id(i));
             if (entity != null) {
                 final var fromAccount = entity.getOwner();
                 if (changes == null) {
@@ -60,15 +62,14 @@ public class LinkAwareUniqueTokensCommitInterceptor
                     if (!MISSING_ENTITY_ID.equals(fromAccount)) {
                         // Non-treasury-owned NFT wiped (or burned via a multi-stage contract
                         // operation)
-                        uniqueTokensLinkManager.updateLinks(
-                                fromAccount.asNum(), null, entity.getKey());
+                        uniqueTokensLinkManager.updateLinks(fromAccount.asNum(), null, nftId);
                     }
                 } else if (changes.containsKey(OWNER)) {
                     final var toAccount = (EntityId) changes.get(OWNER);
                     if (!Objects.equals(fromAccount, toAccount)) {
                         // NFT owner changed (could be a treasury exit or return)
                         uniqueTokensLinkManager.updateLinks(
-                                fromAccount.asNum(), toAccount.asNum(), entity.getKey());
+                                fromAccount.asNum(), toAccount.asNum(), nftId);
                     }
                 }
             } else if (changes != null) {
@@ -76,9 +77,8 @@ public class LinkAwareUniqueTokensCommitInterceptor
                 final var newOwner = (EntityId) changes.get(OWNER);
                 if (!MISSING_ENTITY_ID.equals(newOwner)) {
                     // Non-treasury-owned NFT minted via a multi-stage contract operation
-                    final var nftKey = pendingChanges.id(i).asEntityNumPair();
                     final var mintedNft =
-                            uniqueTokensLinkManager.updateLinks(null, newOwner.asNum(), nftKey);
+                            uniqueTokensLinkManager.updateLinks(null, newOwner.asNum(), nftId);
                     pendingChanges.cacheEntity(i, mintedNft);
                 }
             }

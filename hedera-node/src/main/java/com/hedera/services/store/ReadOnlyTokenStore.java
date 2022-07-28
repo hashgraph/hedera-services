@@ -27,8 +27,8 @@ import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.ledger.backing.BackingStore;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
-import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.state.virtual.UniqueTokenValue;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.NftId;
@@ -66,13 +66,13 @@ import org.apache.commons.lang3.tuple.Pair;
 public class ReadOnlyTokenStore {
     protected final AccountStore accountStore;
     protected final BackingStore<TokenID, MerkleToken> tokens;
-    protected final BackingStore<NftId, MerkleUniqueToken> uniqueTokens;
+    protected final BackingStore<NftId, UniqueTokenValue> uniqueTokens;
     protected final BackingStore<Pair<AccountID, TokenID>, MerkleTokenRelStatus> tokenRels;
 
     public ReadOnlyTokenStore(
             final AccountStore accountStore,
             final BackingStore<TokenID, MerkleToken> tokens,
-            final BackingStore<NftId, MerkleUniqueToken> uniqueTokens,
+            final BackingStore<NftId, UniqueTokenValue> uniqueTokens,
             final BackingStore<Pair<AccountID, TokenID>, MerkleTokenRelStatus> tokenRels) {
         this.tokens = tokens;
         this.tokenRels = tokenRels;
@@ -296,7 +296,7 @@ public class ReadOnlyTokenStore {
         validateFalse(merkleToken.isPaused(), code);
     }
 
-    private void validateUsable(MerkleUniqueToken merkleUniqueToken) {
+    private void validateUsable(UniqueTokenValue merkleUniqueToken) {
         validateTrue(merkleUniqueToken != null, INVALID_NFT_ID);
     }
 
@@ -334,7 +334,7 @@ public class ReadOnlyTokenStore {
         token.setAutoRenewPeriod(immutableToken.autoRenewPeriod());
     }
 
-    private void initModelFields(UniqueToken uniqueToken, MerkleUniqueToken immutableUniqueToken) {
+    private void initModelFields(UniqueToken uniqueToken, UniqueTokenValue immutableUniqueToken) {
         uniqueToken.setCreationTime(immutableUniqueToken.getCreationTime());
         uniqueToken.setMetadata(immutableUniqueToken.getMetadata());
         uniqueToken.setOwner(immutableUniqueToken.getOwner().asId());

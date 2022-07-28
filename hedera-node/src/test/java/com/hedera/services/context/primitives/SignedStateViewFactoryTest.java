@@ -33,10 +33,11 @@ import com.hedera.services.state.merkle.MerkleSpecialFiles;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleTopic;
-import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.migration.StateVersions;
 import com.hedera.services.state.virtual.ContractKey;
 import com.hedera.services.state.virtual.IterableContractValue;
+import com.hedera.services.state.virtual.UniqueTokenKey;
+import com.hedera.services.state.virtual.UniqueTokenValue;
 import com.hedera.services.state.virtual.VirtualBlobKey;
 import com.hedera.services.state.virtual.VirtualBlobValue;
 import com.hedera.services.store.schedule.ScheduleStore;
@@ -71,42 +72,24 @@ import static org.mockito.BDDMockito.given;
 class SignedStateViewFactoryTest {
 	private SignedStateViewFactory factory;
 
-	@Mock
-	private Platform platform;
-	@Mock
-	private ScheduleStore scheduleStore;
-	@Mock
-	private NetworkInfo networkInfo;
-	@Mock
-	private ServicesState state;
-	@Mock
-	private ServicesState secondState;
-	@Mock
-	private MerkleMap<EntityNum, MerkleAccount> accounts;
-	@Mock
-	private VirtualMap<VirtualBlobKey, VirtualBlobValue> storage;
-	@Mock
-	private VirtualMap<ContractKey, IterableContractValue> contractStorage;
-	@Mock
-	private MerkleMap<EntityNum, MerkleTopic> topics;
-	@Mock
-	private MerkleMap<EntityNum, MerkleToken> tokens;
-	@Mock
-	private MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenAssociations;
-	@Mock
-	private MerkleScheduledTransactions scheduleTxs;
-	@Mock
-	private MerkleNetworkContext networkCtx;
-	@Mock
-	private AddressBook addressBook;
-	@Mock
-	private MerkleSpecialFiles specialFiles;
-	@Mock
-	private MerkleMap<EntityNumPair, MerkleUniqueToken> uniqueTokens;
-	@Mock
-	private RecordsRunningHashLeaf runningHashLeaf;
-	@Mock
-	private FCHashMap<ByteString, EntityNum> aliases;
+    @Mock private Platform platform;
+    @Mock private ScheduleStore scheduleStore;
+    @Mock private NetworkInfo networkInfo;
+    @Mock private ServicesState state;
+    @Mock private ServicesState secondState;
+    @Mock private MerkleMap<EntityNum, MerkleAccount> accounts;
+    @Mock private VirtualMap<VirtualBlobKey, VirtualBlobValue> storage;
+    @Mock private VirtualMap<ContractKey, IterableContractValue> contractStorage;
+    @Mock private MerkleMap<EntityNum, MerkleTopic> topics;
+    @Mock private MerkleMap<EntityNum, MerkleToken> tokens;
+    @Mock private MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenAssociations;
+    @Mock private MerkleScheduledTransactions scheduleTxs;
+    @Mock private MerkleNetworkContext networkCtx;
+    @Mock private AddressBook addressBook;
+    @Mock private MerkleSpecialFiles specialFiles;
+    @Mock private VirtualMap<UniqueTokenKey, UniqueTokenValue> uniqueTokens;
+    @Mock private RecordsRunningHashLeaf runningHashLeaf;
+    @Mock private FCHashMap<ByteString, EntityNum> aliases;
 
 	@BeforeEach
 	public void setUp() {

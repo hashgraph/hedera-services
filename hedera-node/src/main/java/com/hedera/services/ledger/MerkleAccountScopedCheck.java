@@ -23,9 +23,9 @@ package com.hedera.services.ledger;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.NftProperty;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
+import com.hedera.services.state.virtual.UniqueTokenValue;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.EntityNum;
@@ -52,16 +52,15 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SPENDER_DOES_N
 public class MerkleAccountScopedCheck implements LedgerCheck<MerkleAccount, AccountProperty> {
 	private final OptionValidator validator;
 
-	private BalanceChange balanceChange;
-	private TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger;
+    private BalanceChange balanceChange;
+    private TransactionalLedger<NftId, NftProperty, UniqueTokenValue> nftsLedger;
 
-	public MerkleAccountScopedCheck(
-			final OptionValidator validator,
-			final TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger
-	) {
-		this.validator = validator;
-		this.nftsLedger = nftsLedger;
-	}
+    public MerkleAccountScopedCheck(
+            final OptionValidator validator,
+            final TransactionalLedger<NftId, NftProperty, UniqueTokenValue> nftsLedger) {
+        this.validator = validator;
+        this.nftsLedger = nftsLedger;
+    }
 
 	@Override
 	public ResponseCodeEnum checkUsing(

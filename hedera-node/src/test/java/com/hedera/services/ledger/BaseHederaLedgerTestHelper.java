@@ -49,8 +49,8 @@ import com.hedera.services.state.expiry.ExpiringCreations;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
-import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.state.virtual.UniqueTokenValue;
 import com.hedera.services.store.contracts.MutableEntityAccess;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.tokens.HederaTokenStore;
@@ -87,7 +87,7 @@ public class BaseHederaLedgerTestHelper {
     protected ExpiringCreations creator;
     protected RecordsHistorian historian;
     protected TransferLogic transferLogic;
-    protected TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger;
+    protected TransactionalLedger<NftId, NftProperty, UniqueTokenValue> nftsLedger;
     protected TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
     protected TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokensLedger;
     protected TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus>

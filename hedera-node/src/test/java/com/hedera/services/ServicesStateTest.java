@@ -205,6 +205,7 @@ class ServicesStateTest {
         subject.setChild(StateChildIndices.TOKEN_ASSOCIATIONS, tokenAssociations);
         subject.setChild(StateChildIndices.NETWORK_CTX, networkContext);
         subject.setChild(StateChildIndices.SCHEDULE_TXS, scheduledTransactions);
+        subject.setChild(StateChildIndices.UNIQUE_TOKENS, mock(MerkleMap.class));
         subject.setMetadata(metadata);
 
         given(metadata.app()).willReturn(app);
@@ -239,6 +240,7 @@ class ServicesStateTest {
         subject.setChild(StateChildIndices.TOKEN_ASSOCIATIONS, tokenAssociations);
         subject.setChild(StateChildIndices.NETWORK_CTX, networkContext);
         subject.setChild(StateChildIndices.SCHEDULE_TXS, scheduledTransactions);
+        subject.setChild(StateChildIndices.UNIQUE_TOKENS, mock(MerkleMap.class));
         subject.setMetadata(metadata);
         given(networkContext.consensusTimeOfLastHandledTxn()).willReturn(consensusTime);
 
@@ -357,7 +359,7 @@ class ServicesStateTest {
 
         // then:
         verify(metadata).release();
-        verify(mockMm, times(6)).archive();
+        verify(mockMm, times(5)).archive();
     }
 
     @Test
@@ -583,6 +585,7 @@ class ServicesStateTest {
         subject.setChild(StateChildIndices.SPECIAL_FILES, specialFiles);
         subject.setChild(StateChildIndices.NETWORK_CTX, networkContext);
         subject.setChild(StateChildIndices.ACCOUNTS, accounts);
+        subject.setChild(StateChildIndices.UNIQUE_TOKENS, mock(MerkleMap.class));
         subject.setDeserializedStateVersion(StateVersions.RELEASE_025X_VERSION);
 
         final var when = Instant.ofEpochSecond(1_234_567L, 890);
@@ -699,6 +702,7 @@ class ServicesStateTest {
         recordsRunningHashLeaf.setRunningHash(new RunningHash(EMPTY_HASH));
         servicesState.setChild(
                 StateChildIndices.RECORD_STREAM_RUNNING_HASH, recordsRunningHashLeaf);
+        servicesState.setChild(StateChildIndices.UNIQUE_TOKENS, mock(VirtualMap.class));
         final var platform = createMockPlatformWithCrypto();
         final var app = createApp(platform);
 
@@ -773,7 +777,6 @@ class ServicesStateTest {
         subject.setChild(StateChildIndices.ACCOUNTS, mockMm);
         subject.setChild(StateChildIndices.TOKEN_ASSOCIATIONS, mockMm);
         subject.setChild(StateChildIndices.TOKENS, mockMm);
-        subject.setChild(StateChildIndices.UNIQUE_TOKENS, mockMm);
         subject.setChild(StateChildIndices.STORAGE, mockMm);
         subject.setChild(StateChildIndices.TOPICS, mockMm);
         subject.setChild(StateChildIndices.STAKING_INFO, mockMm);

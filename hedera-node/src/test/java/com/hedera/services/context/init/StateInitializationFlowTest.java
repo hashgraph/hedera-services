@@ -31,9 +31,10 @@ import com.hedera.services.state.merkle.MerkleScheduledTransactions;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleTopic;
-import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.virtual.ContractKey;
 import com.hedera.services.state.virtual.IterableContractValue;
+import com.hedera.services.state.virtual.UniqueTokenKey;
+import com.hedera.services.state.virtual.UniqueTokenValue;
 import com.hedera.services.state.virtual.VirtualBlobKey;
 import com.hedera.services.state.virtual.VirtualBlobValue;
 import com.hedera.services.stream.RecordStreamManager;
@@ -63,42 +64,24 @@ import static org.mockito.Mockito.verify;
 class StateInitializationFlowTest {
 	private final HederaNumbers defaultNumbers = new MockHederaNumbers();
 
-	@Mock
-	private Hash hash;
-	@Mock
-	private HederaFs hfs;
-	@Mock
-	private RunningHash runningHash;
-	@Mock
-	private ServicesState activeState;
-	@Mock
-	private RecordsRunningHashLeaf runningHashLeaf;
-	@Mock
-	private MutableStateChildren workingState;
-	@Mock
-	private RecordStreamManager recordStreamManager;
-	@Mock
-	private FileUpdateInterceptor aFileInterceptor;
-	@Mock
-	private FileUpdateInterceptor bFileInterceptor;
-	@Mock
-	private Consumer<HederaNumbers> staticNumbersHolder;
-	@Mock
-	private MerkleMap<EntityNum, MerkleAccount> accounts;
-	@Mock
-	private MerkleMap<EntityNum, MerkleTopic> topics;
-	@Mock
-	private MerkleMap<EntityNum, MerkleToken> tokens;
-	@Mock
-	private MerkleMap<EntityNumPair, MerkleUniqueToken> uniqueTokens;
-	@Mock
-	private MerkleScheduledTransactions schedules;
-	@Mock
-	private VirtualMap<VirtualBlobKey, VirtualBlobValue> storage;
-	@Mock
-	private MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenAssociations;
-	@Mock
-	private VirtualMap<ContractKey, IterableContractValue> contractStorage;
+    @Mock private Hash hash;
+    @Mock private HederaFs hfs;
+    @Mock private RunningHash runningHash;
+    @Mock private ServicesState activeState;
+    @Mock private RecordsRunningHashLeaf runningHashLeaf;
+    @Mock private MutableStateChildren workingState;
+    @Mock private RecordStreamManager recordStreamManager;
+    @Mock private FileUpdateInterceptor aFileInterceptor;
+    @Mock private FileUpdateInterceptor bFileInterceptor;
+    @Mock private Consumer<HederaNumbers> staticNumbersHolder;
+    @Mock private MerkleMap<EntityNum, MerkleAccount> accounts;
+    @Mock private MerkleMap<EntityNum, MerkleTopic> topics;
+    @Mock private MerkleMap<EntityNum, MerkleToken> tokens;
+    @Mock private VirtualMap<UniqueTokenKey, UniqueTokenValue> uniqueTokens;
+    @Mock private MerkleScheduledTransactions schedules;
+    @Mock private VirtualMap<VirtualBlobKey, VirtualBlobValue> storage;
+    @Mock private MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenAssociations;
+    @Mock private VirtualMap<ContractKey, IterableContractValue> contractStorage;
 
 	private StateInitializationFlow subject;
 

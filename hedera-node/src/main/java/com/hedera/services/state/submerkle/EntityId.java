@@ -23,6 +23,7 @@ package com.hedera.services.state.submerkle;
 import com.google.common.base.MoreObjects;
 import com.google.common.primitives.Ints;
 import com.google.common.primitives.Longs;
+import com.hedera.services.context.properties.StaticPropertiesHolder;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -100,10 +101,23 @@ public class EntityId implements SelfSerializable {
 		return RUNTIME_CONSTRUCTABLE_ID;
 	}
 
-	@Override
-	public int getVersion() {
-		return MERKLE_VERSION;
-	}
+    /**
+     * Builds an entity id from just the entity number.
+     *
+     * @param num the number of the entity id.
+     * @return the equivalent entity id using the node's shard and realm.
+     */
+    public static EntityId fromNum(long num) {
+        return new EntityId(
+                StaticPropertiesHolder.STATIC_PROPERTIES.getShard(),
+                StaticPropertiesHolder.STATIC_PROPERTIES.getRealm(),
+                num);
+    }
+
+    @Override
+    public int getVersion() {
+        return MERKLE_VERSION;
+    }
 
 	@Override
 	public void deserialize(SerializableDataInputStream in, int version) throws IOException {

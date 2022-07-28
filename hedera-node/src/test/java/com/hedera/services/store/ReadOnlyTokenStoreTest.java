@@ -25,8 +25,8 @@ import com.hedera.services.ledger.backing.BackingStore;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
-import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.state.virtual.UniqueTokenValue;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.NftId;
@@ -64,14 +64,10 @@ import static org.mockito.Mockito.mock;
 
 @ExtendWith(MockitoExtension.class)
 class ReadOnlyTokenStoreTest {
-	@Mock
-	private AccountStore accountStore;
-	@Mock
-	private BackingStore<TokenID, MerkleToken> tokens;
-	@Mock
-	private BackingStore<NftId, MerkleUniqueToken> uniqueTokens;
-	@Mock
-	private BackingStore<Pair<AccountID, TokenID>, MerkleTokenRelStatus> tokenRels;
+    @Mock private AccountStore accountStore;
+    @Mock private BackingStore<TokenID, MerkleToken> tokens;
+    @Mock private BackingStore<NftId, UniqueTokenValue> uniqueTokens;
+    @Mock private BackingStore<Pair<AccountID, TokenID>, MerkleTokenRelStatus> tokenRels;
 
 	private ReadOnlyTokenStore subject;
 
@@ -237,14 +233,14 @@ class ReadOnlyTokenStoreTest {
 		assertFailsWith(() -> subject.loadTokenOrFailWith(tokenId, FAIL_INVALID), FAIL_INVALID);
 	}
 
-	@Test
-	void loadsUniqueTokens() {
-		final var aToken = new Token(miscId);
-		final var merkleUniqueToken = mock(MerkleUniqueToken.class);
-		final var serialNumbers = List.of(1L, 2L);
-		given(merkleUniqueToken.getOwner()).willReturn(new EntityId(Id.DEFAULT));
-		given(merkleUniqueToken.getSpender()).willReturn(new EntityId(Id.DEFAULT));
-		given(uniqueTokens.getImmutableRef(any())).willReturn(merkleUniqueToken);
+    @Test
+    void loadsUniqueTokens() {
+        final var aToken = new Token(miscId);
+        final var merkleUniqueToken = mock(UniqueTokenValue.class);
+        final var serialNumbers = List.of(1L, 2L);
+        given(merkleUniqueToken.getOwner()).willReturn(new EntityId(Id.DEFAULT));
+        given(merkleUniqueToken.getSpender()).willReturn(new EntityId(Id.DEFAULT));
+        given(uniqueTokens.getImmutableRef(any())).willReturn(merkleUniqueToken);
 
 		subject.loadUniqueTokens(aToken, serialNumbers);
 

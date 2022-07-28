@@ -15,56 +15,49 @@
  */
 package com.hedera.services.ledger.backing;
 
-import static com.hedera.services.utils.EntityNumPair.fromNftId;
-
-import com.hedera.services.state.merkle.MerkleUniqueToken;
+import com.hedera.services.state.virtual.UniqueTokenKey;
+import com.hedera.services.state.virtual.UniqueTokenValue;
 import com.hedera.services.store.models.NftId;
-import com.hedera.services.utils.EntityNumPair;
-import com.swirlds.merkle.map.MerkleMap;
+import com.swirlds.virtualmap.VirtualMap;
 import java.util.Set;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 
-public class BackingNfts implements BackingStore<NftId, MerkleUniqueToken> {
-    private final Supplier<MerkleMap<EntityNumPair, MerkleUniqueToken>> delegate;
+public class BackingNfts implements BackingStore<NftId, UniqueTokenValue> {
+    private final Supplier<VirtualMap<UniqueTokenKey, UniqueTokenValue>> delegate;
 
-    public BackingNfts(Supplier<MerkleMap<EntityNumPair, MerkleUniqueToken>> delegate) {
+    public BackingNfts(Supplier<VirtualMap<UniqueTokenKey, UniqueTokenValue>> delegate) {
         this.delegate = delegate;
     }
 
     @Override
-    public MerkleUniqueToken getRef(NftId id) {
-        return delegate.get().getForModify(fromNftId(id));
+    public UniqueTokenValue getRef(NftId id) {
+        return delegate.get().getForModify(UniqueTokenKey.from(id));
     }
 
     @Override
-    public MerkleUniqueToken getImmutableRef(NftId id) {
-        return delegate.get().get(fromNftId(id));
+    public UniqueTokenValue getImmutableRef(NftId id) {
+        return delegate.get().get(UniqueTokenKey.from(id));
     }
 
     @Override
-    public void put(NftId id, MerkleUniqueToken nft) {
-        if (!delegate.get().containsKey(EntityNumPair.fromNftId(id))) {
-            delegate.get().put(fromNftId(id), nft);
-        }
+    public void put(NftId id, UniqueTokenValue nft) {
+        final var key = UniqueTokenKey.from(id);
+        delegate.get().put(key, nft);
     }
 
     @Override
     public void remove(NftId id) {
-        delegate.get().remove(fromNftId(id));
+        delegate.get().remove(UniqueTokenKey.from(id));
     }
 
     @Override
     public boolean contains(NftId id) {
-        return delegate.get().containsKey(EntityNumPair.fromNftId(id));
+        return delegate.get().containsKey(UniqueTokenKey.from(id));
     }
 
     @Override
     public Set<NftId> idSet() {
-        return delegate.get().keySet().stream()
-                .map(EntityNumPair::asTokenNumAndSerialPair)
-                .map(pair -> NftId.withDefaultShardRealm(pair.getLeft(), pair.getRight()))
-                .collect(Collectors.toSet());
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -73,7 +66,7 @@ public class BackingNfts implements BackingStore<NftId, MerkleUniqueToken> {
     }
 
     /* -- only for unit tests */
-    public Supplier<MerkleMap<EntityNumPair, MerkleUniqueToken>> getDelegate() {
+    public Supplier<VirtualMap<UniqueTokenKey, UniqueTokenValue>> getDelegate() {
         return delegate;
     }
 }

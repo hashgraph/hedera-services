@@ -34,9 +34,9 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleAccountState;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
-import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
+import com.hedera.services.state.virtual.UniqueTokenValue;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.ReadOnlyTokenStore;
 import com.hedera.services.store.models.Account;
@@ -86,28 +86,17 @@ import static org.mockito.Mockito.mock;
 
 @ExtendWith(MockitoExtension.class)
 class DeleteAllowanceChecksTest {
-	@Mock
-	private AccountStore accountStore;
-	@Mock
-	private ReadOnlyTokenStore tokenStore;
-	@Mock
-	private GlobalDynamicProperties dynamicProperties;
-	@Mock
-	private Account payer;
-	@Mock
-	private Account ownerAccount;
-	@Mock
-	private StateView view;
-	@Mock
-	private OptionValidator validator;
-	@Mock
-	private MerkleToken merkleToken;
-	@Mock
-	private MerkleAccount ownerMerkleAccount;
-	@Mock
-	private MerkleUniqueToken merkleUniqueToken;
-	@Mock
-	private UniqueToken uniqueToken;
+    @Mock private AccountStore accountStore;
+    @Mock private ReadOnlyTokenStore tokenStore;
+    @Mock private GlobalDynamicProperties dynamicProperties;
+    @Mock private Account payer;
+    @Mock private Account ownerAccount;
+    @Mock private StateView view;
+    @Mock private OptionValidator validator;
+    @Mock private MerkleToken merkleToken;
+    @Mock private MerkleAccount ownerMerkleAccount;
+    @Mock private UniqueTokenValue merkleUniqueToken;
+    @Mock private UniqueToken uniqueToken;
 
 	DeleteAllowanceChecks subject;
 
@@ -359,18 +348,19 @@ class DeleteAllowanceChecksTest {
 		nftAllowances.clear();
 	}
 
-	private void setUpForTest() {
-		given(payer.getId()).willReturn(Id.fromGrpcAccount(ownerId));
-		final BackingStore<AccountID, MerkleAccount> store = mock(BackingAccounts.class);
-		final BackingStore<TokenID, MerkleToken> tokens = mock(BackingTokens.class);
-		final BackingStore<NftId, MerkleUniqueToken> nfts = mock(BackingNfts.class);
-		BackingStore<Pair<AccountID, TokenID>, MerkleTokenRelStatus> rels = mock(BackingTokenRels.class);
-		given(view.asReadOnlyAccountStore()).willReturn(store);
-		given(view.asReadOnlyTokenStore()).willReturn(tokens);
-		given(view.asReadOnlyNftStore()).willReturn(nfts);
-		given(view.asReadOnlyAssociationStore()).willReturn(rels);
-		given(ownerMerkleAccount.getNumAssociations()).willReturn(1);
-		given(ownerMerkleAccount.getNumPositiveBalances()).willReturn(0);
+    private void setUpForTest() {
+        given(payer.getId()).willReturn(Id.fromGrpcAccount(ownerId));
+        final BackingStore<AccountID, MerkleAccount> store = mock(BackingAccounts.class);
+        final BackingStore<TokenID, MerkleToken> tokens = mock(BackingTokens.class);
+        final BackingStore<NftId, UniqueTokenValue> nfts = mock(BackingNfts.class);
+        BackingStore<Pair<AccountID, TokenID>, MerkleTokenRelStatus> rels =
+                mock(BackingTokenRels.class);
+        given(view.asReadOnlyAccountStore()).willReturn(store);
+        given(view.asReadOnlyTokenStore()).willReturn(tokens);
+        given(view.asReadOnlyNftStore()).willReturn(nfts);
+        given(view.asReadOnlyAssociationStore()).willReturn(rels);
+        given(ownerMerkleAccount.getNumAssociations()).willReturn(1);
+        given(ownerMerkleAccount.getNumPositiveBalances()).willReturn(0);
 
 		given(store.getImmutableRef(ownerId)).willReturn(ownerMerkleAccount);
 		given(tokens.getImmutableRef(nftToken)).willReturn(merkleToken);

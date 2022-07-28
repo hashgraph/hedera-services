@@ -48,13 +48,14 @@ import com.hedera.services.state.merkle.MerkleStakingInfo;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleTopic;
-import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.submerkle.ExchangeRates;
 import com.hedera.services.state.submerkle.SequenceNumber;
 import com.hedera.services.state.validation.BasedLedgerValidator;
 import com.hedera.services.state.validation.LedgerValidator;
 import com.hedera.services.state.virtual.ContractKey;
 import com.hedera.services.state.virtual.IterableContractValue;
+import com.hedera.services.state.virtual.UniqueTokenKey;
+import com.hedera.services.state.virtual.UniqueTokenValue;
 import com.hedera.services.state.virtual.VirtualBlobKey;
 import com.hedera.services.state.virtual.VirtualBlobValue;
 import com.hedera.services.state.virtual.VirtualMapFactory;
@@ -102,7 +103,7 @@ public interface StateModule {
     @Binds
     @Singleton
     NewSignedStateListener bindNewSignedStateListener(
-        ServicesSignedStateListener servicesSignedStateListener);
+            ServicesSignedStateListener servicesSignedStateListener);
 
     @Binds
     @Singleton
@@ -271,7 +272,7 @@ public interface StateModule {
 
     @Provides
     @Singleton
-    static Supplier<MerkleMap<EntityNumPair, MerkleUniqueToken>> provideWorkingNfts(
+    static Supplier<VirtualMap<UniqueTokenKey, UniqueTokenValue>> provideWorkingNfts(
             final MutableStateChildren workingState) {
         return workingState::uniqueTokens;
     }

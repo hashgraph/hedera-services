@@ -30,9 +30,10 @@ import com.hedera.services.state.merkle.MerkleStakingInfo;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleTopic;
-import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.virtual.ContractKey;
 import com.hedera.services.state.virtual.IterableContractValue;
+import com.hedera.services.state.virtual.UniqueTokenKey;
+import com.hedera.services.state.virtual.UniqueTokenValue;
 import com.hedera.services.state.virtual.VirtualBlobKey;
 import com.hedera.services.state.virtual.VirtualBlobValue;
 import com.hedera.services.stream.RecordsRunningHashLeaf;
@@ -61,7 +62,7 @@ class MutableStateChildrenTest {
     @Mock private MerkleNetworkContext networkCtx;
     @Mock private AddressBook addressBook;
     @Mock private MerkleSpecialFiles specialFiles;
-    @Mock private MerkleMap<EntityNumPair, MerkleUniqueToken> uniqueTokens;
+    @Mock private VirtualMap<UniqueTokenKey, UniqueTokenValue> uniqueTokens;
     @Mock private RecordsRunningHashLeaf runningHashLeaf;
     @Mock private FCHashMap<ByteString, EntityNum> aliases;
     @Mock private MerkleMap<EntityNum, MerkleStakingInfo> stakingInfo;
@@ -98,7 +99,7 @@ class MutableStateChildrenTest {
         given(tokens.size()).willReturn(5);
         given(tokenAssociations.size()).willReturn(6);
         given(topics.size()).willReturn(7);
-        given(uniqueTokens.size()).willReturn(8);
+        given(uniqueTokens.size()).willReturn(8L);
 
         assertEquals(1L, subject.numAccountAndContracts());
         assertEquals(2L, subject.numBlobs());

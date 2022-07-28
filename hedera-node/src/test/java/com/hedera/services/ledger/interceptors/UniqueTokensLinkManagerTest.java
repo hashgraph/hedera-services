@@ -1,5 +1,3 @@
-package com.hedera.services.ledger.interceptors;
-
 /*-
  * ‌
  * Hedera Services Node
@@ -19,18 +17,28 @@ package com.hedera.services.ledger.interceptors;
  * limitations under the License.
  * ‍
  */
+package com.hedera.services.ledger.interceptors;
+
+import static com.hedera.services.utils.NftNumPair.MISSING_NFT_NUM_PAIR;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
-import com.hedera.services.state.merkle.MerkleUniqueToken;
+import com.hedera.services.state.virtual.UniqueTokenKey;
+import com.hedera.services.state.virtual.UniqueTokenValue;
+import com.hedera.services.state.virtual.VirtualMapFactory;
 import com.hedera.services.utils.EntityNum;
-import com.hedera.services.utils.EntityNumPair;
 import com.hedera.services.utils.NftNumPair;
 import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
 import com.hedera.test.extensions.LoggingSubject;
 import com.hedera.test.extensions.LoggingTarget;
+import com.swirlds.jasperdb.JasperDbBuilder;
 import com.swirlds.merkle.map.MerkleMap;
+import com.swirlds.virtualmap.VirtualMap;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -45,9 +53,10 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 
 @ExtendWith(LogCaptureExtension.class)
 class UniqueTokensLinkManagerTest {
-	private final MerkleMap<EntityNum, MerkleAccount> accounts = new MerkleMap<>();
-	private final MerkleMap<EntityNum, MerkleToken> tokens = new MerkleMap<>();
-	private final MerkleMap<EntityNumPair, MerkleUniqueToken> uniqueTokens = new MerkleMap<>();
+    private final MerkleMap<EntityNum, MerkleAccount> accounts = new MerkleMap<>();
+    private final MerkleMap<EntityNum, MerkleToken> tokens = new MerkleMap<>();
+    private final VirtualMap<UniqueTokenKey, UniqueTokenValue> uniqueTokens =
+            new VirtualMapFactory(JasperDbBuilder::new).newVirtualizedUniqueTokenStorage();
 
 	@LoggingTarget
 	private LogCaptor logCaptor;
@@ -150,15 +159,15 @@ class UniqueTokensLinkManagerTest {
 
 		final var mintedNft = subject.updateLinks(null, newOwner, nftKey2);
 
-		final var updatedNft1 = uniqueTokens.get(nftKey1);
-		assertEquals(nftNumPair2, updatedNft1.getPrev());
-		final var updatedNft2 = uniqueTokens.get(nftKey2);
-		assertSame(updatedNft2, mintedNft);
-		assertEquals(nftNumPair1, updatedNft2.getNext());
-		final var updatedOwner = accounts.get(newOwner);
-		assertEquals(tokenNum, updatedOwner.getHeadNftId());
-		assertEquals(serialNum2, updatedOwner.getHeadNftSerialNum());
-	}
+        final var updatedNft1 = uniqueTokens.get(nftKey1);
+        assertEquals(nftNumPair2, updatedNft1.getPrev());
+        final var updatedNft2 = uniqueTokens.get(nftKey2);
+        assertEquals(updatedNft2, mintedNft);
+        assertEquals(nftNumPair1, updatedNft2.getNext());
+        final var updatedOwner = accounts.get(newOwner);
+        assertEquals(tokenNum, updatedOwner.getHeadNftId());
+        assertEquals(serialNum2, updatedOwner.getHeadNftSerialNum());
+    }
 
 	void setUpEntities() {
 		oldOwnerAccount.setHeadNftId(tokenNum);
@@ -181,27 +190,27 @@ class UniqueTokensLinkManagerTest {
 		uniqueTokens.put(nftKey3, nft3);
 	}
 
-	final long oldOwnerNum = 1234L;
-	final long newOwnerNum = 1235L;
-	final long treasuryNum = 1236L;
-	final long tokenNum = 1237L;
-	final long serialNum1 = 1L;
-	final long serialNum2 = 2L;
-	final long serialNum3 = 3L;
-	final EntityNum oldOwner = EntityNum.fromLong(oldOwnerNum);
-	final EntityNum newOwner = EntityNum.fromLong(newOwnerNum);
-	final EntityNum treasury = EntityNum.fromLong(treasuryNum);
-	final EntityNum token = EntityNum.fromLong(tokenNum);
-	final EntityNumPair nftKey1 = EntityNumPair.fromLongs(tokenNum, serialNum1);
-	final EntityNumPair nftKey2 = EntityNumPair.fromLongs(tokenNum, serialNum2);
-	final EntityNumPair nftKey3 = EntityNumPair.fromLongs(tokenNum, serialNum3);
-	final NftNumPair nftNumPair1 = nftKey1.asNftNumPair();
-	final NftNumPair nftNumPair2 = nftKey2.asNftNumPair();
-	final NftNumPair nftNumPair3 = nftKey3.asNftNumPair();
-	private MerkleAccount oldOwnerAccount = new MerkleAccount();
-	private MerkleAccount newOwnerAccount = new MerkleAccount();
-	private MerkleToken nftToken = new MerkleToken();
-	private MerkleUniqueToken nft1 = new MerkleUniqueToken();
-	private MerkleUniqueToken nft2 = new MerkleUniqueToken();
-	private MerkleUniqueToken nft3 = new MerkleUniqueToken();
+    final long oldOwnerNum = 1234L;
+    final long newOwnerNum = 1235L;
+    final long treasuryNum = 1236L;
+    final long tokenNum = 1237L;
+    final long serialNum1 = 1L;
+    final long serialNum2 = 2L;
+    final long serialNum3 = 3L;
+    final EntityNum oldOwner = EntityNum.fromLong(oldOwnerNum);
+    final EntityNum newOwner = EntityNum.fromLong(newOwnerNum);
+    final EntityNum treasury = EntityNum.fromLong(treasuryNum);
+    final EntityNum token = EntityNum.fromLong(tokenNum);
+    final UniqueTokenKey nftKey1 = new UniqueTokenKey(tokenNum, serialNum1);
+    final UniqueTokenKey nftKey2 = new UniqueTokenKey(tokenNum, serialNum2);
+    final UniqueTokenKey nftKey3 = new UniqueTokenKey(tokenNum, serialNum3);
+    final NftNumPair nftNumPair1 = nftKey1.toNftNumPair();
+    final NftNumPair nftNumPair2 = nftKey2.toNftNumPair();
+    final NftNumPair nftNumPair3 = nftKey3.toNftNumPair();
+    private MerkleAccount oldOwnerAccount = new MerkleAccount();
+    private MerkleAccount newOwnerAccount = new MerkleAccount();
+    private MerkleToken nftToken = new MerkleToken();
+    private UniqueTokenValue nft1 = new UniqueTokenValue();
+    private UniqueTokenValue nft2 = new UniqueTokenValue();
+    private UniqueTokenValue nft3 = new UniqueTokenValue();
 }

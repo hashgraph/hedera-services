@@ -42,9 +42,7 @@ class MiscSpeedometersTest {
     @BeforeEach
     void setup() {
         platform = mock(Platform.class);
-        given(platform.getOrCreateMetric(any()))
-            .willReturn(syncVerifies)
-            .willReturn(txnRejections);
+        given(platform.getOrCreateMetric(any())).willReturn(syncVerifies).willReturn(txnRejections);
 
         subject = new MiscSpeedometers(halfLife);
     }

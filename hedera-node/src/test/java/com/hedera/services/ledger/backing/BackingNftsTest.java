@@ -1,5 +1,3 @@
-package com.hedera.services.ledger.backing;
-
 /*-
  * ‌
  * Hedera Services Node
@@ -19,13 +17,23 @@ package com.hedera.services.ledger.backing;
  * limitations under the License.
  * ‍
  */
+package com.hedera.services.ledger.backing;
 
-import com.hedera.services.state.merkle.MerkleUniqueToken;
-import com.hedera.services.state.submerkle.EntityId;
+import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
+import static com.hedera.services.state.submerkle.RichInstant.MISSING_INSTANT;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import com.hedera.services.state.submerkle.RichInstant;
+import com.hedera.services.state.virtual.UniqueTokenKey;
+import com.hedera.services.state.virtual.UniqueTokenValue;
+import com.hedera.services.state.virtual.VirtualMapFactory;
 import com.hedera.services.store.models.NftId;
-import com.hedera.services.utils.EntityNumPair;
-import com.swirlds.merkle.map.MerkleMap;
+import com.swirlds.jasperdb.JasperDbBuilder;
+import com.swirlds.virtualmap.VirtualMap;
+import java.nio.charset.StandardCharsets;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -44,48 +52,48 @@ import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 class BackingNftsTest {
-	private final NftId aNftId = new NftId(0, 0, 3, 4);
-	private final NftId bNftId = new NftId(0, 0, 4, 5);
-	private final NftId cNftId = new NftId(0, 0, 5, 6);
-	private final EntityNumPair aKey = EntityNumPair.fromLongs(3, 4);
-	private final EntityNumPair bKey = EntityNumPair.fromLongs(4, 5);
-	private final EntityNumPair cKey = EntityNumPair.fromLongs(5, 6);
-	private final MerkleUniqueToken aValue = new MerkleUniqueToken(
-			new EntityId(0, 0, 3),
-			"abcdefgh".getBytes(),
-			new RichInstant(1_234_567L, 1));
-	private final MerkleUniqueToken theToken = new MerkleUniqueToken(
-			MISSING_ENTITY_ID,
-			"HI".getBytes(StandardCharsets.UTF_8),
-			MISSING_INSTANT);
-	private final MerkleUniqueToken notTheToken = new MerkleUniqueToken(
-			MISSING_ENTITY_ID,
-			"IH".getBytes(StandardCharsets.UTF_8),
-			MISSING_INSTANT);
+    private final NftId aNftId = new NftId(0, 0, 3, 4);
+    private final NftId bNftId = new NftId(0, 0, 4, 5);
+    private final NftId cNftId = new NftId(0, 0, 5, 6);
+    private final UniqueTokenKey aKey = new UniqueTokenKey(3, 4);
+    private final UniqueTokenKey bKey = new UniqueTokenKey(4, 5);
+    private final UniqueTokenValue aValue =
+            new UniqueTokenValue(
+                    3,
+                    MISSING_ENTITY_ID.num(),
+                    "abcdefgh".getBytes(),
+                    new RichInstant(1_234_567L, 1));
+    private final UniqueTokenValue theToken =
+            new UniqueTokenValue(
+                    MISSING_ENTITY_ID.num(),
+                    MISSING_ENTITY_ID.num(),
+                    "HI".getBytes(StandardCharsets.UTF_8),
+                    MISSING_INSTANT);
+    private final UniqueTokenValue notTheToken =
+            new UniqueTokenValue(
+                    MISSING_ENTITY_ID.num(),
+                    MISSING_ENTITY_ID.num(),
+                    "IH".getBytes(StandardCharsets.UTF_8),
+                    MISSING_INSTANT);
 
-	private MerkleMap<EntityNumPair, MerkleUniqueToken> delegate;
+    private VirtualMap<UniqueTokenKey, UniqueTokenValue> delegate;
 
 	private BackingNfts subject;
 
-	@BeforeEach
-	void setUp() {
-		delegate = new MerkleMap<>();
-
-		delegate.put(aKey, theToken);
-		delegate.put(bKey, notTheToken);
+    @BeforeEach
+    void setUp() {
+        delegate = new VirtualMapFactory(JasperDbBuilder::new).newVirtualizedUniqueTokenStorage();
+        delegate.put(aKey, theToken);
+        delegate.put(bKey, notTheToken);
 
 		subject = new BackingNfts(() -> delegate);
 	}
 
-	@Test
-	void doSupportGettingIdSet() {
-		// when:
-		subject = new BackingNfts(() -> delegate);
-
-		// expect:
-		assertNotNull(subject.idSet());
-		assertEquals(2, subject.size());
-	}
+    @Test
+    void noSupportGettingIdSet() {
+        // expect:
+        assertThrows(UnsupportedOperationException.class, subject::idSet);
+    }
 
 	@Test
 	void containsWorks() {

@@ -61,7 +61,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-
 @ExtendWith(MockitoExtension.class)
 class StructuralPrecheckTest {
     private static final int pretendSizeLimit = 1_000;
@@ -74,10 +73,8 @@ class StructuralPrecheckTest {
 
     private HapiOpCounters counters = new HapiOpCounters(runningAvgs, txnCtx, statNameFn);
 
-    @Mock
-    private Counter counter;
-    @Mock
-    private Platform platform;
+    @Mock private Counter counter;
+    @Mock private Platform platform;
 
     @BeforeEach
     void setUp() {

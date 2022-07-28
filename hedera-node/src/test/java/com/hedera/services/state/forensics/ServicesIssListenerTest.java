@@ -45,8 +45,7 @@ class ServicesIssListenerTest {
     private final Instant consensusTime = Instant.now();
 
     @Mock private ServicesState state;
-    @Mock
-    private IssEventInfo issEventInfo;
+    @Mock private IssEventInfo issEventInfo;
     @Mock private IssNotification issNotification;
 
     @LoggingTarget private LogCaptor logCaptor;
@@ -69,8 +68,7 @@ class ServicesIssListenerTest {
 
         // then:
         var desired =
-                String.format(
-                        ServicesIssListener.ISS_FALLBACK_ERROR_MSG_PATTERN, round, otherId);
+                String.format(ServicesIssListener.ISS_FALLBACK_ERROR_MSG_PATTERN, round, otherId);
         assertThat(logCaptor.warnLogs(), contains(Matchers.startsWith(desired)));
     }
 
@@ -83,11 +81,7 @@ class ServicesIssListenerTest {
         subject.notify(issNotification);
 
         // then:
-        var desired =
-                String.format(
-                        ServicesIssListener.ISS_ERROR_MSG_PATTERN,
-                        round,
-                        otherId);
+        var desired = String.format(ServicesIssListener.ISS_ERROR_MSG_PATTERN, round, otherId);
         verify(issEventInfo).alert(consensusTime);
         verify(issEventInfo).decrementRoundsToLog();
         assertThat(logCaptor.errorLogs(), contains(desired));
@@ -103,11 +97,7 @@ class ServicesIssListenerTest {
         subject.notify(issNotification);
 
         // then:
-        var desired =
-                String.format(
-                        ServicesIssListener.ISS_ERROR_MSG_PATTERN,
-                        round,
-                        otherId);
+        var desired = String.format(ServicesIssListener.ISS_ERROR_MSG_PATTERN, round, otherId);
         verify(issEventInfo).alert(consensusTime);
         verify(issEventInfo, never()).decrementRoundsToLog();
         verify(state, never()).logSummary();

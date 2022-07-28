@@ -99,9 +99,9 @@ import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
-import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.validation.UsageLimits;
+import com.hedera.services.state.virtual.UniqueTokenValue;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.utils.EntityNumPair;
@@ -191,7 +191,7 @@ class HederaTokenStoreTest {
     private SideEffectsTracker sideEffectsTracker;
     private GlobalDynamicProperties properties;
     private TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
-    private TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger;
+    private TransactionalLedger<NftId, NftProperty, UniqueTokenValue> nftsLedger;
     private TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus>
             tokenRelsLedger;
     private BackingTokens backingTokens;
@@ -226,7 +226,7 @@ class HederaTokenStoreTest {
         hederaLedger = mock(HederaLedger.class);
 
         nftsLedger =
-                (TransactionalLedger<NftId, NftProperty, MerkleUniqueToken>)
+                (TransactionalLedger<NftId, NftProperty, UniqueTokenValue>)
                         mock(TransactionalLedger.class);
         given(nftsLedger.get(aNft, OWNER)).willReturn(EntityId.fromGrpcAccountId(sponsor));
         given(nftsLedger.get(tNft, OWNER)).willReturn(EntityId.fromGrpcAccountId(primaryTreasury));

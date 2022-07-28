@@ -23,9 +23,9 @@ package com.hedera.services.ledger;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.NftProperty;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
+import com.hedera.services.state.virtual.UniqueTokenValue;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.txns.validation.OptionValidator;
@@ -59,18 +59,12 @@ import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class MerkleAccountScopedCheckTest {
-	@Mock
-	private OptionValidator validator;
-	@Mock
-	private BalanceChange balanceChange;
-	@Mock
-	private TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger;
-	@Mock
-	private MerkleAccount account;
-	@Mock
-	private Map<AccountProperty, Object> changeSet;
-	@Mock
-	private Function<AccountProperty, Object> extantProps;
+    @Mock private OptionValidator validator;
+    @Mock private BalanceChange balanceChange;
+    @Mock private TransactionalLedger<NftId, NftProperty, UniqueTokenValue> nftsLedger;
+    @Mock private MerkleAccount account;
+    @Mock private Map<AccountProperty, Object> changeSet;
+    @Mock private Function<AccountProperty, Object> extantProps;
 
 	private MerkleAccountScopedCheck subject;
 
