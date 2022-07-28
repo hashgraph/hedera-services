@@ -2763,39 +2763,39 @@ public class ContractCallSuite extends HapiApiSuite {
         final var gasToOffer = 4_000_000;
         final var farmInitcodeLoc = "src/main/resource/contract/bytecodes/farmInitcode.bin";
         final var consAbi =
-                "{ \"inputs\": [ { \"internalType\": \"address\", \"name\": \"_devaddr\", \"type\": "
-                        + "\"address\" }, { \"internalType\": \"address\", \"name\": \"_rentPayer\", \"type\": \"address\" },  "
-                        + "   { \"internalType\": \"uint256\", \"name\": \"_saucePerSecond\", \"type\": \"uint256\" }, { "
-                        + "\"internalType\": \"uint256\", \"name\": \"_hbarPerSecond\", \"type\": \"uint256\" }, {"
-                        + " \"internalType\": \"uint256\", \"name\": \"_maxSauceSupply\", \"type\": \"uint256\" }, { "
-                        + "\"internalType\":"
-                        + " \"uint256\", \"name\": \"_depositFeeTinyCents\", \"type\": \"uint256\" } ], \"stateMutability\": "
-                        + "\"nonpayable\", \"type\": \"constructor\" }";
+                "{ \"inputs\": [ { \"internalType\": \"address\", \"name\": \"_devaddr\", \"type\":"
+                    + " \"address\" }, { \"internalType\": \"address\", \"name\": \"_rentPayer\","
+                    + " \"type\": \"address\" },     { \"internalType\": \"uint256\", \"name\":"
+                    + " \"_saucePerSecond\", \"type\": \"uint256\" }, { \"internalType\":"
+                    + " \"uint256\", \"name\": \"_hbarPerSecond\", \"type\": \"uint256\" }, {"
+                    + " \"internalType\": \"uint256\", \"name\": \"_maxSauceSupply\", \"type\":"
+                    + " \"uint256\" }, { \"internalType\": \"uint256\", \"name\":"
+                    + " \"_depositFeeTinyCents\", \"type\": \"uint256\" } ], \"stateMutability\":"
+                    + " \"nonpayable\", \"type\": \"constructor\" }";
         final var addPoolAbi =
-                "{ \"inputs\": [ { \"internalType\": \"uint256\", \"name\": \"_allocPoint\", \"type\":"
-                        + " "
-                        + "\"uint256\" }, { \"internalType\": \"address\", \"name\": \"_lpToken\", \"type\": \"address\" }      "
-                        + " "
-                        + "], \"name\": \"add\", \"outputs\": [], \"stateMutability\": \"nonpayable\", \"type\": \"function\" }";
+                "{ \"inputs\": [ { \"internalType\": \"uint256\", \"name\": \"_allocPoint\","
+                        + " \"type\": \"uint256\" }, { \"internalType\": \"address\", \"name\":"
+                        + " \"_lpToken\", \"type\": \"address\" }       ], \"name\": \"add\","
+                        + " \"outputs\": [], \"stateMutability\": \"nonpayable\", \"type\":"
+                        + " \"function\" }";
         final var depositAbi =
-                "{ \"inputs\": [ { \"internalType\": \"uint256\", \"name\": \"_pid\", \"type\": "
-                        + "\"uint256\" }, { \"internalType\": \"uint256\", \"name\": \"_amount\", \"type\": \"uint256\" } ], "
-                        + "\"name\": \"deposit\", \"outputs\": [], \"stateMutability\": \"payable\", \"type\": "
-                        + "\"function\" }";
+                "{ \"inputs\": [ { \"internalType\": \"uint256\", \"name\": \"_pid\", \"type\":"
+                        + " \"uint256\" }, { \"internalType\": \"uint256\", \"name\": \"_amount\","
+                        + " \"type\": \"uint256\" } ], \"name\": \"deposit\", \"outputs\": [],"
+                        + " \"stateMutability\": \"payable\", \"type\": \"function\" }";
         final var withdrawAbi =
-                "{ \"inputs\": [ { \"internalType\": \"uint256\", \"name\": \"_pid\", \"type\": "
-                        + "\"uint256\" }, { \"internalType\": \"uint256\", \"name\": \"_amount\", \"type\": \"uint256\" } ], "
-                        + "\"name\": \"withdraw\", \"outputs\": [], \"stateMutability\": \"nonpayable\", \"type\": "
-                        + "\"function\" }";
+                "{ \"inputs\": [ { \"internalType\": \"uint256\", \"name\": \"_pid\", \"type\":"
+                        + " \"uint256\" }, { \"internalType\": \"uint256\", \"name\": \"_amount\","
+                        + " \"type\": \"uint256\" } ], \"name\": \"withdraw\", \"outputs\": [],"
+                        + " \"stateMutability\": \"nonpayable\", \"type\": \"function\" }";
         final var setSauceAbi =
-                "{ \"inputs\": [ { \"internalType\": \"address\", \"name\": \"_sauce\", \"type\": "
-                        + "\"address\" } ], \"name\": \"setSauceAddress\", \"outputs\": [], \"stateMutability\": \"nonpayable\","
-                        + " "
-                        + "\"type\": \"function\" }";
+                "{ \"inputs\": [ { \"internalType\": \"address\", \"name\": \"_sauce\", \"type\":"
+                        + " \"address\" } ], \"name\": \"setSauceAddress\", \"outputs\": [],"
+                        + " \"stateMutability\": \"nonpayable\", \"type\": \"function\" }";
         final var transferAbi =
-                "{ \"inputs\": [ { \"internalType\": \"address\", \"name\": \"newOwner\", \"type\": "
-                        + "\"address\" } ], \"name\": \"transferOwnership\", \"outputs\": [], \"stateMutability\": "
-                        + "\"nonpayable\", \"type\": \"function\" }";
+                "{ \"inputs\": [ { \"internalType\": \"address\", \"name\": \"newOwner\", \"type\":"
+                        + " \"address\" } ], \"name\": \"transferOwnership\", \"outputs\": [],"
+                        + " \"stateMutability\": \"nonpayable\", \"type\": \"function\" }";
         final var initcode = "farmInitcode";
         final var farm = "farm";
         final var dev = "dev";
@@ -2927,8 +2927,8 @@ public class ContractCallSuite extends HapiApiSuite {
             "da71addf000000000000000000000000%s";
     private static final String EXPLICIT_JURISDICTIONS_ADD_PARAMS =
             "218c66ea0000000000000000000000000000000000000000000000000000000000000080000000000000000000000000"
-                    + "0000000000000000000000000000000000000339000000000000000000000000123456789012345678901234"
-                    + "5678901234567890000000000000000000000000123456789012345678901234567890123456789000000000"
-                    + "000000000000000000000000000000000000000000000000000000026e790000000000000000000000000000"
-                    + "00000000000000000000000000000000";
+                + "0000000000000000000000000000000000000339000000000000000000000000123456789012345678901234"
+                + "5678901234567890000000000000000000000000123456789012345678901234567890123456789000000000"
+                + "000000000000000000000000000000000000000000000000000000026e790000000000000000000000000000"
+                + "00000000000000000000000000000000";
 }

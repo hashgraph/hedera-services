@@ -361,24 +361,24 @@ public class SizeLimitedStorage {
                         final var preInsertSize = curStorage.size();
                         try {
                             firstKey =
-                                storageUpserter.upsertMapping(
-                                    changedKey, newValue, firstKey, firstValue, curStorage);
+                                    storageUpserter.upsertMapping(
+                                            changedKey, newValue, firstKey, firstValue, curStorage);
                         } catch (Exception irreparable) {
                             log.error(
-                                "Failed link management when upserting {} -> {}; will be unable"
-                                    + " to expire all slots for this contract",
-                                changedKey,
-                                newValue,
-                                irreparable);
+                                    "Failed link management when upserting {} -> {}; will be unable"
+                                            + " to expire all slots for this contract",
+                                    changedKey,
+                                    newValue,
+                                    irreparable);
                         }
                         // If newValue was just added to the map, it is the mutable root value; but
                         // if we only
                         // updated the existing root value, then newValue is NOT the mutable root
                         // value
                         firstValue =
-                            (changedKey.equals(firstKey) && curStorage.size() > preInsertSize)
-                                ? newValue
-                                : null;
+                                (changedKey.equals(firstKey) && curStorage.size() > preInsertSize)
+                                        ? newValue
+                                        : null;
                     }
                     newFirstKeys.put(id, firstKey);
                 });

@@ -128,9 +128,9 @@ class SizeLimitedStorageTest {
         givenAccount(firstAccount, firstKvPairs, firstRootKey);
         givenAccount(nextAccount, nextKvPairs, nextRootKey);
         given(storageRemover.removeMapping(firstAKey, firstRootKey, storage))
-            .willThrow(NullPointerException.class);
+                .willThrow(NullPointerException.class);
         given(storageRemover.removeMapping(eq(firstBKey), any(), eq(storage)))
-            .willReturn(firstRootKey);
+                .willReturn(firstRootKey);
         given(storageRemover.removeMapping(eq(nextAKey), any(), eq(storage))).willReturn(null);
 
         InOrder inOrder = Mockito.inOrder(storage, accounts, accountsLedger, storageRemover);
@@ -150,7 +150,7 @@ class SizeLimitedStorageTest {
         // and:
         inOrder.verify(accountsLedger).set(firstAccount, NUM_CONTRACT_KV_PAIRS, firstKvPairs - 2);
         inOrder.verify(accountsLedger)
-            .set(firstAccount, FIRST_CONTRACT_STORAGE_KEY, firstRootKey.getKey());
+                .set(firstAccount, FIRST_CONTRACT_STORAGE_KEY, firstRootKey.getKey());
         inOrder.verify(accountsLedger).set(nextAccount, NUM_CONTRACT_KV_PAIRS, nextKvPairs - 1);
         inOrder.verify(accountsLedger).set(nextAccount, FIRST_CONTRACT_STORAGE_KEY, null);
     }
@@ -163,13 +163,13 @@ class SizeLimitedStorageTest {
         givenAccount(firstAccount, firstKvPairs, firstRootKey);
         givenAccount(nextAccount, nextKvPairs, nextRootKey);
         given(storageUpserter.upsertMapping(firstAKey, aValue, firstRootKey, null, storage))
-            .willReturn(firstAKey);
+                .willReturn(firstAKey);
         given(storageUpserter.upsertMapping(firstBKey, bValue, firstAKey, aValue, storage))
-            .willReturn(firstAKey);
+                .willReturn(firstAKey);
         given(storageUpserter.upsertMapping(firstDKey, dValue, firstAKey, null, storage))
-            .willReturn(firstAKey);
+                .willReturn(firstAKey);
         given(storageUpserter.upsertMapping(nextAKey, aValue, nextRootKey, null, storage))
-            .willReturn(nextAKey);
+                .willReturn(nextAKey);
 
         subject.putStorage(firstAccount, aLiteralKey, aLiteralValue);
         subject.putStorage(firstAccount, bLiteralKey, bLiteralValue);
@@ -179,9 +179,9 @@ class SizeLimitedStorageTest {
         subject.validateAndCommit();
 
         inOrder.verify(storageUpserter)
-            .upsertMapping(firstAKey, aValue, firstRootKey, null, storage);
+                .upsertMapping(firstAKey, aValue, firstRootKey, null, storage);
         inOrder.verify(storageUpserter)
-            .upsertMapping(firstBKey, bValue, firstAKey, aValue, storage);
+                .upsertMapping(firstBKey, bValue, firstAKey, aValue, storage);
         inOrder.verify(storageUpserter).upsertMapping(firstDKey, dValue, firstAKey, null, storage);
         inOrder.verify(storageUpserter).upsertMapping(nextAKey, aValue, nextRootKey, null, storage);
     }
@@ -191,13 +191,13 @@ class SizeLimitedStorageTest {
         givenAccount(firstAccount, firstKvPairs, firstRootKey);
         givenAccount(nextAccount, nextKvPairs, nextRootKey);
         given(storageUpserter.upsertMapping(firstAKey, aValue, firstRootKey, null, storage))
-            .willThrow(NullPointerException.class);
+                .willThrow(NullPointerException.class);
         given(storageUpserter.upsertMapping(eq(firstBKey), eq(bValue), any(), any(), eq(storage)))
-            .willReturn(firstAKey);
+                .willReturn(firstAKey);
         given(storageUpserter.upsertMapping(eq(firstDKey), eq(dValue), any(), any(), eq(storage)))
-            .willReturn(firstAKey);
+                .willReturn(firstAKey);
         given(storageUpserter.upsertMapping(eq(nextAKey), eq(aValue), any(), any(), eq(storage)))
-            .willReturn(nextAKey);
+                .willReturn(nextAKey);
 
         subject.putStorage(firstAccount, aLiteralKey, aLiteralValue);
         subject.putStorage(firstAccount, bLiteralKey, bLiteralValue);
@@ -221,13 +221,13 @@ class SizeLimitedStorageTest {
         givenAccount(firstAccount, firstKvPairs, firstRootKey);
         givenAccount(nextAccount, nextKvPairs, nextRootKey);
         given(storageUpserter.upsertMapping(firstAKey, aValue, firstRootKey, null, storage))
-            .willReturn(firstAKey);
+                .willReturn(firstAKey);
         given(storageUpserter.upsertMapping(firstBKey, bValue, firstAKey, null, storage))
-            .willReturn(firstAKey);
+                .willReturn(firstAKey);
         given(storageUpserter.upsertMapping(firstDKey, dValue, firstAKey, null, storage))
-            .willReturn(firstAKey);
+                .willReturn(firstAKey);
         given(storageUpserter.upsertMapping(nextAKey, aValue, nextRootKey, null, storage))
-            .willReturn(nextAKey);
+                .willReturn(nextAKey);
 
         subject.putStorage(firstAccount, aLiteralKey, aLiteralValue);
         subject.putStorage(firstAccount, bLiteralKey, bLiteralValue);
@@ -237,7 +237,7 @@ class SizeLimitedStorageTest {
         subject.validateAndCommit();
 
         inOrder.verify(storageUpserter)
-            .upsertMapping(firstAKey, aValue, firstRootKey, null, storage);
+                .upsertMapping(firstAKey, aValue, firstRootKey, null, storage);
         inOrder.verify(storageUpserter).upsertMapping(firstBKey, bValue, firstAKey, null, storage);
         inOrder.verify(storageUpserter).upsertMapping(firstDKey, dValue, firstAKey, null, storage);
         inOrder.verify(storageUpserter).upsertMapping(nextAKey, aValue, nextRootKey, null, storage);
