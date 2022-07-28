@@ -1,11 +1,6 @@
-package com.hedera.services.context.primitives;
-
-/*-
- * ‌
- * Hedera Services Node
- * ​
- * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,8 +12,8 @@ package com.hedera.services.context.primitives;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+package com.hedera.services.context.primitives;
 
 import static com.hedera.services.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
 import static com.hedera.services.ledger.accounts.AliasManager.tryAddressRecovery;
@@ -528,25 +523,29 @@ public class StateView {
         if (stakedNum < 0) {
             // Staked num for a node is (-nodeId -1)
             stakingInfo.setStakedNodeId(-stakedNum - 1);
+            addNodeStakeMeta(stakingInfo, account, rewardCalculator);
         } else if (stakedNum > 0) {
             stakingInfo.setStakedAccountId(STATIC_PROPERTIES.scopedAccountWith(stakedNum));
         }
 
-        if (account.getStakePeriodStart() > 0) {
-            final var startSecond =
-                    rewardCalculator.epochSecondAtStartOfPeriod(account.getStakePeriodStart());
-            stakingInfo.setStakePeriodStart(Timestamp.newBuilder().setSeconds(startSecond).build());
-            if (account.mayHavePendingReward()) {
-                final var info = stateChildren.stakingInfo();
-                final var nodeStakingInfo =
-                        info.get(EntityNum.fromLong(account.getStakedNodeAddressBookId()));
-                final var pendingReward =
-                        rewardCalculator.estimatePendingRewards(account, nodeStakingInfo);
-                stakingInfo.setPendingReward(pendingReward);
-            }
-        }
-
         return stakingInfo.build();
+    }
+
+    private void addNodeStakeMeta(
+            final StakingInfo.Builder stakingInfo,
+            final MerkleAccount account,
+            final RewardCalculator rewardCalculator) {
+        final var startSecond =
+                rewardCalculator.epochSecondAtStartOfPeriod(account.getStakePeriodStart());
+        stakingInfo.setStakePeriodStart(Timestamp.newBuilder().setSeconds(startSecond).build());
+        if (account.mayHavePendingReward()) {
+            final var info = stateChildren.stakingInfo();
+            final var nodeStakingInfo =
+                    info.get(EntityNum.fromLong(account.getStakedNodeAddressBookId()));
+            final var pendingReward =
+                    rewardCalculator.estimatePendingRewards(account, nodeStakingInfo);
+            stakingInfo.setPendingReward(pendingReward);
+        }
     }
 
     public Optional<GetAccountDetailsResponse.AccountDetails> accountDetails(
@@ -828,7 +827,7 @@ public class StateView {
         return (VirtualMap<K, V>) EMPTY_VM;
     }
 
-    /* --- used only in unit tests ---*/
+    /* --- used only in unit tests */
     public MerkleNetworkContext networkCtx() {
         return stateChildren == null ? EMPTY_CTX : stateChildren.networkCtx();
     }

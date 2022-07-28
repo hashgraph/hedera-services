@@ -1,11 +1,6 @@
-package com.hedera.services.txns.validation;
-
-/*-
- * ‌
- * Hedera Services Node
- * ​
- * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,8 +12,8 @@ package com.hedera.services.txns.validation;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+package com.hedera.services.txns.validation;
 
 import static com.hedera.services.ledger.accounts.HederaAccountCustomizer.STAKED_ACCOUNT_ID_CASE;
 import static com.hedera.services.utils.EntityNum.fromContractId;
@@ -61,8 +56,20 @@ public final class PureValidation {
         }
     }
 
+    public static ResponseCodeEnum queryableAccountOrContractStatus(
+            final EntityNum entityNum, final MerkleMap<EntityNum, MerkleAccount> accounts) {
+        return internalQueryableAccountStatus(true, entityNum, accounts);
+    }
+
     public static ResponseCodeEnum queryableAccountStatus(
             final EntityNum entityNum, final MerkleMap<EntityNum, MerkleAccount> accounts) {
+        return internalQueryableAccountStatus(false, entityNum, accounts);
+    }
+
+    private static ResponseCodeEnum internalQueryableAccountStatus(
+            final boolean contractIsOk,
+            final EntityNum entityNum,
+            final MerkleMap<EntityNum, MerkleAccount> accounts) {
         final var account = accounts.get(entityNum);
 
         return Optional.ofNullable(account)
@@ -71,7 +78,7 @@ public final class PureValidation {
                             if (v.isDeleted()) {
                                 return ACCOUNT_DELETED;
                             }
-                            return v.isSmartContract() ? INVALID_ACCOUNT_ID : OK;
+                            return (contractIsOk || !v.isSmartContract()) ? OK : INVALID_ACCOUNT_ID;
                         })
                 .orElse(INVALID_ACCOUNT_ID);
     }
@@ -147,7 +154,9 @@ public final class PureValidation {
             final MerkleMap<EntityNum, MerkleAccount> accounts,
             final NodeInfo nodeInfo) {
         if (idCase.matches(STAKED_ACCOUNT_ID_CASE)) {
-            return queryableAccountStatus(EntityNum.fromAccountId(stakedAccountId), accounts) == OK;
+            return queryableAccountOrContractStatus(
+                            EntityNum.fromAccountId(stakedAccountId), accounts)
+                    == OK;
         } else {
             return nodeInfo.isValidId(stakedNodeId);
         }
