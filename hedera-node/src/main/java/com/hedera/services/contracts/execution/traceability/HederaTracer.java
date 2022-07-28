@@ -74,19 +74,6 @@ public class HederaTracer implements HederaOperationTracer {
         }
     }
 
-    @Override
-    public void tracePrecompileResult(final MessageFrame frame, final ContractActionType type) {
-        if (areActionSidecarsEnabled) {
-            final var lastAction = currentActionsStack.pop();
-            // specialize the call type - precompile or system call
-            lastAction.setCallType(type);
-            // we have to null out recipient account and set recipient contract
-            lastAction.setRecipientAccount(null);
-            lastAction.setRecipientContract(EntityId.fromAddress(frame.getContractAddress()));
-            finalizeActionFor(lastAction, frame, frame.getState());
-        }
-    }
-
     private void trackActionFor(final MessageFrame frame, final int callDepth) {
         // code can be empty when calling precompiles too, but we handle
         // that in tracePrecompileCall, after precompile execution is completed
@@ -115,7 +102,7 @@ public class HederaTracer implements HederaOperationTracer {
             final SolidityAction action, final MessageFrame frame, final State frameState) {
         if (frameState == State.CODE_SUCCESS || frameState == State.COMPLETED_SUCCESS) {
             action.setGasUsed(action.getGas() - frame.getRemainingGas());
-            // extract only CALL output - CREATE output is extracted in bytecode sidecar
+            // externalize output for calls only - create output is externalized in bytecode sidecar
             if (action.getCallType() != CREATE) {
                 action.setOutput(frame.getOutputData().toArrayUnsafe());
             } else {
@@ -124,7 +111,6 @@ public class HederaTracer implements HederaOperationTracer {
         } else if (frameState == State.REVERT) {
             // deliberate failures do not burn extra gas
             action.setGasUsed(action.getGas() - frame.getRemainingGas());
-            // set the revert reason in the action
             frame.getRevertReason()
                     .ifPresentOrElse(
                             bytes -> action.setRevertReason(bytes.toArrayUnsafe()),
@@ -132,15 +118,11 @@ public class HederaTracer implements HederaOperationTracer {
         } else if (frameState == State.EXCEPTIONAL_HALT) {
             // exceptional exits always burn all gas
             action.setGasUsed(action.getGas());
-            // set error in action
             final var exceptionalHaltReasonOptional = frame.getExceptionalHaltReason();
             if (exceptionalHaltReasonOptional.isPresent()) {
                 final var exceptionalHaltReason = exceptionalHaltReasonOptional.get();
-                // set the result as error
                 action.setError(
                         exceptionalHaltReason.getDescription().getBytes(StandardCharsets.UTF_8));
-                // if recipient was an invalid address, clear current recipient
-                // and set invalid solidity address field
                 if (exceptionalHaltReason.equals(INVALID_SOLIDITY_ADDRESS)) {
                     if (action.getRecipientAccount() != null) {
                         action.setInvalidSolidityAddress(
@@ -155,6 +137,17 @@ public class HederaTracer implements HederaOperationTracer {
             } else {
                 action.setError(new byte[0]);
             }
+        }
+    }
+
+    @Override
+    public void tracePrecompileResult(final MessageFrame frame, final ContractActionType type) {
+        if (areActionSidecarsEnabled) {
+            final var lastAction = currentActionsStack.pop();
+            lastAction.setCallType(type);
+            lastAction.setRecipientAccount(null);
+            lastAction.setRecipientContract(EntityId.fromAddress(frame.getContractAddress()));
+            finalizeActionFor(lastAction, frame, frame.getState());
         }
     }
 
