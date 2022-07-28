@@ -282,12 +282,14 @@ public class MigrationRecordsManager {
                                 return;
                             }
                             final var contractId = id.toGrpcContractID();
+
                             final var bytecodeSidecar =
                                     generateMigrationBytecodeSidecarFor(contractId);
                             transactionContext.addSidecarRecord(bytecodeSidecar);
                             log.debug(
                                     "Published migration bytecode sidecar for contract 0.0.{}",
                                     contractId.getContractNum());
+
                             var contractStorageKey = account.getFirstContractStorageKey();
                             if (contractStorageKey == null) {
                                 log.debug(
