@@ -846,23 +846,6 @@ class ServicesStateTest {
     }
 
     @Test
-    void testLoading0253State() {
-        ClassLoaderHelper.loadClassPathDependencies();
-        final AtomicReference<SignedState> ref = new AtomicReference<>();
-        assertDoesNotThrow(
-                () -> ref.set(loadSignedState(signedStateDir + "v0.25.3/SignedState.swh")));
-        final var mockPlatform = createMockPlatformWithCrypto();
-        ref.get()
-                .getSwirldState()
-                .init(
-                        mockPlatform,
-                        createPretendBookFrom(mockPlatform, false),
-                        new DualStateImpl(),
-                        RESTART,
-                        null);
-    }
-
-    @Test
     void testGenesisState() {
         ClassLoaderHelper.loadClassPathDependencies();
         final var servicesState = new ServicesState();

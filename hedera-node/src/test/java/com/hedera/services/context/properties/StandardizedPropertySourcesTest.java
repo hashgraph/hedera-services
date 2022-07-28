@@ -58,7 +58,7 @@ class StandardizedPropertySourcesTest {
         final var name = "ratios";
         final var mockSubject = Mockito.mock(PropertySource.class);
         doCallRealMethod().when(mockSubject).getNodeStakeRatiosProperty(name);
-        given(mockSubject.getProperty(name)).willReturn(prop);
+        given(mockSubject.getProperty(name)).willReturn(expected);
         doCallRealMethod().when(mockSubject).getTypedProperty(Map.class, name);
         assertEquals(expected, mockSubject.getNodeStakeRatiosProperty(name));
 
