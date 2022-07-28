@@ -55,7 +55,6 @@ import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenInfo;
 import com.hederahashgraph.api.proto.java.TokenNftInfo;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Optional;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
@@ -219,18 +218,18 @@ class ViewExecutorTest {
         given(decodingFacade.decodeTokenGetCustomFees(input))
                 .willReturn(new TokenGetCustomFeesWrapper(fungible));
         given(stateView.tokenCustomFees(fungible)).willReturn(getCustomFees());
+        given(stateView.tokenExists(fungible)).willReturn(true);
         given(encodingFacade.encodeTokenGetCustomFees(any())).willReturn(tokenCustomFeesEncoded);
 
         assertEquals(Pair.of(gas, tokenCustomFeesEncoded), subject.computeCosted());
     }
 
     @Test
-    void computeGetTokenCustomFeesThrowsWhenEmptyFees() {
+    void computeGetTokenCustomFeesThrowsWhenTokenDoesNotExists() {
         final var input = prerequisites(ABI_ID_GET_TOKEN_CUSTOM_FEES, fungibleTokenAddress);
 
         given(decodingFacade.decodeTokenGetCustomFees(input))
                 .willReturn(new TokenGetCustomFeesWrapper(fungible));
-        given(stateView.tokenCustomFees(fungible)).willReturn(Collections.emptyList());
         assertEquals(Pair.of(gas, null), subject.computeCosted());
         verify(frame).setState(MessageFrame.State.REVERT);
     }

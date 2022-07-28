@@ -96,7 +96,7 @@ public final class ParsingConstants {
             TupleType.parse(RESPONSE_STATUS_AT_BEGINNING + TOKEN_INFO + ")");
     public static final TupleType getNonFungibleTokenInfoType =
             TupleType.parse(RESPONSE_STATUS_AT_BEGINNING + NON_FUNGIBLE_TOKEN_INFO + ")");
-    public static final TupleType tokenGetCustomFees =
+    public static final TupleType getTokenCustomFeesType =
             TupleType.parse(
                     RESPONSE_STATUS_AT_BEGINNING
                             + FIXED_FEE

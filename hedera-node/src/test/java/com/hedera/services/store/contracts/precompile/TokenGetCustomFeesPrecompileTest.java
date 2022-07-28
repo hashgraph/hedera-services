@@ -158,6 +158,7 @@ class TokenGetCustomFeesPrecompileTest {
                 .willReturn(tokenCustomFeesWrapper);
 
         given(stateView.tokenCustomFees(tokenMerkleId)).willReturn(List.of(fractionalFee));
+        given(stateView.tokenExists(tokenMerkleId)).willReturn(true);
         given(encoder.encodeTokenGetCustomFees(List.of(fractionalFee))).willReturn(successResult);
 
         givenMinimalContextForSuccessfulCall(pretendArguments);
@@ -177,7 +178,7 @@ class TokenGetCustomFeesPrecompileTest {
     }
 
     @Test
-    void getTokenCustomFeesMissingCustomFeesFails() {
+    void getTokenCustomFeesMissingTokenIdFails() {
         givenMinimalFrameContext();
 
         final var tokenCustomFeesWrapper = new TokenGetCustomFeesWrapper(tokenMerkleId);
@@ -187,8 +188,6 @@ class TokenGetCustomFeesPrecompileTest {
                         EntityIdUtils.asTypedEvmAddress(tokenMerkleId));
         given(decoder.decodeTokenGetCustomFees(pretendArguments))
                 .willReturn(tokenCustomFeesWrapper);
-
-        given(stateView.tokenCustomFees(tokenMerkleId)).willReturn(Collections.emptyList());
 
         givenMinimalContextForInvalidTokenIdCall(pretendArguments);
         givenReadOnlyFeeSchedule();

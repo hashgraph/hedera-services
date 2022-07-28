@@ -40,10 +40,8 @@ contract TokenInfoContract is HederaTokenService {
         IHederaTokenService.FixedFee[] memory fixedFees,
         IHederaTokenService.FractionalFee[] memory fractionalFees,
         IHederaTokenService.RoyaltyFee[] memory royaltyFees) {
-        (int responseCode,
-        IHederaTokenService.FixedFee[] memory retrievedFixedFees,
-        IHederaTokenService.FractionalFee[] memory retrievedFractionalFees,
-        IHederaTokenService.RoyaltyFee[] memory retrievedRoyaltyFees) = HederaTokenService.getTokenCustomFees(token);
+        int responseCode;
+        (responseCode, fixedFees, fractionalFees, royaltyFees) = HederaTokenService.getTokenCustomFees(token);
 
         if (responseCode != HederaResponseCodes.SUCCESS) {
             revert ();

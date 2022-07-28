@@ -65,12 +65,14 @@ import org.apache.tuweni.bytes.Bytes;
 public class HTSPrecompileResult implements ContractCallResult {
     private HTSPrecompileResult() {}
 
+    public static final String ADDRESS_TYPE = "address";
+    public static final String BYTES_32_TYPE = "bytes32";
     public static final String FIXED_FEE_REPLACED_ADDRESS =
-            FIXED_FEE.replace(removeBrackets(ADDRESS), removeBrackets(BYTES32));
+            FIXED_FEE.replace(ADDRESS_TYPE, BYTES_32_TYPE);
     public static final String FRACTIONAL_FEE_REPLACED_ADDRESS =
-            FRACTIONAL_FEE.replace("address", "bytes32");
+            FRACTIONAL_FEE.replace(ADDRESS_TYPE, BYTES_32_TYPE);
     public static final String ROYALTY_FEE_REPLACED_ADDRESS =
-            ROYALTY_FEE.replace("address", "bytes32");
+            ROYALTY_FEE.replace(ADDRESS_TYPE, BYTES_32_TYPE);
     public static final String TOKEN_INFO_REPLACED_ADDRESS =
             "("
                     + HEDERA_TOKEN.replace(removeBrackets(ADDRESS), removeBrackets(BYTES32))

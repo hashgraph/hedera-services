@@ -18,9 +18,9 @@ package com.hedera.services.store.contracts.precompile.codec;
 import static com.hedera.services.contracts.ParsingConstants.FunctionType.HAPI_MINT;
 import static com.hedera.services.contracts.ParsingConstants.getFungibleTokenInfoType;
 import static com.hedera.services.contracts.ParsingConstants.getNonFungibleTokenInfoType;
+import static com.hedera.services.contracts.ParsingConstants.getTokenCustomFeesType;
 import static com.hedera.services.contracts.ParsingConstants.getTokenInfoType;
 import static com.hedera.services.contracts.ParsingConstants.notSpecifiedType;
-import static com.hedera.services.contracts.ParsingConstants.tokenGetCustomFees;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.esaulpaugh.headlong.abi.Tuple;
@@ -367,7 +367,7 @@ public class EncodingFacade {
                         case HAPI_GET_NON_FUNGIBLE_TOKEN_INFO -> getNonFungibleTokenInfoType;
                         case GET_TOKEN_DEFAULT_FREEZE_STATUS -> getTokenDefaultFreezeStatusType;
                         case GET_TOKEN_DEFAULT_KYC_STATUS -> getTokenDefaultKycStatusType;
-                        case HAPI_GET_TOKEN_CUSTOM_FEES -> tokenGetCustomFees;
+                        case HAPI_GET_TOKEN_CUSTOM_FEES -> getTokenCustomFeesType;
                         default -> notSpecifiedType;
                     };
 

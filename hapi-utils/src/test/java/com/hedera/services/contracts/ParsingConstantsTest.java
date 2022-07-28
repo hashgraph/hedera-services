@@ -39,6 +39,7 @@ import static com.hedera.services.contracts.ParsingConstants.ercTransferType;
 import static com.hedera.services.contracts.ParsingConstants.getApprovedType;
 import static com.hedera.services.contracts.ParsingConstants.getFungibleTokenInfoType;
 import static com.hedera.services.contracts.ParsingConstants.getNonFungibleTokenInfoType;
+import static com.hedera.services.contracts.ParsingConstants.getTokenCustomFeesType;
 import static com.hedera.services.contracts.ParsingConstants.getTokenInfoType;
 import static com.hedera.services.contracts.ParsingConstants.hapiAllowanceOfType;
 import static com.hedera.services.contracts.ParsingConstants.hapiGetApprovedType;
@@ -49,7 +50,6 @@ import static com.hedera.services.contracts.ParsingConstants.nameType;
 import static com.hedera.services.contracts.ParsingConstants.notSpecifiedType;
 import static com.hedera.services.contracts.ParsingConstants.ownerOfType;
 import static com.hedera.services.contracts.ParsingConstants.symbolType;
-import static com.hedera.services.contracts.ParsingConstants.tokenGetCustomFees;
 import static com.hedera.services.contracts.ParsingConstants.tokenUriType;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -110,7 +110,7 @@ class ParsingConstantsTest {
                 getNonFungibleTokenInfoType,
                 TupleType.parse(RESPONSE_STATUS_AT_BEGINNING + NON_FUNGIBLE_TOKEN_INFO + ")"));
         assertEquals(
-                tokenGetCustomFees,
+                getTokenCustomFeesType,
                 TupleType.parse(
                         RESPONSE_STATUS_AT_BEGINNING
                                 + FIXED_FEE
