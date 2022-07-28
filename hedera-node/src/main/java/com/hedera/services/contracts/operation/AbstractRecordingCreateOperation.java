@@ -134,8 +134,6 @@ public abstract class AbstractRecordingCreateOperation extends AbstractOperation
 
     protected abstract Address targetContractAddress(MessageFrame frame);
 
-    protected abstract boolean isContractCreationAllowed(MessageFrame frame);
-
     private void fail(final MessageFrame frame) {
         final long inputOffset = clampedToLong(frame.getStackItem(1));
         final long inputSize = clampedToLong(frame.getStackItem(2));
@@ -245,5 +243,9 @@ public abstract class AbstractRecordingCreateOperation extends AbstractOperation
 
         final int currentPC = frame.getPC();
         frame.setPC(currentPC + 1);
+    }
+
+    private boolean isContractCreationAllowed(final MessageFrame frame) {
+        return ((HederaStackedWorldStateUpdater) frame.getWorldUpdater()).isNewCreationAllowed();
     }
 }

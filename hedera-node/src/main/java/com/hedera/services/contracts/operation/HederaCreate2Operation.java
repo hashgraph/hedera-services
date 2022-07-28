@@ -91,11 +91,6 @@ public class HederaCreate2Operation extends AbstractRecordingCreateOperation {
         return alias;
     }
 
-    @Override
-    protected boolean isContractCreationAllowed(MessageFrame frame) {
-        return ((HederaStackedWorldStateUpdater) frame.getWorldUpdater()).isNewCreationAllowed();
-    }
-
     private static Bytes32 keccak256(final Bytes input) {
         return Bytes32.wrap(keccak256DigestOf(input.toArrayUnsafe()));
     }

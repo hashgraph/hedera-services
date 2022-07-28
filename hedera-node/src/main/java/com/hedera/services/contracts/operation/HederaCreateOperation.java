@@ -19,7 +19,6 @@ import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.contracts.gascalculator.StorageGasCalculator;
 import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.state.EntityCreator;
-import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.services.store.contracts.HederaWorldUpdater;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import javax.inject.Inject;
@@ -80,8 +79,4 @@ public class HederaCreateOperation extends AbstractRecordingCreateOperation {
         return address;
     }
 
-    @Override
-    protected boolean isContractCreationAllowed(MessageFrame frame) {
-        return ((HederaStackedWorldStateUpdater) frame.getWorldUpdater()).isNewCreationAllowed();
-    }
 }
