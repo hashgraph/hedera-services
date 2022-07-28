@@ -216,18 +216,18 @@ public class StakingAccountsCommitInterceptor extends AccountsCommitInterceptor 
             final var account = pendingChanges.entity(i);
             final var changes = pendingChanges.changes(i);
             setCurrentAndNewIds(account, changes);
+            final var stakeMetaChanged = hasStakeMetaChanges(changes, account);
             // Because awardStake() and withdrawStake() are very fast, we don't worry about
-            // optimizing
-            // the FROM_NODE_TO_NODE case with curStakedId == newStakedId, despite how common it is
+            // optimizing the FROM_NODE_TO_NODE case with curStakedId == newStakedId, despite
+            // how common it is
             if (scenario.withdrawsFromNode()) {
                 stakeChangeManager.withdrawStake(
                         -curStakedId - 1,
                         roundedToHbar(account.totalStake()),
                         account.isDeclinedReward());
-                if (newStakedId != curStakedId) {
-                    // This account may be leaving some rewards from its current node "unclaimed";
-                    // if so, we
-                    // need to record that, so we don't include them in the pendingRewards
+                if (stakeMetaChanged) {
+                    // This account may be leaving some rewards from its current node unclaimed;
+                    // if so, we need to record that, so we don't include them in the pendingRewards
                     // calculation later
                     final var effStakeRewardStart = rewardableStartStakeFor(account);
                     stakeInfoManager.unclaimRewardsForStakeStart(
@@ -243,7 +243,6 @@ public class StakingAccountsCommitInterceptor extends AccountsCommitInterceptor 
                         roundedToHbar(stakeToAward),
                         finalDeclineRewardGiven(account, changes));
             }
-            final var stakeMetaChanged = hasStakeMetaChanges(changes);
             if (stakeMetaChanged) {
                 stakeAtStartOfLastRewardedPeriodUpdates[i] =
                         NOT_REWARDED_SINCE_LAST_STAKING_META_CHANGE;
@@ -397,7 +396,7 @@ public class StakingAccountsCommitInterceptor extends AccountsCommitInterceptor 
                 && account.getStakedId() < 0
                 && (stakedToMeUpdate != NA
                         || changes.containsKey(BALANCE)
-                        || hasStakeMetaChanges(changes));
+                        || hasStakeMetaChanges(changes, account));
     }
 
     /**

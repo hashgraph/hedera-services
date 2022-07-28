@@ -1,11 +1,6 @@
-package com.hedera.services.ledger.accounts.staking;
-
-/*-
- * ‌
- * Hedera Services Node
- * ​
- * Copyright (C) 2018 - 2022 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2022 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,8 +12,8 @@ package com.hedera.services.ledger.accounts.staking;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+package com.hedera.services.ledger.accounts.staking;
 
 import static com.hedera.services.ledger.accounts.HederaAccountCustomizer.STAKED_ACCOUNT_ID_CASE;
 import static com.hedera.services.ledger.properties.AccountProperty.BALANCE;
@@ -122,8 +117,16 @@ public class StakingUtils {
         }
     }
 
-    public static boolean hasStakeMetaChanges(@NotNull final Map<AccountProperty, Object> changes) {
-        return changes.containsKey(DECLINE_REWARD) || changes.containsKey(STAKED_ID);
+    public static boolean hasStakeMetaChanges(
+            @NotNull final Map<AccountProperty, Object> changes,
+            @Nullable final MerkleAccount account) {
+        return (changes.containsKey(DECLINE_REWARD)
+                        && (account == null
+                                || account.isDeclinedReward()
+                                        != (boolean) changes.get(DECLINE_REWARD)))
+                || (changes.containsKey(STAKED_ID)
+                        && (account == null
+                                || account.getStakedId() != (long) changes.get(STAKED_ID)));
     }
 
     public static long roundedToHbar(long value) {

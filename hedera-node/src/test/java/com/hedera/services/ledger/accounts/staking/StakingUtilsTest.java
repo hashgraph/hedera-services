@@ -1,11 +1,6 @@
-package com.hedera.services.ledger.accounts.staking;
-
-/*-
- * ‌
- * Hedera Services Node
- * ​
- * Copyright (C) 2018 - 2022 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2022 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,8 +12,8 @@ package com.hedera.services.ledger.accounts.staking;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+package com.hedera.services.ledger.accounts.staking;
 
 import static com.hedera.services.ledger.accounts.staking.StakingUtils.NA;
 import static com.hedera.services.ledger.accounts.staking.StakingUtils.finalBalanceGiven;
@@ -30,6 +25,8 @@ import static com.hedera.services.ledger.accounts.staking.StakingUtils.hasStakeM
 import static com.hedera.services.ledger.accounts.staking.StakingUtils.updateBalance;
 import static com.hedera.services.ledger.accounts.staking.StakingUtils.updateStakedToMe;
 import static com.hedera.services.ledger.properties.AccountProperty.BALANCE;
+import static com.hedera.services.ledger.properties.AccountProperty.DECLINE_REWARD;
+import static com.hedera.services.ledger.properties.AccountProperty.STAKED_ID;
 import static com.hedera.services.state.migration.ReleaseTwentySevenMigration.buildStakingInfoMap;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -63,18 +60,32 @@ public class StakingUtilsTest {
     @Mock private Address address2;
     @Mock private BootstrapProperties bootstrapProperties;
 
-    private MerkleMap<EntityNum, MerkleStakingInfo> stakingInfo = new MerkleMap<>();
-    private MerkleMap<EntityNum, MerkleAccount> accounts = new MerkleMap<>();
-
-    @BeforeEach
-    void setUp() {
-        stakingInfo = buildsStakingInfoMap();
+    @Test
+    void validatesIfAnyStakedFieldChanges() {
+        final var account = new MerkleAccount();
+        assertTrue(hasStakeMetaChanges(randomStakeFieldChanges(100L), account));
+        assertFalse(hasStakeMetaChanges(randomNotStakeFieldChanges(), account));
     }
 
     @Test
-    void validatesIfAnyStakedFieldChanges() {
-        assertTrue(hasStakeMetaChanges(randomStakeFieldChanges(100L)));
-        assertFalse(hasStakeMetaChanges(randomNotStakeFieldChanges()));
+    void stakeMetaOnlyChangesWithStakingIdIfDifferent() {
+        final var account = new MerkleAccount();
+        account.setStakedId(-1);
+        assertTrue(hasStakeMetaChanges(Map.of(STAKED_ID, -2L), account));
+        assertFalse(hasStakeMetaChanges(Map.of(STAKED_ID, -1L), account));
+    }
+
+    @Test
+    void stakeMetaOnlyChangesWithDeclineIfDifferent() {
+        final var account = new MerkleAccount();
+        assertTrue(hasStakeMetaChanges(Map.of(DECLINE_REWARD, true), account));
+        assertFalse(hasStakeMetaChanges(Map.of(DECLINE_REWARD, false), account));
+    }
+
+    @Test
+    void stakeMetaAlwaysChangesIfNullAccount() {
+        assertTrue(hasStakeMetaChanges(Map.of(DECLINE_REWARD, false), null));
+        assertTrue(hasStakeMetaChanges(Map.of(STAKED_ID, -1L), null));
     }
 
     @Test
