@@ -48,7 +48,6 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.assertionsHold;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.balanceSnapshot;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingAllOf;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
@@ -67,7 +66,6 @@ import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.assertions.AccountInfoAsserts;
-import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hedera.services.bdd.suites.utils.sysfiles.serdes.StandardSerdes;
 import com.hederahashgraph.api.proto.java.AccountAmount;
@@ -115,7 +113,7 @@ public class RecordCreationSuite extends HapiApiSuite {
                     submittingNodeChargedNetworkFeeForLackOfDueDiligence(),
                     submittingNodeChargedNetworkFeeForIgnoringPayerUnwillingness(),
                     submittingNodeStillPaidIfServiceFeesOmitted(),
-                    internalContractCreateLimitIsRespected()
+                    internalContractCreateLimitIsRespected(),
                     /* This last spec requires sleeping for the default TTL (180s) so that the
                     expiration queue will be purged of all entries for existing records.
 
@@ -712,33 +710,6 @@ public class RecordCreationSuite extends HapiApiSuite {
                                 .via(deploySmallContractRec)
                                 .gas(2000000)
                                 .hasKnownStatus(CONTRACT_EXECUTION_EXCEPTION));
-    }
-
-    /* this spec can be used to perf test the node when
-    a large number of contract creates occur in a small period and the node
-    has to save to the state a large number of contracts and also create a large
-    number of sidecar files ( > 1GB if deploying big contract)
-     */
-    private HapiApiSpec recStream6InternalContractCreates() {
-        final var contract = "RecStream6Deploy";
-        final var deploySmallContractFn = "deploySmallContract";
-        //        final var deployAvgContractFn = "deployAverageContract";
-        //        final var deployBigContractFn = "deployBigContract";
-        final var deploySmallContractRec = "deploySmallContractRec";
-
-        return defaultHapiSpec("recStream6InternalContractCreates")
-                .given(cryptoCreate("payer"), uploadInitCode(contract), contractCreate(contract))
-                .when(overriding("contracts.throttle.throttleByGas", "false"))
-                .then(
-                        UtilVerbs.inParallel(
-                                asOpArray(
-                                        1000,
-                                        i ->
-                                                contractCall(contract, deploySmallContractFn, 50)
-                                                        .via(deploySmallContractRec)
-                                                        .gas(2000000)
-                                                        .hasKnownStatus(
-                                                                CONTRACT_EXECUTION_EXCEPTION))));
     }
 
     private byte[] rawConfigPlus(byte[] rawBase, String extraName, String extraValue) {

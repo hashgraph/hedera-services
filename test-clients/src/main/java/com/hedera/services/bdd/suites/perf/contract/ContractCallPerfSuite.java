@@ -22,9 +22,12 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocal;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
@@ -46,7 +49,7 @@ public class ContractCallPerfSuite extends HapiApiSuite {
 
     @Override
     public List<HapiApiSpec> getSpecsInSuite() {
-        return List.of(contractCallPerf());
+        return List.of(contractCallPerf(), recStream6InternalContractCreatesPerf());
     }
 
     @Override
@@ -110,6 +113,32 @@ public class ContractCallPerfSuite extends HapiApiSuite {
                                                                                                             ENDING_BALANCE)
                                                                                         })))
                                                         .noLogging()));
+    }
+
+    /* this spec can be used to perf test the node when
+    a large number of contract creates occur in a small period and the node
+    has to save to the state a large number of contracts and also create a large
+    number of sidecar files ( > 1GB if deploying big contract)
+     */
+    private HapiApiSpec recStream6InternalContractCreatesPerf() {
+        final var contract = "RecStream6Deploy";
+        //        final var deploySmallContractFn = "deploySmallContract";
+        //        final var deployAvgContractFn = "deployAverageContract";
+        final var deployBigContractFn = "deployBigContract";
+        final var deploySmallContractRec = "deploySmallContractRec";
+
+        return defaultHapiSpec("recStream6InternalContractCreatesPerf")
+                .given(cryptoCreate("payer"), uploadInitCode(contract), contractCreate(contract))
+                .when(overriding("contracts.throttle.throttleByGas", "false"))
+                .then(
+                        UtilVerbs.inParallel(
+                                asOpArray(
+                                        1000,
+                                        i ->
+                                                contractCall(contract, deployBigContractFn, 15)
+                                                        .via(deploySmallContractRec)
+                                                        .gas(2000000)
+                                                        .hasKnownStatus(SUCCESS))));
     }
 
     @Override
