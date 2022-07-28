@@ -26,16 +26,16 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.verify;
 
+import com.hedera.services.state.merkle.MerkleScheduledTransactions.ChildIndices;
 import com.hedera.services.state.virtual.EntityNumVirtualKey;
 import com.hedera.services.state.virtual.schedule.ScheduleEqualityVirtualKey;
 import com.hedera.services.state.virtual.schedule.ScheduleEqualityVirtualValue;
 import com.hedera.services.state.virtual.schedule.ScheduleSecondVirtualValue;
 import com.hedera.services.state.virtual.schedule.ScheduleVirtualValue;
 import com.hedera.services.state.virtual.temporal.SecondSinceEpocVirtualKey;
-import java.util.List;
-
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
+import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -120,6 +120,24 @@ class MerkleScheduledTransactionsTest {
 
     @Test
     void toStringWorks() {
+        assertEquals(
+                "MerkleScheduledTransactions{state=MerkleScheduledTransactionsState, "
+                        + "# schedules=0, # seconds=0, # equalities=0}",
+                subject.toString());
+
+        subject.setChild(ChildIndices.BY_ID, new MerkleMap<>());
+        subject.setChild(ChildIndices.BY_EQUALITY, new MerkleMap<>());
+        subject.setChild(ChildIndices.BY_EXPIRATION_SECOND, new MerkleMap<>());
+
+        assertEquals(
+                "MerkleScheduledTransactions{state=MerkleScheduledTransactionsState, "
+                        + "# schedules=0, # seconds=0, # equalities=0}",
+                subject.toString());
+
+        subject.setChild(ChildIndices.BY_ID, new MerkleScheduledTransactionsState());
+        subject.setChild(ChildIndices.BY_EQUALITY, new MerkleScheduledTransactionsState());
+        subject.setChild(ChildIndices.BY_EXPIRATION_SECOND, new MerkleScheduledTransactionsState());
+
         assertEquals(
                 "MerkleScheduledTransactions{state=MerkleScheduledTransactionsState, "
                         + "# schedules=0, # seconds=0, # equalities=0}",
@@ -225,7 +243,6 @@ class MerkleScheduledTransactionsTest {
         assertEquals(subject.byId().get(key2).getKey(), key2);
         assertNotSame(subject.byId().get(key2), value2);
 
-
         subject.setImmutable(false);
         var map2 = new MerkleMap<EntityNumVirtualKey, ScheduleVirtualValue>();
         value1 = value1.asWritable();
@@ -243,7 +260,6 @@ class MerkleScheduledTransactionsTest {
         assertNotSame(subject.byId().get(key1), value1);
         assertEquals(subject.byId().get(key2).getKey(), key2);
         assertNotSame(subject.byId().get(key2), value2);
-
     }
 
     @Test
@@ -281,7 +297,6 @@ class MerkleScheduledTransactionsTest {
         assertEquals(subject.byExpirationSecond().get(key2).getKey(), key2);
         assertNotSame(subject.byExpirationSecond().get(key2), value2);
 
-
         subject.setImmutable(false);
         var map2 = new MerkleMap<SecondSinceEpocVirtualKey, ScheduleSecondVirtualValue>();
         value1 = value1.asWritable();
@@ -299,8 +314,8 @@ class MerkleScheduledTransactionsTest {
         assertNotSame(subject.byExpirationSecond().get(key1), value1);
         assertEquals(subject.byExpirationSecond().get(key2).getKey(), key2);
         assertNotSame(subject.byExpirationSecond().get(key2), value2);
-
     }
+
     @Test
     void byEqualityMigratesCorrectly() {
 
@@ -336,7 +351,6 @@ class MerkleScheduledTransactionsTest {
         assertEquals(subject.byEquality().get(key2).getKey(), key2);
         assertNotSame(subject.byEquality().get(key2), value2);
 
-
         subject.setImmutable(false);
         var map2 = new MerkleMap<ScheduleEqualityVirtualKey, ScheduleEqualityVirtualValue>();
         value1 = value1.asWritable();
@@ -354,6 +368,5 @@ class MerkleScheduledTransactionsTest {
         assertNotSame(subject.byEquality().get(key1), value1);
         assertEquals(subject.byEquality().get(key2).getKey(), key2);
         assertNotSame(subject.byEquality().get(key2), value2);
-
     }
 }
