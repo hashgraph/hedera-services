@@ -478,8 +478,6 @@ class GlobalDynamicPropertiesTest {
                                 : Set.of(SidecarType.CONTRACT_BYTECODE));
         given(properties.getBooleanProperty("staking.requireMinStakeToReward"))
                 .willReturn((i + 79) % 2 == 0);
-        given(properties.getBooleanProperty("staking.requireMinStakeToReward"))
-            .willReturn((i + 79) % 2 == 0);
         given(properties.getNodeStakeRatiosProperty("staking.nodeMaxToMinStakeRatios"))
             .willReturn(Map.of(0L, 4L, 1L, 8L));
     }
