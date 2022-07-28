@@ -88,7 +88,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import javax.annotation.Nullable;
@@ -111,8 +110,8 @@ public class ServicesState extends PartialNaryMerkleInternal
     private int deserializedStateVersion = CURRENT_VERSION;
     /* All of the state that is not itself hashed or serialized, but only derived from such state */
     private StateMetadata metadata;
-    /* Tasks to run after init. */
-    private List<Runnable> postInitTasks = new ArrayList<>();
+    /* Tasks to run after migration. */
+    private List<Runnable> postMigrateTasks = new ArrayList<>();
 
     public ServicesState() {
         /* RuntimeConstructable */
@@ -217,14 +216,14 @@ public class ServicesState extends PartialNaryMerkleInternal
                 migrateFrom(deserializedVersion);
             }
         }
-        runPostInitTasks();
+        runPostMigrateTasks();
     }
 
-    private void runPostInitTasks() {
-        for (Runnable task : postInitTasks) {
+    private void runPostMigrateTasks() {
+        for (Runnable task : postMigrateTasks) {
             task.run();
         }
-        postInitTasks.clear();
+        postMigrateTasks.clear();
     }
 
     @Override
@@ -363,7 +362,7 @@ public class ServicesState extends PartialNaryMerkleInternal
             if (deployedVersion.equals(deserializedVersion)) {
                 initTask.run();
             } else {
-                postInitTasks.add(initTask);
+                postMigrateTasks.add(initTask);
             }
         }
     }
