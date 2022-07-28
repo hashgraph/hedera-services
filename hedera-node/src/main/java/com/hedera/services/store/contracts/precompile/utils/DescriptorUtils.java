@@ -20,6 +20,7 @@ import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_GET_TOKEN_DEFAULT_FREEZE_STATUS;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_GET_TOKEN_DEFAULT_KYC_STATUS;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_GET_TOKEN_INFO;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_IS_KYC;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_REDIRECT_FOR_TOKEN;
 import static com.hedera.services.utils.EntityIdUtils.tokenIdFromEvmAddress;
 
@@ -36,7 +37,8 @@ public class DescriptorUtils {
                 || ABI_ID_GET_FUNGIBLE_TOKEN_INFO == input.getInt(0)
                 || ABI_ID_GET_NON_FUNGIBLE_TOKEN_INFO == input.getInt(0)
                 || ABI_ID_GET_TOKEN_DEFAULT_FREEZE_STATUS == input.getInt(0)
-                || ABI_ID_GET_TOKEN_DEFAULT_KYC_STATUS == input.getInt(0);
+                || ABI_ID_GET_TOKEN_DEFAULT_KYC_STATUS == input.getInt(0)
+                || ABI_ID_IS_KYC == input.getInt(0);
     }
 
     public static RedirectTarget getRedirectTarget(final Bytes input) {

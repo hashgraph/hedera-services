@@ -134,6 +134,7 @@ public final class ParsingConstants {
         HAPI_GET_TOKEN_INFO,
         HAPI_GET_NON_FUNGIBLE_TOKEN_INFO,
         HAPI_IS_APPROVED_FOR_ALL,
+        HAPI_IS_KYC,
         GET_TOKEN_DEFAULT_FREEZE_STATUS,
         GET_TOKEN_DEFAULT_KYC_STATUS,
         NOT_SPECIFIED

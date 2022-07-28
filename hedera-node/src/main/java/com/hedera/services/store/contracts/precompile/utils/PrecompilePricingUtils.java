@@ -26,7 +26,9 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAssoci
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenBurn;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenDissociateFromAccount;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenGetInfo;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenGrantKycToAccount;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenMint;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenRevokeKycFromAccount;
 import static com.hederahashgraph.api.proto.java.ResponseType.ANSWER_ONLY;
 import static com.hederahashgraph.api.proto.java.SubType.DEFAULT;
 import static com.hederahashgraph.api.proto.java.SubType.TOKEN_FUNGIBLE_COMMON;
@@ -206,6 +208,9 @@ public class PrecompilePricingUtils {
         DISSOCIATE(TokenDissociateFromAccount, DEFAULT),
         APPROVE(CryptoApproveAllowance, DEFAULT),
         DELETE_NFT_APPROVE(CryptoDeleteAllowance, DEFAULT),
+
+        GRANT_KYC(TokenGrantKycToAccount, DEFAULT),
+        REVOKE_KYC(TokenRevokeKycFromAccount, DEFAULT),
 
         PRNG(HederaFunctionality.UtilPrng, DEFAULT),
         WIPE_FUNGIBLE(TokenAccountWipe, TOKEN_FUNGIBLE_COMMON),
