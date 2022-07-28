@@ -19,9 +19,9 @@ import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hedera.services.ledger.properties.AccountProperty.IS_RECEIVER_SIG_REQUIRED;
 import static com.hedera.services.ledger.properties.AccountProperty.KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ADMIN_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_SUPPLY_KEY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_IS_IMMUTABLE;
 
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.keys.ActivationTest;
@@ -102,7 +102,7 @@ public class TxnAwareEvmSigsVerifier implements EvmSigsVerifier {
         validateTrue(worldLedgers.tokens().exists(tokenId), INVALID_TOKEN_ID);
 
         final var adminKey = (JKey) worldLedgers.tokens().get(tokenId, TokenProperty.ADMIN_KEY);
-        validateTrue(adminKey != null, INVALID_ADMIN_KEY);
+        validateTrue(adminKey != null, TOKEN_IS_IMMUTABLE);
 
         return isActiveInFrame(adminKey, isDelegateCall, activeContract, worldLedgers.aliases());
     }

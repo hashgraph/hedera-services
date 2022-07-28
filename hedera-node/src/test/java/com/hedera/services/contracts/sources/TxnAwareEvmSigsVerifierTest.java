@@ -42,9 +42,9 @@ import static com.hedera.services.ledger.properties.AccountProperty.IS_RECEIVER_
 import static com.hedera.services.ledger.properties.AccountProperty.KEY;
 import static com.hedera.test.utils.TxnUtils.assertFailsWith;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ADMIN_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_SUPPLY_KEY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_IS_IMMUTABLE;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -197,7 +197,7 @@ class TxnAwareEvmSigsVerifierTest {
                 () ->
                         subject.hasActiveAdminKey(
                                 true, PRETEND_TOKEN_ADDR, PRETEND_SENDER_ADDR, ledgers),
-                INVALID_ADMIN_KEY);
+                TOKEN_IS_IMMUTABLE);
     }
 
     @Test
