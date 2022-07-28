@@ -95,9 +95,11 @@ class PlatformSubmissionManagerTest {
         recordCache = mock(RecordCache.class);
         speedometers = mock(MiscSpeedometers.class);
 
-        accessor = new SignedTxnAccessor(signedTxn);
-        uncheckedAccessor = new SignedTxnAccessor(uncheckedSubTxn);
-        invalidUncheckedAccessor = new SignedTxnAccessor(invalidUncheckedSubTxn);
+        accessor = SignedTxnAccessor.from(signedTxn.toByteArray(), signedTxn);
+        uncheckedAccessor = SignedTxnAccessor.from(uncheckedSubTxn.toByteArray(), uncheckedSubTxn);
+        invalidUncheckedAccessor =
+                SignedTxnAccessor.from(
+                        invalidUncheckedSubTxn.toByteArray(), invalidUncheckedSubTxn);
 
         subject = new PlatformSubmissionManager(platform, recordCache, speedometers);
     }

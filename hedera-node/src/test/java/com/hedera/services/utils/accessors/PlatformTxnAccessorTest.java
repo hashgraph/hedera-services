@@ -126,7 +126,7 @@ class PlatformTxnAccessorTest {
                 Transaction.newBuilder().setBodyBytes(someTxn.toByteString()).build();
 
         // when:
-        SignedTxnAccessor subject = new SignedTxnAccessor(signedTxnWithBody);
+        SignedTxnAccessor subject = SignedTxnAccessor.from(signedTxnWithBody.toByteArray());
 
         // then:
         assertArrayEquals(signedTxnWithBody.toByteArray(), subject.getSignedTxnWrapperBytes());

@@ -15,6 +15,7 @@
  */
 package com.hedera.services.utils.accessors;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.MoreObjects;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.primitives.StateView;
@@ -66,12 +67,6 @@ public class PlatformTxnAccessor implements SwirldsTxnAccessor {
     public static PlatformTxnAccessor from(
             final TxnAccessor delegate, final SwirldTransaction platformTxn) {
         return new PlatformTxnAccessor(delegate, platformTxn);
-    }
-
-    public static PlatformTxnAccessor from(final SwirldTransaction platformTxn)
-            throws InvalidProtocolBufferException {
-        return new PlatformTxnAccessor(
-                SignedTxnAccessor.from(platformTxn.getContents()), platformTxn);
     }
 
     @Override
@@ -326,5 +321,12 @@ public class PlatformTxnAccessor implements SwirldsTxnAccessor {
     @Override
     public StateView getStateView() {
         return delegate.getStateView();
+    }
+
+    @VisibleForTesting
+    public static PlatformTxnAccessor from(final SwirldTransaction platformTxn)
+            throws InvalidProtocolBufferException {
+        return new PlatformTxnAccessor(
+                SignedTxnAccessor.from(platformTxn.getContents()), platformTxn);
     }
 }

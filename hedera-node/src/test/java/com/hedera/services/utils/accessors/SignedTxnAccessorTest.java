@@ -385,7 +385,7 @@ class SignedTxnAccessorTest {
                         .build();
 
         var txn = buildTokenTransferTxn(nftTransfers);
-        var subject = new SignedTxnAccessor(txn);
+        var subject = SignedTxnAccessor.from(txn.toByteArray());
         assertEquals(SubType.TOKEN_NON_FUNGIBLE_UNIQUE, subject.availXferUsageMeta().getSubType());
         assertEquals(subject.availXferUsageMeta().getSubType(), subject.getSubType());
 
@@ -396,7 +396,7 @@ class SignedTxnAccessorTest {
         xferUsageMeta.setCustomFeeHbarTransfers(0);
 
         txn = buildTokenTransferTxn(fungibleTokenXfers);
-        subject = new SignedTxnAccessor(txn);
+        subject = SignedTxnAccessor.from(txn.toByteArray(), txn);
         assertEquals(TOKEN_FUNGIBLE_COMMON, subject.availXferUsageMeta().getSubType());
         assertEquals(subject.availXferUsageMeta().getSubType(), subject.getSubType());
 
@@ -407,7 +407,7 @@ class SignedTxnAccessorTest {
         xferUsageMeta.setCustomFeeTokenTransfers(0);
 
         txn = buildDefaultCryptoCreateTxn();
-        subject = new SignedTxnAccessor(txn);
+        subject = SignedTxnAccessor.from(txn.toByteArray(), txn);
         assertEquals(SubType.DEFAULT, subject.getSubType());
     }
 
@@ -733,7 +733,7 @@ class SignedTxnAccessorTest {
         given(dynamicProperties.areNftsEnabled()).willReturn(true);
         given(dynamicProperties.maxBatchSizeWipe()).willReturn(10);
 
-        var subject = new TokenWipeAccessor(txn.toByteArray(), dynamicProperties);
+        var subject = new TokenWipeAccessor(txn.toByteArray(), txn, dynamicProperties);
 
         assertEquals(true, subject.supportsPrecheck());
         assertEquals(INVALID_TOKEN_ID, subject.doPrecheck());

@@ -27,7 +27,9 @@ import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.store.models.Id;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenWipeAccountTransactionBody;
+import com.hederahashgraph.api.proto.java.Transaction;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Specialized accessor for TokenWipe transaction. Uses the latest signed state view for looking up
@@ -38,9 +40,12 @@ public class TokenWipeAccessor extends SignedTxnAccessor {
     private final boolean areNftsEnabled;
     private final int maxBatchSizeWipe;
 
-    public TokenWipeAccessor(final byte[] txn, final GlobalDynamicProperties dynamicProperties)
+    public TokenWipeAccessor(
+            final byte[] signedTxnWrapperBytes,
+            final Transaction txn,
+            final GlobalDynamicProperties dynamicProperties)
             throws InvalidProtocolBufferException {
-        super(txn);
+        super(signedTxnWrapperBytes, Optional.of(txn));
         this.body = getTxn().getTokenWipe();
         this.areNftsEnabled = dynamicProperties.areNftsEnabled();
         this.maxBatchSizeWipe = dynamicProperties.maxBatchSizeWipe();

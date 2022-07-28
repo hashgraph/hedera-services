@@ -165,7 +165,7 @@ class UsageBasedFeeCalculatorTest {
                         .payerKt(complexKey)
                         .txnValidStart(at)
                         .get();
-        accessor = new SignedTxnAccessor(signedTxn);
+        accessor = SignedTxnAccessor.from(signedTxn.toByteArray(), signedTxn);
         usagePrices = mock(UsagePricesProvider.class);
         given(usagePrices.activePrices(accessor)).willReturn(currentPrices);
         correctOpEstimator = mock(TxnResourceUsageEstimator.class);
@@ -218,7 +218,7 @@ class UsageBasedFeeCalculatorTest {
                         .sending(sent)
                         .txnValidStart(at)
                         .get();
-        accessor = new SignedTxnAccessor(signedTxn);
+        accessor = SignedTxnAccessor.from(signedTxn.toByteArray());
 
         given(exchange.rate(at)).willReturn(currentRate);
         given(usagePrices.defaultPricesGiven(ContractCall, at)).willReturn(defaultCurrentPrices);
@@ -243,7 +243,7 @@ class UsageBasedFeeCalculatorTest {
                         .sending(sent)
                         .txnValidStart(at)
                         .get();
-        accessor = Mockito.spy(new SignedTxnAccessor(signedTxn));
+        accessor = Mockito.spy(SignedTxnAccessor.from(signedTxn.toByteArray()));
 
         given(accessor.getFunction()).willReturn(EthereumTransaction);
 
@@ -268,7 +268,7 @@ class UsageBasedFeeCalculatorTest {
                         .initialBalance(initialBalance)
                         .txnValidStart(at)
                         .get();
-        accessor = new SignedTxnAccessor(signedTxn);
+        accessor = SignedTxnAccessor.from(signedTxn.toByteArray());
 
         given(exchange.rate(at)).willReturn(currentRate);
         given(usagePrices.pricesGiven(ContractCreate, at)).willReturn(currentPrices);
@@ -287,7 +287,7 @@ class UsageBasedFeeCalculatorTest {
     void estimatesMiscNoNetChange() throws Throwable {
         // setup:
         signedTxn = newSignedFileCreate().payer(asAccountString(payer)).txnValidStart(at).get();
-        accessor = new SignedTxnAccessor(signedTxn);
+        accessor = SignedTxnAccessor.from(signedTxn.toByteArray());
 
         // expect:
         assertEquals(0L, subject.estimatedNonFeePayerAdjustments(accessor, at));
@@ -305,7 +305,7 @@ class UsageBasedFeeCalculatorTest {
                                         asAccountString(payer), asAccountString(receiver), sent))
                         .txnValidStart(at)
                         .get();
-        accessor = new SignedTxnAccessor(signedTxn);
+        accessor = SignedTxnAccessor.from(signedTxn.toByteArray());
 
         // expect:
         assertEquals(-sent, subject.estimatedNonFeePayerAdjustments(accessor, at));
@@ -579,7 +579,7 @@ class UsageBasedFeeCalculatorTest {
         final var dynamicProperties = mock(GlobalDynamicProperties.class);
         given(dynamicProperties.areNftsEnabled()).willReturn(true);
         given(dynamicProperties.maxBatchSizeWipe()).willReturn(10);
-        accessor = new TokenWipeAccessor(signedTxn.toByteArray(), dynamicProperties);
+        accessor = new TokenWipeAccessor(signedTxn.toByteArray(), signedTxn, dynamicProperties);
         invokesAccessorBasedUsagesForTxnInHandle(
                 signedTxn,
                 TokenAccountWipe,

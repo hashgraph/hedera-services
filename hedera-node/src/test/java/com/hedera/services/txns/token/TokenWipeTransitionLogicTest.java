@@ -128,7 +128,8 @@ class TokenWipeTransitionLogicTest {
     void rejectsUniqueWhenNftsNotEnabled() throws InvalidProtocolBufferException {
         givenValidUniqueTxnCtx();
         given(dynamicProperties.areNftsEnabled()).willReturn(false);
-        accessor = new TokenWipeAccessor(tokenWipeTxn.toByteArray(), dynamicProperties);
+        accessor =
+                new TokenWipeAccessor(tokenWipeTxn.toByteArray(), tokenWipeTxn, dynamicProperties);
 
         // expect:
         assertEquals(NOT_SUPPORTED, subject.validateSemantics(accessor));
@@ -257,7 +258,8 @@ class TokenWipeTransitionLogicTest {
     void propagatesErrorOnInvalidBatch() throws InvalidProtocolBufferException {
         givenValidUniqueTxnCtx();
         given(dynamicProperties.maxBatchSizeWipe()).willReturn(1);
-        accessor = new TokenWipeAccessor(tokenWipeTxn.toByteArray(), dynamicProperties);
+        accessor =
+                new TokenWipeAccessor(tokenWipeTxn.toByteArray(), tokenWipeTxn, dynamicProperties);
 
         assertEquals(BATCH_SIZE_LIMIT_EXCEEDED, subject.validateSemantics(accessor));
     }
@@ -320,7 +322,8 @@ class TokenWipeTransitionLogicTest {
                 Transaction.newBuilder().setBodyBytes(tokenWipeTxnBody.toByteString()).build();
         given(dynamicProperties.areNftsEnabled()).willReturn(true);
         given(dynamicProperties.maxBatchSizeWipe()).willReturn(10);
-        accessor = new TokenWipeAccessor(tokenWipeTxn.toByteArray(), dynamicProperties);
+        accessor =
+                new TokenWipeAccessor(tokenWipeTxn.toByteArray(), tokenWipeTxn, dynamicProperties);
         given(swirldsTxnAccessor.getDelegate()).willReturn(accessor);
     }
 

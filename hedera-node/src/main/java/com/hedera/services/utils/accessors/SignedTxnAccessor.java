@@ -75,6 +75,7 @@ import com.hederahashgraph.api.proto.java.TransactionID;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.LongPredicate;
 import org.apache.commons.codec.binary.StringUtils;
 import org.apache.logging.log4j.LogManager;
@@ -133,13 +134,27 @@ public class SignedTxnAccessor implements TxnAccessor {
 
     public static SignedTxnAccessor from(byte[] signedTxnWrapperBytes)
             throws InvalidProtocolBufferException {
-        return new SignedTxnAccessor(signedTxnWrapperBytes);
+        return new SignedTxnAccessor(signedTxnWrapperBytes, Optional.empty());
     }
 
-    protected SignedTxnAccessor(byte[] signedTxnWrapperBytes)
+    public static SignedTxnAccessor from(
+            byte[] signedTxnWrapperBytes, final Transaction signedTxnWrapper)
+            throws InvalidProtocolBufferException {
+        return new SignedTxnAccessor(signedTxnWrapperBytes, Optional.of(signedTxnWrapper));
+    }
+
+    protected SignedTxnAccessor(
+            byte[] signedTxnWrapperBytes, final Optional<Transaction> transaction)
             throws InvalidProtocolBufferException {
         this.signedTxnWrapperBytes = signedTxnWrapperBytes;
-        signedTxnWrapper = Transaction.parseFrom(signedTxnWrapperBytes);
+
+        final Transaction txnWrapper;
+        if (transaction.isPresent()) {
+            txnWrapper = transaction.get();
+        } else {
+            txnWrapper = Transaction.parseFrom(signedTxnWrapperBytes);
+        }
+        this.signedTxnWrapper = txnWrapper;
 
         final var signedTxnBytes = signedTxnWrapper.getSignedTransactionBytes();
         if (signedTxnBytes.isEmpty()) {
@@ -166,10 +181,6 @@ public class SignedTxnAccessor implements TxnAccessor {
         getFunction();
         setBaseUsageMeta();
         setOpUsageMeta();
-    }
-
-    public SignedTxnAccessor(Transaction signedTxnWrapper) throws InvalidProtocolBufferException {
-        this(signedTxnWrapper.toByteArray());
     }
 
     @Override
