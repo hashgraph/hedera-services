@@ -1,11 +1,6 @@
-package com.hedera.services.queries.file;
-
-/*-
- * ‌
- * Hedera Services Node
- * ​
- * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2020-2021 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,27 +12,25 @@ package com.hedera.services.queries.file;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+package com.hedera.services.queries.file;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import static org.junit.jupiter.api.Assertions.*;
-
 @ExtendWith(MockitoExtension.class)
 class FileAnswersTest {
-	@Mock
-	GetFileInfoAnswer getFileInfo;
-	@Mock
-	GetFileContentsAnswer getFileContents;
+    @Mock GetFileInfoAnswer getFileInfo;
+    @Mock GetFileContentsAnswer getFileContents;
 
-	@Test
-	void assertGetters() {
-		var fileAnswers = new FileAnswers(getFileInfo, getFileContents);
-		assertEquals(getFileInfo, fileAnswers.fileInfo());
-		assertEquals(getFileContents, fileAnswers.fileContents());
-	}
+    @Test
+    void assertGetters() {
+        var fileAnswers = new FileAnswers(getFileInfo, getFileContents);
+        assertEquals(getFileInfo, fileAnswers.fileInfo());
+        assertEquals(getFileContents, fileAnswers.fileContents());
+    }
 }

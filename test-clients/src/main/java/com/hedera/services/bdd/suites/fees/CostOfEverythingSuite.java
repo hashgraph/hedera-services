@@ -1,11 +1,6 @@
-package com.hedera.services.bdd.suites.fees;
-
-/*-
- * ‌
- * Hedera Services Test Clients
- * ​
- * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,21 +12,8 @@ package com.hedera.services.bdd.suites.fees;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
-
-import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.spec.keys.KeyShape;
-import com.hedera.services.bdd.suites.HapiApiSuite;
-import com.hederahashgraph.api.proto.java.AccountAmount;
-import com.hederahashgraph.api.proto.java.TransferList;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
-import java.math.BigInteger;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Stream;
+package com.hedera.services.bdd.suites.fees;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.CostSnapshotMode;
 import static com.hedera.services.bdd.spec.HapiApiSpec.CostSnapshotMode.TAKE;
@@ -49,9 +31,9 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountRecords;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getScheduleInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleSign;
@@ -63,294 +45,300 @@ import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTIO
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
 import static java.util.stream.Collectors.toList;
 
+import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.keys.KeyShape;
+import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hederahashgraph.api.proto.java.AccountAmount;
+import com.hederahashgraph.api.proto.java.TransferList;
+import java.math.BigInteger;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Stream;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 public class CostOfEverythingSuite extends HapiApiSuite {
-	private static final Logger log = LogManager.getLogger(CostOfEverythingSuite.class);
+    private static final Logger log = LogManager.getLogger(CostOfEverythingSuite.class);
 
-	CostSnapshotMode costSnapshotMode = TAKE;
-//	CostSnapshotMode costSnapshotMode = COMPARE;
+    CostSnapshotMode costSnapshotMode = TAKE;
+    //	CostSnapshotMode costSnapshotMode = COMPARE;
 
-	public static void main(String... args) {
-		new CostOfEverythingSuite().runSuiteSync();
-	}
+    public static void main(String... args) {
+        new CostOfEverythingSuite().runSuiteSync();
+    }
 
-	@Override
-	public List<HapiApiSpec> getSpecsInSuite() {
-		return Stream.of(
-//				cryptoCreatePaths(),
-//				cryptoTransferPaths(),
-//				cryptoGetAccountInfoPaths(),
-//				cryptoGetAccountRecordsPaths(),
-//				transactionGetRecordPaths(),
-				miscContractCreatesAndCalls()
-//				canonicalScheduleOpsHaveExpectedUsdFees()
-		).map(Stream::of).reduce(Stream.empty(), Stream::concat).collect(toList());
-	}
+    @Override
+    public List<HapiApiSpec> getSpecsInSuite() {
+        return Stream.of(
+                        //				cryptoCreatePaths(),
+                        //				cryptoTransferPaths(),
+                        //				cryptoGetAccountInfoPaths(),
+                        //				cryptoGetAccountRecordsPaths(),
+                        //				transactionGetRecordPaths(),
+                        miscContractCreatesAndCalls()
+                        //				canonicalScheduleOpsHaveExpectedUsdFees()
+                        )
+                .map(Stream::of)
+                .reduce(Stream.empty(), Stream::concat)
+                .collect(toList());
+    }
 
-	HapiApiSpec[] transactionGetRecordPaths() {
-		return new HapiApiSpec[]{
-				txnGetCreateRecord(),
-				txnGetSmallTransferRecord(),
-				txnGetLargeTransferRecord(),
-		};
-	}
+    HapiApiSpec[] transactionGetRecordPaths() {
+        return new HapiApiSpec[] {
+            txnGetCreateRecord(), txnGetSmallTransferRecord(), txnGetLargeTransferRecord(),
+        };
+    }
 
-	HapiApiSpec canonicalScheduleOpsHaveExpectedUsdFees() {
-		return customHapiSpec("CanonicalScheduleOps")
-				.withProperties(Map.of(
-						"nodes", "35.231.208.148",
-						"default.payer.pemKeyLoc", "previewtestnet-account2.pem",
-						"default.payer.pemKeyPassphrase", "<secret>"
-				)).given(
-						cryptoCreate("payingSender")
-								.balance(ONE_HUNDRED_HBARS),
-						cryptoCreate("receiver")
-								.balance(0L)
-								.receiverSigRequired(true)
-				).when(
-						scheduleCreate("canonical",
-								cryptoTransfer(tinyBarsFromTo("payingSender", "receiver", 1L))
-										.blankMemo()
-										.fee(ONE_HBAR)
-						)
-								.via("canonicalCreation")
-								.payingWith("payingSender")
-								.adminKey("payingSender"),
-						getScheduleInfo("canonical")
-								.payingWith("payingSender"),
-						scheduleSign("canonical")
-								.via("canonicalSigning")
-								.payingWith("payingSender")
-								.alsoSigningWith("receiver"),
-						scheduleCreate("tbd",
-								cryptoTransfer(tinyBarsFromTo("payingSender", "receiver", 1L))
-										.memo("")
-										.fee(ONE_HBAR)
-										.blankMemo()
-										.signedBy("payingSender")
-						)
-								.payingWith("payingSender")
-								.adminKey("payingSender"),
-						scheduleDelete("tbd")
-								.via("canonicalDeletion")
-								.payingWith("payingSender")
-				).then(
-						validateChargedUsdWithin("canonicalCreation", 0.01, 3.0),
-						validateChargedUsdWithin("canonicalSigning", 0.001, 3.0),
-						validateChargedUsdWithin("canonicalDeletion", 0.001, 3.0)
-				);
-	}
+    HapiApiSpec canonicalScheduleOpsHaveExpectedUsdFees() {
+        return customHapiSpec("CanonicalScheduleOps")
+                .withProperties(
+                        Map.of(
+                                "nodes", "35.231.208.148",
+                                "default.payer.pemKeyLoc", "previewtestnet-account2.pem",
+                                "default.payer.pemKeyPassphrase", "<secret>"))
+                .given(
+                        cryptoCreate("payingSender").balance(ONE_HUNDRED_HBARS),
+                        cryptoCreate("receiver").balance(0L).receiverSigRequired(true))
+                .when(
+                        scheduleCreate(
+                                        "canonical",
+                                        cryptoTransfer(
+                                                        tinyBarsFromTo(
+                                                                "payingSender", "receiver", 1L))
+                                                .blankMemo()
+                                                .fee(ONE_HBAR))
+                                .via("canonicalCreation")
+                                .payingWith("payingSender")
+                                .adminKey("payingSender"),
+                        getScheduleInfo("canonical").payingWith("payingSender"),
+                        scheduleSign("canonical")
+                                .via("canonicalSigning")
+                                .payingWith("payingSender")
+                                .alsoSigningWith("receiver"),
+                        scheduleCreate(
+                                        "tbd",
+                                        cryptoTransfer(
+                                                        tinyBarsFromTo(
+                                                                "payingSender", "receiver", 1L))
+                                                .memo("")
+                                                .fee(ONE_HBAR)
+                                                .blankMemo()
+                                                .signedBy("payingSender"))
+                                .payingWith("payingSender")
+                                .adminKey("payingSender"),
+                        scheduleDelete("tbd").via("canonicalDeletion").payingWith("payingSender"))
+                .then(
+                        validateChargedUsdWithin("canonicalCreation", 0.01, 3.0),
+                        validateChargedUsdWithin("canonicalSigning", 0.001, 3.0),
+                        validateChargedUsdWithin("canonicalDeletion", 0.001, 3.0));
+    }
 
-	HapiApiSpec miscContractCreatesAndCalls() {
-		Object[] donationArgs = new Object[]{2, "Hey, Ma!"};
-		final var multipurposeContract = "Multipurpose";
-		final var lookupContract = "BalanceLookup";
+    HapiApiSpec miscContractCreatesAndCalls() {
+        Object[] donationArgs = new Object[] {2, "Hey, Ma!"};
+        final var multipurposeContract = "Multipurpose";
+        final var lookupContract = "BalanceLookup";
 
-		return customHapiSpec("MiscContractCreatesAndCalls")
-				.withProperties(Map.of("cost.snapshot.mode", costSnapshotMode.toString()))
-				.given(
-						cryptoCreate("civilian")
-								.balance(ONE_HUNDRED_HBARS),
-						uploadInitCode(multipurposeContract, lookupContract)
-				).when(
-						contractCreate(multipurposeContract)
-								.payingWith("civilian")
-								.balance(652),
-						contractCreate(lookupContract)
-								.payingWith("civilian")
-								.balance(256)
-				).then(
-						contractCall(multipurposeContract, "believeIn", 256)
-								.payingWith("civilian"),
-						contractCallLocal(multipurposeContract, "pick")
-								.payingWith("civilian").logged()
-								.has(resultWith().resultThruAbi(getABIFor(FUNCTION, "pick", multipurposeContract),
-										isLiteralResult(new Object[]{BigInteger.valueOf(256)}))),
-						contractCall(multipurposeContract, "donate", donationArgs)
-								.payingWith("civilian"),
-						contractCallLocal(lookupContract, "lookup",
-								spec -> new Object[]{
-										spec.registry().getAccountID("civilian").getAccountNum()
-								}
-						).payingWith("civilian").logged()
-				);
-	}
+        return customHapiSpec("MiscContractCreatesAndCalls")
+                .withProperties(Map.of("cost.snapshot.mode", costSnapshotMode.toString()))
+                .given(
+                        cryptoCreate("civilian").balance(ONE_HUNDRED_HBARS),
+                        uploadInitCode(multipurposeContract, lookupContract))
+                .when(
+                        contractCreate(multipurposeContract).payingWith("civilian").balance(652),
+                        contractCreate(lookupContract).payingWith("civilian").balance(256))
+                .then(
+                        contractCall(multipurposeContract, "believeIn", 256).payingWith("civilian"),
+                        contractCallLocal(multipurposeContract, "pick")
+                                .payingWith("civilian")
+                                .logged()
+                                .has(
+                                        resultWith()
+                                                .resultThruAbi(
+                                                        getABIFor(
+                                                                FUNCTION,
+                                                                "pick",
+                                                                multipurposeContract),
+                                                        isLiteralResult(
+                                                                new Object[] {
+                                                                    BigInteger.valueOf(256)
+                                                                }))),
+                        contractCall(multipurposeContract, "donate", donationArgs)
+                                .payingWith("civilian"),
+                        contractCallLocal(
+                                        lookupContract,
+                                        "lookup",
+                                        spec ->
+                                                new Object[] {
+                                                    spec.registry()
+                                                            .getAccountID("civilian")
+                                                            .getAccountNum()
+                                                })
+                                .payingWith("civilian")
+                                .logged());
+    }
 
-	HapiApiSpec txnGetCreateRecord() {
-		return customHapiSpec("TxnGetCreateRecord")
-				.withProperties(Map.of("cost.snapshot.mode", costSnapshotMode.toString()))
-				.given(
-						cryptoCreate("hairTriggerPayer")
-								.balance(99_999_999_999L)
-								.sendThreshold(1L)
-				).when(
-						cryptoCreate("somebodyElse")
-								.payingWith("hairTriggerPayer")
-								.via("txn")
-				).then(
-						getTxnRecord("txn").logged()
-				);
-	}
+    HapiApiSpec txnGetCreateRecord() {
+        return customHapiSpec("TxnGetCreateRecord")
+                .withProperties(Map.of("cost.snapshot.mode", costSnapshotMode.toString()))
+                .given(cryptoCreate("hairTriggerPayer").balance(99_999_999_999L).sendThreshold(1L))
+                .when(cryptoCreate("somebodyElse").payingWith("hairTriggerPayer").via("txn"))
+                .then(getTxnRecord("txn").logged());
+    }
 
-	HapiApiSpec txnGetSmallTransferRecord() {
-		return customHapiSpec("TxnGetSmalTransferRecord")
-				.withProperties(Map.of("cost.snapshot.mode", costSnapshotMode.toString()))
-				.given(
-						cryptoCreate("hairTriggerPayer")
-								.sendThreshold(1L)
-				).when(
-						cryptoTransfer(tinyBarsFromTo(GENESIS, FUNDING, 1L))
-								.payingWith("hairTriggerPayer")
-								.via("txn")
-				).then(
-						getTxnRecord("txn").logged()
-				);
-	}
+    HapiApiSpec txnGetSmallTransferRecord() {
+        return customHapiSpec("TxnGetSmalTransferRecord")
+                .withProperties(Map.of("cost.snapshot.mode", costSnapshotMode.toString()))
+                .given(cryptoCreate("hairTriggerPayer").sendThreshold(1L))
+                .when(
+                        cryptoTransfer(tinyBarsFromTo(GENESIS, FUNDING, 1L))
+                                .payingWith("hairTriggerPayer")
+                                .via("txn"))
+                .then(getTxnRecord("txn").logged());
+    }
 
-	HapiApiSpec txnGetLargeTransferRecord() {
-		return customHapiSpec("TxnGetLargeTransferRecord")
-				.withProperties(Map.of("cost.snapshot.mode", costSnapshotMode.toString()))
-				.given(
-						cryptoCreate("hairTriggerPayer").sendThreshold(1L),
-						cryptoCreate("a"),
-						cryptoCreate("b"),
-						cryptoCreate("c"),
-						cryptoCreate("d")
-				).when(
-						cryptoTransfer(spec -> TransferList.newBuilder()
-								.addAccountAmounts(aa(spec, GENESIS, -4L))
-								.addAccountAmounts(aa(spec, "a", 1L))
-								.addAccountAmounts(aa(spec, "b", 1L))
-								.addAccountAmounts(aa(spec, "c", 1L))
-								.addAccountAmounts(aa(spec, "d", 1L)).build())
-								.payingWith("hairTriggerPayer")
-								.via("txn")
-				).then(
-						getTxnRecord("txn").logged()
-				);
-	}
+    HapiApiSpec txnGetLargeTransferRecord() {
+        return customHapiSpec("TxnGetLargeTransferRecord")
+                .withProperties(Map.of("cost.snapshot.mode", costSnapshotMode.toString()))
+                .given(
+                        cryptoCreate("hairTriggerPayer").sendThreshold(1L),
+                        cryptoCreate("a"),
+                        cryptoCreate("b"),
+                        cryptoCreate("c"),
+                        cryptoCreate("d"))
+                .when(
+                        cryptoTransfer(
+                                        spec ->
+                                                TransferList.newBuilder()
+                                                        .addAccountAmounts(aa(spec, GENESIS, -4L))
+                                                        .addAccountAmounts(aa(spec, "a", 1L))
+                                                        .addAccountAmounts(aa(spec, "b", 1L))
+                                                        .addAccountAmounts(aa(spec, "c", 1L))
+                                                        .addAccountAmounts(aa(spec, "d", 1L))
+                                                        .build())
+                                .payingWith("hairTriggerPayer")
+                                .via("txn"))
+                .then(getTxnRecord("txn").logged());
+    }
 
-	private AccountAmount aa(HapiApiSpec spec, String id, long amount) {
-		return AccountAmount.newBuilder()
-				.setAmount(amount)
-				.setAccountID(spec.registry().getAccountID(id))
-				.build();
-	}
+    private AccountAmount aa(HapiApiSpec spec, String id, long amount) {
+        return AccountAmount.newBuilder()
+                .setAmount(amount)
+                .setAccountID(spec.registry().getAccountID(id))
+                .build();
+    }
 
-	HapiApiSpec[] cryptoGetAccountRecordsPaths() {
-		return new HapiApiSpec[]{
-				cryptoGetRecordsHappyPathS(),
-				cryptoGetRecordsHappyPathM(),
-				cryptoGetRecordsHappyPathL(),
-		};
-	}
+    HapiApiSpec[] cryptoGetAccountRecordsPaths() {
+        return new HapiApiSpec[] {
+            cryptoGetRecordsHappyPathS(),
+            cryptoGetRecordsHappyPathM(),
+            cryptoGetRecordsHappyPathL(),
+        };
+    }
 
-	HapiApiSpec cryptoGetRecordsHappyPathS() {
-		return customHapiSpec("CryptoGetRecordsHappyPathS")
-				.withProperties(Map.of("cost.snapshot.mode", costSnapshotMode.toString()))
-				.given(
-						cryptoCreate("hairTriggerPayer")
-								.sendThreshold(1L)
-				).when(
-						cryptoTransfer(tinyBarsFromTo(GENESIS, FUNDING, 1L))
-								.payingWith("hairTriggerPayer")
-				).then(
-						getAccountRecords("hairTriggerPayer").has(inOrder(recordWith()))
-				);
-	}
+    HapiApiSpec cryptoGetRecordsHappyPathS() {
+        return customHapiSpec("CryptoGetRecordsHappyPathS")
+                .withProperties(Map.of("cost.snapshot.mode", costSnapshotMode.toString()))
+                .given(cryptoCreate("hairTriggerPayer").sendThreshold(1L))
+                .when(
+                        cryptoTransfer(tinyBarsFromTo(GENESIS, FUNDING, 1L))
+                                .payingWith("hairTriggerPayer"))
+                .then(getAccountRecords("hairTriggerPayer").has(inOrder(recordWith())));
+    }
 
-	HapiApiSpec cryptoGetRecordsHappyPathM() {
-		return customHapiSpec("CryptoGetRecordsHappyPathM")
-				.withProperties(Map.of("cost.snapshot.mode", costSnapshotMode.toString()))
-				.given(
-						cryptoCreate("hairTriggerPayer").sendThreshold(1L)
-				).when(
-						cryptoTransfer(tinyBarsFromTo(GENESIS, FUNDING, 1L)).payingWith("hairTriggerPayer"),
-						cryptoTransfer(tinyBarsFromTo(GENESIS, FUNDING, 1L)).payingWith("hairTriggerPayer")
-				).then(
-						getAccountRecords("hairTriggerPayer").has(inOrder(recordWith(), recordWith()))
-				);
-	}
+    HapiApiSpec cryptoGetRecordsHappyPathM() {
+        return customHapiSpec("CryptoGetRecordsHappyPathM")
+                .withProperties(Map.of("cost.snapshot.mode", costSnapshotMode.toString()))
+                .given(cryptoCreate("hairTriggerPayer").sendThreshold(1L))
+                .when(
+                        cryptoTransfer(tinyBarsFromTo(GENESIS, FUNDING, 1L))
+                                .payingWith("hairTriggerPayer"),
+                        cryptoTransfer(tinyBarsFromTo(GENESIS, FUNDING, 1L))
+                                .payingWith("hairTriggerPayer"))
+                .then(
+                        getAccountRecords("hairTriggerPayer")
+                                .has(inOrder(recordWith(), recordWith())));
+    }
 
-	HapiApiSpec cryptoGetRecordsHappyPathL() {
-		return customHapiSpec("CryptoGetRecordsHappyPathL")
-				.withProperties(Map.of("cost.snapshot.mode", costSnapshotMode.toString()))
-				.given(
-						cryptoCreate("hairTriggerPayer").sendThreshold(1L)
-				).when(
-						cryptoTransfer(tinyBarsFromTo(GENESIS, FUNDING, 1L)).payingWith("hairTriggerPayer"),
-						cryptoTransfer(tinyBarsFromTo(GENESIS, FUNDING, 1L)).payingWith("hairTriggerPayer"),
-						cryptoTransfer(tinyBarsFromTo(GENESIS, FUNDING, 1L)).payingWith("hairTriggerPayer"),
-						cryptoTransfer(tinyBarsFromTo(GENESIS, FUNDING, 1L)).payingWith("hairTriggerPayer"),
-						cryptoTransfer(tinyBarsFromTo(GENESIS, FUNDING, 1L)).payingWith("hairTriggerPayer")
-				).then(
-						getAccountRecords("hairTriggerPayer").has(inOrder(
-								recordWith(), recordWith(), recordWith(), recordWith(), recordWith()
-						))
-				);
-	}
+    HapiApiSpec cryptoGetRecordsHappyPathL() {
+        return customHapiSpec("CryptoGetRecordsHappyPathL")
+                .withProperties(Map.of("cost.snapshot.mode", costSnapshotMode.toString()))
+                .given(cryptoCreate("hairTriggerPayer").sendThreshold(1L))
+                .when(
+                        cryptoTransfer(tinyBarsFromTo(GENESIS, FUNDING, 1L))
+                                .payingWith("hairTriggerPayer"),
+                        cryptoTransfer(tinyBarsFromTo(GENESIS, FUNDING, 1L))
+                                .payingWith("hairTriggerPayer"),
+                        cryptoTransfer(tinyBarsFromTo(GENESIS, FUNDING, 1L))
+                                .payingWith("hairTriggerPayer"),
+                        cryptoTransfer(tinyBarsFromTo(GENESIS, FUNDING, 1L))
+                                .payingWith("hairTriggerPayer"),
+                        cryptoTransfer(tinyBarsFromTo(GENESIS, FUNDING, 1L))
+                                .payingWith("hairTriggerPayer"))
+                .then(
+                        getAccountRecords("hairTriggerPayer")
+                                .has(
+                                        inOrder(
+                                                recordWith(),
+                                                recordWith(),
+                                                recordWith(),
+                                                recordWith(),
+                                                recordWith())));
+    }
 
-	HapiApiSpec[] cryptoGetAccountInfoPaths() {
-		return new HapiApiSpec[]{
-				cryptoGetAccountInfoHappyPath()
-		};
-	}
+    HapiApiSpec[] cryptoGetAccountInfoPaths() {
+        return new HapiApiSpec[] {cryptoGetAccountInfoHappyPath()};
+    }
 
-	HapiApiSpec cryptoGetAccountInfoHappyPath() {
-		KeyShape smallKey = threshOf(1, 3);
-		KeyShape midsizeKey = listOf(SIMPLE, listOf(2), threshOf(1, 2));
-		KeyShape hugeKey = threshOf(4, SIMPLE, SIMPLE, listOf(4), listOf(3), listOf(2));
+    HapiApiSpec cryptoGetAccountInfoHappyPath() {
+        KeyShape smallKey = threshOf(1, 3);
+        KeyShape midsizeKey = listOf(SIMPLE, listOf(2), threshOf(1, 2));
+        KeyShape hugeKey = threshOf(4, SIMPLE, SIMPLE, listOf(4), listOf(3), listOf(2));
 
-		return customHapiSpec("CryptoGetAccountInfoHappyPath")
-				.withProperties(Map.of("cost.snapshot.mode", costSnapshotMode.toString()))
-				.given(
-						newKeyNamed("smallKey").shape(smallKey),
-						newKeyNamed("midsizeKey").shape(midsizeKey),
-						newKeyNamed("hugeKey").shape(hugeKey)
-				).when(
-						cryptoCreate("small").key("smallKey"),
-						cryptoCreate("midsize").key("midsizeKey"),
-						cryptoCreate("huge").key("hugeKey")
-				).then(
-						getAccountInfo("small"),
-						getAccountInfo("midsize"),
-						getAccountInfo("huge")
-				);
-	}
+        return customHapiSpec("CryptoGetAccountInfoHappyPath")
+                .withProperties(Map.of("cost.snapshot.mode", costSnapshotMode.toString()))
+                .given(
+                        newKeyNamed("smallKey").shape(smallKey),
+                        newKeyNamed("midsizeKey").shape(midsizeKey),
+                        newKeyNamed("hugeKey").shape(hugeKey))
+                .when(
+                        cryptoCreate("small").key("smallKey"),
+                        cryptoCreate("midsize").key("midsizeKey"),
+                        cryptoCreate("huge").key("hugeKey"))
+                .then(getAccountInfo("small"), getAccountInfo("midsize"), getAccountInfo("huge"));
+    }
 
-	HapiApiSpec[] cryptoCreatePaths() {
-		return new HapiApiSpec[]{
-				cryptoCreateSimpleKey(),
-		};
-	}
+    HapiApiSpec[] cryptoCreatePaths() {
+        return new HapiApiSpec[] {
+            cryptoCreateSimpleKey(),
+        };
+    }
 
-	HapiApiSpec cryptoCreateSimpleKey() {
-		KeyShape shape = SIMPLE;
+    HapiApiSpec cryptoCreateSimpleKey() {
+        KeyShape shape = SIMPLE;
 
-		return customHapiSpec("SuccessfulCryptoCreate")
-				.withProperties(Map.of("cost.snapshot.mode", costSnapshotMode.toString()))
-				.given(
-						newKeyNamed("key").shape(shape)
-				).when().then(
-						cryptoCreate("a").key("key")
-				);
-	}
+        return customHapiSpec("SuccessfulCryptoCreate")
+                .withProperties(Map.of("cost.snapshot.mode", costSnapshotMode.toString()))
+                .given(newKeyNamed("key").shape(shape))
+                .when()
+                .then(cryptoCreate("a").key("key"));
+    }
 
-	HapiApiSpec[] cryptoTransferPaths() {
-		return new HapiApiSpec[]{
-				cryptoTransferGenesisToFunding(),
-		};
-	}
+    HapiApiSpec[] cryptoTransferPaths() {
+        return new HapiApiSpec[] {
+            cryptoTransferGenesisToFunding(),
+        };
+    }
 
-	HapiApiSpec cryptoTransferGenesisToFunding() {
-		return customHapiSpec("CryptoTransferGenesisToFunding")
-				.withProperties(Map.of("cost.snapshot.mode", costSnapshotMode.toString()))
-				.given().when().then(
-						cryptoTransfer(tinyBarsFromTo(GENESIS, FUNDING, 1_000L))
-				);
-	}
+    HapiApiSpec cryptoTransferGenesisToFunding() {
+        return customHapiSpec("CryptoTransferGenesisToFunding")
+                .withProperties(Map.of("cost.snapshot.mode", costSnapshotMode.toString()))
+                .given()
+                .when()
+                .then(cryptoTransfer(tinyBarsFromTo(GENESIS, FUNDING, 1_000L)));
+    }
 
-	@Override
-	protected Logger getResultsLogger() {
-		return log;
-	}
+    @Override
+    protected Logger getResultsLogger() {
+        return log;
+    }
 }

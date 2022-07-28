@@ -1,11 +1,6 @@
-package com.hedera.services.yahcli.suites;
-
-/*-
- * ‌
- * Hedera Services Test Clients
- * ​
- * Copyright (C) 2018 - 2020 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2021-2022 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,81 +12,79 @@ package com.hedera.services.yahcli.suites;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+package com.hedera.services.yahcli.suites;
+
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileContents;
+import static com.hedera.services.bdd.suites.utils.sysfiles.serdes.StandardSerdes.SYS_FILE_SERDES;
+import static com.hedera.services.yahcli.output.CommonMessages.COMMON_MESSAGES;
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.queries.file.HapiGetFileContents;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hedera.services.bdd.suites.utils.sysfiles.serdes.SysFileSerde;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
 import java.io.File;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileContents;
-import static com.hedera.services.bdd.suites.utils.sysfiles.serdes.StandardSerdes.SYS_FILE_SERDES;
-import static com.hedera.services.yahcli.output.CommonMessages.COMMON_MESSAGES;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 public class SysFileDownloadSuite extends HapiApiSuite {
-	private static final Logger log = LogManager.getLogger(SysFileDownloadSuite.class);
+    private static final Logger log = LogManager.getLogger(SysFileDownloadSuite.class);
 
-	private final String destDir;
-	private final Map<String, String> specConfig;
-	private final String[] sysFilesToDownload;
+    private final String destDir;
+    private final Map<String, String> specConfig;
+    private final String[] sysFilesToDownload;
 
-	public SysFileDownloadSuite(
-			String destDir,
-			Map<String, String> specConfig,
-			String[] sysFilesToDownload
-	) {
-		this.destDir = destDir;
-		this.specConfig = specConfig;
-		this.sysFilesToDownload = sysFilesToDownload;
-	}
+    public SysFileDownloadSuite(
+            String destDir, Map<String, String> specConfig, String[] sysFilesToDownload) {
+        this.destDir = destDir;
+        this.specConfig = specConfig;
+        this.sysFilesToDownload = sysFilesToDownload;
+    }
 
-	@Override
-	public List<HapiApiSpec> getSpecsInSuite() {
-		return List.of(new HapiApiSpec[] {
-				downloadSysFiles(),
-		});
-	}
+    @Override
+    public List<HapiApiSpec> getSpecsInSuite() {
+        return List.of(
+                new HapiApiSpec[] {
+                    downloadSysFiles(),
+                });
+    }
 
-	private HapiApiSpec downloadSysFiles() {
-		long[] targets = Utils.rationalized(sysFilesToDownload);
+    private HapiApiSpec downloadSysFiles() {
+        long[] targets = Utils.rationalized(sysFilesToDownload);
 
-		return HapiApiSpec.customHapiSpec("downloadSysFiles").withProperties(
-				specConfig
-		).given().when().then(
-				Arrays.stream(targets)
-						.mapToObj(this::appropriateQuery)
-						.toArray(HapiSpecOperation[]::new)
-		);
-	}
+        return HapiApiSpec.customHapiSpec("downloadSysFiles")
+                .withProperties(specConfig)
+                .given()
+                .when()
+                .then(
+                        Arrays.stream(targets)
+                                .mapToObj(this::appropriateQuery)
+                                .toArray(HapiSpecOperation[]::new));
+    }
 
-	private HapiGetFileContents appropriateQuery(final long fileNum) {
-		final String fid = String.format("0.0.%d", fileNum);
-		if (Utils.isSpecialFile(fileNum)) {
-			final String fqLoc = Utils.specialFileLoc(destDir, fileNum);
-			return getFileContents(fid)
-					.alertingPre(COMMON_MESSAGES::downloadBeginning)
-					.alertingPost(COMMON_MESSAGES::downloadEnding)
-					.saveTo(fqLoc);
-		}
-		final SysFileSerde<String> serde = SYS_FILE_SERDES.get(fileNum);
-		final String fqLoc = destDir + File.separator + serde.preferredFileName();
-		return getFileContents(fid)
-				.alertingPre(COMMON_MESSAGES::downloadBeginning)
-				.alertingPost(COMMON_MESSAGES::downloadEnding)
-				.saveReadableTo(serde::fromRawFile, fqLoc);
-	}
+    private HapiGetFileContents appropriateQuery(final long fileNum) {
+        final String fid = String.format("0.0.%d", fileNum);
+        if (Utils.isSpecialFile(fileNum)) {
+            final String fqLoc = Utils.specialFileLoc(destDir, fileNum);
+            return getFileContents(fid)
+                    .alertingPre(COMMON_MESSAGES::downloadBeginning)
+                    .alertingPost(COMMON_MESSAGES::downloadEnding)
+                    .saveTo(fqLoc);
+        }
+        final SysFileSerde<String> serde = SYS_FILE_SERDES.get(fileNum);
+        final String fqLoc = destDir + File.separator + serde.preferredFileName();
+        return getFileContents(fid)
+                .alertingPre(COMMON_MESSAGES::downloadBeginning)
+                .alertingPost(COMMON_MESSAGES::downloadEnding)
+                .saveReadableTo(serde::fromRawFile, fqLoc);
+    }
 
-	@Override
-	protected Logger getResultsLogger() {
-		return log;
-	}
+    @Override
+    protected Logger getResultsLogger() {
+        return log;
+    }
 }

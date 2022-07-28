@@ -47,9 +47,9 @@ import javax.inject.Singleton;
  *       SignatureMap}.
  * </ol>
  *
- * We prefer to look up the Hedera keys from an immutable state, since if the entities with
- * those keys are unchanged between {@code expandSignatures} and {@code handleTransaction}, we can
- * skip the otherwise necessary step of re-expanding signatures in {@link
+ * We prefer to look up the Hedera keys from an immutable state, since if the entities with those
+ * keys are unchanged between {@code expandSignatures} and {@code handleTransaction}, we can skip
+ * the otherwise necessary step of re-expanding signatures in {@link
  * Rationalization#performFor(SwirldsTxnAccessor)}.
  *
  * <p>This class is <b>NOT</b> thread-safe.

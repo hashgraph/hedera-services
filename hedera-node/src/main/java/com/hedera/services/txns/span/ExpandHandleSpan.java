@@ -51,9 +51,7 @@ public class ExpandHandleSpan {
     private final SpanMapManager spanMapManager;
     private final AccessorFactory factory;
 
-    public ExpandHandleSpan(
-            final SpanMapManager spanMapManager,
-            final AccessorFactory factory) {
+    public ExpandHandleSpan(final SpanMapManager spanMapManager, final AccessorFactory factory) {
         this.spanMapManager = spanMapManager;
         this.factory = factory;
     }

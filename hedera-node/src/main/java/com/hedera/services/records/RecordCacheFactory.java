@@ -1,11 +1,6 @@
-package com.hedera.services.records;
-
-/*-
- * ‌
- * Hedera Services Node
- * ​
- * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2020-2021 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,43 +12,39 @@ package com.hedera.services.records;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+package com.hedera.services.records;
 
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.hedera.services.context.annotations.CompositeProps;
 import com.hedera.services.context.properties.PropertySource;
 import com.hederahashgraph.api.proto.java.TransactionID;
+import java.util.concurrent.TimeUnit;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import javax.inject.Inject;
-import javax.inject.Singleton;
-import java.util.concurrent.TimeUnit;
-
 /**
- * Minimal helper to construct a {@link RecordCache} based on the TTL
- * configured in the Hedera Services properties.
+ * Minimal helper to construct a {@link RecordCache} based on the TTL configured in the Hedera
+ * Services properties.
  */
 @Singleton
 public final class RecordCacheFactory {
-	private static final Logger log = LogManager.getLogger(RecordCacheFactory.class);
+    private static final Logger log = LogManager.getLogger(RecordCacheFactory.class);
 
-	private final PropertySource properties;
+    private final PropertySource properties;
 
-	@Inject
-	public RecordCacheFactory(final @CompositeProps PropertySource properties) {
-		this.properties = properties;
-	}
+    @Inject
+    public RecordCacheFactory(final @CompositeProps PropertySource properties) {
+        this.properties = properties;
+    }
 
-	public Cache<TransactionID, Boolean> getCache() {
-		final var ttl = properties.getIntProperty("cache.records.ttl");
+    public Cache<TransactionID, Boolean> getCache() {
+        final var ttl = properties.getIntProperty("cache.records.ttl");
 
-		log.info("Constructing the node-local txn id cache with ttl={}s", ttl);
-		return CacheBuilder
-				.newBuilder()
-				.expireAfterWrite(ttl, TimeUnit.SECONDS)
-				.build();
-	}
+        log.info("Constructing the node-local txn id cache with ttl={}s", ttl);
+        return CacheBuilder.newBuilder().expireAfterWrite(ttl, TimeUnit.SECONDS).build();
+    }
 }
