@@ -106,17 +106,16 @@ public class RecordCreationSuite extends HapiApiSuite {
     public List<HapiApiSpec> getSpecsInSuite() {
         return List.of(
                 new HapiApiSpec[] {
-                    //                    ensureSystemStateAsExpected(),
-                    //                    confirmNftToggleIsWorksThenReenable(),
-                    //                    payerRecordCreationSanityChecks(),
-                    //                    accountsGetPayerRecordsIfSoConfigured(),
-                    //                    calledContractNoLongerGetsRecord(),
-                    //                    thresholdRecordsDontExistAnymore(),
-                    //                    submittingNodeChargedNetworkFeeForLackOfDueDiligence(),
-                    //
-                    // submittingNodeChargedNetworkFeeForIgnoringPayerUnwillingness(),
-                    //                    submittingNodeStillPaidIfServiceFeesOmitted(),
-
+                    ensureSystemStateAsExpected(),
+                    confirmNftToggleIsWorksThenReenable(),
+                    payerRecordCreationSanityChecks(),
+                    accountsGetPayerRecordsIfSoConfigured(),
+                    calledContractNoLongerGetsRecord(),
+                    thresholdRecordsDontExistAnymore(),
+                    submittingNodeChargedNetworkFeeForLackOfDueDiligence(),
+                    submittingNodeChargedNetworkFeeForIgnoringPayerUnwillingness(),
+                    submittingNodeStillPaidIfServiceFeesOmitted(),
+                    internalContractCreateLimitIsRespected()
                     /* This last spec requires sleeping for the default TTL (180s) so that the
                     expiration queue will be purged of all entries for existing records.
 
@@ -125,8 +124,7 @@ public class RecordCreationSuite extends HapiApiSuite {
 
                     However, it is a good sanity check to have available locally when making
                     changes to record expiration.  */
-                    //						recordsTtlChangesAsExpected(),
-                    recStream6InternalContractCreates()
+                    //                    						recordsTtlChangesAsExpected()
                 });
     }
 
@@ -701,12 +699,31 @@ public class RecordCreationSuite extends HapiApiSuite {
                 .then(sourcing(() -> fileUpdate(APP_PROPERTIES).contents(origPropContents.get())));
     }
 
-    private HapiApiSpec recStream6InternalContractCreates() {
-
+    private HapiApiSpec internalContractCreateLimitIsRespected() {
         final var contract = "RecStream6Deploy";
         final var deploySmallContractFn = "deploySmallContract";
-        final var deployAvgContractFn = "deployAverageContract";
-        final var deployBigContractFn = "deployBigContract";
+        final var deploySmallContractRec = "deploySmallContractRec";
+
+        return defaultHapiSpec("recStream6InternalContractCreates")
+                .given(cryptoCreate("payer"), uploadInitCode(contract), contractCreate(contract))
+                .when()
+                .then(
+                        contractCall(contract, deploySmallContractFn, 500)
+                                .via(deploySmallContractRec)
+                                .gas(2000000)
+                                .hasKnownStatus(CONTRACT_EXECUTION_EXCEPTION));
+    }
+
+    /* this spec can be used to perf test the node when
+    a large number of contract creates occur in a small period and the node
+    has to save to the state a large number of contracts and also create a large
+    number of sidecar files ( > 1GB if deploying big contract)
+     */
+    private HapiApiSpec recStream6InternalContractCreates() {
+        final var contract = "RecStream6Deploy";
+        final var deploySmallContractFn = "deploySmallContract";
+        //        final var deployAvgContractFn = "deployAverageContract";
+        //        final var deployBigContractFn = "deployBigContract";
         final var deploySmallContractRec = "deploySmallContractRec";
 
         return defaultHapiSpec("recStream6InternalContractCreates")
@@ -715,9 +732,9 @@ public class RecordCreationSuite extends HapiApiSuite {
                 .then(
                         UtilVerbs.inParallel(
                                 asOpArray(
-                                        1,
+                                        1000,
                                         i ->
-                                                contractCall(contract, deploySmallContractFn, 51)
+                                                contractCall(contract, deploySmallContractFn, 50)
                                                         .via(deploySmallContractRec)
                                                         .gas(2000000)
                                                         .hasKnownStatus(
