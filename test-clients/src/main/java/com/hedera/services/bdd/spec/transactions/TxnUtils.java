@@ -661,6 +661,6 @@ public class TxnUtils {
     }
 
     public static boolean isEndOfStakingPeriodRecord(final TransactionRecord record) {
-        return record.getMemo().startsWith("End of Staking Period Calculation");
+        return record.getMemo().startsWith("End of staking period calculation record");
     }
 }
