@@ -341,70 +341,62 @@ class MigrationRecordsManagerTest {
                         .setMigration(true)
                         .build(),
                 sidecarRecords.get(0).build());
-        final var contract2StateChange = ContractStateChange.newBuilder()
-            .setContractId(entityNum2.toGrpcContractID())
-            .addStorageChanges(
-                StorageChange.newBuilder()
-                    .setSlot(
-                        ByteStringUtils.wrapUnsafely(
-                            UInt256.valueOf(257L)
-                                .toArrayUnsafe()))
-                    .setValueRead(
-                        ByteStringUtils.wrapUnsafely(
-                            value4))
-                    .build())
-            .build();
+        final var contract2StateChange =
+                ContractStateChange.newBuilder()
+                        .setContractId(entityNum2.toGrpcContractID())
+                        .addStorageChanges(
+                                StorageChange.newBuilder()
+                                        .setSlot(
+                                                ByteStringUtils.wrapUnsafely(
+                                                        UInt256.valueOf(257L).toArrayUnsafe()))
+                                        .setValueRead(ByteStringUtils.wrapUnsafely(value4))
+                                        .build())
+                        .build();
         final var expectedStateChangesContract2 =
-            ContractStateChanges.newBuilder()
-                .addContractStateChanges(contract2StateChange)
-                .build();
+                ContractStateChanges.newBuilder()
+                        .addContractStateChanges(contract2StateChange)
+                        .build();
         assertEquals(
-            TransactionSidecarRecord.newBuilder()
-                .setStateChanges(expectedStateChangesContract2)
-                .setMigration(true)
-                .build(),
-            sidecarRecords.get(1).build());
+                TransactionSidecarRecord.newBuilder()
+                        .setStateChanges(expectedStateChangesContract2)
+                        .setMigration(true)
+                        .build(),
+                sidecarRecords.get(1).build());
         assertEquals(
                 SidecarUtils.createContractBytecodeSidecarFrom(
                                 entityNum1.toGrpcContractID(), runtimeBytes)
                         .setMigration(true)
                         .build(),
                 sidecarRecords.get(2).build());
-        final var contract1StateChanges = ContractStateChange.newBuilder()
-            .setContractId(entityNum1.toGrpcContractID())
-            .addStorageChanges(
-                StorageChange.newBuilder()
-                    .setSlot(
-                        ByteStringUtils.wrapUnsafely(
-                            UInt256.valueOf(1L)
-                                .toArrayUnsafe()))
-                    .setValueRead(
-                        ByteStringUtils.wrapUnsafely(
-                            value1))
-                    .build())
-            .addStorageChanges(
-                StorageChange.newBuilder()
-                    .setSlot(
-                        ByteStringUtils.wrapUnsafely(
-                            UInt256.valueOf(2L)
-                                .toArrayUnsafe()))
-                    .setValueRead(
-                        ByteStringUtils.wrapUnsafely(
-                            value2))
-                    .build())
-            .addStorageChanges(
-                StorageChange.newBuilder()
-                    .setSlot(
-                        ByteStringUtils.wrapUnsafely(
-                            UInt256.valueOf(155542L)
-                                .toArrayUnsafe()))
-                    .setValueRead(
-                        ByteStringUtils.wrapUnsafely(
-                            value3))
-                    .build())
-            .build();
-        final var expectedStateChangesContract1 = ContractStateChanges
-            .newBuilder().addContractStateChanges(contract1StateChanges).build();
+        final var contract1StateChanges =
+                ContractStateChange.newBuilder()
+                        .setContractId(entityNum1.toGrpcContractID())
+                        .addStorageChanges(
+                                StorageChange.newBuilder()
+                                        .setSlot(
+                                                ByteStringUtils.wrapUnsafely(
+                                                        UInt256.valueOf(1L).toArrayUnsafe()))
+                                        .setValueRead(ByteStringUtils.wrapUnsafely(value1))
+                                        .build())
+                        .addStorageChanges(
+                                StorageChange.newBuilder()
+                                        .setSlot(
+                                                ByteStringUtils.wrapUnsafely(
+                                                        UInt256.valueOf(2L).toArrayUnsafe()))
+                                        .setValueRead(ByteStringUtils.wrapUnsafely(value2))
+                                        .build())
+                        .addStorageChanges(
+                                StorageChange.newBuilder()
+                                        .setSlot(
+                                                ByteStringUtils.wrapUnsafely(
+                                                        UInt256.valueOf(155542L).toArrayUnsafe()))
+                                        .setValueRead(ByteStringUtils.wrapUnsafely(value3))
+                                        .build())
+                        .build();
+        final var expectedStateChangesContract1 =
+                ContractStateChanges.newBuilder()
+                        .addContractStateChanges(contract1StateChanges)
+                        .build();
         assertEquals(
                 TransactionSidecarRecord.newBuilder()
                         .setStateChanges(expectedStateChangesContract1)

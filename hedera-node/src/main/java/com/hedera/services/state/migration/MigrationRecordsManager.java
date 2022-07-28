@@ -275,55 +275,58 @@ public class MigrationRecordsManager {
 
     private void publishTraceabilityMigrationRecords() {
         final var contractStorageMap = contractStorage.get();
-        accounts.get().forEach((id, account) -> {
-            if (!account.isSmartContract()) {
-                return;
-            }
-            final var contractId = id.toGrpcContractID();
-            final var bytecodeSidecar =
-                    generateMigrationBytecodeSidecarFor(contractId);
-            transactionContext.addSidecarRecord(bytecodeSidecar);
-            log.debug(
-                    "Published migration bytecode sidecar for contract 0.0.{}",
-                    contractId.getContractNum());
-            var contractStorageKey = account.getFirstContractStorageKey();
-            if (contractStorageKey == null) {
-                log.debug(
-                        "Contract 0.0.{} has no iterable storage - no migration state"
-                                + " changes will be published.",
-                        contractId.getContractNum());
-                return;
-            }
-            final var stateChanges =
-                    generateMigrationStateChanges(
-                            contractId, contractStorageMap, contractStorageKey);
-            transactionContext.addSidecarRecord(
-                    TransactionSidecarRecord.newBuilder()
-                            .setStateChanges(
-                                    ContractStateChanges.newBuilder()
-                                            .addContractStateChanges(stateChanges)
-                                            .build())
-                            .setMigration(true));
-            log.debug(
-                    "Published migration state changes for contract 0.0.{}",
-                    contractId.getContractNum());
-        });
+        accounts.get()
+                .forEach(
+                        (id, account) -> {
+                            if (!account.isSmartContract()) {
+                                return;
+                            }
+                            final var contractId = id.toGrpcContractID();
+                            final var bytecodeSidecar =
+                                    generateMigrationBytecodeSidecarFor(contractId);
+                            transactionContext.addSidecarRecord(bytecodeSidecar);
+                            log.debug(
+                                    "Published migration bytecode sidecar for contract 0.0.{}",
+                                    contractId.getContractNum());
+                            var contractStorageKey = account.getFirstContractStorageKey();
+                            if (contractStorageKey == null) {
+                                log.debug(
+                                        "Contract 0.0.{} has no iterable storage - no migration"
+                                                + " state changes will be published.",
+                                        contractId.getContractNum());
+                                return;
+                            }
+                            final var stateChanges =
+                                    generateMigrationStateChanges(
+                                            contractId, contractStorageMap, contractStorageKey);
+                            transactionContext.addSidecarRecord(
+                                    TransactionSidecarRecord.newBuilder()
+                                            .setStateChanges(
+                                                    ContractStateChanges.newBuilder()
+                                                            .addContractStateChanges(stateChanges)
+                                                            .build())
+                                            .setMigration(true));
+                            log.debug(
+                                    "Published migration state changes for contract 0.0.{}",
+                                    contractId.getContractNum());
+                        });
     }
 
-    private TransactionSidecarRecord.Builder generateMigrationBytecodeSidecarFor(final ContractID contractId) {
+    private TransactionSidecarRecord.Builder generateMigrationBytecodeSidecarFor(
+            final ContractID contractId) {
         final var runtimeCode =
                 entityAccess.fetchCodeIfPresent(EntityIdUtils.asAccount(contractId));
         final var bytecodeSidecar =
                 SidecarUtils.createContractBytecodeSidecarFrom(
-                    contractId, runtimeCode.toArrayUnsafe());
+                        contractId, runtimeCode.toArrayUnsafe());
         bytecodeSidecar.setMigration(true);
         return bytecodeSidecar;
     }
 
     private Builder generateMigrationStateChanges(
-        final ContractID contractId,
-        final VirtualMap<ContractKey, IterableContractValue> contractStorageMap,
-        ContractKey contractStorageKey) {
+            final ContractID contractId,
+            final VirtualMap<ContractKey, IterableContractValue> contractStorageMap,
+            ContractKey contractStorageKey) {
         final var contractStateChangeBuilder =
                 ContractStateChange.newBuilder().setContractId(contractId);
         IterableContractValue iterableValue;
