@@ -823,17 +823,17 @@ workflows:
             - attach_workspace:
                 at: /
 
-  # The mainnet migration test needs to be run in a 18-node test network.
-  # Enable this workflow to run on a daily only when a new release branch is tagged and branched.
-  # Once this branch is released, disable this workflow.
+# The mainnet migration test needs to be run in a 18-node test network.
+# Enable this workflow to run on a daily only when a new release branch is tagged and branched.
+# Once this branch is released, disable this workflow.
   GCP-Daily-Services-Crypto-Migration-18N-1C:
     triggers:
-      - schedule:
-          cron: "0 23,8 * * *"
-          filters:
-            branches:
-              only:
-                - release-branch-N
+          - schedule:
+              cron: "0 23,8 * * *"
+              filters:
+                branches:
+                  only:
+                    - release-branch-N
     jobs:
       - build-platform-and-services
       - update-start-up-key-for-mainnet:
@@ -1431,67 +1431,67 @@ workflows:
                 at: /
 
   continuous-integration-gcp:
-    jobs:
-      #        - build-artifact:
-      #            name: "artifact-build"
-      #            context: SonarCloud
-      #            filters:
-      #              branches:
-      #                ignore:
-      #                  - NONE
-      #            workflow-name: "Continuous-integration"
-      - build-platform-and-services:
-          context: SonarCloud
-          workflow-name: "Continuous-integration-GCP"
-      - jrs-regression:
-          context: Slack
-          regression_path: /swirlds-platform/regression/assets
-          result_path: assets/results/4N_1C/CI
-          config_type: "ci"
-          workflow-name: "GCP-Commit-Services-Comp-Basic-4N-1C"
-          name: "run-continuous-integration-gcp"
-          continuous_integration: true
-          slack_results_channel: "hedera-cicd"
-          slack_summary_channel: "hedera-cicd"
-          requires:
-            - build-platform-and-services
-          pre-steps:
-            - install-tools
-            - attach_workspace:
-                at: /
+      jobs:
+#        - build-artifact:
+#            name: "artifact-build"
+#            context: SonarCloud
+#            filters:
+#              branches:
+#                ignore:
+#                  - NONE
+#            workflow-name: "Continuous-integration"
+        - build-platform-and-services:
+            context: SonarCloud
+            workflow-name: "Continuous-integration-GCP"
+        - jrs-regression:
+            context: Slack
+            regression_path: /swirlds-platform/regression/assets
+            result_path: assets/results/4N_1C/CI
+            config_type: "ci"
+            workflow-name: "GCP-Commit-Services-Comp-Basic-4N-1C"
+            name: "run-continuous-integration-gcp"
+            continuous_integration: true
+            slack_results_channel: "hedera-cicd"
+            slack_summary_channel: "hedera-cicd"
+            requires:
+              - build-platform-and-services
+            pre-steps:
+              - install-tools
+              - attach_workspace:
+                  at: /
 jobs:
-  #  build-artifact:
-  #    parameters:
-  #      workflow-name:
-  #        type: string
-  #        default: ""
-  #    executor:
-  #      name: build-executor
-  #      workflow-name:  << parameters.workflow-name >>
-  #    steps:
-  #      - checkout
-  #      - run:
-  #          name: prepare log dir
-  #          command: |
-  #            mkdir -p /repo/test-clients/output
-  #      - run:
-  #          name: gradle assemble
-  #          # use double quote otherwise the backslash of line continuation will be treated as part of mvn parameter
-  #          command: |
-  #            ./gradlew assemble copyLib copyApp --scan --parallel \
-  #              | tee /repo/test-clients/output/hapi-client.log
-  #
-  ##      - run:
-  ##          name: Upload codecov
-  ##          command: |
-  ##            apt update -y
-  ##            apt install -y curl
-  ##            bash <(wget -O - https://codecov.io/bash)
-  #      - persist_to_workspace:
-  #          root: /
-  #          paths:
-  #            - repo/
-  #            - root/.m2
+#  build-artifact:
+#    parameters:
+#      workflow-name:
+#        type: string
+#        default: ""
+#    executor:
+#      name: build-executor
+#      workflow-name:  << parameters.workflow-name >>
+#    steps:
+#      - checkout
+#      - run:
+#          name: prepare log dir
+#          command: |
+#            mkdir -p /repo/test-clients/output
+#      - run:
+#          name: gradle assemble
+#          # use double quote otherwise the backslash of line continuation will be treated as part of mvn parameter
+#          command: |
+#            ./gradlew assemble copyLib copyApp --scan --parallel \
+#              | tee /repo/test-clients/output/hapi-client.log
+#
+##      - run:
+##          name: Upload codecov
+##          command: |
+##            apt update -y
+##            apt install -y curl
+##            bash <(wget -O - https://codecov.io/bash)
+#      - persist_to_workspace:
+#          root: /
+#          paths:
+#            - repo/
+#            - root/.m2
 
   sonar-check:
     parameters:
@@ -1675,9 +1675,9 @@ jobs:
       workflow-name: << parameters.workflow-name >>
     steps:
       - gcp_import_credentials:
-          username_variable: GCLOUD_SERVICE_ACCOUNT_NAME
-          keyfile_variable: GCLOUD_SERVICE_KEY
-          project_variable: GOOGLE_PROJECT_ID
+         username_variable: GCLOUD_SERVICE_ACCOUNT_NAME
+         keyfile_variable: GCLOUD_SERVICE_KEY
+         project_variable: GOOGLE_PROJECT_ID
       - add_ssh_keys:
           fingerprints:
             - "96:47:c4:5c:e7:45:06:c5:26:a5:85:ef:41:22:2f:d6"
