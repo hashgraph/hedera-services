@@ -17,11 +17,16 @@ package com.hedera.services.store.contracts.precompile.proxy;
 
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_GET_FUNGIBLE_TOKEN_INFO;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_GET_NON_FUNGIBLE_TOKEN_INFO;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_GET_TOKEN_CUSTOM_FEES;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_GET_TOKEN_DEFAULT_FREEZE_STATUS;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_GET_TOKEN_DEFAULT_KYC_STATUS;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_GET_TOKEN_INFO;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_IS_FROZEN;
 import static com.hedera.services.store.contracts.precompile.proxy.RedirectViewExecutor.MINIMUM_TINYBARS_COST;
+import static com.hedera.test.factories.fees.CustomFeeBuilder.fixedHbar;
+import static com.hedera.test.factories.fees.CustomFeeBuilder.fixedHts;
+import static com.hedera.test.factories.fees.CustomFeeBuilder.fractional;
+import static com.hedera.test.utils.IdUtils.asAccount;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.ArgumentMatchers.any;
@@ -38,16 +43,20 @@ import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
 import com.hedera.services.store.contracts.precompile.codec.GetTokenDefaultFreezeStatusWrapper;
 import com.hedera.services.store.contracts.precompile.codec.GetTokenDefaultKycStatusWrapper;
 import com.hedera.services.store.contracts.precompile.codec.TokenFreezeUnfreezeWrapper;
+import com.hedera.services.store.contracts.precompile.codec.TokenGetCustomFeesWrapper;
 import com.hedera.services.store.contracts.precompile.codec.TokenInfoWrapper;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.utils.EntityIdUtils;
+import com.hedera.test.factories.fees.CustomFeeBuilder;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.CustomFee;
 import com.hederahashgraph.api.proto.java.NftID;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenInfo;
 import com.hederahashgraph.api.proto.java.TokenNftInfo;
+import java.util.ArrayList;
 import java.util.Optional;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
@@ -221,6 +230,32 @@ class ViewExecutorTest {
     }
 
     @Test
+    void computeGetTokenCustomFees() {
+        final var input = prerequisites(ABI_ID_GET_TOKEN_CUSTOM_FEES, fungibleTokenAddress);
+        final var tokenCustomFeesEncoded =
+                Bytes.fromHexString(
+                        "0x000000000000000000000000000000000000000000000000000000000000001600000000000000000000000000000000000000000000000000000000000000800000000000000000000000000000000000000000000000000000000000000280000000000000000000000000000000000000000000000000000000000000036000000000000000000000000000000000000000000000000000000000000000030000000000000000000000000000000000000000000000000000000000000064000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000900000000000000000000000000000000000000000000000000000000000000640000000000000000000000000000000000000000000000000000000000000378000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000009000000000000000000000000000000000000000000000000000000000000003200000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000090000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000f0000000000000000000000000000000000000000000000000000000000000064000000000000000000000000000000000000000000000000000000000000000a0000000000000000000000000000000000000000000000000000000000000032000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000090000000000000000000000000000000000000000000000000000000000000000");
+
+        given(decodingFacade.decodeTokenGetCustomFees(input))
+                .willReturn(new TokenGetCustomFeesWrapper(fungible));
+        given(stateView.tokenCustomFees(fungible)).willReturn(getCustomFees());
+        given(stateView.tokenExists(fungible)).willReturn(true);
+        given(encodingFacade.encodeTokenGetCustomFees(any())).willReturn(tokenCustomFeesEncoded);
+
+        assertEquals(Pair.of(gas, tokenCustomFeesEncoded), subject.computeCosted());
+    }
+
+    @Test
+    void computeGetTokenCustomFeesThrowsWhenTokenDoesNotExists() {
+        final var input = prerequisites(ABI_ID_GET_TOKEN_CUSTOM_FEES, fungibleTokenAddress);
+
+        given(decodingFacade.decodeTokenGetCustomFees(input))
+                .willReturn(new TokenGetCustomFeesWrapper(fungible));
+        assertEquals(Pair.of(gas, null), subject.computeCosted());
+        verify(frame).setState(MessageFrame.State.REVERT);
+    }
+
+    @Test
     void computeCostedNOT_SUPPORTED() {
         prerequisites(0xffffffff, fungibleTokenAddress);
         assertNull(subject.computeCosted().getRight());
@@ -318,5 +353,25 @@ class ViewExecutorTest {
                         stateView,
                         ledgers);
         return input;
+    }
+
+    private ArrayList<CustomFee> getCustomFees() {
+
+        final var payerAccountId = asAccount("0.0.9");
+
+        final var builder = new CustomFeeBuilder(payerAccountId);
+        final var customFixedFeeInHbar = builder.withFixedFee(fixedHbar(100L));
+        final var customFixedFeeInHts = builder.withFixedFee(fixedHts(fungible, 100L));
+        final var customFixedFeeSameToken = builder.withFixedFee(fixedHts(50L));
+        final var customFractionalFee =
+                builder.withFractionalFee(
+                        fractional(15L, 100L).setMinimumAmount(10L).setMaximumAmount(50L));
+        final var customFees = new ArrayList<CustomFee>();
+        customFees.add(customFixedFeeInHbar);
+        customFees.add(customFixedFeeInHts);
+        customFees.add(customFixedFeeSameToken);
+        customFees.add(customFractionalFee);
+
+        return customFees;
     }
 }

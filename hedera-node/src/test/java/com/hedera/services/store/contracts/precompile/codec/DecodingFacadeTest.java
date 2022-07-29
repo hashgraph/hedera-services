@@ -246,6 +246,14 @@ class DecodingFacadeTest {
             Bytes.fromHexString(
                     "0xf7f38e2600000000000000000000000000000000000000000000000000000000000006b000000000000000000000000000000000000000000000000000000000000006ae000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000001");
 
+    public static final Bytes GET_FUNGIBLE_TOKEN_CUSTOM_FEES_INPUT =
+            Bytes.fromHexString(
+                    "0xae7611a000000000000000000000000000000000000000000000000000000000000003ee");
+
+    public static final Bytes GET_NON_FUNGIBLE_TOKEN_CUSTOM_FEES_INPUT =
+            Bytes.fromHexString(
+                    "0xae7611a000000000000000000000000000000000000000000000000000000000000003f6");
+
     @Mock private WorldLedgers ledgers;
 
     @Test
@@ -915,6 +923,22 @@ class DecodingFacadeTest {
         assertEquals(1, decodedInput.serialNumbers().size());
         assertEquals(1, decodedInput.serialNumbers().get(0));
         assertEquals(NON_FUNGIBLE_UNIQUE, decodedInput.type());
+    }
+
+    @Test
+    void decodeGetFungibleTokenCustomFeesInput() {
+        final var decodedInput =
+                subject.decodeTokenGetCustomFees(GET_FUNGIBLE_TOKEN_CUSTOM_FEES_INPUT);
+
+        assertTrue(decodedInput.tokenID().getTokenNum() > 0);
+    }
+
+    @Test
+    void decodeGetNonFungibleTokenCustomFeesInput() {
+        final var decodedInput =
+                subject.decodeTokenGetCustomFees(GET_NON_FUNGIBLE_TOKEN_CUSTOM_FEES_INPUT);
+
+        assertTrue(decodedInput.tokenID().getTokenNum() > 0);
     }
 
     private void assertExpectedFungibleTokenCreateStruct(final TokenCreateWrapper decodedInput) {
