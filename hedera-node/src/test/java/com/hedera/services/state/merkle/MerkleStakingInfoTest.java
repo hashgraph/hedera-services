@@ -229,9 +229,9 @@ class MerkleStakingInfoTest {
     @Test
     void toStringWorks() {
         final var expected =
-                "MerkleStakingInfo{id=0.0.0.34, minStake=100, maxStake=10000, stakeToReward=345,"
-                    + " stakeToNotReward=155, stakeRewardStart=1234, unclaimedStakeRewardStart=123,"
-                    + " stake=500, rewardSumHistory=[2, 1, 0]}";
+                "MerkleStakingInfo{id=34, minStake=100, maxStake=10000, "
+                        + "stakeToReward=345, stakeToNotReward=155, stakeRewardStart=1234, "
+                        + "unclaimedStakeRewardStart=123, stake=500, rewardSumHistory=[2, 1, 0]}";
 
         assertEquals(expected, subject.toString());
     }
@@ -278,7 +278,8 @@ class MerkleStakingInfoTest {
         final var rewardRate = 1_000_000;
         final var maxRewardRate = rewardRate / 2;
 
-        final var pendingRewardRate = subject.updateRewardSumHistory(rewardRate, maxRewardRate);
+        final var pendingRewardRate =
+                subject.updateRewardSumHistory(rewardRate, maxRewardRate, true);
 
         assertArrayEquals(new long[] {maxRewardRate + 2L, 2L, 1L}, subject.getRewardSumHistory());
         assertEquals(maxRewardRate, pendingRewardRate);
@@ -288,7 +289,8 @@ class MerkleStakingInfoTest {
     void updatesRewardsSumHistoryAsExpectedForNodeWithGreaterThanMinStakeAndNoMoreThanMaxStake() {
         final var rewardRate = 1_000_000;
 
-        final var pendingRewardRate = subject.updateRewardSumHistory(rewardRate, Long.MAX_VALUE);
+        final var pendingRewardRate =
+                subject.updateRewardSumHistory(rewardRate, Long.MAX_VALUE, true);
 
         assertArrayEquals(new long[] {1_000_002L, 2L, 1L}, subject.getRewardSumHistory());
         assertEquals(1_000_000L, pendingRewardRate);
@@ -299,7 +301,8 @@ class MerkleStakingInfoTest {
         final var rewardRate = 1_000_000;
 
         subject.setStakeRewardStart(2 * subject.getMaxStake());
-        final var pendingRewardRate = subject.updateRewardSumHistory(rewardRate, Long.MAX_VALUE);
+        final var pendingRewardRate =
+                subject.updateRewardSumHistory(rewardRate, Long.MAX_VALUE, true);
 
         assertArrayEquals(new long[] {500_002L, 2L, 1L}, subject.getRewardSumHistory());
         assertEquals(500_000L, pendingRewardRate);
@@ -316,7 +319,8 @@ class MerkleStakingInfoTest {
                         .longValueExact();
 
         subject.setStakeRewardStart(excessStake);
-        final var pendingRewardRate = subject.updateRewardSumHistory(rewardRate, Long.MAX_VALUE);
+        final var pendingRewardRate =
+                subject.updateRewardSumHistory(rewardRate, Long.MAX_VALUE, true);
 
         assertArrayEquals(
                 new long[] {expectedScaledRate + 2L, 2L, 1L}, subject.getRewardSumHistory());
@@ -324,14 +328,28 @@ class MerkleStakingInfoTest {
     }
 
     @Test
-    void updatesRewardsSumHistoryAsExpectedForNodeWithLessThanMinStake() {
+    void updatesRewardsSumHistoryAsExpectedForNodeWithLessThanMinStakeWhenMinIsReqForReward() {
         final var rewardRate = 1_000_000_000;
 
-        subject.setStakeRewardStart(0);
-        final var pendingRewardRate = subject.updateRewardSumHistory(rewardRate, Long.MAX_VALUE);
+        subject.setStake(0);
+        final var pendingRewardRate =
+                subject.updateRewardSumHistory(rewardRate, Long.MAX_VALUE, true);
 
         assertArrayEquals(new long[] {2L, 2L, 1L}, subject.getRewardSumHistory());
         assertEquals(0L, pendingRewardRate);
+    }
+
+    @Test
+    void updatesRewardsSumHistoryAsExpectedForNodeWithLessThanMinStakeWhenMinIsNotReqForReward() {
+        final var rewardRate = 1_000_000_000;
+
+        subject.setStake(0);
+        subject.setStakeRewardStart(subject.getMinStake() - 1);
+        final var pendingRewardRate =
+                subject.updateRewardSumHistory(rewardRate, Long.MAX_VALUE, false);
+
+        assertArrayEquals(new long[] {1000000002L, 2L, 1L}, subject.getRewardSumHistory());
+        assertEquals(rewardRate, pendingRewardRate);
     }
 
     @Test

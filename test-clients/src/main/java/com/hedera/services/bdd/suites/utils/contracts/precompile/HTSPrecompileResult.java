@@ -35,6 +35,7 @@ import static com.hedera.services.contracts.ParsingConstants.hapiAllowanceOfType
 import static com.hedera.services.contracts.ParsingConstants.hapiGetApprovedType;
 import static com.hedera.services.contracts.ParsingConstants.hapiIsApprovedForAllType;
 import static com.hedera.services.contracts.ParsingConstants.isApprovedForAllType;
+import static com.hedera.services.contracts.ParsingConstants.isFrozenType;
 import static com.hedera.services.contracts.ParsingConstants.mintReturnType;
 import static com.hedera.services.contracts.ParsingConstants.nameType;
 import static com.hedera.services.contracts.ParsingConstants.notSpecifiedType;
@@ -136,6 +137,7 @@ public class HTSPrecompileResult implements ContractCallResult {
     private TokenNftInfo nonFungibleTokenInfo;
     private boolean tokenDefaultFreezeStatus;
     private boolean tokenDefaultKycStatus;
+    private boolean isFrozen;
     private List<CustomFee> customFees;
 
     public HTSPrecompileResult forFunction(final FunctionType functionType) {
@@ -162,6 +164,7 @@ public class HTSPrecompileResult implements ContractCallResult {
                     case HAPI_GET_NON_FUNGIBLE_TOKEN_INFO -> getNonFungibleTokenInfoTypeReplacedAddress;
                     case GET_TOKEN_DEFAULT_FREEZE_STATUS -> getTokenDefaultFreezeStatusType;
                     case GET_TOKEN_DEFAULT_KYC_STATUS -> getTokenDefaultKycStatusType;
+                    case HAPI_IS_FROZEN -> isFrozenType;
                     case HAPI_GET_TOKEN_CUSTOM_FEES -> tokenGetCustomFeesReplacedAddress;
                     default -> notSpecifiedType;
                 };
@@ -275,6 +278,11 @@ public class HTSPrecompileResult implements ContractCallResult {
         return this;
     }
 
+    public HTSPrecompileResult withIsFrozen(final boolean isFrozen) {
+        this.isFrozen = isFrozen;
+        return this;
+    }
+
     @Override
     public Bytes getBytes() {
         if (ParsingConstants.FunctionType.ERC_OWNER.equals(functionType)) {
@@ -310,6 +318,7 @@ public class HTSPrecompileResult implements ContractCallResult {
                             status.getNumber(), tokenDefaultFreezeStatus);
                     case GET_TOKEN_DEFAULT_KYC_STATUS -> Tuple.of(
                             status.getNumber(), tokenDefaultKycStatus);
+                    case HAPI_IS_FROZEN -> Tuple.of(status.getNumber(), isFrozen);
                     case HAPI_GET_TOKEN_CUSTOM_FEES -> getTupleForTokenGetCustomFees();
                     default -> Tuple.of(status.getNumber());
                 };

@@ -21,6 +21,7 @@ import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_GET_TOKEN_DEFAULT_FREEZE_STATUS;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_GET_TOKEN_DEFAULT_KYC_STATUS;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_GET_TOKEN_INFO;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_IS_FROZEN;
 import static com.hedera.services.store.contracts.precompile.proxy.RedirectViewExecutor.MINIMUM_TINYBARS_COST;
 import static com.hedera.test.factories.fees.CustomFeeBuilder.fixedHbar;
 import static com.hedera.test.factories.fees.CustomFeeBuilder.fixedHts;
@@ -41,6 +42,7 @@ import com.hedera.services.store.contracts.precompile.codec.DecodingFacade;
 import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
 import com.hedera.services.store.contracts.precompile.codec.GetTokenDefaultFreezeStatusWrapper;
 import com.hedera.services.store.contracts.precompile.codec.GetTokenDefaultKycStatusWrapper;
+import com.hedera.services.store.contracts.precompile.codec.TokenFreezeUnfreezeWrapper;
 import com.hedera.services.store.contracts.precompile.codec.TokenGetCustomFeesWrapper;
 import com.hedera.services.store.contracts.precompile.codec.TokenInfoWrapper;
 import com.hedera.services.store.models.Id;
@@ -83,8 +85,10 @@ class ViewExecutorTest {
     public static final TokenID fungible = IdUtils.asToken("0.0.888");
     public static final TokenID nonfungibletoken = IdUtils.asToken("0.0.999");
     public static final Id fungibleId = Id.fromGrpcToken(fungible);
+    public static final Id accountId = Id.fromGrpcAccount(account);
     public static final Id nonfungibleId = Id.fromGrpcToken(nonfungibletoken);
     public static final Address fungibleTokenAddress = fungibleId.asEvmAddress();
+    public static final Address accountAddress = accountId.asEvmAddress();
     public static final Address nonfungibleTokenAddress = nonfungibleId.asEvmAddress();
     public static final AccountID treasury =
             EntityIdUtils.accountIdFromEvmAddress(
@@ -99,6 +103,7 @@ class ViewExecutorTest {
     private static final Bytes answer = Bytes.of(1);
     private TokenInfo tokenInfo;
     private Bytes tokenInfoEncoded;
+    private Bytes isFrozenEncoded;
 
     ViewExecutor subject;
 
@@ -129,6 +134,10 @@ class ViewExecutorTest {
         tokenInfoEncoded =
                 Bytes.fromHexString(
                         "0x00000000000000000000000000000000000000000000000000000000000000160000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000012000000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000360000000000000000000000000000000000000000000000000000000000000038000000000000000000000000000000000000000000000000000000000000003a000000000000000000000000000000000000000000000000000000000000003c0000000000000000000000000000000000000000000000000000000000000016000000000000000000000000000000000000000000000000000000000000001a000000000000000000000000000000000000000000000000000000000000005cc00000000000000000000000000000000000000000000000000000000000001e0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000003e80000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000022000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000044e414d45000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002465400000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000044d454d4f00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000043078303300000000000000000000000000000000000000000000000000000000");
+        isFrozenEncoded =
+                Bytes.fromHexString(
+                        "0x00000000000000000000000000000000000000000000000000000000000000160000000000000000000000000000000000000"
+                            + "000000000000000000000000001");
     }
 
     private ByteString fromString(final String value) {
@@ -206,6 +215,18 @@ class ViewExecutorTest {
                 .willReturn(tokenInfoEncoded);
 
         assertEquals(Pair.of(gas, tokenInfoEncoded), subject.computeCosted());
+    }
+
+    @Test
+    void computeIsFrozen() {
+        final var input = prerequisites(ABI_ID_IS_FROZEN, fungibleTokenAddress);
+
+        final var isFrozenWrapper = TokenFreezeUnfreezeWrapper.forIsFrozen(fungible, account);
+        given(decodingFacade.decodeIsFrozen(any(), any())).willReturn(isFrozenWrapper);
+        given(ledgers.isFrozen(account, fungible)).willReturn(true);
+        given(encodingFacade.encodeIsFrozen(true)).willReturn(isFrozenEncoded);
+
+        assertEquals(Pair.of(gas, isFrozenEncoded), subject.computeCosted());
     }
 
     @Test

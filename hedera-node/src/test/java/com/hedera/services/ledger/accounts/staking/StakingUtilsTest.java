@@ -25,6 +25,8 @@ import static com.hedera.services.ledger.accounts.staking.StakingUtils.hasStakeM
 import static com.hedera.services.ledger.accounts.staking.StakingUtils.updateBalance;
 import static com.hedera.services.ledger.accounts.staking.StakingUtils.updateStakedToMe;
 import static com.hedera.services.ledger.properties.AccountProperty.BALANCE;
+import static com.hedera.services.ledger.properties.AccountProperty.DECLINE_REWARD;
+import static com.hedera.services.ledger.properties.AccountProperty.STAKED_ID;
 import static com.hedera.services.state.migration.ReleaseTwentySevenMigration.buildStakingInfoMap;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -68,8 +70,30 @@ public class StakingUtilsTest {
 
     @Test
     void validatesIfAnyStakedFieldChanges() {
-        assertTrue(hasStakeMetaChanges(randomStakeFieldChanges(100L)));
-        assertFalse(hasStakeMetaChanges(randomNotStakeFieldChanges()));
+        final var account = new MerkleAccount();
+        assertTrue(hasStakeMetaChanges(randomStakeFieldChanges(100L), account));
+        assertFalse(hasStakeMetaChanges(randomNotStakeFieldChanges(), account));
+    }
+
+    @Test
+    void stakeMetaOnlyChangesWithStakingIdIfDifferent() {
+        final var account = new MerkleAccount();
+        account.setStakedId(-1);
+        assertTrue(hasStakeMetaChanges(Map.of(STAKED_ID, -2L), account));
+        assertFalse(hasStakeMetaChanges(Map.of(STAKED_ID, -1L), account));
+    }
+
+    @Test
+    void stakeMetaOnlyChangesWithDeclineIfDifferent() {
+        final var account = new MerkleAccount();
+        assertTrue(hasStakeMetaChanges(Map.of(DECLINE_REWARD, true), account));
+        assertFalse(hasStakeMetaChanges(Map.of(DECLINE_REWARD, false), account));
+    }
+
+    @Test
+    void stakeMetaAlwaysChangesIfNullAccount() {
+        assertTrue(hasStakeMetaChanges(Map.of(DECLINE_REWARD, false), null));
+        assertTrue(hasStakeMetaChanges(Map.of(STAKED_ID, -1L), null));
     }
 
     @Test

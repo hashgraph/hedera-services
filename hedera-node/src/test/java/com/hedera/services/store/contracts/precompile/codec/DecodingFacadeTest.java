@@ -189,6 +189,18 @@ class DecodingFacadeTest {
             Bytes.fromHexString(
                     "0xe985e9c5000000000000000000000000000000000000000000000000000000000000065b000000000000000000000000000000000000000000000000000000000000065c");
 
+    public static final Bytes FREEZE_INPUT =
+            Bytes.fromHexString(
+                    "0x5b8f8584000000000000000000000000000000000000000000000000000000000000050e000000000000000000000000000000000000000000000000000000000000050c");
+
+    public static final Bytes UNFREEZE_INPUT =
+            Bytes.fromHexString(
+                    "0x52f9138700000000000000000000000000000000000000000000000000000000000005180000000000000000000000000000000000000000000000000000000000000516");
+
+    public static final Bytes IS_FROZEN_INPUT =
+            Bytes.fromHexString(
+                    "0x46de0fb1000000000000000000000000000000000000000000000000000000000000050e000000000000000000000000000000000000000000000000000000000000050c");
+
     public static final Bytes IS_APPROVED_FOR_ALL_INPUT_HAPI =
             Bytes.fromHexString(
                     "0xf49f40db0000000000000000000000000000000000000000000000000000000000001234000000000000000000000000000000000000000000000000000000000000065b000000000000000000000000000000000000000000000000000000000000065c");
@@ -831,6 +843,27 @@ class DecodingFacadeTest {
         final var royaltyFee = decodedInput.getRoyaltyFees().get(0).asGrpc();
         assertFalse(royaltyFee.hasFeeCollectorAccountId());
         assertFalse(royaltyFee.getRoyaltyFee().hasFallbackFee());
+    }
+
+    @Test
+    void decodeTokenFreezeWithValidInput() {
+        final var decodedInput = subject.decodeFreeze(FREEZE_INPUT, identity());
+
+        assertEquals(TokenID.newBuilder().setTokenNum(1294).build(), decodedInput.token());
+    }
+
+    @Test
+    void decodeTokenUnFreezeWithValidInput() {
+        final var decodedInput = subject.decodeUnfreeze(UNFREEZE_INPUT, identity());
+
+        assertEquals(TokenID.newBuilder().setTokenNum(1304).build(), decodedInput.token());
+    }
+
+    @Test
+    void decodeTokenIsFrozenWithValidInput() {
+        final var decodedInput = subject.decodeIsFrozen(IS_FROZEN_INPUT, identity());
+
+        assertEquals(TokenID.newBuilder().setTokenNum(1294).build(), decodedInput.token());
     }
 
     @Test

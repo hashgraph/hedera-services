@@ -428,6 +428,31 @@ interface IHederaTokenService {
         external
         returns (int64 responseCode, bool defaultKycStatus);
 
+    /// Query if token account is frozen
+    /// @param token The token address to check
+    /// @param account The account address associated with the token
+    /// @return responseCode The response code for the status of the request. SUCCESS is 22.
+    /// @return frozen True if `account` is frozen for `token`
+    function isFrozen(address token, address account)
+    external
+    returns (int64 responseCode, bool frozen);
+
+    /// Operation to freeze token account
+    /// @param token The token address
+    /// @param account The account address to be frozen
+    /// @return responseCode The response code for the status of the request. SUCCESS is 22.
+    function freezeToken(address token, address account)
+    external
+    returns (int64 responseCode);
+
+    /// Operation to unfreeze token account
+    /// @param token The token address
+    /// @param account The account address to be unfrozen
+    /// @return responseCode The response code for the status of the request. SUCCESS is 22.
+    function unfreezeToken(address token, address account)
+    external
+    returns (int64 responseCode);
+
     /// Query token custom fees
     /// @param token The token address to check
     /// @return responseCode The response code for the status of the request. SUCCESS is 22.

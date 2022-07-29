@@ -54,6 +54,7 @@ import com.hedera.services.store.contracts.precompile.codec.Dissociation;
 import com.hedera.services.store.contracts.precompile.codec.MintWrapper;
 import com.hedera.services.store.contracts.precompile.codec.SetApprovalForAllWrapper;
 import com.hedera.services.store.contracts.precompile.codec.TokenCreateWrapper;
+import com.hedera.services.store.contracts.precompile.codec.TokenFreezeUnfreezeWrapper;
 import com.hedera.services.store.contracts.precompile.codec.TokenTransferWrapper;
 import com.hedera.services.store.contracts.precompile.codec.WipeWrapper;
 import com.hedera.services.utils.EntityIdUtils;
@@ -293,6 +294,26 @@ class SyntheticTxnFactoryTest {
         assertEquals(
                 ByteString.copyFrom(Bytes.of(1).toArray()),
                 txnBody.getContractCall().getFunctionParameters());
+    }
+
+    @Test
+    void createsExpectedFreezeTokenCall() {
+        final var freezeWrapper = new TokenFreezeUnfreezeWrapper(fungible, a);
+        final var result = subject.createFreeze(freezeWrapper);
+        final var txnBody = result.build();
+
+        assertEquals(fungible, txnBody.getTokenFreeze().getToken());
+        assertEquals(a, txnBody.getTokenFreeze().getAccount());
+    }
+
+    @Test
+    void createsExpectedUnfreezeTokenCall() {
+        final var unfreezeWrapper = new TokenFreezeUnfreezeWrapper(fungible, a);
+        final var result = subject.createUnFreeze(unfreezeWrapper);
+        final var txnBody = result.build();
+
+        assertEquals(fungible, txnBody.getTokenUnfreeze().getToken());
+        assertEquals(a, txnBody.getTokenUnfreeze().getAccount());
     }
 
     @Test

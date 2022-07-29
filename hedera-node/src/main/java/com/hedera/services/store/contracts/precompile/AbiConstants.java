@@ -98,6 +98,12 @@ public final class AbiConstants {
     public static final int ABI_WIPE_TOKEN_ACCOUNT_FUNGIBLE = 0x9790686d;
     // wipeTokenAccountNFT(address, address, int64[])
     public static final int ABI_WIPE_TOKEN_ACCOUNT_NFT = 0xf7f38e26;
+    // isFrozen(address token, address account)
+    public static final int ABI_ID_IS_FROZEN = 0x46de0fb1;
+    // freezeToken(address token, address account)
+    public static final int ABI_ID_FREEZE = 0x5b8f8584;
+    // unfreezeToken(address token, address account)
+    public static final int ABI_ID_UNFREEZE = 0x52f91387;
     // Transfer(address indexed from, address indexed to, uint256 indexed tokenId)
     // Transfer(address indexed from, address indexed to, uint256 value)
     public static final Bytes TRANSFER_EVENT =

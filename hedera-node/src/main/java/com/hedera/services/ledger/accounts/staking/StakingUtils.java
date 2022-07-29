@@ -117,8 +117,16 @@ public class StakingUtils {
         }
     }
 
-    public static boolean hasStakeMetaChanges(@NotNull final Map<AccountProperty, Object> changes) {
-        return changes.containsKey(DECLINE_REWARD) || changes.containsKey(STAKED_ID);
+    public static boolean hasStakeMetaChanges(
+            @NotNull final Map<AccountProperty, Object> changes,
+            @Nullable final MerkleAccount account) {
+        return (changes.containsKey(DECLINE_REWARD)
+                        && (account == null
+                                || account.isDeclinedReward()
+                                        != (boolean) changes.get(DECLINE_REWARD)))
+                || (changes.containsKey(STAKED_ID)
+                        && (account == null
+                                || account.getStakedId() != (long) changes.get(STAKED_ID)));
     }
 
     public static long roundedToHbar(long value) {

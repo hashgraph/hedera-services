@@ -29,6 +29,7 @@ import com.hedera.services.store.contracts.precompile.codec.MintWrapper;
 import com.hedera.services.store.contracts.precompile.codec.OwnerOfAndTokenURIWrapper;
 import com.hedera.services.store.contracts.precompile.codec.TokenCreateWrapper;
 import com.hedera.services.store.contracts.precompile.codec.TokenExpiryWrapper;
+import com.hedera.services.store.contracts.precompile.codec.TokenFreezeUnfreezeWrapper;
 import com.hedera.services.store.contracts.precompile.codec.TokenGetCustomFeesWrapper;
 import com.hedera.services.store.contracts.precompile.codec.TokenInfoWrapper;
 import com.hedera.services.store.contracts.precompile.codec.TokenTransferWrapper;
@@ -136,6 +137,9 @@ public class HTSTestsUtil {
             new GetTokenDefaultFreezeStatusWrapper(fungible);
     public static final GetTokenDefaultKycStatusWrapper defaultKycStatusWrapper =
             new GetTokenDefaultKycStatusWrapper(fungible);
+
+    public static final TokenFreezeUnfreezeWrapper tokenFreezeUnFreezeWrapper =
+            new TokenFreezeUnfreezeWrapper(fungible, account);
 
     public static final Association multiAssociateOp =
             Association.singleAssociation(accountMerkleId, tokenMerkleId);

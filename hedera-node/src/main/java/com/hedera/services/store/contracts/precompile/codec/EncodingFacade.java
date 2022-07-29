@@ -16,6 +16,7 @@
 package com.hedera.services.store.contracts.precompile.codec;
 
 import static com.hedera.services.contracts.ParsingConstants.FunctionType.HAPI_MINT;
+import static com.hedera.services.contracts.ParsingConstants.INT_BOOL_PAIR_RETURN_TYPE;
 import static com.hedera.services.contracts.ParsingConstants.getFungibleTokenInfoType;
 import static com.hedera.services.contracts.ParsingConstants.getNonFungibleTokenInfoType;
 import static com.hedera.services.contracts.ParsingConstants.getTokenCustomFeesType;
@@ -55,7 +56,6 @@ public class EncodingFacade {
     private static final String STRING_RETURN_TYPE = "(string)";
     public static final String UINT256_RETURN_TYPE = "(uint256)";
     public static final String BOOL_RETURN_TYPE = "(bool)";
-    public static final String INT_BOOL_PAIR_RETURN_TYPE = "(int32,bool)";
     private static final TupleType mintReturnType = TupleType.parse("(int32,uint64,int64[])");
     private static final TupleType burnReturnType = TupleType.parse("(int32,uint64)");
     private static final TupleType createReturnType = TupleType.parse("(int32,address)");
@@ -81,6 +81,7 @@ public class EncodingFacade {
             TupleType.parse(INT_BOOL_PAIR_RETURN_TYPE);
     private static final TupleType getTokenDefaultKycStatusType =
             TupleType.parse(INT_BOOL_PAIR_RETURN_TYPE);
+    private static final TupleType isTokenFrozenType = TupleType.parse(INT_BOOL_PAIR_RETURN_TYPE);
 
     @Inject
     public EncodingFacade() {
@@ -135,6 +136,14 @@ public class EncodingFacade {
         return functionResultBuilder()
                 .forFunction(FunctionType.ERC_BALANCE)
                 .withBalance(balance)
+                .build();
+    }
+
+    public Bytes encodeIsFrozen(final boolean isFrozen) {
+        return functionResultBuilder()
+                .forFunction(FunctionType.HAPI_IS_FROZEN)
+                .withStatus(SUCCESS.getNumber())
+                .withIsFrozen(isFrozen)
                 .build();
     }
 
@@ -337,6 +346,7 @@ public class EncodingFacade {
         private String metadata;
         private TokenInfo tokenInfo;
         private TokenNftInfo nonFungibleTokenInfo;
+        private boolean isFrozen;
         private List<CustomFee> customFees;
 
         private FunctionResultBuilder forFunction(final FunctionType functionType) {
@@ -367,6 +377,7 @@ public class EncodingFacade {
                         case HAPI_GET_NON_FUNGIBLE_TOKEN_INFO -> getNonFungibleTokenInfoType;
                         case GET_TOKEN_DEFAULT_FREEZE_STATUS -> getTokenDefaultFreezeStatusType;
                         case GET_TOKEN_DEFAULT_KYC_STATUS -> getTokenDefaultKycStatusType;
+                        case HAPI_IS_FROZEN -> isTokenFrozenType;
                         case HAPI_GET_TOKEN_CUSTOM_FEES -> getTokenCustomFeesType;
                         default -> notSpecifiedType;
                     };
@@ -402,6 +413,11 @@ public class EncodingFacade {
 
         private FunctionResultBuilder withBalance(final long balance) {
             this.balance = balance;
+            return this;
+        }
+
+        private FunctionResultBuilder withIsFrozen(final boolean isFrozen) {
+            this.isFrozen = isFrozen;
             return this;
         }
 
@@ -513,6 +529,7 @@ public class EncodingFacade {
                                 status, tokenDefaultFreezeStatus);
                         case GET_TOKEN_DEFAULT_KYC_STATUS -> Tuple.of(
                                 status, tokenDefaultKycStatus);
+                        case HAPI_IS_FROZEN -> Tuple.of(status, isFrozen);
                         case HAPI_GET_TOKEN_CUSTOM_FEES -> getTupleForTokenGetCustomFees();
                         default -> Tuple.of(status);
                     };

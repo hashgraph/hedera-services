@@ -72,11 +72,12 @@ public enum ScheduleSignScenarios implements TxnHandlingScenario {
         @Override
         public byte[] extantSchedulingBodyBytes() throws Throwable {
             var accessor =
-                    new SignedTxnAccessor(
+                    SignedTxnAccessor.from(
                             newSignedCryptoTransfer()
                                     .sansTxnId()
                                     .transfers(tinyBarsFromTo(MISC_ACCOUNT_ID, RECEIVER_SIG_ID, 1))
-                                    .get());
+                                    .get()
+                                    .toByteArray());
             var scheduled = ScheduleUtils.fromOrdinary(accessor.getTxn());
             return TransactionBody.newBuilder()
                     .setScheduleCreate(
@@ -99,11 +100,12 @@ public enum ScheduleSignScenarios implements TxnHandlingScenario {
         @Override
         public byte[] extantSchedulingBodyBytes() throws Throwable {
             var accessor =
-                    new SignedTxnAccessor(
+                    SignedTxnAccessor.from(
                             newSignedCryptoTransfer()
                                     .sansTxnId()
                                     .transfers(tinyBarsFromTo(MISC_ACCOUNT_ID, RECEIVER_SIG_ID, 1))
-                                    .get());
+                                    .get()
+                                    .toByteArray());
             var scheduled = ScheduleUtils.fromOrdinary(accessor.getTxn());
             return TransactionBody.newBuilder()
                     .setScheduleCreate(

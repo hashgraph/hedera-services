@@ -197,7 +197,8 @@ public class OpUsageCtxHelper {
     }
 
     public TokenWipeMeta metaForTokenWipe(TxnAccessor accessor) {
-        return TOKEN_OPS_USAGE_UTILS.tokenWipeUsageFrom(accessor.getTxn(), accessor.getSubType());
+        return TOKEN_OPS_USAGE_UTILS.tokenWipeUsageFrom(
+                accessor.getTxn().getTokenWipe(), accessor.getSubType());
     }
 
     public TokenMintMeta metaForTokenMint(TxnAccessor accessor) {

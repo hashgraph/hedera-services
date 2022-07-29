@@ -26,7 +26,6 @@ import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.getNftGra
 import static com.hedera.services.utils.EntityIdUtils.asAccount;
 import static com.hedera.services.utils.EntityIdUtils.asHexedEvmAddress;
 import static com.hedera.services.utils.EntityIdUtils.readableId;
-import static com.hedera.services.utils.EntityIdUtils.unaliased;
 import static com.hedera.services.utils.EntityNum.fromAccountId;
 import static com.hedera.services.utils.MiscUtils.asKeyUnchecked;
 import static com.swirlds.common.utility.CommonUtils.hex;
@@ -68,6 +67,7 @@ import com.hedera.services.state.virtual.VirtualBlobKey;
 import com.hedera.services.state.virtual.VirtualBlobValue;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.schedule.ScheduleStore;
+import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
 import com.hedera.services.utils.MiscUtils;
@@ -104,6 +104,7 @@ import com.swirlds.virtualmap.VirtualKey;
 import com.swirlds.virtualmap.VirtualMap;
 import com.swirlds.virtualmap.VirtualValue;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -126,6 +127,8 @@ public class StateView {
     static final byte[] EMPTY_BYTES = new byte[0];
     static final MerkleMap<?, ?> EMPTY_MM = new MerkleMap<>();
     static final VirtualMap<?, ?> EMPTY_VM = new VirtualMap<>();
+
+    static final Map<ByteString, EntityNum> EMPTY_HM = new HashMap<>();
     static final MerkleNetworkContext EMPTY_CTX = new MerkleNetworkContext();
 
     public static final JKey EMPTY_WACL = new JKeyList();
@@ -633,7 +636,7 @@ public class StateView {
             final AliasManager aliasManager,
             final int maxTokensForAccountInfo,
             final RewardCalculator rewardCalculator) {
-        final var contractId = unaliased(id, aliasManager);
+        final var contractId = EntityIdUtils.unaliased(id, aliasManager);
         final var contract = contracts().get(contractId);
         if (contract == null) {
             return Optional.empty();
@@ -857,5 +860,9 @@ public class StateView {
 
     public MerkleMap<EntityNum, MerkleStakingInfo> stakingInfo() {
         return stateChildren == null ? emptyMm() : stateChildren.stakingInfo();
+    }
+
+    public Map<ByteString, EntityNum> aliases() {
+        return stateChildren == null ? EMPTY_HM : stateChildren.aliases();
     }
 }
