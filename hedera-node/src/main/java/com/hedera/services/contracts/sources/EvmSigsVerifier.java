@@ -131,7 +131,7 @@ public interface EvmSigsVerifier {
      *
      * @param isDelegateCall a flag showing if the message represented by the active frame is
      *     invoked via {@code delegatecall}
-     * @param token the address of the token to test for supply key activation
+     * @param token the address of the token to test for admin key activation
      * @param activeContract the address of the contract that should be signed in the key
      * @param worldLedgers the worldLedgers representing current state
      * @return whether the target account's key has an active signature

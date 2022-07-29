@@ -212,7 +212,7 @@ public class MerkleToken extends PartialMerkleLeaf implements Keyed<EntityNum>, 
         return MoreObjects.toStringHelper(MerkleToken.class)
                 .omitNullValues()
                 .add("number", number + " <-> " + EntityIdUtils.asIdLiteral(number))
-                .add("tokenID", tokenType)
+                .add("tokenType", tokenType)
                 .add("supplyType", supplyType)
                 .add("deleted", deleted)
                 .add("expiry", expiry)
