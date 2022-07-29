@@ -573,7 +573,7 @@ class DecodingFacadeTest {
     }
 
     @Test
-    void decodeTokenFreezeWithValidInput() {
+    void decodeTokenDeleteWithValidInput() {
         final var decodedInput = subject.decodeDelete(DELETE_INPUT);
 
         assertEquals(TokenID.newBuilder().setTokenNum(1133).build(), decodedInput.tokenID());

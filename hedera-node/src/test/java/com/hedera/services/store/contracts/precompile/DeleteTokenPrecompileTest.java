@@ -25,7 +25,7 @@ import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.fungib
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.successResult;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.tokenDeleteWrapper;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 
@@ -87,7 +87,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class FreezeTokenPrecompileTest {
+class DeleteTokenPrecompileTest {
     @Mock private GlobalDynamicProperties dynamicProperties;
     @Mock private GasCalculator gasCalculator;
     @Mock private TypedTokenStore tokenStore;

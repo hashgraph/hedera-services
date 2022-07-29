@@ -163,7 +163,7 @@ class InfrastructureFactoryTest {
     }
 
     @Test
-    void canCreateNewFreezeLogic() {
+    void canCreateNewDeleteLogic() {
         final var accountStore = subject.newAccountStore(accounts);
         final var tokenStore =
                 subject.newTokenStore(
