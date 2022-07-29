@@ -437,7 +437,7 @@ class RecordStreamFileWriter implements LinkedObjectStream<RecordStreamObject> {
         if (!sidecars.isEmpty()) {
             for (final var sidecarBuilder : sidecars) {
                 // build() and getSerializedSize() would have been called anyway by the proto
-                // library downstream, so we do not incur any performance loses calling them here
+                // library downstream, so we do not incur any performance losses calling them here
                 // getSerializedSize() caches its result internally
                 final var sidecar = sidecarBuilder.build();
                 final var sidecarSizeInBytes = sidecar.getSerializedSize();
