@@ -90,7 +90,7 @@ public class PauseUnpauseTokenAccountPrecompileSuite extends HapiApiSuite {
                 unpauseNonFungibleTokenHappyPath());
     }
 
-    private HapiApiSpec pauseFungibleTokenHappyPath() {
+    HapiApiSpec pauseFungibleTokenHappyPath() {
         final AtomicReference<TokenID> tokenID = new AtomicReference<>();
 
         return defaultHapiSpec("PauseFungibleTokenHappyPath")
@@ -166,7 +166,7 @@ public class PauseUnpauseTokenAccountPrecompileSuite extends HapiApiSuite {
                                                                                 TOKEN_WAS_DELETED)))));
     }
 
-    private HapiApiSpec unpauseFungibleTokenHappyPath() {
+    HapiApiSpec unpauseFungibleTokenHappyPath() {
         final AtomicReference<TokenID> tokenID = new AtomicReference<>();
 
         return defaultHapiSpec("UnpauseFungibleTokenHappyPath")
@@ -219,7 +219,7 @@ public class PauseUnpauseTokenAccountPrecompileSuite extends HapiApiSuite {
                         getTokenInfo(VANILLA_TOKEN).hasPauseStatus(Unpaused));
     }
 
-    private HapiApiSpec pauseNonFungibleTokenHappyPath() {
+    HapiApiSpec pauseNonFungibleTokenHappyPath() {
         final AtomicReference<TokenID> tokenID = new AtomicReference<>();
 
         return defaultHapiSpec("PauseNonFungibleTokenHappyPath")
@@ -297,7 +297,7 @@ public class PauseUnpauseTokenAccountPrecompileSuite extends HapiApiSuite {
                                                                                 TOKEN_WAS_DELETED)))));
     }
 
-    private HapiApiSpec unpauseNonFungibleTokenHappyPath() {
+    HapiApiSpec unpauseNonFungibleTokenHappyPath() {
         final AtomicReference<TokenID> tokenID = new AtomicReference<>();
 
         return defaultHapiSpec("UnpauseNonFungibleTokenHappyPath")
