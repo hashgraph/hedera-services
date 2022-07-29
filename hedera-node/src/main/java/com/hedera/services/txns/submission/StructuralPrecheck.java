@@ -26,9 +26,11 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_TO
 import com.google.protobuf.GeneratedMessageV3;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.domain.process.TxnValidityAndFeeReq;
+import com.hedera.services.context.primitives.SignedStateViewFactory;
 import com.hedera.services.stats.HapiOpCounters;
 import com.hedera.services.txns.submission.annotations.MaxProtoMsgDepth;
 import com.hedera.services.txns.submission.annotations.MaxSignedTxnSize;
+import com.hedera.services.utils.accessors.AccessorFactory;
 import com.hedera.services.utils.accessors.SignedTxnAccessor;
 import com.hederahashgraph.api.proto.java.Transaction;
 import java.util.List;
@@ -52,15 +54,21 @@ public final class StructuralPrecheck {
     private final int maxSignedTxnSize;
     private final int maxProtoMessageDepth;
     private HapiOpCounters opCounters;
+    private final SignedStateViewFactory stateViewFactory;
+    private final AccessorFactory accessorFactory;
 
     @Inject
     public StructuralPrecheck(
             @MaxSignedTxnSize final int maxSignedTxnSize,
             @MaxProtoMsgDepth final int maxProtoMessageDepth,
-            final HapiOpCounters counters) {
+            final HapiOpCounters counters,
+            final SignedStateViewFactory stateViewFactory,
+            final AccessorFactory accessorFactory) {
         this.maxSignedTxnSize = maxSignedTxnSize;
         this.maxProtoMessageDepth = maxProtoMessageDepth;
         this.opCounters = counters;
+        this.stateViewFactory = stateViewFactory;
+        this.accessorFactory = accessorFactory;
     }
 
     public Pair<TxnValidityAndFeeReq, SignedTxnAccessor> assess(final Transaction signedTxn) {
@@ -90,7 +98,16 @@ public final class StructuralPrecheck {
         }
 
         try {
-            final var accessor = new SignedTxnAccessor(signedTxn);
+            // get latest signed state to be used for precheck
+            final var accessor =
+                    (SignedTxnAccessor)
+                            accessorFactory.constructSpecializedAccessor(signedTxn.toByteArray());
+
+            final var signedStateView = stateViewFactory.latestSignedStateView();
+            if (signedStateView.isPresent()) {
+                accessor.setStateView(signedStateView.get());
+            }
+
             if (hasTooManyLayers(signedTxn) || hasTooManyLayers(accessor.getTxn())) {
                 return WELL_KNOWN_FLAWS.get(TRANSACTION_TOO_MANY_LAYERS);
             }

@@ -20,7 +20,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.google.protobuf.InvalidProtocolBufferException;
-import com.hedera.services.ledger.accounts.AliasManager;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ScheduleID;
@@ -40,7 +41,8 @@ class AccessorFactoryTest {
     private static final AccountID payerId = IdUtils.asAccount("0.0.456");
     private static final ScheduleID scheduleId = IdUtils.asSchedule("0.0.333333");
 
-    @Mock private AliasManager aliasManager;
+    @Mock private OptionValidator validator;
+    @Mock private GlobalDynamicProperties properties;
 
     AccessorFactory subject;
 
@@ -58,7 +60,7 @@ class AccessorFactoryTest {
 
     @BeforeEach
     void setUp() {
-        subject = new AccessorFactory(aliasManager);
+        subject = new AccessorFactory(properties, validator);
     }
 
     @Test

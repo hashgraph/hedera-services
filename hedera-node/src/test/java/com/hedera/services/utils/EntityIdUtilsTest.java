@@ -65,9 +65,10 @@ class EntityIdUtilsTest {
     void echoesUnaliasedContractId() {
         final var literalId = ContractID.newBuilder().setContractNum(1234).build();
 
-        assertEquals(EntityNum.fromLong(1234), unaliased(literalId, aliasManager));
+        assertEquals(EntityNum.fromLong(1234), EntityIdUtils.unaliased(literalId, aliasManager));
         assertEquals(
-                EntityNum.MISSING_NUM, unaliased(ContractID.getDefaultInstance(), aliasManager));
+                EntityNum.MISSING_NUM,
+                EntityIdUtils.unaliased(ContractID.getDefaultInstance(), aliasManager));
     }
 
     @Test
@@ -79,7 +80,7 @@ class EntityIdUtilsTest {
                 ContractID.newBuilder().setEvmAddress(ByteString.copyFrom(mockAddr)).build();
 
         given(aliasManager.isMirror(mockAddr)).willReturn(true);
-        assertEquals(expectedId, unaliased(input, aliasManager));
+        assertEquals(expectedId, EntityIdUtils.unaliased(input, aliasManager));
     }
 
     @Test
@@ -97,7 +98,7 @@ class EntityIdUtilsTest {
                 ContractID.newBuilder().setEvmAddress(ByteString.copyFrom(mockAddr)).build();
         given(aliasManager.lookupIdBy(ByteString.copyFrom(mockAddr))).willReturn(extantNum);
 
-        assertEquals(extantNum, unaliased(input, aliasManager));
+        assertEquals(extantNum, EntityIdUtils.unaliased(input, aliasManager));
     }
 
     @Test
