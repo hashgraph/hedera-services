@@ -189,6 +189,18 @@ class DecodingFacadeTest {
             Bytes.fromHexString(
                     "0xe985e9c5000000000000000000000000000000000000000000000000000000000000065b000000000000000000000000000000000000000000000000000000000000065c");
 
+    public static final Bytes FREEZE_INPUT =
+            Bytes.fromHexString(
+                    "0x5b8f8584000000000000000000000000000000000000000000000000000000000000050e000000000000000000000000000000000000000000000000000000000000050c");
+
+    public static final Bytes UNFREEZE_INPUT =
+            Bytes.fromHexString(
+                    "0x52f9138700000000000000000000000000000000000000000000000000000000000005180000000000000000000000000000000000000000000000000000000000000516");
+
+    public static final Bytes IS_FROZEN_INPUT =
+            Bytes.fromHexString(
+                    "0x46de0fb1000000000000000000000000000000000000000000000000000000000000050e000000000000000000000000000000000000000000000000000000000000050c");
+
     public static final Bytes IS_APPROVED_FOR_ALL_INPUT_HAPI =
             Bytes.fromHexString(
                     "0xf49f40db0000000000000000000000000000000000000000000000000000000000001234000000000000000000000000000000000000000000000000000000000000065b000000000000000000000000000000000000000000000000000000000000065c");
@@ -233,6 +245,14 @@ class DecodingFacadeTest {
     private static final Bytes NON_FUNGIBLE_WIPE_INPUT =
             Bytes.fromHexString(
                     "0xf7f38e2600000000000000000000000000000000000000000000000000000000000006b000000000000000000000000000000000000000000000000000000000000006ae000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000001");
+
+    public static final Bytes GET_FUNGIBLE_TOKEN_CUSTOM_FEES_INPUT =
+            Bytes.fromHexString(
+                    "0xae7611a000000000000000000000000000000000000000000000000000000000000003ee");
+
+    public static final Bytes GET_NON_FUNGIBLE_TOKEN_CUSTOM_FEES_INPUT =
+            Bytes.fromHexString(
+                    "0xae7611a000000000000000000000000000000000000000000000000000000000000003f6");
 
     @Mock private WorldLedgers ledgers;
 
@@ -826,6 +846,27 @@ class DecodingFacadeTest {
     }
 
     @Test
+    void decodeTokenFreezeWithValidInput() {
+        final var decodedInput = subject.decodeFreeze(FREEZE_INPUT, identity());
+
+        assertEquals(TokenID.newBuilder().setTokenNum(1294).build(), decodedInput.token());
+    }
+
+    @Test
+    void decodeTokenUnFreezeWithValidInput() {
+        final var decodedInput = subject.decodeUnfreeze(UNFREEZE_INPUT, identity());
+
+        assertEquals(TokenID.newBuilder().setTokenNum(1304).build(), decodedInput.token());
+    }
+
+    @Test
+    void decodeTokenIsFrozenWithValidInput() {
+        final var decodedInput = subject.decodeIsFrozen(IS_FROZEN_INPUT, identity());
+
+        assertEquals(TokenID.newBuilder().setTokenNum(1294).build(), decodedInput.token());
+    }
+
+    @Test
     void decodeCreateTokenWithInvalidInput() {
         UnaryOperator<byte[]> identity = identity();
         assertThrows(
@@ -882,6 +923,22 @@ class DecodingFacadeTest {
         assertEquals(1, decodedInput.serialNumbers().size());
         assertEquals(1, decodedInput.serialNumbers().get(0));
         assertEquals(NON_FUNGIBLE_UNIQUE, decodedInput.type());
+    }
+
+    @Test
+    void decodeGetFungibleTokenCustomFeesInput() {
+        final var decodedInput =
+                subject.decodeTokenGetCustomFees(GET_FUNGIBLE_TOKEN_CUSTOM_FEES_INPUT);
+
+        assertTrue(decodedInput.tokenID().getTokenNum() > 0);
+    }
+
+    @Test
+    void decodeGetNonFungibleTokenCustomFeesInput() {
+        final var decodedInput =
+                subject.decodeTokenGetCustomFees(GET_NON_FUNGIBLE_TOKEN_CUSTOM_FEES_INPUT);
+
+        assertTrue(decodedInput.tokenID().getTokenNum() > 0);
     }
 
     private void assertExpectedFungibleTokenCreateStruct(final TokenCreateWrapper decodedInput) {

@@ -54,6 +54,7 @@ import static org.mockito.BDDMockito.verify;
 import static org.mockito.BDDMockito.willThrow;
 
 import com.hedera.services.context.primitives.StateView;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.fees.FeeMultiplierSource;
 import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.fees.calculation.utils.PricedUsageCalculator;
@@ -62,6 +63,7 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.txns.crypto.AutoCreationLogic;
 import com.hedera.services.usage.state.UsageAccumulator;
 import com.hedera.services.utils.accessors.SignedTxnAccessor;
+import com.hedera.services.utils.accessors.TokenWipeAccessor;
 import com.hedera.services.utils.accessors.TxnAccessor;
 import com.hedera.test.factories.keys.KeyTree;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
@@ -163,7 +165,7 @@ class UsageBasedFeeCalculatorTest {
                         .payerKt(complexKey)
                         .txnValidStart(at)
                         .get();
-        accessor = new SignedTxnAccessor(signedTxn);
+        accessor = SignedTxnAccessor.from(signedTxn.toByteArray(), signedTxn);
         usagePrices = mock(UsagePricesProvider.class);
         given(usagePrices.activePrices(accessor)).willReturn(currentPrices);
         correctOpEstimator = mock(TxnResourceUsageEstimator.class);
@@ -216,7 +218,7 @@ class UsageBasedFeeCalculatorTest {
                         .sending(sent)
                         .txnValidStart(at)
                         .get();
-        accessor = new SignedTxnAccessor(signedTxn);
+        accessor = SignedTxnAccessor.from(signedTxn.toByteArray());
 
         given(exchange.rate(at)).willReturn(currentRate);
         given(usagePrices.defaultPricesGiven(ContractCall, at)).willReturn(defaultCurrentPrices);
@@ -241,7 +243,7 @@ class UsageBasedFeeCalculatorTest {
                         .sending(sent)
                         .txnValidStart(at)
                         .get();
-        accessor = Mockito.spy(new SignedTxnAccessor(signedTxn));
+        accessor = Mockito.spy(SignedTxnAccessor.from(signedTxn.toByteArray()));
 
         given(accessor.getFunction()).willReturn(EthereumTransaction);
 
@@ -266,7 +268,7 @@ class UsageBasedFeeCalculatorTest {
                         .initialBalance(initialBalance)
                         .txnValidStart(at)
                         .get();
-        accessor = new SignedTxnAccessor(signedTxn);
+        accessor = SignedTxnAccessor.from(signedTxn.toByteArray());
 
         given(exchange.rate(at)).willReturn(currentRate);
         given(usagePrices.pricesGiven(ContractCreate, at)).willReturn(currentPrices);
@@ -285,7 +287,7 @@ class UsageBasedFeeCalculatorTest {
     void estimatesMiscNoNetChange() throws Throwable {
         // setup:
         signedTxn = newSignedFileCreate().payer(asAccountString(payer)).txnValidStart(at).get();
-        accessor = new SignedTxnAccessor(signedTxn);
+        accessor = SignedTxnAccessor.from(signedTxn.toByteArray());
 
         // expect:
         assertEquals(0L, subject.estimatedNonFeePayerAdjustments(accessor, at));
@@ -303,7 +305,7 @@ class UsageBasedFeeCalculatorTest {
                                         asAccountString(payer), asAccountString(receiver), sent))
                         .txnValidStart(at)
                         .get();
-        accessor = new SignedTxnAccessor(signedTxn);
+        accessor = SignedTxnAccessor.from(signedTxn.toByteArray());
 
         // expect:
         assertEquals(-sent, subject.estimatedNonFeePayerAdjustments(accessor, at));
@@ -574,12 +576,16 @@ class UsageBasedFeeCalculatorTest {
                         .wiping(tokenId, receiver)
                         .txnValidStart(at)
                         .get();
-
+        final var dynamicProperties = mock(GlobalDynamicProperties.class);
+        given(dynamicProperties.areNftsEnabled()).willReturn(true);
+        given(dynamicProperties.maxBatchSizeWipe()).willReturn(10);
+        accessor = new TokenWipeAccessor(signedTxn.toByteArray(), signedTxn, dynamicProperties);
         invokesAccessorBasedUsagesForTxnInHandle(
                 signedTxn,
                 TokenAccountWipe,
                 SubType.TOKEN_NON_FUNGIBLE_UNIQUE,
-                TokenType.NON_FUNGIBLE_UNIQUE);
+                TokenType.NON_FUNGIBLE_UNIQUE,
+                true);
     }
 
     @Test
@@ -716,9 +722,19 @@ class UsageBasedFeeCalculatorTest {
             final Transaction signedTxn,
             final HederaFunctionality function,
             final SubType subType,
-            final TokenType tokenType)
-            throws Throwable {
-        accessor = SignedTxnAccessor.uncheckedFrom(signedTxn);
+            final TokenType tokenType) {
+        invokesAccessorBasedUsagesForTxnInHandle(signedTxn, function, subType, tokenType, false);
+    }
+
+    void invokesAccessorBasedUsagesForTxnInHandle(
+            final Transaction signedTxn,
+            final HederaFunctionality function,
+            final SubType subType,
+            final TokenType tokenType,
+            final boolean isCustomAccessor) {
+        if (!isCustomAccessor) {
+            accessor = SignedTxnAccessor.uncheckedFrom(signedTxn);
+        }
         // and:
         final var expectedFees =
                 getFeeObject(currentPrices.get(subType), resourceUsage, currentRate);

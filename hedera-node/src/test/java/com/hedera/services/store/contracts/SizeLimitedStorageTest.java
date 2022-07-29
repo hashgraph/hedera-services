@@ -28,16 +28,19 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willThrow;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.validation.UsageLimits;
+import com.hedera.services.state.validation.ContractStorageLimits;
 import com.hedera.services.state.virtual.ContractKey;
 import com.hedera.services.state.virtual.IterableContractValue;
 import com.hedera.services.utils.EntityNum;
@@ -60,7 +63,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class SizeLimitedStorageTest {
-    @Mock private UsageLimits usageLimits;
+    @Mock private ContractStorageLimits usageLimits;
     @Mock private SizeLimitedStorage.IterableStorageUpserter storageUpserter;
     @Mock private SizeLimitedStorage.IterableStorageRemover storageRemover;
     @Mock private MerkleMap<EntityNum, MerkleAccount> accounts;
@@ -121,14 +124,42 @@ class SizeLimitedStorageTest {
     }
 
     @Test
-    void okToCommitNoChanges() {
-        assertDoesNotThrow(subject::validateAndCommit);
+    void removesAllMappingsEvenIfExceptionThrown() {
+        givenAccount(firstAccount, firstKvPairs, firstRootKey);
+        givenAccount(nextAccount, nextKvPairs, nextRootKey);
+        given(storageRemover.removeMapping(firstAKey, firstRootKey, storage))
+                .willThrow(NullPointerException.class);
+        given(storageRemover.removeMapping(eq(firstBKey), any(), eq(storage)))
+                .willReturn(firstRootKey);
+        given(storageRemover.removeMapping(eq(nextAKey), any(), eq(storage))).willReturn(null);
+
+        InOrder inOrder = Mockito.inOrder(storage, accounts, accountsLedger, storageRemover);
+
+        given(storage.containsKey(firstAKey)).willReturn(true);
+        given(storage.containsKey(firstBKey)).willReturn(true);
+        given(storage.containsKey(nextAKey)).willReturn(true);
+
+        subject.putStorage(firstAccount, aLiteralKey, UInt256.ZERO);
+        subject.putStorage(firstAccount, bLiteralKey, UInt256.ZERO);
+        subject.putStorage(nextAccount, aLiteralKey, UInt256.ZERO);
+
+        subject.validateAndCommit();
+        subject.recordNewKvUsageTo(accountsLedger);
+
+        inOrder.verify(storageRemover, times(3)).removeMapping(any(), any(), eq(storage));
+        // and:
+        inOrder.verify(accountsLedger).set(firstAccount, NUM_CONTRACT_KV_PAIRS, firstKvPairs - 2);
+        inOrder.verify(accountsLedger)
+                .set(firstAccount, FIRST_CONTRACT_STORAGE_KEY, firstRootKey.getKey());
+        inOrder.verify(accountsLedger).set(nextAccount, NUM_CONTRACT_KV_PAIRS, nextKvPairs - 1);
+        inOrder.verify(accountsLedger).set(nextAccount, FIRST_CONTRACT_STORAGE_KEY, null);
     }
 
     @Test
-    void commitsMappingsInOrder() {
+    void commitsMappingsInOrderWithNewRootValue() {
         InOrder inOrder = Mockito.inOrder(storage, accountsLedger, storageUpserter);
 
+        given(storage.size()).willReturn(0L).willReturn(1L);
         givenAccount(firstAccount, firstKvPairs, firstRootKey);
         givenAccount(nextAccount, nextKvPairs, nextRootKey);
         given(storageUpserter.upsertMapping(firstAKey, aValue, firstRootKey, null, storage))
@@ -151,6 +182,63 @@ class SizeLimitedStorageTest {
                 .upsertMapping(firstAKey, aValue, firstRootKey, null, storage);
         inOrder.verify(storageUpserter)
                 .upsertMapping(firstBKey, bValue, firstAKey, aValue, storage);
+        inOrder.verify(storageUpserter).upsertMapping(firstDKey, dValue, firstAKey, null, storage);
+        inOrder.verify(storageUpserter).upsertMapping(nextAKey, aValue, nextRootKey, null, storage);
+    }
+
+    @Test
+    void commitsAllMappingsEvenIfExceptionThrown() {
+        givenAccount(firstAccount, firstKvPairs, firstRootKey);
+        givenAccount(nextAccount, nextKvPairs, nextRootKey);
+        given(storageUpserter.upsertMapping(firstAKey, aValue, firstRootKey, null, storage))
+                .willThrow(NullPointerException.class);
+        given(storageUpserter.upsertMapping(eq(firstBKey), eq(bValue), any(), any(), eq(storage)))
+                .willReturn(firstAKey);
+        given(storageUpserter.upsertMapping(eq(firstDKey), eq(dValue), any(), any(), eq(storage)))
+                .willReturn(firstAKey);
+        given(storageUpserter.upsertMapping(eq(nextAKey), eq(aValue), any(), any(), eq(storage)))
+                .willReturn(nextAKey);
+
+        subject.putStorage(firstAccount, aLiteralKey, aLiteralValue);
+        subject.putStorage(firstAccount, bLiteralKey, bLiteralValue);
+        subject.putStorage(nextAccount, aLiteralKey, aLiteralValue);
+        subject.putStorage(firstAccount, dLiteralKey, dLiteralValue);
+
+        subject.validateAndCommit();
+
+        verify(storageUpserter, times(4)).upsertMapping(any(), any(), any(), any(), any());
+    }
+
+    @Test
+    void okToCommitNoChanges() {
+        assertDoesNotThrow(subject::validateAndCommit);
+    }
+
+    @Test
+    void commitsMappingsInOrderWithUpdatedRootValue() {
+        InOrder inOrder = Mockito.inOrder(storage, accountsLedger, storageUpserter);
+
+        givenAccount(firstAccount, firstKvPairs, firstRootKey);
+        givenAccount(nextAccount, nextKvPairs, nextRootKey);
+        given(storageUpserter.upsertMapping(firstAKey, aValue, firstRootKey, null, storage))
+                .willReturn(firstAKey);
+        given(storageUpserter.upsertMapping(firstBKey, bValue, firstAKey, null, storage))
+                .willReturn(firstAKey);
+        given(storageUpserter.upsertMapping(firstDKey, dValue, firstAKey, null, storage))
+                .willReturn(firstAKey);
+        given(storageUpserter.upsertMapping(nextAKey, aValue, nextRootKey, null, storage))
+                .willReturn(nextAKey);
+
+        subject.putStorage(firstAccount, aLiteralKey, aLiteralValue);
+        subject.putStorage(firstAccount, bLiteralKey, bLiteralValue);
+        subject.putStorage(nextAccount, aLiteralKey, aLiteralValue);
+        subject.putStorage(firstAccount, dLiteralKey, dLiteralValue);
+
+        subject.validateAndCommit();
+
+        inOrder.verify(storageUpserter)
+                .upsertMapping(firstAKey, aValue, firstRootKey, null, storage);
+        inOrder.verify(storageUpserter).upsertMapping(firstBKey, bValue, firstAKey, null, storage);
         inOrder.verify(storageUpserter).upsertMapping(firstDKey, dValue, firstAKey, null, storage);
         inOrder.verify(storageUpserter).upsertMapping(nextAKey, aValue, nextRootKey, null, storage);
     }

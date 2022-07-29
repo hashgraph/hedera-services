@@ -29,6 +29,8 @@ import com.hedera.services.store.contracts.precompile.codec.MintWrapper;
 import com.hedera.services.store.contracts.precompile.codec.OwnerOfAndTokenURIWrapper;
 import com.hedera.services.store.contracts.precompile.codec.TokenCreateWrapper;
 import com.hedera.services.store.contracts.precompile.codec.TokenExpiryWrapper;
+import com.hedera.services.store.contracts.precompile.codec.TokenFreezeUnfreezeWrapper;
+import com.hedera.services.store.contracts.precompile.codec.TokenGetCustomFeesWrapper;
 import com.hedera.services.store.contracts.precompile.codec.TokenInfoWrapper;
 import com.hedera.services.store.contracts.precompile.codec.TokenTransferWrapper;
 import com.hedera.services.store.contracts.precompile.codec.WipeWrapper;
@@ -136,6 +138,9 @@ public class HTSTestsUtil {
     public static final GetTokenDefaultKycStatusWrapper defaultKycStatusWrapper =
             new GetTokenDefaultKycStatusWrapper(fungible);
 
+    public static final TokenFreezeUnfreezeWrapper tokenFreezeUnFreezeWrapper =
+            new TokenFreezeUnfreezeWrapper(fungible, account);
+
     public static final Association multiAssociateOp =
             Association.singleAssociation(accountMerkleId, tokenMerkleId);
     public static final Address recipientAddress = Address.ALTBN128_ADD;
@@ -183,6 +188,8 @@ public class HTSTestsUtil {
             "Invalid operation for ERC-20 token!";
     public static final String NOT_SUPPORTED_NON_FUNGIBLE_OPERATION_REASON =
             "Invalid operation for ERC-721 token!";
+    public static final TokenGetCustomFeesWrapper customFeesWrapper =
+            new TokenGetCustomFeesWrapper(token);
 
     public static final Bytes ercTransferSuccessResult =
             Bytes.fromHexString(

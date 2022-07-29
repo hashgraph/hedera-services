@@ -46,6 +46,8 @@ import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.ledger.properties.TokenProperty;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.state.validation.ContractStorageLimits;
+import com.hedera.services.state.validation.UsageLimits;
 import com.hedera.services.state.virtual.IterableStorageUtils;
 import com.hedera.services.state.virtual.VirtualBlobKey;
 import com.hedera.services.state.virtual.VirtualBlobValue;
@@ -79,6 +81,10 @@ import org.hyperledger.besu.evm.precompile.PrecompiledContract;
 
 @Module(includes = {StoresModule.class})
 public interface ContractsModule {
+    @Binds
+    @Singleton
+    ContractStorageLimits provideContractStorageLimits(UsageLimits usageLimits);
+
     @Binds
     @Singleton
     HederaMutableWorldState provideMutableWorldState(HederaWorldState hederaWorldState);

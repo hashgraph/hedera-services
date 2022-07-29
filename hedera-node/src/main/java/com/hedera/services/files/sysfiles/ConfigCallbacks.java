@@ -15,29 +15,43 @@
  */
 package com.hedera.services.files.sysfiles;
 
+import com.hedera.services.context.annotations.CompositeProps;
 import com.hedera.services.context.domain.security.HapiOpPermissions;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.context.properties.PropertySources;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
+import com.hedera.services.state.merkle.MerkleStakingInfo;
 import com.hedera.services.throttling.FunctionalityThrottling;
 import com.hedera.services.throttling.annotations.HandleThrottle;
 import com.hedera.services.throttling.annotations.HapiThrottle;
 import com.hedera.services.throttling.annotations.ScheduleThrottle;
+import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.ServicesConfigurationList;
+import com.swirlds.common.system.address.AddressBook;
+import com.swirlds.merkle.map.MerkleMap;
+import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 @Singleton
 public class ConfigCallbacks {
+    private static final Logger log = LogManager.getLogger(ConfigCallbacks.class);
+    private static final long DEFAULT_MAX_TO_MIN_STAKE_RATIO = 4L;
+    private final PropertySource properties;
     private final PropertySources propertySources;
     private final HapiOpPermissions hapiOpPermissions;
+    private final Supplier<AddressBook> addressBook;
     private final GlobalDynamicProperties dynamicProps;
     private final FunctionalityThrottling hapiThrottling;
     private final FunctionalityThrottling handleThrottling;
     private final FunctionalityThrottling scheduleThrottling;
     private final Supplier<MerkleNetworkContext> networkCtx;
+    private final Supplier<MerkleMap<EntityNum, MerkleStakingInfo>> stakingInfos;
 
     @Inject
     public ConfigCallbacks(
@@ -47,7 +61,10 @@ public class ConfigCallbacks {
             final @HapiThrottle FunctionalityThrottling hapiThrottling,
             final @HandleThrottle FunctionalityThrottling handleThrottling,
             final @ScheduleThrottle FunctionalityThrottling scheduleThrottling,
-            final Supplier<MerkleNetworkContext> networkCtx) {
+            final Supplier<AddressBook> addressBook,
+            final @CompositeProps PropertySource properties,
+            final Supplier<MerkleNetworkContext> networkCtx,
+            final Supplier<MerkleMap<EntityNum, MerkleStakingInfo>> stakingInfos) {
         this.dynamicProps = dynamicProps;
         this.propertySources = propertySources;
         this.hapiOpPermissions = hapiOpPermissions;
@@ -55,6 +72,9 @@ public class ConfigCallbacks {
         this.handleThrottling = handleThrottling;
         this.scheduleThrottling = scheduleThrottling;
         this.networkCtx = networkCtx;
+        this.stakingInfos = stakingInfos;
+        this.addressBook = addressBook;
+        this.properties = properties;
     }
 
     public Consumer<ServicesConfigurationList> propertiesCb() {
@@ -65,7 +85,35 @@ public class ConfigCallbacks {
             handleThrottling.applyGasConfig();
             scheduleThrottling.applyGasConfig();
             networkCtx.get().renumberBlocksToMatch(dynamicProps.knownBlockValues());
+            updateMinAndMaxStakesWith(
+                    properties.getLongProperty("ledger.totalTinyBarFloat"),
+                    addressBook.get().getSize(),
+                    dynamicProps.nodeMaxMinStakeRatios());
         };
+    }
+
+    private void updateMinAndMaxStakesWith(
+            final long hbarFloat, final int numNodes, final Map<Long, Long> maxToMinStakeRatios) {
+        final var maxStake = hbarFloat / numNodes;
+        final var curStakingInfos = stakingInfos.get();
+        curStakingInfos
+                .keySet()
+                .forEach(
+                        num -> {
+                            final var mutableInfo = curStakingInfos.getForModify(num);
+                            mutableInfo.setMaxStake(maxStake);
+                            final var maxToMinRatio =
+                                    maxToMinStakeRatios.getOrDefault(
+                                            num.longValue(), DEFAULT_MAX_TO_MIN_STAKE_RATIO);
+                            final var minStake = maxStake / maxToMinRatio;
+                            mutableInfo.setMinStake(minStake);
+                            log.info(
+                                    "Set node{} max/min stake to {}/{} ~ {}:1 ratio",
+                                    num::longValue,
+                                    mutableInfo::getMaxStake,
+                                    mutableInfo::getMinStake,
+                                    () -> maxToMinRatio);
+                        });
     }
 
     public Consumer<ServicesConfigurationList> permissionsCb() {

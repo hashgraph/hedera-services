@@ -428,6 +428,40 @@ interface IHederaTokenService {
         external
         returns (int64 responseCode, bool defaultKycStatus);
 
+    /// Query if token account is frozen
+    /// @param token The token address to check
+    /// @param account The account address associated with the token
+    /// @return responseCode The response code for the status of the request. SUCCESS is 22.
+    /// @return frozen True if `account` is frozen for `token`
+    function isFrozen(address token, address account)
+    external
+    returns (int64 responseCode, bool frozen);
+
+    /// Operation to freeze token account
+    /// @param token The token address
+    /// @param account The account address to be frozen
+    /// @return responseCode The response code for the status of the request. SUCCESS is 22.
+    function freezeToken(address token, address account)
+    external
+    returns (int64 responseCode);
+
+    /// Operation to unfreeze token account
+    /// @param token The token address
+    /// @param account The account address to be unfrozen
+    /// @return responseCode The response code for the status of the request. SUCCESS is 22.
+    function unfreezeToken(address token, address account)
+    external
+    returns (int64 responseCode);
+
+    /// Query token custom fees
+    /// @param token The token address to check
+    /// @return responseCode The response code for the status of the request. SUCCESS is 22.
+    /// @return fixedFees Set of fixed fees for `token`
+    /// @return fractionalFees Set of fractional fees for `token`
+    /// @return royaltyFees Set of royalty fees for `token`
+    function getTokenCustomFees(address token)
+    external
+    returns (int64 responseCode, FixedFee[] memory fixedFees, FractionalFee[] memory fractionalFees, RoyaltyFee[] memory royaltyFees);
 
     /**********************
      * ABIV1 calls        *
@@ -517,7 +551,6 @@ interface IHederaTokenService {
     /// @return responseCode The response code for the status of the request. SUCCESS is 22.
     /// @return approved True if `operator` is an approved operator for `owner`, false otherwise
     function isApprovedForAll(address token, address owner, address operator) external returns (int responseCode, bool approved);
-
 
     /// Operation to wipe fungible tokens from account
     /// @param token The token address
