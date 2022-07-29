@@ -841,149 +841,203 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
         final var senderKey = "senderKey";
         final var contractKey = "contractAdminKey";
 
-		return defaultHapiSpec("ActiveContractIsVerifiedWithoutCheckingSignatures")
-				.given(
-						newKeyNamed(multiKey),
-						newKeyNamed(senderKey),
-						newKeyNamed(contractKey),
-						cryptoCreate(SENDER).balance(10 * ONE_HUNDRED_HBARS).key(senderKey),
-						cryptoCreate(RECEIVER).balance(2 * ONE_HUNDRED_HBARS),
-						cryptoCreate(TOKEN_TREASURY),
-						uploadInitCode(CONTRACT),
-						contractCreate(CONTRACT)
-								.payingWith(GENESIS)
-								.adminKey(contractKey)
-								.gas(GAS_TO_OFFER),
-						tokenCreate(FUNGIBLE_TOKEN)
-								.tokenType(TokenType.FUNGIBLE_COMMON)
-								.initialSupply(TOTAL_SUPPLY)
-								.treasury(TOKEN_TREASURY),
-						tokenCreate(NFT_TOKEN)
-								.tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
-								.adminKey(multiKey)
-								.supplyKey(multiKey)
-								.supplyType(TokenSupplyType.INFINITE)
-								.initialSupply(0)
-								.treasury(TOKEN_TREASURY),
-						mintToken(NFT_TOKEN, List.of(metadata("firstMemo"), metadata("secondMemo"))),
-						tokenAssociate(SENDER, List.of(FUNGIBLE_TOKEN, NFT_TOKEN)),
-						tokenAssociate(RECEIVER, List.of(FUNGIBLE_TOKEN, NFT_TOKEN)),
-						tokenAssociate(CONTRACT, List.of(FUNGIBLE_TOKEN, NFT_TOKEN)),
-						cryptoTransfer(moving(senderStartBalance, FUNGIBLE_TOKEN).between(TOKEN_TREASURY, SENDER)),
-						cryptoTransfer(movingUnique(NFT_TOKEN, 1L).between(TOKEN_TREASURY, SENDER)),
-						cryptoTransfer(moving(senderStartBalance, FUNGIBLE_TOKEN).between(TOKEN_TREASURY,
-								CONTRACT), movingUnique(NFT_TOKEN, 2L).between(TOKEN_TREASURY,
-								CONTRACT))
-				).when(
-						withOpContext((spec, opLog) -> {
-							final var token = spec.registry().getTokenID(FUNGIBLE_TOKEN);
-							final var nftToken = spec.registry().getTokenID(NFT_TOKEN);
-							final var sender = spec.registry().getAccountID(SENDER);
-							final var receiver = spec.registry().getAccountID(RECEIVER);
-							final var contractId = spec.registry().getAccountID(CONTRACT);
-							allRunFor(
-									spec,
-									contractCall(CONTRACT, "transferMultipleTokens", Tuple.singleton(
-											new Tuple[] {
-													tokenTransferList()
-															.forToken(token)
-															.isSingleList(false)
-															.withAccountAmounts(
-																	accountAmount(contractId, -toSendEachTuple),
-																	accountAmount(receiver, toSendEachTuple)
-															).build(),
-													tokenTransferList()
-															.forToken(token)
-															.isSingleList(false)
-															.withAccountAmounts(
-																	accountAmount(sender, -toSendEachTuple),
-																	accountAmount(receiver, toSendEachTuple)
-															).build()
-											}
-									))
-											.payingWith(GENESIS)
-											.via(revertedFungibleTransferTxn)
-											.gas(GAS_TO_OFFER)
-											.hasKnownStatus(CONTRACT_REVERT_EXECUTED),
-									contractCall(CONTRACT, "transferMultipleTokens", Tuple.singleton(
-											new Tuple[] {
-													tokenTransferList()
-															.forToken(token)
-															.isSingleList(false)
-															.withAccountAmounts(
-																	accountAmount(contractId, -toSendEachTuple),
-																	accountAmount(receiver, toSendEachTuple)
-															).build(),
-													tokenTransferList()
-															.forToken(token)
-															.isSingleList(false)
-															.withAccountAmounts(
-																	accountAmount(sender, -toSendEachTuple),
-																	accountAmount(receiver, toSendEachTuple)
-															).build()
-											}
-									))
-											.payingWith(GENESIS)
-											.alsoSigningWithFullPrefix(senderKey)
-											.via(successfulFungibleTransferTxn)
-											.gas(GAS_TO_OFFER)
-											.hasKnownStatus(SUCCESS),
-									contractCall(CONTRACT, "transferMultipleTokens", Tuple.singleton(
-											new Tuple[] {
-													tokenTransferList()
-															.forToken(nftToken)
-															.isSingleList(false)
-															.withNftTransfers(nftTransfer(contractId, receiver, 2L))
-															.build(),
-													tokenTransferList()
-															.forToken(nftToken)
-															.isSingleList(false)
-															.withNftTransfers(nftTransfer(sender, receiver, 1L))
-															.build()
-											}
-									))
-											.payingWith(GENESIS)
-											.via(revertedNftTransferTxn)
-											.gas(GAS_TO_OFFER)
-											.hasKnownStatus(CONTRACT_REVERT_EXECUTED),
-									contractCall(CONTRACT, "transferMultipleTokens", Tuple.singleton(
-											new Tuple[] {
-													tokenTransferList()
-															.forToken(nftToken)
-															.isSingleList(false)
-															.withNftTransfers(nftTransfer(contractId, receiver, 2L))
-															.build(),
-													tokenTransferList()
-															.forToken(nftToken)
-															.isSingleList(false)
-															.withNftTransfers(nftTransfer(sender, receiver, 1L))
-															.build()
-											}
-									))
-											.payingWith(GENESIS)
-											.via(successfulNftTransferTxn)
-											.alsoSigningWithFullPrefix(senderKey)
-											.gas(GAS_TO_OFFER)
-											.hasKnownStatus(SUCCESS));
-						})
-				).then(
-						getAccountBalance(RECEIVER)
-								.hasTokenBalance(FUNGIBLE_TOKEN, receiverStartBalance + 2 * toSendEachTuple)
-								.hasTokenBalance(NFT_TOKEN, 2L),
-						getAccountBalance(SENDER)
-								.hasTokenBalance(FUNGIBLE_TOKEN, senderStartBalance - toSendEachTuple)
-								.hasTokenBalance(NFT_TOKEN, 0L),
-						getAccountBalance(CONTRACT)
-								.hasTokenBalance(FUNGIBLE_TOKEN, senderStartBalance - toSendEachTuple)
-								.hasTokenBalance(NFT_TOKEN, 0L),
-                        childRecordsCheck(revertedFungibleTransferTxn, CONTRACT_REVERT_EXECUTED,
-								recordWith()
-										.status(INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE)
-										.contractCallResult(
-												resultWith()
-														.contractCallResult(htsPrecompileResult()
-																.withStatus(INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE)))),
-                        childRecordsCheck(successfulFungibleTransferTxn, SUCCESS,
+        return defaultHapiSpec("ActiveContractIsVerifiedWithoutCheckingSignatures")
+                .given(
+                        newKeyNamed(multiKey),
+                        newKeyNamed(senderKey),
+                        newKeyNamed(contractKey),
+                        cryptoCreate(SENDER).balance(10 * ONE_HUNDRED_HBARS).key(senderKey),
+                        cryptoCreate(RECEIVER).balance(2 * ONE_HUNDRED_HBARS),
+                        cryptoCreate(TOKEN_TREASURY),
+                        uploadInitCode(CONTRACT),
+                        contractCreate(CONTRACT)
+                                .payingWith(GENESIS)
+                                .adminKey(contractKey)
+                                .gas(GAS_TO_OFFER),
+                        tokenCreate(FUNGIBLE_TOKEN)
+                                .tokenType(TokenType.FUNGIBLE_COMMON)
+                                .initialSupply(TOTAL_SUPPLY)
+                                .treasury(TOKEN_TREASURY),
+                        tokenCreate(NFT_TOKEN)
+                                .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
+                                .adminKey(multiKey)
+                                .supplyKey(multiKey)
+                                .supplyType(TokenSupplyType.INFINITE)
+                                .initialSupply(0)
+                                .treasury(TOKEN_TREASURY),
+                        mintToken(
+                                NFT_TOKEN, List.of(metadata("firstMemo"), metadata("secondMemo"))),
+                        tokenAssociate(SENDER, List.of(FUNGIBLE_TOKEN, NFT_TOKEN)),
+                        tokenAssociate(RECEIVER, List.of(FUNGIBLE_TOKEN, NFT_TOKEN)),
+                        tokenAssociate(CONTRACT, List.of(FUNGIBLE_TOKEN, NFT_TOKEN)),
+                        cryptoTransfer(
+                                moving(senderStartBalance, FUNGIBLE_TOKEN)
+                                        .between(TOKEN_TREASURY, SENDER)),
+                        cryptoTransfer(movingUnique(NFT_TOKEN, 1L).between(TOKEN_TREASURY, SENDER)),
+                        cryptoTransfer(
+                                moving(senderStartBalance, FUNGIBLE_TOKEN)
+                                        .between(TOKEN_TREASURY, CONTRACT),
+                                movingUnique(NFT_TOKEN, 2L).between(TOKEN_TREASURY, CONTRACT)))
+                .when(
+                        withOpContext(
+                                (spec, opLog) -> {
+                                    final var token = spec.registry().getTokenID(FUNGIBLE_TOKEN);
+                                    final var nftToken = spec.registry().getTokenID(NFT_TOKEN);
+                                    final var sender = spec.registry().getAccountID(SENDER);
+                                    final var receiver = spec.registry().getAccountID(RECEIVER);
+                                    final var contractId = spec.registry().getAccountID(CONTRACT);
+                                    allRunFor(
+                                            spec,
+                                            contractCall(
+                                                            CONTRACT,
+                                                            "transferMultipleTokens",
+                                                            Tuple.singleton(
+                                                                    new Tuple[] {
+                                                                        tokenTransferList()
+                                                                                .forToken(token)
+                                                                                .isSingleList(false)
+                                                                                .withAccountAmounts(
+                                                                                        accountAmount(
+                                                                                                contractId,
+                                                                                                -toSendEachTuple),
+                                                                                        accountAmount(
+                                                                                                receiver,
+                                                                                                toSendEachTuple))
+                                                                                .build(),
+                                                                        tokenTransferList()
+                                                                                .forToken(token)
+                                                                                .isSingleList(false)
+                                                                                .withAccountAmounts(
+                                                                                        accountAmount(
+                                                                                                sender,
+                                                                                                -toSendEachTuple),
+                                                                                        accountAmount(
+                                                                                                receiver,
+                                                                                                toSendEachTuple))
+                                                                                .build()
+                                                                    }))
+                                                    .payingWith(GENESIS)
+                                                    .via(revertedFungibleTransferTxn)
+                                                    .gas(GAS_TO_OFFER)
+                                                    .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
+                                            contractCall(
+                                                            CONTRACT,
+                                                            "transferMultipleTokens",
+                                                            Tuple.singleton(
+                                                                    new Tuple[] {
+                                                                        tokenTransferList()
+                                                                                .forToken(token)
+                                                                                .isSingleList(false)
+                                                                                .withAccountAmounts(
+                                                                                        accountAmount(
+                                                                                                contractId,
+                                                                                                -toSendEachTuple),
+                                                                                        accountAmount(
+                                                                                                receiver,
+                                                                                                toSendEachTuple))
+                                                                                .build(),
+                                                                        tokenTransferList()
+                                                                                .forToken(token)
+                                                                                .isSingleList(false)
+                                                                                .withAccountAmounts(
+                                                                                        accountAmount(
+                                                                                                sender,
+                                                                                                -toSendEachTuple),
+                                                                                        accountAmount(
+                                                                                                receiver,
+                                                                                                toSendEachTuple))
+                                                                                .build()
+                                                                    }))
+                                                    .payingWith(GENESIS)
+                                                    .alsoSigningWithFullPrefix(senderKey)
+                                                    .via(successfulFungibleTransferTxn)
+                                                    .gas(GAS_TO_OFFER)
+                                                    .hasKnownStatus(SUCCESS),
+                                            contractCall(
+                                                            CONTRACT,
+                                                            "transferMultipleTokens",
+                                                            Tuple.singleton(
+                                                                    new Tuple[] {
+                                                                        tokenTransferList()
+                                                                                .forToken(nftToken)
+                                                                                .isSingleList(false)
+                                                                                .withNftTransfers(
+                                                                                        nftTransfer(
+                                                                                                contractId,
+                                                                                                receiver,
+                                                                                                2L))
+                                                                                .build(),
+                                                                        tokenTransferList()
+                                                                                .forToken(nftToken)
+                                                                                .isSingleList(false)
+                                                                                .withNftTransfers(
+                                                                                        nftTransfer(
+                                                                                                sender,
+                                                                                                receiver,
+                                                                                                1L))
+                                                                                .build()
+                                                                    }))
+                                                    .payingWith(GENESIS)
+                                                    .via(revertedNftTransferTxn)
+                                                    .gas(GAS_TO_OFFER)
+                                                    .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
+                                            contractCall(
+                                                            CONTRACT,
+                                                            "transferMultipleTokens",
+                                                            Tuple.singleton(
+                                                                    new Tuple[] {
+                                                                        tokenTransferList()
+                                                                                .forToken(nftToken)
+                                                                                .isSingleList(false)
+                                                                                .withNftTransfers(
+                                                                                        nftTransfer(
+                                                                                                contractId,
+                                                                                                receiver,
+                                                                                                2L))
+                                                                                .build(),
+                                                                        tokenTransferList()
+                                                                                .forToken(nftToken)
+                                                                                .isSingleList(false)
+                                                                                .withNftTransfers(
+                                                                                        nftTransfer(
+                                                                                                sender,
+                                                                                                receiver,
+                                                                                                1L))
+                                                                                .build()
+                                                                    }))
+                                                    .payingWith(GENESIS)
+                                                    .via(successfulNftTransferTxn)
+                                                    .alsoSigningWithFullPrefix(senderKey)
+                                                    .gas(GAS_TO_OFFER)
+                                                    .hasKnownStatus(SUCCESS));
+                                }))
+                .then(
+                        getAccountBalance(RECEIVER)
+                                .hasTokenBalance(
+                                        FUNGIBLE_TOKEN, receiverStartBalance + 2 * toSendEachTuple)
+                                .hasTokenBalance(NFT_TOKEN, 2L),
+                        getAccountBalance(SENDER)
+                                .hasTokenBalance(
+                                        FUNGIBLE_TOKEN, senderStartBalance - toSendEachTuple)
+                                .hasTokenBalance(NFT_TOKEN, 0L),
+                        getAccountBalance(CONTRACT)
+                                .hasTokenBalance(
+                                        FUNGIBLE_TOKEN, senderStartBalance - toSendEachTuple)
+                                .hasTokenBalance(NFT_TOKEN, 0L),
+                        childRecordsCheck(
+                                revertedFungibleTransferTxn,
+                                CONTRACT_REVERT_EXECUTED,
+                                recordWith()
+                                        .status(INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE)
+                                        .contractCallResult(
+                                                resultWith()
+                                                        .contractCallResult(
+                                                                htsPrecompileResult()
+                                                                        .withStatus(
+                                                                                INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE)))),
+                        childRecordsCheck(
+                                successfulFungibleTransferTxn,
+                                SUCCESS,
                                 recordWith()
                                         .status(SUCCESS)
                                         .contractCallResult(
@@ -993,29 +1047,46 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                                                                         .withStatus(SUCCESS)))
                                         .tokenTransfers(
                                                 SomeFungibleTransfers.changingFungibleBalances()
-                                                        .including(FUNGIBLE_TOKEN, SENDER, -toSendEachTuple)
-                                                        .including(FUNGIBLE_TOKEN, CONTRACT, -toSendEachTuple)
-                                                        .including(FUNGIBLE_TOKEN, RECEIVER, 2 * toSendEachTuple))),
-						childRecordsCheck(revertedNftTransferTxn, CONTRACT_REVERT_EXECUTED,
-								recordWith()
-										.status(INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE)
-										.contractCallResult(
-												resultWith()
-														.contractCallResult(htsPrecompileResult()
-																.withStatus(INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE)))),
-						childRecordsCheck(successfulNftTransferTxn, SUCCESS,
-								recordWith()
-										.status(SUCCESS)
-										.contractCallResult(
-												resultWith()
-														.contractCallResult(htsPrecompileResult()
-																.withStatus(SUCCESS)))
-										.tokenTransfers(
-												NonFungibleTransfers.changingNFTBalances()
-														.including(NFT_TOKEN, SENDER, RECEIVER, 1L)
-														.including(NFT_TOKEN, CONTRACT, RECEIVER, 2L))));
-	}
-
+                                                        .including(
+                                                                FUNGIBLE_TOKEN,
+                                                                SENDER,
+                                                                -toSendEachTuple)
+                                                        .including(
+                                                                FUNGIBLE_TOKEN,
+                                                                CONTRACT,
+                                                                -toSendEachTuple)
+                                                        .including(
+                                                                FUNGIBLE_TOKEN,
+                                                                RECEIVER,
+                                                                2 * toSendEachTuple))),
+                        childRecordsCheck(
+                                revertedNftTransferTxn,
+                                CONTRACT_REVERT_EXECUTED,
+                                recordWith()
+                                        .status(INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE)
+                                        .contractCallResult(
+                                                resultWith()
+                                                        .contractCallResult(
+                                                                htsPrecompileResult()
+                                                                        .withStatus(
+                                                                                INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE)))),
+                        childRecordsCheck(
+                                successfulNftTransferTxn,
+                                SUCCESS,
+                                recordWith()
+                                        .status(SUCCESS)
+                                        .contractCallResult(
+                                                resultWith()
+                                                        .contractCallResult(
+                                                                htsPrecompileResult()
+                                                                        .withStatus(SUCCESS)))
+                                        .tokenTransfers(
+                                                NonFungibleTransfers.changingNFTBalances()
+                                                        .including(NFT_TOKEN, SENDER, RECEIVER, 1L)
+                                                        .including(
+                                                                NFT_TOKEN, CONTRACT, RECEIVER,
+                                                                2L))));
+    }
 
     @Override
     protected Logger getResultsLogger() {

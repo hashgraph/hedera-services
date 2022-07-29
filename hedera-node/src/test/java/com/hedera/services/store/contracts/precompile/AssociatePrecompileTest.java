@@ -24,7 +24,7 @@ import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.accoun
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.associateOp;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.contractAddress;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.failInvalidResult;
-import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.invalidSigResult;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.invalidFullPrefix;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.multiAssociateOp;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.multiDissociateOp;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.parentContractAddress;
@@ -35,7 +35,7 @@ import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.succes
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.timestamp;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.tokenMerkleId;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ID_REPEATED_IN_TOKEN_LIST;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -106,45 +106,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-
-import java.io.IOException;
-import java.math.BigDecimal;
-import java.util.Collections;
-import java.util.Deque;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.Optional;
-
-import static com.hedera.services.state.EntityCreator.EMPTY_MEMO;
-import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_ASSOCIATE_TOKEN;
-import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_ASSOCIATE_TOKENS;
-import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.DEFAULT_GAS_PRICE;
-import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.TEST_CONSENSUS_TIME;
-import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.accountMerkleId;
-import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.associateOp;
-import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.contractAddress;
-import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.failInvalidResult;
-import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.invalidFullPrefix;
-import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.multiAssociateOp;
-import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.multiDissociateOp;
-import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.parentContractAddress;
-import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.parentRecipientAddress;
-import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.recipientAddress;
-import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.senderAddress;
-import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.successResult;
-import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.timestamp;
-import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.tokenMerkleId;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ID_REPEATED_IN_TOKEN_LIST;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 @SuppressWarnings("rawtypes")
@@ -229,29 +190,34 @@ class AssociatePrecompileTest {
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
     }
 
-	@Test
-	void computeAssociateTokenFailurePathWorks() {
-		// given:
-		givenCommonFrameContext();
-		givenPricingUtilsContext();
-		Bytes pretendArguments = Bytes.ofUnsignedInt(ABI_ID_ASSOCIATE_TOKEN);
-		given(decoder.decodeAssociation(eq(pretendArguments), any())).willReturn(associateOp);
-		given(syntheticTxnFactory.createAssociate(associateOp)).willReturn(mockSynthBodyBuilder);
-		given(sigsVerifier.hasActiveKey(false,
-				Id.fromGrpcAccount(accountMerkleId).asEvmAddress(), senderAddress,
-				wrappedLedgers))
-				.willReturn(false);
-		given(feeCalculator.estimatedGasPriceInTinybars(HederaFunctionality.ContractCall, timestamp))
-				.willReturn(1L);
-		given(mockSynthBodyBuilder.build()).
-				willReturn(TransactionBody.newBuilder().build());
-		given(mockSynthBodyBuilder.setTransactionID(any(TransactionID.class)))
-				.willReturn(mockSynthBodyBuilder);
-		given(feeCalculator.computeFee(any(), any(), any(), any()))
-				.willReturn(mockFeeObject);
-		given(mockFeeObject.getServiceFee())
-				.willReturn(1L);
-		given(creator.createUnsuccessfulSyntheticRecord(INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE)).willReturn(mockRecordBuilder);
+    @Test
+    void computeAssociateTokenFailurePathWorks() {
+        // given:
+        givenCommonFrameContext();
+        givenPricingUtilsContext();
+        Bytes pretendArguments = Bytes.ofUnsignedInt(ABI_ID_ASSOCIATE_TOKEN);
+        given(decoder.decodeAssociation(eq(pretendArguments), any())).willReturn(associateOp);
+        given(syntheticTxnFactory.createAssociate(associateOp)).willReturn(mockSynthBodyBuilder);
+        given(
+                        sigsVerifier.hasActiveKey(
+                                false,
+                                Id.fromGrpcAccount(accountMerkleId).asEvmAddress(),
+                                senderAddress,
+                                wrappedLedgers))
+                .willReturn(false);
+        given(
+                        feeCalculator.estimatedGasPriceInTinybars(
+                                HederaFunctionality.ContractCall, timestamp))
+                .willReturn(1L);
+        given(mockSynthBodyBuilder.build()).willReturn(TransactionBody.newBuilder().build());
+        given(mockSynthBodyBuilder.setTransactionID(any(TransactionID.class)))
+                .willReturn(mockSynthBodyBuilder);
+        given(feeCalculator.computeFee(any(), any(), any(), any())).willReturn(mockFeeObject);
+        given(mockFeeObject.getServiceFee()).willReturn(1L);
+        given(
+                        creator.createUnsuccessfulSyntheticRecord(
+                                INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE))
+                .willReturn(mockRecordBuilder);
 
         // when:
         subject.prepareFields(frame);
@@ -259,10 +225,11 @@ class AssociatePrecompileTest {
         subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
         final var result = subject.computeInternal(frame);
 
-		// then:
-		assertEquals(invalidFullPrefix, result);
-		verify(worldUpdater).manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
-	}
+        // then:
+        assertEquals(invalidFullPrefix, result);
+        verify(worldUpdater)
+                .manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
+    }
 
     @Test
     void computeAssociateTokenFailurePathWorksWithNullLedgers() {

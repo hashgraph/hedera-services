@@ -484,92 +484,95 @@ public class ContractHTSSuite extends HapiApiSuite {
                                                     .via("missingSignatureTx")
                                                     .hasKnownStatus(CONTRACT_REVERT_EXECUTED));
 
-									/* --- HSCS-PREC-023 --- */
-									allRunFor(
-											spec,
-											contractCall(VERSATILE_TRANSFERS, "feeDistributionAfterTransfer",
-													asAddress(spec.registry().getTokenID(A_TOKEN)),
-													asAddress(spec.registry().getTokenID(FEE_TOKEN)),
-													accounts.toArray(),
-													amounts.toArray(),
-													asAddress(spec.registry().getAccountID(RECEIVER))
-											)
-													.alsoSigningWithFullPrefix(ACCOUNT, RECEIVER)
-													.gas(GAS_TO_OFFER)
-													.via("failingChildFrameTx")
-													.hasKnownStatus(CONTRACT_REVERT_EXECUTED));
-								}
-						)
-				).then(
-						childRecordsCheck("distributeTx", SUCCESS,
-								recordWith()
-										.status(SUCCESS)
-										.contractCallResult(
-												resultWith()
-														.contractCallResult(htsPrecompileResult()
-																.withStatus(SUCCESS)
-														)
-										)
-										.tokenTransfers(
-												changingFungibleBalances()
-														.including(A_TOKEN, ACCOUNT, -10L)
-														.including(A_TOKEN, RECEIVER, 5L)
-														.including(A_TOKEN, SECOND_RECEIVER, 5L)
-										),
-								recordWith()
-										.status(SUCCESS)
-										.contractCallResult(
-												resultWith()
-														.contractCallResult(htsPrecompileResult()
-																.withStatus(SUCCESS)
-														)
-										)
-										.tokenTransfers(
-												changingFungibleBalances()
-														.including(FEE_TOKEN, FEE_COLLECTOR, -100L)
-														.including(FEE_TOKEN, ACCOUNT, 100L)
-										)
-						),
-						childRecordsCheck("missingSignatureTx", CONTRACT_REVERT_EXECUTED,
-								recordWith()
-										.status(REVERTED_SUCCESS)
-										.contractCallResult(
-												resultWith()
-														.contractCallResult(htsPrecompileResult()
-																.withStatus(SUCCESS)
-														)
-										),
-								recordWith()
-										.status(INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE)
-										.contractCallResult(
-												resultWith()
-														.contractCallResult(htsPrecompileResult()
-																.withStatus(INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE)
-														)
-										)
-						),
-						childRecordsCheck("failingChildFrameTx", CONTRACT_REVERT_EXECUTED,
-								recordWith()
-										.status(REVERTED_SUCCESS)
-										.contractCallResult(
-												resultWith()
-														.contractCallResult(htsPrecompileResult()
-																.withStatus(SUCCESS)
-														)
-										),
-								recordWith()
-										.status(INSUFFICIENT_TOKEN_BALANCE)
-										.contractCallResult(
-												resultWith()
-														.contractCallResult(htsPrecompileResult()
-																.withStatus(INSUFFICIENT_TOKEN_BALANCE)
-														)
-										)
-						),
-						getAccountBalance(ACCOUNT).hasTokenBalance(FEE_TOKEN, 1000),
-						getAccountBalance(FEE_COLLECTOR).hasTokenBalance(FEE_TOKEN, 0)
-				);
-	}
+                                    /* --- HSCS-PREC-023 --- */
+                                    allRunFor(
+                                            spec,
+                                            contractCall(
+                                                            VERSATILE_TRANSFERS,
+                                                            "feeDistributionAfterTransfer",
+                                                            asAddress(
+                                                                    spec.registry()
+                                                                            .getTokenID(A_TOKEN)),
+                                                            asAddress(
+                                                                    spec.registry()
+                                                                            .getTokenID(FEE_TOKEN)),
+                                                            accounts.toArray(),
+                                                            amounts.toArray(),
+                                                            asAddress(
+                                                                    spec.registry()
+                                                                            .getAccountID(
+                                                                                    RECEIVER)))
+                                                    .alsoSigningWithFullPrefix(ACCOUNT, RECEIVER)
+                                                    .gas(GAS_TO_OFFER)
+                                                    .via("failingChildFrameTx")
+                                                    .hasKnownStatus(CONTRACT_REVERT_EXECUTED));
+                                }))
+                .then(
+                        childRecordsCheck(
+                                "distributeTx",
+                                SUCCESS,
+                                recordWith()
+                                        .status(SUCCESS)
+                                        .contractCallResult(
+                                                resultWith()
+                                                        .contractCallResult(
+                                                                htsPrecompileResult()
+                                                                        .withStatus(SUCCESS)))
+                                        .tokenTransfers(
+                                                changingFungibleBalances()
+                                                        .including(A_TOKEN, ACCOUNT, -10L)
+                                                        .including(A_TOKEN, RECEIVER, 5L)
+                                                        .including(A_TOKEN, SECOND_RECEIVER, 5L)),
+                                recordWith()
+                                        .status(SUCCESS)
+                                        .contractCallResult(
+                                                resultWith()
+                                                        .contractCallResult(
+                                                                htsPrecompileResult()
+                                                                        .withStatus(SUCCESS)))
+                                        .tokenTransfers(
+                                                changingFungibleBalances()
+                                                        .including(FEE_TOKEN, FEE_COLLECTOR, -100L)
+                                                        .including(FEE_TOKEN, ACCOUNT, 100L))),
+                        childRecordsCheck(
+                                "missingSignatureTx",
+                                CONTRACT_REVERT_EXECUTED,
+                                recordWith()
+                                        .status(REVERTED_SUCCESS)
+                                        .contractCallResult(
+                                                resultWith()
+                                                        .contractCallResult(
+                                                                htsPrecompileResult()
+                                                                        .withStatus(SUCCESS))),
+                                recordWith()
+                                        .status(INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE)
+                                        .contractCallResult(
+                                                resultWith()
+                                                        .contractCallResult(
+                                                                htsPrecompileResult()
+                                                                        .withStatus(
+                                                                                INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE)))),
+                        childRecordsCheck(
+                                "failingChildFrameTx",
+                                CONTRACT_REVERT_EXECUTED,
+                                recordWith()
+                                        .status(REVERTED_SUCCESS)
+                                        .contractCallResult(
+                                                resultWith()
+                                                        .contractCallResult(
+                                                                htsPrecompileResult()
+                                                                        .withStatus(SUCCESS))),
+                                recordWith()
+                                        .status(INSUFFICIENT_TOKEN_BALANCE)
+                                        .contractCallResult(
+                                                resultWith()
+                                                        .contractCallResult(
+                                                                htsPrecompileResult()
+                                                                        .withStatus(
+                                                                                INSUFFICIENT_TOKEN_BALANCE)))),
+                        getAccountBalance(ACCOUNT).hasTokenBalance(FEE_TOKEN, 1000),
+                        getAccountBalance(FEE_COLLECTOR).hasTokenBalance(FEE_TOKEN, 0));
+    }
 
     private HapiApiSpec tokenTransferFromFeeCollectorStaticNestedCall() {
         return defaultHapiSpec("TokenTransferFromFeeCollectorStaticNestedCall")
@@ -668,93 +671,95 @@ public class ContractHTSSuite extends HapiApiSuite {
                                                     .via("missingSignatureTx")
                                                     .hasKnownStatus(CONTRACT_REVERT_EXECUTED));
 
-									/* --- HSCS-PREC-023 --- */
-									allRunFor(
-											spec,
-											contractCall(VERSATILE_TRANSFERS,
-													"feeDistributionAfterTransferStaticNestedCall",
-													asAddress(spec.registry().getTokenID(A_TOKEN)),
-													asAddress(spec.registry().getTokenID(FEE_TOKEN)),
-													accounts.toArray(),
-													amounts.toArray(),
-													asAddress(spec.registry().getAccountID(RECEIVER))
-											)
-													.alsoSigningWithFullPrefix(ACCOUNT, RECEIVER)
-													.gas(GAS_TO_OFFER)
-													.via("failingChildFrameTx")
-													.hasKnownStatus(CONTRACT_REVERT_EXECUTED)
-									);
-								})
-				).then(
-						childRecordsCheck("distributeTx", SUCCESS,
-								recordWith()
-										.status(SUCCESS)
-										.contractCallResult(
-												resultWith()
-														.contractCallResult(htsPrecompileResult()
-																.withStatus(SUCCESS)
-														)
-										)
-										.tokenTransfers(
-												changingFungibleBalances()
-														.including(A_TOKEN, ACCOUNT, -10L)
-														.including(A_TOKEN, RECEIVER, 5L)
-														.including(A_TOKEN, SECOND_RECEIVER, 5L)
-										),
-								recordWith()
-										.status(SUCCESS)
-										.contractCallResult(
-												resultWith()
-														.contractCallResult(htsPrecompileResult()
-																.withStatus(SUCCESS)
-														)
-										)
-										.tokenTransfers(
-												changingFungibleBalances()
-														.including(FEE_TOKEN, FEE_COLLECTOR, -100L)
-														.including(FEE_TOKEN, ACCOUNT, 100L)
-										)
-						),
-						childRecordsCheck("missingSignatureTx", CONTRACT_REVERT_EXECUTED,
-								recordWith()
-										.status(REVERTED_SUCCESS)
-										.contractCallResult(
-												resultWith()
-														.contractCallResult(htsPrecompileResult()
-																.withStatus(SUCCESS)
-														)
-										),
-								recordWith()
-										.status(INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE)
-										.contractCallResult(
-												resultWith()
-														.contractCallResult(htsPrecompileResult()
-																.withStatus(INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE)
-														)
-										)
-						),
-						childRecordsCheck("failingChildFrameTx", CONTRACT_REVERT_EXECUTED,
-								recordWith()
-										.status(REVERTED_SUCCESS)
-										.contractCallResult(
-												resultWith()
-														.contractCallResult(htsPrecompileResult()
-																.withStatus(SUCCESS)
-														)
-										),
-								recordWith()
-										.status(INSUFFICIENT_TOKEN_BALANCE)
-										.contractCallResult(
-												resultWith()
-														.contractCallResult(htsPrecompileResult()
-																.withStatus(INSUFFICIENT_TOKEN_BALANCE)
-														)
-										)
-						),
-						getAccountBalance(ACCOUNT).hasTokenBalance(FEE_TOKEN, 1000),
-						getAccountBalance(FEE_COLLECTOR).hasTokenBalance(FEE_TOKEN, 0)
-				);
-	}
+                                    /* --- HSCS-PREC-023 --- */
+                                    allRunFor(
+                                            spec,
+                                            contractCall(
+                                                            VERSATILE_TRANSFERS,
+                                                            "feeDistributionAfterTransferStaticNestedCall",
+                                                            asAddress(
+                                                                    spec.registry()
+                                                                            .getTokenID(A_TOKEN)),
+                                                            asAddress(
+                                                                    spec.registry()
+                                                                            .getTokenID(FEE_TOKEN)),
+                                                            accounts.toArray(),
+                                                            amounts.toArray(),
+                                                            asAddress(
+                                                                    spec.registry()
+                                                                            .getAccountID(
+                                                                                    RECEIVER)))
+                                                    .alsoSigningWithFullPrefix(ACCOUNT, RECEIVER)
+                                                    .gas(GAS_TO_OFFER)
+                                                    .via("failingChildFrameTx")
+                                                    .hasKnownStatus(CONTRACT_REVERT_EXECUTED));
+                                }))
+                .then(
+                        childRecordsCheck(
+                                "distributeTx",
+                                SUCCESS,
+                                recordWith()
+                                        .status(SUCCESS)
+                                        .contractCallResult(
+                                                resultWith()
+                                                        .contractCallResult(
+                                                                htsPrecompileResult()
+                                                                        .withStatus(SUCCESS)))
+                                        .tokenTransfers(
+                                                changingFungibleBalances()
+                                                        .including(A_TOKEN, ACCOUNT, -10L)
+                                                        .including(A_TOKEN, RECEIVER, 5L)
+                                                        .including(A_TOKEN, SECOND_RECEIVER, 5L)),
+                                recordWith()
+                                        .status(SUCCESS)
+                                        .contractCallResult(
+                                                resultWith()
+                                                        .contractCallResult(
+                                                                htsPrecompileResult()
+                                                                        .withStatus(SUCCESS)))
+                                        .tokenTransfers(
+                                                changingFungibleBalances()
+                                                        .including(FEE_TOKEN, FEE_COLLECTOR, -100L)
+                                                        .including(FEE_TOKEN, ACCOUNT, 100L))),
+                        childRecordsCheck(
+                                "missingSignatureTx",
+                                CONTRACT_REVERT_EXECUTED,
+                                recordWith()
+                                        .status(REVERTED_SUCCESS)
+                                        .contractCallResult(
+                                                resultWith()
+                                                        .contractCallResult(
+                                                                htsPrecompileResult()
+                                                                        .withStatus(SUCCESS))),
+                                recordWith()
+                                        .status(INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE)
+                                        .contractCallResult(
+                                                resultWith()
+                                                        .contractCallResult(
+                                                                htsPrecompileResult()
+                                                                        .withStatus(
+                                                                                INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE)))),
+                        childRecordsCheck(
+                                "failingChildFrameTx",
+                                CONTRACT_REVERT_EXECUTED,
+                                recordWith()
+                                        .status(REVERTED_SUCCESS)
+                                        .contractCallResult(
+                                                resultWith()
+                                                        .contractCallResult(
+                                                                htsPrecompileResult()
+                                                                        .withStatus(SUCCESS))),
+                                recordWith()
+                                        .status(INSUFFICIENT_TOKEN_BALANCE)
+                                        .contractCallResult(
+                                                resultWith()
+                                                        .contractCallResult(
+                                                                htsPrecompileResult()
+                                                                        .withStatus(
+                                                                                INSUFFICIENT_TOKEN_BALANCE)))),
+                        getAccountBalance(ACCOUNT).hasTokenBalance(FEE_TOKEN, 1000),
+                        getAccountBalance(FEE_COLLECTOR).hasTokenBalance(FEE_TOKEN, 0));
+    }
 
     /* --- HSCS-PREC-009 ---
      * Contract is a custom hbar fee collector

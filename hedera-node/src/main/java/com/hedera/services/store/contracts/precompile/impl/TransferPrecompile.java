@@ -19,7 +19,7 @@ import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hedera.services.grpc.marshalling.ImpliedTransfers.NO_ALIASES;
 import static com.hedera.services.txns.span.SpanMapManager.reCalculateXferMeta;
 import static com.hedera.services.utils.EntityIdUtils.asTypedEvmAddress;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 import com.hedera.services.context.SideEffectsTracker;
@@ -51,26 +51,22 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.UnaryOperator;
-
-import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
-import static com.hedera.services.grpc.marshalling.ImpliedTransfers.NO_ALIASES;
-import static com.hedera.services.txns.span.SpanMapManager.reCalculateXferMeta;
-import static com.hedera.services.utils.EntityIdUtils.asTypedEvmAddress;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import org.apache.tuweni.bytes.Bytes;
+import org.hyperledger.besu.datatypes.Address;
+import org.hyperledger.besu.evm.frame.MessageFrame;
 
 public class TransferPrecompile extends AbstractWritePrecompile {
-	private static final String TRANSFER = String.format(FAILURE_MESSAGE, "transfer");
-	private final HederaStackedWorldStateUpdater updater;
-	private final EvmSigsVerifier sigsVerifier;
-	private final int functionId;
-	private final Address senderAddress;
-	private final ImpliedTransfersMarshal impliedTransfersMarshal;
-	private ResponseCodeEnum impliedValidity;
-	private ImpliedTransfers impliedTransfers;
-	private List<BalanceChange> explicitChanges;
-	private HederaTokenStore hederaTokenStore;
-	protected List<TokenTransferWrapper> transferOp;
+    private static final String TRANSFER = String.format(FAILURE_MESSAGE, "transfer");
+    private final HederaStackedWorldStateUpdater updater;
+    private final EvmSigsVerifier sigsVerifier;
+    private final int functionId;
+    private final Address senderAddress;
+    private final ImpliedTransfersMarshal impliedTransfersMarshal;
+    private ResponseCodeEnum impliedValidity;
+    private ImpliedTransfers impliedTransfers;
+    private List<BalanceChange> explicitChanges;
+    private HederaTokenStore hederaTokenStore;
+    protected List<TokenTransferWrapper> transferOp;
 
     public TransferPrecompile(
             final WorldLedgers ledgers,
@@ -165,35 +161,52 @@ public class TransferPrecompile extends AbstractWritePrecompile {
                         ledgers.accounts(),
                         ledgers.tokenRels());
 
-		for (int i = 0, n = changes.size(); i < n; i++) {
-			final var change = changes.get(i);
-			final var units = change.getAggregatedUnits();
-			if (change.isForNft() || units < 0) {
-				if (change.isApprovedAllowance()) {
-					// Signing requirements are skipped for changes to be authorized via an allowance
-					continue;
-				}
-				final var hasSenderSig = KeyActivationUtils.validateKey(
-						frame, change.getAccount().asEvmAddress(), sigsVerifier::hasActiveKey, ledgers,
-						updater.aliases());
-				validateTrue(hasSenderSig, INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE, TRANSFER);
-			}
-			if (i < numExplicitChanges) {
-				/* Only process receiver sig requirements for that are not custom fee payments (custom fees are never NFT transfers) */
-				var hasReceiverSigIfReq = true;
-				if (change.isForNft()) {
-					final var counterPartyAddress = asTypedEvmAddress(change.counterPartyAccountId());
-					hasReceiverSigIfReq = KeyActivationUtils.validateKey(
-							frame, counterPartyAddress, sigsVerifier::hasActiveKeyOrNoReceiverSigReq, ledgers,
-							updater.aliases());
-				} else if (units > 0) {
-					hasReceiverSigIfReq = KeyActivationUtils.validateKey(
-							frame, change.getAccount().asEvmAddress(), sigsVerifier::hasActiveKeyOrNoReceiverSigReq,
-							ledgers, updater.aliases());
-				}
-				validateTrue(hasReceiverSigIfReq, INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE, TRANSFER);
-			}
-		}
+        for (int i = 0, n = changes.size(); i < n; i++) {
+            final var change = changes.get(i);
+            final var units = change.getAggregatedUnits();
+            if (change.isForNft() || units < 0) {
+                if (change.isApprovedAllowance()) {
+                    // Signing requirements are skipped for changes to be authorized via an
+                    // allowance
+                    continue;
+                }
+                final var hasSenderSig =
+                        KeyActivationUtils.validateKey(
+                                frame,
+                                change.getAccount().asEvmAddress(),
+                                sigsVerifier::hasActiveKey,
+                                ledgers,
+                                updater.aliases());
+                validateTrue(hasSenderSig, INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE, TRANSFER);
+            }
+            if (i < numExplicitChanges) {
+                /* Only process receiver sig requirements for that are not custom fee payments (custom fees are never NFT transfers) */
+                var hasReceiverSigIfReq = true;
+                if (change.isForNft()) {
+                    final var counterPartyAddress =
+                            asTypedEvmAddress(change.counterPartyAccountId());
+                    hasReceiverSigIfReq =
+                            KeyActivationUtils.validateKey(
+                                    frame,
+                                    counterPartyAddress,
+                                    sigsVerifier::hasActiveKeyOrNoReceiverSigReq,
+                                    ledgers,
+                                    updater.aliases());
+                } else if (units > 0) {
+                    hasReceiverSigIfReq =
+                            KeyActivationUtils.validateKey(
+                                    frame,
+                                    change.getAccount().asEvmAddress(),
+                                    sigsVerifier::hasActiveKeyOrNoReceiverSigReq,
+                                    ledgers,
+                                    updater.aliases());
+                }
+                validateTrue(
+                        hasReceiverSigIfReq,
+                        INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE,
+                        TRANSFER);
+            }
+        }
 
         transferLogic.doZeroSum(changes);
     }

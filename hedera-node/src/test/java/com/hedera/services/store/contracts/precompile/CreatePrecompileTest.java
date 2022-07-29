@@ -29,11 +29,13 @@ import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.create
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.createTokenCreateWrapperWithKeys;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.feeCollector;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.fixedFee;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.invalidFullPrefix;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.invalidSigResult;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.pendingChildConsTime;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.senderAddress;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.successResult;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.timestamp;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -118,46 +120,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
-
-import java.math.BigInteger;
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
-import java.util.function.Function;
-
-import static com.hedera.services.ledger.properties.AccountProperty.AUTO_RENEW_ACCOUNT_ID;
-import static com.hedera.services.ledger.properties.AccountProperty.KEY;
-import static com.hedera.services.state.EntityCreator.EMPTY_MEMO;
-import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_CREATE_FUNGIBLE_TOKEN;
-import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_CREATE_FUNGIBLE_TOKEN_WITH_FEES;
-import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_CREATE_NON_FUNGIBLE_TOKEN;
-import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_CREATE_NON_FUNGIBLE_TOKEN_WITH_FEES;
-import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.account;
-import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.contractAddr;
-import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.contractAddress;
-import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.createNonFungibleTokenCreateWrapperWithKeys;
-import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.createTokenCreateWrapperWithKeys;
-import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.feeCollector;
-import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.fixedFee;
-import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.invalidFullPrefix;
-import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.invalidSigResult;
-import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.pendingChildConsTime;
-import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.senderAddress;
-import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.successResult;
-import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.timestamp;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
-import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class CreatePrecompileTest {
@@ -550,60 +512,71 @@ class CreatePrecompileTest {
                 .manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
     }
 
-	@Test
-	void validateAdminKeySignatureFailsIfKeyIsInvalid() {
-		givenMinimalFrameContext();
-		givenValidGasCalculation();
-		given(wrappedLedgers.accounts()).willReturn(accounts);
-		given(frame.getRemainingGas()).willReturn(100_000L);
-		given(dynamicProperties.isHTSPrecompileCreateEnabled()).willReturn(true);
-		given(frame.getWorldUpdater()).willReturn(worldUpdater);
-		Optional<WorldUpdater> parent = Optional.of(worldUpdater);
-		given(worldUpdater.parentUpdater()).willReturn(parent);
-		given(worldUpdater.wrappedTrackingLedgers(any())).willReturn(wrappedLedgers);
-		given(wrappedLedgers.accounts()).willReturn(accounts);
-		Bytes pretendArguments = Bytes.of(Integers.toBytes(ABI_ID_CREATE_FUNGIBLE_TOKEN));
-		final var keyValueMock = Mockito.mock(TokenCreateWrapper.KeyValueWrapper.class);
-		when(keyValueMock.getKeyValueType())
-				.thenReturn(TokenCreateWrapper.KeyValueWrapper.KeyValueType.CONTRACT_ID)
-				.thenReturn(TokenCreateWrapper.KeyValueWrapper.KeyValueType.INVALID_KEY);
-		final var tokenCreateWrapper =
-				createTokenCreateWrapperWithKeys(List.of(new TokenCreateWrapper.TokenKeyWrapper(1, keyValueMock))
-				);
-		given(decoder.decodeFungibleCreate(eq(pretendArguments), any())).willReturn(tokenCreateWrapper);
-		given(mockSynthBodyBuilder.build())
-				.willReturn(TransactionBody.newBuilder().setTokenCreation(tokenCreateTransactionBody).build());
-		given(mockSynthBodyBuilder.setTransactionID(any(TransactionID.class)))
-				.willReturn(mockSynthBodyBuilder);
-		given(syntheticTxnFactory.createTokenCreate(tokenCreateWrapper)).willReturn(mockSynthBodyBuilder);
-		given(frame.getSenderAddress()).willReturn(senderAddress);
-		given(sigsVerifier.hasActiveKey(Mockito.anyBoolean(), any(), any(), any())).willReturn(true);
-		final var tokenCreateValidator = Mockito.mock(Function.class);
-		given(createChecks.validatorForConsTime(any())).willReturn(tokenCreateValidator);
-		given(tokenCreateValidator.apply(any())).willReturn(ResponseCodeEnum.OK);
-		given(aliases.resolveForEvm(any())).willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
-		given(worldUpdater.aliases()).willReturn(aliases);
-		given(creator.createUnsuccessfulSyntheticRecord(INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE))
-				.willReturn(mockRecordBuilder);
-		given(encoder.encodeCreateFailure(INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE))
-				.willReturn(invalidFullPrefix);
-		given(infrastructureFactory.newCreateChecks()).willReturn(createChecks);
+    @Test
+    void validateAdminKeySignatureFailsIfKeyIsInvalid() {
+        givenMinimalFrameContext();
+        givenValidGasCalculation();
+        given(wrappedLedgers.accounts()).willReturn(accounts);
+        given(frame.getRemainingGas()).willReturn(100_000L);
+        given(dynamicProperties.isHTSPrecompileCreateEnabled()).willReturn(true);
+        given(frame.getWorldUpdater()).willReturn(worldUpdater);
+        Optional<WorldUpdater> parent = Optional.of(worldUpdater);
+        given(worldUpdater.parentUpdater()).willReturn(parent);
+        given(worldUpdater.wrappedTrackingLedgers(any())).willReturn(wrappedLedgers);
+        given(wrappedLedgers.accounts()).willReturn(accounts);
+        Bytes pretendArguments = Bytes.of(Integers.toBytes(ABI_ID_CREATE_FUNGIBLE_TOKEN));
+        final var keyValueMock = Mockito.mock(TokenCreateWrapper.KeyValueWrapper.class);
+        when(keyValueMock.getKeyValueType())
+                .thenReturn(TokenCreateWrapper.KeyValueWrapper.KeyValueType.CONTRACT_ID)
+                .thenReturn(TokenCreateWrapper.KeyValueWrapper.KeyValueType.INVALID_KEY);
+        final var tokenCreateWrapper =
+                createTokenCreateWrapperWithKeys(
+                        List.of(new TokenCreateWrapper.TokenKeyWrapper(1, keyValueMock)));
+        given(decoder.decodeFungibleCreate(eq(pretendArguments), any()))
+                .willReturn(tokenCreateWrapper);
+        given(mockSynthBodyBuilder.build())
+                .willReturn(
+                        TransactionBody.newBuilder()
+                                .setTokenCreation(tokenCreateTransactionBody)
+                                .build());
+        given(mockSynthBodyBuilder.setTransactionID(any(TransactionID.class)))
+                .willReturn(mockSynthBodyBuilder);
+        given(syntheticTxnFactory.createTokenCreate(tokenCreateWrapper))
+                .willReturn(mockSynthBodyBuilder);
+        given(frame.getSenderAddress()).willReturn(senderAddress);
+        given(sigsVerifier.hasActiveKey(Mockito.anyBoolean(), any(), any(), any()))
+                .willReturn(true);
+        final var tokenCreateValidator = Mockito.mock(Function.class);
+        given(createChecks.validatorForConsTime(any())).willReturn(tokenCreateValidator);
+        given(tokenCreateValidator.apply(any())).willReturn(ResponseCodeEnum.OK);
+        given(aliases.resolveForEvm(any()))
+                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+        given(worldUpdater.aliases()).willReturn(aliases);
+        given(
+                        creator.createUnsuccessfulSyntheticRecord(
+                                INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE))
+                .willReturn(mockRecordBuilder);
+        given(encoder.encodeCreateFailure(INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE))
+                .willReturn(invalidFullPrefix);
+        given(infrastructureFactory.newCreateChecks()).willReturn(createChecks);
 
         // when:
         final var result = subject.compute(pretendArguments, frame);
 
-		// then:
-		assertEquals(invalidFullPrefix, result);
+        // then:
+        assertEquals(invalidFullPrefix, result);
 
-		verify(creator).createUnsuccessfulSyntheticRecord(INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE);
-		verify(createLogic, never()).create(
-				pendingChildConsTime.getEpochSecond(),
-				EntityIdUtils.accountIdFromEvmAddress(senderAddress),
-				tokenCreateTransactionBody
-		);
-		verify(wrappedLedgers, never()).commit();
-		verify(worldUpdater).manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
-	}
+        verify(creator)
+                .createUnsuccessfulSyntheticRecord(INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE);
+        verify(createLogic, never())
+                .create(
+                        pendingChildConsTime.getEpochSecond(),
+                        EntityIdUtils.accountIdFromEvmAddress(senderAddress),
+                        tokenCreateTransactionBody);
+        verify(wrappedLedgers, never()).commit();
+        verify(worldUpdater)
+                .manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
+    }
 
     @Test
     void createReturnsNullAndSetsRevertReasonWhenKeyWithMultipleKeyTypesIsPresent() {

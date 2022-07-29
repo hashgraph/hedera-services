@@ -24,7 +24,7 @@ import static com.hedera.services.utils.EntityIdUtils.asTypedEvmAddress;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
@@ -69,26 +69,6 @@ import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.frame.MessageFrame;
-
-import javax.inject.Provider;
-import java.math.BigInteger;
-import java.time.Instant;
-import java.util.Objects;
-import java.util.function.Predicate;
-import java.util.function.UnaryOperator;
-
-import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
-import static com.hedera.services.ledger.properties.AccountProperty.AUTO_RENEW_ACCOUNT_ID;
-import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
-import static com.hedera.services.store.contracts.precompile.codec.TokenCreateWrapper.FixedFeeWrapper.FixedFeePayment.INVALID_PAYMENT;
-import static com.hedera.services.store.contracts.precompile.codec.TokenCreateWrapper.KeyValueWrapper.KeyValueType.INVALID_KEY;
-import static com.hedera.services.utils.EntityIdUtils.asTypedEvmAddress;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 /**
  * Executes the logic of creating a token from {@link HTSPrecompiledContract}.
@@ -144,16 +124,16 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
  * </ol>
  */
 public class TokenCreatePrecompile extends AbstractWritePrecompile {
-	private static final String TOKEN_CREATE = String.format(FAILURE_MESSAGE, "token create");
-	private final EncodingFacade encoder;
-	private final HederaStackedWorldStateUpdater updater;
-	private final EvmSigsVerifier sigsVerifier;
-	private final RecordsHistorian recordsHistorian;
-	private final int functionId;
-	private final Address senderAddress;
-	private final AccountID fundingAccount;
-	private final Provider<FeeCalculator> feeCalculator;
-	private TokenCreateWrapper tokenCreateOp;
+    private static final String TOKEN_CREATE = String.format(FAILURE_MESSAGE, "token create");
+    private final EncodingFacade encoder;
+    private final HederaStackedWorldStateUpdater updater;
+    private final EvmSigsVerifier sigsVerifier;
+    private final RecordsHistorian recordsHistorian;
+    private final int functionId;
+    private final Address senderAddress;
+    private final AccountID fundingAccount;
+    private final Provider<FeeCalculator> feeCalculator;
+    private TokenCreateWrapper tokenCreateOp;
 
     public TokenCreatePrecompile(
             final WorldLedgers ledgers,
@@ -226,12 +206,24 @@ public class TokenCreatePrecompile extends AbstractWritePrecompile {
                 tokenCreateChecks.validatorForConsTime(creationTime).apply(transactionBody.build());
         validateTrue(result == OK, result);
 
-		/* --- Check required signatures --- */
-		final var treasuryId = Id.fromGrpcAccount(tokenCreateOp.getTreasury());
-		final var treasuryHasSigned = KeyActivationUtils.validateKey(
-				frame, treasuryId.asEvmAddress(), sigsVerifier::hasActiveKey, ledgers, updater.aliases());
-		validateTrue(treasuryHasSigned, INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE, TOKEN_CREATE);
-		tokenCreateOp.getAdminKey().ifPresent(key -> validateTrue(validateAdminKey(frame, key), INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE, TOKEN_CREATE));
+        /* --- Check required signatures --- */
+        final var treasuryId = Id.fromGrpcAccount(tokenCreateOp.getTreasury());
+        final var treasuryHasSigned =
+                KeyActivationUtils.validateKey(
+                        frame,
+                        treasuryId.asEvmAddress(),
+                        sigsVerifier::hasActiveKey,
+                        ledgers,
+                        updater.aliases());
+        validateTrue(treasuryHasSigned, INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE, TOKEN_CREATE);
+        tokenCreateOp
+                .getAdminKey()
+                .ifPresent(
+                        key ->
+                                validateTrue(
+                                        validateAdminKey(frame, key),
+                                        INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE,
+                                        TOKEN_CREATE));
 
         /* --- Build the necessary infrastructure to execute the transaction --- */
         final var accountStore = infrastructureFactory.newAccountStore(ledgers.accounts());

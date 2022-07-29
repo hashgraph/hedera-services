@@ -955,44 +955,62 @@ public class DynamicGasCostSuite extends HapiApiSuite {
                                                     .via(helperMintFail)
                                                     .gas(4_000_000L);
 
-							allRunFor(spec,
-									ftAssoc, nftAssoc,
-									fundingXfer, sendFt, sendNft, failFtDissoc, failNftDissoc,
-									mint, helperMint);
-						})
-				).then(
-						childRecordsCheck(helperMintFail, SUCCESS,
-								/* First record is of helper creation */
-								recordWith()
-										.status(SUCCESS),
-								recordWith()
-										.status(INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE)
-										.contractCallResult(
-												resultWith()
-														.contractCallResult(htsPrecompileResult()
-																.forFunction(HTSPrecompileResult.FunctionType.MINT)
-																.withTotalSupply(0)
-																.withSerialNumbers()
-																.withStatus(INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE)))),
-						childRecordsCheck(ftFail, CONTRACT_REVERT_EXECUTED,
-								recordWith()
-										.status(REVERTED_SUCCESS),
-								recordWith()
-										.status(TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES)
-										.contractCallResult(
-												resultWith()
-														.contractCallResult(htsPrecompileResult()
-																.withStatus(TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES)))),
-						childRecordsCheck(nftFail, CONTRACT_REVERT_EXECUTED,
-								recordWith()
-										.status(REVERTED_SUCCESS),
-								recordWith()
-										.status(ACCOUNT_STILL_OWNS_NFTS)
-										.contractCallResult(
-												resultWith()
-														.contractCallResult(htsPrecompileResult()
-																.withStatus(ACCOUNT_STILL_OWNS_NFTS)))),
-						getAccountBalance(TOKEN_TREASURY).hasTokenBalance(nft, 1),
+                                    allRunFor(
+                                            spec,
+                                            ftAssoc,
+                                            nftAssoc,
+                                            fundingXfer,
+                                            sendFt,
+                                            sendNft,
+                                            failFtDissoc,
+                                            failNftDissoc,
+                                            mint,
+                                            helperMint);
+                                }))
+                .then(
+                        childRecordsCheck(
+                                helperMintFail,
+                                SUCCESS,
+                                /* First record is of helper creation */
+                                recordWith().status(SUCCESS),
+                                recordWith()
+                                        .status(INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE)
+                                        .contractCallResult(
+                                                resultWith()
+                                                        .contractCallResult(
+                                                                htsPrecompileResult()
+                                                                        .forFunction(
+                                                                                FunctionType
+                                                                                        .HAPI_MINT)
+                                                                        .withTotalSupply(0)
+                                                                        .withSerialNumbers()
+                                                                        .withStatus(
+                                                                                INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE)))),
+                        childRecordsCheck(
+                                ftFail,
+                                CONTRACT_REVERT_EXECUTED,
+                                recordWith().status(REVERTED_SUCCESS),
+                                recordWith()
+                                        .status(TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES)
+                                        .contractCallResult(
+                                                resultWith()
+                                                        .contractCallResult(
+                                                                htsPrecompileResult()
+                                                                        .withStatus(
+                                                                                TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES)))),
+                        childRecordsCheck(
+                                nftFail,
+                                CONTRACT_REVERT_EXECUTED,
+                                recordWith().status(REVERTED_SUCCESS),
+                                recordWith()
+                                        .status(ACCOUNT_STILL_OWNS_NFTS)
+                                        .contractCallResult(
+                                                resultWith()
+                                                        .contractCallResult(
+                                                                htsPrecompileResult()
+                                                                        .withStatus(
+                                                                                ACCOUNT_STILL_OWNS_NFTS)))),
+                        getAccountBalance(TOKEN_TREASURY).hasTokenBalance(nft, 1),
 
                         // https://github.com/hashgraph/hedera-services/issues/2876 (mint via
                         // delegatable_contract_id)
