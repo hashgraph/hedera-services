@@ -84,10 +84,10 @@ public class PauseUnpauseTokenAccountPrecompileSuite extends HapiApiSuite {
     @Override
     public List<HapiApiSpec> getSpecsInSuite() {
         return List.of(
-                        pauseFungibleTokenHappyPath(),
-                        unpauseFungibleTokenHappyPath(),
-                        pauseNonFungibleTokenHappyPath(),
-                        unpauseNonFungibleTokenHappyPath());
+                pauseFungibleTokenHappyPath(),
+                unpauseFungibleTokenHappyPath(),
+                pauseNonFungibleTokenHappyPath(),
+                unpauseNonFungibleTokenHappyPath());
     }
 
     private HapiApiSpec pauseFungibleTokenHappyPath() {
