@@ -16,7 +16,7 @@
 package com.hedera.services.setup;
 
 import com.swirlds.common.FastCopyable;
-import com.swirlds.common.merkle.Archivable;
+import com.swirlds.common.Releasable;
 import com.swirlds.virtualmap.VirtualMap;
 import java.util.Collection;
 import java.util.EnumMap;
@@ -64,6 +64,7 @@ public class InfrastructureBundle {
                 });
     }
 
+    @SuppressWarnings("java:S106")
     public void toStorage(final String dir) {
         refs.forEach(
                 (type, ref) -> {
@@ -78,8 +79,8 @@ public class InfrastructureBundle {
                     final var curRef = ref.get();
                     if (curRef instanceof FastCopyable fc) {
                         ref.set(fc.copy());
-                        if (curRef instanceof Archivable a) {
-                            a.archive();
+                        if (curRef instanceof Releasable r) {
+                            r.release();
                         } else if (curRef instanceof VirtualMap<?, ?> vm) {
                             vm.release();
                         }

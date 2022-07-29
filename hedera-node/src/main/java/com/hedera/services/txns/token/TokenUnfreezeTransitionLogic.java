@@ -15,19 +15,11 @@
  */
 package com.hedera.services.txns.token;
 
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-
 import com.hedera.services.context.TransactionContext;
-import com.hedera.services.store.AccountStore;
-import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.txns.TransitionLogic;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.TokenUnfreezeAccountTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import java.util.List;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import javax.inject.Inject;
@@ -36,46 +28,23 @@ import javax.inject.Singleton;
 @Singleton
 public class TokenUnfreezeTransitionLogic implements TransitionLogic {
     private final TransactionContext txnCtx;
-    private final TypedTokenStore tokenStore;
-    private final AccountStore accountStore;
+    private final UnfreezeLogic unFreezeLogic;
 
     @Inject
-    public TokenUnfreezeTransitionLogic(
-            TransactionContext txnCtx, TypedTokenStore tokenStore, AccountStore accountStore) {
+    public TokenUnfreezeTransitionLogic(TransactionContext txnCtx, UnfreezeLogic unFreezeLogic) {
         this.txnCtx = txnCtx;
-        this.tokenStore = tokenStore;
-        this.accountStore = accountStore;
+        this.unFreezeLogic = unFreezeLogic;
     }
 
     @Override
     public void doStateTransition() {
-
         /* --- Translate from gRPC types --- */
-
         final var op = txnCtx.accessor().getTxn().getTokenUnfreeze();
-
-        final var grpcTokenId = op.getToken();
-        final var grpcAccountId = op.getAccount();
-
         /* --- Convert to model ids --- */
-
-        final var targetTokenId = Id.fromGrpcToken(grpcTokenId);
-        final var targetAccountId = Id.fromGrpcAccount(grpcAccountId);
-
-        /* --- Load the model objects --- */
-
-        final var targetToken = tokenStore.loadToken(targetTokenId);
-        final var targetAccount = accountStore.loadAccount(targetAccountId);
-
-        final var tokenRelationship = tokenStore.loadTokenRelationship(targetToken, targetAccount);
-
+        final var targetTokenId = Id.fromGrpcToken(op.getToken());
+        final var targetAccountId = Id.fromGrpcAccount(op.getAccount());
         /* --- Do the business logic --- */
-
-        tokenRelationship.changeFrozenState(false);
-
-        /* --- Persist the updated models --- */
-
-        tokenStore.commitTokenRelationships(List.of(tokenRelationship));
+        unFreezeLogic.unfreeze(targetTokenId, targetAccountId);
     }
 
     @Override
@@ -89,16 +58,6 @@ public class TokenUnfreezeTransitionLogic implements TransitionLogic {
     }
 
     public ResponseCodeEnum validate(TransactionBody txnBody) {
-        TokenUnfreezeAccountTransactionBody op = txnBody.getTokenUnfreeze();
-
-        if (!op.hasToken()) {
-            return INVALID_TOKEN_ID;
-        }
-
-        if (!op.hasAccount()) {
-            return INVALID_ACCOUNT_ID;
-        }
-
-        return OK;
+        return unFreezeLogic.validate(txnBody);
     }
 }

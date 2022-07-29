@@ -23,12 +23,16 @@ import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.store.contracts.precompile.codec.Association;
 import com.hedera.services.store.contracts.precompile.codec.BurnWrapper;
 import com.hedera.services.store.contracts.precompile.codec.Dissociation;
+import com.hedera.services.store.contracts.precompile.codec.GetTokenDefaultFreezeStatusWrapper;
+import com.hedera.services.store.contracts.precompile.codec.GetTokenDefaultKycStatusWrapper;
 import com.hedera.services.store.contracts.precompile.codec.MintWrapper;
 import com.hedera.services.store.contracts.precompile.codec.OwnerOfAndTokenURIWrapper;
 import com.hedera.services.store.contracts.precompile.codec.TokenCreateWrapper;
 import com.hedera.services.store.contracts.precompile.codec.TokenExpiryWrapper;
+import com.hedera.services.store.contracts.precompile.codec.TokenFreezeUnfreezeWrapper;
 import com.hedera.services.store.contracts.precompile.codec.TokenInfoWrapper;
 import com.hedera.services.store.contracts.precompile.codec.TokenTransferWrapper;
+import com.hedera.services.store.contracts.precompile.codec.WipeWrapper;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.test.utils.IdUtils;
@@ -111,15 +115,30 @@ public class HTSTestsUtil {
     public static final MintWrapper fungibleMint = MintWrapper.forFungible(fungible, AMOUNT);
     public static final BurnWrapper fungibleBurnAmountOversize =
             BurnWrapper.forFungible(fungible, new BigInteger("2").pow(64).longValue());
+    public static final WipeWrapper fungibleWipeAmountOversize =
+            WipeWrapper.forFungible(fungible, account, new BigInteger("2").pow(64).longValue());
     public static final BurnWrapper fungibleBurnMaxAmount =
             BurnWrapper.forFungible(fungible, Long.MAX_VALUE);
+    public static final WipeWrapper fungibleWipeMaxAmount =
+            WipeWrapper.forFungible(fungible, account, Long.MAX_VALUE);
     public static final MintWrapper fungibleMintAmountOversize =
             MintWrapper.forFungible(fungible, new BigInteger("2").pow(64).longValue());
     public static final MintWrapper fungibleMintMaxAmount =
             MintWrapper.forFungible(fungible, Long.MAX_VALUE);
+    public static final WipeWrapper fungibleWipe =
+            WipeWrapper.forFungible(fungible, account, AMOUNT);
+    public static final WipeWrapper nonFungibleWipe =
+            WipeWrapper.forNonFungible(nonFungible, account, targetSerialNos);
     public static final Long serialNumber = 1L;
     public static final OwnerOfAndTokenURIWrapper ownerOfAndTokenUriWrapper =
             new OwnerOfAndTokenURIWrapper(serialNumber);
+    public static final GetTokenDefaultFreezeStatusWrapper defaultFreezeStatusWrapper =
+            new GetTokenDefaultFreezeStatusWrapper(fungible);
+    public static final GetTokenDefaultKycStatusWrapper defaultKycStatusWrapper =
+            new GetTokenDefaultKycStatusWrapper(fungible);
+
+    public static final TokenFreezeUnfreezeWrapper tokenFreezeUnFreezeWrapper =
+            new TokenFreezeUnfreezeWrapper(fungible, account);
 
     public static final Association multiAssociateOp =
             Association.singleAssociation(accountMerkleId, tokenMerkleId);

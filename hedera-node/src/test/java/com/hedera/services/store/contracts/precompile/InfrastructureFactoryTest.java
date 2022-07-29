@@ -38,6 +38,7 @@ import com.hedera.services.state.validation.UsageLimits;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
+import com.hedera.services.store.contracts.WorldLedgers;
 import com.hedera.services.store.contracts.precompile.codec.DecodingFacade;
 import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
 import com.hedera.services.store.contracts.precompile.proxy.RedirectViewExecutor;
@@ -53,7 +54,10 @@ import com.hedera.services.txns.token.AssociateLogic;
 import com.hedera.services.txns.token.BurnLogic;
 import com.hedera.services.txns.token.CreateLogic;
 import com.hedera.services.txns.token.DissociateLogic;
+import com.hedera.services.txns.token.FreezeLogic;
 import com.hedera.services.txns.token.MintLogic;
+import com.hedera.services.txns.token.UnfreezeLogic;
+import com.hedera.services.txns.token.WipeLogic;
 import com.hedera.services.txns.token.process.DissociationFactory;
 import com.hedera.services.txns.token.validators.CreateChecks;
 import com.hedera.services.txns.validation.OptionValidator;
@@ -93,6 +97,7 @@ class InfrastructureFactoryTest {
     @Mock private ViewGasCalculator gasCalculator;
     @Mock private HederaStackedWorldStateUpdater worldStateUpdater;
     @Mock private StateView stateView;
+    @Mock private WorldLedgers ledgers;
 
     private InfrastructureFactory subject;
 
@@ -243,7 +248,7 @@ class InfrastructureFactoryTest {
     void canCreateNewViewExecutor() {
         assertInstanceOf(
                 ViewExecutor.class,
-                subject.newViewExecutor(Bytes.EMPTY, frame, gasCalculator, stateView));
+                subject.newViewExecutor(Bytes.EMPTY, frame, gasCalculator, stateView, ledgers));
     }
 
     @Test
@@ -281,5 +286,32 @@ class InfrastructureFactoryTest {
     @Test
     void canCreateNewDeleteAllowanceChecks() {
         assertInstanceOf(DeleteAllowanceChecks.class, subject.newDeleteAllowanceChecks());
+    }
+
+    @Test
+    void canCreateNewWipeLogic() {
+        final var accountStore = subject.newAccountStore(accounts);
+        final var tokenStore =
+                subject.newTokenStore(
+                        accountStore, subject.newSideEffects(), tokens, uniqueTokens, tokenRels);
+        assertInstanceOf(WipeLogic.class, subject.newWipeLogic(accountStore, tokenStore));
+    }
+
+    @Test
+    void canCreateNewFreezeLogic() {
+        final var accountStore = subject.newAccountStore(accounts);
+        final var tokenStore =
+                subject.newTokenStore(
+                        accountStore, subject.newSideEffects(), tokens, uniqueTokens, tokenRels);
+        assertInstanceOf(FreezeLogic.class, subject.newFreezeLogic(accountStore, tokenStore));
+    }
+
+    @Test
+    void canCreateNewUnfreezeLogic() {
+        final var accountStore = subject.newAccountStore(accounts);
+        final var tokenStore =
+                subject.newTokenStore(
+                        accountStore, subject.newSideEffects(), tokens, uniqueTokens, tokenRels);
+        assertInstanceOf(UnfreezeLogic.class, subject.newUnfreezeLogic(accountStore, tokenStore));
     }
 }
