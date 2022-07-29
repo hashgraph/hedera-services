@@ -21,6 +21,7 @@ import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_GET_TOKEN_DEFAULT_FREEZE_STATUS;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_GET_TOKEN_DEFAULT_KYC_STATUS;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_GET_TOKEN_INFO;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_IS_FROZEN;
 import static com.hedera.services.utils.MiscUtils.asSecondsTimestamp;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 
@@ -81,49 +82,61 @@ public class ViewExecutor {
     }
 
     private Bytes answerGiven(final int selector) {
-        if (selector == ABI_ID_GET_TOKEN_INFO) {
-            final var wrapper = decoder.decodeGetTokenInfo(input);
-            final var tokenInfo = stateView.infoForToken(wrapper.tokenID()).orElse(null);
+        switch (selector) {
+            case ABI_ID_GET_TOKEN_INFO -> {
+                final var wrapper = decoder.decodeGetTokenInfo(input);
+                final var tokenInfo = stateView.infoForToken(wrapper.tokenID()).orElse(null);
 
-            validateTrueOrRevert(tokenInfo != null, ResponseCodeEnum.INVALID_TOKEN_ID);
+                validateTrueOrRevert(tokenInfo != null, ResponseCodeEnum.INVALID_TOKEN_ID);
 
-            return encoder.encodeGetTokenInfo(tokenInfo);
-        } else if (selector == ABI_ID_GET_FUNGIBLE_TOKEN_INFO) {
-            final var wrapper = decoder.decodeGetFungibleTokenInfo(input);
-            final var tokenInfo = stateView.infoForToken(wrapper.tokenID()).orElse(null);
+                return encoder.encodeGetTokenInfo(tokenInfo);
+            }
+            case ABI_ID_GET_FUNGIBLE_TOKEN_INFO -> {
+                final var wrapper = decoder.decodeGetFungibleTokenInfo(input);
+                final var tokenInfo = stateView.infoForToken(wrapper.tokenID()).orElse(null);
 
-            validateTrueOrRevert(tokenInfo != null, ResponseCodeEnum.INVALID_TOKEN_ID);
+                validateTrueOrRevert(tokenInfo != null, ResponseCodeEnum.INVALID_TOKEN_ID);
 
-            return encoder.encodeGetFungibleTokenInfo(tokenInfo);
-        } else if (selector == ABI_ID_GET_NON_FUNGIBLE_TOKEN_INFO) {
-            final var wrapper = decoder.decodeGetNonFungibleTokenInfo(input);
-            final var tokenInfo = stateView.infoForToken(wrapper.tokenID()).orElse(null);
+                return encoder.encodeGetFungibleTokenInfo(tokenInfo);
+            }
+            case ABI_ID_GET_NON_FUNGIBLE_TOKEN_INFO -> {
+                final var wrapper = decoder.decodeGetNonFungibleTokenInfo(input);
+                final var tokenInfo = stateView.infoForToken(wrapper.tokenID()).orElse(null);
 
-            validateTrueOrRevert(tokenInfo != null, ResponseCodeEnum.INVALID_TOKEN_ID);
+                validateTrueOrRevert(tokenInfo != null, ResponseCodeEnum.INVALID_TOKEN_ID);
 
-            final var nftID =
-                    NftID.newBuilder()
-                            .setTokenID(wrapper.tokenID())
-                            .setSerialNumber(wrapper.serialNumber())
-                            .build();
-            final var nonFungibleTokenInfo = stateView.infoForNft(nftID).orElse(null);
-            validateTrueOrRevert(
-                    nonFungibleTokenInfo != null, ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER);
+                final var nftID =
+                        NftID.newBuilder()
+                                .setTokenID(wrapper.tokenID())
+                                .setSerialNumber(wrapper.serialNumber())
+                                .build();
+                final var nonFungibleTokenInfo = stateView.infoForNft(nftID).orElse(null);
+                validateTrueOrRevert(
+                        nonFungibleTokenInfo != null,
+                        ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER);
 
-            return encoder.encodeGetNonFungibleTokenInfo(tokenInfo, nonFungibleTokenInfo);
-        } else if (selector == ABI_ID_GET_TOKEN_DEFAULT_FREEZE_STATUS) {
-            final var wrapper = decoder.decodeTokenDefaultFreezeStatus(input);
-            final var defaultFreezeStatus = ledgers.defaultFreezeStatus(wrapper.tokenID());
+                return encoder.encodeGetNonFungibleTokenInfo(tokenInfo, nonFungibleTokenInfo);
+            }
+            case ABI_ID_IS_FROZEN -> {
+                final var wrapper = decoder.decodeIsFrozen(input, a -> a);
+                final var isFrozen = ledgers.isFrozen(wrapper.account(), wrapper.token());
 
-            return encoder.encodeGetTokenDefaultFreezeStatus(defaultFreezeStatus);
-        } else if (selector == ABI_ID_GET_TOKEN_DEFAULT_KYC_STATUS) {
-            final var wrapper = decoder.decodeTokenDefaultKycStatus(input);
-            final var defaultKycStatus = ledgers.defaultKycStatus(wrapper.tokenID());
+                return encoder.encodeIsFrozen(isFrozen);
+            }
+            case ABI_ID_GET_TOKEN_DEFAULT_FREEZE_STATUS -> {
+                final var wrapper = decoder.decodeTokenDefaultFreezeStatus(input);
+                final var defaultFreezeStatus = ledgers.defaultFreezeStatus(wrapper.tokenID());
 
-            return encoder.encodeGetTokenDefaultKycStatus(defaultKycStatus);
-        } else {
-            // Only view functions can be used inside a ContractCallLocal
-            throw new InvalidTransactionException(NOT_SUPPORTED);
+                return encoder.encodeGetTokenDefaultFreezeStatus(defaultFreezeStatus);
+            }
+            case ABI_ID_GET_TOKEN_DEFAULT_KYC_STATUS -> {
+                final var wrapper = decoder.decodeTokenDefaultKycStatus(input);
+                final var defaultKycStatus = ledgers.defaultKycStatus(wrapper.tokenID());
+
+                return encoder.encodeGetTokenDefaultKycStatus(defaultKycStatus);
+            }
+                // Only view functions can be used inside a ContractCallLocal
+            default -> throw new InvalidTransactionException(NOT_SUPPORTED);
         }
     }
 }

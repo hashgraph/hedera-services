@@ -34,6 +34,7 @@ import com.hedera.services.store.contracts.precompile.codec.Dissociation;
 import com.hedera.services.store.contracts.precompile.codec.MintWrapper;
 import com.hedera.services.store.contracts.precompile.codec.SetApprovalForAllWrapper;
 import com.hedera.services.store.contracts.precompile.codec.TokenCreateWrapper;
+import com.hedera.services.store.contracts.precompile.codec.TokenFreezeUnfreezeWrapper;
 import com.hedera.services.store.contracts.precompile.codec.TokenTransferWrapper;
 import com.hedera.services.store.contracts.precompile.codec.WipeWrapper;
 import com.hedera.services.utils.EntityNum;
@@ -64,11 +65,13 @@ import com.hederahashgraph.api.proto.java.TokenAssociateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenBurnTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenDissociateTransactionBody;
+import com.hederahashgraph.api.proto.java.TokenFreezeAccountTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenMintTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TokenType;
+import com.hederahashgraph.api.proto.java.TokenUnfreezeAccountTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenWipeAccountTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
@@ -434,6 +437,21 @@ public class SyntheticTxnFactory {
         }
 
         return TransactionBody.newBuilder().setTokenWipe(builder);
+    }
+
+    public TransactionBody.Builder createFreeze(final TokenFreezeUnfreezeWrapper freezeWrapper) {
+        final var builder = TokenFreezeAccountTransactionBody.newBuilder();
+        builder.setToken(freezeWrapper.token());
+        builder.setAccount(freezeWrapper.account());
+        return TransactionBody.newBuilder().setTokenFreeze(builder);
+    }
+
+    public TransactionBody.Builder createUnFreeze(
+            final TokenFreezeUnfreezeWrapper unFreezeWrapper) {
+        final var builder = TokenUnfreezeAccountTransactionBody.newBuilder();
+        builder.setToken(unFreezeWrapper.token());
+        builder.setAccount(unFreezeWrapper.account());
+        return TransactionBody.newBuilder().setTokenUnfreeze(builder);
     }
 
     public static class HbarTransfer {
