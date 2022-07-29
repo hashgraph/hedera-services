@@ -28,8 +28,7 @@ import org.apache.logging.log4j.Logger;
 public class OnlyIfSigVerifiableValid implements BiPredicate<JKey, TransactionSignature> {
     private static final Logger log = LogManager.getLogger(OnlyIfSigVerifiableValid.class);
 
-    public OnlyIfSigVerifiableValid() {
-    }
+    public OnlyIfSigVerifiableValid() {}
 
     @Override
     public boolean test(final JKey ignoredKey, final TransactionSignature sig) {
@@ -50,7 +49,8 @@ public class OnlyIfSigVerifiableValid implements BiPredicate<JKey, TransactionSi
                 statusUnknown = false;
             } catch (final InterruptedException ignore) {
                 log.warn(
-                    "Interrupted while validating signature, this will be fatal outside reconnect");
+                        "Interrupted while validating signature, this will be fatal outside"
+                                + " reconnect");
                 Thread.currentThread().interrupt();
             } catch (final ExecutionException e) {
                 log.error("Erred while validating signature, this is likely fatal", e);
