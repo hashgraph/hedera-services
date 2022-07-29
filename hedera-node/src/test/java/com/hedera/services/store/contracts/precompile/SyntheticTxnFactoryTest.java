@@ -55,8 +55,10 @@ import com.hedera.services.store.contracts.precompile.codec.MintWrapper;
 import com.hedera.services.store.contracts.precompile.codec.PauseWrapper;
 import com.hedera.services.store.contracts.precompile.codec.SetApprovalForAllWrapper;
 import com.hedera.services.store.contracts.precompile.codec.TokenCreateWrapper;
+import com.hedera.services.store.contracts.precompile.codec.TokenFreezeUnfreezeWrapper;
 import com.hedera.services.store.contracts.precompile.codec.TokenTransferWrapper;
 import com.hedera.services.store.contracts.precompile.codec.UnpauseWrapper;
+import com.hedera.services.store.contracts.precompile.codec.WipeWrapper;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.test.factories.keys.KeyFactory;
@@ -294,6 +296,26 @@ class SyntheticTxnFactoryTest {
         assertEquals(
                 ByteString.copyFrom(Bytes.of(1).toArray()),
                 txnBody.getContractCall().getFunctionParameters());
+    }
+
+    @Test
+    void createsExpectedFreezeTokenCall() {
+        final var freezeWrapper = new TokenFreezeUnfreezeWrapper(fungible, a);
+        final var result = subject.createFreeze(freezeWrapper);
+        final var txnBody = result.build();
+
+        assertEquals(fungible, txnBody.getTokenFreeze().getToken());
+        assertEquals(a, txnBody.getTokenFreeze().getAccount());
+    }
+
+    @Test
+    void createsExpectedUnfreezeTokenCall() {
+        final var unfreezeWrapper = new TokenFreezeUnfreezeWrapper(fungible, a);
+        final var result = subject.createUnFreeze(unfreezeWrapper);
+        final var txnBody = result.build();
+
+        assertEquals(fungible, txnBody.getTokenUnfreeze().getToken());
+        assertEquals(a, txnBody.getTokenUnfreeze().getAccount());
     }
 
     @Test
@@ -852,6 +874,31 @@ class SyntheticTxnFactoryTest {
         final var txnBody = result.build();
 
         assertEquals(nonFungible, txnBody.getTokenUnpause().getToken());
+    }
+
+    @Test
+    void createsExpectedFungibleWipe() {
+        final var amount = 1234L;
+        final var fungibleWipe = WipeWrapper.forFungible(fungible, a, amount);
+
+        final var result = subject.createWipe(fungibleWipe);
+        final var txnBody = result.build();
+
+        assertEquals(fungible, txnBody.getTokenWipe().getToken());
+        assertEquals(amount, txnBody.getTokenWipe().getAmount());
+        assertEquals(a, txnBody.getTokenWipe().getAccount());
+    }
+
+    @Test
+    void createsExpectedNftWipe() {
+        final var nftWipe = WipeWrapper.forNonFungible(nonFungible, a, targetSerialNos);
+
+        final var result = subject.createWipe(nftWipe);
+        final var txnBody = result.build();
+
+        assertEquals(nonFungible, txnBody.getTokenWipe().getToken());
+        assertEquals(a, txnBody.getTokenWipe().getAccount());
+        assertEquals(targetSerialNos, txnBody.getTokenWipe().getSerialNumbersList());
     }
 
     private AccountAmount aaWith(final AccountID account, final long amount) {

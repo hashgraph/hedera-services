@@ -117,6 +117,18 @@ public interface EvmSigsVerifier {
             Address activeContract,
             WorldLedgers worldLedgers);
 
+    boolean hasActiveWipeKey(
+            boolean isDelegateCall,
+            Address token,
+            Address activeContract,
+            WorldLedgers worldLedgers);
+
+    boolean hasActiveFreezeKey(
+            boolean isDelegateCall,
+            Address token,
+            Address activeContract,
+            WorldLedgers worldLedgers);
+
     /**
      * Determines if the target token has an active pause key given the cryptographic signatures
      * from the {@link com.hederahashgraph.api.proto.java.SignatureMap} that could be verified

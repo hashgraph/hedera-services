@@ -43,8 +43,10 @@ import static com.hedera.services.ledger.properties.AccountProperty.KEY;
 import static com.hedera.test.utils.TxnUtils.assertFailsWith;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_FREEZE_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_PAUSE_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_SUPPLY_KEY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_WIPE_KEY;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -173,6 +175,35 @@ class TxnAwareEvmSigsVerifierTest {
                 () ->
                         subject.hasActiveSupplyKey(
                                 true, PRETEND_TOKEN_ADDR, PRETEND_SENDER_ADDR, ledgers));
+    }
+
+    @Test
+    void throwsIfAskedToVerifyTokenWithoutFreezeKey() {
+        given(ledgers.tokens()).willReturn(tokensLedger);
+        given(tokensLedger.exists(token)).willReturn(true);
+        given(tokensLedger.get(token, TokenProperty.FREEZE_KEY)).willReturn(null);
+
+        assertFailsWith(
+                () ->
+                        subject.hasActiveFreezeKey(
+                                true, PRETEND_TOKEN_ADDR, PRETEND_SENDER_ADDR, ledgers),
+                TOKEN_HAS_NO_FREEZE_KEY);
+    }
+
+    @Test
+    void testsFreezeKeyIfPresent() {
+        given(txnCtx.swirldsTxnAccessor()).willReturn(accessor);
+        given(ledgers.tokens()).willReturn(tokensLedger);
+        given(tokensLedger.exists(token)).willReturn(true);
+        given(tokensLedger.get(token, TokenProperty.FREEZE_KEY)).willReturn(expectedKey);
+
+        given(accessor.getRationalizedPkToCryptoSigFn()).willReturn(pkToCryptoSigsFn);
+        given(activationTest.test(eq(expectedKey), eq(pkToCryptoSigsFn), any())).willReturn(true);
+
+        final var verdict =
+                subject.hasActiveFreezeKey(true, PRETEND_TOKEN_ADDR, PRETEND_SENDER_ADDR, ledgers);
+
+        assertTrue(verdict);
     }
 
     @Test
@@ -469,6 +500,35 @@ class TxnAwareEvmSigsVerifierTest {
 
         final var verdict =
                 subject.hasActivePauseKey(true, PRETEND_TOKEN_ADDR, PRETEND_SENDER_ADDR, ledgers);
+
+        assertTrue(verdict);
+    }
+
+    @Test
+    void throwsIfAskedToVerifyTokenWithoutWipeKey() {
+        given(ledgers.tokens()).willReturn(tokensLedger);
+        given(tokensLedger.exists(token)).willReturn(true);
+        given(tokensLedger.get(token, TokenProperty.WIPE_KEY)).willReturn(null);
+
+        assertFailsWith(
+                () ->
+                        subject.hasActiveWipeKey(
+                                true, PRETEND_TOKEN_ADDR, PRETEND_SENDER_ADDR, ledgers),
+                TOKEN_HAS_NO_WIPE_KEY);
+    }
+
+    @Test
+    void testsWipeKeyIfPresent() {
+        given(txnCtx.swirldsTxnAccessor()).willReturn(accessor);
+        given(ledgers.tokens()).willReturn(tokensLedger);
+        given(tokensLedger.exists(token)).willReturn(true);
+        given(tokensLedger.get(token, TokenProperty.WIPE_KEY)).willReturn(expectedKey);
+
+        given(accessor.getRationalizedPkToCryptoSigFn()).willReturn(pkToCryptoSigsFn);
+        given(activationTest.test(eq(expectedKey), eq(pkToCryptoSigsFn), any())).willReturn(true);
+
+        final var verdict =
+                subject.hasActiveWipeKey(true, PRETEND_TOKEN_ADDR, PRETEND_SENDER_ADDR, ledgers);
 
         assertTrue(verdict);
     }

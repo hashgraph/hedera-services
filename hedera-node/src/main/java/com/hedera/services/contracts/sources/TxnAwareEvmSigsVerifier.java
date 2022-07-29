@@ -20,8 +20,10 @@ import static com.hedera.services.ledger.properties.AccountProperty.IS_RECEIVER_
 import static com.hedera.services.ledger.properties.AccountProperty.KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_FREEZE_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_PAUSE_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_SUPPLY_KEY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_WIPE_KEY;
 
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.keys.ActivationTest;
@@ -105,6 +107,36 @@ public class TxnAwareEvmSigsVerifier implements EvmSigsVerifier {
         validateTrue(pauseKey != null, TOKEN_HAS_NO_PAUSE_KEY);
 
         return isActiveInFrame(pauseKey, isDelegateCall, activeContract, worldLedgers.aliases());
+    }
+
+    @Override
+    public boolean hasActiveWipeKey(
+            final boolean isDelegateCall,
+            @NotNull final Address tokenAddress,
+            @NotNull final Address activeContract,
+            @NotNull final WorldLedgers worldLedgers) {
+        final var tokenId = EntityIdUtils.tokenIdFromEvmAddress(tokenAddress);
+        validateTrue(worldLedgers.tokens().exists(tokenId), INVALID_TOKEN_ID);
+
+        final var wipeKey = (JKey) worldLedgers.tokens().get(tokenId, TokenProperty.WIPE_KEY);
+        validateTrue(wipeKey != null, TOKEN_HAS_NO_WIPE_KEY);
+
+        return isActiveInFrame(wipeKey, isDelegateCall, activeContract, worldLedgers.aliases());
+    }
+
+    @Override
+    public boolean hasActiveFreezeKey(
+            final boolean isDelegateCall,
+            @NotNull final Address tokenAddress,
+            @NotNull final Address activeContract,
+            @NotNull final WorldLedgers worldLedgers) {
+        final var tokenId = EntityIdUtils.tokenIdFromEvmAddress(tokenAddress);
+        validateTrue(worldLedgers.tokens().exists(tokenId), INVALID_TOKEN_ID);
+
+        final var freezeKey = (JKey) worldLedgers.tokens().get(tokenId, TokenProperty.FREEZE_KEY);
+        validateTrue(freezeKey != null, TOKEN_HAS_NO_FREEZE_KEY);
+
+        return isActiveInFrame(freezeKey, isDelegateCall, activeContract, worldLedgers.aliases());
     }
 
     @Override

@@ -86,8 +86,7 @@ class PrecheckVerifierTest {
         aliasManager = mock(AliasManager.class);
         realAccessor =
                 PlatformTxnAccessor.from(
-                        SignedTxnAccessor.from(PlatformTxnFactory.from(txn).getContents()),
-                        PlatformTxnFactory.from(txn));
+                        SignedTxnAccessor.from(txn.toByteArray()), PlatformTxnFactory.from(txn));
         reqKeys =
                 List.of(
                         KeyTree.withRoot(list(ed25519(), list(ed25519(), ed25519()))).asJKey(),

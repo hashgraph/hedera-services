@@ -90,6 +90,7 @@ spotless {
         endWithNewline()
     })
     java({
+        targetExclude("build/generated/sources/**/*.java")
         // fix errors due to dashed comment blocks (eg: /*-, /*--, etc)
         addStep(RepairDashedCommentsFormatterStep.create())
         // Remove the old license headers as the spotless licenseHeader formatter
