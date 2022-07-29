@@ -33,7 +33,6 @@ import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
 import java.util.List;
 import java.util.function.Supplier;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -76,7 +75,7 @@ public class MerkleScheduledTransactions extends PartialNaryMerkleInternal
     }
 
     public MerkleScheduledTransactions() {
-		final var virtualMapFactory = getVirtualMapFactory();
+        final var virtualMapFactory = getVirtualMapFactory();
         addDeserializedChildren(
                 List.of(
                         new MerkleScheduledTransactionsState(),
@@ -147,17 +146,19 @@ public class MerkleScheduledTransactions extends PartialNaryMerkleInternal
     }
 
     public VirtualMap<EntityNumVirtualKey, ScheduleVirtualValue> byId() {
-        return maybeMigrateMap(ChildIndices.BY_ID,
-                () -> getVirtualMapFactory().newScheduleListStorage());
+        return maybeMigrateMap(
+                ChildIndices.BY_ID, () -> getVirtualMapFactory().newScheduleListStorage());
     }
 
     public VirtualMap<SecondSinceEpocVirtualKey, ScheduleSecondVirtualValue> byExpirationSecond() {
-        return maybeMigrateMap(ChildIndices.BY_EXPIRATION_SECOND,
+        return maybeMigrateMap(
+                ChildIndices.BY_EXPIRATION_SECOND,
                 () -> getVirtualMapFactory().newScheduleTemporalStorage());
     }
 
     public VirtualMap<ScheduleEqualityVirtualKey, ScheduleEqualityVirtualValue> byEquality() {
-        return maybeMigrateMap(ChildIndices.BY_EQUALITY,
+        return maybeMigrateMap(
+                ChildIndices.BY_EQUALITY,
                 () -> getVirtualMapFactory().newScheduleEqualityStorage());
     }
 
@@ -177,9 +178,9 @@ public class MerkleScheduledTransactions extends PartialNaryMerkleInternal
     }
 
     public void do0230MigrationIfNeeded() {
-        if ((getChild(ChildIndices.BY_ID) instanceof MerkleMap<?,?>) ||
-                (getChild(ChildIndices.BY_EXPIRATION_SECOND) instanceof MerkleMap<?,?>) ||
-                (getChild(ChildIndices.BY_EQUALITY) instanceof MerkleMap<?,?>)) {
+        if ((getChild(ChildIndices.BY_ID) instanceof MerkleMap<?, ?>)
+                || (getChild(ChildIndices.BY_EXPIRATION_SECOND) instanceof MerkleMap<?, ?>)
+                || (getChild(ChildIndices.BY_EQUALITY) instanceof MerkleMap<?, ?>)) {
             byId();
             byExpirationSecond();
             byEquality();
@@ -193,9 +194,9 @@ public class MerkleScheduledTransactions extends PartialNaryMerkleInternal
     private long getChildSize(int childIdx) {
         Object child = getChild(childIdx);
 
-        if (child instanceof MerkleMap<?,?>) {
+        if (child instanceof MerkleMap<?, ?>) {
             return ((MerkleMap<?, ?>) child).size();
-        } else if (child instanceof VirtualMap<?,?>) {
+        } else if (child instanceof VirtualMap<?, ?>) {
             return ((VirtualMap<?, ?>) child).size();
         }
 
@@ -206,20 +207,23 @@ public class MerkleScheduledTransactions extends PartialNaryMerkleInternal
             int childIdx, Supplier<K> newChildSup) {
 
         Object child = getChild(childIdx);
-        if (child instanceof MerkleMap<?,?>) {
+        if (child instanceof MerkleMap<?, ?>) {
 
             if (isImmutable()) {
-                throw new IllegalStateException("Migration not complete for child "
-                        + childIdx + " and this object is immutable.");
+                throw new IllegalStateException(
+                        "Migration not complete for child "
+                                + childIdx
+                                + " and this object is immutable.");
             }
 
             MerkleMap<?, ?> merkle = uncheckedCast(child);
             var newChild = newChildSup.get();
             child = newChild;
-            merkle.forEach((k, v) -> {
-                WritableCopyable value = uncheckedCast(v);
-                newChild.put(uncheckedCast(k), value.asWritable());
-            });
+            merkle.forEach(
+                    (k, v) -> {
+                        WritableCopyable value = uncheckedCast(v);
+                        newChild.put(uncheckedCast(k), value.asWritable());
+                    });
             setChild(childIdx, newChild);
         }
 

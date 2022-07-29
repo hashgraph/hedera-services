@@ -233,7 +233,8 @@ class ServicesStateTest {
                         autoRenewalMigrator,
                         iterableStorageMigrator,
                         vmf,
-                        workingState, scheduledTransactions);
+                        workingState,
+                        scheduledTransactions);
 
         ServicesState.setExpiryJustEnabled(true);
         subject.setChild(StateChildIndices.ACCOUNTS, accounts);

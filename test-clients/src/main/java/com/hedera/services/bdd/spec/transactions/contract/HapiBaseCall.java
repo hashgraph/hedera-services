@@ -1,38 +1,32 @@
-package com.hedera.services.bdd.spec.transactions.contract;
-
-/*-
- * ‌
- * Hedera Services Test Clients
- * ​
- * Copyright (C) 2018 - 2022 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2022 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+package com.hedera.services.bdd.spec.transactions.contract;
+
+import static com.hedera.services.bdd.suites.HapiApiSuite.SECP_256K1_SOURCE_KEY;
+import static org.ethereum.crypto.HashUtil.sha3;
 
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.esaulpaugh.headlong.abi.TupleType;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
-import org.ethereum.util.ByteUtil;
-
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
-
-import static com.hedera.services.bdd.suites.HapiApiSuite.SECP_256K1_SOURCE_KEY;
-import static org.ethereum.crypto.HashUtil.sha3;
+import org.ethereum.util.ByteUtil;
 
 public abstract class HapiBaseCall<T extends HapiTxnOp<T>> extends HapiTxnOp<T> {
 
@@ -40,9 +34,10 @@ public abstract class HapiBaseCall<T extends HapiTxnOp<T>> extends HapiTxnOp<T> 
     protected static final String FALLBACK_ABI = "<empty>";
     protected static final String ADDRESS_ABI_TYPE = "address";
     protected static final String ADDRESS_ENCODE_TYPE = "bytes32";
-    protected final static ObjectMapper DEFAULT_MAPPER = new ObjectMapper()
-            .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
-            .enable(DeserializationFeature.READ_UNKNOWN_ENUM_VALUES_AS_NULL);
+    protected static final ObjectMapper DEFAULT_MAPPER =
+            new ObjectMapper()
+                    .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+                    .enable(DeserializationFeature.READ_UNKNOWN_ENUM_VALUES_AS_NULL);
 
     protected boolean tryAsHexedAddressIfLenMatches = true;
     protected Object[] params;
@@ -52,17 +47,15 @@ public abstract class HapiBaseCall<T extends HapiTxnOp<T>> extends HapiTxnOp<T> 
     protected String privateKeyRef = SECP_256K1_SOURCE_KEY;
 
     protected byte[] encodeParametersWithTuple(final Object[] params) throws Throwable {
-        byte[] callData = new byte[] { };
+        byte[] callData = new byte[] {};
         var abiFunction = DEFAULT_MAPPER.readValue(abi, HapiBaseCall.AbiFunction.class);
         final var signatureParameters = getParametersForSignature(abi);
         final var signature = abiFunction.getName() + signatureParameters;
-        final var argumentTypes = signatureParameters.replace(
-                ADDRESS_ABI_TYPE,
-                ADDRESS_ENCODE_TYPE);
+        final var argumentTypes =
+                signatureParameters.replace(ADDRESS_ABI_TYPE, ADDRESS_ENCODE_TYPE);
         final var paramsAsTuple = Tuple.of(params);
 
-        final var tupleEncoded = getTupleAsBytes(paramsAsTuple,
-                argumentTypes);
+        final var tupleEncoded = getTupleAsBytes(paramsAsTuple, argumentTypes);
         callData = ByteUtil.merge(callData, tupleEncoded);
 
         return ByteUtil.merge(encodeSignature(signature), callData);
@@ -194,7 +187,6 @@ public abstract class HapiBaseCall<T extends HapiTxnOp<T>> extends HapiTxnOp<T> 
             return type;
         }
     }
-
 
     private static class Component {
         private List<Component> components;

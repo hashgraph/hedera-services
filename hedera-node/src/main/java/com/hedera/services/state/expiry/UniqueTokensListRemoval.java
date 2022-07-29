@@ -1,11 +1,6 @@
-package com.hedera.services.state.expiry;
-
-/*-
- * ‌
- * Hedera Services Node
- * ​
- * Copyright (C) 2018 - 2022 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2022 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,16 +12,16 @@ package com.hedera.services.state.expiry;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+package com.hedera.services.state.expiry;
+
+import static com.hedera.services.utils.NftNumPair.MISSING_NFT_NUM_PAIR;
 
 import com.hedera.services.state.virtual.UniqueTokenKey;
 import com.hedera.services.state.virtual.UniqueTokenValue;
 import com.hedera.services.utils.MapValueListMutation;
 import com.swirlds.virtualmap.VirtualMap;
 import org.jetbrains.annotations.Nullable;
-
-import static com.hedera.services.utils.NftNumPair.MISSING_NFT_NUM_PAIR;
 
 public class UniqueTokensListRemoval
         implements MapValueListMutation<UniqueTokenKey, UniqueTokenValue> {
