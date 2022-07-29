@@ -15,6 +15,7 @@
  */
 package com.hedera.services.yahcli.commands.keys;
 
+import static com.hedera.services.yahcli.commands.keys.ExtractDetailsCommand.DER_EDDSA_PREFIX;
 import static com.hedera.services.yahcli.config.ConfigUtils.ensureDir;
 import static com.hedera.services.yahcli.config.ConfigUtils.setLogLevels;
 import static com.hedera.services.yahcli.output.CommonMessages.COMMON_MESSAGES;
@@ -66,6 +67,9 @@ public class NewPemCommand implements Callable<Integer> {
         final var hexedPubKey = CommonUtils.hex(pubKey);
         final var pubKeyLoc = loc.replace(".pem", ".pubkey");
         Files.writeString(Paths.get(pubKeyLoc), hexedPubKey + "\n");
+        final var privKeyLoc = loc.replace(".pem", ".privkey");
+        final var hexedPrivKey = CommonUtils.hex(privateKey.getSeed());
+        Files.writeString(Paths.get(privKeyLoc), DER_EDDSA_PREFIX + hexedPrivKey + "\n");
         COMMON_MESSAGES.info(" - The public key is: " + hexedPubKey);
         if (passphrase == null) {
             passphrase = TxnUtils.randomAlphaNumeric(12);
@@ -77,6 +81,8 @@ public class NewPemCommand implements Callable<Integer> {
         Files.writeString(Paths.get(wordsLoc), mnemonic + "\n");
         COMMON_MESSAGES.info(" - Passphrase @ " + passLoc);
         COMMON_MESSAGES.info(" - Mnemonic form @ " + wordsLoc);
+        COMMON_MESSAGES.info(" - Hexed public key @ " + pubKeyLoc);
+        COMMON_MESSAGES.info(" - DER-encoded private key @ " + privKeyLoc);
 
         return 0;
     }

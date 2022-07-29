@@ -1,11 +1,6 @@
-package com.hedera.services.bdd.suites.regression;
-
-/*-
- * ‌
- * Hedera Services Test Clients
- * ​
- * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,56 +12,51 @@ package com.hedera.services.bdd.suites.regression;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
-
-import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.suites.HapiApiSuite;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
-import java.util.List;
-import java.util.Map;
+package com.hedera.services.bdd.suites.regression;
 
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.expectedEntitiesExist;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.freezeOnly;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 
+import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.suites.HapiApiSuite;
+import java.util.List;
+import java.util.Map;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 public class AddWellKnownEntities extends HapiApiSuite {
-	private static final Logger log = LogManager.getLogger(AddWellKnownEntities.class);
+    private static final Logger log = LogManager.getLogger(AddWellKnownEntities.class);
 
-	public static void main(String... args) {
-		var hero = new AddWellKnownEntities();
+    public static void main(String... args) {
+        var hero = new AddWellKnownEntities();
 
-		hero.runSuiteSync();
-	}
+        hero.runSuiteSync();
+    }
 
-	@Override
-	public List<HapiApiSpec> getSpecsInSuite() {
-		return List.of(
-				new HapiApiSpec[] {
-						instantiateEntities(),
-				}
-		);
-	}
+    @Override
+    public List<HapiApiSpec> getSpecsInSuite() {
+        return List.of(
+                new HapiApiSpec[] {
+                    instantiateEntities(),
+                });
+    }
 
-	private HapiApiSpec instantiateEntities() {
-		return HapiApiSpec.customHapiSpec("AddWellKnownEntities")
-				.withProperties(Map.of(
-						"fees.useFixedOffer", "true",
-						"fees.fixedOffer", "" + ONE_HUNDRED_HBARS,
-						"persistentEntities.dir.path", "src/main/resource/jrs-creations"
-				)).given(
-						expectedEntitiesExist()
-				).when().then(
-						sleepFor(10_000L),
-						freezeOnly().startingIn(60).seconds()
-								.payingWith(GENESIS)
-				);
-	}
+    private HapiApiSpec instantiateEntities() {
+        return HapiApiSpec.customHapiSpec("AddWellKnownEntities")
+                .withProperties(
+                        Map.of(
+                                "fees.useFixedOffer", "true",
+                                "fees.fixedOffer", "" + ONE_HUNDRED_HBARS,
+                                "persistentEntities.dir.path", "src/main/resource/jrs-creations"))
+                .given(expectedEntitiesExist())
+                .when()
+                .then(sleepFor(10_000L), freezeOnly().startingIn(60).seconds().payingWith(GENESIS));
+    }
 
-	@Override
-	protected Logger getResultsLogger() {
-		return log;
-	}
+    @Override
+    protected Logger getResultsLogger() {
+        return log;
+    }
 }
