@@ -490,6 +490,7 @@ abstract contract HederaTokenService is HederaResponseCodes {
             abi.encodeWithSelector(IHederaTokenService.unPauseToken.selector, token));
         (responseCode) = success ? abi.decode(result, (int32)) : HederaResponseCodes.UNKNOWN;
     }
+
     /// Operation to wipe fungible tokens from account
     /// @param token The token address
     /// @param account The account address to revoke kyc
