@@ -117,6 +117,18 @@ public interface EvmSigsVerifier {
             Address activeContract,
             WorldLedgers worldLedgers);
 
+    boolean hasActiveWipeKey(
+            boolean isDelegateCall,
+            Address token,
+            Address activeContract,
+            WorldLedgers worldLedgers);
+
+    boolean hasActiveFreezeKey(
+            boolean isDelegateCall,
+            Address token,
+            Address activeContract,
+            WorldLedgers worldLedgers);
+
     /**
      * Determines if the supplied key is active in the context of the transaction, i.e. has signed
      * the transaction, given the cryptographic signatures from the {@link

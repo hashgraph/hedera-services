@@ -256,6 +256,9 @@ class StaticEntityAccessTest {
         assertFailsWith(() -> subject.symbolOf(tokenId), INVALID_TOKEN_ID);
         assertFailsWith(() -> subject.decimalsOf(tokenId), INVALID_TOKEN_ID);
         assertFailsWith(() -> subject.balanceOf(accountId, tokenId), INVALID_TOKEN_ID);
+        assertFailsWith(() -> subject.defaultFreezeStatus(tokenId), INVALID_TOKEN_ID);
+        assertFailsWith(() -> subject.defaultKycStatus(tokenId), INVALID_TOKEN_ID);
+        assertFailsWith(() -> subject.isFrozen(accountId, tokenId), INVALID_TOKEN_ID);
     }
 
     @Test
@@ -267,12 +270,15 @@ class StaticEntityAccessTest {
         assertEquals(decimals, subject.decimalsOf(tokenId));
         assertEquals(totalSupply, subject.supplyOf(tokenId));
         assertEquals(type, subject.typeOf(tokenId));
+        assertEquals(accountsFrozenByDefault, subject.defaultFreezeStatus(tokenId));
+        assertEquals(accountsKycGrantedByDefault, subject.defaultKycStatus(tokenId));
     }
 
     @Test
     void rejectsMissingAccount() {
         given(tokens.get(tokenNum)).willReturn(token);
         assertFailsWith(() -> subject.balanceOf(accountId, tokenId), INVALID_ACCOUNT_ID);
+        assertFailsWith(() -> subject.isFrozen(accountId, tokenId), INVALID_ACCOUNT_ID);
     }
 
     @Test
@@ -290,6 +296,16 @@ class StaticEntityAccessTest {
         given(tokenAssociations.get(EntityNumPair.fromAccountTokenRel(accountId, tokenId)))
                 .willReturn(relStatus);
         assertEquals(balance, subject.balanceOf(accountId, tokenId));
+    }
+
+    @Test
+    void getsExpectedIsFrozenTokenStatusIfAssociationExists() {
+        given(tokens.get(tokenNum)).willReturn(token);
+        given(accounts.containsKey(accountNum)).willReturn(true);
+        final var relStatus = new MerkleTokenRelStatus(balance, true, false, false);
+        given(tokenAssociations.get(EntityNumPair.fromAccountTokenRel(accountId, tokenId)))
+                .willReturn(relStatus);
+        assertTrue(subject.isFrozen(accountId, tokenId));
     }
 
     @Test
@@ -404,6 +420,8 @@ class StaticEntityAccessTest {
     private static final EntityNum accountNum = EntityNum.fromLong(888);
     private static final EntityNum treasuryNum = EntityNum.fromLong(999);
     private static final EntityNum spenderNum = EntityNum.fromLong(111);
+    private static final boolean accountsFrozenByDefault = false;
+    private static final boolean accountsKycGrantedByDefault = true;
     private static final MerkleUniqueToken accountOwned =
             new MerkleUniqueToken(
                     accountNum.toEntityId(),

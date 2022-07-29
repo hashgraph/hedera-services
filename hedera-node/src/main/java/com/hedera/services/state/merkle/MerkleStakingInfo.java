@@ -42,7 +42,6 @@ import static com.hedera.services.state.merkle.internals.ByteUtils.getHashBytes;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.MoreObjects;
 import com.hedera.services.context.properties.BootstrapProperties;
-import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.EntityNum;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
@@ -88,8 +87,10 @@ public class MerkleStakingInfo extends PartialMerkleLeaf implements Keyed<Entity
     }
 
     public MerkleStakingInfo(final BootstrapProperties properties) {
-        final var numRewardablePeriods =
-                properties.getIntProperty("staking.rewardHistory.numStoredPeriods");
+        this(properties.getIntProperty("staking.rewardHistory.numStoredPeriods"));
+    }
+
+    public MerkleStakingInfo(final int numRewardablePeriods) {
         rewardSumHistory = new long[numRewardablePeriods + 1];
     }
 
@@ -135,7 +136,10 @@ public class MerkleStakingInfo extends PartialMerkleLeaf implements Keyed<Entity
         return stakeRewardStart;
     }
 
-    public long updateRewardSumHistory(final long perHbarRate, long maxPerHbarRate) {
+    public long updateRewardSumHistory(
+            final long perHbarRate,
+            final long maxPerHbarRate,
+            final boolean requireMinStakeToReward) {
         assertMutableRewardSumHistory();
         rewardSumHistory = Arrays.copyOf(rewardSumHistory, rewardSumHistory.length);
         final var droppedRewardSum = rewardSumHistory[rewardSumHistory.length - 1];
@@ -152,7 +156,9 @@ public class MerkleStakingInfo extends PartialMerkleLeaf implements Keyed<Entity
         // for this staking period, unless its effective stake was less than minStake, and hence
         // zero here (note
         // the active condition will only be checked in a later release)
-        if (Math.min(stakeRewardStart, stake) > 0) {
+        final var rewardableStake =
+                requireMinStakeToReward ? Math.min(stakeRewardStart, stake) : stakeRewardStart;
+        if (rewardableStake > 0) {
             perHbarRateThisNode = perHbarRate;
             // But if the node had more the maximum stakeRewardStart, "down-scale" its reward rate
             // to
@@ -360,7 +366,7 @@ public class MerkleStakingInfo extends PartialMerkleLeaf implements Keyed<Entity
     @Override
     public String toString() {
         return MoreObjects.toStringHelper(MerkleStakingInfo.class)
-                .add("id", EntityIdUtils.asScopedSerialNoLiteral(number))
+                .add("id", number)
                 .add("minStake", minStake)
                 .add("maxStake", maxStake)
                 .add("stakeToReward", stakeToReward)
