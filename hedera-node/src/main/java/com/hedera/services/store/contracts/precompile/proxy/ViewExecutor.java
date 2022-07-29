@@ -139,7 +139,8 @@ public class ViewExecutor {
             case ABI_ID_GET_TOKEN_CUSTOM_FEES -> {
                 final var wrapper = decoder.decodeTokenGetCustomFees(input);
                 validateTrueOrRevert(
-                    stateView.tokenExists(wrapper.tokenID()), ResponseCodeEnum.INVALID_TOKEN_ID);
+                        stateView.tokenExists(wrapper.tokenID()),
+                        ResponseCodeEnum.INVALID_TOKEN_ID);
                 final var customFees = stateView.tokenCustomFees(wrapper.tokenID());
                 return encoder.encodeTokenGetCustomFees(customFees);
             }
