@@ -15,6 +15,7 @@
  */
 package com.hedera.services.utils.accessors;
 
+import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.txns.span.ExpandHandleSpanMapAccessor;
 import com.hedera.services.usage.BaseTransactionMeta;
@@ -37,9 +38,6 @@ import java.util.Map;
  * {@link Transaction}.
  */
 public interface TxnAccessor {
-    // --- Used to complete transaction-specific logic ---
-    <T extends TxnAccessor> T castToSpecialized();
-
     // --- Used to calculate and charge fee for any transaction ---
     long getOfferedFee();
 
@@ -69,10 +67,14 @@ public interface TxnAccessor {
      */
     boolean throttleExempt();
 
+    void markThrottleExempt();
+
     /**
      * @return true if the transaction should not be charged congestion pricing.
      */
     boolean congestionExempt();
+
+    void markCongestionExempt();
 
     TransactionBody getTxn();
 
@@ -137,4 +139,17 @@ public interface TxnAccessor {
     Map<String, Object> getSpanMap();
 
     ExpandHandleSpanMapAccessor getSpanMapAccessor();
+
+    /* --- Used for delegating precheck to custom accessors --- */
+    default boolean supportsPrecheck() {
+        return false;
+    }
+
+    default ResponseCodeEnum doPrecheck() {
+        throw new UnsupportedOperationException();
+    }
+
+    void setStateView(StateView view);
+
+    StateView getStateView();
 }
