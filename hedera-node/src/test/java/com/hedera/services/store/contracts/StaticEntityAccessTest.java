@@ -294,7 +294,7 @@ class StaticEntityAccessTest {
         given(accounts.containsKey(accountNum)).willReturn(true);
         final var relStatus = new MerkleTokenRelStatus(balance, false, true, false);
         given(tokenAssociations.get(EntityNumPair.fromAccountTokenRel(accountId, tokenId)))
-            .willReturn(relStatus);
+                .willReturn(relStatus);
         assertTrue(subject.isKyc(accountId, tokenId));
     }
 

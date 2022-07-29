@@ -159,8 +159,7 @@ class ViewExecutorTest {
 
         final var wrapper = new GrantRevokeKycWrapper(fungible, account);
         given(decodingFacade.decodeIsKyc(any(), any())).willReturn(wrapper);
-        given(encodingFacade.encodeIsKyc(anyBoolean()))
-            .willReturn(RETURN_SUCCESS_TRUE);
+        given(encodingFacade.encodeIsKyc(anyBoolean())).willReturn(RETURN_SUCCESS_TRUE);
 
         assertEquals(Pair.of(gas, RETURN_SUCCESS_TRUE), subject.computeCosted());
     }

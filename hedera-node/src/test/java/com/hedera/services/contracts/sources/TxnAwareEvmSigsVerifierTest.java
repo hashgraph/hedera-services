@@ -452,10 +452,10 @@ class TxnAwareEvmSigsVerifierTest {
         given(tokensLedger.get(token, TokenProperty.KYC_KEY)).willReturn(null);
 
         assertFailsWith(
-            () ->
-                subject.hasActiveKycKey(
-                    true, PRETEND_TOKEN_ADDR, PRETEND_SENDER_ADDR, ledgers),
-            TOKEN_HAS_NO_KYC_KEY);
+                () ->
+                        subject.hasActiveKycKey(
+                                true, PRETEND_TOKEN_ADDR, PRETEND_SENDER_ADDR, ledgers),
+                TOKEN_HAS_NO_KYC_KEY);
     }
 
     @Test
@@ -469,11 +469,10 @@ class TxnAwareEvmSigsVerifierTest {
         given(activationTest.test(eq(expectedKey), eq(pkToCryptoSigsFn), any())).willReturn(true);
 
         final var verdict =
-            subject.hasActiveKycKey(true, PRETEND_TOKEN_ADDR, PRETEND_SENDER_ADDR, ledgers);
+                subject.hasActiveKycKey(true, PRETEND_TOKEN_ADDR, PRETEND_SENDER_ADDR, ledgers);
 
         assertTrue(verdict);
     }
-
 
     @Test
     void throwsIfAskedToVerifyTokenWithoutWipeKey() {
