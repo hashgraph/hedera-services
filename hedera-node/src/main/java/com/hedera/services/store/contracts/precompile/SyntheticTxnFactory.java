@@ -468,7 +468,6 @@ public class SyntheticTxnFactory {
         builder.setToken(unFreezeWrapper.token());
         builder.setAccount(unFreezeWrapper.account());
         return TransactionBody.newBuilder().setTokenUnfreeze(builder);
->>>>>>>>> Temporary merge branch 2
     }
 
     public static class HbarTransfer {

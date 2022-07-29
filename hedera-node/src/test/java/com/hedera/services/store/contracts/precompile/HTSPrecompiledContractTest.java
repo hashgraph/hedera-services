@@ -35,8 +35,8 @@ import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_TRANSFER_NFTS;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_TRANSFER_TOKEN;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_TRANSFER_TOKENS;
-import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_PAUSE_TOKEN;
-import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_UNPAUSE_TOKEN;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_PAUSE_TOKEN;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_UNPAUSE_TOKEN;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_WIPE_TOKEN_ACCOUNT_FUNGIBLE;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_WIPE_TOKEN_ACCOUNT_NFT;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.TEST_CONSENSUS_TIME;
@@ -742,7 +742,7 @@ class HTSPrecompiledContractTest {
     void computeCallsCorrectImplementationForPauseFungibleToken() {
         // given
         givenFrameContext();
-        Bytes input = Bytes.of(Integers.toBytes(ABI_PAUSE_TOKEN));
+        Bytes input = Bytes.of(Integers.toBytes(ABI_ID_PAUSE_TOKEN));
         given(decoder.decodePause(any())).willReturn(fungiblePause);
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
@@ -759,7 +759,7 @@ class HTSPrecompiledContractTest {
     void computeCallsCorrectImplementationForPauseNonFungibleToken() {
         // given
         givenFrameContext();
-        Bytes input = Bytes.of(Integers.toBytes(ABI_PAUSE_TOKEN));
+        Bytes input = Bytes.of(Integers.toBytes(ABI_ID_PAUSE_TOKEN));
         given(decoder.decodePause(any())).willReturn(nonFungiblePause);
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
@@ -776,7 +776,7 @@ class HTSPrecompiledContractTest {
     void computeCallsCorrectImplementationForUnpauseFungibleToken() {
         // given
         givenFrameContext();
-        Bytes input = Bytes.of(Integers.toBytes(ABI_UNPAUSE_TOKEN));
+        Bytes input = Bytes.of(Integers.toBytes(ABI_ID_UNPAUSE_TOKEN));
         given(decoder.decodeUnpause(any())).willReturn(fungibleUnpause);
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
@@ -793,7 +793,7 @@ class HTSPrecompiledContractTest {
     void computeCallsCorrectImplementationForUnpauseNonFungibleToken() {
         // given
         givenFrameContext();
-        Bytes input = Bytes.of(Integers.toBytes(ABI_UNPAUSE_TOKEN));
+        Bytes input = Bytes.of(Integers.toBytes(ABI_ID_UNPAUSE_TOKEN));
         given(decoder.decodeUnpause(any())).willReturn(nonFungibleUnpause);
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));

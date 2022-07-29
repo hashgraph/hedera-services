@@ -338,7 +338,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
                             precompilePricingUtils,
                             feeCalculator,
                             currentView);
-                    case AbiConstants.ABI_PAUSE_TOKEN -> new PausePrecompile(
+                    case AbiConstants.ABI_ID_PAUSE_TOKEN -> new PausePrecompile(
                             ledgers,
                             decoder,
                             updater.aliases(),
@@ -347,7 +347,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
                             syntheticTxnFactory,
                             infrastructureFactory,
                             precompilePricingUtils);
-                    case AbiConstants.ABI_UNPAUSE_TOKEN -> new UnpausePrecompile(
+                    case AbiConstants.ABI_ID_UNPAUSE_TOKEN -> new UnpausePrecompile(
                             ledgers,
                             decoder,
                             updater.aliases(),

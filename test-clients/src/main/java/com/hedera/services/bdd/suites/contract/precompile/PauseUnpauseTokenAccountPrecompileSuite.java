@@ -59,6 +59,8 @@ public class PauseUnpauseTokenAccountPrecompileSuite extends HapiApiSuite {
 
     private static final String UNPAUSE_KEY = "UNPAUSE_KEY";
 
+    private static final String PAUSE_KEY = "PAUSE_KEY";
+
     private static final String ACCOUNT = "account";
 
     public static final long INITIAL_BALANCE = 1_000_000_000L;
@@ -81,12 +83,12 @@ public class PauseUnpauseTokenAccountPrecompileSuite extends HapiApiSuite {
 
     @Override
     public List<HapiApiSpec> getSpecsInSuite() {
-        return allOf(
-                List.of(
-                        pauseFungibleTokenHappyPath(),
-                        unpauseFungibleTokenHappyPath(),
-                        pauseNonFungibleTokenHappyPath(),
-                        unpauseNonFungibleTokenHappyPath()));
+        return List.of(
+//                        pauseFungibleTokenHappyPath(),
+//                        unpauseFungibleTokenHappyPath(),
+                        pauseNonFungibleTokenHappyPath()
+//                        unpauseNonFungibleTokenHappyPath()
+        );
     }
 
     private HapiApiSpec pauseFungibleTokenHappyPath() {
@@ -224,13 +226,15 @@ public class PauseUnpauseTokenAccountPrecompileSuite extends HapiApiSuite {
         return defaultHapiSpec("PauseNonFungibleTokenHappyPath")
                 .given(
                         newKeyNamed(MULTI_KEY),
+                        newKeyNamed(PAUSE_KEY),
                         cryptoCreate(TOKEN_TREASURY),
                         cryptoCreate(ACCOUNT).balance(INITIAL_BALANCE),
                         tokenCreate(VANILLA_TOKEN)
                                 .tokenType(NON_FUNGIBLE_UNIQUE)
                                 .treasury(TOKEN_TREASURY)
-                                .pauseKey(MULTI_KEY)
                                 .adminKey(MULTI_KEY)
+                                .pauseKey(PAUSE_KEY)
+                                .supplyKey(MULTI_KEY)
                                 .initialSupply(0)
                                 .exposingCreatedIdTo(id -> tokenID.set(asToken(id))),
                         uploadInitCode(PAUSE_UNPAUSE_CONTRACT),
@@ -249,7 +253,7 @@ public class PauseUnpauseTokenAccountPrecompileSuite extends HapiApiSuite {
                                                                 "pauseNonFungibleAccountDoesNotOwnPauseKeyFailingTxn")
                                                         .gas(GAS_TO_OFFER)
                                                         .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
-                                                cryptoUpdate(ACCOUNT).key(MULTI_KEY),
+                                                cryptoUpdate(ACCOUNT).key(MULTI_KEY).key(PAUSE_KEY),
                                                 contractCall(
                                                                 PAUSE_UNPAUSE_CONTRACT,
                                                                 PAUSE_TOKEN_ACCOUNT_FUNCTION_NAME,
@@ -299,6 +303,7 @@ public class PauseUnpauseTokenAccountPrecompileSuite extends HapiApiSuite {
 
         return defaultHapiSpec("UnpauseNonFungibleTokenHappyPath")
                 .given(
+                        newKeyNamed(MULTI_KEY),
                         newKeyNamed(UNPAUSE_KEY),
                         cryptoCreate(TOKEN_TREASURY),
                         cryptoCreate(ACCOUNT).balance(INITIAL_BALANCE),
@@ -306,6 +311,7 @@ public class PauseUnpauseTokenAccountPrecompileSuite extends HapiApiSuite {
                                 .tokenType(NON_FUNGIBLE_UNIQUE)
                                 .treasury(TOKEN_TREASURY)
                                 .pauseKey(UNPAUSE_KEY)
+                                .supplyKey(MULTI_KEY)
                                 .initialSupply(0)
                                 .exposingCreatedIdTo(id -> tokenID.set(asToken(id))),
                         uploadInitCode(PAUSE_UNPAUSE_CONTRACT),

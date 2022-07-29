@@ -49,9 +49,9 @@ public final class AbiConstants {
     // dissociateToken(address account, address token)
     public static final int ABI_ID_DISSOCIATE_TOKEN = 0x099794e8;
     // pauseToken(address token)
-    public static final int ABI_PAUSE_TOKEN = 0x7c41ad2c;
+    public static final int ABI_ID_PAUSE_TOKEN = 0x7c41ad2c;
     // unpauseToken(address token)
-    public static final int ABI_UNPAUSE_TOKEN = 0x3b3bff0f;
+    public static final int ABI_ID_UNPAUSE_TOKEN = 0x3b3bff0f;
     // allowance(address token, address owner, address spender)
     public static final int ABI_ID_ALLOWANCE = 0x927da105;
     // approve(address token, address spender, uint256 amount)
