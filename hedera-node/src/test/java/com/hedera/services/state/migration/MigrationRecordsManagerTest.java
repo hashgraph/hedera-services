@@ -508,6 +508,20 @@ class MigrationRecordsManagerTest {
     }
 
     @Test
+    void traceabilityMigrationIsNotExecutedWhenMarkedAsDone() {
+        given(consensusTimeTracker.unlimitedPreceding()).willReturn(true);
+        given(networkCtx.areMigrationRecordsStreamed()).willReturn(false);
+        given(networkCtx.consensusTimeOfLastHandledTxn()).willReturn(now);
+        MigrationRecordsManager.setExpiryJustEnabled(false);
+
+        subject.markTraceabilityMigrationAsDone();
+        subject.publishMigrationRecords(now);
+
+        verify(transactionContext, never()).accessor();
+        assertTrue(subject.areTraceabilityRecordsStreamed());
+    }
+
+    @Test
     void traceabilityMigrationDoesNotAddStateChangesWhenSmartContractDoesNotHaveAnyStorage() {
         final ArgumentCaptor<TransactionSidecarRecord.Builder> sidecarCaptor =
                 forClass(TransactionSidecarRecord.Builder.class);

@@ -105,10 +105,6 @@ public class MigrationRecordsManager {
     // txn after upgrade)
     private boolean areTraceabilityRecordsStreamed = false;
 
-    public boolean areTraceabilityRecordsStreamed() {
-        return areTraceabilityRecordsStreamed;
-    }
-
     @Inject
     public MigrationRecordsManager(
             final EntityCreator creator,
@@ -154,7 +150,9 @@ public class MigrationRecordsManager {
         // with 0.29.0 upgrade we are performing traceability migration
         // which is independent of context.areMigrationRecordsStreamed flag
         // NOTE this call needs to be removed on the next upgrade
-        attemptToPublishTraceabilityMigrationRecords();
+        if (!areTraceabilityRecordsStreamed) {
+            attemptToPublishTraceabilityMigrationRecords();
+        }
 
         final var curNetworkCtx = networkCtx.get();
 
@@ -284,6 +282,10 @@ public class MigrationRecordsManager {
 
     public void markTraceabilityMigrationAsDone() {
         areTraceabilityRecordsStreamed = true;
+    }
+
+    public boolean areTraceabilityRecordsStreamed() {
+        return areTraceabilityRecordsStreamed;
     }
 
     private void publishTraceabilityMigrationRecords() {
