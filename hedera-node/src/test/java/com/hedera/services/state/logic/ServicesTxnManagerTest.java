@@ -119,7 +119,7 @@ class ServicesTxnManagerTest {
 
     @Test
     void onlyCallsMigrationRecordsManagerOnceIfAllMigrationsAreExecutedTogether() {
-        given(migrationRecordsManager.areAllMigrationsSansTraceabilityFinished()).willReturn(false);
+        given(migrationRecordsManager.areTraceabilityRecordsStreamed()).willReturn(true);
 
         subject.process(accessor, consensusTime, submittingMember);
         subject.process(accessor, consensusTime, submittingMember);
@@ -129,9 +129,9 @@ class ServicesTxnManagerTest {
 
     @Test
     void callsMigrationManagerUntilTraceabilityMigrationIsComplete() {
-        given(migrationRecordsManager.areAllMigrationsSansTraceabilityFinished())
-                .willReturn(true)
-                .willReturn(false);
+        given(migrationRecordsManager.areTraceabilityRecordsStreamed())
+                .willReturn(false)
+                .willReturn(true);
 
         subject.process(accessor, consensusTime, submittingMember);
         subject.process(accessor, consensusTime, submittingMember);

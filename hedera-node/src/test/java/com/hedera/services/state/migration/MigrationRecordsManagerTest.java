@@ -219,7 +219,7 @@ class MigrationRecordsManagerTest {
         assertEquals(rewardSynthBody, bodies.get(1).build());
         assertEquals(cloneSynthBody, bodies.get(2).build());
         assertEquals(cloneSynthBody, bodies.get(3).build());
-        assertFalse(subject.areAllMigrationsSansTraceabilityFinished());
+        assertTrue(subject.areTraceabilityRecordsStreamed());
     }
 
     @Test
@@ -234,7 +234,7 @@ class MigrationRecordsManagerTest {
 
         subject.publishMigrationRecords(now);
 
-        assertTrue(subject.areAllMigrationsSansTraceabilityFinished());
+        assertFalse(subject.areTraceabilityRecordsStreamed());
         verify(transactionContext, never()).addSidecarRecord(any());
     }
 
@@ -250,7 +250,7 @@ class MigrationRecordsManagerTest {
 
         subject.publishMigrationRecords(now);
 
-        assertTrue(subject.areAllMigrationsSansTraceabilityFinished());
+        assertFalse(subject.areTraceabilityRecordsStreamed());
         verify(transactionContext, never()).addSidecarRecord(any());
     }
 
@@ -266,7 +266,7 @@ class MigrationRecordsManagerTest {
 
         subject.publishMigrationRecords(now);
 
-        assertTrue(subject.areAllMigrationsSansTraceabilityFinished());
+        assertFalse(subject.areTraceabilityRecordsStreamed());
         verify(transactionContext, never()).addSidecarRecord(any());
     }
 
@@ -332,7 +332,7 @@ class MigrationRecordsManagerTest {
         subject.publishMigrationRecords(now);
 
         // then
-        assertFalse(subject.areAllMigrationsSansTraceabilityFinished());
+        assertTrue(subject.areTraceabilityRecordsStreamed());
         verify(transactionContext, times(4)).addSidecarRecord(sidecarCaptor.capture());
         final var sidecarRecords = sidecarCaptor.getAllValues();
         assertEquals(
@@ -417,7 +417,7 @@ class MigrationRecordsManagerTest {
 
         subject.publishMigrationRecords(now);
 
-        assertFalse(subject.areAllMigrationsSansTraceabilityFinished());
+        assertTrue(subject.areTraceabilityRecordsStreamed());
         verify(transactionContext, never()).addSidecarRecord(any());
     }
 
@@ -444,7 +444,7 @@ class MigrationRecordsManagerTest {
 
         subject.publishMigrationRecords(now);
 
-        assertFalse(subject.areAllMigrationsSansTraceabilityFinished());
+        assertTrue(subject.areTraceabilityRecordsStreamed());
         verify(transactionContext).addSidecarRecord(sidecarCaptor.capture());
         final var sidecarRecords = sidecarCaptor.getValue();
         assertEquals(
@@ -458,7 +458,7 @@ class MigrationRecordsManagerTest {
     @Test
     void doesNotPerformOtherMigrationOnSubsequentCallsIfOnlyTraceabilityNeedsFinishing() {
         given(consensusTimeTracker.unlimitedPreceding()).willReturn(true);
-        given(networkCtx.areMigrationRecordsStreamed()).willReturn(false);
+        given(networkCtx.areMigrationRecordsStreamed()).willReturn(false).willReturn(true);
         given(networkCtx.consensusTimeOfLastHandledTxn()).willReturn(now);
         MigrationRecordsManager.setExpiryJustEnabled(true);
         given(txnAccessor.getFunction())
@@ -469,13 +469,12 @@ class MigrationRecordsManagerTest {
         given(merkleAccount.isSmartContract()).willReturn(true).willReturn(false);
 
         subject.publishMigrationRecords(now);
-        assertTrue(subject.areAllMigrationsSansTraceabilityFinished());
+        assertFalse(subject.areTraceabilityRecordsStreamed());
         verify(transactionContext, never()).addSidecarRecord(any());
-        verify(networkCtx, never()).markMigrationRecordsStreamed();
+        verify(networkCtx).markMigrationRecordsStreamed();
 
         subject.publishMigrationRecords(now);
-        assertFalse(subject.areAllMigrationsSansTraceabilityFinished());
-        verify(networkCtx).markMigrationRecordsStreamed();
+        assertTrue(subject.areTraceabilityRecordsStreamed());
         verify(treasuryCloner, times(1)).getClonesCreated();
         verify(recordsHistorian, times(1))
                 .trackPrecedingChildRecord(
@@ -579,6 +578,15 @@ class MigrationRecordsManagerTest {
 
         verifyNoInteractions(sigImpactHistorian);
         verifyNoInteractions(recordsHistorian);
+    }
+
+    @Test
+    void traceabilityRecordsFlagWorksAsExpected() {
+        assertFalse(subject.areTraceabilityRecordsStreamed());
+
+        subject.markTraceabilityMigrationAsDone();
+
+        assertTrue(subject.areTraceabilityRecordsStreamed());
     }
 
     private TransactionBody expectedSyntheticRewardAccount() {

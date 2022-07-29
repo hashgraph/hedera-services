@@ -102,8 +102,12 @@ public class MigrationRecordsManager {
     private Supplier<SideEffectsTracker> sideEffectsFactory = SideEffectsTracker::new;
     // helper flag in the highly unlikely case when the traceability migration
     // cannot be executed alongside the rest of the migrations (ContractCall/Create/Eth as first
-    // txn)
-    private boolean areAllMigrationsSansTraceabilityFinished;
+    // txn after upgrade)
+    private boolean areTraceabilityRecordsStreamed = false;
+
+    public boolean areTraceabilityRecordsStreamed() {
+        return areTraceabilityRecordsStreamed;
+    }
 
     @Inject
     public MigrationRecordsManager(
@@ -147,6 +151,11 @@ public class MigrationRecordsManager {
      * state).
      */
     public void publishMigrationRecords(final Instant now) {
+        // with 0.29.0 upgrade we are performing traceability migration
+        // which is independent of context.areMigrationRecordsStreamed flag
+        // NOTE this call needs to be removed on the next upgrade
+        attemptToPublishTraceabilityMigrationRecords();
+
         final var curNetworkCtx = networkCtx.get();
 
         if (!consensusTimeTracker.unlimitedPreceding()
@@ -165,39 +174,24 @@ public class MigrationRecordsManager {
                     num -> publishSyntheticCreationForStakingFund(num, implicitAutoRenewPeriod));
         } else {
             // Publish free auto-renewal migration records if expiry is just being enabled
-            if (expiryJustEnabled && !areAllMigrationsSansTraceabilityFinished) {
+            if (expiryJustEnabled) {
                 publishContractFreeAutoRenewalRecords();
             }
         }
 
         // And we always publish records for any treasury clones that needed to be created
-        if (!areAllMigrationsSansTraceabilityFinished) {
-            treasuryCloner
-                    .getClonesCreated()
-                    .forEach(
-                            account ->
-                                    publishSyntheticCreation(
-                                            account.getKey(),
-                                            account.getExpiry() - now.getEpochSecond(),
-                                            asKeyUnchecked(account.getAccountKey()),
-                                            account.getMemo(),
-                                            TREASURY_CLONE_MEMO,
-                                            "treasury clone"));
-        }
+        treasuryCloner
+                .getClonesCreated()
+                .forEach(
+                        account ->
+                                publishSyntheticCreation(
+                                        account.getKey(),
+                                        account.getExpiry() - now.getEpochSecond(),
+                                        asKeyUnchecked(account.getAccountKey()),
+                                        account.getMemo(),
+                                        TREASURY_CLONE_MEMO,
+                                        "treasury clone"));
 
-        if (globalDynamicProperties.isTraceabilityMigrationEnabled()) {
-            // if we cannot perform the traceability migration with this txn
-            // do not mark migration records as streamed in the context and indicate to {@link
-            // ServicesTxnManager} to call this method until migration is finished
-            if (isSidecarGeneratingFunction(transactionContext.accessor().getFunction())) {
-                areAllMigrationsSansTraceabilityFinished = true;
-                return;
-            }
-            publishTraceabilityMigrationRecords();
-        }
-        // if we reach this line, traceability migration was given opportunity to execute,
-        // so we mark migration record streaming as completed
-        areAllMigrationsSansTraceabilityFinished = false;
         curNetworkCtx.markMigrationRecordsStreamed();
     }
 
@@ -271,6 +265,25 @@ public class MigrationRecordsManager {
                                         contractNum.num());
                             }
                         });
+    }
+
+    private void attemptToPublishTraceabilityMigrationRecords() {
+        if (!globalDynamicProperties.isTraceabilityMigrationEnabled()) {
+            areTraceabilityRecordsStreamed = true;
+        } else if (!isSidecarGeneratingFunction(transactionContext.accessor().getFunction())) {
+            publishTraceabilityMigrationRecords();
+            areTraceabilityRecordsStreamed = true;
+        }
+    }
+
+    private boolean isSidecarGeneratingFunction(final HederaFunctionality function) {
+        return function == HederaFunctionality.ContractCall
+            || function == HederaFunctionality.ContractCreate
+            || function == HederaFunctionality.EthereumTransaction;
+    }
+
+    public void markTraceabilityMigrationAsDone() {
+        areTraceabilityRecordsStreamed = true;
     }
 
     private void publishTraceabilityMigrationRecords() {
@@ -354,16 +367,6 @@ public class MigrationRecordsManager {
             contractKeyBytes[j] = contractStorageKey.getUint256Byte(i);
         }
         return contractKeyBytes;
-    }
-
-    public boolean areAllMigrationsSansTraceabilityFinished() {
-        return areAllMigrationsSansTraceabilityFinished;
-    }
-
-    private boolean isSidecarGeneratingFunction(final HederaFunctionality function) {
-        return function == HederaFunctionality.ContractCall
-                || function == HederaFunctionality.ContractCreate
-                || function == HederaFunctionality.EthereumTransaction;
     }
 
     @VisibleForTesting

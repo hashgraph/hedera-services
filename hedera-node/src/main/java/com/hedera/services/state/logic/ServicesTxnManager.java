@@ -100,7 +100,7 @@ public class ServicesTxnManager {
                 // our responsibility here is just to give it the opportunity
                 migrationRecordsManager.publishMigrationRecords(consensusTime);
                 needToPublishMigrationRecords =
-                        migrationRecordsManager.areAllMigrationsSansTraceabilityFinished();
+                        !migrationRecordsManager.areTraceabilityRecordsStreamed();
             }
             if (accessor.isTriggeredTxn()) {
                 scopedTriggeredProcessing.run();
