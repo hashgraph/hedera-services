@@ -20,6 +20,7 @@ import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_GET_TOKEN_DEFAULT_FREEZE_STATUS;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_GET_TOKEN_DEFAULT_KYC_STATUS;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_GET_TOKEN_INFO;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_IS_KYC;
 import static com.hedera.services.store.contracts.precompile.proxy.RedirectViewExecutor.MINIMUM_TINYBARS_COST;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -36,6 +37,7 @@ import com.hedera.services.store.contracts.precompile.codec.DecodingFacade;
 import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
 import com.hedera.services.store.contracts.precompile.codec.GetTokenDefaultFreezeStatusWrapper;
 import com.hedera.services.store.contracts.precompile.codec.GetTokenDefaultKycStatusWrapper;
+import com.hedera.services.store.contracts.precompile.codec.GrantRevokeKycWrapper;
 import com.hedera.services.store.contracts.precompile.codec.TokenInfoWrapper;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.utils.EntityIdUtils;
@@ -147,6 +149,18 @@ class ViewExecutorTest {
         given(decodingFacade.decodeTokenDefaultKycStatus(input)).willReturn(wrapper);
         given(encodingFacade.encodeGetTokenDefaultKycStatus(anyBoolean()))
                 .willReturn(RETURN_SUCCESS_TRUE);
+
+        assertEquals(Pair.of(gas, RETURN_SUCCESS_TRUE), subject.computeCosted());
+    }
+
+    @Test
+    void computeIsKyc() {
+        final var input = prerequisites(ABI_ID_IS_KYC, fungibleTokenAddress);
+
+        final var wrapper = new GrantRevokeKycWrapper(fungible, account);
+        given(decodingFacade.decodeIsKyc(any(), any())).willReturn(wrapper);
+        given(encodingFacade.encodeIsKyc(anyBoolean()))
+            .willReturn(RETURN_SUCCESS_TRUE);
 
         assertEquals(Pair.of(gas, RETURN_SUCCESS_TRUE), subject.computeCosted());
     }

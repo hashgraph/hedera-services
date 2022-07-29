@@ -648,6 +648,12 @@ class EncodingFacadeTest {
     }
 
     @Test
+    void decodeReturnResultForIsKyc() {
+        final var decodedResult = subject.encodeIsKyc(true);
+        assertEquals(RETURN_SUCCESS_TRUE, decodedResult);
+    }
+
+    @Test
     void decodeReturnResultForGetTokenDefaultFreezeStatus() {
         final var decodedResult = subject.encodeGetTokenDefaultFreezeStatus(true);
         assertEquals(RETURN_SUCCESS_TRUE, decodedResult);
