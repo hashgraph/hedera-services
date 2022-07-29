@@ -428,6 +428,31 @@ interface IHederaTokenService {
         external
         returns (int64 responseCode, bool defaultKycStatus);
 
+    /// Query if token account is frozen
+    /// @param token The token address to check
+    /// @param account The account address associated with the token
+    /// @return responseCode The response code for the status of the request. SUCCESS is 22.
+    /// @return frozen True if `account` is frozen for `token`
+    function isFrozen(address token, address account)
+    external
+    returns (int64 responseCode, bool frozen);
+
+    /// Operation to freeze token account
+    /// @param token The token address
+    /// @param account The account address to be frozen
+    /// @return responseCode The response code for the status of the request. SUCCESS is 22.
+    function freezeToken(address token, address account)
+    external
+    returns (int64 responseCode);
+
+    /// Operation to unfreeze token account
+    /// @param token The token address
+    /// @param account The account address to be unfrozen
+    /// @return responseCode The response code for the status of the request. SUCCESS is 22.
+    function unfreezeToken(address token, address account)
+    external
+    returns (int64 responseCode);
+
 
     /**********************
      * ABIV1 calls        *
@@ -468,7 +493,7 @@ interface IHederaTokenService {
     function transferNFT(address token, address sender, address recipient, int64 serialNumber) external
     returns (int responseCode);
 
-    /// Allows spender to withdraw from your account multiple times, up to the value amount. If this function is called 
+    /// Allows spender to withdraw from your account multiple times, up to the value amount. If this function is called
     /// again it overwrites the current allowance with value.
     /// Only Applicable to Fungible Tokens
     /// @param token The hedera token address to approve
@@ -498,7 +523,7 @@ interface IHederaTokenService {
     /// @param token The Hedera NFT token address to check approval
     /// @param serialNumber The NFT to find the approved address for
     /// @return responseCode The response code for the status of the request. SUCCESS is 22.
-    /// @return approved The approved address for this NFT, or the zero address if there is none    
+    /// @return approved The approved address for this NFT, or the zero address if there is none
     function getApproved(address token, uint256 serialNumber) external returns (int responseCode, address approved);
 
     /// Enable or disable approval for a third party ("operator") to manage
@@ -518,4 +543,19 @@ interface IHederaTokenService {
     /// @return approved True if `operator` is an approved operator for `owner`, false otherwise
     function isApprovedForAll(address token, address owner, address operator) external returns (int responseCode, bool approved);
 
+
+    /// Operation to wipe fungible tokens from account
+    /// @param token The token address
+    /// @param account The account address to revoke kyc
+    /// @param amount The number of tokens to wipe
+    /// @return responseCode The response code for the status of the request. SUCCESS is 22.
+    function wipeTokenAccount(address token, address account, uint32 amount) external returns (int responseCode);
+
+    /// Operation to wipe non fungible tokens from account
+    /// @param token The token address
+    /// @param account The account address to revoke kyc
+    /// @param  serialNumbers The serial numbers of token to wipe
+    /// @return responseCode The response code for the status of the request. SUCCESS is 22.
+    function wipeTokenAccountNFT(address token, address account, int64[] memory serialNumbers) external
+    returns (int responseCode);
 }

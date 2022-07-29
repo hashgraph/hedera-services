@@ -41,6 +41,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class PendingRewardsManagementTest {
+
     @Mock private MerkleMap<EntityNum, MerkleAccount> accounts;
     @Mock private MerkleMap<EntityNum, MerkleStakingInfo> stakingInfos;
     @Mock private MerkleNetworkContext networkCtx;
@@ -71,17 +72,18 @@ class PendingRewardsManagementTest {
     void pendingRewardsIsUpdatedBasedOnLastPeriodRewardRateAndStakeRewardStart() {
         given800Balance(1_000_000_000_000L);
         given(dynamicProperties.maxDailyStakeRewardThPerH()).willReturn(lastPeriodRewardRate);
-        given(networkCtx.areRewardsActivated()).willReturn(true);
         given(networkCtx.getTotalStakedRewardStart()).willReturn(totalStakedRewardStart);
         given(properties.getLongProperty("staking.rewardRate")).willReturn(rewardRate);
         given(stakingInfos.keySet()).willReturn(Set.of(onlyNodeNum));
         given(stakingInfos.getForModify(onlyNodeNum)).willReturn(info);
         given(info.stakeRewardStartMinusUnclaimed())
                 .willReturn(stakeRewardStart - unclaimedStakeRewardStart);
+        given(dynamicProperties.requireMinStakeToReward()).willReturn(true);
         given(
                         info.updateRewardSumHistory(
                                 rewardRate / (totalStakedRewardStart / HBARS_TO_TINYBARS),
-                                lastPeriodRewardRate))
+                                lastPeriodRewardRate,
+                                true))
                 .willReturn(lastPeriodRewardRate);
         given(info.reviewElectionsAndRecomputeStakes()).willReturn(updatedStakeRewardStart);
         given(dynamicProperties.isStakingEnabled()).willReturn(true);

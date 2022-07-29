@@ -23,6 +23,7 @@ import static com.hedera.services.contracts.ParsingConstants.EXPIRY;
 import static com.hedera.services.contracts.ParsingConstants.FIXED_FEE;
 import static com.hedera.services.contracts.ParsingConstants.FRACTIONAL_FEE;
 import static com.hedera.services.contracts.ParsingConstants.INT;
+import static com.hedera.services.contracts.ParsingConstants.INT_BOOL_PAIR;
 import static com.hedera.services.contracts.ParsingConstants.ROYALTY_FEE;
 import static com.hedera.services.contracts.ParsingConstants.STRING;
 import static com.hedera.services.contracts.ParsingConstants.TOKEN_KEY;
@@ -191,12 +192,47 @@ public class DecodingFacade {
     private static final ABIType<Tuple> ERC_TRANSFER_DECODER =
             TypeFactory.create(ADDRESS_UINT256_RAW_TYPE);
 
+    private static final Function WIPE_TOKEN_ACCOUNT_FUNCTION =
+            new Function("wipeTokenAccount(address,address,uint32)", INT);
+    private static final Bytes WIPE_TOKEN_ACCOUNT_SELECTOR =
+            Bytes.wrap(WIPE_TOKEN_ACCOUNT_FUNCTION.selector());
+    private static final ABIType<Tuple> WIPE_TOKEN_ACCOUNT_DECODER =
+            TypeFactory.create("(bytes32,bytes32,uint32)");
+
+    private static final Function WIPE_TOKEN_ACCOUNT_NFT_FUNCTION =
+            new Function("wipeTokenAccountNFT(address,address,int64[])", INT);
+    private static final Bytes WIPE_TOKEN_ACCOUNT_NFT_SELECTOR =
+            Bytes.wrap(WIPE_TOKEN_ACCOUNT_NFT_FUNCTION.selector());
+    private static final ABIType<Tuple> WIPE_TOKEN_ACCOUNT_NFT_DECODER =
+            TypeFactory.create("(bytes32,bytes32,int64[])");
+
     private static final Function ERC_TRANSFER_FROM_FUNCTION =
             new Function("transferFrom(address,address,uint256)");
     private static final Bytes ERC_TRANSFER_FROM_SELECTOR =
             Bytes.wrap(ERC_TRANSFER_FROM_FUNCTION.selector());
     private static final ABIType<Tuple> ERC_TRANSFER_FROM_DECODER =
             TypeFactory.create(ADDRESS_ADDRESS_UINT256_RAW_TYPE);
+
+    private static final Function IS_FROZEN_TOKEN_FUNCTION =
+            new Function("isFrozen(address,address)", INT_BOOL_PAIR);
+    private static final Bytes IS_FROZEN_TOKEN_FUNCTION_SELECTOR =
+            Bytes.wrap(IS_FROZEN_TOKEN_FUNCTION.selector());
+    private static final ABIType<Tuple> IS_FROZEN_TOKEN_DECODER =
+            TypeFactory.create(ADDRESS_PAIR_RAW_TYPE);
+
+    private static final Function FREEZE_TOKEN_FUNCTION =
+            new Function("freezeToken(address,address)", INT);
+    private static final Bytes FREEZE_TOKEN_FUNCTION_SELECTOR =
+            Bytes.wrap(FREEZE_TOKEN_FUNCTION.selector());
+    private static final ABIType<Tuple> FREEZE_TOKEN_ACCOUNT_DECODER =
+            TypeFactory.create(ADDRESS_PAIR_RAW_TYPE);
+
+    private static final Function UNFREEZE_TOKEN_FUNCTION =
+            new Function("unfreezeToken(address,address)", INT);
+    private static final Bytes UNFREEZE_TOKEN_FUNCTION_SELECTOR =
+            Bytes.wrap(UNFREEZE_TOKEN_FUNCTION.selector());
+    private static final ABIType<Tuple> UNFREEZE_TOKEN_ACCOUNT_DECODER =
+            TypeFactory.create(ADDRESS_PAIR_RAW_TYPE);
 
     /* --- Token Create Structs --- */
     private static final String KEY_VALUE_DECODER = "(bool,bytes32,bytes,bytes,bytes32)";
@@ -336,7 +372,7 @@ public class DecodingFacade {
             TypeFactory.create(ADDRESS_UINT256_RAW_TYPE);
 
     private static final Function HAPI_IS_APPROVED_FOR_ALL =
-            new Function("isApprovedForAll(address,address,address)", "(int,bool)");
+            new Function("isApprovedForAll(address,address,address)", INT_BOOL_PAIR);
     private static final Bytes HAPI_IS_APPROVED_FOR_ALL_SELECTOR =
             Bytes.wrap(HAPI_IS_APPROVED_FOR_ALL.selector());
     private static final ABIType<Tuple> HAPI_IS_APPROVED_FOR_ALL_DECODER =
@@ -350,7 +386,7 @@ public class DecodingFacade {
             TypeFactory.create("(bytes32,bytes32,bool)");
 
     private static final Function HAPI_TOKEN_APPROVE_FUNCTION =
-            new Function("approve(address,address,uint256)", "(int,bool)");
+            new Function("approve(address,address,uint256)", INT_BOOL_PAIR);
     private static final Bytes HAPI_TOKEN_APPROVE_SELECTOR =
             Bytes.wrap(HAPI_TOKEN_APPROVE_FUNCTION.selector());
     private static final ABIType<Tuple> HAPI_TOKEN_APPROVE_DECODER =
@@ -952,6 +988,42 @@ public class DecodingFacade {
         return TokenInfoWrapper.forNonFungibleToken(tokenID, serialNumber);
     }
 
+    public TokenFreezeUnfreezeWrapper decodeIsFrozen(
+            final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
+        final Tuple decodedArguments =
+                decodeFunctionCall(
+                        input, IS_FROZEN_TOKEN_FUNCTION_SELECTOR, IS_FROZEN_TOKEN_DECODER);
+
+        final var tokenID = convertAddressBytesToTokenID(decodedArguments.get(0));
+        final var accountID =
+                convertLeftPaddedAddressToAccountId(decodedArguments.get(1), aliasResolver);
+        return TokenFreezeUnfreezeWrapper.forIsFrozen(tokenID, accountID);
+    }
+
+    public TokenFreezeUnfreezeWrapper decodeFreeze(
+            final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
+        final Tuple decodedArguments =
+                decodeFunctionCall(
+                        input, FREEZE_TOKEN_FUNCTION_SELECTOR, FREEZE_TOKEN_ACCOUNT_DECODER);
+
+        final var tokenID = convertAddressBytesToTokenID(decodedArguments.get(0));
+        final var accountID =
+                convertLeftPaddedAddressToAccountId(decodedArguments.get(1), aliasResolver);
+        return TokenFreezeUnfreezeWrapper.forFreeze(tokenID, accountID);
+    }
+
+    public TokenFreezeUnfreezeWrapper decodeUnfreeze(
+            final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
+        final Tuple decodedArguments =
+                decodeFunctionCall(
+                        input, UNFREEZE_TOKEN_FUNCTION_SELECTOR, UNFREEZE_TOKEN_ACCOUNT_DECODER);
+
+        final var tokenID = convertAddressBytesToTokenID(decodedArguments.get(0));
+        final var accountID =
+                convertLeftPaddedAddressToAccountId(decodedArguments.get(1), aliasResolver);
+        return TokenFreezeUnfreezeWrapper.forUnfreeze(tokenID, accountID);
+    }
+
     private TokenCreateWrapper decodeTokenCreateWithoutFees(
             final Tuple tokenCreateStruct,
             final boolean isFungible,
@@ -982,6 +1054,32 @@ public class DecodingFacade {
                 isFreezeDefault,
                 tokenKeys,
                 tokenExpiry);
+    }
+
+    public WipeWrapper decodeWipe(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
+        final Tuple decodedArguments =
+                decodeFunctionCall(input, WIPE_TOKEN_ACCOUNT_SELECTOR, WIPE_TOKEN_ACCOUNT_DECODER);
+
+        final var tokenID = convertAddressBytesToTokenID(decodedArguments.get(0));
+        final var accountID =
+                convertLeftPaddedAddressToAccountId(decodedArguments.get(1), aliasResolver);
+        final var fungibleAmount = (long) decodedArguments.get(2);
+
+        return WipeWrapper.forFungible(tokenID, accountID, fungibleAmount);
+    }
+
+    public WipeWrapper decodeWipeNFT(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
+        final Tuple decodedArguments =
+                decodeFunctionCall(
+                        input, WIPE_TOKEN_ACCOUNT_NFT_SELECTOR, WIPE_TOKEN_ACCOUNT_NFT_DECODER);
+
+        final var tokenID = convertAddressBytesToTokenID(decodedArguments.get(0));
+        final var accountID =
+                convertLeftPaddedAddressToAccountId(decodedArguments.get(1), aliasResolver);
+        final var serialNumbers = ((long[]) decodedArguments.get(2));
+
+        return WipeWrapper.forNonFungible(
+                tokenID, accountID, Arrays.stream(serialNumbers).boxed().toList());
     }
 
     private List<TokenKeyWrapper> decodeTokenKeys(

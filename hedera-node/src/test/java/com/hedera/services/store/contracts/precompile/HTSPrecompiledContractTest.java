@@ -34,6 +34,8 @@ import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_TRANSFER_NFTS;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_TRANSFER_TOKEN;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_TRANSFER_TOKENS;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_WIPE_TOKEN_ACCOUNT_FUNGIBLE;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_WIPE_TOKEN_ACCOUNT_NFT;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.TEST_CONSENSUS_TIME;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.associateOp;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.contractAddress;
@@ -43,7 +45,9 @@ import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.fungib
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.fungibleBurn;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.fungibleMint;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.fungibleMintAmountOversize;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.fungibleWipe;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.multiDissociateOp;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.nonFungibleWipe;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.timestamp;
 import static org.hyperledger.besu.evm.frame.MessageFrame.State.REVERT;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -91,6 +95,8 @@ import com.hedera.services.store.contracts.precompile.impl.MultiAssociatePrecomp
 import com.hedera.services.store.contracts.precompile.impl.MultiDissociatePrecompile;
 import com.hedera.services.store.contracts.precompile.impl.TokenCreatePrecompile;
 import com.hedera.services.store.contracts.precompile.impl.TransferPrecompile;
+import com.hedera.services.store.contracts.precompile.impl.WipeFungiblePrecompile;
+import com.hedera.services.store.contracts.precompile.impl.WipeNonFungiblePrecompile;
 import com.hedera.services.store.contracts.precompile.proxy.RedirectViewExecutor;
 import com.hedera.services.store.contracts.precompile.proxy.ViewExecutor;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
@@ -745,6 +751,40 @@ class HTSPrecompiledContractTest {
 
         verify(messageFrame).setRevertReason(INVALID_TRANSFER);
         verify(messageFrame).setState(REVERT);
+    }
+
+    @Test
+    void computeCallsCorrectImplementationForWipeFungibleToken() {
+        // given
+        givenFrameContext();
+        Bytes input = Bytes.of(Integers.toBytes(ABI_WIPE_TOKEN_ACCOUNT_FUNGIBLE));
+        given(decoder.decodeWipe(any(), any())).willReturn(fungibleWipe);
+        given(worldUpdater.permissivelyUnaliased(any()))
+                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+
+        // when
+        subject.prepareFields(messageFrame);
+        subject.prepareComputation(input, a -> a);
+
+        // then
+        assertTrue(subject.getPrecompile() instanceof WipeFungiblePrecompile);
+    }
+
+    @Test
+    void computeCallsCorrectImplementationForWipeNonFungibleToken() {
+        // given
+        givenFrameContext();
+        Bytes input = Bytes.of(Integers.toBytes(ABI_WIPE_TOKEN_ACCOUNT_NFT));
+        given(decoder.decodeWipeNFT(any(), any())).willReturn(nonFungibleWipe);
+        given(worldUpdater.permissivelyUnaliased(any()))
+                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+
+        // when
+        subject.prepareFields(messageFrame);
+        subject.prepareComputation(input, a -> a);
+
+        // then
+        assertTrue(subject.getPrecompile() instanceof WipeNonFungiblePrecompile);
     }
 
     private void givenFrameContext() {
