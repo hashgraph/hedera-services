@@ -23,7 +23,7 @@ sonarqube {
         property("sonar.links.issue", "https://github.com/hashgraph/hedera-services/issues")
         property("sonar.links.scm", "https://github.com/hashgraph/hedera-services.git")
 
-        property("sonar.coverage.exclusions", "**/test-clients/**")
+        property("sonar.coverage.exclusions", "**/test-clients/**,**/hedera-node/src/jmh/**")
 
         // Ignored to match pom.xml setup
         property("sonar.issue.ignore.multicriteria", "e1,e2")

@@ -252,7 +252,7 @@ class AwareNodeDiligenceScreenTest {
                                         .build()
                                         .toByteString())
                         .build();
-        return new SignedTxnAccessor(signedTxn);
+        return SignedTxnAccessor.from(signedTxn.toByteArray(), signedTxn);
     }
 
     /**

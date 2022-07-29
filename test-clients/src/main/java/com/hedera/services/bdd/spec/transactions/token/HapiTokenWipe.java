@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2021 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -89,7 +89,8 @@ public class HapiTokenWipe extends HapiTxnOp<HapiTokenWipe> {
 
     private FeeData usageEstimate(TransactionBody txn, SigValueObj svo) {
         UsageAccumulator accumulator = new UsageAccumulator();
-        final var tokenWipeMeta = TOKEN_OPS_USAGE_UTILS.tokenWipeUsageFrom(txn, subType);
+        final var tokenWipeMeta =
+                TOKEN_OPS_USAGE_UTILS.tokenWipeUsageFrom(txn.getTokenWipe(), subType);
         final var baseTransactionMeta = new BaseTransactionMeta(txn.getMemoBytes().size(), 0);
         TokenOpsUsage tokenOpsUsage = new TokenOpsUsage();
         tokenOpsUsage.tokenWipeUsage(suFrom(svo), baseTransactionMeta, tokenWipeMeta, accumulator);
@@ -127,16 +128,16 @@ public class HapiTokenWipe extends HapiTxnOp<HapiTokenWipe> {
     }
 
     @Override
-    protected void updateStateOf(HapiApiSpec spec) {}
+    protected void updateStateOf(HapiApiSpec spec) {
+        /* no-op. */
+    }
 
     @Override
     protected MoreObjects.ToStringHelper toStringHelper() {
-        MoreObjects.ToStringHelper helper =
-                super.toStringHelper()
-                        .add("token", token)
-                        .add("account", account)
-                        .add("amount", amount)
-                        .add("serialNumbers", serialNumbers);
-        return helper;
+        return super.toStringHelper()
+                .add("token", token)
+                .add("account", account)
+                .add("amount", amount)
+                .add("serialNumbers", serialNumbers);
     }
 }

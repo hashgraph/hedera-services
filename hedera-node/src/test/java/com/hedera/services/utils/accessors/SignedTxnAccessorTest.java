@@ -19,8 +19,11 @@ import static com.hedera.services.state.submerkle.FcCustomFee.fixedFee;
 import static com.hedera.services.state.submerkle.FcCustomFee.fractionalFee;
 import static com.hedera.services.txns.ethereum.TestingConstants.TRUFFLE0_PRIVATE_ECDSA_KEY;
 import static com.hedera.test.utils.IdUtils.asAccount;
+import static com.hedera.test.utils.IdUtils.asAliasAccount;
 import static com.hedera.test.utils.IdUtils.asToken;
 import static com.hedera.test.utils.IdUtils.asTopic;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.SubType.TOKEN_FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.SubType.TOKEN_NON_FUNGIBLE_UNIQUE;
 import static java.util.stream.Collectors.toList;
@@ -42,6 +45,8 @@ import com.google.protobuf.ByteString;
 import com.google.protobuf.Int32Value;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.StringValue;
+import com.hedera.services.context.primitives.StateView;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ethereum.EthTxData;
 import com.hedera.services.ethereum.EthTxSigs;
 import com.hedera.services.ledger.accounts.AliasManager;
@@ -100,6 +105,7 @@ import com.swirlds.common.system.transaction.internal.SwirldTransaction;
 import java.math.BigInteger;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Function;
 import org.junit.jupiter.api.Test;
 
@@ -319,8 +325,8 @@ class SignedTxnAccessorTest {
         assertNull(accessor.getExpandedSigStatus());
         accessor.setExpandedSigStatus(ResponseCodeEnum.ACCOUNT_DELETED);
         assertEquals(ResponseCodeEnum.ACCOUNT_DELETED, accessor.getExpandedSigStatus());
-        accessor.setExpandedSigStatus(ResponseCodeEnum.OK);
-        assertEquals(ResponseCodeEnum.OK, accessor.getExpandedSigStatus());
+        accessor.setExpandedSigStatus(OK);
+        assertEquals(OK, accessor.getExpandedSigStatus());
     }
 
     @Test
@@ -360,29 +366,6 @@ class SignedTxnAccessorTest {
     }
 
     @Test
-    void detectsUniqueTokenWipeSubtypeFromGrpcSyntax() {
-        final var op =
-                TokenWipeAccountTransactionBody.newBuilder()
-                        .addAllSerialNumbers(List.of(1L, 2L, 3L))
-                        .build();
-        final var txn = buildTransactionFrom(TransactionBody.newBuilder().setTokenWipe(op).build());
-
-        final var subject = SignedTxnAccessor.uncheckedFrom(txn);
-
-        assertEquals(TOKEN_NON_FUNGIBLE_UNIQUE, subject.getSubType());
-    }
-
-    @Test
-    void detectsCommonTokenWipeSubtypeFromGrpcSyntax() {
-        final var op = TokenWipeAccountTransactionBody.newBuilder().setAmount(1234L).build();
-        final var txn = buildTransactionFrom(TransactionBody.newBuilder().setTokenWipe(op).build());
-
-        final var subject = SignedTxnAccessor.uncheckedFrom(txn);
-
-        assertEquals(TOKEN_FUNGIBLE_COMMON, subject.getSubType());
-    }
-
-    @Test
     void fetchesSubTypeAsExpected() throws InvalidProtocolBufferException {
         final var nftTransfers =
                 TokenTransferList.newBuilder()
@@ -401,7 +384,7 @@ class SignedTxnAccessorTest {
                         .build();
 
         var txn = buildTokenTransferTxn(nftTransfers);
-        var subject = new SignedTxnAccessor(txn);
+        var subject = SignedTxnAccessor.from(txn.toByteArray());
         assertEquals(SubType.TOKEN_NON_FUNGIBLE_UNIQUE, subject.availXferUsageMeta().getSubType());
         assertEquals(subject.availXferUsageMeta().getSubType(), subject.getSubType());
 
@@ -412,7 +395,7 @@ class SignedTxnAccessorTest {
         xferUsageMeta.setCustomFeeHbarTransfers(0);
 
         txn = buildTokenTransferTxn(fungibleTokenXfers);
-        subject = new SignedTxnAccessor(txn);
+        subject = SignedTxnAccessor.from(txn.toByteArray(), txn);
         assertEquals(TOKEN_FUNGIBLE_COMMON, subject.availXferUsageMeta().getSubType());
         assertEquals(subject.availXferUsageMeta().getSubType(), subject.getSubType());
 
@@ -423,7 +406,7 @@ class SignedTxnAccessorTest {
         xferUsageMeta.setCustomFeeTokenTransfers(0);
 
         txn = buildDefaultCryptoCreateTxn();
-        subject = new SignedTxnAccessor(txn);
+        subject = SignedTxnAccessor.from(txn.toByteArray(), txn);
         assertEquals(SubType.DEFAULT, subject.getSubType());
     }
 
@@ -729,6 +712,33 @@ class SignedTxnAccessorTest {
     }
 
     @Test
+    void precheckSupportingFunctionsWork() throws InvalidProtocolBufferException {
+        var falseOp = ContractCallTransactionBody.newBuilder().setGas(123456789L).build();
+        var txn =
+                buildTransactionFrom(TransactionBody.newBuilder().setContractCall(falseOp).build());
+
+        final var accessor = SignedTxnAccessor.uncheckedFrom(txn);
+
+        assertEquals(false, accessor.supportsPrecheck());
+        assertThrows(UnsupportedOperationException.class, () -> accessor.doPrecheck());
+
+        var trueOp =
+                TokenWipeAccountTransactionBody.newBuilder()
+                        .setAccount(asAccount("0.0.1000"))
+                        .build();
+        txn = buildTransactionFrom(TransactionBody.newBuilder().setTokenWipe(trueOp).build());
+
+        final var dynamicProperties = mock(GlobalDynamicProperties.class);
+        given(dynamicProperties.areNftsEnabled()).willReturn(true);
+        given(dynamicProperties.maxBatchSizeWipe()).willReturn(10);
+
+        var subject = new TokenWipeAccessor(txn.toByteArray(), txn, dynamicProperties);
+
+        assertEquals(true, subject.supportsPrecheck());
+        assertEquals(INVALID_TOKEN_ID, subject.doPrecheck());
+    }
+
+    @Test
     void getGasLimitWorksForEthTxn() {
         final var gasLimit = 1234L;
         final var unsignedTx =
@@ -926,9 +936,41 @@ class SignedTxnAccessorTest {
                     + " 52, 53, 54, 55, 56, 57, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 48, 49, 50,"
                     + " 51, 52, 53, 54, 55, 56, 57, 48, 49, 50, 51]]]}, used=[false]},"
                     + " payer=accountNum: 2\n"
-                    + ", scheduleRef=null}";
+                    + ", scheduleRef=null, view=null}";
 
         assertEquals(expectedString, subject.toLoggableString());
+    }
+
+    @Test
+    void setterAndGetterForStateViewWorks() {
+        final var op = ContractCallTransactionBody.newBuilder().build();
+        final var txn =
+                buildTransactionFrom(TransactionBody.newBuilder().setContractCall(op).build());
+
+        final var subject = SignedTxnAccessor.uncheckedFrom(txn);
+        final var stateView = mock(StateView.class);
+
+        subject.setStateView(stateView);
+
+        assertEquals(stateView, subject.getStateView());
+    }
+
+    @Test
+    void looksUpAliases() {
+        final var stateView = mock(StateView.class);
+        final var alias = ByteString.copyFromUtf8("someString");
+        final Map<ByteString, EntityNum> accountsMap = new HashMap<>();
+        accountsMap.put(alias, EntityNum.fromLong(10L));
+        given(stateView.aliases()).willReturn(accountsMap);
+
+        final var op = ContractCallTransactionBody.newBuilder().build();
+        final var txn =
+                buildTransactionFrom(TransactionBody.newBuilder().setContractCall(op).build());
+        final var subject = SignedTxnAccessor.uncheckedFrom(txn);
+        subject.setStateView(stateView);
+
+        assertEquals(EntityNum.fromLong(10L), subject.lookUpAlias(alias));
+        assertEquals(EntityNum.fromLong(10L), subject.unaliased(asAliasAccount(alias)));
     }
 
     private Transaction signedCryptoCreateTxn() {
@@ -1084,19 +1126,19 @@ class SignedTxnAccessorTest {
         return buildTransactionFrom(txnBody);
     }
 
-    private Transaction buildTransactionFrom(final TransactionBody transactionBody) {
+    public static Transaction buildTransactionFrom(final TransactionBody transactionBody) {
         return buildTransactionFrom(signedTransactionFrom(transactionBody).toByteString());
     }
 
-    private Transaction buildTransactionFrom(final ByteString signedTransactionBytes) {
+    private static Transaction buildTransactionFrom(final ByteString signedTransactionBytes) {
         return Transaction.newBuilder().setSignedTransactionBytes(signedTransactionBytes).build();
     }
 
-    private SignedTransaction signedTransactionFrom(final TransactionBody txnBody) {
+    private static SignedTransaction signedTransactionFrom(final TransactionBody txnBody) {
         return signedTransactionFrom(txnBody, SignatureMap.getDefaultInstance());
     }
 
-    private SignedTransaction signedTransactionFrom(
+    private static SignedTransaction signedTransactionFrom(
             final TransactionBody txnBody, final SignatureMap sigMap) {
         return SignedTransaction.newBuilder()
                 .setBodyBytes(txnBody.toByteString())

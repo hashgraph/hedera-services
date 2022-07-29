@@ -21,9 +21,10 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.verify;
 
 import com.google.protobuf.InvalidProtocolBufferException;
-import com.hedera.services.ledger.accounts.AliasManager;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.txns.span.ExpandHandleSpan;
 import com.hedera.services.txns.span.SpanMapManager;
+import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.accessors.AccessorFactory;
 import com.hedera.services.utils.accessors.SwirldsTxnAccessor;
 import com.hedera.test.utils.IdUtils;
@@ -41,9 +42,11 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class ExpandHandleSpanTest {
     @Mock private SpanMapManager handleSpanMap;
-    @Mock private AliasManager aliasManager;
+    @Mock private GlobalDynamicProperties dynamicProperties;
+    @Mock private OptionValidator validator;
 
-    private final AccessorFactory accessorFactory = new AccessorFactory(aliasManager);
+    private final AccessorFactory accessorFactory =
+            new AccessorFactory(dynamicProperties, validator);
 
     private final byte[] validTxnBytes =
             Transaction.newBuilder()

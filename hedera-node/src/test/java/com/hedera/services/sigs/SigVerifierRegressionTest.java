@@ -166,7 +166,7 @@ class SigVerifierRegressionTest {
 
     private boolean sigVerifies(Transaction signedTxn) throws Exception {
         try {
-            SignedTxnAccessor accessor = new SignedTxnAccessor(signedTxn);
+            SignedTxnAccessor accessor = SignedTxnAccessor.from(signedTxn.toByteArray(), signedTxn);
             return precheckVerifier.hasNecessarySignatures(accessor);
         } catch (InvalidProtocolBufferException ignore) {
             return false;

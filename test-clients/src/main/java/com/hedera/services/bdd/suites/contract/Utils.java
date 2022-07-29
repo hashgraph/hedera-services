@@ -57,6 +57,13 @@ public class Utils {
         return ByteString.copyFrom(Bytes32.fromHexStringLenient(Long.toHexString(n)).toArray());
     }
 
+    public static String asHexedAddress(final TokenID id) {
+        return Bytes.wrap(
+                        asSolidityAddress(
+                                (int) id.getShardNum(), id.getRealmNum(), id.getTokenNum()))
+                .toHexString();
+    }
+
     public static byte[] asAddress(final TokenID id) {
         return asSolidityAddress((int) id.getShardNum(), id.getRealmNum(), id.getTokenNum());
     }

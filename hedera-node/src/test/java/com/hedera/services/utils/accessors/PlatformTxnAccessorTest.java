@@ -36,6 +36,7 @@ import static org.mockito.Mockito.mock;
 
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
+import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.legacy.proto.utils.CommonUtils;
 import com.hedera.services.sigs.order.LinkedRefs;
@@ -125,7 +126,7 @@ class PlatformTxnAccessorTest {
                 Transaction.newBuilder().setBodyBytes(someTxn.toByteString()).build();
 
         // when:
-        SignedTxnAccessor subject = new SignedTxnAccessor(signedTxnWithBody);
+        SignedTxnAccessor subject = SignedTxnAccessor.from(signedTxnWithBody.toByteArray());
 
         // then:
         assertArrayEquals(signedTxnWithBody.toByteArray(), subject.getSignedTxnWrapperBytes());
@@ -330,6 +331,7 @@ class PlatformTxnAccessorTest {
                         .build();
         final var platformTxn = new SwirldTransaction(signedTxnWithBody.toByteArray());
         final var aliasManager = mock(AliasManager.class);
+        final var stateView = mock(StateView.class);
 
         var signedAccessor = SignedTxnAccessor.from(platformTxn.getContents());
         // when:
@@ -374,6 +376,7 @@ class PlatformTxnAccessorTest {
         subject.setPayer(payer);
         subject.setLinkedRefs(refs);
         subject.setSigMeta(sigMeta);
+        subject.setStateView(stateView);
 
         assertTrue(delegate.isTriggeredTxn());
         assertTrue(subject.isTriggeredTxn());
@@ -398,14 +401,19 @@ class PlatformTxnAccessorTest {
                 someTxn.getConsensusSubmitMessage().getMessage().size(),
                 subject.availSubmitUsageMeta().numMsgBytes());
 
-        assertEquals(delegate, subject.castToSpecialized());
+        assertEquals(delegate, subject.getDelegate());
 
         subject.countAutoCreationsWith(aliasManager);
 
-        signedAccessor.markCongestionExempt();
-        signedAccessor.markThrottleExempt();
+        subject.markCongestionExempt();
+        subject.markThrottleExempt();
         assertTrue(subject.congestionExempt());
         assertTrue(subject.throttleExempt());
+
+        assertEquals(delegate.throttleExempt(), subject.throttleExempt());
+        assertEquals(delegate.congestionExempt(), subject.congestionExempt());
+        assertEquals(delegate.getStateView(), subject.getStateView());
+        assertEquals(stateView, subject.getStateView());
     }
 
     @Test
@@ -494,13 +502,13 @@ class PlatformTxnAccessorTest {
                     + " 52, 53, 54, 55, 56, 57, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 48, 49, 50,"
                     + " 51, 52, 53, 54, 55, 56, 57, 48, 49, 50, 51]]]}, used=[false]},"
                     + " payer=accountNum: 2\n"
-                    + ", scheduleRef=null}, platformTxn=Transaction{contents=[26, 71, 10, 69, 10,"
-                    + " 1, 97, 26, 64, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 48, 49, 50, 51, 52,"
-                    + " 53, 54, 55, 56, 57, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 48, 49, 50, 51,"
-                    + " 52, 53, 54, 55, 56, 57, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 48, 49, 50,"
-                    + " 51, 52, 53, 54, 55, 56, 57, 48, 49, 50, 51, 34, 20, 10, 4, 18, 2, 24, 2,"
-                    + " 24, 10, 50, 3, 72, 105, 33, -38, 1, 4, 10, 2, 24, 10], signatures=null},"
-                    + " linkedRefs=null, expandedSigStatus=null,"
+                    + ", scheduleRef=null, view=null}, platformTxn=Transaction{contents=[26, 71,"
+                    + " 10, 69, 10, 1, 97, 26, 64, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 48, 49,"
+                    + " 50, 51, 52, 53, 54, 55, 56, 57, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 48,"
+                    + " 49, 50, 51, 52, 53, 54, 55, 56, 57, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57,"
+                    + " 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 48, 49, 50, 51, 34, 20, 10, 4, 18,"
+                    + " 2, 24, 2, 24, 10, 50, 3, 72, 105, 33, -38, 1, 4, 10, 2, 24, 10],"
+                    + " signatures=null}, linkedRefs=null, expandedSigStatus=null,"
                     + " pubKeyToSigBytes=PojoSigMapPubKeyToSigBytes{pojoSigMap=PojoSigMap{keyTypes=[ED25519],"
                     + " rawMap=[[[97], [48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 48, 49, 50, 51, 52,"
                     + " 53, 54, 55, 56, 57, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 48, 49, 50, 51,"

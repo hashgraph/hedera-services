@@ -15,6 +15,19 @@
  */
 package com.hedera.services.store.contracts.precompile.codec;
 
+import static com.hedera.services.contracts.ParsingConstants.ARRAY_BRACKETS;
+import static com.hedera.services.contracts.ParsingConstants.BOOL;
+import static com.hedera.services.contracts.ParsingConstants.BYTES32;
+import static com.hedera.services.contracts.ParsingConstants.BYTES32_PAIR_RAW_TYPE;
+import static com.hedera.services.contracts.ParsingConstants.EXPIRY;
+import static com.hedera.services.contracts.ParsingConstants.FIXED_FEE;
+import static com.hedera.services.contracts.ParsingConstants.FRACTIONAL_FEE;
+import static com.hedera.services.contracts.ParsingConstants.INT;
+import static com.hedera.services.contracts.ParsingConstants.INT_BOOL_PAIR;
+import static com.hedera.services.contracts.ParsingConstants.ROYALTY_FEE;
+import static com.hedera.services.contracts.ParsingConstants.STRING;
+import static com.hedera.services.contracts.ParsingConstants.TOKEN_KEY;
+import static com.hedera.services.contracts.ParsingConstants.UINT256;
 import static com.hedera.services.utils.EntityIdUtils.accountIdFromEvmAddress;
 
 import com.esaulpaugh.headlong.abi.ABIType;
@@ -53,12 +66,10 @@ public class DecodingFacade {
     private static final int ADDRESS_BYTES_LENGTH = 20;
     private static final int ADDRESS_SKIP_BYTES_LENGTH = 12;
     private static final int FUNCTION_SELECTOR_BYTES_LENGTH = 4;
-    private static final String INT_OUTPUT = "(int)";
-    private static final String BOOL_OUTPUT = "(bool)";
-    private static final String STRING_OUTPUT = "(string)";
     private static final String ADDRESS_PAIR_RAW_TYPE = "(bytes32,bytes32)";
     private static final String ADDRESS_TRIPLE_RAW_TYPE = "(bytes32,bytes32,bytes32)";
     private static final String UINT256_RAW_TYPE = "(uint256)";
+    private static final String BYTES32_RAW_TYPE = "(bytes32)";
     private static final String ADDRESS_UINT256_RAW_TYPE = "(bytes32,uint256)";
     private static final String ADDRESS_ADDRESS_UINT256_RAW_TYPE = "(bytes32,bytes32,uint256)";
 
@@ -69,103 +80,129 @@ public class DecodingFacade {
 
     private static final Function CRYPTO_TRANSFER_FUNCTION =
             new Function(
-                    "cryptoTransfer((address,(address,int64)[],(address,address,int64)[])[])",
-                    INT_OUTPUT);
+                    "cryptoTransfer((address,(address,int64)[],(address,address,int64)[])[])", INT);
     private static final Bytes CRYPTO_TRANSFER_SELECTOR =
             Bytes.wrap(CRYPTO_TRANSFER_FUNCTION.selector());
     private static final ABIType<Tuple> CRYPTO_TRANSFER_DECODER =
             TypeFactory.create("((bytes32,(bytes32,int64)[],(bytes32,bytes32,int64)[])[])");
 
     private static final Function TRANSFER_TOKENS_FUNCTION =
-            new Function("transferTokens(address,address[],int64[])", INT_OUTPUT);
+            new Function("transferTokens(address,address[],int64[])", INT);
     private static final Bytes TRANSFER_TOKENS_SELECTOR =
             Bytes.wrap(TRANSFER_TOKENS_FUNCTION.selector());
     private static final ABIType<Tuple> TRANSFER_TOKENS_DECODER =
             TypeFactory.create("(bytes32,bytes32[],int64[])");
 
     private static final Function TRANSFER_TOKEN_FUNCTION =
-            new Function("transferToken(address,address,address,int64)", INT_OUTPUT);
+            new Function("transferToken(address,address,address,int64)", INT);
     private static final Bytes TRANSFER_TOKEN_SELECTOR =
             Bytes.wrap(TRANSFER_TOKEN_FUNCTION.selector());
     private static final ABIType<Tuple> TRANSFER_TOKEN_DECODER =
             TypeFactory.create("(bytes32,bytes32,bytes32,int64)");
 
     private static final Function TRANSFER_NFTS_FUNCTION =
-            new Function("transferNFTs(address,address[],address[],int64[])", INT_OUTPUT);
+            new Function("transferNFTs(address,address[],address[],int64[])", INT);
     private static final Bytes TRANSFER_NFTS_SELECTOR =
             Bytes.wrap(TRANSFER_NFTS_FUNCTION.selector());
     private static final ABIType<Tuple> TRANSFER_NFTS_DECODER =
             TypeFactory.create("(bytes32,bytes32[],bytes32[],int64[])");
 
     private static final Function TRANSFER_NFT_FUNCTION =
-            new Function("transferNFT(address,address,address,int64)", INT_OUTPUT);
+            new Function("transferNFT(address,address,address,int64)", INT);
     private static final Bytes TRANSFER_NFT_SELECTOR = Bytes.wrap(TRANSFER_NFT_FUNCTION.selector());
     private static final ABIType<Tuple> TRANSFER_NFT_DECODER =
             TypeFactory.create("(bytes32,bytes32,bytes32,int64)");
 
     private static final Function MINT_TOKEN_FUNCTION =
-            new Function("mintToken(address,uint64,bytes[])", INT_OUTPUT);
+            new Function("mintToken(address,uint64,bytes[])", INT);
     private static final Bytes MINT_TOKEN_SELECTOR = Bytes.wrap(MINT_TOKEN_FUNCTION.selector());
     private static final ABIType<Tuple> MINT_TOKEN_DECODER =
             TypeFactory.create("(bytes32,int64,bytes[])");
 
     private static final Function BURN_TOKEN_FUNCTION =
-            new Function("burnToken(address,uint64,int64[])", INT_OUTPUT);
+            new Function("burnToken(address,uint64,int64[])", INT);
     private static final Bytes BURN_TOKEN_SELECTOR = Bytes.wrap(BURN_TOKEN_FUNCTION.selector());
     private static final ABIType<Tuple> BURN_TOKEN_DECODER =
             TypeFactory.create("(bytes32,int64,int64[])");
 
+    private static final Function GET_TOKEN_DEFAULT_FREEZE_STATUS_FUNCTION =
+            new Function("getTokenDefaultFreezeStatus(address)", INT);
+    private static final Bytes GET_TOKEN_DEFAULT_FREEZE_STATUS_SELECTOR =
+            Bytes.wrap(GET_TOKEN_DEFAULT_FREEZE_STATUS_FUNCTION.selector());
+    private static final ABIType<Tuple> GET_TOKEN_DEFAULT_FREEZE_STATUS_DECODER =
+            TypeFactory.create(BYTES32_RAW_TYPE);
+
+    private static final Function GET_TOKEN_DEFAULT_KYC_STATUS_FUNCTION =
+            new Function("getTokenDefaultKycStatus(address)", INT);
+    private static final Bytes GET_TOKEN_DEFAULT_KYC_STATUS_SELECTOR =
+            Bytes.wrap(GET_TOKEN_DEFAULT_KYC_STATUS_FUNCTION.selector());
+    private static final ABIType<Tuple> GET_TOKEN_DEFAULT_KYC_STATUS_DECODER =
+            TypeFactory.create(BYTES32_RAW_TYPE);
+
     private static final Function ASSOCIATE_TOKENS_FUNCTION =
-            new Function("associateTokens(address,address[])", INT_OUTPUT);
+            new Function("associateTokens(address,address[])", INT);
     private static final Bytes ASSOCIATE_TOKENS_SELECTOR =
             Bytes.wrap(ASSOCIATE_TOKENS_FUNCTION.selector());
     private static final ABIType<Tuple> ASSOCIATE_TOKENS_DECODER =
             TypeFactory.create("(bytes32,bytes32[])");
 
     private static final Function ASSOCIATE_TOKEN_FUNCTION =
-            new Function("associateToken(address,address)", INT_OUTPUT);
+            new Function("associateToken(address,address)", INT);
     private static final Bytes ASSOCIATE_TOKEN_SELECTOR =
             Bytes.wrap(ASSOCIATE_TOKEN_FUNCTION.selector());
     private static final ABIType<Tuple> ASSOCIATE_TOKEN_DECODER =
-            TypeFactory.create(ADDRESS_PAIR_RAW_TYPE);
+            TypeFactory.create(BYTES32_PAIR_RAW_TYPE);
 
     private static final Function DISSOCIATE_TOKENS_FUNCTION =
-            new Function("dissociateTokens(address,address[])", INT_OUTPUT);
+            new Function("dissociateTokens(address,address[])", INT);
     private static final Bytes DISSOCIATE_TOKENS_SELECTOR =
             Bytes.wrap(DISSOCIATE_TOKENS_FUNCTION.selector());
     private static final ABIType<Tuple> DISSOCIATE_TOKENS_DECODER =
             TypeFactory.create("(bytes32,bytes32[])");
 
     private static final Function DISSOCIATE_TOKEN_FUNCTION =
-            new Function("dissociateToken(address,address)", INT_OUTPUT);
+            new Function("dissociateToken(address,address)", INT);
     private static final Bytes DISSOCIATE_TOKEN_SELECTOR =
             Bytes.wrap(DISSOCIATE_TOKEN_FUNCTION.selector());
     private static final ABIType<Tuple> DISSOCIATE_TOKEN_DECODER =
-            TypeFactory.create(ADDRESS_PAIR_RAW_TYPE);
+            TypeFactory.create(BYTES32_PAIR_RAW_TYPE);
 
     private static final Function TOKEN_URI_NFT_FUNCTION =
-            new Function("tokenURI(uint256)", STRING_OUTPUT);
+            new Function("tokenURI(uint256)", STRING);
     private static final Bytes TOKEN_URI_NFT_SELECTOR =
             Bytes.wrap(TOKEN_URI_NFT_FUNCTION.selector());
-    private static final ABIType<Tuple> TOKEN_URI_NFT_DECODER =
-            TypeFactory.create(UINT256_RAW_TYPE);
+    private static final ABIType<Tuple> TOKEN_URI_NFT_DECODER = TypeFactory.create(UINT256);
 
     private static final Function BALANCE_OF_TOKEN_FUNCTION =
-            new Function("balanceOf(address)", INT_OUTPUT);
+            new Function("balanceOf(address)", INT);
     private static final Bytes BALANCE_OF_TOKEN_SELECTOR =
             Bytes.wrap(BALANCE_OF_TOKEN_FUNCTION.selector());
-    private static final ABIType<Tuple> BALANCE_OF_TOKEN_DECODER = TypeFactory.create("(bytes32)");
+    private static final ABIType<Tuple> BALANCE_OF_TOKEN_DECODER =
+            TypeFactory.create(BYTES32_RAW_TYPE);
 
-    private static final Function OWNER_OF_NFT_FUNCTION =
-            new Function("ownerOf(uint256)", INT_OUTPUT);
+    private static final Function OWNER_OF_NFT_FUNCTION = new Function("ownerOf(uint256)", INT);
     private static final Bytes OWNER_OF_NFT_SELECTOR = Bytes.wrap(OWNER_OF_NFT_FUNCTION.selector());
-    private static final ABIType<Tuple> OWNER_OF_NFT_DECODER = TypeFactory.create(UINT256_RAW_TYPE);
+    private static final ABIType<Tuple> OWNER_OF_NFT_DECODER = TypeFactory.create(UINT256);
 
     private static final Function ERC_TRANSFER_FUNCTION =
-            new Function("transfer(address,uint256)", BOOL_OUTPUT);
+            new Function("transfer(address,uint256)", BOOL);
     private static final Bytes ERC_TRANSFER_SELECTOR = Bytes.wrap(ERC_TRANSFER_FUNCTION.selector());
     private static final ABIType<Tuple> ERC_TRANSFER_DECODER =
             TypeFactory.create(ADDRESS_UINT256_RAW_TYPE);
+
+    private static final Function WIPE_TOKEN_ACCOUNT_FUNCTION =
+            new Function("wipeTokenAccount(address,address,uint32)", INT);
+    private static final Bytes WIPE_TOKEN_ACCOUNT_SELECTOR =
+            Bytes.wrap(WIPE_TOKEN_ACCOUNT_FUNCTION.selector());
+    private static final ABIType<Tuple> WIPE_TOKEN_ACCOUNT_DECODER =
+            TypeFactory.create("(bytes32,bytes32,uint32)");
+
+    private static final Function WIPE_TOKEN_ACCOUNT_NFT_FUNCTION =
+            new Function("wipeTokenAccountNFT(address,address,int64[])", INT);
+    private static final Bytes WIPE_TOKEN_ACCOUNT_NFT_SELECTOR =
+            Bytes.wrap(WIPE_TOKEN_ACCOUNT_NFT_FUNCTION.selector());
+    private static final ABIType<Tuple> WIPE_TOKEN_ACCOUNT_NFT_DECODER =
+            TypeFactory.create("(bytes32,bytes32,int64[])");
 
     private static final Function ERC_TRANSFER_FROM_FUNCTION =
             new Function("transferFrom(address,address,uint256)");
@@ -174,31 +211,48 @@ public class DecodingFacade {
     private static final ABIType<Tuple> ERC_TRANSFER_FROM_DECODER =
             TypeFactory.create(ADDRESS_ADDRESS_UINT256_RAW_TYPE);
 
+    private static final Function IS_FROZEN_TOKEN_FUNCTION =
+            new Function("isFrozen(address,address)", INT_BOOL_PAIR);
+    private static final Bytes IS_FROZEN_TOKEN_FUNCTION_SELECTOR =
+            Bytes.wrap(IS_FROZEN_TOKEN_FUNCTION.selector());
+    private static final ABIType<Tuple> IS_FROZEN_TOKEN_DECODER =
+            TypeFactory.create(ADDRESS_PAIR_RAW_TYPE);
+
+    private static final Function FREEZE_TOKEN_FUNCTION =
+            new Function("freezeToken(address,address)", INT);
+    private static final Bytes FREEZE_TOKEN_FUNCTION_SELECTOR =
+            Bytes.wrap(FREEZE_TOKEN_FUNCTION.selector());
+    private static final ABIType<Tuple> FREEZE_TOKEN_ACCOUNT_DECODER =
+            TypeFactory.create(ADDRESS_PAIR_RAW_TYPE);
+
+    private static final Function UNFREEZE_TOKEN_FUNCTION =
+            new Function("unfreezeToken(address,address)", INT);
+    private static final Bytes UNFREEZE_TOKEN_FUNCTION_SELECTOR =
+            Bytes.wrap(UNFREEZE_TOKEN_FUNCTION.selector());
+    private static final ABIType<Tuple> UNFREEZE_TOKEN_ACCOUNT_DECODER =
+            TypeFactory.create(ADDRESS_PAIR_RAW_TYPE);
+
     /* --- Token Create Structs --- */
-    private static final String KEY_VALUE = "(bool,address,bytes,bytes,address)";
     private static final String KEY_VALUE_DECODER = "(bool,bytes32,bytes,bytes,bytes32)";
-
-    private static final String TOKEN_KEY = "(uint256," + KEY_VALUE + ")";
     private static final String TOKEN_KEY_DECODER = "(int32," + KEY_VALUE_DECODER + ")";
-
-    private static final String EXPIRY = "(uint32,address,uint32)";
     private static final String EXPIRY_DECODER = "(int64,bytes32,int64)";
 
-    private static final String FIXED_FEE = "(uint32,address,bool,bool,address)";
     private static final String FIXED_FEE_DECODER = "(int64,bytes32,bool,bool,bytes32)";
-
-    private static final String FRACTIONAL_FEE = "(uint32,uint32,uint32,uint32,bool,address)";
     private static final String FRACTIONAL_FEE_DECODER = "(int64,int64,int64,int64,bool,bytes32)";
-
-    private static final String ROYALTY_FEE = "(uint32,uint32,uint32,address,bool,address)";
     private static final String ROYALTY_FEE_DECODER = "(int64,int64,int64,bytes32,bool,bytes32)";
 
     private static final String TOKEN_CREATE_STRUCT =
-            "(string,string,address,string,bool,uint32,bool," + TOKEN_KEY + "[]," + EXPIRY + ")";
+            "(string,string,address,string,bool,uint32,bool,"
+                    + TOKEN_KEY
+                    + ARRAY_BRACKETS
+                    + ","
+                    + EXPIRY
+                    + ")";
     private static final String TOKEN_CREATE_STRUCT_DECODER =
             "(string,string,bytes32,string,bool,int64,bool,"
                     + TOKEN_KEY_DECODER
-                    + "[],"
+                    + ARRAY_BRACKETS
+                    + ","
                     + EXPIRY_DECODER
                     + ")";
 
@@ -222,9 +276,11 @@ public class DecodingFacade {
                             + TOKEN_CREATE_STRUCT
                             + ",uint256,uint256,"
                             + FIXED_FEE
-                            + "[],"
+                            + ARRAY_BRACKETS
+                            + ","
                             + FRACTIONAL_FEE
-                            + "[])");
+                            + ARRAY_BRACKETS
+                            + ")");
     private static final Bytes TOKEN_CREATE_FUNGIBLE_WITH_FEES_SELECTOR =
             Bytes.wrap(TOKEN_CREATE_FUNGIBLE_WITH_FEES_FUNCTION.selector());
     private static final ABIType<Tuple> TOKEN_CREATE_FUNGIBLE_WITH_FEES_DECODER =
@@ -233,9 +289,11 @@ public class DecodingFacade {
                             + TOKEN_CREATE_STRUCT_DECODER
                             + ",uint256,uint256,"
                             + FIXED_FEE_DECODER
-                            + "[],"
+                            + ARRAY_BRACKETS
+                            + ","
                             + FRACTIONAL_FEE_DECODER
-                            + "[])");
+                            + ARRAY_BRACKETS
+                            + ")");
 
     private static final Function TOKEN_CREATE_NON_FUNGIBLE_WITH_FEES_FUNCTION =
             new Function(
@@ -243,9 +301,11 @@ public class DecodingFacade {
                             + TOKEN_CREATE_STRUCT
                             + ","
                             + FIXED_FEE
-                            + "[],"
+                            + ARRAY_BRACKETS
+                            + ","
                             + ROYALTY_FEE
-                            + "[])");
+                            + ARRAY_BRACKETS
+                            + ")");
     private static final Bytes TOKEN_CREATE_NON_FUNGIBLE_WITH_FEES_SELECTOR =
             Bytes.wrap(TOKEN_CREATE_NON_FUNGIBLE_WITH_FEES_FUNCTION.selector());
     private static final ABIType<Tuple> TOKEN_CREATE_NON_FUNGIBLE_WITH_FEES_DECODER =
@@ -254,26 +314,28 @@ public class DecodingFacade {
                             + TOKEN_CREATE_STRUCT_DECODER
                             + ","
                             + FIXED_FEE_DECODER
-                            + "[],"
+                            + ARRAY_BRACKETS
+                            + ","
                             + ROYALTY_FEE_DECODER
-                            + "[])");
+                            + ARRAY_BRACKETS
+                            + ")");
 
     private static final Function ERC_ALLOWANCE_FUNCTION =
-            new Function("allowance(address,address)", INT_OUTPUT);
+            new Function("allowance(address,address)", INT);
     private static final Bytes ERC_ALLOWANCE_SELECTOR =
             Bytes.wrap(ERC_ALLOWANCE_FUNCTION.selector());
     private static final ABIType<Tuple> ERC_ALLOWANCE_DECODER =
             TypeFactory.create(ADDRESS_PAIR_RAW_TYPE);
 
     private static final Function ERC_GET_APPROVED_FUNCTION =
-            new Function("getApproved(uint256)", INT_OUTPUT);
+            new Function("getApproved(uint256)", INT);
     private static final Bytes ERC_GET_APPROVED_FUNCTION_SELECTOR =
             Bytes.wrap(ERC_GET_APPROVED_FUNCTION.selector());
     private static final ABIType<Tuple> ERC_GET_APPROVED_FUNCTION_DECODER =
             TypeFactory.create(UINT256_RAW_TYPE);
 
     private static final Function ERC_IS_APPROVED_FOR_ALL =
-            new Function("isApprovedForAll(address,address)", BOOL_OUTPUT);
+            new Function("isApprovedForAll(address,address)", BOOL);
     private static final Bytes ERC_IS_APPROVED_FOR_ALL_SELECTOR =
             Bytes.wrap(ERC_IS_APPROVED_FOR_ALL.selector());
     private static final ABIType<Tuple> ERC_IS_APPROVED_FOR_ALL_DECODER =
@@ -287,7 +349,7 @@ public class DecodingFacade {
             TypeFactory.create("(bytes32,bool)");
 
     private static final Function ERC_TOKEN_APPROVE_FUNCTION =
-            new Function("approve(address,uint256)", BOOL_OUTPUT);
+            new Function("approve(address,uint256)", BOOL);
     private static final Bytes ERC_TOKEN_APPROVE_SELECTOR =
             Bytes.wrap(ERC_TOKEN_APPROVE_FUNCTION.selector());
     private static final ABIType<Tuple> ERC_TOKEN_APPROVE_DECODER =
@@ -308,32 +370,57 @@ public class DecodingFacade {
             TypeFactory.create(ADDRESS_UINT256_RAW_TYPE);
 
     private static final Function HAPI_IS_APPROVED_FOR_ALL =
-            new Function("isApprovedForAll(address,address,address)", "(int,bool)");
+            new Function("isApprovedForAll(address,address,address)", INT_BOOL_PAIR);
     private static final Bytes HAPI_IS_APPROVED_FOR_ALL_SELECTOR =
             Bytes.wrap(HAPI_IS_APPROVED_FOR_ALL.selector());
     private static final ABIType<Tuple> HAPI_IS_APPROVED_FOR_ALL_DECODER =
             TypeFactory.create(ADDRESS_TRIPLE_RAW_TYPE);
 
     private static final Function HAPI_SET_APPROVAL_FOR_ALL =
-            new Function("setApprovalForAll(address,address,bool)", INT_OUTPUT);
+            new Function("setApprovalForAll(address,address,bool)", INT);
     private static final Bytes HAPI_SET_APPROVAL_FOR_ALL_SELECTOR =
             Bytes.wrap(HAPI_SET_APPROVAL_FOR_ALL.selector());
     private static final ABIType<Tuple> HAPI_SET_APPROVAL_FOR_ALL_DECODER =
             TypeFactory.create("(bytes32,bytes32,bool)");
 
     private static final Function HAPI_TOKEN_APPROVE_FUNCTION =
-            new Function("approve(address,address,uint256)", "(int,bool)");
+            new Function("approve(address,address,uint256)", INT_BOOL_PAIR);
     private static final Bytes HAPI_TOKEN_APPROVE_SELECTOR =
             Bytes.wrap(HAPI_TOKEN_APPROVE_FUNCTION.selector());
     private static final ABIType<Tuple> HAPI_TOKEN_APPROVE_DECODER =
             TypeFactory.create(ADDRESS_ADDRESS_UINT256_RAW_TYPE);
 
     private static final Function HAPI_APPROVE_NFT_FUNCTION =
-            new Function("approveNFT(address,address,uint256)", INT_OUTPUT);
+            new Function("approveNFT(address,address,uint256)", INT);
     private static final Bytes HAPI_APPROVE_NFT_SELECTOR =
             Bytes.wrap(HAPI_APPROVE_NFT_FUNCTION.selector());
     private static final ABIType<Tuple> HAPI_APPROVE_NFT_DECODER =
             TypeFactory.create(ADDRESS_ADDRESS_UINT256_RAW_TYPE);
+
+    private static final Function GET_TOKEN_INFO_FUNCTION = new Function("getTokenInfo(address)");
+    private static final Bytes GET_TOKEN_INFO_SELECTOR =
+            Bytes.wrap(GET_TOKEN_INFO_FUNCTION.selector());
+    private static final ABIType<Tuple> GET_TOKEN_INFO_DECODER = TypeFactory.create(BYTES32);
+
+    private static final Function GET_FUNGIBLE_TOKEN_INFO_FUNCTION =
+            new Function("getFungibleTokenInfo(address)");
+    private static final Bytes GET_FUNGIBLE_TOKEN_INFO_SELECTOR =
+            Bytes.wrap(GET_FUNGIBLE_TOKEN_INFO_FUNCTION.selector());
+    private static final ABIType<Tuple> GET_FUNGIBLE_TOKEN_INFO_DECODER =
+            TypeFactory.create(BYTES32);
+
+    private static final Function GET_NON_FUNGIBLE_TOKEN_INFO_FUNCTION =
+            new Function("getNonFungibleTokenInfo(address,int64)");
+    private static final Bytes GET_NON_FUNGIBLE_TOKEN_INFO_SELECTOR =
+            Bytes.wrap(GET_NON_FUNGIBLE_TOKEN_INFO_FUNCTION.selector());
+    private static final ABIType<Tuple> GET_NON_FUNGIBLE_TOKEN_INFO_DECODER =
+            TypeFactory.create("(bytes32,int64)");
+
+    private static final Function TOKEN_GET_CUSTOM_FEES_FUNCTION =
+            new Function("getTokenCustomFees(address)");
+    private static final Bytes TOKEN_GET_CUSTOM_FEES_SELECTOR =
+            Bytes.wrap(TOKEN_GET_CUSTOM_FEES_FUNCTION.selector());
+    private static final ABIType<Tuple> TOKEN_GET_CUSTOM_FEES_DECODER = TypeFactory.create(BYTES32);
 
     @Inject
     public DecodingFacade() {
@@ -385,6 +472,30 @@ public class DecodingFacade {
             return BurnWrapper.forNonFungible(
                     tokenID, Arrays.stream(serialNumbers).boxed().toList());
         }
+    }
+
+    public GetTokenDefaultFreezeStatusWrapper decodeTokenDefaultFreezeStatus(final Bytes input) {
+        final Tuple decodedArguments =
+                decodeFunctionCall(
+                        input,
+                        GET_TOKEN_DEFAULT_FREEZE_STATUS_SELECTOR,
+                        GET_TOKEN_DEFAULT_FREEZE_STATUS_DECODER);
+
+        final var tokenID = convertAddressBytesToTokenID(decodedArguments.get(0));
+
+        return new GetTokenDefaultFreezeStatusWrapper(tokenID);
+    }
+
+    public GetTokenDefaultKycStatusWrapper decodeTokenDefaultKycStatus(final Bytes input) {
+        final Tuple decodedArguments =
+                decodeFunctionCall(
+                        input,
+                        GET_TOKEN_DEFAULT_KYC_STATUS_SELECTOR,
+                        GET_TOKEN_DEFAULT_KYC_STATUS_DECODER);
+
+        final var tokenID = convertAddressBytesToTokenID(decodedArguments.get(0));
+
+        return new GetTokenDefaultKycStatusWrapper(tokenID);
     }
 
     public BalanceOfWrapper decodeBalanceOf(
@@ -844,6 +955,80 @@ public class DecodingFacade {
         return tokenCreateWrapper;
     }
 
+    public TokenInfoWrapper decodeGetTokenInfo(final Bytes input) {
+        final Tuple decodedArguments =
+                decodeFunctionCall(input, GET_TOKEN_INFO_SELECTOR, GET_TOKEN_INFO_DECODER);
+
+        final var tokenID = convertAddressBytesToTokenID(decodedArguments.get(0));
+        return TokenInfoWrapper.forToken(tokenID);
+    }
+
+    public TokenInfoWrapper decodeGetFungibleTokenInfo(final Bytes input) {
+        final Tuple decodedArguments =
+                decodeFunctionCall(
+                        input, GET_FUNGIBLE_TOKEN_INFO_SELECTOR, GET_FUNGIBLE_TOKEN_INFO_DECODER);
+
+        final var tokenID = convertAddressBytesToTokenID(decodedArguments.get(0));
+        return TokenInfoWrapper.forFungibleToken(tokenID);
+    }
+
+    public TokenInfoWrapper decodeGetNonFungibleTokenInfo(final Bytes input) {
+        final Tuple decodedArguments =
+                decodeFunctionCall(
+                        input,
+                        GET_NON_FUNGIBLE_TOKEN_INFO_SELECTOR,
+                        GET_NON_FUNGIBLE_TOKEN_INFO_DECODER);
+
+        final var tokenID = convertAddressBytesToTokenID(decodedArguments.get(0));
+        final var serialNumber = (long) decodedArguments.get(1);
+        return TokenInfoWrapper.forNonFungibleToken(tokenID, serialNumber);
+    }
+
+    public TokenFreezeUnfreezeWrapper decodeIsFrozen(
+            final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
+        final Tuple decodedArguments =
+                decodeFunctionCall(
+                        input, IS_FROZEN_TOKEN_FUNCTION_SELECTOR, IS_FROZEN_TOKEN_DECODER);
+
+        final var tokenID = convertAddressBytesToTokenID(decodedArguments.get(0));
+        final var accountID =
+                convertLeftPaddedAddressToAccountId(decodedArguments.get(1), aliasResolver);
+        return TokenFreezeUnfreezeWrapper.forIsFrozen(tokenID, accountID);
+    }
+
+    public TokenFreezeUnfreezeWrapper decodeFreeze(
+            final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
+        final Tuple decodedArguments =
+                decodeFunctionCall(
+                        input, FREEZE_TOKEN_FUNCTION_SELECTOR, FREEZE_TOKEN_ACCOUNT_DECODER);
+
+        final var tokenID = convertAddressBytesToTokenID(decodedArguments.get(0));
+        final var accountID =
+                convertLeftPaddedAddressToAccountId(decodedArguments.get(1), aliasResolver);
+        return TokenFreezeUnfreezeWrapper.forFreeze(tokenID, accountID);
+    }
+
+    public TokenFreezeUnfreezeWrapper decodeUnfreeze(
+            final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
+        final Tuple decodedArguments =
+                decodeFunctionCall(
+                        input, UNFREEZE_TOKEN_FUNCTION_SELECTOR, UNFREEZE_TOKEN_ACCOUNT_DECODER);
+
+        final var tokenID = convertAddressBytesToTokenID(decodedArguments.get(0));
+        final var accountID =
+                convertLeftPaddedAddressToAccountId(decodedArguments.get(1), aliasResolver);
+        return TokenFreezeUnfreezeWrapper.forUnfreeze(tokenID, accountID);
+    }
+
+    public TokenGetCustomFeesWrapper decodeTokenGetCustomFees(final Bytes input) {
+        final Tuple decodedArguments =
+                decodeFunctionCall(
+                        input, TOKEN_GET_CUSTOM_FEES_SELECTOR, TOKEN_GET_CUSTOM_FEES_DECODER);
+
+        final var tokenID = convertAddressBytesToTokenID(decodedArguments.get(0));
+        return new TokenGetCustomFeesWrapper(tokenID);
+    }
+
     private TokenCreateWrapper decodeTokenCreateWithoutFees(
             final Tuple tokenCreateStruct,
             final boolean isFungible,
@@ -874,6 +1059,32 @@ public class DecodingFacade {
                 isFreezeDefault,
                 tokenKeys,
                 tokenExpiry);
+    }
+
+    public WipeWrapper decodeWipe(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
+        final Tuple decodedArguments =
+                decodeFunctionCall(input, WIPE_TOKEN_ACCOUNT_SELECTOR, WIPE_TOKEN_ACCOUNT_DECODER);
+
+        final var tokenID = convertAddressBytesToTokenID(decodedArguments.get(0));
+        final var accountID =
+                convertLeftPaddedAddressToAccountId(decodedArguments.get(1), aliasResolver);
+        final var fungibleAmount = (long) decodedArguments.get(2);
+
+        return WipeWrapper.forFungible(tokenID, accountID, fungibleAmount);
+    }
+
+    public WipeWrapper decodeWipeNFT(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
+        final Tuple decodedArguments =
+                decodeFunctionCall(
+                        input, WIPE_TOKEN_ACCOUNT_NFT_SELECTOR, WIPE_TOKEN_ACCOUNT_NFT_DECODER);
+
+        final var tokenID = convertAddressBytesToTokenID(decodedArguments.get(0));
+        final var accountID =
+                convertLeftPaddedAddressToAccountId(decodedArguments.get(1), aliasResolver);
+        final var serialNumbers = ((long[]) decodedArguments.get(2));
+
+        return WipeWrapper.forNonFungible(
+                tokenID, accountID, Arrays.stream(serialNumbers).boxed().toList());
     }
 
     private List<TokenKeyWrapper> decodeTokenKeys(

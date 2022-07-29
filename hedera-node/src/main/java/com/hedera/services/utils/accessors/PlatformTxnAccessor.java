@@ -15,8 +15,10 @@
  */
 package com.hedera.services.utils.accessors;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.MoreObjects;
 import com.google.protobuf.InvalidProtocolBufferException;
+import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.sigs.order.LinkedRefs;
 import com.hedera.services.sigs.sourcing.PojoSigMapPubKeyToSigBytes;
@@ -152,11 +154,6 @@ public class PlatformTxnAccessor implements SwirldsTxnAccessor {
     }
 
     @Override
-    public <T extends TxnAccessor> T castToSpecialized() {
-        return delegate.castToSpecialized();
-    }
-
-    @Override
     public long getOfferedFee() {
         return delegate.getOfferedFee();
     }
@@ -222,8 +219,18 @@ public class PlatformTxnAccessor implements SwirldsTxnAccessor {
     }
 
     @Override
+    public void markThrottleExempt() {
+        delegate.markThrottleExempt();
+    }
+
+    @Override
     public boolean congestionExempt() {
         return delegate.congestionExempt();
+    }
+
+    @Override
+    public void markCongestionExempt() {
+        delegate.markCongestionExempt();
     }
 
     @Override
@@ -272,6 +279,11 @@ public class PlatformTxnAccessor implements SwirldsTxnAccessor {
     }
 
     @Override
+    public void setStateView(final StateView view) {
+        delegate.setStateView(view);
+    }
+
+    @Override
     public void setNumAutoCreations(final int numAutoCreations) {
         delegate.setNumAutoCreations(numAutoCreations);
     }
@@ -314,5 +326,10 @@ public class PlatformTxnAccessor implements SwirldsTxnAccessor {
     @Override
     public SubmitMessageMeta availSubmitUsageMeta() {
         return delegate.availSubmitUsageMeta();
+    }
+
+    @Override
+    public StateView getStateView() {
+        return delegate.getStateView();
     }
 }

@@ -68,7 +68,7 @@ class RedirectViewExecutorTest {
     @Mock private MessageFrame frame;
     @Mock private EncodingFacade encodingFacade;
     @Mock private DecodingFacade decodingFacade;
-    @Mock private RedirectGasCalculator redirectGasCalculator;
+    @Mock private ViewGasCalculator viewGasCalculator;
     @Mock private HederaStackedWorldStateUpdater stackedWorldStateUpdater;
     @Mock private WorldLedgers worldLedgers;
     @Mock private BlockValues blockValues;
@@ -260,13 +260,12 @@ class RedirectViewExecutorTest {
                         nestedInput);
         given(frame.getBlockValues()).willReturn(blockValues);
         given(blockValues.getTimestamp()).willReturn(timestamp);
-        given(redirectGasCalculator.compute(resultingTimestamp, MINIMUM_TINYBARS_COST))
-                .willReturn(gas);
+        given(viewGasCalculator.compute(resultingTimestamp, MINIMUM_TINYBARS_COST)).willReturn(gas);
         given(frame.getWorldUpdater()).willReturn(stackedWorldStateUpdater);
         given(stackedWorldStateUpdater.trackingLedgers()).willReturn(worldLedgers);
         this.subject =
                 new RedirectViewExecutor(
-                        input, frame, encodingFacade, decodingFacade, redirectGasCalculator);
+                        input, frame, encodingFacade, decodingFacade, viewGasCalculator);
         return nestedInput;
     }
 }

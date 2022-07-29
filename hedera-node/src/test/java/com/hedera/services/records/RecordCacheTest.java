@@ -302,7 +302,8 @@ class RecordCacheTest {
                 .given(factory)
                 .triggeredTxn(
                         signedTxn.toByteArray(), effectivePayer, effectiveScheduleID, false, false);
-
+        given(factory.constructSpecializedAccessor(signedTxn.toByteArray()))
+                .willReturn(SignedTxnAccessor.from(signedTxn.toByteArray()));
         final var accessor =
                 factory.triggeredTxn(
                         signedTxn.toByteArray(), effectivePayer, effectiveScheduleID, false, false);
