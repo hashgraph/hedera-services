@@ -278,8 +278,8 @@ public class MigrationRecordsManager {
 
     private boolean isSidecarGeneratingFunction(final HederaFunctionality function) {
         return function == HederaFunctionality.ContractCall
-            || function == HederaFunctionality.ContractCreate
-            || function == HederaFunctionality.EthereumTransaction;
+                || function == HederaFunctionality.ContractCreate
+                || function == HederaFunctionality.EthereumTransaction;
     }
 
     public void markTraceabilityMigrationAsDone() {
@@ -313,7 +313,10 @@ public class MigrationRecordsManager {
                             }
                             final var stateChangesSidecar =
                                     generateMigrationStateChangesSidecar(
-                                            contractId, contractStorageMap, contractStorageKey, account.getNumContractKvPairs());
+                                            contractId,
+                                            contractStorageMap,
+                                            contractStorageKey,
+                                            account.getNumContractKvPairs());
                             transactionContext.addSidecarRecord(stateChangesSidecar);
                             log.debug(
                                     "Published migration state changes for contract 0.0.{}",
@@ -333,10 +336,10 @@ public class MigrationRecordsManager {
     }
 
     private Builder generateMigrationStateChangesSidecar(
-        final ContractID contractId,
-        final VirtualMap<ContractKey, IterableContractValue> contractStorageMap,
-        ContractKey contractStorageKey,
-        int maxNumberOfKvPairsToIterate) {
+            final ContractID contractId,
+            final VirtualMap<ContractKey, IterableContractValue> contractStorageMap,
+            ContractKey contractStorageKey,
+            int maxNumberOfKvPairsToIterate) {
         final var contractStateChangeBuilder =
                 ContractStateChange.newBuilder().setContractId(contractId);
 
@@ -355,8 +358,9 @@ public class MigrationRecordsManager {
 
         if (maxNumberOfKvPairsToIterate != 0) {
             log.warn(
-                    "After walking through all iterable storage of contract 0.0.{}, numContractKvPairs field indicates that there should have been {}"
-                            + " more k/v pair(s) left",
+                    "After walking through all iterable storage of contract 0.0.{},"
+                        + " numContractKvPairs field indicates that there should have been {} more"
+                        + " k/v pair(s) left",
                     contractId.getContractNum(),
                     maxNumberOfKvPairsToIterate);
         }

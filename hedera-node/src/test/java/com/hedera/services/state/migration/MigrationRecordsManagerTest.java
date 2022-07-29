@@ -419,7 +419,7 @@ class MigrationRecordsManagerTest {
     @Test
     void traceabilityMigrationHandlesNumKvPairsFieldIndicatingMoreThanActualPairsSuccessfully() {
         final ArgumentCaptor<TransactionSidecarRecord.Builder> sidecarCaptor =
-            forClass(TransactionSidecarRecord.Builder.class);
+                forClass(TransactionSidecarRecord.Builder.class);
         given(consensusTimeTracker.unlimitedPreceding()).willReturn(true);
         given(networkCtx.areMigrationRecordsStreamed()).willReturn(false);
         given(networkCtx.consensusTimeOfLastHandledTxn()).willReturn(now);
@@ -443,7 +443,7 @@ class MigrationRecordsManagerTest {
         final var entityNum1 = EntityNum.fromLong(contract1Num);
         final var runtimeBytes = "runtime".getBytes();
         given(entityAccess.fetchCodeIfPresent(entityNum1.toGrpcAccountId()))
-            .willReturn(Bytes.of(runtimeBytes));
+                .willReturn(Bytes.of(runtimeBytes));
 
         accounts.put(entityNum1, contract1);
 
@@ -454,38 +454,41 @@ class MigrationRecordsManagerTest {
         assertTrue(subject.areTraceabilityRecordsStreamed());
         // then:
         assertThat(
-            logCaptor.warnLogs(),
-            contains(Matchers.equalTo("After walking through all iterable storage of contract 0.0.3, numContractKvPairs field indicates that there should have been 1"
-                + " more k/v pair(s) left")));
+                logCaptor.warnLogs(),
+                contains(
+                        Matchers.equalTo(
+                                "After walking through all iterable storage of contract 0.0.3,"
+                                    + " numContractKvPairs field indicates that there should have"
+                                    + " been 1 more k/v pair(s) left")));
         verify(transactionContext, times(2)).addSidecarRecord(sidecarCaptor.capture());
         final var sidecarRecords = sidecarCaptor.getAllValues();
         assertEquals(
-            SidecarUtils.createContractBytecodeSidecarFrom(
-                    entityNum1.toGrpcContractID(), runtimeBytes)
-                .setMigration(true)
-                .build(),
-            sidecarRecords.get(0).build());
+                SidecarUtils.createContractBytecodeSidecarFrom(
+                                entityNum1.toGrpcContractID(), runtimeBytes)
+                        .setMigration(true)
+                        .build(),
+                sidecarRecords.get(0).build());
         final var contract2StateChange =
-            ContractStateChange.newBuilder()
-                .setContractId(entityNum1.toGrpcContractID())
-                .addStorageChanges(
-                    StorageChange.newBuilder()
-                        .setSlot(
-                            ByteStringUtils.wrapUnsafely(
-                                UInt256.valueOf(1L).toArrayUnsafe()))
-                        .setValueRead(ByteStringUtils.wrapUnsafely(value))
-                        .build())
-                .build();
+                ContractStateChange.newBuilder()
+                        .setContractId(entityNum1.toGrpcContractID())
+                        .addStorageChanges(
+                                StorageChange.newBuilder()
+                                        .setSlot(
+                                                ByteStringUtils.wrapUnsafely(
+                                                        UInt256.valueOf(1L).toArrayUnsafe()))
+                                        .setValueRead(ByteStringUtils.wrapUnsafely(value))
+                                        .build())
+                        .build();
         final var expectedStateChangesContract2 =
-            ContractStateChanges.newBuilder()
-                .addContractStateChanges(contract2StateChange)
-                .build();
+                ContractStateChanges.newBuilder()
+                        .addContractStateChanges(contract2StateChange)
+                        .build();
         assertEquals(
-            TransactionSidecarRecord.newBuilder()
-                .setStateChanges(expectedStateChangesContract2)
-                .setMigration(true)
-                .build(),
-            sidecarRecords.get(1).build());
+                TransactionSidecarRecord.newBuilder()
+                        .setStateChanges(expectedStateChangesContract2)
+                        .setMigration(true)
+                        .build(),
+                sidecarRecords.get(1).build());
     }
 
     @Test
