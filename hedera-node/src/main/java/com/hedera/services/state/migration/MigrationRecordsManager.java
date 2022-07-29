@@ -313,7 +313,7 @@ public class MigrationRecordsManager {
                             }
                             final var stateChangesSidecar =
                                     generateMigrationStateChangesSidecar(
-                                            contractId, contractStorageMap, contractStorageKey);
+                                            contractId, contractStorageMap, contractStorageKey, account.getNumContractKvPairs());
                             transactionContext.addSidecarRecord(stateChangesSidecar);
                             log.debug(
                                     "Published migration state changes for contract 0.0.{}",
@@ -333,14 +333,15 @@ public class MigrationRecordsManager {
     }
 
     private Builder generateMigrationStateChangesSidecar(
-            final ContractID contractId,
-            final VirtualMap<ContractKey, IterableContractValue> contractStorageMap,
-            ContractKey contractStorageKey) {
+        final ContractID contractId,
+        final VirtualMap<ContractKey, IterableContractValue> contractStorageMap,
+        ContractKey contractStorageKey,
+        int maxNumberOfKvPairsToIterate) {
         final var contractStateChangeBuilder =
                 ContractStateChange.newBuilder().setContractId(contractId);
 
         IterableContractValue iterableValue;
-        while (contractStorageKey != null) {
+        while (maxNumberOfKvPairsToIterate > 0 && contractStorageKey != null) {
             iterableValue = contractStorageMap.get(contractStorageKey);
             contractStateChangeBuilder.addStorageChanges(
                     StorageChange.newBuilder()
@@ -349,6 +350,15 @@ public class MigrationRecordsManager {
                             .build());
             contractStorageKey =
                     iterableValue.getNextKeyScopedTo(contractStorageKey.getContractId());
+            maxNumberOfKvPairsToIterate--;
+        }
+
+        if (maxNumberOfKvPairsToIterate != 0) {
+            log.warn(
+                    "After walking through all iterable storage of contract 0.0.{}, numContractKvPairs field indicates that there should have been {}"
+                            + " more k/v pair(s) left",
+                    contractId.getContractNum(),
+                    maxNumberOfKvPairsToIterate);
         }
 
         return TransactionSidecarRecord.newBuilder()

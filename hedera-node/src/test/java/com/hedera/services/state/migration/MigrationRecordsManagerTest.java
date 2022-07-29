@@ -20,6 +20,8 @@ import static com.hedera.services.records.TxnAwareRecordsHistorian.DEFAULT_SOURC
 import static com.hedera.services.state.EntityCreator.EMPTY_MEMO;
 import static com.hedera.services.state.EntityCreator.NO_CUSTOM_FEES;
 import static com.hedera.services.state.initialization.TreasuryClonerTest.accountWith;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -65,6 +67,10 @@ import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.MiscUtils;
 import com.hedera.services.utils.SidecarUtils;
 import com.hedera.services.utils.accessors.TxnAccessor;
+import com.hedera.test.extensions.LogCaptor;
+import com.hedera.test.extensions.LogCaptureExtension;
+import com.hedera.test.extensions.LoggingSubject;
+import com.hedera.test.extensions.LoggingTarget;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.Duration;
@@ -81,6 +87,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.units.bigints.UInt256;
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -88,7 +95,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-@ExtendWith(MockitoExtension.class)
+@ExtendWith({MockitoExtension.class, LogCaptureExtension.class})
 class MigrationRecordsManagerTest {
     private static final long fundingExpiry = 33197904000L;
     private static final long stakingRewardAccount = 800;
@@ -130,7 +137,8 @@ class MigrationRecordsManagerTest {
     @Mock private VirtualMap<ContractKey, IterableContractValue> contractStorage;
     @Mock private EntityAccess entityAccess;
     @Mock private TxnAccessor txnAccessor;
-    private MigrationRecordsManager subject;
+    @LoggingTarget private LogCaptor logCaptor;
+    @LoggingSubject private MigrationRecordsManager subject;
 
     @BeforeEach
     void setUp() {
@@ -285,6 +293,7 @@ class MigrationRecordsManagerTest {
         // mock contract with 3 slots
         final var contract1 = mock(MerkleAccount.class);
         given(contract1.isSmartContract()).willReturn(true);
+        given(contract1.getNumContractKvPairs()).willReturn(3);
         final var contract1Num = 3L;
         final var contract1Key1 = ContractKey.from(contract1Num, UInt256.valueOf(1L));
         final var contract1Key2 = ContractKey.from(contract1Num, UInt256.valueOf(2L));
@@ -309,14 +318,16 @@ class MigrationRecordsManagerTest {
         final var runtimeBytes = "runtime".getBytes();
         given(entityAccess.fetchCodeIfPresent(entityNum1.toGrpcAccountId()))
                 .willReturn(Bytes.of(runtimeBytes));
-        // mock contract with 1 slot
+        // mock contract with 1 slot with loop
         final var contract2 = mock(MerkleAccount.class);
         given(contract2.isSmartContract()).willReturn(true);
-        final var contract2Value1 = mock(IterableContractValue.class);
+        given(contract2.getNumContractKvPairs()).willReturn(1);
         final var contrcat2Num = 4L;
         final var contract2Key1 = ContractKey.from(contrcat2Num, UInt256.valueOf(257L));
+        final var contract2Key2 = ContractKey.from(contract1Num, UInt256.valueOf(2L));
+        final var contract2Value1 = mock(IterableContractValue.class);
         given(contract2.getFirstContractStorageKey()).willReturn(contract2Key1);
-        given(contract2Value1.getNextKeyScopedTo(contrcat2Num)).willReturn(null);
+        given(contract2Value1.getNextKeyScopedTo(contrcat2Num)).willReturn(contract2Key2);
         final var value4 = "value4".getBytes();
         given(contract2Value1.getValue()).willReturn(value4);
         given(contractStorage.get(contract2Key1)).willReturn(contract2Value1);
@@ -403,6 +414,78 @@ class MigrationRecordsManagerTest {
                         .setMigration(true)
                         .build(),
                 sidecarRecords.get(3).build());
+    }
+
+    @Test
+    void traceabilityMigrationHandlesNumKvPairsFieldIndicatingMoreThanActualPairsSuccessfully() {
+        final ArgumentCaptor<TransactionSidecarRecord.Builder> sidecarCaptor =
+            forClass(TransactionSidecarRecord.Builder.class);
+        given(consensusTimeTracker.unlimitedPreceding()).willReturn(true);
+        given(networkCtx.areMigrationRecordsStreamed()).willReturn(false);
+        given(networkCtx.consensusTimeOfLastHandledTxn()).willReturn(now);
+        MigrationRecordsManager.setExpiryJustEnabled(false);
+        given(txnAccessor.getFunction()).willReturn(HederaFunctionality.ConsensusCreateTopic);
+        given(transactionContext.accessor()).willReturn(txnAccessor);
+        given(dynamicProperties.isTraceabilityMigrationEnabled()).willReturn(true);
+        accounts.clear();
+        // mock contract with 1 slot but numKvPairs = 2
+        final var contract1 = mock(MerkleAccount.class);
+        given(contract1.isSmartContract()).willReturn(true);
+        given(contract1.getNumContractKvPairs()).willReturn(2);
+        final var contract1Num = 3L;
+        final var contract1Key1 = ContractKey.from(contract1Num, UInt256.valueOf(1L));
+        final var contract1Value1 = mock(IterableContractValue.class);
+        given(contract1.getFirstContractStorageKey()).willReturn(contract1Key1);
+        given(contract1Value1.getNextKeyScopedTo(contract1Num)).willReturn(null);
+        final var value = "value".getBytes();
+        given(contract1Value1.getValue()).willReturn(value);
+        given(contractStorage.get(contract1Key1)).willReturn(contract1Value1);
+        final var entityNum1 = EntityNum.fromLong(contract1Num);
+        final var runtimeBytes = "runtime".getBytes();
+        given(entityAccess.fetchCodeIfPresent(entityNum1.toGrpcAccountId()))
+            .willReturn(Bytes.of(runtimeBytes));
+
+        accounts.put(entityNum1, contract1);
+
+        // when
+        subject.publishMigrationRecords(now);
+
+        // then
+        assertTrue(subject.areTraceabilityRecordsStreamed());
+        // then:
+        assertThat(
+            logCaptor.warnLogs(),
+            contains(Matchers.equalTo("After walking through all iterable storage of contract 0.0.3, numContractKvPairs field indicates that there should have been 1"
+                + " more k/v pair(s) left")));
+        verify(transactionContext, times(2)).addSidecarRecord(sidecarCaptor.capture());
+        final var sidecarRecords = sidecarCaptor.getAllValues();
+        assertEquals(
+            SidecarUtils.createContractBytecodeSidecarFrom(
+                    entityNum1.toGrpcContractID(), runtimeBytes)
+                .setMigration(true)
+                .build(),
+            sidecarRecords.get(0).build());
+        final var contract2StateChange =
+            ContractStateChange.newBuilder()
+                .setContractId(entityNum1.toGrpcContractID())
+                .addStorageChanges(
+                    StorageChange.newBuilder()
+                        .setSlot(
+                            ByteStringUtils.wrapUnsafely(
+                                UInt256.valueOf(1L).toArrayUnsafe()))
+                        .setValueRead(ByteStringUtils.wrapUnsafely(value))
+                        .build())
+                .build();
+        final var expectedStateChangesContract2 =
+            ContractStateChanges.newBuilder()
+                .addContractStateChanges(contract2StateChange)
+                .build();
+        assertEquals(
+            TransactionSidecarRecord.newBuilder()
+                .setStateChanges(expectedStateChangesContract2)
+                .setMigration(true)
+                .build(),
+            sidecarRecords.get(1).build());
     }
 
     @Test
