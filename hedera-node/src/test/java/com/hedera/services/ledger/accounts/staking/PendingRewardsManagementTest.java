@@ -78,10 +78,12 @@ class PendingRewardsManagementTest {
         given(stakingInfos.getForModify(onlyNodeNum)).willReturn(info);
         given(info.stakeRewardStartMinusUnclaimed())
                 .willReturn(stakeRewardStart - unclaimedStakeRewardStart);
+        given(dynamicProperties.requireMinStakeToReward()).willReturn(true);
         given(
                         info.updateRewardSumHistory(
                                 rewardRate / (totalStakedRewardStart / HBARS_TO_TINYBARS),
-                                lastPeriodRewardRate))
+                                lastPeriodRewardRate,
+                                true))
                 .willReturn(lastPeriodRewardRate);
         given(info.reviewElectionsAndRecomputeStakes()).willReturn(updatedStakeRewardStart);
         given(dynamicProperties.isStakingEnabled()).willReturn(true);
