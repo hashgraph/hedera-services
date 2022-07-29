@@ -203,11 +203,12 @@ public class ContextOptionValidator implements OptionValidator {
                 ResponseCodeEnum.INVALID_QUERY_RANGE);
     }
 
-    private ResponseCodeEnum batchSizeCheck(int length, int limit) {
+    public static ResponseCodeEnum batchSizeCheck(int length, int limit) {
         return lengthCheck(length, limit, ResponseCodeEnum.BATCH_SIZE_LIMIT_EXCEEDED);
     }
 
-    private ResponseCodeEnum lengthCheck(long length, long limit, ResponseCodeEnum onFailure) {
+    private static ResponseCodeEnum lengthCheck(
+            long length, long limit, ResponseCodeEnum onFailure) {
         if (length > limit) {
             return onFailure;
         }

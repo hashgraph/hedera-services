@@ -16,14 +16,20 @@
 package com.hedera.services.setup;
 
 import static com.hedera.services.ledger.properties.AccountProperty.BALANCE;
+import static com.hedera.services.ledger.properties.AccountProperty.STAKED_ID;
+import static com.hedera.services.setup.Constructables.FUNDING_ID;
+import static com.hedera.services.setup.Constructables.NUM_REWARDABLE_PERIODS;
+import static com.hedera.services.setup.Constructables.STAKING_REWARD_ID;
 import static com.hedera.services.setup.InfrastructureType.ACCOUNTS_LEDGER;
 import static com.hedera.services.setup.InfrastructureType.ACCOUNTS_MM;
 import static com.hedera.services.setup.InfrastructureType.CONTRACT_STORAGE_VM;
 import static com.hedera.services.state.virtual.IterableStorageUtils.overwritingUpsertMapping;
 
 import com.hedera.services.ledger.TransactionalLedger;
+import com.hedera.services.ledger.backing.BackingStore;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.merkle.MerkleStakingInfo;
 import com.hedera.services.state.virtual.ContractKey;
 import com.hedera.services.state.virtual.IterableContractValue;
 import com.hedera.services.utils.EntityNum;
@@ -31,8 +37,10 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
 import java.util.Map;
+import java.util.SplittableRandom;
 
 public class InfrastructureInitializer {
+
     public static void initializeBundle(
             final Map<String, Object> config, final InfrastructureBundle bundle) {
         if (config.containsKey("initContracts") && config.containsKey("initKvPairs")) {
@@ -41,9 +49,63 @@ public class InfrastructureInitializer {
                     bundle.get(CONTRACT_STORAGE_VM),
                     (int) config.get("initKvPairs"),
                     (int) config.get("initContracts"));
-        } else if (config.containsKey("userAccounts")) {
+        }
+        if (config.containsKey("userAccounts")) {
             initSomeAccounts(bundle.get(ACCOUNTS_LEDGER), (int) config.get("userAccounts"));
         }
+    }
+
+    public static void initializeStakeableAccounts(
+            final SplittableRandom random,
+            final Map<String, Object> config,
+            final BackingStore<AccountID, MerkleAccount> backingAccounts,
+            final MerkleMap<EntityNum, MerkleStakingInfo> stakingInfos,
+            final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> stakingLedger) {
+        final var numAccounts = (int) config.get("stakeableAccounts");
+        final var numNodeIds = (int) config.get("nodeIds");
+        final var stakeToNodeProb = (double) config.get("stakeToNodeProb");
+        final var stakeToAccountProb = (double) config.get("stakeToAccountProb");
+        final var stakeProb = stakeToNodeProb + stakeToAccountProb;
+        final var initialBalance = 1_000 * 100_000_000L;
+        final var firstNodeNum = (long) Constructables.FIRST_NODE_I;
+        final var firstAccountNum = (long) Constructables.FIRST_USER_I;
+
+        for (int i = 0; i < numNodeIds; i++) {
+            final var account = accountWith(0);
+            final var num = firstNodeNum + i;
+            backingAccounts.put(accountIdWith(num), account);
+        }
+        for (int i = 0; i < numAccounts; i++) {
+            final var account = accountWith(initialBalance);
+            final var num = firstAccountNum + i;
+            backingAccounts.put(accountIdWith(num), account);
+        }
+        backingAccounts.put(FUNDING_ID, accountWith(0L));
+        backingAccounts.put(STAKING_REWARD_ID, accountWith(250_000_000L * 100_000_000L));
+
+        for (int i = 0; i < numNodeIds; i++) {
+            final var stakingInfo = new MerkleStakingInfo(NUM_REWARDABLE_PERIODS);
+            stakingInfo.setMaxStake(Long.MAX_VALUE);
+            stakingInfos.put(EntityNum.fromInt(i), stakingInfo);
+        }
+
+        stakingLedger.begin();
+        for (int i = 0; i < numAccounts; i++) {
+            final var choice = random.nextDouble();
+            if (choice < stakeProb) {
+                final var num = firstAccountNum + i;
+                final var accountId = accountIdWith(num);
+                if (choice < stakeToNodeProb) {
+                    stakingLedger.set(accountId, STAKED_ID, -random.nextInt(numNodeIds) - 1L);
+                } else {
+                    final var stakeeOffset = +random.nextInt(numAccounts);
+                    if (i != stakeeOffset) {
+                        stakingLedger.set(accountId, STAKED_ID, firstAccountNum + stakeeOffset);
+                    }
+                }
+            }
+        }
+        stakingLedger.commit();
     }
 
     private static void initSomeAccounts(
@@ -126,5 +188,9 @@ public class InfrastructureInitializer {
         final var account = new MerkleAccount();
         account.setBalanceUnchecked(balance);
         return account;
+    }
+
+    public static AccountID accountIdWith(final long num) {
+        return AccountID.newBuilder().setAccountNum(num).build();
     }
 }
