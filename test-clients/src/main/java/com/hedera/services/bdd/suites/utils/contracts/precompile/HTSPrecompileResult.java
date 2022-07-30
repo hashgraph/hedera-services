@@ -50,6 +50,7 @@ import com.hedera.services.bdd.suites.contract.Utils;
 import com.hedera.services.bdd.suites.utils.contracts.ContractCallResult;
 import com.hedera.services.contracts.ParsingConstants;
 import com.hedera.services.contracts.ParsingConstants.FunctionType;
+import com.hederahashgraph.api.proto.java.CustomFee;
 import com.hederahashgraph.api.proto.java.FixedFee;
 import com.hederahashgraph.api.proto.java.FractionalFee;
 import com.hederahashgraph.api.proto.java.Key;
@@ -59,22 +60,31 @@ import com.hederahashgraph.api.proto.java.TokenInfo;
 import com.hederahashgraph.api.proto.java.TokenNftInfo;
 import java.math.BigInteger;
 import java.util.ArrayList;
+import java.util.List;
 import org.apache.tuweni.bytes.Bytes;
 
 public class HTSPrecompileResult implements ContractCallResult {
     private HTSPrecompileResult() {}
 
+    public static final String ADDRESS_TYPE = "address";
+    public static final String BYTES_32_TYPE = "bytes32";
+    public static final String FIXED_FEE_REPLACED_ADDRESS =
+            FIXED_FEE.replace(ADDRESS_TYPE, BYTES_32_TYPE);
+    public static final String FRACTIONAL_FEE_REPLACED_ADDRESS =
+            FRACTIONAL_FEE.replace(ADDRESS_TYPE, BYTES_32_TYPE);
+    public static final String ROYALTY_FEE_REPLACED_ADDRESS =
+            ROYALTY_FEE.replace(ADDRESS_TYPE, BYTES_32_TYPE);
     public static final String TOKEN_INFO_REPLACED_ADDRESS =
             "("
                     + HEDERA_TOKEN.replace(removeBrackets(ADDRESS), removeBrackets(BYTES32))
                     + ",int64,bool,bool,bool,"
-                    + FIXED_FEE.replace(removeBrackets(ADDRESS), removeBrackets(BYTES32))
+                    + FIXED_FEE_REPLACED_ADDRESS
                     + ARRAY_BRACKETS
                     + ","
-                    + FRACTIONAL_FEE.replace("address", "bytes32")
+                    + FRACTIONAL_FEE_REPLACED_ADDRESS
                     + ARRAY_BRACKETS
                     + ","
-                    + ROYALTY_FEE.replace("address", "bytes32")
+                    + ROYALTY_FEE_REPLACED_ADDRESS
                     + ARRAY_BRACKETS
                     + ",string"
                     + ")";
@@ -91,6 +101,18 @@ public class HTSPrecompileResult implements ContractCallResult {
     public static final TupleType getNonFungibleTokenInfoTypeReplacedAddress =
             TupleType.parse(
                     RESPONSE_STATUS_AT_BEGINNING + NON_FUNGIBLE_TOKEN_INFO_REPLACED_ADDRESS + ")");
+    public static final TupleType tokenGetCustomFeesReplacedAddress =
+            TupleType.parse(
+                    RESPONSE_STATUS_AT_BEGINNING
+                            + FIXED_FEE_REPLACED_ADDRESS
+                            + ARRAY_BRACKETS
+                            + ","
+                            + FRACTIONAL_FEE_REPLACED_ADDRESS
+                            + ARRAY_BRACKETS
+                            + ","
+                            + ROYALTY_FEE_REPLACED_ADDRESS
+                            + ARRAY_BRACKETS
+                            + ")");
 
     public static HTSPrecompileResult htsPrecompileResult() {
         return new HTSPrecompileResult();
@@ -116,6 +138,7 @@ public class HTSPrecompileResult implements ContractCallResult {
     private boolean tokenDefaultFreezeStatus;
     private boolean tokenDefaultKycStatus;
     private boolean isFrozen;
+    private List<CustomFee> customFees;
 
     public HTSPrecompileResult forFunction(final FunctionType functionType) {
         tupleType =
@@ -142,6 +165,7 @@ public class HTSPrecompileResult implements ContractCallResult {
                     case GET_TOKEN_DEFAULT_FREEZE_STATUS -> getTokenDefaultFreezeStatusType;
                     case GET_TOKEN_DEFAULT_KYC_STATUS -> getTokenDefaultKycStatusType;
                     case HAPI_IS_FROZEN -> isFrozenType;
+                    case HAPI_GET_TOKEN_CUSTOM_FEES -> tokenGetCustomFeesReplacedAddress;
                     default -> notSpecifiedType;
                 };
 
@@ -238,6 +262,11 @@ public class HTSPrecompileResult implements ContractCallResult {
         return this;
     }
 
+    public HTSPrecompileResult withCustomFees(final List<CustomFee> customFees) {
+        this.customFees = customFees;
+        return this;
+    }
+
     public HTSPrecompileResult withTokenDefaultFreezeStatus(
             final boolean tokenDefaultFreezeStatus) {
         this.tokenDefaultFreezeStatus = tokenDefaultFreezeStatus;
@@ -290,6 +319,7 @@ public class HTSPrecompileResult implements ContractCallResult {
                     case GET_TOKEN_DEFAULT_KYC_STATUS -> Tuple.of(
                             status.getNumber(), tokenDefaultKycStatus);
                     case HAPI_IS_FROZEN -> Tuple.of(status.getNumber(), isFrozen);
+                    case HAPI_GET_TOKEN_CUSTOM_FEES -> getTupleForTokenGetCustomFees();
                     default -> Tuple.of(status.getNumber());
                 };
 
@@ -318,23 +348,48 @@ public class HTSPrecompileResult implements ContractCallResult {
                                 Utils.asAddress(nonFungibleTokenInfo.getSpenderId()))));
     }
 
+    private Tuple getTupleForTokenGetCustomFees() {
+        return getTupleForTokenCustomFees(status.getNumber());
+    }
+
+    private Tuple getTupleForTokenCustomFees(final int responseCode) {
+        final var fixedFees = new ArrayList<Tuple>();
+        final var fractionalFees = new ArrayList<Tuple>();
+        final var royaltyFees = new ArrayList<Tuple>();
+
+        for (final var customFee : customFees) {
+            extractFees(fixedFees, fractionalFees, royaltyFees, customFee);
+        }
+        return Tuple.of(
+                responseCode,
+                fixedFees.toArray(new Tuple[fixedFees.size()]),
+                fractionalFees.toArray(new Tuple[fractionalFees.size()]),
+                royaltyFees.toArray(new Tuple[royaltyFees.size()]));
+    }
+
+    private void extractFees(
+            final ArrayList<Tuple> fixedFees,
+            final ArrayList<Tuple> fractionalFees,
+            final ArrayList<Tuple> royaltyFees,
+            final CustomFee customFee) {
+        final var feeCollector =
+                expandByteArrayTo32Length(Utils.asAddress(customFee.getFeeCollectorAccountId()));
+        if (customFee.getFixedFee().getAmount() > 0) {
+            fixedFees.add(getFixedFeeTuple(customFee.getFixedFee(), feeCollector));
+        } else if (customFee.getFractionalFee().getMinimumAmount() > 0) {
+            fractionalFees.add(getFractionalFeeTuple(customFee.getFractionalFee(), feeCollector));
+        } else if (customFee.getRoyaltyFee().getExchangeValueFraction().getNumerator() > 0) {
+            royaltyFees.add(getRoyaltyFeeTuple(customFee.getRoyaltyFee(), feeCollector));
+        }
+    }
+
     private Tuple getTupleForTokenInfo() {
         final var fixedFees = new ArrayList<Tuple>();
         final var fractionalFees = new ArrayList<Tuple>();
         final var royaltyFees = new ArrayList<Tuple>();
 
         for (final var customFee : tokenInfo.getCustomFeesList()) {
-            final var feeCollector =
-                    expandByteArrayTo32Length(
-                            Utils.asAddress(customFee.getFeeCollectorAccountId()));
-            if (customFee.getFixedFee().getAmount() > 0) {
-                fixedFees.add(getFixedFeeTuple(customFee.getFixedFee(), feeCollector));
-            } else if (customFee.getFractionalFee().getMinimumAmount() > 0) {
-                fractionalFees.add(
-                        getFractionalFeeTuple(customFee.getFractionalFee(), feeCollector));
-            } else if (customFee.getRoyaltyFee().getExchangeValueFraction().getNumerator() > 0) {
-                royaltyFees.add(getRoyaltyFeeTuple(customFee.getRoyaltyFee(), feeCollector));
-            }
+            extractFees(fixedFees, fractionalFees, royaltyFees, customFee);
         }
         return Tuple.of(
                 getHederaTokenTuple(),

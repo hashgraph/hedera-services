@@ -53,10 +53,12 @@ import com.hedera.services.store.contracts.precompile.codec.BurnWrapper;
 import com.hedera.services.store.contracts.precompile.codec.DeleteWrapper;
 import com.hedera.services.store.contracts.precompile.codec.Dissociation;
 import com.hedera.services.store.contracts.precompile.codec.MintWrapper;
+import com.hedera.services.store.contracts.precompile.codec.PauseWrapper;
 import com.hedera.services.store.contracts.precompile.codec.SetApprovalForAllWrapper;
 import com.hedera.services.store.contracts.precompile.codec.TokenCreateWrapper;
 import com.hedera.services.store.contracts.precompile.codec.TokenFreezeUnfreezeWrapper;
 import com.hedera.services.store.contracts.precompile.codec.TokenTransferWrapper;
+import com.hedera.services.store.contracts.precompile.codec.UnpauseWrapper;
 import com.hedera.services.store.contracts.precompile.codec.WipeWrapper;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.EntityNum;
@@ -851,6 +853,46 @@ class SyntheticTxnFactoryTest {
                         subject, differentReceiver.asGrpc().toBuilder()));
         assertFalse(
                 SyntheticTxnFactory.areSameBuilder(subject, differentSender.asGrpc().toBuilder()));
+    }
+
+    @Test
+    void createsExpectedFungiblePause() {
+        final var fungiblePause = new PauseWrapper(fungible);
+
+        final var result = subject.createPause(fungiblePause);
+        final var txnBody = result.build();
+
+        assertEquals(fungible, txnBody.getTokenPause().getToken());
+    }
+
+    @Test
+    void createsExpectedNonFungiblePause() {
+        final var nonFungiblePause = new PauseWrapper(nonFungible);
+
+        final var result = subject.createPause(nonFungiblePause);
+        final var txnBody = result.build();
+
+        assertEquals(nonFungible, txnBody.getTokenPause().getToken());
+    }
+
+    @Test
+    void createsExpectedFungibleUnpause() {
+        final var fungibleUnpause = new UnpauseWrapper(fungible);
+
+        final var result = subject.createUnpause(fungibleUnpause);
+        final var txnBody = result.build();
+
+        assertEquals(fungible, txnBody.getTokenUnpause().getToken());
+    }
+
+    @Test
+    void createsExpectedNonFungibleUnpause() {
+        final var nonFungibleUnpause = new UnpauseWrapper(nonFungible);
+
+        final var result = subject.createUnpause(nonFungibleUnpause);
+        final var txnBody = result.build();
+
+        assertEquals(nonFungible, txnBody.getTokenUnpause().getToken());
     }
 
     @Test
