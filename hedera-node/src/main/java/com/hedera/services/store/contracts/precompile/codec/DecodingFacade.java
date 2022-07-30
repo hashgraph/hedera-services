@@ -221,8 +221,7 @@ public class DecodingFacade {
             new Function("unpauseToken(address)", INT);
     private static final Bytes UNPAUSE_TOKEN_SELECTOR =
             Bytes.wrap(UNPAUSE_TOKEN_FUNCTION.selector());
-    private static final ABIType<Tuple> UNPAUSE_TOKEN_DECODER =
-            TypeFactory.create(BYTES32);
+    private static final ABIType<Tuple> UNPAUSE_TOKEN_DECODER = TypeFactory.create(BYTES32);
 
     private static final Function IS_FROZEN_TOKEN_FUNCTION =
             new Function("isFrozen(address,address)", INT_BOOL_PAIR);
