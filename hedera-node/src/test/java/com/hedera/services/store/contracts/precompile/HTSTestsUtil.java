@@ -27,12 +27,14 @@ import com.hedera.services.store.contracts.precompile.codec.GetTokenDefaultFreez
 import com.hedera.services.store.contracts.precompile.codec.GetTokenDefaultKycStatusWrapper;
 import com.hedera.services.store.contracts.precompile.codec.MintWrapper;
 import com.hedera.services.store.contracts.precompile.codec.OwnerOfAndTokenURIWrapper;
+import com.hedera.services.store.contracts.precompile.codec.PauseWrapper;
 import com.hedera.services.store.contracts.precompile.codec.TokenCreateWrapper;
 import com.hedera.services.store.contracts.precompile.codec.TokenExpiryWrapper;
 import com.hedera.services.store.contracts.precompile.codec.TokenFreezeUnfreezeWrapper;
 import com.hedera.services.store.contracts.precompile.codec.TokenGetCustomFeesWrapper;
 import com.hedera.services.store.contracts.precompile.codec.TokenInfoWrapper;
 import com.hedera.services.store.contracts.precompile.codec.TokenTransferWrapper;
+import com.hedera.services.store.contracts.precompile.codec.UnpauseWrapper;
 import com.hedera.services.store.contracts.precompile.codec.WipeWrapper;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.utils.EntityIdUtils;
@@ -126,6 +128,10 @@ public class HTSTestsUtil {
             MintWrapper.forFungible(fungible, new BigInteger("2").pow(64).longValue());
     public static final MintWrapper fungibleMintMaxAmount =
             MintWrapper.forFungible(fungible, Long.MAX_VALUE);
+    public static final PauseWrapper fungiblePause = new PauseWrapper(fungible);
+    public static final PauseWrapper nonFungiblePause = new PauseWrapper(nonFungible);
+    public static final UnpauseWrapper fungibleUnpause = new UnpauseWrapper(fungible);
+    public static final UnpauseWrapper nonFungibleUnpause = new UnpauseWrapper(nonFungible);
     public static final WipeWrapper fungibleWipe =
             WipeWrapper.forFungible(fungible, account, AMOUNT);
     public static final WipeWrapper nonFungibleWipe =

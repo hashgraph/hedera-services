@@ -130,6 +130,31 @@ public interface EvmSigsVerifier {
             WorldLedgers worldLedgers);
 
     /**
+     * Determines if the target token has an active pause key given the cryptographic signatures
+     * from the {@link com.hederahashgraph.api.proto.java.SignatureMap} that could be verified
+     * asynchronously; plus the given recipient and contract of the current {@link
+     * org.hyperledger.besu.evm.frame.MessageFrame}.
+     *
+     * <p>If the pause key includes a {@code contractID} key matching the contract address, or a
+     * {@code delegatableContractId} key matching the recipient address, then those keys must be
+     * treated as active for the purposes of this test.
+     *
+     * <p>Does <b>not</b> perform any synchronous signature verification.
+     *
+     * @param isDelegateCall a flag showing if the message represented by the active frame is
+     *     invoked via {@code delegatecall}
+     * @param tokenAddress the address of the token to test for pause key activation
+     * @param activeContract the address of the contract that should be signed in the key
+     * @param worldLedgers the worldLedgers representing current state
+     * @return whether the target account's key has an active signature
+     */
+    boolean hasActivePauseKey(
+            boolean isDelegateCall,
+            Address tokenAddress,
+            Address activeContract,
+            WorldLedgers worldLedgers);
+
+    /**
      * Determines if the supplied key is active in the context of the transaction, i.e. has signed
      * the transaction, given the cryptographic signatures from the {@link
      * com.hederahashgraph.api.proto.java.SignatureMap} that could be verified asynchronously.

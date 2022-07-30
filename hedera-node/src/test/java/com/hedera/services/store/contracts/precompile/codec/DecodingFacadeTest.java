@@ -219,6 +219,22 @@ class DecodingFacadeTest {
             Bytes.fromHexString(
                     "0xe1f21c67000000000000000000000000000000000000000000000000000000000000123400000000000000000000000000000000000000000000000000000000000003f0000000000000000000000000000000000000000000000000000000000000000a");
 
+    private static final Bytes FUNGIBLE_PAUSE_INPUT =
+            Bytes.fromHexString(
+                    "0x7c41ad2c000000000000000000000000000000000000000000000000000000000000043d");
+
+    private static final Bytes NON_FUNGIBLE_PAUSE_INPUT =
+            Bytes.fromHexString(
+                    "0x7c41ad2c0000000000000000000000000000000000000000000000000000000000000445");
+
+    private static final Bytes FUNGIBLE_UNPAUSE_INPUT =
+            Bytes.fromHexString(
+                    "0x3b3bff0f0000000000000000000000000000000000000000000000000000000000000441");
+
+    private static final Bytes NON_FUNGIBLE_UNPAUSE_INPUT =
+            Bytes.fromHexString(
+                    "0x3b3bff0f0000000000000000000000000000000000000000000000000000000000000449");
+
     public static final Bytes GET_TOKEN_INFO_INPUT =
             Bytes.fromHexString(
                     "0x1f69565f000000000000000000000000000000000000000000000000000000000000000a");
@@ -875,6 +891,34 @@ class DecodingFacadeTest {
                         subject.decodeFungibleCreate(
                                 CREATE_FUNGIBLE_NO_FEES_TOKEN_KEY_EXCEEDING_INTEGER_MAX_INVALID_INPUT,
                                 identity));
+    }
+
+    @Test
+    void decodeFungiblePauseInput() {
+        final var decodedInput = subject.decodePause(FUNGIBLE_PAUSE_INPUT);
+
+        assertTrue(decodedInput.token().getTokenNum() > 0);
+    }
+
+    @Test
+    void decodeNonFungiblePauseInput() {
+        final var decodedInput = subject.decodePause(NON_FUNGIBLE_PAUSE_INPUT);
+
+        assertTrue(decodedInput.token().getTokenNum() > 0);
+    }
+
+    @Test
+    void decodeFungibleUnpauseInput() {
+        final var decodedInput = subject.decodeUnpause(FUNGIBLE_UNPAUSE_INPUT);
+
+        assertTrue(decodedInput.token().getTokenNum() > 0);
+    }
+
+    @Test
+    void decodeNonFungibleUnpauseInput() {
+        final var decodedInput = subject.decodeUnpause(NON_FUNGIBLE_UNPAUSE_INPUT);
+
+        assertTrue(decodedInput.token().getTokenNum() > 0);
     }
 
     @Test
