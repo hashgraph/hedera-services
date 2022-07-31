@@ -35,6 +35,7 @@ import com.hedera.services.store.contracts.precompile.codec.MintWrapper;
 import com.hedera.services.store.contracts.precompile.codec.SetApprovalForAllWrapper;
 import com.hedera.services.store.contracts.precompile.codec.TokenCreateWrapper;
 import com.hedera.services.store.contracts.precompile.codec.TokenTransferWrapper;
+import com.hedera.services.store.contracts.precompile.codec.UpdateTokenInfoWrapper;
 import com.hedera.services.store.contracts.precompile.codec.WipeWrapper;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.MiscUtils;
@@ -436,7 +437,11 @@ public class SyntheticTxnFactory {
         return TransactionBody.newBuilder().setTokenWipe(builder);
     }
 
-    public static class HbarTransfer {
+    public TransactionBody.Builder createUpdateTokenInfo(UpdateTokenInfoWrapper updateOp) {
+        return null;
+    }
+
+	public static class HbarTransfer {
         protected final long amount;
         protected final AccountID sender;
         protected final AccountID receiver;

@@ -71,6 +71,7 @@ import com.hedera.services.store.contracts.precompile.impl.TokenInfoPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.TokenURIPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.TotalSupplyPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.TransferPrecompile;
+import com.hedera.services.store.contracts.precompile.impl.UpdateTokenInfoPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.WipeFungiblePrecompile;
 import com.hedera.services.store.contracts.precompile.impl.WipeNonFungiblePrecompile;
 import com.hedera.services.store.contracts.precompile.utils.DescriptorUtils;
@@ -418,6 +419,14 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
                             ledgers,
                             decoder,
                             updater.aliases(),
+                            sigsVerifier,
+                            sideEffectsTracker,
+                            syntheticTxnFactory,
+                            infrastructureFactory,
+                            precompilePricingUtils);
+                    case AbiConstants.ABI_ID_UPDATE_TOKEN_INFO -> new UpdateTokenInfoPrecompile(
+                            ledgers,
+                            decoder,
                             sigsVerifier,
                             sideEffectsTracker,
                             syntheticTxnFactory,

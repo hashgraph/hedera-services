@@ -1240,4 +1240,9 @@ public class DecodingFacade {
                             -amount, false, tokenType, accountID, null));
         }
     }
+
+    public UpdateTokenInfoWrapper decodeUpdateTokenInfo(
+            Bytes input, UnaryOperator<byte[]> aliasResolver) {
+        return new UpdateTokenInfoWrapper();
+    }
 }
