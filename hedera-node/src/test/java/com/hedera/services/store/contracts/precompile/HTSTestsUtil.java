@@ -107,6 +107,8 @@ public class HTSTestsUtil {
             UInt256.valueOf(ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER_VALUE);
     public static final Bytes invalidSigResult =
             UInt256.valueOf(ResponseCodeEnum.INVALID_SIGNATURE_VALUE);
+    public static final Bytes invalidFullPrefix =
+            UInt256.valueOf(ResponseCodeEnum.INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE_VALUE);
     public static final Bytes missingNftResult =
             UInt256.valueOf(ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER_VALUE);
     public static final Association associateOp =
