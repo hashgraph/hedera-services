@@ -57,8 +57,18 @@ public class TransactionRecordService {
      *
      * @param result the processing result of the EVM transaction
      */
-    public void externalizeUnsuccessfulEvmCreate(TransactionProcessingResult result) {
+    public void externalizeUnsuccessfulEvmCreate(final TransactionProcessingResult result) {
+        externalizeUnsuccessfulEvmCreate(result, null);
+    }
+
+    public void externalizeUnsuccessfulEvmCreate(
+            final TransactionProcessingResult result,
+            final TransactionSidecarRecord.Builder contractBytecodeSidecarRecord) {
         txnCtx.setCreateResult(EvmFnResult.fromCall(result));
+        addAllSidecarsToTxnContextFrom(result);
+        if (contractBytecodeSidecarRecord != null) {
+            txnCtx.addSidecarRecord(contractBytecodeSidecarRecord);
+        }
         externalizeGenericEvmCreate(result);
     }
 

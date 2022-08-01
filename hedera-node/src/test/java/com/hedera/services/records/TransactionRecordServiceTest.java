@@ -209,6 +209,52 @@ class TransactionRecordServiceTest {
     }
 
     @Test
+    void externalisesUnsuccessfulEvmCreateTransactionWithSidecars() {
+        // given:
+        final var contextCaptor = ArgumentCaptor.forClass(TransactionSidecarRecord.Builder.class);
+        givenProcessingResult(false, null);
+        given(processingResult.getStateChanges()).willReturn(stateChanges);
+        final var contractBytecodeSidecar =
+                SidecarUtils.createContractBytecodeSidecarFrom(
+                        IdUtils.asContract("0.0.5"),
+                        "initCode".getBytes(),
+                        "runtimeCode".getBytes());
+        // when:
+        subject.externalizeUnsuccessfulEvmCreate(processingResult, contractBytecodeSidecar);
+        // then:
+        verify(txnCtx).setStatus(CONTRACT_EXECUTION_EXCEPTION);
+        verify(txnCtx).setCreateResult(any());
+        verify(txnCtx).addFeeChargedToPayer(NON_THRESHOLD_FEE);
+        verify(txnCtx, times(2)).addSidecarRecord(contextCaptor.capture());
+        final var sidecars = contextCaptor.getAllValues();
+        assertEquals(2, sidecars.size());
+        assertEquals(
+                SidecarUtils.createStateChangesSidecarFrom(stateChanges).build(),
+                sidecars.get(0).build());
+        assertEquals(contractBytecodeSidecar.build(), sidecars.get(1).build());
+    }
+
+    @Test
+    void externalisesUnsuccessfulEvmCreateTransactionWithStateChanges() {
+        // given:
+        final var contextCaptor = ArgumentCaptor.forClass(TransactionSidecarRecord.Builder.class);
+        givenProcessingResult(false, null);
+        given(processingResult.getStateChanges()).willReturn(stateChanges);
+        // when
+        subject.externalizeUnsuccessfulEvmCreate(processingResult, null);
+        // then:
+        verify(txnCtx).setStatus(CONTRACT_EXECUTION_EXCEPTION);
+        verify(txnCtx).setCreateResult(any());
+        verify(txnCtx).addFeeChargedToPayer(NON_THRESHOLD_FEE);
+        verify(txnCtx, times(1)).addSidecarRecord(contextCaptor.capture());
+        final var sidecars = contextCaptor.getAllValues();
+        assertEquals(1, sidecars.size());
+        assertEquals(
+                SidecarUtils.createStateChangesSidecarFrom(stateChanges).build(),
+                sidecars.get(0).build());
+    }
+
+    @Test
     void externalisesEvmCreateTransactionWithContractRevert() {
         // given:
         givenProcessingResult(false, null);
@@ -218,6 +264,8 @@ class TransactionRecordServiceTest {
         verify(txnCtx).setStatus(CONTRACT_EXECUTION_EXCEPTION);
         verify(txnCtx).setCreateResult(any());
         verify(txnCtx).addFeeChargedToPayer(NON_THRESHOLD_FEE);
+        verify(txnCtx, Mockito.never())
+                .addSidecarRecord(any(TransactionSidecarRecord.Builder.class));
     }
 
     @Test

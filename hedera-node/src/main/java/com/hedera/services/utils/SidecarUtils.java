@@ -100,4 +100,13 @@ public class SidecarUtils {
         }
         return TransactionSidecarRecord.newBuilder().setActions(actionsBuilder.build());
     }
+
+    public static TransactionSidecarRecord.Builder createContractBytecodeSidecarForFailedCreate(
+            final byte[] initCode) {
+        return TransactionSidecarRecord.newBuilder()
+                .setBytecode(
+                        ContractBytecode.newBuilder()
+                                .setInitcode(ByteStringUtils.wrapUnsafely(initCode))
+                                .build());
+    }
 }

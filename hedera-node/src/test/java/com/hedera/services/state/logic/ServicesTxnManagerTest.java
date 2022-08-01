@@ -118,11 +118,26 @@ class ServicesTxnManagerTest {
     }
 
     @Test
-    void onlyCallsMigrationRecordsManagerOnce() {
+    void onlyCallsMigrationRecordsManagerOnceIfAllMigrationsAreExecutedTogether() {
+        given(migrationRecordsManager.areTraceabilityRecordsStreamed()).willReturn(true);
+
         subject.process(accessor, consensusTime, submittingMember);
         subject.process(accessor, consensusTime, submittingMember);
 
         verify(migrationRecordsManager, times(1)).publishMigrationRecords(consensusTime);
+    }
+
+    @Test
+    void callsMigrationManagerUntilTraceabilityMigrationIsComplete() {
+        given(migrationRecordsManager.areTraceabilityRecordsStreamed())
+                .willReturn(false)
+                .willReturn(true);
+
+        subject.process(accessor, consensusTime, submittingMember);
+        subject.process(accessor, consensusTime, submittingMember);
+        subject.process(accessor, consensusTime, submittingMember);
+
+        verify(migrationRecordsManager, times(2)).publishMigrationRecords(consensusTime);
     }
 
     @Test
