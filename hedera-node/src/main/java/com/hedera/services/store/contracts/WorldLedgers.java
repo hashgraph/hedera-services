@@ -176,7 +176,7 @@ public class WorldLedgers {
             validateTrue(accountsLedger.exists(accountId), INVALID_ACCOUNT_ID);
             final var isKycKey = Pair.of(accountId, tokenId);
             return tokenRelsLedger.exists(isKycKey)
-                && (boolean) tokenRelsLedger.get(isKycKey, IS_KYC_GRANTED);
+                    && (boolean) tokenRelsLedger.get(isKycKey, IS_KYC_GRANTED);
         }
     }
 

@@ -44,8 +44,8 @@ import static com.hedera.test.utils.TxnUtils.assertFailsWith;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_FREEZE_KEY;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_PAUSE_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_KYC_KEY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_PAUSE_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_SUPPLY_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_WIPE_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_IS_IMMUTABLE;
@@ -513,10 +513,10 @@ class TxnAwareEvmSigsVerifierTest {
         given(tokensLedger.get(token, TokenProperty.KYC_KEY)).willReturn(null);
 
         assertFailsWith(
-            () ->
-                subject.hasActiveKycKey(
-                    true, PRETEND_TOKEN_ADDR, PRETEND_SENDER_ADDR, ledgers),
-            TOKEN_HAS_NO_KYC_KEY);
+                () ->
+                        subject.hasActiveKycKey(
+                                true, PRETEND_TOKEN_ADDR, PRETEND_SENDER_ADDR, ledgers),
+                TOKEN_HAS_NO_KYC_KEY);
     }
 
     @Test
@@ -530,7 +530,7 @@ class TxnAwareEvmSigsVerifierTest {
         given(activationTest.test(eq(expectedKey), eq(pkToCryptoSigsFn), any())).willReturn(true);
 
         final var verdict =
-            subject.hasActiveKycKey(true, PRETEND_TOKEN_ADDR, PRETEND_SENDER_ADDR, ledgers);
+                subject.hasActiveKycKey(true, PRETEND_TOKEN_ADDR, PRETEND_SENDER_ADDR, ledgers);
 
         assertTrue(verdict);
     }

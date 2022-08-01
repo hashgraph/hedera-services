@@ -441,7 +441,7 @@ public class SyntheticTxnFactory {
     }
 
     public TransactionBody.Builder createGrantKyc(
-        final GrantRevokeKycWrapper grantRevokeKycWrapper) {
+            final GrantRevokeKycWrapper grantRevokeKycWrapper) {
         final var builder = TokenGrantKycTransactionBody.newBuilder();
 
         builder.setToken(grantRevokeKycWrapper.token());
@@ -451,7 +451,7 @@ public class SyntheticTxnFactory {
     }
 
     public TransactionBody.Builder createRevokeKyc(
-        final GrantRevokeKycWrapper grantRevokeKycWrapper) {
+            final GrantRevokeKycWrapper grantRevokeKycWrapper) {
         final var builder = TokenRevokeKycTransactionBody.newBuilder();
 
         builder.setToken(grantRevokeKycWrapper.token());
