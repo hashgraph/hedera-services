@@ -337,7 +337,7 @@ public class SpanMapManager {
 
     public static void reCalculateXferMeta(
             TxnAccessor accessor, ImpliedTransfers impliedTransfers) {
-        final var xferMeta = accessor.availXferUsageMeta();
+        final var xferMeta = accessor.getSpanMapAccessor().getCryptoTransferMeta(accessor);
 
         var customFeeTokenTransfers = 0;
         var customFeeHbarTransfers = 0;

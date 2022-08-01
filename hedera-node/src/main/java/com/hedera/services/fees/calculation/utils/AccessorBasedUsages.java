@@ -175,7 +175,7 @@ public class AccessorBasedUsages {
             TxnAccessor accessor,
             BaseTransactionMeta baseMeta,
             UsageAccumulator into) {
-        final var xferMeta = accessor.availXferUsageMeta();
+        final var xferMeta = accessor.getSpanMapAccessor().getCryptoTransferMeta(accessor);
         xferMeta.setTokenMultiplier(dynamicProperties.feesTokenTransferUsageMultiplier());
         cryptoOpsUsage.cryptoTransferUsage(sigUsage, xferMeta, baseMeta, into);
     }

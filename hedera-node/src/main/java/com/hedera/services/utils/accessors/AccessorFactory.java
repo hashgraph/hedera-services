@@ -15,9 +15,6 @@
  */
 package com.hedera.services.utils.accessors;
 
-import static com.hedera.services.legacy.proto.utils.CommonUtils.extractTransactionBody;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAccountWipe;
-
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.txns.validation.OptionValidator;
@@ -25,11 +22,16 @@ import com.hedera.services.utils.MiscUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.Transaction;
+
 import javax.inject.Inject;
 
+import static com.hedera.services.legacy.proto.utils.CommonUtils.extractTransactionBody;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAccountWipe;
+
 public class AccessorFactory {
-    final GlobalDynamicProperties dynamicProperties;
-    final OptionValidator validator;
+    private final GlobalDynamicProperties dynamicProperties;
+    private final OptionValidator validator;
 
     @Inject
     public AccessorFactory(
@@ -78,6 +80,8 @@ public class AccessorFactory {
         final var function = MiscUtils.FUNCTION_EXTRACTOR.apply(body);
         if (function == TokenAccountWipe) {
             return new TokenWipeAccessor(signedTxnWrapperBytes, signedTxn, dynamicProperties);
+        } else if(function == CryptoTransfer) {
+            return new CryptoTransferAccessor(signedTxnWrapperBytes, signedTxn, dynamicProperties);
         }
         return SignedTxnAccessor.from(signedTxnWrapperBytes, signedTxn);
     }

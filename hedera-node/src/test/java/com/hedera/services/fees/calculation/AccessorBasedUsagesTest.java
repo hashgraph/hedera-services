@@ -167,7 +167,7 @@ class AccessorBasedUsagesTest {
 
         given(dynamicProperties.feesTokenTransferUsageMultiplier()).willReturn(multiplier);
         given(txnAccessor.getFunction()).willReturn(CryptoTransfer);
-        given(txnAccessor.availXferUsageMeta()).willReturn(xferMeta);
+        given(txnAccessor.getSpanMapAccessor().getCryptoTransferMeta(txnAccessor)).willReturn(xferMeta);
         given(txnAccessor.baseUsageMeta()).willReturn(baseMeta);
 
         subject.assess(sigUsage, txnAccessor, usageAccumulator);

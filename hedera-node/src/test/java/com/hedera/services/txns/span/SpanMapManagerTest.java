@@ -187,7 +187,7 @@ class SpanMapManagerTest {
         given(accessor.getTxn()).willReturn(pretendXferTxn);
         given(accessor.getSpanMap()).willReturn(span);
         given(accessor.getFunction()).willReturn(CryptoTransfer);
-        given(accessor.availXferUsageMeta()).willReturn(xferMeta);
+        given(accessor.getSpanMapAccessor().getCryptoTransferMeta(accessor)).willReturn(xferMeta);
         given(impliedTransfersMarshal.unmarshalFromGrpc(pretendXferTxn.getCryptoTransfer(), payer))
                 .willReturn(someImpliedXfers);
 
@@ -204,7 +204,7 @@ class SpanMapManagerTest {
         given(accessor.getTxn()).willReturn(pretendXferTxn);
         given(accessor.getSpanMap()).willReturn(span);
         given(accessor.getFunction()).willReturn(CryptoTransfer);
-        given(accessor.availXferUsageMeta()).willReturn(xferMeta);
+        given(accessor.getSpanMapAccessor().getCryptoTransferMeta(accessor)).willReturn(xferMeta);
         given(impliedTransfersMarshal.unmarshalFromGrpc(pretendXferTxn.getCryptoTransfer(), payer))
                 .willReturn(someValidImpliedXfers);
 
@@ -219,7 +219,7 @@ class SpanMapManagerTest {
         given(accessor.getTxn()).willReturn(pretendXferTxn);
         given(accessor.getSpanMap()).willReturn(span);
         given(accessor.getFunction()).willReturn(CryptoTransfer);
-        given(accessor.availXferUsageMeta()).willReturn(xferMeta);
+        given(accessor.getSpanMapAccessor().getCryptoTransferMeta(accessor)).willReturn(xferMeta);
         given(impliedTransfersMarshal.unmarshalFromGrpc(pretendXferTxn.getCryptoTransfer(), payer))
                 .willReturn(mockImpliedTransfers);
         given(mockImpliedTransfers.getAssessedCustomFees()).willReturn(assessedCustomFees);
@@ -262,7 +262,7 @@ class SpanMapManagerTest {
         given(accessor.getTxn()).willReturn(pretendXferTxn);
         given(accessor.getSpanMap()).willReturn(span);
         given(accessor.getFunction()).willReturn(CryptoTransfer);
-        given(accessor.availXferUsageMeta()).willReturn(xferMeta);
+        given(accessor.getSpanMapAccessor().getCryptoTransferMeta(accessor)).willReturn(xferMeta);
         given(dynamicProperties.maxTransferListSize()).willReturn(maxHbarAdjusts);
         given(dynamicProperties.maxTokenTransferListSize()).willReturn(maxTokenAdjusts + 1);
         spanMapAccessor.setImpliedTransfers(accessor, someImpliedXfers);
@@ -284,7 +284,7 @@ class SpanMapManagerTest {
         given(accessor.getTxn()).willReturn(pretendXferTxn);
         given(accessor.getSpanMap()).willReturn(span);
         given(accessor.getFunction()).willReturn(CryptoTransfer);
-        given(accessor.availXferUsageMeta()).willReturn(xferMeta);
+        given(accessor.getSpanMapAccessor().getCryptoTransferMeta(accessor)).willReturn(xferMeta);
         given(dynamicProperties.maxTransferListSize()).willReturn(maxHbarAdjusts);
         given(dynamicProperties.maxTokenTransferListSize()).willReturn(maxTokenAdjusts + 1);
         spanMapAccessor.setImpliedTransfers(accessor, validImpliedTransfers);

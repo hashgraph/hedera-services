@@ -386,22 +386,22 @@ class SignedTxnAccessorTest {
 
         var txn = buildTokenTransferTxn(nftTransfers);
         var subject = SignedTxnAccessor.from(txn.toByteArray());
-        assertEquals(SubType.TOKEN_NON_FUNGIBLE_UNIQUE, subject.availXferUsageMeta().getSubType());
-        assertEquals(subject.availXferUsageMeta().getSubType(), subject.getSubType());
+        assertEquals(SubType.TOKEN_NON_FUNGIBLE_UNIQUE, subject.getSpanMapAccessor().getCryptoTransferMeta(subject).getSubType());
+        assertEquals(subject.getSpanMapAccessor().getCryptoTransferMeta(subject).getSubType(), subject.getSubType());
 
         // set customFee
-        var xferUsageMeta = subject.availXferUsageMeta();
+        var xferUsageMeta = subject.getSpanMapAccessor().getCryptoTransferMeta(subject);
         xferUsageMeta.setCustomFeeHbarTransfers(1);
         assertEquals(SubType.TOKEN_NON_FUNGIBLE_UNIQUE_WITH_CUSTOM_FEES, subject.getSubType());
         xferUsageMeta.setCustomFeeHbarTransfers(0);
 
         txn = buildTokenTransferTxn(fungibleTokenXfers);
         subject = SignedTxnAccessor.from(txn.toByteArray(), txn);
-        assertEquals(TOKEN_FUNGIBLE_COMMON, subject.availXferUsageMeta().getSubType());
-        assertEquals(subject.availXferUsageMeta().getSubType(), subject.getSubType());
+        assertEquals(TOKEN_FUNGIBLE_COMMON, subject.getSpanMapAccessor().getCryptoTransferMeta(subject).getSubType());
+        assertEquals(subject.getSpanMapAccessor().getCryptoTransferMeta(subject).getSubType(), subject.getSubType());
 
         // set customFee
-        xferUsageMeta = subject.availXferUsageMeta();
+        xferUsageMeta = subject.getSpanMapAccessor().getCryptoTransferMeta(subject);
         xferUsageMeta.setCustomFeeTokenTransfers(1);
         assertEquals(SubType.TOKEN_FUNGIBLE_COMMON_WITH_CUSTOM_FEES, subject.getSubType());
         xferUsageMeta.setCustomFeeTokenTransfers(0);
@@ -416,7 +416,7 @@ class SignedTxnAccessorTest {
         final var txn = buildTransactionFrom(tokenXfers());
         final var subject = SignedTxnAccessor.uncheckedFrom(txn);
 
-        final var xferMeta = subject.availXferUsageMeta();
+        final var xferMeta = subject.getSpanMapAccessor().getCryptoTransferMeta(subject);
 
         assertEquals(1, xferMeta.getTokenMultiplier());
         assertEquals(3, xferMeta.getNumTokensInvolved());
@@ -430,7 +430,7 @@ class SignedTxnAccessorTest {
         final var subject = SignedTxnAccessor.uncheckedFrom(txn);
 
         assertEquals(SubType.DEFAULT, subject.getSubType());
-        assertThrows(IllegalStateException.class, subject::availXferUsageMeta);
+        assertThrows(IllegalStateException.class, () -> subject.getSpanMapAccessor().getCryptoTransferMeta(subject));
         assertThrows(IllegalStateException.class, subject::availSubmitUsageMeta);
     }
 

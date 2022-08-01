@@ -27,6 +27,7 @@ import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.PureTransferSemanticChecks;
 import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.txns.span.ExpandHandleSpanMapAccessor;
+import com.hedera.services.utils.accessors.SwirldsTxnAccessor;
 import com.hedera.services.utils.accessors.TxnAccessor;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -44,31 +45,25 @@ import javax.inject.Singleton;
 public class CryptoTransferTransitionLogic implements TransitionLogic {
     private final HederaLedger ledger;
     private final TransactionContext txnCtx;
-    private final GlobalDynamicProperties dynamicProperties;
     private final ImpliedTransfersMarshal impliedTransfersMarshal;
-    private final PureTransferSemanticChecks transferSemanticChecks;
     private final ExpandHandleSpanMapAccessor spanMapAccessor;
 
     @Inject
     public CryptoTransferTransitionLogic(
             HederaLedger ledger,
             TransactionContext txnCtx,
-            GlobalDynamicProperties dynamicProperties,
             ImpliedTransfersMarshal impliedTransfersMarshal,
-            PureTransferSemanticChecks transferSemanticChecks,
             ExpandHandleSpanMapAccessor spanMapAccessor) {
         this.txnCtx = txnCtx;
         this.ledger = ledger;
         this.spanMapAccessor = spanMapAccessor;
-        this.dynamicProperties = dynamicProperties;
-        this.transferSemanticChecks = transferSemanticChecks;
         this.impliedTransfersMarshal = impliedTransfersMarshal;
     }
 
     @Override
     public void doStateTransition() {
-        final var accessor = txnCtx.accessor();
-        final var impliedTransfers = finalImpliedTransfersFor(accessor);
+        final var swirldsTxnAccessor = txnCtx.swirldsTxnAccessor();
+        final var impliedTransfers = finalImpliedTransfersFor(swirldsTxnAccessor);
 
         var outcome = impliedTransfers.getMeta().code();
         validateTrue(outcome == OK, outcome);
@@ -80,7 +75,7 @@ public class CryptoTransferTransitionLogic implements TransitionLogic {
         txnCtx.setAssessedCustomFees(impliedTransfers.getAssessedCustomFees());
     }
 
-    private ImpliedTransfers finalImpliedTransfersFor(TxnAccessor accessor) {
+    private ImpliedTransfers finalImpliedTransfersFor(final SwirldsTxnAccessor accessor) {
         var impliedTransfers = spanMapAccessor.getImpliedTransfers(accessor);
         if (impliedTransfers == null) {
             final var op = accessor.getTxn().getCryptoTransfer();
@@ -92,32 +87,5 @@ public class CryptoTransferTransitionLogic implements TransitionLogic {
     @Override
     public Predicate<TransactionBody> applicability() {
         return TransactionBody::hasCryptoTransfer;
-    }
-
-    @Override
-    public ResponseCodeEnum validateSemantics(TxnAccessor accessor) {
-        final var impliedTransfers = spanMapAccessor.getImpliedTransfers(accessor);
-        if (impliedTransfers != null) {
-            /* Accessor is for a consensus transaction with a expand-handle span
-             * we've been managing in the normal way. */
-            return impliedTransfers.getMeta().code();
-        } else {
-            /* Accessor is for either (1) a transaction in precheck; or (2) a scheduled
-            transaction that reached consensus without a managed expand-handle span; or
-            (3) in a development environment, a transaction submitted via UncheckedSubmit. */
-            final var validationProps =
-                    new ImpliedTransfersMeta.ValidationProps(
-                            dynamicProperties.maxTransferListSize(),
-                            dynamicProperties.maxTokenTransferListSize(),
-                            dynamicProperties.maxNftTransfersLen(),
-                            dynamicProperties.maxCustomFeeDepth(),
-                            dynamicProperties.maxXferBalanceChanges(),
-                            dynamicProperties.areNftsEnabled(),
-                            dynamicProperties.isAutoCreationEnabled(),
-                            dynamicProperties.areAllowancesEnabled());
-            final var op = accessor.getTxn().getCryptoTransfer();
-            return transferSemanticChecks.fullPureValidation(
-                    op.getTransfers(), op.getTokenTransfersList(), validationProps);
-        }
     }
 }

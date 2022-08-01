@@ -60,7 +60,7 @@ public class PureTransferSemanticChecks {
         // Default constructor
     }
 
-    public ResponseCodeEnum fullPureValidation(
+    public static ResponseCodeEnum fullPureValidation(
             TransferList hbarAdjustsWrapper,
             List<TokenTransferList> tokenAdjustsList,
             ImpliedTransfersMeta.ValidationProps validationProps) {
@@ -99,7 +99,7 @@ public class PureTransferSemanticChecks {
         return validateTokenTransferSemantics(tokenAdjustsList);
     }
 
-    ResponseCodeEnum validateTokenTransferSyntax(
+    static ResponseCodeEnum validateTokenTransferSyntax(
             List<TokenTransferList> tokenTransfersList,
             int maxListLen,
             int maxOwnershipChanges,
@@ -118,7 +118,7 @@ public class PureTransferSemanticChecks {
                 areAllowanceEnabled);
     }
 
-    private ResponseCodeEnum checkTokenTransfersList(
+    private static ResponseCodeEnum checkTokenTransfersList(
             final List<TokenTransferList> tokenTransfersList,
             final boolean areNftsEnabled,
             final int maxOwnershipChanges,
@@ -160,7 +160,7 @@ public class PureTransferSemanticChecks {
         return OK;
     }
 
-    ResponseCodeEnum validateTokenTransferSemantics(List<TokenTransferList> tokenTransfersList) {
+    static ResponseCodeEnum validateTokenTransferSemantics(List<TokenTransferList> tokenTransfersList) {
         if (tokenTransfersList.isEmpty()) {
             return OK;
         }
@@ -180,7 +180,7 @@ public class PureTransferSemanticChecks {
         return OK;
     }
 
-    private ResponseCodeEnum validateScopedTransferSemantics(
+    private static ResponseCodeEnum validateScopedTransferSemantics(
             final Set<TokenID> uniqueTokens,
             final TokenTransferList tokenTransfers,
             final Set<Long> uniqueSerialNos) {
@@ -219,7 +219,7 @@ public class PureTransferSemanticChecks {
         return OK;
     }
 
-    boolean hasRepeatedAccount(List<AccountAmount> adjusts) {
+    static boolean hasRepeatedAccount(List<AccountAmount> adjusts) {
         final int n = adjusts.size();
         if (n < 2) {
             return false;
@@ -245,7 +245,7 @@ public class PureTransferSemanticChecks {
         return false;
     }
 
-    boolean isNetZeroAdjustment(List<AccountAmount> adjusts) {
+    static boolean isNetZeroAdjustment(List<AccountAmount> adjusts) {
         var net = ZERO;
         for (var adjust : adjusts) {
             net = net.add(BigInteger.valueOf(adjust.getAmount()));
@@ -253,18 +253,18 @@ public class PureTransferSemanticChecks {
         return net.equals(ZERO);
     }
 
-    boolean isAcceptableSize(List<AccountAmount> hbarAdjusts, int maxHbarAdjusts) {
+    static boolean isAcceptableSize(List<AccountAmount> hbarAdjusts, int maxHbarAdjusts) {
         return hbarAdjusts.size() <= maxHbarAdjusts;
     }
 
-    boolean hasAllowanceTransfers(final List<AccountAmount> adjusts) {
+    static boolean hasAllowanceTransfers(final List<AccountAmount> adjusts) {
         for (var adjust : adjusts) {
             if (adjust.getIsApproval()) return true;
         }
         return false;
     }
 
-    boolean hasAllowanceNftTransfers(final List<NftTransfer> adjusts) {
+    static boolean hasAllowanceNftTransfers(final List<NftTransfer> adjusts) {
         for (var adjust : adjusts) {
             if (adjust.getIsApproval()) return true;
         }

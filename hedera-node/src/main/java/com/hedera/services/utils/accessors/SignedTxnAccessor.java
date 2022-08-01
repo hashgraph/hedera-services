@@ -15,6 +15,49 @@
  */
 package com.hedera.services.utils.accessors;
 
+import com.google.common.base.MoreObjects;
+import com.google.protobuf.ByteString;
+import com.google.protobuf.InvalidProtocolBufferException;
+import com.hedera.services.context.primitives.StateView;
+import com.hedera.services.ethereum.EthTxData;
+import com.hedera.services.grpc.marshalling.AliasResolver;
+import com.hedera.services.ledger.accounts.AliasManager;
+import com.hedera.services.sigs.sourcing.PojoSigMapPubKeyToSigBytes;
+import com.hedera.services.sigs.sourcing.PubKeyToSigBytes;
+import com.hedera.services.txns.span.ExpandHandleSpanMapAccessor;
+import com.hedera.services.usage.BaseTransactionMeta;
+import com.hedera.services.usage.SigUsage;
+import com.hedera.services.usage.consensus.SubmitMessageMeta;
+import com.hedera.services.usage.crypto.CryptoApproveAllowanceMeta;
+import com.hedera.services.usage.crypto.CryptoCreateMeta;
+import com.hedera.services.usage.crypto.CryptoDeleteAllowanceMeta;
+import com.hedera.services.usage.crypto.CryptoUpdateMeta;
+import com.hedera.services.usage.token.TokenOpsUsage;
+import com.hedera.services.usage.token.meta.FeeScheduleUpdateMeta;
+import com.hedera.services.usage.util.UtilPrngMeta;
+import com.hedera.services.utils.EntityNum;
+import com.hedera.services.utils.MiscUtils;
+import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.ScheduleID;
+import com.hederahashgraph.api.proto.java.SignatureMap;
+import com.hederahashgraph.api.proto.java.SignedTransaction;
+import com.hederahashgraph.api.proto.java.SubType;
+import com.hederahashgraph.api.proto.java.Transaction;
+import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.hederahashgraph.api.proto.java.TransactionID;
+import org.apache.commons.codec.binary.StringUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.bouncycastle.util.Arrays;
+
+import javax.annotation.Nullable;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.function.LongPredicate;
+
 import static com.hedera.services.legacy.proto.utils.CommonUtils.noThrowSha384HashOf;
 import static com.hedera.services.usage.token.TokenOpsUsageUtils.TOKEN_OPS_USAGE_UTILS;
 import static com.hedera.services.utils.EntityIdUtils.isAlias;
@@ -38,49 +81,6 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUnpaus
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.UtilPrng;
 import static com.hederahashgraph.api.proto.java.SubType.TOKEN_FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.SubType.TOKEN_NON_FUNGIBLE_UNIQUE;
-
-import com.google.common.base.MoreObjects;
-import com.google.protobuf.ByteString;
-import com.google.protobuf.InvalidProtocolBufferException;
-import com.hedera.services.context.primitives.StateView;
-import com.hedera.services.ethereum.EthTxData;
-import com.hedera.services.grpc.marshalling.AliasResolver;
-import com.hedera.services.ledger.accounts.AliasManager;
-import com.hedera.services.sigs.sourcing.PojoSigMapPubKeyToSigBytes;
-import com.hedera.services.sigs.sourcing.PubKeyToSigBytes;
-import com.hedera.services.txns.span.ExpandHandleSpanMapAccessor;
-import com.hedera.services.usage.BaseTransactionMeta;
-import com.hedera.services.usage.SigUsage;
-import com.hedera.services.usage.consensus.SubmitMessageMeta;
-import com.hedera.services.usage.crypto.CryptoApproveAllowanceMeta;
-import com.hedera.services.usage.crypto.CryptoCreateMeta;
-import com.hedera.services.usage.crypto.CryptoDeleteAllowanceMeta;
-import com.hedera.services.usage.crypto.CryptoTransferMeta;
-import com.hedera.services.usage.crypto.CryptoUpdateMeta;
-import com.hedera.services.usage.token.TokenOpsUsage;
-import com.hedera.services.usage.token.meta.FeeScheduleUpdateMeta;
-import com.hedera.services.usage.util.UtilPrngMeta;
-import com.hedera.services.utils.EntityNum;
-import com.hedera.services.utils.MiscUtils;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.HederaFunctionality;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.ScheduleID;
-import com.hederahashgraph.api.proto.java.SignatureMap;
-import com.hederahashgraph.api.proto.java.SignedTransaction;
-import com.hederahashgraph.api.proto.java.SubType;
-import com.hederahashgraph.api.proto.java.Transaction;
-import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.api.proto.java.TransactionID;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.function.LongPredicate;
-import javax.annotation.Nullable;
-import org.apache.commons.codec.binary.StringUtils;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import org.bouncycastle.util.Arrays;
 
 /** Encapsulates access to several commonly referenced parts of a gRPC {@link Transaction}. */
 public class SignedTxnAccessor implements TxnAccessor {
@@ -110,9 +110,8 @@ public class SignedTxnAccessor implements TxnAccessor {
     private TransactionID txnId;
     private TransactionBody txn;
     private SubmitMessageMeta submitMessageMeta;
-    private CryptoTransferMeta xferUsageMeta;
     private BaseTransactionMeta txnUsageMeta;
-    private HederaFunctionality function;
+    protected HederaFunctionality function;
     private ResponseCodeEnum expandedSigStatus;
     private PubKeyToSigBytes pubKeyToSigBytes;
     private boolean throttleExempt;
@@ -350,7 +349,6 @@ public class SignedTxnAccessor implements TxnAccessor {
                 .add("txnId", txnId)
                 .add("txn", txn)
                 .add("submitMessageMeta", submitMessageMeta)
-                .add("xferUsageMeta", xferUsageMeta)
                 .add("txnUsageMeta", txnUsageMeta)
                 .add("function", function)
                 .add("pubKeyToSigBytes", pubKeyToSigBytes)
@@ -373,15 +371,6 @@ public class SignedTxnAccessor implements TxnAccessor {
     @Override
     public SigUsage usageGiven(final int numPayerKeys) {
         return new SigUsage(numSigPairs, sigMapSize, numPayerKeys);
-    }
-
-    @Override
-    public CryptoTransferMeta availXferUsageMeta() {
-        if (function != CryptoTransfer) {
-            throw new IllegalStateException(
-                    "Cannot get CryptoTransfer metadata for a " + function + ACCESSOR_LITERAL);
-        }
-        return xferUsageMeta;
     }
 
     @Override
@@ -446,9 +435,7 @@ public class SignedTxnAccessor implements TxnAccessor {
 
     /* This section should be deleted after custom accessors are complete */
     private void setOpUsageMeta() {
-        if (function == CryptoTransfer) {
-            setXferUsageMeta();
-        } else if (function == ConsensusSubmitMessage) {
+        if (function == ConsensusSubmitMessage) {
             setSubmitUsageMeta();
         } else if (function == TokenFeeScheduleUpdate) {
             setFeeScheduleUpdateMeta();
@@ -477,21 +464,6 @@ public class SignedTxnAccessor implements TxnAccessor {
         } else if (function == UtilPrng) {
             setUtilPrngUsageMeta();
         }
-    }
-
-    private void setXferUsageMeta() {
-        var totalTokensInvolved = 0;
-        var totalTokenTransfers = 0;
-        var numNftOwnershipChanges = 0;
-        final var op = txn.getCryptoTransfer();
-        for (var tokenTransfers : op.getTokenTransfersList()) {
-            totalTokensInvolved++;
-            totalTokenTransfers += tokenTransfers.getTransfersCount();
-            numNftOwnershipChanges += tokenTransfers.getNftTransfersCount();
-        }
-        xferUsageMeta =
-                new CryptoTransferMeta(
-                        1, totalTokensInvolved, totalTokenTransfers, numNftOwnershipChanges);
     }
 
     private void setSubmitUsageMeta() {
@@ -581,7 +553,7 @@ public class SignedTxnAccessor implements TxnAccessor {
     @Override
     public SubType getSubType() {
         if (function == CryptoTransfer) {
-            return xferUsageMeta.getSubType();
+            return SPAN_MAP_ACCESSOR.getCryptoTransferMeta(this).getSubType();
         } else if (function == TokenCreate) {
             return SPAN_MAP_ACCESSOR.getTokenCreateMeta(this).getSubType();
         } else if (function == TokenMint) {

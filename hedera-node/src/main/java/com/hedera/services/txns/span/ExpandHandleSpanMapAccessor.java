@@ -21,6 +21,7 @@ import com.hedera.services.grpc.marshalling.ImpliedTransfers;
 import com.hedera.services.usage.crypto.CryptoApproveAllowanceMeta;
 import com.hedera.services.usage.crypto.CryptoCreateMeta;
 import com.hedera.services.usage.crypto.CryptoDeleteAllowanceMeta;
+import com.hedera.services.usage.crypto.CryptoTransferMeta;
 import com.hedera.services.usage.crypto.CryptoUpdateMeta;
 import com.hedera.services.usage.token.meta.FeeScheduleUpdateMeta;
 import com.hedera.services.usage.token.meta.TokenBurnMeta;
@@ -53,6 +54,8 @@ public class ExpandHandleSpanMapAccessor {
     private static final String CRYPTO_UPDATE_META_KEY = "cryptoUpdateMeta";
     private static final String CRYPTO_APPROVE_META_KEY = "cryptoApproveMeta";
     private static final String CRYPTO_DELETE_ALLOWANCE_META_KEY = "cryptoDeleteAllowanceMeta";
+
+    private static final String CRYPTO_TRANSFER_META_KEY = "cryptoTransferMeta";
     private static final String ETH_TX_DATA_META_KEY = "ethTxDataMeta";
     private static final String ETH_TX_SIGS_META_KEY = "ethTxSigsMeta";
     private static final String ETH_TX_BODY_META_KEY = "ethTxBodyMeta";
@@ -111,6 +114,14 @@ public class ExpandHandleSpanMapAccessor {
 
     public TokenFreezeMeta getTokenFreezeMeta(TxnAccessor accessor) {
         return (TokenFreezeMeta) accessor.getSpanMap().get(TOKEN_FREEZE_META_KEY);
+    }
+
+    public void setCryptoTransferMeta(TxnAccessor accessor, CryptoTransferMeta cryptoTransferMeta) {
+        accessor.getSpanMap().put(CRYPTO_TRANSFER_META_KEY, cryptoTransferMeta);
+    }
+
+    public CryptoTransferMeta getCryptoTransferMeta(TxnAccessor accessor) {
+        return (CryptoTransferMeta) accessor.getSpanMap().get(CRYPTO_TRANSFER_META_KEY);
     }
 
     public void setTokenUnfreezeMeta(TxnAccessor accessor, TokenUnfreezeMeta tokenUnfreezeMeta) {

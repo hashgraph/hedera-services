@@ -15,6 +15,41 @@
  */
 package com.hedera.services.txns.crypto;
 
+import com.google.protobuf.ByteString;
+import com.google.protobuf.InvalidProtocolBufferException;
+import com.hedera.services.context.TransactionContext;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.exceptions.InvalidTransactionException;
+import com.hedera.services.grpc.marshalling.CustomFeeMeta;
+import com.hedera.services.grpc.marshalling.ImpliedTransfers;
+import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;
+import com.hedera.services.grpc.marshalling.ImpliedTransfersMeta;
+import com.hedera.services.ledger.HederaLedger;
+import com.hedera.services.state.submerkle.FcAssessedCustomFee;
+import com.hedera.services.state.submerkle.FcCustomFee;
+import com.hedera.services.store.models.Id;
+import com.hedera.services.txns.span.ExpandHandleSpanMapAccessor;
+import com.hedera.services.utils.accessors.CryptoTransferAccessor;
+import com.hedera.services.utils.accessors.SwirldsTxnAccessor;
+import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.Timestamp;
+import com.hederahashgraph.api.proto.java.TokenTransferList;
+import com.hederahashgraph.api.proto.java.Transaction;
+import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.hederahashgraph.api.proto.java.TransactionID;
+import com.hederahashgraph.api.proto.java.TransferList;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
+
 import static com.hedera.test.utils.IdUtils.adjustFrom;
 import static com.hedera.test.utils.IdUtils.adjustFromWithAllowance;
 import static com.hedera.test.utils.IdUtils.asAccount;
@@ -30,44 +65,13 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.verify;
+import static org.mockito.BDDMockito.willCallRealMethod;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyNoInteractions;
-
-import com.google.protobuf.ByteString;
-import com.hedera.services.context.TransactionContext;
-import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.exceptions.InvalidTransactionException;
-import com.hedera.services.grpc.marshalling.CustomFeeMeta;
-import com.hedera.services.grpc.marshalling.ImpliedTransfers;
-import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;
-import com.hedera.services.grpc.marshalling.ImpliedTransfersMeta;
-import com.hedera.services.ledger.HederaLedger;
-import com.hedera.services.ledger.PureTransferSemanticChecks;
-import com.hedera.services.state.submerkle.FcAssessedCustomFee;
-import com.hedera.services.state.submerkle.FcCustomFee;
-import com.hedera.services.store.models.Id;
-import com.hedera.services.txns.span.ExpandHandleSpanMapAccessor;
-import com.hedera.services.utils.accessors.SignedTxnAccessor;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.Timestamp;
-import com.hederahashgraph.api.proto.java.TokenTransferList;
-import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.api.proto.java.TransactionID;
-import com.hederahashgraph.api.proto.java.TransferList;
-import java.time.Instant;
-import java.util.ArrayList;
-import java.util.List;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class CryptoTransferTransitionLogicTest {
@@ -98,11 +102,13 @@ class CryptoTransferTransitionLogicTest {
     @Mock private TransactionContext txnCtx;
     @Mock private GlobalDynamicProperties dynamicProperties;
     @Mock private ImpliedTransfersMarshal impliedTransfersMarshal;
-    @Mock private PureTransferSemanticChecks transferSemanticChecks;
     @Mock private ExpandHandleSpanMapAccessor spanMapAccessor;
-    @Mock private SignedTxnAccessor accessor;
+    @Mock private SwirldsTxnAccessor swirldsTxnAccessor;
+    private CryptoTransferAccessor accessor;
 
-    private TransactionBody cryptoTransferTxn;
+    private TransactionBody cryptoTransferTxnBody;
+
+    private Transaction cryptoTransferTxn;
 
     private CryptoTransferTransitionLogic subject;
 
@@ -112,14 +118,12 @@ class CryptoTransferTransitionLogicTest {
                 new CryptoTransferTransitionLogic(
                         ledger,
                         txnCtx,
-                        dynamicProperties,
                         impliedTransfersMarshal,
-                        transferSemanticChecks,
                         spanMapAccessor);
     }
 
     @Test
-    void happyPathUsesLedgerNetZero() {
+    void happyPathUsesLedgerNetZero() throws InvalidProtocolBufferException {
         final var a = asAccount("1.2.3");
         final var b = asAccount("2.3.4");
         final var impliedTransfers =
@@ -142,7 +146,7 @@ class CryptoTransferTransitionLogicTest {
     }
 
     @Test
-    void recomputesImpliedTransfersIfNotAvailableInSpan() {
+    void recomputesImpliedTransfersIfNotAvailableInSpan() throws InvalidProtocolBufferException {
         final var a =
                 AccountID.newBuilder()
                         .setShardNum(0)
@@ -158,12 +162,11 @@ class CryptoTransferTransitionLogicTest {
                         new ArrayList<>());
 
         givenValidTxnCtx();
-        given(accessor.getPayer()).willReturn(payer);
-        given(accessor.getTxn()).willReturn(cryptoTransferTxn);
+        accessor.setPayer(payer);
         // and:
         given(
                         impliedTransfersMarshal.unmarshalFromGrpc(
-                                cryptoTransferTxn.getCryptoTransfer(), payer))
+                                cryptoTransferTxnBody.getCryptoTransfer(), payer))
                 .willReturn(impliedTransfers);
 
         // when:
@@ -174,7 +177,7 @@ class CryptoTransferTransitionLogicTest {
     }
 
     @Test
-    void verifyIfAssessedCustomFeesSet() {
+    void verifyIfAssessedCustomFeesSet() throws InvalidProtocolBufferException {
         // setup :
         final var a = Id.fromGrpcAccount(asAccount("1.2.3"));
         final var b = Id.fromGrpcAccount(asAccount("2.3.4"));
@@ -196,12 +199,10 @@ class CryptoTransferTransitionLogicTest {
                         customFeesBalanceChange);
 
         givenValidTxnCtx();
-        given(accessor.getPayer()).willReturn(payer);
-        given(accessor.getTxn()).willReturn(cryptoTransferTxn);
         // and:
         given(
                         impliedTransfersMarshal.unmarshalFromGrpc(
-                                cryptoTransferTxn.getCryptoTransfer(), payer))
+                                cryptoTransferTxnBody.getCryptoTransfer(), payer))
                 .willReturn(impliedTransfers);
 
         // when:
@@ -212,17 +213,16 @@ class CryptoTransferTransitionLogicTest {
     }
 
     @Test
-    void shortCircuitsToImpliedTransfersValidityIfNotAvailableInSpan() {
+    void shortCircuitsToImpliedTransfersValidityIfNotAvailableInSpan() throws InvalidProtocolBufferException {
         final var impliedTransfers =
                 ImpliedTransfers.invalid(validationProps, TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN);
 
         givenValidTxnCtx();
-        given(accessor.getPayer()).willReturn(payer);
-        given(accessor.getTxn()).willReturn(cryptoTransferTxn);
+        accessor.setPayer(payer);
         // and:
         given(
                         impliedTransfersMarshal.unmarshalFromGrpc(
-                                cryptoTransferTxn.getCryptoTransfer(), payer))
+                                cryptoTransferTxnBody.getCryptoTransfer(), payer))
                 .willReturn(impliedTransfers);
 
         // when & then:
@@ -232,11 +232,12 @@ class CryptoTransferTransitionLogicTest {
     }
 
     @Test
-    void reusesPrecomputedFailureIfImpliedTransfersInSpan() {
+    void reusesPrecomputedFailureIfImpliedTransfersInSpan() throws InvalidProtocolBufferException {
         // setup:
         final var impliedTransfers =
                 ImpliedTransfers.invalid(validationProps, TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN);
 
+        givenValidTxnCtx();
         given(spanMapAccessor.getImpliedTransfers(accessor)).willReturn(impliedTransfers);
 
         // when:
@@ -247,7 +248,7 @@ class CryptoTransferTransitionLogicTest {
     }
 
     @Test
-    void doesntAllowAllowanceTransfersWhenNotSupported() {
+    void doesntAllowAllowanceTransfersWhenNotSupported() throws InvalidProtocolBufferException {
         xfers =
                 CryptoTransferTransactionBody.newBuilder()
                         .setTransfers(
@@ -269,19 +270,19 @@ class CryptoTransferTransitionLogicTest {
                                                         adjustFromWithAllowance(
                                                                 asAccount("0.0.2000"), +1_000))))
                         .build();
-        cryptoTransferTxn = TransactionBody.newBuilder().setCryptoTransfer(xfers).build();
-        given(accessor.getTxn()).willReturn(cryptoTransferTxn);
+        cryptoTransferTxnBody = TransactionBody.newBuilder().setCryptoTransfer(xfers).build();
+        addToTxn();
         given(dynamicProperties.areAllowancesEnabled()).willReturn(false);
-        given(transferSemanticChecks.fullPureValidation(any(), any(), any()))
-                .willReturn(NOT_SUPPORTED);
+//        given(transferSemanticChecks.fullPureValidation(any(), any(), any()))
+//                .willReturn(NOT_SUPPORTED);
         final var validity = subject.validateSemantics(accessor);
         assertEquals(NOT_SUPPORTED, validity);
     }
 
     @Test
-    void computesFailureIfImpliedTransfersNotInSpan() {
+    void computesFailureIfImpliedTransfersNotInSpan() throws InvalidProtocolBufferException {
         // setup:
-        final var pretendXferTxn = TransactionBody.getDefaultInstance();
+        cryptoTransferTxnBody = TransactionBody.getDefaultInstance();
 
         given(dynamicProperties.maxTransferListSize()).willReturn(maxHbarAdjusts);
         given(dynamicProperties.maxTokenTransferListSize()).willReturn(maxTokenAdjusts);
@@ -290,13 +291,13 @@ class CryptoTransferTransitionLogicTest {
         given(dynamicProperties.maxXferBalanceChanges()).willReturn(maxBalanceChanges);
         given(dynamicProperties.isAutoCreationEnabled()).willReturn(autoCreationEnabled);
         given(dynamicProperties.areAllowancesEnabled()).willReturn(areAllowancesEnabled);
-        given(accessor.getTxn()).willReturn(pretendXferTxn);
-        given(
-                        transferSemanticChecks.fullPureValidation(
-                                pretendXferTxn.getCryptoTransfer().getTransfers(),
-                                pretendXferTxn.getCryptoTransfer().getTokenTransfersList(),
-                                validationProps))
-                .willReturn(TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN);
+        addToTxn();
+//        given(
+//                        transferSemanticChecks.fullPureValidation(
+//                                pretendXferTxn.getCryptoTransfer().getTransfers(),
+//                                pretendXferTxn.getCryptoTransfer().getTokenTransfersList(),
+//                                validationProps))
+//                .willReturn(TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN);
 
         // when:
         final var validity = subject.validateSemantics(accessor);
@@ -307,10 +308,17 @@ class CryptoTransferTransitionLogicTest {
 
     @Test
     void hasCorrectApplicability() {
-        givenValidTxnCtx(withAdjustments(a, -2L, b, 1L, c, 1L));
+        cryptoTransferTxnBody =
+                TransactionBody.newBuilder()
+                        .setTransactionID(ourTxnId())
+                        .setCryptoTransfer(
+                                CryptoTransferTransactionBody.newBuilder()
+                                        .setTransfers(withAdjustments(a, -2L, b, 1L, c, 1L))
+                                        .build())
+                        .build();
 
         // expect:
-        assertTrue(subject.applicability().test(cryptoTransferTxn));
+        assertTrue(subject.applicability().test(cryptoTransferTxnBody));
         assertFalse(subject.applicability().test(TransactionBody.getDefaultInstance()));
     }
 
@@ -319,8 +327,8 @@ class CryptoTransferTransitionLogicTest {
         assertEquals(status, ex.getResponseCode());
     }
 
-    private void givenValidTxnCtx(TransferList wrapper) {
-        cryptoTransferTxn =
+    private void givenValidTxnCtx(TransferList wrapper) throws InvalidProtocolBufferException {
+        cryptoTransferTxnBody =
                 TransactionBody.newBuilder()
                         .setTransactionID(ourTxnId())
                         .setCryptoTransfer(
@@ -328,11 +336,23 @@ class CryptoTransferTransitionLogicTest {
                                         .setTransfers(wrapper)
                                         .build())
                         .build();
+        addToTxn();
     }
 
-    private void givenValidTxnCtx() {
-        cryptoTransferTxn = TransactionBody.newBuilder().setCryptoTransfer(xfers).build();
-        given(txnCtx.accessor()).willReturn(accessor);
+    private void addToTxn() throws InvalidProtocolBufferException {
+        cryptoTransferTxn =
+                Transaction.newBuilder().setBodyBytes(cryptoTransferTxnBody.toByteString()).build();
+        accessor = new CryptoTransferAccessor(cryptoTransferTxn.toByteArray(), cryptoTransferTxn, dynamicProperties);
+        given(swirldsTxnAccessor.getPayer()).willReturn(payer);
+        accessor.setPayer(payer);
+        given(txnCtx.swirldsTxnAccessor()).willReturn(swirldsTxnAccessor);
+        given(swirldsTxnAccessor.getTxn()).willReturn(cryptoTransferTxnBody);
+//        given(swirldsTxnAccessor.getDelegate()).willReturn(accessor);
+    }
+
+    private void givenValidTxnCtx() throws InvalidProtocolBufferException {
+        cryptoTransferTxnBody = TransactionBody.newBuilder().setCryptoTransfer(xfers).build();
+        addToTxn();
     }
 
     private TransactionID ourTxnId() {

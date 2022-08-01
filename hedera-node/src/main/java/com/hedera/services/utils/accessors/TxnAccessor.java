@@ -109,9 +109,6 @@ public interface TxnAccessor {
 
     // --- Used only by specific transactions and will be moved to Custom accessors in future PR ---
 
-    // Used only for CryptoTransfer
-    CryptoTransferMeta availXferUsageMeta();
-
     void setNumAutoCreations(int numAutoCreations);
 
     int getNumAutoCreations();
