@@ -48,6 +48,10 @@ public final class AbiConstants {
     public static final int ABI_ID_DISSOCIATE_TOKENS = 0x78b63918;
     // dissociateToken(address account, address token)
     public static final int ABI_ID_DISSOCIATE_TOKEN = 0x099794e8;
+    // pauseToken(address token)
+    public static final int ABI_ID_PAUSE_TOKEN = 0x7c41ad2c;
+    // unpauseToken(address token)
+    public static final int ABI_ID_UNPAUSE_TOKEN = 0x3b3bff0f;
     // allowance(address token, address owner, address spender)
     public static final int ABI_ID_ALLOWANCE = 0x927da105;
     // approve(address token, address spender, uint256 amount)
@@ -141,10 +145,10 @@ public final class AbiConstants {
     public static final int ABI_ID_GET_TOKEN_INFO = 0x1f69565f;
     // getNonFungibleTokenInfo(address token, int64 serialNumber)
     public static final int ABI_ID_GET_NON_FUNGIBLE_TOKEN_INFO = 0x287e1da8;
-
     // getTokenDefaultFreezeStatus(address token)
     public static final int ABI_ID_GET_TOKEN_DEFAULT_FREEZE_STATUS = 0xa7daa18d;
-
     // getTokenDefaultKycStatus(address token)
     public static final int ABI_ID_GET_TOKEN_DEFAULT_KYC_STATUS = 0x335e04c1;
+    // getTokenCustomFees(address token)
+    public static final int ABI_ID_GET_TOKEN_CUSTOM_FEES = 0xae7611a0;
 }

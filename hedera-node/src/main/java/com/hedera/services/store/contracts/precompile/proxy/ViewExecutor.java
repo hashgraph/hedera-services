@@ -18,6 +18,7 @@ package com.hedera.services.store.contracts.precompile.proxy;
 import static com.hedera.services.exceptions.ValidationUtils.validateTrueOrRevert;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_GET_FUNGIBLE_TOKEN_INFO;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_GET_NON_FUNGIBLE_TOKEN_INFO;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_GET_TOKEN_CUSTOM_FEES;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_GET_TOKEN_DEFAULT_FREEZE_STATUS;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_GET_TOKEN_DEFAULT_KYC_STATUS;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_GET_TOKEN_INFO;
@@ -134,6 +135,14 @@ public class ViewExecutor {
                 final var defaultKycStatus = ledgers.defaultKycStatus(wrapper.tokenID());
 
                 return encoder.encodeGetTokenDefaultKycStatus(defaultKycStatus);
+            }
+            case ABI_ID_GET_TOKEN_CUSTOM_FEES -> {
+                final var wrapper = decoder.decodeTokenGetCustomFees(input);
+                validateTrueOrRevert(
+                        stateView.tokenExists(wrapper.tokenID()),
+                        ResponseCodeEnum.INVALID_TOKEN_ID);
+                final var customFees = stateView.tokenCustomFees(wrapper.tokenID());
+                return encoder.encodeTokenGetCustomFees(customFees);
             }
                 // Only view functions can be used inside a ContractCallLocal
             default -> throw new InvalidTransactionException(NOT_SUPPORTED);
