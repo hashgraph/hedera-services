@@ -19,7 +19,7 @@ import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hedera.services.grpc.marshalling.ImpliedTransfers.NO_ALIASES;
 import static com.hedera.services.txns.span.SpanMapManager.reCalculateXferMeta;
 import static com.hedera.services.utils.EntityIdUtils.asTypedEvmAddress;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 import com.hedera.services.context.SideEffectsTracker;
@@ -56,6 +56,7 @@ import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 
 public class TransferPrecompile extends AbstractWritePrecompile {
+    private static final String TRANSFER = String.format(FAILURE_MESSAGE, "transfer");
     private final HederaStackedWorldStateUpdater updater;
     private final EvmSigsVerifier sigsVerifier;
     private final int functionId;
@@ -176,7 +177,7 @@ public class TransferPrecompile extends AbstractWritePrecompile {
                                 sigsVerifier::hasActiveKey,
                                 ledgers,
                                 updater.aliases());
-                validateTrue(hasSenderSig, INVALID_SIGNATURE);
+                validateTrue(hasSenderSig, INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE, TRANSFER);
             }
             if (i < numExplicitChanges) {
                 /* Only process receiver sig requirements for that are not custom fee payments (custom fees are never NFT transfers) */
@@ -200,7 +201,10 @@ public class TransferPrecompile extends AbstractWritePrecompile {
                                     ledgers,
                                     updater.aliases());
                 }
-                validateTrue(hasReceiverSigIfReq, INVALID_SIGNATURE);
+                validateTrue(
+                        hasReceiverSigIfReq,
+                        INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE,
+                        TRANSFER);
             }
         }
 

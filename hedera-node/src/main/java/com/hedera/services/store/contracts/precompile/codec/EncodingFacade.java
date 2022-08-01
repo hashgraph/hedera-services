@@ -19,6 +19,7 @@ import static com.hedera.services.contracts.ParsingConstants.FunctionType.HAPI_M
 import static com.hedera.services.contracts.ParsingConstants.INT_BOOL_PAIR_RETURN_TYPE;
 import static com.hedera.services.contracts.ParsingConstants.getFungibleTokenInfoType;
 import static com.hedera.services.contracts.ParsingConstants.getNonFungibleTokenInfoType;
+import static com.hedera.services.contracts.ParsingConstants.getTokenCustomFeesType;
 import static com.hedera.services.contracts.ParsingConstants.getTokenInfoType;
 import static com.hedera.services.contracts.ParsingConstants.notSpecifiedType;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
@@ -29,6 +30,7 @@ import com.hedera.services.contracts.ParsingConstants.FunctionType;
 import com.hedera.services.store.contracts.precompile.TokenKeyType;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.ContractID;
+import com.hederahashgraph.api.proto.java.CustomFee;
 import com.hederahashgraph.api.proto.java.FixedFee;
 import com.hederahashgraph.api.proto.java.FractionalFee;
 import com.hederahashgraph.api.proto.java.Key;
@@ -310,6 +312,14 @@ public class EncodingFacade {
                 .build();
     }
 
+    public Bytes encodeTokenGetCustomFees(final List<CustomFee> customFees) {
+        return functionResultBuilder()
+                .forFunction(FunctionType.HAPI_GET_TOKEN_CUSTOM_FEES)
+                .withStatus(SUCCESS.getNumber())
+                .withCustomFees(customFees)
+                .build();
+    }
+
     private FunctionResultBuilder functionResultBuilder() {
         return new FunctionResultBuilder();
     }
@@ -337,6 +347,7 @@ public class EncodingFacade {
         private TokenInfo tokenInfo;
         private TokenNftInfo nonFungibleTokenInfo;
         private boolean isFrozen;
+        private List<CustomFee> customFees;
 
         private FunctionResultBuilder forFunction(final FunctionType functionType) {
             this.tupleType =
@@ -367,6 +378,7 @@ public class EncodingFacade {
                         case GET_TOKEN_DEFAULT_FREEZE_STATUS -> getTokenDefaultFreezeStatusType;
                         case GET_TOKEN_DEFAULT_KYC_STATUS -> getTokenDefaultKycStatusType;
                         case HAPI_IS_FROZEN -> isTokenFrozenType;
+                        case HAPI_GET_TOKEN_CUSTOM_FEES -> getTokenCustomFeesType;
                         default -> notSpecifiedType;
                     };
 
@@ -478,6 +490,11 @@ public class EncodingFacade {
             return this;
         }
 
+        private FunctionResultBuilder withCustomFees(final List<CustomFee> customFees) {
+            this.customFees = customFees;
+            return this;
+        }
+
         private Bytes build() {
             final var result =
                     switch (functionType) {
@@ -513,6 +530,7 @@ public class EncodingFacade {
                         case GET_TOKEN_DEFAULT_KYC_STATUS -> Tuple.of(
                                 status, tokenDefaultKycStatus);
                         case HAPI_IS_FROZEN -> Tuple.of(status, isFrozen);
+                        case HAPI_GET_TOKEN_CUSTOM_FEES -> getTupleForTokenGetCustomFees();
                         default -> Tuple.of(status);
                     };
 
@@ -521,6 +539,10 @@ public class EncodingFacade {
 
         private Tuple getTupleForGetTokenInfo() {
             return Tuple.of(status, getTupleForTokenInfo());
+        }
+
+        private Tuple getTupleForTokenGetCustomFees() {
+            return getTupleForTokenCustomFees(status);
         }
 
         private Tuple getTupleForGetFungibleTokenInfo() {
@@ -549,19 +571,7 @@ public class EncodingFacade {
             final var royaltyFees = new ArrayList<Tuple>();
 
             for (final var customFee : tokenInfo.getCustomFeesList()) {
-                final var feeCollector =
-                        convertBesuAddressToHeadlongAddress(
-                                EntityIdUtils.asTypedEvmAddress(
-                                        customFee.getFeeCollectorAccountId()));
-                if (customFee.getFixedFee().getAmount() > 0) {
-                    fixedFees.add(getFixedFeeTuple(customFee.getFixedFee(), feeCollector));
-                } else if (customFee.getFractionalFee().getMinimumAmount() > 0) {
-                    fractionalFees.add(
-                            getFractionalFeeTuple(customFee.getFractionalFee(), feeCollector));
-                } else if (customFee.getRoyaltyFee().getExchangeValueFraction().getNumerator()
-                        > 0) {
-                    royaltyFees.add(getRoyaltyFeeTuple(customFee.getRoyaltyFee(), feeCollector));
-                }
+                extractAllFees(fixedFees, fractionalFees, royaltyFees, customFee);
             }
             return Tuple.of(
                     getHederaTokenTuple(),
@@ -573,6 +583,39 @@ public class EncodingFacade {
                     fractionalFees.toArray(new Tuple[fractionalFees.size()]),
                     royaltyFees.toArray(new Tuple[royaltyFees.size()]),
                     Bytes.wrap(tokenInfo.getLedgerId().toByteArray()).toString());
+        }
+
+        private Tuple getTupleForTokenCustomFees(final int responseCode) {
+            final var fixedFees = new ArrayList<Tuple>();
+            final var fractionalFees = new ArrayList<Tuple>();
+            final var royaltyFees = new ArrayList<Tuple>();
+
+            for (final var customFee : customFees) {
+                extractAllFees(fixedFees, fractionalFees, royaltyFees, customFee);
+            }
+            return Tuple.of(
+                    responseCode,
+                    fixedFees.toArray(new Tuple[fixedFees.size()]),
+                    fractionalFees.toArray(new Tuple[fractionalFees.size()]),
+                    royaltyFees.toArray(new Tuple[royaltyFees.size()]));
+        }
+
+        private void extractAllFees(
+                final ArrayList<Tuple> fixedFees,
+                final ArrayList<Tuple> fractionalFees,
+                final ArrayList<Tuple> royaltyFees,
+                final CustomFee customFee) {
+            final var feeCollector =
+                    convertBesuAddressToHeadlongAddress(
+                            EntityIdUtils.asTypedEvmAddress(customFee.getFeeCollectorAccountId()));
+            if (customFee.getFixedFee().getAmount() > 0) {
+                fixedFees.add(getFixedFeeTuple(customFee.getFixedFee(), feeCollector));
+            } else if (customFee.getFractionalFee().getMinimumAmount() > 0) {
+                fractionalFees.add(
+                        getFractionalFeeTuple(customFee.getFractionalFee(), feeCollector));
+            } else if (customFee.getRoyaltyFee().getExchangeValueFraction().getNumerator() > 0) {
+                royaltyFees.add(getRoyaltyFeeTuple(customFee.getRoyaltyFee(), feeCollector));
+            }
         }
 
         private Tuple getFixedFeeTuple(
