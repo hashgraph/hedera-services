@@ -98,7 +98,7 @@ public final class AbiConstants {
     public static final int ABI_WIPE_TOKEN_ACCOUNT_FUNGIBLE = 0x9790686d;
     // wipeTokenAccountNFT(address, address, int64[])
     public static final int ABI_WIPE_TOKEN_ACCOUNT_NFT = 0xf7f38e26;
-    //updateTokenInfo(address token, HederaToken tokenInfo)
+    // updateTokenInfo(address token, HederaToken tokenInfo)
     public static final int ABI_ID_UPDATE_TOKEN_INFO = 0x2cccc36f;
     // Transfer(address indexed from, address indexed to, uint256 indexed tokenId)
     // Transfer(address indexed from, address indexed to, uint256 value)

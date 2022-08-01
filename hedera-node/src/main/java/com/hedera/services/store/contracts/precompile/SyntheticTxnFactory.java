@@ -441,7 +441,7 @@ public class SyntheticTxnFactory {
         return null;
     }
 
-	public static class HbarTransfer {
+    public static class HbarTransfer {
         protected final long amount;
         protected final AccountID sender;
         protected final AccountID receiver;

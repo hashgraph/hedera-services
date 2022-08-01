@@ -1,23 +1,19 @@
+/*
+ * Copyright (C) 2022 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package com.hedera.services.store.contracts.precompile;
-
-import com.hedera.services.context.SideEffectsTracker;
-import com.hedera.services.exceptions.InvalidTransactionException;
-import com.hedera.services.ledger.SigImpactHistorian;
-import com.hedera.services.state.enums.TokenType;
-import com.hedera.services.state.merkle.MerkleToken;
-import com.hedera.services.store.contracts.WorldLedgers;
-import com.hedera.services.store.models.Id;
-import com.hedera.services.store.models.NftId;
-import com.hedera.services.store.tokens.HederaTokenStore;
-import com.hedera.services.txns.validation.OptionValidator;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.TokenID;
-import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
-import com.hederahashgraph.api.proto.java.TransactionBody;
-
-import javax.inject.Inject;
-import java.util.Optional;
 
 import static com.hedera.services.exceptions.ValidationUtils.validateFalse;
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
@@ -37,6 +33,24 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_IS_IMMUTABLE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_IS_PAUSED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELETED;
+
+import com.hedera.services.context.SideEffectsTracker;
+import com.hedera.services.exceptions.InvalidTransactionException;
+import com.hedera.services.ledger.SigImpactHistorian;
+import com.hedera.services.state.enums.TokenType;
+import com.hedera.services.state.merkle.MerkleToken;
+import com.hedera.services.store.contracts.WorldLedgers;
+import com.hedera.services.store.models.Id;
+import com.hedera.services.store.models.NftId;
+import com.hedera.services.store.tokens.HederaTokenStore;
+import com.hedera.services.txns.validation.OptionValidator;
+import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.TokenID;
+import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
+import com.hederahashgraph.api.proto.java.TransactionBody;
+import java.util.Optional;
+import javax.inject.Inject;
 
 public class TokenUpdateLogic {
     private final OptionValidator validator;
@@ -68,8 +82,7 @@ public class TokenUpdateLogic {
                     op.hasExpiry() && !validator.isValidExpiry(op.getExpiry()),
                     INVALID_EXPIRATION_TIME);
             MerkleToken token = store.get(tokenID);
-            validateTrue(
-                    (token.hasAdminKey() && affectsExpiryAtMost(op)), TOKEN_IS_IMMUTABLE);
+            validateTrue((token.hasAdminKey() && affectsExpiryAtMost(op)), TOKEN_IS_IMMUTABLE);
             validateFalse(token.isDeleted(), TOKEN_WAS_DELETED);
             validateFalse(token.isPaused(), TOKEN_IS_PAUSED);
 
@@ -95,7 +108,7 @@ public class TokenUpdateLogic {
                     }
                 }
                 if (!newTreasury.equals(existingTreasury)) {
-                    validateTrue(isDetached(existingTreasury),ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
+                    validateTrue(isDetached(existingTreasury), ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
 
                     outcome = prepTreasuryChange(tokenID, token, newTreasury, existingTreasury);
                     if (outcome != OK) {
@@ -239,11 +252,11 @@ public class TokenUpdateLogic {
         return (long) ledger.tokenRels().get(relationship, TOKEN_BALANCE);
     }
 
-    private void incrementNumTreasuryTitles(final AccountID aId){
+    private void incrementNumTreasuryTitles(final AccountID aId) {
         changeNumTreasuryTitles(aId, +1);
     }
 
-    private void decrementNumTreasuryTitles(final AccountID aId){
+    private void decrementNumTreasuryTitles(final AccountID aId) {
         changeNumTreasuryTitles(aId, -1);
     }
 
