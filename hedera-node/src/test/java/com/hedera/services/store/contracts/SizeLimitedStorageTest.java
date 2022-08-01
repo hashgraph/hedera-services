@@ -321,7 +321,7 @@ class SizeLimitedStorageTest {
 
         subject.beginSession();
 
-        assertTrue(subject.getNewUsages().isEmpty());
+        assertTrue(subject.getUsageChanges().isEmpty());
         assertTrue(subject.getNewMappings().isEmpty());
         assertTrue(subject.getUpdatedKeys().isEmpty());
         assertTrue(subject.getRemovedKeys().isEmpty());

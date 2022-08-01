@@ -94,6 +94,9 @@ public final class CommonUtils {
     }
 
     public static boolean productWouldOverflow(final long multiplier, final long multiplicand) {
+        if (multiplicand == 0) {
+            return false;
+        }
         final var maxMultiplier = Long.MAX_VALUE / multiplicand;
         return multiplier > maxMultiplier;
     }
