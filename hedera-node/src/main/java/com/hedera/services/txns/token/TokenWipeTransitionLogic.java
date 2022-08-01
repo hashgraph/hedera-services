@@ -16,11 +16,9 @@
 package com.hedera.services.txns.token;
 
 import com.hedera.services.context.TransactionContext;
-import com.hedera.services.store.models.Id;
 import com.hedera.services.txns.TransitionLogic;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hedera.services.utils.accessors.TokenWipeAccessor;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import java.util.function.Function;
 import java.util.function.Predicate;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -40,11 +38,11 @@ public class TokenWipeTransitionLogic implements TransitionLogic {
     @Override
     public void doStateTransition() {
         /* --- Translate from gRPC types --- */
-        final var op = txnCtx.accessor().getTxn().getTokenWipe();
-        final var targetTokenId = Id.fromGrpcToken(op.getToken());
-        final var targetAccountId = Id.fromGrpcAccount(op.getAccount());
-        final var amount = op.getAmount();
-        final var serialNumbersList = op.getSerialNumbersList();
+        final var accessor = (TokenWipeAccessor) txnCtx.swirldsTxnAccessor().getDelegate();
+        final var targetTokenId = accessor.targetToken();
+        final var targetAccountId = accessor.accountToWipe();
+        final var serialNumbersList = accessor.serialNums();
+        final var amount = accessor.amount();
 
         wipeLogic.wipe(targetTokenId, targetAccountId, amount, serialNumbersList);
     }
@@ -52,14 +50,5 @@ public class TokenWipeTransitionLogic implements TransitionLogic {
     @Override
     public Predicate<TransactionBody> applicability() {
         return TransactionBody::hasTokenWipe;
-    }
-
-    @Override
-    public Function<TransactionBody, ResponseCodeEnum> semanticCheck() {
-        return this::validate;
-    }
-
-    public ResponseCodeEnum validate(TransactionBody txnBody) {
-        return wipeLogic.validateSyntax(txnBody);
     }
 }

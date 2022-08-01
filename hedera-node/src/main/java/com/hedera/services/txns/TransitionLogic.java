@@ -70,12 +70,16 @@ public interface TransitionLogic {
 
     /**
      * Validate the transaction represented by the given {@link TxnAccessor}, returning a {@link
-     * ResponseCodeEnum}.
+     * ResponseCodeEnum}. The accessor has {@link com.hedera.services.context.primitives.StateView}
+     * back by latest signed state
      *
      * @param accessor the transaction to be validated
      * @return {@code OK} if the transaction is valid, otherwise an appropriate error code
      */
     default ResponseCodeEnum validateSemantics(TxnAccessor accessor) {
+        if (accessor.supportsPrecheck()) {
+            return accessor.doPrecheck();
+        }
         return semanticCheck().apply(accessor.getTxn());
     }
 }
