@@ -93,6 +93,7 @@ class GlobalDynamicPropertiesTest {
         assertTrue(subject.isStakingEnabled());
         assertFalse(subject.isUtilPrngEnabled());
         assertTrue(subject.requireMinStakeToReward());
+        assertTrue(subject.isTraceabilityMigrationEnabled());
     }
 
     @Test
@@ -236,6 +237,7 @@ class GlobalDynamicPropertiesTest {
         assertFalse(subject.areContractAutoAssociationsEnabled());
         assertFalse(subject.isStakingEnabled());
         assertTrue(subject.isUtilPrngEnabled());
+        assertFalse(subject.isTraceabilityMigrationEnabled());
     }
 
     @Test
@@ -484,6 +486,8 @@ class GlobalDynamicPropertiesTest {
                 .willReturn(Map.of(0L, 4L, 1L, 8L));
         given(properties.getIntProperty("hedera.recordStream.sidecarMaxSizeMb"))
                 .willReturn((i + 88));
+        given(properties.getBooleanProperty("hedera.recordStream.enableTraceabilityMigration"))
+                .willReturn((i + 81) % 2 == 0);
     }
 
     private Set<EntityType> typesFor(final int i) {
