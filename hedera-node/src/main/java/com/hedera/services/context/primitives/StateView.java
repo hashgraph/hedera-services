@@ -29,6 +29,7 @@ import static com.hedera.services.utils.EntityIdUtils.readableId;
 import static com.hedera.services.utils.EntityNum.fromAccountId;
 import static com.hedera.services.utils.MiscUtils.asKeyUnchecked;
 import static com.swirlds.common.utility.CommonUtils.hex;
+import static java.util.Collections.emptyList;
 import static java.util.Collections.unmodifiableMap;
 
 import com.google.protobuf.ByteString;
@@ -75,6 +76,7 @@ import com.hederahashgraph.api.proto.java.ConsensusTopicInfo;
 import com.hederahashgraph.api.proto.java.ContractGetInfoResponse;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.CryptoGetInfoResponse;
+import com.hederahashgraph.api.proto.java.CustomFee;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.FileGetInfoResponse;
 import com.hederahashgraph.api.proto.java.FileID;
@@ -115,6 +117,7 @@ import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes;
 
 public class StateView {
+
     private static final Logger log = LogManager.getLogger(StateView.class);
 
     /* EVM storage maps from 256-bit (32-byte) keys to 256-bit (32-byte) values */
@@ -532,6 +535,26 @@ public class StateView {
         }
 
         return stakingInfo.build();
+    }
+
+    public List<CustomFee> tokenCustomFees(final TokenID tokenId) {
+        if (stateChildren == null) {
+            return emptyList();
+        }
+        try {
+            final var tokens = stateChildren.tokens();
+            final var token = tokens.get(EntityNum.fromTokenId(tokenId));
+            if (token == null) {
+                return emptyList();
+            }
+            return token.grpcFeeSchedule();
+        } catch (Exception unexpected) {
+            log.warn(
+                    "Unexpected failure getting custom fees for token {}!",
+                    readableId(tokenId),
+                    unexpected);
+            return emptyList();
+        }
     }
 
     private void addNodeStakeMeta(
