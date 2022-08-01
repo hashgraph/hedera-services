@@ -83,15 +83,14 @@ class HederaStackedWorldStateUpdaterTest {
 
     @Test
     void creationIsAllowedWhenNoLimitReached() {
-        given(globalDynamicProperties.maxFollowingRecords()).willReturn(5L);
-        given(globalDynamicProperties.maxInternalContractCreations()).willReturn(1);
+        given(globalDynamicProperties.maxInternalContractCreations()).willReturn(1L);
 
         assertTrue(subject.isNewCreationAllowed());
     }
 
     @Test
     void creationNotAllowedWhenCreationLimitReached() {
-        given(globalDynamicProperties.maxInternalContractCreations()).willReturn(1);
+        given(globalDynamicProperties.maxInternalContractCreations()).willReturn(1L);
 
         subject.countIdsAllocatedByStacked(1);
 
@@ -100,8 +99,6 @@ class HederaStackedWorldStateUpdaterTest {
 
     @Test
     void creationNotAllowedWhenFollowingChildRecordsLimitReached() {
-        given(globalDynamicProperties.maxFollowingRecords()).willReturn(1L);
-        given(globalDynamicProperties.maxInternalContractCreations()).willReturn(4);
 
         subject.countIdsAllocatedByStacked(2);
 

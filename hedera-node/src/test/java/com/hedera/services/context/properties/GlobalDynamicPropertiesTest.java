@@ -167,7 +167,6 @@ class GlobalDynamicPropertiesTest {
         assertEquals(63, subject.getMaxPurgedKvPairsPerTouch());
         assertEquals(64, subject.getMaxReturnedNftsPerTouch());
         assertEquals(86, subject.maxNumTokenRels());
-        assertEquals(83, subject.maxInternalContractCreations());
     }
 
     @Test
@@ -190,6 +189,7 @@ class GlobalDynamicPropertiesTest {
         assertEquals(69L, subject.maxPrecedingRecords());
         assertEquals(70L, subject.maxFollowingRecords());
         assertEquals(76L, subject.maxDailyStakeRewardThPerH());
+        assertEquals(70L, subject.maxInternalContractCreations());
     }
 
     @Test
@@ -291,7 +291,6 @@ class GlobalDynamicPropertiesTest {
         assertEquals(74, subject.getStakingRewardPercent());
         assertEquals(79, subject.recordFileVersion());
         assertEquals(80, subject.recordSignatureFileVersion());
-        assertEquals(84, subject.maxInternalContractCreations());
     }
 
     @Test
@@ -324,6 +323,7 @@ class GlobalDynamicPropertiesTest {
         assertEquals(84L, subject.maxNumTokens());
         assertEquals(85L, subject.maxNumTopics());
         assertEquals(86L, subject.maxNumSchedules());
+        assertEquals(71L, subject.maxInternalContractCreations());
     }
 
     @Test

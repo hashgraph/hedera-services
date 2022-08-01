@@ -597,8 +597,7 @@ class HederaWorldStateTest {
     @Test
     void creationIsAllowedWhenNoLimitReached() {
         givenNonNullWorldLedgers();
-        given(dynamicProperties.maxFollowingRecords()).willReturn(5L);
-        given(dynamicProperties.maxInternalContractCreations()).willReturn(1);
+        given(dynamicProperties.maxInternalContractCreations()).willReturn(1L);
         final var actualSubject = subject.updater();
 
         assertTrue(actualSubject.isNewCreationAllowed());
@@ -607,7 +606,7 @@ class HederaWorldStateTest {
     @Test
     void creationNotAllowedWhenCreationLimitReached() {
         givenNonNullWorldLedgers();
-        given(dynamicProperties.maxInternalContractCreations()).willReturn(1);
+        given(dynamicProperties.maxInternalContractCreations()).willReturn(1L);
         final var actualSubject = subject.updater();
 
         actualSubject.countIdsAllocatedByStacked(1);
@@ -618,8 +617,7 @@ class HederaWorldStateTest {
     @Test
     void creationNotAllowedWhenFollowingChildRecordsLimitReached() {
         givenNonNullWorldLedgers();
-        given(dynamicProperties.maxFollowingRecords()).willReturn(1L);
-        given(dynamicProperties.maxInternalContractCreations()).willReturn(4);
+        given(dynamicProperties.maxInternalContractCreations()).willReturn(1L);
         final var actualSubject = subject.updater();
 
         actualSubject.countIdsAllocatedByStacked(2);

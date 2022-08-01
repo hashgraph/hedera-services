@@ -140,7 +140,7 @@ public class GlobalDynamicProperties {
     private boolean requireMinStakeToReward;
     private Map<Long, Long> nodeMaxMinStakeRatios;
     private boolean enableTraceabilityMigration;
-    private int maxInternalContractCreations;
+    private long maxInternalContractCreations;
 
     @Inject
     public GlobalDynamicProperties(
@@ -280,7 +280,9 @@ public class GlobalDynamicProperties {
         enableTraceabilityMigration =
                 properties.getBooleanProperty("hedera.recordStream.enableTraceabilityMigration");
         maxInternalContractCreations =
-                properties.getIntProperty("contracts.maxInternalContractCreations");
+                Math.min(
+                        maxFollowingRecords,
+                        properties.getIntProperty("contracts.maxInternalContractCreations"));
     }
 
     public int maxTokensPerAccount() {
@@ -683,7 +685,7 @@ public class GlobalDynamicProperties {
         return enableTraceabilityMigration;
     }
 
-    public int maxInternalContractCreations() {
+    public long maxInternalContractCreations() {
         return maxInternalContractCreations;
     }
 }
