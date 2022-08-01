@@ -17,22 +17,19 @@ package com.hedera.services.store.contracts.precompile.codec;
 
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
-import java.math.BigInteger;
 import java.util.List;
 
 public class UpdateTokenInfoWrapper {
-    private TokenID tokenID;
-    private String name;
-    private String symbol;
-    private AccountID treasury;
-    private boolean isSupplyTypeFinite;
-    private BigInteger initSupply;
-    private BigInteger decimals;
-    private long maxSupply;
-    private String memo;
-    private boolean isFreezeDefault;
-    private List<TokenCreateWrapper.TokenKeyWrapper> tokenKeys;
-    private TokenExpiryWrapper expiry;
+    private final TokenID tokenID;
+    private final String name;
+    private final String symbol;
+    private final AccountID treasury;
+    private final boolean isSupplyTypeFinite;
+    private final long maxSupply;
+    private final String memo;
+    private final boolean isFreezeDefault;
+    private final List<TokenCreateWrapper.TokenKeyWrapper> tokenKeys;
+    private final TokenExpiryWrapper expiry;
 
     private UpdateTokenInfoWrapper(
             TokenID tokenID,
@@ -40,8 +37,6 @@ public class UpdateTokenInfoWrapper {
             String symbol,
             AccountID treasury,
             boolean isSupplyTypeFinite,
-            BigInteger initSupply,
-            BigInteger decimals,
             long maxSupply,
             String memo,
             boolean isFreezeDefault,
@@ -52,8 +47,6 @@ public class UpdateTokenInfoWrapper {
         this.symbol = symbol;
         this.treasury = treasury;
         this.isSupplyTypeFinite = isSupplyTypeFinite;
-        this.initSupply = initSupply;
-        this.decimals = decimals;
         this.maxSupply = maxSupply;
         this.memo = memo;
         this.isFreezeDefault = isFreezeDefault;
@@ -85,14 +78,6 @@ public class UpdateTokenInfoWrapper {
         return isSupplyTypeFinite;
     }
 
-    public BigInteger getInitSupply() {
-        return initSupply;
-    }
-
-    public BigInteger getDecimals() {
-        return decimals;
-    }
-
     public long getMaxSupply() {
         return maxSupply;
     }
@@ -119,8 +104,6 @@ public class UpdateTokenInfoWrapper {
         private String symbol;
         private AccountID treasury;
         private boolean isSupplyTypeFinite;
-        private BigInteger initSupply;
-        private BigInteger decimals;
         private long maxSupply;
         private String memo;
         private boolean isFreezeDefault;
@@ -149,16 +132,6 @@ public class UpdateTokenInfoWrapper {
 
         public Builder setSupplyTypeFinite(boolean supplyTypeFinite) {
             isSupplyTypeFinite = supplyTypeFinite;
-            return this;
-        }
-
-        public Builder setInitSupply(BigInteger initSupply) {
-            this.initSupply = initSupply;
-            return this;
-        }
-
-        public Builder setDecimals(BigInteger decimals) {
-            this.decimals = decimals;
             return this;
         }
 
@@ -194,8 +167,6 @@ public class UpdateTokenInfoWrapper {
                     this.symbol,
                     this.treasury,
                     this.isSupplyTypeFinite,
-                    this.initSupply,
-                    this.decimals,
                     this.maxSupply,
                     this.memo,
                     this.isFreezeDefault,

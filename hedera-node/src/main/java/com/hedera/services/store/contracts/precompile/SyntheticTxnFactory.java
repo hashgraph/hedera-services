@@ -22,6 +22,7 @@ import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
 import com.google.protobuf.BoolValue;
 import com.google.protobuf.ByteString;
+import com.google.protobuf.StringValue;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ethereum.EthTxData;
 import com.hedera.services.ledger.accounts.ContractCustomizer;
@@ -70,6 +71,7 @@ import com.hederahashgraph.api.proto.java.TokenMintTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TokenType;
+import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenWipeAccountTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
@@ -437,8 +439,39 @@ public class SyntheticTxnFactory {
         return TransactionBody.newBuilder().setTokenWipe(builder);
     }
 
-    public TransactionBody.Builder createUpdateTokenInfo(UpdateTokenInfoWrapper updateOp) {
-        return null;
+    public TransactionBody.Builder createTokenUpdate(UpdateTokenInfoWrapper updateWrapper) {
+        final var builder = TokenUpdateTransactionBody.newBuilder();
+        builder.setToken(updateWrapper.getTokenID())
+                .setName(updateWrapper.getName())
+                .setSymbol(updateWrapper.getSymbol())
+                .setMemo(StringValue.of(updateWrapper.getMemo()));
+        if (updateWrapper.getTreasury() != null) builder.setTreasury(updateWrapper.getTreasury());
+
+        if (updateWrapper.getExpiry().second() != 0) {
+            builder.setExpiry(
+                    Timestamp.newBuilder().setSeconds(updateWrapper.getExpiry().second()).build());
+        }
+        if (updateWrapper.getExpiry().autoRenewAccount() != null)
+            builder.setAutoRenewAccount(updateWrapper.getExpiry().autoRenewAccount());
+        if (updateWrapper.getExpiry().autoRenewPeriod() != 0)
+            builder.setAutoRenewPeriod(
+                    Duration.newBuilder().setSeconds(updateWrapper.getExpiry().autoRenewPeriod()));
+        updateWrapper
+                .getTokenKeys()
+                .forEach(
+                        tokenKeyWrapper -> {
+                            final var key = tokenKeyWrapper.key().asGrpc();
+                            if (tokenKeyWrapper.isUsedForAdminKey()) builder.setAdminKey(key);
+                            if (tokenKeyWrapper.isUsedForKycKey()) builder.setKycKey(key);
+                            if (tokenKeyWrapper.isUsedForFreezeKey()) builder.setFreezeKey(key);
+                            if (tokenKeyWrapper.isUsedForWipeKey()) builder.setWipeKey(key);
+                            if (tokenKeyWrapper.isUsedForSupplyKey()) builder.setSupplyKey(key);
+                            if (tokenKeyWrapper.isUsedForFeeScheduleKey())
+                                builder.setFeeScheduleKey(key);
+                            if (tokenKeyWrapper.isUsedForPauseKey()) builder.setPauseKey(key);
+                        });
+
+        return TransactionBody.newBuilder().setTokenUpdate(builder);
     }
 
     public static class HbarTransfer {

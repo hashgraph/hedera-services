@@ -1181,21 +1181,21 @@ public class DecodingFacade {
             Bytes input, UnaryOperator<byte[]> aliasResolver) {
         final Tuple decodedArguments =
                 decodeFunctionCall(input, TOKEN_UPDATE_INFO_SELECTOR, TOKEN_UPDATE_INFO_DECODER);
-        final Tuple tokenCreateStruct = decodedArguments.get(1);
+        final Tuple hederaTokenStruct = decodedArguments.get(1);
 
         final var tokenTreasury =
-                convertLeftPaddedAddressToAccountId(tokenCreateStruct.get(2), aliasResolver);
-        final var tokenKeys = decodeTokenKeys(tokenCreateStruct.get(7), aliasResolver);
-        final var tokenExpiry = decodeTokenExpiry(tokenCreateStruct.get(8), aliasResolver);
+                convertLeftPaddedAddressToAccountId(hederaTokenStruct.get(2), aliasResolver);
+        final var tokenKeys = decodeTokenKeys(hederaTokenStruct.get(7), aliasResolver);
+        final var tokenExpiry = decodeTokenExpiry(hederaTokenStruct.get(8), aliasResolver);
         return UpdateTokenInfoWrapper.builder()
                 .setTokenID(decodedArguments.get(0))
-                .setName(tokenCreateStruct.get(0))
-                .setSymbol(tokenCreateStruct.get(1))
+                .setName(hederaTokenStruct.get(0))
+                .setSymbol(hederaTokenStruct.get(1))
                 .setTreasury(tokenTreasury)
-                .setMemo(tokenCreateStruct.get(3))
-                .setSupplyTypeFinite(tokenCreateStruct.get(4))
-                .setMaxSupply(tokenCreateStruct.get(5))
-                .setFreezeDefault(tokenCreateStruct.get(6))
+                .setMemo(hederaTokenStruct.get(3))
+                .setSupplyTypeFinite(hederaTokenStruct.get(4))
+                .setMaxSupply(hederaTokenStruct.get(5))
+                .setFreezeDefault(hederaTokenStruct.get(6))
                 .setTokenKeys(tokenKeys)
                 .setExpiry(tokenExpiry)
                 .build();

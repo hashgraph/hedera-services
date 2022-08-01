@@ -58,7 +58,7 @@ public class UpdateTokenInfoPrecompile extends AbstractWritePrecompile {
     @Override
     public TransactionBody.Builder body(Bytes input, UnaryOperator<byte[]> aliasResolver) {
         final var updateOp = decoder.decodeUpdateTokenInfo(input, aliasResolver);
-        transactionBody = syntheticTxnFactory.createUpdateTokenInfo(updateOp);
+        transactionBody = syntheticTxnFactory.createTokenUpdate(updateOp);
         initializeHederaTokenStore();
         return transactionBody;
     }
