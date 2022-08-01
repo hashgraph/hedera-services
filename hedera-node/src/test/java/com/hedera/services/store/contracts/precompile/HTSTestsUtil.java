@@ -22,6 +22,7 @@ import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.store.contracts.precompile.codec.Association;
 import com.hedera.services.store.contracts.precompile.codec.BurnWrapper;
+import com.hedera.services.store.contracts.precompile.codec.DeleteWrapper;
 import com.hedera.services.store.contracts.precompile.codec.Dissociation;
 import com.hedera.services.store.contracts.precompile.codec.GetTokenDefaultFreezeStatusWrapper;
 import com.hedera.services.store.contracts.precompile.codec.GetTokenDefaultKycStatusWrapper;
@@ -146,6 +147,8 @@ public class HTSTestsUtil {
 
     public static final TokenFreezeUnfreezeWrapper tokenFreezeUnFreezeWrapper =
             new TokenFreezeUnfreezeWrapper(fungible, account);
+
+    public static final DeleteWrapper tokenDeleteWrapper = new DeleteWrapper(fungible);
 
     public static final Association multiAssociateOp =
             Association.singleAssociation(accountMerkleId, tokenMerkleId);

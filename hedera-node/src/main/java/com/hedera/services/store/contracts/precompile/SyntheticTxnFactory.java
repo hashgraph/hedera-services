@@ -30,6 +30,7 @@ import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.store.contracts.precompile.codec.ApproveWrapper;
 import com.hedera.services.store.contracts.precompile.codec.Association;
 import com.hedera.services.store.contracts.precompile.codec.BurnWrapper;
+import com.hedera.services.store.contracts.precompile.codec.DeleteWrapper;
 import com.hedera.services.store.contracts.precompile.codec.Dissociation;
 import com.hedera.services.store.contracts.precompile.codec.MintWrapper;
 import com.hedera.services.store.contracts.precompile.codec.PauseWrapper;
@@ -66,6 +67,7 @@ import com.hederahashgraph.api.proto.java.TokenAllowance;
 import com.hederahashgraph.api.proto.java.TokenAssociateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenBurnTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
+import com.hederahashgraph.api.proto.java.TokenDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenDissociateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenFreezeAccountTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -214,6 +216,12 @@ public class SyntheticTxnFactory {
         }
 
         return TransactionBody.newBuilder().setTokenBurn(builder);
+    }
+
+    public TransactionBody.Builder createDelete(final DeleteWrapper deleteWrapper) {
+        final var builder = TokenDeleteTransactionBody.newBuilder();
+        builder.setToken(deleteWrapper.tokenID());
+        return TransactionBody.newBuilder().setTokenDeletion(builder);
     }
 
     public TransactionBody.Builder createMint(final MintWrapper mintWrapper) {

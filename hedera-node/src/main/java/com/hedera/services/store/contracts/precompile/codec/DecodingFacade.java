@@ -69,7 +69,6 @@ public class DecodingFacade {
     private static final String ADDRESS_PAIR_RAW_TYPE = "(bytes32,bytes32)";
     private static final String ADDRESS_TRIPLE_RAW_TYPE = "(bytes32,bytes32,bytes32)";
     private static final String UINT256_RAW_TYPE = "(uint256)";
-    public static final String ADDRESS_RAW_TYPE = "(bytes32)";
     private static final String ADDRESS_UINT256_RAW_TYPE = "(bytes32,uint256)";
     private static final String ADDRESS_ADDRESS_UINT256_RAW_TYPE = "(bytes32,bytes32,uint256)";
 
@@ -130,14 +129,18 @@ public class DecodingFacade {
     private static final Bytes GET_TOKEN_DEFAULT_FREEZE_STATUS_SELECTOR =
             Bytes.wrap(GET_TOKEN_DEFAULT_FREEZE_STATUS_FUNCTION.selector());
     private static final ABIType<Tuple> GET_TOKEN_DEFAULT_FREEZE_STATUS_DECODER =
-            TypeFactory.create(ADDRESS_RAW_TYPE);
+            TypeFactory.create(BYTES32);
 
     private static final Function GET_TOKEN_DEFAULT_KYC_STATUS_FUNCTION =
             new Function("getTokenDefaultKycStatus(address)", INT);
     private static final Bytes GET_TOKEN_DEFAULT_KYC_STATUS_SELECTOR =
             Bytes.wrap(GET_TOKEN_DEFAULT_KYC_STATUS_FUNCTION.selector());
     private static final ABIType<Tuple> GET_TOKEN_DEFAULT_KYC_STATUS_DECODER =
-            TypeFactory.create(ADDRESS_RAW_TYPE);
+            TypeFactory.create(BYTES32);
+
+    private static final Function DELETE_TOKEN_FUNCTION = new Function("deleteToken(address)", INT);
+    private static final Bytes DELETE_TOKEN_SELECTOR = Bytes.wrap(DELETE_TOKEN_FUNCTION.selector());
+    private static final ABIType<Tuple> DELETE_TOKEN_DECODER = TypeFactory.create(BYTES32);
 
     private static final Function ASSOCIATE_TOKENS_FUNCTION =
             new Function("associateTokens(address,address[])", INT);
@@ -177,8 +180,7 @@ public class DecodingFacade {
             new Function("balanceOf(address)", INT);
     private static final Bytes BALANCE_OF_TOKEN_SELECTOR =
             Bytes.wrap(BALANCE_OF_TOKEN_FUNCTION.selector());
-    private static final ABIType<Tuple> BALANCE_OF_TOKEN_DECODER =
-            TypeFactory.create(ADDRESS_RAW_TYPE);
+    private static final ABIType<Tuple> BALANCE_OF_TOKEN_DECODER = TypeFactory.create(BYTES32);
 
     private static final Function OWNER_OF_NFT_FUNCTION = new Function("ownerOf(uint256)", INT);
     private static final Bytes OWNER_OF_NFT_SELECTOR = Bytes.wrap(OWNER_OF_NFT_FUNCTION.selector());
@@ -213,14 +215,13 @@ public class DecodingFacade {
 
     private static final Function PAUSE_TOKEN_FUNCTION = new Function("pauseToken(address)", INT);
     private static final Bytes PAUSE_TOKEN_SELECTOR = Bytes.wrap(PAUSE_TOKEN_FUNCTION.selector());
-    private static final ABIType<Tuple> PAUSE_TOKEN_DECODER = TypeFactory.create(ADDRESS_RAW_TYPE);
+    private static final ABIType<Tuple> PAUSE_TOKEN_DECODER = TypeFactory.create(BYTES32);
 
     private static final Function UNPAUSE_TOKEN_FUNCTION =
             new Function("unpauseToken(address)", INT);
     private static final Bytes UNPAUSE_TOKEN_SELECTOR =
             Bytes.wrap(UNPAUSE_TOKEN_FUNCTION.selector());
-    private static final ABIType<Tuple> UNPAUSE_TOKEN_DECODER =
-            TypeFactory.create(ADDRESS_RAW_TYPE);
+    private static final ABIType<Tuple> UNPAUSE_TOKEN_DECODER = TypeFactory.create(BYTES32);
 
     private static final Function IS_FROZEN_TOKEN_FUNCTION =
             new Function("isFrozen(address,address)", INT_BOOL_PAIR);
@@ -507,6 +508,14 @@ public class DecodingFacade {
         final var tokenID = convertAddressBytesToTokenID(decodedArguments.get(0));
 
         return new GetTokenDefaultKycStatusWrapper(tokenID);
+    }
+
+    public DeleteWrapper decodeDelete(final Bytes input) {
+        final Tuple decodedArguments =
+                decodeFunctionCall(input, DELETE_TOKEN_SELECTOR, DELETE_TOKEN_DECODER);
+        final var tokenID = convertAddressBytesToTokenID(decodedArguments.get(0));
+
+        return new DeleteWrapper(tokenID);
     }
 
     public BalanceOfWrapper decodeBalanceOf(

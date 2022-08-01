@@ -53,6 +53,7 @@ import com.hedera.services.txns.crypto.validators.DeleteAllowanceChecks;
 import com.hedera.services.txns.token.AssociateLogic;
 import com.hedera.services.txns.token.BurnLogic;
 import com.hedera.services.txns.token.CreateLogic;
+import com.hedera.services.txns.token.DeleteLogic;
 import com.hedera.services.txns.token.DissociateLogic;
 import com.hedera.services.txns.token.FreezeLogic;
 import com.hedera.services.txns.token.MintLogic;
@@ -161,6 +162,15 @@ class InfrastructureFactoryTest {
                                 tokens,
                                 uniqueTokens,
                                 tokenRels)));
+    }
+
+    @Test
+    void canCreateNewDeleteLogic() {
+        final var accountStore = subject.newAccountStore(accounts);
+        final var tokenStore =
+                subject.newTokenStore(
+                        accountStore, subject.newSideEffects(), tokens, uniqueTokens, tokenRels);
+        assertInstanceOf(DeleteLogic.class, subject.newDeleteLogic(accountStore, tokenStore));
     }
 
     @Test
