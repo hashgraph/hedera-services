@@ -33,7 +33,6 @@ public class EvmKeyValueSource {
 
     static {
         final var keyBytes = new byte[32];
-        final var mockId = AccountID.newBuilder().setAccountNum(1).build();
         for (int i = 0; i < NUM_KEYS; i++) {
             r.nextBytes(keyBytes);
             keys[i] = UInt256.fromBytes(Bytes.wrap(keyBytes));

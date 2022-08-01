@@ -26,10 +26,10 @@ import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.getNftGra
 import static com.hedera.services.utils.EntityIdUtils.asAccount;
 import static com.hedera.services.utils.EntityIdUtils.asHexedEvmAddress;
 import static com.hedera.services.utils.EntityIdUtils.readableId;
-import static com.hedera.services.utils.EntityIdUtils.unaliased;
 import static com.hedera.services.utils.EntityNum.fromAccountId;
 import static com.hedera.services.utils.MiscUtils.asKeyUnchecked;
 import static com.swirlds.common.utility.CommonUtils.hex;
+import static java.util.Collections.emptyList;
 import static java.util.Collections.unmodifiableMap;
 
 import com.google.protobuf.ByteString;
@@ -67,6 +67,7 @@ import com.hedera.services.state.virtual.VirtualBlobKey;
 import com.hedera.services.state.virtual.VirtualBlobValue;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.schedule.ScheduleStore;
+import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
 import com.hedera.services.utils.MiscUtils;
@@ -75,6 +76,7 @@ import com.hederahashgraph.api.proto.java.ConsensusTopicInfo;
 import com.hederahashgraph.api.proto.java.ContractGetInfoResponse;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.CryptoGetInfoResponse;
+import com.hederahashgraph.api.proto.java.CustomFee;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.FileGetInfoResponse;
 import com.hederahashgraph.api.proto.java.FileID;
@@ -102,6 +104,7 @@ import com.swirlds.virtualmap.VirtualKey;
 import com.swirlds.virtualmap.VirtualMap;
 import com.swirlds.virtualmap.VirtualValue;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -114,6 +117,7 @@ import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes;
 
 public class StateView {
+
     private static final Logger log = LogManager.getLogger(StateView.class);
 
     /* EVM storage maps from 256-bit (32-byte) keys to 256-bit (32-byte) values */
@@ -123,6 +127,8 @@ public class StateView {
     static final byte[] EMPTY_BYTES = new byte[0];
     static final MerkleMap<?, ?> EMPTY_MM = new MerkleMap<>();
     static final VirtualMap<?, ?> EMPTY_VM = new VirtualMap<>();
+
+    static final Map<ByteString, EntityNum> EMPTY_HM = new HashMap<>();
     static final MerkleNetworkContext EMPTY_CTX = new MerkleNetworkContext();
 
     public static final JKey EMPTY_WACL = new JKeyList();
@@ -531,6 +537,26 @@ public class StateView {
         return stakingInfo.build();
     }
 
+    public List<CustomFee> tokenCustomFees(final TokenID tokenId) {
+        if (stateChildren == null) {
+            return emptyList();
+        }
+        try {
+            final var tokens = stateChildren.tokens();
+            final var token = tokens.get(EntityNum.fromTokenId(tokenId));
+            if (token == null) {
+                return emptyList();
+            }
+            return token.grpcFeeSchedule();
+        } catch (Exception unexpected) {
+            log.warn(
+                    "Unexpected failure getting custom fees for token {}!",
+                    readableId(tokenId),
+                    unexpected);
+            return emptyList();
+        }
+    }
+
     private void addNodeStakeMeta(
             final StakingInfo.Builder stakingInfo,
             final MerkleAccount account,
@@ -610,7 +636,7 @@ public class StateView {
             final AliasManager aliasManager,
             final int maxTokensForAccountInfo,
             final RewardCalculator rewardCalculator) {
-        final var contractId = unaliased(id, aliasManager);
+        final var contractId = EntityIdUtils.unaliased(id, aliasManager);
         final var contract = contracts().get(contractId);
         if (contract == null) {
             return Optional.empty();
@@ -834,5 +860,9 @@ public class StateView {
 
     public MerkleMap<EntityNum, MerkleStakingInfo> stakingInfo() {
         return stateChildren == null ? emptyMm() : stateChildren.stakingInfo();
+    }
+
+    public Map<ByteString, EntityNum> aliases() {
+        return stateChildren == null ? EMPTY_HM : stateChildren.aliases();
     }
 }

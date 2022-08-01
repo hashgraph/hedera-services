@@ -248,4 +248,9 @@ public class MutableStateChildren implements StateChildren {
     public void setNetworkCtx(final MerkleNetworkContext networkCtx) {
         this.networkCtx = new WeakReference<>(networkCtx);
     }
+
+    @VisibleForTesting
+    public void setAliases(final Map<ByteString, EntityNum> aliases) {
+        this.aliases = new WeakReference<>(aliases);
+    }
 }
