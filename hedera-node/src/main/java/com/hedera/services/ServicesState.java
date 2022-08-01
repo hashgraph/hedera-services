@@ -364,6 +364,9 @@ public class ServicesState extends PartialNaryMerkleInternal
             } else {
                 postMigrateTasks.add(initTask);
             }
+            if (trigger == RECONNECT) {
+                app.migrationRecordsManager().markTraceabilityMigrationAsDone();
+            }
         }
     }
 

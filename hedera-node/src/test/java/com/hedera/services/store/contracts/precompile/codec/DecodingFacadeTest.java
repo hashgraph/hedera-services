@@ -74,6 +74,9 @@ class DecodingFacadeTest {
     private static final Bytes NON_FUNGIBLE_BURN_INPUT =
             Bytes.fromHexString(
                     "0xacb9cff9000000000000000000000000000000000000000000000000000000000000049e000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000600000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000007b00000000000000000000000000000000000000000000000000000000000000ea");
+    public static final Bytes DELETE_INPUT =
+            Bytes.fromHexString(
+                    "0xf069f712000000000000000000000000000000000000000000000000000000000000046d");
     private static final Bytes FUNGIBLE_MINT_INPUT =
             Bytes.fromHexString(
                     "0x278e0b88000000000000000000000000000000000000000000000000000000000000043e000000000000000000000000000000000000000000000000000000000000000f00000000000000000000000000000000000000000000000000000000000000600000000000000000000000000000000000000000000000000000000000000000");
@@ -218,6 +221,22 @@ class DecodingFacadeTest {
     public static final Bytes APPROVE_TOKEN_INPUT_HAPI =
             Bytes.fromHexString(
                     "0xe1f21c67000000000000000000000000000000000000000000000000000000000000123400000000000000000000000000000000000000000000000000000000000003f0000000000000000000000000000000000000000000000000000000000000000a");
+
+    private static final Bytes FUNGIBLE_PAUSE_INPUT =
+            Bytes.fromHexString(
+                    "0x7c41ad2c000000000000000000000000000000000000000000000000000000000000043d");
+
+    private static final Bytes NON_FUNGIBLE_PAUSE_INPUT =
+            Bytes.fromHexString(
+                    "0x7c41ad2c0000000000000000000000000000000000000000000000000000000000000445");
+
+    private static final Bytes FUNGIBLE_UNPAUSE_INPUT =
+            Bytes.fromHexString(
+                    "0x3b3bff0f0000000000000000000000000000000000000000000000000000000000000441");
+
+    private static final Bytes NON_FUNGIBLE_UNPAUSE_INPUT =
+            Bytes.fromHexString(
+                    "0x3b3bff0f0000000000000000000000000000000000000000000000000000000000000449");
 
     public static final Bytes GET_TOKEN_INFO_INPUT =
             Bytes.fromHexString(
@@ -578,6 +597,13 @@ class DecodingFacadeTest {
     }
 
     @Test
+    void decodeTokenDeleteWithValidInput() {
+        final var decodedInput = subject.decodeDelete(DELETE_INPUT);
+
+        assertEquals(TokenID.newBuilder().setTokenNum(1133).build(), decodedInput.tokenID());
+    }
+
+    @Test
     void decodeFungibleMintInput() {
         final var decodedInput = subject.decodeMint(FUNGIBLE_MINT_INPUT);
 
@@ -875,6 +901,34 @@ class DecodingFacadeTest {
                         subject.decodeFungibleCreate(
                                 CREATE_FUNGIBLE_NO_FEES_TOKEN_KEY_EXCEEDING_INTEGER_MAX_INVALID_INPUT,
                                 identity));
+    }
+
+    @Test
+    void decodeFungiblePauseInput() {
+        final var decodedInput = subject.decodePause(FUNGIBLE_PAUSE_INPUT);
+
+        assertTrue(decodedInput.token().getTokenNum() > 0);
+    }
+
+    @Test
+    void decodeNonFungiblePauseInput() {
+        final var decodedInput = subject.decodePause(NON_FUNGIBLE_PAUSE_INPUT);
+
+        assertTrue(decodedInput.token().getTokenNum() > 0);
+    }
+
+    @Test
+    void decodeFungibleUnpauseInput() {
+        final var decodedInput = subject.decodeUnpause(FUNGIBLE_UNPAUSE_INPUT);
+
+        assertTrue(decodedInput.token().getTokenNum() > 0);
+    }
+
+    @Test
+    void decodeNonFungibleUnpauseInput() {
+        final var decodedInput = subject.decodeUnpause(NON_FUNGIBLE_UNPAUSE_INPUT);
+
+        assertTrue(decodedInput.token().getTokenNum() > 0);
     }
 
     @Test

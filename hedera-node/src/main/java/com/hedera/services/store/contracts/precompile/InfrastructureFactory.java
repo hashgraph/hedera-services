@@ -51,10 +51,13 @@ import com.hedera.services.txns.crypto.validators.DeleteAllowanceChecks;
 import com.hedera.services.txns.token.AssociateLogic;
 import com.hedera.services.txns.token.BurnLogic;
 import com.hedera.services.txns.token.CreateLogic;
+import com.hedera.services.txns.token.DeleteLogic;
 import com.hedera.services.txns.token.DissociateLogic;
 import com.hedera.services.txns.token.FreezeLogic;
 import com.hedera.services.txns.token.MintLogic;
+import com.hedera.services.txns.token.PauseLogic;
 import com.hedera.services.txns.token.UnfreezeLogic;
+import com.hedera.services.txns.token.UnpauseLogic;
 import com.hedera.services.txns.token.WipeLogic;
 import com.hedera.services.txns.token.process.DissociationFactory;
 import com.hedera.services.txns.token.validators.CreateChecks;
@@ -142,6 +145,11 @@ public class InfrastructureFactory {
         return new BurnLogic(validator, tokenStore, accountStore, dynamicProperties);
     }
 
+    public DeleteLogic newDeleteLogic(
+            final AccountStore accountStore, final TypedTokenStore tokenStore) {
+        return new DeleteLogic(accountStore, tokenStore, sigImpactHistorian);
+    }
+
     public MintLogic newMintLogic(
             final AccountStore accountStore, final TypedTokenStore tokenStore) {
         return new MintLogic(usageLimits, validator, tokenStore, accountStore, dynamicProperties);
@@ -211,6 +219,14 @@ public class InfrastructureFactory {
     public DeleteAllowanceLogic newDeleteAllowanceLogic(
             final AccountStore accountStore, final TypedTokenStore tokenStore) {
         return new DeleteAllowanceLogic(accountStore, tokenStore);
+    }
+
+    public PauseLogic newPauseLogic(final TypedTokenStore tokenStore) {
+        return new PauseLogic(tokenStore);
+    }
+
+    public UnpauseLogic newUnpauseLogic(final TypedTokenStore tokenStore) {
+        return new UnpauseLogic(tokenStore);
     }
 
     public WipeLogic newWipeLogic(

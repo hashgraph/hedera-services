@@ -51,6 +51,7 @@ import com.hedera.services.store.contracts.precompile.impl.AssociatePrecompile;
 import com.hedera.services.store.contracts.precompile.impl.BalanceOfPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.BurnPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.DecimalsPrecompile;
+import com.hedera.services.store.contracts.precompile.impl.DeleteTokenPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.DissociatePrecompile;
 import com.hedera.services.store.contracts.precompile.impl.ERCTransferPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.FreezeTokenPrecompile;
@@ -66,6 +67,7 @@ import com.hedera.services.store.contracts.precompile.impl.MultiDissociatePrecom
 import com.hedera.services.store.contracts.precompile.impl.NamePrecompile;
 import com.hedera.services.store.contracts.precompile.impl.NonFungibleTokenInfoPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.OwnerOfPrecompile;
+import com.hedera.services.store.contracts.precompile.impl.PausePrecompile;
 import com.hedera.services.store.contracts.precompile.impl.SetApprovalForAllPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.SymbolPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.TokenCreatePrecompile;
@@ -75,6 +77,7 @@ import com.hedera.services.store.contracts.precompile.impl.TokenURIPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.TotalSupplyPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.TransferPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.UnfreezeTokenPrecompile;
+import com.hedera.services.store.contracts.precompile.impl.UnpausePrecompile;
 import com.hedera.services.store.contracts.precompile.impl.WipeFungiblePrecompile;
 import com.hedera.services.store.contracts.precompile.impl.WipeNonFungiblePrecompile;
 import com.hedera.services.store.contracts.precompile.utils.DescriptorUtils;
@@ -336,6 +339,24 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
                             precompilePricingUtils,
                             feeCalculator,
                             currentView);
+                    case AbiConstants.ABI_ID_PAUSE_TOKEN -> new PausePrecompile(
+                            ledgers,
+                            decoder,
+                            updater.aliases(),
+                            sigsVerifier,
+                            sideEffectsTracker,
+                            syntheticTxnFactory,
+                            infrastructureFactory,
+                            precompilePricingUtils);
+                    case AbiConstants.ABI_ID_UNPAUSE_TOKEN -> new UnpausePrecompile(
+                            ledgers,
+                            decoder,
+                            updater.aliases(),
+                            sigsVerifier,
+                            sideEffectsTracker,
+                            syntheticTxnFactory,
+                            infrastructureFactory,
+                            precompilePricingUtils);
                     case AbiConstants.ABI_ID_ALLOWANCE -> checkFeatureFlag(
                             dynamicProperties.areAllowancesEnabled(),
                             () ->
@@ -454,6 +475,15 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
                             infrastructureFactory,
                             precompilePricingUtils,
                             false);
+                    case AbiConstants.ABI_ID_DELETE_TOKEN -> new DeleteTokenPrecompile(
+                            ledgers,
+                            decoder,
+                            updater.aliases(),
+                            sigsVerifier,
+                            sideEffectsTracker,
+                            syntheticTxnFactory,
+                            infrastructureFactory,
+                            precompilePricingUtils);
                     case AbiConstants.ABI_ID_REDIRECT_FOR_TOKEN -> {
                         final var target = DescriptorUtils.getRedirectTarget(input);
                         final var tokenId = target.tokenId();

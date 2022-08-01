@@ -50,6 +50,7 @@ import com.hedera.services.state.initialization.SystemFilesManager;
 import com.hedera.services.state.initialization.TreasuryCloner;
 import com.hedera.services.state.logic.NetworkCtxManager;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.migration.MigrationRecordsManager;
 import com.hedera.services.state.validation.LedgerValidator;
 import com.hedera.services.state.virtual.VirtualMapFactory;
 import com.hedera.services.stats.ServicesStatsManager;
@@ -130,6 +131,8 @@ public interface ServicesApp {
     MutableStateChildren workingState();
 
     PrefetchProcessor prefetchProcessor();
+
+    MigrationRecordsManager migrationRecordsManager();
 
     /* Needed by ServicesMain */
     Pause pause();

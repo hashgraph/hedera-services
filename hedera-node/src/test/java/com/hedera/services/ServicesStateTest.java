@@ -58,6 +58,7 @@ import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.merkle.MerkleScheduledTransactions;
 import com.hedera.services.state.merkle.MerkleSpecialFiles;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
+import com.hedera.services.state.migration.MigrationRecordsManager;
 import com.hedera.services.state.migration.ReleaseTwentySevenMigration;
 import com.hedera.services.state.migration.ReleaseTwentySixMigration;
 import com.hedera.services.state.migration.StateChildIndices;
@@ -158,6 +159,7 @@ class ServicesStateTest {
     @Mock private BootstrapProperties bootstrapProperties;
     @Mock private SystemAccountsCreator accountsCreator;
     @Mock private SystemFilesManager systemFilesManager;
+    @Mock private MigrationRecordsManager migrationRecordsManager;
 
     @LoggingTarget private LogCaptor logCaptor;
     @LoggingSubject private ServicesState subject;
@@ -514,6 +516,7 @@ class ServicesStateTest {
         given(app.hashLogger()).willReturn(hashLogger);
         given(app.initializationFlow()).willReturn(initFlow);
         given(app.dualStateAccessor()).willReturn(dualStateAccessor);
+        given(app.migrationRecordsManager()).willReturn(migrationRecordsManager);
         given(platform.getSelfId()).willReturn(selfId);
         // and:
         APPS.save(selfId.getId(), app);
@@ -631,6 +634,7 @@ class ServicesStateTest {
         given(app.hashLogger()).willReturn(hashLogger);
         given(app.initializationFlow()).willReturn(initFlow);
         given(app.dualStateAccessor()).willReturn(dualStateAccessor);
+        given(app.migrationRecordsManager()).willReturn(migrationRecordsManager);
         given(platform.getSelfId()).willReturn(selfId);
         // and:
         APPS.save(selfId.getId(), app);
@@ -694,6 +698,23 @@ class ServicesStateTest {
         assertSame(addressBook, copy.addressBook());
         assertSame(networkContext, copy.networkCtx());
         assertSame(specialFiles, copy.specialFiles());
+    }
+
+    @Test
+    void reconnectMarksTraceabilityRecordsAsStreamed() {
+        given(app.hashLogger()).willReturn(hashLogger);
+        given(app.initializationFlow()).willReturn(initFlow);
+        given(app.dualStateAccessor()).willReturn(dualStateAccessor);
+        given(app.migrationRecordsManager()).willReturn(migrationRecordsManager);
+        given(platform.getSelfId()).willReturn(selfId);
+        // and:
+        APPS.save(selfId.getId(), app);
+
+        // when:
+        subject.init(platform, addressBook, dualState, RECONNECT, currentVersion);
+
+        // then:
+        verify(migrationRecordsManager).markTraceabilityMigrationAsDone();
     }
 
     @Test
