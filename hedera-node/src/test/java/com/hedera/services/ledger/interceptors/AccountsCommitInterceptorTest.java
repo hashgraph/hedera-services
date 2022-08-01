@@ -23,7 +23,7 @@ import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.ledger.EntityChangeSet;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.validation.UsageLimits;
+import com.hedera.services.state.validation.AccountUsageTracking;
 import com.hederahashgraph.api.proto.java.AccountID;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
@@ -35,14 +35,14 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class AccountsCommitInterceptorTest {
 
-    @Mock private UsageLimits usageLimits;
+    @Mock private AccountUsageTracking usageTracking;
     @Mock private SideEffectsTracker sideEffectsTracker;
 
     private AccountsCommitInterceptor subject;
 
     @BeforeEach
     void setUp() {
-        subject = new AccountsCommitInterceptor(usageLimits, sideEffectsTracker);
+        subject = new AccountsCommitInterceptor(usageTracking, sideEffectsTracker);
     }
 
     @Test
@@ -51,8 +51,8 @@ class AccountsCommitInterceptorTest {
 
         subject.postCommit();
 
-        verify(usageLimits).recordContracts(1);
-        verify(usageLimits).refreshAccounts();
+        verify(usageTracking).recordContracts(1);
+        verify(usageTracking).refreshAccounts();
     }
 
     @Test
@@ -61,7 +61,7 @@ class AccountsCommitInterceptorTest {
 
         subject.postCommit();
 
-        verifyNoInteractions(usageLimits);
+        verifyNoInteractions(usageTracking);
     }
 
     private EntityChangeSet<AccountID, MerkleAccount, AccountProperty> pendingChanges(

@@ -36,6 +36,7 @@ import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.validation.UsageLimits;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.TypedTokenStore;
+import com.hedera.services.store.contracts.WorldLedgers;
 import com.hedera.services.store.contracts.precompile.codec.DecodingFacade;
 import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
 import com.hedera.services.store.contracts.precompile.proxy.RedirectViewExecutor;
@@ -50,8 +51,14 @@ import com.hedera.services.txns.crypto.validators.DeleteAllowanceChecks;
 import com.hedera.services.txns.token.AssociateLogic;
 import com.hedera.services.txns.token.BurnLogic;
 import com.hedera.services.txns.token.CreateLogic;
+import com.hedera.services.txns.token.DeleteLogic;
 import com.hedera.services.txns.token.DissociateLogic;
+import com.hedera.services.txns.token.FreezeLogic;
 import com.hedera.services.txns.token.MintLogic;
+import com.hedera.services.txns.token.PauseLogic;
+import com.hedera.services.txns.token.UnfreezeLogic;
+import com.hedera.services.txns.token.UnpauseLogic;
+import com.hedera.services.txns.token.WipeLogic;
 import com.hedera.services.txns.token.process.DissociationFactory;
 import com.hedera.services.txns.token.validators.CreateChecks;
 import com.hedera.services.txns.validation.OptionValidator;
@@ -138,6 +145,11 @@ public class InfrastructureFactory {
         return new BurnLogic(validator, tokenStore, accountStore, dynamicProperties);
     }
 
+    public DeleteLogic newDeleteLogic(
+            final AccountStore accountStore, final TypedTokenStore tokenStore) {
+        return new DeleteLogic(accountStore, tokenStore, sigImpactHistorian);
+    }
+
     public MintLogic newMintLogic(
             final AccountStore accountStore, final TypedTokenStore tokenStore) {
         return new MintLogic(usageLimits, validator, tokenStore, accountStore, dynamicProperties);
@@ -194,8 +206,9 @@ public class InfrastructureFactory {
             final Bytes input,
             final MessageFrame frame,
             final ViewGasCalculator gasCalculator,
-            final StateView stateView) {
-        return new ViewExecutor(input, frame, encoder, decoder, gasCalculator, stateView);
+            final StateView stateView,
+            final WorldLedgers ledgers) {
+        return new ViewExecutor(input, frame, encoder, decoder, gasCalculator, stateView, ledgers);
     }
 
     public ApproveAllowanceLogic newApproveAllowanceLogic(
@@ -206,6 +219,29 @@ public class InfrastructureFactory {
     public DeleteAllowanceLogic newDeleteAllowanceLogic(
             final AccountStore accountStore, final TypedTokenStore tokenStore) {
         return new DeleteAllowanceLogic(accountStore, tokenStore);
+    }
+
+    public PauseLogic newPauseLogic(final TypedTokenStore tokenStore) {
+        return new PauseLogic(tokenStore);
+    }
+
+    public UnpauseLogic newUnpauseLogic(final TypedTokenStore tokenStore) {
+        return new UnpauseLogic(tokenStore);
+    }
+
+    public WipeLogic newWipeLogic(
+            final AccountStore accountStore, final TypedTokenStore tokenStore) {
+        return new WipeLogic(tokenStore, accountStore, dynamicProperties);
+    }
+
+    public FreezeLogic newFreezeLogic(
+            final AccountStore accountStore, final TypedTokenStore tokenStore) {
+        return new FreezeLogic(tokenStore, accountStore);
+    }
+
+    public UnfreezeLogic newUnfreezeLogic(
+            final AccountStore accountStore, final TypedTokenStore tokenStore) {
+        return new UnfreezeLogic(tokenStore, accountStore);
     }
 
     public CreateChecks newCreateChecks() {

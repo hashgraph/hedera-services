@@ -22,7 +22,7 @@ import com.hedera.services.ledger.CommitInterceptor;
 import com.hedera.services.ledger.EntityChangeSet;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.validation.UsageLimits;
+import com.hedera.services.state.validation.AccountUsageTracking;
 import com.hederahashgraph.api.proto.java.AccountID;
 import java.util.Map;
 import javax.annotation.Nullable;
@@ -40,17 +40,17 @@ public class AccountsCommitInterceptor
         implements CommitInterceptor<AccountID, MerkleAccount, AccountProperty> {
     private int numNewAccounts;
     private int numNewContracts;
-    @Nullable private final UsageLimits usageLimits;
+    @Nullable private final AccountUsageTracking usageTracking;
     private final SideEffectsTracker sideEffectsTracker;
 
     public AccountsCommitInterceptor(
-            final UsageLimits usageLimits, final SideEffectsTracker sideEffectsTracker) {
-        this.usageLimits = usageLimits;
+            final AccountUsageTracking usageTracking, final SideEffectsTracker sideEffectsTracker) {
+        this.usageTracking = usageTracking;
         this.sideEffectsTracker = sideEffectsTracker;
     }
 
     public AccountsCommitInterceptor(final SideEffectsTracker sideEffectsTracker) {
-        this.usageLimits = null;
+        this.usageTracking = null;
         this.sideEffectsTracker = sideEffectsTracker;
     }
 
@@ -72,7 +72,7 @@ public class AccountsCommitInterceptor
             final var account = pendingChanges.entity(i);
             final var changes = pendingChanges.changes(i);
             // A null account means a new entity
-            if (account == null && usageLimits != null) {
+            if (account == null && usageTracking != null) {
                 if (Boolean.TRUE.equals(changes.get(IS_SMART_CONTRACT))) {
                     numNewContracts++;
                 } else {
@@ -87,12 +87,12 @@ public class AccountsCommitInterceptor
 
     @Override
     public void postCommit() {
-        if (usageLimits != null) {
+        if (usageTracking != null) {
             if (numNewContracts > 0) {
-                usageLimits.recordContracts(numNewContracts);
+                usageTracking.recordContracts(numNewContracts);
             }
             if (numNewAccounts > 0) {
-                usageLimits.refreshAccounts();
+                usageTracking.refreshAccounts();
             }
         }
     }

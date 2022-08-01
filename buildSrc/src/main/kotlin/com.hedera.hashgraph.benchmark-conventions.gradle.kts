@@ -34,6 +34,6 @@ tasks.jmh {
 
 tasks.jmhJar {
     manifest(Action {
-      attributes(mapOf("Multi-Release" to true))  
+        attributes(mapOf("Multi-Release" to true))
     })
 }

@@ -27,23 +27,35 @@ import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_DISSOCIATE_TOKEN;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_DISSOCIATE_TOKENS;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_ERC_NAME;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_GET_TOKEN_CUSTOM_FEES;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_GET_TOKEN_INFO;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_MINT_TOKEN;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_PAUSE_TOKEN;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_REDIRECT_FOR_TOKEN;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_TRANSFER_NFT;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_TRANSFER_NFTS;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_TRANSFER_TOKEN;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_TRANSFER_TOKENS;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_UNPAUSE_TOKEN;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_WIPE_TOKEN_ACCOUNT_FUNGIBLE;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_WIPE_TOKEN_ACCOUNT_NFT;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.TEST_CONSENSUS_TIME;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.associateOp;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.contractAddress;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.createTokenCreateWrapperWithKeys;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.customFeesWrapper;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.dissociateToken;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.fungible;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.fungibleBurn;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.fungibleMint;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.fungibleMintAmountOversize;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.fungiblePause;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.fungibleUnpause;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.fungibleWipe;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.multiDissociateOp;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.nonFungiblePause;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.nonFungibleUnpause;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.nonFungibleWipe;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.timestamp;
 import static org.hyperledger.besu.evm.frame.MessageFrame.State.REVERT;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -89,8 +101,13 @@ import com.hedera.services.store.contracts.precompile.impl.DissociatePrecompile;
 import com.hedera.services.store.contracts.precompile.impl.MintPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.MultiAssociatePrecompile;
 import com.hedera.services.store.contracts.precompile.impl.MultiDissociatePrecompile;
+import com.hedera.services.store.contracts.precompile.impl.PausePrecompile;
 import com.hedera.services.store.contracts.precompile.impl.TokenCreatePrecompile;
+import com.hedera.services.store.contracts.precompile.impl.TokenGetCustomFeesPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.TransferPrecompile;
+import com.hedera.services.store.contracts.precompile.impl.UnpausePrecompile;
+import com.hedera.services.store.contracts.precompile.impl.WipeFungiblePrecompile;
+import com.hedera.services.store.contracts.precompile.impl.WipeNonFungiblePrecompile;
 import com.hedera.services.store.contracts.precompile.proxy.RedirectViewExecutor;
 import com.hedera.services.store.contracts.precompile.proxy.ViewExecutor;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
@@ -280,8 +297,9 @@ class HTSPrecompiledContractTest {
                         encoder,
                         decoder,
                         precompilePricingUtils::computeViewFunctionGas,
-                        stateView);
-        given(infrastructureFactory.newViewExecutor(any(), any(), any(), any()))
+                        stateView,
+                        wrappedLedgers);
+        given(infrastructureFactory.newViewExecutor(any(), any(), any(), any(), any()))
                 .willReturn(viewExecutor);
         given(feeCalculator.estimatePayment(any(), any(), any(), any(), any()))
                 .willReturn(mockFeeObject);
@@ -721,6 +739,74 @@ class HTSPrecompiledContractTest {
     }
 
     @Test
+    void computeCallsCorrectImplementationForPauseFungibleToken() {
+        // given
+        givenFrameContext();
+        Bytes input = Bytes.of(Integers.toBytes(ABI_ID_PAUSE_TOKEN));
+        given(decoder.decodePause(any())).willReturn(fungiblePause);
+        given(worldUpdater.permissivelyUnaliased(any()))
+                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+
+        // when
+        subject.prepareFields(messageFrame);
+        subject.prepareComputation(input, a -> a);
+
+        // then
+        assertTrue(subject.getPrecompile() instanceof PausePrecompile);
+    }
+
+    @Test
+    void computeCallsCorrectImplementationForPauseNonFungibleToken() {
+        // given
+        givenFrameContext();
+        Bytes input = Bytes.of(Integers.toBytes(ABI_ID_PAUSE_TOKEN));
+        given(decoder.decodePause(any())).willReturn(nonFungiblePause);
+        given(worldUpdater.permissivelyUnaliased(any()))
+                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+
+        // when
+        subject.prepareFields(messageFrame);
+        subject.prepareComputation(input, a -> a);
+
+        // then
+        assertTrue(subject.getPrecompile() instanceof PausePrecompile);
+    }
+
+    @Test
+    void computeCallsCorrectImplementationForUnpauseFungibleToken() {
+        // given
+        givenFrameContext();
+        Bytes input = Bytes.of(Integers.toBytes(ABI_ID_UNPAUSE_TOKEN));
+        given(decoder.decodeUnpause(any())).willReturn(fungibleUnpause);
+        given(worldUpdater.permissivelyUnaliased(any()))
+                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+
+        // when
+        subject.prepareFields(messageFrame);
+        subject.prepareComputation(input, a -> a);
+
+        // then
+        assertTrue(subject.getPrecompile() instanceof UnpausePrecompile);
+    }
+
+    @Test
+    void computeCallsCorrectImplementationForUnpauseNonFungibleToken() {
+        // given
+        givenFrameContext();
+        Bytes input = Bytes.of(Integers.toBytes(ABI_ID_UNPAUSE_TOKEN));
+        given(decoder.decodeUnpause(any())).willReturn(nonFungibleUnpause);
+        given(worldUpdater.permissivelyUnaliased(any()))
+                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+
+        // when
+        subject.prepareFields(messageFrame);
+        subject.prepareComputation(input, a -> a);
+
+        // then
+        assertTrue(subject.getPrecompile() instanceof UnpausePrecompile);
+    }
+
+    @Test
     void defaultHandleHbarsThrows() {
         // given
         givenFrameContext();
@@ -744,6 +830,57 @@ class HTSPrecompiledContractTest {
 
         verify(messageFrame).setRevertReason(INVALID_TRANSFER);
         verify(messageFrame).setState(REVERT);
+    }
+
+    @Test
+    void computeCallsCorrectImplementationForWipeFungibleToken() {
+        // given
+        givenFrameContext();
+        Bytes input = Bytes.of(Integers.toBytes(ABI_WIPE_TOKEN_ACCOUNT_FUNGIBLE));
+        given(decoder.decodeWipe(any(), any())).willReturn(fungibleWipe);
+        given(worldUpdater.permissivelyUnaliased(any()))
+                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+
+        // when
+        subject.prepareFields(messageFrame);
+        subject.prepareComputation(input, a -> a);
+
+        // then
+        assertTrue(subject.getPrecompile() instanceof WipeFungiblePrecompile);
+    }
+
+    @Test
+    void computeCallsCorrectImplementationForWipeNonFungibleToken() {
+        // given
+        givenFrameContext();
+        Bytes input = Bytes.of(Integers.toBytes(ABI_WIPE_TOKEN_ACCOUNT_NFT));
+        given(decoder.decodeWipeNFT(any(), any())).willReturn(nonFungibleWipe);
+        given(worldUpdater.permissivelyUnaliased(any()))
+                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+
+        // when
+        subject.prepareFields(messageFrame);
+        subject.prepareComputation(input, a -> a);
+
+        // then
+        assertTrue(subject.getPrecompile() instanceof WipeNonFungiblePrecompile);
+    }
+
+    @Test
+    void computeCallsCorrectImplementationForGetTokenCustomFees() {
+        // given
+        givenFrameContext();
+        Bytes input = Bytes.of(Integers.toBytes(ABI_ID_GET_TOKEN_CUSTOM_FEES));
+        given(decoder.decodeTokenGetCustomFees(any())).willReturn(customFeesWrapper);
+        given(worldUpdater.permissivelyUnaliased(any()))
+                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+
+        // when
+        subject.prepareFields(messageFrame);
+        subject.prepareComputation(input, a -> a);
+
+        // then
+        assertTrue(subject.getPrecompile() instanceof TokenGetCustomFeesPrecompile);
     }
 
     private void givenFrameContext() {

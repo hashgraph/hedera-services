@@ -1,11 +1,6 @@
-package com.hedera.services.store.contracts;
-
-/*-
- * ‌
- * Hedera Services Node
- * ​
- * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2022 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,11 +12,18 @@ package com.hedera.services.store.contracts;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+package com.hedera.services.store.contracts;
+
+import static com.hedera.services.ledger.properties.AccountProperty.IS_SMART_CONTRACT;
+import static com.hedera.services.setup.InfrastructureManager.loadOrCreateBundle;
+import static com.hedera.services.setup.InfrastructureType.ACCOUNTS_LEDGER;
+import static com.hedera.services.setup.InfrastructureType.ACCOUNTS_MM;
+import static com.hedera.services.setup.InfrastructureType.CONTRACT_STORAGE_VM;
 
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.properties.AccountProperty;
+import com.hedera.services.mocks.MockStorageLimits;
 import com.hedera.services.setup.Constructables;
 import com.hedera.services.setup.EvmKeyValueSource;
 import com.hedera.services.setup.InfrastructureBundle;
@@ -31,6 +33,8 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.virtual.IterableStorageUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.swirlds.common.constructable.ConstructableRegistryException;
+import java.util.List;
+import java.util.Map;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.Fork;
 import org.openjdk.jmh.annotations.Level;
@@ -41,108 +45,109 @@ import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.annotations.Warmup;
 
-import java.util.List;
-import java.util.Map;
-
-import static com.hedera.services.ledger.properties.AccountProperty.IS_SMART_CONTRACT;
-import static com.hedera.services.properties.MockDynamicProperties.mockPropertiesWith;
-import static com.hedera.services.setup.InfrastructureManager.loadOrCreateBundle;
-import static com.hedera.services.setup.InfrastructureType.ACCOUNTS_LEDGER;
-import static com.hedera.services.setup.InfrastructureType.ACCOUNTS_MM;
-import static com.hedera.services.setup.InfrastructureType.CONTRACT_STORAGE_VM;
-
 @State(Scope.Benchmark)
 @Fork(1)
 @Warmup(iterations = 1, time = 10)
 @Measurement(iterations = 3, time = 30)
 public class SizeLimitedStorageBench {
-	// Application-level config overrides
-	@Param("163840")
-	int maxContractKvPairs;
-	@Param("500000000")
-	int maxAggregateKvPairs;
+    // Application-level config overrides
+    @Param("163840")
+    int maxContractKvPairs;
 
-	// Config for the starting database to load/create
-	@Param("10")
-	int initContracts;
-	@Param("1000")
-	int initKvPairs;
+    // Config for the starting database to load/create
+    @Param("10")
+    int initContracts;
 
-	// Config for mutation load profile
-	@Param("20")
-	int maxContractNum;
-	@Param("3")
-	int mutationsPerInvocation;
-	@Param("1000")
-	int uniqueMutationsPerIteration;
-	@Param("0.25")
-	double removalProb;
+    @Param("1000")
+    int initKvPairs;
 
-	private int batchI;
-	private KvMutationBatch mutationBatch;
-	private InfrastructureBundle bundle;
+    // Config for mutation load profile
+    @Param("20")
+    int maxContractNum;
 
-	private SizeLimitedStorage subject;
+    @Param("3")
+    int mutationsPerInvocation;
 
-	// --- Fixtures ---
-	@Setup(Level.Trial)
-	public void setupInfrastructure() {
-		registerConstructables();
-		bundle = loadOrCreateBundle(activeConfig(), requiredInfra());
-		subject = new SizeLimitedStorage(
-				IterableStorageUtils::overwritingUpsertMapping,
-				IterableStorageUtils::removeMapping,
-				mockPropertiesWith(maxContractKvPairs, maxAggregateKvPairs),
-				bundle.getterFor(ACCOUNTS_MM),
-				bundle.getterFor(CONTRACT_STORAGE_VM));
-	}
+    @Param("1000")
+    int uniqueMutationsPerIteration;
 
-	@Setup(Level.Iteration)
-	public void generateMutationBatch() {
-		mutationBatch = EvmKeyValueSource.randomMutationBatch(
-				uniqueMutationsPerIteration, maxContractNum, maxContractKvPairs, removalProb);
-		batchI = 0;
-	}
+    @Param("0.25")
+    double removalProb;
 
-	// --- Benchmarks ---
-	@Benchmark
-	public void simulateContractTransaction() {
-		final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> ledger = bundle.get(ACCOUNTS_LEDGER);
-		ledger.begin();
+    private int batchI;
+    private KvMutationBatch mutationBatch;
+    private InfrastructureBundle bundle;
 
-		subject.beginSession();
-		for (int j = 0; j < mutationsPerInvocation; j++, batchI = (batchI + 1) % uniqueMutationsPerIteration) {
-			final var contractId = mutationBatch.contracts()[batchI];
-			if (!ledger.contains(contractId)) {
-				ledger.create(contractId);
-				ledger.set(contractId, IS_SMART_CONTRACT, true);
-			}
-			subject.putStorage(contractId, mutationBatch.keys()[batchI], mutationBatch.values()[batchI]);
-		}
-		subject.validateAndCommit();
-		subject.recordNewKvUsageTo(ledger);
+    private SizeLimitedStorage subject;
 
-		ledger.commit();
-	}
+    // --- Fixtures ---
+    @Setup(Level.Trial)
+    public void setupInfrastructure() {
+        registerConstructables();
+        bundle = loadOrCreateBundle(activeConfig(), requiredInfra());
+        subject =
+                new SizeLimitedStorage(
+                        new MockStorageLimits(),
+                        IterableStorageUtils::overwritingUpsertMapping,
+                        IterableStorageUtils::removeMapping,
+                        bundle.getterFor(ACCOUNTS_MM),
+                        bundle.getterFor(CONTRACT_STORAGE_VM));
+    }
 
-	// --- Helpers ---
-	private void registerConstructables() {
-		try {
-			Constructables.registerForAccounts();
-			Constructables.registerForJasperDb();
-			Constructables.registerForMerkleMap();
-			Constructables.registerForVirtualMap();
-			Constructables.registerForContractStorage();
-		} catch (ConstructableRegistryException e) {
-			throw new IllegalStateException(e);
-		}
-	}
+    @Setup(Level.Iteration)
+    public void generateMutationBatch() {
+        mutationBatch =
+                EvmKeyValueSource.randomMutationBatch(
+                        uniqueMutationsPerIteration,
+                        maxContractNum,
+                        maxContractKvPairs,
+                        removalProb);
+        batchI = 0;
+    }
 
-	private Map<String, Object> activeConfig() {
-		return Map.of("initContracts", initContracts, "initKvPairs", initKvPairs);
-	}
+    // --- Benchmarks ---
+    @Benchmark
+    public void simulateContractTransaction() {
+        final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> ledger =
+                bundle.get(ACCOUNTS_LEDGER);
+        ledger.begin();
 
-	private List<InfrastructureType> requiredInfra() {
-		return List.of(ACCOUNTS_MM, CONTRACT_STORAGE_VM, ACCOUNTS_LEDGER);
-	}
+        subject.beginSession();
+        for (int j = 0;
+                j < mutationsPerInvocation;
+                j++, batchI = (batchI + 1) % uniqueMutationsPerIteration) {
+            final var contractId = mutationBatch.contracts()[batchI];
+            if (!ledger.contains(contractId)) {
+                ledger.create(contractId);
+                ledger.set(contractId, IS_SMART_CONTRACT, true);
+            }
+            subject.putStorage(
+                    contractId, mutationBatch.keys()[batchI], mutationBatch.values()[batchI]);
+        }
+        subject.validateAndCommit();
+        subject.recordNewKvUsageTo(ledger);
+
+        ledger.commit();
+    }
+
+    // --- Helpers ---
+    private void registerConstructables() {
+        try {
+            Constructables.registerForAccounts();
+            Constructables.registerForJasperDb();
+            Constructables.registerForMerkleMap();
+            Constructables.registerForVirtualMap();
+            Constructables.registerForContractStorage();
+        } catch (ConstructableRegistryException e) {
+            throw new IllegalStateException(e);
+        }
+    }
+
+    private Map<String, Object> activeConfig() {
+        return Map.of("initContracts", initContracts, "initKvPairs", initKvPairs);
+    }
+
+    private List<InfrastructureType> requiredInfra() {
+        return List.of(ACCOUNTS_MM, CONTRACT_STORAGE_VM, ACCOUNTS_LEDGER);
+    }
 }
