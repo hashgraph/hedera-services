@@ -139,6 +139,7 @@ public class GlobalDynamicProperties {
     private Set<SidecarType> enabledSidecars;
     private boolean requireMinStakeToReward;
     private Map<Long, Long> nodeMaxMinStakeRatios;
+    private boolean enableTraceabilityMigration;
     private int maxInternalContractCreations;
 
     @Inject
@@ -276,6 +277,8 @@ public class GlobalDynamicProperties {
         requireMinStakeToReward = properties.getBooleanProperty("staking.requireMinStakeToReward");
         nodeMaxMinStakeRatios =
                 properties.getNodeStakeRatiosProperty("staking.nodeMaxToMinStakeRatios");
+        enableTraceabilityMigration =
+                properties.getBooleanProperty("hedera.recordStream.enableTraceabilityMigration");
         maxInternalContractCreations =
                 properties.getIntProperty("contracts.maxInternalContractCreations");
     }
@@ -674,6 +677,10 @@ public class GlobalDynamicProperties {
 
     public Map<Long, Long> nodeMaxMinStakeRatios() {
         return nodeMaxMinStakeRatios;
+    }
+
+    public boolean isTraceabilityMigrationEnabled() {
+        return enableTraceabilityMigration;
     }
 
     public int maxInternalContractCreations() {
