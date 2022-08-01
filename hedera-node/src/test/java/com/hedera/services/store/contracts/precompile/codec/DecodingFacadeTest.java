@@ -575,7 +575,6 @@ class DecodingFacadeTest {
 
         assertTrue(decodedInput.token().getTokenNum() > 0);
         assertTrue(decodedInput.account().getAccountNum() > 0);
-
     }
 
     @Test

@@ -292,8 +292,8 @@ class InfrastructureFactoryTest {
     void canCreateNewGrantKycLogic() {
         final var accountStore = subject.newAccountStore(accounts);
         final var tokenStore =
-            subject.newTokenStore(
-                accountStore, subject.newSideEffects(), tokens, uniqueTokens, tokenRels);
+                subject.newTokenStore(
+                        accountStore, subject.newSideEffects(), tokens, uniqueTokens, tokenRels);
         assertInstanceOf(GrantKycLogic.class, subject.newGrantKycLogic(accountStore, tokenStore));
     }
 
@@ -301,8 +301,8 @@ class InfrastructureFactoryTest {
     void canCreateNewRevokeKycLogic() {
         final var accountStore = subject.newAccountStore(accounts);
         final var tokenStore =
-            subject.newTokenStore(
-                accountStore, subject.newSideEffects(), tokens, uniqueTokens, tokenRels);
+                subject.newTokenStore(
+                        accountStore, subject.newSideEffects(), tokens, uniqueTokens, tokenRels);
         assertInstanceOf(RevokeKycLogic.class, subject.newRevokeKycLogic(accountStore, tokenStore));
     }
 
