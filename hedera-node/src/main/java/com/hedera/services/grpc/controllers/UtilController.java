@@ -15,7 +15,7 @@
  */
 package com.hedera.services.grpc.controllers;
 
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.PRNG;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.UtilPrng;
 
 import com.hedera.services.txns.submission.TxnResponseHelper;
 import com.hederahashgraph.api.proto.java.Transaction;
@@ -36,6 +36,6 @@ public class UtilController extends UtilServiceGrpc.UtilServiceImplBase {
 
     @Override
     public void prng(Transaction signedTxn, StreamObserver<TransactionResponse> observer) {
-        txnHelper.submit(signedTxn, observer, PRNG);
+        txnHelper.submit(signedTxn, observer, UtilPrng);
     }
 }

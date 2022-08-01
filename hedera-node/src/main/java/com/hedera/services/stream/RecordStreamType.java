@@ -28,6 +28,7 @@ public interface RecordStreamType extends StreamType {
     String RECORD_DESCRIPTION = "records";
     String RECORD_EXTENSION = "rcd";
     String RECORD_SIG_EXTENSION = "rcd_sig";
+    String SIDECAR_RECORD_EXTENSION = "rcd";
 
     /** {@inheritDoc} */
     @Override
@@ -45,5 +46,9 @@ public interface RecordStreamType extends StreamType {
     @Override
     default String getSigExtension() {
         return RECORD_SIG_EXTENSION;
+    }
+
+    default String getSidecarExtension() {
+        return SIDECAR_RECORD_EXTENSION;
     }
 }

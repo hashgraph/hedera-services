@@ -16,5 +16,6 @@
 package com.hedera.services.store.contracts.precompile.codec;
 
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.TokenID;
 
-public record SetApprovalForAllWrapper(AccountID to, boolean approved) {}
+public record SetApprovalForAllWrapper(TokenID tokenId, AccountID to, boolean approved) {}

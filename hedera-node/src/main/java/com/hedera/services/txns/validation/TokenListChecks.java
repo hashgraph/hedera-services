@@ -28,6 +28,17 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_WIPE_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_SUPPLY_KEY;
+
+import com.hedera.services.sigs.utils.ImmutableKeyUtils;
+import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.TokenID;
+import com.hederahashgraph.api.proto.java.TokenSupplyType;
+import com.hederahashgraph.api.proto.java.TokenType;
+import java.util.HashSet;
+import java.util.List;
+import java.util.function.Predicate;
 
 import com.hedera.services.sigs.utils.ImmutableKeyUtils;
 import com.hederahashgraph.api.proto.java.Key;
@@ -161,6 +172,14 @@ public final class TokenListChecks {
             final boolean hasKey, final Key key, final ResponseCodeEnum code) {
         if (hasKey) {
             return checkKey(key, code);
+        }
+        return OK;
+    }
+
+    public static ResponseCodeEnum nftSupplyKeyCheck(
+            final TokenType tokenType, final boolean supplyKey) {
+        if (tokenType == TokenType.NON_FUNGIBLE_UNIQUE && !supplyKey) {
+            return TOKEN_HAS_NO_SUPPLY_KEY;
         }
         return OK;
     }

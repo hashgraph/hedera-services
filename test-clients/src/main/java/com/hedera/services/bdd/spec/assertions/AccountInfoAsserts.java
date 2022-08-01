@@ -19,6 +19,7 @@ import static com.hedera.services.bdd.suites.HapiApiSuite.ONE_HBAR;
 import static com.hederahashgraph.api.proto.java.CryptoGetInfoResponse.AccountInfo;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
@@ -29,6 +30,7 @@ import com.hederahashgraph.api.proto.java.Key;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
+import java.util.function.ToLongFunction;
 import org.junit.jupiter.api.Assertions;
 
 public class AccountInfoAsserts extends BaseErroringAssertsProvider<AccountInfo> {
@@ -78,67 +80,87 @@ public class AccountInfoAsserts extends BaseErroringAssertsProvider<AccountInfo>
 
     public AccountInfoAsserts accountId(String account) {
         registerProvider(
-                (spec, o) -> {
-                    assertEquals(
-                            spec.registry().getAccountID(account),
-                            ((AccountInfo) o).getAccountID(),
-                            "Bad account Id!");
-                });
+                (spec, o) ->
+                        assertEquals(
+                                spec.registry().getAccountID(account),
+                                ((AccountInfo) o).getAccountID(),
+                                "Bad account Id!"));
         return this;
     }
 
     public AccountInfoAsserts stakedAccountId(String idLiteral) {
         registerProvider(
-                (spec, o) -> {
-                    assertEquals(
-                            HapiPropertySource.asAccount(idLiteral),
-                            ((AccountInfo) o).getStakingInfo().getStakedAccountId(),
-                            "Bad stakedAccountId id!");
-                });
+                (spec, o) ->
+                        assertEquals(
+                                HapiPropertySource.asAccount(idLiteral),
+                                ((AccountInfo) o).getStakingInfo().getStakedAccountId(),
+                                "Bad stakedAccountId id!"));
         return this;
     }
 
     public AccountInfoAsserts noStakedAccountId() {
         registerProvider(
-                (spec, o) -> {
-                    assertEquals(
-                            AccountID.getDefaultInstance(),
-                            ((AccountInfo) o).getStakingInfo().getStakedAccountId(),
-                            "Bad stakedAccountId id!");
-                });
+                (spec, o) ->
+                        assertEquals(
+                                AccountID.getDefaultInstance(),
+                                ((AccountInfo) o).getStakingInfo().getStakedAccountId(),
+                                "Bad stakedAccountId id!"));
+        return this;
+    }
+
+    public AccountInfoAsserts someStakePeriodStart() {
+        registerProvider(
+                (spec, o) ->
+                        assertNotEquals(
+                                0,
+                                ((AccountInfo) o)
+                                        .getStakingInfo()
+                                        .getStakePeriodStart()
+                                        .getSeconds(),
+                                "Wrong stakePeriodStart"));
+        return this;
+    }
+
+    public AccountInfoAsserts noStakePeriodStart() {
+        registerProvider(
+                (spec, o) ->
+                        assertEquals(
+                                0,
+                                ((AccountInfo) o)
+                                        .getStakingInfo()
+                                        .getStakePeriodStart()
+                                        .getSeconds(),
+                                "Wrong stakePeriodStart"));
         return this;
     }
 
     public AccountInfoAsserts noStakingNodeId() {
         registerProvider(
-                (spec, o) -> {
-                    assertEquals(
-                            0,
-                            ((AccountInfo) o).getStakingInfo().getStakedNodeId(),
-                            "Bad stakedNodeId id!");
-                });
+                (spec, o) ->
+                        assertEquals(
+                                0,
+                                ((AccountInfo) o).getStakingInfo().getStakedNodeId(),
+                                "Bad stakedNodeId id!"));
         return this;
     }
 
     public AccountInfoAsserts stakedNodeId(long idLiteral) {
         registerProvider(
-                (spec, o) -> {
-                    assertEquals(
-                            idLiteral,
-                            ((AccountInfo) o).getStakingInfo().getStakedNodeId(),
-                            "Bad stakedNodeId id!");
-                });
+                (spec, o) ->
+                        assertEquals(
+                                idLiteral,
+                                ((AccountInfo) o).getStakingInfo().getStakedNodeId(),
+                                "Bad stakedNodeId id!"));
         return this;
     }
 
     public AccountInfoAsserts isDeclinedReward(boolean isDeclined) {
         registerProvider(
-                (spec, o) -> {
-                    assertEquals(
-                            isDeclined,
-                            ((AccountInfo) o).getStakingInfo().getDeclineReward(),
-                            "Bad isDeclinedReward!");
-                });
+                (spec, o) ->
+                        assertEquals(
+                                isDeclined,
+                                ((AccountInfo) o).getStakingInfo().getDeclineReward(),
+                                "Bad isDeclinedReward!"));
         return this;
     }
 
@@ -157,37 +179,32 @@ public class AccountInfoAsserts extends BaseErroringAssertsProvider<AccountInfo>
 
     public AccountInfoAsserts key(String key) {
         registerProvider(
-                (spec, o) -> {
-                    assertEquals(
-                            spec.registry().getKey(key), ((AccountInfo) o).getKey(), "Bad key!");
-                });
+                (spec, o) ->
+                        assertEquals(
+                                spec.registry().getKey(key),
+                                ((AccountInfo) o).getKey(),
+                                "Bad key!"));
         return this;
     }
 
     public AccountInfoAsserts key(Key key) {
-        registerProvider(
-                (spec, o) -> {
-                    assertEquals(key, ((AccountInfo) o).getKey(), "Bad key!");
-                });
+        registerProvider((spec, o) -> assertEquals(key, ((AccountInfo) o).getKey(), "Bad key!"));
         return this;
     }
 
     public AccountInfoAsserts receiverSigReq(Boolean isReq) {
         registerProvider(
-                (spec, o) -> {
-                    assertEquals(
-                            isReq,
-                            ((AccountInfo) o).getReceiverSigRequired(),
-                            "Bad receiver sig requirement!");
-                });
+                (spec, o) ->
+                        assertEquals(
+                                isReq,
+                                ((AccountInfo) o).getReceiverSigRequired(),
+                                "Bad receiver sig requirement!"));
         return this;
     }
 
     public AccountInfoAsserts balance(long amount) {
         registerProvider(
-                (spec, o) -> {
-                    assertEquals(amount, ((AccountInfo) o).getBalance(), "Bad balance!");
-                });
+                (spec, o) -> assertEquals(amount, ((AccountInfo) o).getBalance(), "Bad balance!"));
         return this;
     }
 
@@ -206,7 +223,7 @@ public class AccountInfoAsserts extends BaseErroringAssertsProvider<AccountInfo>
                                     * ONE_HBAR;
                     final var newAmount = ((AccountInfo) o).getBalance();
                     final var actualSubtractedTinybars = amount - newAmount;
-                    System.out.println(
+                    final var errorMsgIfOutsideTolerance =
                             "Expected to deduct "
                                     + (long) expectedTinyBarsToSubtract
                                     + " tinybar to equal ≈ $"
@@ -217,13 +234,12 @@ public class AccountInfoAsserts extends BaseErroringAssertsProvider<AccountInfo>
                                     + rates.getCentEquiv()
                                     + "¢ exchange rate (actually deducted "
                                     + (amount - newAmount)
-                                    + " tinybars)");
-
+                                    + " tinybars)";
                     assertEquals(
                             expectedTinyBarsToSubtract,
                             actualSubtractedTinybars,
                             (allowedPercentDiff / 100.0) * expectedTinyBarsToSubtract,
-                            "Unexpected balance deduction");
+                            errorMsgIfOutsideTolerance);
                 });
         return this;
     }
@@ -245,28 +261,23 @@ public class AccountInfoAsserts extends BaseErroringAssertsProvider<AccountInfo>
 
     public AccountInfoAsserts hasAlias() {
         registerProvider(
-                (spec, o) -> {
-                    assertFalse(((AccountInfo) o).getAlias().isEmpty(), "Has no Alias!");
-                });
+                (spec, o) -> assertFalse(((AccountInfo) o).getAlias().isEmpty(), "Has no Alias!"));
         return this;
     }
 
     public AccountInfoAsserts alias(String alias) {
         registerProvider(
-                (spec, o) -> {
-                    assertEquals(
-                            spec.registry().getKey(alias).toByteString(),
-                            ((AccountInfo) o).getAlias(),
-                            "Bad Alias!");
-                });
+                (spec, o) ->
+                        assertEquals(
+                                spec.registry().getKey(alias).toByteString(),
+                                ((AccountInfo) o).getAlias(),
+                                "Bad Alias!"));
         return this;
     }
 
     public AccountInfoAsserts noAlias() {
         registerProvider(
-                (spec, o) -> {
-                    assertTrue(((AccountInfo) o).getAlias().isEmpty(), "Bad Alias!");
-                });
+                (spec, o) -> assertTrue(((AccountInfo) o).getAlias().isEmpty(), "Bad Alias!"));
         return this;
     }
 
@@ -282,10 +293,7 @@ public class AccountInfoAsserts extends BaseErroringAssertsProvider<AccountInfo>
     }
 
     public AccountInfoAsserts memo(String memo) {
-        registerProvider(
-                (spec, o) -> {
-                    assertEquals(memo, ((AccountInfo) o).getMemo(), "Bad memo!");
-                });
+        registerProvider((spec, o) -> assertEquals(memo, ((AccountInfo) o).getMemo(), "Bad memo!"));
         return this;
     }
 
@@ -304,7 +312,7 @@ public class AccountInfoAsserts extends BaseErroringAssertsProvider<AccountInfo>
     }
 
     public static Function<HapiApiSpec, Function<Long, Optional<String>>> changeFromSnapshot(
-            String snapshot, Function<HapiApiSpec, Long> expDeltaFn) {
+            String snapshot, ToLongFunction<HapiApiSpec> expDeltaFn) {
         return approxChangeFromSnapshot(snapshot, expDeltaFn, 0L);
     }
 
@@ -319,10 +327,10 @@ public class AccountInfoAsserts extends BaseErroringAssertsProvider<AccountInfo>
     }
 
     public static Function<HapiApiSpec, Function<Long, Optional<String>>> approxChangeFromSnapshot(
-            String snapshot, Function<HapiApiSpec, Long> expDeltaFn, long epsilon) {
+            String snapshot, ToLongFunction<HapiApiSpec> expDeltaFn, long epsilon) {
         return spec ->
                 actual -> {
-                    long expDelta = expDeltaFn.apply(spec);
+                    long expDelta = expDeltaFn.applyAsLong(spec);
                     long actualDelta = actual - spec.registry().getBalanceSnapshot(snapshot);
                     if (Math.abs(actualDelta - expDelta) <= epsilon) {
                         return Optional.empty();
@@ -338,23 +346,21 @@ public class AccountInfoAsserts extends BaseErroringAssertsProvider<AccountInfo>
 
     public AccountInfoAsserts sendThreshold(long amount) {
         registerProvider(
-                (spec, o) -> {
-                    assertEquals(
-                            amount,
-                            ((AccountInfo) o).getGenerateSendRecordThreshold(),
-                            "Bad send threshold!");
-                });
+                (spec, o) ->
+                        assertEquals(
+                                amount,
+                                ((AccountInfo) o).getGenerateSendRecordThreshold(),
+                                "Bad send threshold!"));
         return this;
     }
 
     public AccountInfoAsserts receiveThreshold(long amount) {
         registerProvider(
-                (spec, o) -> {
-                    assertEquals(
-                            amount,
-                            ((AccountInfo) o).getGenerateReceiveRecordThreshold(),
-                            "Bad receive threshold!");
-                });
+                (spec, o) ->
+                        assertEquals(
+                                amount,
+                                ((AccountInfo) o).getGenerateReceiveRecordThreshold(),
+                                "Bad receive threshold!"));
         return this;
     }
 
@@ -388,31 +394,28 @@ public class AccountInfoAsserts extends BaseErroringAssertsProvider<AccountInfo>
 
     public AccountInfoAsserts autoRenew(long period) {
         registerProvider(
-                (spec, o) -> {
-                    assertEquals(
-                            period,
-                            ((AccountInfo) o).getAutoRenewPeriod().getSeconds(),
-                            "Bad auto-renew period!");
-                });
+                (spec, o) ->
+                        assertEquals(
+                                period,
+                                ((AccountInfo) o).getAutoRenewPeriod().getSeconds(),
+                                "Bad auto-renew period!"));
         return this;
     }
 
     public AccountInfoAsserts nonce(long nonce) {
         registerProvider(
-                (spec, o) -> {
-                    assertEquals(nonce, ((AccountInfo) o).getEthereumNonce(), "Bad nonce!");
-                });
+                (spec, o) ->
+                        assertEquals(nonce, ((AccountInfo) o).getEthereumNonce(), "Bad nonce!"));
         return this;
     }
 
     public AccountInfoAsserts pendingRewards(long reward) {
         registerProvider(
-                (spec, o) -> {
-                    assertEquals(
-                            reward,
-                            ((AccountInfo) o).getStakingInfo().getPendingReward(),
-                            "Bad pending rewards!");
-                });
+                (spec, o) ->
+                        assertEquals(
+                                reward,
+                                ((AccountInfo) o).getStakingInfo().getPendingReward(),
+                                "Bad pending rewards!"));
         return this;
     }
 }

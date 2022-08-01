@@ -30,7 +30,7 @@ import com.hedera.services.usage.token.meta.TokenPauseMeta;
 import com.hedera.services.usage.token.meta.TokenUnfreezeMeta;
 import com.hedera.services.usage.token.meta.TokenUnpauseMeta;
 import com.hedera.services.usage.token.meta.TokenWipeMeta;
-import com.hedera.services.usage.util.PrngMeta;
+import com.hedera.services.usage.util.UtilPrngMeta;
 import com.hedera.services.utils.accessors.TxnAccessor;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.util.Map;
@@ -57,7 +57,7 @@ public class ExpandHandleSpanMapAccessor {
     private static final String ETH_TX_SIGS_META_KEY = "ethTxSigsMeta";
     private static final String ETH_TX_BODY_META_KEY = "ethTxBodyMeta";
     private static final String ETH_TX_EXPANSION_KEY = "ethTxExpansion";
-    private static final String PRNG_META_KEY = "prngMeta";
+    private static final String UTIL_PRNG_META_KEY = "utilPrngMeta";
 
     @Inject
     public ExpandHandleSpanMapAccessor() {
@@ -225,11 +225,11 @@ public class ExpandHandleSpanMapAccessor {
         return (EthTxExpansion) accessor.getSpanMap().get(ETH_TX_EXPANSION_KEY);
     }
 
-    public PrngMeta getPrngMeta(TxnAccessor accessor) {
-        return (PrngMeta) accessor.getSpanMap().get(PRNG_META_KEY);
+    public UtilPrngMeta getUtilPrngMeta(TxnAccessor accessor) {
+        return (UtilPrngMeta) accessor.getSpanMap().get(UTIL_PRNG_META_KEY);
     }
 
-    public void setPrngMeta(TxnAccessor accessor, PrngMeta prngMeta) {
-        accessor.getSpanMap().put(PRNG_META_KEY, prngMeta);
+    public void setUtilPrngMeta(TxnAccessor accessor, UtilPrngMeta utilPrngMeta) {
+        accessor.getSpanMap().put(UTIL_PRNG_META_KEY, utilPrngMeta);
     }
 }

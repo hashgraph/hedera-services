@@ -52,7 +52,7 @@ public class RedirectViewExecutor {
     private final WorldLedgers ledgers;
     private final EncodingFacade encoder;
     private final DecodingFacade decoder;
-    private final RedirectGasCalculator gasCalculator;
+    private final ViewGasCalculator gasCalculator;
     private final HederaStackedWorldStateUpdater updater;
 
     public RedirectViewExecutor(
@@ -60,7 +60,7 @@ public class RedirectViewExecutor {
             final MessageFrame frame,
             final EncodingFacade encoder,
             final DecodingFacade decoder,
-            final RedirectGasCalculator gasCalculator) {
+            final ViewGasCalculator gasCalculator) {
         this.input = input;
         this.frame = frame;
         this.encoder = encoder;
@@ -100,18 +100,20 @@ public class RedirectViewExecutor {
             final var symbol = ledgers.symbolOf(tokenId);
             return encoder.encodeSymbol(symbol);
         } else if (selector == ABI_ID_ERC_ALLOWANCE) {
-            final var wrapper = decoder.decodeTokenAllowance(input.slice(24), updater::unaliased);
+            final var wrapper =
+                    decoder.decodeTokenAllowance(input.slice(24), tokenId, updater::unaliased);
             final var allowance =
                     ledgers.staticAllowanceOf(wrapper.owner(), wrapper.spender(), tokenId);
             return encoder.encodeAllowance(allowance);
         } else if (selector == ABI_ID_ERC_GET_APPROVED) {
-            final var wrapper = decoder.decodeGetApproved(input.slice(24));
+            final var wrapper = decoder.decodeGetApproved(input.slice(24), tokenId);
             final var spender =
                     ledgers.staticApprovedSpenderOf(NftId.fromGrpc(tokenId, wrapper.serialNo()));
             final var priorityAddress = ledgers.canonicalAddress(spender);
             return encoder.encodeGetApproved(priorityAddress);
         } else if (selector == ABI_ID_ERC_IS_APPROVED_FOR_ALL) {
-            final var wrapper = decoder.decodeIsApprovedForAll(input.slice(24), updater::unaliased);
+            final var wrapper =
+                    decoder.decodeIsApprovedForAll(input.slice(24), tokenId, updater::unaliased);
             final var isOperator =
                     ledgers.staticIsOperator(wrapper.owner(), wrapper.operator(), tokenId);
             return encoder.encodeIsApprovedForAll(isOperator);

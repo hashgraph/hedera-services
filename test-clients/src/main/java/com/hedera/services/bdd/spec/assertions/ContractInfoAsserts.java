@@ -18,6 +18,7 @@ package com.hedera.services.bdd.spec.assertions;
 import static com.hederahashgraph.api.proto.java.ContractGetInfoResponse.ContractInfo;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.hedera.services.bdd.spec.HapiPropertySource;
@@ -29,6 +30,9 @@ import com.hederahashgraph.api.proto.java.Key;
 import java.util.List;
 
 public class ContractInfoAsserts extends BaseErroringAssertsProvider<ContractInfo> {
+    private static final String BAD_MEMO = "Bad memo";
+    private static final String BAD_ADMIN_KEY = "Bad admin key";
+
     public static ContractInfoAsserts infoKnownFor(String contract) {
         return contractWith().knownInfoFor(contract);
     }
@@ -55,9 +59,7 @@ public class ContractInfoAsserts extends BaseErroringAssertsProvider<ContractInf
                             actual.getContractAccountID(),
                             "Bad Solidity id!");
                     assertEquals(
-                            spec.registry().getKey(contract),
-                            actual.getAdminKey(),
-                            "Bad admin key!");
+                            spec.registry().getKey(contract), actual.getAdminKey(), BAD_ADMIN_KEY);
                     assertTrue(
                             object2ContractInfo(o).getExpirationTime().getSeconds() != 0,
                             "Expiry must not be null!");
@@ -65,38 +67,61 @@ public class ContractInfoAsserts extends BaseErroringAssertsProvider<ContractInf
                             otherExpectedInfo.getAutoRenewPeriod(),
                             actual.getAutoRenewPeriod(),
                             "Bad auto renew period!");
-                    assertEquals(otherExpectedInfo.getMemo(), actual.getMemo(), "Bad memo!");
+                    assertEquals(otherExpectedInfo.getMemo(), actual.getMemo(), BAD_MEMO);
                 });
         return this;
     }
 
     public ContractInfoAsserts nonNullContractId() {
         registerProvider(
-                (spec, o) -> {
-                    assertTrue(object2ContractInfo(o).hasContractID(), "Null contractId!");
-                });
+                (spec, o) ->
+                        assertTrue(object2ContractInfo(o).hasContractID(), "Null contractId!"));
+        return this;
+    }
+
+    public ContractInfoAsserts noStakePeriodStart() {
+        registerProvider(
+                (spec, o) ->
+                        assertEquals(
+                                0,
+                                object2ContractInfo(o)
+                                        .getStakingInfo()
+                                        .getStakePeriodStart()
+                                        .getSeconds(),
+                                "Wrong stakePeriodStart"));
+        return this;
+    }
+
+    public ContractInfoAsserts someStakePeriodStart() {
+        registerProvider(
+                (spec, o) ->
+                        assertNotEquals(
+                                0,
+                                object2ContractInfo(o)
+                                        .getStakingInfo()
+                                        .getStakePeriodStart()
+                                        .getSeconds(),
+                                "Wrong stakePeriodStart"));
         return this;
     }
 
     public ContractInfoAsserts addressOrAlias(final String hexedEvm) {
         registerProvider(
-                (spec, o) -> {
-                    assertEquals(
-                            hexedEvm,
-                            object2ContractInfo(o).getContractAccountID(),
-                            "Bad EVM address");
-                });
+                (spec, o) ->
+                        assertEquals(
+                                hexedEvm,
+                                object2ContractInfo(o).getContractAccountID(),
+                                "Bad EVM address"));
         return this;
     }
 
     public ContractInfoAsserts maxAutoAssociations(final int num) {
         registerProvider(
-                (spec, o) -> {
-                    assertEquals(
-                            num,
-                            object2ContractInfo(o).getMaxAutomaticTokenAssociations(),
-                            "Bad Contract maxAutoAssociations");
-                });
+                (spec, o) ->
+                        assertEquals(
+                                num,
+                                object2ContractInfo(o).getMaxAutomaticTokenAssociations(),
+                                "Bad Contract maxAutoAssociations"));
         return this;
     }
 
@@ -146,36 +171,32 @@ public class ContractInfoAsserts extends BaseErroringAssertsProvider<ContractInf
 
     public ContractInfoAsserts solidityAddress(String contract) {
         registerProvider(
-                (spec, o) -> {
-                    assertEquals(
-                            TxnUtils.solidityIdFrom(spec.registry().getContractId(contract)),
-                            TxnUtils.solidityIdFrom(object2ContractInfo(o).getContractID()),
-                            "Bad Solidity address");
-                });
+                (spec, o) ->
+                        assertEquals(
+                                TxnUtils.solidityIdFrom(spec.registry().getContractId(contract)),
+                                TxnUtils.solidityIdFrom(object2ContractInfo(o).getContractID()),
+                                "Bad Solidity address"));
         return this;
     }
 
     public ContractInfoAsserts isDeleted() {
         registerProvider(
-                (spec, o) -> {
-                    assertEquals(true, object2ContractInfo(o).getDeleted(), "Bad deletion status!");
-                });
+                (spec, o) ->
+                        assertTrue(object2ContractInfo(o).getDeleted(), "Bad deletion status!"));
         return this;
     }
 
     public ContractInfoAsserts memo(String expectedMemo) {
         registerProvider(
-                (spec, o) -> {
-                    assertEquals(expectedMemo, object2ContractInfo(o).getMemo(), "Bad memo!");
-                });
+                (spec, o) ->
+                        assertEquals(expectedMemo, object2ContractInfo(o).getMemo(), BAD_MEMO));
         return this;
     }
 
     public ContractInfoAsserts balance(long balance) {
         registerProvider(
-                (spec, o) -> {
-                    assertEquals(balance, object2ContractInfo(o).getBalance(), "Bad balance!");
-                });
+                (spec, o) ->
+                        assertEquals(balance, object2ContractInfo(o).getBalance(), "Bad balance!"));
         return this;
     }
 
@@ -203,12 +224,11 @@ public class ContractInfoAsserts extends BaseErroringAssertsProvider<ContractInf
 
     public ContractInfoAsserts expiry(long expectedExpiry) {
         registerProvider(
-                (spec, o) -> {
-                    assertEquals(
-                            expectedExpiry,
-                            object2ContractInfo(o).getExpirationTime().getSeconds(),
-                            "Bad expiry time!");
-                });
+                (spec, o) ->
+                        assertEquals(
+                                expectedExpiry,
+                                object2ContractInfo(o).getExpirationTime().getSeconds(),
+                                "Bad expiry time!"));
         return this;
     }
 
@@ -221,8 +241,8 @@ public class ContractInfoAsserts extends BaseErroringAssertsProvider<ContractInf
                             expected.getAutoRenewPeriod(),
                             actual.getAutoRenewPeriod(),
                             "Bad auto renew period!");
-                    assertEquals(expected.getAdminKey(), actual.getAdminKey(), "Bad admin key!");
-                    assertEquals(expected.getMemo(), actual.getMemo(), "Bad memo!");
+                    assertEquals(expected.getAdminKey(), actual.getAdminKey(), BAD_ADMIN_KEY);
+                    assertEquals(expected.getMemo(), actual.getMemo(), BAD_MEMO);
                 });
         return this;
     }
@@ -231,8 +251,7 @@ public class ContractInfoAsserts extends BaseErroringAssertsProvider<ContractInf
         registerProvider(
                 (spec, o) -> {
                     Key expectedKey = spec.registry().getKey(expectedKeyName);
-                    assertEquals(
-                            expectedKey, object2ContractInfo(o).getAdminKey(), "Bad admin key!");
+                    assertEquals(expectedKey, object2ContractInfo(o).getAdminKey(), BAD_ADMIN_KEY);
                 });
         return this;
     }
@@ -261,12 +280,11 @@ public class ContractInfoAsserts extends BaseErroringAssertsProvider<ContractInf
 
     public ContractInfoAsserts autoRenew(long expectedAutoRenew) {
         registerProvider(
-                (spec, o) -> {
-                    assertEquals(
-                            expectedAutoRenew,
-                            object2ContractInfo(o).getAutoRenewPeriod().getSeconds(),
-                            "Bad" + " autoRenew!");
-                });
+                (spec, o) ->
+                        assertEquals(
+                                expectedAutoRenew,
+                                object2ContractInfo(o).getAutoRenewPeriod().getSeconds(),
+                                "Bad" + " autoRenew!"));
         return this;
     }
 
@@ -274,89 +292,81 @@ public class ContractInfoAsserts extends BaseErroringAssertsProvider<ContractInf
         /* EVM storage maps 32-byte keys to 32-byte values */
         final long numStorageBytes = expectedKvPairs * 64L;
         registerProvider(
-                (spec, o) -> {
-                    assertEquals(
-                            numStorageBytes,
-                            object2ContractInfo(o).getStorage(),
-                            "Bad storage size!");
-                });
+                (spec, o) ->
+                        assertEquals(
+                                numStorageBytes,
+                                object2ContractInfo(o).getStorage(),
+                                "Bad storage size!"));
         return this;
     }
 
     public ContractInfoAsserts stakedAccountId(String idLiteral) {
         registerProvider(
-                (spec, o) -> {
-                    assertEquals(
-                            TxnUtils.asId(idLiteral, spec),
-                            (object2ContractInfo(o)).getStakingInfo().getStakedAccountId(),
-                            "Bad stakedAccountId id!");
-                });
+                (spec, o) ->
+                        assertEquals(
+                                TxnUtils.asId(idLiteral, spec),
+                                (object2ContractInfo(o)).getStakingInfo().getStakedAccountId(),
+                                "Bad stakedAccountId id!"));
         return this;
     }
 
     public ContractInfoAsserts stakedNodeId(long idLiteral) {
         registerProvider(
-                (spec, o) -> {
-                    assertEquals(
-                            idLiteral,
-                            (object2ContractInfo(o)).getStakingInfo().getStakedNodeId(),
-                            "Bad stakedNodeId id!");
-                });
+                (spec, o) ->
+                        assertEquals(
+                                idLiteral,
+                                (object2ContractInfo(o)).getStakingInfo().getStakedNodeId(),
+                                "Bad stakedNodeId id!"));
         return this;
     }
 
     public ContractInfoAsserts isDeclinedReward(boolean isDeclined) {
         registerProvider(
-                (spec, o) -> {
-                    assertEquals(
-                            isDeclined,
-                            (object2ContractInfo(o)).getStakingInfo().getDeclineReward(),
-                            "Bad isDeclinedReward!");
-                });
+                (spec, o) ->
+                        assertEquals(
+                                isDeclined,
+                                (object2ContractInfo(o)).getStakingInfo().getDeclineReward(),
+                                "Bad isDeclinedReward!"));
         return this;
     }
 
     public ContractInfoAsserts noStakedAccountId() {
         registerProvider(
-                (spec, o) -> {
-                    assertEquals(
-                            AccountID.getDefaultInstance(),
-                            (object2ContractInfo(o)).getStakingInfo().getStakedAccountId(),
-                            "Bad stakedAccountId id!");
-                });
+                (spec, o) ->
+                        assertEquals(
+                                AccountID.getDefaultInstance(),
+                                (object2ContractInfo(o)).getStakingInfo().getStakedAccountId(),
+                                "Bad stakedAccountId id!"));
         return this;
     }
 
     public ContractInfoAsserts noStakingNodeId() {
         registerProvider(
-                (spec, o) -> {
-                    assertEquals(
-                            0,
-                            (object2ContractInfo(o)).getStakingInfo().getStakedNodeId(),
-                            "Bad stakedNodeId id!");
-                });
+                (spec, o) ->
+                        assertEquals(
+                                0,
+                                (object2ContractInfo(o)).getStakingInfo().getStakedNodeId(),
+                                "Bad stakedNodeId id!"));
         return this;
     }
 
     public ContractInfoAsserts autoRenewAccountId(String id) {
         registerProvider(
-                (spec, o) -> {
-                    assertEquals(
-                            spec.registry().getAccountID(id),
-                            object2ContractInfo(o).getAutoRenewAccountId(),
-                            "Bad autoRenewAccountId !");
-                });
+                (spec, o) ->
+                        assertEquals(
+                                spec.registry().getAccountID(id),
+                                object2ContractInfo(o).getAutoRenewAccountId(),
+                                "Bad autoRenewAccountId !"));
         return this;
     }
 
     public ContractInfoAsserts pendingRewards(long reward) {
         registerProvider(
-                (spec, o) -> {
-                    assertEquals(
-                            reward,
-                            (object2ContractInfo(o)).getStakingInfo().getPendingReward(),
-                            "Bad pending rewards!");
-                });
+                (spec, o) ->
+                        assertEquals(
+                                reward,
+                                (object2ContractInfo(o)).getStakingInfo().getPendingReward(),
+                                "Bad pending rewards!"));
         return this;
     }
 

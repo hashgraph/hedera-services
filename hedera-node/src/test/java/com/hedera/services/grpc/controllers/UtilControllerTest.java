@@ -15,7 +15,7 @@
  */
 package com.hedera.services.grpc.controllers;
 
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.PRNG;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.UtilPrng;
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.verify;
 
@@ -46,6 +46,6 @@ class UtilControllerTest {
         subject.prng(txn, txnObserver);
 
         // expect:
-        verify(txnResponseHelper).submit(txn, txnObserver, PRNG);
+        verify(txnResponseHelper).submit(txn, txnObserver, UtilPrng);
     }
 }

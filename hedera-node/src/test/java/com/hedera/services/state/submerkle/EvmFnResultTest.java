@@ -31,8 +31,6 @@ import com.hedera.services.ethereum.EthTxData;
 import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import com.hederahashgraph.api.proto.java.ContractID;
-import com.hederahashgraph.api.proto.java.ContractStateChange;
-import com.hederahashgraph.api.proto.java.StorageChange;
 import com.swirlds.common.utility.CommonUtils;
 import java.math.BigInteger;
 import java.util.Arrays;
@@ -54,11 +52,6 @@ class EvmFnResultTest {
     private static final long gasUsed = 1_234;
     private static final long gas = 5_000;
     private static final long amount = 1_000_000;
-    private static final EntityNum cNum = EntityNum.fromLong(1_234_567_890L);
-    private static final Address realContract = cNum.toEvmAddress();
-    private static final byte[] slot = "slot".getBytes();
-    private static final byte[] left = "left".getBytes();
-    private static final byte[] right = "right".getBytes();
     private static final byte[] result = "abcdefgh".getBytes();
     private static final byte[] otherResult = "hgfedcba".getBytes();
     private static final byte[] bloom = "ijklmnopqrstuvwxyz".getBytes();
@@ -80,8 +73,6 @@ class EvmFnResultTest {
                             Map.of(Bytes.of(7), Pair.of(Bytes.of(8), null)),
                             Address.fromHexString("0x9"),
                             Map.of(Bytes.of(10), Pair.of(Bytes.of(11), Bytes.of(12)))));
-    private static Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> specialStateChanges =
-            Map.of(realContract, Map.of(Bytes.of(slot), Pair.of(Bytes.of(left), Bytes.of(right))));
 
     private EvmFnResult subject;
 
@@ -97,39 +88,10 @@ class EvmFnResultTest {
                         logs,
                         createdContractIds,
                         evmAddress,
-                        stateChanges,
                         gas,
                         amount,
                         functionParameters,
                         senderId);
-    }
-
-    @Test
-    void stripsLeadingZerosInChangeRepresentation() {
-        final var slot = Bytes.wrap(Address.BLS12_G1MULTIEXP.toArray());
-        final var access =
-                Pair.of(
-                        Bytes.of(Address.BLS12_MAP_FP2_TO_G2.toArray()),
-                        Bytes.of(Address.BLS12_G1MUL.toArray()));
-        final var expected =
-                StorageChange.newBuilder()
-                        .setSlot(
-                                ByteString.copyFrom(
-                                        Address.BLS12_G1MULTIEXP.trimLeadingZeros().toArray()))
-                        .setValueRead(
-                                ByteString.copyFrom(
-                                        Address.BLS12_MAP_FP2_TO_G2.trimLeadingZeros().toArray()))
-                        .setValueWritten(
-                                BytesValue.newBuilder()
-                                        .setValue(
-                                                ByteString.copyFrom(
-                                                        Address.BLS12_G1MUL
-                                                                .trimLeadingZeros()
-                                                                .toArray()))
-                                        .build())
-                        .build();
-        final var actual = EvmFnResult.trimmedGrpc(slot, access);
-        assertEquals(expected, actual.build());
     }
 
     @Test
@@ -141,9 +103,8 @@ class EvmFnResultTest {
         assertEquals(gasUsed, subject.getGasUsed());
         assertEquals(logs, subject.getLogs());
         assertEquals(createdContractIds, subject.getCreatedContractIds());
-        assertEquals(stateChanges, subject.getStateChanges());
         assertEquals(0x2055c5c03ff84eb4L, subject.getClassId());
-        assertEquals(5, subject.getVersion());
+        assertEquals(EvmFnResult.RELEASE_0290_VERSION, subject.getVersion());
         assertEquals(gas, subject.getGas());
         assertEquals(amount, subject.getAmount());
         assertEquals(functionParameters, subject.getFunctionParameters());
@@ -162,7 +123,6 @@ class EvmFnResultTest {
                         Collections.emptyList(),
                         Collections.emptyList(),
                         new byte[0],
-                        stateChanges,
                         0L,
                         0L,
                         new byte[0],
@@ -175,7 +135,7 @@ class EvmFnResultTest {
                         0,
                         Optional.of(HederaMessageCallProcessor.INVALID_TRANSFER),
                         Optional.empty(),
-                        stateChanges);
+                        Collections.emptyMap());
 
         final var actual = EvmFnResult.fromCall(input);
 
@@ -194,7 +154,6 @@ class EvmFnResultTest {
                         EvmLog.fromBesu(besuLogs),
                         createdContractIds,
                         new byte[0],
-                        stateChanges,
                         0L,
                         0L,
                         new byte[0],
@@ -202,7 +161,13 @@ class EvmFnResultTest {
 
         final var input =
                 TransactionProcessingResult.successful(
-                        besuLogs, gasUsed, 0, 0, Bytes.wrap(result), recipient, stateChanges);
+                        besuLogs,
+                        gasUsed,
+                        0,
+                        0,
+                        Bytes.wrap(result),
+                        recipient,
+                        Collections.emptyMap());
         input.setCreatedContracts(grpcCreatedContractIds);
 
         final var actual = EvmFnResult.fromCall(input);
@@ -231,7 +196,6 @@ class EvmFnResultTest {
                         EvmLog.fromBesu(besuLogs),
                         createdContractIds,
                         evmAddress,
-                        stateChanges,
                         0L,
                         0L,
                         new byte[0],
@@ -239,7 +203,13 @@ class EvmFnResultTest {
 
         final var input =
                 TransactionProcessingResult.successful(
-                        besuLogs, gasUsed, 0, 0, Bytes.wrap(result), recipient, stateChanges);
+                        besuLogs,
+                        gasUsed,
+                        0,
+                        0,
+                        Bytes.wrap(result),
+                        recipient,
+                        Collections.emptyMap());
         input.setCreatedContracts(grpcCreatedContractIds);
 
         final var actual = EvmFnResult.fromCreate(input, evmAddress);
@@ -260,7 +230,6 @@ class EvmFnResultTest {
                         logs,
                         createdContractIds,
                         evmAddress,
-                        stateChanges,
                         gas,
                         amount,
                         functionParameters,
@@ -275,7 +244,6 @@ class EvmFnResultTest {
                         logs,
                         createdContractIds,
                         evmAddress,
-                        stateChanges,
                         gas,
                         amount,
                         functionParameters,
@@ -290,7 +258,6 @@ class EvmFnResultTest {
                         logs,
                         createdContractIds,
                         Address.ZERO.toArray(),
-                        stateChanges,
                         gas,
                         amount,
                         functionParameters,
@@ -305,7 +272,6 @@ class EvmFnResultTest {
                         logs,
                         createdContractIds,
                         evmAddress,
-                        stateChanges,
                         gas,
                         amount,
                         functionParameters,
@@ -320,7 +286,6 @@ class EvmFnResultTest {
                         List.of(logFrom(1)),
                         createdContractIds,
                         evmAddress,
-                        stateChanges,
                         gas,
                         amount,
                         functionParameters,
@@ -335,22 +300,6 @@ class EvmFnResultTest {
                         logs,
                         List.of(new EntityId(1L, 1L, 42L)),
                         evmAddress,
-                        stateChanges,
-                        gas,
-                        amount,
-                        functionParameters,
-                        senderId);
-        final var eight =
-                new EvmFnResult(
-                        contractId,
-                        result,
-                        error,
-                        bloom,
-                        gasUsed,
-                        logs,
-                        createdContractIds,
-                        evmAddress,
-                        Collections.emptyMap(),
                         gas,
                         amount,
                         functionParameters,
@@ -365,7 +314,6 @@ class EvmFnResultTest {
                         logs,
                         createdContractIds,
                         evmAddress,
-                        stateChanges,
                         gas,
                         amount,
                         "randomParameters".getBytes(),
@@ -380,7 +328,6 @@ class EvmFnResultTest {
                         logs,
                         createdContractIds,
                         evmAddress,
-                        stateChanges,
                         gas,
                         amount,
                         "randomParameters".getBytes(),
@@ -393,7 +340,6 @@ class EvmFnResultTest {
         assertNotEquals(one, five);
         assertNotEquals(one, six);
         assertNotEquals(one, seven);
-        assertNotEquals(one, eight);
         assertNotEquals(one, nine);
         assertNotEquals(one, ten);
         assertEquals(one, three);
@@ -414,7 +360,6 @@ class EvmFnResultTest {
                         subject.getLogs(),
                         subject.getCreatedContractIds(),
                         subject.getEvmAddress(),
-                        subject.getStateChanges(),
                         subject.getGas(),
                         subject.getAmount(),
                         subject.getFunctionParameters(),
@@ -446,9 +391,8 @@ class EvmFnResultTest {
                         + ", "
                         + "logs="
                         + logs
-                        + ", stateChanges={0x0000000000000000000000000000000000000006={0x07=(0x08,null)},"
-                        + " 0x0000000000000000000000000000000000000009={0x0a=(0x0b,0x0c)}},"
-                        + " evmAddress=0000000000000000000000000000000000000009, gas="
+                        + ", evmAddress=0000000000000000000000000000000000000009, "
+                        + "gas="
                         + gas
                         + ", "
                         + "amount="
@@ -480,7 +424,6 @@ class EvmFnResultTest {
                         logs,
                         createdContractIds,
                         evmAddress,
-                        specialStateChanges,
                         gas,
                         amount,
                         functionParameters,
@@ -498,21 +441,6 @@ class EvmFnResultTest {
                                         .map(EntityId::toGrpcContractId)
                                         .collect(toList()))
                         .addAllLogInfo(logs.stream().map(EvmLog::toGrpc).collect(toList()))
-                        .addStateChanges(
-                                ContractStateChange.newBuilder()
-                                        .setContractID(cNum.toGrpcContractID())
-                                        .addStorageChanges(
-                                                StorageChange.newBuilder()
-                                                        .setSlot(ByteString.copyFrom(slot))
-                                                        .setValueRead(ByteString.copyFrom(left))
-                                                        .setValueWritten(
-                                                                BytesValue.newBuilder()
-                                                                        .setValue(
-                                                                                ByteString.copyFrom(
-                                                                                        right))
-                                                                        .build())
-                                                        .build())
-                                        .build())
                         .setEvmAddress(
                                 BytesValue.newBuilder().setValue(ByteString.copyFrom(evmAddress)))
                         .setGas(gas)
@@ -536,7 +464,6 @@ class EvmFnResultTest {
                         Collections.emptyList(),
                         Collections.emptyList(),
                         EvmFnResult.EMPTY,
-                        specialStateChanges,
                         gas,
                         0L,
                         functionParameters,
@@ -547,21 +474,6 @@ class EvmFnResultTest {
                         .setGasUsed(gasUsed)
                         .setContractCallResult(ByteString.copyFrom(result))
                         .setBloom(ByteString.copyFrom(bloom))
-                        .addStateChanges(
-                                ContractStateChange.newBuilder()
-                                        .setContractID(cNum.toGrpcContractID())
-                                        .addStorageChanges(
-                                                StorageChange.newBuilder()
-                                                        .setSlot(ByteString.copyFrom(slot))
-                                                        .setValueRead(ByteString.copyFrom(left))
-                                                        .setValueWritten(
-                                                                BytesValue.newBuilder()
-                                                                        .setValue(
-                                                                                ByteString.copyFrom(
-                                                                                        right))
-                                                                        .build())
-                                                        .build())
-                                        .build())
                         .setGas(gas)
                         .setFunctionParameters(ByteString.copyFrom(functionParameters))
                         .setSenderId(senderId.toGrpcAccountId())
@@ -585,8 +497,6 @@ class EvmFnResultTest {
                                         .map(EntityId::toGrpcContractId)
                                         .collect(toList()))
                         .addAllLogInfo(logs.stream().map(EvmLog::toGrpc).collect(toList()))
-                        .addStateChanges(actual.getStateChanges(0))
-                        .addStateChanges(actual.getStateChanges(1))
                         .setEvmAddress(
                                 BytesValue.newBuilder().setValue(ByteString.copyFrom(evmAddress)))
                         .setGas(gas)
@@ -600,7 +510,7 @@ class EvmFnResultTest {
 
     @Test
     void serializableDetWorks() {
-        assertEquals(EvmFnResult.RELEASE_0260_VERSION, subject.getVersion());
+        assertEquals(EvmFnResult.RELEASE_0290_VERSION, subject.getVersion());
         assertEquals(EvmFnResult.RUNTIME_CONSTRUCTABLE_ID, subject.getClassId());
     }
 

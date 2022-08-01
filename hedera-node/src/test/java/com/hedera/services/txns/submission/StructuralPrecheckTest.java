@@ -26,6 +26,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.willCallRealMethod;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -33,10 +34,14 @@ import static org.mockito.internal.verification.VerificationModeFactory.times;
 
 import com.google.protobuf.ByteString;
 import com.google.protobuf.GeneratedMessageV3;
+import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.domain.process.TxnValidityAndFeeReq;
+import com.hedera.services.context.primitives.SignedStateViewFactory;
+import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.stats.HapiOpCounters;
 import com.hedera.services.stats.MiscRunningAvgs;
+import com.hedera.services.utils.accessors.AccessorFactory;
 import com.hedera.services.utils.accessors.SignedTxnAccessor;
 import com.hedera.test.utils.IdUtils;
 import com.hedera.test.utils.TxnUtils;
@@ -52,6 +57,7 @@ import com.hederahashgraph.api.proto.java.TransactionID;
 import com.swirlds.common.metrics.Counter;
 import com.swirlds.common.system.Platform;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.IntStream;
 import org.apache.commons.lang3.tuple.Pair;
@@ -75,79 +81,106 @@ class StructuralPrecheckTest {
 
     @Mock private Counter counter;
     @Mock private Platform platform;
+    private SignedStateViewFactory viewFactory = mock(SignedStateViewFactory.class);
+    private AccessorFactory accessorFactory = mock(AccessorFactory.class);
+
+    private SignedTxnAccessor accessor = mock(SignedTxnAccessor.class);
+    private Transaction txn;
 
     @BeforeEach
     void setUp() {
-        subject = new StructuralPrecheck(pretendSizeLimit, pretendMaxMessageDepth, counters);
+        subject =
+                new StructuralPrecheck(
+                        pretendSizeLimit,
+                        pretendMaxMessageDepth,
+                        counters,
+                        viewFactory,
+                        accessorFactory);
     }
 
     @Test
-    void mustHaveBodyBytes() {
-        final var assess = subject.assess(Transaction.getDefaultInstance());
+    void mustHaveBodyBytes() throws InvalidProtocolBufferException {
+        txn = Transaction.getDefaultInstance();
+        willCallRealMethod().given(accessorFactory).constructSpecializedAccessor(txn.toByteArray());
+        given(accessor.getTxn()).willReturn(txn.getBody());
+
+        final var assess = subject.assess(txn);
 
         assertExpectedFail(INVALID_TRANSACTION_BODY, assess);
     }
 
     @Test
-    void cantMixSignedBytesWithBodyBytes() {
+    void cantMixSignedBytesWithBodyBytes() throws InvalidProtocolBufferException {
         withVerifiableCounters();
-        final var assess =
-                subject.assess(
-                        Transaction.newBuilder()
-                                .setSignedTransactionBytes(ByteString.copyFromUtf8("w/e"))
-                                .setBodyBytes(ByteString.copyFromUtf8("doesn't matter"))
-                                .build());
+        txn =
+                Transaction.newBuilder()
+                        .setSignedTransactionBytes(ByteString.copyFromUtf8("w/e"))
+                        .setBodyBytes(ByteString.copyFromUtf8("doesn't matter"))
+                        .build();
+        willCallRealMethod().given(accessorFactory).constructSpecializedAccessor(txn.toByteArray());
+        given(accessor.getTxn()).willReturn(txn.getBody());
+
+        final var assess = subject.assess(txn);
 
         assertExpectedFail(INVALID_TRANSACTION, assess);
         verify(counter).increment();
     }
 
     @Test
-    void cantMixSignedBytesWithSigMap() {
+    void cantMixSignedBytesWithSigMap() throws InvalidProtocolBufferException {
         withVerifiableCounters();
-        final var assess =
-                subject.assess(
-                        Transaction.newBuilder()
-                                .setSignedTransactionBytes(ByteString.copyFromUtf8("w/e"))
-                                .setSigMap(SignatureMap.getDefaultInstance())
-                                .build());
+        txn =
+                Transaction.newBuilder()
+                        .setSignedTransactionBytes(ByteString.copyFromUtf8("w/e"))
+                        .setSigMap(SignatureMap.getDefaultInstance())
+                        .build();
+        willCallRealMethod().given(accessorFactory).constructSpecializedAccessor(txn.toByteArray());
+        given(accessor.getTxn()).willReturn(txn.getBody());
+
+        final var assess = subject.assess(txn);
 
         assertExpectedFail(INVALID_TRANSACTION, assess);
         verify(counter).increment();
     }
 
     @Test
-    void cantBeOversize() {
+    void cantBeOversize() throws InvalidProtocolBufferException {
         withVerifiableCounters();
-        final var assess =
-                subject.assess(
-                        Transaction.newBuilder()
-                                .setSignedTransactionBytes(
-                                        ByteString.copyFromUtf8(
-                                                IntStream.range(0, pretendSizeLimit)
-                                                        .mapToObj(i -> "A")
-                                                        .collect(joining())))
-                                .build());
+        txn =
+                Transaction.newBuilder()
+                        .setSignedTransactionBytes(
+                                ByteString.copyFromUtf8(
+                                        IntStream.range(0, pretendSizeLimit)
+                                                .mapToObj(i -> "A")
+                                                .collect(joining())))
+                        .build();
+        willCallRealMethod().given(accessorFactory).constructSpecializedAccessor(txn.toByteArray());
+        given(accessor.getTxn()).willReturn(txn.getBody());
+
+        final var assess = subject.assess(txn);
 
         assertExpectedFail(TRANSACTION_OVERSIZE, assess);
         verifyNoInteractions(counter);
     }
 
     @Test
-    void mustParseViaAccessor() {
+    void mustParseViaAccessor() throws InvalidProtocolBufferException {
         withVerifiableCounters();
-        final var assess =
-                subject.assess(
-                        Transaction.newBuilder()
-                                .setSignedTransactionBytes(ByteString.copyFromUtf8("NONSENSE"))
-                                .build());
+        txn =
+                Transaction.newBuilder()
+                        .setSignedTransactionBytes(ByteString.copyFromUtf8("NONSENSE"))
+                        .build();
+        willCallRealMethod().given(accessorFactory).constructSpecializedAccessor(txn.toByteArray());
+        given(accessor.getTxn()).willReturn(txn.getBody());
+
+        final var assess = subject.assess(txn);
 
         assertExpectedFail(INVALID_TRANSACTION_BODY, assess);
         verifyNoInteractions(counter);
     }
 
     @Test
-    void cantBeUndulyNested() {
+    void cantBeUndulyNested() throws InvalidProtocolBufferException {
         withVerifiableCounters();
         final var weirdlyNestedKey = TxnUtils.nestKeys(Key.newBuilder(), pretendMaxMessageDepth);
         final var hostTxn =
@@ -156,7 +189,10 @@ class StructuralPrecheckTest {
                                 CryptoCreateTransactionBody.newBuilder().setKey(weirdlyNestedKey));
         final var signedTxn =
                 Transaction.newBuilder().setBodyBytes(hostTxn.build().toByteString()).build();
-
+        willCallRealMethod()
+                .given(accessorFactory)
+                .constructSpecializedAccessor(signedTxn.toByteArray());
+        given(accessor.getTxn()).willReturn(hostTxn.build());
         final var assess = subject.assess(signedTxn);
 
         assertExpectedFail(TRANSACTION_TOO_MANY_LAYERS, assess);
@@ -164,7 +200,7 @@ class StructuralPrecheckTest {
     }
 
     @Test
-    void cantOmitAFunction() {
+    void cantOmitAFunction() throws InvalidProtocolBufferException {
         withVerifiableCounters();
         final var hostTxn =
                 TransactionBody.newBuilder()
@@ -174,6 +210,11 @@ class StructuralPrecheckTest {
         final var signedTxn =
                 Transaction.newBuilder().setBodyBytes(hostTxn.build().toByteString()).build();
 
+        willCallRealMethod()
+                .given(accessorFactory)
+                .constructSpecializedAccessor(signedTxn.toByteArray());
+        given(accessor.getTxn()).willReturn(hostTxn.build());
+
         final var assess = subject.assess(signedTxn);
 
         assertExpectedFail(INVALID_TRANSACTION_BODY, assess);
@@ -181,7 +222,7 @@ class StructuralPrecheckTest {
     }
 
     @Test
-    void canBeOk() {
+    void canBeOkAndSetsStateView() throws InvalidProtocolBufferException {
         withVerifiableCounters();
         final var reasonablyNestedKey = TxnUtils.nestKeys(Key.newBuilder(), 2);
         final var hostTxn =
@@ -191,11 +232,19 @@ class StructuralPrecheckTest {
                                         .setKey(reasonablyNestedKey));
         final var signedTxn =
                 Transaction.newBuilder().setBodyBytes(hostTxn.build().toByteString()).build();
+        final var view = mock(StateView.class);
+
+        willCallRealMethod()
+                .given(accessorFactory)
+                .constructSpecializedAccessor(signedTxn.toByteArray());
+        given(accessor.getTxn()).willReturn(hostTxn.build());
+        given(viewFactory.latestSignedStateView()).willReturn(Optional.of(view));
 
         final var assess = subject.assess(signedTxn);
 
         assertEquals(OK, assess.getLeft().getValidity());
         assertNotNull(assess.getRight());
+        assertEquals(view, assess.getRight().getStateView());
         assertEquals(HederaFunctionality.CryptoCreate, assess.getRight().getFunction());
         verify(counter).increment();
     }
@@ -212,7 +261,7 @@ class StructuralPrecheckTest {
     }
 
     @Test
-    void validateCounterForDeprecatedTransactions() {
+    void validateCounterForDeprecatedTransactions() throws InvalidProtocolBufferException {
         withVerifiableCounters();
         final var hostTxn =
                 TransactionBody.newBuilder()
@@ -221,6 +270,11 @@ class StructuralPrecheckTest {
                                         .setAccountID(IdUtils.asAccount("0.0.2")));
         var signedTxn =
                 Transaction.newBuilder().setBodyBytes(hostTxn.build().toByteString()).build();
+        willCallRealMethod()
+                .given(accessorFactory)
+                .constructSpecializedAccessor(signedTxn.toByteArray());
+        given(accessor.getTxn()).willReturn(hostTxn.build());
+
         subject.assess(signedTxn);
 
         signedTxn = Transaction.newBuilder().setSigMap(SignatureMap.newBuilder().build()).build();
@@ -235,7 +289,7 @@ class StructuralPrecheckTest {
     }
 
     @Test
-    void txnWithNoDeprecatedFieldsDoesntIncrement() {
+    void txnWithNoDeprecatedFieldsDoesntIncrement() throws InvalidProtocolBufferException {
         withVerifiableCounters();
         final var hostTxn =
                 TransactionBody.newBuilder()
@@ -246,6 +300,11 @@ class StructuralPrecheckTest {
                 Transaction.newBuilder()
                         .setSignedTransactionBytes(hostTxn.build().toByteString())
                         .build();
+        willCallRealMethod()
+                .given(accessorFactory)
+                .constructSpecializedAccessor(signedTxn.toByteArray());
+        given(accessor.getTxn()).willReturn(hostTxn.build());
+
         subject.assess(signedTxn);
         verifyNoInteractions(counter);
     }

@@ -54,7 +54,6 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.GetAccountD
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.GetBySolidityID;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.GetVersionInfo;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.NetworkGetExecutionTime;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.PRNG;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ScheduleCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ScheduleDelete;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ScheduleGetInfo;
@@ -83,6 +82,7 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUpdate
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TransactionGetReceipt;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TransactionGetRecord;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.UncheckedSubmit;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.UtilPrng;
 import static com.hederahashgraph.api.proto.java.Query.QueryCase.TRANSACTIONGETFASTRECORD;
 
 import com.hedera.services.exceptions.UnknownHederaFunctionality;
@@ -186,7 +186,7 @@ public final class PermissionFileUtils {
         permissionKeys.put(TokenGetNftInfos, "tokenGetNftInfos");
         permissionKeys.put(TokenGetAccountNftInfos, "tokenGetAccountNftInfos");
         permissionKeys.put(TokenFeeScheduleUpdate, "tokenFeeScheduleUpdate");
-        permissionKeys.put(PRNG, "prng");
+        permissionKeys.put(UtilPrng, "utilPrng");
 
         legacyKeys =
                 permissionKeys.entrySet().stream()

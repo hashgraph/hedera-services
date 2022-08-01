@@ -78,7 +78,7 @@ public class ScheduleCreateFactory extends SignedTxnFactory<ScheduleCreateFactor
             op.setScheduledTransactionBody(SchedulableTransactionBody.getDefaultInstance());
         } else {
             try {
-                var accessor = new SignedTxnAccessor(scheduled);
+                var accessor = SignedTxnAccessor.from(scheduled.toByteArray());
                 var scheduled = ScheduleUtils.fromOrdinary(accessor.getTxn());
                 op.setScheduledTransactionBody(scheduled);
             } catch (InvalidProtocolBufferException e) {

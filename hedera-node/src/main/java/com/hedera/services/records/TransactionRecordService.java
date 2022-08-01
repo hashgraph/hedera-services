@@ -15,7 +15,7 @@
  */
 package com.hedera.services.records;
 
-import static com.hedera.services.utils.ResponseCodeUtil.getStatus;
+import static com.hedera.services.utils.ResponseCodeUtil.getStatusOrDefault;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.hedera.services.context.TransactionContext;
@@ -24,6 +24,8 @@ import com.hedera.services.ethereum.EthTxData;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.EvmFnResult;
 import com.hedera.services.store.models.Topic;
+import com.hedera.services.stream.proto.TransactionSidecarRecord;
+import com.hedera.services.utils.SidecarUtils;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -62,15 +64,26 @@ public class TransactionRecordService {
 
     public void externalizeSuccessfulEvmCreate(
             final TransactionProcessingResult result, final byte[] evmAddress) {
+        externalizeSuccessfulEvmCreate(result, evmAddress, null);
+    }
+
+    public void externalizeSuccessfulEvmCreate(
+            final TransactionProcessingResult result,
+            final byte[] evmAddress,
+            final TransactionSidecarRecord.Builder contractBytecodeSidecarRecord) {
         txnCtx.setCreateResult(EvmFnResult.fromCreate(result, evmAddress));
+        addAllSidecarsToTxnContextFrom(result);
+        if (contractBytecodeSidecarRecord != null) {
+            txnCtx.addSidecarRecord(contractBytecodeSidecarRecord);
+        }
         externalizeGenericEvmCreate(result);
     }
 
     private void externalizeGenericEvmCreate(final TransactionProcessingResult result) {
-        txnCtx.setStatus(getStatus(result, SUCCESS));
+        txnCtx.setStatus(getStatusOrDefault(result, SUCCESS));
         final var finalGasPayment =
                 result.getGasPrice() * (result.getGasUsed() - result.getSbhRefund());
-        txnCtx.addNonThresholdFeeChargedToPayer(finalGasPayment);
+        txnCtx.addFeeChargedToPayer(finalGasPayment);
     }
 
     /**
@@ -80,10 +93,19 @@ public class TransactionRecordService {
      * @param result the processing result of the EVM transaction
      */
     public void externaliseEvmCallTransaction(final TransactionProcessingResult result) {
-        txnCtx.setStatus(getStatus(result, SUCCESS));
+        txnCtx.setStatus(getStatusOrDefault(result, SUCCESS));
         txnCtx.setCallResult(EvmFnResult.fromCall(result));
-        txnCtx.addNonThresholdFeeChargedToPayer(
+        txnCtx.addFeeChargedToPayer(
                 result.getGasPrice() * (result.getGasUsed() - result.getSbhRefund()));
+        addAllSidecarsToTxnContextFrom(result);
+    }
+
+    private void addAllSidecarsToTxnContextFrom(final TransactionProcessingResult result) {
+        if (!result.getStateChanges().isEmpty()) {
+            txnCtx.addSidecarRecord(
+                    SidecarUtils.createStateChangesSidecarFrom(result.getStateChanges()));
+        }
+        // FUTURE WORK - we should put the actions in the list here as well when they are added
     }
 
     public void updateForEvmCall(EthTxData callContext, EntityId senderId) {

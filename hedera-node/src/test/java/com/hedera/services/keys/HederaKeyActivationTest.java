@@ -30,7 +30,6 @@ import static com.hedera.test.factories.keys.NodeFactory.threshold;
 import static com.swirlds.common.utility.CommonUtils.hex;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.any;
@@ -57,8 +56,6 @@ import com.swirlds.common.crypto.VerificationStatus;
 import com.swirlds.common.crypto.engine.CryptoEngine;
 import java.util.Arrays;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.TimeUnit;
 import java.util.function.BiPredicate;
 import java.util.function.Function;
 import org.bouncycastle.crypto.params.ECPublicKeyParameters;
@@ -117,39 +114,6 @@ class HederaKeyActivationTest {
         given(sigsFn.apply(secp256k1Key.getECDSASecp256k1Key())).willReturn(mockCryptoSig);
 
         assertTrue(HederaKeyActivation.isActive(secp256k1Key, sigsFn, ONLY_IF_SIG_IS_VALID));
-    }
-
-    @Test
-    void singletonSigsHaveCompletedFutures() {
-        final var answer =
-                (int)
-                        CompletableFuture.anyOf(
-                                        CompletableFuture.supplyAsync(
-                                                () -> {
-                                                    try {
-                                                        HederaKeyActivation.VALID_IMPLICIT_SIG
-                                                                .waitForFuture()
-                                                                .get();
-                                                    } catch (Exception ignore) {
-                                                    }
-                                                    try {
-                                                        HederaKeyActivation.INVALID_MISSING_SIG
-                                                                .waitForFuture()
-                                                                .get();
-                                                    } catch (Exception ignore) {
-                                                    }
-                                                    return 1;
-                                                }),
-                                        CompletableFuture.supplyAsync(
-                                                () -> {
-                                                    try {
-                                                        TimeUnit.SECONDS.sleep(1);
-                                                    } catch (InterruptedException ignore) {
-                                                    }
-                                                    return 2;
-                                                }))
-                                .join();
-        assertNotEquals(2, answer);
     }
 
     @Test

@@ -22,7 +22,6 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoDelet
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoUpdate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileAppend;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.PRNG;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAccountWipe;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenBurn;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenCreate;
@@ -32,6 +31,23 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenMint;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenPause;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUnfreezeAccount;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUnpause;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.UtilPrng;
+
+import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.txns.span.ExpandHandleSpanMapAccessor;
+import com.hedera.services.usage.BaseTransactionMeta;
+import com.hedera.services.usage.SigUsage;
+import com.hedera.services.usage.consensus.ConsensusOpsUsage;
+import com.hedera.services.usage.crypto.CryptoOpsUsage;
+import com.hedera.services.usage.file.FileOpsUsage;
+import com.hedera.services.usage.state.UsageAccumulator;
+import com.hedera.services.usage.token.TokenOpsUsage;
+import com.hedera.services.usage.util.UtilOpsUsage;
+import com.hedera.services.utils.accessors.TxnAccessor;
+import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import java.util.EnumSet;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.txns.span.ExpandHandleSpanMapAccessor;
@@ -69,7 +85,7 @@ public class AccessorBasedUsages {
                     TokenUnfreezeAccount,
                     TokenPause,
                     TokenUnpause,
-                    PRNG);
+                    UtilPrng);
 
     private final ExpandHandleSpanMapAccessor spanMapAccessor = new ExpandHandleSpanMapAccessor();
 
@@ -141,8 +157,8 @@ public class AccessorBasedUsages {
             estimateTokenPause(sigUsage, accessor, baseMeta, into);
         } else if (function == TokenUnpause) {
             estimateTokenUnpause(sigUsage, accessor, baseMeta, into);
-        } else if (function == PRNG) {
-            estimatePrng(sigUsage, accessor, baseMeta, into);
+        } else if (function == UtilPrng) {
+            estimateUtilPrng(sigUsage, accessor, baseMeta, into);
         }
     }
 
@@ -302,12 +318,12 @@ public class AccessorBasedUsages {
         tokenOpsUsage.tokenUnpauseUsage(sigUsage, baseMeta, tokenUnpauseMeta, into);
     }
 
-    private void estimatePrng(
+    private void estimateUtilPrng(
             SigUsage sigUsage,
             TxnAccessor accessor,
             BaseTransactionMeta baseMeta,
             UsageAccumulator into) {
-        final var prngMeta = accessor.getSpanMapAccessor().getPrngMeta(accessor);
+        final var prngMeta = accessor.getSpanMapAccessor().getUtilPrngMeta(accessor);
         utilOpsUsage.prngUsage(sigUsage, baseMeta, prngMeta, into);
     }
 }

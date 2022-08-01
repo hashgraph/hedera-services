@@ -58,9 +58,12 @@ import com.hedera.services.store.contracts.HederaMutableWorldState;
 import com.hedera.services.store.contracts.HederaWorldState;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.store.models.Id;
+import com.hedera.services.stream.proto.SidecarType;
+import com.hedera.services.stream.proto.TransactionSidecarRecord;
 import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.EntityNum;
+import com.hedera.services.utils.SidecarUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -69,6 +72,8 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.merkle.map.MerkleMap;
 import java.math.BigInteger;
+import java.util.Collections;
+import java.util.List;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
@@ -224,12 +229,35 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
         if (result.isSuccessful()) {
             final var newEvmAddress = newContractAddress.toArrayUnsafe();
             final var newContractId = contractIdFromEvmAddress(newEvmAddress);
+            final var contractBytecodeSidecar =
+                    op.getInitcodeSourceCase() != INITCODE
+                            ? SidecarUtils.createContractBytecodeSidecarFrom(
+                                    newContractId,
+                                    codeWithConstructorArgs.toArrayUnsafe(),
+                                    result.getOutput().toArrayUnsafe())
+                            : SidecarUtils.createContractBytecodeSidecarFrom(
+                                    newContractId, result.getOutput().toArrayUnsafe());
             if (createSyntheticRecord) {
-                recordSyntheticOperation(newContractId, newEvmAddress, hapiSenderCustomizer);
+                recordSyntheticOperation(
+                        newContractId,
+                        newEvmAddress,
+                        hapiSenderCustomizer,
+                        contractBytecodeSidecar);
+                // bytecode sidecar is already externalized if needed in {@link
+                // #recordSyntheticOperation}
+                // so call {@link #externalizeSuccessfulEvmCreate} without contract bytecode sidecar
+                // argument
+                recordService.externalizeSuccessfulEvmCreate(result, newEvmAddress);
+            } else {
+                if (properties.enabledSidecars().contains(SidecarType.CONTRACT_BYTECODE)) {
+                    recordService.externalizeSuccessfulEvmCreate(
+                            result, newEvmAddress, contractBytecodeSidecar);
+                } else {
+                    recordService.externalizeSuccessfulEvmCreate(result, newEvmAddress);
+                }
             }
-            sigImpactHistorian.markEntityChanged(newContractId.getContractNum());
             txnCtx.setTargetedContract(newContractId);
-            recordService.externalizeSuccessfulEvmCreate(result, newEvmAddress);
+            sigImpactHistorian.markEntityChanged(newContractId.getContractNum());
         } else {
             recordService.externalizeUnsuccessfulEvmCreate(result);
         }
@@ -312,9 +340,10 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
     }
 
     private void recordSyntheticOperation(
-            ContractID newContractId,
-            byte[] newContractAddress,
-            final ContractCustomizer opCustomizer) {
+            final ContractID newContractId,
+            final byte[] newContractAddress,
+            final ContractCustomizer opCustomizer,
+            final TransactionSidecarRecord.Builder contractBytecodeSidecar) {
         var childRecordId = recordsHistorian.nextChildRecordSourceId();
 
         final var syntheticOp = syntheticTxnFactory.contractCreation(opCustomizer);
@@ -325,6 +354,12 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
                 entityCreator.createSuccessfulSyntheticRecord(
                         NO_CUSTOM_FEES, sideEffects, EMPTY_MEMO);
 
-        recordsHistorian.trackFollowingChildRecord(childRecordId, syntheticOp, childRecord);
+        recordsHistorian.trackFollowingChildRecord(
+                childRecordId,
+                syntheticOp,
+                childRecord,
+                properties.enabledSidecars().contains(SidecarType.CONTRACT_BYTECODE)
+                        ? List.of(contractBytecodeSidecar)
+                        : Collections.emptyList());
     }
 }

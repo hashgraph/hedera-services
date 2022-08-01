@@ -20,7 +20,7 @@ import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.asToken;
 import static com.hedera.test.utils.TxnUtils.withAdjustments;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.EthereumTransaction;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.PRNG;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.UtilPrng;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
@@ -361,7 +361,7 @@ class ExpiringCreationsTest {
         setUpForExpiringRecordBuilder();
 
         // case 1
-        given(accessor.getFunction()).willReturn(PRNG);
+        given(accessor.getFunction()).willReturn(UtilPrng);
         given(sideEffectsTracker.getPseudorandomNumber()).willReturn(10);
         given(sideEffectsTracker.hasTrackedRandomData()).willReturn(true);
 

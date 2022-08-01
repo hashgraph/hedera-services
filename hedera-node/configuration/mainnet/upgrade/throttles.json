@@ -39,7 +39,7 @@
 			"TokenGetNftInfos",
 			"CryptoApproveAllowance",
 			"CryptoDeleteAllowance",
-			"PRNG"
+			"UtilPrng"
 		  ]
 		},
 		{

@@ -190,6 +190,16 @@ public class StaticEntityAccess implements EntityAccess {
     // when processing
     // a non-static EVM call; then the WorldLedgers should get all such information from its ledgers
 
+    public boolean defaultFreezeStatus(final TokenID tokenId) {
+        final var token = lookupToken(tokenId);
+        return token.accountsAreFrozenByDefault();
+    }
+
+    public boolean defaultKycStatus(final TokenID tokenID) {
+        final var token = lookupToken(tokenID);
+        return token.accountsKycGrantedByDefault();
+    }
+
     /**
      * Returns the name of the given token.
      *
@@ -259,6 +269,22 @@ public class StaticEntityAccess implements EntityAccess {
         final var balanceKey = fromAccountTokenRel(accountId, tokenId);
         final var relStatus = tokenAssociations.get(balanceKey);
         return (relStatus != null) ? relStatus.getBalance() : 0;
+    }
+
+    /**
+     * Returns the frozen status of the given token for the given account.
+     *
+     * @param accountId the account of interest
+     * @param tokenId the token of interest
+     * @return the token's freeze status
+     */
+    public boolean isFrozen(final AccountID accountId, final TokenID tokenId) {
+        lookupToken(tokenId);
+        final var accountNum = EntityNum.fromAccountId(accountId);
+        validateTrue(accounts.containsKey(accountNum), INVALID_ACCOUNT_ID);
+        final var isFrozenKey = fromAccountTokenRel(accountId, tokenId);
+        final var relStatus = tokenAssociations.get(isFrozenKey);
+        return relStatus != null && relStatus.isFrozen();
     }
 
     /**

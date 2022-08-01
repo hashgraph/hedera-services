@@ -15,22 +15,24 @@
  */
 package com.hedera.services.txns;
 
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.verify;
 
 import com.google.protobuf.InvalidProtocolBufferException;
-import com.hedera.services.ledger.accounts.AliasManager;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.txns.span.ExpandHandleSpan;
 import com.hedera.services.txns.span.SpanMapManager;
+import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.accessors.AccessorFactory;
+import com.hedera.services.utils.accessors.SwirldsTxnAccessor;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.swirlds.common.system.transaction.internal.SwirldTransaction;
-import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -40,12 +42,11 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class ExpandHandleSpanTest {
     @Mock private SpanMapManager handleSpanMap;
-    @Mock private AliasManager aliasManager;
+    @Mock private GlobalDynamicProperties dynamicProperties;
+    @Mock private OptionValidator validator;
 
-    private final AccessorFactory accessorFactory = new AccessorFactory(aliasManager);
-
-    private final long duration = 20;
-    private final TimeUnit testUnit = TimeUnit.MILLISECONDS;
+    private final AccessorFactory accessorFactory =
+            new AccessorFactory(dynamicProperties, validator);
 
     private final byte[] validTxnBytes =
             Transaction.newBuilder()
@@ -71,7 +72,7 @@ class ExpandHandleSpanTest {
 
     @BeforeEach
     void setUp() {
-        subject = new ExpandHandleSpan(duration, testUnit, handleSpanMap, accessorFactory);
+        subject = new ExpandHandleSpan(handleSpanMap, accessorFactory);
     }
 
     @Test
@@ -82,9 +83,12 @@ class ExpandHandleSpanTest {
     }
 
     @Test
-    void expandsOnTracking() {
-        assertDoesNotThrow(() -> subject.track(validTxn));
-        assertDoesNotThrow(() -> subject.accessorFor(validTxn));
+    void expandsOnTracking() throws InvalidProtocolBufferException {
+        subject.track(validTxn);
+
+        final SwirldsTxnAccessor accessor = validTxn.getMetadata();
+        assertSame(accessor, subject.accessorFor(validTxn));
+        assertNull(validTxn.getMetadata());
     }
 
     @Test

@@ -22,6 +22,7 @@ import com.hedera.services.ledger.backing.BackingAccounts;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.ChangeSummaryManager;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.merkle.MerkleStakingInfo;
 import com.hedera.services.state.virtual.ContractKey;
 import com.hedera.services.state.virtual.IterableContractValue;
 import com.hedera.services.utils.EntityNum;
@@ -29,6 +30,8 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.swirlds.common.io.streams.MerkleDataInputStream;
 import com.swirlds.common.io.streams.MerkleDataOutputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
+import com.swirlds.common.merkle.MerkleNode;
+import com.swirlds.common.merkle.utility.Keyed;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
 import java.io.File;
@@ -71,6 +74,35 @@ public enum InfrastructureType {
             return EnumSet.of(InfrastructureType.ACCOUNTS_MM);
         }
     },
+    STAKING_INFOS_MM {
+        private static final String MM_FILE_NAME = "staking_infos.mmap";
+
+        @Override
+        public String locWithin(final String dir) {
+            return dir + File.separator + MM_FILE_NAME;
+        }
+
+        @Override
+        @SuppressWarnings("unchecked")
+        public MerkleMap<EntityNum, MerkleStakingInfo> abInitio(
+                final String dir, final InfrastructureBundle bundle) {
+            return new MerkleMap<>();
+        }
+
+        @Override
+        @SuppressWarnings("unchecked")
+        public MerkleMap<EntityNum, MerkleStakingInfo> fromStorage(
+                final String dir, final InfrastructureBundle bundle) {
+            return mmFromStorage(dir);
+        }
+
+        @Override
+        @SuppressWarnings("unchecked")
+        public void toStorage(
+                final Object fromBundle, final String dir, final InfrastructureBundle bundle) {
+            mmToStorage((MerkleMap<EntityNum, MerkleStakingInfo>) fromBundle, dir);
+        }
+    },
     ACCOUNTS_MM {
         private static final String MM_FILE_NAME = "accounts.mmap";
 
@@ -90,29 +122,14 @@ public enum InfrastructureType {
         @SuppressWarnings("unchecked")
         public MerkleMap<EntityNum, MerkleAccount> fromStorage(
                 final String dir, final InfrastructureBundle bundle) {
-            final var mMapLoc = locWithin(dir);
-            try (final var fin =
-                    new MerkleDataInputStream(Files.newInputStream(Paths.get(mMapLoc)))) {
-                fin.readProtocolVersion();
-                return fin.readMerkleTree(Integer.MAX_VALUE);
-            } catch (IOException e) {
-                throw new UncheckedIOException(e);
-            }
+            return mmFromStorage(dir);
         }
 
         @Override
         @SuppressWarnings("unchecked")
         public void toStorage(
                 final Object fromBundle, final String dir, final InfrastructureBundle bundle) {
-            final var accounts = (MerkleMap<EntityNum, MerkleAccount>) fromBundle;
-            final var mMapLoc = locWithin(dir);
-            try (final var mMapOut =
-                    new MerkleDataOutputStream(Files.newOutputStream(Paths.get(mMapLoc)))) {
-                mMapOut.writeProtocolVersion();
-                mMapOut.writeMerkleTree(accounts);
-            } catch (IOException e) {
-                throw new UncheckedIOException(e);
-            }
+            mmToStorage((MerkleMap<EntityNum, MerkleAccount>) fromBundle, dir);
         }
     },
     CONTRACT_STORAGE_VM {
@@ -139,8 +156,8 @@ public enum InfrastructureType {
             final VirtualMap<ContractKey, IterableContractValue> kvStore = new VirtualMap<>();
             final var storage = new File(dir);
             try (final var fin =
-                    new MerkleDataInputStream(Files.newInputStream(Paths.get(vMaploc)), storage)) {
-                kvStore.deserializeExternal(fin, storage, null, 1);
+                    new MerkleDataInputStream(Files.newInputStream(Paths.get(vMaploc)))) {
+                kvStore.deserialize(fin, storage, 1);
             } catch (IOException e) {
                 throw new UncheckedIOException(e);
             }
@@ -157,7 +174,7 @@ public enum InfrastructureType {
             CRYPTO.digestTreeSync(contractStorage);
             try (final var fout =
                     new SerializableDataOutputStream(Files.newOutputStream(Paths.get(metaLoc)))) {
-                contractStorage.serializeExternal(fout, new File(dir));
+                contractStorage.serialize(fout, new File(dir));
             } catch (IOException e) {
                 throw new UncheckedIOException(e);
             }
@@ -181,4 +198,26 @@ public enum InfrastructureType {
     public abstract <T> T abInitio(String dir, InfrastructureBundle bundle);
 
     public abstract <T> T fromStorage(String dir, InfrastructureBundle bundle);
+
+    protected <K, V extends MerkleNode & Keyed<K>> MerkleMap<K, V> mmFromStorage(final String dir) {
+        final var mMapLoc = locWithin(dir);
+        try (final var fin = new MerkleDataInputStream(Files.newInputStream(Paths.get(mMapLoc)))) {
+            fin.readProtocolVersion();
+            return fin.readMerkleTree(new File(dir), Integer.MAX_VALUE);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+
+    protected <K, V extends MerkleNode & Keyed<K>> void mmToStorage(
+            final MerkleMap<K, V> fromBundle, final String dir) {
+        final var mMapLoc = locWithin(dir);
+        try (final var mMapOut =
+                new MerkleDataOutputStream(Files.newOutputStream(Paths.get(mMapLoc)))) {
+            mMapOut.writeProtocolVersion();
+            mMapOut.writeMerkleTree(new File(dir), fromBundle);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
 }

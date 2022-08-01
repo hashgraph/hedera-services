@@ -15,7 +15,7 @@
  */
 package com.hedera.services.txns.util;
 
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.PRNG;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.UtilPrng;
 
 import com.hedera.services.fees.annotations.FunctionKey;
 import com.hedera.services.txns.TransitionLogic;
@@ -28,9 +28,10 @@ import java.util.List;
 public final class UtilLogicModule {
     @Provides
     @IntoMap
-    @FunctionKey(PRNG)
-    public static List<TransitionLogic> providePrngLogic(final PrngTransitionLogic prngLogic) {
-        return List.of(prngLogic);
+    @FunctionKey(UtilPrng)
+    public static List<TransitionLogic> providePrngLogic(
+            final UtilPrngTransitionLogic utilPrngLogic) {
+        return List.of(utilPrngLogic);
     }
 
     private UtilLogicModule() {

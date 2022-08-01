@@ -180,6 +180,17 @@ public enum TokenProperty implements BeanProperty<MerkleToken> {
             return MerkleToken::accountsAreFrozenByDefault;
         }
     },
+    ACC_KYC_GRANTED_BY_DEFAULT {
+        @Override
+        public BiConsumer<MerkleToken, Object> setter() {
+            return (a, f) -> a.setAccountsKycGrantedByDefault((boolean) f);
+        }
+
+        @Override
+        public Function<MerkleToken, Object> getter() {
+            return MerkleToken::accountsKycGrantedByDefault;
+        }
+    },
     EXPIRY {
         @Override
         public BiConsumer<MerkleToken, Object> setter() {

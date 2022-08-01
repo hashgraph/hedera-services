@@ -17,7 +17,6 @@ package com.hedera.services.utils;
 
 import static com.hedera.services.state.submerkle.ExpirableTxnRecordTestHelper.fromGprc;
 import static com.hedera.services.txns.ethereum.TestingConstants.TRUFFLE0_PRIVATE_ECDSA_KEY;
-import static com.hedera.services.utils.MiscUtils.PRNG_METRIC;
 import static com.hedera.services.utils.MiscUtils.QUERY_FUNCTIONS;
 import static com.hedera.services.utils.MiscUtils.SCHEDULE_CREATE_METRIC;
 import static com.hedera.services.utils.MiscUtils.SCHEDULE_DELETE_METRIC;
@@ -37,6 +36,7 @@ import static com.hedera.services.utils.MiscUtils.TOKEN_UNFREEZE_METRIC;
 import static com.hedera.services.utils.MiscUtils.TOKEN_UNPAUSE_METRIC;
 import static com.hedera.services.utils.MiscUtils.TOKEN_UPDATE_METRIC;
 import static com.hedera.services.utils.MiscUtils.TOKEN_WIPE_ACCOUNT_METRIC;
+import static com.hedera.services.utils.MiscUtils.UTIL_PRNG_METRIC;
 import static com.hedera.services.utils.MiscUtils.activeHeaderFrom;
 import static com.hedera.services.utils.MiscUtils.asOrdinary;
 import static com.hedera.services.utils.MiscUtils.asUsableFcKey;
@@ -94,7 +94,6 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.GetByKey;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.GetBySolidityID;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.GetVersionInfo;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.NetworkGetExecutionTime;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.PRNG;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ScheduleCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ScheduleDelete;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ScheduleGetInfo;
@@ -120,6 +119,7 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUpdate
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TransactionGetReceipt;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TransactionGetRecord;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.UncheckedSubmit;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.UtilPrng;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseType.ANSWER_ONLY;
@@ -195,7 +195,6 @@ import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
 import com.hederahashgraph.api.proto.java.NetworkGetExecutionTimeQuery;
 import com.hederahashgraph.api.proto.java.NetworkGetVersionInfoQuery;
-import com.hederahashgraph.api.proto.java.PrngTransactionBody;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.QueryHeader;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -234,6 +233,7 @@ import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.api.proto.java.UncheckedSubmitBody;
+import com.hederahashgraph.api.proto.java.UtilPrngTransactionBody;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.merkle.utility.KeyedMerkleLong;
 import com.swirlds.common.system.address.Address;
@@ -605,7 +605,7 @@ class MiscUtilsTest {
                                 put(
                                         "ScheduleDelete",
                                         new BodySetter<>(ScheduleDeleteTransactionBody.class));
-                                put("Prng", new BodySetter<>(PrngTransactionBody.class));
+                                put("UtilPrng", new BodySetter<>(UtilPrngTransactionBody.class));
                             }
                         };
 
@@ -776,7 +776,9 @@ class MiscUtilsTest {
                                 put(
                                         SCHEDULE_DELETE_METRIC,
                                         new BodySetter<>(ScheduleDeleteTransactionBody.class));
-                                put(PRNG_METRIC, new BodySetter<>(PrngTransactionBody.class));
+                                put(
+                                        UTIL_PRNG_METRIC,
+                                        new BodySetter<>(UtilPrngTransactionBody.class));
                             }
                         };
 
@@ -1020,7 +1022,7 @@ class MiscUtilsTest {
                                         TokenFeeScheduleUpdate,
                                         new BodySetter<>(
                                                 TokenFeeScheduleUpdateTransactionBody.class));
-                                put(PRNG, new BodySetter<>(PrngTransactionBody.class));
+                                put(UtilPrng, new BodySetter<>(UtilPrngTransactionBody.class));
                             }
                         };
 

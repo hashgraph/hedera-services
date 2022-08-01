@@ -22,7 +22,6 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.queries.contract.HapiGetContractInfo;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
-import com.hedera.services.bdd.spec.utilops.UtilStateChange;
 import com.hedera.services.bdd.suites.contract.Utils;
 import com.hedera.services.bdd.suites.utils.contracts.ContractCallResult;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -148,10 +147,7 @@ public class ContractFnResultAsserts extends BaseErroringAssertsProvider<Contrac
                     final var actual = result.getGasUsed();
                     final var epsilon = allowedPercentDeviation * actual / 100.0;
                     Assertions.assertEquals(
-                            expected,
-                            (double) result.getGasUsed(),
-                            epsilon,
-                            "Wrong amount of gas used");
+                            expected, result.getGasUsed(), epsilon, "Wrong amount of gas used");
                 });
         return this;
     }
@@ -162,18 +158,6 @@ public class ContractFnResultAsserts extends BaseErroringAssertsProvider<Contrac
                     ContractFunctionResult result = (ContractFunctionResult) o;
                     Assertions.assertEquals(
                             gasUsed, result.getGasUsed(), "Wrong amount of Gas was used!");
-                });
-        return this;
-    }
-
-    public ContractFnResultAsserts stateChanges(StateChange... stateChanges) {
-        registerProvider(
-                (spec, o) -> {
-                    ContractFunctionResult result = (ContractFunctionResult) o;
-                    Assertions.assertEquals(
-                            UtilStateChange.stateChangesToGrpc(List.of(stateChanges), spec),
-                            result.getStateChangesList(),
-                            "Wrong state changes!");
                 });
         return this;
     }
@@ -247,7 +231,7 @@ public class ContractFnResultAsserts extends BaseErroringAssertsProvider<Contrac
                         if (opError.isPresent()) {
                             throw opError.get();
                         }
-                    } catch (Throwable t) {
+                    } catch (Throwable t) { // NOSONAR throw from 2 lines above must be caught
                         return Optional.of(t);
                     }
                     return Optional.empty();
@@ -283,12 +267,12 @@ public class ContractFnResultAsserts extends BaseErroringAssertsProvider<Contrac
                     } else {
                         Assertions.assertEquals(expected, actual);
                     }
-                } catch (Throwable T) {
-                    return Optional.of(T);
+                } catch (Exception e) {
+                    return Optional.of(e);
                 }
             }
-        } catch (Throwable T) {
-            return Optional.of(T);
+        } catch (Exception e) {
+            return Optional.of(e);
         }
         return Optional.empty();
     }
@@ -315,8 +299,8 @@ public class ContractFnResultAsserts extends BaseErroringAssertsProvider<Contrac
                                     expecteds[i], actuals[i]));
                 }
             }
-        } catch (Throwable T) {
-            return Optional.of(T);
+        } catch (Exception e) {
+            return Optional.of(e);
         }
         return Optional.empty();
     }

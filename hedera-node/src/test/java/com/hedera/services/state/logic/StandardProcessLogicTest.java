@@ -28,6 +28,7 @@ import static org.mockito.Mockito.verifyNoInteractions;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.TransactionContext;
+import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.records.ConsensusTimeTracker;
 import com.hedera.services.state.expiry.EntityAutoRenewal;
@@ -58,7 +59,6 @@ class StandardProcessLogicTest {
     private final long member = 1L;
     private final Instant consensusNow = Instant.ofEpochSecond(1_234_567L, 890);
     private final Instant triggeredConsensusNow = consensusNow.plusNanos(1L);
-    ;
 
     @Mock private ExpiryManager expiries;
     @Mock private InvariantChecks invariantChecks;
@@ -73,6 +73,7 @@ class StandardProcessLogicTest {
     @Mock private ConsensusTimeTracker consensusTimeTracker;
     @Mock private RecordStreaming recordStreaming;
     @Mock private ScheduleProcessing scheduleProcessing;
+    @Mock private StateView workingView;
 
     @LoggingTarget private LogCaptor logCaptor;
     @LoggingSubject private StandardProcessLogic subject;
@@ -93,7 +94,8 @@ class StandardProcessLogicTest {
                         txnCtx,
                         scheduleProcessing,
                         executionTimeTracker,
-                        recordStreaming);
+                        recordStreaming,
+                        workingView);
     }
 
     @Test

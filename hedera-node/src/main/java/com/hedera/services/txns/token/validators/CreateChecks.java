@@ -16,6 +16,7 @@
 package com.hedera.services.txns.token.validators;
 
 import static com.hedera.services.txns.validation.TokenListChecks.checkKeys;
+import static com.hedera.services.txns.validation.TokenListChecks.nftSupplyKeyCheck;
 import static com.hedera.services.txns.validation.TokenListChecks.suppliesCheck;
 import static com.hedera.services.txns.validation.TokenListChecks.supplyTypeCheck;
 import static com.hedera.services.txns.validation.TokenListChecks.typeCheck;
@@ -87,6 +88,11 @@ public final class CreateChecks {
             }
 
             validity = suppliesCheck(op.getInitialSupply(), op.getMaxSupply());
+            if (validity != OK) {
+                return validity;
+            }
+
+            validity = nftSupplyKeyCheck(op.getTokenType(), op.hasSupplyKey());
             if (validity != OK) {
                 return validity;
             }
