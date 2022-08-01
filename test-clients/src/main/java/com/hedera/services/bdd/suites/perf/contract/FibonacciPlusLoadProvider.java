@@ -19,7 +19,6 @@ import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.isLiteralArrayResult;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocal;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getExecTime;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
@@ -35,7 +34,7 @@ import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
 import static com.hedera.services.bdd.suites.perf.PerfUtilOps.mgmtOfBooleanProp;
 import static com.hedera.services.bdd.suites.perf.PerfUtilOps.mgmtOfIntProp;
 import static com.hedera.services.bdd.suites.perf.PerfUtilOps.stdMgmtOf;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_EXECUTION_EXCEPTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_GAS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static java.lang.Math.ceil;
@@ -352,7 +351,7 @@ public class FibonacciPlusLoadProvider extends HapiApiSuite {
                                                     })
                                             .hasKnownStatusFrom(
                                                     SUCCESS,
-                                                    CONTRACT_REVERT_EXECUTED,
+                                                    CONTRACT_EXECUTION_EXCEPTION,
                                                     INSUFFICIENT_GAS)
                                             .deferStatusResolution();
                         } else {
@@ -418,8 +417,7 @@ public class FibonacciPlusLoadProvider extends HapiApiSuite {
                                             LOG.info("Got {} for creation using {} gas", code, gas);
                                             this.observeExposedGas(gas);
                                         })
-                                .via(createTxn),
-                        getExecTime(createTxn).logged())
+                                .via(createTxn))
                 .then(
                         sourcing(
                                 () -> {
@@ -441,7 +439,6 @@ public class FibonacciPlusLoadProvider extends HapiApiSuite {
                                             callStart.set(done);
                                         })
                                 .via(firstCallTxn),
-                        getExecTime(firstCallTxn).logged(),
                         contractCall(CONTRACT, ADD_NTH_FIB, secondTargets, FIBONACCI_NUM_TO_USE)
                                 .payingWith(civilian)
                                 .gas(300_000L)
@@ -455,8 +452,7 @@ public class FibonacciPlusLoadProvider extends HapiApiSuite {
                                                     gas,
                                                     code);
                                         })
-                                .via(secondCallTxn),
-                        getExecTime(secondCallTxn).logged());
+                                .via(secondCallTxn));
     }
 
     @Override
