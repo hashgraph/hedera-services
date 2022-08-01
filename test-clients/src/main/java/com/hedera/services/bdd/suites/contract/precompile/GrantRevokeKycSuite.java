@@ -86,7 +86,7 @@ public class GrantRevokeKycSuite extends HapiApiSuite {
     }
 
     List<HapiApiSpec> positiveSpecs() {
-        return List.of(grantRevokeKyc());
+        return List.of(grantRevokeKycSpec());
     }
 
     private HapiApiSpec grantRevokeKycFail() {
@@ -95,7 +95,7 @@ public class GrantRevokeKycSuite extends HapiApiSuite {
         final AtomicReference<AccountID> secondAccountID = new AtomicReference<>();
         final AtomicReference<TokenID> tokenWithoutKeyID = new AtomicReference<>();
 
-        return defaultHapiSpec("GrantRevokeKyc")
+        return defaultHapiSpec("GrantRevokeKycFail")
                 .given(
                         newKeyNamed(KYC_KEY),
                         cryptoCreate(ACCOUNT)
@@ -244,12 +244,12 @@ public class GrantRevokeKycSuite extends HapiApiSuite {
                                                                                 INVALID_TOKEN_ID)))));
     }
 
-    private HapiApiSpec grantRevokeKyc() {
+    private HapiApiSpec grantRevokeKycSpec() {
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
         final AtomicReference<AccountID> accountID = new AtomicReference<>();
         final AtomicReference<AccountID> secondAccountID = new AtomicReference<>();
 
-        return defaultHapiSpec("GrantRevokeKyc")
+        return defaultHapiSpec("GrantRevokeKycSpec")
                 .given(
                         newKeyNamed(KYC_KEY),
                         cryptoCreate(ACCOUNT)
