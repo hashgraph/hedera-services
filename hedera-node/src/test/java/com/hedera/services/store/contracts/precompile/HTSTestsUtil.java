@@ -22,17 +22,20 @@ import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.store.contracts.precompile.codec.Association;
 import com.hedera.services.store.contracts.precompile.codec.BurnWrapper;
+import com.hedera.services.store.contracts.precompile.codec.DeleteWrapper;
 import com.hedera.services.store.contracts.precompile.codec.Dissociation;
 import com.hedera.services.store.contracts.precompile.codec.GetTokenDefaultFreezeStatusWrapper;
 import com.hedera.services.store.contracts.precompile.codec.GetTokenDefaultKycStatusWrapper;
 import com.hedera.services.store.contracts.precompile.codec.MintWrapper;
 import com.hedera.services.store.contracts.precompile.codec.OwnerOfAndTokenURIWrapper;
+import com.hedera.services.store.contracts.precompile.codec.PauseWrapper;
 import com.hedera.services.store.contracts.precompile.codec.TokenCreateWrapper;
 import com.hedera.services.store.contracts.precompile.codec.TokenExpiryWrapper;
 import com.hedera.services.store.contracts.precompile.codec.TokenFreezeUnfreezeWrapper;
 import com.hedera.services.store.contracts.precompile.codec.TokenGetCustomFeesWrapper;
 import com.hedera.services.store.contracts.precompile.codec.TokenInfoWrapper;
 import com.hedera.services.store.contracts.precompile.codec.TokenTransferWrapper;
+import com.hedera.services.store.contracts.precompile.codec.UnpauseWrapper;
 import com.hedera.services.store.contracts.precompile.codec.WipeWrapper;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.utils.EntityIdUtils;
@@ -104,6 +107,8 @@ public class HTSTestsUtil {
             UInt256.valueOf(ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER_VALUE);
     public static final Bytes invalidSigResult =
             UInt256.valueOf(ResponseCodeEnum.INVALID_SIGNATURE_VALUE);
+    public static final Bytes invalidFullPrefix =
+            UInt256.valueOf(ResponseCodeEnum.INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE_VALUE);
     public static final Bytes missingNftResult =
             UInt256.valueOf(ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER_VALUE);
     public static final Association associateOp =
@@ -126,6 +131,10 @@ public class HTSTestsUtil {
             MintWrapper.forFungible(fungible, new BigInteger("2").pow(64).longValue());
     public static final MintWrapper fungibleMintMaxAmount =
             MintWrapper.forFungible(fungible, Long.MAX_VALUE);
+    public static final PauseWrapper fungiblePause = new PauseWrapper(fungible);
+    public static final PauseWrapper nonFungiblePause = new PauseWrapper(nonFungible);
+    public static final UnpauseWrapper fungibleUnpause = new UnpauseWrapper(fungible);
+    public static final UnpauseWrapper nonFungibleUnpause = new UnpauseWrapper(nonFungible);
     public static final WipeWrapper fungibleWipe =
             WipeWrapper.forFungible(fungible, account, AMOUNT);
     public static final WipeWrapper nonFungibleWipe =
@@ -140,6 +149,8 @@ public class HTSTestsUtil {
 
     public static final TokenFreezeUnfreezeWrapper tokenFreezeUnFreezeWrapper =
             new TokenFreezeUnfreezeWrapper(fungible, account);
+
+    public static final DeleteWrapper tokenDeleteWrapper = new DeleteWrapper(fungible);
 
     public static final Association multiAssociateOp =
             Association.singleAssociation(accountMerkleId, tokenMerkleId);
