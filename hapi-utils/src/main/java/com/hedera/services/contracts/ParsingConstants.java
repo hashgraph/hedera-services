@@ -97,7 +97,20 @@ public final class ParsingConstants {
             TupleType.parse(RESPONSE_STATUS_AT_BEGINNING + TOKEN_INFO + ")");
     public static final TupleType getNonFungibleTokenInfoType =
             TupleType.parse(RESPONSE_STATUS_AT_BEGINNING + NON_FUNGIBLE_TOKEN_INFO + ")");
+    public static final TupleType getTokenCustomFeesType =
+            TupleType.parse(
+                    RESPONSE_STATUS_AT_BEGINNING
+                            + FIXED_FEE
+                            + ARRAY_BRACKETS
+                            + ","
+                            + FRACTIONAL_FEE
+                            + ARRAY_BRACKETS
+                            + ","
+                            + ROYALTY_FEE
+                            + ARRAY_BRACKETS
+                            + ")");
     public static final TupleType isApprovedForAllType = booleanTuple;
+    public static final TupleType isFrozenType = TupleType.parse(INT_BOOL_PAIR_RETURN_TYPE);
     public static final TupleType ercTransferType = booleanTuple;
     public static final TupleType hapiAllowanceOfType = TupleType.parse("(int32,uint256)");
     public static final TupleType hapiGetApprovedType = TupleType.parse("(int32,bytes32)");
@@ -137,6 +150,8 @@ public final class ParsingConstants {
         HAPI_IS_KYC,
         GET_TOKEN_DEFAULT_FREEZE_STATUS,
         GET_TOKEN_DEFAULT_KYC_STATUS,
+        HAPI_IS_FROZEN,
+        HAPI_GET_TOKEN_CUSTOM_FEES,
         NOT_SPECIFIED
     }
 }

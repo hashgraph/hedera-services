@@ -43,9 +43,12 @@ import static com.hedera.services.ledger.properties.AccountProperty.KEY;
 import static com.hedera.test.utils.TxnUtils.assertFailsWith;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_FREEZE_KEY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_PAUSE_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_KYC_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_SUPPLY_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_WIPE_KEY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_IS_IMMUTABLE;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -177,6 +180,35 @@ class TxnAwareEvmSigsVerifierTest {
     }
 
     @Test
+    void throwsIfAskedToVerifyTokenWithoutFreezeKey() {
+        given(ledgers.tokens()).willReturn(tokensLedger);
+        given(tokensLedger.exists(token)).willReturn(true);
+        given(tokensLedger.get(token, TokenProperty.FREEZE_KEY)).willReturn(null);
+
+        assertFailsWith(
+                () ->
+                        subject.hasActiveFreezeKey(
+                                true, PRETEND_TOKEN_ADDR, PRETEND_SENDER_ADDR, ledgers),
+                TOKEN_HAS_NO_FREEZE_KEY);
+    }
+
+    @Test
+    void testsFreezeKeyIfPresent() {
+        given(txnCtx.swirldsTxnAccessor()).willReturn(accessor);
+        given(ledgers.tokens()).willReturn(tokensLedger);
+        given(tokensLedger.exists(token)).willReturn(true);
+        given(tokensLedger.get(token, TokenProperty.FREEZE_KEY)).willReturn(expectedKey);
+
+        given(accessor.getRationalizedPkToCryptoSigFn()).willReturn(pkToCryptoSigsFn);
+        given(activationTest.test(eq(expectedKey), eq(pkToCryptoSigsFn), any())).willReturn(true);
+
+        final var verdict =
+                subject.hasActiveFreezeKey(true, PRETEND_TOKEN_ADDR, PRETEND_SENDER_ADDR, ledgers);
+
+        assertTrue(verdict);
+    }
+
+    @Test
     void throwsIfAskedToVerifyMissingAccount() {
         given(ledgers.accounts()).willReturn(accountsLedger);
         given(accountsLedger.exists(account)).willReturn(false);
@@ -186,6 +218,35 @@ class TxnAwareEvmSigsVerifierTest {
                         subject.hasActiveKey(
                                 true, PRETEND_ACCOUNT_ADDR, PRETEND_SENDER_ADDR, ledgers),
                 INVALID_ACCOUNT_ID);
+    }
+
+    @Test
+    void throwsIfAskedToVerifyTokenWithoutAdminKey() {
+        given(ledgers.tokens()).willReturn(tokensLedger);
+        given(tokensLedger.exists(token)).willReturn(true);
+        given(tokensLedger.get(token, TokenProperty.ADMIN_KEY)).willReturn(null);
+
+        assertFailsWith(
+                () ->
+                        subject.hasActiveAdminKey(
+                                true, PRETEND_TOKEN_ADDR, PRETEND_SENDER_ADDR, ledgers),
+                TOKEN_IS_IMMUTABLE);
+    }
+
+    @Test
+    void testsAdminKeyIfPresent() {
+        given(txnCtx.swirldsTxnAccessor()).willReturn(accessor);
+        given(ledgers.tokens()).willReturn(tokensLedger);
+        given(tokensLedger.exists(token)).willReturn(true);
+        given(tokensLedger.get(token, TokenProperty.ADMIN_KEY)).willReturn(expectedKey);
+
+        given(accessor.getRationalizedPkToCryptoSigFn()).willReturn(pkToCryptoSigsFn);
+        given(activationTest.test(eq(expectedKey), eq(pkToCryptoSigsFn), any())).willReturn(true);
+
+        final var verdict =
+                subject.hasActiveAdminKey(true, PRETEND_TOKEN_ADDR, PRETEND_SENDER_ADDR, ledgers);
+
+        assertTrue(verdict);
     }
 
     @Test
@@ -452,10 +513,10 @@ class TxnAwareEvmSigsVerifierTest {
         given(tokensLedger.get(token, TokenProperty.KYC_KEY)).willReturn(null);
 
         assertFailsWith(
-                () ->
-                        subject.hasActiveKycKey(
-                                true, PRETEND_TOKEN_ADDR, PRETEND_SENDER_ADDR, ledgers),
-                TOKEN_HAS_NO_KYC_KEY);
+            () ->
+                subject.hasActiveKycKey(
+                    true, PRETEND_TOKEN_ADDR, PRETEND_SENDER_ADDR, ledgers),
+            TOKEN_HAS_NO_KYC_KEY);
     }
 
     @Test
@@ -469,7 +530,36 @@ class TxnAwareEvmSigsVerifierTest {
         given(activationTest.test(eq(expectedKey), eq(pkToCryptoSigsFn), any())).willReturn(true);
 
         final var verdict =
-                subject.hasActiveKycKey(true, PRETEND_TOKEN_ADDR, PRETEND_SENDER_ADDR, ledgers);
+            subject.hasActiveKycKey(true, PRETEND_TOKEN_ADDR, PRETEND_SENDER_ADDR, ledgers);
+
+        assertTrue(verdict);
+    }
+
+    @Test
+    void throwsIfAskedToVerifyTokenWithoutPauseKey() {
+        given(ledgers.tokens()).willReturn(tokensLedger);
+        given(tokensLedger.exists(token)).willReturn(true);
+        given(tokensLedger.get(token, TokenProperty.PAUSE_KEY)).willReturn(null);
+
+        assertFailsWith(
+                () ->
+                        subject.hasActivePauseKey(
+                                true, PRETEND_TOKEN_ADDR, PRETEND_SENDER_ADDR, ledgers),
+                TOKEN_HAS_NO_PAUSE_KEY);
+    }
+
+    @Test
+    void testsPauseKeyIfPresent() {
+        given(txnCtx.swirldsTxnAccessor()).willReturn(accessor);
+        given(ledgers.tokens()).willReturn(tokensLedger);
+        given(tokensLedger.exists(token)).willReturn(true);
+        given(tokensLedger.get(token, TokenProperty.PAUSE_KEY)).willReturn(expectedKey);
+
+        given(accessor.getRationalizedPkToCryptoSigFn()).willReturn(pkToCryptoSigsFn);
+        given(activationTest.test(eq(expectedKey), eq(pkToCryptoSigsFn), any())).willReturn(true);
+
+        final var verdict =
+                subject.hasActivePauseKey(true, PRETEND_TOKEN_ADDR, PRETEND_SENDER_ADDR, ledgers);
 
         assertTrue(verdict);
     }

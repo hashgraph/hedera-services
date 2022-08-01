@@ -30,6 +30,7 @@ import static com.hedera.services.ledger.properties.TokenProperty.SYMBOL;
 import static com.hedera.services.ledger.properties.TokenProperty.TOKEN_TYPE;
 import static com.hedera.services.ledger.properties.TokenProperty.TOTAL_SUPPLY;
 import static com.hedera.services.ledger.properties.TokenProperty.TREASURY;
+import static com.hedera.services.ledger.properties.TokenRelProperty.IS_FROZEN;
 import static com.hedera.services.ledger.properties.TokenRelProperty.IS_KYC_GRANTED;
 import static com.hedera.services.ledger.properties.TokenRelProperty.TOKEN_BALANCE;
 import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
@@ -175,7 +176,19 @@ public class WorldLedgers {
             validateTrue(accountsLedger.exists(accountId), INVALID_ACCOUNT_ID);
             final var isKycKey = Pair.of(accountId, tokenId);
             return tokenRelsLedger.exists(isKycKey)
-                    && (boolean) tokenRelsLedger.get(isKycKey, IS_KYC_GRANTED);
+                && (boolean) tokenRelsLedger.get(isKycKey, IS_KYC_GRANTED);
+        }
+    }
+
+    public boolean isFrozen(final AccountID accountId, final TokenID tokenId) {
+        if (staticEntityAccess != null) {
+            return staticEntityAccess.isFrozen(accountId, tokenId);
+        } else {
+            validateTrue(tokensLedger.exists(tokenId), INVALID_TOKEN_ID);
+            validateTrue(accountsLedger.exists(accountId), INVALID_ACCOUNT_ID);
+            final var isFrozenKey = Pair.of(accountId, tokenId);
+            return tokenRelsLedger.exists(isFrozenKey)
+                    && (boolean) tokenRelsLedger.get(isFrozenKey, IS_FROZEN);
         }
     }
 

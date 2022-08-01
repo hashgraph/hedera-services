@@ -271,6 +271,22 @@ public class StaticEntityAccess implements EntityAccess {
     }
 
     /**
+     * Returns the frozen status of the given token for the given account.
+     *
+     * @param accountId the account of interest
+     * @param tokenId the token of interest
+     * @return the token's freeze status
+     */
+    public boolean isFrozen(final AccountID accountId, final TokenID tokenId) {
+        lookupToken(tokenId);
+        final var accountNum = EntityNum.fromAccountId(accountId);
+        validateTrue(accounts.containsKey(accountNum), INVALID_ACCOUNT_ID);
+        final var isFrozenKey = fromAccountTokenRel(accountId, tokenId);
+        final var relStatus = tokenAssociations.get(isFrozenKey);
+        return relStatus != null && relStatus.isFrozen();
+    }
+
+    /**
      * Returns the allowance of the given spender for the given owner for the given token.
      *
      * @param ownerId the owner account

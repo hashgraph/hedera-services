@@ -259,6 +259,7 @@ class StaticEntityAccessTest {
         assertFailsWith(() -> subject.isKyc(accountId, tokenId), INVALID_TOKEN_ID);
         assertFailsWith(() -> subject.defaultFreezeStatus(tokenId), INVALID_TOKEN_ID);
         assertFailsWith(() -> subject.defaultKycStatus(tokenId), INVALID_TOKEN_ID);
+        assertFailsWith(() -> subject.isFrozen(accountId, tokenId), INVALID_TOKEN_ID);
     }
 
     @Test
@@ -279,6 +280,7 @@ class StaticEntityAccessTest {
         given(tokens.get(tokenNum)).willReturn(token);
         assertFailsWith(() -> subject.isKyc(accountId, tokenId), INVALID_ACCOUNT_ID);
         assertFailsWith(() -> subject.balanceOf(accountId, tokenId), INVALID_ACCOUNT_ID);
+        assertFailsWith(() -> subject.isFrozen(accountId, tokenId), INVALID_ACCOUNT_ID);
     }
 
     @Test
@@ -306,6 +308,16 @@ class StaticEntityAccessTest {
         given(tokenAssociations.get(EntityNumPair.fromAccountTokenRel(accountId, tokenId)))
                 .willReturn(relStatus);
         assertEquals(balance, subject.balanceOf(accountId, tokenId));
+    }
+
+    @Test
+    void getsExpectedIsFrozenTokenStatusIfAssociationExists() {
+        given(tokens.get(tokenNum)).willReturn(token);
+        given(accounts.containsKey(accountNum)).willReturn(true);
+        final var relStatus = new MerkleTokenRelStatus(balance, true, false, false);
+        given(tokenAssociations.get(EntityNumPair.fromAccountTokenRel(accountId, tokenId)))
+                .willReturn(relStatus);
+        assertTrue(subject.isFrozen(accountId, tokenId));
     }
 
     @Test

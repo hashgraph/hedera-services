@@ -681,8 +681,11 @@ class SystemOpPoliciesTest {
                         .clearTransactionID()
                         .build();
         var accessor =
-                new SignedTxnAccessor(
-                        Transaction.newBuilder().setBodyBytes(txn.toByteString()).build());
+                SignedTxnAccessor.from(
+                        Transaction.newBuilder()
+                                .setBodyBytes(txn.toByteString())
+                                .build()
+                                .toByteArray());
         accessor.setPayer(transaction.getTransactionID().getAccountID());
         return accessor;
     }
@@ -690,8 +693,11 @@ class SystemOpPoliciesTest {
     private SignedTxnAccessor accessorWithPayer(TransactionBody.Builder txn, AccountID payer)
             throws InvalidProtocolBufferException {
         var accessor =
-                new SignedTxnAccessor(
-                        Transaction.newBuilder().setBodyBytes(txn.build().toByteString()).build());
+                SignedTxnAccessor.from(
+                        Transaction.newBuilder()
+                                .setBodyBytes(txn.build().toByteString())
+                                .build()
+                                .toByteArray());
         accessor.setPayer(payer);
         return accessor;
     }

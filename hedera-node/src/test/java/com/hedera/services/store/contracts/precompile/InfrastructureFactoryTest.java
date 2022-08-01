@@ -53,9 +53,14 @@ import com.hedera.services.txns.crypto.validators.DeleteAllowanceChecks;
 import com.hedera.services.txns.token.AssociateLogic;
 import com.hedera.services.txns.token.BurnLogic;
 import com.hedera.services.txns.token.CreateLogic;
+import com.hedera.services.txns.token.DeleteLogic;
 import com.hedera.services.txns.token.DissociateLogic;
+import com.hedera.services.txns.token.FreezeLogic;
 import com.hedera.services.txns.token.GrantKycLogic;
 import com.hedera.services.txns.token.MintLogic;
+import com.hedera.services.txns.token.PauseLogic;
+import com.hedera.services.txns.token.UnfreezeLogic;
+import com.hedera.services.txns.token.UnpauseLogic;
 import com.hedera.services.txns.token.RevokeKycLogic;
 import com.hedera.services.txns.token.WipeLogic;
 import com.hedera.services.txns.token.process.DissociationFactory;
@@ -159,6 +164,15 @@ class InfrastructureFactoryTest {
                                 tokens,
                                 uniqueTokens,
                                 tokenRels)));
+    }
+
+    @Test
+    void canCreateNewDeleteLogic() {
+        final var accountStore = subject.newAccountStore(accounts);
+        final var tokenStore =
+                subject.newTokenStore(
+                        accountStore, subject.newSideEffects(), tokens, uniqueTokens, tokenRels);
+        assertInstanceOf(DeleteLogic.class, subject.newDeleteLogic(accountStore, tokenStore));
     }
 
     @Test
@@ -292,8 +306,8 @@ class InfrastructureFactoryTest {
     void canCreateNewGrantKycLogic() {
         final var accountStore = subject.newAccountStore(accounts);
         final var tokenStore =
-                subject.newTokenStore(
-                        accountStore, subject.newSideEffects(), tokens, uniqueTokens, tokenRels);
+            subject.newTokenStore(
+                accountStore, subject.newSideEffects(), tokens, uniqueTokens, tokenRels);
         assertInstanceOf(GrantKycLogic.class, subject.newGrantKycLogic(accountStore, tokenStore));
     }
 
@@ -301,9 +315,27 @@ class InfrastructureFactoryTest {
     void canCreateNewRevokeKycLogic() {
         final var accountStore = subject.newAccountStore(accounts);
         final var tokenStore =
+            subject.newTokenStore(
+                accountStore, subject.newSideEffects(), tokens, uniqueTokens, tokenRels);
+        assertInstanceOf(RevokeKycLogic.class, subject.newRevokeKycLogic(accountStore, tokenStore));
+    }
+
+    @Test
+    void canCreateNewPauseLogic() {
+        final var accountStore = subject.newAccountStore(accounts);
+        final var tokenStore =
                 subject.newTokenStore(
                         accountStore, subject.newSideEffects(), tokens, uniqueTokens, tokenRels);
-        assertInstanceOf(RevokeKycLogic.class, subject.newRevokeKycLogic(accountStore, tokenStore));
+        assertInstanceOf(PauseLogic.class, subject.newPauseLogic(tokenStore));
+    }
+
+    @Test
+    void canCreateNewUnpauseLogic() {
+        final var accountStore = subject.newAccountStore(accounts);
+        final var tokenStore =
+                subject.newTokenStore(
+                        accountStore, subject.newSideEffects(), tokens, uniqueTokens, tokenRels);
+        assertInstanceOf(UnpauseLogic.class, subject.newUnpauseLogic(tokenStore));
     }
 
     @Test
@@ -313,5 +345,23 @@ class InfrastructureFactoryTest {
                 subject.newTokenStore(
                         accountStore, subject.newSideEffects(), tokens, uniqueTokens, tokenRels);
         assertInstanceOf(WipeLogic.class, subject.newWipeLogic(accountStore, tokenStore));
+    }
+
+    @Test
+    void canCreateNewFreezeLogic() {
+        final var accountStore = subject.newAccountStore(accounts);
+        final var tokenStore =
+                subject.newTokenStore(
+                        accountStore, subject.newSideEffects(), tokens, uniqueTokens, tokenRels);
+        assertInstanceOf(FreezeLogic.class, subject.newFreezeLogic(accountStore, tokenStore));
+    }
+
+    @Test
+    void canCreateNewUnfreezeLogic() {
+        final var accountStore = subject.newAccountStore(accounts);
+        final var tokenStore =
+                subject.newTokenStore(
+                        accountStore, subject.newSideEffects(), tokens, uniqueTokens, tokenRels);
+        assertInstanceOf(UnfreezeLogic.class, subject.newUnfreezeLogic(accountStore, tokenStore));
     }
 }
