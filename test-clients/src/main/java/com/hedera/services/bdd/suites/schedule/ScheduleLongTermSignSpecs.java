@@ -403,7 +403,7 @@ public class ScheduleLongTermSignSpecs extends HapiApiSuite {
 
         return defaultHapiSpec("ExtraSigsDontMatterAtExpiry")
                 .given(
-                        cryptoCreate("payer").balance(ONE_MILLION_HBARS),
+                        cryptoCreate("payer").balance(ONE_MILLION_HBARS).payingWith(GENESIS),
                         newKeyNamed(senderKey).shape(senderShape),
                         newKeyNamed("extraKey"),
                         cryptoCreate(sender).key(senderKey).via("senderTxn"),

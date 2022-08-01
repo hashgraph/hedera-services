@@ -953,6 +953,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                 .given(
                         cryptoCreate(ACCOUNT)
                                 .balance(ONE_MILLION_HBARS)
+                                .payingWith(GENESIS)
                                 .exposingCreatedIdTo(accountID::set),
                         cryptoCreate(TOKEN_TREASURY),
                         tokenCreate(VANILLA_TOKEN)
