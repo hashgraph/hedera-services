@@ -16,7 +16,6 @@
 package com.hedera.services.store.contracts.precompile;
 
 import static com.hedera.services.state.EntityCreator.EMPTY_MEMO;
-import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_GET_TOKEN_CUSTOM_FEES;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.TEST_CONSENSUS_TIME;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.invalidTokenIdResult;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.payer;
@@ -26,6 +25,7 @@ import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.succes
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.timestamp;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.tokenMerkleAddress;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.tokenMerkleId;
+import static com.hedera.services.store.contracts.precompile.PrecompileFunctionSelector.ABI_ID_GET_TOKEN_CUSTOM_FEES;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
@@ -152,7 +152,9 @@ class TokenGetCustomFeesPrecompileTest {
         final var fractionalFee = getFractionalFee();
         final Bytes pretendArguments =
                 Bytes.concatenate(
-                        Bytes.of(Integers.toBytes(ABI_ID_GET_TOKEN_CUSTOM_FEES)),
+                        Bytes.of(
+                                Integers.toBytes(
+                                        ABI_ID_GET_TOKEN_CUSTOM_FEES.getFunctionSelector())),
                         EntityIdUtils.asTypedEvmAddress(tokenMerkleId));
         given(decoder.decodeTokenGetCustomFees(pretendArguments))
                 .willReturn(tokenCustomFeesWrapper);
@@ -184,7 +186,9 @@ class TokenGetCustomFeesPrecompileTest {
         final var tokenCustomFeesWrapper = new TokenGetCustomFeesWrapper(tokenMerkleId);
         final Bytes pretendArguments =
                 Bytes.concatenate(
-                        Bytes.of(Integers.toBytes(ABI_ID_GET_TOKEN_CUSTOM_FEES)),
+                        Bytes.of(
+                                Integers.toBytes(
+                                        ABI_ID_GET_TOKEN_CUSTOM_FEES.getFunctionSelector())),
                         EntityIdUtils.asTypedEvmAddress(tokenMerkleId));
         given(decoder.decodeTokenGetCustomFees(pretendArguments))
                 .willReturn(tokenCustomFeesWrapper);

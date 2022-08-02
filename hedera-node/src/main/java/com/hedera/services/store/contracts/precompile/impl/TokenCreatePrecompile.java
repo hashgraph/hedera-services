@@ -41,9 +41,9 @@ import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.services.store.contracts.WorldLedgers;
-import com.hedera.services.store.contracts.precompile.AbiConstants;
 import com.hedera.services.store.contracts.precompile.HTSPrecompiledContract;
 import com.hedera.services.store.contracts.precompile.InfrastructureFactory;
+import com.hedera.services.store.contracts.precompile.PrecompileFunctionSelector;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.store.contracts.precompile.codec.DecodingFacade;
 import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
@@ -129,7 +129,7 @@ public class TokenCreatePrecompile extends AbstractWritePrecompile {
     private final HederaStackedWorldStateUpdater updater;
     private final EvmSigsVerifier sigsVerifier;
     private final RecordsHistorian recordsHistorian;
-    private final int functionId;
+    private final PrecompileFunctionSelector selector;
     private final Address senderAddress;
     private final AccountID fundingAccount;
     private final Provider<FeeCalculator> feeCalculator;
@@ -145,7 +145,7 @@ public class TokenCreatePrecompile extends AbstractWritePrecompile {
             final SideEffectsTracker sideEffects,
             final SyntheticTxnFactory syntheticTxnFactory,
             final InfrastructureFactory infrastructureFactory,
-            final int functionId,
+            final PrecompileFunctionSelector selector,
             final Address senderAddress,
             final AccountID fundingAccount,
             final Provider<FeeCalculator> feeCalculator,
@@ -161,7 +161,7 @@ public class TokenCreatePrecompile extends AbstractWritePrecompile {
         this.updater = updater;
         this.sigsVerifier = sigsVerifier;
         this.recordsHistorian = recordsHistorian;
-        this.functionId = functionId;
+        this.selector = selector;
         this.senderAddress = senderAddress;
         this.fundingAccount = fundingAccount;
         this.feeCalculator = feeCalculator;
@@ -171,14 +171,14 @@ public class TokenCreatePrecompile extends AbstractWritePrecompile {
     public TransactionBody.Builder body(
             final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
         tokenCreateOp =
-                switch (functionId) {
-                    case AbiConstants.ABI_ID_CREATE_FUNGIBLE_TOKEN -> decoder.decodeFungibleCreate(
+                switch (selector) {
+                    case ABI_ID_CREATE_FUNGIBLE_TOKEN -> decoder.decodeFungibleCreate(
                             input, aliasResolver);
-                    case AbiConstants.ABI_ID_CREATE_FUNGIBLE_TOKEN_WITH_FEES -> decoder
+                    case ABI_ID_CREATE_FUNGIBLE_TOKEN_WITH_FEES -> decoder
                             .decodeFungibleCreateWithFees(input, aliasResolver);
-                    case AbiConstants.ABI_ID_CREATE_NON_FUNGIBLE_TOKEN -> decoder
-                            .decodeNonFungibleCreate(input, aliasResolver);
-                    case AbiConstants.ABI_ID_CREATE_NON_FUNGIBLE_TOKEN_WITH_FEES -> decoder
+                    case ABI_ID_CREATE_NON_FUNGIBLE_TOKEN -> decoder.decodeNonFungibleCreate(
+                            input, aliasResolver);
+                    case ABI_ID_CREATE_NON_FUNGIBLE_TOKEN_WITH_FEES -> decoder
                             .decodeNonFungibleCreateWithFees(input, aliasResolver);
                     default -> null;
                 };

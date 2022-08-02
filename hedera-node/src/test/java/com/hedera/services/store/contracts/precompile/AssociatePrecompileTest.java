@@ -16,8 +16,6 @@
 package com.hedera.services.store.contracts.precompile;
 
 import static com.hedera.services.state.EntityCreator.EMPTY_MEMO;
-import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_ASSOCIATE_TOKEN;
-import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_ASSOCIATE_TOKENS;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.DEFAULT_GAS_PRICE;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.TEST_CONSENSUS_TIME;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.accountMerkleId;
@@ -34,6 +32,8 @@ import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.sender
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.successResult;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.timestamp;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.tokenMerkleId;
+import static com.hedera.services.store.contracts.precompile.PrecompileFunctionSelector.ABI_ID_ASSOCIATE_TOKEN;
+import static com.hedera.services.store.contracts.precompile.PrecompileFunctionSelector.ABI_ID_ASSOCIATE_TOKENS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -195,7 +195,7 @@ class AssociatePrecompileTest {
         // given:
         givenCommonFrameContext();
         givenPricingUtilsContext();
-        Bytes pretendArguments = Bytes.ofUnsignedInt(ABI_ID_ASSOCIATE_TOKEN);
+        Bytes pretendArguments = Bytes.ofUnsignedInt(ABI_ID_ASSOCIATE_TOKEN.getFunctionSelector());
         given(decoder.decodeAssociation(eq(pretendArguments), any())).willReturn(associateOp);
         given(syntheticTxnFactory.createAssociate(associateOp)).willReturn(mockSynthBodyBuilder);
         given(
@@ -236,7 +236,7 @@ class AssociatePrecompileTest {
         // given:
         givenFrameContextWithDelegateCallFromParent();
         givenPricingUtilsContext();
-        Bytes pretendArguments = Bytes.ofUnsignedInt(ABI_ID_ASSOCIATE_TOKEN);
+        Bytes pretendArguments = Bytes.ofUnsignedInt(ABI_ID_ASSOCIATE_TOKEN.getFunctionSelector());
         given(decoder.decodeAssociation(eq(pretendArguments), any())).willReturn(associateOp);
         given(syntheticTxnFactory.createAssociate(associateOp)).willReturn(mockSynthBodyBuilder);
         given(
@@ -284,7 +284,7 @@ class AssociatePrecompileTest {
         given(worldUpdater.wrappedTrackingLedgers(any())).willReturn(wrappedLedgers);
         given(frame.getRecipientAddress()).willReturn(recipientAddress);
         givenLedgers();
-        Bytes pretendArguments = Bytes.ofUnsignedInt(ABI_ID_ASSOCIATE_TOKEN);
+        Bytes pretendArguments = Bytes.ofUnsignedInt(ABI_ID_ASSOCIATE_TOKEN.getFunctionSelector());
         given(decoder.decodeAssociation(eq(pretendArguments), any())).willReturn(associateOp);
         given(syntheticTxnFactory.createAssociate(associateOp)).willReturn(mockSynthBodyBuilder);
         given(
@@ -350,7 +350,7 @@ class AssociatePrecompileTest {
         given(worldUpdater.wrappedTrackingLedgers(any())).willReturn(wrappedLedgers);
         given(frame.getRecipientAddress()).willReturn(recipientAddress);
         givenLedgers();
-        Bytes pretendArguments = Bytes.ofUnsignedInt(ABI_ID_ASSOCIATE_TOKEN);
+        Bytes pretendArguments = Bytes.ofUnsignedInt(ABI_ID_ASSOCIATE_TOKEN.getFunctionSelector());
         given(decoder.decodeAssociation(eq(pretendArguments), any())).willReturn(associateOp);
         given(syntheticTxnFactory.createAssociate(associateOp)).willReturn(mockSynthBodyBuilder);
         given(
@@ -397,7 +397,7 @@ class AssociatePrecompileTest {
         givenFrameContextWithDelegateCallFromParent();
         givenLedgers();
         givenPricingUtilsContext();
-        Bytes pretendArguments = Bytes.ofUnsignedInt(ABI_ID_ASSOCIATE_TOKEN);
+        Bytes pretendArguments = Bytes.ofUnsignedInt(ABI_ID_ASSOCIATE_TOKEN.getFunctionSelector());
         given(decoder.decodeAssociation(eq(pretendArguments), any())).willReturn(associateOp);
         given(syntheticTxnFactory.createAssociate(associateOp)).willReturn(mockSynthBodyBuilder);
         given(
@@ -451,7 +451,7 @@ class AssociatePrecompileTest {
         givenFrameContextWithEmptyMessageFrameStack();
         givenLedgers();
         givenPricingUtilsContext();
-        Bytes pretendArguments = Bytes.ofUnsignedInt(ABI_ID_ASSOCIATE_TOKEN);
+        Bytes pretendArguments = Bytes.ofUnsignedInt(ABI_ID_ASSOCIATE_TOKEN.getFunctionSelector());
         given(decoder.decodeAssociation(eq(pretendArguments), any())).willReturn(associateOp);
         given(syntheticTxnFactory.createAssociate(associateOp)).willReturn(mockSynthBodyBuilder);
         given(
@@ -505,7 +505,7 @@ class AssociatePrecompileTest {
         givenFrameContextWithoutParentFrame();
         givenLedgers();
         givenPricingUtilsContext();
-        Bytes pretendArguments = Bytes.ofUnsignedInt(ABI_ID_ASSOCIATE_TOKEN);
+        Bytes pretendArguments = Bytes.ofUnsignedInt(ABI_ID_ASSOCIATE_TOKEN.getFunctionSelector());
         given(decoder.decodeAssociation(eq(pretendArguments), any())).willReturn(associateOp);
         given(syntheticTxnFactory.createAssociate(associateOp)).willReturn(mockSynthBodyBuilder);
         given(
@@ -559,7 +559,7 @@ class AssociatePrecompileTest {
         givenCommonFrameContext();
         givenLedgers();
         givenPricingUtilsContext();
-        Bytes pretendArguments = Bytes.ofUnsignedInt(ABI_ID_ASSOCIATE_TOKENS);
+        Bytes pretendArguments = Bytes.ofUnsignedInt(ABI_ID_ASSOCIATE_TOKENS.getFunctionSelector());
         given(decoder.decodeMultipleAssociations(eq(pretendArguments), any()))
                 .willReturn(multiAssociateOp);
         given(syntheticTxnFactory.createAssociate(multiAssociateOp))
@@ -613,7 +613,7 @@ class AssociatePrecompileTest {
         // given
         givenFrameContext();
         givenPricingUtilsContext();
-        Bytes input = Bytes.of(Integers.toBytes(ABI_ID_ASSOCIATE_TOKENS));
+        Bytes input = Bytes.of(Integers.toBytes(ABI_ID_ASSOCIATE_TOKENS.getFunctionSelector()));
         given(decoder.decodeMultipleAssociations(any(), any())).willReturn(associateOp);
         final var builder = TokenAssociateTransactionBody.newBuilder();
         builder.setAccount(multiDissociateOp.accountId());
@@ -640,7 +640,7 @@ class AssociatePrecompileTest {
         // given
         givenFrameContext();
         givenPricingUtilsContext();
-        Bytes input = Bytes.of(Integers.toBytes(ABI_ID_ASSOCIATE_TOKEN));
+        Bytes input = Bytes.of(Integers.toBytes(ABI_ID_ASSOCIATE_TOKEN.getFunctionSelector()));
         given(decoder.decodeAssociation(any(), any())).willReturn(associateOp);
         final var builder = TokenAssociateTransactionBody.newBuilder();
         builder.setAccount(associateOp.accountId());

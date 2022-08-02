@@ -18,9 +18,6 @@ package com.hedera.services.store.contracts.precompile;
 import static com.hedera.services.state.EntityCreator.EMPTY_MEMO;
 import static com.hedera.services.state.merkle.internals.BitPackUtils.signedLowOrder32From;
 import static com.hedera.services.state.merkle.internals.BitPackUtils.unsignedHighOrder32From;
-import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_GET_FUNGIBLE_TOKEN_INFO;
-import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_GET_NON_FUNGIBLE_TOKEN_INFO;
-import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_GET_TOKEN_INFO;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.TEST_CONSENSUS_TIME;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.createTokenInfoWrapperForNonFungibleToken;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.createTokenInfoWrapperForToken;
@@ -41,6 +38,9 @@ import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.tokenA
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.tokenAddressConvertedToTokenId;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.tokenMerkleAddress;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.tokenMerkleId;
+import static com.hedera.services.store.contracts.precompile.PrecompileFunctionSelector.ABI_ID_GET_FUNGIBLE_TOKEN_INFO;
+import static com.hedera.services.store.contracts.precompile.PrecompileFunctionSelector.ABI_ID_GET_NON_FUNGIBLE_TOKEN_INFO;
+import static com.hedera.services.store.contracts.precompile.PrecompileFunctionSelector.ABI_ID_GET_TOKEN_INFO;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
@@ -248,7 +248,7 @@ class GetTokenInfoPrecompilesTest {
         final var tokenInfoWrapper = createTokenInfoWrapperForToken(tokenMerkleId);
         final Bytes pretendArguments =
                 Bytes.concatenate(
-                        Bytes.of(Integers.toBytes(ABI_ID_GET_TOKEN_INFO)),
+                        Bytes.of(Integers.toBytes(ABI_ID_GET_TOKEN_INFO.getFunctionSelector())),
                         EntityIdUtils.asTypedEvmAddress(tokenMerkleId));
         given(decoder.decodeGetTokenInfo(pretendArguments)).willReturn(tokenInfoWrapper);
 
@@ -278,7 +278,7 @@ class GetTokenInfoPrecompilesTest {
         final var tokenInfoWrapper = createTokenInfoWrapperForToken(tokenMerkleId);
         final Bytes pretendArguments =
                 Bytes.concatenate(
-                        Bytes.of(Integers.toBytes(ABI_ID_GET_TOKEN_INFO)),
+                        Bytes.of(Integers.toBytes(ABI_ID_GET_TOKEN_INFO.getFunctionSelector())),
                         EntityIdUtils.asTypedEvmAddress(tokenMerkleId));
         given(decoder.decodeGetTokenInfo(pretendArguments)).willReturn(tokenInfoWrapper);
 
@@ -323,7 +323,7 @@ class GetTokenInfoPrecompilesTest {
         final var tokenInfoWrapper = createTokenInfoWrapperForToken(tokenMerkleId);
         final Bytes pretendArguments =
                 Bytes.concatenate(
-                        Bytes.of(Integers.toBytes(ABI_ID_GET_TOKEN_INFO)),
+                        Bytes.of(Integers.toBytes(ABI_ID_GET_TOKEN_INFO.getFunctionSelector())),
                         EntityIdUtils.asTypedEvmAddress(tokenMerkleId));
         given(decoder.decodeGetTokenInfo(pretendArguments)).willReturn(tokenInfoWrapper);
 
@@ -355,7 +355,9 @@ class GetTokenInfoPrecompilesTest {
         final var tokenInfoWrapper = createTokenInfoWrapperForToken(tokenMerkleId);
         final Bytes pretendArguments =
                 Bytes.concatenate(
-                        Bytes.of(Integers.toBytes(ABI_ID_GET_FUNGIBLE_TOKEN_INFO)),
+                        Bytes.of(
+                                Integers.toBytes(
+                                        ABI_ID_GET_FUNGIBLE_TOKEN_INFO.getFunctionSelector())),
                         EntityIdUtils.asTypedEvmAddress(tokenMerkleId));
         given(decoder.decodeGetFungibleTokenInfo(pretendArguments)).willReturn(tokenInfoWrapper);
 
@@ -386,7 +388,9 @@ class GetTokenInfoPrecompilesTest {
                 createTokenInfoWrapperForNonFungibleToken(tokenMerkleId, serialNumber);
         final Bytes pretendArguments =
                 Bytes.concatenate(
-                        Bytes.of(Integers.toBytes(ABI_ID_GET_NON_FUNGIBLE_TOKEN_INFO)),
+                        Bytes.of(
+                                Integers.toBytes(
+                                        ABI_ID_GET_NON_FUNGIBLE_TOKEN_INFO.getFunctionSelector())),
                         EntityIdUtils.asTypedEvmAddress(tokenMerkleId),
                         Bytes.wrap(new byte[] {Long.valueOf(serialNumber).byteValue()}));
         given(decoder.decodeGetNonFungibleTokenInfo(pretendArguments)).willReturn(tokenInfoWrapper);
@@ -425,7 +429,7 @@ class GetTokenInfoPrecompilesTest {
         final var tokenInfoWrapper = createTokenInfoWrapperForToken(tokenMerkleId);
         final Bytes pretendArguments =
                 Bytes.concatenate(
-                        Bytes.of(Integers.toBytes(ABI_ID_GET_TOKEN_INFO)),
+                        Bytes.of(Integers.toBytes(ABI_ID_GET_TOKEN_INFO.getFunctionSelector())),
                         EntityIdUtils.asTypedEvmAddress(tokenMerkleId));
         given(decoder.decodeGetTokenInfo(pretendArguments)).willReturn(tokenInfoWrapper);
 
@@ -458,7 +462,7 @@ class GetTokenInfoPrecompilesTest {
         final var tokenInfoWrapper = createTokenInfoWrapperForToken(tokenMerkleId);
         final Bytes pretendArguments =
                 Bytes.concatenate(
-                        Bytes.of(Integers.toBytes(ABI_ID_GET_TOKEN_INFO)),
+                        Bytes.of(Integers.toBytes(ABI_ID_GET_TOKEN_INFO.getFunctionSelector())),
                         EntityIdUtils.asTypedEvmAddress(tokenMerkleId));
         given(decoder.decodeGetTokenInfo(pretendArguments)).willReturn(tokenInfoWrapper);
 
@@ -491,7 +495,7 @@ class GetTokenInfoPrecompilesTest {
         final var tokenInfoWrapper = createTokenInfoWrapperForToken(tokenMerkleId);
         final Bytes pretendArguments =
                 Bytes.concatenate(
-                        Bytes.of(Integers.toBytes(ABI_ID_GET_TOKEN_INFO)),
+                        Bytes.of(Integers.toBytes(ABI_ID_GET_TOKEN_INFO.getFunctionSelector())),
                         EntityIdUtils.asTypedEvmAddress(tokenMerkleId));
         given(decoder.decodeGetTokenInfo(pretendArguments)).willReturn(tokenInfoWrapper);
 
@@ -525,7 +529,9 @@ class GetTokenInfoPrecompilesTest {
                 createTokenInfoWrapperForNonFungibleToken(tokenMerkleId, serialNumber);
         final Bytes pretendArguments =
                 Bytes.concatenate(
-                        Bytes.of(Integers.toBytes(ABI_ID_GET_NON_FUNGIBLE_TOKEN_INFO)),
+                        Bytes.of(
+                                Integers.toBytes(
+                                        ABI_ID_GET_NON_FUNGIBLE_TOKEN_INFO.getFunctionSelector())),
                         EntityIdUtils.asTypedEvmAddress(tokenMerkleId),
                         Bytes.wrap(new byte[] {Long.valueOf(serialNumber).byteValue()}));
         given(decoder.decodeGetNonFungibleTokenInfo(pretendArguments)).willReturn(tokenInfoWrapper);
@@ -568,7 +574,9 @@ class GetTokenInfoPrecompilesTest {
                 createTokenInfoWrapperForNonFungibleToken(tokenMerkleId, serialNumber);
         final Bytes pretendArguments =
                 Bytes.concatenate(
-                        Bytes.of(Integers.toBytes(ABI_ID_GET_NON_FUNGIBLE_TOKEN_INFO)),
+                        Bytes.of(
+                                Integers.toBytes(
+                                        ABI_ID_GET_NON_FUNGIBLE_TOKEN_INFO.getFunctionSelector())),
                         EntityIdUtils.asTypedEvmAddress(tokenMerkleId),
                         Bytes.wrap(new byte[] {Long.valueOf(serialNumber).byteValue()}));
         given(decoder.decodeGetNonFungibleTokenInfo(pretendArguments)).willReturn(tokenInfoWrapper);
@@ -610,7 +618,7 @@ class GetTokenInfoPrecompilesTest {
         final var tokenInfoWrapper = createTokenInfoWrapperForToken(tokenMerkleId);
         final Bytes pretendArguments =
                 Bytes.concatenate(
-                        Bytes.of(Integers.toBytes(ABI_ID_GET_TOKEN_INFO)),
+                        Bytes.of(Integers.toBytes(ABI_ID_GET_TOKEN_INFO.getFunctionSelector())),
                         EntityIdUtils.asTypedEvmAddress(tokenMerkleId));
         given(decoder.decodeGetTokenInfo(pretendArguments)).willReturn(tokenInfoWrapper);
 
@@ -638,7 +646,9 @@ class GetTokenInfoPrecompilesTest {
         final var tokenInfoWrapper = createTokenInfoWrapperForToken(tokenMerkleId);
         final Bytes pretendArguments =
                 Bytes.concatenate(
-                        Bytes.of(Integers.toBytes(ABI_ID_GET_FUNGIBLE_TOKEN_INFO)),
+                        Bytes.of(
+                                Integers.toBytes(
+                                        ABI_ID_GET_FUNGIBLE_TOKEN_INFO.getFunctionSelector())),
                         EntityIdUtils.asTypedEvmAddress(tokenMerkleId));
         given(decoder.decodeGetFungibleTokenInfo(pretendArguments)).willReturn(tokenInfoWrapper);
 
@@ -667,7 +677,9 @@ class GetTokenInfoPrecompilesTest {
                 createTokenInfoWrapperForNonFungibleToken(tokenMerkleId, serialNumber);
         final Bytes pretendArguments =
                 Bytes.concatenate(
-                        Bytes.of(Integers.toBytes(ABI_ID_GET_NON_FUNGIBLE_TOKEN_INFO)),
+                        Bytes.of(
+                                Integers.toBytes(
+                                        ABI_ID_GET_NON_FUNGIBLE_TOKEN_INFO.getFunctionSelector())),
                         EntityIdUtils.asTypedEvmAddress(tokenMerkleId),
                         Bytes.wrap(new byte[] {Long.valueOf(serialNumber).byteValue()}));
         given(decoder.decodeGetNonFungibleTokenInfo(pretendArguments)).willReturn(tokenInfoWrapper);
@@ -698,7 +710,7 @@ class GetTokenInfoPrecompilesTest {
         final var tokenInfoWrapper = createTokenInfoWrapperForToken(tokenMerkleId);
         final Bytes pretendArguments =
                 Bytes.concatenate(
-                        Bytes.of(Integers.toBytes(ABI_ID_GET_TOKEN_INFO)),
+                        Bytes.of(Integers.toBytes(ABI_ID_GET_TOKEN_INFO.getFunctionSelector())),
                         EntityIdUtils.asTypedEvmAddress(tokenMerkleId));
         given(decoder.decodeGetTokenInfo(pretendArguments)).willReturn(tokenInfoWrapper);
 
@@ -730,7 +742,9 @@ class GetTokenInfoPrecompilesTest {
         final var tokenInfoWrapper = createTokenInfoWrapperForToken(tokenMerkleId);
         final Bytes pretendArguments =
                 Bytes.concatenate(
-                        Bytes.of(Integers.toBytes(ABI_ID_GET_FUNGIBLE_TOKEN_INFO)),
+                        Bytes.of(
+                                Integers.toBytes(
+                                        ABI_ID_GET_FUNGIBLE_TOKEN_INFO.getFunctionSelector())),
                         EntityIdUtils.asTypedEvmAddress(tokenMerkleId));
         given(decoder.decodeGetFungibleTokenInfo(pretendArguments)).willReturn(tokenInfoWrapper);
 
@@ -763,7 +777,9 @@ class GetTokenInfoPrecompilesTest {
                 createTokenInfoWrapperForNonFungibleToken(tokenMerkleId, serialNumber);
         final Bytes pretendArguments =
                 Bytes.concatenate(
-                        Bytes.of(Integers.toBytes(ABI_ID_GET_NON_FUNGIBLE_TOKEN_INFO)),
+                        Bytes.of(
+                                Integers.toBytes(
+                                        ABI_ID_GET_NON_FUNGIBLE_TOKEN_INFO.getFunctionSelector())),
                         EntityIdUtils.asTypedEvmAddress(tokenMerkleId),
                         Bytes.wrap(new byte[] {Long.valueOf(serialNumber).byteValue()}));
         given(decoder.decodeGetNonFungibleTokenInfo(pretendArguments)).willReturn(tokenInfoWrapper);

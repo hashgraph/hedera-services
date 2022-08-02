@@ -16,7 +16,6 @@
 package com.hedera.services.store.contracts.precompile;
 
 import static com.hedera.services.state.EntityCreator.EMPTY_MEMO;
-import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_MINT_TOKEN;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.AMOUNT;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.DEFAULT_GAS_PRICE;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.TEST_CONSENSUS_TIME;
@@ -40,6 +39,7 @@ import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.pendin
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.recipientAddr;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.successResult;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.timestamp;
+import static com.hedera.services.store.contracts.precompile.PrecompileFunctionSelector.ABI_ID_MINT_TOKEN;
 import static com.hedera.test.utils.TxnUtils.assertFailsWith;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
@@ -434,7 +434,8 @@ class MintPrecompilesTest {
 
     @Test
     void fungibleMintFailureAmountLimitOversize() {
-        Bytes pretendArguments = Bytes.of(Integers.toBytes(ABI_ID_MINT_TOKEN));
+        Bytes pretendArguments =
+                Bytes.of(Integers.toBytes(ABI_ID_MINT_TOKEN.getFunctionSelector()));
         // given:
         given(frame.getSenderAddress()).willReturn(contractAddress);
         given(frame.getWorldUpdater()).willReturn(worldUpdater);
@@ -497,7 +498,7 @@ class MintPrecompilesTest {
         // given
         givenMinFrameContext();
         givenPricingUtilsContext();
-        Bytes input = Bytes.of(Integers.toBytes(ABI_ID_MINT_TOKEN));
+        Bytes input = Bytes.of(Integers.toBytes(ABI_ID_MINT_TOKEN.getFunctionSelector()));
         given(decoder.decodeMint(any())).willReturn(fungibleMint);
         given(syntheticTxnFactory.createMint(any()))
                 .willReturn(
@@ -542,7 +543,7 @@ class MintPrecompilesTest {
         Optional<WorldUpdater> parent = Optional.of(worldUpdater);
         given(worldUpdater.parentUpdater()).willReturn(parent);
         given(worldUpdater.wrappedTrackingLedgers(any())).willReturn(wrappedLedgers);
-        return Bytes.of(Integers.toBytes(ABI_ID_MINT_TOKEN));
+        return Bytes.of(Integers.toBytes(ABI_ID_MINT_TOKEN.getFunctionSelector()));
     }
 
     private void givenLedgers() {

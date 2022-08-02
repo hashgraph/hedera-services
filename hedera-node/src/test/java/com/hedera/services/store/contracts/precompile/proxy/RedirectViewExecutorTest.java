@@ -15,17 +15,17 @@
  */
 package com.hedera.services.store.contracts.precompile.proxy;
 
-import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_ERC_ALLOWANCE;
-import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_ERC_BALANCE_OF_TOKEN;
-import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_ERC_DECIMALS;
-import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_ERC_GET_APPROVED;
-import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_ERC_IS_APPROVED_FOR_ALL;
-import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_ERC_NAME;
-import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_ERC_OWNER_OF_NFT;
-import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_ERC_SYMBOL;
-import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_ERC_TOKEN_URI_NFT;
-import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_ERC_TOTAL_SUPPLY_TOKEN;
-import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_REDIRECT_FOR_TOKEN;
+import static com.hedera.services.store.contracts.precompile.PrecompileFunctionSelector.ABI_ID_ERC_ALLOWANCE;
+import static com.hedera.services.store.contracts.precompile.PrecompileFunctionSelector.ABI_ID_ERC_BALANCE_OF_TOKEN;
+import static com.hedera.services.store.contracts.precompile.PrecompileFunctionSelector.ABI_ID_ERC_DECIMALS;
+import static com.hedera.services.store.contracts.precompile.PrecompileFunctionSelector.ABI_ID_ERC_GET_APPROVED;
+import static com.hedera.services.store.contracts.precompile.PrecompileFunctionSelector.ABI_ID_ERC_IS_APPROVED_FOR_ALL;
+import static com.hedera.services.store.contracts.precompile.PrecompileFunctionSelector.ABI_ID_ERC_NAME;
+import static com.hedera.services.store.contracts.precompile.PrecompileFunctionSelector.ABI_ID_ERC_OWNER_OF_NFT;
+import static com.hedera.services.store.contracts.precompile.PrecompileFunctionSelector.ABI_ID_ERC_SYMBOL;
+import static com.hedera.services.store.contracts.precompile.PrecompileFunctionSelector.ABI_ID_ERC_TOKEN_URI_NFT;
+import static com.hedera.services.store.contracts.precompile.PrecompileFunctionSelector.ABI_ID_ERC_TOTAL_SUPPLY_TOKEN;
+import static com.hedera.services.store.contracts.precompile.PrecompileFunctionSelector.ABI_ID_REDIRECT_FOR_TOKEN;
 import static com.hedera.services.store.contracts.precompile.proxy.RedirectViewExecutor.MINIMUM_TINYBARS_COST;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALLOWANCE_OWNER_ID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -95,7 +95,7 @@ class RedirectViewExecutorTest {
 
     @Test
     void computeCostedNAME() {
-        prerequisites(ABI_ID_ERC_NAME, fungibleTokenAddress);
+        prerequisites(ABI_ID_ERC_NAME.getFunctionSelector(), fungibleTokenAddress);
 
         final var result = "name";
 
@@ -107,7 +107,7 @@ class RedirectViewExecutorTest {
 
     @Test
     void computeCostedSYMBOL() {
-        prerequisites(ABI_ID_ERC_SYMBOL, fungibleTokenAddress);
+        prerequisites(ABI_ID_ERC_SYMBOL.getFunctionSelector(), fungibleTokenAddress);
 
         final var result = "symbol";
 
@@ -119,7 +119,8 @@ class RedirectViewExecutorTest {
 
     @Test
     void computeAllowanceOf() {
-        final var nestedInput = prerequisites(ABI_ID_ERC_ALLOWANCE, fungibleTokenAddress);
+        final var nestedInput =
+                prerequisites(ABI_ID_ERC_ALLOWANCE.getFunctionSelector(), fungibleTokenAddress);
 
         final var allowanceWrapper = new TokenAllowanceWrapper(fungible, account, spender);
         given(decodingFacade.decodeTokenAllowance(eq(nestedInput), eq(fungible), any()))
@@ -132,7 +133,9 @@ class RedirectViewExecutorTest {
 
     @Test
     void computeApprovedSpenderOf() {
-        final var nestedInput = prerequisites(ABI_ID_ERC_GET_APPROVED, nonfungibleTokenAddress);
+        final var nestedInput =
+                prerequisites(
+                        ABI_ID_ERC_GET_APPROVED.getFunctionSelector(), nonfungibleTokenAddress);
 
         final var getApprovedWrapper = new GetApprovedWrapper(nonfungibletoken, 123L);
         given(decodingFacade.decodeGetApproved(nestedInput, nonfungibletoken))
@@ -148,7 +151,9 @@ class RedirectViewExecutorTest {
     @Test
     void computeOperatorCheck() {
         final var nestedInput =
-                prerequisites(ABI_ID_ERC_IS_APPROVED_FOR_ALL, nonfungibleTokenAddress);
+                prerequisites(
+                        ABI_ID_ERC_IS_APPROVED_FOR_ALL.getFunctionSelector(),
+                        nonfungibleTokenAddress);
 
         final var isApproveForAll = new IsApproveForAllWrapper(nonfungibletoken, account, spender);
         given(decodingFacade.decodeIsApprovedForAll(eq(nestedInput), eq(nonfungibletoken), any()))
@@ -161,7 +166,8 @@ class RedirectViewExecutorTest {
 
     @Test
     void revertsFrameAndReturnsNullOnRevertingException() {
-        final var nestedInput = prerequisites(ABI_ID_ERC_ALLOWANCE, fungibleTokenAddress);
+        final var nestedInput =
+                prerequisites(ABI_ID_ERC_ALLOWANCE.getFunctionSelector(), fungibleTokenAddress);
 
         final var allowanceWrapper = new TokenAllowanceWrapper(fungible, account, spender);
         given(decodingFacade.decodeTokenAllowance(eq(nestedInput), eq(fungible), any()))
@@ -175,7 +181,7 @@ class RedirectViewExecutorTest {
 
     @Test
     void computeCostedDECIMALS() {
-        prerequisites(ABI_ID_ERC_DECIMALS, fungibleTokenAddress);
+        prerequisites(ABI_ID_ERC_DECIMALS.getFunctionSelector(), fungibleTokenAddress);
 
         final var result = 1;
 
@@ -188,7 +194,7 @@ class RedirectViewExecutorTest {
 
     @Test
     void computeCostedTOTAL_SUPPY_TOKEN() {
-        prerequisites(ABI_ID_ERC_TOTAL_SUPPLY_TOKEN, fungibleTokenAddress);
+        prerequisites(ABI_ID_ERC_TOTAL_SUPPLY_TOKEN.getFunctionSelector(), fungibleTokenAddress);
 
         final var result = 1L;
 
@@ -200,7 +206,9 @@ class RedirectViewExecutorTest {
 
     @Test
     void computeCostedBALANCE_OF_TOKEN() {
-        Bytes nestedInput = prerequisites(ABI_ID_ERC_BALANCE_OF_TOKEN, fungibleTokenAddress);
+        Bytes nestedInput =
+                prerequisites(
+                        ABI_ID_ERC_BALANCE_OF_TOKEN.getFunctionSelector(), fungibleTokenAddress);
 
         final var result = 1L;
 
@@ -214,7 +222,9 @@ class RedirectViewExecutorTest {
 
     @Test
     void computeCostedOWNER_OF_NFT() {
-        Bytes nestedInput = prerequisites(ABI_ID_ERC_OWNER_OF_NFT, nonfungibleTokenAddress);
+        Bytes nestedInput =
+                prerequisites(
+                        ABI_ID_ERC_OWNER_OF_NFT.getFunctionSelector(), nonfungibleTokenAddress);
 
         final var result = Address.fromHexString("0x000000000000013");
         final var serialNum = 1L;
@@ -230,7 +240,9 @@ class RedirectViewExecutorTest {
 
     @Test
     void computeCostedTOKEN_URI_NFT() {
-        Bytes nestedInput = prerequisites(ABI_ID_ERC_TOKEN_URI_NFT, nonfungibleTokenAddress);
+        Bytes nestedInput =
+                prerequisites(
+                        ABI_ID_ERC_TOKEN_URI_NFT.getFunctionSelector(), nonfungibleTokenAddress);
 
         final var result = "some metadata";
         final var serialNum = 1L;
@@ -255,7 +267,7 @@ class RedirectViewExecutorTest {
         Bytes nestedInput = Bytes.of(Integers.toBytes(descriptor));
         Bytes input =
                 Bytes.concatenate(
-                        Bytes.of(Integers.toBytes(ABI_ID_REDIRECT_FOR_TOKEN)),
+                        Bytes.of(Integers.toBytes(ABI_ID_REDIRECT_FOR_TOKEN.getFunctionSelector())),
                         tokenAddress,
                         nestedInput);
         given(frame.getBlockValues()).willReturn(blockValues);
