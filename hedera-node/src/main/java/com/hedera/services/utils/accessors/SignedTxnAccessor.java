@@ -28,7 +28,6 @@ import com.hedera.services.txns.span.ExpandHandleSpanMapAccessor;
 import com.hedera.services.usage.BaseTransactionMeta;
 import com.hedera.services.usage.SigUsage;
 import com.hedera.services.usage.crypto.CryptoApproveAllowanceMeta;
-import com.hedera.services.usage.crypto.CryptoCreateMeta;
 import com.hedera.services.usage.crypto.CryptoDeleteAllowanceMeta;
 import com.hedera.services.usage.crypto.CryptoUpdateMeta;
 import com.hedera.services.usage.token.TokenOpsUsage;
@@ -62,7 +61,6 @@ import static com.hedera.services.usage.token.TokenOpsUsageUtils.TOKEN_OPS_USAGE
 import static com.hedera.services.utils.EntityIdUtils.isAlias;
 import static com.hedera.services.utils.MiscUtils.FUNCTION_EXTRACTOR;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoApproveAllowance;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoDeleteAllowance;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoUpdate;
@@ -433,8 +431,6 @@ public class SignedTxnAccessor implements TxnAccessor {
             setTokenPauseUsageMeta();
         } else if (function == TokenUnpause) {
             setTokenUnpauseUsageMeta();
-        } else if (function == CryptoCreate) {
-            setCryptoCreateUsageMeta();
         } else if (function == CryptoUpdate) {
             setCryptoUpdateUsageMeta();
         } else if (function == CryptoApproveAllowance) {
@@ -485,11 +481,6 @@ public class SignedTxnAccessor implements TxnAccessor {
     private void setTokenUnpauseUsageMeta() {
         final var tokenUnpauseMeta = TOKEN_OPS_USAGE_UTILS.tokenUnpauseUsageFrom();
         SPAN_MAP_ACCESSOR.setTokenUnpauseMeta(this, tokenUnpauseMeta);
-    }
-
-    private void setCryptoCreateUsageMeta() {
-        final var cryptoCreateMeta = new CryptoCreateMeta(txn.getCryptoCreateAccount());
-        SPAN_MAP_ACCESSOR.setCryptoCreateMeta(this, cryptoCreateMeta);
     }
 
     private void setCryptoUpdateUsageMeta() {

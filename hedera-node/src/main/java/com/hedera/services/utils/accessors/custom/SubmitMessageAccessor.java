@@ -2,7 +2,6 @@ package com.hedera.services.utils.accessors.custom;
 
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
-import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.usage.consensus.SubmitMessageMeta;
 import com.hedera.services.utils.accessors.SignedTxnAccessor;
 import com.hederahashgraph.api.proto.java.ConsensusMessageChunkInfo;

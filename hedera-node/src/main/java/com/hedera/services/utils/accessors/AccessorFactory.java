@@ -24,6 +24,7 @@ import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.MiscUtils;
 import com.hedera.services.utils.accessors.custom.CryptoCreateAccessor;
 import com.hedera.services.utils.accessors.custom.CryptoTransferAccessor;
+import com.hedera.services.utils.accessors.custom.SubmitMessageAccessor;
 import com.hedera.services.utils.accessors.custom.TokenWipeAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ScheduleID;
@@ -94,12 +95,12 @@ public class AccessorFactory {
         final var signedTxn = Transaction.parseFrom(signedTxnWrapperBytes);
         final var body = extractTransactionBody(signedTxn);
         final var function = MiscUtils.FUNCTION_EXTRACTOR.apply(body);
-        switch (function){
+        return switch (function){
             case TokenAccountWipe -> new TokenWipeAccessor(signedTxnWrapperBytes, signedTxn, dynamicProperties);
             case CryptoTransfer -> new CryptoTransferAccessor(signedTxnWrapperBytes, signedTxn, dynamicProperties);
             case CryptoCreate -> new CryptoCreateAccessor(signedTxnWrapperBytes, signedTxn, dynamicProperties, validator, accounts, nodeInfo);
+            case ConsensusSubmitMessage -> new SubmitMessageAccessor(signedTxnWrapperBytes, signedTxn);
             default -> SignedTxnAccessor.from(signedTxnWrapperBytes, signedTxn);
-        }
-        return SignedTxnAccessor.from(signedTxnWrapperBytes, signedTxn);
+        };
     }
 }

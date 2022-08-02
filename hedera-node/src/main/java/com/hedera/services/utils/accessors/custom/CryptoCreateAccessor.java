@@ -5,6 +5,7 @@ import com.hedera.services.context.NodeInfo;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.txns.validation.OptionValidator;
+import com.hedera.services.usage.crypto.CryptoCreateMeta;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.accessors.SignedTxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -55,6 +56,7 @@ public class CryptoCreateAccessor extends SignedTxnAccessor {
         this.validator = validator;
         this.accounts = accounts;
         this.nodeInfo = nodeInfo;
+		setCryptoCreateUsageMeta();
     }
 
 	public long initialBalance(){
@@ -163,4 +165,9 @@ public class CryptoCreateAccessor extends SignedTxnAccessor {
         }
         return OK;
     }
+
+	private void setCryptoCreateUsageMeta() {
+		final var cryptoCreateMeta = new CryptoCreateMeta(body);
+		getSpanMapAccessor().setCryptoCreateMeta(this, cryptoCreateMeta);
+	}
 }
