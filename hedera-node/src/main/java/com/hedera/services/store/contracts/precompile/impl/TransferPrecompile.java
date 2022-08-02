@@ -42,11 +42,7 @@ import com.hedera.services.store.models.Id;
 import com.hedera.services.store.tokens.HederaTokenStore;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.accessors.TxnAccessor;
-import com.hederahashgraph.api.proto.java.AccountAmount;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.Timestamp;
-import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.hederahashgraph.api.proto.java.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -217,6 +213,8 @@ public class TransferPrecompile extends AbstractWritePrecompile {
     }
 
     protected void extrapolateDetailsFromSyntheticTxn() {
+        Objects.requireNonNull(transferOp);
+
         final var op = transactionBody.getCryptoTransfer();
         impliedValidity = impliedTransfersMarshal.validityWithCurrentProps(op);
         if (impliedValidity != ResponseCodeEnum.OK) {

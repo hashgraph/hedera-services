@@ -23,6 +23,7 @@ import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
 import com.hedera.services.store.contracts.precompile.codec.GetTokenDefaultKycStatusWrapper;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import java.util.Objects;
 import java.util.function.UnaryOperator;
 import org.apache.tuweni.bytes.Bytes;
 
@@ -47,6 +48,8 @@ public class GetTokenDefaultKycStatus extends AbstractReadOnlyPrecompile {
 
     @Override
     public Bytes getSuccessResultFor(final ExpirableTxnRecord.Builder childRecord) {
+        Objects.requireNonNull(defaultKycStatusWrapper);
+
         final var defaultKycStatus = ledgers.defaultKycStatus(defaultKycStatusWrapper.tokenID());
         return encoder.encodeGetTokenDefaultKycStatus(defaultKycStatus);
     }

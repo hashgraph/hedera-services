@@ -40,7 +40,8 @@ public class TokenCreateUsage extends TokenTxnUsage<TokenCreateUsage> {
 
     public static TokenCreateUsage newEstimate(TransactionBody tokenCreationOp, SigUsage sigUsage) {
         return new TokenCreateUsage(
-                tokenCreationOp, estimatorFactory.get(sigUsage, tokenCreationOp, ESTIMATOR_UTILS));
+                tokenCreationOp,
+                getEstimatorFactory().get(sigUsage, tokenCreationOp, ESTIMATOR_UTILS));
     }
 
     @Override

@@ -26,13 +26,13 @@ import java.util.function.Predicate;
 
 public abstract class TxnUsage {
     protected static final int AMOUNT_REPR_BYTES = 8;
-    protected static EstimatorFactory estimatorFactory = TxnUsageEstimator::new;
+    private static EstimatorFactory estimatorFactory = TxnUsageEstimator::new;
     protected static final UsageProperties usageProperties = USAGE_PROPERTIES;
 
     protected final TransactionBody op;
     protected final TxnUsageEstimator usageEstimator;
 
-    protected TxnUsage(TransactionBody op, TxnUsageEstimator usageEstimator) {
+    protected TxnUsage(final TransactionBody op, final TxnUsageEstimator usageEstimator) {
         this.op = op;
         this.usageEstimator = usageEstimator;
     }

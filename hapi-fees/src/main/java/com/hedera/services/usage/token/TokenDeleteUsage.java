@@ -29,7 +29,8 @@ public class TokenDeleteUsage extends TokenTxnUsage<TokenDeleteUsage> {
 
     public static TokenDeleteUsage newEstimate(TransactionBody tokenDeletionOp, SigUsage sigUsage) {
         return new TokenDeleteUsage(
-                tokenDeletionOp, estimatorFactory.get(sigUsage, tokenDeletionOp, ESTIMATOR_UTILS));
+                tokenDeletionOp,
+                getEstimatorFactory().get(sigUsage, tokenDeletionOp, ESTIMATOR_UTILS));
     }
 
     @Override

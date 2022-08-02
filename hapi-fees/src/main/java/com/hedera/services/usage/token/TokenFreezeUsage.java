@@ -29,7 +29,7 @@ public class TokenFreezeUsage extends TokenTxnUsage<TokenFreezeUsage> {
 
     public static TokenFreezeUsage newEstimate(TransactionBody tokenFreezeOp, SigUsage sigUsage) {
         return new TokenFreezeUsage(
-                tokenFreezeOp, estimatorFactory.get(sigUsage, tokenFreezeOp, ESTIMATOR_UTILS));
+                tokenFreezeOp, getEstimatorFactory().get(sigUsage, tokenFreezeOp, ESTIMATOR_UTILS));
     }
 
     @Override

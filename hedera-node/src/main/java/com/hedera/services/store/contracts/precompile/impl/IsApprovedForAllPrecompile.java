@@ -28,6 +28,7 @@ import com.hedera.services.store.contracts.precompile.codec.IsApproveForAllWrapp
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import java.util.Objects;
 import java.util.Set;
 import java.util.function.UnaryOperator;
 import org.apache.tuweni.bytes.Bytes;
@@ -66,6 +67,8 @@ public class IsApprovedForAllPrecompile extends AbstractReadOnlyPrecompile {
     @Override
     @SuppressWarnings("unchecked")
     public Bytes getSuccessResultFor(final ExpirableTxnRecord.Builder childRecord) {
+        Objects.requireNonNull(isApproveForAllWrapper);
+
         final var accountsLedger = ledgers.accounts();
         var answer = true;
         final var ownerId = isApproveForAllWrapper.owner();

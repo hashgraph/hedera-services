@@ -39,6 +39,7 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.math.BigInteger;
+import java.util.Objects;
 import java.util.function.UnaryOperator;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
@@ -113,6 +114,8 @@ public class ERCTransferPrecompile extends TransferPrecompile {
 
     @Override
     public void run(final MessageFrame frame) {
+        Objects.requireNonNull(transferOp);
+
         if (!isFungible) {
             final var nftExchange = transferOp.get(0).nftExchanges().get(0);
             final var nftId = NftId.fromGrpc(nftExchange.getTokenType(), nftExchange.getSerialNo());

@@ -31,7 +31,7 @@ public class TokenAssociateUsage extends TokenTxnUsage<TokenAssociateUsage> {
 
     public static TokenAssociateUsage newEstimate(TransactionBody tokenOp, SigUsage sigUsage) {
         return new TokenAssociateUsage(
-                tokenOp, estimatorFactory.get(sigUsage, tokenOp, ESTIMATOR_UTILS));
+                tokenOp, getEstimatorFactory().get(sigUsage, tokenOp, ESTIMATOR_UTILS));
     }
 
     @Override

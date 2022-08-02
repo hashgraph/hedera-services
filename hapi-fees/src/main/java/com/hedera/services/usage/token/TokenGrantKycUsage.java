@@ -30,7 +30,8 @@ public class TokenGrantKycUsage extends TokenTxnUsage<TokenGrantKycUsage> {
     public static TokenGrantKycUsage newEstimate(
             TransactionBody tokenGrantKycOp, SigUsage sigUsage) {
         return new TokenGrantKycUsage(
-                tokenGrantKycOp, estimatorFactory.get(sigUsage, tokenGrantKycOp, ESTIMATOR_UTILS));
+                tokenGrantKycOp,
+                getEstimatorFactory().get(sigUsage, tokenGrantKycOp, ESTIMATOR_UTILS));
     }
 
     @Override

@@ -29,7 +29,7 @@ public class TokenDissociateUsage extends TokenTxnUsage<TokenDissociateUsage> {
 
     public static TokenDissociateUsage newEstimate(TransactionBody tokenOp, SigUsage sigUsage) {
         return new TokenDissociateUsage(
-                tokenOp, estimatorFactory.get(sigUsage, tokenOp, ESTIMATOR_UTILS));
+                tokenOp, getEstimatorFactory().get(sigUsage, tokenOp, ESTIMATOR_UTILS));
     }
 
     @Override

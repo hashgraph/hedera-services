@@ -43,7 +43,7 @@ public class TokenUpdateUsage extends TokenTxnUsage<TokenUpdateUsage> {
 
     public static TokenUpdateUsage newEstimate(TransactionBody tokenUpdateOp, SigUsage sigUsage) {
         return new TokenUpdateUsage(
-                tokenUpdateOp, estimatorFactory.get(sigUsage, tokenUpdateOp, ESTIMATOR_UTILS));
+                tokenUpdateOp, getEstimatorFactory().get(sigUsage, tokenUpdateOp, ESTIMATOR_UTILS));
     }
 
     @Override

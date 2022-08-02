@@ -32,7 +32,7 @@ public class TokenRevokeKycUsage extends TokenTxnUsage<TokenRevokeKycUsage> {
             TransactionBody tokenRevokeKycOp, SigUsage sigUsage) {
         return new TokenRevokeKycUsage(
                 tokenRevokeKycOp,
-                estimatorFactory.get(sigUsage, tokenRevokeKycOp, ESTIMATOR_UTILS));
+                getEstimatorFactory().get(sigUsage, tokenRevokeKycOp, ESTIMATOR_UTILS));
     }
 
     @Override
