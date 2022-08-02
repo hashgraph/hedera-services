@@ -39,13 +39,14 @@ import static com.hederahashgraph.api.proto.java.SubType.TOKEN_FUNGIBLE_COMMON_W
 import static com.hederahashgraph.api.proto.java.SubType.TOKEN_NON_FUNGIBLE_UNIQUE;
 import static com.hederahashgraph.api.proto.java.SubType.TOKEN_NON_FUNGIBLE_UNIQUE_WITH_CUSTOM_FEES;
 
+import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.fees.calculation.UsagePricesProvider;
 import com.hedera.services.pricing.AssetsLoader;
 import com.hedera.services.store.contracts.precompile.Precompile;
-import com.hedera.services.utils.accessors.SignedTxnAccessor;
+import com.hedera.services.utils.accessors.AccessorFactory;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.SignatureMap;
@@ -86,6 +87,7 @@ public class PrecompilePricingUtils {
     private final Provider<FeeCalculator> feeCalculator;
     private final UsagePricesProvider resourceCosts;
     private final StateView currentView;
+    private final AccessorFactory accessorFactory;
     Map<GasCostType, Long> canonicalOperationCostsInTinyCents;
 
     @Inject
@@ -94,11 +96,13 @@ public class PrecompilePricingUtils {
             final HbarCentExchange exchange,
             final Provider<FeeCalculator> feeCalculator,
             final UsagePricesProvider resourceCosts,
-            final StateView currentView) {
+            final StateView currentView,
+            final AccessorFactory accessorFactory) {
         this.exchange = exchange;
         this.feeCalculator = feeCalculator;
         this.resourceCosts = resourceCosts;
         this.currentView = currentView;
+        this.accessorFactory = accessorFactory;
 
         canonicalOperationCostsInTinyCents = new EnumMap<>(GasCostType.class);
         Map<HederaFunctionality, Map<SubType, BigDecimal>> canonicalPrices;
@@ -131,7 +135,8 @@ public class PrecompilePricingUtils {
     public long gasFeeInTinybars(
             final TransactionBody.Builder txBody,
             final Instant consensusTime,
-            final Precompile precompile) {
+            final Precompile precompile)
+            throws InvalidProtocolBufferException {
         final var signedTxn =
                 SignedTransaction.newBuilder()
                         .setBodyBytes(txBody.build().toByteString())
@@ -142,7 +147,7 @@ public class PrecompilePricingUtils {
                         .setSignedTransactionBytes(signedTxn.toByteString())
                         .build();
 
-        final var accessor = SignedTxnAccessor.uncheckedFrom(txn);
+        final var accessor = accessorFactory.constructSpecializedAccessor(txn.toByteArray());
         precompile.addImplicitCostsIn(accessor);
         final var fees =
                 feeCalculator.get().computeFee(accessor, EMPTY_KEY, currentView, consensusTime);
@@ -172,7 +177,8 @@ public class PrecompilePricingUtils {
     public long computeGasRequirement(
             final long blockTimestamp,
             final Precompile precompile,
-            final TransactionBody.Builder transactionBody) {
+            final TransactionBody.Builder transactionBody)
+            throws InvalidProtocolBufferException {
         final Timestamp timestamp = Timestamp.newBuilder().setSeconds(blockTimestamp).build();
         final long gasPriceInTinybars =
                 feeCalculator.get().estimatedGasPriceInTinybars(ContractCall, timestamp);

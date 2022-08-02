@@ -42,6 +42,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 import com.esaulpaugh.headlong.util.Integers;
+import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
@@ -74,6 +75,7 @@ import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.txns.token.DissociateLogic;
+import com.hedera.services.utils.accessors.AccessorFactory;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ExchangeRate;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
@@ -127,6 +129,7 @@ class DissociatePrecompilesTest {
     @Mock private HederaStackedWorldStateUpdater worldUpdater;
     @Mock private WorldLedgers wrappedLedgers;
     @Mock private TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nfts;
+    @Mock private AccessorFactory accessorFactory;
 
     @Mock
     private TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus>
@@ -165,7 +168,12 @@ class DissociatePrecompilesTest {
         given(assetLoader.loadCanonicalPrices()).willReturn(canonicalPrices);
         PrecompilePricingUtils precompilePricingUtils =
                 new PrecompilePricingUtils(
-                        assetLoader, exchange, () -> feeCalculator, resourceCosts, stateView);
+                        assetLoader,
+                        exchange,
+                        () -> feeCalculator,
+                        resourceCosts,
+                        stateView,
+                        accessorFactory);
         subject =
                 new HTSPrecompiledContract(
                         dynamicProperties,
@@ -187,7 +195,7 @@ class DissociatePrecompilesTest {
     }
 
     @Test
-    void dissociateTokenFailurePathWorks() {
+    void dissociateTokenFailurePathWorks() throws InvalidProtocolBufferException {
         givenFrameContext();
         givenPricingUtilsContext();
         Bytes pretendArguments = Bytes.ofUnsignedInt(ABI_ID_DISSOCIATE_TOKEN);
@@ -223,7 +231,7 @@ class DissociatePrecompilesTest {
     }
 
     @Test
-    void dissociateTokenHappyPathWorks() {
+    void dissociateTokenHappyPathWorks() throws InvalidProtocolBufferException {
         givenFrameContext();
         givenLedgers();
         givenPricingUtilsContext();
@@ -265,7 +273,7 @@ class DissociatePrecompilesTest {
     }
 
     @Test
-    void computeMultiDissociateTokenHappyPathWorks() {
+    void computeMultiDissociateTokenHappyPathWorks() throws InvalidProtocolBufferException {
         givenFrameContext();
         givenLedgers();
         givenPricingUtilsContext();
@@ -314,7 +322,8 @@ class DissociatePrecompilesTest {
     }
 
     @Test
-    void gasRequirementReturnsCorrectValueForDissociateTokens() {
+    void gasRequirementReturnsCorrectValueForDissociateTokens()
+            throws InvalidProtocolBufferException {
         // given
         givenMinFrameContext();
         givenPricingUtilsContext();
@@ -341,7 +350,8 @@ class DissociatePrecompilesTest {
     }
 
     @Test
-    void gasRequirementReturnsCorrectValueForDissociateToken() {
+    void gasRequirementReturnsCorrectValueForDissociateToken()
+            throws InvalidProtocolBufferException {
         // given
         givenMinFrameContext();
         givenPricingUtilsContext();

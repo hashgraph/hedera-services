@@ -72,8 +72,10 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willThrow;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import com.esaulpaugh.headlong.util.Integers;
+import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
@@ -125,6 +127,7 @@ import com.hedera.services.txns.crypto.validators.ApproveAllowanceChecks;
 import com.hedera.services.txns.crypto.validators.DeleteAllowanceChecks;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.EntityNum;
+import com.hedera.services.utils.accessors.AccessorFactory;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoAllowance;
@@ -210,6 +213,7 @@ class ERC721PrecompilesTest {
     @Mock private AssetsLoader assetLoader;
     @Mock private HbarCentExchange exchange;
     @Mock private ExchangeRate exchangeRate;
+    @Mock private AccessorFactory accessorFactory;
 
     private static final int CENTS_RATE = 12;
     private static final int HBAR_RATE = 1;
@@ -221,7 +225,12 @@ class ERC721PrecompilesTest {
     void setUp() {
         PrecompilePricingUtils precompilePricingUtils =
                 new PrecompilePricingUtils(
-                        assetLoader, exchange, () -> feeCalculator, resourceCosts, stateView);
+                        assetLoader,
+                        exchange,
+                        () -> feeCalculator,
+                        resourceCosts,
+                        stateView,
+                        accessorFactory);
         subject =
                 new HTSPrecompiledContract(
                         dynamicProperties,
@@ -273,7 +282,7 @@ class ERC721PrecompilesTest {
     }
 
     @Test
-    void name() {
+    void name() throws InvalidProtocolBufferException {
         Bytes pretendArguments =
                 givenMinimalFrameContext(Bytes.of(Integers.toBytes(ABI_ID_ERC_NAME)));
         given(syntheticTxnFactory.createTransactionCall(1L, pretendArguments))
@@ -307,7 +316,7 @@ class ERC721PrecompilesTest {
     }
 
     @Test
-    void symbol() {
+    void symbol() throws InvalidProtocolBufferException {
         Bytes pretendArguments =
                 givenMinimalFrameContext(Bytes.of(Integers.toBytes(ABI_ID_ERC_SYMBOL)));
         given(syntheticTxnFactory.createTransactionCall(1L, pretendArguments))
@@ -341,7 +350,8 @@ class ERC721PrecompilesTest {
     }
 
     @Test
-    void ercIsApprovedForAllWorksWithBothOwnerAndOperatorExtant() {
+    void ercIsApprovedForAllWorksWithBothOwnerAndOperatorExtant()
+            throws InvalidProtocolBufferException {
         Set<FcTokenAllowanceId> allowances = new TreeSet<>();
         FcTokenAllowanceId fcTokenAllowanceId =
                 FcTokenAllowanceId.from(
@@ -391,7 +401,8 @@ class ERC721PrecompilesTest {
     }
 
     @Test
-    void hapiIsApprovedForAllWorksWithBothOwnerAndOperatorExtant() {
+    void hapiIsApprovedForAllWorksWithBothOwnerAndOperatorExtant()
+            throws InvalidProtocolBufferException {
         Set<FcTokenAllowanceId> allowances = new TreeSet<>();
         FcTokenAllowanceId fcTokenAllowanceId =
                 FcTokenAllowanceId.from(
@@ -441,7 +452,7 @@ class ERC721PrecompilesTest {
     }
 
     @Test
-    void isApprovedForAllWorksWithOperatorMissing() {
+    void isApprovedForAllWorksWithOperatorMissing() throws InvalidProtocolBufferException {
         Bytes nestedPretendArguments = Bytes.of(Integers.toBytes(ABI_ID_ERC_IS_APPROVED_FOR_ALL));
         Bytes pretendArguments = givenMinimalFrameContext(nestedPretendArguments);
         given(wrappedLedgers.accounts()).willReturn(accounts);
@@ -482,7 +493,7 @@ class ERC721PrecompilesTest {
     }
 
     @Test
-    void approve() {
+    void approve() throws InvalidProtocolBufferException {
         List<CryptoAllowance> cryptoAllowances = new ArrayList<>();
         List<TokenAllowance> tokenAllowances = new ArrayList<>();
         List<NftAllowance> nftAllowances = new ArrayList<>();
@@ -557,7 +568,7 @@ class ERC721PrecompilesTest {
     }
 
     @Test
-    void approveRevertsIfItFails() {
+    void approveRevertsIfItFails() throws InvalidProtocolBufferException {
         givenPricingUtilsContext();
         List<CryptoAllowance> cryptoAllowances = new ArrayList<>();
         List<TokenAllowance> tokenAllowances = new ArrayList<>();
@@ -624,7 +635,7 @@ class ERC721PrecompilesTest {
     }
 
     @Test
-    void approveSpender0WhenOwner() {
+    void approveSpender0WhenOwner() throws InvalidProtocolBufferException {
         givenPricingUtilsContext();
         Bytes nestedPretendArguments = Bytes.of(Integers.toBytes(ABI_ID_ERC_APPROVE));
         Bytes pretendArguments = givenMinimalFrameContext(nestedPretendArguments);
@@ -689,7 +700,7 @@ class ERC721PrecompilesTest {
     }
 
     @Test
-    void approveSpender0WhenGrantedApproveForAll() {
+    void approveSpender0WhenGrantedApproveForAll() throws InvalidProtocolBufferException {
         givenPricingUtilsContext();
         Bytes nestedPretendArguments = Bytes.of(Integers.toBytes(ABI_ID_ERC_APPROVE));
         Bytes pretendArguments = givenMinimalFrameContext(nestedPretendArguments);
@@ -754,7 +765,7 @@ class ERC721PrecompilesTest {
     }
 
     @Test
-    void approveSpender0NoGoodIfNotPermissioned() {
+    void approveSpender0NoGoodIfNotPermissioned() throws InvalidProtocolBufferException {
         givenPricingUtilsContext();
         Bytes nestedPretendArguments = Bytes.of(Integers.toBytes(ABI_ID_ERC_APPROVE));
         Bytes pretendArguments = givenMinimalFrameContext(nestedPretendArguments);
@@ -796,7 +807,7 @@ class ERC721PrecompilesTest {
     }
 
     @Test
-    void validatesImpliedNftApprovalDeletion() {
+    void validatesImpliedNftApprovalDeletion() throws InvalidProtocolBufferException {
         givenPricingUtilsContext();
         Bytes nestedPretendArguments = Bytes.of(Integers.toBytes(ABI_ID_ERC_APPROVE));
         Bytes pretendArguments = givenMinimalFrameContext(nestedPretendArguments);
@@ -855,7 +866,7 @@ class ERC721PrecompilesTest {
     }
 
     @Test
-    void allowanceValidation() {
+    void allowanceValidation() throws InvalidProtocolBufferException {
         givenPricingUtilsContext();
         List<CryptoAllowance> cryptoAllowances = new ArrayList<>();
         List<TokenAllowance> tokenAllowances = new ArrayList<>();
@@ -916,7 +927,7 @@ class ERC721PrecompilesTest {
     }
 
     @Test
-    void ercSetApprovalForAll() {
+    void ercSetApprovalForAll() throws InvalidProtocolBufferException {
         List<CryptoAllowance> cryptoAllowances = new ArrayList<>();
         List<TokenAllowance> tokenAllowances = new ArrayList<>();
         List<NftAllowance> nftAllowances = new ArrayList<>();
@@ -988,7 +999,7 @@ class ERC721PrecompilesTest {
     }
 
     @Test
-    void hapiSetApprovalForAll() {
+    void hapiSetApprovalForAll() throws InvalidProtocolBufferException {
         List<CryptoAllowance> cryptoAllowances = new ArrayList<>();
         List<TokenAllowance> tokenAllowances = new ArrayList<>();
         List<NftAllowance> nftAllowances = new ArrayList<>();
@@ -1060,7 +1071,7 @@ class ERC721PrecompilesTest {
     }
 
     @Test
-    void ercGetApproved() {
+    void ercGetApproved() throws InvalidProtocolBufferException {
         Set<FcTokenAllowanceId> allowances = new TreeSet<>();
         FcTokenAllowanceId fcTokenAllowanceId =
                 FcTokenAllowanceId.from(
@@ -1112,7 +1123,7 @@ class ERC721PrecompilesTest {
     }
 
     @Test
-    void hapiGetApproved() {
+    void hapiGetApproved() throws InvalidProtocolBufferException {
         Set<FcTokenAllowanceId> allowances = new TreeSet<>();
         FcTokenAllowanceId fcTokenAllowanceId =
                 FcTokenAllowanceId.from(
@@ -1163,7 +1174,7 @@ class ERC721PrecompilesTest {
     }
 
     @Test
-    void totalSupply() {
+    void totalSupply() throws InvalidProtocolBufferException {
         Bytes pretendArguments =
                 givenMinimalFrameContext(Bytes.of(Integers.toBytes(ABI_ID_ERC_TOTAL_SUPPLY_TOKEN)));
         given(syntheticTxnFactory.createTransactionCall(1L, pretendArguments))
@@ -1196,7 +1207,7 @@ class ERC721PrecompilesTest {
     }
 
     @Test
-    void balanceOf() {
+    void balanceOf() throws InvalidProtocolBufferException {
         Bytes nestedPretendArguments = Bytes.of(Integers.toBytes(ABI_ID_ERC_BALANCE_OF_TOKEN));
         Bytes pretendArguments = givenMinimalFrameContext(nestedPretendArguments);
 
@@ -1233,7 +1244,7 @@ class ERC721PrecompilesTest {
     }
 
     @Test
-    void ownerOfHappyPathWorks() {
+    void ownerOfHappyPathWorks() throws InvalidProtocolBufferException {
         Bytes nestedPretendArguments = Bytes.of(Integers.toBytes(ABI_ID_ERC_OWNER_OF_NFT));
         Bytes pretendArguments = givenMinimalFrameContext(nestedPretendArguments);
 
@@ -1271,7 +1282,7 @@ class ERC721PrecompilesTest {
     }
 
     @Test
-    void ownerOfRevertsWithMissingNft() {
+    void ownerOfRevertsWithMissingNft() throws InvalidProtocolBufferException {
         Bytes nestedPretendArguments = Bytes.of(Integers.toBytes(ABI_ID_ERC_OWNER_OF_NFT));
         Bytes pretendArguments = givenMinimalFrameContext(nestedPretendArguments);
 
@@ -1303,7 +1314,7 @@ class ERC721PrecompilesTest {
     }
 
     @Test
-    void transferFrom() {
+    void transferFrom() throws InvalidProtocolBufferException {
         Bytes nestedPretendArguments = Bytes.of(Integers.toBytes(ABI_ID_ERC_TRANSFER_FROM));
         Bytes pretendArguments = givenMinimalFrameContext(nestedPretendArguments);
         givenLedgers();
@@ -1365,6 +1376,7 @@ class ERC721PrecompilesTest {
         given(aliases.resolveForEvm(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
         given(worldUpdater.aliases()).willReturn(aliases);
+        when(accessorFactory.constructSpecializedAccessor(any())).thenCallRealMethod();
 
         final var log =
                 EncodingFacade.LogBuilder.logBuilder()
@@ -1393,7 +1405,7 @@ class ERC721PrecompilesTest {
     }
 
     @Test
-    void transferFromFailsForInvalidSig() {
+    void transferFromFailsForInvalidSig() throws InvalidProtocolBufferException {
         Bytes nestedPretendArguments = Bytes.of(Integers.toBytes(ABI_ID_ERC_TRANSFER_FROM));
         Bytes pretendArguments = givenMinimalFrameContext(nestedPretendArguments);
         givenLedgers();
@@ -1448,6 +1460,7 @@ class ERC721PrecompilesTest {
         given(aliases.resolveForEvm(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
         given(worldUpdater.aliases()).willReturn(aliases);
+        when(accessorFactory.constructSpecializedAccessor(any())).thenCallRealMethod();
         // when:
         subject.prepareFields(frame);
         subject.prepareComputation(pretendArguments, a -> a);
@@ -1459,7 +1472,7 @@ class ERC721PrecompilesTest {
     }
 
     @Test
-    void erc721SystemFailureSurfacesResult() {
+    void erc721SystemFailureSurfacesResult() throws InvalidProtocolBufferException {
         Bytes nestedPretendArguments = Bytes.of(Integers.toBytes(ABI_ID_ERC_OWNER_OF_NFT));
         Bytes pretendArguments = givenMinimalFrameContext(nestedPretendArguments);
 
@@ -1490,7 +1503,7 @@ class ERC721PrecompilesTest {
     }
 
     @Test
-    void tokenURI() {
+    void tokenURI() throws InvalidProtocolBufferException {
         Bytes nestedPretendArguments = Bytes.of(Integers.toBytes(ABI_ID_ERC_TOKEN_URI_NFT));
         Bytes pretendArguments = givenMinimalFrameContext(nestedPretendArguments);
 

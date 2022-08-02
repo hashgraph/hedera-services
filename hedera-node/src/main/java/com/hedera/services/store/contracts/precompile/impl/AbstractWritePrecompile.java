@@ -15,6 +15,7 @@
  */
 package com.hedera.services.store.contracts.precompile.impl;
 
+import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.store.contracts.WorldLedgers;
 import com.hedera.services.store.contracts.precompile.InfrastructureFactory;
@@ -50,7 +51,7 @@ public abstract class AbstractWritePrecompile implements Precompile {
     }
 
     @Override
-    public long getGasRequirement(long blockTimestamp) {
+    public long getGasRequirement(long blockTimestamp) throws InvalidProtocolBufferException {
         return pricingUtils.computeGasRequirement(blockTimestamp, this, transactionBody);
     }
 }

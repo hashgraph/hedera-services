@@ -32,6 +32,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
 import com.esaulpaugh.headlong.util.Integers;
+import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
@@ -52,6 +53,7 @@ import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
 import com.hedera.services.store.contracts.precompile.codec.TokenGetCustomFeesWrapper;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.services.utils.EntityIdUtils;
+import com.hedera.services.utils.accessors.AccessorFactory;
 import com.hederahashgraph.api.proto.java.CustomFee;
 import com.hederahashgraph.api.proto.java.Fraction;
 import com.hederahashgraph.api.proto.java.FractionalFee;
@@ -101,6 +103,7 @@ class TokenGetCustomFeesPrecompileTest {
     @Mock private AssetsLoader assetLoader;
     @Mock private HbarCentExchange exchange;
     @Mock private FeeObject mockFeeObject;
+    @Mock private AccessorFactory accessorFactory;
 
     private HTSPrecompiledContract subject;
     private MockedStatic<EntityIdUtils> entityIdUtils;
@@ -112,7 +115,12 @@ class TokenGetCustomFeesPrecompileTest {
     void setUp() {
         final PrecompilePricingUtils precompilePricingUtils =
                 new PrecompilePricingUtils(
-                        assetLoader, exchange, () -> feeCalculator, resourceCosts, stateView);
+                        assetLoader,
+                        exchange,
+                        () -> feeCalculator,
+                        resourceCosts,
+                        stateView,
+                        accessorFactory);
 
         entityIdUtils = Mockito.mockStatic(EntityIdUtils.class);
         entityIdUtils
@@ -145,7 +153,7 @@ class TokenGetCustomFeesPrecompileTest {
     }
 
     @Test
-    void getTokenCustomFeesWorks() {
+    void getTokenCustomFeesWorks() throws InvalidProtocolBufferException {
         givenMinimalFrameContext();
 
         final var tokenCustomFeesWrapper = new TokenGetCustomFeesWrapper(tokenMerkleId);
@@ -178,7 +186,7 @@ class TokenGetCustomFeesPrecompileTest {
     }
 
     @Test
-    void getTokenCustomFeesMissingTokenIdFails() {
+    void getTokenCustomFeesMissingTokenIdFails() throws InvalidProtocolBufferException {
         givenMinimalFrameContext();
 
         final var tokenCustomFeesWrapper = new TokenGetCustomFeesWrapper(tokenMerkleId);

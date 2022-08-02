@@ -48,6 +48,7 @@ import static org.mockito.Mockito.verify;
 
 import com.esaulpaugh.headlong.util.Integers;
 import com.google.protobuf.ByteString;
+import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
@@ -68,6 +69,7 @@ import com.hedera.services.store.contracts.precompile.codec.DecodingFacade;
 import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.services.utils.EntityIdUtils;
+import com.hedera.services.utils.accessors.AccessorFactory;
 import com.hederahashgraph.api.proto.java.CustomFee;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.FixedFee;
@@ -127,6 +129,7 @@ class GetTokenInfoPrecompilesTest {
     @Mock private AssetsLoader assetLoader;
     @Mock private HbarCentExchange exchange;
     @Mock private FeeObject mockFeeObject;
+    @Mock private AccessorFactory accessorFactory;
 
     private HTSPrecompiledContract subject;
     private MockedStatic<EntityIdUtils> entityIdUtils;
@@ -177,7 +180,12 @@ class GetTokenInfoPrecompilesTest {
     void setUp() {
         final PrecompilePricingUtils precompilePricingUtils =
                 new PrecompilePricingUtils(
-                        assetLoader, exchange, () -> feeCalculator, resourceCosts, stateView);
+                        assetLoader,
+                        exchange,
+                        () -> feeCalculator,
+                        resourceCosts,
+                        stateView,
+                        accessorFactory);
 
         entityIdUtils = Mockito.mockStatic(EntityIdUtils.class);
         entityIdUtils
@@ -242,7 +250,7 @@ class GetTokenInfoPrecompilesTest {
     }
 
     @Test
-    void getTokenInfoWorks() {
+    void getTokenInfoWorks() throws InvalidProtocolBufferException {
         givenMinimalFrameContext();
 
         final var tokenInfoWrapper = createTokenInfoWrapperForToken(tokenMerkleId);
@@ -272,7 +280,7 @@ class GetTokenInfoPrecompilesTest {
     }
 
     @Test
-    void getTokenInfoWorksWithDelegatableContractKey() {
+    void getTokenInfoWorksWithDelegatableContractKey() throws InvalidProtocolBufferException {
         givenMinimalFrameContext();
 
         final var tokenInfoWrapper = createTokenInfoWrapperForToken(tokenMerkleId);
@@ -317,7 +325,7 @@ class GetTokenInfoPrecompilesTest {
     }
 
     @Test
-    void getTokenInfoWithAllKeyTypesWorks() {
+    void getTokenInfoWithAllKeyTypesWorks() throws InvalidProtocolBufferException {
         givenMinimalFrameContext();
 
         final var tokenInfoWrapper = createTokenInfoWrapperForToken(tokenMerkleId);
@@ -349,7 +357,7 @@ class GetTokenInfoPrecompilesTest {
     }
 
     @Test
-    void getFungibleTokenInfoWorks() {
+    void getFungibleTokenInfoWorks() throws InvalidProtocolBufferException {
         givenMinimalFrameContext();
 
         final var tokenInfoWrapper = createTokenInfoWrapperForToken(tokenMerkleId);
@@ -379,7 +387,7 @@ class GetTokenInfoPrecompilesTest {
     }
 
     @Test
-    void getNonFungibleTokenInfoWorks() {
+    void getNonFungibleTokenInfoWorks() throws InvalidProtocolBufferException {
         givenMinimalFrameContext();
 
         final var tokenInfoWrapper =
@@ -419,7 +427,7 @@ class GetTokenInfoPrecompilesTest {
     }
 
     @Test
-    void getTokenInfoWithFixedFeeWithDenominationWorks() {
+    void getTokenInfoWithFixedFeeWithDenominationWorks() throws InvalidProtocolBufferException {
         givenMinimalFrameContext();
 
         final var tokenInfoWrapper = createTokenInfoWrapperForToken(tokenMerkleId);
@@ -452,7 +460,7 @@ class GetTokenInfoPrecompilesTest {
     }
 
     @Test
-    void getTokenInfoWithFixedFeeWithoutDenominationWorks() {
+    void getTokenInfoWithFixedFeeWithoutDenominationWorks() throws InvalidProtocolBufferException {
         givenMinimalFrameContext();
 
         final var tokenInfoWrapper = createTokenInfoWrapperForToken(tokenMerkleId);
@@ -485,7 +493,7 @@ class GetTokenInfoPrecompilesTest {
     }
 
     @Test
-    void getTokenInfoWithFractionalFeeWorks() {
+    void getTokenInfoWithFractionalFeeWorks() throws InvalidProtocolBufferException {
         givenMinimalFrameContext();
 
         final var tokenInfoWrapper = createTokenInfoWrapperForToken(tokenMerkleId);
@@ -518,7 +526,8 @@ class GetTokenInfoPrecompilesTest {
     }
 
     @Test
-    void getNonFungibleTokenInfoWithRoyaltyFeeWithFallbackFeeWorks() {
+    void getNonFungibleTokenInfoWithRoyaltyFeeWithFallbackFeeWorks()
+            throws InvalidProtocolBufferException {
         givenMinimalFrameContext();
 
         final var tokenInfoWrapper =
@@ -561,7 +570,8 @@ class GetTokenInfoPrecompilesTest {
     }
 
     @Test
-    void getNonFungibleTokenInfoWithRoyaltyFeeWithoutFallbackFeeWorks() {
+    void getNonFungibleTokenInfoWithRoyaltyFeeWithoutFallbackFeeWorks()
+            throws InvalidProtocolBufferException {
         givenMinimalFrameContext();
 
         final var tokenInfoWrapper =
@@ -604,7 +614,7 @@ class GetTokenInfoPrecompilesTest {
     }
 
     @Test
-    void getTokenInfoOfMissingTokenFails() {
+    void getTokenInfoOfMissingTokenFails() throws InvalidProtocolBufferException {
         givenMinimalFrameContext();
 
         final var tokenInfoWrapper = createTokenInfoWrapperForToken(tokenMerkleId);
@@ -632,7 +642,7 @@ class GetTokenInfoPrecompilesTest {
     }
 
     @Test
-    void getFungibleTokenInfoOfMissingTokenFails() {
+    void getFungibleTokenInfoOfMissingTokenFails() throws InvalidProtocolBufferException {
         givenMinimalFrameContext();
 
         final var tokenInfoWrapper = createTokenInfoWrapperForToken(tokenMerkleId);
@@ -660,7 +670,7 @@ class GetTokenInfoPrecompilesTest {
     }
 
     @Test
-    void getNonFungibleTokenInfoOfMissingSerialNumberFails() {
+    void getNonFungibleTokenInfoOfMissingSerialNumberFails() throws InvalidProtocolBufferException {
         givenMinimalFrameContext();
 
         final var tokenInfoWrapper =
@@ -692,7 +702,7 @@ class GetTokenInfoPrecompilesTest {
     }
 
     @Test
-    void getTokenInfoOfDeletedTokenWorks() {
+    void getTokenInfoOfDeletedTokenWorks() throws InvalidProtocolBufferException {
         givenMinimalFrameContext();
 
         final var tokenInfoWrapper = createTokenInfoWrapperForToken(tokenMerkleId);
@@ -724,7 +734,7 @@ class GetTokenInfoPrecompilesTest {
     }
 
     @Test
-    void getFungibleTokenInfoOfDeletedTokenWorks() {
+    void getFungibleTokenInfoOfDeletedTokenWorks() throws InvalidProtocolBufferException {
         givenMinimalFrameContext();
 
         final var tokenInfoWrapper = createTokenInfoWrapperForToken(tokenMerkleId);
@@ -756,7 +766,7 @@ class GetTokenInfoPrecompilesTest {
     }
 
     @Test
-    void getNonFungibleTokenInfoOfDeletedTokenWorks() {
+    void getNonFungibleTokenInfoOfDeletedTokenWorks() throws InvalidProtocolBufferException {
         givenMinimalFrameContext();
 
         final var tokenInfoWrapper =

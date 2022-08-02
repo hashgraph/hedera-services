@@ -20,6 +20,7 @@ import static com.hedera.services.store.contracts.precompile.codec.EncodingFacad
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FEE_SUBMITTED;
 import static org.hyperledger.besu.evm.frame.MessageFrame.State.REVERT;
 
+import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.state.submerkle.FcAssessedCustomFee;
@@ -86,13 +87,13 @@ public interface Precompile {
     // Change the world state through the given frame
     void run(MessageFrame frame);
 
-    long getGasRequirement(long blockTimestamp);
+    long getGasRequirement(long blockTimestamp) throws InvalidProtocolBufferException;
 
     default void customizeTrackingLedgers(final WorldLedgers worldLedgers) {
         // No-op
     }
 
-    default void handleSentHbars(MessageFrame frame) {
+    default void handleSentHbars(MessageFrame frame) throws InvalidProtocolBufferException {
         if (!Objects.equals(Wei.ZERO, frame.getValue())) {
             frame.setRevertReason(INVALID_TRANSFER);
             frame.setState(REVERT);

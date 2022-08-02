@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2022 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,6 +29,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 import com.esaulpaugh.headlong.util.Integers;
+import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
@@ -60,6 +61,7 @@ import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.txns.token.WipeLogic;
+import com.hedera.services.utils.accessors.AccessorFactory;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ExchangeRate;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
@@ -109,6 +111,7 @@ class WipeNonFungiblePrecompileTest {
     @Mock private HederaStackedWorldStateUpdater worldUpdater;
     @Mock private WorldLedgers wrappedLedgers;
     @Mock private TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nfts;
+    @Mock private AccessorFactory accessorFactory;
 
     @Mock
     private TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus>
@@ -147,7 +150,12 @@ class WipeNonFungiblePrecompileTest {
         given(assetLoader.loadCanonicalPrices()).willReturn(canonicalPrices);
         PrecompilePricingUtils precompilePricingUtils =
                 new PrecompilePricingUtils(
-                        assetLoader, exchange, () -> feeCalculator, resourceCosts, stateView);
+                        assetLoader,
+                        exchange,
+                        () -> feeCalculator,
+                        resourceCosts,
+                        stateView,
+                        accessorFactory);
         subject =
                 new HTSPrecompiledContract(
                         dynamicProperties,
@@ -169,7 +177,7 @@ class WipeNonFungiblePrecompileTest {
     }
 
     @Test
-    void nftWipeFailurePathWorks() {
+    void nftWipeFailurePathWorks() throws InvalidProtocolBufferException {
         givenNonfungibleFrameContext();
         givenPricingUtilsContext();
 
@@ -200,7 +208,7 @@ class WipeNonFungiblePrecompileTest {
     }
 
     @Test
-    void nftWipeHappyPathWorks() {
+    void nftWipeHappyPathWorks() throws InvalidProtocolBufferException {
         givenNonfungibleFrameContext();
         givenLedgers();
         givenPricingUtilsContext();
@@ -243,7 +251,7 @@ class WipeNonFungiblePrecompileTest {
     }
 
     @Test
-    void nftWipeWorksForInvalidSyntax() {
+    void nftWipeWorksForInvalidSyntax() throws InvalidProtocolBufferException {
         givenNonfungibleFrameContext();
         givenLedgers();
         givenPricingUtilsContext();
@@ -280,7 +288,8 @@ class WipeNonFungiblePrecompileTest {
     }
 
     @Test
-    void gasRequirementReturnsCorrectValueForWipeNonFungibleToken() {
+    void gasRequirementReturnsCorrectValueForWipeNonFungibleToken()
+            throws InvalidProtocolBufferException {
         // given
         givenMinFrameContext();
         givenPricingUtilsContext();

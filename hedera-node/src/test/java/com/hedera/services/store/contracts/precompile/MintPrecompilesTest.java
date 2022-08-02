@@ -55,6 +55,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 import com.esaulpaugh.headlong.util.Integers;
+import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
@@ -88,6 +89,7 @@ import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.txns.token.MintLogic;
+import com.hedera.services.utils.accessors.AccessorFactory;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ExchangeRate;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
@@ -154,6 +156,7 @@ class MintPrecompilesTest {
     @Mock private AssetsLoader assetLoader;
     @Mock private HbarCentExchange exchange;
     @Mock private ExchangeRate exchangeRate;
+    @Mock private AccessorFactory accessorFactory;
 
     private static final long TEST_SERVICE_FEE = 5_000_000;
     private static final long TEST_NETWORK_FEE = 400_000;
@@ -174,7 +177,12 @@ class MintPrecompilesTest {
         given(assetLoader.loadCanonicalPrices()).willReturn(canonicalPrices);
         PrecompilePricingUtils precompilePricingUtils =
                 new PrecompilePricingUtils(
-                        assetLoader, exchange, () -> feeCalculator, resourceCosts, stateView);
+                        assetLoader,
+                        exchange,
+                        () -> feeCalculator,
+                        resourceCosts,
+                        stateView,
+                        accessorFactory);
         subject =
                 new HTSPrecompiledContract(
                         dynamicProperties,
@@ -196,7 +204,7 @@ class MintPrecompilesTest {
     }
 
     @Test
-    void mintFailurePathWorks() {
+    void mintFailurePathWorks() throws InvalidProtocolBufferException {
         Bytes pretendArguments = givenNonFungibleFrameContext();
         givenPricingUtilsContext();
 
@@ -234,7 +242,7 @@ class MintPrecompilesTest {
     }
 
     @Test
-    void mintRandomFailurePathWorks() {
+    void mintRandomFailurePathWorks() throws InvalidProtocolBufferException {
         Bytes pretendArguments = givenNonFungibleFrameContext();
         givenPricingUtilsContext();
 
@@ -267,7 +275,7 @@ class MintPrecompilesTest {
     }
 
     @Test
-    void nftMintHappyPathWorks() {
+    void nftMintHappyPathWorks() throws InvalidProtocolBufferException {
         Bytes pretendArguments = givenNonFungibleFrameContext();
         givenLedgers();
         givenPricingUtilsContext();
@@ -324,7 +332,7 @@ class MintPrecompilesTest {
     }
 
     @Test
-    void nftMintBadSyntaxWorks() {
+    void nftMintBadSyntaxWorks() throws InvalidProtocolBufferException {
         Bytes pretendArguments = givenNonFungibleFrameContext();
         givenLedgers();
         givenPricingUtilsContext();
@@ -366,7 +374,7 @@ class MintPrecompilesTest {
     }
 
     @Test
-    void fungibleMintHappyPathWorks() {
+    void fungibleMintHappyPathWorks() throws InvalidProtocolBufferException {
         Bytes pretendArguments = givenFungibleFrameContext();
         givenLedgers();
         givenFungibleCollaborators();
@@ -404,7 +412,7 @@ class MintPrecompilesTest {
     }
 
     @Test
-    void mintFailsWithMissingParentUpdater() {
+    void mintFailsWithMissingParentUpdater() throws InvalidProtocolBufferException {
         Bytes pretendArguments = givenFungibleFrameContext();
         givenLedgers();
         givenFungibleCollaborators();
@@ -451,7 +459,7 @@ class MintPrecompilesTest {
     }
 
     @Test
-    void fungibleMintForMaxAmountWorks() {
+    void fungibleMintForMaxAmountWorks() throws InvalidProtocolBufferException {
         // given:
         givenLedgers();
         givenPricingUtilsContext();
@@ -493,7 +501,7 @@ class MintPrecompilesTest {
     }
 
     @Test
-    void gasRequirementReturnsCorrectValueForMintToken() {
+    void gasRequirementReturnsCorrectValueForMintToken() throws InvalidProtocolBufferException {
         // given
         givenMinFrameContext();
         givenPricingUtilsContext();
