@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.hedera.services.utils.accessors;
+package com.hedera.services.utils.accessors.custom;
 
 import static com.hedera.services.txns.token.TokenOpsValidator.validateTokenOpsWith;
 import static com.hedera.services.txns.validation.ContextOptionValidator.batchSizeCheck;
@@ -25,9 +25,12 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_WIPING
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.store.models.Id;
+import com.hedera.services.utils.accessors.SignedTxnAccessor;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenWipeAccountTransactionBody;
 import com.hederahashgraph.api.proto.java.Transaction;
+
+import javax.annotation.Nullable;
 import java.util.List;
 
 /**
@@ -41,7 +44,7 @@ public class TokenWipeAccessor extends SignedTxnAccessor {
 
     public TokenWipeAccessor(
             final byte[] signedTxnWrapperBytes,
-            final Transaction txn,
+            @Nullable final Transaction txn,
             final GlobalDynamicProperties dynamicProperties)
             throws InvalidProtocolBufferException {
         super(signedTxnWrapperBytes, txn);

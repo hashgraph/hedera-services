@@ -117,9 +117,6 @@ public interface TxnAccessor {
 
     void countAutoCreationsWith(AliasManager aliasManager);
 
-    // Used only for SubmitMessage
-    SubmitMessageMeta availSubmitUsageMeta();
-
     // Used only for ScheduleCreate/Sign, to find valid signatures that apply to a scheduled
     // transaction
     SignatureMap getSigMap();

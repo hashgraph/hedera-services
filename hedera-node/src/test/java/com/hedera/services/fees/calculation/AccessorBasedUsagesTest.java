@@ -183,7 +183,7 @@ class AccessorBasedUsagesTest {
         final var usageAccumulator = new UsageAccumulator();
 
         given(txnAccessor.getFunction()).willReturn(ConsensusSubmitMessage);
-        given(txnAccessor.availSubmitUsageMeta()).willReturn(submitMeta);
+        given(txnAccessor.getSpanMapAccessor().getSubmitMessageMeta(txnAccessor)).willReturn(submitMeta);
         given(txnAccessor.baseUsageMeta()).willReturn(baseMeta);
 
         subject.assess(sigUsage, txnAccessor, usageAccumulator);

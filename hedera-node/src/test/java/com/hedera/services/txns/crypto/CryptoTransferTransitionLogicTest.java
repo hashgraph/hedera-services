@@ -29,8 +29,8 @@ import com.hedera.services.state.submerkle.FcAssessedCustomFee;
 import com.hedera.services.state.submerkle.FcCustomFee;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.txns.span.ExpandHandleSpanMapAccessor;
-import com.hedera.services.utils.accessors.CryptoTransferAccessor;
-import com.hedera.services.utils.accessors.SwirldsTxnAccessor;
+import com.hedera.services.utils.accessors.custom.CryptoTransferAccessor;
+import com.hedera.services.utils.accessors.PlatformTxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -65,12 +65,11 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.verify;
-import static org.mockito.BDDMockito.willCallRealMethod;
 import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyNoInteractions;
 
 @ExtendWith(MockitoExtension.class)
@@ -103,7 +102,7 @@ class CryptoTransferTransitionLogicTest {
     @Mock private GlobalDynamicProperties dynamicProperties;
     @Mock private ImpliedTransfersMarshal impliedTransfersMarshal;
     @Mock private ExpandHandleSpanMapAccessor spanMapAccessor;
-    @Mock private SwirldsTxnAccessor swirldsTxnAccessor;
+    @Mock private PlatformTxnAccessor swirldsTxnAccessor;
     private CryptoTransferAccessor accessor;
 
     private TransactionBody cryptoTransferTxnBody;
@@ -237,8 +236,11 @@ class CryptoTransferTransitionLogicTest {
         final var impliedTransfers =
                 ImpliedTransfers.invalid(validationProps, TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN);
 
-        givenValidTxnCtx();
-        given(spanMapAccessor.getImpliedTransfers(accessor)).willReturn(impliedTransfers);
+        cryptoTransferTxnBody = TransactionBody.newBuilder().setCryptoTransfer(xfers).build();
+        cryptoTransferTxn =
+                Transaction.newBuilder().setBodyBytes(cryptoTransferTxnBody.toByteString()).build();
+        accessor = new CryptoTransferAccessor(cryptoTransferTxn.toByteArray(), cryptoTransferTxn, dynamicProperties);
+        accessor.getSpanMapAccessor().setImpliedTransfers(accessor, impliedTransfers);
 
         // when:
         final var validity = subject.validateSemantics(accessor);
@@ -271,10 +273,13 @@ class CryptoTransferTransitionLogicTest {
                                                                 asAccount("0.0.2000"), +1_000))))
                         .build();
         cryptoTransferTxnBody = TransactionBody.newBuilder().setCryptoTransfer(xfers).build();
-        addToTxn();
+        cryptoTransferTxn =
+                Transaction.newBuilder().setBodyBytes(cryptoTransferTxnBody.toByteString()).build();
+        accessor = new CryptoTransferAccessor(cryptoTransferTxn.toByteArray(), cryptoTransferTxn, dynamicProperties);
+
         given(dynamicProperties.areAllowancesEnabled()).willReturn(false);
-//        given(transferSemanticChecks.fullPureValidation(any(), any(), any()))
-//                .willReturn(NOT_SUPPORTED);
+        given(dynamicProperties.maxTransferListSize()).willReturn(maxHbarAdjusts);
+
         final var validity = subject.validateSemantics(accessor);
         assertEquals(NOT_SUPPORTED, validity);
     }
@@ -291,13 +296,10 @@ class CryptoTransferTransitionLogicTest {
         given(dynamicProperties.maxXferBalanceChanges()).willReturn(maxBalanceChanges);
         given(dynamicProperties.isAutoCreationEnabled()).willReturn(autoCreationEnabled);
         given(dynamicProperties.areAllowancesEnabled()).willReturn(areAllowancesEnabled);
-        addToTxn();
-//        given(
-//                        transferSemanticChecks.fullPureValidation(
-//                                pretendXferTxn.getCryptoTransfer().getTransfers(),
-//                                pretendXferTxn.getCryptoTransfer().getTokenTransfersList(),
-//                                validationProps))
-//                .willReturn(TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN);
+
+        cryptoTransferTxn =
+                Transaction.newBuilder().setBodyBytes(cryptoTransferTxnBody.toByteString()).build();
+        accessor = new CryptoTransferAccessor(cryptoTransferTxn.toByteArray(), cryptoTransferTxn, dynamicProperties);
 
         // when:
         final var validity = subject.validateSemantics(accessor);
@@ -343,11 +345,9 @@ class CryptoTransferTransitionLogicTest {
         cryptoTransferTxn =
                 Transaction.newBuilder().setBodyBytes(cryptoTransferTxnBody.toByteString()).build();
         accessor = new CryptoTransferAccessor(cryptoTransferTxn.toByteArray(), cryptoTransferTxn, dynamicProperties);
-        given(swirldsTxnAccessor.getPayer()).willReturn(payer);
         accessor.setPayer(payer);
         given(txnCtx.swirldsTxnAccessor()).willReturn(swirldsTxnAccessor);
-        given(swirldsTxnAccessor.getTxn()).willReturn(cryptoTransferTxnBody);
-//        given(swirldsTxnAccessor.getDelegate()).willReturn(accessor);
+        given(swirldsTxnAccessor.getDelegate()).willReturn(accessor);
     }
 
     private void givenValidTxnCtx() throws InvalidProtocolBufferException {

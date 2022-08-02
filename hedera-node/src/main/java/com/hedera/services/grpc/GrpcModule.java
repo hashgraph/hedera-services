@@ -93,15 +93,13 @@ public interface GrpcModule {
             FeeAssessor feeAssessor,
             AliasManager aliasManager,
             CustomFeeSchedules customFeeSchedules,
-            GlobalDynamicProperties dynamicProperties,
-            PureTransferSemanticChecks transferSemanticChecks) {
+            GlobalDynamicProperties dynamicProperties) {
         return new ImpliedTransfersMarshal(
                 feeAssessor,
                 aliasManager,
                 customFeeSchedules,
                 AliasResolver::new,
                 dynamicProperties,
-                transferSemanticChecks,
                 AliasResolver::usesAliases,
                 BalanceChangeManager::new,
                 CustomSchedulesManager::new);

@@ -21,11 +21,14 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
 import com.google.protobuf.InvalidProtocolBufferException;
+import com.hedera.services.context.NodeInfo;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.accounts.AliasManager;
+import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.txns.span.ExpandHandleSpan;
 import com.hedera.services.txns.span.SpanMapManager;
 import com.hedera.services.txns.validation.OptionValidator;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.accessors.AccessorFactory;
 import com.hedera.services.utils.accessors.SignedTxnAccessor;
 import com.hedera.test.utils.IdUtils;
@@ -35,6 +38,8 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.swirlds.common.system.transaction.SwirldTransaction;
 import java.util.concurrent.TimeUnit;
+
+import com.swirlds.merkle.map.MerkleMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -44,11 +49,13 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class ExpandHandleSpanTest {
     @Mock private SpanMapManager handleSpanMap;
-    @Mock private AliasManager aliasManager;
     @Mock private OptionValidator validator;
     @Mock private GlobalDynamicProperties properties;
 
-    private AccessorFactory accessorFactory = new AccessorFactory(properties, validator);
+    @Mock private MerkleMap<EntityNum, MerkleAccount> accounts;
+    @Mock private NodeInfo nodeInfo;
+
+    private AccessorFactory accessorFactory = new AccessorFactory(properties, validator, () -> accounts, nodeInfo);
 
     private final long duration = 20;
     private final TimeUnit testUnit = TimeUnit.MILLISECONDS;

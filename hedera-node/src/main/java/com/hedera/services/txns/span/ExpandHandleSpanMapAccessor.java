@@ -18,6 +18,7 @@ package com.hedera.services.txns.span;
 import com.hedera.services.ethereum.EthTxData;
 import com.hedera.services.ethereum.EthTxSigs;
 import com.hedera.services.grpc.marshalling.ImpliedTransfers;
+import com.hedera.services.usage.consensus.SubmitMessageMeta;
 import com.hedera.services.usage.crypto.CryptoApproveAllowanceMeta;
 import com.hedera.services.usage.crypto.CryptoCreateMeta;
 import com.hedera.services.usage.crypto.CryptoDeleteAllowanceMeta;
@@ -54,8 +55,9 @@ public class ExpandHandleSpanMapAccessor {
     private static final String CRYPTO_UPDATE_META_KEY = "cryptoUpdateMeta";
     private static final String CRYPTO_APPROVE_META_KEY = "cryptoApproveMeta";
     private static final String CRYPTO_DELETE_ALLOWANCE_META_KEY = "cryptoDeleteAllowanceMeta";
-
     private static final String CRYPTO_TRANSFER_META_KEY = "cryptoTransferMeta";
+
+    private static final String SUBMIT_MESSAGE_META_KEY = "submitMessageMeta";
     private static final String ETH_TX_DATA_META_KEY = "ethTxDataMeta";
     private static final String ETH_TX_SIGS_META_KEY = "ethTxSigsMeta";
     private static final String ETH_TX_BODY_META_KEY = "ethTxBodyMeta";
@@ -82,6 +84,14 @@ public class ExpandHandleSpanMapAccessor {
 
     public ImpliedTransfers getImpliedTransfers(TxnAccessor accessor) {
         return (ImpliedTransfers) accessor.getSpanMap().get(IMPLIED_TRANSFERS_KEY);
+    }
+
+    public void setSubmitMessageMeta(TxnAccessor accessor, SubmitMessageMeta submitMessageMeta) {
+        accessor.getSpanMap().put(SUBMIT_MESSAGE_META_KEY, submitMessageMeta);
+    }
+
+    public SubmitMessageMeta getSubmitMessageMeta(TxnAccessor accessor) {
+        return (SubmitMessageMeta) accessor.getSpanMap().get(SUBMIT_MESSAGE_META_KEY);
     }
 
     public void setTokenCreateMeta(TxnAccessor accessor, TokenCreateMeta tokenCreateMeta) {

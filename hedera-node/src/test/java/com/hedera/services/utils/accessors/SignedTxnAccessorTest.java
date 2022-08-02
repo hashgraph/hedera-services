@@ -57,6 +57,7 @@ import com.hedera.services.usage.token.TokenOpsUsage;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.KeyUtils;
 import com.hedera.services.utils.RationalizedSigMeta;
+import com.hedera.services.utils.accessors.custom.TokenWipeAccessor;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -431,7 +432,7 @@ class SignedTxnAccessorTest {
 
         assertEquals(SubType.DEFAULT, subject.getSubType());
         assertThrows(IllegalStateException.class, () -> subject.getSpanMapAccessor().getCryptoTransferMeta(subject));
-        assertThrows(IllegalStateException.class, subject::availSubmitUsageMeta);
+        assertThrows(IllegalStateException.class, () -> subject.getSpanMapAccessor().getSubmitMessageMeta(subject));
     }
 
     @Test
@@ -446,7 +447,7 @@ class SignedTxnAccessorTest {
         final var txn = buildTransactionFrom(txnBody);
         final var subject = SignedTxnAccessor.uncheckedFrom(txn);
 
-        final var submitMeta = subject.availSubmitUsageMeta();
+        final var submitMeta = subject.getSpanMapAccessor().getSubmitMessageMeta(subject);
 
         assertEquals(message.length(), submitMeta.numMsgBytes());
     }

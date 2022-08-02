@@ -33,16 +33,20 @@ import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.verify;
 
 import com.google.protobuf.ByteString;
+import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.EntityNum;
-import com.hedera.services.utils.accessors.SignedTxnAccessor;
+import com.hedera.services.utils.accessors.PlatformTxnAccessor;
+import com.hedera.services.utils.accessors.custom.SubmitMessageAccessor;
+import com.hedera.services.utils.accessors.SwirldsTxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ConsensusMessageChunkInfo;
 import com.hederahashgraph.api.proto.java.ConsensusSubmitMessageTransactionBody;
 import com.hederahashgraph.api.proto.java.Timestamp;
+import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.swirlds.common.utility.CommonUtils;
@@ -56,29 +60,31 @@ class SubmitMessageTransitionLogicTest {
     private static final long EPOCH_SECOND = 1546304461;
 
     private Instant consensusTime;
-    private TransactionBody transactionBody;
-    private TransactionContext transactionContext;
-    private SignedTxnAccessor accessor;
+    private TransactionBody txnBody;
+    private Transaction submitMessageTxn;
+    private TransactionContext txnCtx;
+    private SubmitMessageAccessor accessor;
+    private SwirldsTxnAccessor swirldsTxnAccessor;
     private OptionValidator validator;
     private SubmitMessageTransitionLogic subject;
     private MerkleMap<EntityNum, MerkleTopic> topics = new MerkleMap<>();
-    private GlobalDynamicProperties globalDynamicProperties;
+    private GlobalDynamicProperties dynamicProperties;
     private final AccountID payer = AccountID.newBuilder().setAccountNum(1_234L).build();
 
     @BeforeEach
     private void setup() {
         consensusTime = Instant.ofEpochSecond(EPOCH_SECOND);
+        swirldsTxnAccessor = mock(PlatformTxnAccessor.class);
 
-        transactionContext = mock(TransactionContext.class);
-        given(transactionContext.consensusTime()).willReturn(consensusTime);
-        accessor = mock(SignedTxnAccessor.class);
+        txnCtx = mock(TransactionContext.class);
+        given(txnCtx.consensusTime()).willReturn(consensusTime);
         validator = mock(OptionValidator.class);
         topics.clear();
-        globalDynamicProperties = mock(GlobalDynamicProperties.class);
-        given(globalDynamicProperties.messageMaxBytesAllowed()).willReturn(1024);
+        dynamicProperties = mock(GlobalDynamicProperties.class);
+        given(dynamicProperties.messageMaxBytesAllowed()).willReturn(1024);
         subject =
                 new SubmitMessageTransitionLogic(
-                        () -> topics, validator, transactionContext, globalDynamicProperties);
+                        () -> topics, validator, txnCtx, dynamicProperties);
     }
 
     @Test
@@ -88,17 +94,17 @@ class SubmitMessageTransitionLogicTest {
     }
 
     @Test
-    void hasCorrectApplicability() {
+    void hasCorrectApplicability() throws InvalidProtocolBufferException {
         // given:
         givenValidTransactionContext();
 
         // expect:
-        assertTrue(subject.applicability().test(transactionBody));
+        assertTrue(subject.applicability().test(txnBody));
         assertFalse(subject.applicability().test(TransactionBody.getDefaultInstance()));
     }
 
     @Test
-    void followsHappyPath() {
+    void followsHappyPath() throws InvalidProtocolBufferException {
         // given:
         givenValidTransactionContext();
 
@@ -117,11 +123,11 @@ class SubmitMessageTransitionLogicTest {
                 "c44860f057eca2ea865821f5211420afe231dc2a485c277405d14f8421bb97f4a34ddd53db84bcf064045d10e7fca822",
                 CommonUtils.hex(topic.getRunningHash()));
 
-        verify(transactionContext).setStatus(SUCCESS);
+        verify(txnCtx).setStatus(SUCCESS);
     }
 
     @Test
-    void failsWithEmptyMessage() {
+    void failsWithEmptyMessage() throws InvalidProtocolBufferException {
         // given:
         givenTransactionContextNoMessage();
 
@@ -130,25 +136,25 @@ class SubmitMessageTransitionLogicTest {
 
         // then:
         assertUnchangedTopics();
-        verify(transactionContext).setStatus(INVALID_TOPIC_MESSAGE);
+        verify(txnCtx).setStatus(INVALID_TOPIC_MESSAGE);
     }
 
     @Test
-    void failsForLargeMessage() {
+    void failsForLargeMessage() throws InvalidProtocolBufferException {
         // given:
         givenValidTransactionContext();
-        given(globalDynamicProperties.messageMaxBytesAllowed()).willReturn(5);
+        given(dynamicProperties.messageMaxBytesAllowed()).willReturn(5);
 
         // when:
         subject.doStateTransition();
 
         // then:
         assertUnchangedTopics();
-        verify(transactionContext).setStatus(MESSAGE_SIZE_TOO_LARGE);
+        verify(txnCtx).setStatus(MESSAGE_SIZE_TOO_LARGE);
     }
 
     @Test
-    void failsForInvalidTopic() {
+    void failsForInvalidTopic() throws InvalidProtocolBufferException {
         // given:
         givenTransactionContextInvalidTopic();
 
@@ -157,11 +163,11 @@ class SubmitMessageTransitionLogicTest {
 
         // then:
         assertTrue(topics.isEmpty());
-        verify(transactionContext).setStatus(INVALID_TOPIC_ID);
+        verify(txnCtx).setStatus(INVALID_TOPIC_ID);
     }
 
     @Test
-    void failsForInvalidChunkNumber() {
+    void failsForInvalidChunkNumber() throws InvalidProtocolBufferException {
         // given:
         givenChunkMessage(2, 3, defaultTxnId());
 
@@ -169,11 +175,11 @@ class SubmitMessageTransitionLogicTest {
         subject.doStateTransition();
 
         // then:
-        verify(transactionContext).setStatus(INVALID_CHUNK_NUMBER);
+        verify(txnCtx).setStatus(INVALID_CHUNK_NUMBER);
     }
 
     @Test
-    void failsForDifferentPayers() {
+    void failsForDifferentPayers() throws InvalidProtocolBufferException {
         // given:
         AccountID initialTransactionPayer =
                 AccountID.newBuilder().setAccountNum(payer.getAccountNum() + 1).build();
@@ -183,11 +189,12 @@ class SubmitMessageTransitionLogicTest {
         subject.doStateTransition();
 
         // then:
-        verify(transactionContext).setStatus(INVALID_CHUNK_TRANSACTION_ID);
+        verify(txnCtx).setStatus(INVALID_CHUNK_TRANSACTION_ID);
     }
 
     @Test
-    void acceptsChunkNumberDifferentThan1HavingTheSamePayerEvenWhenNotMatchingValidStart() {
+    void acceptsChunkNumberDifferentThan1HavingTheSamePayerEvenWhenNotMatchingValidStart()
+            throws InvalidProtocolBufferException {
         // given:
         givenChunkMessage(5, 5, txnId(payer, EPOCH_SECOND - 30));
 
@@ -195,11 +202,12 @@ class SubmitMessageTransitionLogicTest {
         subject.doStateTransition();
 
         // then:
-        verify(transactionContext).setStatus(SUCCESS);
+        verify(txnCtx).setStatus(SUCCESS);
     }
 
     @Test
-    void failsForTransactionIDOfChunkNumber1NotMatchingTheEntireInitialTransactionID() {
+    void failsForTransactionIDOfChunkNumber1NotMatchingTheEntireInitialTransactionID()
+            throws InvalidProtocolBufferException {
         // given:
         givenChunkMessage(4, 1, txnId(payer, EPOCH_SECOND - 30));
 
@@ -207,11 +215,12 @@ class SubmitMessageTransitionLogicTest {
         subject.doStateTransition();
 
         // then:
-        verify(transactionContext).setStatus(INVALID_CHUNK_TRANSACTION_ID);
+        verify(txnCtx).setStatus(INVALID_CHUNK_TRANSACTION_ID);
     }
 
     @Test
-    void acceptsChunkNumber1WhenItsTransactionIDMatchesTheEntireInitialTransactionID() {
+    void acceptsChunkNumber1WhenItsTransactionIDMatchesTheEntireInitialTransactionID()
+            throws InvalidProtocolBufferException {
         // given:
         givenChunkMessage(1, 1, defaultTxnId());
 
@@ -219,7 +228,7 @@ class SubmitMessageTransitionLogicTest {
         subject.doStateTransition();
 
         // then:
-        verify(transactionContext).setStatus(SUCCESS);
+        verify(txnCtx).setStatus(SUCCESS);
     }
 
     private void assertUnchangedTopics() {
@@ -234,23 +243,23 @@ class SubmitMessageTransitionLogicTest {
                 .setMessage(ByteString.copyFrom("valid message".getBytes()));
     }
 
-    private void givenTransaction(ConsensusSubmitMessageTransactionBody.Builder body) {
-        transactionBody =
+    private void givenTransaction(ConsensusSubmitMessageTransactionBody.Builder body)
+            throws InvalidProtocolBufferException {
+        txnBody =
                 TransactionBody.newBuilder()
                         .setTransactionID(defaultTxnId())
                         .setConsensusSubmitMessage(body.build())
                         .build();
-        given(accessor.getTxn()).willReturn(transactionBody);
-        given(transactionContext.accessor()).willReturn(accessor);
+        addToTxn();
     }
 
-    private void givenValidTransactionContext() {
+    private void givenValidTransactionContext() throws InvalidProtocolBufferException {
         givenTransaction(getBasicValidTransactionBodyBuilder());
         given(validator.queryableTopicStatus(asTopic(TOPIC_ID), topics)).willReturn(OK);
         topics.put(EntityNum.fromTopicId(asTopic(TOPIC_ID)), new MerkleTopic());
     }
 
-    private void givenTransactionContextNoMessage() {
+    private void givenTransactionContextNoMessage() throws InvalidProtocolBufferException {
         givenTransaction(
                 ConsensusSubmitMessageTransactionBody.newBuilder()
                         .setTopicID(asTopic(TOPIC_ID))
@@ -259,14 +268,24 @@ class SubmitMessageTransitionLogicTest {
         topics.put(EntityNum.fromTopicId(asTopic(TOPIC_ID)), new MerkleTopic());
     }
 
-    private void givenTransactionContextInvalidTopic() {
+    private void givenTransactionContextInvalidTopic() throws InvalidProtocolBufferException {
         givenTransaction(getBasicValidTransactionBodyBuilder());
         given(validator.queryableTopicStatus(asTopic(TOPIC_ID), topics))
                 .willReturn(INVALID_TOPIC_ID);
     }
 
+    private void addToTxn() throws InvalidProtocolBufferException {
+        submitMessageTxn = Transaction.newBuilder().setBodyBytes(txnBody.toByteString()).build();
+        accessor =
+                new SubmitMessageAccessor(
+                        submitMessageTxn.toByteArray(), submitMessageTxn);
+        given(txnCtx.swirldsTxnAccessor()).willReturn(swirldsTxnAccessor);
+        given(swirldsTxnAccessor.getDelegate()).willReturn(accessor);
+    }
+
     private void givenChunkMessage(
-            int totalChunks, int chunkNumber, TransactionID initialTransactionID) {
+            int totalChunks, int chunkNumber, TransactionID initialTransactionID)
+            throws InvalidProtocolBufferException {
         ConsensusMessageChunkInfo chunkInfo =
                 ConsensusMessageChunkInfo.newBuilder()
                         .setInitialTransactionID(initialTransactionID)

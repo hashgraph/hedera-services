@@ -19,17 +19,12 @@ import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 import com.hedera.services.context.TransactionContext;
-import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.grpc.marshalling.ImpliedTransfers;
 import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;
-import com.hedera.services.grpc.marshalling.ImpliedTransfersMeta;
 import com.hedera.services.ledger.HederaLedger;
-import com.hedera.services.ledger.PureTransferSemanticChecks;
 import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.txns.span.ExpandHandleSpanMapAccessor;
-import com.hedera.services.utils.accessors.SwirldsTxnAccessor;
-import com.hedera.services.utils.accessors.TxnAccessor;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hedera.services.utils.accessors.custom.CryptoTransferAccessor;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.util.function.Predicate;
 import javax.inject.Inject;
@@ -62,8 +57,8 @@ public class CryptoTransferTransitionLogic implements TransitionLogic {
 
     @Override
     public void doStateTransition() {
-        final var swirldsTxnAccessor = txnCtx.swirldsTxnAccessor();
-        final var impliedTransfers = finalImpliedTransfersFor(swirldsTxnAccessor);
+        final var accessor = (CryptoTransferAccessor) txnCtx.swirldsTxnAccessor().getDelegate();
+        final var impliedTransfers = finalImpliedTransfersFor(accessor);
 
         var outcome = impliedTransfers.getMeta().code();
         validateTrue(outcome == OK, outcome);
@@ -75,7 +70,7 @@ public class CryptoTransferTransitionLogic implements TransitionLogic {
         txnCtx.setAssessedCustomFees(impliedTransfers.getAssessedCustomFees());
     }
 
-    private ImpliedTransfers finalImpliedTransfersFor(final SwirldsTxnAccessor accessor) {
+    private ImpliedTransfers finalImpliedTransfersFor(final CryptoTransferAccessor accessor) {
         var impliedTransfers = spanMapAccessor.getImpliedTransfers(accessor);
         if (impliedTransfers == null) {
             final var op = accessor.getTxn().getCryptoTransfer();

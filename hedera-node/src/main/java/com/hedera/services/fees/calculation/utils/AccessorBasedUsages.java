@@ -226,7 +226,7 @@ public class AccessorBasedUsages {
             TxnAccessor accessor,
             BaseTransactionMeta baseMeta,
             UsageAccumulator into) {
-        final var submitMeta = accessor.availSubmitUsageMeta();
+        final var submitMeta = accessor.getSpanMapAccessor().getSubmitMessageMeta(accessor);
         consensusOpsUsage.submitMessageUsage(sigUsage, submitMeta, baseMeta, into);
     }
 

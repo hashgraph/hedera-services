@@ -15,6 +15,42 @@
  */
 package com.hedera.services.txns.crypto;
 
+import com.google.protobuf.InvalidProtocolBufferException;
+import com.hedera.services.context.NodeInfo;
+import com.hedera.services.context.TransactionContext;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.exceptions.InsufficientFundsException;
+import com.hedera.services.ledger.HederaLedger;
+import com.hedera.services.ledger.SigImpactHistorian;
+import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
+import com.hedera.services.ledger.properties.AccountProperty;
+import com.hedera.services.legacy.core.jproto.JEd25519Key;
+import com.hedera.services.legacy.core.jproto.JKey;
+import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.state.validation.UsageLimits;
+import com.hedera.services.txns.validation.OptionValidator;
+import com.hedera.services.utils.EntityNum;
+import com.hedera.services.utils.accessors.PlatformTxnAccessor;
+import com.hedera.services.utils.accessors.SwirldsTxnAccessor;
+import com.hedera.services.utils.accessors.custom.CryptoCreateAccessor;
+import com.hedera.test.factories.txns.SignedTxnFactory;
+import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
+import com.hederahashgraph.api.proto.java.Duration;
+import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.KeyList;
+import com.hederahashgraph.api.proto.java.Timestamp;
+import com.hederahashgraph.api.proto.java.Transaction;
+import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.hederahashgraph.api.proto.java.TransactionID;
+import com.swirlds.merkle.map.MerkleMap;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
+
+import java.time.Instant;
+
 import static com.hedera.services.ledger.properties.AccountProperty.AUTO_RENEW_PERIOD;
 import static com.hedera.services.ledger.properties.AccountProperty.DECLINE_REWARD;
 import static com.hedera.services.ledger.properties.AccountProperty.EXPIRY;
@@ -54,37 +90,6 @@ import static org.mockito.BDDMockito.longThat;
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.verify;
 
-import com.hedera.services.context.NodeInfo;
-import com.hedera.services.context.TransactionContext;
-import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.exceptions.InsufficientFundsException;
-import com.hedera.services.ledger.HederaLedger;
-import com.hedera.services.ledger.SigImpactHistorian;
-import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
-import com.hedera.services.ledger.properties.AccountProperty;
-import com.hedera.services.legacy.core.jproto.JEd25519Key;
-import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.submerkle.EntityId;
-import com.hedera.services.state.validation.UsageLimits;
-import com.hedera.services.txns.validation.OptionValidator;
-import com.hedera.services.utils.EntityNum;
-import com.hedera.services.utils.accessors.SignedTxnAccessor;
-import com.hedera.test.factories.txns.SignedTxnFactory;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
-import com.hederahashgraph.api.proto.java.Duration;
-import com.hederahashgraph.api.proto.java.Key;
-import com.hederahashgraph.api.proto.java.KeyList;
-import com.hederahashgraph.api.proto.java.Timestamp;
-import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.api.proto.java.TransactionID;
-import com.swirlds.merkle.map.MerkleMap;
-import java.time.Instant;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.mockito.ArgumentCaptor;
-
 class CryptoCreateTransitionLogicTest {
     private static final Key KEY = SignedTxnFactory.DEFAULT_PAYER_KT.asKey();
     private static final long CUSTOM_AUTO_RENEW_PERIOD = 100_001L;
@@ -104,10 +109,13 @@ class CryptoCreateTransitionLogicTest {
 
     private HederaLedger ledger;
     private OptionValidator validator;
-    private TransactionBody cryptoCreateTxn;
+    private TransactionBody cryptoCreateTxnBody;
+    private Transaction cryptoCreateTxn;
     private SigImpactHistorian sigImpactHistorian;
     private TransactionContext txnCtx;
-    private SignedTxnAccessor accessor;
+    private CryptoCreateAccessor accessor;
+
+    private SwirldsTxnAccessor swirldsTxnAccessor;
     private GlobalDynamicProperties dynamicProperties;
     private CryptoCreateTransitionLogic subject;
     private MerkleMap<EntityNum, MerkleAccount> accounts;
@@ -120,32 +128,25 @@ class CryptoCreateTransitionLogicTest {
         usageLimits = mock(UsageLimits.class);
         given(txnCtx.consensusTime()).willReturn(consensusTime);
         ledger = mock(HederaLedger.class);
-        accessor = mock(SignedTxnAccessor.class);
         validator = mock(OptionValidator.class);
         sigImpactHistorian = mock(SigImpactHistorian.class);
         dynamicProperties = mock(GlobalDynamicProperties.class);
         accounts = mock(MerkleMap.class);
         nodeInfo = mock(NodeInfo.class);
+        swirldsTxnAccessor = mock(PlatformTxnAccessor.class);
         given(dynamicProperties.maxTokensPerAccount()).willReturn(MAX_TOKEN_ASSOCIATIONS);
         withRubberstampingValidator();
 
         subject =
                 new CryptoCreateTransitionLogic(
-                        usageLimits,
-                        ledger,
-                        validator,
-                        sigImpactHistorian,
-                        txnCtx,
-                        dynamicProperties,
-                        () -> accounts,
-                        nodeInfo);
+                        usageLimits, ledger, sigImpactHistorian, txnCtx);
     }
 
     @Test
     void hasCorrectApplicability() {
         givenValidTxnCtx();
 
-        assertTrue(subject.applicability().test(cryptoCreateTxn));
+        assertTrue(subject.applicability().test(cryptoCreateTxnBody));
         assertFalse(subject.applicability().test(TransactionBody.getDefaultInstance()));
     }
 
@@ -154,49 +155,50 @@ class CryptoCreateTransitionLogicTest {
         givenValidTxnCtx();
         given(validator.memoCheck(MEMO)).willReturn(MEMO_TOO_LONG);
 
-        assertEquals(MEMO_TOO_LONG, subject.semanticCheck().apply(cryptoCreateTxn));
+        assertEquals(MEMO_TOO_LONG, subject.validateSemantics(accessor));
     }
 
     @Test
     void returnsKeyRequiredOnEmptyKey() {
         givenValidTxnCtx(Key.newBuilder().setKeyList(KeyList.getDefaultInstance()).build());
 
-        assertEquals(KEY_REQUIRED, subject.semanticCheck().apply(cryptoCreateTxn));
+        assertEquals(KEY_REQUIRED, subject.validateSemantics(accessor));
     }
 
     @Test
     void requiresKey() {
         givenMissingKey();
 
-        assertEquals(KEY_REQUIRED, subject.semanticCheck().apply(cryptoCreateTxn));
+        assertEquals(KEY_REQUIRED, subject.validateSemantics(accessor));
     }
 
     @Test
     void rejectsInvalidKey() {
         givenEmptyKey();
 
-        assertEquals(INVALID_ADMIN_KEY, subject.semanticCheck().apply(cryptoCreateTxn));
+        assertEquals(INVALID_ADMIN_KEY, subject.validateSemantics(accessor));
     }
 
     @Test
     void rejectsMissingAutoRenewPeriod() {
         givenMissingAutoRenewPeriod();
 
-        assertEquals(INVALID_RENEWAL_PERIOD, subject.semanticCheck().apply(cryptoCreateTxn));
+        assertEquals(INVALID_RENEWAL_PERIOD, subject.validateSemantics(accessor));
     }
 
     @Test
     void rejectsNegativeBalance() {
         givenAbsurdInitialBalance();
 
-        assertEquals(INVALID_INITIAL_BALANCE, subject.semanticCheck().apply(cryptoCreateTxn));
+        assertEquals(INVALID_INITIAL_BALANCE, subject.validateSemantics(accessor));
     }
 
     @Test
     void rejectsNegativeSendThreshold() {
         givenAbsurdSendThreshold();
 
-        assertEquals(INVALID_SEND_RECORD_THRESHOLD, subject.semanticCheck().apply(cryptoCreateTxn));
+        assertEquals(
+                INVALID_SEND_RECORD_THRESHOLD, subject.validateSemantics(accessor));
     }
 
     @Test
@@ -204,7 +206,8 @@ class CryptoCreateTransitionLogicTest {
         givenAbsurdReceiveThreshold();
 
         assertEquals(
-                INVALID_RECEIVE_RECORD_THRESHOLD, subject.semanticCheck().apply(cryptoCreateTxn));
+                INVALID_RECEIVE_RECORD_THRESHOLD,
+                subject.validateSemantics(accessor));
     }
 
     @Test
@@ -212,7 +215,7 @@ class CryptoCreateTransitionLogicTest {
         givenValidTxnCtx();
         given(validator.hasGoodEncoding(any())).willReturn(false);
 
-        assertEquals(BAD_ENCODING, subject.semanticCheck().apply(cryptoCreateTxn));
+        assertEquals(BAD_ENCODING, subject.validateSemantics(accessor));
     }
 
     @Test
@@ -221,7 +224,8 @@ class CryptoCreateTransitionLogicTest {
         given(validator.isValidAutoRenewPeriod(any())).willReturn(false);
 
         assertEquals(
-                AUTORENEW_DURATION_NOT_IN_RANGE, subject.semanticCheck().apply(cryptoCreateTxn));
+                AUTORENEW_DURATION_NOT_IN_RANGE,
+                subject.validateSemantics(accessor));
     }
 
     @Test
@@ -232,7 +236,7 @@ class CryptoCreateTransitionLogicTest {
         given(dynamicProperties.areTokenAssociationsLimited()).willReturn(true);
         given(validator.isValidStakedId(any(), any(), anyLong(), any(), any())).willReturn(true);
 
-        assertEquals(OK, subject.semanticCheck().apply(cryptoCreateTxn));
+        assertEquals(OK, subject.validateSemantics(accessor));
     }
 
     @Test
@@ -243,7 +247,7 @@ class CryptoCreateTransitionLogicTest {
 
         assertEquals(
                 REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT,
-                subject.semanticCheck().apply(cryptoCreateTxn));
+                subject.validateSemantics(accessor));
     }
 
     @Test
@@ -301,13 +305,13 @@ class CryptoCreateTransitionLogicTest {
     void translatesUnknownException() {
         givenValidTxnCtx();
         given(usageLimits.areCreatableAccounts(1)).willReturn(true);
-        cryptoCreateTxn =
-                cryptoCreateTxn.toBuilder()
+        cryptoCreateTxnBody =
+                cryptoCreateTxnBody.toBuilder()
                         .setCryptoCreateAccount(
-                                cryptoCreateTxn.getCryptoCreateAccount().toBuilder()
+                                cryptoCreateTxnBody.getCryptoCreateAccount().toBuilder()
                                         .setKey(unmappableKey()))
                         .build();
-        given(accessor.getTxn()).willReturn(cryptoCreateTxn);
+        addToTxn();
         given(txnCtx.activePayer()).willReturn(ourAccount());
         given(txnCtx.accessor()).willReturn(accessor);
 
@@ -323,26 +327,26 @@ class CryptoCreateTransitionLogicTest {
 
         given(validator.isValidStakedId(any(), any(), anyLong(), any(), any())).willReturn(false);
 
-        assertEquals(INVALID_STAKING_ID, subject.semanticCheck().apply(cryptoCreateTxn));
+        assertEquals(INVALID_STAKING_ID, subject.validateSemantics(accessor));
     }
 
     @Test
     void rejectsStakedIdIfStakingDisabled() {
         givenValidTxnCtx();
 
-        assertEquals(STAKING_NOT_ENABLED, subject.semanticCheck().apply(cryptoCreateTxn));
+        assertEquals(STAKING_NOT_ENABLED, subject.validateSemantics(accessor));
     }
 
     @Test
     void rejectsDeclineRewardIfStakingDisabled() {
         givenValidTxnCtx(KEY, false, true);
 
-        assertEquals(STAKING_NOT_ENABLED, subject.semanticCheck().apply(cryptoCreateTxn));
+        assertEquals(STAKING_NOT_ENABLED, subject.validateSemantics(accessor));
     }
 
     @Test
     void usingProxyAccountFails() {
-        cryptoCreateTxn =
+        cryptoCreateTxnBody =
                 TransactionBody.newBuilder()
                         .setTransactionID(ourTxnId())
                         .setCryptoCreateAccount(
@@ -360,12 +364,12 @@ class CryptoCreateTransitionLogicTest {
                                         .setMaxAutomaticTokenAssociations(
                                                 MAX_TOKEN_ASSOCIATIONS + 1))
                         .build();
-
+        addToTxn();
         assertEquals(
                 PROXY_ACCOUNT_ID_FIELD_IS_DEPRECATED,
-                subject.semanticCheck().apply(cryptoCreateTxn));
+                subject.validateSemantics(accessor));
 
-        cryptoCreateTxn =
+        cryptoCreateTxnBody =
                 TransactionBody.newBuilder()
                         .setTransactionID(ourTxnId())
                         .setCryptoCreateAccount(
@@ -383,10 +387,11 @@ class CryptoCreateTransitionLogicTest {
                                         .setMaxAutomaticTokenAssociations(
                                                 MAX_TOKEN_ASSOCIATIONS + 1))
                         .build();
+        addToTxn();
         given(validator.isValidStakedId(any(), any(), anyLong(), any(), any())).willReturn(true);
         assertNotEquals(
                 PROXY_ACCOUNT_ID_FIELD_IS_DEPRECATED,
-                subject.semanticCheck().apply(cryptoCreateTxn));
+                subject.validateSemantics(accessor));
     }
 
     private Key unmappableKey() {
@@ -394,15 +399,16 @@ class CryptoCreateTransitionLogicTest {
     }
 
     private void givenMissingKey() {
-        cryptoCreateTxn =
+        cryptoCreateTxnBody =
                 TransactionBody.newBuilder()
                         .setCryptoCreateAccount(
                                 CryptoCreateTransactionBody.newBuilder().setInitialBalance(BALANCE))
                         .build();
+        addToTxn();
     }
 
     private void givenEmptyKey() {
-        cryptoCreateTxn =
+        cryptoCreateTxnBody =
                 TransactionBody.newBuilder()
                         .setTransactionID(ourTxnId())
                         .setCryptoCreateAccount(
@@ -413,20 +419,22 @@ class CryptoCreateTransitionLogicTest {
                                                                 new byte[ED25519_BYTE_LENGTH - 1])))
                                         .setInitialBalance(BALANCE))
                         .build();
+        addToTxn();
     }
 
     private void givenMissingAutoRenewPeriod() {
-        cryptoCreateTxn =
+        cryptoCreateTxnBody =
                 TransactionBody.newBuilder()
                         .setCryptoCreateAccount(
                                 CryptoCreateTransactionBody.newBuilder()
                                         .setKey(KEY)
                                         .setInitialBalance(BALANCE))
                         .build();
+        addToTxn();
     }
 
     private void givenAbsurdSendThreshold() {
-        cryptoCreateTxn =
+        cryptoCreateTxnBody =
                 TransactionBody.newBuilder()
                         .setCryptoCreateAccount(
                                 CryptoCreateTransactionBody.newBuilder()
@@ -434,10 +442,11 @@ class CryptoCreateTransitionLogicTest {
                                         .setKey(KEY)
                                         .setSendRecordThreshold(-1L))
                         .build();
+        addToTxn();
     }
 
     private void givenAbsurdReceiveThreshold() {
-        cryptoCreateTxn =
+        cryptoCreateTxnBody =
                 TransactionBody.newBuilder()
                         .setCryptoCreateAccount(
                                 CryptoCreateTransactionBody.newBuilder()
@@ -445,10 +454,11 @@ class CryptoCreateTransitionLogicTest {
                                         .setKey(KEY)
                                         .setReceiveRecordThreshold(-1L))
                         .build();
+        addToTxn();
     }
 
     private void givenAbsurdInitialBalance() {
-        cryptoCreateTxn =
+        cryptoCreateTxnBody =
                 TransactionBody.newBuilder()
                         .setCryptoCreateAccount(
                                 CryptoCreateTransactionBody.newBuilder()
@@ -456,10 +466,11 @@ class CryptoCreateTransitionLogicTest {
                                         .setKey(KEY)
                                         .setInitialBalance(-1L))
                         .build();
+        addToTxn();
     }
 
     private void givenInvalidMaxAutoAssociations() {
-        cryptoCreateTxn =
+        cryptoCreateTxnBody =
                 TransactionBody.newBuilder()
                         .setCryptoCreateAccount(
                                 CryptoCreateTransactionBody.newBuilder()
@@ -476,6 +487,7 @@ class CryptoCreateTransitionLogicTest {
                                         .setMaxAutomaticTokenAssociations(
                                                 MAX_TOKEN_ASSOCIATIONS + 1))
                         .build();
+        addToTxn();
     }
 
     private void givenValidTxnCtx() {
@@ -503,10 +515,30 @@ class CryptoCreateTransitionLogicTest {
         if (setStakingId) {
             opBuilder.setStakedAccountId(STAKED_ACCOUNT_ID);
         }
-        cryptoCreateTxn = TransactionBody.newBuilder().setCryptoCreateAccount(opBuilder).build();
-        given(accessor.getTxn()).willReturn(cryptoCreateTxn);
+        cryptoCreateTxnBody =
+                TransactionBody.newBuilder().setCryptoCreateAccount(opBuilder).build();
+        addToTxn();
+
         given(txnCtx.activePayer()).willReturn(ourAccount());
-        given(txnCtx.accessor()).willReturn(accessor);
+        given(txnCtx.swirldsTxnAccessor()).willReturn(swirldsTxnAccessor);
+        given(swirldsTxnAccessor.getDelegate()).willReturn(accessor);
+    }
+
+    private void addToTxn(){
+        cryptoCreateTxn =
+                Transaction.newBuilder().setBodyBytes(cryptoCreateTxnBody.toByteString()).build();
+        try {
+            accessor =
+                    new CryptoCreateAccessor(
+                            cryptoCreateTxn.toByteArray(),
+                            cryptoCreateTxn,
+                            dynamicProperties,
+                            validator,
+                            () -> accounts,
+                            nodeInfo);
+        } catch (InvalidProtocolBufferException ex) {
+            throw new IllegalStateException(ex);
+        }
     }
 
     private AccountID ourAccount() {

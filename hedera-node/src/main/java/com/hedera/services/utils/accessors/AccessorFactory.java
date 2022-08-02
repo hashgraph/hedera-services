@@ -16,28 +16,44 @@
 package com.hedera.services.utils.accessors;
 
 import com.google.protobuf.InvalidProtocolBufferException;
+import com.hedera.services.context.NodeInfo;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.txns.validation.OptionValidator;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.MiscUtils;
+import com.hedera.services.utils.accessors.custom.CryptoCreateAccessor;
+import com.hedera.services.utils.accessors.custom.CryptoTransferAccessor;
+import com.hedera.services.utils.accessors.custom.TokenWipeAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.Transaction;
+import com.swirlds.merkle.map.MerkleMap;
 
 import javax.inject.Inject;
 
+import java.util.function.Supplier;
+
 import static com.hedera.services.legacy.proto.utils.CommonUtils.extractTransactionBody;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAccountWipe;
 
 public class AccessorFactory {
     private final GlobalDynamicProperties dynamicProperties;
     private final OptionValidator validator;
 
+    private final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts;
+
+    private final NodeInfo nodeInfo;
+
     @Inject
     public AccessorFactory(
-            final GlobalDynamicProperties dynamicProperties, final OptionValidator validator) {
+            final GlobalDynamicProperties dynamicProperties,
+            final OptionValidator validator,
+            final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts,
+            final NodeInfo nodeInfo) {
         this.dynamicProperties = dynamicProperties;
         this.validator = validator;
+        this.accounts = accounts;
+        this.nodeInfo = nodeInfo;
     }
 
     public TxnAccessor nonTriggeredTxn(byte[] signedTxnWrapperBytes)
@@ -78,10 +94,11 @@ public class AccessorFactory {
         final var signedTxn = Transaction.parseFrom(signedTxnWrapperBytes);
         final var body = extractTransactionBody(signedTxn);
         final var function = MiscUtils.FUNCTION_EXTRACTOR.apply(body);
-        if (function == TokenAccountWipe) {
-            return new TokenWipeAccessor(signedTxnWrapperBytes, signedTxn, dynamicProperties);
-        } else if(function == CryptoTransfer) {
-            return new CryptoTransferAccessor(signedTxnWrapperBytes, signedTxn, dynamicProperties);
+        switch (function){
+            case TokenAccountWipe -> new TokenWipeAccessor(signedTxnWrapperBytes, signedTxn, dynamicProperties);
+            case CryptoTransfer -> new CryptoTransferAccessor(signedTxnWrapperBytes, signedTxn, dynamicProperties);
+            case CryptoCreate -> new CryptoCreateAccessor(signedTxnWrapperBytes, signedTxn, dynamicProperties, validator, accounts, nodeInfo);
+            default -> SignedTxnAccessor.from(signedTxnWrapperBytes, signedTxn);
         }
         return SignedTxnAccessor.from(signedTxnWrapperBytes, signedTxn);
     }

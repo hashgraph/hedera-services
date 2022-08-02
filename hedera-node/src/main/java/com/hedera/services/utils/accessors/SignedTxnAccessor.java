@@ -27,7 +27,6 @@ import com.hedera.services.sigs.sourcing.PubKeyToSigBytes;
 import com.hedera.services.txns.span.ExpandHandleSpanMapAccessor;
 import com.hedera.services.usage.BaseTransactionMeta;
 import com.hedera.services.usage.SigUsage;
-import com.hedera.services.usage.consensus.SubmitMessageMeta;
 import com.hedera.services.usage.crypto.CryptoApproveAllowanceMeta;
 import com.hedera.services.usage.crypto.CryptoCreateMeta;
 import com.hedera.services.usage.crypto.CryptoDeleteAllowanceMeta;
@@ -62,7 +61,6 @@ import static com.hedera.services.legacy.proto.utils.CommonUtils.noThrowSha384Ha
 import static com.hedera.services.usage.token.TokenOpsUsageUtils.TOKEN_OPS_USAGE_UTILS;
 import static com.hedera.services.utils.EntityIdUtils.isAlias;
 import static com.hedera.services.utils.MiscUtils.FUNCTION_EXTRACTOR;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusSubmitMessage;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoApproveAllowance;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoDeleteAllowance;
@@ -88,7 +86,6 @@ public class SignedTxnAccessor implements TxnAccessor {
     private static final Logger log = LogManager.getLogger(SignedTxnAccessor.class);
 
     private static final int UNKNOWN_NUM_AUTO_CREATIONS = -1;
-    private static final String ACCESSOR_LITERAL = " accessor";
 
     private static final TokenOpsUsage TOKEN_OPS_USAGE = new TokenOpsUsage();
     private static final ExpandHandleSpanMapAccessor SPAN_MAP_ACCESSOR =
@@ -109,7 +106,6 @@ public class SignedTxnAccessor implements TxnAccessor {
     private SignatureMap sigMap;
     private TransactionID txnId;
     private TransactionBody txn;
-    private SubmitMessageMeta submitMessageMeta;
     private BaseTransactionMeta txnUsageMeta;
     protected HederaFunctionality function;
     private ResponseCodeEnum expandedSigStatus;
@@ -348,7 +344,6 @@ public class SignedTxnAccessor implements TxnAccessor {
                 .add("sigMap", sigMap)
                 .add("txnId", txnId)
                 .add("txn", txn)
-                .add("submitMessageMeta", submitMessageMeta)
                 .add("txnUsageMeta", txnUsageMeta)
                 .add("function", function)
                 .add("pubKeyToSigBytes", pubKeyToSigBytes)
@@ -371,17 +366,6 @@ public class SignedTxnAccessor implements TxnAccessor {
     @Override
     public SigUsage usageGiven(final int numPayerKeys) {
         return new SigUsage(numSigPairs, sigMapSize, numPayerKeys);
-    }
-
-    @Override
-    public SubmitMessageMeta availSubmitUsageMeta() {
-        if (function != ConsensusSubmitMessage) {
-            throw new IllegalStateException(
-                    "Cannot get ConsensusSubmitMessage metadata for a "
-                            + function
-                            + ACCESSOR_LITERAL);
-        }
-        return submitMessageMeta;
     }
 
     @Override
@@ -435,9 +419,7 @@ public class SignedTxnAccessor implements TxnAccessor {
 
     /* This section should be deleted after custom accessors are complete */
     private void setOpUsageMeta() {
-        if (function == ConsensusSubmitMessage) {
-            setSubmitUsageMeta();
-        } else if (function == TokenFeeScheduleUpdate) {
+        if (function == TokenFeeScheduleUpdate) {
             setFeeScheduleUpdateMeta();
         } else if (function == TokenCreate) {
             setTokenCreateUsageMeta();
@@ -464,11 +446,6 @@ public class SignedTxnAccessor implements TxnAccessor {
         } else if (function == UtilPrng) {
             setUtilPrngUsageMeta();
         }
-    }
-
-    private void setSubmitUsageMeta() {
-        submitMessageMeta =
-                new SubmitMessageMeta(txn.getConsensusSubmitMessage().getMessage().size());
     }
 
     private void setFeeScheduleUpdateMeta() {

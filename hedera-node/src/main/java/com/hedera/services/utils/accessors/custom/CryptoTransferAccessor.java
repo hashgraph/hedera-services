@@ -13,16 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.hedera.services.utils.accessors;
+package com.hedera.services.utils.accessors.custom;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.grpc.marshalling.ImpliedTransfersMeta;
 import com.hedera.services.ledger.PureTransferSemanticChecks;
 import com.hedera.services.usage.crypto.CryptoTransferMeta;
+import com.hedera.services.utils.accessors.SignedTxnAccessor;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Transaction;
+
+import javax.annotation.Nullable;
 
 /**
  * Specialized accessor for CryptoTransfer transaction. Uses the latest signed state view for looking up
@@ -34,7 +37,7 @@ public class CryptoTransferAccessor extends SignedTxnAccessor {
 
     public CryptoTransferAccessor(
             final byte[] signedTxnWrapperBytes,
-            final Transaction txn,
+            @Nullable final Transaction txn,
             final GlobalDynamicProperties properties)
             throws InvalidProtocolBufferException {
         super(signedTxnWrapperBytes, txn);

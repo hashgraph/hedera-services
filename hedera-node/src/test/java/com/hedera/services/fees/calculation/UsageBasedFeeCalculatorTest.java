@@ -38,7 +38,6 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenBurn;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenMint;
 import static com.hederahashgraph.api.proto.java.ResponseType.ANSWER_ONLY;
 import static com.hederahashgraph.fee.FeeBuilder.FEE_DIVISOR_FACTOR;
-import static com.hederahashgraph.fee.FeeBuilder.HRS_DIVISOR;
 import static com.hederahashgraph.fee.FeeBuilder.getFeeObject;
 import static com.hederahashgraph.fee.FeeBuilder.getTinybarsFromTinyCents;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -61,9 +60,8 @@ import com.hedera.services.fees.calculation.utils.PricedUsageCalculator;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.txns.crypto.AutoCreationLogic;
-import com.hedera.services.usage.state.UsageAccumulator;
 import com.hedera.services.utils.accessors.SignedTxnAccessor;
-import com.hedera.services.utils.accessors.TokenWipeAccessor;
+import com.hedera.services.utils.accessors.custom.TokenWipeAccessor;
 import com.hedera.services.utils.accessors.TxnAccessor;
 import com.hedera.test.factories.keys.KeyTree;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
@@ -530,7 +528,7 @@ class UsageBasedFeeCalculatorTest {
                         .txnValidStart(at)
                         .get();
         invokesAccessorBasedUsagesForTxnInHandle(
-                signedTxn, CryptoTransfer, SubType.DEFAULT, TokenType.UNRECOGNIZED);
+                signedTxn, CryptoTransfer, SubType.DEFAULT, TokenType.UNRECOGNIZED, true);
     }
 
     @Test
@@ -546,7 +544,6 @@ class UsageBasedFeeCalculatorTest {
                                         asAccountString(payer), asAccountString(receiver), sent))
                         .txnValidStart(at)
                         .get();
-
         invokesAccessorBasedUsagesForTxnInHandle(
                 signedTxn, CryptoTransfer, SubType.DEFAULT, TokenType.UNRECOGNIZED);
     }
@@ -705,17 +702,6 @@ class UsageBasedFeeCalculatorTest {
         public Instant[] congestionLevelStarts() {
             return new Instant[0];
         }
-    }
-
-    public static void copyData(FeeData feeData, UsageAccumulator into) {
-        into.setNumPayerKeys(feeData.getNodedata().getVpt());
-        into.addVpt(feeData.getNetworkdata().getVpt());
-        into.addBpt(feeData.getNetworkdata().getBpt());
-        into.addBpr(feeData.getNodedata().getBpr());
-        into.addSbpr(feeData.getNodedata().getSbpr());
-        into.addNetworkRbs(feeData.getNetworkdata().getRbh() * HRS_DIVISOR);
-        into.addRbs(feeData.getServicedata().getRbh() * HRS_DIVISOR);
-        into.addSbs(feeData.getServicedata().getSbh() * HRS_DIVISOR);
     }
 
     void invokesAccessorBasedUsagesForTxnInHandle(

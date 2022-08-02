@@ -29,11 +29,10 @@ import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.EntityNum;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hedera.services.utils.accessors.custom.SubmitMessageAccessor;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.swirlds.merkle.map.MerkleMap;
 import java.io.IOException;
-import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import javax.inject.Inject;
@@ -45,11 +44,8 @@ import org.apache.logging.log4j.Logger;
 public class SubmitMessageTransitionLogic implements TransitionLogic {
     private static final Logger log = LogManager.getLogger(SubmitMessageTransitionLogic.class);
 
-    private static final Function<TransactionBody, ResponseCodeEnum> SEMANTIC_RUBBER_STAMP =
-            ignore -> OK;
-
     private final OptionValidator validator;
-    private final TransactionContext transactionContext;
+    private final TransactionContext txnCtx;
     private final Supplier<MerkleMap<EntityNum, MerkleTopic>> topics;
     private final GlobalDynamicProperties globalDynamicProperties;
 
@@ -57,83 +53,83 @@ public class SubmitMessageTransitionLogic implements TransitionLogic {
     public SubmitMessageTransitionLogic(
             Supplier<MerkleMap<EntityNum, MerkleTopic>> topics,
             OptionValidator validator,
-            TransactionContext transactionContext,
+            TransactionContext txnCtx,
             GlobalDynamicProperties globalDynamicProperties) {
         this.topics = topics;
         this.validator = validator;
-        this.transactionContext = transactionContext;
+        this.txnCtx = txnCtx;
         this.globalDynamicProperties = globalDynamicProperties;
     }
 
     @Override
     public void doStateTransition() {
-        var transactionBody = transactionContext.accessor().getTxn();
-        var op = transactionBody.getConsensusSubmitMessage();
+        final var accessor = (SubmitMessageAccessor) txnCtx.swirldsTxnAccessor().getDelegate();
+        final var message = accessor.message();
+        final var topic = accessor.topicId();
+        final var hasChunkInfo = accessor.hasChunkInfo();
+        final var chunkInfo = accessor.chunkInfo();
+        final var payer = accessor.getPayer();
+        final var txnId = accessor.getTxnId();
 
-        if (op.getMessage().isEmpty()) {
-            transactionContext.setStatus(INVALID_TOPIC_MESSAGE);
+        // Simple validations depending on the txn body, should be moved to pre-check in future PR
+        if (message.isEmpty()) {
+            txnCtx.setStatus(INVALID_TOPIC_MESSAGE);
             return;
         }
 
-        if (op.getMessage().size() > globalDynamicProperties.messageMaxBytesAllowed()) {
-            transactionContext.setStatus(MESSAGE_SIZE_TOO_LARGE);
+        if (message.size() > globalDynamicProperties.messageMaxBytesAllowed()) {
+            txnCtx.setStatus(MESSAGE_SIZE_TOO_LARGE);
             return;
         }
 
-        var topicStatus = validator.queryableTopicStatus(op.getTopicID(), topics.get());
+        var topicStatus = validator.queryableTopicStatus(topic, topics.get());
         if (OK != topicStatus) {
-            transactionContext.setStatus(topicStatus);
+            txnCtx.setStatus(topicStatus);
             return;
         }
 
-        if (op.hasChunkInfo()) {
-            var chunkInfo = op.getChunkInfo();
+        if (hasChunkInfo) {
             if (!(1 <= chunkInfo.getNumber() && chunkInfo.getNumber() <= chunkInfo.getTotal())) {
-                transactionContext.setStatus(INVALID_CHUNK_NUMBER);
+                txnCtx.setStatus(INVALID_CHUNK_NUMBER);
                 return;
             }
             // tbd : handle custom payer here
             if (!chunkInfo
                     .getInitialTransactionID()
                     .getAccountID()
-                    .equals(transactionBody.getTransactionID().getAccountID())) {
-                transactionContext.setStatus(INVALID_CHUNK_TRANSACTION_ID);
+                    .equals(payer)) {
+                txnCtx.setStatus(INVALID_CHUNK_TRANSACTION_ID);
                 return;
             }
             if (1 == chunkInfo.getNumber()
                     && !chunkInfo
                             .getInitialTransactionID()
-                            .equals(transactionBody.getTransactionID())) {
-                transactionContext.setStatus(INVALID_CHUNK_TRANSACTION_ID);
+                            .equals(txnId)) {
+                txnCtx.setStatus(INVALID_CHUNK_TRANSACTION_ID);
                 return;
             }
         }
 
-        var topicId = EntityNum.fromTopicId(op.getTopicID());
+        var topicId = EntityNum.fromTopicId(topic);
         var mutableTopic = topics.get().getForModify(topicId);
         try {
             mutableTopic.updateRunningHashAndSequenceNumber(
                     // tbd : handle custom payer here
-                    transactionBody.getTransactionID().getAccountID(),
-                    op.getMessage().toByteArray(),
-                    op.getTopicID(),
-                    transactionContext.consensusTime());
-            transactionContext.setTopicRunningHash(
+                    payer,
+                    message.toByteArray(),
+                    topic,
+                    txnCtx.consensusTime());
+            txnCtx.setTopicRunningHash(
                     mutableTopic.getRunningHash(), mutableTopic.getSequenceNumber());
-            transactionContext.setStatus(SUCCESS);
+            txnCtx.setStatus(SUCCESS);
         } catch (IOException e) {
             log.error("Updating topic running hash failed.", e);
-            transactionContext.setStatus(INVALID_TRANSACTION);
+            txnCtx.setStatus(INVALID_TRANSACTION);
         }
     }
 
     @Override
     public Predicate<TransactionBody> applicability() {
         return TransactionBody::hasConsensusSubmitMessage;
-    }
-
-    @Override
-    public Function<TransactionBody, ResponseCodeEnum> semanticCheck() {
-        return SEMANTIC_RUBBER_STAMP;
     }
 }

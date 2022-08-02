@@ -309,11 +309,6 @@ public class PlatformTxnAccessor implements SwirldsTxnAccessor {
     }
 
     @Override
-    public SubmitMessageMeta availSubmitUsageMeta() {
-        return delegate.availSubmitUsageMeta();
-    }
-
-    @Override
     public StateView getStateView() {
         return delegate.getStateView();
     }

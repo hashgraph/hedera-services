@@ -397,10 +397,11 @@ class PlatformTxnAccessorTest {
         assertEquals(delegate.baseUsageMeta(), subject.baseUsageMeta());
         assertEquals(delegate.getMemoUtf8Bytes().length, subject.baseUsageMeta().memoUtf8Bytes());
 
-        assertEquals(delegate.availSubmitUsageMeta(), subject.availSubmitUsageMeta());
+        assertEquals(delegate.getSpanMapAccessor().getSubmitMessageMeta(delegate),
+                subject.getSpanMapAccessor().getSubmitMessageMeta(subject));
         assertEquals(
                 someTxn.getConsensusSubmitMessage().getMessage().size(),
-                subject.availSubmitUsageMeta().numMsgBytes());
+                subject.getSpanMapAccessor().getSubmitMessageMeta(subject).numMsgBytes());
 
         assertEquals(delegate, subject.getDelegate());
 

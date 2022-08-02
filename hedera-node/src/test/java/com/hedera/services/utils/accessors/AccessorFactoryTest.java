@@ -20,8 +20,11 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.google.protobuf.InvalidProtocolBufferException;
+import com.hedera.services.context.NodeInfo;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.txns.validation.OptionValidator;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ScheduleID;
@@ -30,11 +33,14 @@ import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.swirlds.common.system.transaction.SwirldTransaction;
+import com.swirlds.merkle.map.MerkleMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+
+import java.util.function.Supplier;
 
 @ExtendWith(MockitoExtension.class)
 class AccessorFactoryTest {
@@ -43,6 +49,9 @@ class AccessorFactoryTest {
 
     @Mock private OptionValidator validator;
     @Mock private GlobalDynamicProperties properties;
+
+    @Mock private MerkleMap<EntityNum, MerkleAccount> accounts;
+    @Mock private NodeInfo nodeInfo;
 
     AccessorFactory subject;
 
@@ -60,7 +69,7 @@ class AccessorFactoryTest {
 
     @BeforeEach
     void setUp() {
-        subject = new AccessorFactory(properties, validator);
+        subject = new AccessorFactory(properties, validator, () -> accounts, nodeInfo);
     }
 
     @Test
