@@ -39,223 +39,223 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class NarratedLedgerCharging implements NarratedCharging {
-    private static final long UNKNOWN_ACCOUNT_BALANCE = -1L;
+  private static final long UNKNOWN_ACCOUNT_BALANCE = -1L;
 
-    private HederaLedger ledger;
+  private HederaLedger ledger;
 
-    private final NodeInfo nodeInfo;
-    private final FeeExemptions feeExemptions;
-    private final GlobalDynamicProperties dynamicProperties;
-    private final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts;
+  private final NodeInfo nodeInfo;
+  private final FeeExemptions feeExemptions;
+  private final GlobalDynamicProperties dynamicProperties;
+  private final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts;
 
-    private long effPayerStartingBalance = UNKNOWN_ACCOUNT_BALANCE;
-    private long nodeFee;
-    private long networkFee;
-    private long serviceFee;
-    private long totalOfferedFee;
-    private long totalCharged;
-    private boolean payerExempt;
-    private boolean serviceFeeCharged;
-    private AccountID grpcNodeId;
-    private AccountID grpcPayerId;
-    private EntityNum nodeId;
-    private EntityNum payerId;
+  private long effPayerStartingBalance = UNKNOWN_ACCOUNT_BALANCE;
+  private long nodeFee;
+  private long networkFee;
+  private long serviceFee;
+  private long totalOfferedFee;
+  private long totalCharged;
+  private boolean payerExempt;
+  private boolean serviceFeeCharged;
+  private AccountID grpcNodeId;
+  private AccountID grpcPayerId;
+  private EntityNum nodeId;
+  private EntityNum payerId;
 
-    private final AccountID stakingRewardAccountId;
-    private final AccountID nodeRewardAccountId;
+  private final AccountID stakingRewardAccountId;
+  private final AccountID nodeRewardAccountId;
 
-    @Inject
-    public NarratedLedgerCharging(
-            NodeInfo nodeInfo,
-            FeeExemptions feeExemptions,
-            GlobalDynamicProperties dynamicProperties,
-            Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts,
-            AccountNumbers accountNumbers) {
-        this.accounts = accounts;
-        this.nodeInfo = nodeInfo;
-        this.feeExemptions = feeExemptions;
-        this.dynamicProperties = dynamicProperties;
-        stakingRewardAccountId =
-                STATIC_PROPERTIES.scopedAccountWith(accountNumbers.stakingRewardAccount());
-        nodeRewardAccountId =
-                STATIC_PROPERTIES.scopedAccountWith(accountNumbers.nodeRewardAccount());
+  @Inject
+  public NarratedLedgerCharging(
+      NodeInfo nodeInfo,
+      FeeExemptions feeExemptions,
+      GlobalDynamicProperties dynamicProperties,
+      Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts,
+      AccountNumbers accountNumbers) {
+    this.accounts = accounts;
+    this.nodeInfo = nodeInfo;
+    this.feeExemptions = feeExemptions;
+    this.dynamicProperties = dynamicProperties;
+    stakingRewardAccountId =
+        STATIC_PROPERTIES.scopedAccountWith(accountNumbers.stakingRewardAccount());
+    nodeRewardAccountId = STATIC_PROPERTIES.scopedAccountWith(accountNumbers.nodeRewardAccount());
+  }
+
+  @Override
+  public void setLedger(HederaLedger ledger) {
+    this.ledger = ledger;
+  }
+
+  @Override
+  public long totalFeesChargedToPayer() {
+    return totalCharged;
+  }
+
+  @Override
+  public void resetForTxn(TxnAccessor accessor, long submittingNodeId) {
+    this.grpcPayerId = accessor.getPayer();
+    this.payerId = EntityNum.fromAccountId(grpcPayerId);
+    this.totalOfferedFee = accessor.getOfferedFee();
+
+    nodeId = nodeInfo.accountKeyOf(submittingNodeId);
+    grpcNodeId = nodeInfo.accountOf(submittingNodeId);
+    payerExempt = feeExemptions.hasExemptPayer(accessor);
+    serviceFeeCharged = false;
+    totalCharged = 0L;
+    effPayerStartingBalance = UNKNOWN_ACCOUNT_BALANCE;
+  }
+
+  @Override
+  public void setFees(FeeObject fees) {
+    this.nodeFee = fees.getNodeFee();
+    this.networkFee = fees.getNetworkFee();
+    this.serviceFee = fees.getServiceFee();
+  }
+
+  @Override
+  public boolean canPayerAffordAllFees() {
+    if (payerExempt) {
+      return true;
     }
-
-    @Override
-    public void setLedger(HederaLedger ledger) {
-        this.ledger = ledger;
+    if (effPayerStartingBalance == UNKNOWN_ACCOUNT_BALANCE) {
+      initEffPayerBalance(payerId);
     }
+    return effPayerStartingBalance >= (nodeFee + networkFee + serviceFee);
+  }
 
-    @Override
-    public long totalFeesChargedToPayer() {
-        return totalCharged;
+  @Override
+  public boolean canPayerAffordNetworkFee() {
+    if (payerExempt) {
+      return true;
     }
-
-    @Override
-    public void resetForTxn(TxnAccessor accessor, long submittingNodeId) {
-        this.grpcPayerId = accessor.getPayer();
-        this.payerId = EntityNum.fromAccountId(grpcPayerId);
-        this.totalOfferedFee = accessor.getOfferedFee();
-
-        nodeId = nodeInfo.accountKeyOf(submittingNodeId);
-        grpcNodeId = nodeInfo.accountOf(submittingNodeId);
-        payerExempt = feeExemptions.hasExemptPayer(accessor);
-        serviceFeeCharged = false;
-        totalCharged = 0L;
-        effPayerStartingBalance = UNKNOWN_ACCOUNT_BALANCE;
+    if (effPayerStartingBalance == UNKNOWN_ACCOUNT_BALANCE) {
+      initEffPayerBalance(payerId);
     }
+    return effPayerStartingBalance >= networkFee;
+  }
 
-    @Override
-    public void setFees(FeeObject fees) {
-        this.nodeFee = fees.getNodeFee();
-        this.networkFee = fees.getNetworkFee();
-        this.serviceFee = fees.getServiceFee();
+  @Override
+  public boolean canPayerAffordServiceFee() {
+    if (payerExempt) {
+      return true;
     }
+    if (effPayerStartingBalance == UNKNOWN_ACCOUNT_BALANCE) {
+      initEffPayerBalance(payerId);
+    }
+    return effPayerStartingBalance >= serviceFee;
+  }
 
-    @Override
-    public boolean canPayerAffordAllFees() {
-        if (payerExempt) {
-            return true;
-        }
-        if (effPayerStartingBalance == UNKNOWN_ACCOUNT_BALANCE) {
-            initEffPayerBalance(payerId);
-        }
-        return effPayerStartingBalance >= (nodeFee + networkFee + serviceFee);
-    }
+  @Override
+  public boolean isPayerWillingToCoverAllFees() {
+    return payerExempt || totalOfferedFee >= (nodeFee + networkFee + serviceFee);
+  }
 
-    @Override
-    public boolean canPayerAffordNetworkFee() {
-        if (payerExempt) {
-            return true;
-        }
-        if (effPayerStartingBalance == UNKNOWN_ACCOUNT_BALANCE) {
-            initEffPayerBalance(payerId);
-        }
-        return effPayerStartingBalance >= networkFee;
-    }
+  @Override
+  public boolean isPayerWillingToCoverNetworkFee() {
+    return payerExempt || totalOfferedFee >= networkFee;
+  }
 
-    @Override
-    public boolean canPayerAffordServiceFee() {
-        if (payerExempt) {
-            return true;
-        }
-        if (effPayerStartingBalance == UNKNOWN_ACCOUNT_BALANCE) {
-            initEffPayerBalance(payerId);
-        }
-        return effPayerStartingBalance >= serviceFee;
-    }
+  @Override
+  public boolean isPayerWillingToCoverServiceFee() {
+    return payerExempt || totalOfferedFee >= serviceFee;
+  }
 
-    @Override
-    public boolean isPayerWillingToCoverAllFees() {
-        return payerExempt || totalOfferedFee >= (nodeFee + networkFee + serviceFee);
+  @Override
+  public void chargePayerAllFees() {
+    if (payerExempt) {
+      return;
     }
+    ledger.adjustBalance(grpcNodeId, +nodeFee);
+    adjustFundingAndStakingBalances(+(networkFee + serviceFee));
+    totalCharged = nodeFee + networkFee + serviceFee;
+    ledger.adjustBalance(grpcPayerId, -totalCharged);
+    serviceFeeCharged = true;
+  }
 
-    @Override
-    public boolean isPayerWillingToCoverNetworkFee() {
-        return payerExempt || totalOfferedFee >= networkFee;
+  @Override
+  public void chargePayerServiceFee() {
+    if (payerExempt) {
+      return;
     }
+    adjustFundingAndStakingBalances(+serviceFee);
+    totalCharged = serviceFee;
+    ledger.adjustBalance(grpcPayerId, -totalCharged);
+    serviceFeeCharged = true;
+  }
 
-    @Override
-    public boolean isPayerWillingToCoverServiceFee() {
-        return payerExempt || totalOfferedFee >= serviceFee;
+  @Override
+  public void refundPayerServiceFee() {
+    if (payerExempt) {
+      return;
     }
+    if (!serviceFeeCharged) {
+      throw new IllegalStateException(
+          "NarratedCharging asked to refund service fee to un-charged payer");
+    }
+    adjustFundingAndStakingBalances(-serviceFee);
+    ledger.adjustBalance(grpcPayerId, +serviceFee);
+    totalCharged -= serviceFee;
+  }
 
-    @Override
-    public void chargePayerAllFees() {
-        if (payerExempt) {
-            return;
-        }
-        ledger.adjustBalance(grpcNodeId, +nodeFee);
-        adjustFundingAndStakingBalances(+(networkFee + serviceFee));
-        totalCharged = nodeFee + networkFee + serviceFee;
-        ledger.adjustBalance(grpcPayerId, -totalCharged);
-        serviceFeeCharged = true;
+  @Override
+  public void chargePayerNetworkAndUpToNodeFee() {
+    if (payerExempt) {
+      return;
     }
+    if (effPayerStartingBalance == UNKNOWN_ACCOUNT_BALANCE) {
+      initEffPayerBalance(payerId);
+    }
+    long chargeableNodeFee = Math.min(nodeFee, effPayerStartingBalance - networkFee);
+    ledger.adjustBalance(grpcNodeId, +chargeableNodeFee);
+    adjustFundingAndStakingBalances(+networkFee);
+    totalCharged = networkFee + chargeableNodeFee;
+    ledger.adjustBalance(grpcPayerId, -totalCharged);
+  }
 
-    @Override
-    public void chargePayerServiceFee() {
-        if (payerExempt) {
-            return;
-        }
-        adjustFundingAndStakingBalances(+serviceFee);
-        totalCharged = serviceFee;
-        ledger.adjustBalance(grpcPayerId, -totalCharged);
-        serviceFeeCharged = true;
-    }
+  @Override
+  public void chargeSubmittingNodeUpToNetworkFee() {
+    initEffPayerBalance(nodeId);
+    long chargeableNetworkFee = Math.min(networkFee, effPayerStartingBalance);
+    ledger.adjustBalance(grpcNodeId, -chargeableNetworkFee);
+    adjustFundingAndStakingBalances(+chargeableNetworkFee);
+  }
 
-    @Override
-    public void refundPayerServiceFee() {
-        if (payerExempt) {
-            return;
-        }
-        if (!serviceFeeCharged) {
-            throw new IllegalStateException(
-                    "NarratedCharging asked to refund service fee to un-charged payer");
-        }
-        adjustFundingAndStakingBalances(-serviceFee);
-        ledger.adjustBalance(grpcPayerId, +serviceFee);
-        totalCharged -= serviceFee;
+  private void initEffPayerBalance(EntityNum effPayerId) {
+    final var payerAccount = accounts.get().get(effPayerId);
+    if (payerAccount == null) {
+      throw new IllegalStateException(
+          "Invariant failure, effective payer account "
+              + Optional.ofNullable(effPayerId).map(EntityNum::toIdString).orElse("null")
+              + " is missing!");
     }
+    effPayerStartingBalance = payerAccount.getBalance();
+  }
 
-    @Override
-    public void chargePayerNetworkAndUpToNodeFee() {
-        if (payerExempt) {
-            return;
-        }
-        if (effPayerStartingBalance == UNKNOWN_ACCOUNT_BALANCE) {
-            initEffPayerBalance(payerId);
-        }
-        long chargeableNodeFee = Math.min(nodeFee, effPayerStartingBalance - networkFee);
-        ledger.adjustBalance(grpcNodeId, +chargeableNodeFee);
-        adjustFundingAndStakingBalances(+networkFee);
-        totalCharged = networkFee + chargeableNodeFee;
-        ledger.adjustBalance(grpcPayerId, -totalCharged);
+  private void adjustFundingAndStakingBalances(final long totalAdjustment) {
+    long fundingAdjustment = totalAdjustment;
+    if (dynamicProperties.isStakingEnabled()) {
+      final var nodeRewardAdjustment = nodeRewardFractionOf(totalAdjustment, dynamicProperties);
+      if (nodeRewardAdjustment != 0) {
+        ledger.adjustCollectorBalance(nodeRewardAccountId, nodeRewardAdjustment);
+      }
+      final var stakingRewardAdjustment =
+          stakingRewardFractionOf(totalAdjustment, dynamicProperties);
+      if (stakingRewardAdjustment != 0) {
+        ledger.adjustCollectorBalance(stakingRewardAccountId, stakingRewardAdjustment);
+      }
+      fundingAdjustment -= (nodeRewardAdjustment + stakingRewardAdjustment);
     }
+    if (fundingAdjustment != 0) {
+      ledger.adjustCollectorBalance(dynamicProperties.fundingAccount(), fundingAdjustment);
+    }
+  }
 
-    @Override
-    public void chargeSubmittingNodeUpToNetworkFee() {
-        initEffPayerBalance(nodeId);
-        long chargeableNetworkFee = Math.min(networkFee, effPayerStartingBalance);
-        ledger.adjustBalance(grpcNodeId, -chargeableNetworkFee);
-        adjustFundingAndStakingBalances(+chargeableNetworkFee);
-    }
+  public static long stakingRewardFractionOf(
+      final long totalFee, final GlobalDynamicProperties dynamicProperties) {
+    return (dynamicProperties.getStakingRewardPercent() * totalFee) / 100;
+  }
 
-    private void initEffPayerBalance(EntityNum effPayerId) {
-        final var payerAccount = accounts.get().get(effPayerId);
-        if (payerAccount == null) {
-            throw new IllegalStateException(
-                    "Invariant failure, effective payer account "
-                            + Optional.ofNullable(effPayerId)
-                                    .map(EntityNum::toIdString)
-                                    .orElse("null")
-                            + " is missing!");
-        }
-        effPayerStartingBalance = payerAccount.getBalance();
-    }
-
-    private void adjustFundingAndStakingBalances(final long totalAdjustment) {
-        long fundingAdjustment = totalAdjustment;
-        if (dynamicProperties.isStakingEnabled()) {
-            final var nodeRewardAdjustment = nodeRewardFractionOf(totalAdjustment);
-            if (nodeRewardAdjustment != 0) {
-                ledger.adjustBalance(nodeRewardAccountId, nodeRewardAdjustment);
-            }
-            final var stakingRewardAdjustment = stakingRewardFractionOf(totalAdjustment);
-            if (stakingRewardAdjustment != 0) {
-                ledger.adjustBalance(stakingRewardAccountId, stakingRewardAdjustment);
-            }
-            fundingAdjustment -= (nodeRewardAdjustment + stakingRewardAdjustment);
-        }
-        if (fundingAdjustment != 0) {
-            ledger.adjustBalance(dynamicProperties.fundingAccount(), fundingAdjustment);
-        }
-    }
-
-    private long stakingRewardFractionOf(final long totalFee) {
-        return (dynamicProperties.getStakingRewardPercent() * totalFee) / 100;
-    }
-
-    private long nodeRewardFractionOf(final long totalFee) {
-        return (dynamicProperties.getNodeRewardPercent() * totalFee) / 100;
-    }
+  public static long nodeRewardFractionOf(
+      final long totalFee, final GlobalDynamicProperties dynamicProperties) {
+    return (dynamicProperties.getNodeRewardPercent() * totalFee) / 100;
+  }
 }

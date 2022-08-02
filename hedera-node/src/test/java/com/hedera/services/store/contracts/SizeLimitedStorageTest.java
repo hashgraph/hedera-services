@@ -108,7 +108,7 @@ class SizeLimitedStorageTest {
     subject.putStorage(firstAccount, bLiteralKey, UInt256.ZERO);
     subject.putStorage(nextAccount, aLiteralKey, UInt256.ZERO);
 
-    subject.validateAndCommit();
+    subject.validateAndCommit(accountsLedger);
     subject.recordNewKvUsageTo(accountsLedger);
 
     inOrder.verify(storageRemover).removeMapping(firstAKey, firstRootKey, storage);
@@ -144,7 +144,7 @@ class SizeLimitedStorageTest {
     subject.putStorage(firstAccount, bLiteralKey, UInt256.ZERO);
     subject.putStorage(nextAccount, aLiteralKey, UInt256.ZERO);
 
-    subject.validateAndCommit();
+    subject.validateAndCommit(accountsLedger);
     subject.recordNewKvUsageTo(accountsLedger);
 
     inOrder.verify(storageRemover, times(3)).removeMapping(any(), any(), eq(storage));
@@ -178,7 +178,7 @@ class SizeLimitedStorageTest {
     subject.putStorage(nextAccount, aLiteralKey, aLiteralValue);
     subject.putStorage(firstAccount, dLiteralKey, dLiteralValue);
 
-    subject.validateAndCommit();
+    subject.validateAndCommit(accountsLedger);
 
     inOrder.verify(storageUpserter).upsertMapping(firstAKey, aValue, firstRootKey, null, storage);
     inOrder.verify(storageUpserter).upsertMapping(firstBKey, bValue, firstAKey, aValue, storage);
@@ -204,14 +204,14 @@ class SizeLimitedStorageTest {
     subject.putStorage(nextAccount, aLiteralKey, aLiteralValue);
     subject.putStorage(firstAccount, dLiteralKey, dLiteralValue);
 
-    subject.validateAndCommit();
+    subject.validateAndCommit(accountsLedger);
 
     verify(storageUpserter, times(4)).upsertMapping(any(), any(), any(), any(), any());
   }
 
   @Test
   void okToCommitNoChanges() {
-    assertDoesNotThrow(subject::validateAndCommit);
+    assertDoesNotThrow(() -> subject.validateAndCommit(accountsLedger));
   }
 
   @Test
@@ -234,7 +234,7 @@ class SizeLimitedStorageTest {
     subject.putStorage(nextAccount, aLiteralKey, aLiteralValue);
     subject.putStorage(firstAccount, dLiteralKey, dLiteralValue);
 
-    subject.validateAndCommit();
+    subject.validateAndCommit(accountsLedger);
 
     inOrder.verify(storageUpserter).upsertMapping(firstAKey, aValue, firstRootKey, null, storage);
     inOrder.verify(storageUpserter).upsertMapping(firstBKey, bValue, firstAKey, null, storage);
@@ -251,7 +251,7 @@ class SizeLimitedStorageTest {
 
     subject.putStorage(firstAccount, aLiteralKey, aLiteralValue);
 
-    subject.validateAndCommit();
+    subject.validateAndCommit(accountsLedger);
     subject.recordNewKvUsageTo(accountsLedger);
 
     inOrder.verify(storageUpserter).upsertMapping(firstAKey, aValue, null, null, storage);
@@ -267,7 +267,7 @@ class SizeLimitedStorageTest {
     subject.putStorage(firstAccount, aLiteralKey, bLiteralValue);
     subject.putStorage(firstAccount, bLiteralKey, aLiteralValue);
 
-    assertFailsWith(subject::validateAndCommit, MAX_CONTRACT_STORAGE_EXCEEDED);
+    assertFailsWith(() -> subject.validateAndCommit(accountsLedger), MAX_CONTRACT_STORAGE_EXCEEDED);
   }
 
   @Test
@@ -288,7 +288,8 @@ class SizeLimitedStorageTest {
     subject.putStorage(firstAccount, bLiteralKey, aLiteralValue);
     subject.putStorage(nextAccount, aLiteralKey, UInt256.ZERO);
 
-    assertFailsWith(subject::validateAndCommit, MAX_STORAGE_IN_PRICE_REGIME_HAS_BEEN_USED);
+    assertFailsWith(
+        () -> subject.validateAndCommit(accountsLedger), MAX_STORAGE_IN_PRICE_REGIME_HAS_BEEN_USED);
   }
 
   @Test
@@ -361,7 +362,7 @@ class SizeLimitedStorageTest {
     given(storageUpserter.upsertMapping(firstBKey, bValue, null, null, storage))
         .willReturn(firstBKey);
 
-    subject.validateAndCommit();
+    subject.validateAndCommit(accountsLedger);
 
     verify(storageUpserter).upsertMapping(firstBKey, bValue, null, null, storage);
   }

@@ -126,7 +126,7 @@ public class SizeLimitedStorageBench {
             subject.putStorage(
                     contractId, mutationBatch.keys()[batchI], mutationBatch.values()[batchI]);
         }
-        subject.validateAndCommit();
+        subject.validateAndCommit(ledger);
         subject.recordNewKvUsageTo(ledger);
 
         ledger.commit();

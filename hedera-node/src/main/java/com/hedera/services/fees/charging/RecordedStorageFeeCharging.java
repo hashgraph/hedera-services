@@ -1,7 +1,24 @@
+/*
+ * Copyright (C) 2022 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package com.hedera.services.fees.charging;
 
 import static com.hedera.services.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
 import static com.hedera.services.exceptions.ValidationUtils.validateFalse;
+import static com.hedera.services.fees.charging.NarratedLedgerCharging.nodeRewardFractionOf;
+import static com.hedera.services.fees.charging.NarratedLedgerCharging.stakingRewardFractionOf;
 import static com.hedera.services.ledger.TransactionalLedger.activeLedgerWrapping;
 import static com.hedera.services.ledger.properties.AccountProperty.AUTO_RENEW_ACCOUNT_ID;
 import static com.hedera.services.ledger.properties.AccountProperty.BALANCE;
@@ -10,13 +27,13 @@ import static com.hedera.services.ledger.properties.AccountProperty.IS_DELETED;
 import static com.hedera.services.records.TxnAwareRecordsHistorian.DEFAULT_SOURCE_ID;
 import static com.hedera.services.state.EntityCreator.NO_CUSTOM_FEES;
 import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_BALANCES_FOR_STORAGE_RENT;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.hedera.services.config.AccountNumbers;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.context.properties.StaticPropertiesHolder;
 import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.interceptors.AccountsCommitInterceptor;
@@ -52,10 +69,13 @@ public class RecordedStorageFeeCharging implements StorageFeeCharging {
   private final TransactionContext txnCtx;
   // Used to get the storage slot lifetime and pricing tiers
   private final GlobalDynamicProperties dynamicProperties;
+  private final AccountID stakingRewardAccountId;
+  private final AccountID nodeRewardAccountId;
 
   @Inject
   public RecordedStorageFeeCharging(
       final EntityCreator creator,
+      final AccountNumbers accountNumbers,
       final HbarCentExchange exchange,
       final RecordsHistorian recordsHistorian,
       final TransactionContext txnCtx,
@@ -67,6 +87,10 @@ public class RecordedStorageFeeCharging implements StorageFeeCharging {
     this.recordsHistorian = recordsHistorian;
     this.dynamicProperties = dynamicProperties;
     this.syntheticTxnFactory = syntheticTxnFactory;
+    this.stakingRewardAccountId =
+        STATIC_PROPERTIES.scopedAccountWith(accountNumbers.stakingRewardAccount());
+    this.nodeRewardAccountId =
+        STATIC_PROPERTIES.scopedAccountWith(accountNumbers.nodeRewardAccount());
   }
 
   @Override
@@ -151,17 +175,39 @@ public class RecordedStorageFeeCharging implements StorageFeeCharging {
     long paid;
     final var balance = (long) accounts.get(id, BALANCE);
     if (amount > balance) {
-      validateFalse(isLastResort, INSUFFICIENT_ACCOUNT_BALANCE);
+      validateFalse(isLastResort, INSUFFICIENT_BALANCES_FOR_STORAGE_RENT);
       accounts.set(id, BALANCE, 0L);
       paid = balance;
     } else {
       accounts.set(id, BALANCE, balance - amount);
       paid = amount;
     }
-    final var fundingId = dynamicProperties.fundingAccount();
-    final var fundingBalance = (long) accounts.get(fundingId, BALANCE);
-    accounts.set(fundingId, BALANCE, fundingBalance + paid);
+    payToApropos(paid, accounts);
     return paid;
+  }
+
+  private void payToApropos(
+      final long amount,
+      final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accounts) {
+    long fundingAdjustment = amount;
+    final var fundingId = dynamicProperties.fundingAccount();
+    if (dynamicProperties.isStakingEnabled()) {
+      final var nodeRewardAdjustment = nodeRewardFractionOf(amount, dynamicProperties);
+      if (nodeRewardAdjustment != 0) {
+        final var nodeRewardBalance = (long) accounts.get(nodeRewardAccountId, BALANCE);
+        accounts.set(nodeRewardAccountId, BALANCE, nodeRewardBalance + nodeRewardAdjustment);
+      }
+      final var stakeRewardAdjustment = stakingRewardFractionOf(amount, dynamicProperties);
+      if (stakeRewardAdjustment != 0) {
+        final var stakeRewardBalance = (long) accounts.get(stakingRewardAccountId, BALANCE);
+        accounts.set(stakingRewardAccountId, BALANCE, stakeRewardBalance + stakeRewardAdjustment);
+      }
+      fundingAdjustment -= (nodeRewardAdjustment + stakeRewardAdjustment);
+    }
+    if (fundingAdjustment != 0) {
+      final var fundingBalance = (long) accounts.get(fundingId, BALANCE);
+      accounts.set(fundingId, BALANCE, fundingBalance + fundingAdjustment);
+    }
   }
 
   private AccountID keyFor(final Long num) {

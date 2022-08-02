@@ -111,10 +111,12 @@ public class SyntheticTxnFactory {
         final var nums = adjustments.getAccountNums();
         final var changes = adjustments.getHbars();
         for (int i = 0; i < nums.length; i++) {
-            opBuilder.getTransfersBuilder()
-                .addAccountAmounts(AccountAmount.newBuilder()
-                    .setAccountID(AccountID.newBuilder().setAccountNum(nums[i]))
-                    .setAmount(changes[i]));
+            opBuilder
+                    .getTransfersBuilder()
+                    .addAccountAmounts(
+                            AccountAmount.newBuilder()
+                                    .setAccountID(AccountID.newBuilder().setAccountNum(nums[i]))
+                                    .setAmount(changes[i]));
         }
         return TransactionBody.newBuilder().setCryptoTransfer(opBuilder);
     }

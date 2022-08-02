@@ -23,8 +23,8 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import java.util.Map;
 
 public interface StorageFeeCharging {
-  void chargeStorageFees(
-      long numTotalKvPairs,
-      Map<Long, KvUsageInfo> newUsageInfos,
-      TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accounts);
+    void chargeStorageFees(
+            long numTotalKvPairs,
+            Map<Long, KvUsageInfo> newUsageInfos,
+            TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accounts);
 }

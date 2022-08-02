@@ -19,7 +19,6 @@ import static com.hedera.services.sigs.utils.MiscCryptoUtils.keccak256DigestOf;
 import static org.hyperledger.besu.evm.internal.Words.clampedToLong;
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.contracts.gascalculator.StorageGasCalculator;
 import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.state.EntityCreator;
 import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
@@ -35,16 +34,13 @@ import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 public class HederaCreate2Operation extends AbstractRecordingCreateOperation {
     private static final Bytes PREFIX = Bytes.fromHexString("0xFF");
 
-    private final StorageGasCalculator storageGasCalculator;
-
     @Inject
     public HederaCreate2Operation(
             final GasCalculator gasCalculator,
             final EntityCreator creator,
             final SyntheticTxnFactory syntheticTxnFactory,
             final RecordsHistorian recordsHistorian,
-            final GlobalDynamicProperties dynamicProperties,
-            final StorageGasCalculator storageGasCalculator) {
+            final GlobalDynamicProperties dynamicProperties) {
         super(
                 0xF5,
                 "ħCREATE2",
@@ -56,14 +52,11 @@ public class HederaCreate2Operation extends AbstractRecordingCreateOperation {
                 syntheticTxnFactory,
                 recordsHistorian,
                 dynamicProperties);
-        this.storageGasCalculator = storageGasCalculator;
     }
 
     @Override
     protected long cost(final MessageFrame frame) {
-        final var calculator = gasCalculator();
-        return calculator.create2OperationGasCost(frame)
-                + storageGasCalculator.creationGasCost(frame, calculator);
+        return gasCalculator().create2OperationGasCost(frame);
     }
 
     @Override

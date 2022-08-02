@@ -308,6 +308,7 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
     }
 
     public HapiGetTxnRecord hasChildRecords(TransactionRecordAsserts... providers) {
+        requestChildRecords = true;
         childRecordsExpectations = Optional.of(Arrays.asList(providers));
         return this;
     }

@@ -281,11 +281,12 @@ public class GlobalDynamicProperties {
                 properties.getNodeStakeRatiosProperty("staking.nodeMaxToMinStakeRatios");
         enableTraceabilityMigration =
                 properties.getBooleanProperty("hedera.recordStream.enableTraceabilityMigration");
-        storagePriceTiers = ContractStoragePriceTiers.from(
-            properties.getStringProperty("contract.storageSlotPriceTiers"),
-            properties.getIntProperty("contracts.freeStorageTierLimit"),
-            maxAggregateContractKvPairs,
-            properties.getLongProperty("contracts.referenceSlotLifetime"));
+        storagePriceTiers =
+                ContractStoragePriceTiers.from(
+                        properties.getStringProperty("contract.storageSlotPriceTiers"),
+                        properties.getIntProperty("contracts.freeStorageTierLimit"),
+                        maxAggregateContractKvPairs,
+                        properties.getLongProperty("contracts.referenceSlotLifetime"));
         itemizeStorageFees = properties.getBooleanProperty("contracts.itemizeStorageFees");
     }
 

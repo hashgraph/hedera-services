@@ -21,7 +21,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.contracts.gascalculator.StorageGasCalculator;
 import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.state.EntityCreator;
 import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
@@ -56,7 +55,6 @@ class HederaCreate2OperationTest {
     @Mock private SyntheticTxnFactory syntheticTxnFactory;
     @Mock private EntityCreator creator;
     @Mock private RecordsHistorian recordsHistorian;
-    @Mock private StorageGasCalculator storageGasCalculator;
 
     private HederaCreate2Operation subject;
 
@@ -68,14 +66,12 @@ class HederaCreate2OperationTest {
                         creator,
                         syntheticTxnFactory,
                         recordsHistorian,
-                        dynamicProperties,
-                        storageGasCalculator);
+                        dynamicProperties);
     }
 
     @Test
     void computesExpectedCost() {
         given(gasCalculator.create2OperationGasCost(frame)).willReturn(baseGas);
-        given(storageGasCalculator.creationGasCost(frame, gasCalculator)).willReturn(extraGas);
 
         var actualGas = subject.cost(frame);
 

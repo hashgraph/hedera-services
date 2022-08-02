@@ -25,11 +25,13 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NEGATIVE_ALLOW
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.WRONG_CHAIN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.WRONG_NONCE;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.willThrow;
 import static org.mockito.Mockito.verify;
 
 import com.google.protobuf.ByteString;
@@ -263,6 +265,20 @@ class EthereumTransitionLogicTest {
         given(contractCreateTransitionLogic.semanticCheck()).willReturn(semanticCheck);
 
         assertEquals(INVALID_AUTORENEW_ACCOUNT, subject.validateSemantics(accessor));
+    }
+
+    @Test
+    void delegatesPrefetch() {
+        subject.preFetch(accessor);
+
+        verify(spanMapManager).expandEthereumSpan(accessor);
+    }
+
+    @Test
+    void recoversFromUnhandledException() {
+        willThrow(IllegalStateException.class).given(spanMapManager).expandEthereumSpan(accessor);
+
+        assertDoesNotThrow(() -> subject.preFetch(accessor));
     }
 
     private void givenReasonableSemantics() {

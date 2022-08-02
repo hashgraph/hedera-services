@@ -229,11 +229,10 @@ public interface ContractsModule {
     @Singleton
     @IntoSet
     static Operation bindSStoreOperation(
-        final GasCalculator gasCalculator,
-        final GlobalDynamicProperties dynamicProperties
-    ) {
+            final GasCalculator gasCalculator, final GlobalDynamicProperties dynamicProperties) {
         return new HederaSStoreOperation(FRONTIER_MINIMUM, gasCalculator, dynamicProperties);
     }
+
     @Binds
     @Singleton
     @IntoSet

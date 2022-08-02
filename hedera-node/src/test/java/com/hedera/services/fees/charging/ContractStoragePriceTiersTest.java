@@ -75,6 +75,21 @@ class ContractStoragePriceTiersTest {
     }
 
     @Test
+    void partialReferenceLifetimesWork() {
+        givenDefaultSubjectWith("0til50M,2000til450M");
+        final var used = 100_000_000L;
+        final var basePrice = 2000 * THOUSANDTHS_TO_TINY;
+        final var lifetime = DEFAULT_REFERENCE_LIFETIME / 4;
+        final var expected = tinycentsToTinybars(basePrice / 4, someRate);
+
+        final var actual =
+            subject.priceOfPendingUsage(
+                someRate, used, lifetime, nonFreeUsageFor(1));
+
+        assertEquals(expected, actual);
+    }
+
+    @Test
     void failsOnZeroSlotsRequested() {
         givenTypicalSubject();
         final var usage = nonFreeUsageFor(0);

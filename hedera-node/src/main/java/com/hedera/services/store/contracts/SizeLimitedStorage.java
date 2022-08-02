@@ -119,8 +119,11 @@ public class SizeLimitedStorage {
    * @throws com.hedera.services.exceptions.InvalidTransactionException if a storage limit is
    *     exceeded
    */
-  public void validateAndCommit() {
+  public void validateAndCommit(
+      final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger) {
     validatePendingSizeChanges();
+    // If fees cannot be paid, throws an ITE,  rolling back this EVM transaction
+    storageFeeCharging.chargeStorageFees(totalKvPairs, usageChanges, accountsLedger);
 
     commitPendingRemovals();
     commitPendingUpdates();
@@ -349,8 +352,10 @@ public class SizeLimitedStorage {
         (id, changeSet) -> {
           IterableContractValue firstValue = null;
           // We can't use newFirstKeys.computeIfAbsent() below, since that method treats
-          // an id->null mapping as ABSENT(!); but if newFirstKeys contains an id->null mapping,
-          // it means that all the existing key/value pairs were removed for that contract, and
+          // an id->null mapping as ABSENT(!); but if newFirstKeys contains an id->null
+          // mapping,
+          // it means that all the existing key/value pairs were removed for that
+          // contract, and
           // we must ignore any existing first key in the accounts map
           var firstKey = newFirstKeys.containsKey(id) ? newFirstKeys.get(id) : firstKeyLookup(id);
           for (final var changedKey : changeSet) {
@@ -369,7 +374,8 @@ public class SizeLimitedStorage {
                   irreparable);
             }
             // If newValue was just added to the map, it is the mutable root value; but
-            // if we only updated the existing root, newValue is NOT the mutable root value
+            // if we only updated the existing root, newValue is NOT the mutable root
+            // value
             firstValue =
                 (changedKey.equals(firstKey) && curStorage.size() > preInsertSize)
                     ? newValue
