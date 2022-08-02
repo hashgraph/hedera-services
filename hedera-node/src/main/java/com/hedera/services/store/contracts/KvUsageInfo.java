@@ -32,6 +32,10 @@ public class KvUsageInfo {
         return pending - current;
     }
 
+    public boolean hasPositiveUsageDelta() {
+        return pending > current;
+    }
+
     public int pendingUsage() {
         return pending;
     }

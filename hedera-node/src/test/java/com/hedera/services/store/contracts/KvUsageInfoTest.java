@@ -16,6 +16,8 @@
 package com.hedera.services.store.contracts;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.Test;
 
@@ -29,7 +31,9 @@ class KvUsageInfoTest {
         assertEquals(initUsage, subject.pendingUsage());
         assertEquals(0, subject.pendingUsageDelta());
 
+        assertFalse(subject.hasPositiveUsageDelta());
         subject.updatePendingBy(5);
+        assertTrue(subject.hasPositiveUsageDelta());
         subject.updatePendingBy(-2);
 
         assertEquals(initUsage + 3, subject.pendingUsage());

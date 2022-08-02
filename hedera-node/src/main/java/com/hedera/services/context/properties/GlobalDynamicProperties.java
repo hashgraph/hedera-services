@@ -22,6 +22,7 @@ import com.esaulpaugh.headlong.util.Integers;
 import com.hedera.services.config.HederaNumbers;
 import com.hedera.services.context.annotations.CompositeProps;
 import com.hedera.services.fees.calculation.CongestionMultipliers;
+import com.hedera.services.fees.charging.ContractStoragePriceTiers;
 import com.hedera.services.stream.proto.SidecarType;
 import com.hedera.services.sysfiles.domain.KnownBlockValues;
 import com.hedera.services.sysfiles.domain.throttling.ThrottleReqOpsScaleFactor;
@@ -140,6 +141,8 @@ public class GlobalDynamicProperties {
     private boolean requireMinStakeToReward;
     private Map<Long, Long> nodeMaxMinStakeRatios;
     private boolean enableTraceabilityMigration;
+    private boolean itemizeStorageFees;
+    private ContractStoragePriceTiers storagePriceTiers;
 
     @Inject
     public GlobalDynamicProperties(
@@ -278,6 +281,12 @@ public class GlobalDynamicProperties {
                 properties.getNodeStakeRatiosProperty("staking.nodeMaxToMinStakeRatios");
         enableTraceabilityMigration =
                 properties.getBooleanProperty("hedera.recordStream.enableTraceabilityMigration");
+        storagePriceTiers = ContractStoragePriceTiers.from(
+            properties.getStringProperty("contract.storageSlotPriceTiers"),
+            properties.getIntProperty("contracts.freeStorageTierLimit"),
+            maxAggregateContractKvPairs,
+            properties.getLongProperty("contracts.referenceSlotLifetime"));
+        itemizeStorageFees = properties.getBooleanProperty("contracts.itemizeStorageFees");
     }
 
     public int maxTokensPerAccount() {
@@ -678,5 +687,13 @@ public class GlobalDynamicProperties {
 
     public boolean isTraceabilityMigrationEnabled() {
         return enableTraceabilityMigration;
+    }
+
+    public ContractStoragePriceTiers storagePriceTiers() {
+        return storagePriceTiers;
+    }
+
+    public boolean shouldItemizeStorageFees() {
+        return itemizeStorageFees;
     }
 }

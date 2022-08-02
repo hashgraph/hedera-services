@@ -1,0 +1,357 @@
+package com.hedera.services.fees.charging;
+
+import static com.hedera.services.ledger.properties.AccountProperty.AUTO_RENEW_ACCOUNT_ID;
+import static com.hedera.services.ledger.properties.AccountProperty.BALANCE;
+import static com.hedera.services.ledger.properties.AccountProperty.EXPIRY;
+import static com.hedera.services.ledger.properties.AccountProperty.IS_DELETED;
+import static com.hedera.services.records.TxnAwareRecordsHistorian.DEFAULT_SOURCE_ID;
+import static com.hedera.test.utils.TxnUtils.assertFailsWith;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentCaptor.forClass;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
+
+import com.hedera.services.context.SideEffectsTracker;
+import com.hedera.services.context.TransactionContext;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.fees.HbarCentExchange;
+import com.hedera.services.ledger.TransactionalLedger;
+import com.hedera.services.ledger.backing.BackingStore;
+import com.hedera.services.ledger.backing.HashMapBackingAccounts;
+import com.hedera.services.ledger.properties.AccountProperty;
+import com.hedera.services.ledger.properties.ChangeSummaryManager;
+import com.hedera.services.records.RecordsHistorian;
+import com.hedera.services.state.EntityCreator;
+import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.state.submerkle.ExpirableTxnRecord;
+import com.hedera.services.store.contracts.KvUsageInfo;
+import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
+import com.hedera.test.factories.accounts.MerkleAccountFactory;
+import com.hedera.test.utils.IdUtils;
+import com.hederahashgraph.api.proto.java.AccountAmount;
+import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ExchangeRate;
+import com.hederahashgraph.api.proto.java.TransactionBody;
+import java.time.Instant;
+import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import javax.annotation.Nullable;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+
+@ExtendWith(MockitoExtension.class)
+class RecordedStorageFeeChargingTest {
+  private static final int FREE_TIER_LIMIT = 100;
+  private static final long REFERENCE_LIFETIME = 2592000L;
+  private static final long MAX_TOTAL_SLOTS = 500_000_000L;
+  private static final ContractStoragePriceTiers STORAGE_PRICE_TIERS =
+      ContractStoragePriceTiers.from(
+          "10til50M,50til100M,100til150M,200til200M,500til250M,700til300M,1000til350M,2000til400M,5000til450M,10000til500M",
+          FREE_TIER_LIMIT,
+          MAX_TOTAL_SLOTS,
+          REFERENCE_LIFETIME);
+
+  @Mock private EntityCreator creator;
+  @Mock private HbarCentExchange exchange;
+  @Mock private RecordsHistorian recordsHistorian;
+  @Mock private TransactionContext txnCtx;
+  @Mock private GlobalDynamicProperties dynamicProperties;
+  @Mock private TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
+
+  private RecordedStorageFeeCharging subject;
+
+  @BeforeEach
+  void setUp() {
+    final var syntheticTxnFactory = new SyntheticTxnFactory(dynamicProperties);
+    subject =
+        new RecordedStorageFeeCharging(
+            creator, exchange, recordsHistorian, txnCtx, syntheticTxnFactory, dynamicProperties);
+  }
+
+  @Test
+  void createsNoRecordWithNothingToDo() {
+    subject.chargeStorageFees(NUM_SLOTS_USED, Collections.emptyMap(), accountsLedger);
+    verifyNoInteractions(accountsLedger);
+  }
+
+  @Test
+  void chargesOnlyPositiveDeltasWithAutoRenewAccountPriority() {
+    givenStandardSetup();
+    final Map<AccountID, KvUsageInfo> usageInfos = new LinkedHashMap<>();
+    usageInfos.put(aContract, nonFreeUsageFor(+2));
+    usageInfos.put(bContract, nonFreeUsageFor(-1));
+    usageInfos.put(cContract, nonFreeUsageFor(+4));
+    final var expectedACharge =
+        STORAGE_PRICE_TIERS.priceOfPendingUsage(
+            someRate, NUM_SLOTS_USED, REFERENCE_LIFETIME, usageInfos.get(aContract));
+    final var expectedCCharge =
+        STORAGE_PRICE_TIERS.priceOfPendingUsage(
+            someRate, NUM_SLOTS_USED, cExpiry, usageInfos.get(cContract));
+    given(accountsLedger.get(funding, BALANCE)).willReturn(0L).willReturn(expectedACharge);
+
+    givenChargeableContract(aContract, -1, REFERENCE_LIFETIME, anAutoRenew);
+    givenAutoRenew(anAutoRenew, expectedACharge + 1);
+    givenChargeableContract(cContract, expectedCCharge + 2, cExpiry, null);
+
+    subject.chargeStorageFees(NUM_SLOTS_USED, usageInfos, accountsLedger);
+
+    verify(accountsLedger).set(anAutoRenew, BALANCE, 1L);
+    verify(accountsLedger, never()).set(eq(aContract), eq(BALANCE), anyLong());
+    verify(accountsLedger).set(cContract, BALANCE, 2L);
+    verify(accountsLedger).set(funding, BALANCE, expectedACharge);
+    verify(accountsLedger).set(funding, BALANCE, expectedACharge + expectedCCharge);
+  }
+
+  @Test
+  void fallsBackToContractIfAutoRenewCannotCover() {
+    givenStandardSetup();
+    final Map<AccountID, KvUsageInfo> usageInfos = Map.of(aContract, nonFreeUsageFor(+181));
+    final var expectedACharge =
+        STORAGE_PRICE_TIERS.priceOfPendingUsage(
+            someRate, NUM_SLOTS_USED, REFERENCE_LIFETIME, usageInfos.get(aContract));
+    final var autoRenewBalance = expectedACharge / 2;
+    final var contractBalance = expectedACharge / 2 + 1;
+    given(accountsLedger.get(funding, BALANCE)).willReturn(0L).willReturn(autoRenewBalance);
+
+    givenChargeableContract(aContract, contractBalance, REFERENCE_LIFETIME, anAutoRenew);
+    givenAutoRenew(anAutoRenew, autoRenewBalance);
+
+    subject.chargeStorageFeesInternal(
+        NUM_SLOTS_USED, usageInfos, STORAGE_PRICE_TIERS, accountsLedger);
+
+    verify(accountsLedger).set(anAutoRenew, BALANCE, 0L);
+    verify(accountsLedger).set(aContract, BALANCE, 1L);
+    verify(accountsLedger).set(funding, BALANCE, autoRenewBalance);
+    verify(accountsLedger).set(funding, BALANCE, expectedACharge);
+  }
+
+  @Test
+  void fallsBackToContractIfAutoRenewMissing() {
+    givenStandardSetup();
+    final Map<AccountID, KvUsageInfo> usageInfos = Map.of(aContract, nonFreeUsageFor(+181));
+    final var expectedACharge =
+        STORAGE_PRICE_TIERS.priceOfPendingUsage(
+            someRate, NUM_SLOTS_USED, REFERENCE_LIFETIME, usageInfos.get(aContract));
+    final var contractBalance = expectedACharge + 1;
+    given(accountsLedger.get(funding, BALANCE)).willReturn(0L);
+
+    givenChargeableContract(aContract, contractBalance, REFERENCE_LIFETIME, anAutoRenew);
+    given(accountsLedger.contains(anAutoRenew)).willReturn(false);
+
+    subject.chargeStorageFeesInternal(
+        NUM_SLOTS_USED, usageInfos, STORAGE_PRICE_TIERS, accountsLedger);
+
+    verify(accountsLedger).set(aContract, BALANCE, 1L);
+    verify(accountsLedger).set(funding, BALANCE, expectedACharge);
+  }
+
+  @Test
+  void fallsBackToContractIfAutoRenewDeleted() {
+    givenStandardSetup();
+    final Map<AccountID, KvUsageInfo> usageInfos = Map.of(aContract, nonFreeUsageFor(+181));
+    final var expectedACharge =
+        STORAGE_PRICE_TIERS.priceOfPendingUsage(
+            someRate, NUM_SLOTS_USED, REFERENCE_LIFETIME, usageInfos.get(aContract));
+    final var contractBalance = expectedACharge + 1;
+    given(accountsLedger.get(funding, BALANCE)).willReturn(0L);
+
+    givenChargeableContract(aContract, contractBalance, REFERENCE_LIFETIME, anAutoRenew);
+    given(accountsLedger.contains(anAutoRenew)).willReturn(true);
+    given(accountsLedger.get(anAutoRenew, IS_DELETED)).willReturn(true);
+
+    subject.chargeStorageFeesInternal(
+        NUM_SLOTS_USED, usageInfos, STORAGE_PRICE_TIERS, accountsLedger);
+
+    verify(accountsLedger).set(aContract, BALANCE, 1L);
+    verify(accountsLedger).set(funding, BALANCE, expectedACharge);
+  }
+
+  @Test
+  void failsIfFeesCannotBePaid() {
+    givenStandardSetup();
+    final Map<AccountID, KvUsageInfo> usageInfos = Map.of(aContract, nonFreeUsageFor(+181));
+    final var expectedACharge =
+        STORAGE_PRICE_TIERS.priceOfPendingUsage(
+            someRate, NUM_SLOTS_USED, REFERENCE_LIFETIME, usageInfos.get(aContract));
+    final var autoRenewBalance = expectedACharge / 2;
+    final var contractBalance = expectedACharge / 2 - 1;
+    given(accountsLedger.get(funding, BALANCE)).willReturn(0L).willReturn(autoRenewBalance);
+
+    givenChargeableContract(aContract, contractBalance, REFERENCE_LIFETIME, anAutoRenew);
+    givenAutoRenew(anAutoRenew, autoRenewBalance);
+
+    assertFailsWith(
+        () ->
+            subject.chargeStorageFeesInternal(
+                NUM_SLOTS_USED, usageInfos, STORAGE_PRICE_TIERS, accountsLedger),
+        INSUFFICIENT_ACCOUNT_BALANCE);
+  }
+
+  @Test
+  void managesRecordAsExpected() {
+    givenStandardSetup();
+    final ArgumentCaptor<TransactionBody.Builder> bodyCaptor =
+        forClass(TransactionBody.Builder.class);
+    final Map<AccountID, KvUsageInfo> usageInfos =
+        Map.of(aContract, nonFreeUsageFor(+181), bContract, freeUsageFor(12));
+    final var expectedACharge =
+        STORAGE_PRICE_TIERS.priceOfPendingUsage(
+            someRate, NUM_SLOTS_USED, REFERENCE_LIFETIME, usageInfos.get(aContract));
+    // setup:
+    final BackingStore<AccountID, MerkleAccount> backingAccounts = new HashMapBackingAccounts();
+    final var a =
+        MerkleAccountFactory.newContract()
+            .balance(1_000_000_000)
+            .expirationTime(REFERENCE_LIFETIME + now.getEpochSecond())
+            .get();
+    final var b =
+        MerkleAccountFactory.newContract()
+            .balance(1_000_000_000)
+            .expirationTime(REFERENCE_LIFETIME + now.getEpochSecond())
+            .get();
+    final var f = MerkleAccountFactory.newAccount().balance(0).get();
+    backingAccounts.put(aContract, a);
+    backingAccounts.put(bContract, b);
+    backingAccounts.put(funding, f);
+    final var liveLedger =
+        new TransactionalLedger<>(
+            AccountProperty.class,
+            MerkleAccount::new,
+            backingAccounts,
+            new ChangeSummaryManager<>());
+    // and:
+    final var mockRecord = ExpirableTxnRecord.newBuilder();
+    // and:
+    given(dynamicProperties.shouldItemizeStorageFees()).willReturn(true);
+    given(
+            creator.createSuccessfulSyntheticRecord(
+                eq(Collections.EMPTY_LIST),
+                any(SideEffectsTracker.class),
+                eq(RecordedStorageFeeCharging.MEMO)))
+        .willReturn(mockRecord);
+
+    liveLedger.begin();
+    subject.chargeStorageFees(NUM_SLOTS_USED, usageInfos, liveLedger);
+    liveLedger.commit();
+
+    verify(recordsHistorian)
+        .trackFollowingChildRecord(
+            eq(DEFAULT_SOURCE_ID), bodyCaptor.capture(), eq(mockRecord), eq(List.of()));
+    final var body = bodyCaptor.getValue().build();
+    final var op = body.getCryptoTransfer();
+    final var transfers = op.getTransfers().getAccountAmountsList();
+    assertEquals(
+        List.of(aaWith(funding, expectedACharge), aaWith(aContract, -expectedACharge)), transfers);
+    assertEquals(expectedACharge, f.getBalance());
+  }
+
+  @Test
+  void doesntCreateRecordIfNoFeesCharged() {
+    given(txnCtx.consensusTime()).willReturn(now);
+    given(exchange.activeRate(now)).willReturn(someRate);
+    given(dynamicProperties.storagePriceTiers()).willReturn(STORAGE_PRICE_TIERS);
+    final Map<AccountID, KvUsageInfo> usageInfos =
+        Map.of(aContract, freeUsageFor(+1), bContract, freeUsageFor(12));
+    // setup:
+    final BackingStore<AccountID, MerkleAccount> backingAccounts = new HashMapBackingAccounts();
+    final var a =
+        MerkleAccountFactory.newContract()
+            .balance(1_000_000_000)
+            .expirationTime(REFERENCE_LIFETIME + now.getEpochSecond())
+            .get();
+    final var b =
+        MerkleAccountFactory.newContract()
+            .balance(1_000_000_000)
+            .expirationTime(REFERENCE_LIFETIME + now.getEpochSecond())
+            .get();
+    final var f = MerkleAccountFactory.newAccount().balance(0).get();
+    backingAccounts.put(aContract, a);
+    backingAccounts.put(bContract, b);
+    backingAccounts.put(funding, f);
+    final var liveLedger =
+        new TransactionalLedger<>(
+            AccountProperty.class,
+            MerkleAccount::new,
+            backingAccounts,
+            new ChangeSummaryManager<>());
+    given(dynamicProperties.shouldItemizeStorageFees()).willReturn(true);
+
+    liveLedger.begin();
+    subject.chargeStorageFees(NUM_SLOTS_USED, usageInfos, liveLedger);
+    liveLedger.commit();
+
+    verifyNoInteractions(recordsHistorian);
+  }
+
+  private void givenStandardSetup() {
+    given(dynamicProperties.storagePriceTiers()).willReturn(STORAGE_PRICE_TIERS);
+    givenStandardInternalSetup();
+  }
+
+  private void givenStandardInternalSetup() {
+    given(txnCtx.consensusTime()).willReturn(now);
+    given(exchange.activeRate(now)).willReturn(someRate);
+    given(dynamicProperties.fundingAccount()).willReturn(funding);
+  }
+
+  private void givenAutoRenew(final AccountID id, final long amount) {
+    given(accountsLedger.contains(id)).willReturn(true);
+    given(accountsLedger.get(id, IS_DELETED)).willReturn(false);
+    given(accountsLedger.get(id, BALANCE)).willReturn(amount);
+  }
+
+  private void givenChargeableContract(
+      final AccountID id, final long amount, final long expiry, @Nullable AccountID autoRenewId) {
+    if (amount > -1) {
+      given(accountsLedger.get(id, BALANCE)).willReturn(amount);
+    }
+    given(accountsLedger.get(id, EXPIRY)).willReturn(now.getEpochSecond() + expiry);
+    if (autoRenewId != null) {
+      given(accountsLedger.get(id, AUTO_RENEW_ACCOUNT_ID))
+          .willReturn(EntityId.fromGrpcAccountId(autoRenewId));
+    } else {
+      given(accountsLedger.get(id, AUTO_RENEW_ACCOUNT_ID)).willReturn(EntityId.MISSING_ENTITY_ID);
+    }
+  }
+
+  private static final AccountID aContract = IdUtils.asAccount("0.0.1234");
+  private static final AccountID anAutoRenew = IdUtils.asAccount("0.0.2345");
+  private static final AccountID bContract = IdUtils.asAccount("0.0.3456");
+  private static final AccountID cContract = IdUtils.asAccount("0.0.4567");
+  private static final AccountID funding = IdUtils.asAccount("0.0.98");
+  private static final Instant now = Instant.ofEpochSecond(1_234_567, 890);
+  private static final long cExpiry = 3 * REFERENCE_LIFETIME / 2;
+  private static final long NUM_SLOTS_USED = 100_000_000;
+
+  private static final ExchangeRate someRate =
+      ExchangeRate.newBuilder().setHbarEquiv(12).setCentEquiv(123).build();
+
+  private AccountAmount aaWith(final AccountID account, final long amount) {
+    return AccountAmount.newBuilder().setAccountID(account).setAmount(amount).build();
+  }
+
+  private KvUsageInfo nonFreeUsageFor(final int delta) {
+    final var info = new KvUsageInfo(FREE_TIER_LIMIT + 1);
+    info.updatePendingBy(delta);
+    return info;
+  }
+
+  private KvUsageInfo freeUsageFor(final int delta) {
+    final var info = new KvUsageInfo(delta);
+    info.updatePendingBy(delta);
+    return info;
+  }
+}
