@@ -34,18 +34,21 @@ import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.timest
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.doCallRealMethod;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import com.esaulpaugh.headlong.util.Integers;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.contracts.execution.HederaBlockValues;
 import com.hedera.services.contracts.sources.TxnAwareEvmSigsVerifier;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.fees.HbarCentExchange;
@@ -86,6 +89,7 @@ import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.fee.FeeObject;
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -248,6 +252,37 @@ class WipeFungiblePrecompileTest {
         final var result = subject.computePrecompile(pretendArguments, frame);
         // then:
         assertNull(result.getOutput());
+        verify(wrappedLedgers, never()).commit();
+        verify(worldUpdater, never())
+                .manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
+    }
+
+    @Test
+    void fungibleWipeFailureAmountOversize2() throws InvalidProtocolBufferException {
+        // given:
+        given(worldUpdater.aliases()).willReturn(aliases);
+        given(frame.getSenderAddress()).willReturn(contractAddress);
+        given(frame.getWorldUpdater()).willReturn(worldUpdater);
+        Optional<WorldUpdater> parent = Optional.of(worldUpdater);
+        given(worldUpdater.wrappedTrackingLedgers(any())).willReturn(wrappedLedgers);
+
+        given(decoder.decodeWipe(eq(pretendArguments), any())).willReturn(fungibleWipeMaxAmount);
+        given(syntheticTxnFactory.createWipe(fungibleWipeMaxAmount))
+                .willReturn(mockSynthBodyBuilder);
+        given(mockSynthBodyBuilder.build()).willReturn(TransactionBody.newBuilder().build());
+        given(mockSynthBodyBuilder.setTransactionID(any(TransactionID.class)))
+                .willReturn(mockSynthBodyBuilder);
+        given(frame.getBlockValues())
+                .willReturn(new HederaBlockValues(10L, 123L, Instant.ofEpochSecond(123L)));
+        given(feeCalculator.estimatedGasPriceInTinybars(any(), any()))
+                .willReturn(DEFAULT_GAS_PRICE);
+        when(accessorFactory.constructSpecializedAccessor(any()))
+                .thenThrow(new InvalidProtocolBufferException("error"));
+
+        // then:
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> subject.computePrecompile(pretendArguments, frame));
         verify(wrappedLedgers, never()).commit();
         verify(worldUpdater, never())
                 .manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
