@@ -258,7 +258,8 @@ class WipeFungiblePrecompileTest {
     }
 
     @Test
-    void fungibleWipeFailureAmountOversize2() throws InvalidProtocolBufferException {
+    void fungibleWipeMissedSpecializedAccessorCausePrecompileFailure()
+            throws InvalidProtocolBufferException {
         // given:
         given(worldUpdater.aliases()).willReturn(aliases);
         given(frame.getSenderAddress()).willReturn(contractAddress);
