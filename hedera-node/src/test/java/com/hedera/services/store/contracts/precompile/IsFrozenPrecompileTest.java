@@ -54,6 +54,7 @@ import com.hedera.services.store.contracts.precompile.codec.DecodingFacade;
 import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.services.store.models.NftId;
+import com.hedera.services.utils.accessors.AccessorFactory;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.SubType;
@@ -109,6 +110,7 @@ class IsFrozenPrecompileTest {
             tokenRels;
 
     @Mock private AssetsLoader assetLoader;
+    @Mock private AccessorFactory accessorFactory;
 
     private HTSPrecompiledContract subject;
 
@@ -121,7 +123,7 @@ class IsFrozenPrecompileTest {
         given(assetLoader.loadCanonicalPrices()).willReturn(canonicalPrices);
         PrecompilePricingUtils precompilePricingUtils =
                 new PrecompilePricingUtils(
-                        assetLoader, exchange, () -> feeCalculator, resourceCosts, stateView);
+                        assetLoader, exchange, () -> feeCalculator, resourceCosts, stateView, accessorFactory);
         subject =
                 new HTSPrecompiledContract(
                         dynamicProperties,

@@ -35,14 +35,18 @@ public class CryptoTransferAccessor extends SignedTxnAccessor {
     private final CryptoTransferTransactionBody body;
     private final GlobalDynamicProperties properties;
 
+    private final PureTransferSemanticChecks checks;
+
     public CryptoTransferAccessor(
             final byte[] signedTxnWrapperBytes,
             @Nullable final Transaction txn,
-            final GlobalDynamicProperties properties)
+            final GlobalDynamicProperties properties,
+            final PureTransferSemanticChecks checks)
             throws InvalidProtocolBufferException {
         super(signedTxnWrapperBytes, txn);
         this.body = getTxn().getCryptoTransfer();
         this.properties = properties;
+        this.checks = checks;
         setXferUsageMeta();
     }
 
@@ -91,7 +95,7 @@ public class CryptoTransferAccessor extends SignedTxnAccessor {
                             properties.isAutoCreationEnabled(),
                             properties.areAllowancesEnabled());
             final var op = getTxn().getCryptoTransfer();
-            return PureTransferSemanticChecks.fullPureValidation(
+            return checks.fullPureValidation(
                     op.getTransfers(), op.getTokenTransfersList(), validationProps);
         }
     }

@@ -21,7 +21,6 @@ import static com.hedera.services.grpc.marshalling.ImpliedTransfers.NO_CUSTOM_FE
 import static com.hedera.services.ledger.BalanceChange.changingFtUnits;
 import static com.hedera.services.ledger.BalanceChange.changingHbar;
 import static com.hedera.services.ledger.BalanceChange.changingNftOwnership;
-import static com.hedera.services.ledger.PureTransferSemanticChecks.fullPureValidation;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALIAS_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
@@ -55,6 +54,7 @@ public class ImpliedTransfersMarshal {
     private final CustomFeeSchedules customFeeSchedules;
     private final Supplier<AliasResolver> aliasResolverFactory;
     private final GlobalDynamicProperties dynamicProperties;
+    private final PureTransferSemanticChecks checks;
     private final Predicate<CryptoTransferTransactionBody> aliasCheck;
     private final BalanceChangeManager.ChangeManagerFactory changeManagerFactory;
     private final Function<CustomFeeSchedules, CustomSchedulesManager> schedulesManagerFactory;
@@ -65,9 +65,11 @@ public class ImpliedTransfersMarshal {
             final CustomFeeSchedules customFeeSchedules,
             final Supplier<AliasResolver> aliasResolverFactory,
             final GlobalDynamicProperties dynamicProperties,
+            final PureTransferSemanticChecks checks,
             final Predicate<CryptoTransferTransactionBody> aliasCheck,
             final BalanceChangeManager.ChangeManagerFactory changeManagerFactory,
             final Function<CustomFeeSchedules, CustomSchedulesManager> schedulesManagerFactory) {
+        this.checks = checks;
         this.aliasCheck = aliasCheck;
         this.aliasManager = aliasManager;
         this.feeAssessor = feeAssessor;
@@ -137,7 +139,7 @@ public class ImpliedTransfersMarshal {
     }
 
     public ResponseCodeEnum validityWithCurrentProps(CryptoTransferTransactionBody op) {
-        return fullPureValidation(
+        return checks.fullPureValidation(
                 op.getTransfers(), op.getTokenTransfersList(), currentProps());
     }
 

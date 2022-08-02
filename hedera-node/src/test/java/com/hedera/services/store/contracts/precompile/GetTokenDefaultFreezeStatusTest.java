@@ -40,6 +40,7 @@ import com.hedera.services.store.contracts.WorldLedgers;
 import com.hedera.services.store.contracts.precompile.codec.DecodingFacade;
 import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
+import com.hedera.services.utils.accessors.AccessorFactory;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.io.IOException;
 import java.util.Optional;
@@ -77,6 +78,7 @@ class GetTokenDefaultFreezeStatusTest {
     @Mock private InfrastructureFactory infrastructureFactory;
 
     @Mock private AssetsLoader assetLoader;
+    @Mock private AccessorFactory accessorFactory;
 
     private HTSPrecompiledContract subject;
 
@@ -84,7 +86,7 @@ class GetTokenDefaultFreezeStatusTest {
     void setUp() throws IOException {
         PrecompilePricingUtils precompilePricingUtils =
                 new PrecompilePricingUtils(
-                        assetLoader, exchange, () -> feeCalculator, resourceCosts, stateView);
+                        assetLoader, exchange, () -> feeCalculator, resourceCosts, stateView, accessorFactory);
         subject =
                 new HTSPrecompiledContract(
                         dynamicProperties,

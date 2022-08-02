@@ -30,8 +30,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.verify;
+import static org.mockito.BDDMockito.willCallRealMethod;
 import static org.mockito.Mockito.mock;
 
 import com.google.protobuf.ByteString;
@@ -333,8 +335,10 @@ class PlatformTxnAccessorTest {
         SwirldTransaction platformTxn = new SwirldTransaction(signedTxnWithBody.toByteArray());
         final var aliasManager = mock(AliasManager.class);
         final var stateView = mock(StateView.class);
+        final var accessorFactory  = mock(AccessorFactory.class);
+        willCallRealMethod().given(accessorFactory).constructSpecializedAccessor(any());
 
-        var signedAccessor = SignedTxnAccessor.from(platformTxn.getContents());
+        var signedAccessor = accessorFactory.constructSpecializedAccessor(platformTxn.getContents());
         // when:
         PlatformTxnAccessor subject = new PlatformTxnAccessor(signedAccessor, platformTxn);
         final var delegate = subject.getDelegate();
@@ -397,7 +401,8 @@ class PlatformTxnAccessorTest {
         assertEquals(delegate.baseUsageMeta(), subject.baseUsageMeta());
         assertEquals(delegate.getMemoUtf8Bytes().length, subject.baseUsageMeta().memoUtf8Bytes());
 
-        assertEquals(delegate.getSpanMapAccessor().getSubmitMessageMeta(delegate),
+        assertEquals(
+                delegate.getSpanMapAccessor().getSubmitMessageMeta(delegate),
                 subject.getSpanMapAccessor().getSubmitMessageMeta(subject));
         assertEquals(
                 someTxn.getConsensusSubmitMessage().getMessage().size(),
@@ -495,7 +500,7 @@ class PlatformTxnAccessorTest {
                     + "    topicNum: 10\n"
                     + "  }\n"
                     + "}\n"
-                    + ", submitMessageMeta=SubmitMessageMeta[numMsgBytes=0], xferUsageMeta=null,"
+                    + ","
                     + " txnUsageMeta=BaseTransactionMeta[memoUtf8Bytes=3, numExplicitTransfers=0],"
                     + " function=ConsensusSubmitMessage,"
                     + " pubKeyToSigBytes=PojoSigMapPubKeyToSigBytes{pojoSigMap=PojoSigMap{keyTypes=[ED25519],"

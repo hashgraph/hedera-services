@@ -60,6 +60,7 @@ import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.txns.token.UnfreezeLogic;
+import com.hedera.services.utils.accessors.AccessorFactory;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ExchangeRate;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
@@ -120,6 +121,7 @@ class UnfreezeTokenPrecompileTest {
             tokenRels;
 
     @Mock private AssetsLoader assetLoader;
+    @Mock private AccessorFactory accessorFactory;
 
     private HTSPrecompiledContract subject;
     private static final long TEST_SERVICE_FEE = 5_000_000;
@@ -139,7 +141,7 @@ class UnfreezeTokenPrecompileTest {
         given(assetLoader.loadCanonicalPrices()).willReturn(canonicalPrices);
         PrecompilePricingUtils precompilePricingUtils =
                 new PrecompilePricingUtils(
-                        assetLoader, exchange, () -> feeCalculator, resourceCosts, stateView);
+                        assetLoader, exchange, () -> feeCalculator, resourceCosts, stateView, accessorFactory);
         subject =
                 new HTSPrecompiledContract(
                         dynamicProperties,

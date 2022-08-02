@@ -53,11 +53,13 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.willCallRealMethod;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 import com.esaulpaugh.headlong.util.Integers;
+import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
@@ -94,6 +96,7 @@ import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.tokens.HederaTokenStore;
 import com.hedera.services.utils.EntityIdUtils;
+import com.hedera.services.utils.accessors.AccessorFactory;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
 import com.hederahashgraph.api.proto.java.ExchangeRate;
@@ -166,6 +169,7 @@ class TransferPrecompilesTest {
     @Mock private AssetsLoader assetLoader;
     @Mock private HbarCentExchange exchange;
     @Mock private ExchangeRate exchangeRate;
+    @Mock private AccessorFactory accessorFactory;
 
     private static final long TEST_SERVICE_FEE = 5_000_000;
     private static final long TEST_NETWORK_FEE = 400_000;
@@ -181,7 +185,7 @@ class TransferPrecompilesTest {
     void setUp() {
         PrecompilePricingUtils precompilePricingUtils =
                 new PrecompilePricingUtils(
-                        assetLoader, exchange, () -> feeCalculator, resourceCosts, stateView);
+                        assetLoader, exchange, () -> feeCalculator, resourceCosts, stateView, accessorFactory);
         subject =
                 new HTSPrecompiledContract(
                         dynamicProperties,
@@ -200,11 +204,13 @@ class TransferPrecompilesTest {
         given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+
     }
 
     @Test
     void transferFailsFastGivenWrongSyntheticValidity() {
         givenPricingUtilsContext();
+        getAccessor();
         Bytes pretendArguments = Bytes.of(Integers.toBytes(ABI_ID_TRANSFER_TOKENS));
         given(frame.getWorldUpdater()).willReturn(worldUpdater);
         given(frame.getSenderAddress()).willReturn(contractAddress);
@@ -262,6 +268,7 @@ class TransferPrecompilesTest {
         givenMinimalFrameContext();
         givenLedgers();
         givenPricingUtilsContext();
+        getAccessor();
 
         given(
                         syntheticTxnFactory.createCryptoTransfer(
@@ -333,6 +340,7 @@ class TransferPrecompilesTest {
     @Test
     void abortsIfImpliedCustomFeesCannotBeAssessed() {
         givenPricingUtilsContext();
+        getAccessor();
         Bytes pretendArguments = Bytes.of(Integers.toBytes(ABI_ID_TRANSFER_TOKENS));
 
         given(frame.getWorldUpdater()).willReturn(worldUpdater);
@@ -396,6 +404,7 @@ class TransferPrecompilesTest {
         givenMinimalFrameContext();
         givenLedgers();
         givenPricingUtilsContext();
+        getAccessor();
 
         given(
                         syntheticTxnFactory.createCryptoTransfer(
@@ -469,6 +478,7 @@ class TransferPrecompilesTest {
         givenMinimalFrameContext();
         givenLedgers();
         givenPricingUtilsContext();
+        getAccessor();
 
         given(frame.getSenderAddress()).willReturn(contractAddress);
         given(
@@ -542,6 +552,7 @@ class TransferPrecompilesTest {
         givenMinimalFrameContext();
         givenLedgers();
         givenPricingUtilsContext();
+        getAccessor();
 
         given(syntheticTxnFactory.createCryptoTransfer(Collections.singletonList(nftsTransferList)))
                 .willReturn(mockSynthBodyBuilder);
@@ -609,7 +620,7 @@ class TransferPrecompilesTest {
     }
 
     @Test
-    void transferNftHappyPathWorks() {
+    void transferNftHappyPathWorks() throws InvalidProtocolBufferException {
         Bytes pretendArguments = Bytes.of(Integers.toBytes(ABI_ID_TRANSFER_NFT));
 
         final var recipientAddr = Address.ALTBN128_ADD;
@@ -620,6 +631,7 @@ class TransferPrecompilesTest {
         given(frame.getSenderAddress()).willReturn(contractAddress);
         givenLedgers();
         givenPricingUtilsContext();
+        getAccessor();
 
         given(syntheticTxnFactory.createCryptoTransfer(Collections.singletonList(nftTransferList)))
                 .willReturn(mockSynthBodyBuilder);
@@ -706,6 +718,7 @@ class TransferPrecompilesTest {
         givenMinimalFrameContext();
         givenLedgers();
         givenPricingUtilsContext();
+        getAccessor();
 
         given(syntheticTxnFactory.createCryptoTransfer(Collections.singletonList(nftTransferList)))
                 .willReturn(mockSynthBodyBuilder);
@@ -777,6 +790,7 @@ class TransferPrecompilesTest {
         givenMinimalFrameContext();
         givenLedgers();
         givenPricingUtilsContext();
+        getAccessor();
 
         given(
                         sigsVerifier.hasActiveKeyOrNoReceiverSigReq(
@@ -864,6 +878,7 @@ class TransferPrecompilesTest {
         // given
         givenMinFrameContext();
         givenPricingUtilsContext();
+        getAccessor();
         Bytes input = Bytes.of(Integers.toBytes(ABI_ID_TRANSFER_NFTS));
         given(syntheticTxnFactory.createCryptoTransfer(any()))
                 .willReturn(
@@ -889,6 +904,7 @@ class TransferPrecompilesTest {
         // given
         givenMinFrameContext();
         givenPricingUtilsContext();
+        getAccessor();
         Bytes input = Bytes.of(Integers.toBytes(ABI_ID_TRANSFER_NFT));
         given(syntheticTxnFactory.createCryptoTransfer(any()))
                 .willReturn(
@@ -914,6 +930,7 @@ class TransferPrecompilesTest {
         // given
         givenMinFrameContext();
         givenPricingUtilsContext();
+        getAccessor();
         Bytes input = Bytes.of(Integers.toBytes(ABI_ID_CRYPTO_TRANSFER));
         given(syntheticTxnFactory.createCryptoTransfer(any()))
                 .willReturn(
@@ -939,6 +956,7 @@ class TransferPrecompilesTest {
         // given
         givenMinFrameContext();
         givenPricingUtilsContext();
+        getAccessor();
         Bytes input = Bytes.of(Integers.toBytes(ABI_ID_CRYPTO_TRANSFER));
         given(syntheticTxnFactory.createCryptoTransfer(any()))
                 .willReturn(
@@ -973,6 +991,7 @@ class TransferPrecompilesTest {
         // given
         givenMinFrameContext();
         givenPricingUtilsContext();
+        getAccessor();
         Bytes input = Bytes.of(Integers.toBytes(ABI_ID_TRANSFER_TOKENS));
         given(syntheticTxnFactory.createCryptoTransfer(any()))
                 .willReturn(
@@ -998,6 +1017,7 @@ class TransferPrecompilesTest {
         // given
         givenMinFrameContext();
         givenPricingUtilsContext();
+        getAccessor();
         Bytes input = Bytes.of(Integers.toBytes(ABI_ID_TRANSFER_TOKEN));
         given(syntheticTxnFactory.createCryptoTransfer(any()))
                 .willReturn(
@@ -1016,22 +1036,6 @@ class TransferPrecompilesTest {
 
         // then
         assertEquals(EXPECTED_GAS_PRICE, result);
-    }
-
-    private void givenFrameContext() {
-        given(parentFrame.getContractAddress()).willReturn(parentContractAddress);
-        given(parentFrame.getRecipientAddress()).willReturn(parentContractAddress);
-        given(parentFrame.getSenderAddress()).willReturn(parentContractAddress);
-        given(frame.getContractAddress()).willReturn(contractAddr);
-        given(frame.getSenderAddress()).willReturn(contractAddress);
-        given(frame.getMessageFrameStack()).willReturn(frameDeque);
-        given(frame.getMessageFrameStack().descendingIterator()).willReturn(dequeIterator);
-        given(frame.getMessageFrameStack().descendingIterator().hasNext()).willReturn(true);
-        given(frame.getMessageFrameStack().descendingIterator().next()).willReturn(parentFrame);
-        given(frame.getWorldUpdater()).willReturn(worldUpdater);
-        Optional<WorldUpdater> parent = Optional.of(worldUpdater);
-        given(worldUpdater.parentUpdater()).willReturn(parent);
-        given(worldUpdater.wrappedTrackingLedgers(sideEffects)).willReturn(wrappedLedgers);
     }
 
     private void givenMinimalFrameContext() {
@@ -1061,5 +1065,13 @@ class TransferPrecompilesTest {
         given(frame.getSenderAddress()).willReturn(contractAddress);
         given(frame.getWorldUpdater()).willReturn(worldUpdater);
         given(worldUpdater.wrappedTrackingLedgers(any())).willReturn(wrappedLedgers);
+    }
+
+    private void getAccessor(){
+        try{
+            willCallRealMethod().given(accessorFactory).constructSpecializedAccessor(any());
+        } catch (InvalidProtocolBufferException e) {
+            throw new IllegalStateException(e);
+        }
     }
 }

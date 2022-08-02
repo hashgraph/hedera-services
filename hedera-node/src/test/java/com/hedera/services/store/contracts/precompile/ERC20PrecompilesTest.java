@@ -69,9 +69,11 @@ import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.willCallRealMethod;
 import static org.mockito.Mockito.verify;
 
 import com.esaulpaugh.headlong.util.Integers;
+import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
@@ -120,6 +122,7 @@ import com.hedera.services.txns.crypto.validators.ApproveAllowanceChecks;
 import com.hedera.services.txns.crypto.validators.DeleteAllowanceChecks;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.EntityNum;
+import com.hedera.services.utils.accessors.AccessorFactory;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoAllowance;
 import com.hederahashgraph.api.proto.java.CryptoApproveAllowanceTransactionBody;
@@ -207,6 +210,7 @@ class ERC20PrecompilesTest {
     @Mock private AssetsLoader assetLoader;
     @Mock private HbarCentExchange exchange;
     @Mock private ExchangeRate exchangeRate;
+    @Mock private AccessorFactory accessorFactory;
 
     private static final int CENTS_RATE = 12;
     private static final int HBAR_RATE = 1;
@@ -224,7 +228,7 @@ class ERC20PrecompilesTest {
         given(assetLoader.loadCanonicalPrices()).willReturn(canonicalPrices);
         PrecompilePricingUtils precompilePricingUtils =
                 new PrecompilePricingUtils(
-                        assetLoader, exchange, () -> feeCalculator, resourceCosts, stateView);
+                        assetLoader, exchange, () -> feeCalculator, resourceCosts, stateView, accessorFactory);
         subject =
                 new HTSPrecompiledContract(
                         dynamicProperties,
@@ -469,6 +473,7 @@ class ERC20PrecompilesTest {
         Bytes pretendArguments = givenMinimalFrameContext(nestedPretendArguments);
         givenLedgers();
         givenPricingUtilsContext();
+        getAccessor();
 
         given(frame.getContractAddress()).willReturn(contractAddr);
         given(
@@ -1116,6 +1121,7 @@ class ERC20PrecompilesTest {
         Bytes pretendArguments = givenMinimalFrameContext(nestedPretendArguments);
         givenLedgers();
         givenPricingUtilsContext();
+        getAccessor();
 
         given(frame.getContractAddress()).willReturn(contractAddr);
         given(
@@ -1200,6 +1206,7 @@ class ERC20PrecompilesTest {
         Bytes pretendArguments = givenMinimalFrameContext(nestedPretendArguments);
         givenLedgers();
         givenPricingUtilsContext();
+        getAccessor();
 
         given(frame.getContractAddress()).willReturn(contractAddr);
         given(
@@ -1277,6 +1284,7 @@ class ERC20PrecompilesTest {
         Bytes pretendArguments = givenMinimalFrameContext(nestedPretendArguments);
         givenLedgers();
         givenPricingUtilsContext();
+        getAccessor();
 
         given(frame.getContractAddress()).willReturn(contractAddr);
         given(
@@ -1396,6 +1404,14 @@ class ERC20PrecompilesTest {
         given(exchange.rate(any())).willReturn(exchangeRate);
         given(exchangeRate.getCentEquiv()).willReturn(CENTS_RATE);
         given(exchangeRate.getHbarEquiv()).willReturn(HBAR_RATE);
+    }
+
+    private void getAccessor(){
+        try{
+            willCallRealMethod().given(accessorFactory).constructSpecializedAccessor(any());
+        } catch (InvalidProtocolBufferException e) {
+            throw new IllegalStateException(e);
+        }
     }
 
     public static final BalanceOfWrapper BALANCE_OF_WRAPPER = new BalanceOfWrapper(sender);

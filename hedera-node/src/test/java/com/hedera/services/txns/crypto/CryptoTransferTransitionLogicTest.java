@@ -25,12 +25,13 @@ import com.hedera.services.grpc.marshalling.ImpliedTransfers;
 import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;
 import com.hedera.services.grpc.marshalling.ImpliedTransfersMeta;
 import com.hedera.services.ledger.HederaLedger;
+import com.hedera.services.ledger.PureTransferSemanticChecks;
 import com.hedera.services.state.submerkle.FcAssessedCustomFee;
 import com.hedera.services.state.submerkle.FcCustomFee;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.txns.span.ExpandHandleSpanMapAccessor;
-import com.hedera.services.utils.accessors.custom.CryptoTransferAccessor;
 import com.hedera.services.utils.accessors.PlatformTxnAccessor;
+import com.hedera.services.utils.accessors.custom.CryptoTransferAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -65,7 +66,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.verify;
@@ -103,6 +103,7 @@ class CryptoTransferTransitionLogicTest {
     @Mock private ImpliedTransfersMarshal impliedTransfersMarshal;
     @Mock private ExpandHandleSpanMapAccessor spanMapAccessor;
     @Mock private PlatformTxnAccessor swirldsTxnAccessor;
+    @Mock private PureTransferSemanticChecks transferChecks;
     private CryptoTransferAccessor accessor;
 
     private TransactionBody cryptoTransferTxnBody;
@@ -239,7 +240,7 @@ class CryptoTransferTransitionLogicTest {
         cryptoTransferTxnBody = TransactionBody.newBuilder().setCryptoTransfer(xfers).build();
         cryptoTransferTxn =
                 Transaction.newBuilder().setBodyBytes(cryptoTransferTxnBody.toByteString()).build();
-        accessor = new CryptoTransferAccessor(cryptoTransferTxn.toByteArray(), cryptoTransferTxn, dynamicProperties);
+        accessor = new CryptoTransferAccessor(cryptoTransferTxn.toByteArray(), cryptoTransferTxn, dynamicProperties, transferChecks);
         accessor.getSpanMapAccessor().setImpliedTransfers(accessor, impliedTransfers);
 
         // when:
@@ -275,7 +276,7 @@ class CryptoTransferTransitionLogicTest {
         cryptoTransferTxnBody = TransactionBody.newBuilder().setCryptoTransfer(xfers).build();
         cryptoTransferTxn =
                 Transaction.newBuilder().setBodyBytes(cryptoTransferTxnBody.toByteString()).build();
-        accessor = new CryptoTransferAccessor(cryptoTransferTxn.toByteArray(), cryptoTransferTxn, dynamicProperties);
+        accessor = new CryptoTransferAccessor(cryptoTransferTxn.toByteArray(), cryptoTransferTxn, dynamicProperties, transferChecks);
 
         given(dynamicProperties.areAllowancesEnabled()).willReturn(false);
         given(dynamicProperties.maxTransferListSize()).willReturn(maxHbarAdjusts);
@@ -299,7 +300,7 @@ class CryptoTransferTransitionLogicTest {
 
         cryptoTransferTxn =
                 Transaction.newBuilder().setBodyBytes(cryptoTransferTxnBody.toByteString()).build();
-        accessor = new CryptoTransferAccessor(cryptoTransferTxn.toByteArray(), cryptoTransferTxn, dynamicProperties);
+        accessor = new CryptoTransferAccessor(cryptoTransferTxn.toByteArray(), cryptoTransferTxn, dynamicProperties, transferChecks);
 
         // when:
         final var validity = subject.validateSemantics(accessor);
@@ -344,7 +345,7 @@ class CryptoTransferTransitionLogicTest {
     private void addToTxn() throws InvalidProtocolBufferException {
         cryptoTransferTxn =
                 Transaction.newBuilder().setBodyBytes(cryptoTransferTxnBody.toByteString()).build();
-        accessor = new CryptoTransferAccessor(cryptoTransferTxn.toByteArray(), cryptoTransferTxn, dynamicProperties);
+        accessor = new CryptoTransferAccessor(cryptoTransferTxn.toByteArray(), cryptoTransferTxn, dynamicProperties, transferChecks);
         accessor.setPayer(payer);
         given(txnCtx.swirldsTxnAccessor()).willReturn(swirldsTxnAccessor);
         given(swirldsTxnAccessor.getDelegate()).willReturn(accessor);

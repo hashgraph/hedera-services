@@ -85,6 +85,7 @@ class ImpliedTransfersMarshalTest {
     @Mock private FeeAssessor feeAssessor;
     @Mock private CustomFeeSchedules customFeeSchedules;
     @Mock private GlobalDynamicProperties dynamicProperties;
+    @Mock private PureTransferSemanticChecks xferChecks;
     @Mock private BalanceChangeManager.ChangeManagerFactory changeManagerFactory;
     @Mock private Function<CustomFeeSchedules, CustomSchedulesManager> customSchedulesFactory;
     @Mock private BalanceChangeManager changeManager;
@@ -104,6 +105,7 @@ class ImpliedTransfersMarshalTest {
                         customFeeSchedules,
                         () -> aliasResolver,
                         dynamicProperties,
+                        xferChecks,
                         aliasCheck,
                         changeManagerFactory,
                         customSchedulesFactory);
@@ -478,15 +480,12 @@ class ImpliedTransfersMarshalTest {
     }
 
     private void givenValidity(ResponseCodeEnum s) {
-        try (MockedStatic mocked = mockStatic(PureTransferSemanticChecks.class)) {
-            mocked.when(
-                            () ->
-                                    PureTransferSemanticChecks.fullPureValidation(
-                                            op.getTransfers(),
-                                            op.getTokenTransfersList(),
-                                            propsWithAutoCreation))
-                    .thenReturn(s);
-        }
+        given(
+                        xferChecks.fullPureValidation(
+                                op.getTransfers(),
+                                op.getTokenTransfersList(),
+                                propsWithAutoCreation))
+                .willReturn(s);
     }
 
     private void setupProps() {

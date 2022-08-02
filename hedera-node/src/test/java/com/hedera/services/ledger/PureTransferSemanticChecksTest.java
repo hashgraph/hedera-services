@@ -262,7 +262,7 @@ class PureTransferSemanticChecksTest {
     }
 
     @Test
-    void preservesTraditionalResponseCodePriority() {
+    void zpreservesTraditionalResponseCodePriority() {
         // setup:
         final var hbarAdjusts = withAdjustments(a, -4L, b, +2L, c, +2L);
         final var tokenAdjusts = withTokenAdjustments(aTid, a, -1, bTid, b, 2, cTid, c, 3);

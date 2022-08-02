@@ -25,6 +25,7 @@ import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.fees.calculation.UsagePricesProvider;
 import com.hedera.services.pricing.AssetsLoader;
+import com.hedera.services.utils.accessors.AccessorFactory;
 import com.hederahashgraph.api.proto.java.ExchangeRate;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.SubType;
@@ -50,6 +51,7 @@ class PrecompilePricingUtilsTest {
     @Mock private Provider<FeeCalculator> feeCalculator;
     @Mock private UsagePricesProvider resourceCosts;
     @Mock private StateView stateView;
+    @Mock private AccessorFactory accessorFactory;
 
     @Test
     void failsToLoadCanonicalPrices() throws IOException {
@@ -58,7 +60,7 @@ class PrecompilePricingUtilsTest {
                 PrecompilePricingUtils.CanonicalOperationsUnloadableException.class,
                 () ->
                         new PrecompilePricingUtils(
-                                assetLoader, exchange, feeCalculator, resourceCosts, stateView));
+                                assetLoader, exchange, feeCalculator, resourceCosts, stateView, accessorFactory));
     }
 
     @Test
@@ -75,7 +77,7 @@ class PrecompilePricingUtilsTest {
 
         PrecompilePricingUtils subject =
                 new PrecompilePricingUtils(
-                        assetLoader, exchange, feeCalculator, resourceCosts, stateView);
+                        assetLoader, exchange, feeCalculator, resourceCosts, stateView, accessorFactory);
 
         long price =
                 subject.getMinimumPriceInTinybars(

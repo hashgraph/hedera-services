@@ -18,6 +18,7 @@ package com.hedera.services.utils.accessors;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.NodeInfo;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.ledger.PureTransferSemanticChecks;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.EntityNum;
@@ -40,21 +41,23 @@ import static com.hedera.services.legacy.proto.utils.CommonUtils.extractTransact
 public class AccessorFactory {
     private final GlobalDynamicProperties dynamicProperties;
     private final OptionValidator validator;
-
     private final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts;
-
     private final NodeInfo nodeInfo;
+
+    private final PureTransferSemanticChecks transferChecks;
 
     @Inject
     public AccessorFactory(
             final GlobalDynamicProperties dynamicProperties,
             final OptionValidator validator,
             final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts,
-            final NodeInfo nodeInfo) {
+            final NodeInfo nodeInfo,
+            final PureTransferSemanticChecks transferChecks) {
         this.dynamicProperties = dynamicProperties;
         this.validator = validator;
         this.accounts = accounts;
         this.nodeInfo = nodeInfo;
+        this.transferChecks = transferChecks;
     }
 
     public TxnAccessor nonTriggeredTxn(byte[] signedTxnWrapperBytes)
@@ -97,7 +100,7 @@ public class AccessorFactory {
         final var function = MiscUtils.FUNCTION_EXTRACTOR.apply(body);
         return switch (function){
             case TokenAccountWipe -> new TokenWipeAccessor(signedTxnWrapperBytes, signedTxn, dynamicProperties);
-            case CryptoTransfer -> new CryptoTransferAccessor(signedTxnWrapperBytes, signedTxn, dynamicProperties);
+            case CryptoTransfer -> new CryptoTransferAccessor(signedTxnWrapperBytes, signedTxn, dynamicProperties, transferChecks);
             case CryptoCreate -> new CryptoCreateAccessor(signedTxnWrapperBytes, signedTxn, dynamicProperties, validator, accounts, nodeInfo);
             case ConsensusSubmitMessage -> new SubmitMessageAccessor(signedTxnWrapperBytes, signedTxn);
             default -> SignedTxnAccessor.from(signedTxnWrapperBytes, signedTxn);

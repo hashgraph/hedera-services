@@ -23,6 +23,7 @@ import static org.mockito.Mockito.verify;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.NodeInfo;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.ledger.PureTransferSemanticChecks;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.txns.span.ExpandHandleSpan;
@@ -54,8 +55,9 @@ class ExpandHandleSpanTest {
 
     @Mock private MerkleMap<EntityNum, MerkleAccount> accounts;
     @Mock private NodeInfo nodeInfo;
+    @Mock private PureTransferSemanticChecks checks;
 
-    private AccessorFactory accessorFactory = new AccessorFactory(properties, validator, () -> accounts, nodeInfo);
+    private AccessorFactory accessorFactory = new AccessorFactory(properties, validator, () -> accounts, nodeInfo, checks);
 
     private final long duration = 20;
     private final TimeUnit testUnit = TimeUnit.MILLISECONDS;
