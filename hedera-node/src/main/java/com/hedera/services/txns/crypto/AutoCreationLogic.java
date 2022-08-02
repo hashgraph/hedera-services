@@ -43,6 +43,7 @@ import com.hedera.services.state.submerkle.FcAssessedCustomFee;
 import com.hedera.services.state.validation.UsageLimits;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.utils.EntityNum;
+import com.hedera.services.utils.accessors.AccessorFactory;
 import com.hedera.services.utils.accessors.SignedTxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
@@ -78,6 +79,7 @@ public class AutoCreationLogic {
     private final SyntheticTxnFactory syntheticTxnFactory;
     private final List<InProgressChildRecord> pendingCreations = new ArrayList<>();
     private final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts;
+    private final AccessorFactory accessorFactory;
 
     private FeeCalculator feeCalculator;
 
@@ -94,7 +96,8 @@ public class AutoCreationLogic {
             final SigImpactHistorian sigImpactHistorian,
             final StateView currentView,
             final TransactionContext txnCtx,
-            final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts) {
+            final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts,
+            final AccessorFactory accessorFactory) {
         this.ids = ids;
         this.txnCtx = txnCtx;
         this.creator = creator;
@@ -104,6 +107,7 @@ public class AutoCreationLogic {
         this.sigImpactHistorian = sigImpactHistorian;
         this.syntheticTxnFactory = syntheticTxnFactory;
         this.aliasManager = aliasManager;
+        this.accessorFactory = accessorFactory;
     }
 
     public void setFeeCalculator(final FeeCalculator feeCalculator) {
@@ -225,7 +229,12 @@ public class AutoCreationLogic {
                         .setSignedTransactionBytes(signedTxn.toByteString())
                         .build();
 
-        final var accessor = SignedTxnAccessor.uncheckedFrom(txn);
+        SignedTxnAccessor accessor;
+        try {
+            accessor = accessorFactory.constructSpecializedAccessor(txn.toByteArray());
+        } catch (InvalidProtocolBufferException e) {
+            accessor = SignedTxnAccessor.uncheckedFrom(txn);
+        }
         final var fees =
                 feeCalculator.computeFee(accessor, EMPTY_KEY, currentView, txnCtx.consensusTime());
         return fees.getServiceFee() + fees.getNetworkFee() + fees.getNodeFee();

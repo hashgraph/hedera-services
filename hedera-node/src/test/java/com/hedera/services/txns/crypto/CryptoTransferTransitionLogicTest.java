@@ -30,6 +30,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.verify;
@@ -284,7 +285,7 @@ class CryptoTransferTransitionLogicTest {
                         cryptoTransferTxn,
                         dynamicProperties,
                         transferChecks);
-
+        given(transferChecks.fullPureValidation(any(), any(), any())).willReturn(NOT_SUPPORTED);
         given(dynamicProperties.areAllowancesEnabled()).willReturn(false);
         given(dynamicProperties.maxTransferListSize()).willReturn(maxHbarAdjusts);
 
@@ -313,6 +314,12 @@ class CryptoTransferTransitionLogicTest {
                         cryptoTransferTxn,
                         dynamicProperties,
                         transferChecks);
+        given(
+                        transferChecks.fullPureValidation(
+                                cryptoTransferTxnBody.getCryptoTransfer().getTransfers(),
+                                cryptoTransferTxnBody.getCryptoTransfer().getTokenTransfersList(),
+                                validationProps))
+                .willReturn(TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN);
 
         // when:
         final var validity = subject.validateSemantics(accessor);
@@ -342,7 +349,7 @@ class CryptoTransferTransitionLogicTest {
         assertEquals(status, ex.getResponseCode());
     }
 
-    private void givenValidTxnCtx(TransferList wrapper) throws InvalidProtocolBufferException {
+    private void cryptoTransferTxn(TransferList wrapper) throws InvalidProtocolBufferException {
         cryptoTransferTxnBody =
                 TransactionBody.newBuilder()
                         .setTransactionID(ourTxnId())

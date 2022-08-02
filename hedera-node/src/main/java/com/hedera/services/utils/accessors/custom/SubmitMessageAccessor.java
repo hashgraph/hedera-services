@@ -20,6 +20,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.usage.consensus.SubmitMessageMeta;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.accessors.SignedTxnAccessor;
 import com.hederahashgraph.api.proto.java.ConsensusMessageChunkInfo;
 import com.hederahashgraph.api.proto.java.ConsensusSubmitMessageTransactionBody;
@@ -28,6 +29,7 @@ import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.Transaction;
 import org.jetbrains.annotations.Nullable;
 
+/** Specialized accessor for ConsensusSubmitMessage transaction. */
 public class SubmitMessageAccessor extends SignedTxnAccessor {
     private final ConsensusSubmitMessageTransactionBody body;
 
@@ -46,10 +48,6 @@ public class SubmitMessageAccessor extends SignedTxnAccessor {
 
     @Override
     public ResponseCodeEnum doPrecheck() {
-        return validateSyntax();
-    }
-
-    public ResponseCodeEnum validateSyntax() {
         return OK;
     }
 
@@ -59,6 +57,10 @@ public class SubmitMessageAccessor extends SignedTxnAccessor {
 
     public TopicID topicId() {
         return body.getTopicID();
+    }
+
+    public EntityNum topicNum() {
+        return EntityNum.fromTopicId(body.getTopicID());
     }
 
     public boolean hasChunkInfo() {

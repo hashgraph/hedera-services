@@ -122,6 +122,11 @@ public class MockTransactionContext implements TransactionContext {
     }
 
     @Override
+    public <T extends TxnAccessor> T specializedAccessor() {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     public void setStatus(ResponseCodeEnum status) {
         throw new UnsupportedOperationException();
     }

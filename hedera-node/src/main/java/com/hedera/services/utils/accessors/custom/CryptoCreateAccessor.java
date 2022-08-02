@@ -49,6 +49,7 @@ import com.swirlds.merkle.map.MerkleMap;
 import java.util.function.Supplier;
 import org.jetbrains.annotations.Nullable;
 
+/** Specialized accessor for CryptoCreate transaction. */
 public class CryptoCreateAccessor extends SignedTxnAccessor {
     private final CryptoCreateTransactionBody body;
     private final GlobalDynamicProperties properties;

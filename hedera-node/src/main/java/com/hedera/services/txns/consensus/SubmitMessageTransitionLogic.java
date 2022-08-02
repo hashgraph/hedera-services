@@ -63,13 +63,14 @@ public class SubmitMessageTransitionLogic implements TransitionLogic {
 
     @Override
     public void doStateTransition() {
-        final var accessor = (SubmitMessageAccessor) txnCtx.swirldsTxnAccessor().getDelegate();
+        final var accessor = (SubmitMessageAccessor) txnCtx.specializedAccessor();
         final var message = accessor.message();
         final var topic = accessor.topicId();
         final var hasChunkInfo = accessor.hasChunkInfo();
         final var chunkInfo = accessor.chunkInfo();
         final var payer = accessor.getPayer();
         final var txnId = accessor.getTxnId();
+        final var topicNum = accessor.topicNum();
 
         // Simple validations depending on the txn body, should be moved to pre-check in future PR
         if (message.isEmpty()) {
@@ -104,8 +105,7 @@ public class SubmitMessageTransitionLogic implements TransitionLogic {
             }
         }
 
-        var topicId = EntityNum.fromTopicId(topic);
-        var mutableTopic = topics.get().getForModify(topicId);
+        var mutableTopic = topics.get().getForModify(topicNum);
         try {
             mutableTopic.updateRunningHashAndSequenceNumber(
                     // tbd : handle custom payer here

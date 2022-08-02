@@ -57,7 +57,7 @@ public class CryptoTransferTransitionLogic implements TransitionLogic {
 
     @Override
     public void doStateTransition() {
-        final var accessor = (CryptoTransferAccessor) txnCtx.swirldsTxnAccessor().getDelegate();
+        final var accessor = (CryptoTransferAccessor) txnCtx.specializedAccessor();
         final var impliedTransfers = finalImpliedTransfersFor(accessor);
 
         var outcome = impliedTransfers.getMeta().code();

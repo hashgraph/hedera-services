@@ -46,6 +46,7 @@ import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.state.validation.UsageLimits;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.utils.EntityNum;
+import com.hedera.services.utils.accessors.AccessorFactory;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -76,6 +77,7 @@ class AutoCreationLogicTest {
     @Mock private TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
     @Mock private RecordsHistorian recordsHistorian;
     @Mock private MerkleMap<EntityNum, MerkleAccount> accounts;
+    @Mock private AccessorFactory accessorFactory;
 
     private AutoCreationLogic subject;
 
@@ -91,7 +93,8 @@ class AutoCreationLogicTest {
                         sigImpactHistorian,
                         currentView,
                         txnCtx,
-                        () -> accounts);
+                        () -> accounts,
+                        accessorFactory);
 
         subject.setFeeCalculator(feeCalculator);
     }

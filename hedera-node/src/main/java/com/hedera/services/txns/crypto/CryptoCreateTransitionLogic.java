@@ -72,7 +72,7 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
             return;
         }
         try {
-            final var accessor = (CryptoCreateAccessor) txnCtx.swirldsTxnAccessor().getDelegate();
+            final var accessor = (CryptoCreateAccessor) txnCtx.specializedAccessor();
             AccountID sponsor = txnCtx.activePayer();
 
             long balance = accessor.initialBalance();

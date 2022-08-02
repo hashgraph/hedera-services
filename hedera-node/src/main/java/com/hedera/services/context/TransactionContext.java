@@ -133,6 +133,8 @@ public interface TransactionContext {
      */
     SwirldsTxnAccessor swirldsTxnAccessor();
 
+    <T extends TxnAccessor> T specializedAccessor();
+
     /**
      * Gets the list of sidecars that the current top-level txn produced.
      *
