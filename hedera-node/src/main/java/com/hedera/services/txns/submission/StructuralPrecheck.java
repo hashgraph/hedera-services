@@ -99,9 +99,7 @@ public final class StructuralPrecheck {
 
         try {
             // get latest signed state to be used for precheck
-            final var accessor =
-                    (SignedTxnAccessor)
-                            accessorFactory.constructSpecializedAccessor(signedTxn.toByteArray());
+            final var accessor = accessorFactory.constructSpecializedAccessor(signedTxn.toByteArray());
 
             final var signedStateView = stateViewFactory.latestSignedStateView();
             if (signedStateView.isPresent()) {

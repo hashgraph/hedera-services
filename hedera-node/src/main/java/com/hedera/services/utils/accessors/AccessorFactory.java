@@ -93,7 +93,7 @@ public class AccessorFactory {
      * @param signedTxnWrapperBytes
      * @return
      */
-    public TxnAccessor constructSpecializedAccessor(byte[] signedTxnWrapperBytes)
+    public SignedTxnAccessor constructSpecializedAccessor(byte[] signedTxnWrapperBytes)
             throws InvalidProtocolBufferException {
         final var signedTxn = Transaction.parseFrom(signedTxnWrapperBytes);
         final var body = extractTransactionBody(signedTxn);

@@ -50,8 +50,10 @@ import static org.mockito.BDDMockito.argThat;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.verify;
+import static org.mockito.BDDMockito.willCallRealMethod;
 import static org.mockito.BDDMockito.willThrow;
 
+import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.fees.FeeMultiplierSource;
@@ -60,6 +62,7 @@ import com.hedera.services.fees.calculation.utils.PricedUsageCalculator;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.txns.crypto.AutoCreationLogic;
+import com.hedera.services.utils.accessors.AccessorFactory;
 import com.hedera.services.utils.accessors.SignedTxnAccessor;
 import com.hedera.services.utils.accessors.custom.TokenWipeAccessor;
 import com.hedera.services.utils.accessors.TxnAccessor;
@@ -143,9 +146,10 @@ class UsageBasedFeeCalculatorTest {
     private final KeyTree complexKey = TxnHandlingScenario.COMPLEX_KEY_ACCOUNT_KT;
     private JKey payerKey;
     private Transaction signedTxn;
-    private SignedTxnAccessor accessor;
+    private TxnAccessor accessor;
     private AutoRenewCalcs autoRenewCalcs;
     private PricedUsageCalculator pricedUsageCalculator;
+    private AccessorFactory accessorFactory;
 
     private final AtomicLong suggestedMultiplier = new AtomicLong(1L);
 
@@ -172,6 +176,7 @@ class UsageBasedFeeCalculatorTest {
         incorrectQueryEstimator = mock(QueryResourceUsageEstimator.class);
         autoRenewCalcs = mock(AutoRenewCalcs.class);
         pricedUsageCalculator = mock(PricedUsageCalculator.class);
+        accessorFactory = mock(AccessorFactory.class);
 
         txnUsageEstimators =
                 (Map<HederaFunctionality, List<TxnResourceUsageEstimator>>) mock(Map.class);
@@ -545,7 +550,7 @@ class UsageBasedFeeCalculatorTest {
                         .txnValidStart(at)
                         .get();
         invokesAccessorBasedUsagesForTxnInHandle(
-                signedTxn, CryptoTransfer, SubType.DEFAULT, TokenType.UNRECOGNIZED);
+                signedTxn, CryptoTransfer, SubType.DEFAULT, TokenType.UNRECOGNIZED, true);
     }
 
     @Test
@@ -720,6 +725,8 @@ class UsageBasedFeeCalculatorTest {
             final boolean isCustomAccessor) {
         if (!isCustomAccessor) {
             accessor = SignedTxnAccessor.uncheckedFrom(signedTxn);
+        } else {
+            accessor = getAccessor(signedTxn);
         }
         // and:
         final var expectedFees =
@@ -742,5 +749,14 @@ class UsageBasedFeeCalculatorTest {
         assertEquals(fees.getNodeFee(), expectedFees.getNodeFee());
         assertEquals(fees.getNetworkFee(), expectedFees.getNetworkFee());
         assertEquals(fees.getServiceFee(), expectedFees.getServiceFee());
+    }
+
+    private SignedTxnAccessor getAccessor(final Transaction txn){
+        try{
+            willCallRealMethod().given(accessorFactory).constructSpecializedAccessor(any());
+            return accessorFactory.constructSpecializedAccessor(txn.toByteArray());
+        } catch (InvalidProtocolBufferException e) {
+            throw new IllegalStateException(e);
+        }
     }
 }

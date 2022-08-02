@@ -145,7 +145,7 @@ public class PrecompilePricingUtils {
                         .setSignedTransactionBytes(signedTxn.toByteString())
                         .build();
 
-        TxnAccessor accessor;
+        SignedTxnAccessor accessor;
         try{
             accessor = accessorFactory.constructSpecializedAccessor(txn.toByteArray());
         } catch (InvalidProtocolBufferException e) {
