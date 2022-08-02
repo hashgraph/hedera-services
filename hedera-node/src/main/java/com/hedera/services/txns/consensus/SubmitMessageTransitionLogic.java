@@ -94,17 +94,11 @@ public class SubmitMessageTransitionLogic implements TransitionLogic {
                 return;
             }
             // tbd : handle custom payer here
-            if (!chunkInfo
-                    .getInitialTransactionID()
-                    .getAccountID()
-                    .equals(payer)) {
+            if (!chunkInfo.getInitialTransactionID().getAccountID().equals(payer)) {
                 txnCtx.setStatus(INVALID_CHUNK_TRANSACTION_ID);
                 return;
             }
-            if (1 == chunkInfo.getNumber()
-                    && !chunkInfo
-                            .getInitialTransactionID()
-                            .equals(txnId)) {
+            if (1 == chunkInfo.getNumber() && !chunkInfo.getInitialTransactionID().equals(txnId)) {
                 txnCtx.setStatus(INVALID_CHUNK_TRANSACTION_ID);
                 return;
             }
@@ -115,10 +109,7 @@ public class SubmitMessageTransitionLogic implements TransitionLogic {
         try {
             mutableTopic.updateRunningHashAndSequenceNumber(
                     // tbd : handle custom payer here
-                    payer,
-                    message.toByteArray(),
-                    topic,
-                    txnCtx.consensusTime());
+                    payer, message.toByteArray(), topic, txnCtx.consensusTime());
             txnCtx.setTopicRunningHash(
                     mutableTopic.getRunningHash(), mutableTopic.getSequenceNumber());
             txnCtx.setStatus(SUCCESS);

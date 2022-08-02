@@ -228,7 +228,12 @@ class ERC20PrecompilesTest {
         given(assetLoader.loadCanonicalPrices()).willReturn(canonicalPrices);
         PrecompilePricingUtils precompilePricingUtils =
                 new PrecompilePricingUtils(
-                        assetLoader, exchange, () -> feeCalculator, resourceCosts, stateView, accessorFactory);
+                        assetLoader,
+                        exchange,
+                        () -> feeCalculator,
+                        resourceCosts,
+                        stateView,
+                        accessorFactory);
         subject =
                 new HTSPrecompiledContract(
                         dynamicProperties,
@@ -1406,8 +1411,8 @@ class ERC20PrecompilesTest {
         given(exchangeRate.getHbarEquiv()).willReturn(HBAR_RATE);
     }
 
-    private void getAccessor(){
-        try{
+    private void getAccessor() {
+        try {
             willCallRealMethod().given(accessorFactory).constructSpecializedAccessor(any());
         } catch (InvalidProtocolBufferException e) {
             throw new IllegalStateException(e);

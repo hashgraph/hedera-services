@@ -15,6 +15,27 @@
  */
 package com.hedera.services.txns.crypto;
 
+import static com.hedera.test.utils.IdUtils.adjustFrom;
+import static com.hedera.test.utils.IdUtils.adjustFromWithAllowance;
+import static com.hedera.test.utils.IdUtils.asAccount;
+import static com.hedera.test.utils.IdUtils.asAliasAccount;
+import static com.hedera.test.utils.IdUtils.asToken;
+import static com.hedera.test.utils.IdUtils.hbarChange;
+import static com.hedera.test.utils.TxnUtils.withAdjustments;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.verify;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.verifyNoInteractions;
+
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.TransactionContext;
@@ -41,36 +62,14 @@ import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransferList;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-
-import java.time.Instant;
-import java.util.ArrayList;
-import java.util.List;
-
-import static com.hedera.test.utils.IdUtils.adjustFrom;
-import static com.hedera.test.utils.IdUtils.adjustFromWithAllowance;
-import static com.hedera.test.utils.IdUtils.asAccount;
-import static com.hedera.test.utils.IdUtils.asAliasAccount;
-import static com.hedera.test.utils.IdUtils.asToken;
-import static com.hedera.test.utils.IdUtils.hbarChange;
-import static com.hedera.test.utils.TxnUtils.withAdjustments;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN;
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.anyList;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.BDDMockito.verify;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.verifyNoInteractions;
 
 @ExtendWith(MockitoExtension.class)
 class CryptoTransferTransitionLogicTest {
@@ -116,10 +115,7 @@ class CryptoTransferTransitionLogicTest {
     private void setup() {
         subject =
                 new CryptoTransferTransitionLogic(
-                        ledger,
-                        txnCtx,
-                        impliedTransfersMarshal,
-                        spanMapAccessor);
+                        ledger, txnCtx, impliedTransfersMarshal, spanMapAccessor);
     }
 
     @Test
@@ -213,7 +209,8 @@ class CryptoTransferTransitionLogicTest {
     }
 
     @Test
-    void shortCircuitsToImpliedTransfersValidityIfNotAvailableInSpan() throws InvalidProtocolBufferException {
+    void shortCircuitsToImpliedTransfersValidityIfNotAvailableInSpan()
+            throws InvalidProtocolBufferException {
         final var impliedTransfers =
                 ImpliedTransfers.invalid(validationProps, TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN);
 
@@ -240,7 +237,12 @@ class CryptoTransferTransitionLogicTest {
         cryptoTransferTxnBody = TransactionBody.newBuilder().setCryptoTransfer(xfers).build();
         cryptoTransferTxn =
                 Transaction.newBuilder().setBodyBytes(cryptoTransferTxnBody.toByteString()).build();
-        accessor = new CryptoTransferAccessor(cryptoTransferTxn.toByteArray(), cryptoTransferTxn, dynamicProperties, transferChecks);
+        accessor =
+                new CryptoTransferAccessor(
+                        cryptoTransferTxn.toByteArray(),
+                        cryptoTransferTxn,
+                        dynamicProperties,
+                        transferChecks);
         accessor.getSpanMapAccessor().setImpliedTransfers(accessor, impliedTransfers);
 
         // when:
@@ -276,7 +278,12 @@ class CryptoTransferTransitionLogicTest {
         cryptoTransferTxnBody = TransactionBody.newBuilder().setCryptoTransfer(xfers).build();
         cryptoTransferTxn =
                 Transaction.newBuilder().setBodyBytes(cryptoTransferTxnBody.toByteString()).build();
-        accessor = new CryptoTransferAccessor(cryptoTransferTxn.toByteArray(), cryptoTransferTxn, dynamicProperties, transferChecks);
+        accessor =
+                new CryptoTransferAccessor(
+                        cryptoTransferTxn.toByteArray(),
+                        cryptoTransferTxn,
+                        dynamicProperties,
+                        transferChecks);
 
         given(dynamicProperties.areAllowancesEnabled()).willReturn(false);
         given(dynamicProperties.maxTransferListSize()).willReturn(maxHbarAdjusts);
@@ -300,7 +307,12 @@ class CryptoTransferTransitionLogicTest {
 
         cryptoTransferTxn =
                 Transaction.newBuilder().setBodyBytes(cryptoTransferTxnBody.toByteString()).build();
-        accessor = new CryptoTransferAccessor(cryptoTransferTxn.toByteArray(), cryptoTransferTxn, dynamicProperties, transferChecks);
+        accessor =
+                new CryptoTransferAccessor(
+                        cryptoTransferTxn.toByteArray(),
+                        cryptoTransferTxn,
+                        dynamicProperties,
+                        transferChecks);
 
         // when:
         final var validity = subject.validateSemantics(accessor);
@@ -345,7 +357,12 @@ class CryptoTransferTransitionLogicTest {
     private void addToTxn() throws InvalidProtocolBufferException {
         cryptoTransferTxn =
                 Transaction.newBuilder().setBodyBytes(cryptoTransferTxnBody.toByteString()).build();
-        accessor = new CryptoTransferAccessor(cryptoTransferTxn.toByteArray(), cryptoTransferTxn, dynamicProperties, transferChecks);
+        accessor =
+                new CryptoTransferAccessor(
+                        cryptoTransferTxn.toByteArray(),
+                        cryptoTransferTxn,
+                        dynamicProperties,
+                        transferChecks);
         accessor.setPayer(payer);
         given(txnCtx.swirldsTxnAccessor()).willReturn(swirldsTxnAccessor);
         given(swirldsTxnAccessor.getDelegate()).willReturn(accessor);

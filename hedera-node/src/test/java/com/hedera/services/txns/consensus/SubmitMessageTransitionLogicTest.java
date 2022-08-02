@@ -40,8 +40,8 @@ import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.accessors.PlatformTxnAccessor;
-import com.hedera.services.utils.accessors.custom.SubmitMessageAccessor;
 import com.hedera.services.utils.accessors.SwirldsTxnAccessor;
+import com.hedera.services.utils.accessors.custom.SubmitMessageAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ConsensusMessageChunkInfo;
 import com.hederahashgraph.api.proto.java.ConsensusSubmitMessageTransactionBody;
@@ -276,9 +276,7 @@ class SubmitMessageTransitionLogicTest {
 
     private void addToTxn() throws InvalidProtocolBufferException {
         submitMessageTxn = Transaction.newBuilder().setBodyBytes(txnBody.toByteString()).build();
-        accessor =
-                new SubmitMessageAccessor(
-                        submitMessageTxn.toByteArray(), submitMessageTxn);
+        accessor = new SubmitMessageAccessor(submitMessageTxn.toByteArray(), submitMessageTxn);
         given(txnCtx.swirldsTxnAccessor()).willReturn(swirldsTxnAccessor);
         given(swirldsTxnAccessor.getDelegate()).willReturn(accessor);
     }

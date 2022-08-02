@@ -64,8 +64,8 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.txns.crypto.AutoCreationLogic;
 import com.hedera.services.utils.accessors.AccessorFactory;
 import com.hedera.services.utils.accessors.SignedTxnAccessor;
-import com.hedera.services.utils.accessors.custom.TokenWipeAccessor;
 import com.hedera.services.utils.accessors.TxnAccessor;
+import com.hedera.services.utils.accessors.custom.TokenWipeAccessor;
 import com.hedera.test.factories.keys.KeyTree;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.utils.IdUtils;
@@ -751,8 +751,8 @@ class UsageBasedFeeCalculatorTest {
         assertEquals(fees.getServiceFee(), expectedFees.getServiceFee());
     }
 
-    private SignedTxnAccessor getAccessor(final Transaction txn){
-        try{
+    private SignedTxnAccessor getAccessor(final Transaction txn) {
+        try {
             willCallRealMethod().given(accessorFactory).constructSpecializedAccessor(any());
             return accessorFactory.constructSpecializedAccessor(txn.toByteArray());
         } catch (InvalidProtocolBufferException e) {

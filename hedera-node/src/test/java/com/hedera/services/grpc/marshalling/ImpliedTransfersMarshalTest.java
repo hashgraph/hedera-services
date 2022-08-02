@@ -15,41 +15,8 @@
  */
 package com.hedera.services.grpc.marshalling;
 
-import com.google.protobuf.ByteString;
-import com.google.protobuf.UInt32Value;
-import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.ledger.BalanceChange;
-import com.hedera.services.ledger.PureTransferSemanticChecks;
-import com.hedera.services.ledger.accounts.AliasManager;
-import com.hedera.services.store.models.Id;
-import com.hedera.services.txns.customfees.CustomFeeSchedules;
-import com.hedera.services.utils.EntityNum;
-import com.hedera.test.factories.keys.KeyFactory;
-import com.hederahashgraph.api.proto.java.AccountAmount;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
-import com.hederahashgraph.api.proto.java.Key;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.TokenID;
-import com.hederahashgraph.api.proto.java.TokenTransferList;
-import com.hederahashgraph.api.proto.java.TransferList;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
-import org.mockito.MockedStatic;
-import org.mockito.junit.jupiter.MockitoExtension;
-
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.function.Function;
-import java.util.function.Predicate;
-
 import static com.hedera.services.grpc.marshalling.ImpliedTransfers.NO_ALIASES;
 import static com.hedera.services.grpc.marshalling.ImpliedTransfers.NO_CUSTOM_FEE_META;
-import static com.hedera.services.ledger.BalanceChange.changingFtUnits;
 import static com.hedera.services.ledger.BalanceChange.changingHbar;
 import static com.hedera.services.ledger.BalanceChange.changingNftOwnership;
 import static com.hedera.services.ledger.BalanceChange.tokenAdjust;
@@ -62,17 +29,42 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUN
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALIAS_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSFER_LIST_SIZE_LIMIT_EXCEEDED;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.mockStatic;
+
+import com.google.protobuf.ByteString;
+import com.google.protobuf.UInt32Value;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.ledger.BalanceChange;
+import com.hedera.services.ledger.PureTransferSemanticChecks;
+import com.hedera.services.ledger.accounts.AliasManager;
+import com.hedera.services.store.models.Id;
+import com.hedera.services.txns.customfees.CustomFeeSchedules;
+import com.hedera.services.utils.EntityNum;
+import com.hedera.test.factories.keys.KeyFactory;
+import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
+import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.TokenID;
+import com.hederahashgraph.api.proto.java.TokenTransferList;
+import com.hederahashgraph.api.proto.java.TransferList;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.function.Predicate;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class ImpliedTransfersMarshalTest {
@@ -187,25 +179,25 @@ class ImpliedTransfersMarshalTest {
         assertEquals(result.getMeta(), expectedMeta);
     }
 
-//    @Test
-//    void startsWithChecks() {
-//        setupHbarOnlyFixture();
-//        setupProps();
-//
-//        final var expectedMeta =
-//                new ImpliedTransfersMeta(
-//                        propsWithAutoCreation,
-//                        TRANSFER_LIST_SIZE_LIMIT_EXCEEDED,
-//                        Collections.emptyList(),
-//                        NO_ALIASES);
-//
-//
-//        givenValidity(TRANSFER_LIST_SIZE_LIMIT_EXCEEDED);
-//
-//        final var result = subject.unmarshalFromGrpc(op, payer);
-//
-//        assertEquals(result.getMeta(), expectedMeta);
-//    }
+    //    @Test
+    //    void startsWithChecks() {
+    //        setupHbarOnlyFixture();
+    //        setupProps();
+    //
+    //        final var expectedMeta =
+    //                new ImpliedTransfersMeta(
+    //                        propsWithAutoCreation,
+    //                        TRANSFER_LIST_SIZE_LIMIT_EXCEEDED,
+    //                        Collections.emptyList(),
+    //                        NO_ALIASES);
+    //
+    //
+    //        givenValidity(TRANSFER_LIST_SIZE_LIMIT_EXCEEDED);
+    //
+    //        final var result = subject.unmarshalFromGrpc(op, payer);
+    //
+    //        assertEquals(result.getMeta(), expectedMeta);
+    //    }
 
     @Test
     void getsHbarOnly() {
@@ -275,113 +267,115 @@ class ImpliedTransfersMarshalTest {
         assertTrue(result.getAssessedCustomFees().isEmpty());
     }
 
-//    @Test
-//    void aggregatesAccountAmountsAsExpected() {
-//        final var account1 = asAccount("0.0.1001");
-//        final var account2 = asAccount("0.0.1002");
-//        final var account3 = asAccount("0.0.1003");
-//        final var token1 = asToken("0.0.1010");
-//        final var aa1 =
-//                AccountAmount.newBuilder()
-//                        .setAccountID(account1)
-//                        .setAmount(-100)
-//                        .setIsApproval(true)
-//                        .build();
-//        final var aa2 =
-//                AccountAmount.newBuilder()
-//                        .setAccountID(account2)
-//                        .setAmount(100)
-//                        .setIsApproval(true)
-//                        .build();
-//        final var aa3 =
-//                AccountAmount.newBuilder()
-//                        .setAccountID(account1)
-//                        .setAmount(-100)
-//                        .setIsApproval(false)
-//                        .build();
-//        final var aa4 =
-//                AccountAmount.newBuilder()
-//                        .setAccountID(account2)
-//                        .setAmount(100)
-//                        .setIsApproval(false)
-//                        .build();
-//        final var aa5 =
-//                AccountAmount.newBuilder()
-//                        .setAccountID(account3)
-//                        .setAmount(-50)
-//                        .setIsApproval(true)
-//                        .build();
-//        final var aa6 =
-//                AccountAmount.newBuilder()
-//                        .setAccountID(account1)
-//                        .setAmount(50)
-//                        .setIsApproval(true)
-//                        .build();
-//        setupProps();
-//
-//        final var builder =
-//                CryptoTransferTransactionBody.newBuilder()
-//                        .setTransfers(
-//                                TransferList.newBuilder()
-//                                        .addAllAccountAmounts(List.of(aa1, aa2, aa3, aa4, aa5, aa6))
-//                                        .build())
-//                        .addTokenTransfers(
-//                                TokenTransferList.newBuilder()
-//                                        .setToken(token1)
-//                                        .setExpectedDecimals(UInt32Value.of(1))
-//                                        .addAllTransfers(List.of(aa1, aa2, aa3, aa4, aa5, aa6))
-//                                        .build());
-//        op = builder.build();
-//        final var bc1 = changingHbar(aa1, payer);
-//        bc1.aggregateUnits(-50);
-//        final var bc2 = changingHbar(aa2, payer);
-//        bc2.aggregateUnits(+100);
-//        final var bc3 = changingHbar(aa5, payer);
-//        final var bc4 = changingFtUnits(Id.fromGrpcToken(token1), token1, aa1, payer);
-//        bc4.aggregateUnits(-50);
-//        final var bc5 = changingFtUnits(Id.fromGrpcToken(token1), token1, aa2, payer);
-//        bc5.aggregateUnits(+100);
-//        final var bc6 = changingFtUnits(Id.fromGrpcToken(token1), token1, aa5, payer);
-//
-//        final List<BalanceChange> expectedChanges = new ArrayList<>();
-//        expectedChanges.add(bc1);
-//        expectedChanges.add(bc2);
-//        expectedChanges.add(bc3);
-//        expectedChanges.add(bc4);
-//        expectedChanges.add(bc5);
-//        expectedChanges.add(bc6);
-//
-//        givenValidity(OK);
-//        given(changeManagerFactory.from(any(), anyInt())).willReturn(changeManager);
-//        given(customSchedulesFactory.apply(customFeeSchedules)).willReturn(schedulesManager);
-//
-//        final var result = subject.unmarshalFromGrpc(op, payer);
-//
-//        assertEquals(
-//                expectedChanges.get(0).getAggregatedUnits(),
-//                result.getAllBalanceChanges().get(0).getAggregatedUnits());
-//        assertEquals(
-//                expectedChanges.get(1).getAggregatedUnits(),
-//                result.getAllBalanceChanges().get(1).getAggregatedUnits());
-//        assertEquals(
-//                expectedChanges.get(0).getAllowanceUnits(),
-//                result.getAllBalanceChanges().get(0).getAllowanceUnits());
-//        assertEquals(
-//                expectedChanges.get(1).getAllowanceUnits(),
-//                result.getAllBalanceChanges().get(1).getAllowanceUnits());
-//        assertEquals(
-//                expectedChanges.get(2).getAggregatedUnits(),
-//                result.getAllBalanceChanges().get(2).getAggregatedUnits());
-//        assertEquals(
-//                expectedChanges.get(3).getAggregatedUnits(),
-//                result.getAllBalanceChanges().get(3).getAggregatedUnits());
-//        assertEquals(
-//                expectedChanges.get(2).getAllowanceUnits(),
-//                result.getAllBalanceChanges().get(2).getAllowanceUnits());
-//        assertEquals(
-//                expectedChanges.get(3).getAllowanceUnits(),
-//                result.getAllBalanceChanges().get(3).getAllowanceUnits());
-//    }
+    //    @Test
+    //    void aggregatesAccountAmountsAsExpected() {
+    //        final var account1 = asAccount("0.0.1001");
+    //        final var account2 = asAccount("0.0.1002");
+    //        final var account3 = asAccount("0.0.1003");
+    //        final var token1 = asToken("0.0.1010");
+    //        final var aa1 =
+    //                AccountAmount.newBuilder()
+    //                        .setAccountID(account1)
+    //                        .setAmount(-100)
+    //                        .setIsApproval(true)
+    //                        .build();
+    //        final var aa2 =
+    //                AccountAmount.newBuilder()
+    //                        .setAccountID(account2)
+    //                        .setAmount(100)
+    //                        .setIsApproval(true)
+    //                        .build();
+    //        final var aa3 =
+    //                AccountAmount.newBuilder()
+    //                        .setAccountID(account1)
+    //                        .setAmount(-100)
+    //                        .setIsApproval(false)
+    //                        .build();
+    //        final var aa4 =
+    //                AccountAmount.newBuilder()
+    //                        .setAccountID(account2)
+    //                        .setAmount(100)
+    //                        .setIsApproval(false)
+    //                        .build();
+    //        final var aa5 =
+    //                AccountAmount.newBuilder()
+    //                        .setAccountID(account3)
+    //                        .setAmount(-50)
+    //                        .setIsApproval(true)
+    //                        .build();
+    //        final var aa6 =
+    //                AccountAmount.newBuilder()
+    //                        .setAccountID(account1)
+    //                        .setAmount(50)
+    //                        .setIsApproval(true)
+    //                        .build();
+    //        setupProps();
+    //
+    //        final var builder =
+    //                CryptoTransferTransactionBody.newBuilder()
+    //                        .setTransfers(
+    //                                TransferList.newBuilder()
+    //                                        .addAllAccountAmounts(List.of(aa1, aa2, aa3, aa4, aa5,
+    // aa6))
+    //                                        .build())
+    //                        .addTokenTransfers(
+    //                                TokenTransferList.newBuilder()
+    //                                        .setToken(token1)
+    //                                        .setExpectedDecimals(UInt32Value.of(1))
+    //                                        .addAllTransfers(List.of(aa1, aa2, aa3, aa4, aa5,
+    // aa6))
+    //                                        .build());
+    //        op = builder.build();
+    //        final var bc1 = changingHbar(aa1, payer);
+    //        bc1.aggregateUnits(-50);
+    //        final var bc2 = changingHbar(aa2, payer);
+    //        bc2.aggregateUnits(+100);
+    //        final var bc3 = changingHbar(aa5, payer);
+    //        final var bc4 = changingFtUnits(Id.fromGrpcToken(token1), token1, aa1, payer);
+    //        bc4.aggregateUnits(-50);
+    //        final var bc5 = changingFtUnits(Id.fromGrpcToken(token1), token1, aa2, payer);
+    //        bc5.aggregateUnits(+100);
+    //        final var bc6 = changingFtUnits(Id.fromGrpcToken(token1), token1, aa5, payer);
+    //
+    //        final List<BalanceChange> expectedChanges = new ArrayList<>();
+    //        expectedChanges.add(bc1);
+    //        expectedChanges.add(bc2);
+    //        expectedChanges.add(bc3);
+    //        expectedChanges.add(bc4);
+    //        expectedChanges.add(bc5);
+    //        expectedChanges.add(bc6);
+    //
+    //        givenValidity(OK);
+    //        given(changeManagerFactory.from(any(), anyInt())).willReturn(changeManager);
+    //        given(customSchedulesFactory.apply(customFeeSchedules)).willReturn(schedulesManager);
+    //
+    //        final var result = subject.unmarshalFromGrpc(op, payer);
+    //
+    //        assertEquals(
+    //                expectedChanges.get(0).getAggregatedUnits(),
+    //                result.getAllBalanceChanges().get(0).getAggregatedUnits());
+    //        assertEquals(
+    //                expectedChanges.get(1).getAggregatedUnits(),
+    //                result.getAllBalanceChanges().get(1).getAggregatedUnits());
+    //        assertEquals(
+    //                expectedChanges.get(0).getAllowanceUnits(),
+    //                result.getAllBalanceChanges().get(0).getAllowanceUnits());
+    //        assertEquals(
+    //                expectedChanges.get(1).getAllowanceUnits(),
+    //                result.getAllBalanceChanges().get(1).getAllowanceUnits());
+    //        assertEquals(
+    //                expectedChanges.get(2).getAggregatedUnits(),
+    //                result.getAllBalanceChanges().get(2).getAggregatedUnits());
+    //        assertEquals(
+    //                expectedChanges.get(3).getAggregatedUnits(),
+    //                result.getAllBalanceChanges().get(3).getAggregatedUnits());
+    //        assertEquals(
+    //                expectedChanges.get(2).getAllowanceUnits(),
+    //                result.getAllBalanceChanges().get(2).getAllowanceUnits());
+    //        assertEquals(
+    //                expectedChanges.get(3).getAllowanceUnits(),
+    //                result.getAllBalanceChanges().get(3).getAllowanceUnits());
+    //    }
 
     @Test
     void getsHappyPath() {

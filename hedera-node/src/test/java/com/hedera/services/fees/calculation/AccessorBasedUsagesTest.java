@@ -167,7 +167,8 @@ class AccessorBasedUsagesTest {
 
         given(dynamicProperties.feesTokenTransferUsageMultiplier()).willReturn(multiplier);
         given(txnAccessor.getFunction()).willReturn(CryptoTransfer);
-        given(txnAccessor.getSpanMapAccessor().getCryptoTransferMeta(txnAccessor)).willReturn(xferMeta);
+        given(txnAccessor.getSpanMapAccessor().getCryptoTransferMeta(txnAccessor))
+                .willReturn(xferMeta);
         given(txnAccessor.baseUsageMeta()).willReturn(baseMeta);
 
         subject.assess(sigUsage, txnAccessor, usageAccumulator);
@@ -183,7 +184,8 @@ class AccessorBasedUsagesTest {
         final var usageAccumulator = new UsageAccumulator();
 
         given(txnAccessor.getFunction()).willReturn(ConsensusSubmitMessage);
-        given(txnAccessor.getSpanMapAccessor().getSubmitMessageMeta(txnAccessor)).willReturn(submitMeta);
+        given(txnAccessor.getSpanMapAccessor().getSubmitMessageMeta(txnAccessor))
+                .willReturn(submitMeta);
         given(txnAccessor.baseUsageMeta()).willReturn(baseMeta);
 
         subject.assess(sigUsage, txnAccessor, usageAccumulator);

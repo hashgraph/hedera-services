@@ -15,6 +15,8 @@
  */
 package com.hedera.services.utils.accessors;
 
+import static com.hedera.services.legacy.proto.utils.CommonUtils.extractTransactionBody;
+
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.NodeInfo;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
@@ -31,12 +33,8 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.swirlds.merkle.map.MerkleMap;
-
-import javax.inject.Inject;
-
 import java.util.function.Supplier;
-
-import static com.hedera.services.legacy.proto.utils.CommonUtils.extractTransactionBody;
+import javax.inject.Inject;
 
 public class AccessorFactory {
     private final GlobalDynamicProperties dynamicProperties;
@@ -98,11 +96,20 @@ public class AccessorFactory {
         final var signedTxn = Transaction.parseFrom(signedTxnWrapperBytes);
         final var body = extractTransactionBody(signedTxn);
         final var function = MiscUtils.FUNCTION_EXTRACTOR.apply(body);
-        return switch (function){
-            case TokenAccountWipe -> new TokenWipeAccessor(signedTxnWrapperBytes, signedTxn, dynamicProperties);
-            case CryptoTransfer -> new CryptoTransferAccessor(signedTxnWrapperBytes, signedTxn, dynamicProperties, transferChecks);
-            case CryptoCreate -> new CryptoCreateAccessor(signedTxnWrapperBytes, signedTxn, dynamicProperties, validator, accounts, nodeInfo);
-            case ConsensusSubmitMessage -> new SubmitMessageAccessor(signedTxnWrapperBytes, signedTxn);
+        return switch (function) {
+            case TokenAccountWipe -> new TokenWipeAccessor(
+                    signedTxnWrapperBytes, signedTxn, dynamicProperties);
+            case CryptoTransfer -> new CryptoTransferAccessor(
+                    signedTxnWrapperBytes, signedTxn, dynamicProperties, transferChecks);
+            case CryptoCreate -> new CryptoCreateAccessor(
+                    signedTxnWrapperBytes,
+                    signedTxn,
+                    dynamicProperties,
+                    validator,
+                    accounts,
+                    nodeInfo);
+            case ConsensusSubmitMessage -> new SubmitMessageAccessor(
+                    signedTxnWrapperBytes, signedTxn);
             default -> SignedTxnAccessor.from(signedTxnWrapperBytes, signedTxn);
         };
     }

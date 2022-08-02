@@ -24,7 +24,6 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.NodeInfo;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.PureTransferSemanticChecks;
-import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.txns.span.ExpandHandleSpan;
 import com.hedera.services.txns.span.SpanMapManager;
@@ -38,9 +37,8 @@ import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.swirlds.common.system.transaction.SwirldTransaction;
-import java.util.concurrent.TimeUnit;
-
 import com.swirlds.merkle.map.MerkleMap;
+import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -57,7 +55,8 @@ class ExpandHandleSpanTest {
     @Mock private NodeInfo nodeInfo;
     @Mock private PureTransferSemanticChecks checks;
 
-    private AccessorFactory accessorFactory = new AccessorFactory(properties, validator, () -> accounts, nodeInfo, checks);
+    private AccessorFactory accessorFactory =
+            new AccessorFactory(properties, validator, () -> accounts, nodeInfo, checks);
 
     private final long duration = 20;
     private final TimeUnit testUnit = TimeUnit.MILLISECONDS;

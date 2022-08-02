@@ -179,7 +179,12 @@ class GetTokenInfoPrecompilesTest {
     void setUp() {
         final PrecompilePricingUtils precompilePricingUtils =
                 new PrecompilePricingUtils(
-                        assetLoader, exchange, () -> feeCalculator, resourceCosts, stateView, accessorFactory);
+                        assetLoader,
+                        exchange,
+                        () -> feeCalculator,
+                        resourceCosts,
+                        stateView,
+                        accessorFactory);
 
         entityIdUtils = Mockito.mockStatic(EntityIdUtils.class);
         entityIdUtils

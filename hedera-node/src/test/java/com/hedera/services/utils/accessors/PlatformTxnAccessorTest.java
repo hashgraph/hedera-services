@@ -335,10 +335,11 @@ class PlatformTxnAccessorTest {
         SwirldTransaction platformTxn = new SwirldTransaction(signedTxnWithBody.toByteArray());
         final var aliasManager = mock(AliasManager.class);
         final var stateView = mock(StateView.class);
-        final var accessorFactory  = mock(AccessorFactory.class);
+        final var accessorFactory = mock(AccessorFactory.class);
         willCallRealMethod().given(accessorFactory).constructSpecializedAccessor(any());
 
-        var signedAccessor = accessorFactory.constructSpecializedAccessor(platformTxn.getContents());
+        var signedAccessor =
+                accessorFactory.constructSpecializedAccessor(platformTxn.getContents());
         // when:
         PlatformTxnAccessor subject = new PlatformTxnAccessor(signedAccessor, platformTxn);
         final var delegate = subject.getDelegate();
@@ -500,8 +501,7 @@ class PlatformTxnAccessorTest {
                     + "    topicNum: 10\n"
                     + "  }\n"
                     + "}\n"
-                    + ","
-                    + " txnUsageMeta=BaseTransactionMeta[memoUtf8Bytes=3, numExplicitTransfers=0],"
+                    + ", txnUsageMeta=BaseTransactionMeta[memoUtf8Bytes=3, numExplicitTransfers=0],"
                     + " function=ConsensusSubmitMessage,"
                     + " pubKeyToSigBytes=PojoSigMapPubKeyToSigBytes{pojoSigMap=PojoSigMap{keyTypes=[ED25519],"
                     + " rawMap=[[[97], [48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 48, 49, 50, 51, 52,"

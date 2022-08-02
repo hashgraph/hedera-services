@@ -24,12 +24,11 @@ import com.hedera.services.utils.accessors.SignedTxnAccessor;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Transaction;
-
 import javax.annotation.Nullable;
 
 /**
- * Specialized accessor for CryptoTransfer transaction. Uses the latest signed state view for looking up
- * alias in the ServicesState.
+ * Specialized accessor for CryptoTransfer transaction. Uses the latest signed state view for
+ * looking up alias in the ServicesState.
  */
 public class CryptoTransferAccessor extends SignedTxnAccessor {
     private final CryptoTransferTransactionBody body;
@@ -69,9 +68,14 @@ public class CryptoTransferAccessor extends SignedTxnAccessor {
             totalTokenTransfers += tokenTransfers.getTransfersCount();
             numNftOwnershipChanges += tokenTransfers.getNftTransfersCount();
         }
-        getSpanMapAccessor().setCryptoTransferMeta(
-                this, new CryptoTransferMeta(
-                        1, totalTokensInvolved, totalTokenTransfers, numNftOwnershipChanges));
+        getSpanMapAccessor()
+                .setCryptoTransferMeta(
+                        this,
+                        new CryptoTransferMeta(
+                                1,
+                                totalTokensInvolved,
+                                totalTokenTransfers,
+                                numNftOwnershipChanges));
     }
 
     public ResponseCodeEnum validateSyntax() {

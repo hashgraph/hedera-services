@@ -1,23 +1,19 @@
+/*
+ * Copyright (C) 2022 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package com.hedera.services.utils.accessors.custom;
-
-import com.google.protobuf.InvalidProtocolBufferException;
-import com.hedera.services.context.NodeInfo;
-import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.txns.validation.OptionValidator;
-import com.hedera.services.usage.crypto.CryptoCreateMeta;
-import com.hedera.services.utils.EntityNum;
-import com.hedera.services.utils.accessors.SignedTxnAccessor;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
-import com.hederahashgraph.api.proto.java.Duration;
-import com.hederahashgraph.api.proto.java.Key;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.Transaction;
-import com.swirlds.merkle.map.MerkleMap;
-import org.jetbrains.annotations.Nullable;
-
-import java.util.function.Supplier;
 
 import static com.hedera.services.ledger.accounts.HederaAccountCustomizer.hasStakedId;
 import static com.hedera.services.utils.MiscUtils.asFcKeyUnchecked;
@@ -34,6 +30,24 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PROXY_ACCOUNT_ID_FIELD_IS_DEPRECATED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.STAKING_NOT_ENABLED;
+
+import com.google.protobuf.InvalidProtocolBufferException;
+import com.hedera.services.context.NodeInfo;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.txns.validation.OptionValidator;
+import com.hedera.services.usage.crypto.CryptoCreateMeta;
+import com.hedera.services.utils.EntityNum;
+import com.hedera.services.utils.accessors.SignedTxnAccessor;
+import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
+import com.hederahashgraph.api.proto.java.Duration;
+import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.Transaction;
+import com.swirlds.merkle.map.MerkleMap;
+import java.util.function.Supplier;
+import org.jetbrains.annotations.Nullable;
 
 public class CryptoCreateAccessor extends SignedTxnAccessor {
     private final CryptoCreateTransactionBody body;
@@ -56,47 +70,48 @@ public class CryptoCreateAccessor extends SignedTxnAccessor {
         this.validator = validator;
         this.accounts = accounts;
         this.nodeInfo = nodeInfo;
-		setCryptoCreateUsageMeta();
+        setCryptoCreateUsageMeta();
     }
 
-	public long initialBalance(){
-		return body.getInitialBalance();
-	}
+    public long initialBalance() {
+        return body.getInitialBalance();
+    }
 
-	public Duration autoRenewPeriod(){
-		return body.getAutoRenewPeriod();
-	}
+    public Duration autoRenewPeriod() {
+        return body.getAutoRenewPeriod();
+    }
 
-	public Key key(){
-		return body.getKey();
-	}
+    public Key key() {
+        return body.getKey();
+    }
 
-	public String memo(){
-		return body.getMemo();
-	}
-	public boolean receiverSigReq(){
-		return body.getReceiverSigRequired();
-	}
+    public String memo() {
+        return body.getMemo();
+    }
 
-	public int maxTokenAssociations(){
-		return body.getMaxAutomaticTokenAssociations();
-	}
+    public boolean receiverSigReq() {
+        return body.getReceiverSigRequired();
+    }
 
-	public boolean declineReward(){
-		return body.getDeclineReward();
-	}
+    public int maxTokenAssociations() {
+        return body.getMaxAutomaticTokenAssociations();
+    }
 
-	public CryptoCreateTransactionBody.StakedIdCase stakedIdCase(){
-		return body.getStakedIdCase();
-	}
+    public boolean declineReward() {
+        return body.getDeclineReward();
+    }
 
-	public AccountID stakedAccountId(){
-		return body.getStakedAccountId();
-	}
+    public CryptoCreateTransactionBody.StakedIdCase stakedIdCase() {
+        return body.getStakedIdCase();
+    }
 
-	public long stakedNodeId(){
-		return body.getStakedNodeId();
-	}
+    public AccountID stakedAccountId() {
+        return body.getStakedAccountId();
+    }
+
+    public long stakedNodeId() {
+        return body.getStakedNodeId();
+    }
 
     @Override
     public boolean supportsPrecheck() {
@@ -166,8 +181,8 @@ public class CryptoCreateAccessor extends SignedTxnAccessor {
         return OK;
     }
 
-	private void setCryptoCreateUsageMeta() {
-		final var cryptoCreateMeta = new CryptoCreateMeta(body);
-		getSpanMapAccessor().setCryptoCreateMeta(this, cryptoCreateMeta);
-	}
+    private void setCryptoCreateUsageMeta() {
+        final var cryptoCreateMeta = new CryptoCreateMeta(body);
+        getSpanMapAccessor().setCryptoCreateMeta(this, cryptoCreateMeta);
+    }
 }

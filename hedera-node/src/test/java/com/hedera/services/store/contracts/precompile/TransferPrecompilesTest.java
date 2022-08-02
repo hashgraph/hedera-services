@@ -31,7 +31,6 @@ import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.nftTra
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.nftTransferList;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.nftsTransferChanges;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.nftsTransferList;
-import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.parentContractAddress;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.receiver;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.sender;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.successResult;
@@ -185,7 +184,12 @@ class TransferPrecompilesTest {
     void setUp() {
         PrecompilePricingUtils precompilePricingUtils =
                 new PrecompilePricingUtils(
-                        assetLoader, exchange, () -> feeCalculator, resourceCosts, stateView, accessorFactory);
+                        assetLoader,
+                        exchange,
+                        () -> feeCalculator,
+                        resourceCosts,
+                        stateView,
+                        accessorFactory);
         subject =
                 new HTSPrecompiledContract(
                         dynamicProperties,
@@ -204,7 +208,6 @@ class TransferPrecompilesTest {
         given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
-
     }
 
     @Test
@@ -1067,8 +1070,8 @@ class TransferPrecompilesTest {
         given(worldUpdater.wrappedTrackingLedgers(any())).willReturn(wrappedLedgers);
     }
 
-    private void getAccessor(){
-        try{
+    private void getAccessor() {
+        try {
             willCallRealMethod().given(accessorFactory).constructSpecializedAccessor(any());
         } catch (InvalidProtocolBufferException e) {
             throw new IllegalStateException(e);

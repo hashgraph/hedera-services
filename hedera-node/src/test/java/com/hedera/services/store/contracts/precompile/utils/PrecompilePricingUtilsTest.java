@@ -60,7 +60,12 @@ class PrecompilePricingUtilsTest {
                 PrecompilePricingUtils.CanonicalOperationsUnloadableException.class,
                 () ->
                         new PrecompilePricingUtils(
-                                assetLoader, exchange, feeCalculator, resourceCosts, stateView, accessorFactory));
+                                assetLoader,
+                                exchange,
+                                feeCalculator,
+                                resourceCosts,
+                                stateView,
+                                accessorFactory));
     }
 
     @Test
@@ -77,7 +82,12 @@ class PrecompilePricingUtilsTest {
 
         PrecompilePricingUtils subject =
                 new PrecompilePricingUtils(
-                        assetLoader, exchange, feeCalculator, resourceCosts, stateView, accessorFactory);
+                        assetLoader,
+                        exchange,
+                        feeCalculator,
+                        resourceCosts,
+                        stateView,
+                        accessorFactory);
 
         long price =
                 subject.getMinimumPriceInTinybars(

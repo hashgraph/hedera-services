@@ -45,7 +45,6 @@ import com.hedera.services.pricing.AssetsLoader;
 import com.hedera.services.store.contracts.precompile.Precompile;
 import com.hedera.services.utils.accessors.AccessorFactory;
 import com.hedera.services.utils.accessors.SignedTxnAccessor;
-import com.hedera.services.utils.accessors.TxnAccessor;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.SignatureMap;
@@ -146,7 +145,7 @@ public class PrecompilePricingUtils {
                         .build();
 
         SignedTxnAccessor accessor;
-        try{
+        try {
             accessor = accessorFactory.constructSpecializedAccessor(txn.toByteArray());
         } catch (InvalidProtocolBufferException e) {
             accessor = SignedTxnAccessor.uncheckedFrom(txn);

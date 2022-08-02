@@ -39,8 +39,6 @@ import java.util.Map;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusSubmitMessage;
-
 /** Minimal helper class for getting/setting entries in a span map. */
 @Singleton
 public class ExpandHandleSpanMapAccessor {
