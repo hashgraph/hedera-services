@@ -19,6 +19,10 @@ import org.apache.tuweni.bytes.Bytes;
 
 public class EventConstants {
 
+    private EventConstants() {
+        throw new UnsupportedOperationException("Utility Class");
+    }
+
     // Transfer(address indexed from, address indexed to, uint256 indexed tokenId)
     // Transfer(address indexed from, address indexed to, uint256 value)
     public static final Bytes TRANSFER_EVENT =

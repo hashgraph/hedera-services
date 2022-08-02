@@ -62,6 +62,7 @@ import com.hedera.services.stats.MiscRunningAvgs;
 import com.hedera.services.stats.MiscSpeedometers;
 import com.hedera.services.stats.ServicesStatsConfig;
 import com.hedera.services.stats.StatsModule;
+import com.hedera.services.store.contracts.precompile.EventConstants;
 import com.hedera.services.store.contracts.precompile.utils.DescriptorUtils;
 import com.hedera.services.store.contracts.precompile.utils.PrecompileUtils;
 import com.hedera.services.store.models.TopicConversion;
@@ -170,7 +171,8 @@ class UtilsConstructorTest {
                             Units.class,
                             StakingUtils.class,
                             UtilLogicModule.class,
-                            PrecompileUtils.class));
+                            PrecompileUtils.class,
+                            EventConstants.class));
 
     @Test
     void throwsInConstructor() {
