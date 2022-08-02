@@ -16,6 +16,7 @@
 package com.hedera.services.store.contracts.precompile.impl;
 
 import static com.hedera.services.exceptions.ValidationUtils.validateTrueOrRevert;
+import static com.hedera.services.store.contracts.precompile.EventConstants.APPROVAL_FOR_ALL_EVENT;
 import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.HTS_PRECOMPILED_CONTRACT_ADDRESS;
 import static com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils.GasCostType.APPROVE;
 import static com.hedera.services.utils.EntityIdUtils.asTypedEvmAddress;
@@ -24,7 +25,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.store.contracts.WorldLedgers;
-import com.hedera.services.store.contracts.precompile.AbiConstants;
 import com.hedera.services.store.contracts.precompile.InfrastructureFactory;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.store.contracts.precompile.codec.DecodingFacade;
@@ -153,7 +153,7 @@ public class SetApprovalForAllPrecompile extends AbstractWritePrecompile {
     private Log getLogForSetApprovalForAll(final Address logger) {
         return EncodingFacade.LogBuilder.logBuilder()
                 .forLogger(logger)
-                .forEventSignature(AbiConstants.APPROVAL_FOR_ALL_EVENT)
+                .forEventSignature(APPROVAL_FOR_ALL_EVENT)
                 .forIndexedArgument(senderAddress)
                 .forIndexedArgument(asTypedEvmAddress(setApprovalForAllWrapper.to()))
                 .forDataItem(setApprovalForAllWrapper.approved())

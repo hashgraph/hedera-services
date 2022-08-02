@@ -16,8 +16,6 @@
 package com.hedera.services.store.contracts.precompile;
 
 import static com.hedera.services.state.EntityCreator.EMPTY_MEMO;
-import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_DISSOCIATE_TOKEN;
-import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_DISSOCIATE_TOKENS;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.DEFAULT_GAS_PRICE;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.TEST_CONSENSUS_TIME;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.accountAddr;
@@ -31,6 +29,8 @@ import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.parent
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.senderAddr;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.successResult;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.timestamp;
+import static com.hedera.services.store.contracts.precompile.PrecompileFunctionSelector.ABI_ID_DISSOCIATE_TOKEN;
+import static com.hedera.services.store.contracts.precompile.PrecompileFunctionSelector.ABI_ID_DISSOCIATE_TOKENS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ID_REPEATED_IN_TOKEN_LIST;
@@ -190,7 +190,7 @@ class DissociatePrecompilesTest {
     void dissociateTokenFailurePathWorks() {
         givenFrameContext();
         givenPricingUtilsContext();
-        Bytes pretendArguments = Bytes.ofUnsignedInt(ABI_ID_DISSOCIATE_TOKEN);
+        Bytes pretendArguments = Bytes.ofUnsignedInt(ABI_ID_DISSOCIATE_TOKEN.getFunctionSelector());
 
         given(sigsVerifier.hasActiveKey(false, accountAddr, senderAddr, wrappedLedgers))
                 .willThrow(new InvalidTransactionException(INVALID_SIGNATURE));
@@ -227,7 +227,7 @@ class DissociatePrecompilesTest {
         givenFrameContext();
         givenLedgers();
         givenPricingUtilsContext();
-        Bytes pretendArguments = Bytes.ofUnsignedInt(ABI_ID_DISSOCIATE_TOKEN);
+        Bytes pretendArguments = Bytes.ofUnsignedInt(ABI_ID_DISSOCIATE_TOKEN.getFunctionSelector());
 
         given(sigsVerifier.hasActiveKey(false, accountAddr, senderAddr, wrappedLedgers))
                 .willReturn(true);
@@ -269,7 +269,8 @@ class DissociatePrecompilesTest {
         givenFrameContext();
         givenLedgers();
         givenPricingUtilsContext();
-        Bytes pretendArguments = Bytes.ofUnsignedInt(ABI_ID_DISSOCIATE_TOKENS);
+        Bytes pretendArguments =
+                Bytes.ofUnsignedInt(ABI_ID_DISSOCIATE_TOKENS.getFunctionSelector());
 
         given(decoder.decodeMultipleDissociations(eq(pretendArguments), any()))
                 .willReturn(multiDissociateOp);
@@ -318,7 +319,7 @@ class DissociatePrecompilesTest {
         // given
         givenMinFrameContext();
         givenPricingUtilsContext();
-        Bytes input = Bytes.of(Integers.toBytes(ABI_ID_DISSOCIATE_TOKENS));
+        Bytes input = Bytes.of(Integers.toBytes(ABI_ID_DISSOCIATE_TOKENS.getFunctionSelector()));
         given(decoder.decodeMultipleDissociations(any(), any())).willReturn(multiDissociateOp);
         final var builder = TokenDissociateTransactionBody.newBuilder();
         builder.setAccount(multiDissociateOp.accountId());
@@ -345,7 +346,7 @@ class DissociatePrecompilesTest {
         // given
         givenMinFrameContext();
         givenPricingUtilsContext();
-        Bytes input = Bytes.of(Integers.toBytes(ABI_ID_DISSOCIATE_TOKEN));
+        Bytes input = Bytes.of(Integers.toBytes(ABI_ID_DISSOCIATE_TOKEN.getFunctionSelector()));
         given(decoder.decodeDissociate(any(), any())).willReturn(dissociateToken);
         given(syntheticTxnFactory.createDissociate(any()))
                 .willReturn(

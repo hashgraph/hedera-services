@@ -18,16 +18,16 @@ package com.hedera.services.store.contracts.precompile.proxy;
 import static com.hedera.services.exceptions.ValidationUtils.validateFalse;
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hedera.services.state.enums.TokenType.FUNGIBLE_COMMON;
-import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_ERC_ALLOWANCE;
-import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_ERC_BALANCE_OF_TOKEN;
-import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_ERC_DECIMALS;
-import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_ERC_GET_APPROVED;
-import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_ERC_IS_APPROVED_FOR_ALL;
-import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_ERC_NAME;
-import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_ERC_OWNER_OF_NFT;
-import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_ERC_SYMBOL;
-import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_ERC_TOKEN_URI_NFT;
-import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_ERC_TOTAL_SUPPLY_TOKEN;
+import static com.hedera.services.store.contracts.precompile.PrecompileFunctionSelector.ABI_ID_ERC_ALLOWANCE;
+import static com.hedera.services.store.contracts.precompile.PrecompileFunctionSelector.ABI_ID_ERC_BALANCE_OF_TOKEN;
+import static com.hedera.services.store.contracts.precompile.PrecompileFunctionSelector.ABI_ID_ERC_DECIMALS;
+import static com.hedera.services.store.contracts.precompile.PrecompileFunctionSelector.ABI_ID_ERC_GET_APPROVED;
+import static com.hedera.services.store.contracts.precompile.PrecompileFunctionSelector.ABI_ID_ERC_IS_APPROVED_FOR_ALL;
+import static com.hedera.services.store.contracts.precompile.PrecompileFunctionSelector.ABI_ID_ERC_NAME;
+import static com.hedera.services.store.contracts.precompile.PrecompileFunctionSelector.ABI_ID_ERC_OWNER_OF_NFT;
+import static com.hedera.services.store.contracts.precompile.PrecompileFunctionSelector.ABI_ID_ERC_SYMBOL;
+import static com.hedera.services.store.contracts.precompile.PrecompileFunctionSelector.ABI_ID_ERC_TOKEN_URI_NFT;
+import static com.hedera.services.store.contracts.precompile.PrecompileFunctionSelector.ABI_ID_ERC_TOTAL_SUPPLY_TOKEN;
 import static com.hedera.services.store.contracts.precompile.utils.DescriptorUtils.getRedirectTarget;
 import static com.hedera.services.utils.MiscUtils.asSecondsTimestamp;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
@@ -93,49 +93,49 @@ public class RedirectViewExecutor {
 
     private Bytes answerGiven(
             final int selector, final TokenID tokenId, final boolean isFungibleToken) {
-        if (selector == ABI_ID_ERC_NAME) {
+        if (selector == ABI_ID_ERC_NAME.getFunctionSelector()) {
             final var name = ledgers.nameOf(tokenId);
             return encoder.encodeName(name);
-        } else if (selector == ABI_ID_ERC_SYMBOL) {
+        } else if (selector == ABI_ID_ERC_SYMBOL.getFunctionSelector()) {
             final var symbol = ledgers.symbolOf(tokenId);
             return encoder.encodeSymbol(symbol);
-        } else if (selector == ABI_ID_ERC_ALLOWANCE) {
+        } else if (selector == ABI_ID_ERC_ALLOWANCE.getFunctionSelector()) {
             final var wrapper =
                     decoder.decodeTokenAllowance(input.slice(24), tokenId, updater::unaliased);
             final var allowance =
                     ledgers.staticAllowanceOf(wrapper.owner(), wrapper.spender(), tokenId);
             return encoder.encodeAllowance(allowance);
-        } else if (selector == ABI_ID_ERC_GET_APPROVED) {
+        } else if (selector == ABI_ID_ERC_GET_APPROVED.getFunctionSelector()) {
             final var wrapper = decoder.decodeGetApproved(input.slice(24), tokenId);
             final var spender =
                     ledgers.staticApprovedSpenderOf(NftId.fromGrpc(tokenId, wrapper.serialNo()));
             final var priorityAddress = ledgers.canonicalAddress(spender);
             return encoder.encodeGetApproved(priorityAddress);
-        } else if (selector == ABI_ID_ERC_IS_APPROVED_FOR_ALL) {
+        } else if (selector == ABI_ID_ERC_IS_APPROVED_FOR_ALL.getFunctionSelector()) {
             final var wrapper =
                     decoder.decodeIsApprovedForAll(input.slice(24), tokenId, updater::unaliased);
             final var isOperator =
                     ledgers.staticIsOperator(wrapper.owner(), wrapper.operator(), tokenId);
             return encoder.encodeIsApprovedForAll(isOperator);
-        } else if (selector == ABI_ID_ERC_DECIMALS) {
+        } else if (selector == ABI_ID_ERC_DECIMALS.getFunctionSelector()) {
             validateTrue(isFungibleToken, INVALID_TOKEN_ID);
             final var decimals = ledgers.decimalsOf(tokenId);
             return encoder.encodeDecimals(decimals);
-        } else if (selector == ABI_ID_ERC_TOTAL_SUPPLY_TOKEN) {
+        } else if (selector == ABI_ID_ERC_TOTAL_SUPPLY_TOKEN.getFunctionSelector()) {
             final var totalSupply = ledgers.totalSupplyOf(tokenId);
             return encoder.encodeTotalSupply(totalSupply);
-        } else if (selector == ABI_ID_ERC_BALANCE_OF_TOKEN) {
+        } else if (selector == ABI_ID_ERC_BALANCE_OF_TOKEN.getFunctionSelector()) {
             final var wrapper = decoder.decodeBalanceOf(input.slice(24), updater::unaliased);
             final var balance = ledgers.balanceOf(wrapper.accountId(), tokenId);
             return encoder.encodeBalance(balance);
-        } else if (selector == ABI_ID_ERC_OWNER_OF_NFT) {
+        } else if (selector == ABI_ID_ERC_OWNER_OF_NFT.getFunctionSelector()) {
             validateFalse(isFungibleToken, INVALID_TOKEN_ID);
             final var wrapper = decoder.decodeOwnerOf(input.slice(24));
             final var nftId = NftId.fromGrpc(tokenId, wrapper.serialNo());
             final var owner = ledgers.ownerOf(nftId);
             final var priorityAddress = ledgers.canonicalAddress(owner);
             return encoder.encodeOwner(priorityAddress);
-        } else if (selector == ABI_ID_ERC_TOKEN_URI_NFT) {
+        } else if (selector == ABI_ID_ERC_TOKEN_URI_NFT.getFunctionSelector()) {
             validateFalse(isFungibleToken, INVALID_TOKEN_ID);
             final var wrapper = decoder.decodeTokenUriNFT(input.slice(24));
             final var nftId = NftId.fromGrpc(tokenId, wrapper.serialNo());

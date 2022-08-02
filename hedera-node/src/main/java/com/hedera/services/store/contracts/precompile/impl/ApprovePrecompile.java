@@ -17,6 +17,7 @@ package com.hedera.services.store.contracts.precompile.impl;
 
 import static com.hedera.services.exceptions.ValidationUtils.validateTrueOrRevert;
 import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
+import static com.hedera.services.store.contracts.precompile.EventConstants.APPROVAL_EVENT;
 import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.HTS_PRECOMPILED_CONTRACT_ADDRESS;
 import static com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils.GasCostType.APPROVE;
 import static com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils.GasCostType.DELETE_NFT_APPROVE;
@@ -32,7 +33,6 @@ import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.store.contracts.WorldLedgers;
-import com.hedera.services.store.contracts.precompile.AbiConstants;
 import com.hedera.services.store.contracts.precompile.InfrastructureFactory;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.store.contracts.precompile.codec.ApproveWrapper;
@@ -241,7 +241,7 @@ public class ApprovePrecompile extends AbstractWritePrecompile {
     private Log getLogForFungibleAdjustAllowance(final Address logger) {
         return EncodingFacade.LogBuilder.logBuilder()
                 .forLogger(logger)
-                .forEventSignature(AbiConstants.APPROVAL_EVENT)
+                .forEventSignature(APPROVAL_EVENT)
                 .forIndexedArgument(senderAddress)
                 .forIndexedArgument(asTypedEvmAddress(approveOp.spender()))
                 .forDataItem(BigInteger.valueOf(approveOp.amount().longValue()))
@@ -251,7 +251,7 @@ public class ApprovePrecompile extends AbstractWritePrecompile {
     private Log getLogForNftAdjustAllowance(final Address logger) {
         return EncodingFacade.LogBuilder.logBuilder()
                 .forLogger(logger)
-                .forEventSignature(AbiConstants.APPROVAL_EVENT)
+                .forEventSignature(APPROVAL_EVENT)
                 .forIndexedArgument(senderAddress)
                 .forIndexedArgument(asTypedEvmAddress(approveOp.spender()))
                 .forIndexedArgument(BigInteger.valueOf(approveOp.serialNumber().longValue()))

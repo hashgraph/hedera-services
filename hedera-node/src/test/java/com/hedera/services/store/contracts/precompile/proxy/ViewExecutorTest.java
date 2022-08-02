@@ -15,14 +15,14 @@
  */
 package com.hedera.services.store.contracts.precompile.proxy;
 
-import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_GET_FUNGIBLE_TOKEN_INFO;
-import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_GET_NON_FUNGIBLE_TOKEN_INFO;
-import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_GET_TOKEN_CUSTOM_FEES;
-import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_GET_TOKEN_DEFAULT_FREEZE_STATUS;
-import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_GET_TOKEN_DEFAULT_KYC_STATUS;
-import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_GET_TOKEN_INFO;
-import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_IS_FROZEN;
-import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_IS_KYC;
+import static com.hedera.services.store.contracts.precompile.PrecompileFunctionSelector.ABI_ID_GET_FUNGIBLE_TOKEN_INFO;
+import static com.hedera.services.store.contracts.precompile.PrecompileFunctionSelector.ABI_ID_GET_NON_FUNGIBLE_TOKEN_INFO;
+import static com.hedera.services.store.contracts.precompile.PrecompileFunctionSelector.ABI_ID_GET_TOKEN_CUSTOM_FEES;
+import static com.hedera.services.store.contracts.precompile.PrecompileFunctionSelector.ABI_ID_GET_TOKEN_DEFAULT_FREEZE_STATUS;
+import static com.hedera.services.store.contracts.precompile.PrecompileFunctionSelector.ABI_ID_GET_TOKEN_DEFAULT_KYC_STATUS;
+import static com.hedera.services.store.contracts.precompile.PrecompileFunctionSelector.ABI_ID_GET_TOKEN_INFO;
+import static com.hedera.services.store.contracts.precompile.PrecompileFunctionSelector.ABI_ID_IS_FROZEN;
+import static com.hedera.services.store.contracts.precompile.PrecompileFunctionSelector.ABI_ID_IS_KYC;
 import static com.hedera.services.store.contracts.precompile.proxy.RedirectViewExecutor.MINIMUM_TINYBARS_COST;
 import static com.hedera.test.factories.fees.CustomFeeBuilder.fixedHbar;
 import static com.hedera.test.factories.fees.CustomFeeBuilder.fixedHts;
@@ -149,7 +149,9 @@ class ViewExecutorTest {
     @Test
     void computeGetTokenDefaultFreezeStatus() {
         final var input =
-                prerequisites(ABI_ID_GET_TOKEN_DEFAULT_FREEZE_STATUS, fungibleTokenAddress);
+                prerequisites(
+                        ABI_ID_GET_TOKEN_DEFAULT_FREEZE_STATUS.getFunctionSelector(),
+                        fungibleTokenAddress);
 
         final var wrapper = new GetTokenDefaultFreezeStatusWrapper(fungible);
         given(decodingFacade.decodeTokenDefaultFreezeStatus(input)).willReturn(wrapper);
@@ -161,7 +163,10 @@ class ViewExecutorTest {
 
     @Test
     void computeGetTokenDefaultKycStatus() {
-        final var input = prerequisites(ABI_ID_GET_TOKEN_DEFAULT_KYC_STATUS, fungibleTokenAddress);
+        final var input =
+                prerequisites(
+                        ABI_ID_GET_TOKEN_DEFAULT_KYC_STATUS.getFunctionSelector(),
+                        fungibleTokenAddress);
 
         final var wrapper = new GetTokenDefaultKycStatusWrapper(fungible);
         given(decodingFacade.decodeTokenDefaultKycStatus(input)).willReturn(wrapper);
@@ -173,7 +178,7 @@ class ViewExecutorTest {
 
     @Test
     void computeIsKyc() {
-        final var input = prerequisites(ABI_ID_IS_KYC, fungibleTokenAddress);
+        final var input = prerequisites(ABI_ID_IS_KYC.getFunctionSelector(), fungibleTokenAddress);
 
         final var wrapper = new GrantRevokeKycWrapper(fungible, account);
         given(decodingFacade.decodeIsKyc(any(), any())).willReturn(wrapper);
@@ -184,7 +189,8 @@ class ViewExecutorTest {
 
     @Test
     void computeGetTokenInfo() {
-        final var input = prerequisites(ABI_ID_GET_TOKEN_INFO, fungibleTokenAddress);
+        final var input =
+                prerequisites(ABI_ID_GET_TOKEN_INFO.getFunctionSelector(), fungibleTokenAddress);
 
         final var tokenInfoWrapper = TokenInfoWrapper.forToken(fungible);
         given(decodingFacade.decodeGetTokenInfo(input)).willReturn(tokenInfoWrapper);
@@ -197,7 +203,9 @@ class ViewExecutorTest {
 
     @Test
     void computeGetFungibleTokenInfo() {
-        final var input = prerequisites(ABI_ID_GET_FUNGIBLE_TOKEN_INFO, fungibleTokenAddress);
+        final var input =
+                prerequisites(
+                        ABI_ID_GET_FUNGIBLE_TOKEN_INFO.getFunctionSelector(), fungibleTokenAddress);
 
         final var tokenInfoWrapper = TokenInfoWrapper.forFungibleToken(fungible);
         given(decodingFacade.decodeGetFungibleTokenInfo(input)).willReturn(tokenInfoWrapper);
@@ -211,7 +219,9 @@ class ViewExecutorTest {
     @Test
     void computeGetNonFungibleTokenInfo() {
         final var input =
-                prerequisites(ABI_ID_GET_NON_FUNGIBLE_TOKEN_INFO, nonfungibleTokenAddress);
+                prerequisites(
+                        ABI_ID_GET_NON_FUNGIBLE_TOKEN_INFO.getFunctionSelector(),
+                        nonfungibleTokenAddress);
 
         final var tokenInfoWrapper = TokenInfoWrapper.forNonFungibleToken(nonfungibletoken, 1L);
         given(decodingFacade.decodeGetNonFungibleTokenInfo(input)).willReturn(tokenInfoWrapper);
@@ -232,7 +242,8 @@ class ViewExecutorTest {
 
     @Test
     void computeIsFrozen() {
-        final var input = prerequisites(ABI_ID_IS_FROZEN, fungibleTokenAddress);
+        final var input =
+                prerequisites(ABI_ID_IS_FROZEN.getFunctionSelector(), fungibleTokenAddress);
 
         final var isFrozenWrapper = TokenFreezeUnfreezeWrapper.forIsFrozen(fungible, account);
         given(decodingFacade.decodeIsFrozen(any(), any())).willReturn(isFrozenWrapper);
@@ -244,7 +255,9 @@ class ViewExecutorTest {
 
     @Test
     void computeGetTokenCustomFees() {
-        final var input = prerequisites(ABI_ID_GET_TOKEN_CUSTOM_FEES, fungibleTokenAddress);
+        final var input =
+                prerequisites(
+                        ABI_ID_GET_TOKEN_CUSTOM_FEES.getFunctionSelector(), fungibleTokenAddress);
         final var tokenCustomFeesEncoded =
                 Bytes.fromHexString(
                         "0x000000000000000000000000000000000000000000000000000000000000001600000000000000000000000000000000000000000000000000000000000000800000000000000000000000000000000000000000000000000000000000000280000000000000000000000000000000000000000000000000000000000000036000000000000000000000000000000000000000000000000000000000000000030000000000000000000000000000000000000000000000000000000000000064000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000900000000000000000000000000000000000000000000000000000000000000640000000000000000000000000000000000000000000000000000000000000378000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000009000000000000000000000000000000000000000000000000000000000000003200000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000090000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000f0000000000000000000000000000000000000000000000000000000000000064000000000000000000000000000000000000000000000000000000000000000a0000000000000000000000000000000000000000000000000000000000000032000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000090000000000000000000000000000000000000000000000000000000000000000");
@@ -260,7 +273,9 @@ class ViewExecutorTest {
 
     @Test
     void computeGetTokenCustomFeesThrowsWhenTokenDoesNotExists() {
-        final var input = prerequisites(ABI_ID_GET_TOKEN_CUSTOM_FEES, fungibleTokenAddress);
+        final var input =
+                prerequisites(
+                        ABI_ID_GET_TOKEN_CUSTOM_FEES.getFunctionSelector(), fungibleTokenAddress);
 
         given(decodingFacade.decodeTokenGetCustomFees(input))
                 .willReturn(new TokenGetCustomFeesWrapper(fungible));
@@ -276,7 +291,8 @@ class ViewExecutorTest {
 
     @Test
     void getTokenInfoRevertsFrameAndReturnsNullOnRevertingException() {
-        final var input = prerequisites(ABI_ID_GET_TOKEN_INFO, fungibleTokenAddress);
+        final var input =
+                prerequisites(ABI_ID_GET_TOKEN_INFO.getFunctionSelector(), fungibleTokenAddress);
 
         final var tokenInfoWrapper = TokenInfoWrapper.forToken(fungible);
         given(decodingFacade.decodeGetTokenInfo(input)).willReturn(tokenInfoWrapper);
@@ -289,7 +305,9 @@ class ViewExecutorTest {
 
     @Test
     void getFungibleTokenInfoRevertsFrameAndReturnsNullOnRevertingException() {
-        final var input = prerequisites(ABI_ID_GET_FUNGIBLE_TOKEN_INFO, fungibleTokenAddress);
+        final var input =
+                prerequisites(
+                        ABI_ID_GET_FUNGIBLE_TOKEN_INFO.getFunctionSelector(), fungibleTokenAddress);
 
         final var tokenInfoWrapper = TokenInfoWrapper.forFungibleToken(fungible);
         given(decodingFacade.decodeGetFungibleTokenInfo(input)).willReturn(tokenInfoWrapper);
@@ -303,7 +321,10 @@ class ViewExecutorTest {
     @Test
     void getNonFungibleTokenInfoRevertsFrameAndReturnsNullOnRevertingException() {
         final var input =
-                prerequisitesForNft(ABI_ID_GET_NON_FUNGIBLE_TOKEN_INFO, fungibleTokenAddress, 1L);
+                prerequisitesForNft(
+                        ABI_ID_GET_NON_FUNGIBLE_TOKEN_INFO.getFunctionSelector(),
+                        fungibleTokenAddress,
+                        1L);
 
         final var tokenInfoWrapper = TokenInfoWrapper.forNonFungibleToken(nonfungibletoken, 1L);
         given(decodingFacade.decodeGetNonFungibleTokenInfo(input)).willReturn(tokenInfoWrapper);
@@ -317,7 +338,10 @@ class ViewExecutorTest {
     @Test
     void getNonFungibleTokenInfoRevertsFrameAndReturnsNullOnRevertingExceptionForInvalidId() {
         final var input =
-                prerequisitesForNft(ABI_ID_GET_NON_FUNGIBLE_TOKEN_INFO, fungibleTokenAddress, 1L);
+                prerequisitesForNft(
+                        ABI_ID_GET_NON_FUNGIBLE_TOKEN_INFO.getFunctionSelector(),
+                        fungibleTokenAddress,
+                        1L);
 
         final var tokenInfoWrapper = TokenInfoWrapper.forNonFungibleToken(nonfungibletoken, 1L);
         given(decodingFacade.decodeGetNonFungibleTokenInfo(input)).willReturn(tokenInfoWrapper);

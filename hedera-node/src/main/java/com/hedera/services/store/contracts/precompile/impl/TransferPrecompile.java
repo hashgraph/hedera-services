@@ -31,8 +31,8 @@ import com.hedera.services.ledger.BalanceChange;
 import com.hedera.services.state.submerkle.FcAssessedCustomFee;
 import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.services.store.contracts.WorldLedgers;
-import com.hedera.services.store.contracts.precompile.AbiConstants;
 import com.hedera.services.store.contracts.precompile.InfrastructureFactory;
+import com.hedera.services.store.contracts.precompile.PrecompileFunctionSelector;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.store.contracts.precompile.codec.DecodingFacade;
 import com.hedera.services.store.contracts.precompile.codec.TokenTransferWrapper;
@@ -59,7 +59,7 @@ public class TransferPrecompile extends AbstractWritePrecompile {
     private static final String TRANSFER = String.format(FAILURE_MESSAGE, "transfer");
     private final HederaStackedWorldStateUpdater updater;
     private final EvmSigsVerifier sigsVerifier;
-    private final int functionId;
+    private final PrecompileFunctionSelector selector;
     private final Address senderAddress;
     private final ImpliedTransfersMarshal impliedTransfersMarshal;
     private ResponseCodeEnum impliedValidity;
@@ -77,7 +77,7 @@ public class TransferPrecompile extends AbstractWritePrecompile {
             final SyntheticTxnFactory syntheticTxnFactory,
             final InfrastructureFactory infrastructureFactory,
             final PrecompilePricingUtils pricingUtils,
-            final int functionId,
+            final PrecompileFunctionSelector selector,
             final Address senderAddress,
             final ImpliedTransfersMarshal impliedTransfersMarshal) {
         super(
@@ -89,7 +89,7 @@ public class TransferPrecompile extends AbstractWritePrecompile {
                 pricingUtils);
         this.updater = updater;
         this.sigsVerifier = sigsVerifier;
-        this.functionId = functionId;
+        this.selector = selector;
         this.senderAddress = senderAddress;
         this.impliedTransfersMarshal = impliedTransfersMarshal;
     }
@@ -109,17 +109,14 @@ public class TransferPrecompile extends AbstractWritePrecompile {
     public TransactionBody.Builder body(
             final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
         transferOp =
-                switch (functionId) {
-                    case AbiConstants.ABI_ID_CRYPTO_TRANSFER -> decoder.decodeCryptoTransfer(
+                switch (selector) {
+                    case ABI_ID_CRYPTO_TRANSFER -> decoder.decodeCryptoTransfer(
                             input, aliasResolver);
-                    case AbiConstants.ABI_ID_TRANSFER_TOKENS -> decoder.decodeTransferTokens(
+                    case ABI_ID_TRANSFER_TOKENS -> decoder.decodeTransferTokens(
                             input, aliasResolver);
-                    case AbiConstants.ABI_ID_TRANSFER_TOKEN -> decoder.decodeTransferToken(
-                            input, aliasResolver);
-                    case AbiConstants.ABI_ID_TRANSFER_NFTS -> decoder.decodeTransferNFTs(
-                            input, aliasResolver);
-                    case AbiConstants.ABI_ID_TRANSFER_NFT -> decoder.decodeTransferNFT(
-                            input, aliasResolver);
+                    case ABI_ID_TRANSFER_TOKEN -> decoder.decodeTransferToken(input, aliasResolver);
+                    case ABI_ID_TRANSFER_NFTS -> decoder.decodeTransferNFTs(input, aliasResolver);
+                    case ABI_ID_TRANSFER_NFT -> decoder.decodeTransferNFT(input, aliasResolver);
                     default -> null;
                 };
         transactionBody = syntheticTxnFactory.createCryptoTransfer(transferOp);
