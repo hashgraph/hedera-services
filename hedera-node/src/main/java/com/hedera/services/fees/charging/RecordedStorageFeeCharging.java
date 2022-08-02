@@ -1,5 +1,6 @@
 package com.hedera.services.fees.charging;
 
+import static com.hedera.services.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
 import static com.hedera.services.exceptions.ValidationUtils.validateFalse;
 import static com.hedera.services.ledger.TransactionalLedger.activeLedgerWrapping;
 import static com.hedera.services.ledger.properties.AccountProperty.AUTO_RENEW_ACCOUNT_ID;
@@ -15,6 +16,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.context.properties.StaticPropertiesHolder;
 import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.interceptors.AccountsCommitInterceptor;
@@ -70,7 +72,7 @@ public class RecordedStorageFeeCharging implements StorageFeeCharging {
   @Override
   public void chargeStorageFees(
       final long totalKvPairs,
-      final Map<AccountID, KvUsageInfo> newUsageInfos,
+      final Map<Long, KvUsageInfo> newUsageInfos,
       final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accounts) {
     if (newUsageInfos.isEmpty()) {
       return;
@@ -100,7 +102,7 @@ public class RecordedStorageFeeCharging implements StorageFeeCharging {
   @VisibleForTesting
   void chargeStorageFeesInternal(
       final long totalKvPairs,
-      final Map<AccountID, KvUsageInfo> newUsageInfos,
+      final Map<Long, KvUsageInfo> newUsageInfos,
       final ContractStoragePriceTiers storagePriceTiers,
       final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accounts) {
     final var now = txnCtx.consensusTime();
@@ -109,8 +111,9 @@ public class RecordedStorageFeeCharging implements StorageFeeCharging {
 
     if (!newUsageInfos.isEmpty()) {
       newUsageInfos.forEach(
-          (id, usageInfo) -> {
+          (num, usageInfo) -> {
             if (usageInfo.hasPositiveUsageDelta()) {
+              final var id = keyFor(num);
               final var lifetime = (long) accounts.get(id, EXPIRY) - thisSecond;
               final var fee =
                   storagePriceTiers.priceOfPendingUsage(rate, totalKvPairs, lifetime, usageInfo);
@@ -159,5 +162,9 @@ public class RecordedStorageFeeCharging implements StorageFeeCharging {
     final var fundingBalance = (long) accounts.get(fundingId, BALANCE);
     accounts.set(fundingId, BALANCE, fundingBalance + paid);
     return paid;
+  }
+
+  private AccountID keyFor(final Long num) {
+    return STATIC_PROPERTIES.scopedAccountWith(num);
   }
 }

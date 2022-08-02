@@ -78,7 +78,12 @@ class RecordedStorageFeeChargingTest {
     final var syntheticTxnFactory = new SyntheticTxnFactory(dynamicProperties);
     subject =
         new RecordedStorageFeeCharging(
-            creator, exchange, recordsHistorian, txnCtx, syntheticTxnFactory, dynamicProperties);
+            creator,
+            exchange,
+            recordsHistorian,
+            txnCtx,
+            syntheticTxnFactory,
+            dynamicProperties);
   }
 
   @Test
@@ -90,16 +95,19 @@ class RecordedStorageFeeChargingTest {
   @Test
   void chargesOnlyPositiveDeltasWithAutoRenewAccountPriority() {
     givenStandardSetup();
-    final Map<AccountID, KvUsageInfo> usageInfos = new LinkedHashMap<>();
-    usageInfos.put(aContract, nonFreeUsageFor(+2));
-    usageInfos.put(bContract, nonFreeUsageFor(-1));
-    usageInfos.put(cContract, nonFreeUsageFor(+4));
+    final Map<Long, KvUsageInfo> usageInfos = new LinkedHashMap<>();
+    usageInfos.put(aContract.getAccountNum(), nonFreeUsageFor(+2));
+    usageInfos.put(bContract.getAccountNum(), nonFreeUsageFor(-1));
+    usageInfos.put(cContract.getAccountNum(), nonFreeUsageFor(+4));
     final var expectedACharge =
         STORAGE_PRICE_TIERS.priceOfPendingUsage(
-            someRate, NUM_SLOTS_USED, REFERENCE_LIFETIME, usageInfos.get(aContract));
+            someRate,
+            NUM_SLOTS_USED,
+            REFERENCE_LIFETIME,
+            usageInfos.get(aContract.getAccountNum()));
     final var expectedCCharge =
         STORAGE_PRICE_TIERS.priceOfPendingUsage(
-            someRate, NUM_SLOTS_USED, cExpiry, usageInfos.get(cContract));
+            someRate, NUM_SLOTS_USED, cExpiry, usageInfos.get(cContract.getAccountNum()));
     given(accountsLedger.get(funding, BALANCE)).willReturn(0L).willReturn(expectedACharge);
 
     givenChargeableContract(aContract, -1, REFERENCE_LIFETIME, anAutoRenew);
@@ -117,11 +125,15 @@ class RecordedStorageFeeChargingTest {
 
   @Test
   void fallsBackToContractIfAutoRenewCannotCover() {
-    givenStandardSetup();
-    final Map<AccountID, KvUsageInfo> usageInfos = Map.of(aContract, nonFreeUsageFor(+181));
+    givenStandardInternalSetup();
+    final Map<Long, KvUsageInfo> usageInfos =
+        Map.of(aContract.getAccountNum(), nonFreeUsageFor(+181));
     final var expectedACharge =
         STORAGE_PRICE_TIERS.priceOfPendingUsage(
-            someRate, NUM_SLOTS_USED, REFERENCE_LIFETIME, usageInfos.get(aContract));
+            someRate,
+            NUM_SLOTS_USED,
+            REFERENCE_LIFETIME,
+            usageInfos.get(aContract.getAccountNum()));
     final var autoRenewBalance = expectedACharge / 2;
     final var contractBalance = expectedACharge / 2 + 1;
     given(accountsLedger.get(funding, BALANCE)).willReturn(0L).willReturn(autoRenewBalance);
@@ -140,11 +152,15 @@ class RecordedStorageFeeChargingTest {
 
   @Test
   void fallsBackToContractIfAutoRenewMissing() {
-    givenStandardSetup();
-    final Map<AccountID, KvUsageInfo> usageInfos = Map.of(aContract, nonFreeUsageFor(+181));
+    givenStandardInternalSetup();
+    final Map<Long, KvUsageInfo> usageInfos =
+        Map.of(aContract.getAccountNum(), nonFreeUsageFor(+181));
     final var expectedACharge =
         STORAGE_PRICE_TIERS.priceOfPendingUsage(
-            someRate, NUM_SLOTS_USED, REFERENCE_LIFETIME, usageInfos.get(aContract));
+            someRate,
+            NUM_SLOTS_USED,
+            REFERENCE_LIFETIME,
+            usageInfos.get(aContract.getAccountNum()));
     final var contractBalance = expectedACharge + 1;
     given(accountsLedger.get(funding, BALANCE)).willReturn(0L);
 
@@ -160,11 +176,15 @@ class RecordedStorageFeeChargingTest {
 
   @Test
   void fallsBackToContractIfAutoRenewDeleted() {
-    givenStandardSetup();
-    final Map<AccountID, KvUsageInfo> usageInfos = Map.of(aContract, nonFreeUsageFor(+181));
+    givenStandardInternalSetup();
+    final Map<Long, KvUsageInfo> usageInfos =
+        Map.of(aContract.getAccountNum(), nonFreeUsageFor(+181));
     final var expectedACharge =
         STORAGE_PRICE_TIERS.priceOfPendingUsage(
-            someRate, NUM_SLOTS_USED, REFERENCE_LIFETIME, usageInfos.get(aContract));
+            someRate,
+            NUM_SLOTS_USED,
+            REFERENCE_LIFETIME,
+            usageInfos.get(aContract.getAccountNum()));
     final var contractBalance = expectedACharge + 1;
     given(accountsLedger.get(funding, BALANCE)).willReturn(0L);
 
@@ -181,11 +201,15 @@ class RecordedStorageFeeChargingTest {
 
   @Test
   void failsIfFeesCannotBePaid() {
-    givenStandardSetup();
-    final Map<AccountID, KvUsageInfo> usageInfos = Map.of(aContract, nonFreeUsageFor(+181));
+    givenStandardInternalSetup();
+    final Map<Long, KvUsageInfo> usageInfos =
+        Map.of(aContract.getAccountNum(), nonFreeUsageFor(+181));
     final var expectedACharge =
         STORAGE_PRICE_TIERS.priceOfPendingUsage(
-            someRate, NUM_SLOTS_USED, REFERENCE_LIFETIME, usageInfos.get(aContract));
+            someRate,
+            NUM_SLOTS_USED,
+            REFERENCE_LIFETIME,
+            usageInfos.get(aContract.getAccountNum()));
     final var autoRenewBalance = expectedACharge / 2;
     final var contractBalance = expectedACharge / 2 - 1;
     given(accountsLedger.get(funding, BALANCE)).willReturn(0L).willReturn(autoRenewBalance);
@@ -205,11 +229,18 @@ class RecordedStorageFeeChargingTest {
     givenStandardSetup();
     final ArgumentCaptor<TransactionBody.Builder> bodyCaptor =
         forClass(TransactionBody.Builder.class);
-    final Map<AccountID, KvUsageInfo> usageInfos =
-        Map.of(aContract, nonFreeUsageFor(+181), bContract, freeUsageFor(12));
+    final Map<Long, KvUsageInfo> usageInfos =
+        Map.of(
+            aContract.getAccountNum(),
+            nonFreeUsageFor(+181),
+            bContract.getAccountNum(),
+            freeUsageFor(12));
     final var expectedACharge =
         STORAGE_PRICE_TIERS.priceOfPendingUsage(
-            someRate, NUM_SLOTS_USED, REFERENCE_LIFETIME, usageInfos.get(aContract));
+            someRate,
+            NUM_SLOTS_USED,
+            REFERENCE_LIFETIME,
+            usageInfos.get(aContract.getAccountNum()));
     // setup:
     final BackingStore<AccountID, MerkleAccount> backingAccounts = new HashMapBackingAccounts();
     final var a =
@@ -263,8 +294,12 @@ class RecordedStorageFeeChargingTest {
     given(txnCtx.consensusTime()).willReturn(now);
     given(exchange.activeRate(now)).willReturn(someRate);
     given(dynamicProperties.storagePriceTiers()).willReturn(STORAGE_PRICE_TIERS);
-    final Map<AccountID, KvUsageInfo> usageInfos =
-        Map.of(aContract, freeUsageFor(+1), bContract, freeUsageFor(12));
+    final Map<Long, KvUsageInfo> usageInfos =
+        Map.of(
+            aContract.getAccountNum(),
+            freeUsageFor(+1),
+            bContract.getAccountNum(),
+            freeUsageFor(12));
     // setup:
     final BackingStore<AccountID, MerkleAccount> backingAccounts = new HashMapBackingAccounts();
     final var a =

@@ -25,6 +25,6 @@ import java.util.Map;
 public interface StorageFeeCharging {
   void chargeStorageFees(
       long numTotalKvPairs,
-      Map<AccountID, KvUsageInfo> newUsageInfos,
+      Map<Long, KvUsageInfo> newUsageInfos,
       TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accounts);
 }
