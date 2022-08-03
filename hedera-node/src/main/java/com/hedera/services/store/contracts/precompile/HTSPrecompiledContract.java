@@ -487,6 +487,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
                             precompilePricingUtils);
                     case AbiConstants.ABI_ID_UPDATE_TOKEN_INFO -> new UpdateTokenInfoPrecompile(
                             ledgers,
+                            updater.aliases(),
                             decoder,
                             sigsVerifier,
                             sideEffectsTracker,

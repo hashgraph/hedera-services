@@ -15,25 +15,38 @@
  */
 package com.hedera.services.store.contracts.precompile.impl;
 
+import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
+
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.contracts.sources.EvmSigsVerifier;
+import com.hedera.services.ledger.accounts.ContractAliases;
 import com.hedera.services.store.contracts.WorldLedgers;
 import com.hedera.services.store.contracts.precompile.InfrastructureFactory;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
+import com.hedera.services.store.contracts.precompile.TokenUpdateLogic;
 import com.hedera.services.store.contracts.precompile.codec.DecodingFacade;
+import com.hedera.services.store.contracts.precompile.codec.UpdateTokenInfoWrapper;
+import com.hedera.services.store.contracts.precompile.utils.KeyActivationUtils;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
+import com.hedera.services.store.models.Id;
 import com.hedera.services.store.tokens.HederaTokenStore;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import java.util.Objects;
 import java.util.function.UnaryOperator;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 
 public class UpdateTokenInfoPrecompile extends AbstractWritePrecompile {
     private HederaTokenStore hederaTokenStore;
+    private UpdateTokenInfoWrapper updateOp;
+    private final EvmSigsVerifier sigsVerifier;
+    private final ContractAliases aliases;
 
     public UpdateTokenInfoPrecompile(
             WorldLedgers ledgers,
+            ContractAliases aliases,
             DecodingFacade decoder,
             EvmSigsVerifier sigsVerifier,
             SideEffectsTracker sideEffectsTracker,
@@ -47,6 +60,8 @@ public class UpdateTokenInfoPrecompile extends AbstractWritePrecompile {
                 syntheticTxnFactory,
                 infrastructureFactory,
                 precompilePricingUtils);
+        this.sigsVerifier = sigsVerifier;
+        this.aliases = aliases;
     }
 
     private void initializeHederaTokenStore() {
@@ -57,7 +72,7 @@ public class UpdateTokenInfoPrecompile extends AbstractWritePrecompile {
 
     @Override
     public TransactionBody.Builder body(Bytes input, UnaryOperator<byte[]> aliasResolver) {
-        final var updateOp = decoder.decodeUpdateTokenInfo(input, aliasResolver);
+        updateOp = decoder.decodeUpdateTokenInfo(input, aliasResolver);
         transactionBody = syntheticTxnFactory.createTokenUpdate(updateOp);
         initializeHederaTokenStore();
         return transactionBody;
@@ -69,5 +84,31 @@ public class UpdateTokenInfoPrecompile extends AbstractWritePrecompile {
     }
 
     @Override
-    public void run(MessageFrame frame) {}
+    public void run(MessageFrame frame) {
+        {
+            Objects.requireNonNull(updateOp);
+
+            /* --- Validate the synthetic create txn body before proceeding with the rest of the execution --- */
+
+            /* --- Check required signatures --- */
+            final var treasuryId = Id.fromGrpcAccount(updateOp.getTreasury());
+            final var treasuryHasSigned =
+                    KeyActivationUtils.validateKey(
+                            frame,
+                            treasuryId.asEvmAddress(),
+                            sigsVerifier::hasActiveAdminKey,
+                            ledgers,
+                            aliases);
+            validateTrue(treasuryHasSigned, INVALID_SIGNATURE);
+
+            /* --- Build the necessary infrastructure to execute the transaction --- */
+            TokenUpdateLogic updateLogic =
+                    infrastructureFactory.newTokenUpdateLogic(
+                            hederaTokenStore, ledgers, sideEffects);
+
+            /* --- Execute the transaction and capture its results --- */
+            updateLogic.updateToken(
+                    transactionBody.getTokenUpdate(), frame.getBlockValues().getTimestamp());
+        }
+    }
 }

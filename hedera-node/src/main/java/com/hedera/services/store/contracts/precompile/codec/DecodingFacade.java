@@ -440,6 +440,7 @@ public class DecodingFacade {
             Bytes.wrap(TOKEN_UPDATE_INFO_FUNCTION.selector());
     private static final ABIType<Tuple> TOKEN_UPDATE_INFO_DECODER =
             TypeFactory.create("(address," + HEDERA_TOKEN_STRUCT_DECODER + ")");
+
     @Inject
     public DecodingFacade() {
         // empty constructor

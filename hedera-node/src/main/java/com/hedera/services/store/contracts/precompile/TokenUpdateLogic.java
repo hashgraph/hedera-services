@@ -146,6 +146,7 @@ public class TokenUpdateLogic {
             if (outcome != OK) {
                 abortWith(outcome);
             }
+            // TODO check if this is needed
             sigImpactHistorian.markEntityChanged(tokenID.getTokenNum());
         }
     }
