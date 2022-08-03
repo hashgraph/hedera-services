@@ -587,14 +587,20 @@ class UsageBasedFeeCalculatorTest {
 
         // and:
         final var expectedFees =
-                getFeeObject(currentPrices.get(SubType.TOKEN_NON_FUNGIBLE_UNIQUE), resourceUsage, currentRate);
+                getFeeObject(
+                        currentPrices.get(SubType.TOKEN_NON_FUNGIBLE_UNIQUE),
+                        resourceUsage,
+                        currentRate);
 
         given(pricedUsageCalculator.supports(TokenAccountWipe)).willReturn(true);
         given(exchange.activeRate(consensusNow)).willReturn(currentRate);
         given(usagePrices.activePrices(accessor)).willReturn(currentPrices);
         given(
-                pricedUsageCalculator.inHandleFees(
-                        accessor, currentPrices.get(SubType.TOKEN_NON_FUNGIBLE_UNIQUE), currentRate, payerKey))
+                        pricedUsageCalculator.inHandleFees(
+                                accessor,
+                                currentPrices.get(SubType.TOKEN_NON_FUNGIBLE_UNIQUE),
+                                currentRate,
+                                payerKey))
                 .willReturn(expectedFees);
         given(view.tokenType(tokenId)).willReturn(Optional.of(TokenType.NON_FUNGIBLE_UNIQUE));
 
