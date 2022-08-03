@@ -44,21 +44,21 @@ public abstract class AbstractGrantRevokeKycPrecompile extends AbstractWritePrec
     protected TypedTokenStore tokenStore;
 
     protected AbstractGrantRevokeKycPrecompile(
-        WorldLedgers ledgers,
-        DecodingFacade decoder,
-        ContractAliases aliases,
-        EvmSigsVerifier sigsVerifier,
-        SideEffectsTracker sideEffects,
-        SyntheticTxnFactory syntheticTxnFactory,
-        InfrastructureFactory infrastructureFactory,
-        PrecompilePricingUtils pricingUtils) {
+            WorldLedgers ledgers,
+            DecodingFacade decoder,
+            ContractAliases aliases,
+            EvmSigsVerifier sigsVerifier,
+            SideEffectsTracker sideEffects,
+            SyntheticTxnFactory syntheticTxnFactory,
+            InfrastructureFactory infrastructureFactory,
+            PrecompilePricingUtils pricingUtils) {
         super(
-            ledgers,
-            decoder,
-            sideEffects,
-            syntheticTxnFactory,
-            infrastructureFactory,
-            pricingUtils);
+                ledgers,
+                decoder,
+                sideEffects,
+                syntheticTxnFactory,
+                infrastructureFactory,
+                pricingUtils);
         this.aliases = aliases;
         this.sigsVerifier = sigsVerifier;
     }
@@ -70,22 +70,22 @@ public abstract class AbstractGrantRevokeKycPrecompile extends AbstractWritePrec
         tokenId = Id.fromGrpcToken(grantRevokeOp.token());
         accountId = Id.fromGrpcAccount(grantRevokeOp.account());
         final var hasRequiredSigs =
-            KeyActivationUtils.validateKey(
-                frame,
-                tokenId.asEvmAddress(),
-                sigsVerifier::hasActiveKycKey,
-                ledgers,
-                aliases);
+                KeyActivationUtils.validateKey(
+                        frame,
+                        tokenId.asEvmAddress(),
+                        sigsVerifier::hasActiveKycKey,
+                        ledgers,
+                        aliases);
         validateTrue(hasRequiredSigs, INVALID_SIGNATURE);
 
         /* --- Build the necessary infrastructure to execute the transaction --- */
         accountStore = infrastructureFactory.newAccountStore(ledgers.accounts());
-        tokenStore = infrastructureFactory.newTokenStore(
-            accountStore,
-            sideEffects,
-            ledgers.tokens(),
-            ledgers.nfts(),
-            ledgers.tokenRels());
+        tokenStore =
+                infrastructureFactory.newTokenStore(
+                        accountStore,
+                        sideEffects,
+                        ledgers.tokens(),
+                        ledgers.nfts(),
+                        ledgers.tokenRels());
     }
 }
-

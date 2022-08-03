@@ -40,23 +40,23 @@ import org.hyperledger.besu.evm.frame.MessageFrame;
 public class GrantKycPrecompile extends AbstractGrantRevokeKycPrecompile {
 
     public GrantKycPrecompile(
-        WorldLedgers ledgers,
-        DecodingFacade decoder,
-        ContractAliases aliases,
-        EvmSigsVerifier sigsVerifier,
-        SideEffectsTracker sideEffects,
-        SyntheticTxnFactory syntheticTxnFactory,
-        InfrastructureFactory infrastructureFactory,
-        PrecompilePricingUtils pricingUtils) {
+            WorldLedgers ledgers,
+            DecodingFacade decoder,
+            ContractAliases aliases,
+            EvmSigsVerifier sigsVerifier,
+            SideEffectsTracker sideEffects,
+            SyntheticTxnFactory syntheticTxnFactory,
+            InfrastructureFactory infrastructureFactory,
+            PrecompilePricingUtils pricingUtils) {
         super(
-            ledgers,
-            decoder,
-            aliases,
-            sigsVerifier,
-            sideEffects,
-            syntheticTxnFactory,
-            infrastructureFactory,
-            pricingUtils);
+                ledgers,
+                decoder,
+                aliases,
+                sigsVerifier,
+                sideEffects,
+                syntheticTxnFactory,
+                infrastructureFactory,
+                pricingUtils);
     }
 
     @Override
@@ -89,4 +89,3 @@ public class GrantKycPrecompile extends AbstractGrantRevokeKycPrecompile {
         validateTrue(validity == OK, validity);
     }
 }
-

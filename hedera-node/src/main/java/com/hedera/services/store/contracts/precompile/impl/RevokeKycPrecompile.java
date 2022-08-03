@@ -40,30 +40,31 @@ import org.hyperledger.besu.evm.frame.MessageFrame;
 public class RevokeKycPrecompile extends AbstractGrantRevokeKycPrecompile {
 
     public RevokeKycPrecompile(
-        WorldLedgers ledgers,
-        DecodingFacade decoder,
-        ContractAliases aliases,
-        EvmSigsVerifier sigsVerifier,
-        SideEffectsTracker sideEffects,
-        SyntheticTxnFactory syntheticTxnFactory,
-        InfrastructureFactory infrastructureFactory,
-        PrecompilePricingUtils pricingUtils) {
+            WorldLedgers ledgers,
+            DecodingFacade decoder,
+            ContractAliases aliases,
+            EvmSigsVerifier sigsVerifier,
+            SideEffectsTracker sideEffects,
+            SyntheticTxnFactory syntheticTxnFactory,
+            InfrastructureFactory infrastructureFactory,
+            PrecompilePricingUtils pricingUtils) {
         super(
-            ledgers,
-            decoder,
-            aliases,
-            sigsVerifier,
-            sideEffects,
-            syntheticTxnFactory,
-            infrastructureFactory,
-            pricingUtils);
+                ledgers,
+                decoder,
+                aliases,
+                sigsVerifier,
+                sideEffects,
+                syntheticTxnFactory,
+                infrastructureFactory,
+                pricingUtils);
     }
 
     @Override
     public void run(MessageFrame frame) {
         initialise(frame);
 
-        final var revokeKycLogic= infrastructureFactory.newRevokeKycLogic(accountStore, tokenStore);
+        final var revokeKycLogic =
+                infrastructureFactory.newRevokeKycLogic(accountStore, tokenStore);
         executeForRevoke(revokeKycLogic, tokenId, accountId);
     }
 
@@ -89,4 +90,3 @@ public class RevokeKycPrecompile extends AbstractGrantRevokeKycPrecompile {
         validateTrue(validity == OK, validity);
     }
 }
-
