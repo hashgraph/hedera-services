@@ -15,6 +15,7 @@
  */
 package com.hedera.services.stream;
 
+import static com.swirlds.common.utility.Units.MB_TO_BYTES;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -66,6 +67,7 @@ public class RecordStreamManagerTest {
     private static final String baseLogDir = "recordStreamTest/";
     private static final String sidecarDir = "sidecarDir";
     private static final String recordMemo = "0.0.3";
+    private static final int maxSidecarSizeMb = 256;
 
     private static final String INITIALIZE_NOT_NULL =
             "after initialization, the instance should not be null";
@@ -124,6 +126,7 @@ public class RecordStreamManagerTest {
                         globalDynamicProperties);
 
         given(globalDynamicProperties.recordFileVersion()).willReturn(6);
+        given(globalDynamicProperties.getSidecarMaxSizeMb()).willReturn(maxSidecarSizeMb);
         enableV6StreamingInstance =
                 new RecordStreamManager(
                         platform,
@@ -178,6 +181,9 @@ public class RecordStreamManagerTest {
         assertNotNull(enableV6StreamingInstance.getHashCalculator(), INITIALIZE_NOT_NULL);
         assertEquals(0, enableV6StreamingInstance.getHashQueueSize(), INITIALIZE_QUEUE_EMPTY);
         assertEquals(0, enableV6StreamingInstance.getWriteQueueSize(), INITIALIZE_QUEUE_EMPTY);
+        assertEquals(
+                maxSidecarSizeMb * MB_TO_BYTES,
+                enableV6StreamingInstance.getProtobufStreamFileWriter().getMaxSidecarFileSize());
     }
 
     @Test

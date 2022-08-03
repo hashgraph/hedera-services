@@ -259,7 +259,15 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
             txnCtx.setTargetedContract(newContractId);
             sigImpactHistorian.markEntityChanged(newContractId.getContractNum());
         } else {
-            recordService.externalizeUnsuccessfulEvmCreate(result);
+            if (properties.enabledSidecars().contains(SidecarType.CONTRACT_BYTECODE)
+                    && op.getInitcodeSourceCase() != INITCODE) {
+                final var bytecodeSidecar =
+                        SidecarUtils.createContractBytecodeSidecarForFailedCreate(
+                                codeWithConstructorArgs.toArrayUnsafe());
+                recordService.externalizeUnsuccessfulEvmCreate(result, bytecodeSidecar);
+            } else {
+                recordService.externalizeUnsuccessfulEvmCreate(result);
+            }
         }
     }
 

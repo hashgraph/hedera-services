@@ -49,7 +49,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.utils.MiscEETUtils.metadata;
 import static com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult.htsPrecompileResult;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.esaulpaugh.headlong.abi.Tuple;
@@ -1028,13 +1028,13 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                                 revertedFungibleTransferTxn,
                                 CONTRACT_REVERT_EXECUTED,
                                 recordWith()
-                                        .status(INVALID_SIGNATURE)
+                                        .status(INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE)
                                         .contractCallResult(
                                                 resultWith()
                                                         .contractCallResult(
                                                                 htsPrecompileResult()
                                                                         .withStatus(
-                                                                                INVALID_SIGNATURE)))),
+                                                                                INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE)))),
                         childRecordsCheck(
                                 successfulFungibleTransferTxn,
                                 SUCCESS,
@@ -1063,13 +1063,13 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                                 revertedNftTransferTxn,
                                 CONTRACT_REVERT_EXECUTED,
                                 recordWith()
-                                        .status(INVALID_SIGNATURE)
+                                        .status(INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE)
                                         .contractCallResult(
                                                 resultWith()
                                                         .contractCallResult(
                                                                 htsPrecompileResult()
                                                                         .withStatus(
-                                                                                INVALID_SIGNATURE)))),
+                                                                                INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE)))),
                         childRecordsCheck(
                                 successfulNftTransferTxn,
                                 SUCCESS,

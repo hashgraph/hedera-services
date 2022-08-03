@@ -40,6 +40,8 @@ public final class AbiConstants {
     public static final int ABI_ID_MINT_TOKEN = 0x278e0b88;
     // burnToken(address token, uint64 amount, int64[] memory serialNumbers)
     public static final int ABI_ID_BURN_TOKEN = 0xacb9cff9;
+    // deleteToken(address token)
+    public static final int ABI_ID_DELETE_TOKEN = 0xf069f712;
     // associateTokens(address account, address[] memory tokens)
     public static final int ABI_ID_ASSOCIATE_TOKENS = 0x2e63879b;
     // associateToken(address account, address token)
@@ -48,6 +50,10 @@ public final class AbiConstants {
     public static final int ABI_ID_DISSOCIATE_TOKENS = 0x78b63918;
     // dissociateToken(address account, address token)
     public static final int ABI_ID_DISSOCIATE_TOKEN = 0x099794e8;
+    // pauseToken(address token)
+    public static final int ABI_ID_PAUSE_TOKEN = 0x7c41ad2c;
+    // unpauseToken(address token)
+    public static final int ABI_ID_UNPAUSE_TOKEN = 0x3b3bff0f;
     // allowance(address token, address owner, address spender)
     public static final int ABI_ID_ALLOWANCE = 0x927da105;
     // approve(address token, address spender, uint256 amount)

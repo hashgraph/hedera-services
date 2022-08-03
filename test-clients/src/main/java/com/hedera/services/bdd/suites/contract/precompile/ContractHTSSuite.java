@@ -51,7 +51,7 @@ import static com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPreco
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TOKEN_BALANCE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REVERTED_SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN;
@@ -545,13 +545,13 @@ public class ContractHTSSuite extends HapiApiSuite {
                                                                 htsPrecompileResult()
                                                                         .withStatus(SUCCESS))),
                                 recordWith()
-                                        .status(INVALID_SIGNATURE)
+                                        .status(INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE)
                                         .contractCallResult(
                                                 resultWith()
                                                         .contractCallResult(
                                                                 htsPrecompileResult()
                                                                         .withStatus(
-                                                                                INVALID_SIGNATURE)))),
+                                                                                INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE)))),
                         childRecordsCheck(
                                 "failingChildFrameTx",
                                 CONTRACT_REVERT_EXECUTED,
@@ -732,13 +732,13 @@ public class ContractHTSSuite extends HapiApiSuite {
                                                                 htsPrecompileResult()
                                                                         .withStatus(SUCCESS))),
                                 recordWith()
-                                        .status(INVALID_SIGNATURE)
+                                        .status(INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE)
                                         .contractCallResult(
                                                 resultWith()
                                                         .contractCallResult(
                                                                 htsPrecompileResult()
                                                                         .withStatus(
-                                                                                INVALID_SIGNATURE)))),
+                                                                                INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE)))),
                         childRecordsCheck(
                                 "failingChildFrameTx",
                                 CONTRACT_REVERT_EXECUTED,

@@ -24,11 +24,14 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTrans
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAccountWipe;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAssociateToAccount;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenBurn;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenDelete;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenDissociateFromAccount;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenFreezeAccount;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenGetInfo;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenMint;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenPause;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUnfreezeAccount;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUnpause;
 import static com.hederahashgraph.api.proto.java.ResponseType.ANSWER_ONLY;
 import static com.hederahashgraph.api.proto.java.SubType.DEFAULT;
 import static com.hederahashgraph.api.proto.java.SubType.TOKEN_FUNGIBLE_COMMON;
@@ -213,17 +216,19 @@ public class PrecompilePricingUtils {
         MINT_FUNGIBLE(TokenMint, TOKEN_FUNGIBLE_COMMON),
         MINT_NFT(TokenMint, TOKEN_NON_FUNGIBLE_UNIQUE),
         BURN_FUNGIBLE(TokenBurn, TOKEN_FUNGIBLE_COMMON),
+        DELETE(TokenDelete, DEFAULT),
         BURN_NFT(TokenBurn, TOKEN_NON_FUNGIBLE_UNIQUE),
         ASSOCIATE(TokenAssociateToAccount, DEFAULT),
         DISSOCIATE(TokenDissociateFromAccount, DEFAULT),
         APPROVE(CryptoApproveAllowance, DEFAULT),
         DELETE_NFT_APPROVE(CryptoDeleteAllowance, DEFAULT),
+        PAUSE(TokenPause, DEFAULT),
+        UNPAUSE(TokenUnpause, DEFAULT),
         FREEZE(TokenFreezeAccount, DEFAULT),
         UNFREEZE(TokenUnfreezeAccount, DEFAULT),
-
-        PRNG(HederaFunctionality.UtilPrng, DEFAULT),
         WIPE_FUNGIBLE(TokenAccountWipe, TOKEN_FUNGIBLE_COMMON),
-        WIPE_NFT(TokenAccountWipe, TOKEN_NON_FUNGIBLE_UNIQUE);
+        WIPE_NFT(TokenAccountWipe, TOKEN_NON_FUNGIBLE_UNIQUE),
+        PRNG(HederaFunctionality.UtilPrng, DEFAULT);
 
         final HederaFunctionality functionality;
         final SubType subtype;

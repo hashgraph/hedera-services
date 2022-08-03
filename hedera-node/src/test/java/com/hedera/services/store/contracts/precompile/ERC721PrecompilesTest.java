@@ -41,7 +41,7 @@ import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.contra
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.contractAddress;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.failResult;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.feeCollector;
-import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.invalidSigResult;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.invalidFullPrefix;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.missingNftResult;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.nonFungibleTokenAddr;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.ownerOfAndTokenUriWrapper;
@@ -59,7 +59,7 @@ import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.tokenA
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.tokenTransferChanges;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALLOWANCE_OWNER_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SENDER_DOES_NOT_OWN_NFT_SERIAL_NO;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
@@ -1424,7 +1424,9 @@ class ERC721PrecompilesTest {
                 .willReturn(hederaTokenStore);
         given(dynamicProperties.areAllowancesEnabled()).willReturn(true);
 
-        given(creator.createUnsuccessfulSyntheticRecord(INVALID_SIGNATURE))
+        given(
+                        creator.createUnsuccessfulSyntheticRecord(
+                                INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE))
                 .willReturn(mockRecordBuilder);
         given(
                         feeCalculator.estimatedGasPriceInTinybars(
@@ -1464,7 +1466,7 @@ class ERC721PrecompilesTest {
         final var result = subject.computeInternal(frame);
 
         // then:
-        assertEquals(invalidSigResult, result);
+        assertEquals(invalidFullPrefix, result);
     }
 
     @Test
