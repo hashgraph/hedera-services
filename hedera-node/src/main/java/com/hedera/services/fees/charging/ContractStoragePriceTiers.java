@@ -76,6 +76,10 @@ public record ContractStoragePriceTiers(
                 referenceLifetime);
     }
 
+    public boolean promotionalOfferCovers(final long totalKvPairsUsed) {
+        return prices[0] == 0 &&  totalKvPairsUsed <= usageTiers[0];
+    }
+
     /**
      * Returns the price in tinybars to keep one key/value pair in contract storage for a given
      * period.

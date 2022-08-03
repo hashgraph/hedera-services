@@ -20,7 +20,7 @@ import static com.hedera.services.ledger.properties.AccountProperty.BALANCE;
 import static com.hedera.services.ledger.properties.AccountProperty.EXPIRY;
 import static com.hedera.services.ledger.properties.AccountProperty.IS_DELETED;
 import static com.hedera.services.records.TxnAwareRecordsHistorian.DEFAULT_SOURCE_ID;
-import static com.hedera.test.utils.TxnUtils.assertFailsWith;
+import static com.hedera.test.utils.TxnUtils.assertExhaustsResourceLimit;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_BALANCES_FOR_STORAGE_RENT;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentCaptor.forClass;
@@ -109,6 +109,24 @@ class RecordedStorageFeeChargingTest {
     @Test
     void createsNoRecordWithNothingToDo() {
         subject.chargeStorageFees(NUM_SLOTS_USED, Collections.emptyMap(), accountsLedger);
+        verifyNoInteractions(accountsLedger);
+    }
+
+    @Test
+    void doesNothingIfWithinPromotionalUsage() {
+        final var  tierWithPromotionalOffer =
+            ContractStoragePriceTiers.from(
+                "0til50M,50til100M",
+                FREE_TIER_LIMIT,
+                50_000_000,
+                REFERENCE_LIFETIME);
+        given(dynamicProperties.storagePriceTiers()).willReturn(tierWithPromotionalOffer);
+        final Map<Long, KvUsageInfo> usageInfos = new LinkedHashMap<>();
+        usageInfos.put(aContract.getAccountNum(), nonFreeUsageFor(+2));
+        usageInfos.put(bContract.getAccountNum(), nonFreeUsageFor(-1));
+        usageInfos.put(cContract.getAccountNum(), nonFreeUsageFor(+4));
+
+        subject.chargeStorageFees(50_000_000L, usageInfos, accountsLedger);
         verifyNoInteractions(accountsLedger);
     }
 
@@ -240,7 +258,7 @@ class RecordedStorageFeeChargingTest {
         givenChargeableContract(aContract, contractBalance, REFERENCE_LIFETIME, anAutoRenew);
         givenAutoRenew(anAutoRenew, autoRenewBalance);
 
-        assertFailsWith(
+        assertExhaustsResourceLimit(
                 () ->
                         subject.chargeStorageFeesInternal(
                                 NUM_SLOTS_USED, usageInfos, STORAGE_PRICE_TIERS, accountsLedger),
@@ -317,34 +335,34 @@ class RecordedStorageFeeChargingTest {
     void managesAsExpectedWithStakingEnabledAndFullyDistributedFees() {
         givenStandardSetup();
         final ArgumentCaptor<TransactionBody.Builder> bodyCaptor =
-            forClass(TransactionBody.Builder.class);
+                forClass(TransactionBody.Builder.class);
         final Map<Long, KvUsageInfo> usageInfos =
-            Map.of(
-                aContract.getAccountNum(),
-                nonFreeUsageFor(+181),
-                bContract.getAccountNum(),
-                freeUsageFor(12));
+                Map.of(
+                        aContract.getAccountNum(),
+                        nonFreeUsageFor(+181),
+                        bContract.getAccountNum(),
+                        freeUsageFor(12));
         final var expectedACharge =
-            STORAGE_PRICE_TIERS.priceOfPendingUsage(
-                someRate,
-                NUM_SLOTS_USED,
-                REFERENCE_LIFETIME,
-                usageInfos.get(aContract.getAccountNum()));
+                STORAGE_PRICE_TIERS.priceOfPendingUsage(
+                        someRate,
+                        NUM_SLOTS_USED,
+                        REFERENCE_LIFETIME,
+                        usageInfos.get(aContract.getAccountNum()));
         given(dynamicProperties.isStakingEnabled()).willReturn(true);
         given(dynamicProperties.getNodeRewardPercent()).willReturn(33);
         given(dynamicProperties.getStakingRewardPercent()).willReturn(33);
         // setup:
         final BackingStore<AccountID, MerkleAccount> backingAccounts = new HashMapBackingAccounts();
         final var a =
-            MerkleAccountFactory.newContract()
-                .balance(1_000_000_000)
-                .expirationTime(REFERENCE_LIFETIME + now.getEpochSecond())
-                .get();
+                MerkleAccountFactory.newContract()
+                        .balance(1_000_000_000)
+                        .expirationTime(REFERENCE_LIFETIME + now.getEpochSecond())
+                        .get();
         final var b =
-            MerkleAccountFactory.newContract()
-                .balance(1_000_000_000)
-                .expirationTime(REFERENCE_LIFETIME + now.getEpochSecond())
-                .get();
+                MerkleAccountFactory.newContract()
+                        .balance(1_000_000_000)
+                        .expirationTime(REFERENCE_LIFETIME + now.getEpochSecond())
+                        .get();
         final var f = MerkleAccountFactory.newAccount().balance(0).get();
         final var s = MerkleAccountFactory.newAccount().balance(0).get();
         final var n = MerkleAccountFactory.newAccount().balance(0).get();
@@ -354,41 +372,41 @@ class RecordedStorageFeeChargingTest {
         backingAccounts.put(stakingReward, s);
         backingAccounts.put(nodeReward, n);
         final var liveLedger =
-            new TransactionalLedger<>(
-                AccountProperty.class,
-                MerkleAccount::new,
-                backingAccounts,
-                new ChangeSummaryManager<>());
+                new TransactionalLedger<>(
+                        AccountProperty.class,
+                        MerkleAccount::new,
+                        backingAccounts,
+                        new ChangeSummaryManager<>());
         // and:
         final var mockRecord = ExpirableTxnRecord.newBuilder();
         // and:
         given(dynamicProperties.shouldItemizeStorageFees()).willReturn(true);
         given(
-            creator.createSuccessfulSyntheticRecord(
-                eq(Collections.EMPTY_LIST),
-                any(SideEffectsTracker.class),
-                eq(RecordedStorageFeeCharging.MEMO)))
-            .willReturn(mockRecord);
+                        creator.createSuccessfulSyntheticRecord(
+                                eq(Collections.EMPTY_LIST),
+                                any(SideEffectsTracker.class),
+                                eq(RecordedStorageFeeCharging.MEMO)))
+                .willReturn(mockRecord);
 
         liveLedger.begin();
         subject.chargeStorageFees(NUM_SLOTS_USED, usageInfos, liveLedger);
         liveLedger.commit();
 
         verify(recordsHistorian)
-            .trackFollowingChildRecord(
-                eq(DEFAULT_SOURCE_ID), bodyCaptor.capture(), eq(mockRecord), eq(List.of()));
+                .trackFollowingChildRecord(
+                        eq(DEFAULT_SOURCE_ID), bodyCaptor.capture(), eq(mockRecord), eq(List.of()));
         final var body = bodyCaptor.getValue().build();
         final var op = body.getCryptoTransfer();
         final var transfers = op.getTransfers().getAccountAmountsList();
         final var thirtyThreePercent = expectedACharge * 33 / 100;
         final var fundingReward = expectedACharge - 2 * thirtyThreePercent;
         assertEquals(
-            List.of(
-                aaWith(funding, fundingReward),
-                aaWith(stakingReward, thirtyThreePercent),
-                aaWith(nodeReward, thirtyThreePercent),
-                aaWith(aContract, -expectedACharge)),
-            transfers);
+                List.of(
+                        aaWith(funding, fundingReward),
+                        aaWith(stakingReward, thirtyThreePercent),
+                        aaWith(nodeReward, thirtyThreePercent),
+                        aaWith(aContract, -expectedACharge)),
+                transfers);
         assertEquals(fundingReward, f.getBalance());
         assertEquals(thirtyThreePercent, s.getBalance());
         assertEquals(thirtyThreePercent, n.getBalance());
@@ -398,33 +416,33 @@ class RecordedStorageFeeChargingTest {
     void managesAsExpectedWithStakingEnabledAndStakingConcentratedFees() {
         givenStandardSetup();
         final ArgumentCaptor<TransactionBody.Builder> bodyCaptor =
-            forClass(TransactionBody.Builder.class);
+                forClass(TransactionBody.Builder.class);
         final Map<Long, KvUsageInfo> usageInfos =
-            Map.of(
-                aContract.getAccountNum(),
-                nonFreeUsageFor(+181),
-                bContract.getAccountNum(),
-                freeUsageFor(12));
+                Map.of(
+                        aContract.getAccountNum(),
+                        nonFreeUsageFor(+181),
+                        bContract.getAccountNum(),
+                        freeUsageFor(12));
         final var expectedACharge =
-            STORAGE_PRICE_TIERS.priceOfPendingUsage(
-                someRate,
-                NUM_SLOTS_USED,
-                REFERENCE_LIFETIME,
-                usageInfos.get(aContract.getAccountNum()));
+                STORAGE_PRICE_TIERS.priceOfPendingUsage(
+                        someRate,
+                        NUM_SLOTS_USED,
+                        REFERENCE_LIFETIME,
+                        usageInfos.get(aContract.getAccountNum()));
         given(dynamicProperties.isStakingEnabled()).willReturn(true);
         given(dynamicProperties.getStakingRewardPercent()).willReturn(100);
         // setup:
         final BackingStore<AccountID, MerkleAccount> backingAccounts = new HashMapBackingAccounts();
         final var a =
-            MerkleAccountFactory.newContract()
-                .balance(1_000_000_000)
-                .expirationTime(REFERENCE_LIFETIME + now.getEpochSecond())
-                .get();
+                MerkleAccountFactory.newContract()
+                        .balance(1_000_000_000)
+                        .expirationTime(REFERENCE_LIFETIME + now.getEpochSecond())
+                        .get();
         final var b =
-            MerkleAccountFactory.newContract()
-                .balance(1_000_000_000)
-                .expirationTime(REFERENCE_LIFETIME + now.getEpochSecond())
-                .get();
+                MerkleAccountFactory.newContract()
+                        .balance(1_000_000_000)
+                        .expirationTime(REFERENCE_LIFETIME + now.getEpochSecond())
+                        .get();
         final var f = MerkleAccountFactory.newAccount().balance(0).get();
         final var s = MerkleAccountFactory.newAccount().balance(0).get();
         final var n = MerkleAccountFactory.newAccount().balance(0).get();
@@ -434,37 +452,37 @@ class RecordedStorageFeeChargingTest {
         backingAccounts.put(stakingReward, s);
         backingAccounts.put(nodeReward, n);
         final var liveLedger =
-            new TransactionalLedger<>(
-                AccountProperty.class,
-                MerkleAccount::new,
-                backingAccounts,
-                new ChangeSummaryManager<>());
+                new TransactionalLedger<>(
+                        AccountProperty.class,
+                        MerkleAccount::new,
+                        backingAccounts,
+                        new ChangeSummaryManager<>());
         // and:
         final var mockRecord = ExpirableTxnRecord.newBuilder();
         // and:
         given(dynamicProperties.shouldItemizeStorageFees()).willReturn(true);
         given(
-            creator.createSuccessfulSyntheticRecord(
-                eq(Collections.EMPTY_LIST),
-                any(SideEffectsTracker.class),
-                eq(RecordedStorageFeeCharging.MEMO)))
-            .willReturn(mockRecord);
+                        creator.createSuccessfulSyntheticRecord(
+                                eq(Collections.EMPTY_LIST),
+                                any(SideEffectsTracker.class),
+                                eq(RecordedStorageFeeCharging.MEMO)))
+                .willReturn(mockRecord);
 
         liveLedger.begin();
         subject.chargeStorageFees(NUM_SLOTS_USED, usageInfos, liveLedger);
         liveLedger.commit();
 
         verify(recordsHistorian)
-            .trackFollowingChildRecord(
-                eq(DEFAULT_SOURCE_ID), bodyCaptor.capture(), eq(mockRecord), eq(List.of()));
+                .trackFollowingChildRecord(
+                        eq(DEFAULT_SOURCE_ID), bodyCaptor.capture(), eq(mockRecord), eq(List.of()));
         final var body = bodyCaptor.getValue().build();
         final var op = body.getCryptoTransfer();
         final var transfers = op.getTransfers().getAccountAmountsList();
         assertEquals(
-            List.of(
-                aaWith(stakingReward, expectedACharge),
-                aaWith(aContract, -expectedACharge)),
-            transfers);
+                List.of(
+                        aaWith(stakingReward, expectedACharge),
+                        aaWith(aContract, -expectedACharge)),
+                transfers);
         assertEquals(expectedACharge, s.getBalance());
     }
 
@@ -472,32 +490,32 @@ class RecordedStorageFeeChargingTest {
     void managesAsExpectedWithStakingEnabledAndFundingFees() {
         givenStandardSetup();
         final ArgumentCaptor<TransactionBody.Builder> bodyCaptor =
-            forClass(TransactionBody.Builder.class);
+                forClass(TransactionBody.Builder.class);
         final Map<Long, KvUsageInfo> usageInfos =
-            Map.of(
-                aContract.getAccountNum(),
-                nonFreeUsageFor(+181),
-                bContract.getAccountNum(),
-                freeUsageFor(12));
+                Map.of(
+                        aContract.getAccountNum(),
+                        nonFreeUsageFor(+181),
+                        bContract.getAccountNum(),
+                        freeUsageFor(12));
         final var expectedACharge =
-            STORAGE_PRICE_TIERS.priceOfPendingUsage(
-                someRate,
-                NUM_SLOTS_USED,
-                REFERENCE_LIFETIME,
-                usageInfos.get(aContract.getAccountNum()));
+                STORAGE_PRICE_TIERS.priceOfPendingUsage(
+                        someRate,
+                        NUM_SLOTS_USED,
+                        REFERENCE_LIFETIME,
+                        usageInfos.get(aContract.getAccountNum()));
         given(dynamicProperties.isStakingEnabled()).willReturn(true);
         // setup:
         final BackingStore<AccountID, MerkleAccount> backingAccounts = new HashMapBackingAccounts();
         final var a =
-            MerkleAccountFactory.newContract()
-                .balance(1_000_000_000)
-                .expirationTime(REFERENCE_LIFETIME + now.getEpochSecond())
-                .get();
+                MerkleAccountFactory.newContract()
+                        .balance(1_000_000_000)
+                        .expirationTime(REFERENCE_LIFETIME + now.getEpochSecond())
+                        .get();
         final var b =
-            MerkleAccountFactory.newContract()
-                .balance(1_000_000_000)
-                .expirationTime(REFERENCE_LIFETIME + now.getEpochSecond())
-                .get();
+                MerkleAccountFactory.newContract()
+                        .balance(1_000_000_000)
+                        .expirationTime(REFERENCE_LIFETIME + now.getEpochSecond())
+                        .get();
         final var f = MerkleAccountFactory.newAccount().balance(0).get();
         final var s = MerkleAccountFactory.newAccount().balance(0).get();
         final var n = MerkleAccountFactory.newAccount().balance(0).get();
@@ -507,37 +525,35 @@ class RecordedStorageFeeChargingTest {
         backingAccounts.put(stakingReward, s);
         backingAccounts.put(nodeReward, n);
         final var liveLedger =
-            new TransactionalLedger<>(
-                AccountProperty.class,
-                MerkleAccount::new,
-                backingAccounts,
-                new ChangeSummaryManager<>());
+                new TransactionalLedger<>(
+                        AccountProperty.class,
+                        MerkleAccount::new,
+                        backingAccounts,
+                        new ChangeSummaryManager<>());
         // and:
         final var mockRecord = ExpirableTxnRecord.newBuilder();
         // and:
         given(dynamicProperties.shouldItemizeStorageFees()).willReturn(true);
         given(
-            creator.createSuccessfulSyntheticRecord(
-                eq(Collections.EMPTY_LIST),
-                any(SideEffectsTracker.class),
-                eq(RecordedStorageFeeCharging.MEMO)))
-            .willReturn(mockRecord);
+                        creator.createSuccessfulSyntheticRecord(
+                                eq(Collections.EMPTY_LIST),
+                                any(SideEffectsTracker.class),
+                                eq(RecordedStorageFeeCharging.MEMO)))
+                .willReturn(mockRecord);
 
         liveLedger.begin();
         subject.chargeStorageFees(NUM_SLOTS_USED, usageInfos, liveLedger);
         liveLedger.commit();
 
         verify(recordsHistorian)
-            .trackFollowingChildRecord(
-                eq(DEFAULT_SOURCE_ID), bodyCaptor.capture(), eq(mockRecord), eq(List.of()));
+                .trackFollowingChildRecord(
+                        eq(DEFAULT_SOURCE_ID), bodyCaptor.capture(), eq(mockRecord), eq(List.of()));
         final var body = bodyCaptor.getValue().build();
         final var op = body.getCryptoTransfer();
         final var transfers = op.getTransfers().getAccountAmountsList();
         assertEquals(
-            List.of(
-                aaWith(funding, expectedACharge),
-                aaWith(aContract, -expectedACharge)),
-            transfers);
+                List.of(aaWith(funding, expectedACharge), aaWith(aContract, -expectedACharge)),
+                transfers);
         assertEquals(expectedACharge, f.getBalance());
     }
 

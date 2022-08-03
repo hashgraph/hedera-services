@@ -268,12 +268,7 @@ class CreateEvmTxProcessorTest {
         assertFailsWith(
                 () ->
                         createEvmTxProcessor.execute(
-                                sender,
-                                receiver,
-                                333_333L,
-                                1234L,
-                                Bytes.EMPTY,
-                                consensusTime),
+                                sender, receiver, 333_333L, 1234L, Bytes.EMPTY, consensusTime),
                 ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE);
     }
 
@@ -287,12 +282,7 @@ class CreateEvmTxProcessorTest {
         assertFailsWith(
                 () ->
                         createEvmTxProcessor.execute(
-                                sender,
-                                receiver,
-                                33_333L,
-                                1234L,
-                                Bytes.EMPTY,
-                                consensusTime),
+                                sender, receiver, 33_333L, 1234L, Bytes.EMPTY, consensusTime),
                 INSUFFICIENT_GAS);
     }
 
@@ -308,12 +298,7 @@ class CreateEvmTxProcessorTest {
         assertFailsWith(
                 () ->
                         createEvmTxProcessor.execute(
-                                sender,
-                                receiver,
-                                33_333L,
-                                1234L,
-                                Bytes.EMPTY,
-                                consensusTime),
+                                sender, receiver, 33_333L, 1234L, Bytes.EMPTY, consensusTime),
                 INSUFFICIENT_GAS);
     }
 

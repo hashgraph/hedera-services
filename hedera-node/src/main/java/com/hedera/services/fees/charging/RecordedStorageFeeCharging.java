@@ -16,7 +16,7 @@
 package com.hedera.services.fees.charging;
 
 import static com.hedera.services.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
-import static com.hedera.services.exceptions.ValidationUtils.validateFalse;
+import static com.hedera.services.exceptions.ValidationUtils.validateResourceLimit;
 import static com.hedera.services.fees.charging.NarratedLedgerCharging.nodeRewardFractionOf;
 import static com.hedera.services.fees.charging.NarratedLedgerCharging.stakingRewardFractionOf;
 import static com.hedera.services.ledger.TransactionalLedger.activeLedgerWrapping;
@@ -54,163 +54,173 @@ import javax.inject.Singleton;
 
 @Singleton
 public class RecordedStorageFeeCharging implements StorageFeeCharging {
-  private static final List<Builder> NO_SIDECARS = Collections.emptyList();
-  public static final String MEMO = "Contract storage fees";
+    private static final List<Builder> NO_SIDECARS = Collections.emptyList();
+    public static final String MEMO = "Contract storage fees";
 
-  // Used to created the synthetic record if itemizing is enabled
-  private final EntityCreator creator;
-  // Used to get the current exchange rate
-  private final HbarCentExchange exchange;
-  // Used to track the storage fee payments in a succeeding child record
-  private final RecordsHistorian recordsHistorian;
-  // Used to create the synthetic CryptoTransfer for storage fee payments
-  private final SyntheticTxnFactory syntheticTxnFactory;
-  // Used to get the current consensus time
-  private final TransactionContext txnCtx;
-  // Used to get the storage slot lifetime and pricing tiers
-  private final GlobalDynamicProperties dynamicProperties;
-  private final AccountID stakingRewardAccountId;
-  private final AccountID nodeRewardAccountId;
+    // Used to created the synthetic record if itemizing is enabled
+    private final EntityCreator creator;
+    // Used to get the current exchange rate
+    private final HbarCentExchange exchange;
+    // Used to track the storage fee payments in a succeeding child record
+    private final RecordsHistorian recordsHistorian;
+    // Used to create the synthetic CryptoTransfer for storage fee payments
+    private final SyntheticTxnFactory syntheticTxnFactory;
+    // Used to get the current consensus time
+    private final TransactionContext txnCtx;
+    // Used to get the storage slot lifetime and pricing tiers
+    private final GlobalDynamicProperties dynamicProperties;
+    private final AccountID stakingRewardAccountId;
+    private final AccountID nodeRewardAccountId;
 
-  @Inject
-  public RecordedStorageFeeCharging(
-      final EntityCreator creator,
-      final AccountNumbers accountNumbers,
-      final HbarCentExchange exchange,
-      final RecordsHistorian recordsHistorian,
-      final TransactionContext txnCtx,
-      final SyntheticTxnFactory syntheticTxnFactory,
-      final GlobalDynamicProperties dynamicProperties) {
-    this.txnCtx = txnCtx;
-    this.creator = creator;
-    this.exchange = exchange;
-    this.recordsHistorian = recordsHistorian;
-    this.dynamicProperties = dynamicProperties;
-    this.syntheticTxnFactory = syntheticTxnFactory;
-    this.stakingRewardAccountId =
-        STATIC_PROPERTIES.scopedAccountWith(accountNumbers.stakingRewardAccount());
-    this.nodeRewardAccountId =
-        STATIC_PROPERTIES.scopedAccountWith(accountNumbers.nodeRewardAccount());
-  }
-
-  @Override
-  public void chargeStorageFees(
-      final long totalKvPairs,
-      final Map<Long, KvUsageInfo> newUsageInfos,
-      final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accounts) {
-    if (newUsageInfos.isEmpty()) {
-      return;
+    @Inject
+    public RecordedStorageFeeCharging(
+            final EntityCreator creator,
+            final AccountNumbers accountNumbers,
+            final HbarCentExchange exchange,
+            final RecordsHistorian recordsHistorian,
+            final TransactionContext txnCtx,
+            final SyntheticTxnFactory syntheticTxnFactory,
+            final GlobalDynamicProperties dynamicProperties) {
+        this.txnCtx = txnCtx;
+        this.creator = creator;
+        this.exchange = exchange;
+        this.recordsHistorian = recordsHistorian;
+        this.dynamicProperties = dynamicProperties;
+        this.syntheticTxnFactory = syntheticTxnFactory;
+        this.stakingRewardAccountId =
+                STATIC_PROPERTIES.scopedAccountWith(accountNumbers.stakingRewardAccount());
+        this.nodeRewardAccountId =
+                STATIC_PROPERTIES.scopedAccountWith(accountNumbers.nodeRewardAccount());
     }
-    final var storagePriceTiers = dynamicProperties.storagePriceTiers();
-    if (!dynamicProperties.shouldItemizeStorageFees()) {
-      chargeStorageFeesInternal(totalKvPairs, newUsageInfos, storagePriceTiers, accounts);
-    } else {
-      final var wrappedAccounts = activeLedgerWrapping(accounts);
-      final var sideEffects = new SideEffectsTracker();
-      final var accountsCommitInterceptor = new AccountsCommitInterceptor(sideEffects);
-      wrappedAccounts.setCommitInterceptor(accountsCommitInterceptor);
-      chargeStorageFeesInternal(totalKvPairs, newUsageInfos, storagePriceTiers, wrappedAccounts);
-      wrappedAccounts.commit();
 
-      final var charges = sideEffects.getNetTrackedHbarChanges();
-      if (!charges.isEmpty()) {
-        final var synthBody = syntheticTxnFactory.synthCryptoTransfer(charges);
-        final var synthRecord =
-            creator.createSuccessfulSyntheticRecord(NO_CUSTOM_FEES, sideEffects, MEMO);
-        recordsHistorian.trackFollowingChildRecord(
-            DEFAULT_SOURCE_ID, synthBody, synthRecord, NO_SIDECARS);
-      }
-    }
-  }
+    @Override
+    public void chargeStorageFees(
+            final long totalKvPairs,
+            final Map<Long, KvUsageInfo> newUsageInfos,
+            final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accounts) {
+        if (newUsageInfos.isEmpty()) {
+            return;
+        }
+        final var storagePriceTiers = dynamicProperties.storagePriceTiers();
+        if (storagePriceTiers.promotionalOfferCovers(totalKvPairs)) {
+            return;
+        }
+        if (!dynamicProperties.shouldItemizeStorageFees()) {
+            chargeStorageFeesInternal(totalKvPairs, newUsageInfos, storagePriceTiers, accounts);
+        } else {
+            final var wrappedAccounts = activeLedgerWrapping(accounts);
+            final var sideEffects = new SideEffectsTracker();
+            final var accountsCommitInterceptor = new AccountsCommitInterceptor(sideEffects);
+            wrappedAccounts.setCommitInterceptor(accountsCommitInterceptor);
+            chargeStorageFeesInternal(
+                    totalKvPairs, newUsageInfos, storagePriceTiers, wrappedAccounts);
+            wrappedAccounts.commit();
 
-  @VisibleForTesting
-  void chargeStorageFeesInternal(
-      final long totalKvPairs,
-      final Map<Long, KvUsageInfo> newUsageInfos,
-      final ContractStoragePriceTiers storagePriceTiers,
-      final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accounts) {
-    final var now = txnCtx.consensusTime();
-    final var rate = exchange.activeRate(now);
-    final var thisSecond = now.getEpochSecond();
-
-    if (!newUsageInfos.isEmpty()) {
-      newUsageInfos.forEach(
-          (num, usageInfo) -> {
-            if (usageInfo.hasPositiveUsageDelta()) {
-              final var id = keyFor(num);
-              final var lifetime = (long) accounts.get(id, EXPIRY) - thisSecond;
-              final var fee =
-                  storagePriceTiers.priceOfPendingUsage(rate, totalKvPairs, lifetime, usageInfo);
-              if (fee > 0) {
-                pay(id, fee, accounts);
-              }
+            final var charges = sideEffects.getNetTrackedHbarChanges();
+            if (!charges.isEmpty()) {
+                final var synthBody = syntheticTxnFactory.synthCryptoTransfer(charges);
+                final var synthRecord =
+                        creator.createSuccessfulSyntheticRecord(NO_CUSTOM_FEES, sideEffects, MEMO);
+                recordsHistorian.trackFollowingChildRecord(
+                        DEFAULT_SOURCE_ID, synthBody, synthRecord, NO_SIDECARS);
             }
-          });
+        }
     }
-  }
 
-  private void pay(
-      final AccountID id,
-      final long fee,
-      final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accounts) {
-    var leftToPay = fee;
-    final var autoRenewId = (EntityId) accounts.get(id, AUTO_RENEW_ACCOUNT_ID);
-    if (autoRenewId != null && !MISSING_ENTITY_ID.equals(autoRenewId)) {
-      final var grpcId = autoRenewId.toGrpcAccountId();
-      if (accounts.contains(grpcId) && !(boolean) accounts.get(grpcId, IS_DELETED)) {
-        final var debited = charge(autoRenewId.toGrpcAccountId(), leftToPay, false, accounts);
-        leftToPay -= debited;
-      }
-    }
-    if (leftToPay > 0) {
-      charge(id, leftToPay, true, accounts);
-    }
-  }
+    @VisibleForTesting
+    void chargeStorageFeesInternal(
+            final long totalKvPairs,
+            final Map<Long, KvUsageInfo> newUsageInfos,
+            final ContractStoragePriceTiers storagePriceTiers,
+            final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accounts) {
+        final var now = txnCtx.consensusTime();
+        final var rate = exchange.activeRate(now);
+        final var thisSecond = now.getEpochSecond();
 
-  private long charge(
-      final AccountID id,
-      final long amount,
-      final boolean isLastResort,
-      final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accounts) {
-    long paid;
-    final var balance = (long) accounts.get(id, BALANCE);
-    if (amount > balance) {
-      validateFalse(isLastResort, INSUFFICIENT_BALANCES_FOR_STORAGE_RENT);
-      accounts.set(id, BALANCE, 0L);
-      paid = balance;
-    } else {
-      accounts.set(id, BALANCE, balance - amount);
-      paid = amount;
+        if (!newUsageInfos.isEmpty()) {
+            newUsageInfos.forEach(
+                    (num, usageInfo) -> {
+                        if (usageInfo.hasPositiveUsageDelta()) {
+                            final var id = keyFor(num);
+                            final var lifetime = (long) accounts.get(id, EXPIRY) - thisSecond;
+                            final var fee =
+                                    storagePriceTiers.priceOfPendingUsage(
+                                            rate, totalKvPairs, lifetime, usageInfo);
+                            if (fee > 0) {
+                                pay(id, fee, accounts);
+                            }
+                        }
+                    });
+        }
     }
-    payToApropos(paid, accounts);
-    return paid;
-  }
 
-  private void payToApropos(
-      final long amount,
-      final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accounts) {
-    long fundingAdjustment = amount;
-    final var fundingId = dynamicProperties.fundingAccount();
-    if (dynamicProperties.isStakingEnabled()) {
-      final var nodeRewardAdjustment = nodeRewardFractionOf(amount, dynamicProperties);
-      if (nodeRewardAdjustment != 0) {
-        final var nodeRewardBalance = (long) accounts.get(nodeRewardAccountId, BALANCE);
-        accounts.set(nodeRewardAccountId, BALANCE, nodeRewardBalance + nodeRewardAdjustment);
-      }
-      final var stakeRewardAdjustment = stakingRewardFractionOf(amount, dynamicProperties);
-      if (stakeRewardAdjustment != 0) {
-        final var stakeRewardBalance = (long) accounts.get(stakingRewardAccountId, BALANCE);
-        accounts.set(stakingRewardAccountId, BALANCE, stakeRewardBalance + stakeRewardAdjustment);
-      }
-      fundingAdjustment -= (nodeRewardAdjustment + stakeRewardAdjustment);
+    private void pay(
+            final AccountID id,
+            final long fee,
+            final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accounts) {
+        var leftToPay = fee;
+        final var autoRenewId = (EntityId) accounts.get(id, AUTO_RENEW_ACCOUNT_ID);
+        if (autoRenewId != null && !MISSING_ENTITY_ID.equals(autoRenewId)) {
+            final var grpcId = autoRenewId.toGrpcAccountId();
+            if (accounts.contains(grpcId) && !(boolean) accounts.get(grpcId, IS_DELETED)) {
+                final var debited =
+                        charge(autoRenewId.toGrpcAccountId(), leftToPay, false, accounts);
+                leftToPay -= debited;
+            }
+        }
+        if (leftToPay > 0) {
+            charge(id, leftToPay, true, accounts);
+        }
     }
-    if (fundingAdjustment != 0) {
-      final var fundingBalance = (long) accounts.get(fundingId, BALANCE);
-      accounts.set(fundingId, BALANCE, fundingBalance + fundingAdjustment);
-    }
-  }
 
-  private AccountID keyFor(final Long num) {
-    return STATIC_PROPERTIES.scopedAccountWith(num);
-  }
+    private long charge(
+            final AccountID id,
+            final long amount,
+            final boolean isLastResort,
+            final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accounts) {
+        long paid;
+        final var balance = (long) accounts.get(id, BALANCE);
+        if (amount > balance) {
+            validateResourceLimit(!isLastResort, INSUFFICIENT_BALANCES_FOR_STORAGE_RENT);
+            accounts.set(id, BALANCE, 0L);
+            paid = balance;
+        } else {
+            accounts.set(id, BALANCE, balance - amount);
+            paid = amount;
+        }
+        payToApropos(paid, accounts);
+        return paid;
+    }
+
+    private void payToApropos(
+            final long amount,
+            final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accounts) {
+        long fundingAdjustment = amount;
+        final var fundingId = dynamicProperties.fundingAccount();
+        if (dynamicProperties.isStakingEnabled()) {
+            final var nodeRewardAdjustment = nodeRewardFractionOf(amount, dynamicProperties);
+            if (nodeRewardAdjustment != 0) {
+                final var nodeRewardBalance = (long) accounts.get(nodeRewardAccountId, BALANCE);
+                accounts.set(
+                        nodeRewardAccountId, BALANCE, nodeRewardBalance + nodeRewardAdjustment);
+            }
+            final var stakeRewardAdjustment = stakingRewardFractionOf(amount, dynamicProperties);
+            if (stakeRewardAdjustment != 0) {
+                final var stakeRewardBalance = (long) accounts.get(stakingRewardAccountId, BALANCE);
+                accounts.set(
+                        stakingRewardAccountId,
+                        BALANCE,
+                        stakeRewardBalance + stakeRewardAdjustment);
+            }
+            fundingAdjustment -= (nodeRewardAdjustment + stakeRewardAdjustment);
+        }
+        if (fundingAdjustment != 0) {
+            final var fundingBalance = (long) accounts.get(fundingId, BALANCE);
+            accounts.set(fundingId, BALANCE, fundingBalance + fundingAdjustment);
+        }
+    }
+
+    private AccountID keyFor(final Long num) {
+        return STATIC_PROPERTIES.scopedAccountWith(num);
+    }
 }

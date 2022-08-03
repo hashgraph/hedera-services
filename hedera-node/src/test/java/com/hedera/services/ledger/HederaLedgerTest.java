@@ -411,8 +411,8 @@ class HederaLedgerTest extends BaseHederaLedgerTestHelper {
         final var amount = -GENESIS_BALANCE - 1;
 
         assertThrows(
-            InsufficientFundsException.class,
-            () -> subject.adjustCollectorBalance(genesis, amount));
+                InsufficientFundsException.class,
+                () -> subject.adjustCollectorBalance(genesis, amount));
     }
 
     @Test

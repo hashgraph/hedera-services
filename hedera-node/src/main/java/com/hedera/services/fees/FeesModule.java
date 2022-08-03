@@ -55,88 +55,89 @@ import java.util.Set;
 import javax.inject.Singleton;
 
 @Module(
-    includes = {
-      FileFeesModule.class,
-      TokenFeesModule.class,
-      CryptoFeesModule.class,
-      ContractFeesModule.class,
-      EthereumFeesModule.class,
-      ScheduleFeesModule.class,
-      ConsensusFeesModule.class,
-    })
+        includes = {
+            FileFeesModule.class,
+            TokenFeesModule.class,
+            CryptoFeesModule.class,
+            ContractFeesModule.class,
+            EthereumFeesModule.class,
+            ScheduleFeesModule.class,
+            ConsensusFeesModule.class,
+        })
 public interface FeesModule {
-  @Binds
-  @Singleton
-  StorageFeeCharging bindStorageFeeCharging(RecordedStorageFeeCharging recordedStorageFeeCharging);
+    @Binds
+    @Singleton
+    StorageFeeCharging bindStorageFeeCharging(
+            RecordedStorageFeeCharging recordedStorageFeeCharging);
 
-  @Binds
-  @Singleton
-  FeeCalculator bindFeeCalculator(UsageBasedFeeCalculator usageBasedFeeCalculator);
+    @Binds
+    @Singleton
+    FeeCalculator bindFeeCalculator(UsageBasedFeeCalculator usageBasedFeeCalculator);
 
-  @Binds
-  @Singleton
-  UsagePricesProvider bindUsagePricesProvider(BasicFcfsUsagePrices basicFcfsUsagePrices);
+    @Binds
+    @Singleton
+    UsagePricesProvider bindUsagePricesProvider(BasicFcfsUsagePrices basicFcfsUsagePrices);
 
-  @Binds
-  @Singleton
-  FeeExemptions bindFeeExemptions(StandardExemptions standardExemptions);
+    @Binds
+    @Singleton
+    FeeExemptions bindFeeExemptions(StandardExemptions standardExemptions);
 
-  @Binds
-  @Singleton
-  FeeMultiplierSource bindFeeMultiplierSource(
-      TxnRateFeeMultiplierSource txnRateFeeMultiplierSource);
+    @Binds
+    @Singleton
+    FeeMultiplierSource bindFeeMultiplierSource(
+            TxnRateFeeMultiplierSource txnRateFeeMultiplierSource);
 
-  @Binds
-  @Singleton
-  NarratedCharging bindNarratedCharging(NarratedLedgerCharging narratedLedgerCharging);
+    @Binds
+    @Singleton
+    NarratedCharging bindNarratedCharging(NarratedLedgerCharging narratedLedgerCharging);
 
-  @Binds
-  @Singleton
-  HbarCentExchange bindHbarCentExchange(BasicHbarCentExchange basicHbarCentExchange);
+    @Binds
+    @Singleton
+    HbarCentExchange bindHbarCentExchange(BasicHbarCentExchange basicHbarCentExchange);
 
-  @Provides
-  @ElementsIntoSet
-  static Set<QueryResourceUsageEstimator> provideMetaQueryEstimators(
-      GetVersionInfoResourceUsage getVersionInfoResourceUsage,
-      GetTxnRecordResourceUsage getTxnRecordResourceUsage,
-      GetExecTimeResourceUsage getExecTimeResourceUsage,
-      GetAccountDetailsResourceUsage getAccountDetailsResourceUsage) {
-    return Set.of(
-        getVersionInfoResourceUsage,
-        getTxnRecordResourceUsage,
-        getExecTimeResourceUsage,
-        getAccountDetailsResourceUsage);
-  }
+    @Provides
+    @ElementsIntoSet
+    static Set<QueryResourceUsageEstimator> provideMetaQueryEstimators(
+            GetVersionInfoResourceUsage getVersionInfoResourceUsage,
+            GetTxnRecordResourceUsage getTxnRecordResourceUsage,
+            GetExecTimeResourceUsage getExecTimeResourceUsage,
+            GetAccountDetailsResourceUsage getAccountDetailsResourceUsage) {
+        return Set.of(
+                getVersionInfoResourceUsage,
+                getTxnRecordResourceUsage,
+                getExecTimeResourceUsage,
+                getAccountDetailsResourceUsage);
+    }
 
-  @Provides
-  @IntoMap
-  @FunctionKey(Freeze)
-  static List<TxnResourceUsageEstimator> provideFreezeEstimator(
-      FreezeResourceUsage freezeResourceUsage) {
-    return List.of(freezeResourceUsage);
-  }
+    @Provides
+    @IntoMap
+    @FunctionKey(Freeze)
+    static List<TxnResourceUsageEstimator> provideFreezeEstimator(
+            FreezeResourceUsage freezeResourceUsage) {
+        return List.of(freezeResourceUsage);
+    }
 
-  @Provides
-  @IntoMap
-  @FunctionKey(UncheckedSubmit)
-  static List<TxnResourceUsageEstimator> provideUncheckedSubmitEstimator(
-      UncheckedSubmitResourceUsage uncheckedResourceUsage) {
-    return List.of(uncheckedResourceUsage);
-  }
+    @Provides
+    @IntoMap
+    @FunctionKey(UncheckedSubmit)
+    static List<TxnResourceUsageEstimator> provideUncheckedSubmitEstimator(
+            UncheckedSubmitResourceUsage uncheckedResourceUsage) {
+        return List.of(uncheckedResourceUsage);
+    }
 
-  @Provides
-  @IntoMap
-  @FunctionKey(SystemDelete)
-  static List<TxnResourceUsageEstimator> provideSystemDeleteEstimator(
-      SystemDeleteFileResourceUsage systemDeleteFileResourceUsage) {
-    return List.of(systemDeleteFileResourceUsage);
-  }
+    @Provides
+    @IntoMap
+    @FunctionKey(SystemDelete)
+    static List<TxnResourceUsageEstimator> provideSystemDeleteEstimator(
+            SystemDeleteFileResourceUsage systemDeleteFileResourceUsage) {
+        return List.of(systemDeleteFileResourceUsage);
+    }
 
-  @Provides
-  @IntoMap
-  @FunctionKey(SystemUndelete)
-  static List<TxnResourceUsageEstimator> provideSystemUndeleteEstimator(
-      SystemUndeleteFileResourceUsage systemUndeleteFileResourceUsage) {
-    return List.of(systemUndeleteFileResourceUsage);
-  }
+    @Provides
+    @IntoMap
+    @FunctionKey(SystemUndelete)
+    static List<TxnResourceUsageEstimator> provideSystemUndeleteEstimator(
+            SystemUndeleteFileResourceUsage systemUndeleteFileResourceUsage) {
+        return List.of(systemUndeleteFileResourceUsage);
+    }
 }

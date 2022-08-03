@@ -34,41 +34,41 @@ import org.hyperledger.besu.evm.gascalculator.GasCalculator;
  * variable
  */
 public class HederaCreateOperation extends AbstractRecordingCreateOperation {
-  @Inject
-  public HederaCreateOperation(
-      final GasCalculator gasCalculator,
-      final EntityCreator creator,
-      final SyntheticTxnFactory syntheticTxnFactory,
-      final RecordsHistorian recordsHistorian,
-      final GlobalDynamicProperties dynamicProperties) {
-    super(
-        0xF0,
-        "ħCREATE",
-        3,
-        1,
-        1,
-        gasCalculator,
-        creator,
-        syntheticTxnFactory,
-        recordsHistorian,
-        dynamicProperties);
-  }
+    @Inject
+    public HederaCreateOperation(
+            final GasCalculator gasCalculator,
+            final EntityCreator creator,
+            final SyntheticTxnFactory syntheticTxnFactory,
+            final RecordsHistorian recordsHistorian,
+            final GlobalDynamicProperties dynamicProperties) {
+        super(
+                0xF0,
+                "ħCREATE",
+                3,
+                1,
+                1,
+                gasCalculator,
+                creator,
+                syntheticTxnFactory,
+                recordsHistorian,
+                dynamicProperties);
+    }
 
-  @Override
-  public long cost(final MessageFrame frame) {
-    return gasCalculator().createOperationGasCost(frame);
-  }
+    @Override
+    public long cost(final MessageFrame frame) {
+        return gasCalculator().createOperationGasCost(frame);
+    }
 
-  @Override
-  protected boolean isEnabled() {
-    return true;
-  }
+    @Override
+    protected boolean isEnabled() {
+        return true;
+    }
 
-  @Override
-  protected Address targetContractAddress(final MessageFrame frame) {
-    final var updater = (HederaWorldUpdater) frame.getWorldUpdater();
-    final Address address = updater.newContractAddress(frame.getRecipientAddress());
-    frame.warmUpAddress(address);
-    return address;
-  }
+    @Override
+    protected Address targetContractAddress(final MessageFrame frame) {
+        final var updater = (HederaWorldUpdater) frame.getWorldUpdater();
+        final Address address = updater.newContractAddress(frame.getRecipientAddress());
+        frame.warmUpAddress(address);
+        return address;
+    }
 }

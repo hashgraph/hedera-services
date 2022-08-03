@@ -27,6 +27,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.exceptions.InvalidTransactionException;
+import com.hedera.services.exceptions.ResourceLimitException;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.core.jproto.JKeyList;
 import com.hedera.services.legacy.core.jproto.TxnReceipt;
@@ -325,6 +326,12 @@ public class TxnUtils {
 
     public static void assertFailsWith(final Runnable something, final ResponseCodeEnum status) {
         final var ex = assertThrows(InvalidTransactionException.class, something::run);
+        assertEquals(status, ex.getResponseCode());
+    }
+
+    public static void assertExhaustsResourceLimit(
+            final Runnable something, final ResponseCodeEnum status) {
+        final var ex = assertThrows(ResourceLimitException.class, something::run);
         assertEquals(status, ex.getResponseCode());
     }
 
