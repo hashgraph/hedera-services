@@ -15,6 +15,12 @@
  */
 package com.hedera.services.fees.calculation.token.txns;
 
+import static com.hedera.services.usage.SingletonEstimatorUtils.ESTIMATOR_UTILS;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.mock;
+import static org.mockito.Mockito.mockStatic;
+
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.usage.EstimatorFactory;
 import com.hedera.services.usage.SigUsage;
@@ -25,12 +31,6 @@ import com.hederahashgraph.api.proto.java.*;
 import com.hederahashgraph.fee.SigValueObj;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import static com.hedera.services.usage.SingletonEstimatorUtils.ESTIMATOR_UTILS;
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.BDDMockito.mock;
-import static org.mockito.Mockito.mockStatic;
 
 class TokenCreateResourceUsageTest {
     long now = 1_000_000L;
@@ -72,7 +72,8 @@ class TokenCreateResourceUsageTest {
 
         txnUsageEstimator = mock(TxnUsageEstimator.class);
         EstimatorFactory estimatorFactory = mock(EstimatorFactory.class);
-        given(estimatorFactory.get(sigUsage, tokenCreateTxn, ESTIMATOR_UTILS)).willReturn(txnUsageEstimator);
+        given(estimatorFactory.get(sigUsage, tokenCreateTxn, ESTIMATOR_UTILS))
+                .willReturn(txnUsageEstimator);
         subject = new TokenCreateResourceUsage(estimatorFactory);
     }
 

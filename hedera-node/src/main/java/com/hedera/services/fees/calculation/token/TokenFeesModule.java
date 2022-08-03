@@ -15,6 +15,8 @@
  */
 package com.hedera.services.fees.calculation.token;
 
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.*;
+
 import com.hedera.services.fees.annotations.FunctionKey;
 import com.hedera.services.fees.calculation.QueryResourceUsageEstimator;
 import com.hedera.services.fees.calculation.TxnResourceUsageEstimator;
@@ -27,11 +29,8 @@ import dagger.Module;
 import dagger.Provides;
 import dagger.multibindings.ElementsIntoSet;
 import dagger.multibindings.IntoMap;
-
 import java.util.List;
 import java.util.Set;
-
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.*;
 
 @Module
 public final class TokenFeesModule {

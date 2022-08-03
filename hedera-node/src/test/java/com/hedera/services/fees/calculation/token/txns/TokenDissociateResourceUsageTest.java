@@ -15,6 +15,12 @@
  */
 package com.hedera.services.fees.calculation.token.txns;
 
+import static com.hedera.services.usage.SingletonEstimatorUtils.ESTIMATOR_UTILS;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.mock;
+import static org.mockito.Mockito.mockStatic;
+
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.usage.EstimatorFactory;
@@ -28,12 +34,6 @@ import com.hederahashgraph.fee.SigValueObj;
 import com.swirlds.merkle.map.MerkleMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import static com.hedera.services.usage.SingletonEstimatorUtils.ESTIMATOR_UTILS;
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.BDDMockito.mock;
-import static org.mockito.Mockito.mockStatic;
 
 class TokenDissociateResourceUsageTest {
     private TokenDissociateResourceUsage subject;
@@ -86,7 +86,8 @@ class TokenDissociateResourceUsageTest {
 
         txnUsageEstimator = mock(TxnUsageEstimator.class);
         EstimatorFactory estimatorFactory = mock(EstimatorFactory.class);
-        given(estimatorFactory.get(sigUsage, tokenDissociateTxn, ESTIMATOR_UTILS)).willReturn(txnUsageEstimator);
+        given(estimatorFactory.get(sigUsage, tokenDissociateTxn, ESTIMATOR_UTILS))
+                .willReturn(txnUsageEstimator);
         subject = new TokenDissociateResourceUsage(estimatorFactory);
     }
 

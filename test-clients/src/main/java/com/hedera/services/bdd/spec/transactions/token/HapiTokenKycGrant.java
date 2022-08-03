@@ -15,6 +15,9 @@
  */
 package com.hedera.services.bdd.spec.transactions.token;
 
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.suFrom;
+import static com.hedera.services.usage.SingletonEstimatorUtils.ESTIMATOR_UTILS;
+
 import com.google.common.base.MoreObjects;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
@@ -23,15 +26,11 @@ import com.hedera.services.usage.TxnUsageEstimator;
 import com.hedera.services.usage.token.TokenGrantKycUsage;
 import com.hederahashgraph.api.proto.java.*;
 import com.hederahashgraph.fee.SigValueObj;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Function;
-
-import static com.hedera.services.bdd.spec.transactions.TxnUtils.suFrom;
-import static com.hedera.services.usage.SingletonEstimatorUtils.ESTIMATOR_UTILS;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 public class HapiTokenKycGrant extends HapiTxnOp<HapiTokenKycGrant> {
     static final Logger log = LogManager.getLogger(HapiTokenKycGrant.class);
@@ -65,7 +64,9 @@ public class HapiTokenKycGrant extends HapiTxnOp<HapiTokenKycGrant> {
     }
 
     private FeeData usageEstimate(TransactionBody txn, SigValueObj svo) {
-        return TokenGrantKycUsage.newEstimate(txn, new TxnUsageEstimator(suFrom(svo), txn, ESTIMATOR_UTILS)).get();
+        return TokenGrantKycUsage.newEstimate(
+                        txn, new TxnUsageEstimator(suFrom(svo), txn, ESTIMATOR_UTILS))
+                .get();
     }
 
     @Override
