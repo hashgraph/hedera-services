@@ -15,26 +15,23 @@
  */
 package com.hedera.services.bdd.spec.transactions.token;
 
-import static com.hedera.services.bdd.spec.transactions.TxnUtils.suFrom;
-
 import com.google.common.base.MoreObjects;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
+import com.hedera.services.usage.TxnUsageEstimator;
 import com.hedera.services.usage.token.TokenRevokeKycUsage;
-import com.hederahashgraph.api.proto.java.FeeData;
-import com.hederahashgraph.api.proto.java.HederaFunctionality;
-import com.hederahashgraph.api.proto.java.Key;
-import com.hederahashgraph.api.proto.java.TokenRevokeKycTransactionBody;
-import com.hederahashgraph.api.proto.java.Transaction;
-import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.api.proto.java.TransactionResponse;
+import com.hederahashgraph.api.proto.java.*;
 import com.hederahashgraph.fee.SigValueObj;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.suFrom;
+import static com.hedera.services.usage.SingletonEstimatorUtils.ESTIMATOR_UTILS;
 
 public class HapiTokenKycRevoke extends HapiTxnOp<HapiTokenKycRevoke> {
     static final Logger log = LogManager.getLogger(HapiTokenKycRevoke.class);
@@ -68,7 +65,7 @@ public class HapiTokenKycRevoke extends HapiTxnOp<HapiTokenKycRevoke> {
     }
 
     private FeeData usageEstimate(TransactionBody txn, SigValueObj svo) {
-        return TokenRevokeKycUsage.newEstimate(txn, suFrom(svo)).get();
+        return TokenRevokeKycUsage.newEstimate(txn, new TxnUsageEstimator(suFrom(svo), txn, ESTIMATOR_UTILS)).get();
     }
 
     @Override

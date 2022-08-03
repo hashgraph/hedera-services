@@ -20,28 +20,14 @@ import static com.hedera.services.usage.SingletonUsageProperties.USAGE_PROPERTIE
 import static com.hedera.services.usage.token.entities.TokenEntitySizes.TOKEN_ENTITY_SIZES;
 import static com.hederahashgraph.fee.FeeBuilder.BASIC_ENTITY_ID_SIZE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.BDDMockito.any;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.BDDMockito.mock;
-import static org.mockito.BDDMockito.verify;
+import static org.mockito.BDDMockito.*;
 
 import com.hedera.services.test.IdUtils;
 import com.hedera.services.test.KeyUtils;
 import com.hedera.services.usage.EstimatorFactory;
 import com.hedera.services.usage.SigUsage;
-import com.hedera.services.usage.TxnUsage;
 import com.hedera.services.usage.TxnUsageEstimator;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.CustomFee;
-import com.hederahashgraph.api.proto.java.Duration;
-import com.hederahashgraph.api.proto.java.FixedFee;
-import com.hederahashgraph.api.proto.java.Key;
-import com.hederahashgraph.api.proto.java.SubType;
-import com.hederahashgraph.api.proto.java.Timestamp;
-import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
-import com.hederahashgraph.api.proto.java.TokenType;
-import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.api.proto.java.TransactionID;
+import com.hederahashgraph.api.proto.java.*;
 import com.hederahashgraph.fee.FeeBuilder;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -79,8 +65,6 @@ class TokenCreateUsageTest {
 
         factory = mock(EstimatorFactory.class);
         given(factory.get(any(), any(), any())).willReturn(base);
-
-        TxnUsage.setEstimatorFactory(factory);
     }
 
     @Test
@@ -91,7 +75,7 @@ class TokenCreateUsageTest {
         givenExpiryBasedOp(TokenType.FUNGIBLE_COMMON);
         given(base.get(SubType.TOKEN_FUNGIBLE_COMMON)).willReturn(A_USAGES_MATRIX);
         // and:
-        subject = TokenCreateUsage.newEstimate(txn, sigUsage);
+        subject = TokenCreateUsage.newEstimate(txn, base);
 
         // when:
         var actual = subject.get();
@@ -113,7 +97,7 @@ class TokenCreateUsageTest {
         givenExpiryBasedOp(expiry, TokenType.FUNGIBLE_COMMON, false, true);
         given(base.get(SubType.TOKEN_FUNGIBLE_COMMON_WITH_CUSTOM_FEES)).willReturn(A_USAGES_MATRIX);
         // and:
-        subject = TokenCreateUsage.newEstimate(txn, sigUsage);
+        subject = TokenCreateUsage.newEstimate(txn, base);
 
         // when:
         var actual = subject.get();
@@ -138,7 +122,7 @@ class TokenCreateUsageTest {
         givenExpiryBasedOp(TokenType.NON_FUNGIBLE_UNIQUE);
         given(base.get(SubType.TOKEN_NON_FUNGIBLE_UNIQUE)).willReturn(A_USAGES_MATRIX);
         // and:
-        subject = TokenCreateUsage.newEstimate(txn, sigUsage);
+        subject = TokenCreateUsage.newEstimate(txn, base);
 
         // when:
         var actual = subject.get();
@@ -161,7 +145,7 @@ class TokenCreateUsageTest {
         given(base.get(SubType.TOKEN_NON_FUNGIBLE_UNIQUE_WITH_CUSTOM_FEES))
                 .willReturn(A_USAGES_MATRIX);
         // and:
-        subject = TokenCreateUsage.newEstimate(txn, sigUsage);
+        subject = TokenCreateUsage.newEstimate(txn, base);
 
         // when:
         var actual = subject.get();
@@ -184,7 +168,7 @@ class TokenCreateUsageTest {
         given(base.get(SubType.TOKEN_NON_FUNGIBLE_UNIQUE_WITH_CUSTOM_FEES))
                 .willReturn(A_USAGES_MATRIX);
         // and:
-        subject = TokenCreateUsage.newEstimate(txn, sigUsage);
+        subject = TokenCreateUsage.newEstimate(txn, base);
 
         // when:
         var actual = subject.get();
@@ -209,7 +193,7 @@ class TokenCreateUsageTest {
         given(base.get(SubType.TOKEN_FUNGIBLE_COMMON)).willReturn(A_USAGES_MATRIX);
         givenExpiryBasedOp(expiry + 2 * maxLifetime, TokenType.FUNGIBLE_COMMON, false, false);
         // and:
-        subject = TokenCreateUsage.newEstimate(txn, sigUsage);
+        subject = TokenCreateUsage.newEstimate(txn, base);
 
         // when:
         var actual = subject.get();
@@ -231,7 +215,7 @@ class TokenCreateUsageTest {
         given(base.get(SubType.TOKEN_FUNGIBLE_COMMON)).willReturn(A_USAGES_MATRIX);
         givenAutoRenewBasedOp();
         // and:
-        subject = TokenCreateUsage.newEstimate(txn, sigUsage);
+        subject = TokenCreateUsage.newEstimate(txn, base);
 
         // when:
         var actual = subject.get();

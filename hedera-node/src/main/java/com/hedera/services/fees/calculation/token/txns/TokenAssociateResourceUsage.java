@@ -15,28 +15,32 @@
  */
 package com.hedera.services.fees.calculation.token.txns;
 
-import static com.hedera.services.utils.EntityNum.fromAccountId;
-
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.fees.calculation.TxnResourceUsageEstimator;
+import com.hedera.services.usage.EstimatorFactory;
 import com.hedera.services.usage.SigUsage;
+import com.hedera.services.usage.TxnUsageEstimator;
 import com.hedera.services.usage.token.TokenAssociateUsage;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.exception.InvalidTxBodyException;
 import com.hederahashgraph.fee.SigValueObj;
-import java.util.function.BiFunction;
+
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import java.util.function.BiFunction;
+
+import static com.hedera.services.usage.SingletonEstimatorUtils.ESTIMATOR_UTILS;
+import static com.hedera.services.utils.EntityNum.fromAccountId;
 
 @Singleton
-public final class TokenAssociateResourceUsage implements TxnResourceUsageEstimator {
-    private static final BiFunction<TransactionBody, SigUsage, TokenAssociateUsage> factory =
+public final class TokenAssociateResourceUsage extends AbstractTokenResourceUsage implements TxnResourceUsageEstimator {
+    private static final BiFunction<TransactionBody, TxnUsageEstimator, TokenAssociateUsage> factory =
             TokenAssociateUsage::newEstimate;
 
     @Inject
-    public TokenAssociateResourceUsage() {
-        /* No-op */
+    public TokenAssociateResourceUsage(EstimatorFactory estimatorFactory) {
+        super(estimatorFactory);
     }
 
     @Override
@@ -58,7 +62,7 @@ public final class TokenAssociateResourceUsage implements TxnResourceUsageEstima
                             svo.getTotalSigCount(),
                             svo.getSignatureSize(),
                             svo.getPayerAcctSigCount());
-            final var estimate = factory.apply(txn, sigUsage);
+            final var estimate = factory.apply(txn, estimatorFactory.get(sigUsage, txn, ESTIMATOR_UTILS));
             return estimate.givenCurrentExpiry(account.getExpiry()).get();
         }
     }

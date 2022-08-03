@@ -18,14 +18,10 @@ package com.hedera.services.usage.token;
 import static com.hedera.services.usage.EstimatorUtils.MAX_ENTITY_LIFETIME;
 import static com.hedera.services.usage.SingletonEstimatorUtils.ESTIMATOR_UTILS;
 import static com.hedera.services.usage.token.TokenOpsUsageUtils.TOKEN_OPS_USAGE_UTILS;
-import static com.hederahashgraph.api.proto.java.SubType.TOKEN_FUNGIBLE_COMMON;
-import static com.hederahashgraph.api.proto.java.SubType.TOKEN_FUNGIBLE_COMMON_WITH_CUSTOM_FEES;
-import static com.hederahashgraph.api.proto.java.SubType.TOKEN_NON_FUNGIBLE_UNIQUE;
-import static com.hederahashgraph.api.proto.java.SubType.TOKEN_NON_FUNGIBLE_UNIQUE_WITH_CUSTOM_FEES;
+import static com.hederahashgraph.api.proto.java.SubType.*;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 import static com.hederahashgraph.fee.FeeBuilder.BASIC_ENTITY_ID_SIZE;
 
-import com.hedera.services.usage.SigUsage;
 import com.hedera.services.usage.TxnUsageEstimator;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.SubType;
@@ -38,10 +34,9 @@ public class TokenCreateUsage extends TokenTxnUsage<TokenCreateUsage> {
         super(tokenCreationOp, usageEstimator);
     }
 
-    public static TokenCreateUsage newEstimate(TransactionBody tokenCreationOp, SigUsage sigUsage) {
-        return new TokenCreateUsage(
-                tokenCreationOp,
-                getEstimatorFactory().get(sigUsage, tokenCreationOp, ESTIMATOR_UTILS));
+    public static TokenCreateUsage newEstimate(
+            TransactionBody tokenCreationOp, TxnUsageEstimator usageEstimator) {
+        return new TokenCreateUsage(tokenCreationOp, usageEstimator);
     }
 
     @Override

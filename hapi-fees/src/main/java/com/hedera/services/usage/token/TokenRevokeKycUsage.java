@@ -15,9 +15,6 @@
  */
 package com.hedera.services.usage.token;
 
-import static com.hedera.services.usage.SingletonEstimatorUtils.ESTIMATOR_UTILS;
-
-import com.hedera.services.usage.SigUsage;
 import com.hedera.services.usage.TxnUsageEstimator;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -29,10 +26,8 @@ public class TokenRevokeKycUsage extends TokenTxnUsage<TokenRevokeKycUsage> {
     }
 
     public static TokenRevokeKycUsage newEstimate(
-            TransactionBody tokenRevokeKycOp, SigUsage sigUsage) {
-        return new TokenRevokeKycUsage(
-                tokenRevokeKycOp,
-                getEstimatorFactory().get(sigUsage, tokenRevokeKycOp, ESTIMATOR_UTILS));
+            TransactionBody tokenRevokeKycOp, TxnUsageEstimator usageEstimator) {
+        return new TokenRevokeKycUsage(tokenRevokeKycOp, usageEstimator);
     }
 
     @Override

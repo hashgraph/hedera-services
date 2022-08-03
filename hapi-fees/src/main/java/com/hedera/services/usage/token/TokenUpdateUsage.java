@@ -19,13 +19,8 @@ import static com.hedera.services.usage.EstimatorUtils.MAX_ENTITY_LIFETIME;
 import static com.hedera.services.usage.SingletonEstimatorUtils.ESTIMATOR_UTILS;
 import static com.hederahashgraph.fee.FeeBuilder.BASIC_ENTITY_ID_SIZE;
 
-import com.hedera.services.usage.SigUsage;
 import com.hedera.services.usage.TxnUsageEstimator;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.FeeData;
-import com.hederahashgraph.api.proto.java.Key;
-import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
-import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.hederahashgraph.api.proto.java.*;
 import com.hederahashgraph.fee.FeeBuilder;
 import java.util.Optional;
 
@@ -41,9 +36,9 @@ public class TokenUpdateUsage extends TokenTxnUsage<TokenUpdateUsage> {
         super(tokenUpdateOp, usageEstimator);
     }
 
-    public static TokenUpdateUsage newEstimate(TransactionBody tokenUpdateOp, SigUsage sigUsage) {
-        return new TokenUpdateUsage(
-                tokenUpdateOp, getEstimatorFactory().get(sigUsage, tokenUpdateOp, ESTIMATOR_UTILS));
+    public static TokenUpdateUsage newEstimate(
+            TransactionBody tokenUpdateOp, TxnUsageEstimator usageEstimator) {
+        return new TokenUpdateUsage(tokenUpdateOp, usageEstimator);
     }
 
     @Override

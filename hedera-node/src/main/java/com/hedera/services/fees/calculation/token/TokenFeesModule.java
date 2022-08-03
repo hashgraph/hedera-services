@@ -15,32 +15,23 @@
  */
 package com.hedera.services.fees.calculation.token;
 
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAssociateToAccount;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenCreate;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenDelete;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenDissociateFromAccount;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenGrantKycToAccount;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenRevokeKycFromAccount;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUpdate;
-
 import com.hedera.services.fees.annotations.FunctionKey;
 import com.hedera.services.fees.calculation.QueryResourceUsageEstimator;
 import com.hedera.services.fees.calculation.TxnResourceUsageEstimator;
 import com.hedera.services.fees.calculation.token.queries.GetTokenInfoResourceUsage;
 import com.hedera.services.fees.calculation.token.queries.GetTokenNftInfoResourceUsage;
-import com.hedera.services.fees.calculation.token.txns.TokenAssociateResourceUsage;
-import com.hedera.services.fees.calculation.token.txns.TokenCreateResourceUsage;
-import com.hedera.services.fees.calculation.token.txns.TokenDeleteResourceUsage;
-import com.hedera.services.fees.calculation.token.txns.TokenDissociateResourceUsage;
-import com.hedera.services.fees.calculation.token.txns.TokenGrantKycResourceUsage;
-import com.hedera.services.fees.calculation.token.txns.TokenRevokeKycResourceUsage;
-import com.hedera.services.fees.calculation.token.txns.TokenUpdateResourceUsage;
+import com.hedera.services.fees.calculation.token.txns.*;
+import com.hedera.services.usage.EstimatorFactory;
+import com.hedera.services.usage.TxnUsageEstimator;
 import dagger.Module;
 import dagger.Provides;
 import dagger.multibindings.ElementsIntoSet;
 import dagger.multibindings.IntoMap;
+
 import java.util.List;
 import java.util.Set;
+
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.*;
 
 @Module
 public final class TokenFeesModule {
@@ -106,6 +97,11 @@ public final class TokenFeesModule {
     public static List<TxnResourceUsageEstimator> provideTokenDissociate(
             final TokenDissociateResourceUsage tokenDissociateResourceUsage) {
         return List.of(tokenDissociateResourceUsage);
+    }
+
+    @Provides
+    public static EstimatorFactory provideEstimatorFactory() {
+        return TxnUsageEstimator::new;
     }
 
     private TokenFeesModule() {

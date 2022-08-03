@@ -17,7 +17,6 @@ package com.hedera.services.usage.token;
 
 import static com.hedera.services.usage.SingletonEstimatorUtils.ESTIMATOR_UTILS;
 
-import com.hedera.services.usage.SigUsage;
 import com.hedera.services.usage.TxnUsageEstimator;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -29,9 +28,9 @@ public class TokenAssociateUsage extends TokenTxnUsage<TokenAssociateUsage> {
         super(tokenOp, usageEstimator);
     }
 
-    public static TokenAssociateUsage newEstimate(TransactionBody tokenOp, SigUsage sigUsage) {
-        return new TokenAssociateUsage(
-                tokenOp, getEstimatorFactory().get(sigUsage, tokenOp, ESTIMATOR_UTILS));
+    public static TokenAssociateUsage newEstimate(
+            TransactionBody tokenOp, TxnUsageEstimator usageEstimator) {
+        return new TokenAssociateUsage(tokenOp, usageEstimator);
     }
 
     @Override

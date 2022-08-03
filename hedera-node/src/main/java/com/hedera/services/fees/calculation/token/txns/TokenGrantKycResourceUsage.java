@@ -17,24 +17,29 @@ package com.hedera.services.fees.calculation.token.txns;
 
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.fees.calculation.TxnResourceUsageEstimator;
+import com.hedera.services.usage.EstimatorFactory;
 import com.hedera.services.usage.SigUsage;
+import com.hedera.services.usage.TxnUsageEstimator;
 import com.hedera.services.usage.token.TokenGrantKycUsage;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.exception.InvalidTxBodyException;
 import com.hederahashgraph.fee.SigValueObj;
-import java.util.function.BiFunction;
+
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import java.util.function.BiFunction;
+
+import static com.hedera.services.usage.SingletonEstimatorUtils.ESTIMATOR_UTILS;
 
 @Singleton
-public class TokenGrantKycResourceUsage implements TxnResourceUsageEstimator {
-    static BiFunction<TransactionBody, SigUsage, TokenGrantKycUsage> factory =
+public class TokenGrantKycResourceUsage extends AbstractTokenResourceUsage implements TxnResourceUsageEstimator {
+    private static final BiFunction<TransactionBody, TxnUsageEstimator, TokenGrantKycUsage> factory =
             TokenGrantKycUsage::newEstimate;
 
     @Inject
-    public TokenGrantKycResourceUsage() {
-        // Default constructor
+    public TokenGrantKycResourceUsage(EstimatorFactory estimatorFactory) {
+        super(estimatorFactory);
     }
 
     @Override
@@ -48,7 +53,7 @@ public class TokenGrantKycResourceUsage implements TxnResourceUsageEstimator {
         var sigUsage =
                 new SigUsage(
                         svo.getTotalSigCount(), svo.getSignatureSize(), svo.getPayerAcctSigCount());
-        var estimate = factory.apply(txn, sigUsage);
+        var estimate = factory.apply(txn, estimatorFactory.get(sigUsage, txn, ESTIMATOR_UTILS));
         return estimate.get();
     }
 }

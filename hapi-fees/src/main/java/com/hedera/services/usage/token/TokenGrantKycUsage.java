@@ -15,9 +15,6 @@
  */
 package com.hedera.services.usage.token;
 
-import static com.hedera.services.usage.SingletonEstimatorUtils.ESTIMATOR_UTILS;
-
-import com.hedera.services.usage.SigUsage;
 import com.hedera.services.usage.TxnUsageEstimator;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -28,10 +25,8 @@ public class TokenGrantKycUsage extends TokenTxnUsage<TokenGrantKycUsage> {
     }
 
     public static TokenGrantKycUsage newEstimate(
-            TransactionBody tokenGrantKycOp, SigUsage sigUsage) {
-        return new TokenGrantKycUsage(
-                tokenGrantKycOp,
-                getEstimatorFactory().get(sigUsage, tokenGrantKycOp, ESTIMATOR_UTILS));
+            TransactionBody tokenGrantKycOp, TxnUsageEstimator usageEstimator) {
+        return new TokenGrantKycUsage(tokenGrantKycOp, usageEstimator);
     }
 
     @Override

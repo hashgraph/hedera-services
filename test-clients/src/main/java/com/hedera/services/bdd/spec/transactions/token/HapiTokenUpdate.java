@@ -15,10 +15,6 @@
  */
 package com.hedera.services.bdd.spec.transactions.token;
 
-import static com.hedera.services.bdd.spec.transactions.TxnUtils.asId;
-import static com.hedera.services.bdd.spec.transactions.TxnUtils.suFrom;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
-
 import com.google.common.base.MoreObjects;
 import com.google.protobuf.StringValue;
 import com.hedera.services.bdd.spec.HapiApiSpec;
@@ -26,16 +22,12 @@ import com.hedera.services.bdd.spec.fees.FeeCalculator;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.usage.TxnUsageEstimator;
 import com.hedera.services.usage.token.TokenUpdateUsage;
-import com.hederahashgraph.api.proto.java.Duration;
-import com.hederahashgraph.api.proto.java.HederaFunctionality;
-import com.hederahashgraph.api.proto.java.Key;
-import com.hederahashgraph.api.proto.java.Timestamp;
-import com.hederahashgraph.api.proto.java.TokenInfo;
-import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
-import com.hederahashgraph.api.proto.java.Transaction;
-import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.api.proto.java.TransactionResponse;
+import com.hederahashgraph.api.proto.java.*;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -43,8 +35,11 @@ import java.util.OptionalLong;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.asId;
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.suFrom;
+import static com.hedera.services.usage.SingletonEstimatorUtils.ESTIMATOR_UTILS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 public class HapiTokenUpdate extends HapiTxnOp<HapiTokenUpdate> {
     static final Logger log = LogManager.getLogger(HapiTokenUpdate.class);
@@ -193,7 +188,7 @@ public class HapiTokenUpdate extends HapiTxnOp<HapiTokenUpdate> {
                     HapiTokenFeeScheduleUpdate.lookupInfo(spec, token, log, loggingOff);
             FeeCalculator.ActivityMetrics metricsCalc =
                     (_txn, svo) -> {
-                        var estimate = TokenUpdateUsage.newEstimate(_txn, suFrom(svo));
+                        var estimate = TokenUpdateUsage.newEstimate(_txn, new TxnUsageEstimator(suFrom(svo), _txn, ESTIMATOR_UTILS));
                         estimate.givenCurrentExpiry(info.getExpiry().getSeconds())
                                 .givenCurrentMemo(info.getMemo())
                                 .givenCurrentName(info.getName())

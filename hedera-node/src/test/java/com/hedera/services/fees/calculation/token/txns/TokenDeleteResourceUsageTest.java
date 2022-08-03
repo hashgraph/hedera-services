@@ -15,21 +15,22 @@
  */
 package com.hedera.services.fees.calculation.token.txns;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.BDDMockito.mock;
-
 import com.hedera.services.context.primitives.StateView;
+import com.hedera.services.usage.EstimatorFactory;
 import com.hedera.services.usage.SigUsage;
+import com.hedera.services.usage.TxnUsageEstimator;
 import com.hedera.services.usage.token.TokenDeleteUsage;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.fee.SigValueObj;
-import java.util.function.BiFunction;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
+import static com.hedera.services.usage.SingletonEstimatorUtils.ESTIMATOR_UTILS;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.mock;
+import static org.mockito.Mockito.mockStatic;
 
 class TokenDeleteResourceUsageTest {
     private TransactionBody nonTokenDeleteTxn;
@@ -40,12 +41,11 @@ class TokenDeleteResourceUsageTest {
     SigUsage sigUsage = new SigUsage(numSigs, sigsSize, numPayerKeys);
     FeeData expected;
 
-    BiFunction<TransactionBody, SigUsage, TokenDeleteUsage> factory;
-
     StateView view;
     TokenDeleteUsage usage;
 
     TokenDeleteResourceUsage subject;
+    TxnUsageEstimator txnUsageEstimator;
 
     @BeforeEach
     private void setup() throws Throwable {
@@ -61,12 +61,10 @@ class TokenDeleteResourceUsageTest {
         usage = mock(TokenDeleteUsage.class);
         given(usage.get()).willReturn(expected);
 
-        factory = (BiFunction<TransactionBody, SigUsage, TokenDeleteUsage>) mock(BiFunction.class);
-        given(factory.apply(tokenDeleteTxn, sigUsage)).willReturn(usage);
-
-        TokenDeleteResourceUsage.factory = factory;
-
-        subject = new TokenDeleteResourceUsage();
+        txnUsageEstimator = mock(TxnUsageEstimator.class);
+        EstimatorFactory estimatorFactory = mock(EstimatorFactory.class);
+        given(estimatorFactory.get(sigUsage, tokenDeleteTxn, ESTIMATOR_UTILS)).willReturn(txnUsageEstimator);
+        subject = new TokenDeleteResourceUsage(estimatorFactory);
     }
 
     @Test
@@ -78,7 +76,14 @@ class TokenDeleteResourceUsageTest {
 
     @Test
     void delegatesToCorrectEstimate() throws Exception {
+        final var mockStatic = mockStatic(TokenDeleteUsage.class);
+        mockStatic
+                .when(() -> TokenDeleteUsage.newEstimate(tokenDeleteTxn, txnUsageEstimator))
+                .thenReturn(usage);
+
         // expect:
         assertEquals(expected, subject.usageGiven(tokenDeleteTxn, obj, view));
+
+        mockStatic.close();
     }
 }
