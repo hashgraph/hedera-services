@@ -15,10 +15,10 @@
  */
 package com.hedera.services.store.contracts.precompile;
 
-import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_GET_TOKEN_DEFAULT_FREEZE_STATUS;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.contractAddress;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.defaultFreezeStatusWrapper;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.successResult;
+import static com.hedera.services.store.contracts.precompile.PrecompileFunctionSelector.ABI_ID_GET_TOKEN_DEFAULT_FREEZE_STATUS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
@@ -116,7 +116,10 @@ class GetTokenDefaultFreezeStatusTest {
         givenMinimalFrameContext();
         givenLedgers();
         givenMinimalContextForSuccessfulCall();
-        Bytes pretendArguments = Bytes.of(Integers.toBytes(ABI_ID_GET_TOKEN_DEFAULT_FREEZE_STATUS));
+        Bytes pretendArguments =
+                Bytes.of(
+                        Integers.toBytes(
+                                ABI_ID_GET_TOKEN_DEFAULT_FREEZE_STATUS.getFunctionSelector()));
 
         given(syntheticTxnFactory.createTransactionCall(1L, pretendArguments))
                 .willReturn(mockSynthBodyBuilder);
