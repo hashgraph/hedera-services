@@ -953,14 +953,16 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                 .given(
                         cryptoCreate(ACCOUNT)
                                 .balance(ONE_MILLION_HBARS)
-                                .exposingCreatedIdTo(accountID::set),
-                        cryptoCreate(TOKEN_TREASURY),
+                                .exposingCreatedIdTo(accountID::set)
+                                .payingWith(DEFAULT_PAYER),
+                        cryptoCreate(TOKEN_TREASURY).payingWith(DEFAULT_PAYER),
                         tokenCreate(VANILLA_TOKEN)
                                 .tokenType(FUNGIBLE_COMMON)
                                 .treasury(TOKEN_TREASURY)
+                                .payingWith(DEFAULT_PAYER)
                                 .exposingCreatedIdTo(id -> vanillaTokenTokenID.set(asToken(id))),
                         uploadInitCode(outerContract, nestedContract),
-                        contractCreate(nestedContract))
+                        contractCreate(nestedContract).payingWith(DEFAULT_PAYER))
                 .when(
                         withOpContext(
                                 (spec, opLog) ->

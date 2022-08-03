@@ -15,6 +15,30 @@
  */
 package com.hedera.services.txns.token;
 
+import com.google.protobuf.InvalidProtocolBufferException;
+import com.hedera.services.context.TransactionContext;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.exceptions.InvalidTransactionException;
+import com.hedera.services.state.enums.TokenType;
+import com.hedera.services.state.merkle.MerkleToken;
+import com.hedera.services.store.AccountStore;
+import com.hedera.services.store.TypedTokenStore;
+import com.hedera.services.store.models.Account;
+import com.hedera.services.store.models.OwnershipTracker;
+import com.hedera.services.store.models.Token;
+import com.hedera.services.store.models.TokenRelationship;
+import com.hedera.services.utils.accessors.custom.TokenWipeAccessor;
+import com.hedera.test.utils.IdUtils;
+import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.TokenID;
+import com.hederahashgraph.api.proto.java.TokenWipeAccountTransactionBody;
+import com.hederahashgraph.api.proto.java.Transaction;
+import com.hederahashgraph.api.proto.java.TransactionBody;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+import java.util.List;
+
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BATCH_SIZE_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NFT_ID;
@@ -36,30 +60,6 @@ import static org.mockito.BDDMockito.mock;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
 
-import com.google.protobuf.InvalidProtocolBufferException;
-import com.hedera.services.context.TransactionContext;
-import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.exceptions.InvalidTransactionException;
-import com.hedera.services.state.enums.TokenType;
-import com.hedera.services.state.merkle.MerkleToken;
-import com.hedera.services.store.AccountStore;
-import com.hedera.services.store.TypedTokenStore;
-import com.hedera.services.store.models.Account;
-import com.hedera.services.store.models.OwnershipTracker;
-import com.hedera.services.store.models.Token;
-import com.hedera.services.store.models.TokenRelationship;
-import com.hedera.services.utils.accessors.SwirldsTxnAccessor;
-import com.hedera.services.utils.accessors.custom.TokenWipeAccessor;
-import com.hedera.test.utils.IdUtils;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.TokenID;
-import com.hederahashgraph.api.proto.java.TokenWipeAccountTransactionBody;
-import com.hederahashgraph.api.proto.java.Transaction;
-import com.hederahashgraph.api.proto.java.TransactionBody;
-import java.util.List;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-
 class TokenWipeTransitionLogicTest {
     private final AccountID accountID = IdUtils.asAccount("1.2.4");
     private final TokenID id = IdUtils.asToken("1.2.3");
@@ -67,7 +67,6 @@ class TokenWipeTransitionLogicTest {
 
     private TransactionContext txnCtx;
     private TokenWipeAccessor accessor;
-    private SwirldsTxnAccessor swirldsTxnAccessor;
     private MerkleToken merkleToken;
     private Token token;
 
@@ -81,7 +80,6 @@ class TokenWipeTransitionLogicTest {
 
     @BeforeEach
     private void setup() {
-        swirldsTxnAccessor = mock(SwirldsTxnAccessor.class);
         merkleToken = mock(MerkleToken.class);
         token = mock(Token.class);
         account = mock(Account.class);
@@ -93,7 +91,6 @@ class TokenWipeTransitionLogicTest {
         dynamicProperties = mock(GlobalDynamicProperties.class);
         WipeLogic wipeLogic = new WipeLogic(typedTokenStore, accountStore, dynamicProperties);
         subject = new TokenWipeTransitionLogic(txnCtx, wipeLogic);
-        given(txnCtx.swirldsTxnAccessor()).willReturn(swirldsTxnAccessor);
         given(dynamicProperties.areNftsEnabled()).willReturn(true);
     }
 
@@ -324,7 +321,7 @@ class TokenWipeTransitionLogicTest {
         given(dynamicProperties.maxBatchSizeWipe()).willReturn(10);
         accessor =
                 new TokenWipeAccessor(tokenWipeTxn.toByteArray(), tokenWipeTxn, dynamicProperties);
-        given(swirldsTxnAccessor.getDelegate()).willReturn(accessor);
+        given(txnCtx.specializedAccessor()).willReturn(accessor);
     }
 
     private void givenInvalidZeroWipeAmount() throws InvalidProtocolBufferException {

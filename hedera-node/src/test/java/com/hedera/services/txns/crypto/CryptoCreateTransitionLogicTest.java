@@ -15,6 +15,40 @@
  */
 package com.hedera.services.txns.crypto;
 
+import com.google.protobuf.InvalidProtocolBufferException;
+import com.hedera.services.context.NodeInfo;
+import com.hedera.services.context.TransactionContext;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.exceptions.InsufficientFundsException;
+import com.hedera.services.ledger.HederaLedger;
+import com.hedera.services.ledger.SigImpactHistorian;
+import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
+import com.hedera.services.ledger.properties.AccountProperty;
+import com.hedera.services.legacy.core.jproto.JEd25519Key;
+import com.hedera.services.legacy.core.jproto.JKey;
+import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.state.validation.UsageLimits;
+import com.hedera.services.txns.validation.OptionValidator;
+import com.hedera.services.utils.EntityNum;
+import com.hedera.services.utils.accessors.custom.CryptoCreateAccessor;
+import com.hedera.test.factories.txns.SignedTxnFactory;
+import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
+import com.hederahashgraph.api.proto.java.Duration;
+import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.KeyList;
+import com.hederahashgraph.api.proto.java.Timestamp;
+import com.hederahashgraph.api.proto.java.Transaction;
+import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.hederahashgraph.api.proto.java.TransactionID;
+import com.swirlds.merkle.map.MerkleMap;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
+
+import java.time.Instant;
+
 import static com.hedera.services.ledger.properties.AccountProperty.AUTO_RENEW_PERIOD;
 import static com.hedera.services.ledger.properties.AccountProperty.DECLINE_REWARD;
 import static com.hedera.services.ledger.properties.AccountProperty.EXPIRY;
@@ -54,41 +88,6 @@ import static org.mockito.BDDMockito.longThat;
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.verify;
 
-import com.google.protobuf.InvalidProtocolBufferException;
-import com.hedera.services.context.NodeInfo;
-import com.hedera.services.context.TransactionContext;
-import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.exceptions.InsufficientFundsException;
-import com.hedera.services.ledger.HederaLedger;
-import com.hedera.services.ledger.SigImpactHistorian;
-import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
-import com.hedera.services.ledger.properties.AccountProperty;
-import com.hedera.services.legacy.core.jproto.JEd25519Key;
-import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.submerkle.EntityId;
-import com.hedera.services.state.validation.UsageLimits;
-import com.hedera.services.txns.validation.OptionValidator;
-import com.hedera.services.utils.EntityNum;
-import com.hedera.services.utils.accessors.PlatformTxnAccessor;
-import com.hedera.services.utils.accessors.SwirldsTxnAccessor;
-import com.hedera.services.utils.accessors.custom.CryptoCreateAccessor;
-import com.hedera.test.factories.txns.SignedTxnFactory;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
-import com.hederahashgraph.api.proto.java.Duration;
-import com.hederahashgraph.api.proto.java.Key;
-import com.hederahashgraph.api.proto.java.KeyList;
-import com.hederahashgraph.api.proto.java.Timestamp;
-import com.hederahashgraph.api.proto.java.Transaction;
-import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.api.proto.java.TransactionID;
-import com.swirlds.merkle.map.MerkleMap;
-import java.time.Instant;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.mockito.ArgumentCaptor;
-
 class CryptoCreateTransitionLogicTest {
     private static final Key KEY = SignedTxnFactory.DEFAULT_PAYER_KT.asKey();
     private static final long CUSTOM_AUTO_RENEW_PERIOD = 100_001L;
@@ -113,8 +112,6 @@ class CryptoCreateTransitionLogicTest {
     private SigImpactHistorian sigImpactHistorian;
     private TransactionContext txnCtx;
     private CryptoCreateAccessor accessor;
-
-    private SwirldsTxnAccessor swirldsTxnAccessor;
     private GlobalDynamicProperties dynamicProperties;
     private CryptoCreateTransitionLogic subject;
     private MerkleMap<EntityNum, MerkleAccount> accounts;
@@ -132,7 +129,6 @@ class CryptoCreateTransitionLogicTest {
         dynamicProperties = mock(GlobalDynamicProperties.class);
         accounts = mock(MerkleMap.class);
         nodeInfo = mock(NodeInfo.class);
-        swirldsTxnAccessor = mock(PlatformTxnAccessor.class);
         given(dynamicProperties.maxTokensPerAccount()).willReturn(MAX_TOKEN_ASSOCIATIONS);
         withRubberstampingValidator();
 
@@ -508,8 +504,7 @@ class CryptoCreateTransitionLogicTest {
         addToTxn();
 
         given(txnCtx.activePayer()).willReturn(ourAccount());
-        given(txnCtx.swirldsTxnAccessor()).willReturn(swirldsTxnAccessor);
-        given(swirldsTxnAccessor.getDelegate()).willReturn(accessor);
+        given(txnCtx.specializedAccessor()).willReturn(accessor);
     }
 
     private void addToTxn() {

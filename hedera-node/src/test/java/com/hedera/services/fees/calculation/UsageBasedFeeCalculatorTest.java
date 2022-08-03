@@ -581,13 +581,31 @@ class UsageBasedFeeCalculatorTest {
         final var dynamicProperties = mock(GlobalDynamicProperties.class);
         given(dynamicProperties.areNftsEnabled()).willReturn(true);
         given(dynamicProperties.maxBatchSizeWipe()).willReturn(10);
+
+        accessorFactory = new AccessorFactory(dynamicProperties, null, null, null, null);
         accessor = new TokenWipeAccessor(signedTxn.toByteArray(), signedTxn, dynamicProperties);
-        invokesAccessorBasedUsagesForTxnInHandle(
-                signedTxn,
-                TokenAccountWipe,
-                SubType.TOKEN_NON_FUNGIBLE_UNIQUE,
-                TokenType.NON_FUNGIBLE_UNIQUE,
-                true);
+
+        // and:
+        final var expectedFees =
+                getFeeObject(currentPrices.get(SubType.TOKEN_NON_FUNGIBLE_UNIQUE), resourceUsage, currentRate);
+
+        given(pricedUsageCalculator.supports(TokenAccountWipe)).willReturn(true);
+        given(exchange.activeRate(consensusNow)).willReturn(currentRate);
+        given(usagePrices.activePrices(accessor)).willReturn(currentPrices);
+        given(
+                pricedUsageCalculator.inHandleFees(
+                        accessor, currentPrices.get(SubType.TOKEN_NON_FUNGIBLE_UNIQUE), currentRate, payerKey))
+                .willReturn(expectedFees);
+        given(view.tokenType(tokenId)).willReturn(Optional.of(TokenType.NON_FUNGIBLE_UNIQUE));
+
+        // when:
+        FeeObject fees = subject.computeFee(accessor, payerKey, view, consensusNow);
+
+        // then:
+        assertNotNull(fees);
+        assertEquals(fees.getNodeFee(), expectedFees.getNodeFee());
+        assertEquals(fees.getNetworkFee(), expectedFees.getNetworkFee());
+        assertEquals(fees.getServiceFee(), expectedFees.getServiceFee());
     }
 
     @Test

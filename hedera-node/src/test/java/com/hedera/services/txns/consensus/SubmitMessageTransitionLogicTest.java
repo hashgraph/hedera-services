@@ -15,6 +15,28 @@
  */
 package com.hedera.services.txns.consensus;
 
+import com.google.protobuf.ByteString;
+import com.google.protobuf.InvalidProtocolBufferException;
+import com.hedera.services.context.TransactionContext;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.state.merkle.MerkleTopic;
+import com.hedera.services.txns.validation.OptionValidator;
+import com.hedera.services.utils.EntityNum;
+import com.hedera.services.utils.accessors.custom.SubmitMessageAccessor;
+import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ConsensusMessageChunkInfo;
+import com.hederahashgraph.api.proto.java.ConsensusSubmitMessageTransactionBody;
+import com.hederahashgraph.api.proto.java.Timestamp;
+import com.hederahashgraph.api.proto.java.Transaction;
+import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.hederahashgraph.api.proto.java.TransactionID;
+import com.swirlds.common.utility.CommonUtils;
+import com.swirlds.merkle.map.MerkleMap;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+import java.time.Instant;
+
 import static com.hedera.test.utils.IdUtils.asTopic;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CHUNK_NUMBER;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CHUNK_TRANSACTION_ID;
@@ -32,29 +54,6 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.verify;
 
-import com.google.protobuf.ByteString;
-import com.google.protobuf.InvalidProtocolBufferException;
-import com.hedera.services.context.TransactionContext;
-import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.state.merkle.MerkleTopic;
-import com.hedera.services.txns.validation.OptionValidator;
-import com.hedera.services.utils.EntityNum;
-import com.hedera.services.utils.accessors.PlatformTxnAccessor;
-import com.hedera.services.utils.accessors.SwirldsTxnAccessor;
-import com.hedera.services.utils.accessors.custom.SubmitMessageAccessor;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.ConsensusMessageChunkInfo;
-import com.hederahashgraph.api.proto.java.ConsensusSubmitMessageTransactionBody;
-import com.hederahashgraph.api.proto.java.Timestamp;
-import com.hederahashgraph.api.proto.java.Transaction;
-import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.api.proto.java.TransactionID;
-import com.swirlds.common.utility.CommonUtils;
-import com.swirlds.merkle.map.MerkleMap;
-import java.time.Instant;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-
 class SubmitMessageTransitionLogicTest {
     private static final String TOPIC_ID = "8.6.75";
     private static final long EPOCH_SECOND = 1546304461;
@@ -64,7 +63,6 @@ class SubmitMessageTransitionLogicTest {
     private Transaction submitMessageTxn;
     private TransactionContext txnCtx;
     private SubmitMessageAccessor accessor;
-    private SwirldsTxnAccessor swirldsTxnAccessor;
     private OptionValidator validator;
     private SubmitMessageTransitionLogic subject;
     private MerkleMap<EntityNum, MerkleTopic> topics = new MerkleMap<>();
@@ -74,8 +72,6 @@ class SubmitMessageTransitionLogicTest {
     @BeforeEach
     private void setup() {
         consensusTime = Instant.ofEpochSecond(EPOCH_SECOND);
-        swirldsTxnAccessor = mock(PlatformTxnAccessor.class);
-
         txnCtx = mock(TransactionContext.class);
         given(txnCtx.consensusTime()).willReturn(consensusTime);
         validator = mock(OptionValidator.class);
@@ -277,8 +273,7 @@ class SubmitMessageTransitionLogicTest {
     private void addToTxn() throws InvalidProtocolBufferException {
         submitMessageTxn = Transaction.newBuilder().setBodyBytes(txnBody.toByteString()).build();
         accessor = new SubmitMessageAccessor(submitMessageTxn.toByteArray(), submitMessageTxn);
-        given(txnCtx.swirldsTxnAccessor()).willReturn(swirldsTxnAccessor);
-        given(swirldsTxnAccessor.getDelegate()).willReturn(accessor);
+        given(txnCtx.specializedAccessor()).willReturn(accessor);
     }
 
     private void givenChunkMessage(

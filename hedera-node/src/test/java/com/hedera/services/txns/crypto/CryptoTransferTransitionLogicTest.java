@@ -15,6 +15,41 @@
  */
 package com.hedera.services.txns.crypto;
 
+import com.google.protobuf.ByteString;
+import com.google.protobuf.InvalidProtocolBufferException;
+import com.hedera.services.context.TransactionContext;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.exceptions.InvalidTransactionException;
+import com.hedera.services.grpc.marshalling.CustomFeeMeta;
+import com.hedera.services.grpc.marshalling.ImpliedTransfers;
+import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;
+import com.hedera.services.grpc.marshalling.ImpliedTransfersMeta;
+import com.hedera.services.ledger.HederaLedger;
+import com.hedera.services.ledger.PureTransferSemanticChecks;
+import com.hedera.services.state.submerkle.FcAssessedCustomFee;
+import com.hedera.services.state.submerkle.FcCustomFee;
+import com.hedera.services.store.models.Id;
+import com.hedera.services.txns.span.ExpandHandleSpanMapAccessor;
+import com.hedera.services.utils.accessors.custom.CryptoTransferAccessor;
+import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.Timestamp;
+import com.hederahashgraph.api.proto.java.TokenTransferList;
+import com.hederahashgraph.api.proto.java.Transaction;
+import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.hederahashgraph.api.proto.java.TransactionID;
+import com.hederahashgraph.api.proto.java.TransferList;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
+
 import static com.hedera.test.utils.IdUtils.adjustFrom;
 import static com.hedera.test.utils.IdUtils.adjustFromWithAllowance;
 import static com.hedera.test.utils.IdUtils.asAccount;
@@ -36,41 +71,6 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.verify;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verifyNoInteractions;
-
-import com.google.protobuf.ByteString;
-import com.google.protobuf.InvalidProtocolBufferException;
-import com.hedera.services.context.TransactionContext;
-import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.exceptions.InvalidTransactionException;
-import com.hedera.services.grpc.marshalling.CustomFeeMeta;
-import com.hedera.services.grpc.marshalling.ImpliedTransfers;
-import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;
-import com.hedera.services.grpc.marshalling.ImpliedTransfersMeta;
-import com.hedera.services.ledger.HederaLedger;
-import com.hedera.services.ledger.PureTransferSemanticChecks;
-import com.hedera.services.state.submerkle.FcAssessedCustomFee;
-import com.hedera.services.state.submerkle.FcCustomFee;
-import com.hedera.services.store.models.Id;
-import com.hedera.services.txns.span.ExpandHandleSpanMapAccessor;
-import com.hedera.services.utils.accessors.PlatformTxnAccessor;
-import com.hedera.services.utils.accessors.custom.CryptoTransferAccessor;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.Timestamp;
-import com.hederahashgraph.api.proto.java.TokenTransferList;
-import com.hederahashgraph.api.proto.java.Transaction;
-import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.api.proto.java.TransactionID;
-import com.hederahashgraph.api.proto.java.TransferList;
-import java.time.Instant;
-import java.util.ArrayList;
-import java.util.List;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class CryptoTransferTransitionLogicTest {
@@ -102,7 +102,6 @@ class CryptoTransferTransitionLogicTest {
     @Mock private GlobalDynamicProperties dynamicProperties;
     @Mock private ImpliedTransfersMarshal impliedTransfersMarshal;
     @Mock private ExpandHandleSpanMapAccessor spanMapAccessor;
-    @Mock private PlatformTxnAccessor swirldsTxnAccessor;
     @Mock private PureTransferSemanticChecks transferChecks;
     private CryptoTransferAccessor accessor;
 
@@ -371,8 +370,7 @@ class CryptoTransferTransitionLogicTest {
                         dynamicProperties,
                         transferChecks);
         accessor.setPayer(payer);
-        given(txnCtx.swirldsTxnAccessor()).willReturn(swirldsTxnAccessor);
-        given(swirldsTxnAccessor.getDelegate()).willReturn(accessor);
+        given(txnCtx.specializedAccessor()).willReturn(accessor);
     }
 
     private void givenValidTxnCtx() throws InvalidProtocolBufferException {
