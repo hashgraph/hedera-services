@@ -699,6 +699,26 @@ class BasicTransactionContextTest {
     }
 
     @Test
+    void getsSpecializedAccessor() {
+        subject =
+                new BasicTransactionContext(
+                        narratedCharging,
+                        () -> accounts,
+                        nodeInfo,
+                        exchange,
+                        creator,
+                        sideEffectsTracker,
+                        ids);
+
+        subject.resetFor(swirldsTxnAccessor, now, memberId);
+        given(swirldsTxnAccessor.getDelegate()).willReturn(accessor);
+        verify(narratedCharging).resetForTxn(swirldsTxnAccessor, memberId);
+
+        assertEquals(swirldsTxnAccessor, subject.swirldsTxnAccessor());
+        assertEquals(accessor, subject.specializedAccessor());
+    }
+
+    @Test
     void sidecarsArePopulatedAsExpected() {
         final var sidecar =
                 SidecarUtils.createContractBytecodeSidecarFrom(
