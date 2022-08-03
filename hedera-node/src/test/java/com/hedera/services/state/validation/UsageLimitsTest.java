@@ -248,6 +248,7 @@ class UsageLimitsTest {
         given(dynamicProperties.maxIndividualContractKvPairs()).willReturn(6);
 
         assertDoesNotThrow(() -> subject.assertUsableContractSlots(6));
-        assertExhaustsResourceLimit(() -> subject.assertUsableContractSlots(7L), MAX_CONTRACT_STORAGE_EXCEEDED);
+        assertExhaustsResourceLimit(
+                () -> subject.assertUsableContractSlots(7L), MAX_CONTRACT_STORAGE_EXCEEDED);
     }
 }

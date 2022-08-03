@@ -77,7 +77,7 @@ public record ContractStoragePriceTiers(
     }
 
     public boolean promotionalOfferCovers(final long totalKvPairsUsed) {
-        return prices[0] == 0 &&  totalKvPairsUsed <= usageTiers[0];
+        return prices[0] == 0 && totalKvPairsUsed <= usageTiers[0];
     }
 
     /**

@@ -114,12 +114,9 @@ class RecordedStorageFeeChargingTest {
 
     @Test
     void doesNothingIfWithinPromotionalUsage() {
-        final var  tierWithPromotionalOffer =
-            ContractStoragePriceTiers.from(
-                "0til50M,50til100M",
-                FREE_TIER_LIMIT,
-                50_000_000,
-                REFERENCE_LIFETIME);
+        final var tierWithPromotionalOffer =
+                ContractStoragePriceTiers.from(
+                        "0til50M,50til100M", FREE_TIER_LIMIT, 50_000_000, REFERENCE_LIFETIME);
         given(dynamicProperties.storagePriceTiers()).willReturn(tierWithPromotionalOffer);
         final Map<Long, KvUsageInfo> usageInfos = new LinkedHashMap<>();
         usageInfos.put(aContract.getAccountNum(), nonFreeUsageFor(+2));
