@@ -31,7 +31,6 @@ import com.hedera.services.ledger.backing.BackingStore;
 import com.hedera.services.ledger.backing.BackingTokenRels;
 import com.hedera.services.ledger.backing.BackingTokens;
 import com.hedera.services.ledger.interceptors.LinkAwareTokenRelsCommitInterceptor;
-import com.hedera.services.ledger.interceptors.LinkAwareUniqueTokensCommitInterceptor;
 import com.hedera.services.ledger.interceptors.StakingAccountsCommitInterceptor;
 import com.hedera.services.ledger.interceptors.TokenRelsLinkManager;
 import com.hedera.services.ledger.interceptors.TokensCommitInterceptor;
@@ -92,9 +91,6 @@ public interface StoresModule {
                         MerkleUniqueToken::new,
                         new BackingNfts(uniqueTokens),
                         new ChangeSummaryManager<>());
-        final var interceptor =
-                new LinkAwareUniqueTokensCommitInterceptor(usageLimits, uniqueTokensLinkManager);
-        uniqueTokensLedger.setCommitInterceptor(interceptor);
         return uniqueTokensLedger;
     }
 
