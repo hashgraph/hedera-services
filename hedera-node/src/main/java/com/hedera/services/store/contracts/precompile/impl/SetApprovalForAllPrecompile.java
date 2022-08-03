@@ -106,7 +106,8 @@ public class SetApprovalForAllPrecompile extends AbstractWritePrecompile {
 
     @Override
     public void run(MessageFrame frame) {
-        Objects.requireNonNull(setApprovalForAllWrapper);
+        Objects.requireNonNull(
+                setApprovalForAllWrapper, "`body` method should be called before `run`");
         /* --- Build the necessary infrastructure to execute the transaction --- */
         final var accountStore = infrastructureFactory.newAccountStore(ledgers.accounts());
         final var tokenStore =

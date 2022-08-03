@@ -48,7 +48,9 @@ public class GetTokenDefaultKycStatus extends AbstractReadOnlyPrecompile {
 
     @Override
     public Bytes getSuccessResultFor(final ExpirableTxnRecord.Builder childRecord) {
-        Objects.requireNonNull(defaultKycStatusWrapper);
+        Objects.requireNonNull(
+                defaultKycStatusWrapper,
+                "`body` method should be called before `getSuccessResultsFor`");
 
         final var defaultKycStatus = ledgers.defaultKycStatus(defaultKycStatusWrapper.tokenID());
         return encoder.encodeGetTokenDefaultKycStatus(defaultKycStatus);

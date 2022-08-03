@@ -213,7 +213,9 @@ public class TransferPrecompile extends AbstractWritePrecompile {
     }
 
     protected void extrapolateDetailsFromSyntheticTxn() {
-        Objects.requireNonNull(transferOp);
+        Objects.requireNonNull(
+                transferOp,
+                "`body` method should be called before `extrapolateDetailsFromSyntheticTxn`");
 
         final var op = transactionBody.getCryptoTransfer();
         impliedValidity = impliedTransfersMarshal.validityWithCurrentProps(op);
@@ -301,7 +303,8 @@ public class TransferPrecompile extends AbstractWritePrecompile {
 
     @Override
     public long getMinimumFeeInTinybars(final Timestamp consensusTime) {
-        Objects.requireNonNull(transferOp);
+        Objects.requireNonNull(
+                transferOp, "`body` method should be called before `getMinimumFeeInTinybars`");
         long accumulatedCost = 0;
         boolean customFees =
                 impliedTransfers != null && !impliedTransfers.getAssessedCustomFees().isEmpty();

@@ -51,7 +51,8 @@ public class BalanceOfPrecompile extends AbstractReadOnlyPrecompile {
 
     @Override
     public Bytes getSuccessResultFor(final ExpirableTxnRecord.Builder childRecord) {
-        Objects.requireNonNull(balanceWrapper);
+        Objects.requireNonNull(
+                balanceWrapper, "`body` method should be called before `getSuccessResultsFor`");
 
         final var balance = ledgers.balanceOf(balanceWrapper.accountId(), tokenId);
         return encoder.encodeBalance(balance);

@@ -67,7 +67,8 @@ public class GetApprovedPrecompile extends AbstractReadOnlyPrecompile {
 
     @Override
     public Bytes getSuccessResultFor(final ExpirableTxnRecord.Builder childRecord) {
-        Objects.requireNonNull(getApprovedWrapper);
+        Objects.requireNonNull(
+                getApprovedWrapper, "`body` method should be called before `getSuccessResultsFor`");
 
         final var nftsLedger = ledgers.nfts();
         final var nftId =

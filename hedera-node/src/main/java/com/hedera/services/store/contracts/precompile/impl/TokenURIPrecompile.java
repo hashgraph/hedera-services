@@ -56,7 +56,8 @@ public class TokenURIPrecompile extends AbstractReadOnlyPrecompile {
 
     @Override
     public Bytes getSuccessResultFor(final ExpirableTxnRecord.Builder childRecord) {
-        Objects.requireNonNull(nftId);
+        Objects.requireNonNull(
+                nftId, "`body` method should be called before `getSuccessResultsFor`");
 
         final var metadata = ledgers.metadataOf(nftId);
         return encoder.encodeTokenUri(metadata);

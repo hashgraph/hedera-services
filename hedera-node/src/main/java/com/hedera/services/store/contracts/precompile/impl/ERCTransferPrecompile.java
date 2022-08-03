@@ -114,7 +114,7 @@ public class ERCTransferPrecompile extends TransferPrecompile {
 
     @Override
     public void run(final MessageFrame frame) {
-        Objects.requireNonNull(transferOp);
+        Objects.requireNonNull(transferOp, "`body` method should be called before `run`");
 
         if (!isFungible) {
             final var nftExchange = transferOp.get(0).nftExchanges().get(0);

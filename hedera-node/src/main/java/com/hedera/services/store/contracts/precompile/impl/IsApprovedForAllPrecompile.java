@@ -67,7 +67,9 @@ public class IsApprovedForAllPrecompile extends AbstractReadOnlyPrecompile {
     @Override
     @SuppressWarnings("unchecked")
     public Bytes getSuccessResultFor(final ExpirableTxnRecord.Builder childRecord) {
-        Objects.requireNonNull(isApproveForAllWrapper);
+        Objects.requireNonNull(
+                isApproveForAllWrapper,
+                "`body` method should be called before `getSuccessResultsFor`");
 
         final var accountsLedger = ledgers.accounts();
         var answer = true;

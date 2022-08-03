@@ -48,7 +48,9 @@ public class GetTokenDefaultFreezeStatus extends AbstractReadOnlyPrecompile {
 
     @Override
     public Bytes getSuccessResultFor(final ExpirableTxnRecord.Builder childRecord) {
-        Objects.requireNonNull(defaultFreezeStatusWrapper);
+        Objects.requireNonNull(
+                defaultFreezeStatusWrapper,
+                "`body` method should be called before `getSuccessResultsFor`");
 
         final var defaultFreezeStatus =
                 ledgers.defaultFreezeStatus(defaultFreezeStatusWrapper.tokenID());

@@ -92,7 +92,7 @@ public class MintPrecompile extends AbstractWritePrecompile {
 
     @Override
     public void run(final MessageFrame frame) {
-        Objects.requireNonNull(mintOp);
+        Objects.requireNonNull(mintOp, "`body` method should be called before `run`");
 
         // --- Check required signatures ---
         final var tokenId = Id.fromGrpcToken(Objects.requireNonNull(mintOp).tokenType());

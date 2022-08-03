@@ -59,7 +59,8 @@ public class OwnerOfPrecompile extends AbstractReadOnlyPrecompile {
 
     @Override
     public Bytes getSuccessResultFor(final ExpirableTxnRecord.Builder childRecord) {
-        Objects.requireNonNull(nftId);
+        Objects.requireNonNull(
+                nftId, "`body` method should be called before `getSuccessResultsFor`");
 
         final var nftsLedger = ledgers.nfts();
         validateTrueOrRevert(nftsLedger.contains(nftId), INVALID_TOKEN_NFT_SERIAL_NUMBER);

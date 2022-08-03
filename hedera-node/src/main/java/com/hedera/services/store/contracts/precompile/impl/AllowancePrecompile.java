@@ -73,7 +73,8 @@ public class AllowancePrecompile extends AbstractReadOnlyPrecompile {
     @Override
     @SuppressWarnings("unchecked")
     public Bytes getSuccessResultFor(final ExpirableTxnRecord.Builder childRecord) {
-        Objects.requireNonNull(allowanceWrapper);
+        Objects.requireNonNull(
+                allowanceWrapper, "`body` method should be called before `getSuccessResultsFor`");
 
         final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger =
                 ledgers.accounts();
