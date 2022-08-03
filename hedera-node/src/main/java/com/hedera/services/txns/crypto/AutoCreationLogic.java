@@ -44,7 +44,6 @@ import com.hedera.services.state.validation.UsageLimits;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.accessors.AccessorFactory;
-import com.hedera.services.utils.accessors.SignedTxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -229,12 +228,7 @@ public class AutoCreationLogic {
                         .setSignedTransactionBytes(signedTxn.toByteString())
                         .build();
 
-        SignedTxnAccessor accessor;
-        try {
-            accessor = accessorFactory.constructSpecializedAccessor(txn.toByteArray());
-        } catch (InvalidProtocolBufferException e) {
-            accessor = SignedTxnAccessor.uncheckedFrom(txn);
-        }
+        final var accessor = accessorFactory.uncheckedSpecializedAccessor(txn.toByteArray());
         final var fees =
                 feeCalculator.computeFee(accessor, EMPTY_KEY, currentView, txnCtx.consensusTime());
         return fees.getServiceFee() + fees.getNetworkFee() + fees.getNodeFee();

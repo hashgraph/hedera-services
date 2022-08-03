@@ -1072,6 +1072,7 @@ class TransferPrecompilesTest {
 
     private void getAccessor() {
         try {
+            willCallRealMethod().given(accessorFactory).uncheckedSpecializedAccessor(any());
             willCallRealMethod().given(accessorFactory).constructSpecializedAccessor(any());
         } catch (InvalidProtocolBufferException e) {
             throw new IllegalStateException(e);

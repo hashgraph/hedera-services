@@ -39,7 +39,6 @@ import static com.hederahashgraph.api.proto.java.SubType.TOKEN_FUNGIBLE_COMMON_W
 import static com.hederahashgraph.api.proto.java.SubType.TOKEN_NON_FUNGIBLE_UNIQUE;
 import static com.hederahashgraph.api.proto.java.SubType.TOKEN_NON_FUNGIBLE_UNIQUE_WITH_CUSTOM_FEES;
 
-import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.fees.HbarCentExchange;
@@ -47,7 +46,6 @@ import com.hedera.services.fees.calculation.UsagePricesProvider;
 import com.hedera.services.pricing.AssetsLoader;
 import com.hedera.services.store.contracts.precompile.Precompile;
 import com.hedera.services.utils.accessors.AccessorFactory;
-import com.hedera.services.utils.accessors.SignedTxnAccessor;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.SignatureMap;
@@ -147,12 +145,7 @@ public class PrecompilePricingUtils {
                         .setSignedTransactionBytes(signedTxn.toByteString())
                         .build();
 
-        SignedTxnAccessor accessor;
-        try {
-            accessor = accessorFactory.constructSpecializedAccessor(txn.toByteArray());
-        } catch (InvalidProtocolBufferException e) {
-            accessor = SignedTxnAccessor.uncheckedFrom(txn);
-        }
+        final var accessor = accessorFactory.uncheckedSpecializedAccessor(txn.toByteArray());
         precompile.addImplicitCostsIn(accessor);
         final var fees =
                 feeCalculator.get().computeFee(accessor, EMPTY_KEY, currentView, consensusTime);

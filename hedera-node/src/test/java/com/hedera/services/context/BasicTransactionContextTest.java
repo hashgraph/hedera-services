@@ -716,6 +716,9 @@ class BasicTransactionContextTest {
 
         assertEquals(swirldsTxnAccessor, subject.swirldsTxnAccessor());
         assertEquals(accessor, subject.specializedAccessor());
+
+        subject.resetFor(accessor, now, memberId);
+        assertEquals(accessor, subject.specializedAccessor());
     }
 
     @Test

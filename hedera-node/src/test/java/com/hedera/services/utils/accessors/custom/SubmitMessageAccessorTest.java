@@ -16,15 +16,20 @@
 package com.hedera.services.utils.accessors.custom;
 
 import static com.hedera.services.utils.accessors.SignedTxnAccessorTest.buildTransactionFrom;
+import static com.hedera.test.utils.IdUtils.asTopic;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.willCallRealMethod;
 
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.accessors.AccessorFactory;
 import com.hedera.services.utils.accessors.SignedTxnAccessor;
+import com.hederahashgraph.api.proto.java.ConsensusMessageChunkInfo;
 import com.hederahashgraph.api.proto.java.ConsensusSubmitMessageTransactionBody;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.junit.jupiter.api.Test;
@@ -33,7 +38,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-public class SubmitMessageAccessorTest {
+class SubmitMessageAccessorTest {
     @Mock private AccessorFactory accessorFactory;
 
     @Test
@@ -51,6 +56,32 @@ public class SubmitMessageAccessorTest {
         final var submitMeta = subject.getSpanMapAccessor().getSubmitMessageMeta(subject);
 
         assertEquals(message.length(), submitMeta.numMsgBytes());
+    }
+
+    @Test
+    void allGettersWork() throws InvalidProtocolBufferException {
+        final var message = "And after, arranged it in a song";
+        final var chunkInfo = ConsensusMessageChunkInfo.newBuilder().build();
+        final var topicId = asTopic("0.0.123");
+        final var txnBody =
+                TransactionBody.newBuilder()
+                        .setConsensusSubmitMessage(
+                                ConsensusSubmitMessageTransactionBody.newBuilder()
+                                        .setMessage(ByteString.copyFromUtf8(message))
+                                        .setChunkInfo(chunkInfo)
+                                        .setTopicID(topicId)
+                                        .build())
+                        .build();
+        final var txn = buildTransactionFrom(txnBody);
+        final var subject = new SubmitMessageAccessor(txn.toByteArray(), txn);
+
+        assertTrue(subject.supportsPrecheck());
+        assertEquals(ResponseCodeEnum.OK, subject.doPrecheck());
+        assertEquals(message, subject.message().toStringUtf8());
+        assertEquals(topicId, subject.topicId());
+        assertEquals(EntityNum.fromTopicId(topicId), subject.topicNum());
+        assertTrue(subject.hasChunkInfo());
+        assertEquals(chunkInfo, subject.chunkInfo());
     }
 
     private SignedTxnAccessor getAccessor(final Transaction txn) {

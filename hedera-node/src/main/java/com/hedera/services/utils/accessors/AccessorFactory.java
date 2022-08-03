@@ -113,4 +113,12 @@ public class AccessorFactory {
             default -> SignedTxnAccessor.from(signedTxnWrapperBytes, signedTxn);
         };
     }
+
+    public SignedTxnAccessor uncheckedSpecializedAccessor(byte[] signedTxnWrapperBytes) {
+        try {
+            return constructSpecializedAccessor(signedTxnWrapperBytes);
+        } catch (InvalidProtocolBufferException e) {
+            throw new IllegalArgumentException("Not a valid signed transaction");
+        }
+    }
 }

@@ -265,8 +265,8 @@ public class BasicTransactionContext implements TransactionContext {
     @Override
     public <T extends TxnAccessor> T specializedAccessor() {
         return (T)
-                ((accessor instanceof SwirldsTxnAccessor)
-                        ? ((SwirldsTxnAccessor) accessor).getDelegate()
+                ((accessor instanceof SwirldsTxnAccessor swirldsTxnAccessor)
+                        ? swirldsTxnAccessor.getDelegate()
                         : accessor);
     }
 

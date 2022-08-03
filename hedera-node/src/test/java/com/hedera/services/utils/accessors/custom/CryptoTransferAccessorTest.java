@@ -18,12 +18,17 @@ package com.hedera.services.utils.accessors.custom;
 import static com.hedera.services.utils.accessors.SignedTxnAccessorTest.buildDefaultCryptoCreateTxn;
 import static com.hedera.services.utils.accessors.SignedTxnAccessorTest.buildTransactionFrom;
 import static com.hedera.test.utils.IdUtils.asAccount;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.SubType.TOKEN_FUNGIBLE_COMMON;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willCallRealMethod;
 
 import com.google.protobuf.InvalidProtocolBufferException;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.ledger.PureTransferSemanticChecks;
 import com.hedera.services.utils.accessors.AccessorFactory;
 import com.hedera.services.utils.accessors.SignedTxnAccessor;
 import com.hedera.test.utils.IdUtils;
@@ -46,7 +51,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-public class CryptoTransferAccessorTest {
+class CryptoTransferAccessorTest {
     private static final String memo = "Eternal sunshine of the spotless mind";
     private static final long now = 1_234_567L;
     private static final AccountID a = asAccount("1.2.3");
@@ -57,9 +62,11 @@ public class CryptoTransferAccessorTest {
     private static final TokenID yetAnotherId = IdUtils.asToken("0.0.75233");
 
     @Mock private AccessorFactory accessorFactory;
+    @Mock private GlobalDynamicProperties dynamicProperties;
+    @Mock private PureTransferSemanticChecks transferChecks;
 
     @Test
-    void fetchesSubTypeAsExpected() throws InvalidProtocolBufferException {
+    void fetchesSubTypeAsExpected() {
         final var nftTransfers =
                 TokenTransferList.newBuilder()
                         .setToken(anId)
@@ -95,7 +102,7 @@ public class CryptoTransferAccessorTest {
 
         txn = buildTokenTransferTxn(fungibleTokenXfers);
         subject = getAccessor(txn);
-        ;
+
         assertEquals(
                 TOKEN_FUNGIBLE_COMMON,
                 subject.getSpanMapAccessor().getCryptoTransferMeta(subject).getSubType());
@@ -125,6 +132,18 @@ public class CryptoTransferAccessorTest {
         assertEquals(1, xferMeta.getTokenMultiplier());
         assertEquals(3, xferMeta.getNumTokensInvolved());
         assertEquals(7, xferMeta.getNumFungibleTokenTransfers());
+    }
+
+    @Test
+    void allGettersWork() throws InvalidProtocolBufferException {
+        final var txn = buildTransactionFrom(tokenXfers());
+        given(transferChecks.fullPureValidation(any(), any(), any())).willReturn(OK);
+        final var subject =
+                new CryptoTransferAccessor(
+                        txn.toByteArray(), txn, dynamicProperties, transferChecks);
+
+        assertTrue(subject.supportsPrecheck());
+        assertEquals(OK, subject.doPrecheck());
     }
 
     private Transaction buildTokenTransferTxn(final TokenTransferList tokenTransferList) {
