@@ -333,6 +333,9 @@ public class ServicesState extends PartialNaryMerkleInternal
                 // large saved state
                 app.treasuryCloner().ensureTreasuryClonesExist();
             }
+            if (trigger == RECONNECT) {
+                app.migrationRecordsManager().markTraceabilityMigrationAsDone();
+            }
         }
     }
 
