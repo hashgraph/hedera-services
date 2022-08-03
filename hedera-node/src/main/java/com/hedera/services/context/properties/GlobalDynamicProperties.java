@@ -28,6 +28,7 @@ import com.hedera.services.sysfiles.domain.throttling.ThrottleReqOpsScaleFactor;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import java.util.Map;
 import java.util.Set;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -136,6 +137,10 @@ public class GlobalDynamicProperties {
     private long maxNumSchedules;
     private boolean utilPrngEnabled;
     private Set<SidecarType> enabledSidecars;
+    private boolean requireMinStakeToReward;
+    private Map<Long, Long> nodeMaxMinStakeRatios;
+    private int sidecarMaxSizeMb;
+    private boolean enableTraceabilityMigration;
 
     @Inject
     public GlobalDynamicProperties(
@@ -269,6 +274,12 @@ public class GlobalDynamicProperties {
         maxNumTokenRels = properties.getLongProperty("tokens.maxAggregateRels");
         maxNumTopics = properties.getLongProperty("topics.maxNumber");
         utilPrngEnabled = properties.getBooleanProperty("utilPrng.isEnabled");
+        requireMinStakeToReward = properties.getBooleanProperty("staking.requireMinStakeToReward");
+        nodeMaxMinStakeRatios =
+                properties.getNodeStakeRatiosProperty("staking.nodeMaxToMinStakeRatios");
+        sidecarMaxSizeMb = properties.getIntProperty("hedera.recordStream.sidecarMaxSizeMb");
+        enableTraceabilityMigration =
+                properties.getBooleanProperty("hedera.recordStream.enableTraceabilityMigration");
     }
 
     public int maxTokensPerAccount() {
@@ -657,5 +668,21 @@ public class GlobalDynamicProperties {
 
     public Set<SidecarType> enabledSidecars() {
         return enabledSidecars;
+    }
+
+    public boolean requireMinStakeToReward() {
+        return requireMinStakeToReward;
+    }
+
+    public Map<Long, Long> nodeMaxMinStakeRatios() {
+        return nodeMaxMinStakeRatios;
+    }
+
+    public int getSidecarMaxSizeMb() {
+        return sidecarMaxSizeMb;
+    }
+
+    public boolean isTraceabilityMigrationEnabled() {
+        return enableTraceabilityMigration;
     }
 }

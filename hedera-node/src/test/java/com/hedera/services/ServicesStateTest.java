@@ -64,6 +64,7 @@ import com.hedera.services.state.merkle.MerkleScheduledTransactions;
 import com.hedera.services.state.merkle.MerkleSpecialFiles;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.migration.LongTermScheduledTransactionsMigration;
+import com.hedera.services.state.migration.MigrationRecordsManager;
 import com.hedera.services.state.migration.ReleaseTwentySevenMigration;
 import com.hedera.services.state.migration.ReleaseTwentySixMigration;
 import com.hedera.services.state.migration.StateChildIndices;
@@ -129,7 +130,7 @@ class ServicesStateTest {
     private final String signedStateDir = "src/test/resources/signedState/";
     private final SoftwareVersion some025xVersion = forHapiAndHedera("0.25.0", "0.25.2");
     private final SoftwareVersion currentVersion = SEMANTIC_VERSIONS.deployedSoftwareVersion();
-    private final SoftwareVersion futureVersion = forHapiAndHedera("0.28.0", "0.28.0");
+    private final SoftwareVersion futureVersion = forHapiAndHedera("1.0.0", "1.0.0");
     private final Instant creationTime = Instant.ofEpochSecond(1_234_567L, 8);
     private final Instant consensusTime = Instant.ofEpochSecond(2_345_678L, 9);
     private final NodeId selfId = new NodeId(false, 1L);
@@ -169,6 +170,7 @@ class ServicesStateTest {
     @Mock private BootstrapProperties bootstrapProperties;
     @Mock private SystemAccountsCreator accountsCreator;
     @Mock private SystemFilesManager systemFilesManager;
+    @Mock private MigrationRecordsManager migrationRecordsManager;
 
     @LoggingTarget private LogCaptor logCaptor;
     @LoggingSubject private ServicesState subject;
@@ -177,10 +179,10 @@ class ServicesStateTest {
     void setUp() {
         SEMANTIC_VERSIONS
                 .deployedSoftwareVersion()
-                .setProto(SemanticVersion.newBuilder().setMinor(27).build());
+                .setProto(SemanticVersion.newBuilder().setMinor(28).build());
         SEMANTIC_VERSIONS
                 .deployedSoftwareVersion()
-                .setServices(SemanticVersion.newBuilder().setMinor(27).build());
+                .setServices(SemanticVersion.newBuilder().setMinor(28).build());
         subject = new ServicesState();
         setAllChildren();
     }
@@ -622,6 +624,7 @@ class ServicesStateTest {
         given(app.hashLogger()).willReturn(hashLogger);
         given(app.initializationFlow()).willReturn(initFlow);
         given(app.dualStateAccessor()).willReturn(dualStateAccessor);
+        given(app.migrationRecordsManager()).willReturn(migrationRecordsManager);
         given(platform.getSelfId()).willReturn(selfId);
         // and:
         APPS.save(selfId.getId(), app);
@@ -738,6 +741,7 @@ class ServicesStateTest {
         given(app.hashLogger()).willReturn(hashLogger);
         given(app.initializationFlow()).willReturn(initFlow);
         given(app.dualStateAccessor()).willReturn(dualStateAccessor);
+        given(app.migrationRecordsManager()).willReturn(migrationRecordsManager);
         given(platform.getSelfId()).willReturn(selfId);
         // and:
         APPS.save(selfId.getId(), app);
@@ -837,11 +841,28 @@ class ServicesStateTest {
     }
 
     @Test
-    void testLoading0253State() {
+    void reconnectMarksTraceabilityRecordsAsStreamed() {
+        given(app.hashLogger()).willReturn(hashLogger);
+        given(app.initializationFlow()).willReturn(initFlow);
+        given(app.dualStateAccessor()).willReturn(dualStateAccessor);
+        given(app.migrationRecordsManager()).willReturn(migrationRecordsManager);
+        given(platform.getSelfId()).willReturn(selfId);
+        // and:
+        APPS.save(selfId.getId(), app);
+
+        // when:
+        subject.init(platform, addressBook, dualState, RECONNECT, currentVersion);
+
+        // then:
+        verify(migrationRecordsManager).markTraceabilityMigrationAsDone();
+    }
+
+    @Test
+    void testLoading0274State() {
         ClassLoaderHelper.loadClassPathDependencies();
         final AtomicReference<SignedState> ref = new AtomicReference<>();
         assertDoesNotThrow(
-                () -> ref.set(loadSignedState(signedStateDir + "v0.25.3/SignedState.swh")));
+                () -> ref.set(loadSignedState(signedStateDir + "v0.27.4/SignedState.swh")));
         final var mockPlatform = createMockPlatformWithCrypto();
         ref.get()
                 .getSwirldState()

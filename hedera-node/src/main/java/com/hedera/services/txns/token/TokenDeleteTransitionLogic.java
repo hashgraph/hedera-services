@@ -15,17 +15,9 @@
  */
 package com.hedera.services.txns.token;
 
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-
 import com.hedera.services.context.TransactionContext;
-import com.hedera.services.ledger.SigImpactHistorian;
-import com.hedera.services.store.AccountStore;
-import com.hedera.services.store.TypedTokenStore;
-import com.hedera.services.store.models.Id;
 import com.hedera.services.txns.TransitionLogic;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.TokenDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -36,20 +28,13 @@ import javax.inject.Singleton;
 @Singleton
 public class TokenDeleteTransitionLogic implements TransitionLogic {
     private final TransactionContext txnCtx;
-    private final AccountStore accountStore;
-    private final TypedTokenStore tokenStore;
-    private final SigImpactHistorian sigImpactHistorian;
+    private final DeleteLogic deleteLogic;
 
     @Inject
     public TokenDeleteTransitionLogic(
-            final TransactionContext txnCtx,
-            final AccountStore accountStore,
-            final TypedTokenStore tokenStore,
-            final SigImpactHistorian sigImpactHistorian) {
+            final TransactionContext txnCtx, final DeleteLogic deleteLogic) {
         this.txnCtx = txnCtx;
-        this.tokenStore = tokenStore;
-        this.accountStore = accountStore;
-        this.sigImpactHistorian = sigImpactHistorian;
+        this.deleteLogic = deleteLogic;
     }
 
     @Override
@@ -58,19 +43,7 @@ public class TokenDeleteTransitionLogic implements TransitionLogic {
         final var op = txnCtx.accessor().getTxn().getTokenDeletion();
         final var grpcTokenId = op.getToken();
 
-        // --- Convert to model id ---
-        final var targetTokenId = Id.fromGrpcToken(grpcTokenId);
-
-        // --- Load the model object ---
-        final var loadedToken = tokenStore.loadToken(targetTokenId);
-
-        // --- Do the business logic ---
-        loadedToken.delete();
-
-        // --- Persist the updated model ---
-        tokenStore.commitToken(loadedToken);
-        accountStore.commitAccount(loadedToken.getTreasury());
-        sigImpactHistorian.markEntityChanged(grpcTokenId.getTokenNum());
+        deleteLogic.delete(grpcTokenId);
     }
 
     @Override
@@ -84,12 +57,6 @@ public class TokenDeleteTransitionLogic implements TransitionLogic {
     }
 
     public ResponseCodeEnum validate(final TransactionBody txnBody) {
-        final TokenDeleteTransactionBody op = txnBody.getTokenDeletion();
-
-        if (!op.hasToken()) {
-            return INVALID_TOKEN_ID;
-        }
-
-        return OK;
+        return deleteLogic.validate(txnBody);
     }
 }
