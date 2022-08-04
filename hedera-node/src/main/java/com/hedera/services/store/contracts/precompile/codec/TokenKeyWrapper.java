@@ -15,7 +15,7 @@
  */
 package com.hedera.services.store.contracts.precompile.codec;
 
-public record TokenKeyWrapper(int keyType, TokenCreateWrapper.KeyValueWrapper key) {
+public record TokenKeyWrapper(int keyType, KeyValueWrapper key) {
     public boolean isUsedForAdminKey() {
         return (keyType & 1) != 0;
     }

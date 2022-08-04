@@ -47,7 +47,7 @@ class TokenCreateWrapperTest {
     private final TokenKeyWrapper tokenKeyWrapper =
             new TokenKeyWrapper(
                     1,
-                    new TokenCreateWrapper.KeyValueWrapper(
+                    new KeyValueWrapper(
                             true, null, new byte[] {}, new byte[] {}, null));
     private final ContractID contractID = EntityIdUtils.contractIdFromEvmAddress(contractAddress);
 
@@ -61,7 +61,7 @@ class TokenCreateWrapperTest {
                                 tokenKeyWrapper,
                                 new TokenKeyWrapper(
                                         4,
-                                        new TokenCreateWrapper.KeyValueWrapper(
+                                        new KeyValueWrapper(
                                                 true, null, new byte[] {}, new byte[] {}, null))));
 
         // when
@@ -102,7 +102,7 @@ class TokenCreateWrapperTest {
     void translatesKeyValueWrapperWithInheritedKeyAsExpected() {
         // given
         final var wrapper =
-                new TokenCreateWrapper.KeyValueWrapper(
+                new KeyValueWrapper(
                         true, null, new byte[] {}, new byte[] {}, null);
 
         // when
@@ -110,7 +110,7 @@ class TokenCreateWrapperTest {
 
         // then
         assertEquals(
-                TokenCreateWrapper.KeyValueWrapper.KeyValueType.INHERIT_ACCOUNT_KEY,
+                KeyValueWrapper.KeyValueType.INHERIT_ACCOUNT_KEY,
                 wrapper.getKeyValueType());
         assertNull(key);
     }
@@ -119,7 +119,7 @@ class TokenCreateWrapperTest {
     void translatesKeyValueWrapperWithContractIdAsExpected() {
         // given
         final var wrapper =
-                new TokenCreateWrapper.KeyValueWrapper(
+                new KeyValueWrapper(
                         false, contractID, new byte[] {}, new byte[] {}, null);
 
         // when
@@ -127,7 +127,7 @@ class TokenCreateWrapperTest {
 
         // then
         assertEquals(
-                TokenCreateWrapper.KeyValueWrapper.KeyValueType.CONTRACT_ID,
+                KeyValueWrapper.KeyValueType.CONTRACT_ID,
                 wrapper.getKeyValueType());
         assertEquals(contractID, key.getContractID());
     }
@@ -136,7 +136,7 @@ class TokenCreateWrapperTest {
     void translatesKeyValueWrapperWithDelegatableContractIdAsExpected() {
         // given
         final var wrapper =
-                new TokenCreateWrapper.KeyValueWrapper(
+                new KeyValueWrapper(
                         false, null, new byte[] {}, new byte[] {}, contractID);
 
         // when
@@ -144,7 +144,7 @@ class TokenCreateWrapperTest {
 
         // then
         assertEquals(
-                TokenCreateWrapper.KeyValueWrapper.KeyValueType.DELEGATABLE_CONTRACT_ID,
+                KeyValueWrapper.KeyValueType.DELEGATABLE_CONTRACT_ID,
                 wrapper.getKeyValueType());
         assertEquals(contractID, key.getDelegatableContractId());
     }
@@ -153,14 +153,14 @@ class TokenCreateWrapperTest {
     void translatesKeyValueWrapperWithEd25519AsExpected() {
         // given
         final var wrapper =
-                new TokenCreateWrapper.KeyValueWrapper(false, null, ed25519, new byte[] {}, null);
+                new KeyValueWrapper(false, null, ed25519, new byte[] {}, null);
 
         // when
         final var key = wrapper.asGrpc();
 
         // then
         assertEquals(
-                TokenCreateWrapper.KeyValueWrapper.KeyValueType.ED25519, wrapper.getKeyValueType());
+                KeyValueWrapper.KeyValueType.ED25519, wrapper.getKeyValueType());
         assertArrayEquals(ed25519, key.getEd25519().toByteArray());
     }
 
@@ -168,7 +168,7 @@ class TokenCreateWrapperTest {
     void translatesKeyValueWrapperWithEcdsaSecpk256k1AsExpected() {
         // given
         final var wrapper =
-                new TokenCreateWrapper.KeyValueWrapper(
+                new KeyValueWrapper(
                         false, null, new byte[] {}, ecdsaSecpk256k1, null);
 
         // when
@@ -176,7 +176,7 @@ class TokenCreateWrapperTest {
 
         // then
         assertEquals(
-                TokenCreateWrapper.KeyValueWrapper.KeyValueType.ECDSA_SECPK256K1,
+                KeyValueWrapper.KeyValueType.ECDSA_SECPK256K1,
                 wrapper.getKeyValueType());
         assertArrayEquals(ecdsaSecpk256k1, key.getECDSASecp256K1().toByteArray());
     }
@@ -184,11 +184,11 @@ class TokenCreateWrapperTest {
     @Test
     void keyValueWrapperWithNoKeyValueSpecifiedHasInvalidKeyType() {
         final var wrapper =
-                new TokenCreateWrapper.KeyValueWrapper(
+                new KeyValueWrapper(
                         false, null, new byte[] {}, new byte[] {}, null);
 
         assertEquals(
-                TokenCreateWrapper.KeyValueWrapper.KeyValueType.INVALID_KEY,
+                KeyValueWrapper.KeyValueType.INVALID_KEY,
                 wrapper.getKeyValueType());
         assertThrows(InvalidTransactionException.class, wrapper::asGrpc);
     }
@@ -196,44 +196,44 @@ class TokenCreateWrapperTest {
     @Test
     void keyValueWrapperWithInheritAccountAndOneMoreValueHasInvalidKeyType() {
         final var wrapper =
-                new TokenCreateWrapper.KeyValueWrapper(
+                new KeyValueWrapper(
                         true, contractID, new byte[] {}, new byte[] {}, null);
 
         assertEquals(
-                TokenCreateWrapper.KeyValueWrapper.KeyValueType.INVALID_KEY,
+                KeyValueWrapper.KeyValueType.INVALID_KEY,
                 wrapper.getKeyValueType());
     }
 
     @Test
     void keyValueWrapperWithContractIdAndOneMoreKeyValueHasInvalidKeyType() {
         final var wrapper =
-                new TokenCreateWrapper.KeyValueWrapper(
+                new KeyValueWrapper(
                         false, contractID, new byte[] {}, new byte[] {}, contractID);
 
         assertEquals(
-                TokenCreateWrapper.KeyValueWrapper.KeyValueType.INVALID_KEY,
+                KeyValueWrapper.KeyValueType.INVALID_KEY,
                 wrapper.getKeyValueType());
     }
 
     @Test
     void keyValueWrapperWithEd25519AndOneMoreKeyValueHasInvalidKeyType() {
         final var wrapper =
-                new TokenCreateWrapper.KeyValueWrapper(
+                new KeyValueWrapper(
                         false, null, ed25519, new byte[] {}, contractID);
 
         assertEquals(
-                TokenCreateWrapper.KeyValueWrapper.KeyValueType.INVALID_KEY,
+                KeyValueWrapper.KeyValueType.INVALID_KEY,
                 wrapper.getKeyValueType());
     }
 
     @Test
     void keyValueWrapperWithEcdsaSecpk256k1AndOneMoreKeyValueHasInvalidKeyType() {
         final var wrapper =
-                new TokenCreateWrapper.KeyValueWrapper(
+                new KeyValueWrapper(
                         false, null, new byte[] {}, ecdsaSecpk256k1, contractID);
 
         assertEquals(
-                TokenCreateWrapper.KeyValueWrapper.KeyValueType.INVALID_KEY,
+                KeyValueWrapper.KeyValueType.INVALID_KEY,
                 wrapper.getKeyValueType());
     }
 
@@ -241,7 +241,7 @@ class TokenCreateWrapperTest {
     void
             keyValueWrapperWithEd25519KeyWithByteArrayWithSizeDifferentFromRequiredHasInvalidKeyType() {
         final var wrapper =
-                new TokenCreateWrapper.KeyValueWrapper(
+                new KeyValueWrapper(
                         false,
                         null,
                         new byte[JEd25519Key.ED25519_BYTE_LENGTH - 1],
@@ -249,7 +249,7 @@ class TokenCreateWrapperTest {
                         null);
 
         assertEquals(
-                TokenCreateWrapper.KeyValueWrapper.KeyValueType.INVALID_KEY,
+                KeyValueWrapper.KeyValueType.INVALID_KEY,
                 wrapper.getKeyValueType());
     }
 
@@ -257,7 +257,7 @@ class TokenCreateWrapperTest {
     void
             keyValueWrapperWithEcdsaSecpk256k1KeyWithByteArrayWithSizeDifferentFromRequiredHasInvalidKeyType() {
         final var wrapper =
-                new TokenCreateWrapper.KeyValueWrapper(
+                new KeyValueWrapper(
                         false,
                         null,
                         new byte[] {},
@@ -265,7 +265,7 @@ class TokenCreateWrapperTest {
                         null);
 
         assertEquals(
-                TokenCreateWrapper.KeyValueWrapper.KeyValueType.INVALID_KEY,
+                KeyValueWrapper.KeyValueType.INVALID_KEY,
                 wrapper.getKeyValueType());
     }
 

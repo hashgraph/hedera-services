@@ -19,37 +19,31 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import java.util.List;
 
-public class UpdateTokenInfoWrapper {
+public class TokenUpdateWrapper {
     private final TokenID tokenID;
     private final String name;
     private final String symbol;
     private final AccountID treasury;
-    private final boolean isSupplyTypeFinite;
     private final long maxSupply;
     private final String memo;
-    private final boolean isFreezeDefault;
     private final List<TokenKeyWrapper> tokenKeys;
     private final TokenExpiryWrapper expiry;
 
-    private UpdateTokenInfoWrapper(
+    private TokenUpdateWrapper(
             TokenID tokenID,
             String name,
             String symbol,
             AccountID treasury,
-            boolean isSupplyTypeFinite,
             long maxSupply,
             String memo,
-            boolean isFreezeDefault,
             List<TokenKeyWrapper> tokenKeys,
             TokenExpiryWrapper expiry) {
         this.tokenID = tokenID;
         this.name = name;
         this.symbol = symbol;
         this.treasury = treasury;
-        this.isSupplyTypeFinite = isSupplyTypeFinite;
         this.maxSupply = maxSupply;
         this.memo = memo;
-        this.isFreezeDefault = isFreezeDefault;
         this.tokenKeys = tokenKeys;
         this.expiry = expiry;
     }
@@ -74,9 +68,6 @@ public class UpdateTokenInfoWrapper {
         return treasury;
     }
 
-    public boolean isSupplyTypeFinite() {
-        return isSupplyTypeFinite;
-    }
 
     public long getMaxSupply() {
         return maxSupply;
@@ -86,9 +77,6 @@ public class UpdateTokenInfoWrapper {
         return memo;
     }
 
-    public boolean isFreezeDefault() {
-        return isFreezeDefault;
-    }
 
     public List<TokenKeyWrapper> getTokenKeys() {
         return tokenKeys;
@@ -103,10 +91,8 @@ public class UpdateTokenInfoWrapper {
         private String name;
         private String symbol;
         private AccountID treasury;
-        private boolean isSupplyTypeFinite;
         private long maxSupply;
         private String memo;
-        private boolean isFreezeDefault;
         private List<TokenKeyWrapper> tokenKeys;
         private TokenExpiryWrapper expiry;
 
@@ -130,10 +116,6 @@ public class UpdateTokenInfoWrapper {
             return this;
         }
 
-        public Builder setSupplyTypeFinite(boolean supplyTypeFinite) {
-            isSupplyTypeFinite = supplyTypeFinite;
-            return this;
-        }
 
         public Builder setMaxSupply(long maxSupply) {
             this.maxSupply = maxSupply;
@@ -145,10 +127,6 @@ public class UpdateTokenInfoWrapper {
             return this;
         }
 
-        public Builder setFreezeDefault(boolean freezeDefault) {
-            isFreezeDefault = freezeDefault;
-            return this;
-        }
 
         public Builder setTokenKeys(List<TokenKeyWrapper> tokenKeys) {
             this.tokenKeys = tokenKeys;
@@ -160,16 +138,14 @@ public class UpdateTokenInfoWrapper {
             return this;
         }
 
-        public UpdateTokenInfoWrapper build() {
-            return new UpdateTokenInfoWrapper(
+        public TokenUpdateWrapper build() {
+            return new TokenUpdateWrapper(
                     this.tokenID,
                     this.name,
                     this.symbol,
                     this.treasury,
-                    this.isSupplyTypeFinite,
                     this.maxSupply,
                     this.memo,
-                    this.isFreezeDefault,
                     this.tokenKeys,
                     this.expiry);
         }

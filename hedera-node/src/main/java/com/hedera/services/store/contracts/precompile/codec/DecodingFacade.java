@@ -42,7 +42,6 @@ import com.hedera.services.store.contracts.WorldLedgers;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.store.contracts.precompile.codec.TokenCreateWrapper.FixedFeeWrapper;
 import com.hedera.services.store.contracts.precompile.codec.TokenCreateWrapper.FractionalFeeWrapper;
-import com.hedera.services.store.contracts.precompile.codec.TokenCreateWrapper.KeyValueWrapper;
 import com.hedera.services.store.contracts.precompile.codec.TokenCreateWrapper.RoyaltyFeeWrapper;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.utils.EntityIdUtils;
@@ -1287,7 +1286,7 @@ public class DecodingFacade {
         return accountIDs;
     }
 
-    public UpdateTokenInfoWrapper decodeUpdateTokenInfo(
+    public TokenUpdateWrapper decodeUpdateTokenInfo(
             Bytes input, UnaryOperator<byte[]> aliasResolver) {
         final Tuple decodedArguments =
                 decodeFunctionCall(input, TOKEN_UPDATE_INFO_SELECTOR, TOKEN_UPDATE_INFO_DECODER);
@@ -1298,15 +1297,13 @@ public class DecodingFacade {
                 convertLeftPaddedAddressToAccountId(hederaTokenStruct.get(2), aliasResolver);
         final var tokenKeys = decodeTokenKeys(hederaTokenStruct.get(7), aliasResolver);
         final var tokenExpiry = decodeTokenExpiry(hederaTokenStruct.get(8), aliasResolver);
-        return UpdateTokenInfoWrapper.builder()
+        return TokenUpdateWrapper.builder()
                 .setTokenID(tokenID)
                 .setName(hederaTokenStruct.get(0))
                 .setSymbol(hederaTokenStruct.get(1))
                 .setTreasury(tokenTreasury)
                 .setMemo(hederaTokenStruct.get(3))
-                .setSupplyTypeFinite(hederaTokenStruct.get(4))
                 .setMaxSupply(hederaTokenStruct.get(5))
-                .setFreezeDefault(hederaTokenStruct.get(6))
                 .setTokenKeys(tokenKeys)
                 .setExpiry(tokenExpiry)
                 .build();

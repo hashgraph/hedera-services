@@ -52,6 +52,7 @@ import com.hedera.services.store.contracts.precompile.codec.Association;
 import com.hedera.services.store.contracts.precompile.codec.BurnWrapper;
 import com.hedera.services.store.contracts.precompile.codec.DeleteWrapper;
 import com.hedera.services.store.contracts.precompile.codec.Dissociation;
+import com.hedera.services.store.contracts.precompile.codec.KeyValueWrapper;
 import com.hedera.services.store.contracts.precompile.codec.MintWrapper;
 import com.hedera.services.store.contracts.precompile.codec.PauseWrapper;
 import com.hedera.services.store.contracts.precompile.codec.SetApprovalForAllWrapper;
@@ -555,14 +556,14 @@ class SyntheticTxnFactoryTest {
     void createsExpectedFungibleTokenCreate() {
         // given
         final var adminKey =
-                new TokenCreateWrapper.KeyValueWrapper(
+                new KeyValueWrapper(
                         false,
                         null,
                         new byte[] {},
                         new byte[] {},
                         EntityIdUtils.contractIdFromEvmAddress(contractAddress));
         final var multiKey =
-                new TokenCreateWrapper.KeyValueWrapper(
+                new KeyValueWrapper(
                         false,
                         EntityIdUtils.contractIdFromEvmAddress(contractAddress),
                         new byte[] {},
@@ -617,7 +618,7 @@ class SyntheticTxnFactoryTest {
     void createsExpectedNonFungibleTokenCreate() {
         // given
         final var multiKey =
-                new TokenCreateWrapper.KeyValueWrapper(
+                new KeyValueWrapper(
                         false,
                         EntityIdUtils.contractIdFromEvmAddress(contractAddress),
                         new byte[] {},

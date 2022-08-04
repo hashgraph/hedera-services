@@ -40,7 +40,7 @@ import com.hedera.services.store.contracts.precompile.codec.TokenCreateWrapper;
 import com.hedera.services.store.contracts.precompile.codec.TokenFreezeUnfreezeWrapper;
 import com.hedera.services.store.contracts.precompile.codec.TokenTransferWrapper;
 import com.hedera.services.store.contracts.precompile.codec.UnpauseWrapper;
-import com.hedera.services.store.contracts.precompile.codec.UpdateTokenInfoWrapper;
+import com.hedera.services.store.contracts.precompile.codec.TokenUpdateWrapper;
 import com.hedera.services.store.contracts.precompile.codec.WipeWrapper;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.MiscUtils;
@@ -481,7 +481,7 @@ public class SyntheticTxnFactory {
         return TransactionBody.newBuilder().setTokenUnfreeze(builder);
     }
 
-    public TransactionBody.Builder createTokenUpdate(UpdateTokenInfoWrapper updateWrapper) {
+    public TransactionBody.Builder createTokenUpdate(TokenUpdateWrapper updateWrapper) {
         final var builder = TokenUpdateTransactionBody.newBuilder();
         builder.setToken(updateWrapper.getTokenID())
                 .setName(updateWrapper.getName())

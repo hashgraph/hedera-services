@@ -18,6 +18,7 @@ package com.hedera.services.store.contracts.precompile.impl;
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils.GasCostType.UPDATE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.contracts.sources.EvmSigsVerifier;
@@ -27,7 +28,7 @@ import com.hedera.services.store.contracts.precompile.InfrastructureFactory;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.store.contracts.precompile.TokenUpdateLogic;
 import com.hedera.services.store.contracts.precompile.codec.DecodingFacade;
-import com.hedera.services.store.contracts.precompile.codec.UpdateTokenInfoWrapper;
+import com.hedera.services.store.contracts.precompile.codec.TokenUpdateWrapper;
 import com.hedera.services.store.contracts.precompile.utils.KeyActivationUtils;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.services.store.models.Id;
@@ -39,13 +40,13 @@ import java.util.function.UnaryOperator;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 
-public class UpdateTokenInfoPrecompile extends AbstractWritePrecompile {
+public class TokenUpdatePrecompile extends AbstractWritePrecompile {
     private HederaTokenStore hederaTokenStore;
-    private UpdateTokenInfoWrapper updateOp;
+    private TokenUpdateWrapper updateOp;
     private final EvmSigsVerifier sigsVerifier;
     private final ContractAliases aliases;
 
-    public UpdateTokenInfoPrecompile(
+    public TokenUpdatePrecompile(
             WorldLedgers ledgers,
             ContractAliases aliases,
             DecodingFacade decoder,
@@ -86,30 +87,26 @@ public class UpdateTokenInfoPrecompile extends AbstractWritePrecompile {
 
     @Override
     public void run(MessageFrame frame) {
-        {
-            Objects.requireNonNull(updateOp);
+        Objects.requireNonNull(updateOp);
+        /* --- Check required signatures --- */
+        final var tokenId = Id.fromGrpcToken(updateOp.getTokenID());
+        final var hasRequiredSigs =
+                KeyActivationUtils.validateKey(
+                        frame,
+                        tokenId.asEvmAddress(),
+                        sigsVerifier::hasActiveAdminKey,
+                        ledgers,
+                        aliases);
+        validateTrue(hasRequiredSigs, INVALID_SIGNATURE);
+        hederaTokenStore.setAccountsLedger(ledgers.accounts());
+        /* --- Build the necessary infrastructure to execute the transaction --- */
+        TokenUpdateLogic updateLogic =
+                infrastructureFactory.newTokenUpdateLogic(hederaTokenStore, ledgers, sideEffects);
 
-            /* --- Validate the synthetic create txn body before proceeding with the rest of the execution --- */
-
-            /* --- Check required signatures --- */
-            final var tokenId = Id.fromGrpcToken(updateOp.getTokenID());
-            final var hasRequiredSigs =
-                    KeyActivationUtils.validateKey(
-                            frame,
-                            tokenId.asEvmAddress(),
-                            sigsVerifier::hasActiveAdminKey,
-                            ledgers,
-                            aliases);
-            validateTrue(hasRequiredSigs, INVALID_SIGNATURE);
-            hederaTokenStore.setAccountsLedger(ledgers.accounts());
-            /* --- Build the necessary infrastructure to execute the transaction --- */
-            TokenUpdateLogic updateLogic =
-                    infrastructureFactory.newTokenUpdateLogic(
-                            hederaTokenStore, ledgers, sideEffects);
-
-            /* --- Execute the transaction and capture its results --- */
-            updateLogic.updateToken(
-                    transactionBody.getTokenUpdate(), frame.getBlockValues().getTimestamp());
-        }
+        final var validity = updateLogic.validate(transactionBody.build());
+        validateTrue(validity == OK, validity);
+        /* --- Execute the transaction and capture its results --- */
+        updateLogic.updateToken(
+                transactionBody.getTokenUpdate(), frame.getBlockValues().getTimestamp());
     }
 }
