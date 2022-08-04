@@ -718,24 +718,24 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
                             precompilePricingUtils,
                             currentView);
                     case AbiConstants
-                        .ABI_ID_GET_TOKEN_EXPIRY_INFO -> new GetTokenExpiryInfoPrecompile(
-                        null,
-                        syntheticTxnFactory,
-                        ledgers,
-                        encoder,
-                        decoder,
-                        precompilePricingUtils,
-                        currentView);
-                    case AbiConstants
-                        .ABI_ID_UPDATE_TOKEN_EXPIRY_INFO -> new UpdateTokenExpiryInfoPrecompile(
+                            .ABI_ID_GET_TOKEN_EXPIRY_INFO -> new GetTokenExpiryInfoPrecompile(
+                            null,
+                            syntheticTxnFactory,
                             ledgers,
-                        updater.aliases(),
-                        decoder,
-                        sigsVerifier,
-                        sideEffectsTracker,
-                        syntheticTxnFactory,
-                        infrastructureFactory,
-                        precompilePricingUtils);
+                            encoder,
+                            decoder,
+                            precompilePricingUtils,
+                            currentView);
+                    case AbiConstants
+                            .ABI_ID_UPDATE_TOKEN_EXPIRY_INFO -> new UpdateTokenExpiryInfoPrecompile(
+                            ledgers,
+                            updater.aliases(),
+                            decoder,
+                            sigsVerifier,
+                            sideEffectsTracker,
+                            syntheticTxnFactory,
+                            infrastructureFactory,
+                            precompilePricingUtils);
                     default -> null;
                 };
         if (precompile != null) {

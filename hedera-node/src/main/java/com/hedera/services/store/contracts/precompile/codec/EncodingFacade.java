@@ -323,10 +323,10 @@ public class EncodingFacade {
 
     public Bytes encodeGetTokenExpiryInfo(final TokenExpiryWrapper tokenExpiryWrapper) {
         return functionResultBuilder()
-            .forFunction(FunctionType.HAPI_GET_TOKEN_EXPIRY_INFO)
-            .withStatus(SUCCESS.getNumber())
-            .withExpiry(tokenExpiryWrapper)
-            .build();
+                .forFunction(FunctionType.HAPI_GET_TOKEN_EXPIRY_INFO)
+                .withStatus(SUCCESS.getNumber())
+                .withExpiry(tokenExpiryWrapper)
+                .build();
     }
 
     private FunctionResultBuilder functionResultBuilder() {
@@ -624,14 +624,14 @@ public class EncodingFacade {
         private Tuple getTupleForTokenExpiryInfo(final int responseCode) {
             final var expiry = tokenExpiryInfo.second();
             final var autoRenewPeriod = tokenExpiryInfo.autoRenewPeriod();
-            return
-                Tuple.of(responseCode,
-                Tuple.of(
-                    expiry,
-                    convertBesuAddressToHeadlongAddress(
-                        EntityIdUtils.asTypedEvmAddress(
-                            tokenExpiryInfo.autoRenewAccount())),
-                    autoRenewPeriod));
+            return Tuple.of(
+                    responseCode,
+                    Tuple.of(
+                            expiry,
+                            convertBesuAddressToHeadlongAddress(
+                                    EntityIdUtils.asTypedEvmAddress(
+                                            tokenExpiryInfo.autoRenewAccount())),
+                            autoRenewPeriod));
         }
 
         private void extractAllFees(

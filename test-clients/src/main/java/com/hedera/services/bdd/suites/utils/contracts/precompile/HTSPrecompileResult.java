@@ -75,7 +75,8 @@ public class HTSPrecompileResult implements ContractCallResult {
             FRACTIONAL_FEE.replace(ADDRESS_TYPE, BYTES_32_TYPE);
     public static final String ROYALTY_FEE_REPLACED_ADDRESS =
             ROYALTY_FEE.replace(ADDRESS_TYPE, BYTES_32_TYPE);
-    public static final String EXPIRY_REPLACED_ADDRESS = EXPIRY.replace(ADDRESS_TYPE, BYTES_32_TYPE);
+    public static final String EXPIRY_REPLACED_ADDRESS =
+            EXPIRY.replace(ADDRESS_TYPE, BYTES_32_TYPE);
     public static final String TOKEN_INFO_REPLACED_ADDRESS =
             "("
                     + HEDERA_TOKEN.replace(removeBrackets(ADDRESS), removeBrackets(BYTES32))
@@ -116,7 +117,7 @@ public class HTSPrecompileResult implements ContractCallResult {
                             + ARRAY_BRACKETS
                             + ")");
     public static final TupleType getTokenExpiryInfoTypeReplacedAddress =
-        TupleType.parse(RESPONSE_STATUS_AT_BEGINNING + EXPIRY_REPLACED_ADDRESS + ")");
+            TupleType.parse(RESPONSE_STATUS_AT_BEGINNING + EXPIRY_REPLACED_ADDRESS + ")");
 
     public static HTSPrecompileResult htsPrecompileResult() {
         return new HTSPrecompileResult();
@@ -275,7 +276,8 @@ public class HTSPrecompileResult implements ContractCallResult {
         return this;
     }
 
-    public HTSPrecompileResult withExpiry(final long expiry, final long autoRenewPeriod, final byte[] autoRenewAccount) {
+    public HTSPrecompileResult withExpiry(
+            final long expiry, final long autoRenewPeriod, final byte[] autoRenewAccount) {
         this.expiry = expiry;
         this.autoRenewPeriod = autoRenewPeriod;
         this.autoRenewAccount = autoRenewAccount;
@@ -388,12 +390,9 @@ public class HTSPrecompileResult implements ContractCallResult {
     }
 
     private Tuple getTupleForTokenExpiryInfo(final int responseCode) {
-        return
-            Tuple.of(responseCode,
-            Tuple.of(
-                expiry,
-                expandByteArrayTo32Length(autoRenewAccount),
-                autoRenewPeriod));
+        return Tuple.of(
+                responseCode,
+                Tuple.of(expiry, expandByteArrayTo32Length(autoRenewAccount), autoRenewPeriod));
     }
 
     private void extractFees(
