@@ -60,7 +60,7 @@ import java.util.Objects;
 /** Represents an uniqueToken entity. Part of the nft implementation. */
 public class MerkleUniqueToken extends PartialMerkleLeaf
         implements Keyed<EntityNumPair>, MerkleLeaf {
-    private static final int TREASURY_OWNER_CODE = 0;
+    public static final int TREASURY_OWNER_CODE = 0;
 
     static final int RELEASE_0180_VERSION = 2;
     static final int RELEASE_0250_VERSION = 3;

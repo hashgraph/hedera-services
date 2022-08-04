@@ -43,7 +43,6 @@ import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.migration.KvPairIterationMigrator;
-import com.hedera.services.state.migration.LinkRepairs;
 import com.hedera.services.state.migration.LongTermScheduledTransactionsMigration;
 import com.hedera.services.state.migration.ReleaseTwentySevenMigration;
 import com.hedera.services.state.migration.ReleaseTwentySixMigration;
@@ -337,6 +336,8 @@ public class ServicesState extends PartialNaryMerkleInternal
                 // Do this separately from ensureSystemAccounts(), as that call is expensive with a
                 // large saved state
                 app.treasuryCloner().ensureTreasuryClonesExist();
+                // Unconditionally fix NFT counts this upgrade
+                nftRationalization.fixNftCounts(tokens(), accounts(), uniqueTokens(), tokenAssociations());
             }
         }
     }
@@ -553,7 +554,7 @@ public class ServicesState extends PartialNaryMerkleInternal
             ReleaseTwentySixMigration::makeStorageIterable;
     private static ContractAutoRenewalMigrator autoRenewalMigrator =
             ReleaseTwentySixMigration::grantFreeAutoRenew;
-    private static StorageLinksRepair storageLinksRepair = StorageLinksFixer::fixAnyBrokenLinks;
+    private static NftRationalization nftRationalization = ReleaseTwentySevenMigration::fixNftCounts;
     private static StakingInfoBuilder stakingInfoBuilder =
             ReleaseTwentySevenMigration::buildStakingInfoMap;
     private static Function<JasperDbBuilderFactory, VirtualMapFactory> vmFactory =
@@ -594,10 +595,6 @@ public class ServicesState extends PartialNaryMerkleInternal
             accounts().get(EntityNum.fromLong(800L)).forgetThirdChildIfPlaceholder();
             accounts().get(EntityNum.fromLong(801L)).forgetThirdChildIfPlaceholder();
         }
-
-        // Unconditionally repair links this upgrade
-        storageLinksRepair.fixAnyBrokenLinks(
-                this, LinkRepairs::new, VirtualMapMigration::extractVirtualMapData);
 
         // Keep the MutableStateChildren up-to-date (no harm done if they are already are)
         final var app = getMetadata().app();
@@ -644,6 +641,15 @@ public class ServicesState extends PartialNaryMerkleInternal
                 ServicesState initializingState,
                 final StorageLinksFixer.LinkRepairsFactory repairsFactory,
                 final VirtualMapDataAccess<ContractKey, IterableContractValue> dataAccess);
+    }
+
+    @FunctionalInterface
+    interface NftRationalization {
+        void fixNftCounts(
+            final MerkleMap<EntityNum, MerkleToken> tokens,
+            final MerkleMap<EntityNum, MerkleAccount> accounts,
+            final MerkleMap<EntityNumPair, MerkleUniqueToken> nfts,
+            final MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenRels);
     }
 
     @VisibleForTesting
@@ -697,8 +703,9 @@ public class ServicesState extends PartialNaryMerkleInternal
     }
 
     @VisibleForTesting
-    static void setStorageLinksRepair(StorageLinksRepair storageLinksRepair) {
-        ServicesState.storageLinksRepair = storageLinksRepair;
+    static void setNftRationalization(
+        NftRationalization nftRationalization) {
+        ServicesState.nftRationalization = nftRationalization;
     }
 
     static void setScheduledTransactionsMigrator(

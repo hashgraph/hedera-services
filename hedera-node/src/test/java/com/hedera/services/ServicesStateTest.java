@@ -49,7 +49,7 @@ import com.google.common.primitives.Ints;
 import com.google.common.primitives.Longs;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
-import com.hedera.services.ServicesState.StorageLinksRepair;
+import com.hedera.services.ServicesState.NftRationalization;
 import com.hedera.services.context.MutableStateChildren;
 import com.hedera.services.context.init.ServicesInitFlow;
 import com.hedera.services.context.properties.BootstrapProperties;
@@ -112,7 +112,6 @@ import java.security.PublicKey;
 import java.time.Instant;
 import java.util.ConcurrentModificationException;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import org.apache.commons.io.FileUtils;
@@ -128,7 +127,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith({MockitoExtension.class, LogCaptureExtension.class})
 class ServicesStateTest {
 
-    private final String signedStateDir = "src/test/resources/signedState/";
     private final SoftwareVersion some025xVersion = forHapiAndHedera("0.25.0", "0.25.2");
     private final SoftwareVersion currentVersion = SEMANTIC_VERSIONS.deployedSoftwareVersion();
     private final SoftwareVersion futureVersion = forHapiAndHedera("0.28.0", "0.28.0");
@@ -142,7 +140,7 @@ class ServicesStateTest {
     @Mock private AddressBook addressBook;
     @Mock private Address address;
     @Mock private ServicesApp app;
-    @Mock private StorageLinksRepair linkRepairs;
+    @Mock private NftRationalization nftRationalization;
     @Mock private MerkleSpecialFiles specialFiles;
     @Mock private MerkleNetworkContext networkContext;
     @Mock private SwirldTransaction transaction;
@@ -217,8 +215,7 @@ class ServicesStateTest {
                         iterableStorageMigrator,
                         vmf,
                         workingState,
-                        scheduledTxnsMigrator,
-                        linkRepairs);
+                        scheduledTxnsMigrator);
 
         ServicesState.setExpiryJustEnabled(false);
         subject.setChild(StateChildIndices.ACCOUNTS, accounts);
@@ -246,7 +243,6 @@ class ServicesStateTest {
         inOrder.verify(iterableStorageMigrator)
                 .makeStorageIterable(eq(subject), any(), any(), eq(iterableStorage));
         inOrder.verify(scheduledTxnsMigrator).accept(subject);
-        inOrder.verify(linkRepairs).fixAnyBrokenLinks(eq(subject), any(), any());
         inOrder.verify(workingState).updatePrimitiveChildrenFrom(subject);
 
         verifyNoInteractions(autoRenewalMigrator);
@@ -668,6 +664,7 @@ class ServicesStateTest {
 
     @Test
     void nonGenesisInitClearsPreparedUpgradeIfNonNullLastFrozenMatchesFreezeTime() {
+        ServicesState.setNftRationalization(nftRationalization);
         subject.setChild(StateChildIndices.SPECIAL_FILES, specialFiles);
         subject.setChild(StateChildIndices.NETWORK_CTX, networkContext);
         subject.setChild(StateChildIndices.ACCOUNTS, accounts);
@@ -690,6 +687,9 @@ class ServicesStateTest {
 
         verify(networkContext).discardPreparedUpgradeMeta();
         verify(dualState).setFreezeTime(null);
+
+        verify(nftRationalization).fixNftCounts(any(), any(), any(), any());
+        ServicesState.setNftRationalization(ReleaseTwentySevenMigration::fixNftCounts);
     }
 
     @Test
@@ -966,7 +966,7 @@ class ServicesStateTest {
         ServicesState.setVmFactory(vmf);
         ServicesState.setScheduledTransactionsMigrator(scheduledTxnsMigrator);
         ServicesState.setStakingInfoBuilder(stakingInfoBuilder);
-        ServicesState.setStorageLinksRepair(linkRepairs);
+        ServicesState.setNftRationalization(nftRationalization);
     }
 
     private void unmockMigrators() {
