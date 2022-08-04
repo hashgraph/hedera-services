@@ -219,7 +219,7 @@ public class PrecompilePricingUtils {
         UNFREEZE(TokenUnfreezeAccount, DEFAULT),
         WIPE_FUNGIBLE(TokenAccountWipe, TOKEN_FUNGIBLE_COMMON),
         WIPE_NFT(TokenAccountWipe, TOKEN_NON_FUNGIBLE_UNIQUE),
-        UPDATE(TokenUpdate,DEFAULT),
+        UPDATE(TokenUpdate, DEFAULT),
         PRNG(HederaFunctionality.UtilPrng, DEFAULT);
 
         final HederaFunctionality functionality;

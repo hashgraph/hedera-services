@@ -531,8 +531,7 @@ class CreatePrecompileTest {
                 .thenReturn(TokenCreateWrapper.KeyValueWrapper.KeyValueType.CONTRACT_ID)
                 .thenReturn(TokenCreateWrapper.KeyValueWrapper.KeyValueType.INVALID_KEY);
         final var tokenCreateWrapper =
-                createTokenCreateWrapperWithKeys(
-                        List.of(new TokenKeyWrapper(1, keyValueMock)));
+                createTokenCreateWrapperWithKeys(List.of(new TokenKeyWrapper(1, keyValueMock)));
         given(decoder.decodeFungibleCreate(eq(pretendArguments), any()))
                 .willReturn(tokenCreateWrapper);
         given(mockSynthBodyBuilder.build())

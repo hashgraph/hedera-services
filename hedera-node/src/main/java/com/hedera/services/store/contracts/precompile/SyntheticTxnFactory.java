@@ -38,7 +38,6 @@ import com.hedera.services.store.contracts.precompile.codec.PauseWrapper;
 import com.hedera.services.store.contracts.precompile.codec.SetApprovalForAllWrapper;
 import com.hedera.services.store.contracts.precompile.codec.TokenCreateWrapper;
 import com.hedera.services.store.contracts.precompile.codec.TokenFreezeUnfreezeWrapper;
-import com.hedera.services.store.contracts.precompile.codec.TokenKeyWrapper;
 import com.hedera.services.store.contracts.precompile.codec.TokenTransferWrapper;
 import com.hedera.services.store.contracts.precompile.codec.UnpauseWrapper;
 import com.hedera.services.store.contracts.precompile.codec.UpdateTokenInfoWrapper;
@@ -499,11 +498,11 @@ public class SyntheticTxnFactory {
         if (updateWrapper.getExpiry().autoRenewPeriod() != 0) {
             builder.setAutoRenewPeriod(
                     Duration.newBuilder().setSeconds(updateWrapper.getExpiry().autoRenewPeriod()));
-            }
+        }
         updateWrapper
                 .getTokenKeys()
                 .forEach(
-                         tokenKeyWrapper -> {
+                        tokenKeyWrapper -> {
                             final var key = tokenKeyWrapper.key().asGrpc();
                             if (tokenKeyWrapper.isUsedForAdminKey()) builder.setAdminKey(key);
                             if (tokenKeyWrapper.isUsedForKycKey()) builder.setKycKey(key);

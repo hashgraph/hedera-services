@@ -267,7 +267,6 @@ public class DecodingFacade {
                     + EXPIRY_DECODER
                     + ")";
 
-
     private static final Function TOKEN_CREATE_FUNGIBLE_FUNCTION =
             new Function("createFungibleToken(" + HEDERA_TOKEN_STRUCT + ",uint256,uint256)");
     private static final Bytes TOKEN_CREATE_FUNGIBLE_SELECTOR =

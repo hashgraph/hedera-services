@@ -17,7 +17,6 @@ package com.hedera.services.store.contracts.precompile;
 
 import static com.hedera.services.exceptions.ValidationUtils.validateFalse;
 import static com.hedera.services.exceptions.ValidationUtils.validateFalseOrRevert;
-import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hedera.services.exceptions.ValidationUtils.validateTrueOrRevert;
 import static com.hedera.services.ledger.TransferLogic.dropTokenChanges;
 import static com.hedera.services.ledger.backing.BackingTokenRels.asTokenRel;
@@ -77,80 +76,82 @@ public class TokenUpdateLogic {
     }
 
     public void updateToken(TokenUpdateTransactionBody op, long now) {
-            final var tokenID = Id.fromGrpcToken(op.getToken()).asGrpcToken();
-            validateFalse(tokenID == MISSING_TOKEN, INVALID_TOKEN_ID);
-            if(op.hasExpiry()){
-                validateFalseOrRevert(validator.isValidExpiry(op.getExpiry()),INVALID_EXPIRATION_TIME);
-            }
-            MerkleToken token = store.get(tokenID);
-            checkTokenPreconditions(token, op);
+        final var tokenID = Id.fromGrpcToken(op.getToken()).asGrpcToken();
+        validateFalse(tokenID == MISSING_TOKEN, INVALID_TOKEN_ID);
+        if (op.hasExpiry()) {
+            validateFalseOrRevert(validator.isValidExpiry(op.getExpiry()), INVALID_EXPIRATION_TIME);
+        }
+        MerkleToken token = store.get(tokenID);
+        checkTokenPreconditions(token, op);
 
-            ResponseCodeEnum outcome = autoRenewAttachmentCheck(op, token);
-            validateTrueOrRevert(outcome == OK, outcome);
+        ResponseCodeEnum outcome = autoRenewAttachmentCheck(op, token);
+        validateTrueOrRevert(outcome == OK, outcome);
 
-            Optional<AccountID> replacedTreasury = Optional.empty();
-            if (op.hasTreasury()) {
-                var newTreasury = op.getTreasury();
-                validateFalseOrRevert(isDetached(newTreasury), ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
+        Optional<AccountID> replacedTreasury = Optional.empty();
+        if (op.hasTreasury()) {
+            var newTreasury = op.getTreasury();
+            validateFalseOrRevert(isDetached(newTreasury), ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
 
-                if (!store.associationExists(newTreasury, tokenID)) {
-                    outcome = store.autoAssociate(newTreasury, tokenID);
-                    if (outcome != OK) {
-                        abortWith(outcome);
-                    }
-                }
-                var existingTreasury = token.treasury().toGrpcAccountId();
-                if (!allowChangedTreasuryToOwnNfts && token.tokenType() == NON_FUNGIBLE_UNIQUE) {
-                    var existingTreasuryBalance = getTokenBalance(existingTreasury, tokenID);
-                    if (existingTreasuryBalance > 0L) {
-                        abortWith(CURRENT_TREASURY_STILL_OWNS_NFTS);
-                    }
-                }
-                if (!newTreasury.equals(existingTreasury)) {
-                    validateFalseOrRevert(isDetached(existingTreasury), ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
-
-                    outcome = prepTreasuryChange(tokenID, token, newTreasury, existingTreasury);
-                    if (outcome != OK) {
-                        abortWith(outcome);
-                    }
-                    replacedTreasury = Optional.of(token.treasury().toGrpcAccountId());
+            if (!store.associationExists(newTreasury, tokenID)) {
+                outcome = store.autoAssociate(newTreasury, tokenID);
+                if (outcome != OK) {
+                    abortWith(outcome);
                 }
             }
-
-            outcome = store.update(op, now);
-            if (outcome == OK && replacedTreasury.isPresent()) {
-                final var oldTreasury = replacedTreasury.get();
-                long replacedTreasuryBalance = getTokenBalance(oldTreasury, tokenID);
-                if (replacedTreasuryBalance > 0) {
-                    if (token.tokenType().equals(TokenType.FUNGIBLE_COMMON)) {
-                        outcome =
-                                doTokenTransfer(
-                                        tokenID,
-                                        oldTreasury,
-                                        op.getTreasury(),
-                                        replacedTreasuryBalance);
-                    } else {
-                        outcome =
-                                store.changeOwnerWildCard(
-                                        new NftId(
-                                                tokenID.getShardNum(),
-                                                tokenID.getRealmNum(),
-                                                tokenID.getTokenNum(),
-                                                -1),
-                                        oldTreasury,
-                                        op.getTreasury());
-                    }
+            var existingTreasury = token.treasury().toGrpcAccountId();
+            if (!allowChangedTreasuryToOwnNfts && token.tokenType() == NON_FUNGIBLE_UNIQUE) {
+                var existingTreasuryBalance = getTokenBalance(existingTreasury, tokenID);
+                if (existingTreasuryBalance > 0L) {
+                    abortWith(CURRENT_TREASURY_STILL_OWNS_NFTS);
                 }
             }
-            if (outcome != OK) {
-                abortWith(outcome);
+            if (!newTreasury.equals(existingTreasury)) {
+                validateFalseOrRevert(
+                        isDetached(existingTreasury), ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
+
+                outcome = prepTreasuryChange(tokenID, token, newTreasury, existingTreasury);
+                if (outcome != OK) {
+                    abortWith(outcome);
+                }
+                replacedTreasury = Optional.of(token.treasury().toGrpcAccountId());
             }
-            // TODO check if this is needed
-            sigImpactHistorian.markEntityChanged(tokenID.getTokenNum());
         }
 
+        outcome = store.update(op, now);
+        if (outcome == OK && replacedTreasury.isPresent()) {
+            final var oldTreasury = replacedTreasury.get();
+            long replacedTreasuryBalance = getTokenBalance(oldTreasury, tokenID);
+            if (replacedTreasuryBalance > 0) {
+                if (token.tokenType().equals(TokenType.FUNGIBLE_COMMON)) {
+                    outcome =
+                            doTokenTransfer(
+                                    tokenID,
+                                    oldTreasury,
+                                    op.getTreasury(),
+                                    replacedTreasuryBalance);
+                } else {
+                    outcome =
+                            store.changeOwnerWildCard(
+                                    new NftId(
+                                            tokenID.getShardNum(),
+                                            tokenID.getRealmNum(),
+                                            tokenID.getTokenNum(),
+                                            -1),
+                                    oldTreasury,
+                                    op.getTreasury());
+                }
+            }
+        }
+        if (outcome != OK) {
+            abortWith(outcome);
+        }
+        // TODO check if this is needed
+        sigImpactHistorian.markEntityChanged(tokenID.getTokenNum());
+    }
+
     private void checkTokenPreconditions(MerkleToken token, TokenUpdateTransactionBody op) {
-        if(!token.hasAdminKey()) validateTrueOrRevert((affectsExpiryAtMost(op)), TOKEN_IS_IMMUTABLE);
+        if (!token.hasAdminKey())
+            validateTrueOrRevert((affectsExpiryAtMost(op)), TOKEN_IS_IMMUTABLE);
         validateFalseOrRevert(token.isDeleted(), TOKEN_WAS_DELETED);
         validateFalseOrRevert(token.isPaused(), TOKEN_IS_PAUSED);
     }
@@ -204,7 +205,8 @@ public class TokenUpdateLogic {
 
             if (token.hasAutoRenewAccount()) {
                 final var existingAutoRenew = token.autoRenewAccount().toGrpcAccountId();
-                validateFalseOrRevert(isDetached(existingAutoRenew), ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
+                validateFalseOrRevert(
+                        isDetached(existingAutoRenew), ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
             }
         }
         return OK;
