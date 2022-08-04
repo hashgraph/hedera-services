@@ -15,9 +15,6 @@
  */
 package com.hedera.services.usage.token;
 
-import static com.hedera.services.usage.SingletonEstimatorUtils.ESTIMATOR_UTILS;
-
-import com.hedera.services.usage.SigUsage;
 import com.hedera.services.usage.TxnUsageEstimator;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -27,9 +24,9 @@ public class TokenDeleteUsage extends TokenTxnUsage<TokenDeleteUsage> {
         super(tokenDeletionOp, usageEstimator);
     }
 
-    public static TokenDeleteUsage newEstimate(TransactionBody tokenDeletionOp, SigUsage sigUsage) {
-        return new TokenDeleteUsage(
-                tokenDeletionOp, estimatorFactory.get(sigUsage, tokenDeletionOp, ESTIMATOR_UTILS));
+    public static TokenDeleteUsage newEstimate(
+            TransactionBody tokenDeletionOp, TxnUsageEstimator usageEstimator) {
+        return new TokenDeleteUsage(tokenDeletionOp, usageEstimator);
     }
 
     @Override
