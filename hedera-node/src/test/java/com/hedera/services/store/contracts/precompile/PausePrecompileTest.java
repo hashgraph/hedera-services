@@ -16,6 +16,7 @@
 package com.hedera.services.store.contracts.precompile;
 
 import static com.hedera.services.state.EntityCreator.EMPTY_MEMO;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_PAUSE_TOKEN;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.DEFAULT_GAS_PRICE;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.TEST_CONSENSUS_TIME;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.contractAddr;
@@ -26,7 +27,6 @@ import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.fungib
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.fungibleTokenAddr;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.successResult;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.timestamp;
-import static com.hedera.services.store.contracts.precompile.PrecompileFunctionSelector.ABI_ID_PAUSE_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
@@ -92,8 +92,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class PausePrecompileTest {
-    private final Bytes pretendArguments =
-            Bytes.of(Integers.toBytes(ABI_ID_PAUSE_TOKEN.getFunctionSelector()));
+    private final Bytes pretendArguments = Bytes.of(Integers.toBytes(ABI_ID_PAUSE_TOKEN));
 
     @Mock private TypedTokenStore tokenStore;
     @Mock private GlobalDynamicProperties dynamicProperties;
@@ -214,7 +213,7 @@ class PausePrecompileTest {
         // given
         givenMinFrameContext();
         givenPricingUtilsContext();
-        Bytes input = Bytes.of(Integers.toBytes(ABI_ID_PAUSE_TOKEN.getFunctionSelector()));
+        Bytes input = Bytes.of(Integers.toBytes(ABI_ID_PAUSE_TOKEN));
         given(decoder.decodePause(pretendArguments)).willReturn(fungiblePause);
         given(syntheticTxnFactory.createPause(fungiblePause))
                 .willReturn(

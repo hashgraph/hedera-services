@@ -16,13 +16,20 @@
 package com.hedera.services.store.contracts.precompile.proxy;
 
 import static com.hedera.services.exceptions.ValidationUtils.validateTrueOrRevert;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_GET_FUNGIBLE_TOKEN_INFO;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_GET_NON_FUNGIBLE_TOKEN_INFO;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_GET_TOKEN_CUSTOM_FEES;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_GET_TOKEN_DEFAULT_FREEZE_STATUS;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_GET_TOKEN_DEFAULT_KYC_STATUS;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_GET_TOKEN_INFO;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_IS_FROZEN;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_IS_KYC;
 import static com.hedera.services.utils.MiscUtils.asSecondsTimestamp;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.store.contracts.WorldLedgers;
-import com.hedera.services.store.contracts.precompile.PrecompileFunctionSelector;
 import com.hedera.services.store.contracts.precompile.codec.DecodingFacade;
 import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
 import com.hederahashgraph.api.proto.java.NftID;
@@ -63,8 +70,7 @@ public class ViewExecutor {
         final var now = asSecondsTimestamp(frame.getBlockValues().getTimestamp());
         final var costInGas = gasCalculator.compute(now, MINIMUM_TINYBARS_COST);
 
-        final var selector = PrecompileFunctionSelector.fromFunctionId(input.getInt(0));
-
+        final var selector = input.getInt(0);
         try {
             final var answer = answerGiven(selector);
             return Pair.of(costInGas, answer);
@@ -77,10 +83,7 @@ public class ViewExecutor {
         }
     }
 
-    private Bytes answerGiven(final PrecompileFunctionSelector selector) {
-        if (selector == null) {
-            throw new InvalidTransactionException(NOT_SUPPORTED);
-        }
+    private Bytes answerGiven(final int selector) {
         switch (selector) {
             case ABI_ID_GET_TOKEN_INFO -> {
                 final var wrapper = decoder.decodeGetTokenInfo(input);

@@ -16,6 +16,11 @@
 package com.hedera.services.store.contracts.precompile;
 
 import static com.hedera.services.state.EntityCreator.EMPTY_MEMO;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_CRYPTO_TRANSFER;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_TRANSFER_NFT;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_TRANSFER_NFTS;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_TRANSFER_TOKEN;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_TRANSFER_TOKENS;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.DEFAULT_GAS_PRICE;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.TEST_CONSENSUS_TIME;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.TOKEN_TRANSFER_WRAPPER;
@@ -37,11 +42,6 @@ import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.tokens
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.tokensTransferList;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.tokensTransferListReceiverOnly;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.tokensTransferListSenderOnly;
-import static com.hedera.services.store.contracts.precompile.PrecompileFunctionSelector.ABI_ID_CRYPTO_TRANSFER;
-import static com.hedera.services.store.contracts.precompile.PrecompileFunctionSelector.ABI_ID_TRANSFER_NFT;
-import static com.hedera.services.store.contracts.precompile.PrecompileFunctionSelector.ABI_ID_TRANSFER_NFTS;
-import static com.hedera.services.store.contracts.precompile.PrecompileFunctionSelector.ABI_ID_TRANSFER_TOKEN;
-import static com.hedera.services.store.contracts.precompile.PrecompileFunctionSelector.ABI_ID_TRANSFER_TOKENS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_CHARGING_EXCEEDED_MAX_ACCOUNT_AMOUNTS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN;
@@ -205,8 +205,7 @@ class TransferPrecompilesTest {
     @Test
     void transferFailsFastGivenWrongSyntheticValidity() {
         givenPricingUtilsContext();
-        Bytes pretendArguments =
-                Bytes.of(Integers.toBytes(ABI_ID_TRANSFER_TOKENS.getFunctionSelector()));
+        Bytes pretendArguments = Bytes.of(Integers.toBytes(ABI_ID_TRANSFER_TOKENS));
         given(frame.getWorldUpdater()).willReturn(worldUpdater);
         given(frame.getSenderAddress()).willReturn(contractAddress);
         given(frame.getRemainingGas()).willReturn(300L);
@@ -259,8 +258,7 @@ class TransferPrecompilesTest {
 
     @Test
     void transferTokenHappyPathWorks() {
-        Bytes pretendArguments =
-                Bytes.of(Integers.toBytes(ABI_ID_TRANSFER_TOKENS.getFunctionSelector()));
+        Bytes pretendArguments = Bytes.of(Integers.toBytes(ABI_ID_TRANSFER_TOKENS));
         givenMinimalFrameContext();
         givenLedgers();
         givenPricingUtilsContext();
@@ -335,8 +333,7 @@ class TransferPrecompilesTest {
     @Test
     void abortsIfImpliedCustomFeesCannotBeAssessed() {
         givenPricingUtilsContext();
-        Bytes pretendArguments =
-                Bytes.of(Integers.toBytes(ABI_ID_TRANSFER_TOKENS.getFunctionSelector()));
+        Bytes pretendArguments = Bytes.of(Integers.toBytes(ABI_ID_TRANSFER_TOKENS));
 
         given(frame.getWorldUpdater()).willReturn(worldUpdater);
         given(frame.getValue()).willReturn(Wei.ZERO);
@@ -394,8 +391,7 @@ class TransferPrecompilesTest {
 
     @Test
     void transferTokenWithSenderOnlyHappyPathWorks() {
-        Bytes pretendArguments =
-                Bytes.of(Integers.toBytes(ABI_ID_TRANSFER_TOKENS.getFunctionSelector()));
+        Bytes pretendArguments = Bytes.of(Integers.toBytes(ABI_ID_TRANSFER_TOKENS));
 
         givenMinimalFrameContext();
         givenLedgers();
@@ -468,8 +464,7 @@ class TransferPrecompilesTest {
 
     @Test
     void transferTokenWithReceiverOnlyHappyPathWorks() {
-        Bytes pretendArguments =
-                Bytes.of(Integers.toBytes(ABI_ID_TRANSFER_TOKENS.getFunctionSelector()));
+        Bytes pretendArguments = Bytes.of(Integers.toBytes(ABI_ID_TRANSFER_TOKENS));
 
         givenMinimalFrameContext();
         givenLedgers();
@@ -542,8 +537,7 @@ class TransferPrecompilesTest {
 
     @Test
     void transferNftsHappyPathWorks() {
-        Bytes pretendArguments =
-                Bytes.of(Integers.toBytes(ABI_ID_TRANSFER_NFTS.getFunctionSelector()));
+        Bytes pretendArguments = Bytes.of(Integers.toBytes(ABI_ID_TRANSFER_NFTS));
 
         givenMinimalFrameContext();
         givenLedgers();
@@ -616,8 +610,7 @@ class TransferPrecompilesTest {
 
     @Test
     void transferNftHappyPathWorks() {
-        Bytes pretendArguments =
-                Bytes.of(Integers.toBytes(ABI_ID_TRANSFER_NFT.getFunctionSelector()));
+        Bytes pretendArguments = Bytes.of(Integers.toBytes(ABI_ID_TRANSFER_NFT));
 
         final var recipientAddr = Address.ALTBN128_ADD;
         final var senderId = Id.fromGrpcAccount(sender);
@@ -708,8 +701,7 @@ class TransferPrecompilesTest {
 
     @Test
     void cryptoTransferHappyPathWorks() {
-        Bytes pretendArguments =
-                Bytes.of(Integers.toBytes(ABI_ID_CRYPTO_TRANSFER.getFunctionSelector()));
+        Bytes pretendArguments = Bytes.of(Integers.toBytes(ABI_ID_CRYPTO_TRANSFER));
 
         givenMinimalFrameContext();
         givenLedgers();
@@ -780,8 +772,7 @@ class TransferPrecompilesTest {
 
     @Test
     void transferFailsAndCatchesProperly() {
-        Bytes pretendArguments =
-                Bytes.of(Integers.toBytes(ABI_ID_TRANSFER_TOKEN.getFunctionSelector()));
+        Bytes pretendArguments = Bytes.of(Integers.toBytes(ABI_ID_TRANSFER_TOKEN));
 
         givenMinimalFrameContext();
         givenLedgers();
@@ -853,8 +844,7 @@ class TransferPrecompilesTest {
 
     @Test
     void transferWithWrongInput() {
-        Bytes pretendArguments =
-                Bytes.of(Integers.toBytes(ABI_ID_TRANSFER_TOKEN.getFunctionSelector()));
+        Bytes pretendArguments = Bytes.of(Integers.toBytes(ABI_ID_TRANSFER_TOKEN));
 
         given(frame.getSenderAddress()).willReturn(contractAddress);
         given(frame.getWorldUpdater()).willReturn(worldUpdater);
@@ -874,7 +864,7 @@ class TransferPrecompilesTest {
         // given
         givenMinFrameContext();
         givenPricingUtilsContext();
-        Bytes input = Bytes.of(Integers.toBytes(ABI_ID_TRANSFER_NFTS.getFunctionSelector()));
+        Bytes input = Bytes.of(Integers.toBytes(ABI_ID_TRANSFER_NFTS));
         given(syntheticTxnFactory.createCryptoTransfer(any()))
                 .willReturn(
                         TransactionBody.newBuilder()
@@ -899,7 +889,7 @@ class TransferPrecompilesTest {
         // given
         givenMinFrameContext();
         givenPricingUtilsContext();
-        Bytes input = Bytes.of(Integers.toBytes(ABI_ID_TRANSFER_NFT.getFunctionSelector()));
+        Bytes input = Bytes.of(Integers.toBytes(ABI_ID_TRANSFER_NFT));
         given(syntheticTxnFactory.createCryptoTransfer(any()))
                 .willReturn(
                         TransactionBody.newBuilder()
@@ -924,7 +914,7 @@ class TransferPrecompilesTest {
         // given
         givenMinFrameContext();
         givenPricingUtilsContext();
-        Bytes input = Bytes.of(Integers.toBytes(ABI_ID_CRYPTO_TRANSFER.getFunctionSelector()));
+        Bytes input = Bytes.of(Integers.toBytes(ABI_ID_CRYPTO_TRANSFER));
         given(syntheticTxnFactory.createCryptoTransfer(any()))
                 .willReturn(
                         TransactionBody.newBuilder()
@@ -949,7 +939,7 @@ class TransferPrecompilesTest {
         // given
         givenMinFrameContext();
         givenPricingUtilsContext();
-        Bytes input = Bytes.of(Integers.toBytes(ABI_ID_CRYPTO_TRANSFER.getFunctionSelector()));
+        Bytes input = Bytes.of(Integers.toBytes(ABI_ID_CRYPTO_TRANSFER));
         given(syntheticTxnFactory.createCryptoTransfer(any()))
                 .willReturn(
                         TransactionBody.newBuilder()
@@ -983,7 +973,7 @@ class TransferPrecompilesTest {
         // given
         givenMinFrameContext();
         givenPricingUtilsContext();
-        Bytes input = Bytes.of(Integers.toBytes(ABI_ID_TRANSFER_TOKENS.getFunctionSelector()));
+        Bytes input = Bytes.of(Integers.toBytes(ABI_ID_TRANSFER_TOKENS));
         given(syntheticTxnFactory.createCryptoTransfer(any()))
                 .willReturn(
                         TransactionBody.newBuilder()
@@ -1008,7 +998,7 @@ class TransferPrecompilesTest {
         // given
         givenMinFrameContext();
         givenPricingUtilsContext();
-        Bytes input = Bytes.of(Integers.toBytes(ABI_ID_TRANSFER_TOKEN.getFunctionSelector()));
+        Bytes input = Bytes.of(Integers.toBytes(ABI_ID_TRANSFER_TOKEN));
         given(syntheticTxnFactory.createCryptoTransfer(any()))
                 .willReturn(
                         TransactionBody.newBuilder()

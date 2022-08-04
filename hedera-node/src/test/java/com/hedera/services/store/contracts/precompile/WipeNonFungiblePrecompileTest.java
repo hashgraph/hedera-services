@@ -16,8 +16,8 @@
 package com.hedera.services.store.contracts.precompile;
 
 import static com.hedera.services.state.EntityCreator.EMPTY_MEMO;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_WIPE_TOKEN_ACCOUNT_NFT;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.*;
-import static com.hedera.services.store.contracts.precompile.PrecompileFunctionSelector.ABI_WIPE_TOKEN_ACCOUNT_NFT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -90,8 +90,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class WipeNonFungiblePrecompileTest {
 
-    private final Bytes pretendArguments =
-            Bytes.of(Integers.toBytes(ABI_WIPE_TOKEN_ACCOUNT_NFT.getFunctionSelector()));
+    private final Bytes pretendArguments = Bytes.of(Integers.toBytes(ABI_WIPE_TOKEN_ACCOUNT_NFT));
 
     @Mock private AccountStore accountStore;
     @Mock private TypedTokenStore tokenStore;
@@ -285,7 +284,7 @@ class WipeNonFungiblePrecompileTest {
         // given
         givenMinFrameContext();
         givenPricingUtilsContext();
-        Bytes input = Bytes.of(Integers.toBytes(ABI_WIPE_TOKEN_ACCOUNT_NFT.getFunctionSelector()));
+        Bytes input = Bytes.of(Integers.toBytes(ABI_WIPE_TOKEN_ACCOUNT_NFT));
         given(decoder.decodeWipeNFT(eq(pretendArguments), any())).willReturn(nonFungibleWipe);
         given(syntheticTxnFactory.createWipe(nonFungibleWipe))
                 .willReturn(

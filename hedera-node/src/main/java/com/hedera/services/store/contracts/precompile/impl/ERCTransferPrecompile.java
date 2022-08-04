@@ -16,7 +16,6 @@
 package com.hedera.services.store.contracts.precompile.impl;
 
 import static com.hedera.services.exceptions.ValidationUtils.validateTrueOrRevert;
-import static com.hedera.services.store.contracts.precompile.EventConstants.TRANSFER_EVENT;
 import static com.hedera.services.utils.EntityIdUtils.asTypedEvmAddress;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER;
 
@@ -28,8 +27,8 @@ import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.services.store.contracts.WorldLedgers;
+import com.hedera.services.store.contracts.precompile.AbiConstants;
 import com.hedera.services.store.contracts.precompile.InfrastructureFactory;
-import com.hedera.services.store.contracts.precompile.PrecompileFunctionSelector;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.store.contracts.precompile.codec.DecodingFacade;
 import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
@@ -65,7 +64,7 @@ public class ERCTransferPrecompile extends TransferPrecompile {
             final SyntheticTxnFactory syntheticTxnFactory,
             final InfrastructureFactory infrastructureFactory,
             final PrecompilePricingUtils pricingUtils,
-            final PrecompileFunctionSelector selector,
+            final int functionId,
             final ImpliedTransfersMarshal impliedTransfersMarshal) {
         super(
                 ledgers,
@@ -76,7 +75,7 @@ public class ERCTransferPrecompile extends TransferPrecompile {
                 syntheticTxnFactory,
                 infrastructureFactory,
                 pricingUtils,
-                selector,
+                functionId,
                 callerAccount,
                 impliedTransfersMarshal);
         this.callerAccountID = EntityIdUtils.accountIdFromEvmAddress(callerAccount);
@@ -92,10 +91,10 @@ public class ERCTransferPrecompile extends TransferPrecompile {
 
         final var nestedInput = input.slice(24);
         transferOp =
-                switch (PrecompileFunctionSelector.fromFunctionId(nestedInput.getInt(0))) {
-                    case ABI_ID_ERC_TRANSFER -> decoder.decodeERCTransfer(
+                switch (nestedInput.getInt(0)) {
+                    case AbiConstants.ABI_ID_ERC_TRANSFER -> decoder.decodeERCTransfer(
                             nestedInput, tokenID, callerAccountID, aliasResolver);
-                    case ABI_ID_ERC_TRANSFER_FROM -> {
+                    case AbiConstants.ABI_ID_ERC_TRANSFER_FROM -> {
                         final var operatorId = EntityId.fromGrpcAccountId(callerAccountID);
                         yield decoder.decodeERCTransferFrom(
                                 nestedInput,
@@ -153,7 +152,7 @@ public class ERCTransferPrecompile extends TransferPrecompile {
 
         return EncodingFacade.LogBuilder.logBuilder()
                 .forLogger(logger)
-                .forEventSignature(TRANSFER_EVENT)
+                .forEventSignature(AbiConstants.TRANSFER_EVENT)
                 .forIndexedArgument(sender)
                 .forIndexedArgument(receiver)
                 .forDataItem(amount)
@@ -172,7 +171,7 @@ public class ERCTransferPrecompile extends TransferPrecompile {
 
         return EncodingFacade.LogBuilder.logBuilder()
                 .forLogger(logger)
-                .forEventSignature(TRANSFER_EVENT)
+                .forEventSignature(AbiConstants.TRANSFER_EVENT)
                 .forIndexedArgument(sender)
                 .forIndexedArgument(receiver)
                 .forIndexedArgument(serialNumber)

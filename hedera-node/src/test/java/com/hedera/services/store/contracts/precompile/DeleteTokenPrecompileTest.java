@@ -16,6 +16,7 @@
 package com.hedera.services.store.contracts.precompile;
 
 import static com.hedera.services.state.EntityCreator.EMPTY_MEMO;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_DELETE_TOKEN;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.DEFAULT_GAS_PRICE;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.TEST_CONSENSUS_TIME;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.contractAddr;
@@ -23,7 +24,6 @@ import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.contra
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.fungibleTokenAddr;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.successResult;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.tokenDeleteWrapper;
-import static com.hedera.services.store.contracts.precompile.PrecompileFunctionSelector.ABI_ID_DELETE_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
@@ -159,7 +159,7 @@ class DeleteTokenPrecompileTest {
     @Test
     void computeCallsSuccessfullyForDeleteFungibleToken() {
         // given
-        final var input = Bytes.of(Integers.toBytes(ABI_ID_DELETE_TOKEN.getFunctionSelector()));
+        final var input = Bytes.of(Integers.toBytes(ABI_ID_DELETE_TOKEN));
         givenFrameContext();
         givenLedgers();
         givenMinimalContextForSuccessfulCall();
@@ -178,7 +178,7 @@ class DeleteTokenPrecompileTest {
     @Test
     void gasRequirementReturnsCorrectValueForDeleteToken() {
         // given
-        final var input = Bytes.of(Integers.toBytes(ABI_ID_DELETE_TOKEN.getFunctionSelector()));
+        final var input = Bytes.of(Integers.toBytes(ABI_ID_DELETE_TOKEN));
         givenMinimalFrameContext();
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));

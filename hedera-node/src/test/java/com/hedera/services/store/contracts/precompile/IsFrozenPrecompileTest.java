@@ -15,13 +15,13 @@
  */
 package com.hedera.services.store.contracts.precompile;
 
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_IS_FROZEN;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.accountAddr;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.contractAddress;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.fungibleTokenAddr;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.successResult;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.timestamp;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.tokenFreezeUnFreezeWrapper;
-import static com.hedera.services.store.contracts.precompile.PrecompileFunctionSelector.ABI_ID_IS_FROZEN;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
@@ -151,7 +151,7 @@ class IsFrozenPrecompileTest {
                             + "00000000000000000000000000000000000000000000000000001");
         final Bytes pretendArguments =
                 Bytes.concatenate(
-                        Bytes.of(Integers.toBytes(ABI_ID_IS_FROZEN.getFunctionSelector())),
+                        Bytes.of(Integers.toBytes(ABI_ID_IS_FROZEN)),
                         fungibleTokenAddr,
                         accountAddr);
         givenMinimalFrameContext();
@@ -159,7 +159,7 @@ class IsFrozenPrecompileTest {
         givenLedgers();
         given(wrappedLedgers.isFrozen(any(), any())).willReturn(true);
         givenMinimalContextForSuccessfulCall();
-        Bytes input = Bytes.of(Integers.toBytes(ABI_ID_IS_FROZEN.getFunctionSelector()));
+        Bytes input = Bytes.of(Integers.toBytes(ABI_ID_IS_FROZEN));
         given(syntheticTxnFactory.createTransactionCall(1L, pretendArguments))
                 .willReturn(mockSynthBodyBuilder);
         given(decoder.decodeIsFrozen(any(), any())).willReturn(tokenFreezeUnFreezeWrapper);

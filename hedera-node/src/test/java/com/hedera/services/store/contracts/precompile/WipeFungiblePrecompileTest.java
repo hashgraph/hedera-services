@@ -16,6 +16,7 @@
 package com.hedera.services.store.contracts.precompile;
 
 import static com.hedera.services.state.EntityCreator.EMPTY_MEMO;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_WIPE_TOKEN_ACCOUNT_FUNGIBLE;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.AMOUNT;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.DEFAULT_GAS_PRICE;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.TEST_CONSENSUS_TIME;
@@ -30,7 +31,6 @@ import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.fungib
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.fungibleWipeMaxAmount;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.successResult;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.timestamp;
-import static com.hedera.services.store.contracts.precompile.PrecompileFunctionSelector.ABI_WIPE_TOKEN_ACCOUNT_FUNGIBLE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -105,7 +105,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class WipeFungiblePrecompileTest {
 
     private final Bytes pretendArguments =
-            Bytes.of(Integers.toBytes(ABI_WIPE_TOKEN_ACCOUNT_FUNGIBLE.getFunctionSelector()));
+            Bytes.of(Integers.toBytes(ABI_WIPE_TOKEN_ACCOUNT_FUNGIBLE));
 
     @Mock private AccountStore accountStore;
     @Mock private TypedTokenStore tokenStore;
@@ -297,8 +297,7 @@ class WipeFungiblePrecompileTest {
         // given
         givenMinFrameContext();
         givenPricingUtilsContext();
-        Bytes input =
-                Bytes.of(Integers.toBytes(ABI_WIPE_TOKEN_ACCOUNT_FUNGIBLE.getFunctionSelector()));
+        Bytes input = Bytes.of(Integers.toBytes(ABI_WIPE_TOKEN_ACCOUNT_FUNGIBLE));
         given(decoder.decodeWipe(eq(pretendArguments), any())).willReturn(fungibleWipe);
         given(syntheticTxnFactory.createWipe(fungibleWipe))
                 .willReturn(

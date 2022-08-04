@@ -18,6 +18,10 @@ package com.hedera.services.store.contracts.precompile;
 import static com.hedera.services.ledger.properties.AccountProperty.AUTO_RENEW_ACCOUNT_ID;
 import static com.hedera.services.ledger.properties.AccountProperty.KEY;
 import static com.hedera.services.state.EntityCreator.EMPTY_MEMO;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_CREATE_FUNGIBLE_TOKEN;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_CREATE_FUNGIBLE_TOKEN_WITH_FEES;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_CREATE_NON_FUNGIBLE_TOKEN;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_CREATE_NON_FUNGIBLE_TOKEN_WITH_FEES;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.account;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.contractAddr;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.contractAddress;
@@ -31,10 +35,6 @@ import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.pendin
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.senderAddress;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.successResult;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.timestamp;
-import static com.hedera.services.store.contracts.precompile.PrecompileFunctionSelector.ABI_ID_CREATE_FUNGIBLE_TOKEN;
-import static com.hedera.services.store.contracts.precompile.PrecompileFunctionSelector.ABI_ID_CREATE_FUNGIBLE_TOKEN_WITH_FEES;
-import static com.hedera.services.store.contracts.precompile.PrecompileFunctionSelector.ABI_ID_CREATE_NON_FUNGIBLE_TOKEN;
-import static com.hedera.services.store.contracts.precompile.PrecompileFunctionSelector.ABI_ID_CREATE_NON_FUNGIBLE_TOKEN_WITH_FEES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -213,8 +213,7 @@ class CreatePrecompileTest {
         given(worldUpdater.wrappedTrackingLedgers(any())).willReturn(wrappedLedgers);
         given(wrappedLedgers.accounts()).willReturn(accounts);
         given(frame.getSenderAddress()).willReturn(senderAddress);
-        Bytes pretendArguments =
-                Bytes.of(Integers.toBytes(ABI_ID_CREATE_FUNGIBLE_TOKEN.getFunctionSelector()));
+        Bytes pretendArguments = Bytes.of(Integers.toBytes(ABI_ID_CREATE_FUNGIBLE_TOKEN));
         final TokenCreateWrapper wrapper = createTokenCreateWrapperWithKeys(List.of());
         given(decoder.decodeFungibleCreate(any(), any())).willReturn(wrapper);
         given(mockSynthBodyBuilder.build())
@@ -253,8 +252,7 @@ class CreatePrecompileTest {
         given(wrappedLedgers.accounts()).willReturn(accounts);
 
         given(frame.getSenderAddress()).willReturn(senderAddress);
-        Bytes pretendArguments =
-                Bytes.of(Integers.toBytes(ABI_ID_CREATE_FUNGIBLE_TOKEN.getFunctionSelector()));
+        Bytes pretendArguments = Bytes.of(Integers.toBytes(ABI_ID_CREATE_FUNGIBLE_TOKEN));
         final TokenCreateWrapper wrapper = createTokenCreateWrapperWithKeys(List.of());
         given(decoder.decodeFungibleCreate(any(), any())).willReturn(wrapper);
         given(mockSynthBodyBuilder.build())
@@ -307,8 +305,7 @@ class CreatePrecompileTest {
                                                 new byte[] {},
                                                 EntityIdUtils.contractIdFromEvmAddress(
                                                         contractAddress)))));
-        Bytes pretendArguments =
-                Bytes.of(Integers.toBytes(ABI_ID_CREATE_FUNGIBLE_TOKEN.getFunctionSelector()));
+        Bytes pretendArguments = Bytes.of(Integers.toBytes(ABI_ID_CREATE_FUNGIBLE_TOKEN));
         given(decoder.decodeFungibleCreate(eq(pretendArguments), any()))
                 .willReturn(tokenCreateWrapper);
 
@@ -331,8 +328,7 @@ class CreatePrecompileTest {
                                                         [JECDSASecp256k1Key
                                                                 .ECDSA_SECP256K1_COMPRESSED_KEY_LENGTH],
                                                 null))));
-        Bytes pretendArguments =
-                Bytes.of(Integers.toBytes(ABI_ID_CREATE_NON_FUNGIBLE_TOKEN.getFunctionSelector()));
+        Bytes pretendArguments = Bytes.of(Integers.toBytes(ABI_ID_CREATE_NON_FUNGIBLE_TOKEN));
         given(decoder.decodeNonFungibleCreate(eq(pretendArguments), any()))
                 .willReturn(tokenCreateWrapper);
         given(wrappedLedgers.accounts()).willReturn(accounts);
@@ -360,10 +356,7 @@ class CreatePrecompileTest {
                                                         contractAddress)))));
         tokenCreateWrapper.setFixedFees(List.of(fixedFee));
         tokenCreateWrapper.setFractionalFees(List.of(HTSTestsUtil.fractionalFee));
-        Bytes pretendArguments =
-                Bytes.of(
-                        Integers.toBytes(
-                                ABI_ID_CREATE_FUNGIBLE_TOKEN_WITH_FEES.getFunctionSelector()));
+        Bytes pretendArguments = Bytes.of(Integers.toBytes(ABI_ID_CREATE_FUNGIBLE_TOKEN_WITH_FEES));
         given(decoder.decodeFungibleCreateWithFees(eq(pretendArguments), any()))
                 .willReturn(tokenCreateWrapper);
 
@@ -383,9 +376,7 @@ class CreatePrecompileTest {
         tokenCreateWrapper.setFixedFees(List.of(fixedFee));
         tokenCreateWrapper.setRoyaltyFees(List.of(HTSTestsUtil.royaltyFee));
         Bytes pretendArguments =
-                Bytes.of(
-                        Integers.toBytes(
-                                ABI_ID_CREATE_NON_FUNGIBLE_TOKEN_WITH_FEES.getFunctionSelector()));
+                Bytes.of(Integers.toBytes(ABI_ID_CREATE_NON_FUNGIBLE_TOKEN_WITH_FEES));
         given(wrappedLedgers.accounts()).willReturn(accounts);
         given(accounts.get(any(), eq(AUTO_RENEW_ACCOUNT_ID)))
                 .willReturn(EntityId.fromGrpcAccountId(account));
@@ -408,8 +399,7 @@ class CreatePrecompileTest {
         given(aliases.resolveForEvm(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
         given(worldUpdater.aliases()).willReturn(aliases);
-        Bytes pretendArguments =
-                Bytes.of(Integers.toBytes(ABI_ID_CREATE_FUNGIBLE_TOKEN.getFunctionSelector()));
+        Bytes pretendArguments = Bytes.of(Integers.toBytes(ABI_ID_CREATE_FUNGIBLE_TOKEN));
         final var tokenCreateWrapper =
                 createTokenCreateWrapperWithKeys(
                         List.of(
@@ -473,8 +463,7 @@ class CreatePrecompileTest {
         given(worldUpdater.parentUpdater()).willReturn(parent);
         given(worldUpdater.wrappedTrackingLedgers(any())).willReturn(wrappedLedgers);
         given(wrappedLedgers.accounts()).willReturn(accounts);
-        Bytes pretendArguments =
-                Bytes.of(Integers.toBytes(ABI_ID_CREATE_FUNGIBLE_TOKEN.getFunctionSelector()));
+        Bytes pretendArguments = Bytes.of(Integers.toBytes(ABI_ID_CREATE_FUNGIBLE_TOKEN));
         final var tokenCreateWrapper =
                 createTokenCreateWrapperWithKeys(
                         List.of(
@@ -535,8 +524,7 @@ class CreatePrecompileTest {
         given(worldUpdater.parentUpdater()).willReturn(parent);
         given(worldUpdater.wrappedTrackingLedgers(any())).willReturn(wrappedLedgers);
         given(wrappedLedgers.accounts()).willReturn(accounts);
-        Bytes pretendArguments =
-                Bytes.of(Integers.toBytes(ABI_ID_CREATE_FUNGIBLE_TOKEN.getFunctionSelector()));
+        Bytes pretendArguments = Bytes.of(Integers.toBytes(ABI_ID_CREATE_FUNGIBLE_TOKEN));
         final var keyValueMock = Mockito.mock(TokenCreateWrapper.KeyValueWrapper.class);
         when(keyValueMock.getKeyValueType())
                 .thenReturn(TokenCreateWrapper.KeyValueWrapper.KeyValueType.CONTRACT_ID)
@@ -832,8 +820,7 @@ class CreatePrecompileTest {
         given(dynamicProperties.isHTSPrecompileCreateEnabled()).willReturn(true);
         given(frame.getWorldUpdater()).willReturn(worldUpdater);
         given(worldUpdater.wrappedTrackingLedgers(any())).willReturn(wrappedLedgers);
-        Bytes pretendArguments =
-                Bytes.of(Integers.toBytes(ABI_ID_CREATE_NON_FUNGIBLE_TOKEN.getFunctionSelector()));
+        Bytes pretendArguments = Bytes.of(Integers.toBytes(ABI_ID_CREATE_NON_FUNGIBLE_TOKEN));
         given(decoder.decodeNonFungibleCreate(eq(pretendArguments), any()))
                 .willReturn(tokenCreateWrapper);
         given(frame.getSenderAddress()).willReturn(senderAddress);

@@ -16,6 +16,7 @@
 package com.hedera.services.store.contracts.precompile;
 
 import static com.hedera.services.state.EntityCreator.EMPTY_MEMO;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_BURN_TOKEN;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.AMOUNT;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.DEFAULT_GAS_PRICE;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.TEST_CONSENSUS_TIME;
@@ -38,7 +39,6 @@ import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.recipi
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.successResult;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.targetSerialNos;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.timestamp;
-import static com.hedera.services.store.contracts.precompile.PrecompileFunctionSelector.ABI_ID_BURN_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
@@ -117,8 +117,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class BurnPrecompilesTest {
 
-    private final Bytes pretendArguments =
-            Bytes.of(Integers.toBytes(ABI_ID_BURN_TOKEN.getFunctionSelector()));
+    private final Bytes pretendArguments = Bytes.of(Integers.toBytes(ABI_ID_BURN_TOKEN));
 
     @Mock private AccountStore accountStore;
     @Mock private TypedTokenStore tokenStore;
@@ -463,7 +462,7 @@ class BurnPrecompilesTest {
         // given
         givenMinFrameContext();
         givenPricingUtilsContext();
-        Bytes input = Bytes.of(Integers.toBytes(ABI_ID_BURN_TOKEN.getFunctionSelector()));
+        Bytes input = Bytes.of(Integers.toBytes(ABI_ID_BURN_TOKEN));
         given(decoder.decodeBurn(any())).willReturn(fungibleBurn);
         given(syntheticTxnFactory.createBurn(any()))
                 .willReturn(

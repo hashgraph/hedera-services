@@ -15,13 +15,13 @@
  */
 package com.hedera.services.store.contracts.precompile;
 
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_IS_KYC;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.accountAddr;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.contractAddress;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.fungibleTokenAddr;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.grantRevokeKycWrapper;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.successResult;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.timestamp;
-import static com.hedera.services.store.contracts.precompile.PrecompileFunctionSelector.ABI_ID_IS_KYC;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
@@ -142,15 +142,13 @@ class IsKycPrecompileTest {
                             + "00000000000000000000000000000000000000000000000000001");
         final Bytes pretendArguments =
                 Bytes.concatenate(
-                        Bytes.of(Integers.toBytes(ABI_ID_IS_KYC.getFunctionSelector())),
-                        fungibleTokenAddr,
-                        accountAddr);
+                        Bytes.of(Integers.toBytes(ABI_ID_IS_KYC)), fungibleTokenAddr, accountAddr);
         givenMinimalFrameContext();
         givenMinimalFeesContext();
         givenLedgers();
         given(wrappedLedgers.isKyc(any(), any())).willReturn(true);
         givenMinimalContextForSuccessfulCall();
-        Bytes input = Bytes.of(Integers.toBytes(ABI_ID_IS_KYC.getFunctionSelector()));
+        Bytes input = Bytes.of(Integers.toBytes(ABI_ID_IS_KYC));
         given(syntheticTxnFactory.createTransactionCall(1L, pretendArguments))
                 .willReturn(mockSynthBodyBuilder);
         given(decoder.decodeIsKyc(any(), any())).willReturn(grantRevokeKycWrapper);

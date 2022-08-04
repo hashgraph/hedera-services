@@ -16,7 +16,27 @@
 package com.hedera.services.store.contracts.precompile;
 
 import static com.hedera.services.state.EntityCreator.EMPTY_MEMO;
-import static com.hedera.services.store.contracts.precompile.EventConstants.TRANSFER_EVENT;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_ALLOWANCE;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_APPROVE;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_APPROVE_NFT;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_ERC_ALLOWANCE;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_ERC_APPROVE;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_ERC_BALANCE_OF_TOKEN;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_ERC_DECIMALS;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_ERC_GET_APPROVED;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_ERC_IS_APPROVED_FOR_ALL;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_ERC_NAME;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_ERC_OWNER_OF_NFT;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_ERC_SET_APPROVAL_FOR_ALL;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_ERC_SYMBOL;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_ERC_TOKEN_URI_NFT;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_ERC_TOTAL_SUPPLY_TOKEN;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_ERC_TRANSFER;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_ERC_TRANSFER_FROM;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_GET_APPROVED;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_IS_APPROVED_FOR_ALL;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_REDIRECT_FOR_TOKEN;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_SET_APPROVAL_FOR_ALL;
 import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.HTS_PRECOMPILED_CONTRACT_ADDRESS;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.AMOUNT;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.NOT_SUPPORTED_FUNGIBLE_OPERATION_REASON;
@@ -38,27 +58,6 @@ import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.timest
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.token;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.tokenAddress;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.tokenTransferChanges;
-import static com.hedera.services.store.contracts.precompile.PrecompileFunctionSelector.ABI_ID_ALLOWANCE;
-import static com.hedera.services.store.contracts.precompile.PrecompileFunctionSelector.ABI_ID_APPROVE;
-import static com.hedera.services.store.contracts.precompile.PrecompileFunctionSelector.ABI_ID_APPROVE_NFT;
-import static com.hedera.services.store.contracts.precompile.PrecompileFunctionSelector.ABI_ID_ERC_ALLOWANCE;
-import static com.hedera.services.store.contracts.precompile.PrecompileFunctionSelector.ABI_ID_ERC_APPROVE;
-import static com.hedera.services.store.contracts.precompile.PrecompileFunctionSelector.ABI_ID_ERC_BALANCE_OF_TOKEN;
-import static com.hedera.services.store.contracts.precompile.PrecompileFunctionSelector.ABI_ID_ERC_DECIMALS;
-import static com.hedera.services.store.contracts.precompile.PrecompileFunctionSelector.ABI_ID_ERC_GET_APPROVED;
-import static com.hedera.services.store.contracts.precompile.PrecompileFunctionSelector.ABI_ID_ERC_IS_APPROVED_FOR_ALL;
-import static com.hedera.services.store.contracts.precompile.PrecompileFunctionSelector.ABI_ID_ERC_NAME;
-import static com.hedera.services.store.contracts.precompile.PrecompileFunctionSelector.ABI_ID_ERC_OWNER_OF_NFT;
-import static com.hedera.services.store.contracts.precompile.PrecompileFunctionSelector.ABI_ID_ERC_SET_APPROVAL_FOR_ALL;
-import static com.hedera.services.store.contracts.precompile.PrecompileFunctionSelector.ABI_ID_ERC_SYMBOL;
-import static com.hedera.services.store.contracts.precompile.PrecompileFunctionSelector.ABI_ID_ERC_TOKEN_URI_NFT;
-import static com.hedera.services.store.contracts.precompile.PrecompileFunctionSelector.ABI_ID_ERC_TOTAL_SUPPLY_TOKEN;
-import static com.hedera.services.store.contracts.precompile.PrecompileFunctionSelector.ABI_ID_ERC_TRANSFER;
-import static com.hedera.services.store.contracts.precompile.PrecompileFunctionSelector.ABI_ID_ERC_TRANSFER_FROM;
-import static com.hedera.services.store.contracts.precompile.PrecompileFunctionSelector.ABI_ID_GET_APPROVED;
-import static com.hedera.services.store.contracts.precompile.PrecompileFunctionSelector.ABI_ID_IS_APPROVED_FOR_ALL;
-import static com.hedera.services.store.contracts.precompile.PrecompileFunctionSelector.ABI_ID_REDIRECT_FOR_TOKEN;
-import static com.hedera.services.store.contracts.precompile.PrecompileFunctionSelector.ABI_ID_SET_APPROVAL_FOR_ALL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
@@ -278,9 +277,9 @@ class ERC20PrecompilesTest {
         given(worldUpdater.wrappedTrackingLedgers(any())).willReturn(wrappedLedgers);
         Bytes pretendArgumentsApprove =
                 Bytes.concatenate(
-                        Bytes.of(Integers.toBytes(ABI_ID_REDIRECT_FOR_TOKEN.getFunctionSelector())),
+                        Bytes.of(Integers.toBytes(ABI_ID_REDIRECT_FOR_TOKEN)),
                         fungibleTokenAddr,
-                        Bytes.of(Integers.toBytes(ABI_ID_ERC_APPROVE.getFunctionSelector())));
+                        Bytes.of(Integers.toBytes(ABI_ID_ERC_APPROVE)));
 
         // when:
         subject.prepareFields(frame);
@@ -291,9 +290,9 @@ class ERC20PrecompilesTest {
 
         Bytes pretendArgumentsTransferFrom =
                 Bytes.concatenate(
-                        Bytes.of(Integers.toBytes(ABI_ID_REDIRECT_FOR_TOKEN.getFunctionSelector())),
+                        Bytes.of(Integers.toBytes(ABI_ID_REDIRECT_FOR_TOKEN)),
                         fungibleTokenAddr,
-                        Bytes.of(Integers.toBytes(ABI_ID_ERC_TRANSFER_FROM.getFunctionSelector())));
+                        Bytes.of(Integers.toBytes(ABI_ID_ERC_TRANSFER_FROM)));
 
         // when:
         subject.prepareFields(frame);
@@ -304,9 +303,9 @@ class ERC20PrecompilesTest {
 
         Bytes pretendArgumentsAllowance =
                 Bytes.concatenate(
-                        Bytes.of(Integers.toBytes(ABI_ID_REDIRECT_FOR_TOKEN.getFunctionSelector())),
+                        Bytes.of(Integers.toBytes(ABI_ID_REDIRECT_FOR_TOKEN)),
                         fungibleTokenAddr,
-                        Bytes.of(Integers.toBytes(ABI_ID_ERC_ALLOWANCE.getFunctionSelector())));
+                        Bytes.of(Integers.toBytes(ABI_ID_ERC_ALLOWANCE)));
 
         // when:
         subject.prepareFields(frame);
@@ -317,11 +316,9 @@ class ERC20PrecompilesTest {
 
         Bytes pretendArgumentsApproveForAll =
                 Bytes.concatenate(
-                        Bytes.of(Integers.toBytes(ABI_ID_REDIRECT_FOR_TOKEN.getFunctionSelector())),
+                        Bytes.of(Integers.toBytes(ABI_ID_REDIRECT_FOR_TOKEN)),
                         fungibleTokenAddr,
-                        Bytes.of(
-                                Integers.toBytes(
-                                        ABI_ID_ERC_SET_APPROVAL_FOR_ALL.getFunctionSelector())));
+                        Bytes.of(Integers.toBytes(ABI_ID_ERC_SET_APPROVAL_FOR_ALL)));
 
         // when:
         subject.prepareFields(frame);
@@ -332,9 +329,9 @@ class ERC20PrecompilesTest {
 
         Bytes pretendArgumentsGetApproved =
                 Bytes.concatenate(
-                        Bytes.of(Integers.toBytes(ABI_ID_REDIRECT_FOR_TOKEN.getFunctionSelector())),
+                        Bytes.of(Integers.toBytes(ABI_ID_REDIRECT_FOR_TOKEN)),
                         fungibleTokenAddr,
-                        Bytes.of(Integers.toBytes(ABI_ID_ERC_GET_APPROVED.getFunctionSelector())));
+                        Bytes.of(Integers.toBytes(ABI_ID_ERC_GET_APPROVED)));
 
         // when:
         subject.prepareFields(frame);
@@ -345,11 +342,9 @@ class ERC20PrecompilesTest {
 
         Bytes pretendArgumentsApprovedForAll =
                 Bytes.concatenate(
-                        Bytes.of(Integers.toBytes(ABI_ID_REDIRECT_FOR_TOKEN.getFunctionSelector())),
+                        Bytes.of(Integers.toBytes(ABI_ID_REDIRECT_FOR_TOKEN)),
                         fungibleTokenAddr,
-                        Bytes.of(
-                                Integers.toBytes(
-                                        ABI_ID_ERC_IS_APPROVED_FOR_ALL.getFunctionSelector())));
+                        Bytes.of(Integers.toBytes(ABI_ID_ERC_IS_APPROVED_FOR_ALL)));
 
         // when:
         subject.prepareFields(frame);
@@ -366,7 +361,7 @@ class ERC20PrecompilesTest {
 
         given(worldUpdater.wrappedTrackingLedgers(any())).willReturn(wrappedLedgers);
         Bytes pretendArgumentsApprove =
-                Bytes.concatenate(Bytes.of(Integers.toBytes(ABI_ID_APPROVE.getFunctionSelector())));
+                Bytes.concatenate(Bytes.of(Integers.toBytes(ABI_ID_APPROVE)));
 
         // when:
         subject.prepareFields(frame);
@@ -376,8 +371,7 @@ class ERC20PrecompilesTest {
                 () -> subject.prepareComputation(pretendArgumentsApprove, a -> a));
 
         Bytes pretendArgumentsAllowance =
-                Bytes.concatenate(
-                        Bytes.of(Integers.toBytes(ABI_ID_ALLOWANCE.getFunctionSelector())));
+                Bytes.concatenate(Bytes.of(Integers.toBytes(ABI_ID_ALLOWANCE)));
 
         // when:
         subject.prepareFields(frame);
@@ -387,10 +381,7 @@ class ERC20PrecompilesTest {
                 () -> subject.prepareComputation(pretendArgumentsAllowance, a -> a));
 
         Bytes pretendArgumentsApproveForAll =
-                Bytes.concatenate(
-                        Bytes.of(
-                                Integers.toBytes(
-                                        ABI_ID_SET_APPROVAL_FOR_ALL.getFunctionSelector())));
+                Bytes.concatenate(Bytes.of(Integers.toBytes(ABI_ID_SET_APPROVAL_FOR_ALL)));
 
         // when:
         subject.prepareFields(frame);
@@ -400,8 +391,7 @@ class ERC20PrecompilesTest {
                 () -> subject.prepareComputation(pretendArgumentsApproveForAll, a -> a));
 
         Bytes pretendArgumentsGetApproved =
-                Bytes.concatenate(
-                        Bytes.of(Integers.toBytes(ABI_ID_GET_APPROVED.getFunctionSelector())));
+                Bytes.concatenate(Bytes.of(Integers.toBytes(ABI_ID_GET_APPROVED)));
 
         // when:
         subject.prepareFields(frame);
@@ -411,10 +401,7 @@ class ERC20PrecompilesTest {
                 () -> subject.prepareComputation(pretendArgumentsGetApproved, a -> a));
 
         Bytes pretendArgumentsApprovedForAll =
-                Bytes.concatenate(
-                        Bytes.of(
-                                Integers.toBytes(
-                                        ABI_ID_IS_APPROVED_FOR_ALL.getFunctionSelector())));
+                Bytes.concatenate(Bytes.of(Integers.toBytes(ABI_ID_IS_APPROVED_FOR_ALL)));
 
         // when:
         subject.prepareFields(frame);
@@ -440,8 +427,7 @@ class ERC20PrecompilesTest {
 
     @Test
     void gasCalculationForReadOnlyMethod() {
-        Bytes nestedPretendArguments =
-                Bytes.of(Integers.toBytes(ABI_ID_ERC_NAME.getFunctionSelector()));
+        Bytes nestedPretendArguments = Bytes.of(Integers.toBytes(ABI_ID_ERC_NAME));
         Bytes pretendArguments = givenMinimalFrameContext(nestedPretendArguments);
 
         given(syntheticTxnFactory.createTransactionCall(1L, pretendArguments))
@@ -479,8 +465,7 @@ class ERC20PrecompilesTest {
 
     @Test
     void gasCalculationForModifyingMethod() {
-        Bytes nestedPretendArguments =
-                Bytes.of(Integers.toBytes(ABI_ID_ERC_TRANSFER.getFunctionSelector()));
+        Bytes nestedPretendArguments = Bytes.of(Integers.toBytes(ABI_ID_ERC_TRANSFER));
         Bytes pretendArguments = givenMinimalFrameContext(nestedPretendArguments);
         givenLedgers();
         givenPricingUtilsContext();
@@ -555,8 +540,7 @@ class ERC20PrecompilesTest {
 
     @Test
     void name() {
-        Bytes nestedPretendArguments =
-                Bytes.of(Integers.toBytes(ABI_ID_ERC_NAME.getFunctionSelector()));
+        Bytes nestedPretendArguments = Bytes.of(Integers.toBytes(ABI_ID_ERC_NAME));
         Bytes pretendArguments = givenMinimalFrameContext(nestedPretendArguments);
 
         given(syntheticTxnFactory.createTransactionCall(1L, pretendArguments))
@@ -599,8 +583,7 @@ class ERC20PrecompilesTest {
 
     @Test
     void symbol() {
-        Bytes nestedPretendArguments =
-                Bytes.of(Integers.toBytes(ABI_ID_ERC_SYMBOL.getFunctionSelector()));
+        Bytes nestedPretendArguments = Bytes.of(Integers.toBytes(ABI_ID_ERC_SYMBOL));
         Bytes pretendArguments = givenMinimalFrameContext(nestedPretendArguments);
 
         given(syntheticTxnFactory.createTransactionCall(1L, pretendArguments))
@@ -638,8 +621,7 @@ class ERC20PrecompilesTest {
 
     @Test
     void decimals() {
-        Bytes nestedPretendArguments =
-                Bytes.of(Integers.toBytes(ABI_ID_ERC_DECIMALS.getFunctionSelector()));
+        Bytes nestedPretendArguments = Bytes.of(Integers.toBytes(ABI_ID_ERC_DECIMALS));
         Bytes pretendArguments = givenMinimalFrameContext(nestedPretendArguments);
 
         given(syntheticTxnFactory.createTransactionCall(1L, pretendArguments))
@@ -679,8 +661,7 @@ class ERC20PrecompilesTest {
 
     @Test
     void totalSupply() {
-        Bytes nestedPretendArguments =
-                Bytes.of(Integers.toBytes(ABI_ID_ERC_TOTAL_SUPPLY_TOKEN.getFunctionSelector()));
+        Bytes nestedPretendArguments = Bytes.of(Integers.toBytes(ABI_ID_ERC_TOTAL_SUPPLY_TOKEN));
         Bytes pretendArguments = givenMinimalFrameContext(nestedPretendArguments);
         given(syntheticTxnFactory.createTransactionCall(1L, pretendArguments))
                 .willReturn(mockSynthBodyBuilder);
@@ -726,8 +707,7 @@ class ERC20PrecompilesTest {
                         EntityNum.fromLong(receiver.getAccountNum())),
                 10L);
 
-        Bytes nestedPretendArguments =
-                Bytes.of(Integers.toBytes(ABI_ID_ERC_ALLOWANCE.getFunctionSelector()));
+        Bytes nestedPretendArguments = Bytes.of(Integers.toBytes(ABI_ID_ERC_ALLOWANCE));
         Bytes pretendArguments = givenMinimalFrameContext(nestedPretendArguments);
         given(wrappedLedgers.accounts()).willReturn(accounts);
         given(dynamicProperties.areAllowancesEnabled()).willReturn(true);
@@ -778,7 +758,7 @@ class ERC20PrecompilesTest {
                         EntityNum.fromLong(receiver.getAccountNum())),
                 10L);
 
-        Bytes pretendArguments = Bytes.of(Integers.toBytes(ABI_ID_ALLOWANCE.getFunctionSelector()));
+        Bytes pretendArguments = Bytes.of(Integers.toBytes(ABI_ID_ALLOWANCE));
         givenMinimalFrameContext(pretendArguments);
         given(wrappedLedgers.accounts()).willReturn(accounts);
         given(dynamicProperties.areAllowancesEnabled()).willReturn(true);
@@ -822,8 +802,7 @@ class ERC20PrecompilesTest {
 
     @Test
     void balanceOf() {
-        Bytes nestedPretendArguments =
-                Bytes.of(Integers.toBytes(ABI_ID_ERC_BALANCE_OF_TOKEN.getFunctionSelector()));
+        Bytes nestedPretendArguments = Bytes.of(Integers.toBytes(ABI_ID_ERC_BALANCE_OF_TOKEN));
         Bytes pretendArguments = givenMinimalFrameContext(nestedPretendArguments);
 
         given(syntheticTxnFactory.createTransactionCall(1L, pretendArguments))
@@ -877,8 +856,7 @@ class ERC20PrecompilesTest {
     void allowanceValidation() {
         givenPricingUtilsContext();
 
-        Bytes nestedPretendArguments =
-                Bytes.of(Integers.toBytes(ABI_ID_ERC_APPROVE.getFunctionSelector()));
+        Bytes nestedPretendArguments = Bytes.of(Integers.toBytes(ABI_ID_ERC_APPROVE));
         Bytes pretendArguments = givenMinimalFrameContext(nestedPretendArguments);
 
         given(
@@ -918,8 +896,7 @@ class ERC20PrecompilesTest {
         List<TokenAllowance> tokenAllowances = new ArrayList<>();
         List<NftAllowance> nftAllowances = new ArrayList<>();
 
-        Bytes nestedPretendArguments =
-                Bytes.of(Integers.toBytes(ABI_ID_ERC_APPROVE.getFunctionSelector()));
+        Bytes nestedPretendArguments = Bytes.of(Integers.toBytes(ABI_ID_ERC_APPROVE));
         Bytes pretendArguments = givenMinimalFrameContext(nestedPretendArguments);
         givenLedgers();
         givenPricingUtilsContext();
@@ -994,7 +971,7 @@ class ERC20PrecompilesTest {
         List<TokenAllowance> tokenAllowances = new ArrayList<>();
         List<NftAllowance> nftAllowances = new ArrayList<>();
 
-        Bytes pretendArguments = Bytes.of(Integers.toBytes(ABI_ID_APPROVE.getFunctionSelector()));
+        Bytes pretendArguments = Bytes.of(Integers.toBytes(ABI_ID_APPROVE));
         givenMinimalFrameContext(pretendArguments);
         givenLedgers();
         givenPricingUtilsContext();
@@ -1066,8 +1043,7 @@ class ERC20PrecompilesTest {
         List<TokenAllowance> tokenAllowances = new ArrayList<>();
         List<NftAllowance> nftAllowances = new ArrayList<>();
 
-        Bytes pretendArguments =
-                Bytes.of(Integers.toBytes(ABI_ID_APPROVE_NFT.getFunctionSelector()));
+        Bytes pretendArguments = Bytes.of(Integers.toBytes(ABI_ID_APPROVE_NFT));
         givenMinimalFrameContext(pretendArguments);
         givenLedgers();
         givenPricingUtilsContext();
@@ -1136,8 +1112,7 @@ class ERC20PrecompilesTest {
 
     @Test
     void transfer() {
-        Bytes nestedPretendArguments =
-                Bytes.of(Integers.toBytes(ABI_ID_ERC_TRANSFER.getFunctionSelector()));
+        Bytes nestedPretendArguments = Bytes.of(Integers.toBytes(ABI_ID_ERC_TRANSFER));
         Bytes pretendArguments = givenMinimalFrameContext(nestedPretendArguments);
         givenLedgers();
         givenPricingUtilsContext();
@@ -1198,7 +1173,7 @@ class ERC20PrecompilesTest {
         final var log =
                 EncodingFacade.LogBuilder.logBuilder()
                         .forLogger(tokenAddress)
-                        .forEventSignature(TRANSFER_EVENT)
+                        .forEventSignature(AbiConstants.TRANSFER_EVENT)
                         .forIndexedArgument(senderAddress)
                         .forIndexedArgument(recipientAddress)
                         .forDataItem(AMOUNT)
@@ -1221,8 +1196,7 @@ class ERC20PrecompilesTest {
 
     @Test
     void transferFrom() {
-        Bytes nestedPretendArguments =
-                Bytes.of(Integers.toBytes(ABI_ID_ERC_TRANSFER_FROM.getFunctionSelector()));
+        Bytes nestedPretendArguments = Bytes.of(Integers.toBytes(ABI_ID_ERC_TRANSFER_FROM));
         Bytes pretendArguments = givenMinimalFrameContext(nestedPretendArguments);
         givenLedgers();
         givenPricingUtilsContext();
@@ -1299,8 +1273,7 @@ class ERC20PrecompilesTest {
 
     @Test
     void transferFails() {
-        Bytes nestedPretendArguments =
-                Bytes.of(Integers.toBytes(ABI_ID_ERC_TRANSFER.getFunctionSelector()));
+        Bytes nestedPretendArguments = Bytes.of(Integers.toBytes(ABI_ID_ERC_TRANSFER));
         Bytes pretendArguments = givenMinimalFrameContext(nestedPretendArguments);
         givenLedgers();
         givenPricingUtilsContext();
@@ -1360,8 +1333,7 @@ class ERC20PrecompilesTest {
 
     @Test
     void ownerOfNotSupported() {
-        Bytes nestedPretendArguments =
-                Bytes.of(Integers.toBytes(ABI_ID_ERC_OWNER_OF_NFT.getFunctionSelector()));
+        Bytes nestedPretendArguments = Bytes.of(Integers.toBytes(ABI_ID_ERC_OWNER_OF_NFT));
         Bytes pretendArguments =
                 givenMinimalFrameContextWithoutParentUpdater(nestedPretendArguments);
 
@@ -1377,8 +1349,7 @@ class ERC20PrecompilesTest {
 
     @Test
     void tokenURINotSupported() {
-        Bytes nestedPretendArguments =
-                Bytes.of(Integers.toBytes(ABI_ID_ERC_TOKEN_URI_NFT.getFunctionSelector()));
+        Bytes nestedPretendArguments = Bytes.of(Integers.toBytes(ABI_ID_ERC_TOKEN_URI_NFT));
         Bytes pretendArguments =
                 givenMinimalFrameContextWithoutParentUpdater(nestedPretendArguments);
 
@@ -1401,7 +1372,7 @@ class ERC20PrecompilesTest {
         given(worldUpdater.parentUpdater()).willReturn(parent);
         given(worldUpdater.wrappedTrackingLedgers(any())).willReturn(wrappedLedgers);
         return Bytes.concatenate(
-                Bytes.of(Integers.toBytes(ABI_ID_REDIRECT_FOR_TOKEN.getFunctionSelector())),
+                Bytes.of(Integers.toBytes(ABI_ID_REDIRECT_FOR_TOKEN)),
                 fungibleTokenAddr,
                 nestedArg);
     }
@@ -1411,7 +1382,7 @@ class ERC20PrecompilesTest {
         given(frame.getWorldUpdater()).willReturn(worldUpdater);
         given(worldUpdater.wrappedTrackingLedgers(any())).willReturn(wrappedLedgers);
         return Bytes.concatenate(
-                Bytes.of(Integers.toBytes(ABI_ID_REDIRECT_FOR_TOKEN.getFunctionSelector())),
+                Bytes.of(Integers.toBytes(ABI_ID_REDIRECT_FOR_TOKEN)),
                 fungibleTokenAddr,
                 nestedArg);
     }
