@@ -25,6 +25,11 @@ import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
 public class TokenUpdateValidator {
+
+    private TokenUpdateValidator() {
+        throw new UnsupportedOperationException("Utility class");
+    }
+
     public static ResponseCodeEnum validate(TransactionBody txnBody, OptionValidator validator) {
         TokenUpdateTransactionBody op = txnBody.getTokenUpdate();
 

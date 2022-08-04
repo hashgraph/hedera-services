@@ -79,6 +79,7 @@ import com.hedera.services.txns.submission.SubmissionModule;
 import com.hedera.services.txns.token.TokenLogicModule;
 import com.hedera.services.txns.token.TokenOpsValidator;
 import com.hedera.services.txns.token.process.NewRels;
+import com.hedera.services.txns.util.TokenUpdateValidator;
 import com.hedera.services.txns.util.UtilLogicModule;
 import com.hedera.services.txns.validation.PureValidation;
 import com.hedera.services.txns.validation.TokenListChecks;
@@ -173,7 +174,8 @@ class UtilsConstructorTest {
                             Units.class,
                             StakingUtils.class,
                             UtilLogicModule.class,
-                            PrecompileUtils.class));
+                            PrecompileUtils.class,
+                            TokenUpdateValidator.class));
 
     @Test
     void throwsInConstructor() {
