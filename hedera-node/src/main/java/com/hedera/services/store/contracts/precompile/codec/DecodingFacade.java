@@ -439,6 +439,19 @@ public class DecodingFacade {
     private static final ABIType<Tuple> TOKEN_UPDATE_INFO_DECODER =
             TypeFactory.create("(bytes32," + HEDERA_TOKEN_STRUCT_DECODER + ")");
 
+    private static final Function GET_TOKEN_EXPIRY_INFO_FUNCTION =
+            new Function("getFungibleTokenInfo(address)");
+    private static final Bytes GET_TOKEN_EXPIRY_INFO_SELECTOR =
+            Bytes.wrap(GET_TOKEN_EXPIRY_INFO_FUNCTION.selector());
+    private static final ABIType<Tuple> GET_TOKEN_EXPIRY_INFO_DECODER = TypeFactory.create(BYTES32);
+
+    private static final Function TOKEN_UPDATE_EXPIRY_INFO_FUNCTION =
+            new Function("updateTokenInfo(address," + EXPIRY + ")");
+    private static final Bytes TOKEN_UPDATE_EXPIRY_INFO_SELECTOR =
+            Bytes.wrap(TOKEN_UPDATE_EXPIRY_INFO_FUNCTION.selector());
+    private static final ABIType<Tuple> TOKEN_UPDATE_EXPIRY_INFO_DECODER =
+            TypeFactory.create("(bytes32," + EXPIRY_DECODER + ")");
+
     @Inject
     public DecodingFacade() {
         // empty constructor
@@ -1052,6 +1065,27 @@ public class DecodingFacade {
 
         final var tokenID = convertAddressBytesToTokenID(decodedArguments.get(0));
         return new TokenGetCustomFeesWrapper(tokenID);
+    }
+
+    public GetTokenExpiryInfoWrapper decodeGetTokenExpiryInfo(final Bytes input) {
+        final Tuple decodedArguments =
+                decodeFunctionCall(
+                        input, GET_TOKEN_EXPIRY_INFO_SELECTOR, GET_TOKEN_EXPIRY_INFO_DECODER);
+
+        final var tokenID = convertAddressBytesToTokenID(decodedArguments.get(0));
+        return new GetTokenExpiryInfoWrapper(tokenID);
+    }
+
+    public TokenUpdateExpiryInfoWrapper decodeUpdateTokenExpiryInfo(
+            final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
+        final Tuple decodedArguments =
+                decodeFunctionCall(
+                        input, TOKEN_UPDATE_EXPIRY_INFO_SELECTOR, TOKEN_UPDATE_EXPIRY_INFO_DECODER);
+
+        final var tokenID = convertAddressBytesToTokenID(decodedArguments.get(0));
+        final Tuple tokenExpiryStruct = decodedArguments.get(1);
+        final var tokenExpiry = decodeTokenExpiry(tokenExpiryStruct, aliasResolver);
+        return new TokenUpdateExpiryInfoWrapper(tokenID, tokenExpiry);
     }
 
     private TokenCreateWrapper decodeTokenCreateWithoutFees(

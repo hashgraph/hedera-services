@@ -18,6 +18,7 @@ package com.hedera.services.bdd.suites.utils.contracts.precompile;
 import static com.hedera.services.contracts.ParsingConstants.ADDRESS;
 import static com.hedera.services.contracts.ParsingConstants.ARRAY_BRACKETS;
 import static com.hedera.services.contracts.ParsingConstants.BYTES32;
+import static com.hedera.services.contracts.ParsingConstants.EXPIRY;
 import static com.hedera.services.contracts.ParsingConstants.FIXED_FEE;
 import static com.hedera.services.contracts.ParsingConstants.FRACTIONAL_FEE;
 import static com.hedera.services.contracts.ParsingConstants.HEDERA_TOKEN;
@@ -74,6 +75,7 @@ public class HTSPrecompileResult implements ContractCallResult {
             FRACTIONAL_FEE.replace(ADDRESS_TYPE, BYTES_32_TYPE);
     public static final String ROYALTY_FEE_REPLACED_ADDRESS =
             ROYALTY_FEE.replace(ADDRESS_TYPE, BYTES_32_TYPE);
+    public static final String EXPIRY_REPLACED_ADDRESS = EXPIRY.replace(ADDRESS_TYPE, BYTES_32_TYPE);
     public static final String TOKEN_INFO_REPLACED_ADDRESS =
             "("
                     + HEDERA_TOKEN.replace(removeBrackets(ADDRESS), removeBrackets(BYTES32))
@@ -113,6 +115,8 @@ public class HTSPrecompileResult implements ContractCallResult {
                             + ROYALTY_FEE_REPLACED_ADDRESS
                             + ARRAY_BRACKETS
                             + ")");
+    public static final TupleType getTokenExpiryInfoTypeReplacedAddress =
+        TupleType.parse(RESPONSE_STATUS_AT_BEGINNING + EXPIRY_REPLACED_ADDRESS + ")");
 
     public static HTSPrecompileResult htsPrecompileResult() {
         return new HTSPrecompileResult();
@@ -139,6 +143,9 @@ public class HTSPrecompileResult implements ContractCallResult {
     private boolean tokenDefaultKycStatus;
     private boolean isFrozen;
     private List<CustomFee> customFees;
+    private long expiry;
+    private long autoRenewPeriod;
+    private byte[] autoRenewAccount;
 
     public HTSPrecompileResult forFunction(final FunctionType functionType) {
         tupleType =
@@ -166,6 +173,7 @@ public class HTSPrecompileResult implements ContractCallResult {
                     case GET_TOKEN_DEFAULT_KYC_STATUS -> getTokenDefaultKycStatusType;
                     case HAPI_IS_FROZEN -> isFrozenType;
                     case HAPI_GET_TOKEN_CUSTOM_FEES -> tokenGetCustomFeesReplacedAddress;
+                    case HAPI_GET_TOKEN_EXPIRY_INFO -> getTokenExpiryInfoTypeReplacedAddress;
                     default -> notSpecifiedType;
                 };
 
@@ -267,6 +275,13 @@ public class HTSPrecompileResult implements ContractCallResult {
         return this;
     }
 
+    public HTSPrecompileResult withExpiry(final long expiry, final long autoRenewPeriod, final byte[] autoRenewAccount) {
+        this.expiry = expiry;
+        this.autoRenewPeriod = autoRenewPeriod;
+        this.autoRenewAccount = autoRenewAccount;
+        return this;
+    }
+
     public HTSPrecompileResult withTokenDefaultFreezeStatus(
             final boolean tokenDefaultFreezeStatus) {
         this.tokenDefaultFreezeStatus = tokenDefaultFreezeStatus;
@@ -320,6 +335,7 @@ public class HTSPrecompileResult implements ContractCallResult {
                             status.getNumber(), tokenDefaultKycStatus);
                     case HAPI_IS_FROZEN -> Tuple.of(status.getNumber(), isFrozen);
                     case HAPI_GET_TOKEN_CUSTOM_FEES -> getTupleForTokenGetCustomFees();
+                    case HAPI_GET_TOKEN_EXPIRY_INFO -> getTupleForTokenGetExpiryInfo();
                     default -> Tuple.of(status.getNumber());
                 };
 
@@ -352,6 +368,10 @@ public class HTSPrecompileResult implements ContractCallResult {
         return getTupleForTokenCustomFees(status.getNumber());
     }
 
+    private Tuple getTupleForTokenGetExpiryInfo() {
+        return getTupleForTokenExpiryInfo(status.getNumber());
+    }
+
     private Tuple getTupleForTokenCustomFees(final int responseCode) {
         final var fixedFees = new ArrayList<Tuple>();
         final var fractionalFees = new ArrayList<Tuple>();
@@ -365,6 +385,15 @@ public class HTSPrecompileResult implements ContractCallResult {
                 fixedFees.toArray(new Tuple[fixedFees.size()]),
                 fractionalFees.toArray(new Tuple[fractionalFees.size()]),
                 royaltyFees.toArray(new Tuple[royaltyFees.size()]));
+    }
+
+    private Tuple getTupleForTokenExpiryInfo(final int responseCode) {
+        return
+            Tuple.of(responseCode,
+            Tuple.of(
+                expiry,
+                expandByteArrayTo32Length(autoRenewAccount),
+                autoRenewPeriod));
     }
 
     private void extractFees(

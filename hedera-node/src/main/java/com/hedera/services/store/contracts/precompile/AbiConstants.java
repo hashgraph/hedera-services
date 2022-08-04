@@ -155,4 +155,8 @@ public final class AbiConstants {
     public static final int ABI_ID_GET_TOKEN_DEFAULT_KYC_STATUS = 0x335e04c1;
     // getTokenCustomFees(address token)
     public static final int ABI_ID_GET_TOKEN_CUSTOM_FEES = 0xae7611a0;
+    // getTokenExpiryInfo(address token)
+    public static final int ABI_ID_GET_TOKEN_EXPIRY_INFO = 0xd614cdb8;
+    // updateTokenExpiryInfo(address token, Expiry expiryInfoStruct)
+    public static final int ABI_ID_UPDATE_TOKEN_EXPIRY_INFO = 0x593d6e82;
 }

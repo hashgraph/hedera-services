@@ -65,6 +65,7 @@ import com.hedera.services.state.virtual.ContractKey;
 import com.hedera.services.state.virtual.IterableContractValue;
 import com.hedera.services.state.virtual.VirtualBlobKey;
 import com.hedera.services.state.virtual.VirtualBlobValue;
+import com.hedera.services.store.contracts.precompile.codec.TokenExpiryWrapper;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.utils.EntityIdUtils;
@@ -554,6 +555,30 @@ public class StateView {
                     readableId(tokenId),
                     unexpected);
             return emptyList();
+        }
+    }
+
+    public Optional<TokenExpiryWrapper> tokenExpiryInfo(final TokenID tokenId) {
+        if (stateChildren == null) {
+            return Optional.empty();
+        }
+        try {
+            final var tokens = stateChildren.tokens();
+            final var token = tokens.get(EntityNum.fromTokenId(tokenId));
+            if (token == null || !token.hasAutoRenewAccount()) {
+                return Optional.empty();
+            }
+            return Optional.of(
+                    new TokenExpiryWrapper(
+                            token.expiry(),
+                            token.autoRenewAccount().toGrpcAccountId(),
+                            token.autoRenewPeriod()));
+        } catch (Exception unexpected) {
+            log.warn(
+                    "Unexpected failure getting expiry info for token {}!",
+                    readableId(tokenId),
+                    unexpected);
+            return Optional.empty();
         }
     }
 

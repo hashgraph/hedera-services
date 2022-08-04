@@ -120,6 +120,8 @@ public final class ParsingConstants {
             TupleType.parse(INT_BOOL_PAIR_RETURN_TYPE);
     public static final TupleType getTokenDefaultKycStatusType =
             TupleType.parse(INT_BOOL_PAIR_RETURN_TYPE);
+    public static final TupleType getTokenExpiryInfoType =
+            TupleType.parse(RESPONSE_STATUS_AT_BEGINNING + EXPIRY + ")");
 
     public static final TupleType notSpecifiedType = TupleType.parse(INT32);
 
@@ -151,6 +153,7 @@ public final class ParsingConstants {
         GET_TOKEN_DEFAULT_KYC_STATUS,
         HAPI_IS_FROZEN,
         HAPI_GET_TOKEN_CUSTOM_FEES,
+        HAPI_GET_TOKEN_EXPIRY_INFO,
         NOT_SPECIFIED
     }
 }

@@ -20,6 +20,7 @@ import static com.hedera.services.contracts.ParsingConstants.INT_BOOL_PAIR_RETUR
 import static com.hedera.services.contracts.ParsingConstants.getFungibleTokenInfoType;
 import static com.hedera.services.contracts.ParsingConstants.getNonFungibleTokenInfoType;
 import static com.hedera.services.contracts.ParsingConstants.getTokenCustomFeesType;
+import static com.hedera.services.contracts.ParsingConstants.getTokenExpiryInfoType;
 import static com.hedera.services.contracts.ParsingConstants.getTokenInfoType;
 import static com.hedera.services.contracts.ParsingConstants.notSpecifiedType;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
@@ -320,6 +321,14 @@ public class EncodingFacade {
                 .build();
     }
 
+    public Bytes encodeGetTokenExpiryInfo(final TokenExpiryWrapper tokenExpiryWrapper) {
+        return functionResultBuilder()
+            .forFunction(FunctionType.HAPI_GET_TOKEN_EXPIRY_INFO)
+            .withStatus(SUCCESS.getNumber())
+            .withExpiry(tokenExpiryWrapper)
+            .build();
+    }
+
     private FunctionResultBuilder functionResultBuilder() {
         return new FunctionResultBuilder();
     }
@@ -348,6 +357,7 @@ public class EncodingFacade {
         private TokenNftInfo nonFungibleTokenInfo;
         private boolean isFrozen;
         private List<CustomFee> customFees;
+        private TokenExpiryWrapper tokenExpiryInfo;
 
         private FunctionResultBuilder forFunction(final FunctionType functionType) {
             this.tupleType =
@@ -379,6 +389,7 @@ public class EncodingFacade {
                         case GET_TOKEN_DEFAULT_KYC_STATUS -> getTokenDefaultKycStatusType;
                         case HAPI_IS_FROZEN -> isTokenFrozenType;
                         case HAPI_GET_TOKEN_CUSTOM_FEES -> getTokenCustomFeesType;
+                        case HAPI_GET_TOKEN_EXPIRY_INFO -> getTokenExpiryInfoType;
                         default -> notSpecifiedType;
                     };
 
@@ -495,6 +506,11 @@ public class EncodingFacade {
             return this;
         }
 
+        private FunctionResultBuilder withExpiry(final TokenExpiryWrapper tokenExpiryInfo) {
+            this.tokenExpiryInfo = tokenExpiryInfo;
+            return this;
+        }
+
         private Bytes build() {
             final var result =
                     switch (functionType) {
@@ -531,6 +547,7 @@ public class EncodingFacade {
                                 status, tokenDefaultKycStatus);
                         case HAPI_IS_FROZEN -> Tuple.of(status, isFrozen);
                         case HAPI_GET_TOKEN_CUSTOM_FEES -> getTupleForTokenGetCustomFees();
+                        case HAPI_GET_TOKEN_EXPIRY_INFO -> getTupleForGetTokenExpiryInfo();
                         default -> Tuple.of(status);
                     };
 
@@ -543,6 +560,10 @@ public class EncodingFacade {
 
         private Tuple getTupleForTokenGetCustomFees() {
             return getTupleForTokenCustomFees(status);
+        }
+
+        private Tuple getTupleForGetTokenExpiryInfo() {
+            return getTupleForTokenExpiryInfo(status);
         }
 
         private Tuple getTupleForGetFungibleTokenInfo() {
@@ -598,6 +619,19 @@ public class EncodingFacade {
                     fixedFees.toArray(new Tuple[fixedFees.size()]),
                     fractionalFees.toArray(new Tuple[fractionalFees.size()]),
                     royaltyFees.toArray(new Tuple[royaltyFees.size()]));
+        }
+
+        private Tuple getTupleForTokenExpiryInfo(final int responseCode) {
+            final var expiry = tokenExpiryInfo.second();
+            final var autoRenewPeriod = tokenExpiryInfo.autoRenewPeriod();
+            return
+                Tuple.of(responseCode,
+                Tuple.of(
+                    expiry,
+                    convertBesuAddressToHeadlongAddress(
+                        EntityIdUtils.asTypedEvmAddress(
+                            tokenExpiryInfo.autoRenewAccount())),
+                    autoRenewPeriod));
         }
 
         private void extractAllFees(
