@@ -17,7 +17,6 @@ package com.hedera.services.txns.token;
 
 import static com.hedera.services.state.enums.TokenType.NON_FUNGIBLE_UNIQUE;
 import static com.hedera.services.store.tokens.TokenStore.MISSING_TOKEN;
-import static com.hedera.services.txns.validation.TokenListChecks.checkKeys;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CURRENT_TREASURY_STILL_OWNS_NFTS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
@@ -211,7 +210,7 @@ public class TokenUpdateTransitionLogic implements TransitionLogic {
     }
 
     public ResponseCodeEnum validate(TransactionBody txnBody) {
-       return TokenUpdateValidator.validate(txnBody,validator);
+        return TokenUpdateValidator.validate(txnBody, validator);
     }
 
     private ResponseCodeEnum autoRenewAttachmentCheck(

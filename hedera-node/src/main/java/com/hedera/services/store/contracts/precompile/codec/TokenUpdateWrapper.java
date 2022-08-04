@@ -68,7 +68,6 @@ public class TokenUpdateWrapper {
         return treasury;
     }
 
-
     public long getMaxSupply() {
         return maxSupply;
     }
@@ -76,7 +75,6 @@ public class TokenUpdateWrapper {
     public String getMemo() {
         return memo;
     }
-
 
     public List<TokenKeyWrapper> getTokenKeys() {
         return tokenKeys;
@@ -116,7 +114,6 @@ public class TokenUpdateWrapper {
             return this;
         }
 
-
         public Builder setMaxSupply(long maxSupply) {
             this.maxSupply = maxSupply;
             return this;
@@ -126,7 +123,6 @@ public class TokenUpdateWrapper {
             this.memo = memo;
             return this;
         }
-
 
         public Builder setTokenKeys(List<TokenKeyWrapper> tokenKeys) {
             this.tokenKeys = tokenKeys;

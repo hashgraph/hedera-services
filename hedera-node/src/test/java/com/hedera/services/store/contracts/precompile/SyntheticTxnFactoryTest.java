@@ -56,7 +56,6 @@ import com.hedera.services.store.contracts.precompile.codec.KeyValueWrapper;
 import com.hedera.services.store.contracts.precompile.codec.MintWrapper;
 import com.hedera.services.store.contracts.precompile.codec.PauseWrapper;
 import com.hedera.services.store.contracts.precompile.codec.SetApprovalForAllWrapper;
-import com.hedera.services.store.contracts.precompile.codec.TokenCreateWrapper;
 import com.hedera.services.store.contracts.precompile.codec.TokenFreezeUnfreezeWrapper;
 import com.hedera.services.store.contracts.precompile.codec.TokenKeyWrapper;
 import com.hedera.services.store.contracts.precompile.codec.TokenTransferWrapper;

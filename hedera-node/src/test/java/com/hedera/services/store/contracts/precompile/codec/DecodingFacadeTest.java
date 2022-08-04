@@ -1031,15 +1031,12 @@ class DecodingFacadeTest {
 
         final var key1 = tokenKeys.get(0);
         assertEquals(
-                KeyValueWrapper.KeyValueType.INHERIT_ACCOUNT_KEY,
-                key1.key().getKeyValueType());
+                KeyValueWrapper.KeyValueType.INHERIT_ACCOUNT_KEY, key1.key().getKeyValueType());
         assertTrue(key1.isUsedForAdminKey());
         assertEquals(1, key1.keyType());
 
         final var key2 = tokenKeys.get(1);
-        assertEquals(
-                KeyValueWrapper.KeyValueType.CONTRACT_ID,
-                key2.key().getKeyValueType());
+        assertEquals(KeyValueWrapper.KeyValueType.CONTRACT_ID, key2.key().getKeyValueType());
         assertEquals(ContractID.newBuilder().setContractNum(1).build(), key2.key().getContractID());
         assertTrue(key2.isUsedForSupplyKey());
         assertTrue(key2.isUsedForPauseKey());
