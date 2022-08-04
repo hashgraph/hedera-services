@@ -44,7 +44,6 @@ import com.hedera.services.store.contracts.precompile.codec.TokenCreateWrapper.F
 import com.hedera.services.store.contracts.precompile.codec.TokenCreateWrapper.FractionalFeeWrapper;
 import com.hedera.services.store.contracts.precompile.codec.TokenCreateWrapper.KeyValueWrapper;
 import com.hedera.services.store.contracts.precompile.codec.TokenCreateWrapper.RoyaltyFeeWrapper;
-import com.hedera.services.store.contracts.precompile.codec.TokenCreateWrapper.TokenKeyWrapper;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -268,6 +267,7 @@ public class DecodingFacade {
                     + EXPIRY_DECODER
                     + ")";
 
+
     private static final Function TOKEN_CREATE_FUNGIBLE_FUNCTION =
             new Function("createFungibleToken(" + HEDERA_TOKEN_STRUCT + ",uint256,uint256)");
     private static final Bytes TOKEN_CREATE_FUNGIBLE_SELECTOR =
@@ -439,7 +439,7 @@ public class DecodingFacade {
     private static final Bytes TOKEN_UPDATE_INFO_SELECTOR =
             Bytes.wrap(TOKEN_UPDATE_INFO_FUNCTION.selector());
     private static final ABIType<Tuple> TOKEN_UPDATE_INFO_DECODER =
-            TypeFactory.create("(address," + HEDERA_TOKEN_STRUCT_DECODER + ")");
+            TypeFactory.create("(bytes32," + HEDERA_TOKEN_STRUCT_DECODER + ")");
 
     @Inject
     public DecodingFacade() {
@@ -1292,6 +1292,7 @@ public class DecodingFacade {
             Bytes input, UnaryOperator<byte[]> aliasResolver) {
         final Tuple decodedArguments =
                 decodeFunctionCall(input, TOKEN_UPDATE_INFO_SELECTOR, TOKEN_UPDATE_INFO_DECODER);
+        final var tokenID = convertAddressBytesToTokenID(decodedArguments.get(0));
         final Tuple hederaTokenStruct = decodedArguments.get(1);
 
         final var tokenTreasury =
@@ -1299,7 +1300,7 @@ public class DecodingFacade {
         final var tokenKeys = decodeTokenKeys(hederaTokenStruct.get(7), aliasResolver);
         final var tokenExpiry = decodeTokenExpiry(hederaTokenStruct.get(8), aliasResolver);
         return UpdateTokenInfoWrapper.builder()
-                .setTokenID(decodedArguments.get(0))
+                .setTokenID(tokenID)
                 .setName(hederaTokenStruct.get(0))
                 .setSymbol(hederaTokenStruct.get(1))
                 .setTreasury(tokenTreasury)

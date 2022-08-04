@@ -48,6 +48,7 @@ import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.store.contracts.precompile.codec.DecodingFacade;
 import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
 import com.hedera.services.store.contracts.precompile.codec.TokenCreateWrapper;
+import com.hedera.services.store.contracts.precompile.codec.TokenKeyWrapper;
 import com.hedera.services.store.contracts.precompile.utils.KeyActivationUtils;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.services.store.models.Id;
@@ -373,7 +374,7 @@ public class TokenCreatePrecompile extends AbstractWritePrecompile {
     }
 
     private boolean validateAdminKey(
-            final MessageFrame frame, final TokenCreateWrapper.TokenKeyWrapper tokenKeyWrapper) {
+            final MessageFrame frame, final TokenKeyWrapper tokenKeyWrapper) {
         final var key = tokenKeyWrapper.key();
         return switch (key.getKeyValueType()) {
             case INHERIT_ACCOUNT_KEY -> KeyActivationUtils.validateKey(

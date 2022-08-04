@@ -34,6 +34,7 @@ import com.hedera.services.store.contracts.precompile.codec.TokenExpiryWrapper;
 import com.hedera.services.store.contracts.precompile.codec.TokenFreezeUnfreezeWrapper;
 import com.hedera.services.store.contracts.precompile.codec.TokenGetCustomFeesWrapper;
 import com.hedera.services.store.contracts.precompile.codec.TokenInfoWrapper;
+import com.hedera.services.store.contracts.precompile.codec.TokenKeyWrapper;
 import com.hedera.services.store.contracts.precompile.codec.TokenTransferWrapper;
 import com.hedera.services.store.contracts.precompile.codec.UnpauseWrapper;
 import com.hedera.services.store.contracts.precompile.codec.WipeWrapper;
@@ -379,7 +380,7 @@ public class HTSTestsUtil {
                             payer));
 
     public static TokenCreateWrapper createTokenCreateWrapperWithKeys(
-            final List<TokenCreateWrapper.TokenKeyWrapper> keys) {
+            final List<TokenKeyWrapper> keys) {
         return new TokenCreateWrapper(
                 true,
                 "token",
@@ -396,7 +397,7 @@ public class HTSTestsUtil {
     }
 
     public static TokenCreateWrapper createNonFungibleTokenCreateWrapperWithKeys(
-            final List<TokenCreateWrapper.TokenKeyWrapper> keys) {
+            final List<TokenKeyWrapper> keys) {
         return new TokenCreateWrapper(
                 false,
                 "nft",

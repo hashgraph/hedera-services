@@ -87,6 +87,7 @@ import com.hedera.services.store.contracts.WorldLedgers;
 import com.hedera.services.store.contracts.precompile.codec.DecodingFacade;
 import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
 import com.hedera.services.store.contracts.precompile.codec.TokenCreateWrapper;
+import com.hedera.services.store.contracts.precompile.codec.TokenKeyWrapper;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.NftId;
@@ -287,7 +288,7 @@ class CreatePrecompileTest {
         final var tokenCreateWrapper =
                 createTokenCreateWrapperWithKeys(
                         List.of(
-                                new TokenCreateWrapper.TokenKeyWrapper(
+                                new TokenKeyWrapper(
                                         1,
                                         new TokenCreateWrapper.KeyValueWrapper(
                                                 false,
@@ -296,7 +297,7 @@ class CreatePrecompileTest {
                                                 new byte[] {},
                                                 new byte[] {},
                                                 null)),
-                                new TokenCreateWrapper.TokenKeyWrapper(
+                                new TokenKeyWrapper(
                                         8,
                                         new TokenCreateWrapper.KeyValueWrapper(
                                                 false,
@@ -318,7 +319,7 @@ class CreatePrecompileTest {
         final var tokenCreateWrapper =
                 createNonFungibleTokenCreateWrapperWithKeys(
                         List.of(
-                                new TokenCreateWrapper.TokenKeyWrapper(
+                                new TokenKeyWrapper(
                                         1,
                                         new TokenCreateWrapper.KeyValueWrapper(
                                                 false,
@@ -345,7 +346,7 @@ class CreatePrecompileTest {
         final var tokenCreateWrapper =
                 createTokenCreateWrapperWithKeys(
                         List.of(
-                                new TokenCreateWrapper.TokenKeyWrapper(
+                                new TokenKeyWrapper(
                                         1,
                                         new TokenCreateWrapper.KeyValueWrapper(
                                                 false,
@@ -369,7 +370,7 @@ class CreatePrecompileTest {
         final var tokenCreateWrapper =
                 createNonFungibleTokenCreateWrapperWithKeys(
                         List.of(
-                                new TokenCreateWrapper.TokenKeyWrapper(
+                                new TokenKeyWrapper(
                                         1,
                                         new TokenCreateWrapper.KeyValueWrapper(
                                                 true, null, new byte[] {}, new byte[] {}, null))));
@@ -403,7 +404,7 @@ class CreatePrecompileTest {
         final var tokenCreateWrapper =
                 createTokenCreateWrapperWithKeys(
                         List.of(
-                                new TokenCreateWrapper.TokenKeyWrapper(
+                                new TokenKeyWrapper(
                                         1,
                                         new TokenCreateWrapper.KeyValueWrapper(
                                                 false,
@@ -467,7 +468,7 @@ class CreatePrecompileTest {
         final var tokenCreateWrapper =
                 createTokenCreateWrapperWithKeys(
                         List.of(
-                                new TokenCreateWrapper.TokenKeyWrapper(
+                                new TokenKeyWrapper(
                                         1,
                                         new TokenCreateWrapper.KeyValueWrapper(
                                                 false,
@@ -531,7 +532,7 @@ class CreatePrecompileTest {
                 .thenReturn(TokenCreateWrapper.KeyValueWrapper.KeyValueType.INVALID_KEY);
         final var tokenCreateWrapper =
                 createTokenCreateWrapperWithKeys(
-                        List.of(new TokenCreateWrapper.TokenKeyWrapper(1, keyValueMock)));
+                        List.of(new TokenKeyWrapper(1, keyValueMock)));
         given(decoder.decodeFungibleCreate(eq(pretendArguments), any()))
                 .willReturn(tokenCreateWrapper);
         given(mockSynthBodyBuilder.build())
@@ -584,7 +585,7 @@ class CreatePrecompileTest {
         final var tokenCreateWrapper =
                 createTokenCreateWrapperWithKeys(
                         List.of(
-                                new TokenCreateWrapper.TokenKeyWrapper(
+                                new TokenKeyWrapper(
                                         1,
                                         new TokenCreateWrapper.KeyValueWrapper(
                                                 false,
@@ -603,7 +604,7 @@ class CreatePrecompileTest {
         final var tokenCreateWrapper =
                 createTokenCreateWrapperWithKeys(
                         List.of(
-                                new TokenCreateWrapper.TokenKeyWrapper(
+                                new TokenKeyWrapper(
                                         0,
                                         new TokenCreateWrapper.KeyValueWrapper(
                                                 false,
@@ -612,7 +613,7 @@ class CreatePrecompileTest {
                                                 new byte[] {},
                                                 new byte[] {},
                                                 null)),
-                                new TokenCreateWrapper.TokenKeyWrapper(
+                                new TokenKeyWrapper(
                                         1,
                                         new TokenCreateWrapper.KeyValueWrapper(
                                                 false,
@@ -630,7 +631,7 @@ class CreatePrecompileTest {
         final var tokenCreateWrapper =
                 createTokenCreateWrapperWithKeys(
                         List.of(
-                                new TokenCreateWrapper.TokenKeyWrapper(
+                                new TokenKeyWrapper(
                                         1,
                                         new TokenCreateWrapper.KeyValueWrapper(
                                                 false,
@@ -639,7 +640,7 @@ class CreatePrecompileTest {
                                                 new byte[] {},
                                                 new byte[] {},
                                                 null)),
-                                new TokenCreateWrapper.TokenKeyWrapper(
+                                new TokenKeyWrapper(
                                         1,
                                         new TokenCreateWrapper.KeyValueWrapper(
                                                 false,
@@ -658,7 +659,7 @@ class CreatePrecompileTest {
         final var tokenCreateWrapper =
                 createTokenCreateWrapperWithKeys(
                         List.of(
-                                new TokenCreateWrapper.TokenKeyWrapper(
+                                new TokenKeyWrapper(
                                         128,
                                         new TokenCreateWrapper.KeyValueWrapper(
                                                 false,

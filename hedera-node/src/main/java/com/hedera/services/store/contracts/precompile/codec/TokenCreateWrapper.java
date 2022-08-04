@@ -159,8 +159,8 @@ public class TokenCreateWrapper {
 
     public void setAllInheritedKeysTo(final JKey senderKey) throws DecoderException {
         for (final var tokenKey : tokenKeys) {
-            if (tokenKey.key.isShouldInheritAccountKeySet()) {
-                tokenKey.key.setInheritedKey(JKey.mapJKey(senderKey));
+            if (tokenKey.key().isShouldInheritAccountKeySet()) {
+                tokenKey.key().setInheritedKey(JKey.mapJKey(senderKey));
             }
         }
     }
@@ -180,35 +180,6 @@ public class TokenCreateWrapper {
 
     /* ------------------ */
 
-    public record TokenKeyWrapper(int keyType, KeyValueWrapper key) {
-        public boolean isUsedForAdminKey() {
-            return (keyType & 1) != 0;
-        }
-
-        public boolean isUsedForKycKey() {
-            return (keyType & 2) != 0;
-        }
-
-        public boolean isUsedForFreezeKey() {
-            return (keyType & 4) != 0;
-        }
-
-        public boolean isUsedForWipeKey() {
-            return (keyType & 8) != 0;
-        }
-
-        public boolean isUsedForSupplyKey() {
-            return (keyType & 16) != 0;
-        }
-
-        public boolean isUsedForFeeScheduleKey() {
-            return (keyType & 32) != 0;
-        }
-
-        public boolean isUsedForPauseKey() {
-            return (keyType & 64) != 0;
-        }
-    }
 
     public static final class KeyValueWrapper {
         public enum KeyValueType {

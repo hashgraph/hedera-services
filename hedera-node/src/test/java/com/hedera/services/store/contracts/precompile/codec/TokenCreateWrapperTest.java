@@ -44,8 +44,8 @@ import org.junit.jupiter.api.Test;
 class TokenCreateWrapperTest {
     private static final byte[] ecdsaSecpk256k1 = "123456789012345678901234567890123".getBytes();
     private static final byte[] ed25519 = "12345678901234567890123456789012".getBytes();
-    private final TokenCreateWrapper.TokenKeyWrapper tokenKeyWrapper =
-            new TokenCreateWrapper.TokenKeyWrapper(
+    private final TokenKeyWrapper tokenKeyWrapper =
+            new TokenKeyWrapper(
                     1,
                     new TokenCreateWrapper.KeyValueWrapper(
                             true, null, new byte[] {}, new byte[] {}, null));
@@ -59,7 +59,7 @@ class TokenCreateWrapperTest {
                 createTokenCreateWrapperWithKeys(
                         List.of(
                                 tokenKeyWrapper,
-                                new TokenCreateWrapper.TokenKeyWrapper(
+                                new TokenKeyWrapper(
                                         4,
                                         new TokenCreateWrapper.KeyValueWrapper(
                                                 true, null, new byte[] {}, new byte[] {}, null))));

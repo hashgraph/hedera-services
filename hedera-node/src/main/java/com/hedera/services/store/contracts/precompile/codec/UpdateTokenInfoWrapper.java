@@ -28,7 +28,7 @@ public class UpdateTokenInfoWrapper {
     private final long maxSupply;
     private final String memo;
     private final boolean isFreezeDefault;
-    private final List<TokenCreateWrapper.TokenKeyWrapper> tokenKeys;
+    private final List<TokenKeyWrapper> tokenKeys;
     private final TokenExpiryWrapper expiry;
 
     private UpdateTokenInfoWrapper(
@@ -40,7 +40,7 @@ public class UpdateTokenInfoWrapper {
             long maxSupply,
             String memo,
             boolean isFreezeDefault,
-            List<TokenCreateWrapper.TokenKeyWrapper> tokenKeys,
+            List<TokenKeyWrapper> tokenKeys,
             TokenExpiryWrapper expiry) {
         this.tokenID = tokenID;
         this.name = name;
@@ -90,7 +90,7 @@ public class UpdateTokenInfoWrapper {
         return isFreezeDefault;
     }
 
-    public List<TokenCreateWrapper.TokenKeyWrapper> getTokenKeys() {
+    public List<TokenKeyWrapper> getTokenKeys() {
         return tokenKeys;
     }
 
@@ -107,7 +107,7 @@ public class UpdateTokenInfoWrapper {
         private long maxSupply;
         private String memo;
         private boolean isFreezeDefault;
-        private List<TokenCreateWrapper.TokenKeyWrapper> tokenKeys;
+        private List<TokenKeyWrapper> tokenKeys;
         private TokenExpiryWrapper expiry;
 
         public Builder setTokenID(TokenID tokenID) {
@@ -150,7 +150,7 @@ public class UpdateTokenInfoWrapper {
             return this;
         }
 
-        public Builder setTokenKeys(List<TokenCreateWrapper.TokenKeyWrapper> tokenKeys) {
+        public Builder setTokenKeys(List<TokenKeyWrapper> tokenKeys) {
             this.tokenKeys = tokenKeys;
             return this;
         }

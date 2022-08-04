@@ -16,7 +16,9 @@
 package com.hedera.services.store.contracts.precompile;
 
 import static com.hedera.services.exceptions.ValidationUtils.validateFalse;
+import static com.hedera.services.exceptions.ValidationUtils.validateFalseOrRevert;
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
+import static com.hedera.services.exceptions.ValidationUtils.validateTrueOrRevert;
 import static com.hedera.services.ledger.TransferLogic.dropTokenChanges;
 import static com.hedera.services.ledger.backing.BackingTokenRels.asTokenRel;
 import static com.hedera.services.ledger.properties.AccountProperty.NUM_TREASURY_TITLES;
@@ -75,24 +77,21 @@ public class TokenUpdateLogic {
     }
 
     public void updateToken(TokenUpdateTransactionBody op, long now) {
-        {
             final var tokenID = Id.fromGrpcToken(op.getToken()).asGrpcToken();
             validateFalse(tokenID == MISSING_TOKEN, INVALID_TOKEN_ID);
-            validateTrue(
-                    op.hasExpiry() && !validator.isValidExpiry(op.getExpiry()),
-                    INVALID_EXPIRATION_TIME);
+            if(op.hasExpiry()){
+                validateFalseOrRevert(validator.isValidExpiry(op.getExpiry()),INVALID_EXPIRATION_TIME);
+            }
             MerkleToken token = store.get(tokenID);
-            validateTrue((token.hasAdminKey() && affectsExpiryAtMost(op)), TOKEN_IS_IMMUTABLE);
-            validateFalse(token.isDeleted(), TOKEN_WAS_DELETED);
-            validateFalse(token.isPaused(), TOKEN_IS_PAUSED);
+            checkTokenPreconditions(token, op);
 
             ResponseCodeEnum outcome = autoRenewAttachmentCheck(op, token);
-            validateTrue(outcome == OK, outcome);
+            validateTrueOrRevert(outcome == OK, outcome);
 
             Optional<AccountID> replacedTreasury = Optional.empty();
             if (op.hasTreasury()) {
                 var newTreasury = op.getTreasury();
-                validateTrue(isDetached(newTreasury), ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
+                validateFalseOrRevert(isDetached(newTreasury), ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
 
                 if (!store.associationExists(newTreasury, tokenID)) {
                     outcome = store.autoAssociate(newTreasury, tokenID);
@@ -108,7 +107,7 @@ public class TokenUpdateLogic {
                     }
                 }
                 if (!newTreasury.equals(existingTreasury)) {
-                    validateTrue(isDetached(existingTreasury), ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
+                    validateFalseOrRevert(isDetached(existingTreasury), ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
 
                     outcome = prepTreasuryChange(tokenID, token, newTreasury, existingTreasury);
                     if (outcome != OK) {
@@ -149,6 +148,11 @@ public class TokenUpdateLogic {
             // TODO check if this is needed
             sigImpactHistorian.markEntityChanged(tokenID.getTokenNum());
         }
+
+    private void checkTokenPreconditions(MerkleToken token, TokenUpdateTransactionBody op) {
+        if(!token.hasAdminKey()) validateTrueOrRevert((affectsExpiryAtMost(op)), TOKEN_IS_IMMUTABLE);
+        validateFalseOrRevert(token.isDeleted(), TOKEN_WAS_DELETED);
+        validateFalseOrRevert(token.isPaused(), TOKEN_IS_PAUSED);
     }
 
     public ResponseCodeEnum validate(TransactionBody txnBody) {
@@ -196,11 +200,11 @@ public class TokenUpdateLogic {
             TokenUpdateTransactionBody op, MerkleToken token) {
         if (op.hasAutoRenewAccount()) {
             final var newAutoRenew = op.getAutoRenewAccount();
-            validateTrue(isDetached(newAutoRenew), ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
+            validateFalseOrRevert(isDetached(newAutoRenew), ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
 
             if (token.hasAutoRenewAccount()) {
                 final var existingAutoRenew = token.autoRenewAccount().toGrpcAccountId();
-                validateTrue(isDetached(existingAutoRenew), ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
+                validateFalseOrRevert(isDetached(existingAutoRenew), ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
             }
         }
         return OK;

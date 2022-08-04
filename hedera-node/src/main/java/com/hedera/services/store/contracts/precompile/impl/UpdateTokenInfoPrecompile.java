@@ -16,6 +16,7 @@
 package com.hedera.services.store.contracts.precompile.impl;
 
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
+import static com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils.GasCostType.UPDATE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 
 import com.hedera.services.context.SideEffectsTracker;
@@ -80,7 +81,7 @@ public class UpdateTokenInfoPrecompile extends AbstractWritePrecompile {
 
     @Override
     public long getMinimumFeeInTinybars(Timestamp consensusTime) {
-        return 0;
+        return pricingUtils.getMinimumPriceInTinybars(UPDATE, consensusTime);
     }
 
     @Override
@@ -91,16 +92,16 @@ public class UpdateTokenInfoPrecompile extends AbstractWritePrecompile {
             /* --- Validate the synthetic create txn body before proceeding with the rest of the execution --- */
 
             /* --- Check required signatures --- */
-            final var treasuryId = Id.fromGrpcAccount(updateOp.getTreasury());
-            final var treasuryHasSigned =
+            final var tokenId = Id.fromGrpcToken(updateOp.getTokenID());
+            final var hasRequiredSigs =
                     KeyActivationUtils.validateKey(
                             frame,
-                            treasuryId.asEvmAddress(),
+                            tokenId.asEvmAddress(),
                             sigsVerifier::hasActiveAdminKey,
                             ledgers,
                             aliases);
-            validateTrue(treasuryHasSigned, INVALID_SIGNATURE);
-
+            validateTrue(hasRequiredSigs, INVALID_SIGNATURE);
+            hederaTokenStore.setAccountsLedger(ledgers.accounts());
             /* --- Build the necessary infrastructure to execute the transaction --- */
             TokenUpdateLogic updateLogic =
                     infrastructureFactory.newTokenUpdateLogic(

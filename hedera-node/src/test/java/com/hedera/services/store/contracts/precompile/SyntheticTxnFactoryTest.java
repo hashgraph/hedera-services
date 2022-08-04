@@ -57,6 +57,7 @@ import com.hedera.services.store.contracts.precompile.codec.PauseWrapper;
 import com.hedera.services.store.contracts.precompile.codec.SetApprovalForAllWrapper;
 import com.hedera.services.store.contracts.precompile.codec.TokenCreateWrapper;
 import com.hedera.services.store.contracts.precompile.codec.TokenFreezeUnfreezeWrapper;
+import com.hedera.services.store.contracts.precompile.codec.TokenKeyWrapper;
 import com.hedera.services.store.contracts.precompile.codec.TokenTransferWrapper;
 import com.hedera.services.store.contracts.precompile.codec.UnpauseWrapper;
 import com.hedera.services.store.contracts.precompile.codec.WipeWrapper;
@@ -570,8 +571,8 @@ class SyntheticTxnFactoryTest {
         final var wrapper =
                 createTokenCreateWrapperWithKeys(
                         List.of(
-                                new TokenCreateWrapper.TokenKeyWrapper(254, multiKey),
-                                new TokenCreateWrapper.TokenKeyWrapper(1, adminKey)));
+                                new TokenKeyWrapper(254, multiKey),
+                                new TokenKeyWrapper(1, adminKey)));
         wrapper.setFixedFees(List.of(fixedFee));
         wrapper.setFractionalFees(List.of(fractionalFee));
 
@@ -624,7 +625,7 @@ class SyntheticTxnFactoryTest {
                         null);
         final var wrapper =
                 createNonFungibleTokenCreateWrapperWithKeys(
-                        List.of(new TokenCreateWrapper.TokenKeyWrapper(112, multiKey)));
+                        List.of(new TokenKeyWrapper(112, multiKey)));
         wrapper.setFixedFees(List.of(fixedFee));
         wrapper.setRoyaltyFees(List.of(royaltyFee));
 
