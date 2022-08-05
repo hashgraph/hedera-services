@@ -1359,16 +1359,15 @@ public class DecodingFacade {
                 convertLeftPaddedAddressToAccountId(hederaTokenStruct.get(2), aliasResolver);
         final var tokenKeys = decodeTokenKeys(hederaTokenStruct.get(7), aliasResolver);
         final var tokenExpiry = decodeTokenExpiry(hederaTokenStruct.get(8), aliasResolver);
-        return TokenUpdateWrapper.builder()
-                .setTokenID(tokenID)
-                .setName(hederaTokenStruct.get(0))
-                .setSymbol(hederaTokenStruct.get(1))
-                .setTreasury(tokenTreasury)
-                .setMemo(hederaTokenStruct.get(3))
-                .setMaxSupply(hederaTokenStruct.get(5))
-                .setTokenKeys(tokenKeys)
-                .setExpiry(tokenExpiry)
-                .build();
+        return new TokenUpdateWrapper(
+                tokenID,
+                hederaTokenStruct.get(0),
+                hederaTokenStruct.get(1),
+                tokenTreasury,
+                hederaTokenStruct.get(3),
+                hederaTokenStruct.get(5),
+                tokenKeys,
+                tokenExpiry);
     }
 
     private static AccountID convertLeftPaddedAddressToAccountId(
