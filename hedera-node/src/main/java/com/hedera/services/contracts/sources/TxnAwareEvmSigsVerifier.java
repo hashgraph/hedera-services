@@ -21,6 +21,7 @@ import static com.hedera.services.ledger.properties.AccountProperty.KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_FREEZE_KEY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_KYC_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_PAUSE_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_SUPPLY_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_WIPE_KEY;
@@ -93,6 +94,21 @@ public class TxnAwareEvmSigsVerifier implements EvmSigsVerifier {
         validateTrue(supplyKey != null, TOKEN_HAS_NO_SUPPLY_KEY);
 
         return isActiveInFrame(supplyKey, isDelegateCall, activeContract, worldLedgers.aliases());
+    }
+
+    @Override
+    public boolean hasActiveKycKey(
+            final boolean isDelegateCall,
+            @NotNull final Address tokenAddress,
+            @NotNull final Address activeContract,
+            @NotNull final WorldLedgers worldLedgers) {
+        final var tokenId = EntityIdUtils.tokenIdFromEvmAddress(tokenAddress);
+        validateTrue(worldLedgers.tokens().exists(tokenId), INVALID_TOKEN_ID);
+
+        final var kycKey = (JKey) worldLedgers.tokens().get(tokenId, TokenProperty.KYC_KEY);
+        validateTrue(kycKey != null, TOKEN_HAS_NO_KYC_KEY);
+
+        return isActiveInFrame(kycKey, isDelegateCall, activeContract, worldLedgers.aliases());
     }
 
     @Override

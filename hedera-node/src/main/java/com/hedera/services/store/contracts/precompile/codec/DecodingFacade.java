@@ -192,6 +192,27 @@ public class DecodingFacade {
     private static final ABIType<Tuple> ERC_TRANSFER_DECODER =
             TypeFactory.create(ADDRESS_UINT256_RAW_TYPE);
 
+    private static final Function IS_KYC_TOKEN_FUNCTION =
+            new Function("isKyc(address,address)", INT_BOOL_PAIR);
+    private static final Bytes IS_KYC_TOKEN_FUNCTION_SELECTOR =
+            Bytes.wrap(IS_KYC_TOKEN_FUNCTION.selector());
+    private static final ABIType<Tuple> IS_KYC_TOKEN_FUNCTION_DECODER =
+            TypeFactory.create(ADDRESS_PAIR_RAW_TYPE);
+
+    private static final Function GRANT_TOKEN_KYC_FUNCTION =
+            new Function("grantTokenKyc(address,address)", INT);
+    private static final Bytes GRANT_TOKEN_KYC_FUNCTION_SELECTOR =
+            Bytes.wrap(GRANT_TOKEN_KYC_FUNCTION.selector());
+    private static final ABIType<Tuple> GRANT_TOKEN_KYC_FUNCTION_DECODER =
+            TypeFactory.create(ADDRESS_PAIR_RAW_TYPE);
+
+    private static final Function REVOKE_TOKEN_KYC_FUNCTION =
+            new Function("revokeTokenKyc(address,address)", INT);
+    private static final Bytes REVOKE_TOKEN_KYC_FUNCTION_SELECTOR =
+            Bytes.wrap(REVOKE_TOKEN_KYC_FUNCTION.selector());
+    private static final ABIType<Tuple> REVOKE_TOKEN_KYC_FUNCTION_DECODER =
+            TypeFactory.create(ADDRESS_PAIR_RAW_TYPE);
+
     private static final Function WIPE_TOKEN_ACCOUNT_FUNCTION =
             new Function("wipeTokenAccount(address,address,uint32)", INT);
     private static final Bytes WIPE_TOKEN_ACCOUNT_SELECTOR =
@@ -1105,6 +1126,47 @@ public class DecodingFacade {
 
         return WipeWrapper.forNonFungible(
                 tokenID, accountID, Arrays.stream(serialNumbers).boxed().toList());
+    }
+
+    public GrantRevokeKycWrapper decodeIsKyc(
+            final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
+        final Tuple decodedArguments =
+                decodeFunctionCall(
+                        input, IS_KYC_TOKEN_FUNCTION_SELECTOR, IS_KYC_TOKEN_FUNCTION_DECODER);
+
+        final var tokenID = convertAddressBytesToTokenID(decodedArguments.get(0));
+        final var accountID =
+                convertLeftPaddedAddressToAccountId(decodedArguments.get(1), aliasResolver);
+
+        return new GrantRevokeKycWrapper(tokenID, accountID);
+    }
+
+    public GrantRevokeKycWrapper decodeGrantTokenKyc(
+            final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
+        final Tuple decodedArguments =
+                decodeFunctionCall(
+                        input, GRANT_TOKEN_KYC_FUNCTION_SELECTOR, GRANT_TOKEN_KYC_FUNCTION_DECODER);
+
+        final var tokenID = convertAddressBytesToTokenID(decodedArguments.get(0));
+        final var accountID =
+                convertLeftPaddedAddressToAccountId(decodedArguments.get(1), aliasResolver);
+
+        return new GrantRevokeKycWrapper(tokenID, accountID);
+    }
+
+    public GrantRevokeKycWrapper decodeRevokeTokenKyc(
+            final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
+        final Tuple decodedArguments =
+                decodeFunctionCall(
+                        input,
+                        REVOKE_TOKEN_KYC_FUNCTION_SELECTOR,
+                        REVOKE_TOKEN_KYC_FUNCTION_DECODER);
+
+        final var tokenID = convertAddressBytesToTokenID(decodedArguments.get(0));
+        final var accountID =
+                convertLeftPaddedAddressToAccountId(decodedArguments.get(1), aliasResolver);
+
+        return new GrantRevokeKycWrapper(tokenID, accountID);
     }
 
     private List<TokenKeyWrapper> decodeTokenKeys(
