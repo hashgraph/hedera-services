@@ -371,6 +371,15 @@ public class StaticEntityAccess implements EntityAccess {
         return nftPropertyOf(nftId, nft -> new String(nft.getMetadata()));
     }
 
+    public boolean isKyc(final AccountID accountId, final TokenID tokenId) {
+        lookupToken(tokenId);
+        final var accountNum = EntityNum.fromAccountId(accountId);
+        validateTrue(accounts.containsKey(accountNum), INVALID_ACCOUNT_ID);
+        final var isKycKey = fromAccountTokenRel(accountId, tokenId);
+        final var relStatus = tokenAssociations.get(isKycKey);
+        return relStatus != null && relStatus.isKycGranted();
+    }
+
     private <T> T nftPropertyOf(final NftId nftId, final Function<MerkleUniqueToken, T> getter) {
         final var key = EntityNumPair.fromNftId(nftId);
         var nft = nfts.get(key);

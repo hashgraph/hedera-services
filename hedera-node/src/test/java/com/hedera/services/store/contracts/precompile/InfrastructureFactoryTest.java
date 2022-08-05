@@ -56,8 +56,10 @@ import com.hedera.services.txns.token.CreateLogic;
 import com.hedera.services.txns.token.DeleteLogic;
 import com.hedera.services.txns.token.DissociateLogic;
 import com.hedera.services.txns.token.FreezeLogic;
+import com.hedera.services.txns.token.GrantKycLogic;
 import com.hedera.services.txns.token.MintLogic;
 import com.hedera.services.txns.token.PauseLogic;
+import com.hedera.services.txns.token.RevokeKycLogic;
 import com.hedera.services.txns.token.UnfreezeLogic;
 import com.hedera.services.txns.token.UnpauseLogic;
 import com.hedera.services.txns.token.WipeLogic;
@@ -298,6 +300,24 @@ class InfrastructureFactoryTest {
     @Test
     void canCreateNewDeleteAllowanceChecks() {
         assertInstanceOf(DeleteAllowanceChecks.class, subject.newDeleteAllowanceChecks());
+    }
+
+    @Test
+    void canCreateNewGrantKycLogic() {
+        final var accountStore = subject.newAccountStore(accounts);
+        final var tokenStore =
+                subject.newTokenStore(
+                        accountStore, subject.newSideEffects(), tokens, uniqueTokens, tokenRels);
+        assertInstanceOf(GrantKycLogic.class, subject.newGrantKycLogic(accountStore, tokenStore));
+    }
+
+    @Test
+    void canCreateNewRevokeKycLogic() {
+        final var accountStore = subject.newAccountStore(accounts);
+        final var tokenStore =
+                subject.newTokenStore(
+                        accountStore, subject.newSideEffects(), tokens, uniqueTokens, tokenRels);
+        assertInstanceOf(RevokeKycLogic.class, subject.newRevokeKycLogic(accountStore, tokenStore));
     }
 
     @Test

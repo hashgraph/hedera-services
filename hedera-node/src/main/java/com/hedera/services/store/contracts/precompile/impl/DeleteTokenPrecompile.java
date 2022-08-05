@@ -72,7 +72,8 @@ public class DeleteTokenPrecompile extends AbstractWritePrecompile {
 
     @Override
     public long getMinimumFeeInTinybars(Timestamp consensusTime) {
-        Objects.requireNonNull(deleteOp);
+        Objects.requireNonNull(
+                deleteOp, "`body` method should be called before `getMinimumFeeInTinybars`");
         return pricingUtils.getMinimumPriceInTinybars(DELETE, consensusTime);
     }
 

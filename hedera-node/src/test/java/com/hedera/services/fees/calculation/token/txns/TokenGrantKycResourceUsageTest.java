@@ -15,19 +15,20 @@
  */
 package com.hedera.services.fees.calculation.token.txns;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static com.hedera.services.usage.SingletonEstimatorUtils.ESTIMATOR_UTILS;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
+import static org.mockito.Mockito.mockStatic;
 
 import com.hedera.services.context.primitives.StateView;
+import com.hedera.services.usage.EstimatorFactory;
 import com.hedera.services.usage.SigUsage;
+import com.hedera.services.usage.TxnUsageEstimator;
 import com.hedera.services.usage.token.TokenGrantKycUsage;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.fee.SigValueObj;
-import java.util.function.BiFunction;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -44,7 +45,7 @@ class TokenGrantKycResourceUsageTest {
     FeeData expected;
 
     TokenGrantKycUsage usage;
-    BiFunction<TransactionBody, SigUsage, TokenGrantKycUsage> factory;
+    TxnUsageEstimator txnUsageEstimator;
 
     @BeforeEach
     private void setup() throws Throwable {
@@ -57,17 +58,14 @@ class TokenGrantKycResourceUsageTest {
         nonTokenGrantKycTxn = mock(TransactionBody.class);
         given(nonTokenGrantKycTxn.hasTokenGrantKyc()).willReturn(false);
 
-        factory =
-                (BiFunction<TransactionBody, SigUsage, TokenGrantKycUsage>) mock(BiFunction.class);
-        given(factory.apply(tokenGrantKycTxn, sigUsage)).willReturn(usage);
-
         usage = mock(TokenGrantKycUsage.class);
         given(usage.get()).willReturn(expected);
 
-        TokenGrantKycResourceUsage.factory = factory;
-        given(factory.apply(tokenGrantKycTxn, sigUsage)).willReturn(usage);
-
-        subject = new TokenGrantKycResourceUsage();
+        txnUsageEstimator = mock(TxnUsageEstimator.class);
+        EstimatorFactory estimatorFactory = mock(EstimatorFactory.class);
+        given(estimatorFactory.get(sigUsage, tokenGrantKycTxn, ESTIMATOR_UTILS))
+                .willReturn(txnUsageEstimator);
+        subject = new TokenGrantKycResourceUsage(estimatorFactory);
     }
 
     @Test
@@ -79,7 +77,14 @@ class TokenGrantKycResourceUsageTest {
 
     @Test
     void delegatesToCorrectEstimate() throws Exception {
+        final var mockStatic = mockStatic(TokenGrantKycUsage.class);
+        mockStatic
+                .when(() -> TokenGrantKycUsage.newEstimate(tokenGrantKycTxn, txnUsageEstimator))
+                .thenReturn(usage);
+
         // expect:
         assertEquals(expected, subject.usageGiven(tokenGrantKycTxn, obj, view));
+
+        mockStatic.close();
     }
 }

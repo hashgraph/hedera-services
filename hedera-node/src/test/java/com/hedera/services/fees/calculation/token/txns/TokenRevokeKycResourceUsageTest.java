@@ -15,14 +15,16 @@
  */
 package com.hedera.services.fees.calculation.token.txns;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static com.hedera.services.usage.SingletonEstimatorUtils.ESTIMATOR_UTILS;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
+import static org.mockito.Mockito.mockStatic;
 
 import com.hedera.services.context.primitives.StateView;
+import com.hedera.services.usage.EstimatorFactory;
 import com.hedera.services.usage.SigUsage;
+import com.hedera.services.usage.TxnUsageEstimator;
 import com.hedera.services.usage.token.TokenRevokeKycUsage;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -44,7 +46,8 @@ class TokenRevokeKycResourceUsageTest {
     FeeData expected;
 
     TokenRevokeKycUsage usage;
-    BiFunction<TransactionBody, SigUsage, TokenRevokeKycUsage> factory;
+    BiFunction<TransactionBody, TxnUsageEstimator, TokenRevokeKycUsage> factory;
+    TxnUsageEstimator txnUsageEstimator;
 
     @BeforeEach
     private void setup() throws Throwable {
@@ -57,17 +60,14 @@ class TokenRevokeKycResourceUsageTest {
         nonTokenRevokeKycTxn = mock(TransactionBody.class);
         given(nonTokenRevokeKycTxn.hasTokenRevokeKyc()).willReturn(false);
 
-        factory =
-                (BiFunction<TransactionBody, SigUsage, TokenRevokeKycUsage>) mock(BiFunction.class);
-        given(factory.apply(tokenRevokeKycTxn, sigUsage)).willReturn(usage);
-
         usage = mock(TokenRevokeKycUsage.class);
         given(usage.get()).willReturn(expected);
 
-        TokenRevokeKycResourceUsage.factory = factory;
-        given(factory.apply(tokenRevokeKycTxn, sigUsage)).willReturn(usage);
-
-        subject = new TokenRevokeKycResourceUsage();
+        txnUsageEstimator = mock(TxnUsageEstimator.class);
+        EstimatorFactory estimatorFactory = mock(EstimatorFactory.class);
+        given(estimatorFactory.get(sigUsage, tokenRevokeKycTxn, ESTIMATOR_UTILS))
+                .willReturn(txnUsageEstimator);
+        subject = new TokenRevokeKycResourceUsage(estimatorFactory);
     }
 
     @Test
@@ -79,7 +79,14 @@ class TokenRevokeKycResourceUsageTest {
 
     @Test
     void delegatesToCorrectEstimate() throws Exception {
+        final var mockStatic = mockStatic(TokenRevokeKycUsage.class);
+        mockStatic
+                .when(() -> TokenRevokeKycUsage.newEstimate(tokenRevokeKycTxn, txnUsageEstimator))
+                .thenReturn(usage);
+
         // expect:
         assertEquals(expected, subject.usageGiven(tokenRevokeKycTxn, obj, view));
+
+        mockStatic.close();
     }
 }
