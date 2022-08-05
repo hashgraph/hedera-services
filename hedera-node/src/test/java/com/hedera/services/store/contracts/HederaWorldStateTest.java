@@ -594,6 +594,23 @@ class HederaWorldStateTest {
         assertEquals(contract.asGrpcContract(), result.get(0));
     }
 
+    @Test
+    void newContractAddressAllocatesId() {
+        givenNonNullWorldLedgers();
+        given(ids.newContractId(any())).willReturn(ContractID.newBuilder().setContractNum(122).build());
+        final var actualSubject = subject.updater();
+        actualSubject.newContractAddress(Address.fromHexString("0xabcdefabcdefabcdefbabcdefabcdefabcdefbbb"));
+        assertEquals(1, actualSubject.numberOfIdsAllocatedByStacked());
+    }
+
+    @Test
+    void numberOfIdsAllocatedByStackedDefaultsTo0() {
+        givenNonNullWorldLedgers();
+        final var actualSubject = subject.updater();
+        assertEquals(0, actualSubject.numberOfIdsAllocatedByStacked());
+    }
+
+
     private void givenNonNullWorldLedgers() {
         given(worldLedgers.wrapped()).willReturn(worldLedgers);
         given(entityAccess.worldLedgers()).willReturn(worldLedgers);
