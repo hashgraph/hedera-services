@@ -148,7 +148,7 @@ public class TxnUtils {
             final Optional<KeyFactory.KeyType> keyType,
             final Optional<Supplier<KeyGenerator>> keyGenSupplier) {
         if (!keyName.isPresent()) {
-            KeyGenerator generator = keyGenSupplier.get().get();
+            KeyGenerator generator = keyGenSupplier.isEmpty() ? null : keyGenSupplier.get().get();
             if (keyShape.isPresent()) {
                 return spec.keys().generateSubjectTo(spec, keyShape.get(), generator);
             } else {

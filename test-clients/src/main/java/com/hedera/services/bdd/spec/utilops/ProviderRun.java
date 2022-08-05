@@ -187,6 +187,7 @@ public class ProviderRun extends UtilOp {
                 try {
                     Thread.sleep(BACKOFF_SLEEP_SECS * 1_000L);
                 } catch (InterruptedException ignore) {
+                    Thread.currentThread().interrupt();
                 }
             }
         }

@@ -202,6 +202,9 @@ public class HapiGetContractRecords extends HapiQueryOp<HapiGetContractRecords> 
     }
 
     private String specScopedDir(HapiApiSpec spec, Optional<String> prefix) {
+        if (prefix.isEmpty()) {
+            return "";
+        }
         return prefix.map(d -> d + "/" + spec.getName()).get();
     }
 

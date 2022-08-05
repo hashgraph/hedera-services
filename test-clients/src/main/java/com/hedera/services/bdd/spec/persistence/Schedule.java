@@ -74,7 +74,7 @@ public class Schedule {
         if (adminKey != UNUSED_KEY) {
             op.adminKey(adminKeyFor(name));
         }
-        if (memo != UNSPECIFIED_MEMO) {
+        if (!memo.equals(UNSPECIFIED_MEMO)) {
             op.withEntityMemo(memo);
         }
 

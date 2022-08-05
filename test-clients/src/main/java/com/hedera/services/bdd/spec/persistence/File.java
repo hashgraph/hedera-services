@@ -60,7 +60,7 @@ public class File {
     HapiSpecOperation createOp(String name) {
         var op = fileCreate(name).advertisingCreation();
 
-        if (data == UNSPECIFIED_CONTENTS_LOC) {
+        if (data.equals(UNSPECIFIED_CONTENTS_LOC)) {
             op.contents(DEFAULT_CONTENTS);
         } else {
             op.path(
@@ -72,7 +72,7 @@ public class File {
                                             new String[] {FILES_SUBDIR, CONTENTS_SUBDIR, data}));
         }
 
-        if (memo != MISSING_MEMO) {
+        if (!memo.equals(MISSING_MEMO)) {
             op.entityMemo(memo);
         }
 

@@ -58,9 +58,11 @@ public class RandomAccountUpdate implements OpProvider {
 
         HapiCryptoUpdate op =
                 cryptoUpdate(target.get())
-                        .key(newKey.get())
                         .hasPrecheckFrom(STANDARD_PERMISSIBLE_PRECHECKS)
                         .hasKnownStatusFrom(permissibleOutcomes);
+        if (!newKey.isEmpty()) {
+            op.key(newKey.get());
+        }
         return Optional.of(op);
     }
 }

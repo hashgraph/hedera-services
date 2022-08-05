@@ -117,7 +117,7 @@ public class HapiCryptoDeleteAllowance extends HapiTxnOp<HapiCryptoDeleteAllowan
                     NftRemoveAllowance.newBuilder()
                             .setTokenId(spec.registry().getTokenID(entry.token()))
                             .addAllSerialNumbers(entry.serials());
-            if (entry.owner() != MISSING_OWNER) {
+            if (!entry.owner().equals(MISSING_OWNER)) {
                 builder.setOwner(spec.registry().getAccountID(entry.owner()));
             }
             nftallowances.add(builder.build());

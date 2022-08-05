@@ -220,9 +220,6 @@ public class EntityManager {
         } else if (receipt.hasScheduleID()) {
             createdEntityId =
                     new EntityId(HapiPropertySource.asScheduleString(receipt.getScheduleID()));
-        } else if (receipt.hasContractID()) {
-            createdEntityId =
-                    new EntityId(HapiPropertySource.asContractString(receipt.getContractID()));
         }
         return Optional.ofNullable(createdEntityId);
     }

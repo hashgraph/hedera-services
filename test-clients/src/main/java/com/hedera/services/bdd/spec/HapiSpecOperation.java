@@ -242,6 +242,7 @@ public abstract class HapiSpecOperation {
                     try {
                         Thread.sleep(l);
                     } catch (InterruptedException ignore) {
+                        Thread.currentThread().interrupt();
                     }
                 });
     }

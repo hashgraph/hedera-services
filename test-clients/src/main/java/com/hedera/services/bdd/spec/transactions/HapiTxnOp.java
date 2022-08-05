@@ -514,6 +514,7 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
             try {
                 sleep(forMs);
             } catch (InterruptedException ignore) {
+                Thread.currentThread().interrupt();
             }
         }
     }

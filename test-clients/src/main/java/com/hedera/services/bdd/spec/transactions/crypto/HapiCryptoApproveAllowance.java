@@ -195,7 +195,7 @@ public class HapiCryptoApproveAllowance extends HapiTxnOp<HapiCryptoApproveAllow
                     CryptoAllowance.newBuilder()
                             .setSpender(asId(entry.spender(), spec))
                             .setAmount(entry.amount());
-            if (entry.owner() != MISSING_OWNER) {
+            if (!entry.owner().equals(MISSING_OWNER)) {
                 builder.setOwner(asId(entry.owner(), spec));
             }
 
@@ -208,7 +208,7 @@ public class HapiCryptoApproveAllowance extends HapiTxnOp<HapiCryptoApproveAllow
                             .setTokenId(asTokenId(entry.token, spec))
                             .setSpender(asId(entry.spender(), spec))
                             .setAmount(entry.amount());
-            if (entry.owner() != MISSING_OWNER) {
+            if (!entry.owner().equals(MISSING_OWNER)) {
                 builder.setOwner(spec.registry().getAccountID(entry.owner()));
             }
             tallowances.add(builder.build());
@@ -220,10 +220,10 @@ public class HapiCryptoApproveAllowance extends HapiTxnOp<HapiCryptoApproveAllow
                             .setSpender(spec.registry().getAccountID(entry.spender()))
                             .setApprovedForAll(BoolValue.of(entry.approvedForAll()))
                             .addAllSerialNumbers(entry.serials());
-            if (entry.owner() != MISSING_OWNER) {
+            if (!entry.owner().equals(MISSING_OWNER)) {
                 builder.setOwner(spec.registry().getAccountID(entry.owner()));
             }
-            if (entry.delegatingSpender() != MISSING_DELEGATING_SPENDER) {
+            if (!entry.delegatingSpender().equals(MISSING_DELEGATING_SPENDER)) {
                 builder.setDelegatingSpender(
                         spec.registry().getAccountID(entry.delegatingSpender()));
             }

@@ -43,6 +43,8 @@ import org.junit.jupiter.api.Assertions;
 public class ContractFnResultAsserts extends BaseErroringAssertsProvider<ContractFunctionResult> {
     static final Logger log = LogManager.getLogger(ContractFnResultAsserts.class);
 
+    private static final Random rand = new Random();
+
     public static ContractFnResultAsserts resultWith() {
         return new ContractFnResultAsserts();
     }
@@ -222,7 +224,7 @@ public class ContractFnResultAsserts extends BaseErroringAssertsProvider<Contrac
                     try {
                         Assertions.assertEquals(
                                 1, actualObjs.length, "Extra contract function return values!");
-                        String implicitContract = "contract" + new Random().nextInt();
+                        String implicitContract = "contract" + rand.nextInt();
                         ContractID contract = TxnUtils.asContractId((byte[]) actualObjs[0]);
                         spec.registry().saveContractId(implicitContract, contract);
                         HapiGetContractInfo op =

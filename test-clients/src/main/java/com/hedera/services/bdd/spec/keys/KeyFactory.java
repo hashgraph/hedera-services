@@ -53,6 +53,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
+
 import net.i2p.crypto.eddsa.EdDSAPrivateKey;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
@@ -343,10 +345,11 @@ public class KeyFactory implements Serializable {
     }
 
     public static String mnemonicFromFile(String wordsLoc) {
-        try {
-            return java.nio.file.Files.lines(Paths.get(wordsLoc)).collect(Collectors.joining(" "));
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
+        final var path = Paths.get(wordsLoc);
+        try (Stream<String> lines = Files.lines(path)) {
+            return lines.collect(Collectors.joining(" "));
+        } catch (IOException ex) {
+            throw new UncheckedIOException(ex);
         }
     }
 

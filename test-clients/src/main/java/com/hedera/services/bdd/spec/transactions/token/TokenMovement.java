@@ -126,7 +126,7 @@ public class TokenMovement {
     }
 
     public boolean isTrulyToken() {
-        return token != HapiApiSuite.HBAR_TOKEN_SENTINEL;
+        return !token.equals(HapiApiSuite.HBAR_TOKEN_SENTINEL);
     }
 
     public boolean isFungibleToken() {

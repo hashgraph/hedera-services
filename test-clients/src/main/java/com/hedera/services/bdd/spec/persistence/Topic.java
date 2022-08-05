@@ -61,7 +61,7 @@ public class Topic {
         if (submitKey != UNUSED_KEY) {
             op.submitKeyName(submitKeyFor(name));
         }
-        if (autoRenewAccount != UNUSED_ACCOUNT) {
+        if (!autoRenewAccount.equals(UNUSED_ACCOUNT)) {
             op.autoRenewAccountId(autoRenewAccount);
         }
 

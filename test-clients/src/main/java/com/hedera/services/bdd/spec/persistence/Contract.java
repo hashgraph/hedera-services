@@ -35,7 +35,7 @@ public class Contract {
     private SpecKey adminKey = UNUSED_KEY;
 
     public void registerWhatIsKnown(HapiApiSpec spec, String name, Optional<EntityId> entityId) {
-        if (bytecodeFile == UNSPECIFIED_BYTECODE_FILE) {
+        if (bytecodeFile.equals(UNSPECIFIED_BYTECODE_FILE)) {
             throw new IllegalStateException(
                     String.format("Contract '%s' has no given bytecode file!", name));
         }
@@ -58,7 +58,7 @@ public class Contract {
         if (adminKey != UNUSED_KEY) {
             op.adminKey(adminKeyFor(name));
         }
-        if (memo != MISSING_MEMO) {
+        if (!memo.equals(MISSING_MEMO)) {
             op.entityMemo(memo);
         }
 

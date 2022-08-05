@@ -85,7 +85,7 @@ public class Token {
                     spec.registry().saveName(name, this.tokenName);
                     spec.registry().saveSymbol(name, symbol);
                     spec.registry().saveTokenId(name, id.asToken());
-                    if (treasury != UNSPECIFIED_TREASURY) {
+                    if (!treasury.equals(UNSPECIFIED_TREASURY)) {
                         spec.registry().saveTreasury(name, treasury);
                     }
                 });
@@ -98,10 +98,10 @@ public class Token {
     HapiTxnOp<HapiTokenCreate> createOp(String name) {
         var op = tokenCreate(name).advertisingCreation().symbol(symbol).name(this.tokenName);
 
-        if (treasury != UNSPECIFIED_TREASURY) {
+        if (!treasury.equals(UNSPECIFIED_TREASURY)) {
             op.treasury(treasury);
         }
-        if (memo != UNSPECIFIED_MEMO) {
+        if (!memo.equals(UNSPECIFIED_MEMO)) {
             op.entityMemo(memo);
         }
 
