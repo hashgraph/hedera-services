@@ -89,7 +89,7 @@ public class TokenUpdatePrecompile extends AbstractWritePrecompile {
     public void run(MessageFrame frame) {
         Objects.requireNonNull(updateOp);
         /* --- Check required signatures --- */
-        final var tokenId = Id.fromGrpcToken(updateOp.getTokenID());
+        final var tokenId = Id.fromGrpcToken(updateOp.tokenID());
         final var hasRequiredSigs =
                 KeyActivationUtils.validateKey(
                         frame,
