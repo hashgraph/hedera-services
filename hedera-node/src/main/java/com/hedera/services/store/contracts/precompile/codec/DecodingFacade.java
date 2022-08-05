@@ -1353,19 +1353,23 @@ public class DecodingFacade {
         final Tuple decodedArguments =
                 decodeFunctionCall(input, TOKEN_UPDATE_INFO_SELECTOR, TOKEN_UPDATE_INFO_DECODER);
         final var tokenID = convertAddressBytesToTokenID(decodedArguments.get(0));
-        final Tuple hederaTokenStruct = decodedArguments.get(1);
 
+        final Tuple hederaTokenStruct = decodedArguments.get(1);
+        final var tokenName = (String) hederaTokenStruct.get(0);
+        final var tokenSymbol = (String) hederaTokenStruct.get(1);
         final var tokenTreasury =
                 convertLeftPaddedAddressToAccountId(hederaTokenStruct.get(2), aliasResolver);
+        final var tokenMemo = (String) hederaTokenStruct.get(3);
+        final var tokenMaxSupply = (long) hederaTokenStruct.get(5);
         final var tokenKeys = decodeTokenKeys(hederaTokenStruct.get(7), aliasResolver);
         final var tokenExpiry = decodeTokenExpiry(hederaTokenStruct.get(8), aliasResolver);
         return new TokenUpdateWrapper(
                 tokenID,
-                hederaTokenStruct.get(0),
-                hederaTokenStruct.get(1),
+                tokenName,
+                tokenSymbol,
                 tokenTreasury,
-                hederaTokenStruct.get(3),
-                hederaTokenStruct.get(5),
+                tokenMaxSupply,
+                tokenMemo,
                 tokenKeys,
                 tokenExpiry);
     }
