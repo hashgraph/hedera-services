@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,10 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.hedera.services.state.validation;
+package com.hedera.services.store.contracts.precompile.codec;
 
-public interface AccountUsageTracking {
-    void refreshAccounts();
+import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.TokenID;
 
-    void recordContracts(int n);
-}
+public record GrantRevokeKycWrapper(TokenID token, AccountID account) {}

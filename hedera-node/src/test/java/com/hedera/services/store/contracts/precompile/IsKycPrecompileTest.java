@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,21 +15,19 @@
  */
 package com.hedera.services.store.contracts.precompile;
 
-import static com.hedera.services.state.EntityCreator.EMPTY_MEMO;
-import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_DELETE_TOKEN;
-import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.DEFAULT_GAS_PRICE;
-import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.TEST_CONSENSUS_TIME;
-import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.contractAddr;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_IS_KYC;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.accountAddr;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.contractAddress;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.fungibleTokenAddr;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.grantRevokeKycWrapper;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.successResult;
-import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.tokenDeleteWrapper;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.timestamp;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 
 import com.esaulpaugh.headlong.util.Integers;
+import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.contracts.sources.TxnAwareEvmSigsVerifier;
@@ -50,29 +48,18 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
-import com.hedera.services.state.submerkle.ExpirableTxnRecord;
-import com.hedera.services.store.AccountStore;
-import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.services.store.contracts.WorldLedgers;
 import com.hedera.services.store.contracts.precompile.codec.DecodingFacade;
 import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.services.store.models.NftId;
-import com.hedera.services.txns.token.DeleteLogic;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.ExchangeRate;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
-import com.hederahashgraph.api.proto.java.SubType;
-import com.hederahashgraph.api.proto.java.TokenDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.fee.FeeObject;
 import java.io.IOException;
-import java.math.BigDecimal;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Optional;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
@@ -87,11 +74,9 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class DeleteTokenPrecompileTest {
+class IsKycPrecompileTest {
     @Mock private GlobalDynamicProperties dynamicProperties;
     @Mock private GasCalculator gasCalculator;
-    @Mock private TypedTokenStore tokenStore;
-    @Mock private AccountStore accountStore;
     @Mock private MessageFrame frame;
     @Mock private TxnAwareEvmSigsVerifier sigsVerifier;
     @Mock private RecordsHistorian recordsHistorian;
@@ -99,17 +84,17 @@ class DeleteTokenPrecompileTest {
     @Mock private EncodingFacade encoder;
     @Mock private SyntheticTxnFactory syntheticTxnFactory;
     @Mock private ExpiringCreations creator;
+    @Mock private SideEffectsTracker sideEffects;
+    @Mock private FeeObject mockFeeObject;
     @Mock private ImpliedTransfersMarshal impliedTransfers;
     @Mock private FeeCalculator feeCalculator;
-    @Mock private ExchangeRate exchangeRate;
     @Mock private StateView stateView;
     @Mock private ContractAliases aliases;
     @Mock private HederaStackedWorldStateUpdater worldUpdater;
-    @Mock private DeleteLogic deleteLogic;
     @Mock private WorldLedgers wrappedLedgers;
     @Mock private UsagePricesProvider resourceCosts;
     @Mock private HbarCentExchange exchange;
-    @Mock private ExpirableTxnRecord.Builder mockRecordBuilder;
+    @Mock private TransactionBody.Builder mockSynthBodyBuilder;
     @Mock private InfrastructureFactory infrastructureFactory;
     @Mock private TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accounts;
     @Mock private TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokens;
@@ -122,20 +107,9 @@ class DeleteTokenPrecompileTest {
     @Mock private AssetsLoader assetLoader;
 
     private HTSPrecompiledContract subject;
-    private static final long TEST_SERVICE_FEE = 5_000_000;
-    private static final long TEST_NETWORK_FEE = 400_000;
-    private static final long TEST_NODE_FEE = 300_000;
-    private static final int CENTS_RATE = 12;
-    private static final int HBAR_RATE = 1;
-    private static final long EXPECTED_GAS_PRICE =
-            (TEST_SERVICE_FEE + TEST_NETWORK_FEE + TEST_NODE_FEE) / DEFAULT_GAS_PRICE * 6 / 5;
 
     @BeforeEach
     void setUp() throws IOException {
-        Map<HederaFunctionality, Map<SubType, BigDecimal>> canonicalPrices = new HashMap<>();
-        canonicalPrices.put(
-                HederaFunctionality.TokenDelete, Map.of(SubType.DEFAULT, BigDecimal.valueOf(0)));
-        given(assetLoader.loadCanonicalPrices()).willReturn(canonicalPrices);
         PrecompilePricingUtils precompilePricingUtils =
                 new PrecompilePricingUtils(
                         assetLoader, exchange, () -> feeCalculator, resourceCosts, stateView);
@@ -157,14 +131,32 @@ class DeleteTokenPrecompileTest {
     }
 
     @Test
-    void computeCallsSuccessfullyForDeleteFungibleToken() {
+    void IsKyc() {
         // given
-        final var input = Bytes.of(Integers.toBytes(ABI_ID_DELETE_TOKEN));
-        givenFrameContext();
+        final var output =
+                "0x000000000000000000000000000000000000000000000000000000000000"
+                        + "00160000000000000000000000000000000000000000000000000000000000000001";
+        final var successOutput =
+                Bytes.fromHexString(
+                        "0x000000000000000000000000000000000000000000000000000000000000001600000000000"
+                            + "00000000000000000000000000000000000000000000000000001");
+        final Bytes pretendArguments =
+                Bytes.concatenate(
+                        Bytes.of(Integers.toBytes(ABI_ID_IS_KYC)), fungibleTokenAddr, accountAddr);
+        givenMinimalFrameContext();
+        givenMinimalFeesContext();
         givenLedgers();
+        given(wrappedLedgers.isKyc(any(), any())).willReturn(true);
         givenMinimalContextForSuccessfulCall();
-        givenMinimalRecordStructureForSuccessfulCall();
-        givenTokenDeleteContext();
+        Bytes input = Bytes.of(Integers.toBytes(ABI_ID_IS_KYC));
+        given(syntheticTxnFactory.createTransactionCall(1L, pretendArguments))
+                .willReturn(mockSynthBodyBuilder);
+        given(decoder.decodeIsKyc(any(), any())).willReturn(grantRevokeKycWrapper);
+        given(encoder.encodeIsKyc(true)).willReturn(successResult);
+        given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
+        given(tokenRels.get(any(), any())).willReturn(Boolean.TRUE);
+        given(encoder.encodeIsKyc(true)).willReturn(Bytes.fromHexString(output));
+        given(frame.getValue()).willReturn(Wei.ZERO);
 
         // when
         subject.prepareFields(frame);
@@ -172,46 +164,12 @@ class DeleteTokenPrecompileTest {
         final var result = subject.computeInternal(frame);
 
         // then
-        assertEquals(successResult, result);
-    }
-
-    @Test
-    void gasRequirementReturnsCorrectValueForDeleteToken() {
-        // given
-        final var input = Bytes.of(Integers.toBytes(ABI_ID_DELETE_TOKEN));
-        givenMinimalFrameContext();
-        given(worldUpdater.permissivelyUnaliased(any()))
-                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
-        givenPricingUtilsContext();
-        given(worldUpdater.wrappedTrackingLedgers(any())).willReturn(wrappedLedgers);
-        given(feeCalculator.computeFee(any(), any(), any(), any()))
-                .willReturn(new FeeObject(TEST_NODE_FEE, TEST_NETWORK_FEE, TEST_SERVICE_FEE));
-        given(feeCalculator.estimatedGasPriceInTinybars(any(), any()))
-                .willReturn(DEFAULT_GAS_PRICE);
-        given(decoder.decodeDelete(any())).willReturn(tokenDeleteWrapper);
-        given(syntheticTxnFactory.createDelete(tokenDeleteWrapper))
-                .willReturn(
-                        TransactionBody.newBuilder()
-                                .setTokenDeletion(TokenDeleteTransactionBody.newBuilder()));
-        // when
-        subject.prepareFields(frame);
-        subject.prepareComputation(input, a -> a);
-        final var result = subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
-        // then
-        assertEquals(EXPECTED_GAS_PRICE, result);
+        assertEquals(successOutput, result);
     }
 
     private void givenMinimalFrameContext() {
         given(frame.getSenderAddress()).willReturn(contractAddress);
         given(frame.getWorldUpdater()).willReturn(worldUpdater);
-    }
-
-    private void givenFrameContext() {
-        givenMinimalFrameContext();
-        given(frame.getContractAddress()).willReturn(contractAddr);
-        given(frame.getRecipientAddress()).willReturn(fungibleTokenAddr);
-        given(frame.getRemainingGas()).willReturn(300L);
-        given(frame.getValue()).willReturn(Wei.ZERO);
     }
 
     private void givenMinimalContextForSuccessfulCall() {
@@ -224,29 +182,6 @@ class DeleteTokenPrecompileTest {
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
     }
 
-    private void givenTokenDeleteContext() {
-        given(infrastructureFactory.newAccountStore(accounts)).willReturn(accountStore);
-        given(infrastructureFactory.newTokenStore(accountStore, null, tokens, nfts, tokenRels))
-                .willReturn(tokenStore);
-        given(infrastructureFactory.newDeleteLogic(accountStore, tokenStore))
-                .willReturn(deleteLogic);
-        given(deleteLogic.validate(any())).willReturn(OK);
-        given(decoder.decodeDelete(any())).willReturn(tokenDeleteWrapper);
-        given(syntheticTxnFactory.createDelete(tokenDeleteWrapper))
-                .willReturn(
-                        TransactionBody.newBuilder()
-                                .setTokenDeletion(TokenDeleteTransactionBody.newBuilder()));
-        given(
-                        sigsVerifier.hasActiveAdminKey(
-                                true, fungibleTokenAddr, fungibleTokenAddr, wrappedLedgers))
-                .willReturn(true);
-    }
-
-    private void givenMinimalRecordStructureForSuccessfulCall() {
-        given(creator.createSuccessfulSyntheticRecord(Collections.emptyList(), null, EMPTY_MEMO))
-                .willReturn(mockRecordBuilder);
-    }
-
     private void givenLedgers() {
         given(worldUpdater.wrappedTrackingLedgers(any())).willReturn(wrappedLedgers);
         given(wrappedLedgers.accounts()).willReturn(accounts);
@@ -255,12 +190,12 @@ class DeleteTokenPrecompileTest {
         given(wrappedLedgers.tokens()).willReturn(tokens);
     }
 
-    private void givenPricingUtilsContext() {
-        given(exchange.rate(any())).willReturn(exchangeRate);
-        given(exchangeRate.getCentEquiv()).willReturn(CENTS_RATE);
-        given(exchangeRate.getHbarEquiv()).willReturn(HBAR_RATE);
-        given(worldUpdater.aliases()).willReturn(aliases);
-        given(worldUpdater.permissivelyUnaliased(any()))
-                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+    private void givenMinimalFeesContext() {
+        given(feeCalculator.estimatePayment(any(), any(), any(), any(), any()))
+                .willReturn(mockFeeObject);
+        given(
+                        feeCalculator.estimatedGasPriceInTinybars(
+                                HederaFunctionality.ContractCall, timestamp))
+                .willReturn(1L);
     }
 }

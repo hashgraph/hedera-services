@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,14 +16,14 @@
 package com.hedera.services.store.contracts.precompile;
 
 import static com.hedera.services.state.EntityCreator.EMPTY_MEMO;
-import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_DELETE_TOKEN;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_GRANT_TOKEN_KYC;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.DEFAULT_GAS_PRICE;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.TEST_CONSENSUS_TIME;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.contractAddr;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.contractAddress;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.fungibleTokenAddr;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.grantRevokeKycWrapper;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.successResult;
-import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.tokenDeleteWrapper;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
@@ -59,12 +59,12 @@ import com.hedera.services.store.contracts.precompile.codec.DecodingFacade;
 import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.services.store.models.NftId;
-import com.hedera.services.txns.token.DeleteLogic;
+import com.hedera.services.txns.token.GrantKycLogic;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ExchangeRate;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.SubType;
-import com.hederahashgraph.api.proto.java.TokenDeleteTransactionBody;
+import com.hederahashgraph.api.proto.java.TokenGrantKycTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.fee.FeeObject;
@@ -87,7 +87,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class DeleteTokenPrecompileTest {
+class GrantKycPrecompileTest {
     @Mock private GlobalDynamicProperties dynamicProperties;
     @Mock private GasCalculator gasCalculator;
     @Mock private TypedTokenStore tokenStore;
@@ -105,7 +105,7 @@ class DeleteTokenPrecompileTest {
     @Mock private StateView stateView;
     @Mock private ContractAliases aliases;
     @Mock private HederaStackedWorldStateUpdater worldUpdater;
-    @Mock private DeleteLogic deleteLogic;
+    @Mock private GrantKycLogic grantKycLogic;
     @Mock private WorldLedgers wrappedLedgers;
     @Mock private UsagePricesProvider resourceCosts;
     @Mock private HbarCentExchange exchange;
@@ -134,7 +134,8 @@ class DeleteTokenPrecompileTest {
     void setUp() throws IOException {
         Map<HederaFunctionality, Map<SubType, BigDecimal>> canonicalPrices = new HashMap<>();
         canonicalPrices.put(
-                HederaFunctionality.TokenDelete, Map.of(SubType.DEFAULT, BigDecimal.valueOf(0)));
+                HederaFunctionality.TokenGrantKycToAccount,
+                Map.of(SubType.DEFAULT, BigDecimal.valueOf(0)));
         given(assetLoader.loadCanonicalPrices()).willReturn(canonicalPrices);
         PrecompilePricingUtils precompilePricingUtils =
                 new PrecompilePricingUtils(
@@ -157,14 +158,14 @@ class DeleteTokenPrecompileTest {
     }
 
     @Test
-    void computeCallsSuccessfullyForDeleteFungibleToken() {
+    void GrantKyc() {
         // given
-        final var input = Bytes.of(Integers.toBytes(ABI_ID_DELETE_TOKEN));
+        final var input = Bytes.of(Integers.toBytes(ABI_ID_GRANT_TOKEN_KYC));
         givenFrameContext();
         givenLedgers();
         givenMinimalContextForSuccessfulCall();
         givenMinimalRecordStructureForSuccessfulCall();
-        givenTokenDeleteContext();
+        givenGrantContext();
 
         // when
         subject.prepareFields(frame);
@@ -176,9 +177,9 @@ class DeleteTokenPrecompileTest {
     }
 
     @Test
-    void gasRequirementReturnsCorrectValueForDeleteToken() {
+    void gasRequirementReturnsCorrectValueForGrantKyc() {
         // given
-        final var input = Bytes.of(Integers.toBytes(ABI_ID_DELETE_TOKEN));
+        final var input = Bytes.of(Integers.toBytes(ABI_ID_GRANT_TOKEN_KYC));
         givenMinimalFrameContext();
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
@@ -188,11 +189,11 @@ class DeleteTokenPrecompileTest {
                 .willReturn(new FeeObject(TEST_NODE_FEE, TEST_NETWORK_FEE, TEST_SERVICE_FEE));
         given(feeCalculator.estimatedGasPriceInTinybars(any(), any()))
                 .willReturn(DEFAULT_GAS_PRICE);
-        given(decoder.decodeDelete(any())).willReturn(tokenDeleteWrapper);
-        given(syntheticTxnFactory.createDelete(tokenDeleteWrapper))
+        given(decoder.decodeGrantTokenKyc(any(), any())).willReturn(grantRevokeKycWrapper);
+        given(syntheticTxnFactory.createGrantKyc(grantRevokeKycWrapper))
                 .willReturn(
                         TransactionBody.newBuilder()
-                                .setTokenDeletion(TokenDeleteTransactionBody.newBuilder()));
+                                .setTokenGrantKyc(TokenGrantKycTransactionBody.newBuilder()));
         // when
         subject.prepareFields(frame);
         subject.prepareComputation(input, a -> a);
@@ -224,20 +225,20 @@ class DeleteTokenPrecompileTest {
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
     }
 
-    private void givenTokenDeleteContext() {
+    private void givenGrantContext() {
         given(infrastructureFactory.newAccountStore(accounts)).willReturn(accountStore);
         given(infrastructureFactory.newTokenStore(accountStore, null, tokens, nfts, tokenRels))
                 .willReturn(tokenStore);
-        given(infrastructureFactory.newDeleteLogic(accountStore, tokenStore))
-                .willReturn(deleteLogic);
-        given(deleteLogic.validate(any())).willReturn(OK);
-        given(decoder.decodeDelete(any())).willReturn(tokenDeleteWrapper);
-        given(syntheticTxnFactory.createDelete(tokenDeleteWrapper))
+        given(infrastructureFactory.newGrantKycLogic(accountStore, tokenStore))
+                .willReturn(grantKycLogic);
+        given(grantKycLogic.validate(any())).willReturn(OK);
+        given(decoder.decodeGrantTokenKyc(any(), any())).willReturn(grantRevokeKycWrapper);
+        given(syntheticTxnFactory.createGrantKyc(grantRevokeKycWrapper))
                 .willReturn(
                         TransactionBody.newBuilder()
-                                .setTokenDeletion(TokenDeleteTransactionBody.newBuilder()));
+                                .setTokenGrantKyc(TokenGrantKycTransactionBody.newBuilder()));
         given(
-                        sigsVerifier.hasActiveAdminKey(
+                        sigsVerifier.hasActiveKycKey(
                                 true, fungibleTokenAddr, fungibleTokenAddr, wrappedLedgers))
                 .willReturn(true);
     }

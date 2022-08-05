@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,36 +23,38 @@ import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.store.models.Id;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.TokenUnfreezeAccountTransactionBody;
+import com.hederahashgraph.api.proto.java.TokenRevokeKycTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.util.List;
 import javax.inject.Inject;
+import javax.inject.Singleton;
 
-public class UnfreezeLogic {
+@Singleton
+public class RevokeKycLogic {
     private final TypedTokenStore tokenStore;
     private final AccountStore accountStore;
 
     @Inject
-    public UnfreezeLogic(final TypedTokenStore tokenStore, final AccountStore accountStore) {
+    public RevokeKycLogic(final TypedTokenStore tokenStore, final AccountStore accountStore) {
         this.tokenStore = tokenStore;
         this.accountStore = accountStore;
     }
 
-    public void unfreeze(Id targetTokenId, Id targetAccountId) {
+    public void revokeKyc(final Id targetTokenId, final Id targetAccountId) {
         /* --- Load the model objects --- */
         final var loadedToken = tokenStore.loadToken(targetTokenId);
         final var loadedAccount = accountStore.loadAccount(targetAccountId);
         final var tokenRelationship = tokenStore.loadTokenRelationship(loadedToken, loadedAccount);
 
         /* --- Do the business logic --- */
-        tokenRelationship.changeFrozenState(false);
+        tokenRelationship.changeKycState(false);
 
         /* --- Persist the updated models --- */
         tokenStore.commitTokenRelationships(List.of(tokenRelationship));
     }
 
-    public ResponseCodeEnum validate(TransactionBody txnBody) {
-        TokenUnfreezeAccountTransactionBody op = txnBody.getTokenUnfreeze();
+    public ResponseCodeEnum validate(final TransactionBody txnBody) {
+        TokenRevokeKycTransactionBody op = txnBody.getTokenRevokeKyc();
 
         if (!op.hasToken()) {
             return INVALID_TOKEN_ID;
