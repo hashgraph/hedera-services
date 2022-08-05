@@ -34,7 +34,7 @@ contract UpdateTokenInfoContract is HederaTokenService, FeeHelper {
         symbol = _symbol;
         memo = _memo;
         IHederaTokenService.HederaToken memory token =
-        createTokenWithExpiry(treasury, 0, autoRenewAccount, autoRenewPeriod, keys);
+        tokenWithExpiry(treasury, 0, autoRenewAccount, autoRenewPeriod, keys);
 
         int responseCode = HederaTokenService.updateTokenInfo(tokenID,token);
 
@@ -52,6 +52,27 @@ contract UpdateTokenInfoContract is HederaTokenService, FeeHelper {
         IHederaTokenService.HederaToken memory token;
         token.name = name;
         token.symbol = symbol;
+        token.treasury = treasury;
+        token.memo = memo;
+
+        int responseCode = HederaTokenService.updateTokenInfo(tokenID,token);
+
+        if (responseCode != HederaResponseCodes.SUCCESS) {
+            revert ("Update of tokenInfo failed!");
+        }
+    }
+
+    // TEST-003
+    function checkNameAndSymbolLenght(
+        address tokenID,
+        address treasury,
+        string memory _name,
+        string memory _symbol) public payable {
+
+
+        IHederaTokenService.HederaToken memory token;
+        token.name = _name;
+        token.symbol = _symbol;
         token.treasury = treasury;
         token.memo = memo;
 
@@ -94,7 +115,7 @@ contract UpdateTokenInfoContract is HederaTokenService, FeeHelper {
 
     /** --- HELPERS --- */
 
-    function createTokenWithExpiry(
+    function tokenWithExpiry(
         address treasury,
         uint32 second,
         address autoRenewAccount,

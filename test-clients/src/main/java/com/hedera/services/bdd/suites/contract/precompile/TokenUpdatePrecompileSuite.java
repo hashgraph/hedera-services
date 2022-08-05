@@ -50,11 +50,14 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_P
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_SUPPLY_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_WIPE_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_IS_IMMUTABLE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NAME_TOO_LONG;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_SYMBOL_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts;
+import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenPauseStatus;
@@ -74,7 +77,7 @@ public class TokenUpdatePrecompileSuite extends HapiApiSuite {
     private static final long AUTO_RENEW_PERIOD = 8_000_000L;
     private static final String ACCOUNT = "account";
     private static final String TOKEN_UPDATE_CONTRACT = "UpdateTokenInfoContract";
-    private static final String FIRST_UPDATE_TXN = "firstUpdateTxn";
+    private static final String UPDATE_TXN = "updateTxn";
     private static final long DEFAULT_AMOUNT_TO_SEND = 20 * ONE_HBAR;
     private static final String ED25519KEY = "ed25519key";
     private static final String ECDSA_KEY = "ecdsa";
@@ -106,6 +109,7 @@ public class TokenUpdatePrecompileSuite extends HapiApiSuite {
         return List.of(
                 updateTokenWithKeysHappyPath(),
                 updateNftTreasuryWithAndWithoutAdminKey(),
+                updateWithTooLongNameAndSymbol(),
                 updateTokenWithKeysNegative());
     }
 
@@ -170,7 +174,7 @@ public class TokenUpdatePrecompileSuite extends HapiApiSuite {
                                                                 customName,
                                                                 customSymbol,
                                                                 customMemo)
-                                                        .via(FIRST_UPDATE_TXN)
+                                                        .via(UPDATE_TXN)
                                                         .gas(GAS_TO_OFFER)
                                                         .sending(DEFAULT_AMOUNT_TO_SEND)
                                                         .payingWith(ACCOUNT),
@@ -278,6 +282,77 @@ public class TokenUpdatePrecompileSuite extends HapiApiSuite {
                                 .hasPauseStatus(TokenPauseStatus.Unpaused)
                                 .logged(),
                         getTokenNftInfo(VANILLA_TOKEN, 1).hasAccountID(newTokenTreasury).logged());
+    }
+
+    public HapiApiSpec updateWithTooLongNameAndSymbol() {
+        final var tooLongString = "ORIGINAL" + TxnUtils.randomUppercase(101);
+        final var tooLongSymbolTxn = "tooLongSymbolTxn";
+        return defaultHapiSpec("updateWithTooLongNameAndSymbol")
+                .given(
+                        cryptoCreate(TOKEN_TREASURY),
+                        newKeyNamed(MULTI_KEY),
+                        cryptoCreate(ACCOUNT).key(MULTI_KEY).balance(ONE_MILLION_HBARS),
+                        uploadInitCode(TOKEN_UPDATE_CONTRACT),
+                        contractCreate(TOKEN_UPDATE_CONTRACT),
+                        tokenCreate(VANILLA_TOKEN)
+                                .tokenType(FUNGIBLE_COMMON)
+                                .treasury(TOKEN_TREASURY)
+                                .initialSupply(1000)
+                                .adminKey(MULTI_KEY)
+                                .supplyKey(MULTI_KEY)
+                                .pauseKey(MULTI_KEY)
+                                .exposingCreatedIdTo(id -> vanillaTokenID.set(asToken(id))),
+                        tokenAssociate(ACCOUNT, VANILLA_TOKEN))
+                .when(
+                        withOpContext(
+                                (spec, opLog) ->
+                                        allRunFor(
+                                                spec,
+                                                contractCall(
+                                                                TOKEN_UPDATE_CONTRACT,
+                                                                "checkNameAndSymbolLenght",
+                                                                asAddress(vanillaTokenID.get()),
+                                                                asAddress(
+                                                                        spec.registry()
+                                                                                .getAccountID(
+                                                                                        ACCOUNT)),
+                                                                tooLongString,
+                                                                customSymbol)
+                                                        .via(UPDATE_TXN)
+                                                        .gas(GAS_TO_OFFER)
+                                                        .sending(DEFAULT_AMOUNT_TO_SEND)
+                                                        .payingWith(ACCOUNT)
+                                                        .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
+                                                contractCall(
+                                                                TOKEN_UPDATE_CONTRACT,
+                                                                "checkNameAndSymbolLenght",
+                                                                asAddress(vanillaTokenID.get()),
+                                                                asAddress(
+                                                                        spec.registry()
+                                                                                .getAccountID(
+                                                                                        ACCOUNT)),
+                                                                customName,
+                                                                tooLongString)
+                                                        .via(tooLongSymbolTxn)
+                                                        .gas(GAS_TO_OFFER)
+                                                        .sending(DEFAULT_AMOUNT_TO_SEND)
+                                                        .payingWith(ACCOUNT)
+                                                        .hasKnownStatus(CONTRACT_REVERT_EXECUTED))))
+                .then(
+                        withOpContext(
+                                (spec, opLog) ->
+                                        allRunFor(
+                                                spec,
+                                                childRecordsCheck(
+                                                        UPDATE_TXN,
+                                                        CONTRACT_REVERT_EXECUTED,
+                                                        TransactionRecordAsserts.recordWith()
+                                                                .status(TOKEN_NAME_TOO_LONG)),
+                                                childRecordsCheck(
+                                                        tooLongSymbolTxn,
+                                                        CONTRACT_REVERT_EXECUTED,
+                                                        TransactionRecordAsserts.recordWith()
+                                                                .status(TOKEN_SYMBOL_TOO_LONG)))));
     }
 
     private HapiApiSpec updateTokenWithKeysNegative() {
