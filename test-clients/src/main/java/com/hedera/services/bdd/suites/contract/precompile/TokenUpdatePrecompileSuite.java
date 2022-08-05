@@ -81,14 +81,14 @@ public class TokenUpdatePrecompileSuite extends HapiApiSuite {
     private static final long DEFAULT_AMOUNT_TO_SEND = 20 * ONE_HBAR;
     private static final String ED25519KEY = "ed25519key";
     private static final String ECDSA_KEY = "ecdsa";
-    private final String TOKEN_UPDATE_CONTRACT_AS_KEY = "tokenCreateContractAsKey";
-    private final String TOKEN_UPDATE_DELEGATE_KEY = "tokenCreateContractAsKeyDelegate";
-    private final String ACCOUNT_TO_ASSOCIATE = "account3";
-    private final String ACCOUNT_TO_ASSOCIATE_KEY = "associateKey";
+    private static final String TOKEN_UPDATE_AS_KEY = "tokenCreateContractAsKey";
+    private static final String DELEGATE_KEY = "tokenUpdateAsKeyDelegate";
+    private static final String ACCOUNT_TO_ASSOCIATE = "account3";
+    private static final String ACCOUNT_TO_ASSOCIATE_KEY = "associateKey";
     private final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
-    private final String customName = "customName";
-    private final String customSymbol = "Ω";
-    private final String customMemo = "Omega";
+    private static final String customName = "customName";
+    private static final String customSymbol = "Ω";
+    private static final String customMemo = "Omega";
 
     public static void main(String... args) {
         new TokenUpdatePrecompileSuite().runSuiteSync();
@@ -178,11 +178,11 @@ public class TokenUpdatePrecompileSuite extends HapiApiSuite {
                                                         .gas(GAS_TO_OFFER)
                                                         .sending(DEFAULT_AMOUNT_TO_SEND)
                                                         .payingWith(ACCOUNT),
-                                                newKeyNamed(TOKEN_UPDATE_DELEGATE_KEY)
+                                                newKeyNamed(DELEGATE_KEY)
                                                         .shape(
                                                                 DELEGATE_CONTRACT.signedWith(
                                                                         TOKEN_UPDATE_CONTRACT)),
-                                                newKeyNamed(TOKEN_UPDATE_CONTRACT_AS_KEY)
+                                                newKeyNamed(TOKEN_UPDATE_AS_KEY)
                                                         .shape(
                                                                 CONTRACT.signedWith(
                                                                         TOKEN_UPDATE_CONTRACT)))))
@@ -205,9 +205,9 @@ public class TokenUpdatePrecompileSuite extends HapiApiSuite {
                                                 .hasKycKey(ED25519KEY)
                                                 .hasFreezeKey(ECDSA_KEY)
                                                 .hasWipeKey(ECDSA_KEY)
-                                                .hasFeeScheduleKey(TOKEN_UPDATE_DELEGATE_KEY)
-                                                .hasSupplyKey(TOKEN_UPDATE_CONTRACT_AS_KEY)
-                                                .hasPauseKey(TOKEN_UPDATE_CONTRACT_AS_KEY)));
+                                                .hasFeeScheduleKey(DELEGATE_KEY)
+                                                .hasSupplyKey(TOKEN_UPDATE_AS_KEY)
+                                                .hasPauseKey(TOKEN_UPDATE_AS_KEY)));
     }
 
     public HapiApiSpec updateNftTreasuryWithAndWithoutAdminKey() {
@@ -356,6 +356,7 @@ public class TokenUpdatePrecompileSuite extends HapiApiSuite {
     }
 
     private HapiApiSpec updateTokenWithKeysNegative() {
+        final var updateTokenWithKeysFunc = "updateTokenWithKeys";
         final var NO_FEE_SCEDULE_KEY_TXN = "NO_FEE_SCEDULE_KEY_TXN";
         final var NO_PAUSE_KEY_TXN = "NO_PAUSE_KEY_TXN";
         final var NO_KYC_KEY_TXN = "NO_KYC_KEY_TXN";
@@ -435,7 +436,7 @@ public class TokenUpdatePrecompileSuite extends HapiApiSuite {
                                                 spec,
                                                 contractCall(
                                                                 TOKEN_UPDATE_CONTRACT,
-                                                                "updateTokenWithKeys",
+                                                                updateTokenWithKeysFunc,
                                                                 asAddress(vanillaTokenID.get()),
                                                                 asAddress(
                                                                         spec.registry()
@@ -460,7 +461,7 @@ public class TokenUpdatePrecompileSuite extends HapiApiSuite {
                                                         .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
                                                 contractCall(
                                                                 TOKEN_UPDATE_CONTRACT,
-                                                                "updateTokenWithKeys",
+                                                                updateTokenWithKeysFunc,
                                                                 asAddress(tokenList.get(0).get()),
                                                                 asAddress(
                                                                         spec.registry()
@@ -485,7 +486,7 @@ public class TokenUpdatePrecompileSuite extends HapiApiSuite {
                                                         .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
                                                 contractCall(
                                                                 TOKEN_UPDATE_CONTRACT,
-                                                                "updateTokenWithKeys",
+                                                                updateTokenWithKeysFunc,
                                                                 asAddress(tokenList.get(1).get()),
                                                                 asAddress(
                                                                         spec.registry()
@@ -510,7 +511,7 @@ public class TokenUpdatePrecompileSuite extends HapiApiSuite {
                                                         .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
                                                 contractCall(
                                                                 TOKEN_UPDATE_CONTRACT,
-                                                                "updateTokenWithKeys",
+                                                                updateTokenWithKeysFunc,
                                                                 asAddress(tokenList.get(2).get()),
                                                                 asAddress(
                                                                         spec.registry()
@@ -535,7 +536,7 @@ public class TokenUpdatePrecompileSuite extends HapiApiSuite {
                                                         .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
                                                 contractCall(
                                                                 TOKEN_UPDATE_CONTRACT,
-                                                                "updateTokenWithKeys",
+                                                                updateTokenWithKeysFunc,
                                                                 asAddress(tokenList.get(3).get()),
                                                                 asAddress(
                                                                         spec.registry()
@@ -560,7 +561,7 @@ public class TokenUpdatePrecompileSuite extends HapiApiSuite {
                                                         .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
                                                 contractCall(
                                                                 TOKEN_UPDATE_CONTRACT,
-                                                                "updateTokenWithKeys",
+                                                                updateTokenWithKeysFunc,
                                                                 asAddress(tokenList.get(4).get()),
                                                                 asAddress(
                                                                         spec.registry()
