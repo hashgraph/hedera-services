@@ -362,6 +362,36 @@ class HederaStackedWorldStateUpdaterTest {
         assertEquals(HederaStackedWorldStateUpdater.class, updater.getClass());
     }
 
+    @Test
+    void newContractAddressAllocatesId() {
+        withMockCustomizerFactory(
+                () -> {
+                    final var sponsoredId = ContractID.newBuilder().setContractNum(2).build();
+                    final var sponsorAddr =
+                            Address.wrap(
+                                    Bytes.wrap(
+                                            EntityIdUtils.asEvmAddress(
+                                                    ContractID.newBuilder()
+                                                            .setContractNum(1)
+                                                            .build())));
+                    given(trackingLedgers.aliases()).willReturn(aliases);
+                    given(aliases.resolveForEvm(sponsorAddr)).willReturn(sponsorAddr);
+                    given(globalDynamicProperties.areContractAutoAssociationsEnabled())
+                            .willReturn(true);
+
+                    final var sponsoredAddr =
+                            Address.wrap(Bytes.wrap(EntityIdUtils.asEvmAddress(sponsoredId)));
+                    given(worldState.newContractAddress(sponsorAddr)).willReturn(sponsoredAddr);
+                    subject.newContractAddress(sponsorAddr);
+                    assertEquals(1, subject.numberOfIdsAllocatedByStacked());
+                });
+    }
+
+    @Test
+    void numberOfIdsAllocatedByStackedDefaultsTo0() {
+        assertEquals(0, subject.numberOfIdsAllocatedByStacked());
+    }
+
     private void withMockCustomizerFactory(final Runnable spec) {
         HederaStackedWorldStateUpdater.setCustomizerFactory(customizerFactory);
         spec.run();
