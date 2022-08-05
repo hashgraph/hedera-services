@@ -43,6 +43,7 @@ import com.hedera.services.store.contracts.WorldLedgers;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.tokens.HederaTokenStore;
+import com.hedera.services.store.tokens.annotations.AreTreasuryWildcardsEnabled;
 import com.hedera.services.txns.util.TokenUpdateValidator;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -59,10 +60,11 @@ public class TokenUpdateLogic {
     private final WorldLedgers ledger;
     private final SideEffectsTracker sideEffectsTracker;
     private final SigImpactHistorian sigImpactHistorian;
-    boolean allowChangedTreasuryToOwnNfts = false;
+    boolean allowChangedTreasuryToOwnNfts;
 
     @Inject
     public TokenUpdateLogic(
+            final @AreTreasuryWildcardsEnabled boolean allowChangedTreasuryToOwnNfts,
             OptionValidator validator,
             HederaTokenStore tokenStore,
             WorldLedgers ledger,
@@ -73,6 +75,7 @@ public class TokenUpdateLogic {
         this.ledger = ledger;
         this.sideEffectsTracker = sideEffectsTracker;
         this.sigImpactHistorian = sigImpactHistorian;
+        this.allowChangedTreasuryToOwnNfts = allowChangedTreasuryToOwnNfts;
     }
 
     public void updateToken(TokenUpdateTransactionBody op, long now) {
@@ -201,7 +204,7 @@ public class TokenUpdateLogic {
         dropTokenChanges(sideEffectsTracker, ledger.nfts(), ledger.accounts(), ledger.tokenRels());
         throw new InvalidTransactionException(cause);
     }
-    // tmp helpers
+
     private ResponseCodeEnum doTokenTransfer(
             TokenID tId, AccountID from, AccountID to, long adjustment) {
         ResponseCodeEnum validity = store.adjustBalance(from, tId, -adjustment);

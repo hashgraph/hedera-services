@@ -273,6 +273,11 @@ public class InfrastructureFactory {
             WorldLedgers ledgers,
             SideEffectsTracker sideEffects) {
         return new TokenUpdateLogic(
-                validator, hederaTokenStore, ledgers, sideEffects, sigImpactHistorian);
+                dynamicProperties.treasuryNftAllowance(),
+                validator,
+                hederaTokenStore,
+                ledgers,
+                sideEffects,
+                sigImpactHistorian);
     }
 }

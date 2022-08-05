@@ -46,6 +46,7 @@ public class GlobalDynamicProperties {
     private int maxNftTransfersLen;
     private int maxBatchSizeWipe;
     private long maxNftQueryRange;
+    private boolean allowTreasuryToOwnNfts;
     private int maxTokensPerAccount;
     private int maxTokenRelsPerInfoQuery;
     private int maxCustomFeesAllowed;
@@ -157,6 +158,7 @@ public class GlobalDynamicProperties {
         maxBatchSizeMint = properties.getIntProperty("tokens.nfts.maxBatchSizeMint");
         maxBatchSizeWipe = properties.getIntProperty("tokens.nfts.maxBatchSizeWipe");
         maxNftQueryRange = properties.getLongProperty("tokens.nfts.maxQueryRange");
+        allowTreasuryToOwnNfts = properties.getBooleanProperty("tokens.nfts.useTreasuryWildcards");
         maxTokensPerAccount = properties.getIntProperty("tokens.maxPerAccount");
         maxTokenRelsPerInfoQuery = properties.getIntProperty("tokens.maxRelsPerInfoQuery");
         maxTokenSymbolUtf8Bytes = properties.getIntProperty("tokens.maxSymbolUtf8Bytes");
@@ -316,6 +318,10 @@ public class GlobalDynamicProperties {
 
     public long maxNftQueryRange() {
         return maxNftQueryRange;
+    }
+
+    public boolean treasuryNftAllowance() {
+        return allowTreasuryToOwnNfts;
     }
 
     public int maxTokenSymbolUtf8Bytes() {
