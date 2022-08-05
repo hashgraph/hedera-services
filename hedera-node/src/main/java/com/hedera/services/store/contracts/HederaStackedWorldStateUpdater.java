@@ -29,6 +29,7 @@ import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
+import java.util.Optional;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.account.Account;
@@ -258,14 +259,16 @@ public class HederaStackedWorldStateUpdater
     private int totalAllocatedIdsInTxn() {
         int totalAllocatedIds = 0;
         HederaWorldUpdater parent;
-        if (parentUpdater().isPresent()) {
-            parent = (HederaWorldUpdater) parentUpdater().get();
-            boolean hasParent = parentUpdater().isPresent();
-            while (hasParent) {
+        Optional<WorldUpdater> parentOptional = parentUpdater();
+        if (parentOptional.isPresent()) {
+            parent = (HederaWorldUpdater) parentOptional.get();
+            while (true) {
                 totalAllocatedIds += parent.numberOfIdsAllocatedByStacked();
-                hasParent = parent.parentUpdater().isPresent();
-                if (parent.parentUpdater().isPresent()) {
-                    parent = (HederaWorldUpdater) parent.parentUpdater().get();
+                parentOptional = parent.parentUpdater();
+                if (parentOptional.isPresent()) {
+                    parent = (HederaWorldUpdater) parentOptional.get();
+                } else {
+                    break;
                 }
             }
         }
