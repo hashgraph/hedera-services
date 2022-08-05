@@ -219,7 +219,9 @@ class BootstrapPropertiesTest {
                     entry("stats.speedometerHalfLifeSecs", 10.0),
                     entry("stats.executionTimesToTrack", 0),
                     entry("staking.isEnabled", true),
+                    entry("staking.nodeMaxToMinStakeRatios", Map.of()),
                     entry("staking.periodMins", 1440L),
+                    entry("staking.requireMinStakeToReward", false),
                     entry("staking.rewardHistory.numStoredPeriods", 365),
                     entry("staking.rewardRate", 0L),
                     entry("staking.startThreshold", 25000000000000000L),
@@ -259,7 +261,9 @@ class BootstrapPropertiesTest {
                     entry("topics.maxNumber", 1_000_000L),
                     entry("tokens.maxAggregateRels", 10_000_000L),
                     entry("utilPrng.isEnabled", true),
-                    entry("contracts.sidecars", EnumSet.noneOf(SidecarType.class)));
+                    entry("contracts.sidecars", EnumSet.noneOf(SidecarType.class)),
+                    entry("hedera.recordStream.sidecarMaxSizeMb", 256),
+                    entry("hedera.recordStream.enableTraceabilityMigration", true));
 
     @Test
     void containsProperty() {

@@ -74,6 +74,7 @@ import java.util.OptionalLong;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes;
+import org.jetbrains.annotations.NotNull;
 
 public class TokenInfoHTSSuite extends HapiApiSuite {
 
@@ -112,6 +113,7 @@ public class TokenInfoHTSSuite extends HapiApiSuite {
     private static final int MINIMUM_TO_COLLECT = 5;
     private static final int MAXIMUM_TO_COLLECT = 400;
     private static final int MAX_SUPPLY = 1000;
+    public static final String GET_CUSTOM_FEES_FOR_TOKEN = "getCustomFeesForToken";
 
     public static void main(String... args) {
         new TokenInfoHTSSuite().runSuiteSync();
@@ -139,7 +141,9 @@ public class TokenInfoHTSSuite extends HapiApiSuite {
         return List.of(
                 happyPathGetTokenInfo(),
                 happyPathGetFungibleTokenInfo(),
-                happyPathGetNonFungibleTokenInfo());
+                happyPathGetNonFungibleTokenInfo(),
+                happyPathGetTokenCustomFees(),
+                happyPathGetNonFungibleTokenCustomFees());
     }
 
     private HapiApiSpec happyPathGetTokenInfo() {
@@ -740,6 +744,181 @@ public class TokenInfoHTSSuite extends HapiApiSuite {
                                 .logged());
     }
 
+    private HapiApiSpec happyPathGetTokenCustomFees() {
+        return defaultHapiSpec("HappyPathGetTokenCustomFees")
+                .given(
+                        cryptoCreate(TOKEN_TREASURY).balance(0L),
+                        cryptoCreate(AUTO_RENEW_ACCOUNT).balance(0L),
+                        cryptoCreate(HTS_COLLECTOR),
+                        uploadInitCode(TOKEN_INFO_CONTRACT),
+                        contractCreate(TOKEN_INFO_CONTRACT).gas(1_000_000L),
+                        tokenCreate(PRIMARY_TOKEN_NAME)
+                                .supplyType(TokenSupplyType.FINITE)
+                                .name(PRIMARY_TOKEN_NAME)
+                                .treasury(TOKEN_TREASURY)
+                                .maxSupply(MAX_SUPPLY)
+                                .initialSupply(500L)
+                                .withCustom(fixedHbarFee(500L, HTS_COLLECTOR))
+                                .withCustom(
+                                        fractionalFee(
+                                                NUMERATOR,
+                                                DENOMINATOR,
+                                                MINIMUM_TO_COLLECT,
+                                                OptionalLong.of(MAXIMUM_TO_COLLECT),
+                                                TOKEN_TREASURY))
+                                .via(CREATE_TXN),
+                        getTokenInfo(PRIMARY_TOKEN_NAME).via(GET_TOKEN_INFO_TXN))
+                .when(
+                        withOpContext(
+                                (spec, opLog) ->
+                                        allRunFor(
+                                                spec,
+                                                contractCall(
+                                                                TOKEN_INFO_CONTRACT,
+                                                                GET_CUSTOM_FEES_FOR_TOKEN,
+                                                                Tuple.singleton(
+                                                                        expandByteArrayTo32Length(
+                                                                                asAddress(
+                                                                                        spec.registry()
+                                                                                                .getTokenID(
+                                                                                                        PRIMARY_TOKEN_NAME)))))
+                                                        .via(TOKEN_INFO_TXN)
+                                                        .gas(1_000_000L),
+                                                contractCallLocal(
+                                                        TOKEN_INFO_CONTRACT,
+                                                        GET_CUSTOM_FEES_FOR_TOKEN,
+                                                        Tuple.singleton(
+                                                                expandByteArrayTo32Length(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getTokenID(
+                                                                                                PRIMARY_TOKEN_NAME))))))))
+                .then(
+                        withOpContext(
+                                (spec, opLog) ->
+                                        allRunFor(
+                                                spec,
+                                                getTxnRecord(TOKEN_INFO_TXN)
+                                                        .andAllChildRecords()
+                                                        .logged(),
+                                                childRecordsCheck(
+                                                        TOKEN_INFO_TXN,
+                                                        SUCCESS,
+                                                        recordWith()
+                                                                .status(SUCCESS)
+                                                                .contractCallResult(
+                                                                        resultWith()
+                                                                                .contractCallResult(
+                                                                                        htsPrecompileResult()
+                                                                                                .forFunction(
+                                                                                                        FunctionType
+                                                                                                                .HAPI_GET_TOKEN_CUSTOM_FEES)
+                                                                                                .withStatus(
+                                                                                                        SUCCESS)
+                                                                                                .withCustomFees(
+                                                                                                        getCustomFees(
+                                                                                                                spec))))))));
+    }
+
+    private HapiApiSpec happyPathGetNonFungibleTokenCustomFees() {
+        final String owner = "NFT Owner";
+        final String spender = "NFT Spender";
+        final int maxSupply = 10;
+        final ByteString meta = ByteString.copyFrom(META.getBytes(StandardCharsets.UTF_8));
+        return defaultHapiSpec("HappyPathGetNonFungibleTokenCustomFees")
+                .given(
+                        cryptoCreate(TOKEN_TREASURY).balance(0L),
+                        cryptoCreate(owner),
+                        cryptoCreate(spender),
+                        cryptoCreate(HTS_COLLECTOR),
+                        newKeyNamed(SUPPLY_KEY),
+                        uploadInitCode(TOKEN_INFO_CONTRACT),
+                        contractCreate(TOKEN_INFO_CONTRACT).gas(1_000_000L),
+                        tokenCreate(FEE_DENOM).treasury(HTS_COLLECTOR),
+                        tokenCreate(NON_FUNGIBLE_TOKEN_NAME)
+                                .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
+                                .supplyType(TokenSupplyType.FINITE)
+                                .entityMemo(MEMO)
+                                .name(NON_FUNGIBLE_TOKEN_NAME)
+                                .symbol(NON_FUNGIBLE_SYMBOL)
+                                .treasury(TOKEN_TREASURY)
+                                .maxSupply(maxSupply)
+                                .initialSupply(0)
+                                .supplyKey(SUPPLY_KEY)
+                                .withCustom(
+                                        royaltyFeeWithFallback(
+                                                1,
+                                                2,
+                                                fixedHtsFeeInheritingRoyaltyCollector(
+                                                        100, FEE_DENOM),
+                                                HTS_COLLECTOR))
+                                .via(CREATE_TXN),
+                        mintToken(NON_FUNGIBLE_TOKEN_NAME, List.of(meta)),
+                        tokenAssociate(owner, List.of(NON_FUNGIBLE_TOKEN_NAME)),
+                        tokenAssociate(spender, List.of(NON_FUNGIBLE_TOKEN_NAME)),
+                        cryptoTransfer(
+                                TokenMovement.movingUnique(NON_FUNGIBLE_TOKEN_NAME, 1L)
+                                        .between(TOKEN_TREASURY, owner)),
+                        cryptoApproveAllowance()
+                                .payingWith(DEFAULT_PAYER)
+                                .addNftAllowance(
+                                        owner, NON_FUNGIBLE_TOKEN_NAME, spender, false, List.of(1L))
+                                .via("approveTxn")
+                                .logged()
+                                .signedBy(DEFAULT_PAYER, owner)
+                                .fee(ONE_HBAR))
+                .when(
+                        withOpContext(
+                                (spec, opLog) ->
+                                        allRunFor(
+                                                spec,
+                                                contractCall(
+                                                                TOKEN_INFO_CONTRACT,
+                                                                GET_CUSTOM_FEES_FOR_TOKEN,
+                                                                Tuple.singleton(
+                                                                        expandByteArrayTo32Length(
+                                                                                asAddress(
+                                                                                        spec.registry()
+                                                                                                .getTokenID(
+                                                                                                        NON_FUNGIBLE_TOKEN_NAME)))))
+                                                        .via(NON_FUNGIBLE_TOKEN_INFO_TXN)
+                                                        .gas(1_000_000L),
+                                                contractCallLocal(
+                                                        TOKEN_INFO_CONTRACT,
+                                                        GET_CUSTOM_FEES_FOR_TOKEN,
+                                                        Tuple.singleton(
+                                                                expandByteArrayTo32Length(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getTokenID(
+                                                                                                NON_FUNGIBLE_TOKEN_NAME))))))))
+                .then(
+                        withOpContext(
+                                (spec, opLog) ->
+                                        allRunFor(
+                                                spec,
+                                                getTxnRecord(NON_FUNGIBLE_TOKEN_INFO_TXN)
+                                                        .andAllChildRecords()
+                                                        .logged(),
+                                                childRecordsCheck(
+                                                        NON_FUNGIBLE_TOKEN_INFO_TXN,
+                                                        SUCCESS,
+                                                        recordWith()
+                                                                .status(SUCCESS)
+                                                                .contractCallResult(
+                                                                        resultWith()
+                                                                                .contractCallResult(
+                                                                                        htsPrecompileResult()
+                                                                                                .forFunction(
+                                                                                                        FunctionType
+                                                                                                                .HAPI_GET_TOKEN_CUSTOM_FEES)
+                                                                                                .withStatus(
+                                                                                                        SUCCESS)
+                                                                                                .withCustomFees(
+                                                                                                        getCustomFeeForNFT(
+                                                                                                                spec))))))));
+    }
+
     private TokenInfo getTokenInfoStructForFungibleToken(
             final HapiApiSpec spec,
             final String tokenName,
@@ -749,30 +928,7 @@ public class TokenInfoHTSSuite extends HapiApiSuite {
 
         final var treasury = spec.registry().getAccountID(TOKEN_TREASURY);
 
-        final var fixedFee = FixedFee.newBuilder().setAmount(500L).build();
-        final var customFixedFee =
-                CustomFee.newBuilder()
-                        .setFixedFee(fixedFee)
-                        .setFeeCollectorAccountId(spec.registry().getAccountID(HTS_COLLECTOR))
-                        .build();
-
-        final var fraction =
-                Fraction.newBuilder().setNumerator(NUMERATOR).setDenominator(DENOMINATOR).build();
-        final var fractionalFee =
-                FractionalFee.newBuilder()
-                        .setFractionalAmount(fraction)
-                        .setMinimumAmount(MINIMUM_TO_COLLECT)
-                        .setMaximumAmount(MAXIMUM_TO_COLLECT)
-                        .build();
-        final var customFractionalFee =
-                CustomFee.newBuilder()
-                        .setFractionalFee(fractionalFee)
-                        .setFeeCollectorAccountId(spec.registry().getAccountID(TOKEN_TREASURY))
-                        .build();
-
-        final var customFees = new ArrayList<CustomFee>();
-        customFees.add(customFixedFee);
-        customFees.add(customFractionalFee);
+        final ArrayList<CustomFee> customFees = getCustomFees(spec);
 
         return TokenInfo.newBuilder()
                 .setLedgerId(fromString("0x03"))
@@ -798,28 +954,39 @@ public class TokenInfoHTSSuite extends HapiApiSuite {
                 .build();
     }
 
+    @NotNull
+    private ArrayList<CustomFee> getCustomFees(final HapiApiSpec spec) {
+        final var fixedFee = FixedFee.newBuilder().setAmount(500L).build();
+        final var customFixedFee =
+                CustomFee.newBuilder()
+                        .setFixedFee(fixedFee)
+                        .setFeeCollectorAccountId(spec.registry().getAccountID(HTS_COLLECTOR))
+                        .build();
+
+        final var fraction =
+                Fraction.newBuilder().setNumerator(NUMERATOR).setDenominator(DENOMINATOR).build();
+        final var fractionalFee =
+                FractionalFee.newBuilder()
+                        .setFractionalAmount(fraction)
+                        .setMinimumAmount(MINIMUM_TO_COLLECT)
+                        .setMaximumAmount(MAXIMUM_TO_COLLECT)
+                        .build();
+        final var customFractionalFee =
+                CustomFee.newBuilder()
+                        .setFractionalFee(fractionalFee)
+                        .setFeeCollectorAccountId(spec.registry().getAccountID(TOKEN_TREASURY))
+                        .build();
+
+        final var customFees = new ArrayList<CustomFee>();
+        customFees.add(customFixedFee);
+        customFees.add(customFractionalFee);
+        return customFees;
+    }
+
     private TokenInfo getTokenInfoStructForNonFungibleToken(
             final HapiApiSpec spec, final long expirySecond) {
         final var autoRenewAccount = spec.registry().getAccountID(AUTO_RENEW_ACCOUNT);
         final var treasury = spec.registry().getAccountID(TOKEN_TREASURY);
-
-        final var fraction =
-                Fraction.newBuilder().setNumerator(NUMERATOR).setDenominator(DENOMINATOR).build();
-        final var fallbackFee =
-                FixedFee.newBuilder()
-                        .setAmount(100L)
-                        .setDenominatingTokenId(spec.registry().getTokenID(FEE_DENOM))
-                        .build();
-        final var royaltyFee =
-                RoyaltyFee.newBuilder()
-                        .setExchangeValueFraction(fraction)
-                        .setFallbackFee(fallbackFee)
-                        .build();
-        final var customRoyaltyFee =
-                CustomFee.newBuilder()
-                        .setRoyaltyFee(royaltyFee)
-                        .setFeeCollectorAccountId(spec.registry().getAccountID(HTS_COLLECTOR))
-                        .build();
 
         return TokenInfo.newBuilder()
                 .setLedgerId(fromString("0x03"))
@@ -834,7 +1001,7 @@ public class TokenInfoHTSSuite extends HapiApiSuite {
                 .setTreasury(treasury)
                 .setTotalSupply(1L)
                 .setMaxSupply(10L)
-                .addAllCustomFees(List.of(customRoyaltyFee))
+                .addAllCustomFees(getCustomFeeForNFT(spec))
                 .setAdminKey(getTokenKeyFromSpec(spec, TokenKeyType.ADMIN_KEY))
                 .setKycKey(getTokenKeyFromSpec(spec, TokenKeyType.KYC_KEY))
                 .setFreezeKey(getTokenKeyFromSpec(spec, TokenKeyType.FREEZE_KEY))
@@ -843,6 +1010,33 @@ public class TokenInfoHTSSuite extends HapiApiSuite {
                 .setFeeScheduleKey(getTokenKeyFromSpec(spec, TokenKeyType.FEE_SCHEDULE_KEY))
                 .setPauseKey(getTokenKeyFromSpec(spec, TokenKeyType.PAUSE_KEY))
                 .build();
+    }
+
+    @NotNull
+    private ArrayList<CustomFee> getCustomFeeForNFT(HapiApiSpec spec) {
+        final var fraction =
+                Fraction.newBuilder().setNumerator(NUMERATOR).setDenominator(DENOMINATOR).build();
+        final var fallbackFee =
+                FixedFee.newBuilder()
+                        .setAmount(100L)
+                        .setDenominatingTokenId(spec.registry().getTokenID(FEE_DENOM))
+                        .build();
+        final var royaltyFee =
+                RoyaltyFee.newBuilder()
+                        .setExchangeValueFraction(fraction)
+                        .setFallbackFee(fallbackFee)
+                        .build();
+
+        final var customRoyaltyFee =
+                CustomFee.newBuilder()
+                        .setRoyaltyFee(royaltyFee)
+                        .setFeeCollectorAccountId(spec.registry().getAccountID(HTS_COLLECTOR))
+                        .build();
+
+        final var customFees = new ArrayList<CustomFee>();
+        customFees.add(customRoyaltyFee);
+
+        return customFees;
     }
 
     private Key getTokenKeyFromSpec(final HapiApiSpec spec, final TokenKeyType type) {

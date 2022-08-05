@@ -15,6 +15,9 @@
  */
 package com.hedera.services.txns.token;
 
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BATCH_SIZE_LIMIT_EXCEEDED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -31,7 +34,6 @@ import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.OwnershipTracker;
 import com.hedera.services.store.models.Token;
 import com.hedera.services.store.models.TokenRelationship;
-import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -58,14 +60,13 @@ class WipeLogicTest {
     @Mock private Token token;
     @Mock private TypedTokenStore typedTokenStore;
     @Mock private AccountStore accountStore;
-    @Mock private OptionValidator validator;
     @Mock private GlobalDynamicProperties dynamicProperties;
 
     private WipeLogic subject;
 
     @BeforeEach
     private void setup() {
-        subject = new WipeLogic(validator, typedTokenStore, accountStore, dynamicProperties);
+        subject = new WipeLogic(typedTokenStore, accountStore, dynamicProperties);
     }
 
     @Test
@@ -100,6 +101,40 @@ class WipeLogicTest {
         verify(typedTokenStore).commitToken(token);
         verify(typedTokenStore).commitTrackers(any(OwnershipTracker.class));
         verify(accountStore).commitAccount(any(Account.class));
+    }
+
+    @Test
+    void validatesSyntax() {
+        tokenWipeTxn =
+                TransactionBody.newBuilder()
+                        .setTokenWipe(
+                                TokenWipeAccountTransactionBody.newBuilder()
+                                        .setToken(id)
+                                        .setAccount(accountID)
+                                        .addAllSerialNumbers(List.of(1L, 2L, 3L)))
+                        .build();
+
+        given(dynamicProperties.areNftsEnabled()).willReturn(true);
+        given(dynamicProperties.maxBatchSizeWipe()).willReturn(10);
+
+        assertEquals(OK, subject.validateSyntax(tokenWipeTxn));
+    }
+
+    @Test
+    void validatesSyntaxError() {
+        tokenWipeTxn =
+                TransactionBody.newBuilder()
+                        .setTokenWipe(
+                                TokenWipeAccountTransactionBody.newBuilder()
+                                        .setToken(id)
+                                        .setAccount(accountID)
+                                        .addAllSerialNumbers(List.of(1L, 2L, 3L)))
+                        .build();
+
+        given(dynamicProperties.areNftsEnabled()).willReturn(true);
+        given(dynamicProperties.maxBatchSizeWipe()).willReturn(1);
+
+        assertEquals(BATCH_SIZE_LIMIT_EXCEEDED, subject.validateSyntax(tokenWipeTxn));
     }
 
     private void givenValidCommonTxnCtx() {

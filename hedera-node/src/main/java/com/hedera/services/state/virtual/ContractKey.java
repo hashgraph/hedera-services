@@ -300,7 +300,7 @@ public final class ContractKey implements VirtualKey<ContractKey> {
     }
 
     /** get uint256KeyNonZeroBytes for tests */
-    byte getUint256KeyNonZeroBytes() {
+    public byte getUint256KeyNonZeroBytes() {
         return uint256KeyNonZeroBytes;
     }
 
@@ -311,7 +311,7 @@ public final class ContractKey implements VirtualKey<ContractKey> {
      *     31 being the most significant.
      * @return the byte at given index
      */
-    byte getUint256Byte(final int byteIndex) {
+    public byte getUint256Byte(final int byteIndex) {
         return KeyPackingUtils.extractByte(uint256Key, byteIndex);
     }
 

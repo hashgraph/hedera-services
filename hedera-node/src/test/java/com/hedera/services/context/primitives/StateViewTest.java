@@ -126,6 +126,7 @@ import com.swirlds.virtualmap.VirtualMap;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -1003,6 +1004,21 @@ class StateViewTest {
     }
 
     @Test
+    void getAliasesFromChildren() {
+        final var children = new MutableStateChildren();
+        final var aliases = new HashMap<ByteString, EntityNum>();
+        aliases.put(ByteString.copyFromUtf8("test"), EntityNum.fromLong(10L));
+        children.setAliases(aliases);
+        children.setNetworkCtx(networkContext);
+
+        subject = new StateView(null, children, null);
+
+        final var actualAliases = subject.aliases();
+
+        assertEquals(aliases, actualAliases);
+    }
+
+    @Test
     void returnsEmptyOptionalIfContractMissing() {
         given(contracts.get(any())).willReturn(null);
 
@@ -1232,6 +1248,7 @@ class StateViewTest {
         assertSame(StateView.EMPTY_MM, subject.accounts());
         assertSame(StateView.EMPTY_MM, subject.topics());
         assertSame(StateView.EMPTY_MM, subject.stakingInfo());
+        assertSame(StateView.EMPTY_HM, subject.aliases());
         assertSame(EMPTY_CTX, subject.networkCtx());
         assertTrue(subject.contentsOf(target).isEmpty());
         assertTrue(subject.infoForFile(target).isEmpty());
@@ -1272,6 +1289,29 @@ class StateViewTest {
         assertEquals(
                 tokenRels,
                 ((BackingTokenRels) subject.asReadOnlyAssociationStore()).getDelegate().get());
+    }
+
+    @Test
+    void tokenCustomFeesWorks() {
+        given(tokens.get(tokenNum)).willReturn(token);
+        assertEquals(grpcCustomFees, subject.tokenCustomFees(tokenId));
+    }
+
+    @Test
+    void tokenCustomFeesFailsGracefully() {
+        given(tokens.get(tokenNum)).willThrow(IllegalArgumentException.class);
+        assertTrue(subject.tokenCustomFees(tokenId).isEmpty());
+    }
+
+    @Test
+    void tokenCustomFeesMissingTokenIdReturnsEmptyList() {
+        assertTrue(subject.tokenCustomFees(missingTokenId).isEmpty());
+    }
+
+    @Test
+    void tokenCustomFeesWorksForMissing() {
+        subject = new StateView(null, null, null);
+        assertTrue(subject.tokenCustomFees(tokenId).isEmpty());
     }
 
     private final Instant nftCreation = Instant.ofEpochSecond(1_234_567L, 8);

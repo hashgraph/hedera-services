@@ -48,6 +48,17 @@ dependencies {
     runtimeOnly(libs.bundles.netty)
 }
 
+val apt = configurations.create("apt")
+dependencies {
+    apt(libs.dagger.compiler)
+}
+tasks.withType<JavaCompile> {
+    options.annotationProcessorPath = apt;
+}
+
+val jmhDaggerSources = file("build/generated/sources/annotationProcessor/java/jmh")
+java.sourceSets["jmh"].java.srcDir(jmhDaggerSources)
+
 // Add all the libs dependencies into the jar manifest!
 tasks.jar {
     manifest {

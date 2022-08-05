@@ -27,6 +27,7 @@ public final class ParsingConstants {
     public static final String ADDRESS = "(address)";
     public static final String ARRAY_BRACKETS = "[]";
     public static final String BOOL = "(bool)";
+    public static final String INT_BOOL_PAIR = "(int,bool)";
     public static final String BYTES32 = "(bytes32)";
     public static final String BYTES32_PAIR_RAW_TYPE = "(bytes32,bytes32)";
     public static final String INT = "(int)";
@@ -96,7 +97,20 @@ public final class ParsingConstants {
             TupleType.parse(RESPONSE_STATUS_AT_BEGINNING + TOKEN_INFO + ")");
     public static final TupleType getNonFungibleTokenInfoType =
             TupleType.parse(RESPONSE_STATUS_AT_BEGINNING + NON_FUNGIBLE_TOKEN_INFO + ")");
+    public static final TupleType getTokenCustomFeesType =
+            TupleType.parse(
+                    RESPONSE_STATUS_AT_BEGINNING
+                            + FIXED_FEE
+                            + ARRAY_BRACKETS
+                            + ","
+                            + FRACTIONAL_FEE
+                            + ARRAY_BRACKETS
+                            + ","
+                            + ROYALTY_FEE
+                            + ARRAY_BRACKETS
+                            + ")");
     public static final TupleType isApprovedForAllType = booleanTuple;
+    public static final TupleType isFrozenType = TupleType.parse(INT_BOOL_PAIR_RETURN_TYPE);
     public static final TupleType ercTransferType = booleanTuple;
     public static final TupleType hapiAllowanceOfType = TupleType.parse("(int32,uint256)");
     public static final TupleType hapiGetApprovedType = TupleType.parse("(int32,bytes32)");
@@ -133,8 +147,11 @@ public final class ParsingConstants {
         HAPI_GET_TOKEN_INFO,
         HAPI_GET_NON_FUNGIBLE_TOKEN_INFO,
         HAPI_IS_APPROVED_FOR_ALL,
+        HAPI_IS_KYC,
         GET_TOKEN_DEFAULT_FREEZE_STATUS,
         GET_TOKEN_DEFAULT_KYC_STATUS,
+        HAPI_IS_FROZEN,
+        HAPI_GET_TOKEN_CUSTOM_FEES,
         NOT_SPECIFIED
     }
 }

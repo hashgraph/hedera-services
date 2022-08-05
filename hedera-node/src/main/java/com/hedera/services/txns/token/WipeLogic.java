@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,18 +15,13 @@
  */
 package com.hedera.services.txns.token;
 
-import static com.hedera.services.txns.token.TokenOpsValidator.validateTokenOpsWith;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_WIPING_AMOUNT;
-
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.OwnershipTracker;
-import com.hedera.services.txns.validation.OptionValidator;
+import com.hedera.services.utils.accessors.TokenWipeAccessor;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenWipeAccountTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -36,18 +31,15 @@ import javax.inject.Singleton;
 
 @Singleton
 public class WipeLogic {
-    private final OptionValidator validator;
     private final TypedTokenStore tokenStore;
     private final AccountStore accountStore;
     private final GlobalDynamicProperties dynamicProperties;
 
     @Inject
     public WipeLogic(
-            final OptionValidator validator,
             final TypedTokenStore tokenStore,
             final AccountStore accountStore,
             final GlobalDynamicProperties dynamicProperties) {
-        this.validator = validator;
         this.tokenStore = tokenStore;
         this.accountStore = accountStore;
         this.dynamicProperties = dynamicProperties;
@@ -82,20 +74,7 @@ public class WipeLogic {
 
     public ResponseCodeEnum validateSyntax(final TransactionBody txn) {
         TokenWipeAccountTransactionBody op = txn.getTokenWipe();
-
-        if (!op.hasToken()) {
-            return INVALID_TOKEN_ID;
-        }
-
-        if (!op.hasAccount()) {
-            return INVALID_ACCOUNT_ID;
-        }
-        return validateTokenOpsWith(
-                op.getSerialNumbersCount(),
-                op.getAmount(),
-                dynamicProperties.areNftsEnabled(),
-                INVALID_WIPING_AMOUNT,
-                op.getSerialNumbersList(),
-                validator::maxBatchSizeWipeCheck);
+        return TokenWipeAccessor.validateSyntax(
+                op, dynamicProperties.areNftsEnabled(), dynamicProperties.maxBatchSizeWipe());
     }
 }

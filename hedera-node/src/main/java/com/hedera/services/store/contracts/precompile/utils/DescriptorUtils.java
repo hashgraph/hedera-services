@@ -17,9 +17,12 @@ package com.hedera.services.store.contracts.precompile.utils;
 
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_GET_FUNGIBLE_TOKEN_INFO;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_GET_NON_FUNGIBLE_TOKEN_INFO;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_GET_TOKEN_CUSTOM_FEES;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_GET_TOKEN_DEFAULT_FREEZE_STATUS;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_GET_TOKEN_DEFAULT_KYC_STATUS;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_GET_TOKEN_INFO;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_IS_FROZEN;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_IS_KYC;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_REDIRECT_FOR_TOKEN;
 import static com.hedera.services.utils.EntityIdUtils.tokenIdFromEvmAddress;
 
@@ -32,11 +35,18 @@ public class DescriptorUtils {
     }
 
     public static boolean isViewFunction(final Bytes input) {
-        return ABI_ID_GET_TOKEN_INFO == input.getInt(0)
-                || ABI_ID_GET_FUNGIBLE_TOKEN_INFO == input.getInt(0)
-                || ABI_ID_GET_NON_FUNGIBLE_TOKEN_INFO == input.getInt(0)
-                || ABI_ID_GET_TOKEN_DEFAULT_FREEZE_STATUS == input.getInt(0)
-                || ABI_ID_GET_TOKEN_DEFAULT_KYC_STATUS == input.getInt(0);
+        int functionId = input.getInt(0);
+        return switch (functionId) {
+            case ABI_ID_GET_TOKEN_INFO,
+                    ABI_ID_GET_FUNGIBLE_TOKEN_INFO,
+                    ABI_ID_GET_NON_FUNGIBLE_TOKEN_INFO,
+                    ABI_ID_GET_TOKEN_DEFAULT_FREEZE_STATUS,
+                    ABI_ID_GET_TOKEN_DEFAULT_KYC_STATUS,
+                    ABI_ID_IS_FROZEN,
+                    ABI_ID_IS_KYC,
+                    ABI_ID_GET_TOKEN_CUSTOM_FEES -> true;
+            default -> false;
+        };
     }
 
     public static RedirectTarget getRedirectTarget(final Bytes input) {

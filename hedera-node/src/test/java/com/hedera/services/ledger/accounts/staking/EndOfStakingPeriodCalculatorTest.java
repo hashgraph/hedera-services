@@ -46,6 +46,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class EndOfStakingPeriodCalculatorTest {
+
     @Mock private MerkleMap<EntityNum, MerkleAccount> accounts;
     @Mock private MerkleMap<EntityNum, MerkleStakingInfo> stakingInfos;
     @Mock private MerkleNetworkContext merkleNetworkContext;
@@ -72,19 +73,6 @@ class EndOfStakingPeriodCalculatorTest {
     }
 
     @Test
-    void skipsEndOfStakingPeriodCalcsIfRewardsAreNotActivated() {
-        final var consensusTime = Instant.now();
-        given(merkleNetworkContext.areRewardsActivated()).willReturn(false);
-        given(dynamicProperties.isStakingEnabled()).willReturn(true);
-
-        subject.updateNodes(consensusTime);
-
-        verify(merkleNetworkContext, never()).setTotalStakedRewardStart(anyLong());
-        verify(merkleNetworkContext, never()).setTotalStakedStart(anyLong());
-        verify(syntheticTxnFactory, never()).nodeStakeUpdate(any(), anyList());
-    }
-
-    @Test
     void skipsEndOfStakingPeriodCalcsIfStakingNotEnabled() {
         final var consensusTime = Instant.now();
         given(dynamicProperties.isStakingEnabled()).willReturn(false);
@@ -104,7 +92,6 @@ class EndOfStakingPeriodCalculatorTest {
 
         given(dynamicProperties.isStakingEnabled()).willReturn(true);
         given(dynamicProperties.maxDailyStakeRewardThPerH()).willReturn(Long.MAX_VALUE);
-        given(merkleNetworkContext.areRewardsActivated()).willReturn(true);
         given(properties.getLongProperty("staking.rewardRate")).willReturn(100L);
         given(properties.getLongProperty("accounts.stakingRewardAccount"))
                 .willReturn(stakingRewardAccount);

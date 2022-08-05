@@ -18,9 +18,7 @@ package com.hedera.services.store.contracts.precompile.impl;
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils.GasCostType.BURN_FUNGIBLE;
 import static com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils.GasCostType.BURN_NFT;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
 import com.hedera.services.context.SideEffectsTracker;
@@ -48,6 +46,7 @@ import org.hyperledger.besu.evm.frame.MessageFrame;
 
 public class BurnPrecompile extends AbstractWritePrecompile {
     private static final List<Long> NO_SERIAL_NOS = Collections.emptyList();
+    private static final String BURN = String.format(FAILURE_MESSAGE, "burn");
     private final EncodingFacade encoder;
     private final ContractAliases aliases;
     private final EvmSigsVerifier sigsVerifier;
@@ -85,7 +84,7 @@ public class BurnPrecompile extends AbstractWritePrecompile {
 
     @Override
     public void run(final MessageFrame frame) {
-        Objects.requireNonNull(burnOp);
+        Objects.requireNonNull(burnOp, "`body` method should be called before `run`");
 
         /* --- Check required signatures --- */
         final var tokenId = Id.fromGrpcToken(burnOp.tokenType());
@@ -96,7 +95,7 @@ public class BurnPrecompile extends AbstractWritePrecompile {
                         sigsVerifier::hasActiveSupplyKey,
                         ledgers,
                         aliases);
-        validateTrue(hasRequiredSigs, INVALID_SIGNATURE);
+        validateTrue(hasRequiredSigs, INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE, BURN);
 
         /* --- Build the necessary infrastructure to execute the transaction --- */
         final var accountStore = infrastructureFactory.newAccountStore(ledgers.accounts());
@@ -122,7 +121,8 @@ public class BurnPrecompile extends AbstractWritePrecompile {
 
     @Override
     public long getMinimumFeeInTinybars(final Timestamp consensusTime) {
-        Objects.requireNonNull(burnOp);
+        Objects.requireNonNull(
+                burnOp, "`body` method should be called before `getMinimumFeeInTinybars`");
         return pricingUtils.getMinimumPriceInTinybars(
                 (burnOp.type() == NON_FUNGIBLE_UNIQUE) ? BURN_NFT : BURN_FUNGIBLE, consensusTime);
     }

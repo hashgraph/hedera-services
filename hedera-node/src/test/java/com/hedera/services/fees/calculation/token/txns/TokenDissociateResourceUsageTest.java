@@ -15,26 +15,23 @@
  */
 package com.hedera.services.fees.calculation.token.txns;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static com.hedera.services.usage.SingletonEstimatorUtils.ESTIMATOR_UTILS;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
+import static org.mockito.Mockito.mockStatic;
 
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.usage.EstimatorFactory;
 import com.hedera.services.usage.SigUsage;
+import com.hedera.services.usage.TxnUsageEstimator;
 import com.hedera.services.usage.token.TokenDissociateUsage;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.test.utils.IdUtils;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.FeeData;
-import com.hederahashgraph.api.proto.java.TokenDissociateTransactionBody;
-import com.hederahashgraph.api.proto.java.TokenID;
-import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.hederahashgraph.api.proto.java.*;
 import com.hederahashgraph.fee.SigValueObj;
 import com.swirlds.merkle.map.MerkleMap;
-import java.util.function.BiFunction;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -55,11 +52,11 @@ class TokenDissociateResourceUsageTest {
     FeeData expected;
 
     TokenDissociateUsage usage;
-    BiFunction<TransactionBody, SigUsage, TokenDissociateUsage> factory;
 
     long expiry = 1_234_567L;
     TokenID firstToken = IdUtils.asToken("0.0.123");
     TokenID secondToken = IdUtils.asToken("0.0.124");
+    TxnUsageEstimator txnUsageEstimator;
 
     @BeforeEach
     private void setup() throws Throwable {
@@ -84,18 +81,14 @@ class TokenDissociateResourceUsageTest {
         nonTokenDissociateTxn = mock(TransactionBody.class);
         given(nonTokenDissociateTxn.hasTokenAssociate()).willReturn(false);
 
-        factory =
-                (BiFunction<TransactionBody, SigUsage, TokenDissociateUsage>)
-                        mock(BiFunction.class);
-        given(factory.apply(tokenDissociateTxn, sigUsage)).willReturn(usage);
-
         usage = mock(TokenDissociateUsage.class);
         given(usage.get()).willReturn(expected);
 
-        TokenDissociateResourceUsage.factory = factory;
-        given(factory.apply(tokenDissociateTxn, sigUsage)).willReturn(usage);
-
-        subject = new TokenDissociateResourceUsage();
+        txnUsageEstimator = mock(TxnUsageEstimator.class);
+        EstimatorFactory estimatorFactory = mock(EstimatorFactory.class);
+        given(estimatorFactory.get(sigUsage, tokenDissociateTxn, ESTIMATOR_UTILS))
+                .willReturn(txnUsageEstimator);
+        subject = new TokenDissociateResourceUsage(estimatorFactory);
     }
 
     @Test
@@ -107,16 +100,30 @@ class TokenDissociateResourceUsageTest {
 
     @Test
     void delegatesToCorrectEstimate() throws Exception {
+        final var mockStatic = mockStatic(TokenDissociateUsage.class);
+        mockStatic
+                .when(() -> TokenDissociateUsage.newEstimate(tokenDissociateTxn, txnUsageEstimator))
+                .thenReturn(usage);
+
         // expect:
         assertEquals(expected, subject.usageGiven(tokenDissociateTxn, obj, view));
+
+        mockStatic.close();
     }
 
     @Test
     void returnsDefaultIfInfoMissing() throws Exception {
+        final var mockStatic = mockStatic(TokenDissociateUsage.class);
+        mockStatic
+                .when(() -> TokenDissociateUsage.newEstimate(tokenDissociateTxn, txnUsageEstimator))
+                .thenReturn(usage);
+
         given(accounts.get(EntityNum.fromAccountId(target))).willReturn(null);
 
         // expect:
         assertEquals(
                 FeeData.getDefaultInstance(), subject.usageGiven(tokenDissociateTxn, obj, view));
+
+        mockStatic.close();
     }
 }
