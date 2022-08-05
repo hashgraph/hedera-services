@@ -24,6 +24,7 @@ import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import java.util.Objects;
 import java.util.function.UnaryOperator;
 import org.apache.tuweni.bytes.Bytes;
 
@@ -50,6 +51,9 @@ public class BalanceOfPrecompile extends AbstractReadOnlyPrecompile {
 
     @Override
     public Bytes getSuccessResultFor(final ExpirableTxnRecord.Builder childRecord) {
+        Objects.requireNonNull(
+                balanceWrapper, "`body` method should be called before `getSuccessResultsFor`");
+
         final var balance = ledgers.balanceOf(balanceWrapper.accountId(), tokenId);
         return encoder.encodeBalance(balance);
     }

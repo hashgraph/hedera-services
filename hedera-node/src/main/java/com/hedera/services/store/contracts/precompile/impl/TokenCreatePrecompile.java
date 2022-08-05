@@ -22,11 +22,7 @@ import static com.hedera.services.store.contracts.precompile.codec.KeyValueWrapp
 import static com.hedera.services.store.contracts.precompile.codec.TokenCreateWrapper.FixedFeeWrapper.FixedFeePayment.INVALID_PAYMENT;
 import static com.hedera.services.utils.EntityIdUtils.asTypedEvmAddress;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.contracts.sources.EvmSigsVerifier;
@@ -54,11 +50,7 @@ import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUti
 import com.hedera.services.store.models.Id;
 import com.hedera.services.txns.token.validators.CreateChecks;
 import com.hedera.services.utils.EntityIdUtils;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.Timestamp;
-import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.api.proto.java.TransactionID;
+import com.hederahashgraph.api.proto.java.*;
 import java.math.BigInteger;
 import java.time.Instant;
 import java.util.Objects;
@@ -198,7 +190,7 @@ public class TokenCreatePrecompile extends AbstractWritePrecompile {
 
     @Override
     public void run(final MessageFrame frame) {
-        Objects.requireNonNull(tokenCreateOp);
+        Objects.requireNonNull(tokenCreateOp, "`body` method should be called before `run`");
 
         /* --- Validate the synthetic create txn body before proceeding with the rest of the execution --- */
         final var creationTime = recordsHistorian.nextFollowingChildConsensusTime();
