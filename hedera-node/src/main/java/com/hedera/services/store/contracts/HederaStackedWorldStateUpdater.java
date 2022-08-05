@@ -258,13 +258,13 @@ public class HederaStackedWorldStateUpdater
     private int totalAllocatedIdsInTxn() {
         int totalAllocatedIds = 0;
         HederaWorldUpdater parent;
-        boolean hasParent = parentUpdater().isPresent();
-        if (hasParent) {
+        if (parentUpdater().isPresent()) {
             parent = (HederaWorldUpdater) parentUpdater().get();
+            boolean hasParent = parentUpdater().isPresent();
             while (hasParent) {
                 totalAllocatedIds += parent.numberOfIdsAllocatedByStacked();
                 hasParent = parent.parentUpdater().isPresent();
-                if (hasParent) {
+                if (parent.parentUpdater().isPresent()) {
                     parent = (HederaWorldUpdater) parent.parentUpdater().get();
                 }
             }
