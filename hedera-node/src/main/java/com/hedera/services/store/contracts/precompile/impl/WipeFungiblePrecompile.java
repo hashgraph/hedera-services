@@ -62,7 +62,8 @@ public class WipeFungiblePrecompile extends AbstractWipePrecompile {
 
     @Override
     public long getMinimumFeeInTinybars(Timestamp consensusTime) {
-        Objects.requireNonNull(wipeOp);
+        Objects.requireNonNull(
+                wipeOp, "`body` method should be called before `getMinimumFeeInTinybars`");
         return pricingUtils.getMinimumPriceInTinybars(WIPE_FUNGIBLE, consensusTime);
     }
 }

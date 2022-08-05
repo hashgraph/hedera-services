@@ -15,9 +15,8 @@
  */
 package com.hedera.services.fees.calculation.token.txns;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static com.hedera.services.usage.SingletonEstimatorUtils.ESTIMATOR_UTILS;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.Mockito.mockStatic;
@@ -25,15 +24,13 @@ import static org.mockito.Mockito.verify;
 
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.usage.EstimatorFactory;
 import com.hedera.services.usage.SigUsage;
+import com.hedera.services.usage.TxnUsageEstimator;
 import com.hedera.services.usage.token.TokenAssociateUsage;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.test.utils.IdUtils;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.FeeData;
-import com.hederahashgraph.api.proto.java.TokenAssociateTransactionBody;
-import com.hederahashgraph.api.proto.java.TokenID;
-import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.hederahashgraph.api.proto.java.*;
 import com.hederahashgraph.exception.InvalidTxBodyException;
 import com.hederahashgraph.fee.SigValueObj;
 import com.swirlds.merkle.map.MerkleMap;
@@ -60,6 +57,7 @@ class TokenAssociateResourceUsageTest {
     private FeeData expected;
 
     private TokenAssociateResourceUsage subject;
+    private TxnUsageEstimator txnUsageEstimator;
 
     @BeforeEach
     private void setup() {
@@ -89,7 +87,11 @@ class TokenAssociateResourceUsageTest {
         given(usage.givenCurrentExpiry(expiry)).willReturn(usage);
         given(usage.get()).willReturn(expected);
 
-        subject = new TokenAssociateResourceUsage();
+        txnUsageEstimator = mock(TxnUsageEstimator.class);
+        EstimatorFactory estimatorFactory = mock(EstimatorFactory.class);
+        given(estimatorFactory.get(sigUsage, tokenAssociateTxn, ESTIMATOR_UTILS))
+                .willReturn(txnUsageEstimator);
+        subject = new TokenAssociateResourceUsage(estimatorFactory);
     }
 
     @Test
@@ -102,7 +104,7 @@ class TokenAssociateResourceUsageTest {
     void delegatesToCorrectEstimate() throws InvalidTxBodyException {
         final var mockStatic = mockStatic(TokenAssociateUsage.class);
         mockStatic
-                .when(() -> TokenAssociateUsage.newEstimate(tokenAssociateTxn, sigUsage))
+                .when(() -> TokenAssociateUsage.newEstimate(tokenAssociateTxn, txnUsageEstimator))
                 .thenReturn(usage);
 
         assertEquals(expected, subject.usageGiven(tokenAssociateTxn, obj, view));
