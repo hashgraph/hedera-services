@@ -91,7 +91,7 @@ class GlobalDynamicPropertiesTest {
         assertTrue(subject.isHTSPrecompileCreateEnabled());
         assertTrue(subject.areContractAutoAssociationsEnabled());
         assertTrue(subject.isStakingEnabled());
-        assertTrue(subject.isUtilPrngEnabled());
+        assertFalse(subject.isUtilPrngEnabled());
         assertTrue(subject.requireMinStakeToReward());
         assertTrue(subject.isTraceabilityMigrationEnabled());
     }
@@ -167,6 +167,7 @@ class GlobalDynamicPropertiesTest {
         assertEquals(63, subject.getMaxPurgedKvPairsPerTouch());
         assertEquals(64, subject.getMaxReturnedNftsPerTouch());
         assertEquals(86, subject.maxNumTokenRels());
+        assertEquals(89, subject.getSidecarMaxSizeMb());
     }
 
     @Test
@@ -205,7 +206,7 @@ class GlobalDynamicPropertiesTest {
         assertEquals(Set.of(HederaFunctionality.CryptoTransfer), subject.schedulingWhitelist());
         assertEquals(oddCongestion, subject.congestionMultipliers());
         assertEquals(upgradeArtifactLocs[1], subject.upgradeArtifactsLoc());
-        assertEquals(Set.of(SidecarType.CONTRACT_BYTECODE), subject.enabledSidecars());
+        assertEquals(Set.of(SidecarType.CONTRACT_STATE_CHANGE), subject.enabledSidecars());
         assertEquals(Map.of(0L, 4L, 1L, 8L), subject.nodeMaxMinStakeRatios());
     }
 
@@ -236,7 +237,7 @@ class GlobalDynamicPropertiesTest {
         assertTrue(subject.schedulingLongTermEnabled());
         assertFalse(subject.areContractAutoAssociationsEnabled());
         assertFalse(subject.isStakingEnabled());
-        assertFalse(subject.isUtilPrngEnabled());
+        assertTrue(subject.isUtilPrngEnabled());
         assertFalse(subject.isTraceabilityMigrationEnabled());
     }
 
@@ -291,6 +292,7 @@ class GlobalDynamicPropertiesTest {
         assertEquals(74, subject.getStakingRewardPercent());
         assertEquals(79, subject.recordFileVersion());
         assertEquals(80, subject.recordSignatureFileVersion());
+        assertEquals(90, subject.getSidecarMaxSizeMb());
     }
 
     @Test
@@ -342,7 +344,7 @@ class GlobalDynamicPropertiesTest {
         assertEquals(upgradeArtifactLocs[0], subject.upgradeArtifactsLoc());
         assertEquals(blockValues, subject.knownBlockValues());
         assertEquals(66L, subject.exchangeRateGasReq());
-        assertEquals(Set.of(SidecarType.CONTRACT_STATE_CHANGE), subject.enabledSidecars());
+        assertEquals(Set.of(SidecarType.CONTRACT_BYTECODE), subject.enabledSidecars());
     }
 
     private void givenPropsWithSeed(int i) {
@@ -474,16 +476,18 @@ class GlobalDynamicPropertiesTest {
         given(properties.getLongProperty("topics.maxNumber")).willReturn(i + 83L);
         given(properties.getLongProperty("scheduling.maxNumber")).willReturn(i + 84L);
         given(properties.getLongProperty("tokens.maxAggregateRels")).willReturn(i + 85L);
-        given(properties.getBooleanProperty("utilPrng.isEnabled")).willReturn((i + 79) % 2 == 0);
+        given(properties.getBooleanProperty("utilPrng.isEnabled")).willReturn((i + 86) % 2 == 0);
         given(properties.getSidecarsProperty("contracts.sidecars"))
                 .willReturn(
-                        (i + 80) % 2 == 0
+                        (i + 87) % 2 == 0
                                 ? Set.of(SidecarType.CONTRACT_STATE_CHANGE)
                                 : Set.of(SidecarType.CONTRACT_BYTECODE));
         given(properties.getBooleanProperty("staking.requireMinStakeToReward"))
                 .willReturn((i + 79) % 2 == 0);
         given(properties.getNodeStakeRatiosProperty("staking.nodeMaxToMinStakeRatios"))
                 .willReturn(Map.of(0L, 4L, 1L, 8L));
+        given(properties.getIntProperty("hedera.recordStream.sidecarMaxSizeMb"))
+                .willReturn((i + 88));
         given(properties.getBooleanProperty("hedera.recordStream.enableTraceabilityMigration"))
                 .willReturn((i + 81) % 2 == 0);
         given(properties.getIntProperty("contracts.maxInternalContractCreations"))

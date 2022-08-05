@@ -256,6 +256,7 @@ class StaticEntityAccessTest {
         assertFailsWith(() -> subject.symbolOf(tokenId), INVALID_TOKEN_ID);
         assertFailsWith(() -> subject.decimalsOf(tokenId), INVALID_TOKEN_ID);
         assertFailsWith(() -> subject.balanceOf(accountId, tokenId), INVALID_TOKEN_ID);
+        assertFailsWith(() -> subject.isKyc(accountId, tokenId), INVALID_TOKEN_ID);
         assertFailsWith(() -> subject.defaultFreezeStatus(tokenId), INVALID_TOKEN_ID);
         assertFailsWith(() -> subject.defaultKycStatus(tokenId), INVALID_TOKEN_ID);
         assertFailsWith(() -> subject.isFrozen(accountId, tokenId), INVALID_TOKEN_ID);
@@ -277,6 +278,7 @@ class StaticEntityAccessTest {
     @Test
     void rejectsMissingAccount() {
         given(tokens.get(tokenNum)).willReturn(token);
+        assertFailsWith(() -> subject.isKyc(accountId, tokenId), INVALID_ACCOUNT_ID);
         assertFailsWith(() -> subject.balanceOf(accountId, tokenId), INVALID_ACCOUNT_ID);
         assertFailsWith(() -> subject.isFrozen(accountId, tokenId), INVALID_ACCOUNT_ID);
     }
@@ -286,6 +288,16 @@ class StaticEntityAccessTest {
         given(tokens.get(tokenNum)).willReturn(token);
         given(accounts.containsKey(accountNum)).willReturn(true);
         assertEquals(0, subject.balanceOf(accountId, tokenId));
+    }
+
+    @Test
+    void getsExpectedIsKycTokenStatusIfAssociationExists() {
+        given(tokens.get(tokenNum)).willReturn(token);
+        given(accounts.containsKey(accountNum)).willReturn(true);
+        final var relStatus = new MerkleTokenRelStatus(balance, false, true, false);
+        given(tokenAssociations.get(EntityNumPair.fromAccountTokenRel(accountId, tokenId)))
+                .willReturn(relStatus);
+        assertTrue(subject.isKyc(accountId, tokenId));
     }
 
     @Test
@@ -420,6 +432,7 @@ class StaticEntityAccessTest {
     private static final EntityNum accountNum = EntityNum.fromLong(888);
     private static final EntityNum treasuryNum = EntityNum.fromLong(999);
     private static final EntityNum spenderNum = EntityNum.fromLong(111);
+    private static final boolean isKyc = false;
     private static final boolean accountsFrozenByDefault = false;
     private static final boolean accountsKycGrantedByDefault = true;
     private static final MerkleUniqueToken accountOwned =

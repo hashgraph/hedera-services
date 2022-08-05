@@ -20,21 +20,13 @@ import static com.hedera.services.usage.token.TokenTxnUsage.tokenEntitySizes;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.*;
 
 import com.hedera.services.test.IdUtils;
 import com.hedera.services.usage.EstimatorFactory;
 import com.hedera.services.usage.SigUsage;
-import com.hedera.services.usage.TxnUsage;
 import com.hedera.services.usage.TxnUsageEstimator;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.Timestamp;
-import com.hederahashgraph.api.proto.java.TokenAssociateTransactionBody;
-import com.hederahashgraph.api.proto.java.TokenID;
-import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.api.proto.java.TransactionID;
+import com.hederahashgraph.api.proto.java.*;
 import com.hederahashgraph.fee.FeeBuilder;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -61,15 +53,13 @@ class TokenAssociateUsageTest {
 
         factory = mock(EstimatorFactory.class);
         given(factory.get(any(), any(), any())).willReturn(base);
-
-        TxnUsage.setEstimatorFactory(factory);
     }
 
     @Test
     void assessesEverything() {
         givenOpWithTwoAssociations();
         // and:
-        subject = TokenAssociateUsage.newEstimate(txn, sigUsage);
+        subject = TokenAssociateUsage.newEstimate(txn, base);
 
         // when:
         var usage = subject.givenCurrentExpiry(expiry).get();

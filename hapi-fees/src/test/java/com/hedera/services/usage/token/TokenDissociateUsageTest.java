@@ -19,21 +19,13 @@ import static com.hedera.services.test.UsageUtils.A_USAGES_MATRIX;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.*;
 
 import com.hedera.services.test.IdUtils;
 import com.hedera.services.usage.EstimatorFactory;
 import com.hedera.services.usage.SigUsage;
-import com.hedera.services.usage.TxnUsage;
 import com.hedera.services.usage.TxnUsageEstimator;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.Timestamp;
-import com.hederahashgraph.api.proto.java.TokenDissociateTransactionBody;
-import com.hederahashgraph.api.proto.java.TokenID;
-import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.api.proto.java.TransactionID;
+import com.hederahashgraph.api.proto.java.*;
 import com.hederahashgraph.fee.FeeBuilder;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -60,15 +52,13 @@ class TokenDissociateUsageTest {
 
         factory = mock(EstimatorFactory.class);
         given(factory.get(any(), any(), any())).willReturn(base);
-
-        TxnUsage.setEstimatorFactory(factory);
     }
 
     @Test
     void assessesEverything() {
         givenOpWithTwoDissociations();
         // and:
-        subject = TokenDissociateUsage.newEstimate(txn, sigUsage);
+        subject = TokenDissociateUsage.newEstimate(txn, base);
 
         // when:
         var usage = subject.get();
@@ -81,7 +71,7 @@ class TokenDissociateUsageTest {
 
     @Test
     void assertSelf() {
-        subject = TokenDissociateUsage.newEstimate(txn, sigUsage);
+        subject = TokenDissociateUsage.newEstimate(txn, base);
         assertEquals(subject, subject.self());
     }
 
