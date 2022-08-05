@@ -106,7 +106,11 @@ public class NodeSignatureVerifier {
         for (File sigFile : sigFiles) {
             String nodeAccountID = getAccountIDStringFromFilePath(sigFile.getPath());
             if (verifySignatureFile(sigFile)) {
-                byte[] hash = extractHashAndSigFromFile(sigFile).getLeft();
+                final var pair = extractHashAndSigFromFile(sigFile);
+                if (pair == null) {
+                    return new ArrayList<>();
+                }
+                byte[] hash = pair.getLeft();
                 String hashString = CommonUtils.hex(hash);
                 Set<String> nodeAccountIDs =
                         hashToNodeAccountIDs.getOrDefault(hashString, new HashSet<>());
@@ -133,6 +137,9 @@ public class NodeSignatureVerifier {
 
     private boolean verifySignatureFile(File sigFile) {
         Pair<byte[], byte[]> hashAndSig = extractHashAndSigFromFile(sigFile);
+        if (hashAndSig == null) {
+            return false;
+        }
 
         byte[] signedData = hashAndSig.getLeft();
         String nodeAccountID = getAccountIDStringFromFilePath(sigFile.getPath());

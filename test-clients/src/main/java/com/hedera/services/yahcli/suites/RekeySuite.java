@@ -85,7 +85,8 @@ public class RekeySuite extends HapiApiSuite {
                         withOpContext(
                                 (spec, opLog) -> {
                                     if (replTarget.endsWith(".words")) {
-                                        new File(replTarget).delete();
+                                        final var isDeleted = new File(replTarget).delete();
+                                        log.info("File deleted "+ isDeleted);
                                     }
                                 }));
     }

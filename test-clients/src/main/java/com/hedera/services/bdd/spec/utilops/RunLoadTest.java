@@ -220,6 +220,7 @@ public class RunLoadTest extends UtilOp {
                 threadClients[k].join();
             } catch (InterruptedException e) {
                 e.printStackTrace();
+                Thread.currentThread().interrupt();
             }
         }
         log.info(
@@ -270,6 +271,7 @@ public class RunLoadTest extends UtilOp {
                     Thread.sleep(Math.max(5, pauseMillieSeconds));
                 }
             } catch (InterruptedException irrelevant) {
+                Thread.currentThread().interrupt();
             }
         }
         log.info(
