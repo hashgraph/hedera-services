@@ -698,18 +698,18 @@ public class RecordCreationSuite extends HapiApiSuite {
     }
 
     private HapiApiSpec internalContractCreateLimitIsRespected() {
-        final var contract = "RecStream6Deploy";
-        final var deploySmallContractFn = "deploySmallContract";
-        final var deploySmallContractRec = "deploySmallContractRec";
+        final var contract = "InternalCreatesInMultipleFrames";
+        final var startDeployingFn = "startDeploying";
+        final var startDeployingRec = "startDeployingRec";
 
         return defaultHapiSpec("recStream6InternalContractCreates")
                 .given(cryptoCreate("payer"), uploadInitCode(contract), contractCreate(contract))
-                .when()
-                .then(
-                        contractCall(contract, deploySmallContractFn, 500)
-                                .via(deploySmallContractRec)
+                .when(
+                        contractCall(contract, startDeployingFn, 5, 6)
+                                .via(startDeployingRec)
                                 .gas(2000000)
-                                .hasKnownStatus(CONTRACT_EXECUTION_EXCEPTION));
+                                .hasKnownStatus(CONTRACT_EXECUTION_EXCEPTION))
+                .then(getTxnRecord(startDeployingRec).andAllChildRecords().logged());
     }
 
     private byte[] rawConfigPlus(byte[] rawBase, String extraName, String extraValue) {

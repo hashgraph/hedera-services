@@ -34,13 +34,6 @@ public interface HederaWorldUpdater extends WorldUpdater {
     Address newContractAddress(Address sponsor);
 
     /**
-     * Verifies a new contract creation is possible
-     *
-     * @return whether a new creation is allowed
-     */
-    boolean isNewCreationAllowed();
-
-    /**
      * Tracks how much Gas should be refunded to the sender account for the TX. SBH price is
      * refunded for the first allocation of new contract storage in order to prevent double charging
      * the client.
@@ -59,4 +52,6 @@ public interface HederaWorldUpdater extends WorldUpdater {
     void addSbhRefund(long refund);
 
     void countIdsAllocatedByStacked(int n);
+
+    int numberOfIdsAllocatedByStacked();
 }

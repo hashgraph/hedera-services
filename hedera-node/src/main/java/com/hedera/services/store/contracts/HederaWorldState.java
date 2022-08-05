@@ -250,11 +250,6 @@ public class HederaWorldState implements HederaMutableWorldState {
         }
 
         @Override
-        public boolean isNewCreationAllowed() {
-            return numAllocatedIds < dynamicProperties.maxInternalContractCreations();
-        }
-
-        @Override
         public long getSbhRefund() {
             return sbhRefund;
         }
@@ -278,6 +273,11 @@ public class HederaWorldState implements HederaMutableWorldState {
         @Override
         public void countIdsAllocatedByStacked(final int n) {
             numAllocatedIds += n;
+        }
+
+        @Override
+        public int numberOfIdsAllocatedByStacked() {
+            return numAllocatedIds;
         }
 
         @Override

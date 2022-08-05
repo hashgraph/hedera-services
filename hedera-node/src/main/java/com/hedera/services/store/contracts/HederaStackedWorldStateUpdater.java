@@ -149,6 +149,11 @@ public class HederaStackedWorldStateUpdater
     }
 
     @Override
+    public int numberOfIdsAllocatedByStacked() {
+        return numAllocatedIds;
+    }
+
+    @Override
     public Address newContractAddress(final Address sponsorAddressOrAlias) {
         final var sponsor = aliases().resolveForEvm(sponsorAddressOrAlias);
         final var newAddress = worldState.newContractAddress(sponsor);
@@ -162,9 +167,8 @@ public class HederaStackedWorldStateUpdater
         return newAddress;
     }
 
-    @Override
     public boolean isNewCreationAllowed() {
-        return numAllocatedIds < dynamicProperties.maxInternalContractCreations();
+        return totalAllocatedIdsInTxn() < dynamicProperties.maxInternalContractCreations();
     }
 
     @Override
@@ -249,6 +253,24 @@ public class HederaStackedWorldStateUpdater
     private boolean isMissingTarget(final Address alias) {
         final var target = aliases().resolveForEvm(alias);
         return !trackingAccounts().exists(accountIdFromEvmAddress(target));
+    }
+
+    private int totalAllocatedIdsInTxn() {
+        int totalAllocatedIds = 0;
+        HederaWorldUpdater parent;
+        boolean hasParent = parentUpdater().isPresent();
+        if (hasParent) {
+            parent = (HederaWorldUpdater) parentUpdater().get();
+            while (hasParent) {
+                totalAllocatedIds += parent.numberOfIdsAllocatedByStacked();
+                hasParent = parent.parentUpdater().isPresent();
+                if (hasParent) {
+                    parent = (HederaWorldUpdater) parent.parentUpdater().get();
+                }
+            }
+        }
+
+        return totalAllocatedIds + numAllocatedIds;
     }
 
     @FunctionalInterface

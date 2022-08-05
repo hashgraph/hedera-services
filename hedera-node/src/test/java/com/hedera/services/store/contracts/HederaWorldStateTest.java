@@ -594,37 +594,6 @@ class HederaWorldStateTest {
         assertEquals(contract.asGrpcContract(), result.get(0));
     }
 
-    @Test
-    void creationIsAllowedWhenNoLimitReached() {
-        givenNonNullWorldLedgers();
-        given(dynamicProperties.maxInternalContractCreations()).willReturn(1L);
-        final var actualSubject = subject.updater();
-
-        assertTrue(actualSubject.isNewCreationAllowed());
-    }
-
-    @Test
-    void creationNotAllowedWhenCreationLimitReached() {
-        givenNonNullWorldLedgers();
-        given(dynamicProperties.maxInternalContractCreations()).willReturn(1L);
-        final var actualSubject = subject.updater();
-
-        actualSubject.countIdsAllocatedByStacked(1);
-
-        assertFalse(actualSubject.isNewCreationAllowed());
-    }
-
-    @Test
-    void creationNotAllowedWhenFollowingChildRecordsLimitReached() {
-        givenNonNullWorldLedgers();
-        given(dynamicProperties.maxInternalContractCreations()).willReturn(1L);
-        final var actualSubject = subject.updater();
-
-        actualSubject.countIdsAllocatedByStacked(2);
-
-        assertFalse(actualSubject.isNewCreationAllowed());
-    }
-
     private void givenNonNullWorldLedgers() {
         given(worldLedgers.wrapped()).willReturn(worldLedgers);
         given(entityAccess.worldLedgers()).willReturn(worldLedgers);
