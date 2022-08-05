@@ -54,7 +54,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.uploadDefaultFeeSchedules;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.usableTxnIdNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_EXECUTION_EXCEPTION;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
@@ -708,7 +708,7 @@ public class RecordCreationSuite extends HapiApiSuite {
                         contractCall(contract, startDeployingFn, 5, 6)
                                 .via(startDeployingRec)
                                 .gas(2000000)
-                                .hasKnownStatus(CONTRACT_EXECUTION_EXCEPTION))
+                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED))
                 .then(getTxnRecord(startDeployingRec).andAllChildRecords().logged());
     }
 
