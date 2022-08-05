@@ -15,24 +15,20 @@
  */
 package com.hedera.services.fees.calculation.token.txns;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static com.hedera.services.usage.SingletonEstimatorUtils.ESTIMATOR_UTILS;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
+import static org.mockito.Mockito.mockStatic;
 
 import com.hedera.services.context.primitives.StateView;
+import com.hedera.services.usage.EstimatorFactory;
 import com.hedera.services.usage.SigUsage;
+import com.hedera.services.usage.TxnUsageEstimator;
 import com.hedera.services.usage.token.TokenCreateUsage;
 import com.hedera.test.utils.IdUtils;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.FeeData;
-import com.hederahashgraph.api.proto.java.Timestamp;
-import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
-import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.api.proto.java.TransactionID;
+import com.hederahashgraph.api.proto.java.*;
 import com.hederahashgraph.fee.SigValueObj;
-import java.util.function.BiFunction;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -49,13 +45,13 @@ class TokenCreateResourceUsageTest {
                     .setTransactionValidStart(Timestamp.newBuilder().setSeconds(now))
                     .build();
 
-    BiFunction<TransactionBody, SigUsage, TokenCreateUsage> factory;
     FeeData expected;
 
     StateView view;
     TokenCreateUsage usage;
 
     TokenCreateResourceUsage subject;
+    TxnUsageEstimator txnUsageEstimator;
 
     @BeforeEach
     private void setup() throws Throwable {
@@ -74,11 +70,11 @@ class TokenCreateResourceUsageTest {
         usage = mock(TokenCreateUsage.class);
         given(usage.get()).willReturn(expected);
 
-        factory = (BiFunction<TransactionBody, SigUsage, TokenCreateUsage>) mock(BiFunction.class);
-        given(factory.apply(tokenCreateTxn, sigUsage)).willReturn(usage);
-
-        TokenCreateResourceUsage.factory = factory;
-        subject = new TokenCreateResourceUsage();
+        txnUsageEstimator = mock(TxnUsageEstimator.class);
+        EstimatorFactory estimatorFactory = mock(EstimatorFactory.class);
+        given(estimatorFactory.get(sigUsage, tokenCreateTxn, ESTIMATOR_UTILS))
+                .willReturn(txnUsageEstimator);
+        subject = new TokenCreateResourceUsage(estimatorFactory);
     }
 
     @Test
@@ -90,10 +86,16 @@ class TokenCreateResourceUsageTest {
 
     @Test
     void delegatesToCorrectEstimate() throws Exception {
+        final var mockStatic = mockStatic(TokenCreateUsage.class);
+        mockStatic
+                .when(() -> TokenCreateUsage.newEstimate(tokenCreateTxn, txnUsageEstimator))
+                .thenReturn(usage);
         // when:
         var actual = subject.usageGiven(tokenCreateTxn, obj, view);
 
         // expect:
         assertSame(expected, actual);
+
+        mockStatic.close();
     }
 }

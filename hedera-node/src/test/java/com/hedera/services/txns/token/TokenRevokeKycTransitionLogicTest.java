@@ -77,8 +77,12 @@ class TokenRevokeKycTransitionLogicTest {
         account = mock(Account.class);
 
         txnCtx = mock(TransactionContext.class);
+        accountStore = mock(AccountStore.class);
+        tokenStore = mock(TypedTokenStore.class);
 
-        subject = new TokenRevokeKycTransitionLogic(txnCtx, tokenStore, accountStore);
+        RevokeKycLogic revokeKycLogic = new RevokeKycLogic(tokenStore, accountStore);
+
+        subject = new TokenRevokeKycTransitionLogic(txnCtx, revokeKycLogic);
     }
 
     @Test

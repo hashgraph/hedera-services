@@ -23,6 +23,7 @@ import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_GET_TOKEN_DEFAULT_KYC_STATUS;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_GET_TOKEN_INFO;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_IS_FROZEN;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_IS_KYC;
 import static com.hedera.services.utils.MiscUtils.asSecondsTimestamp;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 
@@ -135,6 +136,12 @@ public class ViewExecutor {
                 final var defaultKycStatus = ledgers.defaultKycStatus(wrapper.tokenID());
 
                 return encoder.encodeGetTokenDefaultKycStatus(defaultKycStatus);
+            }
+            case ABI_ID_IS_KYC -> {
+                final var wrapper = decoder.decodeIsKyc(input, a -> a);
+                final var isKyc = ledgers.isKyc(wrapper.account(), wrapper.token());
+
+                return encoder.encodeIsKyc(isKyc);
             }
             case ABI_ID_GET_TOKEN_CUSTOM_FEES -> {
                 final var wrapper = decoder.decodeTokenGetCustomFees(input);

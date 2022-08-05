@@ -15,11 +15,14 @@
  */
 package com.hedera.services.fees.calculation.token.txns;
 
+import static com.hedera.services.usage.SingletonEstimatorUtils.ESTIMATOR_UTILS;
 import static com.hedera.services.utils.EntityNum.fromAccountId;
 
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.fees.calculation.TxnResourceUsageEstimator;
+import com.hedera.services.usage.EstimatorFactory;
 import com.hedera.services.usage.SigUsage;
+import com.hedera.services.usage.TxnUsageEstimator;
 import com.hedera.services.usage.token.TokenDissociateUsage;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -30,13 +33,14 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 
 @Singleton
-public class TokenDissociateResourceUsage implements TxnResourceUsageEstimator {
-    static BiFunction<TransactionBody, SigUsage, TokenDissociateUsage> factory =
-            TokenDissociateUsage::newEstimate;
+public class TokenDissociateResourceUsage extends AbstractTokenResourceUsage
+        implements TxnResourceUsageEstimator {
+    private static final BiFunction<TransactionBody, TxnUsageEstimator, TokenDissociateUsage>
+            factory = TokenDissociateUsage::newEstimate;
 
     @Inject
-    public TokenDissociateResourceUsage() {
-        // Default constructor
+    public TokenDissociateResourceUsage(EstimatorFactory estimatorFactory) {
+        super(estimatorFactory);
     }
 
     @Override
@@ -57,7 +61,7 @@ public class TokenDissociateResourceUsage implements TxnResourceUsageEstimator {
                             svo.getTotalSigCount(),
                             svo.getSignatureSize(),
                             svo.getPayerAcctSigCount());
-            var estimate = factory.apply(txn, sigUsage);
+            var estimate = factory.apply(txn, estimatorFactory.get(sigUsage, txn, ESTIMATOR_UTILS));
             return estimate.get();
         }
     }
