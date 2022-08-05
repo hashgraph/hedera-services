@@ -448,8 +448,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
                             sideEffectsTracker,
                             syntheticTxnFactory,
                             infrastructureFactory,
-                            precompilePricingUtils,
-                            true);
+                            precompilePricingUtils);
                     case AbiConstants.ABI_ID_REVOKE_TOKEN_KYC -> new RevokeKycPrecompile(
                             ledgers,
                             decoder,
@@ -458,8 +457,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
                             sideEffectsTracker,
                             syntheticTxnFactory,
                             infrastructureFactory,
-                            precompilePricingUtils,
-                            false);
+                            precompilePricingUtils);
                     case AbiConstants.ABI_WIPE_TOKEN_ACCOUNT_FUNGIBLE -> new WipeFungiblePrecompile(
                             ledgers,
                             decoder,

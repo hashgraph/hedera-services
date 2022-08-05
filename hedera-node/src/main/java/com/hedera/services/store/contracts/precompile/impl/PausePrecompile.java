@@ -72,13 +72,14 @@ public class PausePrecompile extends AbstractWritePrecompile {
 
     @Override
     public long getMinimumFeeInTinybars(Timestamp consensusTime) {
-        Objects.requireNonNull(pauseOp);
+        Objects.requireNonNull(
+                pauseOp, "`body` method should be called before `getMinimumFeeInTinybars`");
         return pricingUtils.getMinimumPriceInTinybars(PAUSE, consensusTime);
     }
 
     @Override
     public void run(MessageFrame frame) {
-        Objects.requireNonNull(pauseOp);
+        Objects.requireNonNull(pauseOp, "`body` method should be called before `run`");
 
         /* --- Check required signatures --- */
         final var tokenId = Id.fromGrpcToken(pauseOp.token());

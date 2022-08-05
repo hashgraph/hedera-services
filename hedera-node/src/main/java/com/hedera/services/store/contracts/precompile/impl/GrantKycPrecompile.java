@@ -15,7 +15,9 @@
  */
 package com.hedera.services.store.contracts.precompile.impl;
 
+import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils.GasCostType.GRANT_KYC;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.contracts.sources.EvmSigsVerifier;
@@ -25,11 +27,15 @@ import com.hedera.services.store.contracts.precompile.InfrastructureFactory;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.store.contracts.precompile.codec.DecodingFacade;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
+import com.hedera.services.store.models.Id;
+import com.hedera.services.txns.token.GrantKycLogic;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.util.Objects;
 import java.util.function.UnaryOperator;
 import org.apache.tuweni.bytes.Bytes;
+import org.hyperledger.besu.evm.frame.MessageFrame;
 
 public class GrantKycPrecompile extends AbstractGrantRevokeKycPrecompile {
 
@@ -41,8 +47,7 @@ public class GrantKycPrecompile extends AbstractGrantRevokeKycPrecompile {
             SideEffectsTracker sideEffects,
             SyntheticTxnFactory syntheticTxnFactory,
             InfrastructureFactory infrastructureFactory,
-            PrecompilePricingUtils pricingUtils,
-            boolean hasGrantKycLogic) {
+            PrecompilePricingUtils pricingUtils) {
         super(
                 ledgers,
                 decoder,
@@ -51,8 +56,15 @@ public class GrantKycPrecompile extends AbstractGrantRevokeKycPrecompile {
                 sideEffects,
                 syntheticTxnFactory,
                 infrastructureFactory,
-                pricingUtils,
-                hasGrantKycLogic);
+                pricingUtils);
+    }
+
+    @Override
+    public void run(MessageFrame frame) {
+        initialise(frame);
+
+        final var grantKycLogic = infrastructureFactory.newGrantKycLogic(accountStore, tokenStore);
+        executeForGrant(grantKycLogic, tokenId, accountId);
     }
 
     @Override
@@ -66,5 +78,14 @@ public class GrantKycPrecompile extends AbstractGrantRevokeKycPrecompile {
     public long getMinimumFeeInTinybars(Timestamp consensusTime) {
         Objects.requireNonNull(grantRevokeOp);
         return pricingUtils.getMinimumPriceInTinybars(GRANT_KYC, consensusTime);
+    }
+
+    private void executeForGrant(GrantKycLogic grantKycLogic, Id tokenId, Id accountId) {
+        validateLogic(grantKycLogic.validate(transactionBody.build()));
+        grantKycLogic.grantKyc(tokenId, accountId);
+    }
+
+    private void validateLogic(ResponseCodeEnum validity) {
+        validateTrue(validity == OK, validity);
     }
 }

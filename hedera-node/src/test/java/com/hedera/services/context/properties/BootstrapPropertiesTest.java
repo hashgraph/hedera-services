@@ -261,7 +261,9 @@ class BootstrapPropertiesTest {
                     entry("topics.maxNumber", 1_000_000L),
                     entry("tokens.maxAggregateRels", 10_000_000L),
                     entry("utilPrng.isEnabled", true),
-                    entry("contracts.sidecars", EnumSet.noneOf(SidecarType.class)));
+                    entry("contracts.sidecars", EnumSet.noneOf(SidecarType.class)),
+                    entry("hedera.recordStream.sidecarMaxSizeMb", 256),
+                    entry("hedera.recordStream.enableTraceabilityMigration", true));
 
     @Test
     void containsProperty() {
