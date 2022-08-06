@@ -35,6 +35,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.emptyChildRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
@@ -86,9 +87,9 @@ public class TokenUpdatePrecompileSuite extends HapiApiSuite {
     private static final String ACCOUNT_TO_ASSOCIATE = "account3";
     private static final String ACCOUNT_TO_ASSOCIATE_KEY = "associateKey";
     private final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
-    private static final String customName = "customName";
-    private static final String customSymbol = "Ω";
-    private static final String customMemo = "Omega";
+    private static final String CUSTOM_NAME = "customName";
+    private static final String CUSTOM_SYMBOL = "Ω";
+    private static final String CUSTOM_MEMO = "Omega";
 
     public static void main(String... args) {
         new TokenUpdatePrecompileSuite().runSuiteSync();
@@ -110,7 +111,8 @@ public class TokenUpdatePrecompileSuite extends HapiApiSuite {
                 updateTokenWithKeysHappyPath(),
                 updateNftTreasuryWithAndWithoutAdminKey(),
                 updateWithTooLongNameAndSymbol(),
-                updateTokenWithKeysNegative());
+                updateTokenWithKeysNegative(),
+                updateTokenWithKeyWithMultipleValues());
     }
 
     private HapiApiSpec updateTokenWithKeysHappyPath() {
@@ -171,9 +173,9 @@ public class TokenUpdatePrecompileSuite extends HapiApiSuite {
                                                                                 .getAccountID(
                                                                                         ACCOUNT)),
                                                                 AUTO_RENEW_PERIOD,
-                                                                customName,
-                                                                customSymbol,
-                                                                customMemo)
+                                                                CUSTOM_NAME,
+                                                                CUSTOM_SYMBOL,
+                                                                CUSTOM_MEMO)
                                                         .via(UPDATE_TXN)
                                                         .gas(GAS_TO_OFFER)
                                                         .sending(DEFAULT_AMOUNT_TO_SEND)
@@ -192,9 +194,9 @@ public class TokenUpdatePrecompileSuite extends HapiApiSuite {
                                         getTokenInfo(VANILLA_TOKEN)
                                                 .logged()
                                                 .hasTokenType(TokenType.FUNGIBLE_COMMON)
-                                                .hasSymbol(customSymbol)
-                                                .hasName(customName)
-                                                .hasEntityMemo(customMemo)
+                                                .hasSymbol(CUSTOM_SYMBOL)
+                                                .hasName(CUSTOM_NAME)
+                                                .hasEntityMemo(CUSTOM_MEMO)
                                                 .hasTreasury(ACCOUNT)
                                                 .hasAutoRenewAccount(ACCOUNT)
                                                 .hasAutoRenewPeriod(AUTO_RENEW_PERIOD)
@@ -317,7 +319,7 @@ public class TokenUpdatePrecompileSuite extends HapiApiSuite {
                                                                                 .getAccountID(
                                                                                         ACCOUNT)),
                                                                 tooLongString,
-                                                                customSymbol)
+                                                                CUSTOM_SYMBOL)
                                                         .via(UPDATE_TXN)
                                                         .gas(GAS_TO_OFFER)
                                                         .sending(DEFAULT_AMOUNT_TO_SEND)
@@ -331,7 +333,7 @@ public class TokenUpdatePrecompileSuite extends HapiApiSuite {
                                                                         spec.registry()
                                                                                 .getAccountID(
                                                                                         ACCOUNT)),
-                                                                customName,
+                                                                CUSTOM_NAME,
                                                                 tooLongString)
                                                         .via(tooLongSymbolTxn)
                                                         .gas(GAS_TO_OFFER)
@@ -620,5 +622,63 @@ public class TokenUpdatePrecompileSuite extends HapiApiSuite {
                                                         CONTRACT_REVERT_EXECUTED,
                                                         TransactionRecordAsserts.recordWith()
                                                                 .status(TOKEN_HAS_NO_KYC_KEY)))));
+    }
+
+    private HapiApiSpec updateTokenWithKeyWithMultipleValues() {
+
+        return defaultHapiSpec("updateTokenWithKeyWithMultipleValues")
+                .given(
+                        newKeyNamed(ED25519KEY).shape(ED25519),
+                        newKeyNamed(ECDSA_KEY).shape(SECP256K1),
+                        newKeyNamed(ACCOUNT_TO_ASSOCIATE_KEY),
+                        newKeyNamed(MULTI_KEY),
+                        cryptoCreate(TOKEN_TREASURY),
+                        cryptoCreate(ACCOUNT).balance(ONE_MILLION_HBARS).key(MULTI_KEY),
+                        cryptoCreate(ACCOUNT_TO_ASSOCIATE).key(ACCOUNT_TO_ASSOCIATE_KEY),
+                        uploadInitCode(TOKEN_UPDATE_CONTRACT),
+                        contractCreate(TOKEN_UPDATE_CONTRACT),
+                        tokenCreate(VANILLA_TOKEN)
+                                .tokenType(FUNGIBLE_COMMON)
+                                .treasury(TOKEN_TREASURY)
+                                .adminKey(MULTI_KEY)
+                                .supplyKey(MULTI_KEY)
+                                .feeScheduleKey(MULTI_KEY)
+                                .pauseKey(MULTI_KEY)
+                                .wipeKey(MULTI_KEY)
+                                .freezeKey(MULTI_KEY)
+                                .kycKey(MULTI_KEY)
+                                .initialSupply(1_000)
+                                .exposingCreatedIdTo(id -> vanillaTokenID.set(asToken(id))),
+                        tokenAssociate(ACCOUNT, VANILLA_TOKEN),
+                        grantTokenKyc(VANILLA_TOKEN, ACCOUNT),
+                        cryptoTransfer(moving(500, VANILLA_TOKEN).between(TOKEN_TREASURY, ACCOUNT)))
+                .when(
+                        withOpContext(
+                                (spec, opLog) ->
+                                        allRunFor(
+                                                spec,
+                                                contractCall(
+                                                                TOKEN_UPDATE_CONTRACT,
+                                                                "updateTokenWithKeyWithMultipleValues",
+                                                                asAddress(vanillaTokenID.get()),
+                                                                asAddress(
+                                                                        spec.registry()
+                                                                                .getAccountID(
+                                                                                        ACCOUNT)),
+                                                                AUTO_RENEW_PERIOD)
+                                                        .via(UPDATE_TXN)
+                                                        .gas(GAS_TO_OFFER)
+                                                        .sending(DEFAULT_AMOUNT_TO_SEND)
+                                                        .payingWith(ACCOUNT)
+                                                        .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
+                                                newKeyNamed(DELEGATE_KEY)
+                                                        .shape(
+                                                                DELEGATE_CONTRACT.signedWith(
+                                                                        TOKEN_UPDATE_CONTRACT)),
+                                                newKeyNamed(TOKEN_UPDATE_AS_KEY)
+                                                        .shape(
+                                                                CONTRACT.signedWith(
+                                                                        TOKEN_UPDATE_CONTRACT)))))
+                .then(sourcing(() -> emptyChildRecordsCheck(UPDATE_TXN, CONTRACT_REVERT_EXECUTED)));
     }
 }

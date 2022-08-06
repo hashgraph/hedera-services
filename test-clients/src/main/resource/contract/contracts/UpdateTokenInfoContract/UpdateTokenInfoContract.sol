@@ -83,7 +83,7 @@ contract UpdateTokenInfoContract is HederaTokenService, FeeHelper {
         }
     }
 
-    // TEST-Missing-KEYS
+    // TEST-004
     function updateTokenWithKeys(
         address tokenID,
         address treasury,
@@ -112,6 +112,31 @@ contract UpdateTokenInfoContract is HederaTokenService, FeeHelper {
         }
     }
 
+    // TEST-005
+    function updateTokenWithKeyWithMultipleValues(
+        address tokenID,
+        address autoRenewAccount,
+        uint32 autoRenewPeriod
+    ) public payable  {
+        // create the invalid key
+        IHederaTokenService.TokenKey[] memory keys = new IHederaTokenService.TokenKey[](1);
+        IHederaTokenService.TokenKey memory invalidKey;
+        invalidKey.keyType = 4;
+        IHederaTokenService.KeyValue memory invalidKeyValue;
+        invalidKeyValue.contractId = address(this);
+        invalidKeyValue.inheritAccountKey = true;
+        invalidKey.key = invalidKeyValue;
+        keys[0] = invalidKey;
+
+        IHederaTokenService.HederaToken memory token =
+        tokenWithExpiry(address(this), 0, autoRenewAccount, autoRenewPeriod, keys);
+
+        int responseCode = HederaTokenService.updateTokenInfo(tokenID,token);
+
+        if (responseCode != HederaResponseCodes.SUCCESS) {
+            revert ();
+        }
+    }
 
     /** --- HELPERS --- */
 
@@ -121,7 +146,7 @@ contract UpdateTokenInfoContract is HederaTokenService, FeeHelper {
         address autoRenewAccount,
         uint32 autoRenewPeriod,
         IHederaTokenService.TokenKey[] memory keys
-    ) internal returns (IHederaTokenService.HederaToken memory token) {
+    ) internal view returns (IHederaTokenService.HederaToken memory token) {
 
         IHederaTokenService.Expiry memory expiry;
         expiry.second = second;

@@ -112,6 +112,29 @@
       },
       {
         "internalType": "address",
+        "name": "autoRenewAccount",
+        "type": "address"
+      },
+      {
+        "internalType": "uint32",
+        "name": "autoRenewPeriod",
+        "type": "uint32"
+      }
+    ],
+    "name": "updateTokenWithKeyWithMultipleValues",
+    "outputs": [],
+    "stateMutability": "payable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "tokenID",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
         "name": "treasury",
         "type": "address"
       },
