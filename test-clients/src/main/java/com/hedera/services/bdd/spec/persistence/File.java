@@ -60,7 +60,7 @@ public class File {
     HapiSpecOperation createOp(String name) {
         var op = fileCreate(name).advertisingCreation();
 
-        if (data.equals(UNSPECIFIED_CONTENTS_LOC)) {
+        if (data == UNSPECIFIED_CONTENTS_LOC) {
             op.contents(DEFAULT_CONTENTS);
         } else {
             op.path(

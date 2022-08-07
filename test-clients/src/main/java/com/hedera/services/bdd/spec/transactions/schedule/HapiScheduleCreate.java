@@ -269,10 +269,9 @@ public class HapiScheduleCreate<T extends HapiTxnOp<T>> extends HapiTxnOp<HapiSc
             return;
         }
         if (verboseLoggingOn) {
-            log.info(
-                    "Created schedule '{}' as {}",
-                    scheduleEntity,
-                    createdSchedule().isPresent() ? createdSchedule().get() : null);
+            if (!createdSchedule().isEmpty()) {
+                log.info("Created schedule '{}' as {}", scheduleEntity, createdSchedule().get());
+            }
         }
         successCb.ifPresent(
                 cb ->

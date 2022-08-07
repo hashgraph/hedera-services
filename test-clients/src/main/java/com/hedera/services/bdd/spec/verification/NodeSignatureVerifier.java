@@ -190,14 +190,6 @@ public class NodeSignatureVerifier {
             log.error("IOException reading '{}'", file, e);
         } catch (Exception e) {
             log.error("Problem reading '{}'", file, e);
-        } finally {
-            try {
-                if (stream != null) {
-                    stream.close();
-                }
-            } catch (IOException ex) {
-                log.warn("Problem closing the stream for '{}'", file, ex);
-            }
         }
 
         return null;

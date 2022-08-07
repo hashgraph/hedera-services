@@ -97,7 +97,7 @@ public class SpecKey {
     }
 
     public void registerWith(HapiApiSpec spec, RegistryForms forms) {
-        if (!pemLoc.equals(MISSING_LOC)) {
+        if (pemLoc != MISSING_LOC) {
             registerPemWith(spec, forms);
         } else if (!wordsLoc.equals(MISSING_LOC)) {
             passphrase = null;
