@@ -17,6 +17,7 @@ package com.hedera.services.bdd.suites.validation;
 
 import com.hedera.services.bdd.spec.persistence.Entity;
 import com.hedera.services.bdd.spec.persistence.SkipNullRepresenter;
+import java.io.BufferedWriter;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -33,12 +34,12 @@ public class YamlHelper {
         var itManifestLoc = it.getManifestAbsPath();
         it.setManifestAbsPath(null);
         var doc = yamlOut.dumpAs(it, Tag.MAP, null);
-        try {
-            var writer = Files.newBufferedWriter(Paths.get(manifestLoc));
+        final var path = Paths.get(manifestLoc);
+
+        try (BufferedWriter writer = Files.newBufferedWriter(path)) {
             writer.write(doc);
-            writer.close();
-        } catch (IOException e) {
-            log.warn("Could not serialize {}!", it.getName(), e);
+        } catch (IOException ex) {
+            log.warn("Could not serialize {}!", it.getName(), ex);
         } finally {
             it.setManifestAbsPath(itManifestLoc);
         }

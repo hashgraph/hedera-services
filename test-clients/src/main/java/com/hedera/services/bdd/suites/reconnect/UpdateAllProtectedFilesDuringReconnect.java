@@ -108,7 +108,7 @@ public class UpdateAllProtectedFilesDuringReconnect extends HapiApiSuite {
                                 .within(5 * 60, TimeUnit.SECONDS)
                                 .loggingAvailabilityEvery(30)
                                 .sleepingBetweenRetriesFor(10),
-                        UtilVerbs.sleepFor(30 * 1000),
+                        UtilVerbs.sleepFor((long) 30 * 1000),
                         withLiveNode("0.0.8")
                                 .within(5 * 60, TimeUnit.SECONDS)
                                 .loggingAvailabilityEvery(30)

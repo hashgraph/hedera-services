@@ -2112,7 +2112,7 @@ public class TokenTransactSpecs extends HapiApiSuite {
                                 .hasTokenBalance(topLevelToken, 50L),
                         getAccountBalance(edgar).hasTokenBalance(topLevelToken, 1_000L - 50L),
                         getAccountBalance(nonTreasury)
-                                .hasTokenBalance(topLevelToken, 1_000L - 1_000L)
+                                .hasTokenBalance(topLevelToken, 0L)
                                 .hasTokenBalance(feeToken, 1_000L - 50L));
     }
 
@@ -2184,7 +2184,7 @@ public class TokenTransactSpecs extends HapiApiSuite {
                                         2 * ONE_HBAR)
                                 .hasHbarAmount(secondCollectorForTopLevel, 2 * ONE_HBAR),
                         getAccountBalance(firstCollectorForTopLevel)
-                                .hasTokenBalance(topLevelToken, 1_000L - 1_000L),
+                                .hasTokenBalance(topLevelToken, 0L),
                         getAccountBalance(secondCollectorForTopLevel)
                                 .hasTinyBars((10 + 2) * ONE_HBAR)
                                 .hasTokenBalance(topLevelToken, 1_000L + 100L),

@@ -141,7 +141,11 @@ public class CreateSuite extends HapiApiSuite {
                                                                                 NOVELTY,
                                                                                 accountId))));
                                             }
-                                            new File(loc).delete();
+                                            final var isDeleted = new File(loc).delete();
+                                            log.info(
+                                                    "File at {} is {} deleted successfully",
+                                                    loc,
+                                                    isDeleted ? "" : "not");
                                         }
                                     }
                                 }));

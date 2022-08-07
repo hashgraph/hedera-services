@@ -80,7 +80,7 @@ public class ContractCallPerfSuite extends HapiApiSuite {
                                                                 i + 1,
                                                                 0,
                                                                 DEPOSIT_MEMO)
-                                                        .sending(i + 1)
+                                                        .sending(((long) i) + 1)
                                                         .deferStatusResolution())),
                         UtilVerbs.finishThroughputObs("contractCall")
                                 .gatedByQuery(

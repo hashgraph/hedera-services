@@ -65,7 +65,7 @@ public class ContractUpdateSuite extends HapiApiSuite {
 
     private static final long defaultMaxLifetime =
             Long.parseLong(HapiSpecSetup.getDefaultNodeProps().get("entities.maxLifetime"));
-    private static final long ONE_DAY = 60 * 60 * 24;
+    private static final long ONE_DAY = 60L * 60 * 24;
     private static final long ONE_MONTH = 30 * ONE_DAY;
     public static final String ADMIN_KEY = "adminKey";
     public static final String NEW_ADMIN_KEY = "newAdminKey";

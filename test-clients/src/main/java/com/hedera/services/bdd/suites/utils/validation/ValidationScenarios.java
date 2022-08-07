@@ -1585,7 +1585,7 @@ public class ValidationScenarios extends HapiApiSuite {
                         allRunFor(spec, create);
 
                         Integer numberToUse = (luckyNo == null) ? DEFAULT_LUCKY_NUMBER : luckyNo;
-                        Object[] args = new Object[] {Integer.valueOf(numberToUse)};
+                        Object[] args = new Object[] {numberToUse};
                         var setLucky = contractCall(PERSISTENT_CONTRACT_NAME, "believeIn", args);
                         allRunFor(spec, setLucky);
 
@@ -1930,6 +1930,7 @@ public class ValidationScenarios extends HapiApiSuite {
         try {
             Thread.sleep(validationConfig.getSleepMsBeforeNextNode());
         } catch (InterruptedException ignore) {
+            Thread.currentThread().interrupt();
         }
         return account;
     }
@@ -2020,15 +2021,15 @@ public class ValidationScenarios extends HapiApiSuite {
     private static void persistUpdatedConfig() {
         var yamlOut = new Yaml(new SkipNullRepresenter());
         var doc = yamlOut.dumpAs(validationConfig, Tag.MAP, null);
-        try {
-            var writer = Files.newBufferedWriter(Paths.get(params.getConfigLoc()));
+        final var path = Paths.get(params.getConfigLoc());
+
+        try (BufferedWriter writer = Files.newBufferedWriter(path)) {
             writer.write(doc);
-            writer.close();
-        } catch (IOException e) {
+        } catch (IOException ex) {
             log.warn(
                     "Could not update {} with scenario results, skipping!",
                     params.getConfigLoc(),
-                    e);
+                    ex);
         }
     }
 

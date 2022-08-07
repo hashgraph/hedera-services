@@ -62,7 +62,7 @@ public class MixedOpsTransactionsSuite extends HapiApiSuite {
     }
     // Used to generate state with mixed operations
     private HapiApiSpec createStateWithMixedOps() {
-        long ONE_YEAR_IN_SECS = 365 * 24 * 60 * 60;
+        long ONE_YEAR_IN_SECS = 365L * 24 * 60 * 60;
         int numScheduledTxns = 10;
         return HapiApiSpec.defaultHapiSpec("createStateWithMixedOps")
                 .given(

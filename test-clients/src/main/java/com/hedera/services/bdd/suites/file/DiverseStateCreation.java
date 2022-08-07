@@ -38,6 +38,7 @@ import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.swirlds.common.utility.CommonUtils;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -99,10 +100,15 @@ public final class DiverseStateCreation extends HapiApiSuite {
 
     @Override
     public List<HapiApiSpec> getSpecsInSuite() {
-        try {
-            SMALL_CONTENTS = Files.newInputStream(Paths.get(SMALL_CONTENTS_LOC)).readAllBytes();
-            MEDIUM_CONTENTS = Files.newInputStream(Paths.get(MEDIUM_CONTENTS_LOC)).readAllBytes();
-            LARGE_CONTENTS = Files.newInputStream(Paths.get(LARGE_CONTENTS_LOC)).readAllBytes();
+        final var pathSmallContents = Paths.get(SMALL_CONTENTS_LOC);
+        final var pathMediumContents = Paths.get(MEDIUM_CONTENTS_LOC);
+        final var pathLargeContents = Paths.get(LARGE_CONTENTS_LOC);
+        try (InputStream smallInput = Files.newInputStream(pathSmallContents);
+                InputStream mediumInput = Files.newInputStream(pathMediumContents);
+                InputStream largeInput = Files.newInputStream(pathLargeContents)) {
+            SMALL_CONTENTS = smallInput.readAllBytes();
+            MEDIUM_CONTENTS = mediumInput.readAllBytes();
+            LARGE_CONTENTS = largeInput.readAllBytes();
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }

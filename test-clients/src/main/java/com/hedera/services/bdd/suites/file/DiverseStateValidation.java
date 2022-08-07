@@ -49,6 +49,7 @@ import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.swirlds.common.utility.CommonUtils;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.math.BigInteger;
 import java.nio.file.Files;
@@ -79,9 +80,12 @@ public final class DiverseStateValidation extends HapiApiSuite {
 
     @Override
     public List<HapiApiSpec> getSpecsInSuite() {
-        try {
-            SMALL_CONTENTS = Files.newInputStream(Paths.get(SMALL_CONTENTS_LOC)).readAllBytes();
-            LARGE_CONTENTS = Files.newInputStream(Paths.get(LARGE_CONTENTS_LOC)).readAllBytes();
+        final var pathSmallContents = Paths.get(SMALL_CONTENTS_LOC);
+        final var pathLargeContents = Paths.get(LARGE_CONTENTS_LOC);
+        try (InputStream smallInput = Files.newInputStream(pathSmallContents);
+                InputStream largeInput = Files.newInputStream(pathLargeContents)) {
+            SMALL_CONTENTS = smallInput.readAllBytes();
+            LARGE_CONTENTS = largeInput.readAllBytes();
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }

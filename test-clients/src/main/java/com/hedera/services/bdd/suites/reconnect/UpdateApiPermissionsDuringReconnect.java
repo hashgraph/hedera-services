@@ -62,7 +62,7 @@ public class UpdateApiPermissionsDuringReconnect extends HapiApiSuite {
                                 .within(5 * 60, TimeUnit.SECONDS)
                                 .loggingAvailabilityEvery(30)
                                 .sleepingBetweenRetriesFor(10),
-                        UtilVerbs.sleepFor(30 * 1000),
+                        UtilVerbs.sleepFor((long) 30 * 1000),
                         withLiveNode("0.0.6")
                                 .within(5 * 60, TimeUnit.SECONDS)
                                 .loggingAvailabilityEvery(30)

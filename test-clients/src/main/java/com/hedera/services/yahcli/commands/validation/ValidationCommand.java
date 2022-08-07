@@ -34,6 +34,8 @@ import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.concurrent.Callable;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.ParentCommand;
@@ -53,6 +55,8 @@ public class ValidationCommand implements Callable<Integer> {
     public static final String TREASURY = "yahcliTreasury";
     public static final String MUTABLE_SCHEDULE = "yahcliMutablePendingXfer";
     public static final String IMMUTABLE_SCHEDULE = "yahcliImmutablePendingXfer";
+
+    private static final Logger log = LogManager.getLogger(ValidationCommand.class);
 
     @ParentCommand private Yahcli yahcli;
 
@@ -160,7 +164,8 @@ public class ValidationCommand implements Callable<Integer> {
         for (var entityLoc : entityLocs) {
             var f = new File(entityLoc);
             if (f.exists()) {
-                f.delete();
+                final var isDeleted = f.delete();
+                log.info("File is {} deleted successfully", isDeleted ? "" : "not");
             }
         }
     }

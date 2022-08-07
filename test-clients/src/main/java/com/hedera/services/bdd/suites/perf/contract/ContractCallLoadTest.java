@@ -74,7 +74,7 @@ public class ContractCallLoadTest extends LoadTest {
                                                                             i + 1,
                                                                             0,
                                                                             DEPOSIT_MEMO)
-                                                                    .sending(i + 1)
+                                                                    .sending(((long) i) + 1)
                                                                     .noLogging()
                                                                     .suppressStats(true)
                                                                     .hasRetryPrecheckFrom(

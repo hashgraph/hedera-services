@@ -134,6 +134,7 @@ import org.junit.jupiter.api.Assertions;
 
 public class ScheduleExecutionSpecs extends HapiApiSuite {
     private static final Logger log = LogManager.getLogger(ScheduleExecutionSpecs.class);
+    private static final Random rand = new Random();
     private static final String A_TOKEN = "token";
     public static byte[] ORIG_FILE = "SOMETHING".getBytes();
     private static final String A_SCHEDULE = "validSchedule";
@@ -517,7 +518,7 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
 
     private byte[] genRandomBytes(int numBytes) {
         byte[] contents = new byte[numBytes];
-        (new Random()).nextBytes(contents);
+        rand.nextBytes(contents);
         return contents;
     }
 

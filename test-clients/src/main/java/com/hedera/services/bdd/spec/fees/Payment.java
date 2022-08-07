@@ -16,7 +16,6 @@
 package com.hedera.services.bdd.spec.fees;
 
 import com.google.common.base.MoreObjects;
-
 import java.util.Objects;
 
 public class Payment {

@@ -21,12 +21,13 @@ import java.util.List;
 import java.util.Random;
 
 public final class MiscEETUtils {
+    private static final Random rand = new Random();
+
     private MiscEETUtils() {}
-    ;
 
     public static byte[] genRandomBytes(int numBytes) {
         byte[] contents = new byte[numBytes];
-        (new Random()).nextBytes(contents);
+        rand.nextBytes(contents);
         return contents;
     }
 

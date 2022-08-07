@@ -75,6 +75,7 @@ import org.apache.logging.log4j.Logger;
 
 public class MixedOpsLoadTest extends LoadTest {
     private static final Logger log = LogManager.getLogger(MixedOpsLoadTest.class);
+    private static final Random rand = new Random();
     private static final int NUM_SUBMISSIONS = 100;
     private final ResponseCodeEnum[] permissiblePrechecks =
             new ResponseCodeEnum[] {
@@ -102,7 +103,6 @@ public class MixedOpsLoadTest extends LoadTest {
 
     protected HapiApiSpec runMixedOps() {
         PerfTestLoadSettings settings = new PerfTestLoadSettings();
-        Random r = new Random();
         AtomicInteger tokenId = new AtomicInteger(0);
         AtomicInteger scheduleId = new AtomicInteger(0);
 
@@ -154,9 +154,9 @@ public class MixedOpsLoadTest extends LoadTest {
                                             UNKNOWN,
                                             TRANSACTION_EXPIRED)
                                     .deferStatusResolution(),
-                            r.nextInt(100) > 5
+                            rand.nextInt(100) > 5
                                     ? cryptoTransfer(
-                                                    moving(1, token + r.nextInt(NUM_SUBMISSIONS))
+                                                    moving(1, token + rand.nextInt(NUM_SUBMISSIONS))
                                                             .between(sender, receiver))
                                             .payingWith(sender)
                                             .signedBy(GENESIS)
@@ -183,7 +183,7 @@ public class MixedOpsLoadTest extends LoadTest {
                                                             + "-"
                                                             + getHostName()
                                                             + "-"
-                                                            + r.nextInt(NUM_SUBMISSIONS))
+                                                            + rand.nextInt(NUM_SUBMISSIONS))
                                             .ignoreIfMissing()
                                             .noLogging()
                                             .alsoSigningWith(receiver)

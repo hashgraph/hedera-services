@@ -157,9 +157,7 @@ public class NodeSignatureVerifier {
             return null;
         }
 
-        try {
-            stream = new FileInputStream(file);
-            DataInputStream dis = new DataInputStream(stream);
+        try (DataInputStream dis = new DataInputStream(new FileInputStream(file))) {
             byte[] fileHash = new byte[48];
 
             while (dis.available() != 0) {

@@ -40,7 +40,7 @@ import org.apache.logging.log4j.Logger;
 
 public class KeyExport extends HapiApiSuite {
     private static final Logger log = LogManager.getLogger(KeyExport.class);
-
+    private static final Random rand = new Random();
     private static final String PEM_FILE_NAME = "dev-testnet-account2.pem";
 
     public static void main(String... args) throws Exception {
@@ -105,7 +105,6 @@ public class KeyExport extends HapiApiSuite {
     }
 
     private HapiApiSpec exportGenesisKey() {
-        final var r = new Random();
         final int passphraseLength = 24;
         final char[] choices =
                 "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789".toCharArray();
@@ -113,7 +112,7 @@ public class KeyExport extends HapiApiSuite {
 
         KeyFactory.PEM_PASSPHRASE =
                 IntStream.range(0, passphraseLength)
-                        .map(ignore -> r.nextInt(choices.length))
+                        .map(ignore -> rand.nextInt(choices.length))
                         .mapToObj(i -> Character.valueOf(choices[i]).toString())
                         .collect(Collectors.joining(""));
 

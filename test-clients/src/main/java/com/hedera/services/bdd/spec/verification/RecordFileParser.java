@@ -59,10 +59,7 @@ public class RecordFileParser {
             throw new IllegalArgumentException("No such file - " + file);
         }
 
-        try {
-            stream = new FileInputStream(file);
-            DataInputStream dis = new DataInputStream(stream);
-
+        try (DataInputStream dis = new DataInputStream(new FileInputStream(file))) {
             prevHash = new byte[48];
             int record_format_version = dis.readInt();
             int version = dis.readInt();
