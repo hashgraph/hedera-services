@@ -72,18 +72,6 @@ public class SpecKey {
         this.passphrase = passphrase;
     }
 
-    public boolean isGenerateIfMissing() {
-        return generateIfMissing;
-    }
-
-    public void setGenerateIfMissing(boolean generateIfMissing) {
-        this.generateIfMissing = generateIfMissing;
-    }
-
-    public String getPemLoc() {
-        return pemLoc;
-    }
-
     public void setPemLoc(String pemLoc) {
         this.pemLoc = pemLoc;
     }
@@ -99,7 +87,7 @@ public class SpecKey {
     public void registerWith(HapiApiSpec spec, RegistryForms forms) {
         if (pemLoc != MISSING_LOC) {
             registerPemWith(spec, forms);
-        } else if (!wordsLoc.equals(MISSING_LOC)) {
+        } else if (wordsLoc != MISSING_LOC) {
             passphrase = null;
             registerMnemonicWith(spec, forms);
         } else {

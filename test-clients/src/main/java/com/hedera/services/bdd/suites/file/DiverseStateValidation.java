@@ -67,8 +67,8 @@ import org.apache.logging.log4j.Logger;
 public final class DiverseStateValidation extends HapiApiSuite {
     private static final Logger log = LogManager.getLogger(DiverseStateValidation.class);
 
-    private static byte[] SMALL_CONTENTS;
-    private static byte[] LARGE_CONTENTS;
+    private byte[] SMALL_CONTENTS;
+    private byte[] LARGE_CONTENTS;
 
     public static void main(String... args) throws IOException {
         new DiverseStateValidation().runSuiteSync();

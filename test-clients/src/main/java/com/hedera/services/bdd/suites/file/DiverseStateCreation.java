@@ -59,9 +59,9 @@ import org.apache.logging.log4j.Logger;
 public final class DiverseStateCreation extends HapiApiSuite {
     private static final Logger log = LogManager.getLogger(DiverseStateCreation.class);
 
-    private static byte[] SMALL_CONTENTS;
-    private static byte[] MEDIUM_CONTENTS;
-    private static byte[] LARGE_CONTENTS;
+    private byte[] SMALL_CONTENTS;
+    private byte[] MEDIUM_CONTENTS;
+    private byte[] LARGE_CONTENTS;
 
     public static final long SOMETIME = 1_635_780_626L;
     public static final long FUSE_EXPIRY_TIME = 1_111_111L + SOMETIME;

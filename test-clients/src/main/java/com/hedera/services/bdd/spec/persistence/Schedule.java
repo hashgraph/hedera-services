@@ -45,10 +45,7 @@ public class Schedule {
         if (adminKey != UNUSED_KEY) {
             adminKey.registerWith(spec, asAdminKeyFor(name));
         }
-        entityId.ifPresent(
-                id -> {
-                    spec.registry().saveScheduleId(name, id.asSchedule());
-                });
+        entityId.ifPresent(id -> spec.registry().saveScheduleId(name, id.asSchedule()));
     }
 
     public HapiQueryOp<?> existenceCheck(String name) {
@@ -74,7 +71,7 @@ public class Schedule {
         if (adminKey != UNUSED_KEY) {
             op.adminKey(adminKeyFor(name));
         }
-        if (!memo.equals(UNSPECIFIED_MEMO)) {
+        if (memo != UNSPECIFIED_MEMO) {
             op.withEntityMemo(memo);
         }
 

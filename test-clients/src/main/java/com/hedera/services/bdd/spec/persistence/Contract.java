@@ -42,10 +42,7 @@ public class Contract {
         if (adminKey != UNUSED_KEY) {
             adminKey.registerWith(spec, asAdminKeyFor(name));
         }
-        entityId.ifPresent(
-                id -> {
-                    spec.registry().saveContractId(name, id.asContract());
-                });
+        entityId.ifPresent(id -> spec.registry().saveContractId(name, id.asContract()));
     }
 
     public HapiQueryOp<?> existenceCheck(String name) {
@@ -58,19 +55,11 @@ public class Contract {
         if (adminKey != UNUSED_KEY) {
             op.adminKey(adminKeyFor(name));
         }
-        if (!memo.equals(MISSING_MEMO)) {
+        if (memo != MISSING_MEMO) {
             op.entityMemo(memo);
         }
 
         return op;
-    }
-
-    public String getBytecodeFile() {
-        return bytecodeFile;
-    }
-
-    public void setBytecodeFile(String bytecodeFile) {
-        this.bytecodeFile = bytecodeFile;
     }
 
     public SpecKey getAdminKey() {
