@@ -18,6 +18,7 @@ package com.hedera.services.stream;
 import static com.swirlds.common.stream.LinkedObjectStreamUtilities.generateSigFilePath;
 import static com.swirlds.common.stream.LinkedObjectStreamUtilities.generateStreamFileNameFromInstant;
 import static com.swirlds.common.stream.StreamAligned.NO_ALIGNMENT;
+import static com.swirlds.common.utility.Units.MB_TO_BYTES;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
@@ -45,7 +46,6 @@ import com.hedera.services.stream.proto.ContractStateChanges;
 import com.hedera.services.stream.proto.HashAlgorithm;
 import com.hedera.services.stream.proto.HashObject;
 import com.hedera.services.stream.proto.RecordStreamFile;
-import com.hedera.services.stream.proto.SidecarFile;
 import com.hedera.services.stream.proto.SidecarType;
 import com.hedera.services.stream.proto.SignatureType;
 import com.hedera.services.stream.proto.StorageChange;
@@ -55,7 +55,6 @@ import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
 import com.hedera.test.extensions.LoggingSubject;
 import com.hedera.test.extensions.LoggingTarget;
-import com.hedera.test.utils.IdUtils;
 import com.hedera.test.utils.TestFileUtils;
 import com.hederahashgraph.api.proto.java.SemanticVersion;
 import com.hederahashgraph.api.proto.java.Timestamp;
@@ -77,8 +76,11 @@ import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterAll;
@@ -105,7 +107,8 @@ class RecordStreamFileWriterTest {
                         signer,
                         false,
                         streamType,
-                        expectedExportDir());
+                        expectedExportDir(),
+                        maxSidecarFileSize);
         messageDigest = MessageDigest.getInstance(DigestType.SHA_384.algorithmName());
         messageDigest.digest("yumyum".getBytes(StandardCharsets.UTF_8));
         final var startRunningHash = new Hash(messageDigest.digest());
@@ -113,7 +116,7 @@ class RecordStreamFileWriterTest {
     }
 
     @Test
-    void recordAndSignatureFilesAreCreatedAsExpected()
+    void recordSignatureAndSidecarFilesAreCreatedAsExpected()
             throws IOException, NoSuchAlgorithmException {
         // given
         given(streamType.getFileHeader()).willReturn(FILE_HEADER_VALUES);
@@ -142,12 +145,14 @@ class RecordStreamFileWriterTest {
         subject.setRunningHash(startRunningHash);
 
         // when
+        final int numberOfRSOsInFirstBlock = 4;
         final var firstBlockRSOs =
                 generateNRecordStreamObjectsForBlockMStartingFromT(
-                        4, 1, firstTransactionInstant, allSidecarTypes);
+                        numberOfRSOsInFirstBlock, 1, firstTransactionInstant, allSidecarTypes);
+        final int numberOfRSOsInSecondBlock = 8;
         final var secondBlockRSOs =
                 generateNRecordStreamObjectsForBlockMStartingFromT(
-                        8,
+                        numberOfRSOsInSecondBlock,
                         2,
                         firstTransactionInstant.plusSeconds(logPeriodMs / 1000),
                         someSidecarTypes);
@@ -156,7 +161,7 @@ class RecordStreamFileWriterTest {
                         1,
                         3,
                         firstTransactionInstant.plusSeconds(2 * logPeriodMs / 1000),
-                        allSidecarTypes);
+                        Collections.emptyList());
         Stream.of(firstBlockRSOs, secondBlockRSOs, thirdBlockRSOs)
                 .flatMap(Collection::stream)
                 .forEach(subject::addObject);
@@ -168,14 +173,18 @@ class RecordStreamFileWriterTest {
                 startRunningHash,
                 firstBlockEntireFileSignature,
                 firstBlockMetadataSignature,
-                allSidecarTypes);
+                Map.of(1, allSidecarTypesEnum),
+                Map.of(1, transformToExpectedSidecars(allSidecarTypes, numberOfRSOsInFirstBlock)));
         assertRecordStreamFiles(
                 2L,
                 secondBlockRSOs,
                 firstBlockRSOs.get(firstBlockRSOs.size() - 1).getRunningHash().getHash(),
                 secondBlockEntireFileSignature,
                 secondBlockMetadataSignature,
-                someSidecarTypes);
+                Map.of(1, someSidecarTypesEnum),
+                Map.of(
+                        1,
+                        transformToExpectedSidecars(someSidecarTypes, numberOfRSOsInSecondBlock)));
     }
 
     @Test
@@ -203,10 +212,11 @@ class RecordStreamFileWriterTest {
         // when
         final var firstBlockRSOs =
                 generateNRecordStreamObjectsForBlockMStartingFromT(
-                        2, 1, firstTransactionInstant, allSidecarTypes);
+                        1, 1, firstTransactionInstant, allSidecarTypes);
+        final int numberOfRSOsInSecondBlock = 5;
         final var secondBlockRSOs =
                 generateNRecordStreamObjectsForBlockMStartingFromT(
-                        5,
+                        numberOfRSOsInSecondBlock,
                         2,
                         firstTransactionInstant.plusSeconds(logPeriodMs / 1000),
                         allSidecarTypes);
@@ -229,7 +239,8 @@ class RecordStreamFileWriterTest {
                 firstBlockRSOs.get(firstBlockRSOs.size() - 1).getRunningHash().getHash(),
                 secondBlockEntireFileSignature,
                 secondBlockMetadataSignature,
-                allSidecarTypes);
+                Map.of(1, allSidecarTypesEnum),
+                Map.of(1, transformToExpectedSidecars(allSidecarTypes, numberOfRSOsInSecondBlock)));
     }
 
     @Test
@@ -256,9 +267,10 @@ class RecordStreamFileWriterTest {
         // when
         // generate 2 RSOs for block #1, where the second RSO is in different period, but with same
         // alignment (block)
+        final var numberOfRSOsInFirstBlock = 1;
         final var firstBlockRSOs =
                 generateNRecordStreamObjectsForBlockMStartingFromT(
-                        1, 1, firstTransactionInstant, allSidecarTypes);
+                        numberOfRSOsInFirstBlock, 1, firstTransactionInstant, allSidecarTypes);
         firstBlockRSOs.addAll(
                 generateNRecordStreamObjectsForBlockMStartingFromT(
                         1,
@@ -283,7 +295,8 @@ class RecordStreamFileWriterTest {
                 startRunningHash,
                 firstBlockEntireFileSignature,
                 firstBlockMetadataSignature,
-                allSidecarTypes);
+                Map.of(1, allSidecarTypesEnum),
+                Map.of(1, transformToExpectedSidecars(allSidecarTypes, numberOfRSOsInFirstBlock)));
     }
 
     @Test
@@ -310,9 +323,13 @@ class RecordStreamFileWriterTest {
         // when
         // generate 2 RSOs for block #1 without alignment; should be externalized in same record
         // file
+        final var numberOfRSOsInFirstBlock = 2;
         final var firstBlockRSOs =
                 generateNRecordStreamObjectsForBlockMStartingFromT(
-                        2, NO_ALIGNMENT, firstTransactionInstant, allSidecarTypes);
+                        numberOfRSOsInFirstBlock,
+                        NO_ALIGNMENT,
+                        firstTransactionInstant,
+                        allSidecarTypes);
         // generate 1 RSO in next block to trigger externalization of previous file; even though
         // alignments are equal,
         // when they are NO_ALIGNMENT, we ignore it and start a new file regardless
@@ -333,14 +350,92 @@ class RecordStreamFileWriterTest {
                 startRunningHash,
                 firstBlockEntireFileSignature,
                 firstBlockMetadataSignature,
-                allSidecarTypes);
+                Map.of(1, allSidecarTypesEnum),
+                Map.of(1, transformToExpectedSidecars(allSidecarTypes, numberOfRSOsInFirstBlock)));
+    }
+
+    @Test
+    void sidecarFileSizeLimitIsRespected() throws IOException, NoSuchAlgorithmException {
+        // given
+        given(streamType.getFileHeader()).willReturn(FILE_HEADER_VALUES);
+        given(streamType.getSigFileHeader()).willReturn(SIG_FILE_HEADER_VALUES);
+        given(streamType.getExtension()).willReturn(RecordStreamType.RECORD_EXTENSION);
+        given(streamType.getSidecarExtension())
+                .willReturn(RecordStreamType.SIDECAR_RECORD_EXTENSION);
+        final var firstBlockEntireFileSignature =
+                "entireSignatureBlock1".getBytes(StandardCharsets.UTF_8);
+        final var firstBlockMetadataSignature =
+                "metadataSignatureBlock1".getBytes(StandardCharsets.UTF_8);
+        given(signer.sign(any()))
+                .willReturn(firstBlockEntireFileSignature)
+                .willReturn(firstBlockMetadataSignature);
+        final var firstTransactionInstant =
+                LocalDateTime.of(2022, 7, 21, 15, 58, 55).toInstant(ZoneOffset.UTC);
+        // set initial running hash
+        messageDigest.digest("yumyum".getBytes(StandardCharsets.UTF_8));
+        final var startRunningHash = new Hash(messageDigest.digest());
+        subject.setRunningHash(startRunningHash);
+
+        final var bigBytecode =
+                ContractBytecode.newBuilder()
+                        .setInitcode(ByteString.copyFrom(new byte[maxSidecarFileSize - 50]))
+                        .build();
+        final var bigStateChange =
+                ContractStateChanges.newBuilder()
+                        .addContractStateChanges(
+                                ContractStateChange.newBuilder()
+                                        .addStorageChanges(
+                                                StorageChange.newBuilder()
+                                                        .setValueRead(
+                                                                ByteString.copyFrom(
+                                                                        new byte
+                                                                                [maxSidecarFileSize
+                                                                                        - 50]))
+                                                        .build())
+                                        .build())
+                        .build();
+        final var bigSidecar1 = TransactionSidecarRecord.newBuilder().setBytecode(bigBytecode);
+        final var bigSidecar2 =
+                TransactionSidecarRecord.newBuilder().setStateChanges(bigStateChange);
+
+        // when
+        final var firstBlockRSOs =
+                generateNRecordStreamObjectsForBlockMStartingFromT(
+                        1, 1, firstTransactionInstant, List.of(bigSidecar1, bigSidecar2));
+        final var secondBlockRSOs =
+                generateNRecordStreamObjectsForBlockMStartingFromT(
+                        1,
+                        3,
+                        firstTransactionInstant.plusSeconds(2 * logPeriodMs / 1000),
+                        Collections.emptyList());
+        Stream.of(firstBlockRSOs, secondBlockRSOs)
+                .flatMap(Collection::stream)
+                .forEach(subject::addObject);
+
+        // then
+        final var sidecarIdToExpectedContainedSidecars =
+                Map.of(
+                        1, List.of(bigSidecar1),
+                        2, List.of(bigSidecar2));
+        assertRecordStreamFiles(
+                1L,
+                firstBlockRSOs,
+                startRunningHash,
+                firstBlockEntireFileSignature,
+                firstBlockMetadataSignature,
+                Map.of(
+                        1,
+                        EnumSet.of(SidecarType.CONTRACT_BYTECODE),
+                        2,
+                        EnumSet.of(SidecarType.CONTRACT_STATE_CHANGE)),
+                sidecarIdToExpectedContainedSidecars);
     }
 
     private List<RecordStreamObject> generateNRecordStreamObjectsForBlockMStartingFromT(
             final int numberOfRSOs,
             final long blockNumber,
             final Instant firstBlockTransactionInstant,
-            final EnumSet<SidecarType> sidecarsToAdd) {
+            final List<TransactionSidecarRecord.Builder> sidecarRecords) {
         final var recordStreamObjects = new ArrayList<RecordStreamObject>();
         for (int i = 0; i < numberOfRSOs; i++) {
             final var timestamp =
@@ -359,76 +454,12 @@ class RecordStreamFileWriterTest {
                                     ByteString.copyFrom(
                                             ("block #" + blockNumber + ", transaction #" + i)
                                                     .getBytes(StandardCharsets.UTF_8)));
-            List<TransactionSidecarRecord.Builder> sidecars = new ArrayList<>();
-            if (sidecarsToAdd.contains(SidecarType.CONTRACT_STATE_CHANGE)) {
-                final var stateChangeSidecar =
-                        TransactionSidecarRecord.newBuilder()
-                                .setStateChanges(
-                                        ContractStateChanges.newBuilder()
-                                                .addContractStateChanges(
-                                                        ContractStateChange.newBuilder()
-                                                                .setContractId(
-                                                                        IdUtils.asContract(
-                                                                                "0.0."
-                                                                                        + blockNumber))
-                                                                .addStorageChanges(
-                                                                        StorageChange.newBuilder()
-                                                                                .setSlot(
-                                                                                        ByteString
-                                                                                                .copyFrom(
-                                                                                                        new byte
-                                                                                                                [] {
-                                                                                                            (byte)
-                                                                                                                    i
-                                                                                                        }))
-                                                                                .setValueRead(
-                                                                                        ByteString
-                                                                                                .copyFrom(
-                                                                                                        new byte
-                                                                                                                [] {
-                                                                                                            (byte)
-                                                                                                                    i
-                                                                                                        }))
-                                                                                .build())));
-                sidecars.add(stateChangeSidecar);
-            }
-            if (sidecarsToAdd.contains(SidecarType.CONTRACT_ACTION)) {
-                final var contractActionSidecar =
-                        TransactionSidecarRecord.newBuilder()
-                                .setActions(
-                                        ContractActions.newBuilder()
-                                                .addContractActions(
-                                                        ContractAction.newBuilder()
-                                                                .setInput(
-                                                                        ByteString.copyFrom(
-                                                                                "input"
-                                                                                        + (blockNumber
-                                                                                                + i),
-                                                                                StandardCharsets
-                                                                                        .UTF_8))
-                                                                .build()));
-                sidecars.add(contractActionSidecar);
-            }
-            if (sidecarsToAdd.contains(SidecarType.CONTRACT_BYTECODE)) {
-                final var bytecodeSidecar =
-                        TransactionSidecarRecord.newBuilder()
-                                .setBytecode(
-                                        ContractBytecode.newBuilder()
-                                                .setContractId(
-                                                        IdUtils.asContract(
-                                                                "0.0." + (blockNumber + i)))
-                                                .setInitcode(
-                                                        ByteString.copyFrom(
-                                                                "initCode", StandardCharsets.UTF_8))
-                                                .build());
-                sidecars.add(bytecodeSidecar);
-            }
             final var recordStreamObject =
                     new RecordStreamObject(
                             expirableBuilder.build(),
                             transaction.build(),
                             Instant.ofEpochSecond(timestamp.getSeconds(), timestamp.getNanos()),
-                            sidecars);
+                            sidecarRecords);
             final var hashInput = recordStreamObject.toString().getBytes(StandardCharsets.UTF_8);
             recordStreamObject.getRunningHash().setHash(new Hash(messageDigest.digest(hashInput)));
             recordStreamObject.withBlockNumber(blockNumber);
@@ -443,7 +474,8 @@ class RecordStreamFileWriterTest {
             final Hash startRunningHash,
             final byte[] expectedEntireFileSignature,
             final byte[] expectedMetadataSignature,
-            final EnumSet<SidecarType> expectedSidecarTypes)
+            final Map<Integer, EnumSet<SidecarType>> sidecarIdToExpectedSidecarTypes,
+            final Map<Integer, List<TransactionSidecarRecord.Builder>> sidecarIdToExpectedSidecars)
             throws IOException, NoSuchAlgorithmException {
         final var firstTxnTimestamp = blockRSOs.get(0).getTimestamp();
         final var recordStreamFilePath =
@@ -464,7 +496,8 @@ class RecordStreamFileWriterTest {
                 startRunningHash,
                 recordStreamFile,
                 new File(recordStreamFilePath),
-                expectedSidecarTypes);
+                sidecarIdToExpectedSidecarTypes,
+                sidecarIdToExpectedSidecars);
         assertSignatureFile(
                 recordStreamFilePath,
                 expectedEntireFileSignature,
@@ -479,7 +512,8 @@ class RecordStreamFileWriterTest {
             final Hash startRunningHash,
             final RecordStreamFile recordStreamFile,
             final File recordFile,
-            final EnumSet<SidecarType> expectedSidecarTypes)
+            final Map<Integer, EnumSet<SidecarType>> sidecarIdToExpectedSidecarTypes,
+            final Map<Integer, List<Builder>> sidecarIdToExpectedSidecars)
             throws IOException, NoSuchAlgorithmException {
         assertTrue(logCaptor.debugLogs().contains("Stream file created " + recordFile.getName()));
 
@@ -533,18 +567,25 @@ class RecordStreamFileWriterTest {
                         .contains("closeCurrentAndSign :: write block number " + expectedBlock));
 
         // assert sidecar metadata
+        final var firstTxnTimestamp = blockRSOs.get(0).getTimestamp();
+        final var firstTxnInstant =
+                Instant.ofEpochSecond(
+                        firstTxnTimestamp.getEpochSecond(), firstTxnTimestamp.getNano());
+        var sidecarId = 1;
         final var sidecarMetadataList = recordStreamFile.getSidecarsList();
         for (final var sidecarMetadata : sidecarMetadataList) {
-            assertEquals(expectedSidecarTypes.stream().toList(), sidecarMetadata.getTypesList());
-            final var firstTxnTimestamp = blockRSOs.get(0).getTimestamp();
-            final var firstTxnInstant =
-                    Instant.ofEpochSecond(
-                            firstTxnTimestamp.getEpochSecond(), firstTxnTimestamp.getNano());
-            final var pathToSidecarFile = subject.generateSidecarFilePath(firstTxnInstant, 1);
+            assertEquals(
+                    sidecarIdToExpectedSidecarTypes.get(sidecarId).stream().toList(),
+                    sidecarMetadata.getTypesList());
+            final var pathToSidecarFile =
+                    subject.generateSidecarFilePath(firstTxnInstant, sidecarId);
             final var sidecarFileOptional = RecordStreamingUtils.readSidecarFile(pathToSidecarFile);
             assertTrue(sidecarFileOptional.isPresent());
-            assertAllSidecarsAreInFile(sidecarFileOptional.get(), blockRSOs);
+            assertAllSidecarsAreInFile(
+                    sidecarIdToExpectedSidecars.get(sidecarId),
+                    sidecarFileOptional.get().getSidecarRecordsList());
             final var sidecarFile = new File(pathToSidecarFile);
+            assertFalse(sidecarFile.length() > maxSidecarFileSize);
             final var expectedSidecarHash =
                     LinkedObjectStreamUtilities.computeEntireHash(sidecarFile);
             final var actualSidecarHash = sidecarMetadata.getHash();
@@ -559,6 +600,7 @@ class RecordStreamFileWriterTest {
                             .debugLogs()
                             .contains(
                                     "Sidecar file created successfully " + sidecarFile.getName()));
+            sidecarId++;
         }
 
         assertTrue(
@@ -568,14 +610,11 @@ class RecordStreamFileWriterTest {
     }
 
     private void assertAllSidecarsAreInFile(
-            final SidecarFile sidecarFile, final List<RecordStreamObject> blockRSOs) {
-        final var actualSidecarRecordsList = sidecarFile.getSidecarRecordsList();
-        final var expectedSidecarRecordsList = new ArrayList<>();
-        for (final var rso : blockRSOs) {
-            expectedSidecarRecordsList.addAll(
-                    rso.getSidecars().stream().map(Builder::build).toList());
+            final List<TransactionSidecarRecord.Builder> expectedSidecars,
+            final List<TransactionSidecarRecord> actualSidecars) {
+        for (int i = 0; i < expectedSidecars.size(); i++) {
+            assertEquals(expectedSidecars.get(i).build(), actualSidecars.get(i));
         }
-        assertEquals(expectedSidecarRecordsList, actualSidecarRecordsList);
     }
 
     private void assertSignatureFile(
@@ -856,7 +895,7 @@ class RecordStreamFileWriterTest {
                 LocalDateTime.of(2022, 1, 3, 21, 2, 55).toInstant(ZoneOffset.UTC);
         final var firstBlockRSOs =
                 generateNRecordStreamObjectsForBlockMStartingFromT(
-                        1, 1, firstTransactionInstant, noneSidecars);
+                        1, 1, firstTransactionInstant, Collections.emptyList());
         firstBlockRSOs.forEach(subject::addObject);
 
         try (MockedConstruction<SerializableDataOutputStream> ignored =
@@ -871,6 +910,41 @@ class RecordStreamFileWriterTest {
                     contains(
                             Matchers.startsWith(
                                     "closeCurrentAndSign :: IOException when serializing ")));
+        }
+    }
+
+    @Test
+    void interruptThreadAndLogWhenIOExceptionIsCaughtWhileWritingSidecarInConsume() {
+        // given
+        given(streamType.getFileHeader()).willReturn(FILE_HEADER_VALUES);
+        given(streamType.getSidecarExtension())
+                .willReturn(RecordStreamType.SIDECAR_RECORD_EXTENSION);
+        final var firstTransactionInstant =
+                LocalDateTime.of(2022, 7, 21, 15, 59, 55).toInstant(ZoneOffset.UTC);
+        final var bigBytecode =
+                ContractBytecode.newBuilder()
+                        .setInitcode(ByteString.copyFrom(new byte[maxSidecarFileSize - 50]))
+                        .build();
+        final var bigSidecar1 = TransactionSidecarRecord.newBuilder().setBytecode(bigBytecode);
+        final var bigSidecar2 = TransactionSidecarRecord.newBuilder().setBytecode(bigBytecode);
+        final var firstBlockRSOs =
+                generateNRecordStreamObjectsForBlockMStartingFromT(
+                        1, 1, firstTransactionInstant, List.of(bigSidecar1, bigSidecar2));
+        try (MockedConstruction<SerializableDataOutputStream> ignored =
+                Mockito.mockConstruction(
+                        SerializableDataOutputStream.class,
+                        (mock, context) -> doThrow(IOException.class).when(mock).write(any()))) {
+
+            // when
+            firstBlockRSOs.forEach(subject::addObject);
+
+            // then
+            assertTrue(Thread.currentThread().isInterrupted());
+            assertThat(
+                    logCaptor.warnLogs(),
+                    contains(
+                            Matchers.startsWith(
+                                    "consume :: IOException when creating sidecar files")));
         }
     }
 
@@ -981,7 +1055,7 @@ class RecordStreamFileWriterTest {
                         SerializableDataOutputStream.class,
                         (mock, context) -> doThrow(IOException.class).when(mock).write(any()))) {
             generateNRecordStreamObjectsForBlockMStartingFromT(
-                            1, 1, firstTransactionInstant, noneSidecars)
+                            1, 1, firstTransactionInstant, Collections.emptyList())
                     .forEach(subject::addObject);
         }
 
@@ -1079,7 +1153,15 @@ class RecordStreamFileWriterTest {
                 + "recordStreamWriterTest";
     }
 
+    private List<TransactionSidecarRecord.Builder> transformToExpectedSidecars(
+            final List<TransactionSidecarRecord.Builder> sidecars, final int timesReceived) {
+        return Collections.nCopies(timesReceived, sidecars).stream()
+                .flatMap(List::stream)
+                .collect(Collectors.toList());
+    }
+
     private static final long logPeriodMs = 2000L;
+    private static final int maxSidecarFileSize = MB_TO_BYTES;
     private static final int RECORD_STREAM_VERSION = 6;
     private static final int[] FILE_HEADER_VALUES = {
         RECORD_STREAM_VERSION,
@@ -1090,14 +1172,50 @@ class RecordStreamFileWriterTest {
     private static final byte[] SIG_FILE_HEADER_VALUES = {
         RECORD_STREAM_VERSION,
     };
-    public static final EnumSet<SidecarType> allSidecarTypes =
+    public static final EnumSet<SidecarType> allSidecarTypesEnum =
             EnumSet.of(
                     SidecarType.CONTRACT_STATE_CHANGE,
                     SidecarType.CONTRACT_BYTECODE,
                     SidecarType.CONTRACT_ACTION);
-    public static final EnumSet<SidecarType> someSidecarTypes =
+    public static final EnumSet<SidecarType> someSidecarTypesEnum =
             EnumSet.of(SidecarType.CONTRACT_BYTECODE, SidecarType.CONTRACT_ACTION);
-    public static final EnumSet<SidecarType> noneSidecars = EnumSet.noneOf(SidecarType.class);
+    private static final TransactionSidecarRecord.Builder bytecodeSidecar =
+            TransactionSidecarRecord.newBuilder()
+                    .setBytecode(
+                            ContractBytecode.newBuilder()
+                                    .setRuntimeBytecode(ByteString.copyFrom("runtime".getBytes()))
+                                    .build());
+    private static final TransactionSidecarRecord.Builder contractActionsSidecar =
+            TransactionSidecarRecord.newBuilder()
+                    .setActions(
+                            ContractActions.newBuilder()
+                                    .addContractActions(
+                                            ContractAction.newBuilder()
+                                                    .setInput(
+                                                            ByteString.copyFrom("input".getBytes()))
+                                                    .build()));
+    private static final TransactionSidecarRecord.Builder stateChangesSidecar =
+            TransactionSidecarRecord.newBuilder()
+                    .setStateChanges(
+                            ContractStateChanges.newBuilder()
+                                    .addContractStateChanges(
+                                            ContractStateChange.newBuilder()
+                                                    .addStorageChanges(
+                                                            StorageChange.newBuilder()
+                                                                    .setSlot(
+                                                                            ByteString.copyFrom(
+                                                                                    "slot"
+                                                                                            .getBytes()))
+                                                                    .setValueRead(
+                                                                            ByteString.copyFrom(
+                                                                                    "value"
+                                                                                            .getBytes()))
+                                                                    .build()))
+                                    .build());
+    private static final List<TransactionSidecarRecord.Builder> allSidecarTypes =
+            List.of(stateChangesSidecar, bytecodeSidecar, contractActionsSidecar);
+    private static final List<TransactionSidecarRecord.Builder> someSidecarTypes =
+            List.of(bytecodeSidecar, contractActionsSidecar);
 
     @Mock private RecordStreamType streamType;
     @Mock private Signer signer;

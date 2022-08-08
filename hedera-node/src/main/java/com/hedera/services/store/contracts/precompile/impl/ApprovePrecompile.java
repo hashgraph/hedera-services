@@ -21,10 +21,7 @@ import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContr
 import static com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils.GasCostType.APPROVE;
 import static com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils.GasCostType.DELETE_NFT_APPROVE;
 import static com.hedera.services.utils.EntityIdUtils.asTypedEvmAddress;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SENDER_DOES_NOT_OWN_NFT_SERIAL_NO;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.primitives.StateView;
@@ -146,7 +143,7 @@ public class ApprovePrecompile extends AbstractWritePrecompile {
 
     @Override
     public void run(final MessageFrame frame) {
-        Objects.requireNonNull(approveOp);
+        Objects.requireNonNull(approveOp, "`body` method should be called before `run`");
 
         validateTrueOrRevert(
                 approveOp.isFungible() || ownerId != null, INVALID_TOKEN_NFT_SERIAL_NUMBER);
@@ -235,7 +232,12 @@ public class ApprovePrecompile extends AbstractWritePrecompile {
     }
 
     private boolean isNftApprovalRevocation() {
-        return Objects.requireNonNull(approveOp).spender().getAccountNum() == 0;
+        return Objects.requireNonNull(
+                                approveOp,
+                                "`body` method should be called before `isNftApprovalRevocation`")
+                        .spender()
+                        .getAccountNum()
+                == 0;
     }
 
     private Log getLogForFungibleAdjustAllowance(final Address logger) {
