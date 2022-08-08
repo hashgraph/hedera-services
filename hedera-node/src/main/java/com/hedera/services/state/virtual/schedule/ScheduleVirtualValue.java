@@ -165,7 +165,7 @@ public class ScheduleVirtualValue extends PartialMerkleLeaf
                 .build();
     }
 
-    public TransactionID scheduledTransactionId() {
+    public final TransactionID scheduledTransactionId() {
         if (schedulingAccount == null || schedulingTXValidStart == null) {
             throw new IllegalStateException(
                     "Cannot invoke scheduledTransactionId on a content-addressable view!");
@@ -413,7 +413,7 @@ public class ScheduleVirtualValue extends PartialMerkleLeaf
     }
 
     @VisibleForTesting
-    public void setAdminKey(JKey adminKey) {
+    public final void setAdminKey(JKey adminKey) {
         throwIfImmutable("Cannot change this schedule's adminKey if it's immutable.");
         this.adminKey = adminKey;
     }

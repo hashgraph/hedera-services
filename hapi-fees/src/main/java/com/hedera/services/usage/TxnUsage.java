@@ -26,13 +26,12 @@ import java.util.function.Predicate;
 
 public abstract class TxnUsage {
     protected static final int AMOUNT_REPR_BYTES = 8;
-    protected static EstimatorFactory estimatorFactory = TxnUsageEstimator::new;
     protected static final UsageProperties usageProperties = USAGE_PROPERTIES;
 
     protected final TransactionBody op;
     protected final TxnUsageEstimator usageEstimator;
 
-    protected TxnUsage(TransactionBody op, TxnUsageEstimator usageEstimator) {
+    protected TxnUsage(final TransactionBody op, final TxnUsageEstimator usageEstimator) {
         this.op = op;
         this.usageEstimator = usageEstimator;
     }
@@ -55,14 +54,5 @@ public abstract class TxnUsage {
 
     protected void addRecordRb(long rb) {
         usageEstimator.addRbs(rb * usageProperties.legacyReceiptStorageSecs());
-    }
-
-    /* Used only for unit tests */
-    public static EstimatorFactory getEstimatorFactory() {
-        return estimatorFactory;
-    }
-
-    public static void setEstimatorFactory(final EstimatorFactory estimatorFactory) {
-        TxnUsage.estimatorFactory = estimatorFactory;
     }
 }
