@@ -166,10 +166,9 @@ public class ValidationCommand implements Callable<Integer> {
             var f = new File(entityLoc);
             if (f.exists()) {
                 try {
-                    final var isDeleted = Files.delete(Path.of(entityLoc));
-                    log.info("File is {} deleted successfully", isDeleted ? "" : "not");
+                    Files.delete(Path.of(entityLoc));
                 } catch (IOException ex) {
-
+                    log.info("File is not deleted successfully");
                 }
             }
         }
