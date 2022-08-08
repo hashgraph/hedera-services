@@ -20,7 +20,6 @@ import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.contractAddress;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.createTokenInfoWrapperForNonFungibleToken;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.fungible;
-import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.fungibleTokenAddr;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.nonFungibleTokenAddr;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.serialNumber;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.successResult;
@@ -134,12 +133,13 @@ class TokenPrecompileReadOperationsTest {
     void computeCallsCorrectImplementationForIsTokenFungibleToken() {
         // given
         final Bytes pretendArguments =
-                Bytes.concatenate(Bytes.of(Integers.toBytes(ABI_ID_IS_TOKEN)), fungibleTokenAddr);
+                Bytes.concatenate(
+                        Bytes.of(Integers.toBytes(ABI_ID_IS_TOKEN)),
+                        Id.fromGrpcToken(tokenID).asEvmAddress());
         givenMinimalFrameContext();
         given(worldUpdater.wrappedTrackingLedgers(any())).willReturn(wrappedLedgers);
         given(stateView.tokenExists(any())).willReturn(true);
         givenMinimalContextForSuccessfulCall();
-        Bytes input = Bytes.of(Integers.toBytes(ABI_ID_IS_TOKEN));
         given(syntheticTxnFactory.createTransactionCall(1L, pretendArguments))
                 .willReturn(mockSynthBodyBuilder);
         given(decoder.decodeIsToken(pretendArguments))
@@ -150,7 +150,7 @@ class TokenPrecompileReadOperationsTest {
 
         // when
         subject.prepareFields(frame);
-        subject.prepareComputation(input, a -> a);
+        subject.prepareComputation(pretendArguments, a -> a);
         final var result = subject.computeInternal(frame);
 
         // then
