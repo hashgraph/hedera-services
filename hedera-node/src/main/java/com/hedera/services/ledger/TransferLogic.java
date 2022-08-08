@@ -28,6 +28,7 @@ import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 import com.hedera.services.context.SideEffectsTracker;
+import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.ledger.properties.AccountProperty;
@@ -74,6 +75,7 @@ public class TransferLogic {
     private final TransactionalLedger<
                     Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus>
             tokenRelsLedger;
+    private final TransactionContext txnCtx;
 
     @Inject
     public TransferLogic(
@@ -87,7 +89,8 @@ public class TransferLogic {
             final GlobalDynamicProperties dynamicProperties,
             final OptionValidator validator,
             final @Nullable AutoCreationLogic autoCreationLogic,
-            final RecordsHistorian recordsHistorian) {
+            final RecordsHistorian recordsHistorian,
+            final TransactionContext txnCtx) {
         this.tokenStore = tokenStore;
         this.nftsLedger = nftsLedger;
         this.accountsLedger = accountsLedger;
@@ -96,6 +99,7 @@ public class TransferLogic {
         this.autoCreationLogic = autoCreationLogic;
         this.dynamicProperties = dynamicProperties;
         this.sideEffectsTracker = sideEffectsTracker;
+        this.txnCtx = txnCtx;
 
         scopedCheck = new MerkleAccountScopedCheck(validator, nftsLedger);
     }
@@ -137,7 +141,7 @@ public class TransferLogic {
         if (validity == OK) {
             adjustBalancesAndAllowances(changes);
             if (autoCreationFee > 0) {
-                payFunding(autoCreationFee);
+                payFundingFromPayer(autoCreationFee);
                 autoCreationLogic.submitRecordsTo(recordsHistorian);
             }
         } else {
@@ -149,11 +153,15 @@ public class TransferLogic {
         }
     }
 
-    private void payFunding(final long autoCreationFee) {
+    private void payFundingFromPayer(final long autoCreationFee) {
         final var funding = dynamicProperties.fundingAccount();
         final var fundingBalance = (long) accountsLedger.get(funding, BALANCE);
         final var newFundingBalance = fundingBalance + autoCreationFee;
         accountsLedger.set(funding, BALANCE, newFundingBalance);
+
+        final var payerBalance = (long) accountsLedger.get(txnCtx.activePayer(), BALANCE);
+        accountsLedger.set(txnCtx.activePayer(), BALANCE, payerBalance - autoCreationFee);
+        txnCtx.addFeeChargedToPayer(autoCreationFee);
     }
 
     private void adjustBalancesAndAllowances(final List<BalanceChange> changes) {

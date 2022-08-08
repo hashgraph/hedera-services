@@ -52,7 +52,6 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.fee.FeeObject;
-import com.swirlds.merkle.map.MerkleMap;
 import java.time.Instant;
 import java.util.Collections;
 import org.apache.commons.lang3.tuple.Pair;
@@ -75,7 +74,6 @@ class AutoCreationLogicTest {
     @Mock private SigImpactHistorian sigImpactHistorian;
     @Mock private TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
     @Mock private RecordsHistorian recordsHistorian;
-    @Mock private MerkleMap<EntityNum, MerkleAccount> accounts;
 
     private AutoCreationLogic subject;
 
@@ -90,8 +88,7 @@ class AutoCreationLogicTest {
                         aliasManager,
                         sigImpactHistorian,
                         currentView,
-                        txnCtx,
-                        () -> accounts);
+                        txnCtx);
 
         subject.setFeeCalculator(feeCalculator);
     }

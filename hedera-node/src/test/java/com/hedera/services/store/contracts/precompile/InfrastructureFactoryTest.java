@@ -19,6 +19,7 @@ import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.mockito.BDDMockito.given;
 
 import com.hedera.services.context.SideEffectsTracker;
+import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.SigImpactHistorian;
@@ -103,6 +104,7 @@ class InfrastructureFactoryTest {
     @Mock private HederaStackedWorldStateUpdater worldStateUpdater;
     @Mock private StateView stateView;
     @Mock private WorldLedgers ledgers;
+    @Mock private TransactionContext txnCtx;
 
     private InfrastructureFactory subject;
 
@@ -118,7 +120,8 @@ class InfrastructureFactoryTest {
                         recordsHistorian,
                         sigImpactHistorian,
                         dissociationFactory,
-                        dynamicProperties);
+                        dynamicProperties,
+                        txnCtx);
     }
 
     @Test

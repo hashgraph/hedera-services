@@ -31,6 +31,7 @@ import static org.mockito.Mockito.verify;
 import com.google.protobuf.ByteString;
 import com.hedera.services.config.MockGlobalDynamicProps;
 import com.hedera.services.context.SideEffectsTracker;
+import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.backing.HashMapBackingAccounts;
 import com.hedera.services.ledger.interceptors.AccountsCommitInterceptor;
@@ -113,6 +114,7 @@ class TransferLogicTest {
     @Mock private AutoCreationLogic autoCreationLogic;
     @Mock private RecordsHistorian recordsHistorian;
     @Mock private AccountsCommitInterceptor accountsCommitInterceptor;
+    @Mock private TransactionContext txnCtx;
 
     private TransferLogic subject;
 
@@ -135,7 +137,8 @@ class TransferLogicTest {
                         dynamicProperties,
                         TEST_VALIDATOR,
                         autoCreationLogic,
-                        recordsHistorian);
+                        recordsHistorian,
+                        txnCtx);
     }
 
     @Test
@@ -155,7 +158,8 @@ class TransferLogicTest {
                         dynamicProperties,
                         TEST_VALIDATOR,
                         null,
-                        recordsHistorian);
+                        recordsHistorian,
+                        txnCtx);
 
         final var triggerList = List.of(inappropriateTrigger);
         assertThrows(IllegalStateException.class, () -> subject.doZeroSum(triggerList));

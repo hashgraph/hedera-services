@@ -175,7 +175,7 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
                                 .has(
                                         accountWith()
                                                 .expectedBalanceWithChargedUsd(
-                                                        ONE_HUNDRED_HBARS, 0.05, 10))
+                                                        ONE_HUNDRED_HBARS, 0, 0))
                                 .logged(),
                         getAliasedAccountInfo(secp256k1SourceKey)
                                 .hasExpectedAliasKey()
@@ -183,7 +183,7 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
                                 .has(
                                         accountWith()
                                                 .expectedBalanceWithChargedUsd(
-                                                        ONE_HUNDRED_HBARS, 0.05, 10))
+                                                        ONE_HUNDRED_HBARS, 0, 0))
                                 .logged());
     }
 
@@ -220,7 +220,7 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
                                         accountWith()
                                                 .key(VALID_ALIAS)
                                                 .expectedBalanceWithChargedUsd(
-                                                        ONE_HUNDRED_HBARS, 0.05, 10)
+                                                        ONE_HUNDRED_HBARS, 0, 0)
                                                 .alias(VALID_ALIAS)
                                                 .autoRenew(THREE_MONTHS_IN_SECONDS)
                                                 .receiverSigReq(false)
@@ -252,7 +252,7 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
                                         accountWith()
                                                 .key(ALIAS)
                                                 .expectedBalanceWithChargedUsd(
-                                                        ONE_HUNDRED_HBARS, 0.05, 10)
+                                                        ONE_HUNDRED_HBARS, 0, 0)
                                                 .alias(ALIAS)
                                                 .autoRenew(THREE_MONTHS_IN_SECONDS)
                                                 .receiverSigReq(false))
@@ -305,7 +305,7 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
                                 .has(
                                         accountWith()
                                                 .expectedBalanceWithChargedUsd(
-                                                        (2 * ONE_HUNDRED_HBARS), 0.05, 10)))
+                                                        (2 * ONE_HUNDRED_HBARS), 0, 0)))
                 .then(
                         /* transfer from an alias that was auto created to a new alias, validate account is created */
                         cryptoTransfer(tinyBarsFromToWithAlias(ALIAS, ALIAS_2, ONE_HUNDRED_HBARS))
@@ -315,12 +315,12 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
                                 .has(
                                         accountWith()
                                                 .expectedBalanceWithChargedUsd(
-                                                        ONE_HUNDRED_HBARS, 0.05, 10)),
+                                                        ONE_HUNDRED_HBARS, 0, 0)),
                         getAliasedAccountInfo(ALIAS_2)
                                 .has(
                                         accountWith()
                                                 .expectedBalanceWithChargedUsd(
-                                                        ONE_HUNDRED_HBARS, 0.05, 10)));
+                                                        ONE_HUNDRED_HBARS, 0, 0)));
     }
 
     private HapiApiSpec transferFromAliasToAccount() {
@@ -339,7 +339,7 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
                                 .has(
                                         accountWith()
                                                 .expectedBalanceWithChargedUsd(
-                                                        (2 * ONE_HUNDRED_HBARS), 0.05, 10)))
+                                                        (2 * ONE_HUNDRED_HBARS), 0, 0)))
                 .then(
                         /* transfer from an alias that was auto created to a new alias, validate account is created */
                         cryptoTransfer(
@@ -353,7 +353,7 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
                                 .has(
                                         accountWith()
                                                 .expectedBalanceWithChargedUsd(
-                                                        ONE_HUNDRED_HBARS, 0.05, 10)));
+                                                        ONE_HUNDRED_HBARS, 0, 0)));
     }
 
     private HapiApiSpec transferToAccountAutoCreatedUsingAccount() {
@@ -405,8 +405,8 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
                                                             accountWith()
                                                                     .expectedBalanceWithChargedUsd(
                                                                             (2 * ONE_HUNDRED_HBARS),
-                                                                            0.05,
-                                                                            10));
+                                                                            0,
+                                                                            0));
                                     allRunFor(spec, op, op2, op3, op4);
                                 }));
     }
@@ -428,7 +428,7 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
                                 .has(
                                         accountWith()
                                                 .expectedBalanceWithChargedUsd(
-                                                        ONE_HUNDRED_HBARS, 0.05, 10)))
+                                                        ONE_HUNDRED_HBARS, 0, 0)))
                 .then(
                         /* transfer using alias and not account number */
                         cryptoTransfer(tinyBarsFromToWithAlias(PAYER, ALIAS, ONE_HUNDRED_HBARS))
@@ -447,7 +447,7 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
                                 .has(
                                         accountWith()
                                                 .expectedBalanceWithChargedUsd(
-                                                        (2 * ONE_HUNDRED_HBARS), 0.05, 10)));
+                                                        (2 * ONE_HUNDRED_HBARS), 0, 0)));
     }
 
     private HapiApiSpec autoAccountCreationUnsupportedAlias() {
@@ -544,7 +544,7 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
         return defaultHapiSpec("AutoAccountCreationsHappyPath")
                 .given(
                         newKeyNamed(VALID_ALIAS),
-                        cryptoCreate(civilian),
+                        cryptoCreate(civilian).balance(10 * ONE_HBAR),
                         cryptoCreate(autoCreateSponsor).balance(INITIAL_BALANCE * ONE_HBAR))
                 .when(
                         cryptoTransfer(
@@ -569,15 +569,21 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
                                             getTxnRecord(TRANSFER_TXN)
                                                     .andAllChildRecords()
                                                     .hasNonStakingChildRecordCount(1)
-                                                    .hasAliasInChildRecord(VALID_ALIAS, 0);
+                                                    .hasAliasInChildRecord(VALID_ALIAS, 0)
+                                                    .logged();
                                     allRunFor(spec, lookup);
                                     final var sponsor =
                                             spec.registry().getAccountID(autoCreateSponsor);
                                     final var payer = spec.registry().getAccountID(civilian);
                                     final var parent = lookup.getResponseRecord();
                                     final var child = lookup.getChildRecord(0);
-                                    assertFeeInChildRecord(
-                                            parent, child, sponsor, payer, ONE_HUNDRED_HBARS);
+                                    assertAliasBalanceAndFeeInChildRecord(
+                                            parent,
+                                            child,
+                                            sponsor,
+                                            payer,
+                                            ONE_HUNDRED_HBARS,
+                                            10 * ONE_HBAR);
                                     creationTime.set(child.getConsensusTimestamp().getSeconds());
                                 }),
                         sourcing(
@@ -587,7 +593,7 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
                                                         accountWith()
                                                                 .key(VALID_ALIAS)
                                                                 .expectedBalanceWithChargedUsd(
-                                                                        ONE_HUNDRED_HBARS, 0.05, 10)
+                                                                        ONE_HUNDRED_HBARS, 0, 0)
                                                                 .alias(VALID_ALIAS)
                                                                 .autoRenew(THREE_MONTHS_IN_SECONDS)
                                                                 .receiverSigReq(false)
@@ -600,13 +606,16 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
     }
 
     @SuppressWarnings("java:S5960")
-    private void assertFeeInChildRecord(
+    private void assertAliasBalanceAndFeeInChildRecord(
             final TransactionRecord parent,
             final TransactionRecord child,
             final AccountID sponsor,
             final AccountID defaultPayer,
-            final long newAccountFunding) {
+            final long newAccountFunding,
+            final long payerInitialBalance) {
         long receivedBalance = 0;
+        long fundingAccountBalance = 0;
+        long payerBalWithoutAutoCreationFee = 0;
         for (final var adjust : parent.getTransferList().getAccountAmountsList()) {
             final var id = adjust.getAccountID();
             if (!(id.getAccountNum() < 100
@@ -615,12 +624,29 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
                     || id.getAccountNum() == 800
                     || id.getAccountNum() == 801)) {
                 receivedBalance = adjust.getAmount();
-                break;
+            }
+
+            // auto-creation fee is transferred to 0.0.98 (funding account) from payer
+            if (id.getAccountNum() == 98) {
+                fundingAccountBalance = adjust.getAmount();
+            }
+            // sum of all deductions from the payer without auto creation fee
+            if ((id.getAccountNum() < 98
+                    || id.equals(defaultPayer)
+                    || id.getAccountNum() == 800
+                    || id.getAccountNum() == 801)) {
+                payerBalWithoutAutoCreationFee += adjust.getAmount();
             }
         }
-        final var fee = newAccountFunding - receivedBalance;
-
-        assertEquals(fee, child.getTransactionFee(), "Child record did not specify deducted fee");
+        assertEquals(newAccountFunding, receivedBalance, "Transferred incorrect amount to alias");
+        assertEquals(
+                fundingAccountBalance,
+                child.getTransactionFee(),
+                "Child record did not specify deducted fee");
+        assertEquals(
+                -child.getTransactionFee(),
+                payerBalWithoutAutoCreationFee,
+                "Auto creation fee is not deducted from payer");
     }
 
     private HapiApiSpec multipleAutoAccountCreations() {
@@ -648,7 +674,8 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
                                                                 - 3 * ONE_HUNDRED_HBARS)))
                 .then(
                         cryptoTransfer(
-                                        tinyBarsFromToWithAlias(PAYER, "alias4", ONE_HUNDRED_HBARS),
+                                        tinyBarsFromToWithAlias(
+                                                PAYER, "alias4", 7 * ONE_HUNDRED_HBARS),
                                         tinyBarsFromToWithAlias(PAYER, "alias5", 100))
                                 .via("failedAutoCreate")
                                 .hasKnownStatus(INSUFFICIENT_ACCOUNT_BALANCE),

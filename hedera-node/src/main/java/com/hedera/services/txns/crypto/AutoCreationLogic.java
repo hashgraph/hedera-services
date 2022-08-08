@@ -51,11 +51,9 @@ import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.SignedTransaction;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.swirlds.merkle.map.MerkleMap;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.function.Supplier;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.commons.lang3.tuple.Pair;
@@ -77,7 +75,6 @@ public class AutoCreationLogic {
     private final SigImpactHistorian sigImpactHistorian;
     private final SyntheticTxnFactory syntheticTxnFactory;
     private final List<InProgressChildRecord> pendingCreations = new ArrayList<>();
-    private final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts;
 
     private FeeCalculator feeCalculator;
 
@@ -93,12 +90,10 @@ public class AutoCreationLogic {
             final AliasManager aliasManager,
             final SigImpactHistorian sigImpactHistorian,
             final StateView currentView,
-            final TransactionContext txnCtx,
-            final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts) {
+            final TransactionContext txnCtx) {
         this.ids = ids;
         this.txnCtx = txnCtx;
         this.creator = creator;
-        this.accounts = accounts;
         this.usageLimits = usageLimits;
         this.currentView = currentView;
         this.sigImpactHistorian = sigImpactHistorian;
@@ -177,10 +172,6 @@ public class AutoCreationLogic {
         final var key = asPrimitiveKeyUnchecked(alias);
         final var syntheticCreation = syntheticTxnFactory.createAccount(key, 0L);
         final var fee = autoCreationFeeFor(syntheticCreation);
-        if (fee > change.getAggregatedUnits()) {
-            return Pair.of(change.codeForInsufficientBalance(), 0L);
-        }
-        change.aggregateUnits(-fee);
         change.setNewBalance(change.getAggregatedUnits());
 
         final var sideEffects = new SideEffectsTracker();

@@ -34,6 +34,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 
 import com.hedera.services.context.SideEffectsTracker;
+import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.ledger.backing.BackingStore;
@@ -110,6 +111,7 @@ class LedgerBalanceChangesTest {
     @Mock private AutoAssocTokenRelsCommitInterceptor autoAssocTokenRelsCommitInterceptor;
     @Mock private AccountsCommitInterceptor accountsCommitInterceptor;
     @Mock private LinkAwareUniqueTokensCommitInterceptor linkAwareUniqueTokensCommitInterceptor;
+    @Mock private TransactionContext txnCtx;
 
     private HederaLedger subject;
 
@@ -173,7 +175,8 @@ class LedgerBalanceChangesTest {
                         dynamicProperties,
                         validator,
                         autoCreationLogic,
-                        historian);
+                        historian,
+                        txnCtx);
 
         subject =
                 new HederaLedger(
@@ -285,7 +288,8 @@ class LedgerBalanceChangesTest {
                         dynamicProperties,
                         validator,
                         autoCreationLogic,
-                        historian);
+                        historian,
+                        txnCtx);
         subject =
                 new HederaLedger(
                         tokenStore,
