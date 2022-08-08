@@ -67,8 +67,8 @@ import org.apache.logging.log4j.Logger;
 public final class DiverseStateValidation extends HapiApiSuite {
     private static final Logger log = LogManager.getLogger(DiverseStateValidation.class);
 
-    private byte[] SMALL_CONTENTS;
-    private byte[] LARGE_CONTENTS;
+    private byte[] smallContents;
+    private byte[] largeContents;
 
     public static void main(String... args) throws IOException {
         new DiverseStateValidation().runSuiteSync();
@@ -84,8 +84,8 @@ public final class DiverseStateValidation extends HapiApiSuite {
         final var pathLargeContents = Paths.get(LARGE_CONTENTS_LOC);
         try (InputStream smallInput = Files.newInputStream(pathSmallContents);
                 InputStream largeInput = Files.newInputStream(pathLargeContents)) {
-            SMALL_CONTENTS = smallInput.readAllBytes();
-            LARGE_CONTENTS = largeInput.readAllBytes();
+            smallContents = smallInput.readAllBytes();
+            largeContents = largeInput.readAllBytes();
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
@@ -167,7 +167,7 @@ public final class DiverseStateValidation extends HapiApiSuite {
                                         getFileContents(
                                                         idLiteralWith(
                                                                 entityNums.get().get(SMALL_FILE)))
-                                                .hasContents(ignore -> SMALL_CONTENTS)),
+                                                .hasContents(ignore -> smallContents)),
                         sourcing(
                                 () ->
                                         getFileInfo(
@@ -194,7 +194,7 @@ public final class DiverseStateValidation extends HapiApiSuite {
                                         getFileContents(
                                                         idLiteralWith(
                                                                 entityNums.get().get(LARGE_FILE)))
-                                                .hasContents(ignore -> LARGE_CONTENTS)),
+                                                .hasContents(ignore -> largeContents)),
                         /* Confirm contract code and behavior */
                         logIt("--- Now validating contract stuff ---"),
                         sourcing(

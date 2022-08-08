@@ -59,9 +59,9 @@ import org.apache.logging.log4j.Logger;
 public final class DiverseStateCreation extends HapiApiSuite {
     private static final Logger log = LogManager.getLogger(DiverseStateCreation.class);
 
-    private byte[] SMALL_CONTENTS;
-    private byte[] MEDIUM_CONTENTS;
-    private byte[] LARGE_CONTENTS;
+    private byte[] smallContents;
+    private byte[] mediumContents;
+    private byte[] largeContents;
 
     public static final long SOMETIME = 1_635_780_626L;
     public static final long FUSE_EXPIRY_TIME = 1_111_111L + SOMETIME;
@@ -106,9 +106,9 @@ public final class DiverseStateCreation extends HapiApiSuite {
         try (InputStream smallInput = Files.newInputStream(pathSmallContents);
                 InputStream mediumInput = Files.newInputStream(pathMediumContents);
                 InputStream largeInput = Files.newInputStream(pathLargeContents)) {
-            SMALL_CONTENTS = smallInput.readAllBytes();
-            MEDIUM_CONTENTS = mediumInput.readAllBytes();
-            LARGE_CONTENTS = largeInput.readAllBytes();
+            smallContents = smallInput.readAllBytes();
+            mediumContents = mediumInput.readAllBytes();
+            largeContents = largeInput.readAllBytes();
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
@@ -139,7 +139,7 @@ public final class DiverseStateCreation extends HapiApiSuite {
                 .when(
                         /* Create some well-known files */
                         fileCreate(SMALL_FILE)
-                                .contents(SMALL_CONTENTS)
+                                .contents(smallContents)
                                 .key(smallKey)
                                 .expiry(SMALL_EXPIRY_TIME)
                                 .exposingNumTo(num -> entityNums.put(SMALL_FILE, num)),
@@ -151,7 +151,7 @@ public final class DiverseStateCreation extends HapiApiSuite {
                         updateLargeFile(
                                 GENESIS,
                                 MEDIUM_FILE,
-                                ByteString.copyFrom(MEDIUM_CONTENTS),
+                                ByteString.copyFrom(mediumContents),
                                 false,
                                 OptionalLong.of(ONE_HBAR)),
                         fileDelete(MEDIUM_FILE),
@@ -163,7 +163,7 @@ public final class DiverseStateCreation extends HapiApiSuite {
                         updateLargeFile(
                                 GENESIS,
                                 LARGE_FILE,
-                                ByteString.copyFrom(LARGE_CONTENTS),
+                                ByteString.copyFrom(largeContents),
                                 false,
                                 OptionalLong.of(ONE_HBAR)),
                         /* Create some bytecode files */
