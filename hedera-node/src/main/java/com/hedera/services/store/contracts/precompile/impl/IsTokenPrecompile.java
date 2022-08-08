@@ -49,7 +49,6 @@ public class IsTokenPrecompile extends AbstractTokenInfoPrecompile {
     @Override
     public Bytes getSuccessResultFor(final ExpirableTxnRecord.Builder childRecord) {
         final var isToken = stateView.tokenExists(tokenId);
-
         return encoder.encodeIsToken(isToken);
     }
 }
