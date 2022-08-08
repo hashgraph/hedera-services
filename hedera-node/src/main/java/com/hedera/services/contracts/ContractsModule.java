@@ -25,8 +25,6 @@ import static com.hedera.services.store.contracts.precompile.PrngSystemPrecompil
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.contracts.annotations.BytecodeSource;
 import com.hedera.services.contracts.annotations.StorageSource;
-import com.hedera.services.contracts.execution.traceability.HederaOperationTracer;
-import com.hedera.services.contracts.execution.traceability.HederaTracer;
 import com.hedera.services.contracts.gascalculator.GasCalculatorHederaV22;
 import com.hedera.services.contracts.operation.HederaBalanceOperation;
 import com.hedera.services.contracts.operation.HederaCallCodeOperation;
@@ -97,10 +95,6 @@ public interface ContractsModule {
     static Map<byte[], byte[]> provideBytecodeSource(Map<String, byte[]> blobStore) {
         return bytecodeMapFrom(blobStore);
     }
-
-    @Binds
-    @Singleton
-    HederaOperationTracer provideTracer(HederaTracer hederaTracer);
 
     @Provides
     @Singleton

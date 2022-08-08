@@ -28,6 +28,7 @@ import static org.mockito.Mockito.doCallRealMethod;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.internal.verification.VerificationModeFactory.times;
 
 import com.hedera.services.contracts.execution.traceability.ContractActionType;
 import com.hedera.services.contracts.execution.traceability.HederaOperationTracer;
@@ -109,7 +110,7 @@ class HederaMessageCallProcessorTest {
         verify(frame).decrementRemainingGas(GAS_ONE);
         verify(frame).setOutputData(Bytes.of(1));
         verify(frame).setState(COMPLETED_SUCCESS);
-        verify(frame).getState();
+        verify(frame, times(2)).getState();
         verifyNoMoreInteractions(nonHtsPrecompile, frame, hederaTracer);
     }
 
@@ -124,7 +125,7 @@ class HederaMessageCallProcessorTest {
 
         subject.start(frame, hederaTracer);
 
-        verify(frame).getState();
+        verify(frame, times(2)).getState();
         verify(hederaTracer).tracePrecompileCall(frame, GAS_ONE, Bytes.of(1));
         verify(hederaTracer).tracePrecompileResult(frame, ContractActionType.SYSTEM);
         verify(frame).decrementRemainingGas(GAS_ONE);

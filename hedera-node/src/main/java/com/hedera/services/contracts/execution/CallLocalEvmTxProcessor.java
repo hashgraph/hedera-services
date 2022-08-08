@@ -19,7 +19,6 @@ import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.contracts.execution.traceability.HederaOperationTracer;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.store.contracts.CodeCache;
 import com.hedera.services.store.contracts.HederaMutableWorldState;
@@ -57,15 +56,13 @@ public class CallLocalEvmTxProcessor extends EvmTxProcessor {
             final Set<Operation> hederaOperations,
             final Map<String, PrecompiledContract> precompiledContractMap,
             final AliasManager aliasManager,
-            final StorageExpiry storageExpiry,
-            final HederaOperationTracer hederaOperationTracer) {
+            final StorageExpiry storageExpiry) {
         super(
                 livePricesSource,
                 dynamicProperties,
                 gasCalculator,
                 hederaOperations,
-                precompiledContractMap,
-                hederaOperationTracer);
+                precompiledContractMap);
         this.codeCache = codeCache;
         this.aliasManager = aliasManager;
         this.storageExpiry = storageExpiry;

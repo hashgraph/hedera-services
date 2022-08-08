@@ -103,8 +103,7 @@ class CreateEvmTxProcessorTest {
                         operations,
                         precompiledContractMap,
                         storageExpiry,
-                        blockMetaSource,
-                        new FakeHederaTracer());
+                        blockMetaSource);
     }
 
     @Test

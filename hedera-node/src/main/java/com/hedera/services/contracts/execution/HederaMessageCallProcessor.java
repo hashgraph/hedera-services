@@ -1,4 +1,4 @@
-    /*
+/*
  * Copyright (C) 2022 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -66,7 +66,11 @@ public class HederaMessageCallProcessor extends MessageCallProcessor {
             // only a precompile execution will not set the state to CODE_EXECUTING after
             // start()
             ((HederaOperationTracer) operationTracer)
-                .tracePrecompileResult(frame, hederaPrecompile != null ? ContractActionType.SYSTEM : ContractActionType.PRECOMPILE);
+                    .tracePrecompileResult(
+                            frame,
+                            hederaPrecompile != null
+                                    ? ContractActionType.SYSTEM
+                                    : ContractActionType.PRECOMPILE);
         }
     }
 
@@ -86,7 +90,7 @@ public class HederaMessageCallProcessor extends MessageCallProcessor {
         }
         operationTracer.tracePrecompileCall(frame, gasRequirement, output);
         if (frame.getState() == REVERT) {
-          return;
+            return;
         }
         if (frame.getRemainingGas() < gasRequirement) {
             frame.decrementRemainingGas(frame.getRemainingGas());

@@ -70,8 +70,7 @@ class HederaTracerTest {
 
     @BeforeEach
     void setUp() {
-        subject = new HederaTracer();
-        subject.reset(true);
+        subject = new HederaTracer(true);
     }
 
     @Test
@@ -88,7 +87,7 @@ class HederaTracerTest {
         given(topLevelMessageFrame.getValue()).willReturn(value);
 
         // trace top level frame
-        subject.traceExecution(topLevelMessageFrame, eo);
+        subject.init(topLevelMessageFrame);
 
         assertEquals(1, subject.getActions().size());
         final var topLevelAction = subject.getActions().get(0);
@@ -158,7 +157,7 @@ class HederaTracerTest {
         given(childFrame2.getMessageFrameStack()).willReturn(dequeMock);
         // trace second child
         subject.traceExecution(topLevelMessageFrame, eo);
-        verify(eo, times(7)).execute();
+        verify(eo, times(6)).execute();
         // assert call depth is correct
         assertEquals(3, subject.getActions().size());
         assertEquals(1, subject.getActions().get(2).getCallDepth());
@@ -168,6 +167,7 @@ class HederaTracerTest {
     void finalizesCodeSuccessfulCallMessageFrameAsExpected() {
         // given
         givenTracedExecutingFrame(Type.MESSAGE_CALL);
+        subject.init(messageFrame);
         // when
         given(messageFrame.getState()).willReturn(State.CODE_SUCCESS);
         final long remainingGasAfterExecution = 343L;
@@ -185,6 +185,7 @@ class HederaTracerTest {
     void finalizesCodeSuccessfulCreateMessageFrameAsExpected() {
         // given
         givenTracedExecutingFrame(Type.CONTRACT_CREATION);
+        subject.init(messageFrame);
         // when
         given(messageFrame.getState()).willReturn(State.CODE_SUCCESS);
         final long remainingGasAfterExecution = 343L;
@@ -201,6 +202,7 @@ class HederaTracerTest {
     void finalizesRevertedFrameWithRevertReasonAsExpected() {
         // given
         givenTracedExecutingFrame(Type.MESSAGE_CALL);
+        subject.init(messageFrame);
         // when
         given(messageFrame.getState()).willReturn(State.REVERT);
         final var remainingGasAfterExecution = 343L;
@@ -218,6 +220,7 @@ class HederaTracerTest {
     void finalizesRevertedFrameWithoutRevertReasonAsExpected() {
         // given
         givenTracedExecutingFrame(Type.MESSAGE_CALL);
+        subject.init(messageFrame);
         // when
         given(messageFrame.getState()).willReturn(State.REVERT);
         final long remainingGasAfterExecution = 343L;
@@ -235,6 +238,7 @@ class HederaTracerTest {
         // given
         givenTracedExecutingFrame(Type.MESSAGE_CALL);
         // when
+        subject.init(messageFrame);
         given(messageFrame.getState()).willReturn(State.EXCEPTIONAL_HALT);
         subject.traceExecution(messageFrame, eo);
         // then
@@ -248,6 +252,7 @@ class HederaTracerTest {
     void finalizesExceptionallyHaltedFrameWithHaltReasonAsExpected() {
         // given
         givenTracedExecutingFrame(Type.MESSAGE_CALL);
+        subject.init(messageFrame);
         // when
         given(messageFrame.getState()).willReturn(State.EXCEPTIONAL_HALT);
         final var codeTooLarge = Optional.of(ExceptionalHaltReason.CODE_TOO_LARGE);
@@ -273,7 +278,7 @@ class HederaTracerTest {
         given(messageFrame.getInputData()).willReturn(input);
         given(messageFrame.getValue()).willReturn(value);
         given(messageFrame.getState()).willReturn(State.CODE_EXECUTING);
-        subject.traceExecution(messageFrame, eo);
+        subject.init(messageFrame);
         // when
         given(messageFrame.getState()).willReturn(State.EXCEPTIONAL_HALT);
         final var invalidSolidityAddress = Optional.of(INVALID_SOLIDITY_ADDRESS);
@@ -295,6 +300,7 @@ class HederaTracerTest {
     void finalizesExceptionallyHaltedFrameWithInvalidAddressContractRecipientAsExpected() {
         // given
         givenTracedExecutingFrame(Type.MESSAGE_CALL);
+        subject.init(messageFrame);
         // when
         given(messageFrame.getState()).willReturn(State.EXCEPTIONAL_HALT);
         final var invalidSolidityAddress = Optional.of(INVALID_SOLIDITY_ADDRESS);
@@ -322,7 +328,7 @@ class HederaTracerTest {
         given(messageFrame.getInputData()).willReturn(input);
         given(messageFrame.getValue()).willReturn(value);
         given(messageFrame.getState()).willReturn(State.CODE_EXECUTING);
-        subject.traceExecution(messageFrame, eo);
+        subject.init(messageFrame);
         // when
         given(messageFrame.getState()).willReturn(State.CODE_SUCCESS);
         final long remainingGasAfterExecution = 343L;
@@ -349,7 +355,7 @@ class HederaTracerTest {
         given(messageFrame.getInputData()).willReturn(input);
         given(messageFrame.getValue()).willReturn(value);
         given(messageFrame.getState()).willReturn(State.CODE_EXECUTING);
-        subject.traceExecution(messageFrame, eo);
+        subject.init(messageFrame);
         // when
         given(messageFrame.getState()).willReturn(State.COMPLETED_SUCCESS);
         final long remainingGasAfterExecution = 343L;
@@ -368,7 +374,7 @@ class HederaTracerTest {
     @Test
     void finalizesSystemPrecompileCallAsExpectedWhenActionsNotEnabled() {
         // given
-        subject.reset(false);
+        subject = new HederaTracer(false);
         // when
         subject.traceExecution(messageFrame, eo);
         subject.tracePrecompileResult(messageFrame, ContractActionType.SYSTEM);
@@ -387,7 +393,7 @@ class HederaTracerTest {
 
     @Test
     void actionsAreNotTrackedWhenNotEnabled() {
-        subject.reset(false);
+        subject = new HederaTracer(false);
 
         subject.traceExecution(messageFrame, eo);
 

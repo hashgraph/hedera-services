@@ -97,8 +97,7 @@ class CallLocalEvmTxProcessorTest {
                         operations,
                         precompiledContractMap,
                         aliasManager,
-                        storageExpiry,
-                        new FakeHederaTracer());
+                        storageExpiry);
 
         callLocalEvmTxProcessor.setWorldState(worldState);
         callLocalEvmTxProcessor.setBlockMetaSource(blockMetaSource);

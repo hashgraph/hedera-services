@@ -18,7 +18,6 @@ package com.hedera.services.contracts.execution;
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.contracts.execution.traceability.HederaOperationTracer;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.store.contracts.CodeCache;
 import com.hedera.services.store.contracts.HederaMutableWorldState;
@@ -57,8 +56,7 @@ public class CallEvmTxProcessor extends EvmTxProcessor {
             final Map<String, PrecompiledContract> precompiledContractMap,
             final AliasManager aliasManager,
             final StorageExpiry storageExpiry,
-            final InHandleBlockMetaSource blockMetaSource,
-            final HederaOperationTracer hederaOperationTracer) {
+            final InHandleBlockMetaSource blockMetaSource) {
         super(
                 worldState,
                 livePricesSource,
@@ -66,8 +64,7 @@ public class CallEvmTxProcessor extends EvmTxProcessor {
                 gasCalculator,
                 hederaOperations,
                 precompiledContractMap,
-                blockMetaSource,
-                hederaOperationTracer);
+                blockMetaSource);
         this.codeCache = codeCache;
         this.aliasManager = aliasManager;
         this.storageExpiry = storageExpiry;

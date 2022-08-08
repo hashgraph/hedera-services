@@ -23,7 +23,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_T
 import static org.hyperledger.besu.evm.MainnetEVMs.registerLondonOperations;
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.contracts.execution.traceability.HederaOperationTracer;
+import com.hedera.services.contracts.execution.traceability.HederaTracer;
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.store.contracts.HederaMutableWorldState;
 import com.hedera.services.store.contracts.HederaWorldState;
@@ -87,7 +87,6 @@ abstract class EvmTxProcessor {
     private final LivePricesSource livePricesSource;
     private final AbstractMessageProcessor messageCallProcessor;
     private final AbstractMessageProcessor contractCreationProcessor;
-    private final HederaOperationTracer hederaTracer;
     protected final GlobalDynamicProperties dynamicProperties;
 
     protected EvmTxProcessor(
@@ -95,8 +94,7 @@ abstract class EvmTxProcessor {
             final GlobalDynamicProperties dynamicProperties,
             final GasCalculator gasCalculator,
             final Set<Operation> hederaOperations,
-            final Map<String, PrecompiledContract> precompiledContractMap,
-            final HederaOperationTracer hederaOperationTracer) {
+            final Map<String, PrecompiledContract> precompiledContractMap) {
         this(
                 null,
                 livePricesSource,
@@ -104,8 +102,7 @@ abstract class EvmTxProcessor {
                 gasCalculator,
                 hederaOperations,
                 precompiledContractMap,
-                null,
-                hederaOperationTracer);
+                null);
     }
 
     protected void setBlockMetaSource(final BlockMetaSource blockMetaSource) {
@@ -123,13 +120,11 @@ abstract class EvmTxProcessor {
             final GasCalculator gasCalculator,
             final Set<Operation> hederaOperations,
             final Map<String, PrecompiledContract> precompiledContractMap,
-            final BlockMetaSource blockMetaSource,
-            final HederaOperationTracer hederaTracer) {
+            final BlockMetaSource blockMetaSource) {
         this.worldState = worldState;
         this.livePricesSource = livePricesSource;
         this.dynamicProperties = dynamicProperties;
         this.gasCalculator = gasCalculator;
-        this.hederaTracer = hederaTracer;
 
         operationRegistry = new OperationRegistry();
         // We always register the latest ChainIdOperation before any execute(), so use ZERO here
@@ -295,8 +290,10 @@ abstract class EvmTxProcessor {
                 buildInitialFrame(commonInitialFrame, receiver, payload, value);
         messageFrameStack.addFirst(initialFrame);
 
-        hederaTracer.reset(
-                dynamicProperties.enabledSidecars().contains(SidecarType.CONTRACT_ACTION));
+        final var hederaTracer =
+                new HederaTracer(
+                        dynamicProperties.enabledSidecars().contains(SidecarType.CONTRACT_ACTION));
+        hederaTracer.init(initialFrame);
         while (!messageFrameStack.isEmpty()) {
             process(messageFrameStack.peekFirst(), hederaTracer);
         }

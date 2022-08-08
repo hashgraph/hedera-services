@@ -26,39 +26,33 @@ import java.util.ArrayList;
 import java.util.Deque;
 import java.util.List;
 import java.util.Optional;
-import javax.inject.Inject;
-import javax.inject.Singleton;
 import org.hyperledger.besu.evm.Code;
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.frame.MessageFrame.State;
 
-@Singleton
 public class HederaTracer implements HederaOperationTracer {
 
     private final List<SolidityAction> allActions;
     private final Deque<SolidityAction> currentActionsStack;
-    private boolean areActionSidecarsEnabled;
+    private final boolean areActionSidecarsEnabled;
 
-    @Inject
-    public HederaTracer() {
+    public HederaTracer(final boolean areActionSidecarsEnabled) {
         this.currentActionsStack = new ArrayDeque<>();
         this.allActions = new ArrayList<>();
-    }
-
-    @Override
-    public void reset(final boolean areActionSidecarsEnabled) {
-        this.currentActionsStack.clear();
-        this.allActions.clear();
         this.areActionSidecarsEnabled = areActionSidecarsEnabled;
     }
 
     @Override
-    public void traceExecution(MessageFrame frame, ExecuteOperation executeOperation) {
-        if (areActionSidecarsEnabled && currentActionsStack.isEmpty()) {
-            trackActionFor(frame, 0);
+    public void init(final MessageFrame initialFrame) {
+        if (areActionSidecarsEnabled) {
+            // since this is the initial frame, call depth is always 0
+            trackActionFor(initialFrame, 0);
         }
+    }
 
+    @Override
+    public void traceExecution(MessageFrame frame, ExecuteOperation executeOperation) {
         executeOperation.execute();
 
         if (areActionSidecarsEnabled) {
@@ -164,7 +158,6 @@ public class HederaTracer implements HederaOperationTracer {
         };
     }
 
-    @Override
     public List<SolidityAction> getActions() {
         return allActions;
     }

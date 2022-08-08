@@ -15,7 +15,6 @@
  */
 package com.hedera.services.contracts.execution.traceability;
 
-import java.util.List;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.tracing.OperationTracer;
 
@@ -26,6 +25,13 @@ import org.hyperledger.besu.evm.tracing.OperationTracer;
 public interface HederaOperationTracer extends OperationTracer {
 
     /**
+     * Perform initialization logic before EVM execution begins.
+     *
+     * @param frame the initial frame associated with this EVM execution
+     */
+    void init(final MessageFrame initialFrame);
+
+    /**
      * Trace the result from a precompile execution. Must be called after the result has been
      * reflected in the associated message frame.
      *
@@ -34,20 +40,4 @@ public interface HederaOperationTracer extends OperationTracer {
      *     SYSTEM}
      */
     void tracePrecompileResult(final MessageFrame frame, final ContractActionType type);
-
-    /**
-     * Obtain the list of contract actions created during current EVM transaction execution
-     *
-     * @return the list of contract actions created from this EVM transaction execution
-     */
-    List<SolidityAction> getActions();
-
-    /**
-     * Resets the tracer for a new EVM transaction. Must be called before each new EVM transaction
-     * begins its execution.
-     *
-     * @param areActionSidecarsEnabled specifies if actions should be tracked for traceability
-     *     during this EVM transaction
-     */
-    void reset(boolean areActionSidecarsEnabled);
 }
