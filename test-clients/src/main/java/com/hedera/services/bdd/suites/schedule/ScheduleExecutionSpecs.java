@@ -121,10 +121,10 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.IntStream;
@@ -134,7 +134,7 @@ import org.junit.jupiter.api.Assertions;
 
 public class ScheduleExecutionSpecs extends HapiApiSuite {
     private static final Logger log = LogManager.getLogger(ScheduleExecutionSpecs.class);
-    private static final Random rand = new Random();
+    private static final SecureRandom rand = new SecureRandom();
     private static final String A_TOKEN = "token";
     public static byte[] ORIG_FILE = "SOMETHING".getBytes();
     private static final String A_SCHEDULE = "validSchedule";

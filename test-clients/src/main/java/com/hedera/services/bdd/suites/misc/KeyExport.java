@@ -29,9 +29,9 @@ import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.keys.KeyFactory;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.suites.HapiApiSuite;
+import java.security.SecureRandom;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -40,7 +40,7 @@ import org.apache.logging.log4j.Logger;
 
 public class KeyExport extends HapiApiSuite {
     private static final Logger log = LogManager.getLogger(KeyExport.class);
-    private static final Random rand = new Random();
+    private static final SecureRandom rand = new SecureRandom();
     private static final String PEM_FILE_NAME = "dev-testnet-account2.pem";
 
     public static void main(String... args) throws Exception {

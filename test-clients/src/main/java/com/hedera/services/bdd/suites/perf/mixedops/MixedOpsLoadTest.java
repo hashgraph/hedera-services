@@ -62,10 +62,10 @@ import com.hedera.services.bdd.suites.perf.PerfTestLoadSettings;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.net.InetAddress;
 import java.nio.ByteBuffer;
+import java.security.SecureRandom;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 import java.util.stream.IntStream;
@@ -75,7 +75,7 @@ import org.apache.logging.log4j.Logger;
 
 public class MixedOpsLoadTest extends LoadTest {
     private static final Logger log = LogManager.getLogger(MixedOpsLoadTest.class);
-    private static final Random rand = new Random();
+    private static final SecureRandom rand = new SecureRandom();
     private static final int NUM_SUBMISSIONS = 100;
     private final ResponseCodeEnum[] permissiblePrechecks =
             new ResponseCodeEnum[] {

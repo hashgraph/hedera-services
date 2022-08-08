@@ -16,12 +16,12 @@
 package com.hedera.services.bdd.suites.utils;
 
 import com.google.protobuf.ByteString;
+import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Random;
 
 public final class MiscEETUtils {
-    private static final Random rand = new Random();
+    private static final SecureRandom rand = new SecureRandom();
 
     private MiscEETUtils() {}
 

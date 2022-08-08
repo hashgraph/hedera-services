@@ -30,9 +30,9 @@ import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.ContractLoginfo;
 import com.swirlds.common.utility.CommonUtils;
 import java.math.BigInteger;
+import java.security.SecureRandom;
 import java.util.List;
 import java.util.Optional;
-import java.util.Random;
 import java.util.function.Function;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -43,7 +43,7 @@ import org.junit.jupiter.api.Assertions;
 public class ContractFnResultAsserts extends BaseErroringAssertsProvider<ContractFunctionResult> {
     static final Logger log = LogManager.getLogger(ContractFnResultAsserts.class);
 
-    private static final Random rand = new Random();
+    private static final SecureRandom rand = new SecureRandom();
 
     public static ContractFnResultAsserts resultWith() {
         return new ContractFnResultAsserts();
