@@ -257,20 +257,12 @@ public class HederaStackedWorldStateUpdater
     }
 
     private int totalAllocatedIdsInTxn() {
-        int totalAllocatedIds = 0;
-        HederaWorldUpdater parent;
+        var totalAllocatedIds = 0;
         Optional<WorldUpdater> parentOptional = parentUpdater();
-        if (parentOptional.isPresent()) {
-            parent = (HederaWorldUpdater) parentOptional.get();
-            while (true) {
-                totalAllocatedIds += parent.numberOfIdsAllocatedByStacked();
-                parentOptional = parent.parentUpdater();
-                if (parentOptional.isPresent()) {
-                    parent = (HederaWorldUpdater) parentOptional.get();
-                } else {
-                    break;
-                }
-            }
+        while (parentOptional.isPresent()) {
+            final var parent = (HederaWorldUpdater) parentOptional.get();
+            totalAllocatedIds += parent.numberOfIdsAllocatedByStacked();
+            parentOptional = parent.parentUpdater();
         }
 
         return totalAllocatedIds + numAllocatedIds;
