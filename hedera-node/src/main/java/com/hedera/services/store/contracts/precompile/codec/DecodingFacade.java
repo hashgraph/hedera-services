@@ -463,7 +463,8 @@ public class DecodingFacade {
 
     private static final Function GET_TOKEN_TYPE_FUNCTION =
             new Function("getTokenType(address)", "(int,int32)");
-    private static final Bytes GET_TOKEN_TYPE_SELECTOR = Bytes.wrap(GET_TOKEN_TYPE_FUNCTION.selector());
+    private static final Bytes GET_TOKEN_TYPE_SELECTOR =
+            Bytes.wrap(GET_TOKEN_TYPE_FUNCTION.selector());
     private static final ABIType<Tuple> GET_TOKEN_TYPE_DECODER = TypeFactory.create(BYTES32);
 
     @Inject

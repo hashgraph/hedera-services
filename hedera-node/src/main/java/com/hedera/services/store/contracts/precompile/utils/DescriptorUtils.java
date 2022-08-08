@@ -48,7 +48,7 @@ public class DescriptorUtils {
                     ABI_ID_IS_KYC,
                     ABI_ID_GET_TOKEN_CUSTOM_FEES,
                     ABI_ID_IS_TOKEN,
-                    ABI_ID_GET_TOKEN_TYPE-> true;
+                    ABI_ID_GET_TOKEN_TYPE -> true;
             default -> false;
         };
     }
