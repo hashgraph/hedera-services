@@ -153,6 +153,8 @@ public final class ParsingConstants {
         GET_TOKEN_DEFAULT_KYC_STATUS,
         HAPI_IS_FROZEN,
         HAPI_GET_TOKEN_CUSTOM_FEES,
+        HAPI_IS_TOKEN,
+        HAPI_GET_TOKEN_TYPE,
         NOT_SPECIFIED
     }
 }
