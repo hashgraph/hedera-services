@@ -84,7 +84,7 @@ public class EncodingFacade {
             TupleType.parse(INT_BOOL_PAIR_RETURN_TYPE);
     private static final TupleType isTokenFrozenType = TupleType.parse(INT_BOOL_PAIR_RETURN_TYPE);
     private static final TupleType isTokenType = TupleType.parse(INT_BOOL_PAIR_RETURN_TYPE);
-    private static final TupleType getTokenType = TupleType.parse("(int,int32)");
+    private static final TupleType getTokenType = TupleType.parse("(int32,int32)");
 
     @Inject
     public EncodingFacade() {
@@ -341,7 +341,7 @@ public class EncodingFacade {
 
     public Bytes encodeGetTokenType(final int tokenType) {
         return functionResultBuilder()
-                .forFunction(FunctionType.HAPI_IS_TOKEN)
+                .forFunction(FunctionType.HAPI_GET_TOKEN_TYPE)
                 .withStatus(SUCCESS.getNumber())
                 .withGetTokenType(tokenType)
                 .build();
