@@ -36,7 +36,7 @@ contract UpdateTokenInfoContract is HederaTokenService, FeeHelper {
         IHederaTokenService.HederaToken memory token =
         tokenWithExpiry(treasury, 0, autoRenewAccount, autoRenewPeriod, keys);
 
-        int responseCode = HederaTokenService.updateTokenInfo(tokenID,token);
+        int responseCode = HederaTokenService.updateTokenInfo(tokenID, token);
 
         if (responseCode != HederaResponseCodes.SUCCESS) {
             revert ("Update of tokenInfo failed!");
@@ -58,7 +58,7 @@ contract UpdateTokenInfoContract is HederaTokenService, FeeHelper {
         int responseCode = HederaTokenService.updateTokenInfo(tokenID,token);
 
         if (responseCode != HederaResponseCodes.SUCCESS) {
-            revert ("Update of tokenInfo failed!");
+            revert ("Update of tokenInfo.treasury failed!");
         }
     }
 
@@ -79,7 +79,7 @@ contract UpdateTokenInfoContract is HederaTokenService, FeeHelper {
         int responseCode = HederaTokenService.updateTokenInfo(tokenID,token);
 
         if (responseCode != HederaResponseCodes.SUCCESS) {
-            revert ("Update of tokenInfo failed!");
+            revert ("Update of tokenInfo name and symbol failed!");
         }
     }
 
@@ -108,12 +108,12 @@ contract UpdateTokenInfoContract is HederaTokenService, FeeHelper {
         int responseCode = HederaTokenService.updateTokenInfo(tokenID,token);
 
         if (responseCode != HederaResponseCodes.SUCCESS) {
-            revert ("Update of tokenInfo failed!");
+            revert ("Update of tokenInfo keys failed!");
         }
     }
 
     // TEST-005
-    function updateTokenWithKeyWithMultipleValues(
+    function updateTokenWithInvalidKeyValues(
         address tokenID,
         address autoRenewAccount,
         uint32 autoRenewPeriod

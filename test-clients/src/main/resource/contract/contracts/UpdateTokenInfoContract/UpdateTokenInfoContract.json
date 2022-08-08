@@ -121,7 +121,7 @@
         "type": "uint32"
       }
     ],
-    "name": "updateTokenWithKeyWithMultipleValues",
+    "name": "updateTokenWithInvalidKeyValues",
     "outputs": [],
     "stateMutability": "payable",
     "type": "function"

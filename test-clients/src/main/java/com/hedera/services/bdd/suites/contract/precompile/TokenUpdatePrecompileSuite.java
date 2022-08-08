@@ -112,7 +112,7 @@ public class TokenUpdatePrecompileSuite extends HapiApiSuite {
                 updateNftTreasuryWithAndWithoutAdminKey(),
                 updateWithTooLongNameAndSymbol(),
                 updateTokenWithKeysNegative(),
-                updateTokenWithKeyWithMultipleValues());
+                updateTokenWithInvalidKeyValues());
     }
 
     private HapiApiSpec updateTokenWithKeysHappyPath() {
@@ -624,9 +624,9 @@ public class TokenUpdatePrecompileSuite extends HapiApiSuite {
                                                                 .status(TOKEN_HAS_NO_KYC_KEY)))));
     }
 
-    private HapiApiSpec updateTokenWithKeyWithMultipleValues() {
+    private HapiApiSpec updateTokenWithInvalidKeyValues() {
 
-        return defaultHapiSpec("updateTokenWithKeyWithMultipleValues")
+        return defaultHapiSpec("updateTokenWithInvalidKeyValues")
                 .given(
                         newKeyNamed(ED25519KEY).shape(ED25519),
                         newKeyNamed(ECDSA_KEY).shape(SECP256K1),
@@ -659,7 +659,7 @@ public class TokenUpdatePrecompileSuite extends HapiApiSuite {
                                                 spec,
                                                 contractCall(
                                                                 TOKEN_UPDATE_CONTRACT,
-                                                                "updateTokenWithKeyWithMultipleValues",
+                                                                "updateTokenWithInvalidKeyValues",
                                                                 asAddress(vanillaTokenID.get()),
                                                                 asAddress(
                                                                         spec.registry()
