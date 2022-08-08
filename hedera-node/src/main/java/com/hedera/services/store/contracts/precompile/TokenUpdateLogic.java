@@ -56,8 +56,8 @@ import javax.inject.Inject;
 
 public class TokenUpdateLogic {
     private final OptionValidator validator;
-    private final HederaTokenStore store;
-    private final WorldLedgers ledger;
+    private final HederaTokenStore tokenStore;
+    private final WorldLedgers worldLedgers;
     private final SideEffectsTracker sideEffectsTracker;
     private final SigImpactHistorian sigImpactHistorian;
     boolean allowChangedTreasuryToOwnNfts;
@@ -67,12 +67,12 @@ public class TokenUpdateLogic {
             final @AreTreasuryWildcardsEnabled boolean allowChangedTreasuryToOwnNfts,
             OptionValidator validator,
             HederaTokenStore tokenStore,
-            WorldLedgers ledger,
+            WorldLedgers worldLedgers,
             SideEffectsTracker sideEffectsTracker,
             SigImpactHistorian sigImpactHistorian) {
         this.validator = validator;
-        this.store = tokenStore;
-        this.ledger = ledger;
+        this.tokenStore = tokenStore;
+        this.worldLedgers = worldLedgers;
         this.sideEffectsTracker = sideEffectsTracker;
         this.sigImpactHistorian = sigImpactHistorian;
         this.allowChangedTreasuryToOwnNfts = allowChangedTreasuryToOwnNfts;
@@ -82,9 +82,9 @@ public class TokenUpdateLogic {
         final var tokenID = Id.fromGrpcToken(op.getToken()).asGrpcToken();
         validateFalse(tokenID == MISSING_TOKEN, INVALID_TOKEN_ID);
         if (op.hasExpiry()) {
-            validateFalseOrRevert(validator.isValidExpiry(op.getExpiry()), INVALID_EXPIRATION_TIME);
+            validateTrueOrRevert(validator.isValidExpiry(op.getExpiry()), INVALID_EXPIRATION_TIME);
         }
-        MerkleToken token = store.get(tokenID);
+        MerkleToken token = tokenStore.get(tokenID);
         checkTokenPreconditions(token, op);
 
         ResponseCodeEnum outcome = autoRenewAttachmentCheck(op, token);
@@ -95,8 +95,8 @@ public class TokenUpdateLogic {
             var newTreasury = op.getTreasury();
             validateFalseOrRevert(isDetached(newTreasury), ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
 
-            if (!store.associationExists(newTreasury, tokenID)) {
-                outcome = store.autoAssociate(newTreasury, tokenID);
+            if (!tokenStore.associationExists(newTreasury, tokenID)) {
+                outcome = tokenStore.autoAssociate(newTreasury, tokenID);
                 if (outcome != OK) {
                     abortWith(outcome);
                 }
@@ -120,7 +120,7 @@ public class TokenUpdateLogic {
             }
         }
 
-        outcome = store.update(op, now);
+        outcome = tokenStore.update(op, now);
         if (outcome == OK && replacedTreasury.isPresent()) {
             final var oldTreasury = replacedTreasury.get();
             long replacedTreasuryBalance = getTokenBalance(oldTreasury, tokenID);
@@ -134,7 +134,7 @@ public class TokenUpdateLogic {
                                     replacedTreasuryBalance);
                 } else {
                     outcome =
-                            store.changeOwnerWildCard(
+                            tokenStore.changeOwnerWildCard(
                                     new NftId(
                                             tokenID.getShardNum(),
                                             tokenID.getRealmNum(),
@@ -178,7 +178,7 @@ public class TokenUpdateLogic {
     }
 
     private boolean isDetached(AccountID accountID) {
-        return validator.expiryStatusGiven(ledger.accounts(), accountID) != OK;
+        return validator.expiryStatusGiven(worldLedgers.accounts(), accountID) != OK;
     }
 
     private ResponseCodeEnum prepTreasuryChange(
@@ -188,10 +188,10 @@ public class TokenUpdateLogic {
             final AccountID oldTreasury) {
         var status = OK;
         if (token.hasFreezeKey()) {
-            status = store.unfreeze(newTreasury, id);
+            status = tokenStore.unfreeze(newTreasury, id);
         }
         if (status == OK && token.hasKycKey()) {
-            status = store.grantKyc(newTreasury, id);
+            status = tokenStore.grantKyc(newTreasury, id);
         }
         if (status == OK) {
             decrementNumTreasuryTitles(oldTreasury);
@@ -201,27 +201,34 @@ public class TokenUpdateLogic {
     }
 
     private void abortWith(ResponseCodeEnum cause) {
-        dropTokenChanges(sideEffectsTracker, ledger.nfts(), ledger.accounts(), ledger.tokenRels());
+        dropTokenChanges(
+                sideEffectsTracker,
+                worldLedgers.nfts(),
+                worldLedgers.accounts(),
+                worldLedgers.tokenRels());
         throw new InvalidTransactionException(cause);
     }
 
     private ResponseCodeEnum doTokenTransfer(
             TokenID tId, AccountID from, AccountID to, long adjustment) {
-        ResponseCodeEnum validity = store.adjustBalance(from, tId, -adjustment);
+        ResponseCodeEnum validity = tokenStore.adjustBalance(from, tId, -adjustment);
         if (validity == OK) {
-            validity = store.adjustBalance(to, tId, adjustment);
+            validity = tokenStore.adjustBalance(to, tId, adjustment);
         }
 
         if (validity != OK) {
             dropTokenChanges(
-                    sideEffectsTracker, ledger.nfts(), ledger.accounts(), ledger.tokenRels());
+                    sideEffectsTracker,
+                    worldLedgers.nfts(),
+                    worldLedgers.accounts(),
+                    worldLedgers.tokenRels());
         }
         return validity;
     }
 
     public long getTokenBalance(AccountID aId, TokenID tId) {
         var relationship = asTokenRel(aId, tId);
-        return (long) ledger.tokenRels().get(relationship, TOKEN_BALANCE);
+        return (long) worldLedgers.tokenRels().get(relationship, TOKEN_BALANCE);
     }
 
     private void incrementNumTreasuryTitles(final AccountID aId) {
@@ -233,7 +240,7 @@ public class TokenUpdateLogic {
     }
 
     private void changeNumTreasuryTitles(final AccountID aId, final int delta) {
-        final var numTreasuryTitles = (int) ledger.accounts().get(aId, NUM_TREASURY_TITLES);
-        ledger.accounts().set(aId, NUM_TREASURY_TITLES, numTreasuryTitles + delta);
+        final var numTreasuryTitles = (int) worldLedgers.accounts().get(aId, NUM_TREASURY_TITLES);
+        worldLedgers.accounts().set(aId, NUM_TREASURY_TITLES, numTreasuryTitles + delta);
     }
 }
