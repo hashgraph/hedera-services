@@ -149,7 +149,6 @@ public class NodeSignatureVerifier {
     }
 
     private Pair<byte[], byte[]> extractHashAndSigFromFile(File file) {
-        FileInputStream stream = null;
         byte[] sig = null;
 
         if (!file.exists()) {

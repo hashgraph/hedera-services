@@ -30,6 +30,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Map;
@@ -164,8 +165,12 @@ public class ValidationCommand implements Callable<Integer> {
         for (var entityLoc : entityLocs) {
             var f = new File(entityLoc);
             if (f.exists()) {
-                final var isDeleted = f.delete();
-                log.info("File is {} deleted successfully", isDeleted ? "" : "not");
+                try {
+                    final var isDeleted = Files.delete(Path.of(entityLoc));
+                    log.info("File is {} deleted successfully", isDeleted ? "" : "not");
+                } catch (IOException ex) {
+
+                }
             }
         }
     }

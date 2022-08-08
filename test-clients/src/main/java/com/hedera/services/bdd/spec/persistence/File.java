@@ -72,7 +72,7 @@ public class File {
                                             new String[] {FILES_SUBDIR, CONTENTS_SUBDIR, data}));
         }
 
-        if (!memo.equals(MISSING_MEMO)) {
+        if (memo != MISSING_MEMO) {
             op.entityMemo(memo);
         }
 

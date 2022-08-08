@@ -98,7 +98,7 @@ public class Token {
     HapiTxnOp<HapiTokenCreate> createOp(String name) {
         var op = tokenCreate(name).advertisingCreation().symbol(symbol).name(this.tokenName);
 
-        if (!treasury.equals(UNSPECIFIED_TREASURY)) {
+        if (treasury != UNSPECIFIED_TREASURY) {
             op.treasury(treasury);
         }
         if (!memo.equals(UNSPECIFIED_MEMO)) {
