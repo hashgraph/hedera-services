@@ -1,4 +1,4 @@
-/*
+    /*
  * Copyright (C) 2022 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -59,16 +59,14 @@ public class HederaMessageCallProcessor extends MessageCallProcessor {
         final var hederaPrecompile = hederaPrecompiles.get(frame.getContractAddress());
         if (hederaPrecompile != null) {
             executeHederaPrecompile(hederaPrecompile, frame, operationTracer);
-            ((HederaOperationTracer) operationTracer)
-                    .tracePrecompileResult(frame, ContractActionType.SYSTEM);
         } else {
             super.start(frame, operationTracer);
-            if (frame.getState() != State.CODE_EXECUTING) {
-                // only a precompile execution will not set the state to CODE_EXECUTING after
-                // start()
-                ((HederaOperationTracer) operationTracer)
-                        .tracePrecompileResult(frame, ContractActionType.PRECOMPILE);
-            }
+        }
+        if (frame.getState() != State.CODE_EXECUTING) {
+            // only a precompile execution will not set the state to CODE_EXECUTING after
+            // start()
+            ((HederaOperationTracer) operationTracer)
+                .tracePrecompileResult(frame, hederaPrecompile != null ? ContractActionType.SYSTEM : ContractActionType.PRECOMPILE);
         }
     }
 
@@ -87,18 +85,19 @@ public class HederaMessageCallProcessor extends MessageCallProcessor {
             gasRequirement = contract.gasRequirement(frame.getInputData());
         }
         operationTracer.tracePrecompileCall(frame, gasRequirement, output);
-        if (frame.getState() != REVERT) {
-            if (frame.getRemainingGas() < gasRequirement) {
-                frame.decrementRemainingGas(frame.getRemainingGas());
-                frame.setExceptionalHaltReason(Optional.of(INSUFFICIENT_GAS));
-                frame.setState(EXCEPTIONAL_HALT);
-            } else if (output != null) {
-                frame.decrementRemainingGas(gasRequirement);
-                frame.setOutputData(output);
-                frame.setState(COMPLETED_SUCCESS);
-            } else {
-                frame.setState(EXCEPTIONAL_HALT);
-            }
+        if (frame.getState() == REVERT) {
+          return;
+        }
+        if (frame.getRemainingGas() < gasRequirement) {
+            frame.decrementRemainingGas(frame.getRemainingGas());
+            frame.setExceptionalHaltReason(Optional.of(INSUFFICIENT_GAS));
+            frame.setState(EXCEPTIONAL_HALT);
+        } else if (output != null) {
+            frame.decrementRemainingGas(gasRequirement);
+            frame.setOutputData(output);
+            frame.setState(COMPLETED_SUCCESS);
+        } else {
+            frame.setState(EXCEPTIONAL_HALT);
         }
     }
 }
