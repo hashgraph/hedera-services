@@ -246,3 +246,10 @@ tasks.create("versionAsSpecified") {
         Utils.updateVersion(project, newVer)
     }
 }
+
+tasks.withType<Jar> {
+    isReproducibleFileOrder = true
+    isPreserveFileTimestamps = false
+    fileMode = 664
+    dirMode = 775
+}

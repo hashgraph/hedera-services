@@ -84,6 +84,10 @@ tasks.eet {
 
 tasks.shadowJar {
     archiveFileName.set("SuiteRunner.jar")
+    isReproducibleFileOrder = true
+    isPreserveFileTimestamps = false
+    fileMode = 664
+    dirMode = 775
 
     manifest {
         attributes(

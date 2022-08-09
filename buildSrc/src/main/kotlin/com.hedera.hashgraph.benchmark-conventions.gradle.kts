@@ -28,6 +28,10 @@ tasks.jmh {
 }
 
 tasks.jmhJar {
+    isReproducibleFileOrder = true
+    isPreserveFileTimestamps = false
+    fileMode = 664
+    dirMode = 775
     manifest(Action {
         attributes(mapOf("Multi-Release" to true))
     })
