@@ -39,6 +39,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_AUTORE
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RENEWAL_PERIOD;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -115,12 +116,29 @@ public class TokenExpiryInfoSuite extends HapiApiSuite {
                                                                 Tuple.singleton(
                                                                         expandByteArrayTo32Length(
                                                                                 asAddress(
+                                                                                        TokenID
+                                                                                                .newBuilder()
+                                                                                                .build()))))
+                                                        .via("expiryForInvalidTokenIDTxn")
+                                                        .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
+                                                        .gas(GAS_TO_OFFER)
+                                                        .payingWith(GENESIS),
+                                                contractCall(
+                                                                TOKEN_EXPIRY_CONTRACT,
+                                                                "getExpiryInfoForToken",
+                                                                Tuple.singleton(
+                                                                        expandByteArrayTo32Length(
+                                                                                asAddress(
                                                                                         vanillaTokenID
                                                                                                 .get()))))
                                                         .via("expiryTxn")
                                                         .gas(GAS_TO_OFFER)
                                                         .payingWith(GENESIS))))
                 .then(
+                        childRecordsCheck(
+                                "expiryForInvalidTokenIDTxn",
+                                CONTRACT_REVERT_EXECUTED,
+                                recordWith().status(INVALID_TOKEN_ID)),
                         withOpContext(
                                 (spec, opLog) -> {
                                     final var getTokenInfoQuery = getTokenInfo(VANILLA_TOKEN);
@@ -191,6 +209,20 @@ public class TokenExpiryInfoSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 TOKEN_EXPIRY_CONTRACT,
                                                                 UPDATE_EXPIRY_INFO_FOR_TOKEN,
+                                                                INVALID_ADDRESS,
+                                                                DEFAULT_MAX_LIFETIME - 12_345L,
+                                                                asAddress(
+                                                                        updatedAutoRenewAccountID
+                                                                                .get()),
+                                                                MONTH_IN_SECONDS)
+                                                        .alsoSigningWithFullPrefix(ADMIN_KEY)
+                                                        .via("invalidTokenTxn")
+                                                        .gas(GAS_TO_OFFER)
+                                                        .payingWith(GENESIS)
+                                                        .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
+                                                contractCall(
+                                                                TOKEN_EXPIRY_CONTRACT,
+                                                                UPDATE_EXPIRY_INFO_FOR_TOKEN,
                                                                 asAddress(vanillaTokenID.get()),
                                                                 DEFAULT_MAX_LIFETIME - 12_345L,
                                                                 asAddress(
@@ -255,6 +287,10 @@ public class TokenExpiryInfoSuite extends HapiApiSuite {
                                                         .gas(GAS_TO_OFFER)
                                                         .payingWith(GENESIS))))
                 .then(
+                        childRecordsCheck(
+                                "invalidTokenTxn",
+                                CONTRACT_REVERT_EXECUTED,
+                                recordWith().status(INVALID_TOKEN_ID)),
                         childRecordsCheck(
                                 "invalidSignatureTxn",
                                 CONTRACT_REVERT_EXECUTED,
