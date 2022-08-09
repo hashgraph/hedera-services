@@ -16,6 +16,8 @@
 package com.hedera.services.state.initialization;
 
 import static com.hedera.services.config.HederaNumbers.FIRST_POST_SYSTEM_FILE_ENTITY;
+import static com.hedera.services.config.HederaNumbers.FIRST_RESERVED_SYSTEM_CONTRACT;
+import static com.hedera.services.config.HederaNumbers.LAST_RESERVED_SYSTEM_CONTRACT;
 import static com.hedera.services.config.HederaNumbers.NUM_RESERVED_SYSTEM_ENTITIES;
 import static com.hedera.services.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
 
@@ -33,6 +35,7 @@ import org.apache.logging.log4j.Logger;
 
 @Singleton
 public class TreasuryCloner {
+
     private static final Logger log = LogManager.getLogger(TreasuryCloner.class);
 
     private final AccountNumbers accountNums;
@@ -51,6 +54,9 @@ public class TreasuryCloner {
         final var treasuryId = STATIC_PROPERTIES.scopedAccountWith(accountNums.treasury());
         final var treasury = accounts.getImmutableRef(treasuryId);
         for (long i = FIRST_POST_SYSTEM_FILE_ENTITY; i <= NUM_RESERVED_SYSTEM_ENTITIES; i++) {
+            if (i >= FIRST_RESERVED_SYSTEM_CONTRACT && i <= LAST_RESERVED_SYSTEM_CONTRACT) {
+                continue;
+            }
             final var nextCloneId = STATIC_PROPERTIES.scopedAccountWith(i);
             if (accounts.contains(nextCloneId)) {
                 continue;
@@ -58,6 +64,7 @@ public class TreasuryCloner {
             final var nextClone =
                     new HederaAccountCustomizer()
                             .isReceiverSigRequired(treasury.isReceiverSigRequired())
+                            .isDeclinedReward(treasury.isDeclinedReward())
                             .isDeleted(false)
                             .expiry(treasury.getExpiry())
                             .memo(treasury.getMemo())

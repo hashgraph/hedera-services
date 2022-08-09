@@ -69,11 +69,11 @@ public class TreasuryClonerTest {
         final var created = subject.getClonesCreated();
 
         for (long i = 200; i <= 750L; i++) {
-            if (i != 666) {
+            if (i != 666 && !(i >= 350 && i < 400)) {
                 verify(accounts).put(idFor(i), accountWith(pretendExpiry, pretendTreasuryKey));
             }
         }
-        Assertions.assertEquals(550, created.size());
+        Assertions.assertEquals(500, created.size());
         verifyNoMoreInteractions(accounts);
     }
 
