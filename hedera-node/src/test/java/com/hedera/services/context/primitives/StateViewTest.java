@@ -89,6 +89,7 @@ import com.hedera.services.state.virtual.IterableContractValue;
 import com.hedera.services.state.virtual.VirtualBlobKey;
 import com.hedera.services.state.virtual.VirtualBlobValue;
 import com.hedera.services.state.virtual.schedule.ScheduleVirtualValue;
+import com.hedera.services.store.contracts.precompile.codec.TokenExpiryWrapper;
 import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.EntityNum;
@@ -1308,6 +1309,30 @@ class StateViewTest {
     void tokenCustomFeesWorksForMissing() {
         subject = new StateView(null, null, null);
         assertTrue(subject.tokenCustomFees(tokenId).isEmpty());
+    }
+
+    @Test
+    void tokenExpiryInfoWorks() {
+        given(tokens.get(tokenNum)).willReturn(token);
+        final var expected = new TokenExpiryWrapper(expiry, autoRenew, autoRenewPeriod);
+        assertEquals(expected, subject.tokenExpiryInfo(tokenId).get());
+    }
+
+    @Test
+    void tokenExpiryInfoFailsGracefully() {
+        given(tokens.get(tokenNum)).willThrow(IllegalArgumentException.class);
+        assertTrue(subject.tokenExpiryInfo(tokenId).isEmpty());
+    }
+
+    @Test
+    void tokenExpiryInfoMissingTokenIdReturnsEmpty() {
+        assertTrue(subject.tokenExpiryInfo(missingTokenId).isEmpty());
+    }
+
+    @Test
+    void tokenExpiryInfoWorksForMissing() {
+        subject = new StateView(null, null, null);
+        assertTrue(subject.tokenExpiryInfo(tokenId).isEmpty());
     }
 
     private final Instant nftCreation = Instant.ofEpochSecond(1_234_567L, 8);

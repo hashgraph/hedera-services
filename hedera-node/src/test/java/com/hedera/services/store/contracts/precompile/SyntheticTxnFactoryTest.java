@@ -57,9 +57,11 @@ import com.hedera.services.store.contracts.precompile.codec.KeyValueWrapper;
 import com.hedera.services.store.contracts.precompile.codec.MintWrapper;
 import com.hedera.services.store.contracts.precompile.codec.PauseWrapper;
 import com.hedera.services.store.contracts.precompile.codec.SetApprovalForAllWrapper;
+import com.hedera.services.store.contracts.precompile.codec.TokenExpiryWrapper;
 import com.hedera.services.store.contracts.precompile.codec.TokenFreezeUnfreezeWrapper;
 import com.hedera.services.store.contracts.precompile.codec.TokenKeyWrapper;
 import com.hedera.services.store.contracts.precompile.codec.TokenTransferWrapper;
+import com.hedera.services.store.contracts.precompile.codec.TokenUpdateExpiryInfoWrapper;
 import com.hedera.services.store.contracts.precompile.codec.UnpauseWrapper;
 import com.hedera.services.store.contracts.precompile.codec.WipeWrapper;
 import com.hedera.services.utils.EntityIdUtils;
@@ -940,6 +942,21 @@ class SyntheticTxnFactoryTest {
         assertEquals(nonFungible, txnBody.getTokenWipe().getToken());
         assertEquals(a, txnBody.getTokenWipe().getAccount());
         assertEquals(targetSerialNos, txnBody.getTokenWipe().getSerialNumbersList());
+    }
+
+    @Test
+    void createsExpectedUpdateTokenExpiryInfo() {
+        final var amount = 1234L;
+        final var updateExpiryInfo =
+                new TokenUpdateExpiryInfoWrapper(token, new TokenExpiryWrapper(442L, payer, 555L));
+
+        final var result = subject.createTokenUpdateExpiryInfo(updateExpiryInfo);
+        final var txnBody = result.build();
+
+        assertEquals(token, txnBody.getTokenUpdate().getToken());
+        assertEquals(442L, txnBody.getTokenUpdate().getExpiry().getSeconds());
+        assertEquals(payer, txnBody.getTokenUpdate().getAutoRenewAccount());
+        assertEquals(555L, txnBody.getTokenUpdate().getAutoRenewPeriod().getSeconds());
     }
 
     private AccountAmount aaWith(final AccountID account, final long amount) {

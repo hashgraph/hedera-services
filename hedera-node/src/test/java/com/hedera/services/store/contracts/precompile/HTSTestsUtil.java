@@ -26,6 +26,7 @@ import com.hedera.services.store.contracts.precompile.codec.DeleteWrapper;
 import com.hedera.services.store.contracts.precompile.codec.Dissociation;
 import com.hedera.services.store.contracts.precompile.codec.GetTokenDefaultFreezeStatusWrapper;
 import com.hedera.services.store.contracts.precompile.codec.GetTokenDefaultKycStatusWrapper;
+import com.hedera.services.store.contracts.precompile.codec.GetTokenExpiryInfoWrapper;
 import com.hedera.services.store.contracts.precompile.codec.GrantRevokeKycWrapper;
 import com.hedera.services.store.contracts.precompile.codec.MintWrapper;
 import com.hedera.services.store.contracts.precompile.codec.OwnerOfAndTokenURIWrapper;
@@ -37,6 +38,7 @@ import com.hedera.services.store.contracts.precompile.codec.TokenGetCustomFeesWr
 import com.hedera.services.store.contracts.precompile.codec.TokenInfoWrapper;
 import com.hedera.services.store.contracts.precompile.codec.TokenKeyWrapper;
 import com.hedera.services.store.contracts.precompile.codec.TokenTransferWrapper;
+import com.hedera.services.store.contracts.precompile.codec.TokenUpdateExpiryInfoWrapper;
 import com.hedera.services.store.contracts.precompile.codec.UnpauseWrapper;
 import com.hedera.services.store.contracts.precompile.codec.WipeWrapper;
 import com.hedera.services.store.models.Id;
@@ -205,6 +207,10 @@ public class HTSTestsUtil {
             "Invalid operation for ERC-721 token!";
     public static final TokenGetCustomFeesWrapper customFeesWrapper =
             new TokenGetCustomFeesWrapper(token);
+    public static final GetTokenExpiryInfoWrapper getTokenExpiryInfoWrapper =
+            new GetTokenExpiryInfoWrapper(token);
+    public static final TokenUpdateExpiryInfoWrapper tokenUpdateExpiryInfoWrapper =
+            new TokenUpdateExpiryInfoWrapper(token, new TokenExpiryWrapper(442L, payer, 555L));
 
     public static final Bytes ercTransferSuccessResult =
             Bytes.fromHexString(
