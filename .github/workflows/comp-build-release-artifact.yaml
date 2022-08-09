@@ -1,0 +1,80 @@
+name: "ZComponent: Compile"
+on:
+  workflow_call:
+    inputs:
+      dry-run-enabled:
+        description: "Perform Dry Run"
+        type: boolean
+        required: false
+        default: false
+      java-distribution:
+        description: "Java JDK Distribution:"
+        type: string
+        required: false
+        default: "temurin"
+      java-version:
+        description: "Java JDK Version:"
+        type: string
+        required: false
+        default: "17.0.3"
+      gradle-version:
+        description: "Gradle Version:"
+        type: string
+        required: false
+        default: "wrapper"
+      custom-job-label:
+        description: "Custom Job Label:"
+        type: string
+        required: false
+        default: "Release Artifact"
+
+
+
+defaults:
+  run:
+    shell: bash
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  compile:
+    name: ${{ inputs.custom-job-label || 'Release Artifact' }}
+    runs-on: [ self-hosted, Linux, services, standard, ephemeral ]
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Validate Gradle Wrapper
+        uses: gradle/wrapper-validation-action@v1
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v0
+        if: ${{ inputs.dry-run-enabled != true }}
+        with:
+          workload_identity_provider: 'projects/1052213468738/locations/global/workloadIdentityPools/junit-reporting-pool/providers/junit-report-writer'
+          service_account: 'platform-junit-bucket-writer@swirlds-automation.iam.gserviceaccount.com'
+
+      - name: Setup Google Cloud SDK
+        uses: google-github-actions/setup-gcloud@v0
+        if: ${{ inputs.dry-run-enabled != true }}
+
+      - name: Setup Java
+        uses: actions/setup-java@v3
+        with:
+          distribution: ${{ inputs.java-distribution }}
+          java-version: ${{ inputs.java-version }}
+
+      - name: Setup Gradle
+        uses: gradle/gradle-build-action@v2
+        with:
+          gradle-version: ${{ inputs.gradle-version }}
+
+      - name: Gradle Assemble
+        id: gradle-build
+        uses: gradle/gradle-build-action@v2
+        with:
+          arguments: assemble
+
+
