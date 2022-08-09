@@ -124,34 +124,34 @@ public class TokenCreateSpecs extends HapiApiSuite {
     @Override
     public List<HapiApiSpec> getSpecsInSuite() {
         return List.of(
-                //                creationValidatesNonFungiblePrechecks(),
-                //                creationValidatesMaxSupply(),
-                //                creationValidatesMemo(),
-                //                creationValidatesName(),
-                //                creationValidatesSymbol(),
-                //                treasuryHasCorrectBalance(),
-                //                creationRequiresAppropriateSigs(),
-                //                creationRequiresAppropriateSigsHappyPath(),
-                //                initialSupplyMustBeSane(),
-                //                creationYieldsExpectedToken(),
-                //                creationSetsExpectedName(),
-                //                creationValidatesTreasuryAccount(),
-                //                autoRenewValidationWorks(),
-                //                creationWithoutKYCSetsCorrectStatus(),
-                //                creationValidatesExpiry(),
-                //                creationValidatesFreezeDefaultWithNoFreezeKey(),
-                //                creationSetsCorrectExpiry(),
-                creationHappyPath());
-        //                worksAsExpectedWithDefaultTokenId(),
-        //                cannotCreateWithExcessiveLifetime(),
-        //                prechecksWork(),
-        //                /* HIP-18 */
-        //                onlyValidCustomFeeScheduleCanBeCreated(),
-        //                feeCollectorSigningReqsWorkForTokenCreate(),
-        //                createsFungibleInfiniteByDefault(),
-        //                baseCreationsHaveExpectedPrices(),
-        //                /* HIP-23 */
-        //                validateNewTokenAssociations());
+                creationValidatesNonFungiblePrechecks(),
+                creationValidatesMaxSupply(),
+                creationValidatesMemo(),
+                creationValidatesName(),
+                creationValidatesSymbol(),
+                treasuryHasCorrectBalance(),
+                creationRequiresAppropriateSigs(),
+                creationRequiresAppropriateSigsHappyPath(),
+                initialSupplyMustBeSane(),
+                creationYieldsExpectedToken(),
+                creationSetsExpectedName(),
+                creationValidatesTreasuryAccount(),
+                autoRenewValidationWorks(),
+                creationWithoutKYCSetsCorrectStatus(),
+                creationValidatesExpiry(),
+                creationValidatesFreezeDefaultWithNoFreezeKey(),
+                creationSetsCorrectExpiry(),
+                creationHappyPath(),
+                worksAsExpectedWithDefaultTokenId(),
+                cannotCreateWithExcessiveLifetime(),
+                prechecksWork(),
+                /* HIP-18 */
+                onlyValidCustomFeeScheduleCanBeCreated(),
+                feeCollectorSigningReqsWorkForTokenCreate(),
+                createsFungibleInfiniteByDefault(),
+                baseCreationsHaveExpectedPrices(),
+                /* HIP-23 */
+                validateNewTokenAssociations());
     }
 
     private HapiApiSpec validateNewTokenAssociations() {
