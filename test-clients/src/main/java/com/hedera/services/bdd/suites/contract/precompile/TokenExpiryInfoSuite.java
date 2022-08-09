@@ -19,7 +19,6 @@ import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenInfo;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
@@ -127,9 +126,8 @@ public class TokenExpiryInfoSuite extends HapiApiSuite {
                                                     .getSeconds();
                                     allRunFor(
                                             spec,
-                                            getTxnRecord("test").andAllChildRecords().logged(),
                                             childRecordsCheck(
-                                                    "test",
+                                                    "expiryTxn",
                                                     SUCCESS,
                                                     recordWith()
                                                             .status(SUCCESS)

@@ -157,13 +157,13 @@ public class TokenUpdateLogic {
         if (op.hasExpiry()) {
             validateTrueOrRevert(validator.isValidExpiry(op.getExpiry()), INVALID_EXPIRATION_TIME);
         }
-        MerkleToken token = store.get(tokenID);
+        MerkleToken token = tokenStore.get(tokenID);
         checkTokenPreconditions(token, op);
 
         ResponseCodeEnum outcome = autoRenewAttachmentCheck(op, token);
         validateTrueOrRevert(outcome == OK, outcome);
 
-        outcome = store.updateExpiryInfo(op);
+        outcome = tokenStore.updateExpiryInfo(op);
         if (outcome != OK) {
             abortWith(outcome);
         }

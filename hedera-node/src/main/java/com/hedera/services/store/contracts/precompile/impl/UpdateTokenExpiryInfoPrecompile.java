@@ -15,10 +15,8 @@
  */
 package com.hedera.services.store.contracts.precompile.impl;
 
-import static com.hedera.services.exceptions.ValidationUtils.validateFalse;
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils.GasCostType.UPDATE;
-import static com.hedera.services.store.tokens.TokenStore.MISSING_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 
@@ -85,7 +83,7 @@ public class UpdateTokenExpiryInfoPrecompile extends AbstractWritePrecompile {
     public void run(MessageFrame frame) {
         Objects.requireNonNull(updateExpiryInfoOp);
         /* --- Check required signatures --- */
-        validateFalse(updateExpiryInfoOp.tokenID() == MISSING_TOKEN, INVALID_TOKEN_ID);
+        validateTrue(updateExpiryInfoOp.tokenID() != null, INVALID_TOKEN_ID);
         final var tokenId = Id.fromGrpcToken(updateExpiryInfoOp.tokenID());
         final var hasRequiredSigs =
                 KeyActivationUtils.validateKey(
