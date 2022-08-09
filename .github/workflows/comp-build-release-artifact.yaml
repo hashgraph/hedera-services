@@ -30,7 +30,7 @@ on:
         description: "GCP Bucket Deploy Enabled"
         type: boolean
         required: false
-        default: false
+        default: true
       dry-run-enabled:
         description: "Perform Dry Run"
         type: boolean
@@ -58,6 +58,8 @@ on:
         default: "Artifact"
 
     secrets:
+      access-token:
+        required: true
       bucket-name:
         required: true
 
@@ -70,7 +72,7 @@ permissions:
   contents: read
 
 jobs:
-  release-artifact:
+  Artifact:
     name: ${{ inputs.custom-job-label || 'Artifact' }}
     runs-on: [self-hosted, Linux, services, standard, ephemeral]
     steps:
