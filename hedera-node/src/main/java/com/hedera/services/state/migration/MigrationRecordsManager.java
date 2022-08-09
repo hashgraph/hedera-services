@@ -78,6 +78,7 @@ import org.apache.logging.log4j.Logger;
  */
 @Singleton
 public class MigrationRecordsManager {
+
     static final String AUTO_RENEW_MEMO_TPL =
             "Contract {} was renewed during 0.26.0 upgrade; new expiry is {}";
     private static final Logger log = LogManager.getLogger(MigrationRecordsManager.class);
@@ -185,6 +186,8 @@ public class MigrationRecordsManager {
                                 publishSyntheticCreation(
                                         account.getKey(),
                                         account.getExpiry() - now.getEpochSecond(),
+                                        account.isReceiverSigRequired(),
+                                        account.isDeclinedReward(),
                                         asKeyUnchecked(account.getAccountKey()),
                                         account.getMemo(),
                                         TREASURY_CLONE_MEMO,
@@ -196,19 +199,30 @@ public class MigrationRecordsManager {
     private void publishSyntheticCreationForStakingFund(
             final EntityNum num, final long autoRenewPeriod) {
         publishSyntheticCreation(
-                num, autoRenewPeriod, immutableKey, EMPTY_MEMO, STAKING_MEMO, "staking fund");
+                num,
+                autoRenewPeriod,
+                false,
+                false,
+                immutableKey,
+                EMPTY_MEMO,
+                STAKING_MEMO,
+                "staking fund");
     }
 
     private void publishSyntheticCreation(
             final EntityNum num,
             final long autoRenewPeriod,
+            final boolean receiverSigRequired,
+            final boolean declineReward,
             final Key key,
             final String accountMemo,
             final String recordMemo,
             final String description) {
         final var tracker = sideEffectsFactory.get();
         tracker.trackAutoCreation(num.toGrpcAccountId(), ByteString.EMPTY);
-        final var synthBody = synthCreation(autoRenewPeriod, key, accountMemo);
+        final var synthBody =
+                synthCreation(
+                        autoRenewPeriod, key, accountMemo, receiverSigRequired, declineReward);
         final var synthRecord =
                 creator.createSuccessfulSyntheticRecord(NO_CUSTOM_FEES, tracker, recordMemo);
         recordsHistorian.trackPrecedingChildRecord(DEFAULT_SOURCE_ID, synthBody, synthRecord);
@@ -220,11 +234,17 @@ public class MigrationRecordsManager {
     }
 
     private TransactionBody.Builder synthCreation(
-            final long autoRenewPeriod, final Key key, final String memo) {
+            final long autoRenewPeriod,
+            final Key key,
+            final String memo,
+            final boolean receiverSigRequired,
+            final boolean declineReward) {
         final var txnBody =
                 CryptoCreateTransactionBody.newBuilder()
                         .setKey(key)
                         .setMemo(memo)
+                        .setDeclineReward(declineReward)
+                        .setReceiverSigRequired(receiverSigRequired)
                         .setInitialBalance(0)
                         .setAutoRenewPeriod(Duration.newBuilder().setSeconds(autoRenewPeriod))
                         .build();
@@ -361,8 +381,8 @@ public class MigrationRecordsManager {
         if (maxNumberOfKvPairsToIterate != 0) {
             log.warn(
                     "After walking through all iterable storage of contract 0.0.{},"
-                        + " numContractKvPairs field indicates that there should have been {} more"
-                        + " k/v pair(s) left",
+                            + " numContractKvPairs field indicates that there should have been {} more"
+                            + " k/v pair(s) left",
                     contractId.getContractNum(),
                     maxNumberOfKvPairsToIterate);
         }
