@@ -19,6 +19,7 @@ import static com.hedera.services.state.enums.TokenType.FUNGIBLE_COMMON;
 import static com.hedera.services.state.enums.TokenType.NON_FUNGIBLE_UNIQUE;
 import static com.hedera.services.store.tokens.TokenStore.MISSING_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 import static org.mockito.ArgumentMatchers.any;
@@ -258,6 +259,39 @@ class TokenUpdateLogicTest {
         // then
         Assertions.assertThrows(
                 InvalidTransactionException.class, () -> subject.updateToken(op, CONSENSUS_TIME));
+    }
+
+    @Test
+    void updateTokenExpiryInfoHappyPath() {
+        // given
+        givenTokenUpdateLogic(true);
+        givenValidTransactionBody(true);
+        givenContextForSuccessFullCalls();
+        given(ledgers.accounts()).willReturn(accounts);
+        given(store.get(fungible)).willReturn(merkleToken);
+        given(store.updateExpiryInfo(op)).willReturn(OK);
+        // when
+        subject.updateTokenExpiryInfo(op);
+        // then
+        verify(store).updateExpiryInfo(op);
+        verify(sigImpactHistorian).markEntityChanged(fungible.getTokenNum());
+    }
+
+    @Test
+    void updateTokenExpiryInfoFails() {
+        // given
+        givenTokenUpdateLogic(true);
+        givenValidTransactionBody(true);
+        givenContextForSuccessFullCalls();
+        given(ledgers.accounts()).willReturn(accounts);
+        given(store.get(fungible)).willReturn(merkleToken);
+        given(store.updateExpiryInfo(op)).willReturn(INVALID_EXPIRATION_TIME);
+        given(ledgers.accounts()).willReturn(accounts);
+        given(ledgers.tokenRels()).willReturn(tokenRels);
+        given(ledgers.nfts()).willReturn(nfts);
+
+        Assertions.assertThrows(
+                InvalidTransactionException.class, () -> subject.updateTokenExpiryInfo(op));
     }
 
     private void givenContextForSuccessFullCalls() {
