@@ -35,6 +35,7 @@ import static org.mockito.BDDMockito.given;
 
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.TransactionContext;
+import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.ledger.backing.BackingStore;
@@ -112,6 +113,7 @@ class LedgerBalanceChangesTest {
     @Mock private AccountsCommitInterceptor accountsCommitInterceptor;
     @Mock private LinkAwareUniqueTokensCommitInterceptor linkAwareUniqueTokensCommitInterceptor;
     @Mock private TransactionContext txnCtx;
+    @Mock private StateView workingView;
 
     private HederaLedger subject;
 
@@ -176,7 +178,8 @@ class LedgerBalanceChangesTest {
                         validator,
                         autoCreationLogic,
                         historian,
-                        txnCtx);
+                        txnCtx,
+                        () -> workingView);
 
         subject =
                 new HederaLedger(
@@ -289,7 +292,8 @@ class LedgerBalanceChangesTest {
                         validator,
                         autoCreationLogic,
                         historian,
-                        txnCtx);
+                        txnCtx,
+                        () -> workingView);
         subject =
                 new HederaLedger(
                         tokenStore,

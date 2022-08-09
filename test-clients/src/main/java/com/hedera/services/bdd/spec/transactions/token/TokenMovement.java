@@ -16,6 +16,7 @@
 package com.hedera.services.bdd.spec.transactions.token;
 
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.asId;
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.asIdForKeyLookUp;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.asTokenId;
 
 import com.google.protobuf.UInt32Value;
@@ -206,7 +207,7 @@ public class TokenMovement {
 
     private AccountAmount adjustment(String name, long value, HapiApiSpec spec) {
         return AccountAmount.newBuilder()
-                .setAccountID(asId(name, spec))
+                .setAccountID(asIdForKeyLookUp(name, spec))
                 .setAmount(value)
                 .setIsApproval(isApproval)
                 .build();
@@ -260,6 +261,17 @@ public class TokenMovement {
         }
 
         public TokenMovement between(String sender, String receiver) {
+            return new TokenMovement(
+                    token,
+                    Optional.of(sender),
+                    amount,
+                    serialNums,
+                    Optional.of(receiver),
+                    Optional.empty(),
+                    isAllowance);
+        }
+
+        public TokenMovement betweenWithAlias(String sender, String receiver) {
             return new TokenMovement(
                     token,
                     Optional.of(sender),

@@ -51,6 +51,7 @@ import static org.mockito.Mockito.when;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.SideEffectsTracker;
+import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.exceptions.MissingEntityException;
 import com.hedera.services.ledger.accounts.TestAccount;
 import com.hedera.services.ledger.backing.BackingStore;
@@ -99,6 +100,7 @@ class TransactionalLedgerTest {
     @Mock private BackingStore<AccountID, MerkleAccount> backingAccounts;
     @Mock private PropertyChangeObserver<Long, TestAccountProperty> propertyChangeObserver;
     @Mock private CommitInterceptor<Long, TestAccount, TestAccountProperty> testInterceptor;
+    @Mock private StateView workingView;
 
     private LedgerCheck<TestAccount, TestAccountProperty> scopedCheck;
     private TransactionalLedger<Long, TestAccountProperty, TestAccount> testLedger;
@@ -716,14 +718,14 @@ class TransactionalLedgerTest {
         testLedger.set(1L, OBJ, "DEFAULT");
         testLedger.commit();
 
-        assertEquals(ResponseCodeEnum.OK, testLedger.validate(1L, scopedCheck));
+        assertEquals(ResponseCodeEnum.OK, testLedger.validate(1L, scopedCheck, () -> workingView));
     }
 
     @Test
     void validationFailsForMissingAccount() {
         setupCheckableTestLedger();
 
-        assertEquals(INVALID_ACCOUNT_ID, testLedger.validate(2L, scopedCheck));
+        assertEquals(INVALID_ACCOUNT_ID, testLedger.validate(2L, scopedCheck, () -> workingView));
     }
 
     @Test
@@ -741,9 +743,12 @@ class TransactionalLedgerTest {
         when(backingTestAccounts.contains(4L)).thenReturn(true);
         when(backingTestAccounts.getImmutableRef(4L)).thenReturn(account4);
 
-        assertEquals(ACCOUNT_IS_NOT_GENESIS_ACCOUNT, testLedger.validate(2L, scopedCheck));
-        assertEquals(ACCOUNT_IS_TREASURY, testLedger.validate(3L, scopedCheck));
-        assertEquals(ACCOUNT_STILL_OWNS_NFTS, testLedger.validate(4L, scopedCheck));
+        assertEquals(
+                ACCOUNT_IS_NOT_GENESIS_ACCOUNT,
+                testLedger.validate(2L, scopedCheck, () -> workingView));
+        assertEquals(ACCOUNT_IS_TREASURY, testLedger.validate(3L, scopedCheck, () -> workingView));
+        assertEquals(
+                ACCOUNT_STILL_OWNS_NFTS, testLedger.validate(4L, scopedCheck, () -> workingView));
     }
 
     @Test
@@ -761,7 +766,9 @@ class TransactionalLedgerTest {
         testLedger.set(1L, HBAR_ALLOWANCES, MISSING);
         testLedger.commit();
 
-        assertEquals(SPENDER_DOES_NOT_HAVE_ALLOWANCE, testLedger.validate(1L, scopedCheck));
+        assertEquals(
+                SPENDER_DOES_NOT_HAVE_ALLOWANCE,
+                testLedger.validate(1L, scopedCheck, () -> workingView));
     }
 
     @Test
@@ -779,7 +786,8 @@ class TransactionalLedgerTest {
         testLedger.set(1L, HBAR_ALLOWANCES, INSUFFICIENT);
         testLedger.commit();
 
-        assertEquals(AMOUNT_EXCEEDS_ALLOWANCE, testLedger.validate(1L, scopedCheck));
+        assertEquals(
+                AMOUNT_EXCEEDS_ALLOWANCE, testLedger.validate(1L, scopedCheck, () -> workingView));
     }
 
     @Test

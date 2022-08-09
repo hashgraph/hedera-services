@@ -36,6 +36,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromAccountToAlias;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromToWithAlias;
+import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.assertionsHold;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
@@ -57,6 +58,7 @@ import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ThresholdKey;
+import com.hederahashgraph.api.proto.java.TokenType;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
@@ -82,6 +84,7 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
     private static final String PAYER_4 = "payer4";
     private static final String TRANSFER_TXN_2 = "transferTxn2";
     private static final String TRANSFER_ALIAS = "transferAlias";
+    private static final String A_TOKEN = "token";
 
     public static void main(String... args) {
         new AutoAccountCreationSuite().runSuiteAsync();
@@ -100,19 +103,114 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
     @Override
     public List<HapiApiSpec> getSpecsInSuite() {
         return List.of(
-                autoAccountCreationsHappyPath(),
-                autoAccountCreationBadAlias(),
-                autoAccountCreationUnsupportedAlias(),
-                transferToAccountAutoCreatedUsingAlias(),
-                transferToAccountAutoCreatedUsingAccount(),
-                transferFromAliasToAlias(),
-                transferFromAliasToAccount(),
-                multipleAutoAccountCreations(),
-                accountCreatedIfAliasUsedAsPubKey(),
-                aliasCanBeUsedOnManyAccountsNotAsAlias(),
-                autoAccountCreationWorksWhenUsingAliasOfDeletedAccount(),
-                canGetBalanceAndInfoViaAlias(),
-                noStakePeriodStartIfNotStakingToNode());
+                //                autoAccountCreationsHappyPath(),
+                //                autoAccountCreationBadAlias(),
+                //                autoAccountCreationUnsupportedAlias(),
+                //                transferToAccountAutoCreatedUsingAlias(),
+                //                transferToAccountAutoCreatedUsingAccount(),
+                //                transferFromAliasToAlias(),
+                //                transferFromAliasToAccount(),
+                //                multipleAutoAccountCreations(),
+                //                accountCreatedIfAliasUsedAsPubKey(),
+                //                aliasCanBeUsedOnManyAccountsNotAsAlias(),
+                //                autoAccountCreationWorksWhenUsingAliasOfDeletedAccount(),
+                //                canGetBalanceAndInfoViaAlias(),
+                //                noStakePeriodStartIfNotStakingToNode(),
+                canAutoCreateWithHTSTransfers());
+    }
+
+    private HapiApiSpec canAutoCreateWithHTSTransfers() {
+        final var civilian = "somebody";
+        final var autoCreateSponsor = "autoCreateSponsor";
+        final var creationTime = new AtomicLong();
+        final String treasury = "treasury";
+
+        return defaultHapiSpec("canAutoCreateWithHTSTransfers")
+                .given(
+                        newKeyNamed(VALID_ALIAS),
+                        cryptoCreate(treasury).balance(ONE_HUNDRED_HBARS),
+                        tokenCreate(A_TOKEN)
+                                .tokenType(TokenType.FUNGIBLE_COMMON)
+                                .initialSupply(Long.MAX_VALUE)
+                                .treasury(treasury)
+                                .via("tokenCreateTxn"),
+                        getTxnRecord("tokenCreateTxn").hasNewTokenAssociation(A_TOKEN, treasury),
+                        cryptoCreate(civilian).balance(10 * ONE_HBAR),
+                        cryptoCreate(autoCreateSponsor)
+                                .balance(INITIAL_BALANCE * ONE_HBAR)
+                                .maxAutomaticTokenAssociations(1))
+                .when(
+                        cryptoTransfer(moving(1, A_TOKEN).between(treasury, autoCreateSponsor))
+                                .via("transferAToSponsor"),
+                        cryptoTransfer(moving(1, A_TOKEN).between(autoCreateSponsor, VALID_ALIAS))
+                                .via(TRANSFER_TXN)
+                                .payingWith(civilian)
+                                .signedBy(civilian, autoCreateSponsor, VALID_ALIAS)
+                                .logged())
+                .then(
+                        //                        getReceipt(TRANSFER_TXN)
+                        //                                .andAnyChildReceipts()
+                        //                                .hasChildAutoAccountCreations(1),
+                        getTxnRecord(TRANSFER_TXN).andAllChildRecords().logged(),
+                        getAccountInfo(autoCreateSponsor).logged(),
+                        getAliasedAccountInfo(VALID_ALIAS).logged()
+                        //                        assertionsHold(
+                        //                                (spec, opLog) -> {
+                        //                                    final var lookup =
+                        //                                            getTxnRecord(TRANSFER_TXN)
+                        //                                                    .andAllChildRecords()
+                        //
+                        // .hasNonStakingChildRecordCount(1)
+                        //
+                        // .hasAliasInChildRecord(VALID_ALIAS, 0)
+                        //                                                    .logged();
+                        //                                    allRunFor(spec, lookup);
+                        //                                    final var sponsor =
+                        //
+                        // spec.registry().getAccountID(autoCreateSponsor);
+                        //                                    final var payer =
+                        // spec.registry().getAccountID(civilian);
+                        //                                    final var parent =
+                        // lookup.getResponseRecord();
+                        //                                    final var child =
+                        // lookup.getChildRecord(0);
+                        //                                    assertAliasBalanceAndFeeInChildRecord(
+                        //                                            parent,
+                        //                                            child,
+                        //                                            sponsor,
+                        //                                            payer,
+                        //                                            ONE_HUNDRED_HBARS,
+                        //                                            10 * ONE_HBAR);
+                        //
+                        // creationTime.set(child.getConsensusTimestamp().getSeconds());
+                        //                                }),
+                        //                        sourcing(
+                        //                                () ->
+                        //                                        getAliasedAccountInfo(VALID_ALIAS)
+                        //                                                .has(
+                        //                                                        accountWith()
+                        //
+                        // .key(VALID_ALIAS)
+                        //
+                        // .expectedBalanceWithChargedUsd(
+                        //
+                        // ONE_HUNDRED_HBARS, 0, 0)
+                        //
+                        // .alias(VALID_ALIAS)
+                        //
+                        // .autoRenew(THREE_MONTHS_IN_SECONDS)
+                        //
+                        // .receiverSigReq(false)
+                        //                                                                .expiry(
+                        //
+                        // creationTime.get()
+                        //
+                        //      + THREE_MONTHS_IN_SECONDS,
+                        //                                                                        0)
+                        //
+                        // .memo(AUTO_MEMO))
+                        //                                                .logged())
+                        );
     }
 
     private HapiApiSpec noStakePeriodStartIfNotStakingToNode() {
@@ -556,6 +654,7 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
                         getReceipt(TRANSFER_TXN)
                                 .andAnyChildReceipts()
                                 .hasChildAutoAccountCreations(1),
+                        getTxnRecord(TRANSFER_TXN).andAllChildRecords().logged(),
                         getAccountInfo(autoCreateSponsor)
                                 .has(
                                         accountWith()

@@ -67,6 +67,7 @@ import com.hedera.services.txns.token.validators.CreateChecks;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
+import java.util.function.Supplier;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.commons.lang3.tuple.Pair;
@@ -85,6 +86,7 @@ public class InfrastructureFactory {
     private final DissociationFactory dissociationFactory;
     private final GlobalDynamicProperties dynamicProperties;
     private final TransactionContext txnCtx;
+    private final Supplier<StateView> workingView;
 
     @Inject
     public InfrastructureFactory(
@@ -97,7 +99,8 @@ public class InfrastructureFactory {
             final SigImpactHistorian sigImpactHistorian,
             final DissociationFactory dissociationFactory,
             final GlobalDynamicProperties dynamicProperties,
-            final TransactionContext txnCtx) {
+            final TransactionContext txnCtx,
+            final Supplier<StateView> workingView) {
         this.ids = ids;
         this.encoder = encoder;
         this.decoder = decoder;
@@ -108,6 +111,7 @@ public class InfrastructureFactory {
         this.sigImpactHistorian = sigImpactHistorian;
         this.dissociationFactory = dissociationFactory;
         this.txnCtx = txnCtx;
+        this.workingView = workingView;
     }
 
     public SideEffectsTracker newSideEffects() {
@@ -201,7 +205,8 @@ public class InfrastructureFactory {
                 validator,
                 null,
                 recordsHistorian,
-                txnCtx);
+                txnCtx,
+                workingView);
     }
 
     public RedirectViewExecutor newRedirectExecutor(

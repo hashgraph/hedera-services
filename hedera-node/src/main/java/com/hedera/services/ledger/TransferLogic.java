@@ -29,6 +29,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.TransactionContext;
+import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.ledger.properties.AccountProperty;
@@ -49,6 +50,7 @@ import com.hederahashgraph.api.proto.java.TokenID;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
+import java.util.function.Supplier;
 import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -76,6 +78,7 @@ public class TransferLogic {
                     Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus>
             tokenRelsLedger;
     private final TransactionContext txnCtx;
+    private final Supplier<StateView> workingView;
 
     @Inject
     public TransferLogic(
@@ -90,7 +93,8 @@ public class TransferLogic {
             final OptionValidator validator,
             final @Nullable AutoCreationLogic autoCreationLogic,
             final RecordsHistorian recordsHistorian,
-            final TransactionContext txnCtx) {
+            final TransactionContext txnCtx,
+            final Supplier<StateView> workingView) {
         this.tokenStore = tokenStore;
         this.nftsLedger = nftsLedger;
         this.accountsLedger = accountsLedger;
@@ -100,6 +104,7 @@ public class TransferLogic {
         this.dynamicProperties = dynamicProperties;
         this.sideEffectsTracker = sideEffectsTracker;
         this.txnCtx = txnCtx;
+        this.workingView = workingView;
 
         scopedCheck = new MerkleAccountScopedCheck(validator, nftsLedger);
     }
@@ -108,26 +113,32 @@ public class TransferLogic {
         var validity = OK;
         var autoCreationFee = 0L;
         for (var change : changes) {
-            if (change.isForHbar()) {
-                if (change.hasNonEmptyAlias()) {
-                    if (autoCreationLogic == null) {
-                        throw new IllegalStateException(
-                                "Cannot auto-create account from "
-                                        + change
-                                        + " with null autoCreationLogic");
-                    }
-                    final var result = autoCreationLogic.create(change, accountsLedger);
-                    validity = result.getKey();
-                    autoCreationFee += result.getValue();
-                } else {
-                    validity =
-                            accountsLedger.validate(
-                                    change.accountId(), scopedCheck.setBalanceChange(change));
+            // create a new account for alias when the no account is already created using the alias
+            if (change.hasNonEmptyAlias() && !isKnownAlias(change.accountId())) {
+                if (autoCreationLogic == null) {
+                    throw new IllegalStateException(
+                            "Cannot auto-create account from "
+                                    + change
+                                    + " with null autoCreationLogic");
                 }
+                final var result = autoCreationLogic.create(change, accountsLedger);
+                validity = result.getKey();
+                autoCreationFee += result.getValue();
+                if (validity == OK && (change.isForNft() || change.isForFungibleToken())) {
+                    validity = tokenStore.tryTokenChange(change);
+                }
+            } else if (change.isForHbar()) {
+                validity =
+                        accountsLedger.validate(
+                                change.accountId(),
+                                scopedCheck.setBalanceChange(change),
+                                workingView);
             } else {
                 validity =
                         accountsLedger.validate(
-                                change.accountId(), scopedCheck.setBalanceChange(change));
+                                change.accountId(),
+                                scopedCheck.setBalanceChange(change),
+                                workingView);
 
                 if (validity == OK) {
                     validity = tokenStore.tryTokenChange(change);
@@ -151,6 +162,11 @@ public class TransferLogic {
             }
             throw new InvalidTransactionException(validity);
         }
+    }
+
+    private boolean isKnownAlias(final AccountID accountId) {
+        final var aliases = workingView.get().aliases();
+        return aliases.containsKey(accountId.getAlias());
     }
 
     private void payFundingFromPayer(final long autoCreationFee) {

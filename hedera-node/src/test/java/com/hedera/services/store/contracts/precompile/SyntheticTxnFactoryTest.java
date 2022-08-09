@@ -45,6 +45,7 @@ import com.google.protobuf.BoolValue;
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ethereum.EthTxData;
+import com.hedera.services.ledger.BalanceChange;
 import com.hedera.services.ledger.accounts.ContractCustomizer;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.store.contracts.precompile.codec.ApproveWrapper;
@@ -324,7 +325,11 @@ class SyntheticTxnFactoryTest {
     void createsExpectedCryptoCreate() {
         final var balance = 10L;
         final var alias = KeyFactory.getDefaultInstance().newEd25519();
-        final var result = subject.createAccount(alias, balance);
+        final var result =
+                subject.createAccount(
+                        alias,
+                        balance,
+                        BalanceChange.hbarAdjust(EntityNum.fromLong(10).toId(), 100));
         final var txnBody = result.build();
 
         assertTrue(txnBody.hasCryptoCreateAccount());

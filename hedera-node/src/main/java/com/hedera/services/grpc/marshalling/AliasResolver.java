@@ -112,7 +112,20 @@ public class AliasResolver {
                 final var result =
                         resolveInternalFungible(
                                 aliasManager, adjust, resolvedTokenAdjust::addTransfers);
-                if (result != Result.KNOWN_ALIAS) {
+                if (result == Result.UNKNOWN_ALIAS) {
+                    if (adjust.getAmount() > 0) {
+                        final var alias = adjust.getAccountID().getAlias();
+                        if (isSerializedProtoKey(alias)) {
+                            perceivedCreations++;
+                        } else {
+                            perceivedInvalidCreations++;
+                        }
+                    } else {
+                        perceivedMissing++;
+                    }
+                } else if (result == Result.REPEATED_UNKNOWN_ALIAS) {
+                    perceivedInvalidCreations++;
+                } else if (result == Result.UNKNOWN_EVM_ADDRESS) {
                     perceivedMissing++;
                 }
             }
@@ -133,7 +146,21 @@ public class AliasResolver {
                                 aliasManager,
                                 change.getReceiverAccountID(),
                                 resolvedChange::setReceiverAccountID);
-                if (receiverResult != Result.KNOWN_ALIAS) {
+                if (receiverResult == Result.UNKNOWN_ALIAS) {
+                    if (change.getSerialNumber() > 0) {
+                        final var alias = change.getReceiverAccountID().getAlias();
+                        if (isSerializedProtoKey(alias)) {
+                            perceivedCreations++;
+                        } else {
+                            perceivedInvalidCreations++;
+                        }
+                    } else {
+                        perceivedMissing++;
+                    }
+                } else if (receiverResult == Result.REPEATED_UNKNOWN_ALIAS) {
+                    perceivedInvalidCreations++;
+                }
+                if (receiverResult == Result.UNKNOWN_EVM_ADDRESS) {
                     perceivedMissing++;
                 }
                 resolvedTokenAdjust.addNftTransfers(resolvedChange.build());

@@ -143,6 +143,7 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
     @Override
     protected ResponseCodeEnum checkAccountUsability(final AccountID aId) {
         var accountDoesNotExist = !accountsLedger.exists(aId);
+
         if (accountDoesNotExist) {
             return INVALID_ACCOUNT_ID;
         }

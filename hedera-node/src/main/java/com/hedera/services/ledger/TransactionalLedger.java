@@ -15,16 +15,19 @@
  */
 package com.hedera.services.ledger;
 
+import static com.hedera.services.utils.EntityIdUtils.isAlias;
 import static com.hedera.services.utils.EntityIdUtils.readableId;
 import static com.hedera.services.utils.MiscUtils.readableProperty;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static java.util.stream.Collectors.joining;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.exceptions.MissingEntityException;
 import com.hedera.services.ledger.backing.BackingStore;
 import com.hedera.services.ledger.properties.BeanProperty;
 import com.hedera.services.ledger.properties.ChangeSummaryManager;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.util.ArrayList;
 import java.util.EnumMap;
@@ -172,19 +175,33 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A>
         return desc.append("}").toString();
     }
 
-    public ResponseCodeEnum validate(final K id, final LedgerCheck<A, P> ledgerCheck) {
-        if (!exists(id)) {
+    public ResponseCodeEnum validate(
+            final K id,
+            final LedgerCheck<A, P> ledgerCheck,
+            final Supplier<StateView> workingView) {
+        var unaliasedId = id;
+        if (isAlias((AccountID) id)) {
+            unaliasedId =
+                    (K)
+                            workingView
+                                    .get()
+                                    .aliases()
+                                    .get(((AccountID) id).getAlias())
+                                    .toGrpcAccountId();
+        }
+
+        if (!exists(unaliasedId)) {
             return INVALID_ACCOUNT_ID;
         }
-        final var changeSet = changes.get(id);
+        final var changeSet = changes.get(unaliasedId);
         if (entitiesLedger == null) {
-            final var getterTarget = toGetterTarget(id);
+            final var getterTarget = toGetterTarget(unaliasedId);
             return ledgerCheck.checkUsing(getterTarget, changeSet);
         } else {
             // If we are backed by a ledger, it is far more efficient to source properties
             // by using get(), since each call to a ledger's getRef() creates a new entity
             // and sets all its properties.
-            final var extantProps = extantLedgerPropsFor(id);
+            final var extantProps = extantLedgerPropsFor(unaliasedId);
             return ledgerCheck.checkUsing(extantProps, changeSet);
         }
     }

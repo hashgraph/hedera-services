@@ -32,6 +32,7 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.config.MockGlobalDynamicProps;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.TransactionContext;
+import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.backing.HashMapBackingAccounts;
 import com.hedera.services.ledger.interceptors.AccountsCommitInterceptor;
@@ -115,6 +116,7 @@ class TransferLogicTest {
     @Mock private RecordsHistorian recordsHistorian;
     @Mock private AccountsCommitInterceptor accountsCommitInterceptor;
     @Mock private TransactionContext txnCtx;
+    @Mock private StateView workingView;
 
     private TransferLogic subject;
 
@@ -138,7 +140,8 @@ class TransferLogicTest {
                         TEST_VALIDATOR,
                         autoCreationLogic,
                         recordsHistorian,
-                        txnCtx);
+                        txnCtx,
+                        () -> workingView);
     }
 
     @Test
@@ -159,7 +162,8 @@ class TransferLogicTest {
                         TEST_VALIDATOR,
                         null,
                         recordsHistorian,
-                        txnCtx);
+                        txnCtx,
+                        () -> workingView);
 
         final var triggerList = List.of(inappropriateTrigger);
         assertThrows(IllegalStateException.class, () -> subject.doZeroSum(triggerList));

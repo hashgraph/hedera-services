@@ -127,7 +127,11 @@ class AutoCreationLogicTest {
     private void givenCollaborators() {
         given(txnCtx.consensusTime()).willReturn(consensusNow);
         given(ids.newAccountId(any())).willReturn(created);
-        given(syntheticTxnFactory.createAccount(aPrimitiveKey, 0L))
+        given(
+                        syntheticTxnFactory.createAccount(
+                                aPrimitiveKey,
+                                0L,
+                                BalanceChange.hbarAdjust(EntityNum.fromLong(10).toId(), 100)))
                 .willReturn(mockSyntheticCreation);
         given(feeCalculator.computeFee(any(), eq(EMPTY_KEY), eq(currentView), eq(consensusNow)))
                 .willReturn(fees);

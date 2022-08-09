@@ -24,6 +24,7 @@ import com.google.protobuf.BoolValue;
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ethereum.EthTxData;
+import com.hedera.services.ledger.BalanceChange;
 import com.hedera.services.ledger.accounts.ContractCustomizer;
 import com.hedera.services.legacy.proto.utils.ByteStringUtils;
 import com.hedera.services.state.submerkle.EntityId;
@@ -417,16 +418,22 @@ public class SyntheticTxnFactory {
         return TransactionBody.newBuilder().setTokenCreation(txnBodyBuilder);
     }
 
-    public TransactionBody.Builder createAccount(final Key alias, final long balance) {
-        final var txnBody =
-                CryptoCreateTransactionBody.newBuilder()
-                        .setKey(alias)
-                        .setMemo(AUTO_MEMO)
-                        .setInitialBalance(balance)
-                        .setAutoRenewPeriod(
-                                Duration.newBuilder().setSeconds(THREE_MONTHS_IN_SECONDS))
-                        .build();
-        return TransactionBody.newBuilder().setCryptoCreateAccount(txnBody);
+    public TransactionBody.Builder createAccount(
+            final Key alias, final long balance, final BalanceChange change) {
+        final var baseBuilder = createAccountBase(alias, balance);
+        if (change.isForFungibleToken() || change.isForNft()) {
+            baseBuilder.setMaxAutomaticTokenAssociations(1);
+        }
+        return TransactionBody.newBuilder().setCryptoCreateAccount(baseBuilder.build());
+    }
+
+    private CryptoCreateTransactionBody.Builder createAccountBase(
+            final Key alias, final long balance) {
+        return CryptoCreateTransactionBody.newBuilder()
+                .setKey(alias)
+                .setMemo(AUTO_MEMO)
+                .setInitialBalance(balance)
+                .setAutoRenewPeriod(Duration.newBuilder().setSeconds(THREE_MONTHS_IN_SECONDS));
     }
 
     public TransactionBody.Builder nodeStakeUpdate(

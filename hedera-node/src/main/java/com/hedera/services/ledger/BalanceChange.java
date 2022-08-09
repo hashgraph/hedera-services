@@ -227,6 +227,10 @@ public class BalanceChange {
         this.newBalance = newBalance;
     }
 
+    public void setToken(final Id token) {
+        this.newBalance = newBalance;
+    }
+
     public TokenID tokenId() {
         return (tokenId != null) ? tokenId : NO_TOKEN_FOR_HBAR_ADJUST;
     }

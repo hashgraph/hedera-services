@@ -170,9 +170,9 @@ public class AutoCreationLogic {
         }
         final var alias = change.alias();
         final var key = asPrimitiveKeyUnchecked(alias);
-        final var syntheticCreation = syntheticTxnFactory.createAccount(key, 0L);
+        final var syntheticCreation = syntheticTxnFactory.createAccount(key, 0L, change);
         final var fee = autoCreationFeeFor(syntheticCreation);
-        change.setNewBalance(change.getAggregatedUnits());
+        setNewValuesInChange(change);
 
         final var sideEffects = new SideEffectsTracker();
         final var newId = ids.newAccountId(syntheticCreation.getTransactionID().getAccountID());
@@ -188,8 +188,12 @@ public class AutoCreationLogic {
                         .isReceiverSigRequired(false)
                         .isSmartContract(false)
                         .alias(alias);
+        if (change.isForFungibleToken() || change.isForNft()) {
+            customizer.maxAutomaticAssociations(1);
+        }
         customizer.customize(newId, accountsLedger);
         sideEffects.trackAutoCreation(newId, alias);
+        sideEffects.trackTokenUnitsChange(change.tokenId(), newId, change.getAggregatedUnits());
         final var childRecord =
                 creator.createSuccessfulSyntheticRecord(NO_CUSTOM_FEES, sideEffects, AUTO_MEMO);
         childRecord.setFee(fee);
@@ -203,6 +207,14 @@ public class AutoCreationLogic {
         aliasManager.maybeLinkEvmAddress(jKey, EntityNum.fromAccountId(newId));
 
         return Pair.of(OK, fee);
+    }
+
+    private void setNewValuesInChange(final BalanceChange change) {
+        if (change.isForHbar()) {
+            change.setNewBalance(change.getAggregatedUnits());
+        } else if (change.isForFungibleToken()) {
+
+        }
     }
 
     private long autoCreationFeeFor(final TransactionBody.Builder cryptoCreateTxn) {

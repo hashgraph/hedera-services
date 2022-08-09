@@ -30,6 +30,7 @@ import static org.mockito.Mockito.doCallRealMethod;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
+import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.ledger.accounts.TestAccount;
 import com.hedera.services.ledger.backing.BackingStore;
 import com.hedera.services.ledger.backing.HashMapTestAccounts;
@@ -52,10 +53,12 @@ class LedgerImplBackingStoreTest {
     private TransactionalLedger<Long, TestAccountProperty, TestAccount> firstOrder;
 
     private TransactionalLedger<Long, TestAccountProperty, TestAccount> subject;
+    private StateView workingView;
 
     @BeforeEach
     void setUp() {
         backingTestAccounts = new HashMapTestAccounts();
+        workingView = mock(StateView.class);
 
         firstOrder =
                 new TransactionalLedger<>(
@@ -211,7 +214,7 @@ class LedgerImplBackingStoreTest {
 
         subject.begin();
         subject.set(1L, TestAccountProperty.FLAG, false);
-        final var actual = subject.validate(1L, mockCheck);
+        final var actual = subject.validate(1L, mockCheck, () -> workingView);
 
         assertEquals(INVALID_TOKEN_MINT_AMOUNT, actual);
 
@@ -240,7 +243,7 @@ class LedgerImplBackingStoreTest {
         subject.begin();
         subject.create(1L);
         subject.set(1L, TestAccountProperty.FLAG, false);
-        final var actual = subject.validate(1L, mockCheck);
+        final var actual = subject.validate(1L, mockCheck, () -> workingView);
 
         assertEquals(INVALID_TOKEN_MINT_AMOUNT, actual);
 

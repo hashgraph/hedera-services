@@ -681,7 +681,7 @@ public class SigRequirements {
         KeyOrderingFailure failure;
         for (TokenTransferList xfers : op.getTokenTransfersList()) {
             for (AccountAmount adjust : xfers.getTransfersList()) {
-                if ((failure = includeIfNecessary(payer, adjust, required, false, linkedRefs))
+                if ((failure = includeIfNecessary(payer, adjust, required, true, linkedRefs))
                         != NONE) {
                     return accountFailure(failure, factory);
                 }
@@ -1312,6 +1312,8 @@ public class SigRequirements {
         if (!payer.equals(party)) {
             var result = sigMetaLookup.aliasableAccountSigningMetaFor(party, linkedRefs);
             if (!result.succeeded()) {
+                // TODO : add logic
+
                 return result.failureIfAny();
             }
             final var meta = result.metadata();
