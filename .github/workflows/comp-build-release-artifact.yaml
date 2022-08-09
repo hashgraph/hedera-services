@@ -70,7 +70,7 @@ permissions:
   contents: read
 
 jobs:
-  compile:
+  release-artifact:
     name: ${{ inputs.custom-job-label || 'Artifact' }}
     runs-on: [self-hosted, Linux, services, standard, ephemeral]
     steps:
