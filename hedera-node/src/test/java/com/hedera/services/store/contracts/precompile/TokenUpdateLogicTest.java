@@ -18,6 +18,7 @@ package com.hedera.services.store.contracts.precompile;
 import static com.hedera.services.state.enums.TokenType.FUNGIBLE_COMMON;
 import static com.hedera.services.state.enums.TokenType.NON_FUNGIBLE_UNIQUE;
 import static com.hedera.services.store.tokens.TokenStore.MISSING_TOKEN;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -289,6 +290,23 @@ class TokenUpdateLogicTest {
         given(ledgers.accounts()).willReturn(accounts);
         given(ledgers.tokenRels()).willReturn(tokenRels);
         given(ledgers.nfts()).willReturn(nfts);
+
+        Assertions.assertThrows(
+                InvalidTransactionException.class, () -> subject.updateTokenExpiryInfo(op));
+    }
+
+    @Test
+    void updateTokenExpiryInfoFailsForExpiredAccount() {
+        // given
+        givenTokenUpdateLogic(true);
+        givenValidTransactionBody(true);
+        given(merkleToken.hasAdminKey()).willReturn(true);
+        given(validator.isValidExpiry(EXPIRY)).willReturn(true);
+        given(validator.expiryStatusGiven(accounts, account))
+                .willReturn(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
+        given(ledgers.accounts()).willReturn(accounts);
+        given(store.get(fungible)).willReturn(merkleToken);
+        given(ledgers.accounts()).willReturn(accounts);
 
         Assertions.assertThrows(
                 InvalidTransactionException.class, () -> subject.updateTokenExpiryInfo(op));
