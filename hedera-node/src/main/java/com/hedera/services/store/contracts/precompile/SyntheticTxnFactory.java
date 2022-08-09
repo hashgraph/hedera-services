@@ -507,24 +507,24 @@ public class SyntheticTxnFactory {
 
     public TransactionBody.Builder createTokenUpdate(TokenUpdateWrapper updateWrapper) {
         final var builder = TokenUpdateTransactionBody.newBuilder();
-        builder.setToken(updateWrapper.getTokenID())
-                .setName(updateWrapper.getName())
-                .setSymbol(updateWrapper.getSymbol())
-                .setMemo(StringValue.of(updateWrapper.getMemo()));
-        if (updateWrapper.getTreasury() != null) builder.setTreasury(updateWrapper.getTreasury());
+        builder.setToken(updateWrapper.tokenID())
+                .setName(updateWrapper.name())
+                .setSymbol(updateWrapper.symbol())
+                .setMemo(StringValue.of(updateWrapper.memo()));
+        if (updateWrapper.treasury() != null) builder.setTreasury(updateWrapper.treasury());
 
-        if (updateWrapper.getExpiry().second() != 0) {
+        if (updateWrapper.expiry().second() != 0) {
             builder.setExpiry(
-                    Timestamp.newBuilder().setSeconds(updateWrapper.getExpiry().second()).build());
+                    Timestamp.newBuilder().setSeconds(updateWrapper.expiry().second()).build());
         }
-        if (updateWrapper.getExpiry().autoRenewAccount() != null)
-            builder.setAutoRenewAccount(updateWrapper.getExpiry().autoRenewAccount());
-        if (updateWrapper.getExpiry().autoRenewPeriod() != 0) {
+        if (updateWrapper.expiry().autoRenewAccount() != null)
+            builder.setAutoRenewAccount(updateWrapper.expiry().autoRenewAccount());
+        if (updateWrapper.expiry().autoRenewPeriod() != 0) {
             builder.setAutoRenewPeriod(
-                    Duration.newBuilder().setSeconds(updateWrapper.getExpiry().autoRenewPeriod()));
+                    Duration.newBuilder().setSeconds(updateWrapper.expiry().autoRenewPeriod()));
         }
         updateWrapper
-                .getTokenKeys()
+                .tokenKeys()
                 .forEach(
                         tokenKeyWrapper -> {
                             final var key = tokenKeyWrapper.key().asGrpc();
