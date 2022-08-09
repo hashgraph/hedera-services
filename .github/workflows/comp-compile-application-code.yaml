@@ -90,7 +90,7 @@ defaults:
 
 permissions:
   id-token: write
-  actions: write
+  actions: read
   pull-requests: write
   statuses: write
   checks: write
