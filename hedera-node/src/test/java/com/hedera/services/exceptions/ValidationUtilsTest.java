@@ -16,6 +16,7 @@
 package com.hedera.services.exceptions;
 
 import static com.hedera.services.exceptions.ValidationUtils.validateFalse;
+import static com.hedera.services.exceptions.ValidationUtils.validateFalseOrRevert;
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hedera.services.exceptions.ValidationUtils.validateTrueOrRevert;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CANNOT_WIPE_TOKEN_TREASURY_ACCOUNT;
@@ -64,7 +65,12 @@ class ValidationUtilsTest {
                 assertThrows(
                         InvalidTransactionException.class,
                         () -> validateTrueOrRevert(false, INVALID_ALLOWANCE_OWNER_ID));
+        final var trueExCapturedByCode =
+                assertThrows(
+                        InvalidTransactionException.class,
+                        () -> validateFalseOrRevert(true, CANNOT_WIPE_TOKEN_TREASURY_ACCOUNT));
         assertTrue(capturedEx.isReverting());
+        assertTrue(trueExCapturedByCode.isReverting());
         final var reason = Bytes.of(INVALID_ALLOWANCE_OWNER_ID.name().getBytes());
         assertEquals(reason, capturedEx.getRevertReason());
     }

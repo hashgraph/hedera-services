@@ -22,8 +22,10 @@ import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.contra
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.createFungibleTokenUpdateWrapperWithKeys;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.fungibleTokenAddr;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.successResult;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 
@@ -151,11 +153,14 @@ class TokenUpdatePrecompileTest {
         // given
         final var input = Bytes.of(Integers.toBytes(ABI_ID_UPDATE_TOKEN_INFO));
         givenFrameContext();
+        given(frame.getBlockValues())
+                .willReturn(new HederaBlockValues(10L, 123L, Instant.ofEpochSecond(123L)));
         givenLedgers();
         givenMinimalContextForSuccessfulCall();
         givenMinimalRecordStructureForSuccessfulCall();
         givenUpdateTokenContext();
         givenPricingUtilsContext();
+        given(updateLogic.validate(any())).willReturn(OK);
         // when
         subject.prepareFields(frame);
         subject.prepareComputation(input, a -> a);
@@ -165,11 +170,29 @@ class TokenUpdatePrecompileTest {
         assertEquals(successResult, result);
     }
 
+    @Test
+    void failsWithWrongValidityForUpdateFungibleToken() {
+        // given
+        final var input = Bytes.of(Integers.toBytes(ABI_ID_UPDATE_TOKEN_INFO));
+        givenFrameContext();
+        givenLedgers();
+        givenMinimalContextForSuccessfulCall();
+        givenUpdateTokenContext();
+        given(worldUpdater.aliases()).willReturn(aliases);
+        given(worldUpdater.permissivelyUnaliased(any()))
+                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+        given(updateLogic.validate(any())).willReturn(FAIL_INVALID);
+        // when
+        subject.prepareFields(frame);
+        subject.prepareComputation(input, a -> a);
+        final var result = subject.computeInternal(frame);
+        // then
+        assertNotEquals(successResult, result);
+    }
+
     private void givenFrameContext() {
         given(frame.getSenderAddress()).willReturn(contractAddress);
         given(frame.getWorldUpdater()).willReturn(worldUpdater);
-        given(frame.getBlockValues())
-                .willReturn(new HederaBlockValues(10L, 123L, Instant.ofEpochSecond(123L)));
         given(frame.getContractAddress()).willReturn(contractAddr);
         given(frame.getRecipientAddress()).willReturn(fungibleTokenAddr);
         given(frame.getRemainingGas()).willReturn(300L);
@@ -197,7 +220,6 @@ class TokenUpdatePrecompileTest {
                         infrastructureFactory.newTokenUpdateLogic(
                                 hederaTokenStore, wrappedLedgers, sideEffects))
                 .willReturn(updateLogic);
-        given(updateLogic.validate(any())).willReturn(OK);
         given(decoder.decodeUpdateTokenInfo(any(), any())).willReturn(updateWrapper);
         given(syntheticTxnFactory.createTokenUpdate(updateWrapper))
                 .willReturn(
