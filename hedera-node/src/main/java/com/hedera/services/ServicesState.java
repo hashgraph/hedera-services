@@ -336,8 +336,7 @@ public class ServicesState extends PartialNaryMerkleInternal
                 // Do this separately from ensureSystemAccounts(), as that call is expensive with a
                 // large saved state
                 app.treasuryCloner().ensureTreasuryClonesExist();
-                // Unconditionally fix NFT counts this upgrade
-                nftRationalization.fixNftCounts(tokens(), accounts(), uniqueTokens(), tokenAssociations());
+                // No longer need to fix NFT balances, all production states are rationalized
             }
         }
     }
