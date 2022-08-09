@@ -383,8 +383,8 @@ public class MigrationRecordsManager {
         if (maxNumberOfKvPairsToIterate != 0) {
             log.warn(
                     "After walking through all iterable storage of contract 0.0.{},"
-                            + " numContractKvPairs field indicates that there should have been {} more"
-                            + " k/v pair(s) left",
+                        + " numContractKvPairs field indicates that there should have been {} more"
+                        + " k/v pair(s) left",
                     contractId.getContractNum(),
                     maxNumberOfKvPairsToIterate);
         }
