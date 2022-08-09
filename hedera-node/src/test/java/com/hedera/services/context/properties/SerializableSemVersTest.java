@@ -1,6 +1,11 @@
-/*
- * Copyright (C) 2022 Hedera Hashgraph, LLC
- *
+package com.hedera.services.context.properties;
+
+/*-
+ * ‌
+ * Hedera Services Node
+ * ​
+ * Copyright (C) 2018 - 2022 Hedera Hashgraph, LLC
+ * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -12,12 +17,15 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ * ‍
  */
-package com.hedera.services.context.properties;
 
 import static com.hedera.services.context.properties.SerializableSemVers.SEM_VER_COMPARATOR;
 import static com.hedera.services.context.properties.SerializableSemVersSerdeTest.assertEqualVersions;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 
 import com.hederahashgraph.api.proto.java.SemanticVersion;
@@ -115,7 +123,24 @@ class SerializableSemVersTest {
     }
 
     @Test
-    void detectsNonPatchServicesUpgardes() {
+    void answersTruthfullyOnPendingMigrationRecords() {
+        final var someProto = semVerWith(1, 1, 1, null, null);
+        final var saved027Version = semVerWith(0, 27, 7, null, null);
+        final var saved028Version = semVerWith(0, 28, 5, null, null);
+        final var patch0286 = semVerWith(0, 28, 6, null, null);
+
+        final var subject = new SerializableSemVers(someProto, patch0286);
+        final var v0277 = new SerializableSemVers(someProto, saved027Version);
+        final var v0285 = new SerializableSemVers(someProto, saved028Version);
+
+        assertTrue(subject.hasMigrationRecordsFrom(v0277));
+        SerializableSemVers.setCurrentVersionHasPatchMigrationRecords(true);
+        assertTrue(subject.hasMigrationRecordsFrom(v0285));
+        assertFalse(subject.hasMigrationRecordsFrom(subject));
+    }
+
+    @Test
+    void detectsNonPatchServicesUpgrades() {
         final var services = semVerWith(1, 2, 3, null, null);
         final var servicesPatch = semVerWith(1, 2, 4, null, null);
         final var servicesMinorUpgrade = semVerWith(1, 3, 3, null, null);

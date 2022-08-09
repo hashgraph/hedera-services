@@ -216,6 +216,7 @@ class MigrationRecordsManagerTest {
                 .trackPrecedingChildRecord(
                         eq(DEFAULT_SOURCE_ID), bodyCaptor.capture(), eq(pretend801));
         verify(networkCtx).markMigrationRecordsStreamed();
+        verify(treasuryCloner).forgetScannedSystemAccounts();
         verify(recordsHistorian)
                 .trackPrecedingChildRecord(
                         eq(DEFAULT_SOURCE_ID), bodyCaptor.capture(), eq(pretend200));

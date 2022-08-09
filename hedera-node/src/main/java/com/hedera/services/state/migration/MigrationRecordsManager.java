@@ -194,6 +194,7 @@ public class MigrationRecordsManager {
                                         "treasury clone"));
 
         curNetworkCtx.markMigrationRecordsStreamed();
+        treasuryCloner.forgetScannedSystemAccounts();
     }
 
     private void publishSyntheticCreationForStakingFund(
