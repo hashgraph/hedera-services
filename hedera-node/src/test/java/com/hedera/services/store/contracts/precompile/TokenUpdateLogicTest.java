@@ -98,6 +98,16 @@ class TokenUpdateLogicTest {
     }
 
     @Test
+    void callsWithoutAdminKeyFail() {
+        givenTokenUpdateLogic(true);
+        op = TokenUpdateTransactionBody.newBuilder().setToken(fungible).build();
+        given(store.get(fungible)).willReturn(merkleToken);
+        given(merkleToken.isDeleted()).willReturn(true);
+        Assertions.assertThrows(
+                InvalidTransactionException.class, () -> subject.updateToken(op, CONSENSUS_TIME));
+    }
+
+    @Test
     void callsWithInvalidExpiry() {
         givenTokenUpdateLogic(true);
         givenValidTransactionBody(true);
@@ -213,18 +223,38 @@ class TokenUpdateLogicTest {
     }
 
     @Test
-    void updateTokenHappyPathForNonFungibleTokenFailsDueToWrongNftAllowance() {
+    void updateTokenForNonFungibleTokenFailsDueToWrongNftAllowance() {
         // given
         givenTokenUpdateLogic(false);
         givenValidTransactionBody(false);
         givenContextForSuccessFullCalls();
         givenMinimalLedgers();
+        given(tokenRels.get(any(), any())).willReturn(100L);
         given(ledgers.nfts()).willReturn(nfts);
         given(store.get(nonFungible)).willReturn(merkleToken);
         given(store.autoAssociate(any(), any())).willReturn(OK);
         given(merkleToken.tokenType()).willReturn(NON_FUNGIBLE_UNIQUE);
         given(merkleToken.treasury()).willReturn(treasuryId);
 
+        // then
+        Assertions.assertThrows(
+                InvalidTransactionException.class, () -> subject.updateToken(op, CONSENSUS_TIME));
+    }
+
+    @Test
+    void updateTokenForNonFungibleTokenFailsDueToWrongNftAllowanceAndUnsufficientBalance() {
+        // given
+        givenTokenUpdateLogic(false);
+        givenValidTransactionBody(false);
+        givenContextForSuccessFullCalls();
+        givenMinimalLedgers();
+        given(ledgers.nfts()).willReturn(nfts);
+        given(tokenRels.get(any(), any())).willReturn(-1L);
+        given(store.get(nonFungible)).willReturn(merkleToken);
+        given(store.autoAssociate(any(), any())).willReturn(OK);
+        given(store.update(op, CONSENSUS_TIME)).willReturn(FAIL_INVALID);
+        given(merkleToken.tokenType()).willReturn(NON_FUNGIBLE_UNIQUE);
+        given(merkleToken.treasury()).willReturn(EntityId.fromGrpcAccountId(account));
         // then
         Assertions.assertThrows(
                 InvalidTransactionException.class, () -> subject.updateToken(op, CONSENSUS_TIME));
@@ -242,12 +272,12 @@ class TokenUpdateLogicTest {
     private void givenLedgers() {
         givenMinimalLedgers();
         given(accounts.get(any(), any())).willReturn(3);
+        given(tokenRels.get(any(), any())).willReturn(100L);
     }
 
     private void givenMinimalLedgers() {
         given(ledgers.accounts()).willReturn(accounts);
         given(ledgers.tokenRels()).willReturn(tokenRels);
-        given(tokenRels.get(any(), any())).willReturn(100L);
     }
 
     private void givenHederaStoreContextForFungible() {
