@@ -20,9 +20,6 @@ plugins {
 }
 
 spotless {
-    // optional: limit format enforcement to just the files changed by this feature branch
-    ratchetFrom("origin/master")
-
     java({
         targetExclude("build/generated/sources/**/*.java")
         // fix errors due to dashed comment blocks (eg: /*-, /*--, etc)

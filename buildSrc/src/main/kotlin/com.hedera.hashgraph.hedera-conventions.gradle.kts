@@ -21,6 +21,7 @@ plugins {
     `java-library`
     `maven-publish`
     jacoco
+    id("com.hedera.hashgraph.spotless-conventions")
     id("com.hedera.hashgraph.spotless-java-conventions")
     id("com.hedera.hashgraph.spotless-kotlin-conventions")
 }
