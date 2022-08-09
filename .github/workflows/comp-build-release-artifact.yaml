@@ -13,10 +13,24 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 ##
-name: "ZComponent: Compile"
+name: "ZComponent: Build Release Artifact"
 on:
   workflow_call:
     inputs:
+      # Valid version policies are as follows: specified, branch-commit, adhoc-commit
+      version-policy:
+        description: "Version Policy:"
+        type: string
+        required: true
+      new-version:
+        description: "New Version:"
+        type: string
+        required: false
+      enable-bucket-deployment:
+        description: "GCP Bucket Deploy Enabled"
+        type: boolean
+        required: false
+        default: false
       dry-run-enabled:
         description: "Perform Dry Run"
         type: boolean
@@ -41,7 +55,11 @@ on:
         description: "Custom Job Label:"
         type: string
         required: false
-        default: "Release Artifact"
+        default: "Artifact"
+
+    secrets:
+      bucket-name:
+        required: true
 
 defaults:
   run:
@@ -53,9 +71,61 @@ permissions:
 
 jobs:
   compile:
-    name: ${{ inputs.custom-job-label || 'Release Artifact' }}
+    name: ${{ inputs.custom-job-label || 'Artifact' }}
     runs-on: [self-hosted, Linux, services, standard, ephemeral]
     steps:
+      - name: Install Semantic Version Tools
+        run: |
+          echo "::group::Download SemVer Binary"
+          sudo curl -L -o /usr/local/bin/semver https://raw.githubusercontent.com/fsaintjacques/semver-tool/master/src/semver
+          echo "::endgroup::"
+          echo "::group::Change SemVer Binary Permissions"
+          sudo chmod -v +x /usr/local/bin/semver
+          echo "::endgroup::"
+          echo "::group::Show SemVer Binary Version Info"
+          semver --version
+          echo "::endgroup::"
+
+      - name: Install Deterministic Zip Tooling
+        run: |
+          echo "::group::Download Binary"
+          sudo curl -L -o /usr/local/bin/deterministic-zip https://github.com/timo-reymann/deterministic-zip/releases/download/1.1.0/deterministic-zip_linux-amd64
+          echo "::endgroup::"
+          echo "::group::Change Binary Permissions"
+          sudo chmod -v +x /usr/local/bin/deterministic-zip
+          echo "::endgroup::"
+          echo "::group::Show Binary Version Info"
+          deterministic-zip --version
+          echo "::endgroup::"
+
+      - name: Verify Workflow Parameters
+        id: parameters
+        run: |
+          BRANCH_NAME="${{ github.head_ref || github.ref_name }}"
+          BRANCH_NAME="${BRANCH_NAME##origin/}"
+          BRANCH_NAME_LOWER="$(echo "${BRANCH_NAME}" | tr '[:upper:]' '[:lower:]')"
+          BRANCH_NAME_SAFE="$(echo "${BRANCH_NAME_LOWER}" | tr '/' '-')"
+
+          COMMIT_PREFIX="adhoc"
+          [[ "${{ inputs.version-policy }}" == "branch-commit" ]] && COMMIT_PREFIX="${BRANCH_NAME_SAFE}"
+
+          echo "::set-output name=branch-name::${BRANCH_NAME}"
+          echo "::set-output name=branch-name-lower::${BRANCH_NAME_LOWER}"
+          echo "::set-output name=branch-name-safe::${BRANCH_NAME_SAFE}"
+          echo "::set-output name=commit-prefix::${COMMIT_PREFIX}"
+          echo "::set-output name=commit-id::${{ github.sha }}"
+          echo "::set-output name=commit-id-short::$(echo "${{ github.sha }}" | cut -c1-8)"
+
+      - name: Verify Version Update (As Specified)
+        if: ${{ inputs.version-policy == 'specified' && !cancelled() }}
+        run: |
+          VALID_VERSION="$(semver validate "${{ inputs.new-version }}")"
+
+          if [[ "${VALID_VERSION}" != "valid" ]]; then
+            echo "::error title=Version Error::The supplied new-version parameter (${{ inputs.new-version }}) is invalid and does not conform to the semantic versioning specifications."
+            exit 2
+          fi
+
       - name: Checkout Code
         uses: actions/checkout@v3
 
@@ -64,14 +134,14 @@ jobs:
 
       - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@v0
-        if: ${{ inputs.dry-run-enabled != true }}
+        if: ${{ inputs.dry-run-enabled != true && inputs.enable-bucket-deployment == true && !cancelled() }}
         with:
           workload_identity_provider: "projects/1052213468738/locations/global/workloadIdentityPools/junit-reporting-pool/providers/junit-report-writer"
           service_account: "platform-junit-bucket-writer@swirlds-automation.iam.gserviceaccount.com"
 
       - name: Setup Google Cloud SDK
         uses: google-github-actions/setup-gcloud@v0
-        if: ${{ inputs.dry-run-enabled != true }}
+        if: ${{ inputs.dry-run-enabled != true && inputs.enable-bucket-deployment == true && !cancelled() }}
 
       - name: Setup Java
         uses: actions/setup-java@v3
@@ -84,8 +154,97 @@ jobs:
         with:
           gradle-version: ${{ inputs.gradle-version }}
 
+      - name: Gradle Update Version (As Specified)
+        id: gradle-update-version
+        uses: gradle/gradle-build-action@v2
+        if: ${{ inputs.version-policy == 'specified' && !cancelled() }}
+        with:
+          arguments: versionAsSpecified -PnewVersion="${{ inputs.new-version }}" --scan
+
+      - name: Gradle Update Version (Branch Commit)
+        id: gradle-update-version
+        uses: gradle/gradle-build-action@v2
+        if: ${{ inputs.version-policy != 'specified' && inputs.version-policy != 'version-tag' && !cancelled() }}
+        with:
+          arguments: versionAsPrefixedCommit -PcommitPrefix="${{ steps.parameters.outputs.commit-prefix }}" --scan
+
+      - name: Gradle Version Summary
+        id: gradle-update-version
+        uses: gradle/gradle-build-action@v2
+        with:
+          arguments: githubVersionSummary --scan
+
       - name: Gradle Assemble
         id: gradle-build
         uses: gradle/gradle-build-action@v2
         with:
-          arguments: assemble
+          arguments: assemble --scan
+
+      - name: Compute Final Effective Version
+        id: effective-version
+        run: |
+          EFF_VERSION="$(./gradlew :hedera-node:showVersion --quiet | tr -d '[:space:]')"
+          echo "::set-output name=number::${EFF_VERSION}"
+
+      - name: Stage Artifact Build Folder
+        id: artifact-staging
+        run: |
+          BUILD_BASE_DIR="${HOME}/artifact-build"
+          mkdir -p "${BUILD_BASE_DIR}/data/lib"
+          mkdir -p "${BUILD_BASE_DIR}/data/apps"
+
+          cp -f hedera-node/data/lib/*.jar "${BUILD_BASE_DIR}/data/lib"
+          cp -f hedera-node/data/apps/*.jar "${BUILD_BASE_DIR}/data/apps"
+          cp -f hedera-node/configuration/update/immediate.sh "${BUILD_BASE_DIR}"
+          cp -f hedera-node/configuration/update/during-freeze.sh "${BUILD_BASE_DIR}"
+
+          echo "::set-output name=folder::${BUILD_BASE_DIR}"
+
+      - name: Write Artifact Version Descriptor
+        working-directory: ${{ steps.artifact-staging.outputs.folder }}
+        run: |
+          printf "VERSION=%s\nCOMMIT=%s\nDATE=%s" \
+                    "${{ steps.effective-version.outputs.number }}" \
+                    "${{ steps.parameters.outputs.commit-id-short }}" \ 
+                    "$(date -u)" \
+            | tee VERSION
+
+      - name: Create Artifact Archive
+        id: artifact-release
+        working-directory: ${{ steps.artifact-staging.outputs.folder }}
+        run: |
+          POLICY="${{ inputs.version-policy }}"
+          ARTIFACT_BASE_DIR="${HOME}/artifact-release"
+          mkdir -p "${ARTIFACT_BASE_DIR}"
+
+          if [[ "${POLICY}" == "branch-commit"  ]]; then
+            ARTIFACT_NAME="build-${{ steps.parameters.outputs.branch-name-lower }}-${{ steps.parameters.outputs.commit-id-short }}"
+          else
+            ARTIFACT_NAME="build-v${{ steps.effective-version.outputs.number }}" 
+          fi
+
+          ARTIFACT_FILE="${ARTIFACT_BASE_DIR}/${ARTIFACT_NAME}.zip"
+          deterministic-zip -vr "${ARTIFACT_FILE}" *
+
+          echo "::set-output name=folder::${ARTIFACT_BASE_DIR}"
+          echo "::set-output name=name::${ARTIFACT_NAME}"
+          echo "::set-output name=file::${ARTIFACT_FILE}"
+
+      - name: Compute SHA Hash
+        working-directory: ${{ steps.artifact-release.outputs.folder }}
+        run: |
+          ARTIFACT_NAME="${{ steps.artifact-release.outputs.name }}"
+          sha384sum "${ARTIFACT_NAME}.zip" | tee "${ARTIFACT_NAME}.sha384"
+
+      - name: Upload Artifacts (DevOps GCP)
+        uses: google-github-actions/upload-cloud-storage@v0.10.2
+        if: ${{ inputs.dry-run-enabled != true && inputs.enable-bucket-deployment == true && !cancelled() }}
+        with:
+          path: ${{ steps.artifact-release.outputs.folder }}
+          destination: ${{ secrets.bucket-name }}
+          parent: false
+
+      - name: Invoke Jenkins Callbacks
+        if: ${{ inputs.dry-run-enabled != true && inputs.enable-bucket-deployment == true && !cancelled() }}
+        run: |
+          exit 0
