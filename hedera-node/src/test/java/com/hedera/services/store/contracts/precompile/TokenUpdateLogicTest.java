@@ -278,7 +278,7 @@ class TokenUpdateLogicTest {
     }
 
     @Test
-    void updateTokenExpiryInfoFails() {
+    void updateTokenExpiryInfoFailsForInvalidExpirationTime() {
         // given
         givenTokenUpdateLogic(true);
         givenValidTransactionBody(true);

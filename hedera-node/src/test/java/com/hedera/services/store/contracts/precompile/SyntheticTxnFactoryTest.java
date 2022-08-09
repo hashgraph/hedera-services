@@ -982,7 +982,6 @@ class SyntheticTxnFactoryTest {
 
     @Test
     void createsExpectedUpdateTokenExpiryInfo() {
-        final var amount = 1234L;
         final var updateExpiryInfo =
                 new TokenUpdateExpiryInfoWrapper(token, new TokenExpiryWrapper(442L, payer, 555L));
 
@@ -992,6 +991,48 @@ class SyntheticTxnFactoryTest {
         assertEquals(token, txnBody.getTokenUpdate().getToken());
         assertEquals(442L, txnBody.getTokenUpdate().getExpiry().getSeconds());
         assertEquals(payer, txnBody.getTokenUpdate().getAutoRenewAccount());
+        assertEquals(555L, txnBody.getTokenUpdate().getAutoRenewPeriod().getSeconds());
+    }
+
+    @Test
+    void createsExpectedUpdateTokenExpiryInfoWithZeroExpiry() {
+        final var updateExpiryInfo =
+                new TokenUpdateExpiryInfoWrapper(token, new TokenExpiryWrapper(0L, payer, 555L));
+
+        final var result = subject.createTokenUpdateExpiryInfo(updateExpiryInfo);
+        final var txnBody = result.build();
+
+        assertEquals(token, txnBody.getTokenUpdate().getToken());
+        assertEquals(0L, txnBody.getTokenUpdate().getExpiry().getSeconds());
+        assertEquals(payer, txnBody.getTokenUpdate().getAutoRenewAccount());
+        assertEquals(555L, txnBody.getTokenUpdate().getAutoRenewPeriod().getSeconds());
+    }
+
+    @Test
+    void createsExpectedUpdateTokenExpiryInfoWithZeroAutoRenewPeriod() {
+        final var updateExpiryInfo =
+                new TokenUpdateExpiryInfoWrapper(token, new TokenExpiryWrapper(442L, payer, 0L));
+
+        final var result = subject.createTokenUpdateExpiryInfo(updateExpiryInfo);
+        final var txnBody = result.build();
+
+        assertEquals(token, txnBody.getTokenUpdate().getToken());
+        assertEquals(442L, txnBody.getTokenUpdate().getExpiry().getSeconds());
+        assertEquals(payer, txnBody.getTokenUpdate().getAutoRenewAccount());
+        assertEquals(0L, txnBody.getTokenUpdate().getAutoRenewPeriod().getSeconds());
+    }
+
+    @Test
+    void createsExpectedUpdateTokenExpiryInfoWithNoAutoRenewAccount() {
+        final var updateExpiryInfo =
+                new TokenUpdateExpiryInfoWrapper(token, new TokenExpiryWrapper(442L, null, 555L));
+
+        final var result = subject.createTokenUpdateExpiryInfo(updateExpiryInfo);
+        final var txnBody = result.build();
+
+        assertEquals(token, txnBody.getTokenUpdate().getToken());
+        assertEquals(442L, txnBody.getTokenUpdate().getExpiry().getSeconds());
+        assertTrue(txnBody.getTokenUpdate().getAutoRenewAccount().toString().isEmpty());
         assertEquals(555L, txnBody.getTokenUpdate().getAutoRenewPeriod().getSeconds());
     }
 
