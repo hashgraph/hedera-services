@@ -106,11 +106,16 @@ public class TxnAwareRecordsHistorian implements RecordsHistorian {
         final var consensusNow = txnCtx.consensusTime();
         final var topLevel = txnCtx.recordSoFar();
         final var accessor = txnCtx.accessor();
-        final var sidecars = txnCtx.sidecars();
-        timestampSidecars(sidecars, consensusNow);
+        List<TransactionSidecarRecord.Builder> sidecars;
+        if (txnCtx.sidecars().isEmpty()) {
+            sidecars = Collections.emptyList();
+        } else {
+            sidecars = new ArrayList<>(txnCtx.sidecars());
+            timestampSidecars(sidecars, consensusNow);
+        }
+
         final var numChildren =
                 (short) (precedingChildRecords.size() + followingChildRecords.size());
-
         finalizeChildRecords(consensusNow, topLevel);
         final var topLevelRecord = topLevel.setNumChildRecords(numChildren).build();
         topLevelStreamObj =
