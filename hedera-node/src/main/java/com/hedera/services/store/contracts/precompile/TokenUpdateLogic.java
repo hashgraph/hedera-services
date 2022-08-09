@@ -152,7 +152,7 @@ public class TokenUpdateLogic {
         final var tokenID = Id.fromGrpcToken(op.getToken()).asGrpcToken();
         validateFalse(tokenID == MISSING_TOKEN, INVALID_TOKEN_ID);
         if (op.hasExpiry()) {
-            validateFalseOrRevert(validator.isValidExpiry(op.getExpiry()), INVALID_EXPIRATION_TIME);
+            validateTrueOrRevert(validator.isValidExpiry(op.getExpiry()), INVALID_EXPIRATION_TIME);
         }
         MerkleToken token = store.get(tokenID);
         checkTokenPreconditions(token, op);

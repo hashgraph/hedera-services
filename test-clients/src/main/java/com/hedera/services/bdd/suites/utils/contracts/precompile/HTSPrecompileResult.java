@@ -51,6 +51,7 @@ import com.hedera.services.bdd.suites.contract.Utils;
 import com.hedera.services.bdd.suites.utils.contracts.ContractCallResult;
 import com.hedera.services.contracts.ParsingConstants;
 import com.hedera.services.contracts.ParsingConstants.FunctionType;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CustomFee;
 import com.hederahashgraph.api.proto.java.FixedFee;
 import com.hederahashgraph.api.proto.java.FractionalFee;
@@ -146,7 +147,7 @@ public class HTSPrecompileResult implements ContractCallResult {
     private List<CustomFee> customFees;
     private long expiry;
     private long autoRenewPeriod;
-    private byte[] autoRenewAccount;
+    private AccountID autoRenewAccount;
 
     public HTSPrecompileResult forFunction(final FunctionType functionType) {
         tupleType =
@@ -277,10 +278,10 @@ public class HTSPrecompileResult implements ContractCallResult {
     }
 
     public HTSPrecompileResult withExpiry(
-            final long expiry, final long autoRenewPeriod, final byte[] autoRenewAccount) {
+            final long expiry, final AccountID autoRenewAccount, final long autoRenewPeriod) {
         this.expiry = expiry;
-        this.autoRenewPeriod = autoRenewPeriod;
         this.autoRenewAccount = autoRenewAccount;
+        this.autoRenewPeriod = autoRenewPeriod;
         return this;
     }
 
@@ -392,7 +393,7 @@ public class HTSPrecompileResult implements ContractCallResult {
     private Tuple getTupleForTokenExpiryInfo(final int responseCode) {
         return Tuple.of(
                 responseCode,
-                Tuple.of(expiry, expandByteArrayTo32Length(autoRenewAccount), autoRenewPeriod));
+                Tuple.of(expiry, expandByteArrayTo32Length(Utils.asAddress(autoRenewAccount)), autoRenewPeriod));
     }
 
     private void extractFees(

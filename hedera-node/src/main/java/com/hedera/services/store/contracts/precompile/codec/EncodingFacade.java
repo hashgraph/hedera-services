@@ -367,7 +367,7 @@ public class EncodingFacade {
         private TokenNftInfo nonFungibleTokenInfo;
         private boolean isFrozen;
         private List<CustomFee> customFees;
-        private TokenExpiryWrapper tokenExpiryInfo;
+        private Tuple tokenExpiryInfo;
 
         private FunctionResultBuilder forFunction(final FunctionType functionType) {
             this.tupleType =
@@ -523,7 +523,7 @@ public class EncodingFacade {
         }
 
         private FunctionResultBuilder withExpiry(final TokenExpiryWrapper tokenExpiryInfo) {
-            this.tokenExpiryInfo = tokenExpiryInfo;
+            this.tokenExpiryInfo = Tuple.of(tokenExpiryInfo.second(), convertBesuAddressToHeadlongAddress(EntityIdUtils.asTypedEvmAddress(tokenExpiryInfo.autoRenewAccount())), tokenExpiryInfo.autoRenewPeriod());
             return this;
         }
 
@@ -639,16 +639,8 @@ public class EncodingFacade {
         }
 
         private Tuple getTupleForTokenExpiryInfo(final int responseCode) {
-            final var expiry = tokenExpiryInfo.second();
-            final var autoRenewPeriod = tokenExpiryInfo.autoRenewPeriod();
             return Tuple.of(
-                    responseCode,
-                    Tuple.of(
-                            expiry,
-                            convertBesuAddressToHeadlongAddress(
-                                    EntityIdUtils.asTypedEvmAddress(
-                                            tokenExpiryInfo.autoRenewAccount())),
-                            autoRenewPeriod));
+                    responseCode, tokenExpiryInfo);
         }
 
         private void extractAllFees(

@@ -576,4 +576,20 @@ interface IHederaTokenService {
     /// @return responseCode The response code for the status of the request. SUCCESS is 22.
     function wipeTokenAccountNFT(address token, address account, int64[] memory serialNumbers) external
     returns (int responseCode);
+
+    /// Operation to update token expiry info
+    /// @param token The token address
+    /// @param expiryInfo The hedera token expiry info
+    /// @return responseCode The response code for the status of the request. SUCCESS is 22.
+    function updateTokenExpiryInfo(address token, Expiry memory expiryInfo)
+    external
+    returns (int64 responseCode);
+
+    /// Query token expiry info
+    /// @param token The token address to check
+    /// @return responseCode The response code for the status of the request. SUCCESS is 22.
+    /// @return expiry Expiry info for `token`
+    function getTokenExpiryInfo(address token)
+    external
+    returns (int64 responseCode, Expiry memory expiry);
 }

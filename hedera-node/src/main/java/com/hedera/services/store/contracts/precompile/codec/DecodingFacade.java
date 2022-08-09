@@ -461,13 +461,13 @@ public class DecodingFacade {
             TypeFactory.create("(bytes32," + HEDERA_TOKEN_STRUCT_DECODER + ")");
 
     private static final Function GET_TOKEN_EXPIRY_INFO_FUNCTION =
-            new Function("getFungibleTokenInfo(address)");
+            new Function("getTokenExpiryInfo(address)");
     private static final Bytes GET_TOKEN_EXPIRY_INFO_SELECTOR =
             Bytes.wrap(GET_TOKEN_EXPIRY_INFO_FUNCTION.selector());
     private static final ABIType<Tuple> GET_TOKEN_EXPIRY_INFO_DECODER = TypeFactory.create(BYTES32);
 
     private static final Function TOKEN_UPDATE_EXPIRY_INFO_FUNCTION =
-            new Function("updateTokenInfo(address," + EXPIRY + ")");
+            new Function("updateTokenExpiryInfo(address," + EXPIRY + ")");
     private static final Bytes TOKEN_UPDATE_EXPIRY_INFO_SELECTOR =
             Bytes.wrap(TOKEN_UPDATE_EXPIRY_INFO_FUNCTION.selector());
     private static final ABIType<Tuple> TOKEN_UPDATE_EXPIRY_INFO_DECODER =
