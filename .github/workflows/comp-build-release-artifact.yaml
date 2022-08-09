@@ -157,21 +157,18 @@ jobs:
           gradle-version: ${{ inputs.gradle-version }}
 
       - name: Gradle Update Version (As Specified)
-        id: gradle-update-version
         uses: gradle/gradle-build-action@v2
         if: ${{ inputs.version-policy == 'specified' && !cancelled() }}
         with:
           arguments: versionAsSpecified -PnewVersion="${{ inputs.new-version }}" --scan
 
       - name: Gradle Update Version (Branch Commit)
-        id: gradle-update-version
         uses: gradle/gradle-build-action@v2
         if: ${{ inputs.version-policy != 'specified' && inputs.version-policy != 'version-tag' && !cancelled() }}
         with:
           arguments: versionAsPrefixedCommit -PcommitPrefix="${{ steps.parameters.outputs.commit-prefix }}" --scan
 
       - name: Gradle Version Summary
-        id: gradle-update-version
         uses: gradle/gradle-build-action@v2
         with:
           arguments: githubVersionSummary --scan
