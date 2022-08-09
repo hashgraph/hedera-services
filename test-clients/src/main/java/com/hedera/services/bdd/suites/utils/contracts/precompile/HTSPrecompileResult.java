@@ -393,7 +393,10 @@ public class HTSPrecompileResult implements ContractCallResult {
     private Tuple getTupleForTokenExpiryInfo(final int responseCode) {
         return Tuple.of(
                 responseCode,
-                Tuple.of(expiry, expandByteArrayTo32Length(Utils.asAddress(autoRenewAccount)), autoRenewPeriod));
+                Tuple.of(
+                        expiry,
+                        expandByteArrayTo32Length(Utils.asAddress(autoRenewAccount)),
+                        autoRenewPeriod));
     }
 
     private void extractFees(

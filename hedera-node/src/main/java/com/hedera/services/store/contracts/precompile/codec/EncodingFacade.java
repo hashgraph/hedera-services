@@ -523,7 +523,13 @@ public class EncodingFacade {
         }
 
         private FunctionResultBuilder withExpiry(final TokenExpiryWrapper tokenExpiryInfo) {
-            this.tokenExpiryInfo = Tuple.of(tokenExpiryInfo.second(), convertBesuAddressToHeadlongAddress(EntityIdUtils.asTypedEvmAddress(tokenExpiryInfo.autoRenewAccount())), tokenExpiryInfo.autoRenewPeriod());
+            this.tokenExpiryInfo =
+                    Tuple.of(
+                            tokenExpiryInfo.second(),
+                            convertBesuAddressToHeadlongAddress(
+                                    EntityIdUtils.asTypedEvmAddress(
+                                            tokenExpiryInfo.autoRenewAccount())),
+                            tokenExpiryInfo.autoRenewPeriod());
             return this;
         }
 
@@ -639,8 +645,7 @@ public class EncodingFacade {
         }
 
         private Tuple getTupleForTokenExpiryInfo(final int responseCode) {
-            return Tuple.of(
-                    responseCode, tokenExpiryInfo);
+            return Tuple.of(responseCode, tokenExpiryInfo);
         }
 
         private void extractAllFees(

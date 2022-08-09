@@ -59,8 +59,8 @@ import com.hedera.services.store.contracts.precompile.impl.FungibleTokenInfoPrec
 import com.hedera.services.store.contracts.precompile.impl.GetApprovedPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.GetTokenDefaultFreezeStatus;
 import com.hedera.services.store.contracts.precompile.impl.GetTokenDefaultKycStatus;
-import com.hedera.services.store.contracts.precompile.impl.GrantKycPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.GetTokenExpiryInfoPrecompile;
+import com.hedera.services.store.contracts.precompile.impl.GrantKycPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.IsApprovedForAllPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.IsFrozenPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.IsKycPrecompile;
