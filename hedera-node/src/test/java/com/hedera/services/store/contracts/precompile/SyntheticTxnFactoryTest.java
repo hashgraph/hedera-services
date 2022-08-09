@@ -18,6 +18,7 @@ package com.hedera.services.store.contracts.precompile;
 import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.HTS_PRECOMPILED_CONTRACT_ADDRESS;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.account;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.contractAddress;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.createFungibleTokenUpdateWrapperWithKeys;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.createNonFungibleTokenCreateWrapperWithKeys;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.createTokenCreateWrapperWithKeys;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.fixedFee;
@@ -683,6 +684,41 @@ class SyntheticTxnFactoryTest {
         assertEquals(
                 List.of(fungibleTransfer.senderAdjustment(), fungibleTransfer.receiverAdjustment()),
                 expFungibleTransfer.getTransfersList());
+    }
+
+    @Test
+    void createsExpectedTokenUpdateCall() {
+        // given
+        final var multiKey =
+                new KeyValueWrapper(
+                        false,
+                        EntityIdUtils.contractIdFromEvmAddress(contractAddress),
+                        new byte[] {},
+                        new byte[] {},
+                        null);
+        final var tokenUpdateWrapper =
+                createFungibleTokenUpdateWrapperWithKeys(
+                        List.of(new TokenKeyWrapper(112, multiKey)));
+        final var result = subject.createTokenUpdate(tokenUpdateWrapper);
+        final var txnBody = result.build().getTokenUpdate();
+
+        assertEquals(HTSTestsUtil.fungible, txnBody.getToken());
+
+        assertEquals("fungible", txnBody.getName());
+        assertEquals("G", txnBody.getSymbol());
+        assertEquals(account, txnBody.getTreasury());
+        assertEquals("G token memo", txnBody.getMemo().getValue());
+        assertEquals(1, txnBody.getExpiry().getSeconds());
+        assertEquals(2, txnBody.getAutoRenewPeriod().getSeconds());
+        assertTrue(txnBody.hasAutoRenewAccount());
+
+        // keys assertions
+        assertTrue(txnBody.hasSupplyKey());
+        assertEquals(multiKey.asGrpc(), txnBody.getSupplyKey());
+        assertTrue(txnBody.hasFeeScheduleKey());
+        assertEquals(multiKey.asGrpc(), txnBody.getFeeScheduleKey());
+        assertTrue(txnBody.hasPauseKey());
+        assertEquals(multiKey.asGrpc(), txnBody.getPauseKey());
     }
 
     @Test

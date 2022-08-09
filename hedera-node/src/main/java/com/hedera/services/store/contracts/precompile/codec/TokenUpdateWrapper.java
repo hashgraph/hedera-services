@@ -24,7 +24,6 @@ public record TokenUpdateWrapper(
         String name,
         String symbol,
         AccountID treasury,
-        long maxSupply,
         String memo,
         List<TokenKeyWrapper> tokenKeys,
         TokenExpiryWrapper expiry) {}

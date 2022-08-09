@@ -1360,18 +1360,10 @@ public class DecodingFacade {
         final var tokenTreasury =
                 convertLeftPaddedAddressToAccountId(hederaTokenStruct.get(2), aliasResolver);
         final var tokenMemo = (String) hederaTokenStruct.get(3);
-        final var tokenMaxSupply = (long) hederaTokenStruct.get(5);
         final var tokenKeys = decodeTokenKeys(hederaTokenStruct.get(7), aliasResolver);
         final var tokenExpiry = decodeTokenExpiry(hederaTokenStruct.get(8), aliasResolver);
         return new TokenUpdateWrapper(
-                tokenID,
-                tokenName,
-                tokenSymbol,
-                tokenTreasury,
-                tokenMaxSupply,
-                tokenMemo,
-                tokenKeys,
-                tokenExpiry);
+                tokenID, tokenName, tokenSymbol, tokenTreasury, tokenMemo, tokenKeys, tokenExpiry);
     }
 
     private static AccountID convertLeftPaddedAddressToAccountId(
