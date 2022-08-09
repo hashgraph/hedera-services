@@ -708,6 +708,7 @@ class MigrationRecordsManagerTest {
                         .setKey(MiscUtils.asKeyUnchecked(pretendTreasuryKey))
                         .setMemo("123")
                         .setInitialBalance(0)
+                    .setReceiverSigRequired(true)
                         .setAutoRenewPeriod(
                                 Duration.newBuilder()
                                         .setSeconds(pretendExpiry - now.getEpochSecond()))

@@ -209,6 +209,7 @@ public class MigrationRecordsManager {
                 "staking fund");
     }
 
+    @SuppressWarnings("java:S107")
     private void publishSyntheticCreation(
             final EntityNum num,
             final long autoRenewPeriod,
