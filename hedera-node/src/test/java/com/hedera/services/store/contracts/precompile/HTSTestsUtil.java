@@ -38,6 +38,7 @@ import com.hedera.services.store.contracts.precompile.codec.TokenGetCustomFeesWr
 import com.hedera.services.store.contracts.precompile.codec.TokenInfoWrapper;
 import com.hedera.services.store.contracts.precompile.codec.TokenKeyWrapper;
 import com.hedera.services.store.contracts.precompile.codec.TokenTransferWrapper;
+import com.hedera.services.store.contracts.precompile.codec.TokenUpdateWrapper;
 import com.hedera.services.store.contracts.precompile.codec.TokenUpdateExpiryInfoWrapper;
 import com.hedera.services.store.contracts.precompile.codec.UnpauseWrapper;
 import com.hedera.services.store.contracts.precompile.codec.WipeWrapper;
@@ -429,6 +430,18 @@ public class HTSTestsUtil {
     public static TokenInfoWrapper createTokenInfoWrapperForNonFungibleToken(
             final TokenID tokenId, final long serialNumber) {
         return TokenInfoWrapper.forNonFungibleToken(tokenId, serialNumber);
+    }
+
+    public static TokenUpdateWrapper createFungibleTokenUpdateWrapperWithKeys(
+            final List<TokenKeyWrapper> keys) {
+        return new TokenUpdateWrapper(
+                fungible,
+                "fungible",
+                "G",
+                account,
+                "G token memo",
+                keys,
+                new TokenExpiryWrapper(1L, account, 2L));
     }
 
     public static final TokenCreateWrapper.FixedFeeWrapper fixedFee =
