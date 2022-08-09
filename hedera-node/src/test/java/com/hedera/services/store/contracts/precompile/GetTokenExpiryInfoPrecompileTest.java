@@ -18,6 +18,7 @@ package com.hedera.services.store.contracts.precompile;
 import static com.hedera.services.state.EntityCreator.EMPTY_MEMO;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_GET_TOKEN_EXPIRY_INFO;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.TEST_CONSENSUS_TIME;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.invalidAutoRenewAccountResult;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.payer;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.senderAddress;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.senderId;
@@ -168,6 +169,34 @@ class GetTokenExpiryInfoPrecompileTest {
         // and:
         verify(worldUpdater)
                 .manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
+    }
+
+    @Test
+    void getTokenExpiryInfoFails() {
+        givenMinimalFrameContext();
+
+        final var getTokenExpiryInfoWrapper = new GetTokenExpiryInfoWrapper(tokenMerkleId);
+        final Bytes pretendArguments =
+                Bytes.concatenate(
+                        Bytes.of(Integers.toBytes(ABI_ID_GET_TOKEN_EXPIRY_INFO)),
+                        EntityIdUtils.asTypedEvmAddress(tokenMerkleId));
+        given(decoder.decodeGetTokenExpiryInfo(pretendArguments))
+                .willReturn(getTokenExpiryInfoWrapper);
+
+        given(stateView.tokenExists(tokenMerkleId)).willReturn(true);
+        given(stateView.tokenExpiryInfo(tokenMerkleId)).willReturn(Optional.empty());
+
+        givenMinimalContextForSuccessfulCall(pretendArguments);
+        givenReadOnlyFeeSchedule();
+
+        // when:
+        subject.prepareFields(frame);
+        subject.prepareComputation(pretendArguments, a -> a);
+        subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
+        final var result = subject.computeInternal(frame);
+
+        // then:
+        assertEquals(invalidAutoRenewAccountResult, result);
     }
 
     private void givenMinimalFrameContext() {

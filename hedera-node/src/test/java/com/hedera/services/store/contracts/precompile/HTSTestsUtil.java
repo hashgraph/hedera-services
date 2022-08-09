@@ -15,6 +15,8 @@
  */
 package com.hedera.services.store.contracts.precompile;
 
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT_VALUE;
+
 import com.google.protobuf.ByteString;
 import com.hedera.services.ledger.BalanceChange;
 import com.hedera.services.legacy.core.jproto.TxnReceipt;
@@ -106,6 +108,8 @@ public class HTSTestsUtil {
             Timestamp.newBuilder().setSeconds(TEST_CONSENSUS_TIME).build();
     public static final Bytes successResult = UInt256.valueOf(ResponseCodeEnum.SUCCESS_VALUE);
     public static final Bytes failResult = UInt256.valueOf(ResponseCodeEnum.FAIL_INVALID_VALUE);
+    public static final Bytes invalidAutoRenewAccountResult =
+            UInt256.valueOf(INVALID_AUTORENEW_ACCOUNT_VALUE);
     public static final Bytes invalidTokenIdResult =
             UInt256.valueOf(ResponseCodeEnum.INVALID_TOKEN_ID_VALUE);
     public static final Bytes invalidSerialNumberResult =
@@ -212,6 +216,10 @@ public class HTSTestsUtil {
             new GetTokenExpiryInfoWrapper(token);
     public static final TokenUpdateExpiryInfoWrapper tokenUpdateExpiryInfoWrapper =
             new TokenUpdateExpiryInfoWrapper(token, new TokenExpiryWrapper(442L, payer, 555L));
+    public static final TokenUpdateExpiryInfoWrapper
+            tokenUpdateExpiryInfoWrapperWithInvalidTokenID =
+                    new TokenUpdateExpiryInfoWrapper(
+                            null, new TokenExpiryWrapper(442L, payer, 555L));
 
     public static final Bytes ercTransferSuccessResult =
             Bytes.fromHexString(
