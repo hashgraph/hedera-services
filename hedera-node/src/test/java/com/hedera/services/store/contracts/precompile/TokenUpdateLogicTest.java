@@ -17,6 +17,7 @@ package com.hedera.services.store.contracts.precompile;
 
 import static com.hedera.services.state.enums.TokenType.FUNGIBLE_COMMON;
 import static com.hedera.services.state.enums.TokenType.NON_FUNGIBLE_UNIQUE;
+import static com.hedera.services.store.tokens.TokenStore.MISSING_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
@@ -48,10 +49,8 @@ import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import java.time.Instant;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -59,11 +58,17 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class TokenUpdateLogicTest {
-    private static final Instant CONSENSUS_TIME = Instant.ofEpochSecond(1_234_567L, 890);
+    private static final long CONSENSUS_TIME = 1_234_567L;
     private static final TokenID fungible = IdUtils.asToken("0.0.888");
     private static final TokenID nonFungible = IdUtils.asToken("0.0.889");
     private static final AccountID account = IdUtils.asAccount("0.0.3");
     private static final AccountID treasury = IdUtils.asAccount("0.0.4");
+    private static final NftId nftId =
+            new NftId(
+                    nonFungible.getShardNum(),
+                    nonFungible.getRealmNum(),
+                    nonFungible.getTokenNum(),
+                    -1);
     private static final Timestamp EXPIRY = Timestamp.getDefaultInstance();
     private static final EntityId treasuryId = EntityId.fromGrpcAccountId(treasury);
     @Mock private OptionValidator validator;
@@ -84,16 +89,26 @@ class TokenUpdateLogicTest {
     private TokenUpdateLogic subject;
     private TokenUpdateTransactionBody op;
 
-    @BeforeEach
-    private void setup() {
-        subject =
-                new TokenUpdateLogic(
-                        true, validator, store, ledgers, sideEffectsTracker, sigImpactHistorian);
+    @Test
+    void callsWithInvalidTokenIdFail() {
+        givenTokenUpdateLogic(true);
+        op = TokenUpdateTransactionBody.newBuilder().setToken(MISSING_TOKEN).build();
+        Assertions.assertThrows(
+                InvalidTransactionException.class, () -> subject.updateToken(op, CONSENSUS_TIME));
+    }
+
+    @Test
+    void callsWithInvalidExpiry() {
+        givenTokenUpdateLogic(true);
+        givenValidTransactionBody(true);
+        Assertions.assertThrows(
+                InvalidTransactionException.class, () -> subject.updateToken(op, CONSENSUS_TIME));
     }
 
     @Test
     void updateTokenHappyPathForFungibleToken() {
         // given
+        givenTokenUpdateLogic(true);
         givenValidTransactionBody(true);
         givenContextForSuccessFullCalls();
         givenLedgers();
@@ -106,15 +121,16 @@ class TokenUpdateLogicTest {
         given(transactionBody.getTokenUpdate()).willReturn(op);
         // when
         subject.validate(transactionBody);
-        subject.updateToken(op, CONSENSUS_TIME.getEpochSecond());
+        subject.updateToken(op, CONSENSUS_TIME);
         // then
-        verify(store).update(op, CONSENSUS_TIME.getEpochSecond());
+        verify(store).update(op, CONSENSUS_TIME);
         verify(sigImpactHistorian).markEntityChanged(fungible.getTokenNum());
     }
 
     @Test
     void updateTokenForFungibleTokenFailsWhenTransferingBetweenTreasuries() {
         // given
+        givenTokenUpdateLogic(true);
         givenValidTransactionBody(true);
         givenContextForSuccessFullCalls();
         givenLedgers();
@@ -126,25 +142,25 @@ class TokenUpdateLogicTest {
         given(ledgers.nfts()).willReturn(nfts);
         // then
         Assertions.assertThrows(
-                InvalidTransactionException.class,
-                () -> subject.updateToken(op, CONSENSUS_TIME.getEpochSecond()));
+                InvalidTransactionException.class, () -> subject.updateToken(op, CONSENSUS_TIME));
     }
 
     @Test
     void updateTokenForFungibleTokenWithoutAdminKey() {
         // given
+        givenTokenUpdateLogic(true);
         givenValidTransactionBody(true);
         given(validator.isValidExpiry(EXPIRY)).willReturn(true);
         given(store.get(fungible)).willReturn(merkleToken);
         // then
         Assertions.assertThrows(
-                InvalidTransactionException.class,
-                () -> subject.updateToken(op, CONSENSUS_TIME.getEpochSecond()));
+                InvalidTransactionException.class, () -> subject.updateToken(op, CONSENSUS_TIME));
     }
 
     @Test
     void updateTokenFailsWithAutoAssosiationErrorForFungibleToken() {
         // given
+        givenTokenUpdateLogic(true);
         givenValidTransactionBody(true);
         givenContextForSuccessFullCalls();
         given(ledgers.accounts()).willReturn(accounts);
@@ -155,13 +171,32 @@ class TokenUpdateLogicTest {
         given(store.autoAssociate(any(), any())).willReturn(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT);
         // then
         Assertions.assertThrows(
-                InvalidTransactionException.class,
-                () -> subject.updateToken(op, CONSENSUS_TIME.getEpochSecond()));
+                InvalidTransactionException.class, () -> subject.updateToken(op, CONSENSUS_TIME));
+    }
+
+    @Test
+    void updateTokenFailsWithInvalidFreezeKeyValue() {
+        // given
+        givenTokenUpdateLogic(true);
+        givenValidTransactionBody(true);
+        givenContextForSuccessFullCalls();
+        given(ledgers.accounts()).willReturn(accounts);
+        given(ledgers.tokenRels()).willReturn(tokenRels);
+        given(store.get(fungible)).willReturn(merkleToken);
+        given(store.autoAssociate(any(), any())).willReturn(OK);
+        given(merkleToken.hasFreezeKey()).willReturn(true);
+        given(store.unfreeze(any(), any())).willReturn(FAIL_INVALID);
+        given(ledgers.nfts()).willReturn(nfts);
+        given(merkleToken.treasury()).willReturn(treasuryId);
+        // then
+        Assertions.assertThrows(
+                InvalidTransactionException.class, () -> subject.updateToken(op, CONSENSUS_TIME));
     }
 
     @Test
     void updateTokenHappyPathForNonFungibleToken() {
         // given
+        givenTokenUpdateLogic(true);
         givenValidTransactionBody(false);
         givenContextForSuccessFullCalls();
         givenLedgers();
@@ -171,10 +206,28 @@ class TokenUpdateLogicTest {
         given(transactionBody.getTokenUpdate()).willReturn(op);
         // when
         subject.validate(transactionBody);
-        subject.updateToken(op, CONSENSUS_TIME.getEpochSecond());
+        subject.updateToken(op, CONSENSUS_TIME);
         // then
-        verify(store).update(op, CONSENSUS_TIME.getEpochSecond());
+        verify(store).update(op, CONSENSUS_TIME);
         verify(sigImpactHistorian).markEntityChanged(nonFungible.getTokenNum());
+    }
+
+    @Test
+    void updateTokenHappyPathForNonFungibleTokenFailsDueToWrongNftAllowance() {
+        // given
+        givenTokenUpdateLogic(false);
+        givenValidTransactionBody(false);
+        givenContextForSuccessFullCalls();
+        givenMinimalLedgers();
+        given(ledgers.nfts()).willReturn(nfts);
+        given(store.get(nonFungible)).willReturn(merkleToken);
+        given(store.autoAssociate(any(), any())).willReturn(OK);
+        given(merkleToken.tokenType()).willReturn(NON_FUNGIBLE_UNIQUE);
+        given(merkleToken.treasury()).willReturn(treasuryId);
+
+        // then
+        Assertions.assertThrows(
+                InvalidTransactionException.class, () -> subject.updateToken(op, CONSENSUS_TIME));
     }
 
     private void givenContextForSuccessFullCalls() {
@@ -187,28 +240,26 @@ class TokenUpdateLogicTest {
     }
 
     private void givenLedgers() {
+        givenMinimalLedgers();
+        given(accounts.get(any(), any())).willReturn(3);
+    }
+
+    private void givenMinimalLedgers() {
         given(ledgers.accounts()).willReturn(accounts);
         given(ledgers.tokenRels()).willReturn(tokenRels);
-        given(accounts.get(any(), any())).willReturn(3);
         given(tokenRels.get(any(), any())).willReturn(100L);
     }
 
     private void givenHederaStoreContextForFungible() {
         given(store.get(fungible)).willReturn(merkleToken);
         given(store.autoAssociate(any(), any())).willReturn(OK);
-        given(store.update(op, CONSENSUS_TIME.getEpochSecond())).willReturn(OK);
+        given(store.update(op, CONSENSUS_TIME)).willReturn(OK);
     }
 
     private void givenHederaStoreContextForNonFungible() {
-        final var nftId =
-                new NftId(
-                        nonFungible.getShardNum(),
-                        nonFungible.getRealmNum(),
-                        nonFungible.getTokenNum(),
-                        -1);
         given(store.get(nonFungible)).willReturn(merkleToken);
         given(store.autoAssociate(any(), any())).willReturn(OK);
-        given(store.update(op, CONSENSUS_TIME.getEpochSecond())).willReturn(OK);
+        given(store.update(op, CONSENSUS_TIME)).willReturn(OK);
         given(store.changeOwnerWildCard(nftId, treasury, account)).willReturn(OK);
     }
 
@@ -241,5 +292,16 @@ class TokenUpdateLogicTest {
         given(merkleToken.hasKycKey()).willReturn(true);
         given(store.unfreeze(any(), any())).willReturn(OK);
         given(store.grantKyc(any(), any())).willReturn(OK);
+    }
+
+    private void givenTokenUpdateLogic(boolean hasValidNftAllowance) {
+        subject =
+                new TokenUpdateLogic(
+                        hasValidNftAllowance,
+                        validator,
+                        store,
+                        ledgers,
+                        sideEffectsTracker,
+                        sigImpactHistorian);
     }
 }

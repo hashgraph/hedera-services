@@ -80,7 +80,7 @@ public class TokenUpdateLogic {
 
     public void updateToken(TokenUpdateTransactionBody op, long now) {
         final var tokenID = Id.fromGrpcToken(op.getToken()).asGrpcToken();
-        validateFalse(tokenID == MISSING_TOKEN, INVALID_TOKEN_ID);
+        validateFalse(tokenID.equals(MISSING_TOKEN), INVALID_TOKEN_ID);
         if (op.hasExpiry()) {
             validateTrueOrRevert(validator.isValidExpiry(op.getExpiry()), INVALID_EXPIRATION_TIME);
         }
