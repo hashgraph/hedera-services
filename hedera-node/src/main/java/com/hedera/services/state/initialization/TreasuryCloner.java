@@ -28,6 +28,7 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.LongStream;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;
@@ -41,6 +42,7 @@ public class TreasuryCloner {
     private final AccountNumbers accountNums;
     private final BackingStore<AccountID, MerkleAccount> accounts;
     private final List<MerkleAccount> clonesCreated = new ArrayList<>();
+    private final List<MerkleAccount> skippedCandidateClones = new ArrayList<>();
 
     @Inject
     public TreasuryCloner(
@@ -53,12 +55,10 @@ public class TreasuryCloner {
     public void ensureTreasuryClonesExist() {
         final var treasuryId = STATIC_PROPERTIES.scopedAccountWith(accountNums.treasury());
         final var treasury = accounts.getImmutableRef(treasuryId);
-        for (long i = FIRST_POST_SYSTEM_FILE_ENTITY; i <= NUM_RESERVED_SYSTEM_ENTITIES; i++) {
-            if (i >= FIRST_RESERVED_SYSTEM_CONTRACT && i <= LAST_RESERVED_SYSTEM_CONTRACT) {
-                continue;
-            }
-            final var nextCloneId = STATIC_PROPERTIES.scopedAccountWith(i);
+        for (final var num : nonContractSystemNums()) {
+            final var nextCloneId = STATIC_PROPERTIES.scopedAccountWith(num);
             if (accounts.contains(nextCloneId)) {
+                skippedCandidateClones.add(accounts.getImmutableRef(nextCloneId));
                 continue;
             }
             final var nextClone =
@@ -76,13 +76,32 @@ public class TreasuryCloner {
             clonesCreated.add(nextClone);
         }
         log.info(
-                "Created {} zero-balance accounts cloning treasury properties in the {}-{} range",
+                "Created {} zero-balance accounts cloning treasury properties in the {}-{} range (skipped {} pre-existing accounts)",
                 clonesCreated.size(),
                 FIRST_POST_SYSTEM_FILE_ENTITY,
-                NUM_RESERVED_SYSTEM_ENTITIES);
+                NUM_RESERVED_SYSTEM_ENTITIES,
+                skippedCandidateClones.size());
     }
 
     public List<MerkleAccount> getClonesCreated() {
         return clonesCreated;
+    }
+
+    public List<MerkleAccount> getSkippedCandidateClones() {
+        return skippedCandidateClones;
+    }
+
+    public void forgetScannedSystemAccounts() {
+        clonesCreated.clear();
+        skippedCandidateClones.clear();
+    }
+
+    private long[] nonContractSystemNums() {
+        return LongStream.rangeClosed(FIRST_POST_SYSTEM_FILE_ENTITY, NUM_RESERVED_SYSTEM_ENTITIES)
+                .filter(
+                        i ->
+                                i < FIRST_RESERVED_SYSTEM_CONTRACT
+                                        || i > LAST_RESERVED_SYSTEM_CONTRACT)
+                .toArray();
     }
 }

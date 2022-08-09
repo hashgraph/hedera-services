@@ -20,21 +20,24 @@ package com.hedera.services.context.properties;
  * ‍
  */
 
+import static com.hedera.services.context.properties.SemanticVersions.asSemVer;
+
 import com.google.common.annotations.VisibleForTesting;
 import com.hederahashgraph.api.proto.java.SemanticVersion;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.system.SoftwareVersion;
-import org.jetbrains.annotations.NotNull;
-
-import javax.annotation.Nullable;
 import java.io.IOException;
 import java.util.Comparator;
-
-import static com.hedera.services.context.properties.SemanticVersions.asSemVer;
+import java.util.Set;
+import javax.annotation.Nullable;
+import org.jetbrains.annotations.NotNull;
 
 public class SerializableSemVers implements SoftwareVersion {
 	private static final String IS_INCOMPARABLE_MSG = " cannot be compared to ";
+	private static final Set<SemanticVersion> SERVICE_VERSIONS_WITH_PATCH_MIGRATION_RECORDS = Set.of(
+			SemanticVersion.newBuilder().setMinor(28).setPatch(6).build()
+	);
 	public static final int RELEASE_027_VERSION = 1;
 	public static final long CLASS_ID = 0x6f2b1bc2df8cbd0bL;
 
@@ -98,7 +101,12 @@ public class SerializableSemVers implements SoftwareVersion {
 		return compareTo(other) < 0;
 	}
 
-	public boolean isNonPatchUpgradeFrom(@Nullable final SoftwareVersion other) {
+	public boolean hasMigrationRecordsFrom(@Nullable final SoftwareVersion other) {
+		return isNonPatchUpgradeFrom(other) || (this.isAfter(other) && SERVICE_VERSIONS_WITH_PATCH_MIGRATION_RECORDS.contains(this.getServices()));
+	}
+
+	@VisibleForTesting
+	boolean isNonPatchUpgradeFrom(@Nullable final SoftwareVersion other) {
 		if (other == null) {
 			return true;
 		}

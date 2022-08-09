@@ -16,8 +16,9 @@
 package com.hedera.services.state.initialization;
 
 import static com.hedera.services.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willAnswer;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
@@ -30,7 +31,6 @@ import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hederahashgraph.api.proto.java.AccountID;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -56,14 +56,22 @@ public class TreasuryClonerTest {
 
     @Test
     void clonesAsExpected() {
-        given(accounts.getImmutableRef(idFor(2L)))
-                .willReturn(accountWith(pretendExpiry, pretendTreasuryKey));
         willAnswer(
                         invocationOnMock ->
                                 ((AccountID) invocationOnMock.getArgument(0)).getAccountNum()
                                         == 666L)
                 .given(accounts)
                 .contains(any());
+        willAnswer(
+                        invocationOnMock -> {
+                            final var id = (AccountID) invocationOnMock.getArgument(0);
+                            if (id.getAccountNum() == 2L || id.getAccountNum() == 666L) {
+                                return accountWith(pretendExpiry, pretendTreasuryKey);
+                            }
+                            return null;
+                        })
+                .given(accounts)
+                .getImmutableRef(any());
 
         subject.ensureTreasuryClonesExist();
         final var created = subject.getClonesCreated();
@@ -73,8 +81,14 @@ public class TreasuryClonerTest {
                 verify(accounts).put(idFor(i), accountWith(pretendExpiry, pretendTreasuryKey));
             }
         }
-        Assertions.assertEquals(500, created.size());
+        assertEquals(500, created.size());
         verifyNoMoreInteractions(accounts);
+        final var numSkipped = subject.getSkippedCandidateClones().size();
+        assertEquals(1, numSkipped);
+
+        subject.forgetScannedSystemAccounts();
+        assertTrue(subject.getClonesCreated().isEmpty());
+        assertTrue(subject.getSkippedCandidateClones().isEmpty());
     }
 
     private AccountID idFor(final long num) {
