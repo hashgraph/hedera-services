@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import gradle.kotlin.dsl.accessors._5f232daed36d9ae4756d18ee7c950a35.spotless
 
 plugins {
     id("com.diffplug.spotless")

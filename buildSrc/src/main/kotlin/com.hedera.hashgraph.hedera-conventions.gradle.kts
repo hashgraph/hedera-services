@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 import gradle.kotlin.dsl.accessors._de3ff27eccbd9efdc5c099f60a1d8f4c.check
+import net.swiftzer.semver.SemVer
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -24,6 +25,7 @@ plugins {
     id("com.hedera.hashgraph.spotless-conventions")
     id("com.hedera.hashgraph.spotless-java-conventions")
     id("com.hedera.hashgraph.spotless-kotlin-conventions")
+    id("lazy.zoo.gradle.git-data-plugin")
 }
 
 group = "com.hedera.hashgraph"
@@ -201,3 +203,46 @@ tasks.check {
 }
 
 
+tasks.create("showVersion") {
+    doLast {
+        println(project.version)
+    }
+}
+
+tasks.create("versionAsPrefixedCommit") {
+    doLast {
+        gitData.lastCommitHash?.let {
+            val prefix = findProperty("commitPrefix")?.toString() ?: "adhoc"
+            val newPrerel = prefix + ".x" + it.take(8)
+            val currVer = SemVer.parse(project.version.toString())
+            try {
+                val newVer = SemVer(currVer.major, currVer.minor, currVer.patch, newPrerel)
+                Utils.updateVersion(project, newVer)
+            } catch (e: java.lang.IllegalArgumentException) {
+                throw IllegalArgumentException(String.format("%s: %s", e.message, newPrerel), e)
+            }
+        }
+    }
+}
+
+tasks.create("versionAsSnapshot") {
+    doLast {
+        val currVer = SemVer.parse(project.version.toString())
+        val newVer = SemVer(currVer.major, currVer.minor, currVer.patch, "SNAPSHOT")
+
+        Utils.updateVersion(project, newVer)
+    }
+}
+
+tasks.create("versionAsSpecified") {
+    doLast {
+        val verStr = findProperty("newVersion")?.toString()
+
+        if (verStr == null) {
+            throw IllegalArgumentException("No newVersion property provided! Please add the parameter -PnewVersion=<version> when running this task.")
+        }
+
+        val newVer = SemVer.parse(verStr)
+        Utils.updateVersion(project, newVer)
+    }
+}

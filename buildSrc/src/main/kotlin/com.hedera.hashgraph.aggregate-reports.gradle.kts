@@ -1,3 +1,5 @@
+import java.io.BufferedOutputStream
+
 /*
  * Copyright (C) 2022 Hedera Hashgraph, LLC
  *
@@ -13,10 +15,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import gradle.kotlin.dsl.accessors._5f232daed36d9ae4756d18ee7c950a35.jacocoTestReport
-import gradle.kotlin.dsl.accessors._5f232daed36d9ae4756d18ee7c950a35.test
-import gradle.kotlin.dsl.accessors._de3ff27eccbd9efdc5c099f60a1d8f4c.check
-import org.sonarqube.gradle.SonarQubeTask
 
 plugins {
     `java-platform`
@@ -32,7 +30,10 @@ sonarqube {
         property("sonar.projectKey", "com.hedera.hashgraph:hedera-services")
         property("sonar.projectName", "Hedera Services")
         property("sonar.projectVersion", project.version)
-        property("sonar.projectDescription", "Hedera Services (crypto, file, contract, consensus) on the Platform")
+        property(
+            "sonar.projectDescription",
+            "Hedera Services (crypto, file, contract, consensus) on the Platform"
+        )
         property("sonar.links.homepage", "https://github.com/hashgraph/hedera-services")
         property("sonar.links.ci", "https://github.com/hashgraph/hedera-services/actions")
         property("sonar.links.issue", "https://github.com/hashgraph/hedera-services/issues")
@@ -46,6 +47,18 @@ sonarqube {
         property("sonar.issue.ignore.multicriteria.e1.ruleKey", "java:S125")
         property("sonar.issue.ignore.multicriteria.e2.resourceKey", "**/*.java")
         property("sonar.issue.ignore.multicriteria.e2.ruleKey", "java:S1874")
+    }
+}
+
+tasks.create("githubVersionSummary") {
+    doLast {
+        val ghStepSummaryPath: String? = System.getenv("GITHUB_STEP_SUMMARY")
+        if (ghStepSummaryPath == null) {
+            throw IllegalArgumentException("This task may only be run in a Github Actions CI environment! Unable to locate the GITHUB_STEP_SUMMARY environment variable.")
+        }
+
+        val ghStepSummaryFile: File = File(ghStepSummaryPath)
+        Utils.generateProjectVersionReport(rootProject, BufferedOutputStream(ghStepSummaryFile.outputStream()))
     }
 }
 
