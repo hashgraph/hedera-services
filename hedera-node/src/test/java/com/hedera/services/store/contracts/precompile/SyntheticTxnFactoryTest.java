@@ -20,6 +20,7 @@ import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.accoun
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.contractAddress;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.createFungibleTokenUpdateWrapperWithKeys;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.createNonFungibleTokenCreateWrapperWithKeys;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.createNonFungibleTokenUpdateWrapperWithKeys;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.createTokenCreateWrapperWithKeys;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.fixedFee;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.fractionalFee;
@@ -687,8 +688,15 @@ class SyntheticTxnFactoryTest {
     }
 
     @Test
-    void createsExpectedTokenUpdateCall() {
+    void createsExpectedTokenUpdateCallForFungible() {
         // given
+        final var adminKey =
+                new KeyValueWrapper(
+                        false,
+                        null,
+                        new byte[] {},
+                        new byte[] {},
+                        EntityIdUtils.contractIdFromEvmAddress(contractAddress));
         final var multiKey =
                 new KeyValueWrapper(
                         false,
@@ -698,7 +706,9 @@ class SyntheticTxnFactoryTest {
                         null);
         final var tokenUpdateWrapper =
                 createFungibleTokenUpdateWrapperWithKeys(
-                        List.of(new TokenKeyWrapper(112, multiKey)));
+                        List.of(
+                                new TokenKeyWrapper(112, multiKey),
+                                new TokenKeyWrapper(1, adminKey)));
         final var result = subject.createTokenUpdate(tokenUpdateWrapper);
         final var txnBody = result.build().getTokenUpdate();
 
@@ -711,6 +721,54 @@ class SyntheticTxnFactoryTest {
         assertEquals(1, txnBody.getExpiry().getSeconds());
         assertEquals(2, txnBody.getAutoRenewPeriod().getSeconds());
         assertTrue(txnBody.hasAutoRenewAccount());
+
+        // keys assertions
+        assertTrue(txnBody.hasSupplyKey());
+        assertEquals(multiKey.asGrpc(), txnBody.getSupplyKey());
+        assertTrue(txnBody.hasFeeScheduleKey());
+        assertEquals(multiKey.asGrpc(), txnBody.getFeeScheduleKey());
+        assertTrue(txnBody.hasPauseKey());
+        assertEquals(multiKey.asGrpc(), txnBody.getPauseKey());
+    }
+
+    @Test
+    void createsExpectedTokenUpdateCallForNonFungible() {
+        // given
+        final var ComplexKey =
+                new KeyValueWrapper(
+                        false,
+                        null,
+                        new byte[] {},
+                        new byte[] {},
+                        EntityIdUtils.contractIdFromEvmAddress(contractAddress));
+        final var multiKey =
+                new KeyValueWrapper(
+                        false,
+                        EntityIdUtils.contractIdFromEvmAddress(contractAddress),
+                        new byte[] {},
+                        new byte[] {},
+                        null);
+        final var wrapper =
+                createNonFungibleTokenUpdateWrapperWithKeys(
+                        List.of(
+                                new TokenKeyWrapper(112, multiKey),
+                                new TokenKeyWrapper(2, ComplexKey),
+                                new TokenKeyWrapper(4, ComplexKey),
+                                new TokenKeyWrapper(8, ComplexKey)));
+
+        // when
+        final var result = subject.createTokenUpdate(wrapper);
+        final var txnBody = result.build().getTokenUpdate();
+
+        // then
+
+        assertEquals("NFT", txnBody.getName());
+        assertEquals("NFT", txnBody.getSymbol());
+        assertEquals(account, txnBody.getTreasury());
+        assertEquals("NFT token memo", txnBody.getMemo().getValue());
+        assertEquals(0, txnBody.getExpiry().getSeconds());
+        assertEquals(0, txnBody.getAutoRenewPeriod().getSeconds());
+        assertFalse(txnBody.hasAutoRenewAccount());
 
         // keys assertions
         assertTrue(txnBody.hasSupplyKey());
