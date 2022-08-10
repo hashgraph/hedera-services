@@ -73,7 +73,7 @@ class ScheduleExecutorTest {
         Assertions.assertEquals(OK, result);
         verify(factory)
                 .triggeredTxn(
-                        Transaction.getDefaultInstance().toByteArray(),
+                        Transaction.getDefaultInstance(),
                         new EntityId(0, 0, 4321).toGrpcAccountId(),
                         id,
                         false,
@@ -88,7 +88,7 @@ class ScheduleExecutorTest {
         given(schedule.effectivePayer()).willReturn(new EntityId(0, 0, 4321));
         given(
                         factory.triggeredTxn(
-                                Transaction.getDefaultInstance().toByteArray(),
+                                Transaction.getDefaultInstance(),
                                 new EntityId(0, 0, 4321).toGrpcAccountId(),
                                 id,
                                 true,

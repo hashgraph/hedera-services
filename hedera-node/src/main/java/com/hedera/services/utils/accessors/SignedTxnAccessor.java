@@ -15,6 +15,7 @@
  */
 package com.hedera.services.utils.accessors;
 
+import static com.hedera.services.legacy.proto.utils.ByteStringUtils.unwrapUnsafelyIfPossible;
 import static com.hedera.services.legacy.proto.utils.CommonUtils.noThrowSha384HashOf;
 import static com.hedera.services.usage.token.TokenOpsUsageUtils.TOKEN_OPS_USAGE_UTILS;
 import static com.hedera.services.utils.EntityIdUtils.isAlias;
@@ -46,8 +47,10 @@ import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.ethereum.EthTxData;
 import com.hedera.services.grpc.marshalling.AliasResolver;
 import com.hedera.services.ledger.accounts.AliasManager;
+import com.hedera.services.legacy.proto.utils.ByteStringUtils;
 import com.hedera.services.sigs.sourcing.PojoSigMapPubKeyToSigBytes;
 import com.hedera.services.sigs.sourcing.PubKeyToSigBytes;
+import com.hedera.services.state.merkle.internals.ByteUtils;
 import com.hedera.services.txns.span.ExpandHandleSpanMapAccessor;
 import com.hedera.services.usage.BaseTransactionMeta;
 import com.hedera.services.usage.SigUsage;
@@ -158,14 +161,14 @@ public class SignedTxnAccessor implements TxnAccessor {
 
         final var signedTxnBytes = signedTxnWrapper.getSignedTransactionBytes();
         if (signedTxnBytes.isEmpty()) {
-            txnBytes = signedTxnWrapper.getBodyBytes().toByteArray();
+            txnBytes = unwrapUnsafelyIfPossible(signedTxnWrapper.getBodyBytes());
             sigMap = signedTxnWrapper.getSigMap();
             hash = noThrowSha384HashOf(signedTxnWrapperBytes);
         } else {
             final var signedTxn = SignedTransaction.parseFrom(signedTxnBytes);
-            txnBytes = signedTxn.getBodyBytes().toByteArray();
+            txnBytes = unwrapUnsafelyIfPossible(signedTxn.getBodyBytes());
             sigMap = signedTxn.getSigMap();
-            hash = noThrowSha384HashOf(signedTxnBytes.toByteArray());
+            hash = noThrowSha384HashOf(unwrapUnsafelyIfPossible(signedTxnBytes));
         }
         pubKeyToSigBytes = new PojoSigMapPubKeyToSigBytes(sigMap);
 

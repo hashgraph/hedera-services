@@ -75,7 +75,6 @@ class RecordCacheTest {
     @Mock private Map<TransactionID, TxnIdRecentHistory> histories;
     @Mock private TxnIdRecentHistory recentHistory;
     @Mock private TxnIdRecentHistory recentChildHistory;
-    @Mock private AccessorFactory factory;
 
     private RecordCache subject;
 
@@ -298,15 +297,7 @@ class RecordCacheTest {
         final var effectivePayer = IdUtils.asAccount("0.0.3");
         final var effectiveScheduleID = IdUtils.asSchedule("0.0.123");
         given(histories.computeIfAbsent(argThat(txnId::equals), any())).willReturn(recentHistory);
-        willCallRealMethod()
-                .given(factory)
-                .triggeredTxn(
-                        signedTxn.toByteArray(), effectivePayer, effectiveScheduleID, false, false);
-        given(factory.constructSpecializedAccessor(signedTxn.toByteArray()))
-                .willReturn(SignedTxnAccessor.from(signedTxn.toByteArray()));
-        final var accessor =
-                factory.triggeredTxn(
-                        signedTxn.toByteArray(), effectivePayer, effectiveScheduleID, false, false);
+        final var accessor = SignedTxnAccessor.from(signedTxn.toByteArray());
         final var expirableTxnRecordBuilder =
                 ExpirableTxnRecord.newBuilder()
                         .setTxnId(TxnId.fromGrpc(txnId))

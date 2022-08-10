@@ -15,12 +15,14 @@
  */
 package com.hedera.services.records;
 
+import static com.hedera.services.legacy.proto.utils.ByteStringUtils.unwrapUnsafelyIfPossible;
 import static com.hedera.services.legacy.proto.utils.CommonUtils.noThrowSha384HashOf;
 import static com.hedera.services.state.submerkle.TxnId.USER_TRANSACTION_NONCE;
 import static com.hedera.services.utils.MiscUtils.nonNegativeNanosOffset;
 import static com.hedera.services.utils.MiscUtils.synthFromBody;
 
 import com.hedera.services.context.TransactionContext;
+import com.hedera.services.legacy.proto.utils.ByteStringUtils;
 import com.hedera.services.state.EntityCreator;
 import com.hedera.services.state.expiry.ExpiryManager;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
@@ -280,7 +282,7 @@ public class TxnAwareRecordsHistorian implements RecordsHistorian {
 
             final var synthTxn = synthFrom(inProgress.syntheticBody(), child);
             final var synthHash =
-                    noThrowSha384HashOf(synthTxn.getSignedTransactionBytes().toByteArray());
+                    noThrowSha384HashOf(unwrapUnsafelyIfPossible(synthTxn.getSignedTransactionBytes()));
             child.setTxnHash(synthHash);
             final var sidecars = inProgress.sidecars();
             timestampSidecars(sidecars, childConsTime);

@@ -90,15 +90,13 @@ class AccessorFactoryTest {
                                 .toByteArray());
         assertTrue(subject.nonTriggeredTxn(platformTxn.getContents()) instanceof SignedTxnAccessor);
 
-        SwirldTransaction wipeTxn =
-                new SwirldTransaction(
-                        Transaction.newBuilder()
-                                .setBodyBytes(tokenWipeTxn.toByteString())
-                                .build()
-                                .toByteArray());
+        final var grpcWipeTxn =
+            Transaction.newBuilder()
+                .setBodyBytes(tokenWipeTxn.toByteString())
+                .build();
 
         var triggered =
-                subject.triggeredTxn(wipeTxn.getContents(), payerId, scheduleId, true, true);
+                subject.triggeredTxn(grpcWipeTxn, payerId, scheduleId, true, true);
 
         assertTrue(triggered instanceof SignedTxnAccessor);
 

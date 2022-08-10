@@ -89,7 +89,7 @@ class StructuralPrecheckTest {
     @Test
     void mustHaveBodyBytes() throws InvalidProtocolBufferException {
         txn = Transaction.getDefaultInstance();
-        willCallRealMethod().given(accessorFactory).constructSpecializedAccessor(txn.toByteArray());
+        willCallRealMethod().given(accessorFactory).constructSpecializedAccessor(txn);
         given(accessor.getTxn()).willReturn(txn.getBody());
 
         final var assess = subject.assess(txn);
@@ -105,7 +105,7 @@ class StructuralPrecheckTest {
                         .setSignedTransactionBytes(ByteString.copyFromUtf8("w/e"))
                         .setBodyBytes(ByteString.copyFromUtf8("doesn't matter"))
                         .build();
-        willCallRealMethod().given(accessorFactory).constructSpecializedAccessor(txn.toByteArray());
+        willCallRealMethod().given(accessorFactory).constructSpecializedAccessor(txn);
         given(accessor.getTxn()).willReturn(txn.getBody());
 
         final var assess = subject.assess(txn);
@@ -121,7 +121,7 @@ class StructuralPrecheckTest {
                         .setSignedTransactionBytes(ByteString.copyFromUtf8("w/e"))
                         .setSigMap(SignatureMap.getDefaultInstance())
                         .build();
-        willCallRealMethod().given(accessorFactory).constructSpecializedAccessor(txn.toByteArray());
+        willCallRealMethod().given(accessorFactory).constructSpecializedAccessor(txn);
         given(accessor.getTxn()).willReturn(txn.getBody());
 
         final var assess = subject.assess(txn);
@@ -140,7 +140,7 @@ class StructuralPrecheckTest {
                                                 .mapToObj(i -> "A")
                                                 .collect(joining())))
                         .build();
-        willCallRealMethod().given(accessorFactory).constructSpecializedAccessor(txn.toByteArray());
+        willCallRealMethod().given(accessorFactory).constructSpecializedAccessor(txn);
         given(accessor.getTxn()).willReturn(txn.getBody());
 
         final var assess = subject.assess(txn);
@@ -155,7 +155,7 @@ class StructuralPrecheckTest {
                 Transaction.newBuilder()
                         .setSignedTransactionBytes(ByteString.copyFromUtf8("NONSENSE"))
                         .build();
-        willCallRealMethod().given(accessorFactory).constructSpecializedAccessor(txn.toByteArray());
+        willCallRealMethod().given(accessorFactory).constructSpecializedAccessor(txn);
         given(accessor.getTxn()).willReturn(txn.getBody());
 
         final var assess = subject.assess(txn);
@@ -175,7 +175,7 @@ class StructuralPrecheckTest {
                 Transaction.newBuilder().setBodyBytes(hostTxn.build().toByteString()).build();
         willCallRealMethod()
                 .given(accessorFactory)
-                .constructSpecializedAccessor(signedTxn.toByteArray());
+                .constructSpecializedAccessor(signedTxn);
         given(accessor.getTxn()).willReturn(hostTxn.build());
         final var assess = subject.assess(signedTxn);
 
@@ -195,7 +195,7 @@ class StructuralPrecheckTest {
 
         willCallRealMethod()
                 .given(accessorFactory)
-                .constructSpecializedAccessor(signedTxn.toByteArray());
+                .constructSpecializedAccessor(signedTxn);
         given(accessor.getTxn()).willReturn(hostTxn.build());
 
         final var assess = subject.assess(signedTxn);
@@ -219,7 +219,7 @@ class StructuralPrecheckTest {
 
         willCallRealMethod()
                 .given(accessorFactory)
-                .constructSpecializedAccessor(signedTxn.toByteArray());
+                .constructSpecializedAccessor(signedTxn);
         given(accessor.getTxn()).willReturn(hostTxn.build());
         given(viewFactory.latestSignedStateView()).willReturn(Optional.of(view));
 
@@ -254,7 +254,7 @@ class StructuralPrecheckTest {
                 Transaction.newBuilder().setBodyBytes(hostTxn.build().toByteString()).build();
         willCallRealMethod()
                 .given(accessorFactory)
-                .constructSpecializedAccessor(signedTxn.toByteArray());
+                .constructSpecializedAccessor(signedTxn);
         given(accessor.getTxn()).willReturn(hostTxn.build());
 
         subject.assess(signedTxn);
@@ -286,7 +286,7 @@ class StructuralPrecheckTest {
                         .build();
         willCallRealMethod()
                 .given(accessorFactory)
-                .constructSpecializedAccessor(signedTxn.toByteArray());
+                .constructSpecializedAccessor(signedTxn);
         given(accessor.getTxn()).willReturn(hostTxn.build());
 
         subject.assess(signedTxn);

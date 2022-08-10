@@ -34,21 +34,20 @@ public class AccessorFactory {
         this.dynamicProperties = dynamicProperties;
     }
 
-    public TxnAccessor nonTriggeredTxn(byte[] signedTxnWrapperBytes)
+    public TxnAccessor nonTriggeredTxn(byte[] transactionBytes)
             throws InvalidProtocolBufferException {
-        final var subtype = constructSpecializedAccessor(signedTxnWrapperBytes);
-        subtype.setScheduleRef(null);
-        return subtype;
+        return internalSpecializedConstruction(
+                transactionBytes, Transaction.parseFrom(transactionBytes));
     }
 
     public TxnAccessor triggeredTxn(
-            byte[] signedTxnWrapperBytes,
+            Transaction transaction,
             final AccountID payer,
             ScheduleID parent,
             boolean markThrottleExempt,
             boolean markCongestionExempt)
             throws InvalidProtocolBufferException {
-        final var subtype = constructSpecializedAccessor(signedTxnWrapperBytes);
+        final var subtype = constructSpecializedAccessor(transaction);
         subtype.setScheduleRef(parent);
         subtype.setPayer(payer);
         if (markThrottleExempt) {
@@ -61,20 +60,38 @@ public class AccessorFactory {
     }
 
     /**
-     * parse the signedTxnWrapperBytes, figure out what specialized implementation to use construct
-     * the subtype instance
+     * Parses the gRPC {@link Transaction} represented by a given byte array and returns a {@link
+     * SignedTxnAccessor} specialized to handle the transaction's logical operation.
      *
-     * @param signedTxnWrapperBytes
-     * @return
+     * @param transactionBytes the raw gRPC transaction
+     * @return a specialized accessor
      */
-    public TxnAccessor constructSpecializedAccessor(byte[] signedTxnWrapperBytes)
+    public SignedTxnAccessor constructSpecializedAccessor(final byte[] transactionBytes)
             throws InvalidProtocolBufferException {
-        final var signedTxn = Transaction.parseFrom(signedTxnWrapperBytes);
-        final var body = extractTransactionBody(signedTxn);
+        return internalSpecializedConstruction(
+                transactionBytes, Transaction.parseFrom(transactionBytes));
+    }
+
+    /**
+     * Given a gRPC {@link Transaction}, returns a {@link SignedTxnAccessor} specialized to handle
+     * the transaction's logical operation.
+     *
+     * @param transaction the gRPC transaction
+     * @return a specialized accessor
+     */
+    public SignedTxnAccessor constructSpecializedAccessor(final Transaction transaction)
+            throws InvalidProtocolBufferException {
+        return internalSpecializedConstruction(transaction.toByteArray(), transaction);
+    }
+
+    private SignedTxnAccessor internalSpecializedConstruction(
+            final byte[] transactionBytes, final Transaction transaction)
+            throws InvalidProtocolBufferException {
+        final var body = extractTransactionBody(transaction);
         final var function = MiscUtils.FUNCTION_EXTRACTOR.apply(body);
         if (function == TokenAccountWipe) {
-            return new TokenWipeAccessor(signedTxnWrapperBytes, signedTxn, dynamicProperties);
+            return new TokenWipeAccessor(transactionBytes, transaction, dynamicProperties);
         }
-        return SignedTxnAccessor.from(signedTxnWrapperBytes, signedTxn);
+        return SignedTxnAccessor.from(transactionBytes, transaction);
     }
 }
