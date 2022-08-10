@@ -300,10 +300,9 @@ public class ServicesState extends PartialNaryMerkleInternal
             if (trigger == RESTART) {
                 networkCtx().discardPreparedUpgradeMeta();
                 dualState.setFreezeTime(null);
-                // By default, don't (re-)stream migration records on a patch release; this will
-                // almost always be the desired behavior, though exceptions are conceivable
-                if (deployedVersion.isNonPatchUpgradeFrom(deserializedVersion)) {
+                if (deployedVersion.hasMigrationRecordsFrom(deserializedVersion)) {
                     networkCtx().markMigrationRecordsNotYetStreamed();
+                    log.info("There are migration records to stream on first post-upgrade txn");
                 }
             }
             networkCtx().setStateVersion(CURRENT_VERSION);
@@ -336,8 +335,7 @@ public class ServicesState extends PartialNaryMerkleInternal
                 // Do this separately from ensureSystemAccounts(), as that call is expensive with a
                 // large saved state
                 app.treasuryCloner().ensureTreasuryClonesExist();
-                // Unconditionally fix NFT counts this upgrade
-                nftRationalization.fixNftCounts(tokens(), accounts(), uniqueTokens(), tokenAssociations());
+                // No longer need to fix NFT balances, all production states are rationalized
             }
         }
     }

@@ -688,7 +688,7 @@ class ServicesStateTest {
         verify(networkContext).discardPreparedUpgradeMeta();
         verify(dualState).setFreezeTime(null);
 
-        verify(nftRationalization).fixNftCounts(any(), any(), any(), any());
+        verifyNoInteractions(nftRationalization);
         ServicesState.setNftRationalization(ReleaseTwentySevenMigration::fixNftCounts);
     }
 
