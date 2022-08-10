@@ -17,10 +17,6 @@ name: "Deploy Release Artifact"
 on:
   workflow_dispatch:
     inputs:
-      new-version:
-        description: "New Version:"
-        type: string
-        required: true
       enable-bucket-deployment:
         description: "GCP Bucket Deploy Enabled"
         type: boolean
@@ -63,8 +59,7 @@ jobs:
     if: ${{ github.event_name == 'workflow_dispatch' }}
     uses: ./.github/workflows/comp-build-release-artifact.yaml
     with:
-      version-policy: specified
-      new-version: ${{ github.event.inputs.new-version }}
+      version-policy: branch-commit
       enable-bucket-deployment: ${{ github.event.inputs.enable-bucket-deployment == 'true' }}
       dry-run-enabled: ${{ github.event.inputs.dry-run-enabled == 'true' }}
       java-version: ${{ github.event.inputs.java-version || '17.0.3' }}
