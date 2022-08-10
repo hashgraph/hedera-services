@@ -155,7 +155,6 @@ jobs:
         uses: gradle/gradle-build-action@v2
         with:
           gradle-version: ${{ inputs.gradle-version }}
-          cache-read-only: false
           gradle-home-cache-includes: |
             caches
             notifications
