@@ -95,10 +95,11 @@ public class EntityUtilGauges {
 
     private static DoubleGauge.Config gaugeConfigFor(
             final String utilType, @Nullable final String forDesc) {
-        return new DoubleGauge.Config(
-                STAT_CATEGORY,
-                String.format(UTIL_NAME_TPL, utilType),
-                String.format(UTIL_DESCRIPTION_TPL, Optional.ofNullable(forDesc).orElse(utilType)),
-                GAUGE_FORMAT);
+        return new DoubleGauge.Config(STAT_CATEGORY, String.format(UTIL_NAME_TPL, utilType))
+                .withDescription(
+                        String.format(
+                                UTIL_DESCRIPTION_TPL,
+                                Optional.ofNullable(forDesc).orElse(utilType)))
+                .withFormat(GAUGE_FORMAT);
     }
 }

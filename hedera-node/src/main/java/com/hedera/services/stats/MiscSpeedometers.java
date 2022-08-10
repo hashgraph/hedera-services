@@ -32,17 +32,15 @@ public class MiscSpeedometers {
         syncVerificationsConfig =
                 new SpeedometerMetric.Config(
                         STAT_CATEGORY,
-                        Names.SYNC_VERIFICATIONS,
-                        Descriptions.SYNC_VERIFICATIONS,
-                        SPEEDOMETER_FORMAT,
-                        halfLife);
+                        Names.SYNC_VERIFICATIONS).withDescription(
+                        Descriptions.SYNC_VERIFICATIONS).withFormat(
+                        SPEEDOMETER_FORMAT).withHalfLife(halfLife);
         platformTxnRejectionsConfig =
                 new SpeedometerMetric.Config(
                         STAT_CATEGORY,
-                        Names.PLATFORM_TXN_REJECTIONS,
-                        Descriptions.PLATFORM_TXN_REJECTIONS,
-                        SPEEDOMETER_FORMAT,
-                        halfLife);
+                        Names.PLATFORM_TXN_REJECTIONS).withDescription(
+                        Descriptions.PLATFORM_TXN_REJECTIONS).withFormat(
+                        SPEEDOMETER_FORMAT).withHalfLife(halfLife);
     }
 
     public void registerWith(final Platform platform) {

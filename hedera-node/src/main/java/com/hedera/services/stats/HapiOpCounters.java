@@ -110,17 +110,15 @@ public class HapiOpCounters {
                             }
                         });
         deprecatedTxnsConfig =
-                new Config(
-                        STAT_CATEGORY,
-                        COUNTER_DEPRECATED_TXNS_NAME,
-                        COUNTER_RECEIVED_DEPRECATED_DESC);
+                new Config(STAT_CATEGORY, COUNTER_DEPRECATED_TXNS_NAME)
+                        .withDescription(COUNTER_RECEIVED_DEPRECATED_DESC);
     }
 
     private Counter.Config counterConfigFor(
             final HederaFunctionality function, final String nameTpl, final String descTpl) {
         final var baseName = statNameFn.apply(function);
-        return new Counter.Config(
-                STAT_CATEGORY, String.format(nameTpl, baseName), String.format(descTpl, baseName));
+        return new Counter.Config(STAT_CATEGORY, String.format(nameTpl, baseName))
+                .withDescription(String.format(descTpl, baseName));
     }
 
     public void registerWith(final Platform platform) {

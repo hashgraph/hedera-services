@@ -382,7 +382,7 @@ public class StaticEntityAccess implements EntityAccess {
     }
 
     private <T> T nftPropertyOf(final NftId nftId, final Function<UniqueTokenValue, T> getter) {
-        final var key = EntityNumPair.fromNftId(nftId);
+        final var key = UniqueTokenKey.from(nftId);
         var nft = nfts.get(key);
         validateTrue(nft != null, INVALID_TOKEN_NFT_SERIAL_NUMBER);
         return getter.apply(nft);

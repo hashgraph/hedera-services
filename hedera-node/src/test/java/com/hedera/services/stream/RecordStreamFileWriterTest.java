@@ -369,8 +369,8 @@ class RecordStreamFileWriterTest {
         final var firstBlockMetadataSignature =
                 "metadataSignatureBlock1".getBytes(StandardCharsets.UTF_8);
         given(signer.sign(any()))
-                .willReturn(firstBlockEntireFileSignature)
-                .willReturn(firstBlockMetadataSignature);
+                .willReturn(new Signature(RSA, firstBlockEntireFileSignature))
+                .willReturn(new Signature(RSA, firstBlockMetadataSignature));
         final var firstTransactionInstant =
                 LocalDateTime.of(2022, 7, 21, 15, 58, 55).toInstant(ZoneOffset.UTC);
         // set initial running hash

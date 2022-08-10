@@ -40,50 +40,44 @@ public class MiscRunningAvgs {
                 platform.getOrCreateMetric(
                         new RunningAverageMetric.Config(
                                 STAT_CATEGORY,
-                                Names.GAS_PER_CONSENSUS_SEC,
-                                Descriptions.GAS_PER_CONSENSUS_SEC,
-                                RUNNING_AVG_FORMAT,
-                                halfLife));
+                                Names.GAS_PER_CONSENSUS_SEC).withDescription(
+                                Descriptions.GAS_PER_CONSENSUS_SEC).withFormat(
+                                RUNNING_AVG_FORMAT).withHalfLife(halfLife));
         accountRetryWaitMs =
                 platform.getOrCreateMetric(
                         new RunningAverageMetric.Config(
                                 STAT_CATEGORY,
-                                Names.ACCOUNT_RETRY_WAIT_MS,
-                                Descriptions.ACCOUNT_RETRY_WAIT_MS,
-                                RUNNING_AVG_FORMAT,
-                                halfLife));
+                                Names.ACCOUNT_RETRY_WAIT_MS).withDescription(
+                                Descriptions.ACCOUNT_RETRY_WAIT_MS).withFormat(
+                                RUNNING_AVG_FORMAT).withHalfLife(halfLife));
         accountLookupRetries =
                 platform.getOrCreateMetric(
                         new RunningAverageMetric.Config(
                                 STAT_CATEGORY,
-                                Names.ACCOUNT_LOOKUP_RETRIES,
-                                Descriptions.ACCOUNT_LOOKUP_RETRIES,
-                                RUNNING_AVG_FORMAT,
-                                halfLife));
+                                Names.ACCOUNT_LOOKUP_RETRIES).withDescription(
+                                Descriptions.ACCOUNT_LOOKUP_RETRIES).withFormat(
+                                RUNNING_AVG_FORMAT).withHalfLife(halfLife));
         handledSubmitMessageSize =
                 platform.getOrCreateMetric(
                         new RunningAverageMetric.Config(
                                 STAT_CATEGORY,
-                                Names.HANDLED_SUBMIT_MESSAGE_SIZE,
-                                Descriptions.HANDLED_SUBMIT_MESSAGE_SIZE,
-                                RUNNING_AVG_FORMAT,
-                                halfLife));
+                                Names.HANDLED_SUBMIT_MESSAGE_SIZE).withDescription(
+                                Descriptions.HANDLED_SUBMIT_MESSAGE_SIZE).withFormat(
+                                RUNNING_AVG_FORMAT).withHalfLife(halfLife));
         writeQueueSizeRecordStream =
                 platform.getOrCreateMetric(
                         new RunningAverageMetric.Config(
                                 STAT_CATEGORY,
-                                Names.WRITE_QUEUE_SIZE_RECORD_STREAM,
-                                Descriptions.WRITE_QUEUE_SIZE_RECORD_STREAM,
-                                RUNNING_AVG_FORMAT,
-                                halfLife));
+                                Names.WRITE_QUEUE_SIZE_RECORD_STREAM).withDescription(
+                                Descriptions.WRITE_QUEUE_SIZE_RECORD_STREAM).withFormat(
+                                RUNNING_AVG_FORMAT).withHalfLife(halfLife));
         hashQueueSizeRecordStream =
                 platform.getOrCreateMetric(
                         new RunningAverageMetric.Config(
-                                STAT_CATEGORY,
-                                Names.HASH_QUEUE_SIZE_RECORD_STREAM,
-                                Descriptions.HASH_QUEUE_SIZE_RECORD_STREAM,
-                                RUNNING_AVG_FORMAT,
-                                halfLife));
+                                        STAT_CATEGORY, Names.HASH_QUEUE_SIZE_RECORD_STREAM)
+                                .withDescription(Descriptions.HASH_QUEUE_SIZE_RECORD_STREAM)
+                                .withFormat(RUNNING_AVG_FORMAT)
+                                .withHalfLife(halfLife));
     }
 
     public void recordAccountLookupRetries(final int num) {
