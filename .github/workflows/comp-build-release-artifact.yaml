@@ -160,13 +160,13 @@ jobs:
         uses: gradle/gradle-build-action@v2
         if: ${{ inputs.version-policy == 'specified' && !cancelled() && !failure() }}
         with:
-          arguments: versionAsSpecified -PnewVersion="${{ inputs.new-version }}" --scan
+          arguments: versionAsSpecified -PnewVersion=${{ inputs.new-version }} --scan
 
       - name: Gradle Update Version (Branch Commit)
         uses: gradle/gradle-build-action@v2
         if: ${{ inputs.version-policy != 'specified' && !cancelled() && !failure() }}
         with:
-          arguments: versionAsPrefixedCommit -PcommitPrefix="${{ steps.parameters.outputs.commit-prefix }}" --scan
+          arguments: versionAsPrefixedCommit -PcommitPrefix=${{ steps.parameters.outputs.commit-prefix }} --scan
 
       - name: Gradle Version Summary
         uses: gradle/gradle-build-action@v2
