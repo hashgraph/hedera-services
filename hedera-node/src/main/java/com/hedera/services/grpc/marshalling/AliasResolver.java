@@ -42,8 +42,7 @@ public class AliasResolver {
     private int perceivedCreations = 0;
     private int perceivedInvalidCreations = 0;
     private Map<ByteString, EntityNum> resolutions = new HashMap<>();
-
-    private Map<ByteString, EntityNum> localTokenResolutions = new HashMap<>();
+    private Map<ByteString, EntityNum> tempTokenResolutions = new HashMap<>();
 
     private enum Result {
         KNOWN_ALIAS,
@@ -68,6 +67,10 @@ public class AliasResolver {
 
     public Map<ByteString, EntityNum> resolutions() {
         return resolutions;
+    }
+
+    public Map<ByteString, EntityNum> tempTokenResolutions() {
+        return tempTokenResolutions;
     }
 
     public int perceivedMissingAliases() {
@@ -109,7 +112,7 @@ public class AliasResolver {
         final List<TokenTransferList> resolvedTokenAdjusts = new ArrayList<>();
         for (var tokenAdjust : opTokenAdjusts) {
             final var resolvedTokenAdjust = TokenTransferList.newBuilder();
-            localTokenResolutions.clear();
+            tempTokenResolutions.clear();
 
             resolvedTokenAdjust.setToken(tokenAdjust.getToken());
             for (final var adjust : tokenAdjust.getTransfersList()) {
@@ -258,7 +261,7 @@ public class AliasResolver {
                         adjust.toBuilder().setAccountID(resolution.toGrpcAccountId()).build();
             }
             resolutions.put(alias, resolution);
-            localTokenResolutions.put(alias, resolution);
+            tempTokenResolutions.put(alias, resolution);
         }
         resolvingAction.accept(resolvedAdjust);
         return result;
@@ -278,7 +281,7 @@ public class AliasResolver {
         if (isEvmAddress) {
             return Result.UNKNOWN_EVM_ADDRESS;
         } else {
-            return localTokenResolutions.containsKey(alias)
+            return tempTokenResolutions.containsKey(alias)
                     ? Result.REPEATED_UNKNOWN_ALIAS
                     : resolutions.containsKey(alias) ? Result.KNOWN_ALIAS : Result.UNKNOWN_ALIAS;
         }
@@ -288,7 +291,7 @@ public class AliasResolver {
         if (isEvmAddress) {
             return Result.UNKNOWN_EVM_ADDRESS;
         } else {
-            return resolutions.containsKey(alias) ? Result.KNOWN_ALIAS : Result.UNKNOWN_ALIAS;
+            return resolutions.containsKey(alias) ? Result.REPEATED_UNKNOWN_ALIAS : Result.UNKNOWN_ALIAS;
         }
     }
 

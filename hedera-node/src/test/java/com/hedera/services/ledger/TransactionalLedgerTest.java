@@ -21,6 +21,7 @@ import static com.hedera.services.ledger.properties.TestAccountProperty.FLAG;
 import static com.hedera.services.ledger.properties.TestAccountProperty.HBAR_ALLOWANCES;
 import static com.hedera.services.ledger.properties.TestAccountProperty.LONG;
 import static com.hedera.services.ledger.properties.TestAccountProperty.OBJ;
+import static com.hedera.services.utils.EntityIdUtils.asAccount;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_IS_NOT_GENESIS_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_IS_TREASURY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_STILL_OWNS_NFTS;
@@ -60,6 +61,7 @@ import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.ChangeSummaryManager;
 import com.hedera.services.ledger.properties.TestAccountProperty;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.util.List;
@@ -467,6 +469,24 @@ class TransactionalLedgerTest {
         assertTrue(has1);
         assertTrue(has2);
         assertFalse(has3);
+    }
+
+    @Test
+    void checksIfAliasExists() {
+        setupInterceptedAccountsLedger();
+        final var alias = ByteString.copyFromUtf8("test");
+        final var nonExistingAlias = ByteString.copyFromUtf8("dummy");
+        final var aliasedId = AccountID.newBuilder().setAlias(alias).build();
+        given(workingView.aliases()).willReturn(Map.of(alias, EntityNum.fromLong(1L)));
+
+        accountsLedger.begin();
+        accountsLedger.create(asAccount(EntityNum.fromLong(1L).toEntityId()));
+
+        boolean has1 = accountsLedger.exists(aliasedId);
+        boolean has2 = accountsLedger.exists(AccountID.newBuilder().setAlias(nonExistingAlias).build());
+
+        assertTrue(has1);
+        assertFalse(has2);
     }
 
     @Test
