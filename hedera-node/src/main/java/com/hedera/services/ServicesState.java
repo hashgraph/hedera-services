@@ -313,9 +313,7 @@ public class ServicesState extends PartialNaryMerkleInternal
             if (trigger == RESTART) {
                 networkCtx().discardPreparedUpgradeMeta();
                 dualState.setFreezeTime(null);
-                // By default, don't (re-)stream migration records on a patch release; this will
-                // almost always be the desired behavior, though exceptions are conceivable
-                if (deployedVersion.isNonPatchUpgradeFrom(deserializedVersion)) {
+                if (deployedVersion.hasMigrationRecordsFrom(deserializedVersion)) {
                     networkCtx().markMigrationRecordsNotYetStreamed();
                 }
             }
