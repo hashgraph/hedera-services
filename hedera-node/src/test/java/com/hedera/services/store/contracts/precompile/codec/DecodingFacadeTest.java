@@ -258,6 +258,18 @@ class DecodingFacadeTest {
             Bytes.fromHexString(
                     "0x335e04c10000000000000000000000000000000000000000000000000000000000000404");
 
+    public static final Bytes GRANT_TOKEN_KYC_INPUT =
+            Bytes.fromHexString(
+                    "0x8f8d7f9900000000000000000000000000000000000000000000000000000000000004b200000000000000000000000000000000000000000000000000000000000004b0");
+
+    public static final Bytes REVOKE_TOKEN_KYC_INPUT =
+            Bytes.fromHexString(
+                    "0xaf99c63300000000000000000000000000000000000000000000000000000000000004b200000000000000000000000000000000000000000000000000000000000004b0");
+
+    public static final Bytes IS_KYC =
+            Bytes.fromHexString(
+                    "0xf2c31ff400000000000000000000000000000000000000000000000000000000000004b200000000000000000000000000000000000000000000000000000000000004b0");
+
     private static final Bytes FUNGIBLE_WIPE_INPUT =
             Bytes.fromHexString(
                     "0x9790686d00000000000000000000000000000000000000000000000000000000000006aa00000000000000000000000000000000000000000000000000000000000006a8000000000000000000000000000000000000000000000000000000000000000a");
@@ -594,6 +606,30 @@ class DecodingFacadeTest {
                 subject.decodeTokenDefaultKycStatus(GET_TOKEN_DEFAULT_KYC_STATUS_INPUT);
 
         assertTrue(decodedInput.tokenID().getTokenNum() > 0);
+    }
+
+    @Test
+    void decodeGrantTokenKycInput() {
+        final var decodedInput = subject.decodeGrantTokenKyc(GRANT_TOKEN_KYC_INPUT, identity());
+
+        assertTrue(decodedInput.token().getTokenNum() > 0);
+        assertTrue(decodedInput.account().getAccountNum() > 0);
+    }
+
+    @Test
+    void decodeRevokeTokenKycInput() {
+        final var decodedInput = subject.decodeRevokeTokenKyc(REVOKE_TOKEN_KYC_INPUT, identity());
+
+        assertTrue(decodedInput.token().getTokenNum() > 0);
+        assertTrue(decodedInput.account().getAccountNum() > 0);
+    }
+
+    @Test
+    void decodeIsKyc() {
+        final var decodedInput = subject.decodeIsKyc(IS_KYC, identity());
+
+        assertTrue(decodedInput.token().getTokenNum() > 0);
+        assertTrue(decodedInput.account().getAccountNum() > 0);
     }
 
     @Test

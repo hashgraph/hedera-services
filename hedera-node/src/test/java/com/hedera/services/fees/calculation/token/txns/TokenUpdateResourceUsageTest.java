@@ -15,28 +15,24 @@
  */
 package com.hedera.services.fees.calculation.token.txns;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static com.hedera.services.usage.SingletonEstimatorUtils.ESTIMATOR_UTILS;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
+import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.verify;
 
 import com.hedera.services.context.primitives.StateView;
+import com.hedera.services.usage.EstimatorFactory;
 import com.hedera.services.usage.SigUsage;
+import com.hedera.services.usage.TxnUsageEstimator;
 import com.hedera.services.usage.token.TokenUpdateUsage;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.utils.IdUtils;
-import com.hederahashgraph.api.proto.java.FeeData;
-import com.hederahashgraph.api.proto.java.Timestamp;
-import com.hederahashgraph.api.proto.java.TokenID;
-import com.hederahashgraph.api.proto.java.TokenInfo;
-import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
-import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.hederahashgraph.api.proto.java.*;
 import com.hederahashgraph.fee.SigValueObj;
 import java.util.Optional;
-import java.util.function.BiFunction;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -53,7 +49,6 @@ class TokenUpdateResourceUsageTest {
     FeeData expected;
 
     TokenUpdateUsage usage;
-    BiFunction<TransactionBody, SigUsage, TokenUpdateUsage> factory;
 
     long expiry = 1_234_567L;
     String symbol = "HEYMAOK";
@@ -75,6 +70,8 @@ class TokenUpdateResourceUsageTest {
                     .setExpiry(Timestamp.newBuilder().setSeconds(expiry))
                     .build();
 
+    TxnUsageEstimator txnUsageEstimator;
+
     @BeforeEach
     private void setup() throws Throwable {
         expected = mock(FeeData.class);
@@ -87,9 +84,6 @@ class TokenUpdateResourceUsageTest {
 
         nonTokenUpdateTxn = mock(TransactionBody.class);
         given(nonTokenUpdateTxn.hasTokenUpdate()).willReturn(false);
-
-        factory = (BiFunction<TransactionBody, SigUsage, TokenUpdateUsage>) mock(BiFunction.class);
-        given(factory.apply(tokenUpdateTxn, sigUsage)).willReturn(usage);
 
         usage = mock(TokenUpdateUsage.class);
         given(usage.givenCurrentAdminKey(Optional.of(TxnHandlingScenario.TOKEN_ADMIN_KT.asKey())))
@@ -117,10 +111,11 @@ class TokenUpdateResourceUsageTest {
 
         given(view.infoForToken(target)).willReturn(Optional.of(info));
 
-        TokenUpdateResourceUsage.factory = factory;
-        given(factory.apply(tokenUpdateTxn, sigUsage)).willReturn(usage);
-
-        subject = new TokenUpdateResourceUsage();
+        txnUsageEstimator = mock(TxnUsageEstimator.class);
+        EstimatorFactory estimatorFactory = mock(EstimatorFactory.class);
+        given(estimatorFactory.get(sigUsage, tokenUpdateTxn, ESTIMATOR_UTILS))
+                .willReturn(txnUsageEstimator);
+        subject = new TokenUpdateResourceUsage(estimatorFactory);
     }
 
     @Test
@@ -132,18 +127,32 @@ class TokenUpdateResourceUsageTest {
 
     @Test
     void delegatesToCorrectEstimate() throws Exception {
+        final var mockStatic = mockStatic(TokenUpdateUsage.class);
+        mockStatic
+                .when(() -> TokenUpdateUsage.newEstimate(tokenUpdateTxn, txnUsageEstimator))
+                .thenReturn(usage);
+
         // expect:
         assertEquals(expected, subject.usageGiven(tokenUpdateTxn, obj, view));
 
         // and:
         verify(usage).givenCurrentMemo(memo);
+
+        mockStatic.close();
     }
 
     @Test
     void returnsDefaultIfInfoMissing() throws Exception {
+        final var mockStatic = mockStatic(TokenUpdateUsage.class);
+        mockStatic
+                .when(() -> TokenUpdateUsage.newEstimate(tokenUpdateTxn, txnUsageEstimator))
+                .thenReturn(usage);
+
         given(view.infoForToken(any())).willReturn(Optional.empty());
 
         // expect:
         assertEquals(FeeData.getDefaultInstance(), subject.usageGiven(tokenUpdateTxn, obj, view));
+
+        mockStatic.close();
     }
 }

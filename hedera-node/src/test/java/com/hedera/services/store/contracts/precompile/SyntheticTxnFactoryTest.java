@@ -53,6 +53,7 @@ import com.hedera.services.store.contracts.precompile.codec.Association;
 import com.hedera.services.store.contracts.precompile.codec.BurnWrapper;
 import com.hedera.services.store.contracts.precompile.codec.DeleteWrapper;
 import com.hedera.services.store.contracts.precompile.codec.Dissociation;
+import com.hedera.services.store.contracts.precompile.codec.GrantRevokeKycWrapper;
 import com.hedera.services.store.contracts.precompile.codec.MintWrapper;
 import com.hedera.services.store.contracts.precompile.codec.PauseWrapper;
 import com.hedera.services.store.contracts.precompile.codec.SetApprovalForAllWrapper;
@@ -874,6 +875,26 @@ class SyntheticTxnFactoryTest {
                         subject, differentReceiver.asGrpc().toBuilder()));
         assertFalse(
                 SyntheticTxnFactory.areSameBuilder(subject, differentSender.asGrpc().toBuilder()));
+    }
+
+    @Test
+    void createsExpectedGrantKycCall() {
+        final var grantWrapper = new GrantRevokeKycWrapper(fungible, a);
+        final var result = subject.createGrantKyc(grantWrapper);
+        final var txnBody = result.build();
+
+        assertEquals(fungible, txnBody.getTokenGrantKyc().getToken());
+        assertEquals(a, txnBody.getTokenGrantKyc().getAccount());
+    }
+
+    @Test
+    void createsExpectedRevokeKycCall() {
+        final var revokeWrapper = new GrantRevokeKycWrapper(fungible, a);
+        final var result = subject.createRevokeKyc(revokeWrapper);
+        final var txnBody = result.build();
+
+        assertEquals(fungible, txnBody.getTokenRevokeKyc().getToken());
+        assertEquals(a, txnBody.getTokenRevokeKyc().getAccount());
     }
 
     @Test
