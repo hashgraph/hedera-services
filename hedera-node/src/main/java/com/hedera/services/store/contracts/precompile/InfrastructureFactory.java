@@ -147,7 +147,8 @@ public class InfrastructureFactory {
                 dynamicProperties,
                 tokenRelsLedger,
                 nftsLedger,
-                backingTokens);
+                backingTokens,
+                workingView);
     }
 
     public BurnLogic newBurnLogic(
@@ -205,8 +206,7 @@ public class InfrastructureFactory {
                 validator,
                 null,
                 recordsHistorian,
-                txnCtx,
-                workingView);
+                txnCtx);
     }
 
     public RedirectViewExecutor newRedirectExecutor(

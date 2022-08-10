@@ -42,6 +42,7 @@ import static org.mockito.internal.verification.VerificationModeFactory.times;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.SideEffectsTracker;
+import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.accounts.ContractAliases;
@@ -122,11 +123,7 @@ class AbstractLedgerWorldUpdaterTest {
     @Mock private EntityAccess entityAccess;
     @Mock private StaticEntityAccess staticEntityAccess;
     @Mock private WorldLedgers mockLedgers;
-    @Mock private MerkleNetworkContext networkCtx;
-    @Mock private MerkleMap<EntityNum, MerkleStakingInfo> stakingInfo;
-    @Mock private GlobalDynamicProperties dynamicProperties;
-    @Mock private RewardCalculator rewardCalculator;
-    @Mock private MerkleMap<EntityNum, MerkleAccount> accounts;
+    @Mock private StateView view;
 
     private WorldLedgers ledgers;
     private MockLedgerWorldUpdater subject;
@@ -575,25 +572,29 @@ class AbstractLedgerWorldUpdaterTest {
                         TokenRelProperty.class,
                         MerkleTokenRelStatus::new,
                         new HashMapBackingTokenRels(),
-                        new ChangeSummaryManager<>());
+                        new ChangeSummaryManager<>(),
+                        () -> view);
         final var accountsLedger =
                 new TransactionalLedger<>(
                         AccountProperty.class,
                         MerkleAccount::new,
                         new HashMapBackingAccounts(),
-                        new ChangeSummaryManager<>());
+                        new ChangeSummaryManager<>(),
+                        () -> view);
         final var tokensLedger =
                 new TransactionalLedger<>(
                         TokenProperty.class,
                         MerkleToken::new,
                         new HashMapBackingTokens(),
-                        new ChangeSummaryManager<>());
+                        new ChangeSummaryManager<>(),
+                        () -> view);
         final var nftsLedger =
                 new TransactionalLedger<>(
                         NftProperty.class,
                         MerkleUniqueToken::new,
                         new HashMapBackingNfts(),
-                        new ChangeSummaryManager<>());
+                        new ChangeSummaryManager<>(),
+                        () -> view);
 
         tokenRelsLedger.begin();
         accountsLedger.begin();

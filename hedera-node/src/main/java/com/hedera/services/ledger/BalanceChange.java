@@ -195,6 +195,10 @@ public class BalanceChange {
         alias = ByteString.EMPTY;
     }
 
+    public void replaceCounterPartyAliasWith(final AccountID createdId) {
+        counterPartyAccountId = createdId;
+    }
+
     public boolean isForHbar() {
         return token == null;
     }
@@ -205,6 +209,10 @@ public class BalanceChange {
 
     public boolean isForNft() {
         return token != null && counterPartyAccountId != null;
+    }
+
+    public boolean isForToken(){
+        return isForFungibleToken() || isForNft();
     }
 
     public NftId nftId() {
@@ -224,10 +232,6 @@ public class BalanceChange {
     }
 
     public void setNewBalance(final long newBalance) {
-        this.newBalance = newBalance;
-    }
-
-    public void setToken(final Id token) {
         this.newBalance = newBalance;
     }
 
@@ -350,5 +354,9 @@ public class BalanceChange {
 
     public boolean hasNonEmptyAlias() {
         return accountId.getAccountNum() == 0 && !alias.isEmpty();
+    }
+
+    public boolean hasNonEmptyCounterPartyAlias() {
+        return counterPartyAccountId.getAccountNum() == 0 && !counterPartyAccountId.getAlias().isEmpty();
     }
 }

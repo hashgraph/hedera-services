@@ -87,7 +87,7 @@ class AutoCreationLogicTest {
                         ids,
                         aliasManager,
                         sigImpactHistorian,
-                        currentView,
+                        () -> currentView,
                         txnCtx);
 
         subject.setFeeCalculator(feeCalculator);

@@ -24,6 +24,7 @@ import static org.mockito.Mockito.mock;
 
 import com.hedera.services.config.MockGlobalDynamicProps;
 import com.hedera.services.context.SideEffectsTracker;
+import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.ledger.backing.BackingTokenRels;
 import com.hedera.services.ledger.backing.HashMapBackingAccounts;
@@ -61,6 +62,7 @@ class HederaLedgerLiveTest extends BaseHederaLedgerTestHelper {
     @Mock private AutoAssocTokenRelsCommitInterceptor autoAssocTokenRelsCommitInterceptor;
     @Mock private AccountsCommitInterceptor accountsCommitInterceptor;
     @Mock private LinkAwareUniqueTokensCommitInterceptor linkAwareUniqueTokensCommitInterceptor;
+    @Mock private StateView workingView;
 
     final SideEffectsTracker liveSideEffects = new SideEffectsTracker();
 
@@ -73,7 +75,8 @@ class HederaLedgerLiveTest extends BaseHederaLedgerTestHelper {
                         AccountProperty.class,
                         MerkleAccount::new,
                         new HashMapBackingAccounts(),
-                        new ChangeSummaryManager<>());
+                        new ChangeSummaryManager<>(),
+                        () -> workingView);
         accountsLedger.setCommitInterceptor(accountsCommitInterceptor);
 
         nftsLedger =
@@ -81,14 +84,16 @@ class HederaLedgerLiveTest extends BaseHederaLedgerTestHelper {
                         NftProperty.class,
                         MerkleUniqueToken::new,
                         new HashMapBackingNfts(),
-                        new ChangeSummaryManager<>());
+                        new ChangeSummaryManager<>(),
+                        () -> workingView);
         nftsLedger.setCommitInterceptor(linkAwareUniqueTokensCommitInterceptor);
         tokenRelsLedger =
                 new TransactionalLedger<>(
                         TokenRelProperty.class,
                         MerkleTokenRelStatus::new,
                         new HashMapBackingTokenRels(),
-                        new ChangeSummaryManager<>());
+                        new ChangeSummaryManager<>(),
+                        () -> workingView);
         tokenRelsLedger.setKeyToString(BackingTokenRels::readableTokenRel);
         tokenRelsLedger.setCommitInterceptor(autoAssocTokenRelsCommitInterceptor);
         tokensLedger =
@@ -96,7 +101,8 @@ class HederaLedgerLiveTest extends BaseHederaLedgerTestHelper {
                         TokenProperty.class,
                         MerkleToken::new,
                         new HashMapBackingTokens(),
-                        new ChangeSummaryManager<>());
+                        new ChangeSummaryManager<>(),
+                        () -> workingView);
         tokenStore =
                 new HederaTokenStore(
                         ids,
@@ -106,7 +112,8 @@ class HederaLedgerLiveTest extends BaseHederaLedgerTestHelper {
                         new MockGlobalDynamicProps(),
                         tokenRelsLedger,
                         nftsLedger,
-                        new HashMapBackingTokens());
+                        new HashMapBackingTokens(),
+                       () -> workingView);
         subject =
                 new HederaLedger(
                         tokenStore,

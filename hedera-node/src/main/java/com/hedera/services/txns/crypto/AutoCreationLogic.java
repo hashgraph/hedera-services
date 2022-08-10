@@ -54,6 +54,7 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.function.Supplier;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.commons.lang3.tuple.Pair;
@@ -66,7 +67,7 @@ import org.apache.commons.lang3.tuple.Pair;
 public class AutoCreationLogic {
     private static final List<FcAssessedCustomFee> NO_CUSTOM_FEES = Collections.emptyList();
 
-    private final StateView currentView;
+    private final Supplier<StateView> currentView;
     private final UsageLimits usageLimits;
     private final EntityIdSource ids;
     private final EntityCreator creator;
@@ -89,7 +90,7 @@ public class AutoCreationLogic {
             final EntityIdSource ids,
             final AliasManager aliasManager,
             final SigImpactHistorian sigImpactHistorian,
-            final StateView currentView,
+            final Supplier<StateView> currentView,
             final TransactionContext txnCtx) {
         this.ids = ids;
         this.txnCtx = txnCtx;
@@ -168,16 +169,23 @@ public class AutoCreationLogic {
         if (!usageLimits.areCreatableAccounts(1)) {
             return Pair.of(MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED, 0L);
         }
-        final var alias = change.alias();
+        final ByteString alias;
+        if (change.hasNonEmptyCounterPartyAlias()) {
+            alias = change.counterPartyAccountId().getAlias();
+        } else {
+            alias = change.alias();
+        }
+
         final var key = asPrimitiveKeyUnchecked(alias);
         final var syntheticCreation = syntheticTxnFactory.createAccount(key, 0L, change);
         final var fee = autoCreationFeeFor(syntheticCreation);
-        setNewValuesInChange(change);
 
         final var sideEffects = new SideEffectsTracker();
         final var newId = ids.newAccountId(syntheticCreation.getTransactionID().getAccountID());
         accountsLedger.create(newId);
-        change.replaceAliasWith(newId);
+
+        setNewValuesInChange(change, newId);
+
         JKey jKey = asFcKeyUnchecked(key);
         final var customizer =
                 new HederaAccountCustomizer()
@@ -188,7 +196,7 @@ public class AutoCreationLogic {
                         .isReceiverSigRequired(false)
                         .isSmartContract(false)
                         .alias(alias);
-        if (change.isForFungibleToken() || change.isForNft()) {
+        if (change.isForToken()) {
             customizer.maxAutomaticAssociations((int) change.getAggregatedUnits());
         }
         customizer.customize(newId, accountsLedger);
@@ -209,11 +217,15 @@ public class AutoCreationLogic {
         return Pair.of(OK, fee);
     }
 
-    private void setNewValuesInChange(final BalanceChange change) {
+    private void setNewValuesInChange(final BalanceChange change, final AccountID newId) {
         if (change.isForHbar()) {
             change.setNewBalance(change.getAggregatedUnits());
-        } else if (change.isForFungibleToken()) {
+        }
 
+        if (change.hasNonEmptyCounterPartyAlias()) {
+            change.replaceCounterPartyAliasWith(newId);
+        } else {
+            change.replaceAliasWith(newId);
         }
     }
 
@@ -230,7 +242,8 @@ public class AutoCreationLogic {
 
         final var accessor = SignedTxnAccessor.uncheckedFrom(txn);
         final var fees =
-                feeCalculator.computeFee(accessor, EMPTY_KEY, currentView, txnCtx.consensusTime());
+                feeCalculator.computeFee(
+                        accessor, EMPTY_KEY, currentView.get(), txnCtx.consensusTime());
         return fees.getServiceFee() + fees.getNetworkFee() + fees.getNodeFee();
     }
 
@@ -240,5 +253,32 @@ public class AutoCreationLogic {
         } catch (InvalidProtocolBufferException internal) {
             throw new IllegalStateException(internal);
         }
+    }
+
+    public void checkIfExistingAlias(final BalanceChange change) {
+        if (change.hasNonEmptyAlias() && isKnownAlias(change.accountId(), currentView)) {
+            final var aliasNum =
+                    currentView
+                            .get()
+                            .aliases()
+                            .get(change.accountId().getAlias())
+                            .toGrpcAccountId();
+            change.replaceAliasWith(aliasNum);
+        }
+        if (change.hasNonEmptyCounterPartyAlias()
+                && isKnownAlias(change.counterPartyAccountId(), currentView)) {
+            final var aliasNum =
+                    currentView
+                            .get()
+                            .aliases()
+                            .get(change.counterPartyAccountId().getAlias())
+                            .toGrpcAccountId();
+            change.replaceCounterPartyAliasWith(aliasNum);
+        }
+    }
+
+    private boolean isKnownAlias(final AccountID accountId, final Supplier<StateView> workingView) {
+        final var aliases = workingView.get().aliases();
+        return aliases.containsKey(accountId.getAlias());
     }
 }

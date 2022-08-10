@@ -125,27 +125,31 @@ class LedgerBalanceChangesTest {
                         AccountProperty.class,
                         MerkleAccount::new,
                         backingAccounts,
-                        new ChangeSummaryManager<>());
+                        new ChangeSummaryManager<>(),
+                        () -> workingView);
         accountsLedger.setCommitInterceptor(accountsCommitInterceptor);
         tokenRelsLedger =
                 new TransactionalLedger<>(
                         TokenRelProperty.class,
                         MerkleTokenRelStatus::new,
                         backingRels,
-                        new ChangeSummaryManager<>());
+                        new ChangeSummaryManager<>(),
+                        () -> workingView);
         nftsLedger =
                 new TransactionalLedger<>(
                         NftProperty.class,
                         MerkleUniqueToken::new,
                         backingNfts,
-                        new ChangeSummaryManager<>());
+                        new ChangeSummaryManager<>(),
+                        () -> workingView);
         nftsLedger.setCommitInterceptor(linkAwareUniqueTokensCommitInterceptor);
         tokensLedger =
                 new TransactionalLedger<>(
                         TokenProperty.class,
                         MerkleToken::new,
                         backingTokens,
-                        new ChangeSummaryManager<>());
+                        new ChangeSummaryManager<>(),
+                        () -> workingView);
 
         tokenRelsLedger.setKeyToString(BackingTokenRels::readableTokenRel);
         tokenRelsLedger.setCommitInterceptor(autoAssocTokenRelsCommitInterceptor);
@@ -166,7 +170,8 @@ class LedgerBalanceChangesTest {
                         dynamicProperties,
                         tokenRelsLedger,
                         nftsLedger,
-                        backingTokens);
+                        backingTokens,
+                        () -> workingView);
         transferLogic =
                 new TransferLogic(
                         accountsLedger,
@@ -178,8 +183,7 @@ class LedgerBalanceChangesTest {
                         validator,
                         autoCreationLogic,
                         historian,
-                        txnCtx,
-                        () -> workingView);
+                        txnCtx);
 
         subject =
                 new HederaLedger(
@@ -279,7 +283,8 @@ class LedgerBalanceChangesTest {
                         dynamicProperties,
                         tokenRelsLedger,
                         nftsLedger,
-                        backingTokens);
+                        backingTokens,
+                        () -> workingView);
 
         transferLogic =
                 new TransferLogic(
@@ -292,8 +297,7 @@ class LedgerBalanceChangesTest {
                         validator,
                         autoCreationLogic,
                         historian,
-                        txnCtx,
-                        () -> workingView);
+                        txnCtx);
         subject =
                 new HederaLedger(
                         tokenStore,

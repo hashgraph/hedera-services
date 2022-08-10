@@ -78,7 +78,6 @@ public class TransferLogic {
                     Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus>
             tokenRelsLedger;
     private final TransactionContext txnCtx;
-    private final Supplier<StateView> workingView;
 
     @Inject
     public TransferLogic(
@@ -93,8 +92,7 @@ public class TransferLogic {
             final OptionValidator validator,
             final @Nullable AutoCreationLogic autoCreationLogic,
             final RecordsHistorian recordsHistorian,
-            final TransactionContext txnCtx,
-            final Supplier<StateView> workingView) {
+            final TransactionContext txnCtx) {
         this.tokenStore = tokenStore;
         this.nftsLedger = nftsLedger;
         this.accountsLedger = accountsLedger;
@@ -104,7 +102,6 @@ public class TransferLogic {
         this.dynamicProperties = dynamicProperties;
         this.sideEffectsTracker = sideEffectsTracker;
         this.txnCtx = txnCtx;
-        this.workingView = workingView;
 
         scopedCheck = new MerkleAccountScopedCheck(validator, nftsLedger);
     }
@@ -113,8 +110,9 @@ public class TransferLogic {
         var validity = OK;
         var autoCreationFee = 0L;
         for (var change : changes) {
+            autoCreationLogic.checkIfExistingAlias(change);
             // create a new account for alias when the no account is already created using the alias
-            if (change.hasNonEmptyAlias() && !isKnownAlias(change.accountId())) {
+            if (change.hasNonEmptyAlias() || (change.isForNft() && change.hasNonEmptyCounterPartyAlias())) {
                 if (autoCreationLogic == null) {
                     throw new IllegalStateException(
                             "Cannot auto-create account from "
@@ -124,37 +122,19 @@ public class TransferLogic {
                 final var result = autoCreationLogic.create(change, accountsLedger);
                 validity = result.getKey();
                 autoCreationFee += result.getValue();
-                if (validity == OK && (change.isForNft() || change.isForFungibleToken())) {
+                if (validity == OK && (change.isForToken())) {
                     validity = tokenStore.tryTokenChange(change);
                 }
             } else if (change.isForHbar()) {
-                if (isKnownAlias(change.accountId())) {
-                    change.replaceAliasWith(
-                            workingView
-                                    .get()
-                                    .aliases()
-                                    .get(change.accountId().getAlias())
-                                    .toGrpcAccountId());
-                }
                 validity =
                         accountsLedger.validate(
                                 change.accountId(),
-                                scopedCheck.setBalanceChange(change),
-                                workingView);
+                                scopedCheck.setBalanceChange(change));
             } else {
-                if (isKnownAlias(change.accountId())) {
-                    change.replaceAliasWith(
-                            workingView
-                                    .get()
-                                    .aliases()
-                                    .get(change.accountId().getAlias())
-                                    .toGrpcAccountId());
-                }
                 validity =
                         accountsLedger.validate(
                                 change.accountId(),
-                                scopedCheck.setBalanceChange(change),
-                                workingView);
+                                scopedCheck.setBalanceChange(change));
 
                 if (validity == OK) {
                     validity = tokenStore.tryTokenChange(change);
@@ -178,11 +158,6 @@ public class TransferLogic {
             }
             throw new InvalidTransactionException(validity);
         }
-    }
-
-    private boolean isKnownAlias(final AccountID accountId) {
-        final var aliases = workingView.get().aliases();
-        return aliases.containsKey(accountId.getAlias());
     }
 
     private void payFundingFromPayer(final long autoCreationFee) {

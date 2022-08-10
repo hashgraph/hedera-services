@@ -128,7 +128,8 @@ class TransferLogicTest {
                         AccountProperty.class,
                         MerkleAccount::new,
                         backingAccounts,
-                        new ChangeSummaryManager<>());
+                        new ChangeSummaryManager<>(),
+                        () -> workingView);
         subject =
                 new TransferLogic(
                         accountsLedger,
@@ -140,8 +141,7 @@ class TransferLogicTest {
                         TEST_VALIDATOR,
                         autoCreationLogic,
                         recordsHistorian,
-                        txnCtx,
-                        () -> workingView);
+                        txnCtx);
     }
 
     @Test
@@ -162,8 +162,7 @@ class TransferLogicTest {
                         TEST_VALIDATOR,
                         null,
                         recordsHistorian,
-                        txnCtx,
-                        () -> workingView);
+                        txnCtx);
 
         final var triggerList = List.of(inappropriateTrigger);
         assertThrows(IllegalStateException.class, () -> subject.doZeroSum(triggerList));

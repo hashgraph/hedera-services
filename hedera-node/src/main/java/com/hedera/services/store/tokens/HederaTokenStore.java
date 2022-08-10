@@ -29,7 +29,9 @@ import static com.hedera.services.ledger.properties.TokenRelProperty.TOKEN_BALAN
 import static com.hedera.services.state.enums.TokenType.NON_FUNGIBLE_UNIQUE;
 import static com.hedera.services.state.merkle.MerkleToken.UNUSED_KEY;
 import static com.hedera.services.state.submerkle.EntityId.fromGrpcAccountId;
+import static com.hedera.services.utils.EntityIdUtils.isAlias;
 import static com.hedera.services.utils.EntityIdUtils.readableId;
+import static com.hedera.services.utils.EntityNum.MISSING_NUM;
 import static com.hedera.services.utils.EntityNum.fromTokenId;
 import static com.hedera.services.utils.MiscUtils.asFcKeyUnchecked;
 import static com.hedera.services.utils.MiscUtils.asUsableFcKey;
@@ -63,6 +65,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELE
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES;
 
 import com.hedera.services.context.SideEffectsTracker;
+import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.TransactionalLedger;
@@ -113,6 +116,7 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
     private final TransactionalLedger<
                     Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus>
             tokenRelsLedger;
+    private final Supplier<StateView> workingView;
     private final BackingStore<TokenID, MerkleToken> backingTokens;
 
     TokenID pendingId = NO_PENDING_ID;
@@ -129,7 +133,8 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
                             Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus>
                     tokenRelsLedger,
             final TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger,
-            final BackingStore<TokenID, MerkleToken> backingTokens) {
+            final BackingStore<TokenID, MerkleToken> backingTokens,
+            final Supplier<StateView> workingView) {
         super(ids);
         this.validator = validator;
         this.properties = properties;
@@ -138,21 +143,23 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
         this.backingTokens = backingTokens;
         this.tokenRelsLedger = tokenRelsLedger;
         this.sideEffectsTracker = sideEffectsTracker;
+        this.workingView = workingView;
     }
 
     @Override
     protected ResponseCodeEnum checkAccountUsability(final AccountID aId) {
-        var accountDoesNotExist = !accountsLedger.exists(aId);
+        var unaliasedId = aId;
+        var accountDoesNotExist = !accountsLedger.exists(unaliasedId);
 
         if (accountDoesNotExist) {
             return INVALID_ACCOUNT_ID;
         }
 
-        var deleted = (boolean) accountsLedger.get(aId, IS_DELETED);
+        var deleted = (boolean) accountsLedger.get(unaliasedId, IS_DELETED);
         if (deleted) {
             return ACCOUNT_DELETED;
         }
-        return validator.expiryStatusGiven(accountsLedger, aId);
+        return validator.expiryStatusGiven(accountsLedger, unaliasedId);
     }
 
     @Override

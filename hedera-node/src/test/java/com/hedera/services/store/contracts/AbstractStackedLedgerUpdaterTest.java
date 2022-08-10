@@ -27,6 +27,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
+import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.accounts.ContractAliases;
 import com.hedera.services.ledger.accounts.ContractCustomizer;
@@ -69,6 +70,7 @@ class AbstractStackedLedgerUpdaterTest {
     @Mock private HederaWorldState worldState;
     @Mock private ContractCustomizer customizer;
     @Mock private RecordsHistorian recordsHistorian;
+    @Mock private StateView view;
 
     private WorldLedgers ledgers;
     private MockLedgerWorldUpdater wrapped;
@@ -244,25 +246,29 @@ class AbstractStackedLedgerUpdaterTest {
                         TokenRelProperty.class,
                         MerkleTokenRelStatus::new,
                         new HashMapBackingTokenRels(),
-                        new ChangeSummaryManager<>());
+                        new ChangeSummaryManager<>(),
+                        () -> view);
         final var accountsLedger =
                 new TransactionalLedger<>(
                         AccountProperty.class,
                         MerkleAccount::new,
                         new HashMapBackingAccounts(),
-                        new ChangeSummaryManager<>());
+                        new ChangeSummaryManager<>(),
+                        () -> view);
         final var nftsLedger =
                 new TransactionalLedger<>(
                         NftProperty.class,
                         MerkleUniqueToken::new,
                         new HashMapBackingNfts(),
-                        new ChangeSummaryManager<>());
+                        new ChangeSummaryManager<>(),
+                        () -> view);
         final var tokensLedger =
                 new TransactionalLedger<>(
                         TokenProperty.class,
                         MerkleToken::new,
                         new HashMapBackingTokens(),
-                        new ChangeSummaryManager<>());
+                        new ChangeSummaryManager<>(),
+                        () -> view);
 
         tokenRelsLedger.begin();
         accountsLedger.begin();

@@ -698,7 +698,8 @@ public class SigRequirements {
                                         required,
                                         token,
                                         op,
-                                        linkedRefs))
+                                        linkedRefs,
+                                        false))
                         != NONE) {
                     return accountFailure(failure, factory);
                 }
@@ -712,7 +713,8 @@ public class SigRequirements {
                                         required,
                                         token,
                                         op,
-                                        linkedRefs))
+                                        linkedRefs,
+                                        true))
                         != NONE) {
                     return (failure == MISSING_TOKEN)
                             ? factory.forMissingToken()
@@ -1308,13 +1310,21 @@ public class SigRequirements {
             final List<JKey> required,
             final TokenID token,
             final CryptoTransferTransactionBody op,
-            final @Nullable LinkedRefs linkedRefs) {
+            final @Nullable LinkedRefs linkedRefs,
+            final boolean autoCreationAllowed) {
         if (!payer.equals(party)) {
             var result = sigMetaLookup.aliasableAccountSigningMetaFor(party, linkedRefs);
             if (!result.succeeded()) {
-                // TODO : add logic
-
-                return result.failureIfAny();
+                final var reason = result.failureIfAny();
+                if (reason == IMMUTABLE_ACCOUNT) { // is this needed IMMUTABLE_ACCOUNT case
+                    return NONE;
+                } else if (reason == MISSING_ACCOUNT
+                        && autoCreationAllowed
+                        && isAlias(party)) {
+                    return NONE;
+                } else {
+                    return INVALID_ACCOUNT_CODES.contains(reason) ? INVALID_ACCOUNT : reason;
+                }
             }
             final var meta = result.metadata();
             final var isSender = counterparty == null;

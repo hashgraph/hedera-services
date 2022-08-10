@@ -160,8 +160,6 @@ public class AliasResolver {
                     } else {
                         perceivedMissing++;
                     }
-                } else if (receiverResult == Result.REPEATED_UNKNOWN_ALIAS) {
-                    perceivedInvalidCreations++;
                 }
                 if (receiverResult == Result.UNKNOWN_EVM_ADDRESS) {
                     perceivedMissing++;
@@ -223,7 +221,7 @@ public class AliasResolver {
             if (resolution != MISSING_NUM) {
                 resolvedId = resolution.toGrpcAccountId();
             } else {
-                result = netOf(isEvmAddress, alias);
+                result = netOfNftAliases(isEvmAddress, alias);
             }
             resolutions.put(alias, resolution);
         }
@@ -257,7 +255,7 @@ public class AliasResolver {
             final var resolution = aliasManager.lookupIdBy(alias);
             if (resolution == MISSING_NUM) {
                 if (isForToken) {
-                    result = netOfTokens(isEvmAddress, alias);
+                    result = netOfFungibleTokenAliases(isEvmAddress, alias);
                 } else {
                     result = netOf(isEvmAddress, alias);
                 }
@@ -282,13 +280,21 @@ public class AliasResolver {
         }
     }
 
-    private Result netOfTokens(final boolean isEvmAddress, final ByteString alias) {
+    private Result netOfFungibleTokenAliases(final boolean isEvmAddress, final ByteString alias) {
         if (isEvmAddress) {
             return Result.UNKNOWN_EVM_ADDRESS;
         } else {
             return localTokenResolutions.containsKey(alias)
                     ? Result.REPEATED_UNKNOWN_ALIAS
                     : resolutions.containsKey(alias) ? Result.KNOWN_ALIAS : Result.UNKNOWN_ALIAS;
+        }
+    }
+
+    private Result netOfNftAliases(final boolean isEvmAddress, final ByteString alias) {
+        if (isEvmAddress) {
+            return Result.UNKNOWN_EVM_ADDRESS;
+        } else {
+            return resolutions.containsKey(alias) ? Result.KNOWN_ALIAS : Result.UNKNOWN_ALIAS;
         }
     }
 

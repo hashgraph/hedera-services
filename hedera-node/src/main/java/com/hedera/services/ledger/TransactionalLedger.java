@@ -84,18 +84,21 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A>
     private EntityChangeSet<K, A, P> pendingChanges = null;
     private CommitInterceptor<K, A, P> commitInterceptor = null;
     private PropertyChangeObserver<K, P> propertyChangeObserver = null;
+    private final Supplier<StateView> currentView;
 
     public TransactionalLedger(
             final Class<P> propertyType,
             final Supplier<A> newEntity,
             final BackingStore<K, A> entities,
-            final ChangeSummaryManager<A, P> changeManager) {
+            final ChangeSummaryManager<A, P> changeManager,
+            final Supplier<StateView> currentView) {
         this.entities = entities;
         this.allProps = propertyType.getEnumConstants();
         this.newEntity = newEntity;
         this.propertyType = propertyType;
         this.changeManager = changeManager;
         this.changeFactory = ignore -> new EnumMap<>(propertyType);
+        this.currentView = currentView;
 
         if (entities instanceof TransactionalLedger) {
             this.entitiesLedger = (TransactionalLedger<K, P, A>) entities;
@@ -125,7 +128,8 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A>
                         sourceLedger.getPropertyType(),
                         sourceLedger.getNewEntity(),
                         sourceLedger,
-                        sourceLedger.getChangeManager());
+                        sourceLedger.getChangeManager(),
+                        sourceLedger.getCurrentView());
         wrapper.begin();
         return wrapper;
     }
@@ -177,18 +181,17 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A>
 
     public ResponseCodeEnum validate(
             final K id,
-            final LedgerCheck<A, P> ledgerCheck,
-            final Supplier<StateView> workingView) {
+            final LedgerCheck<A, P> ledgerCheck) {
         var unaliasedId = id;
-        if (isAlias((AccountID) id)) {
-            unaliasedId =
-                    (K)
-                            workingView
-                                    .get()
-                                    .aliases()
-                                    .get(((AccountID) id).getAlias())
-                                    .toGrpcAccountId();
-        }
+//        if (isAlias((AccountID) id)) {
+//            unaliasedId =
+//                    (K)
+//                            workingView
+//                                    .get()
+//                                    .aliases()
+//                                    .get(((AccountID) id).getAlias())
+//                                    .toGrpcAccountId();
+//        }
 
         if (!exists(unaliasedId)) {
             return INVALID_ACCOUNT_ID;
@@ -312,7 +315,16 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A>
     /** {@inheritDoc} */
     @Override
     public boolean exists(final K id) {
-        return existsOrIsPendingCreation(id) && !isZombie(id);
+        var unaliasedId = id;
+        if (id instanceof  AccountID && isAlias((AccountID) id)) {
+            final var aliasNum = currentView.get().aliases().get(((AccountID) id).getAlias());
+            if (aliasNum != null) {
+                unaliasedId = (K) aliasNum.toGrpcAccountId();
+            } else {
+                return false;
+            }
+        }
+        return existsOrIsPendingCreation(unaliasedId) && !isZombie(unaliasedId);
     }
 
     /** {@inheritDoc} */
@@ -454,6 +466,10 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A>
 
     ChangeSummaryManager<A, P> getChangeManager() {
         return changeManager;
+    }
+
+    Supplier<StateView> getCurrentView() {
+        return currentView;
     }
 
     Supplier<A> getNewEntity() {

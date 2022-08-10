@@ -216,8 +216,8 @@ public class TokenMovement {
     private NftTransfer adjustment(
             String senderName, String receiverName, long value, HapiApiSpec spec) {
         return NftTransfer.newBuilder()
-                .setSenderAccountID(asId(senderName, spec))
-                .setReceiverAccountID(asId(receiverName, spec))
+                .setSenderAccountID(asIdForKeyLookUp(senderName, spec))
+                .setReceiverAccountID(asIdForKeyLookUp(receiverName, spec))
                 .setSerialNumber(value)
                 .setIsApproval(isApproval)
                 .build();

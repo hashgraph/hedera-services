@@ -21,6 +21,7 @@ import com.hedera.services.config.AccountNumbers;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.annotations.CompositeProps;
+import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.context.properties.SupplierMapPropertySource;
@@ -137,13 +138,15 @@ public interface StakingActivityModule {
             final StakeInfoManager stakeInfoManager,
             final @MockProps AccountNumbers accountNumbers,
             final TransactionContext txnCtx,
-            final AccountUsageTracking usageTracking) {
+            final AccountUsageTracking usageTracking,
+            final Supplier<StateView> currentView) {
         final var accountsLedger =
                 new TransactionalLedger<>(
                         AccountProperty.class,
                         MerkleAccount::new,
                         backingAccounts,
-                        new ChangeSummaryManager<>());
+                        new ChangeSummaryManager<>(),
+                        currentView);
         final var accountsCommitInterceptor =
                 new StakingAccountsCommitInterceptor(
                         sideEffectsTracker,

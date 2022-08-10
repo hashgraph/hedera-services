@@ -84,6 +84,7 @@ import static org.mockito.BDDMockito.willThrow;
 
 import com.google.protobuf.StringValue;
 import com.hedera.services.context.SideEffectsTracker;
+import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.BalanceChange;
 import com.hedera.services.ledger.HederaLedger;
@@ -199,6 +200,7 @@ class HederaTokenStoreTest {
     private UsageLimits usageLimits;
     private MerkleToken token;
     private MerkleToken nonfungibleToken;
+    private StateView workingView;
 
     private HederaTokenStore subject;
 
@@ -296,6 +298,7 @@ class HederaTokenStoreTest {
         usageLimits = mock(UsageLimits.class);
 
         sideEffectsTracker = new SideEffectsTracker();
+        workingView = mock(StateView.class);
         subject =
                 new HederaTokenStore(
                         ids,
@@ -305,7 +308,8 @@ class HederaTokenStoreTest {
                         properties,
                         tokenRelsLedger,
                         nftsLedger,
-                        backingTokens);
+                        backingTokens,
+                        () -> workingView);
         subject.setAccountsLedger(accountsLedger);
         subject.setHederaLedger(hederaLedger);
     }

@@ -421,8 +421,8 @@ public class SyntheticTxnFactory {
     public TransactionBody.Builder createAccount(
             final Key alias, final long balance, final BalanceChange change) {
         final var baseBuilder = createAccountBase(alias, balance);
-        if (change.isForFungibleToken() || change.isForNft()) {
-            baseBuilder.setMaxAutomaticTokenAssociations(1);
+        if (change.isForToken()) {
+            baseBuilder.setMaxAutomaticTokenAssociations((int) change.getAggregatedUnits());
         }
         return TransactionBody.newBuilder().setCryptoCreateAccount(baseBuilder.build());
     }
