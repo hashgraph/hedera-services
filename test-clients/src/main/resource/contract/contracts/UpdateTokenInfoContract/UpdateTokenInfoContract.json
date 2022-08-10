@@ -1,0 +1,162 @@
+[
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "tokenID",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "treasury",
+        "type": "address"
+      },
+      {
+        "internalType": "string",
+        "name": "_name",
+        "type": "string"
+      },
+      {
+        "internalType": "string",
+        "name": "_symbol",
+        "type": "string"
+      }
+    ],
+    "name": "checkNameAndSymbolLenght",
+    "outputs": [],
+    "stateMutability": "payable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "tokenID",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "treasury",
+        "type": "address"
+      }
+    ],
+    "name": "updateTokenTreasury",
+    "outputs": [],
+    "stateMutability": "payable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "tokenID",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "treasury",
+        "type": "address"
+      },
+      {
+        "internalType": "bytes",
+        "name": "ed25519",
+        "type": "bytes"
+      },
+      {
+        "internalType": "bytes",
+        "name": "ecdsa",
+        "type": "bytes"
+      },
+      {
+        "internalType": "address",
+        "name": "contractID",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "autoRenewAccount",
+        "type": "address"
+      },
+      {
+        "internalType": "uint32",
+        "name": "autoRenewPeriod",
+        "type": "uint32"
+      },
+      {
+        "internalType": "string",
+        "name": "_name",
+        "type": "string"
+      },
+      {
+        "internalType": "string",
+        "name": "_symbol",
+        "type": "string"
+      },
+      {
+        "internalType": "string",
+        "name": "_memo",
+        "type": "string"
+      }
+    ],
+    "name": "updateTokenWithAllFields",
+    "outputs": [],
+    "stateMutability": "payable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "tokenID",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "autoRenewAccount",
+        "type": "address"
+      },
+      {
+        "internalType": "uint32",
+        "name": "autoRenewPeriod",
+        "type": "uint32"
+      }
+    ],
+    "name": "updateTokenWithInvalidKeyValues",
+    "outputs": [],
+    "stateMutability": "payable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "tokenID",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "treasury",
+        "type": "address"
+      },
+      {
+        "internalType": "bytes",
+        "name": "ed25519",
+        "type": "bytes"
+      },
+      {
+        "internalType": "bytes",
+        "name": "ecdsa",
+        "type": "bytes"
+      },
+      {
+        "internalType": "address",
+        "name": "contractID",
+        "type": "address"
+      }
+    ],
+    "name": "updateTokenWithKeys",
+    "outputs": [],
+    "stateMutability": "payable",
+    "type": "function"
+  }
+]
