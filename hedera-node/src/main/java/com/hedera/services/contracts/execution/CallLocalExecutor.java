@@ -94,8 +94,7 @@ public class CallLocalExecutor {
                             receiver.canonicalAddress(),
                             op.getGas(),
                             0,
-                            callData,
-                            Instant.now());
+                            callData);
 
             var status = ResponseCodeUtil.getStatusOrDefault(result, OK);
 
