@@ -64,7 +64,7 @@ jobs:
     uses: ./.github/workflows/comp-build-release-artifact.yaml
     with:
       version-policy: specified
-      new-version: ${{ needs.prepare-tag-release.outputs.version }}
+      new-version: ${{ github.event.inputs.new-version }}
       enable-bucket-deployment: ${{ github.event.inputs.enable-bucket-deployment == 'true' }}
       dry-run-enabled: ${{ github.event.inputs.dry-run-enabled == 'true' }}
       java-version: ${{ github.event.inputs.java-version || '17.0.3' }}
