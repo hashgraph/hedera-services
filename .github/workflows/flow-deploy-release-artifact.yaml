@@ -25,7 +25,7 @@ on:
         description: "GCP Bucket Deploy Enabled"
         type: boolean
         required: false
-        default: false
+        default: true
       dry-run-enabled:
         description: "Perform Dry Run"
         type: boolean
