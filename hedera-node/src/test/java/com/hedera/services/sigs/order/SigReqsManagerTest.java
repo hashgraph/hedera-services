@@ -127,7 +127,7 @@ class SigReqsManagerTest {
         given(sigReqsFactory.from(workingStateLookup, signatureWaivers))
                 .willReturn(workingStateSigReqs);
         given(sigReqsFactory.from(immutableStateLookup, signatureWaivers))
-            .willReturn(immutableStateSigReqs);
+                .willReturn(immutableStateSigReqs);
         given(dynamicProperties.expandSigsFromImmutableState()).willReturn(true);
         given(sourceState.getTimeOfLastHandledTxn()).willReturn(lastHandleTime);
         given(sourceState.getStateVersion()).willReturn(StateVersions.CURRENT_VERSION);
@@ -155,11 +155,11 @@ class SigReqsManagerTest {
     @Test
     void usesImmutableStateLookupIfEverythingIsSane() {
         given(
-            lookupsFactory.from(
-                fileNumbers, subject.getImmutableChildren(), TOKEN_META_TRANSFORM))
-            .willReturn(immutableStateLookup);
+                        lookupsFactory.from(
+                                fileNumbers, subject.getImmutableChildren(), TOKEN_META_TRANSFORM))
+                .willReturn(immutableStateLookup);
         given(sigReqsFactory.from(immutableStateLookup, signatureWaivers))
-            .willReturn(immutableStateSigReqs);
+                .willReturn(immutableStateSigReqs);
         given(dynamicProperties.expandSigsFromImmutableState()).willReturn(true);
         given(sourceState.getTimeOfLastHandledTxn()).willReturn(lastHandleTime);
         given(sourceState.getStateVersion()).willReturn(StateVersions.CURRENT_VERSION);

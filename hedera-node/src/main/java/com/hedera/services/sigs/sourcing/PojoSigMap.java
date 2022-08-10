@@ -18,7 +18,6 @@ package com.hedera.services.sigs.sourcing;
 import static com.hedera.services.legacy.proto.utils.ByteStringUtils.unwrapUnsafelyIfPossible;
 
 import com.google.common.base.MoreObjects;
-import com.hedera.services.legacy.proto.utils.ByteStringUtils;
 import com.hederahashgraph.api.proto.java.SignatureMap;
 
 public class PojoSigMap {

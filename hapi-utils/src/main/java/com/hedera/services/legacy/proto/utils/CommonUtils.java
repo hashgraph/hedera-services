@@ -39,8 +39,8 @@ public final class CommonUtils {
         return Base64.getEncoder().encodeToString(bytes);
     }
 
-    public static ByteString extractTransactionBodyByteString(final TransactionOrBuilder transaction)
-            throws InvalidProtocolBufferException {
+    public static ByteString extractTransactionBodyByteString(
+            final TransactionOrBuilder transaction) throws InvalidProtocolBufferException {
         final var signedTransactionBytes = transaction.getSignedTransactionBytes();
         if (!signedTransactionBytes.isEmpty()) {
             return SignedTransaction.parseFrom(signedTransactionBytes).getBodyBytes();

@@ -173,9 +173,7 @@ class StructuralPrecheckTest {
                                 CryptoCreateTransactionBody.newBuilder().setKey(weirdlyNestedKey));
         final var signedTxn =
                 Transaction.newBuilder().setBodyBytes(hostTxn.build().toByteString()).build();
-        willCallRealMethod()
-                .given(accessorFactory)
-                .constructSpecializedAccessor(signedTxn);
+        willCallRealMethod().given(accessorFactory).constructSpecializedAccessor(signedTxn);
         given(accessor.getTxn()).willReturn(hostTxn.build());
         final var assess = subject.assess(signedTxn);
 
@@ -193,9 +191,7 @@ class StructuralPrecheckTest {
         final var signedTxn =
                 Transaction.newBuilder().setBodyBytes(hostTxn.build().toByteString()).build();
 
-        willCallRealMethod()
-                .given(accessorFactory)
-                .constructSpecializedAccessor(signedTxn);
+        willCallRealMethod().given(accessorFactory).constructSpecializedAccessor(signedTxn);
         given(accessor.getTxn()).willReturn(hostTxn.build());
 
         final var assess = subject.assess(signedTxn);
@@ -217,9 +213,7 @@ class StructuralPrecheckTest {
                 Transaction.newBuilder().setBodyBytes(hostTxn.build().toByteString()).build();
         final var view = mock(StateView.class);
 
-        willCallRealMethod()
-                .given(accessorFactory)
-                .constructSpecializedAccessor(signedTxn);
+        willCallRealMethod().given(accessorFactory).constructSpecializedAccessor(signedTxn);
         given(accessor.getTxn()).willReturn(hostTxn.build());
         given(viewFactory.latestSignedStateView()).willReturn(Optional.of(view));
 
@@ -252,9 +246,7 @@ class StructuralPrecheckTest {
                                         .setAccountID(IdUtils.asAccount("0.0.2")));
         var signedTxn =
                 Transaction.newBuilder().setBodyBytes(hostTxn.build().toByteString()).build();
-        willCallRealMethod()
-                .given(accessorFactory)
-                .constructSpecializedAccessor(signedTxn);
+        willCallRealMethod().given(accessorFactory).constructSpecializedAccessor(signedTxn);
         given(accessor.getTxn()).willReturn(hostTxn.build());
 
         subject.assess(signedTxn);
@@ -284,9 +276,7 @@ class StructuralPrecheckTest {
                 Transaction.newBuilder()
                         .setSignedTransactionBytes(hostTxn.build().toByteString())
                         .build();
-        willCallRealMethod()
-                .given(accessorFactory)
-                .constructSpecializedAccessor(signedTxn);
+        willCallRealMethod().given(accessorFactory).constructSpecializedAccessor(signedTxn);
         given(accessor.getTxn()).willReturn(hostTxn.build());
 
         subject.assess(signedTxn);

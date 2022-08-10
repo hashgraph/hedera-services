@@ -23,7 +23,6 @@ import com.hedera.services.config.FileNumbers;
 import com.hedera.services.context.MutableStateChildren;
 import com.hedera.services.context.StateChildren;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.records.TxnAwareRecordsHistorian;
 import com.hedera.services.sigs.ExpansionHelper;
 import com.hedera.services.sigs.Rationalization;
 import com.hedera.services.sigs.metadata.SigMetadataLookup;

@@ -145,40 +145,44 @@ public class FileUpdateSuite extends HapiApiSuite {
     public List<HapiApiSpec> getSpecsInSuite() {
         return List.of(
                 new HapiApiSpec[] {
-//                    vanillaUpdateSucceeds(),
-//                    updateFeesCompatibleWithCreates(),
-//                    apiPermissionsChangeDynamically(),
-//                    cannotUpdateExpirationPastMaxLifetime(),
-//                    optimisticSpecialFileUpdate(),
-//                    associateHasExpectedSemantics(),
-//                    notTooManyFeeScheduleCanBeCreated(),
-//                    allUnusedGasIsRefundedIfSoConfigured(),
-//                    maxRefundIsEnforced(),
-//                    gasLimitOverMaxGasLimitFailsPrecheck(),
-//                    autoCreationIsDynamic(),
-//                    kvLimitsEnforced(),
-//                    serviceFeeRefundedIfConsGasExhausted(),
-//                    chainIdChangesDynamically(),
-//                    entitiesNotCreatableAfterUsageLimitsReached(),
+                    //                    vanillaUpdateSucceeds(),
+                    //                    updateFeesCompatibleWithCreates(),
+                    //                    apiPermissionsChangeDynamically(),
+                    //                    cannotUpdateExpirationPastMaxLifetime(),
+                    //                    optimisticSpecialFileUpdate(),
+                    //                    associateHasExpectedSemantics(),
+                    //                    notTooManyFeeScheduleCanBeCreated(),
+                    //                    allUnusedGasIsRefundedIfSoConfigured(),
+                    //                    maxRefundIsEnforced(),
+                    //                    gasLimitOverMaxGasLimitFailsPrecheck(),
+                    //                    autoCreationIsDynamic(),
+                    //                    kvLimitsEnforced(),
+                    //                    serviceFeeRefundedIfConsGasExhausted(),
+                    //                    chainIdChangesDynamically(),
+                    //                    entitiesNotCreatableAfterUsageLimitsReached(),
                     getMainnetInfo(),
                 });
     }
 
     private HapiApiSpec getMainnetInfo() {
-        return customHapiSpec("GetMainnetInfo").withProperties(Map.of(
-                "nodes", "35.237.200.180",
-                "fees.useFixedOffer", "true",
-                "fees.fixedOffer", "100000000",
-                "default.payer", "0.0.950",
-                "default.payer.pemKeyLoc", "mainnet-account950.pem",
-                "default.payer.pemKeyPassphrase", "BtUiHHK7rAnn4TPA"
-            ))
-            .given().when().then(
-                getAccountBalance(DEFAULT_PAYER).logged()
-//                cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, "0.0.256009", ONE_HUNDRED_HBARS))
-//                    .fee(ONE_HBAR)
-//                    .signedBy(DEFAULT_PAYER)
-            );
+        return customHapiSpec("GetMainnetInfo")
+                .withProperties(
+                        Map.of(
+                                "nodes", "35.237.200.180",
+                                "fees.useFixedOffer", "true",
+                                "fees.fixedOffer", "100000000",
+                                "default.payer", "0.0.950",
+                                "default.payer.pemKeyLoc", "mainnet-account950.pem",
+                                "default.payer.pemKeyPassphrase", "BtUiHHK7rAnn4TPA"))
+                .given()
+                .when()
+                .then(
+                        getAccountBalance(DEFAULT_PAYER).logged()
+                        //                cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, "0.0.256009",
+                        // ONE_HUNDRED_HBARS))
+                        //                    .fee(ONE_HBAR)
+                        //                    .signedBy(DEFAULT_PAYER)
+                        );
     }
 
     private HapiApiSpec associateHasExpectedSemantics() {

@@ -91,12 +91,9 @@ class AccessorFactoryTest {
         assertTrue(subject.nonTriggeredTxn(platformTxn.getContents()) instanceof SignedTxnAccessor);
 
         final var grpcWipeTxn =
-            Transaction.newBuilder()
-                .setBodyBytes(tokenWipeTxn.toByteString())
-                .build();
+                Transaction.newBuilder().setBodyBytes(tokenWipeTxn.toByteString()).build();
 
-        var triggered =
-                subject.triggeredTxn(grpcWipeTxn, payerId, scheduleId, true, true);
+        var triggered = subject.triggeredTxn(grpcWipeTxn, payerId, scheduleId, true, true);
 
         assertTrue(triggered instanceof SignedTxnAccessor);
 
