@@ -214,10 +214,10 @@ tasks.create("versionAsPrefixedCommit") {
         gitData.lastCommitHash?.let {
             val prefix = findProperty("commitPrefix")?.toString() ?: "adhoc"
             val newPrerel = prefix + ".x" + it.take(8)
-            val currVer = SemVer.parse(project.version.toString())
+            val currVer = SemVer.parse(rootProject.version.toString())
             try {
                 val newVer = SemVer(currVer.major, currVer.minor, currVer.patch, newPrerel)
-                Utils.updateVersion(project, newVer)
+                Utils.updateVersion(rootProject, newVer)
             } catch (e: java.lang.IllegalArgumentException) {
                 throw IllegalArgumentException(String.format("%s: %s", e.message, newPrerel), e)
             }
@@ -227,10 +227,10 @@ tasks.create("versionAsPrefixedCommit") {
 
 tasks.create("versionAsSnapshot") {
     doLast {
-        val currVer = SemVer.parse(project.version.toString())
+        val currVer = SemVer.parse(rootProject.version.toString())
         val newVer = SemVer(currVer.major, currVer.minor, currVer.patch, "SNAPSHOT")
 
-        Utils.updateVersion(project, newVer)
+        Utils.updateVersion(rootProject, newVer)
     }
 }
 
@@ -243,7 +243,7 @@ tasks.create("versionAsSpecified") {
         }
 
         val newVer = SemVer.parse(verStr)
-        Utils.updateVersion(project, newVer)
+        Utils.updateVersion(rootProject, newVer)
     }
 }
 
