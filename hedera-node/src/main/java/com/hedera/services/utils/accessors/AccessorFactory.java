@@ -29,13 +29,11 @@ import javax.inject.Inject;
 
 public class AccessorFactory {
     private final GlobalDynamicProperties dynamicProperties;
-    private final OptionValidator validator;
 
     @Inject
     public AccessorFactory(
-            final GlobalDynamicProperties dynamicProperties, final OptionValidator validator) {
+            final GlobalDynamicProperties dynamicProperties) {
         this.dynamicProperties = dynamicProperties;
-        this.validator = validator;
     }
 
     public TxnAccessor nonTriggeredTxn(byte[] signedTxnWrapperBytes)

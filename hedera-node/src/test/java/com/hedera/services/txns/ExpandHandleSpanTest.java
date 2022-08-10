@@ -43,10 +43,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class ExpandHandleSpanTest {
     @Mock private SpanMapManager handleSpanMap;
     @Mock private GlobalDynamicProperties dynamicProperties;
-    @Mock private OptionValidator validator;
 
     private final AccessorFactory accessorFactory =
-            new AccessorFactory(dynamicProperties, validator);
+            new AccessorFactory(dynamicProperties);
 
     private final byte[] validTxnBytes =
             Transaction.newBuilder()

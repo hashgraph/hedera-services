@@ -41,7 +41,6 @@ class AccessorFactoryTest {
     private static final AccountID payerId = IdUtils.asAccount("0.0.456");
     private static final ScheduleID scheduleId = IdUtils.asSchedule("0.0.333333");
 
-    @Mock private OptionValidator validator;
     @Mock private GlobalDynamicProperties properties;
 
     AccessorFactory subject;
@@ -60,7 +59,7 @@ class AccessorFactoryTest {
 
     @BeforeEach
     void setUp() {
-        subject = new AccessorFactory(properties, validator);
+        subject = new AccessorFactory(properties);
     }
 
     @Test

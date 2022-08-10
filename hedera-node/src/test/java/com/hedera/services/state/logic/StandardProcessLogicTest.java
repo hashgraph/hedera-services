@@ -17,6 +17,7 @@ package com.hedera.services.state.logic;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.BDDMockito.given;
@@ -29,6 +30,7 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.primitives.StateView;
+import com.hedera.services.keys.HederaKeyActivation;
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.records.ConsensusTimeTracker;
 import com.hedera.services.state.expiry.EntityAutoRenewal;
@@ -46,6 +48,7 @@ import com.swirlds.common.system.transaction.Transaction;
 import com.swirlds.common.system.transaction.internal.SwirldTransaction;
 import java.time.Instant;
 import org.hamcrest.Matchers;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -117,6 +120,8 @@ class StandardProcessLogicTest {
         given(scheduleProcessing.shouldProcessScheduledTransactions(consensusNow)).willReturn(true);
         given(scheduleProcessing.getMaxProcessingLoopIterations()).willReturn(10L);
 
+        txn.add(HederaKeyActivation.VALID_IMPLICIT_SIG);
+
         // when:
         subject.incorporateConsensusTxn(txn, consensusNow, member);
 
@@ -134,6 +139,7 @@ class StandardProcessLogicTest {
         inOrder.verify(scheduleProcessing)
                 .triggerNextTransactionExpiringAsNeeded(consensusNow, null, true);
         inOrder.verify(autoRenewal).execute(consensusNow);
+        assertTrue(txn.getSignatures().isEmpty());
     }
 
     @Test

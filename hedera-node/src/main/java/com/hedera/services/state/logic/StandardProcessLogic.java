@@ -108,6 +108,7 @@ public class StandardProcessLogic implements ProcessLogic {
             }
 
             autoRenewal.execute(consensusTime);
+            platformTxn.clearSignatures();
         } catch (InvalidProtocolBufferException e) {
             log.warn("Consensus platform txn was not gRPC!", e);
         } catch (Exception internal) {

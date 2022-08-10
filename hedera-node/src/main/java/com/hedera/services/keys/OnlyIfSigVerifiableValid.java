@@ -28,8 +28,6 @@ import org.apache.logging.log4j.Logger;
 public class OnlyIfSigVerifiableValid implements BiPredicate<JKey, TransactionSignature> {
     private static final Logger log = LogManager.getLogger(OnlyIfSigVerifiableValid.class);
 
-    public OnlyIfSigVerifiableValid() {}
-
     @Override
     public boolean test(final JKey ignoredKey, final TransactionSignature sig) {
         // If this signature was verified synchronously in Rationalization (or is
