@@ -302,6 +302,7 @@ public class ServicesState extends PartialNaryMerkleInternal
                 dualState.setFreezeTime(null);
                 if (deployedVersion.hasMigrationRecordsFrom(deserializedVersion)) {
                     networkCtx().markMigrationRecordsNotYetStreamed();
+                    log.info("There are migration records to stream on first post-upgrade txn");
                 }
             }
             networkCtx().setStateVersion(CURRENT_VERSION);

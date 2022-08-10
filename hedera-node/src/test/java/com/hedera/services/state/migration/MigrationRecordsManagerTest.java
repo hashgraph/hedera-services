@@ -31,6 +31,7 @@ import static org.mockito.Mockito.verifyNoInteractions;
 
 import com.google.protobuf.BoolValue;
 import com.google.protobuf.ByteString;
+import com.google.protobuf.Int32Value;
 import com.google.protobuf.StringValue;
 import com.hedera.services.config.AccountNumbers;
 import com.hedera.services.context.SideEffectsTracker;
@@ -80,6 +81,8 @@ class MigrationRecordsManagerTest {
     private static final ExpirableTxnRecord.Builder pretend200 = ExpirableTxnRecord.newBuilder();
     private static final ExpirableTxnRecord.Builder pretend201 = ExpirableTxnRecord.newBuilder();
     private static final ExpirableTxnRecord.Builder pretend275 = ExpirableTxnRecord.newBuilder();
+    private static final ExpirableTxnRecord.Builder pretend276 = ExpirableTxnRecord.newBuilder();
+    private static final ExpirableTxnRecord.Builder pretend277 = ExpirableTxnRecord.newBuilder();
     private static final ExpirableTxnRecord.Builder pretend800 = ExpirableTxnRecord.newBuilder();
     private static final ExpirableTxnRecord.Builder pretend801 = ExpirableTxnRecord.newBuilder();
     private static final Instant now = Instant.ofEpochSecond(1_234_567L);
@@ -101,6 +104,8 @@ class MigrationRecordsManagerTest {
     @Mock private SideEffectsTracker tracker200;
     @Mock private SideEffectsTracker tracker201;
     @Mock private SideEffectsTracker tracker275;
+    @Mock private SideEffectsTracker tracker276;
+    @Mock private SideEffectsTracker tracker277;
     @Mock private EntityCreator creator;
     @Mock private AccountNumbers accountNumbers;
     @Mock private TreasuryCloner treasuryCloner;
@@ -139,7 +144,9 @@ class MigrationRecordsManagerTest {
                             case 1 -> tracker801;
                             case 2 -> tracker200;
                             case 3 -> tracker201;
-                            default -> tracker275;
+                            case 4 -> tracker275;
+                            case 5 -> tracker276;
+                            default -> tracker277;
                         });
     }
 
@@ -149,7 +156,9 @@ class MigrationRecordsManagerTest {
                 forClass(TransactionBody.Builder.class);
         final var rewardSynthBody = expectedSyntheticRewardAccount();
         final var cloneSynthBody = expectedSyntheticTreasuryClone();
-        final var extantUpdateBody = expectedExistingSystemAccountPublication();
+        final var nodeStakingBody = expectedExistingStakedTo(275L, pretendNodeStakedId);
+        final var accountStakingBody = expectedExistingStakedTo(276L, pretendStakedAccountId);
+        final var notStakingBody = expectedExistingStakedTo(277L, 0);
 
         given(consensusTimeTracker.unlimitedPreceding()).willReturn(true);
         given(creator.createSuccessfulSyntheticRecord(NO_CUSTOM_FEES, tracker800, MEMO))
@@ -174,10 +183,22 @@ class MigrationRecordsManagerTest {
                 tracker275,
                 "Synthetic no-op account update"))
             .willReturn(pretend275);
+        given(
+            creator.createSuccessfulSyntheticRecord(
+                NO_CUSTOM_FEES,
+                tracker276,
+                "Synthetic no-op account update"))
+            .willReturn(pretend276);
+        given(
+            creator.createSuccessfulSyntheticRecord(
+                NO_CUSTOM_FEES,
+                tracker277,
+                "Synthetic no-op account update"))
+            .willReturn(pretend277);
         given(accountNumbers.stakingRewardAccount()).willReturn(stakingRewardAccount);
         given(accountNumbers.nodeRewardAccount()).willReturn(nodeRewardAccount);
         givenSomeTreasuryClones();
-        givenAnExtantAccount();
+        givenSomeExtantAccounts();
 
         subject.publishMigrationRecords(now);
 
@@ -205,12 +226,20 @@ class MigrationRecordsManagerTest {
         verify(recordsHistorian)
             .trackPrecedingChildRecord(
                 eq(DEFAULT_SOURCE_ID), bodyCaptor.capture(), eq(pretend275));
+        verify(recordsHistorian)
+            .trackPrecedingChildRecord(
+                eq(DEFAULT_SOURCE_ID), bodyCaptor.capture(), eq(pretend276));
+        verify(recordsHistorian)
+            .trackPrecedingChildRecord(
+                eq(DEFAULT_SOURCE_ID), bodyCaptor.capture(), eq(pretend277));
         final var bodies = bodyCaptor.getAllValues();
         assertEquals(rewardSynthBody, bodies.get(0).build());
         assertEquals(rewardSynthBody, bodies.get(1).build());
         assertEquals(cloneSynthBody, bodies.get(2).build());
         assertEquals(cloneSynthBody, bodies.get(3).build());
-        assertEquals(extantUpdateBody, bodies.get(4).build());
+        assertEquals(nodeStakingBody, bodies.get(4).build());
+        assertEquals(accountStakingBody, bodies.get(5).build());
+        assertEquals(notStakingBody, bodies.get(6).build());
         // and:
         verify(treasuryCloner).forgetScannedSystemAccounts();
     }
@@ -342,19 +371,25 @@ class MigrationRecordsManagerTest {
         return TransactionBody.newBuilder().setCryptoCreateAccount(txnBody).build();
     }
 
-    private TransactionBody expectedExistingSystemAccountPublication() {
-        final var txnBody =
+    private TransactionBody expectedExistingStakedTo(final long n, final long stakedId) {
+        final var bodyBuilder =
             CryptoUpdateTransactionBody.newBuilder()
+                .setAccountIDToUpdate(AccountID.newBuilder().setAccountNum(n).build())
                 .setKey(MiscUtils.asKeyUnchecked(pretendTreasuryKey))
                 .setMemo(StringValue.of(pretendMemo))
                 .setDeclineReward(BoolValue.newBuilder().setValue(true).build())
                 .setReceiverSigRequiredWrapper(BoolValue.newBuilder().setValue(true).build())
+                .setMaxAutomaticTokenAssociations(Int32Value.newBuilder().setValue(pretendMaxAutoAssociations).build())
                 .setAutoRenewPeriod(
                     Duration.newBuilder()
                         .setSeconds(pretendAutoRenew))
-                .setExpirationTime(Timestamp.newBuilder().setSeconds(pretendExpiry).build())
-                .build();
-        return TransactionBody.newBuilder().setCryptoUpdateAccount(txnBody).build();
+                .setExpirationTime(Timestamp.newBuilder().setSeconds(pretendExpiry).build());
+        if (stakedId < 0) {
+           bodyBuilder.setStakedNodeId(-stakedId - 1);
+        } else if (stakedId > 0) {
+            bodyBuilder.setStakedAccountId(AccountID.newBuilder().setAccountNum(stakedId).build());
+        }
+        return TransactionBody.newBuilder().setCryptoUpdateAccount(bodyBuilder).build();
     }
 
     private void givenSomeTreasuryClones() {
@@ -367,22 +402,37 @@ class MigrationRecordsManagerTest {
         given(treasuryCloner.getClonesCreated()).willReturn(treasuryClones);
     }
 
-    private void givenAnExtantAccount() {
-        final var account = new HederaAccountCustomizer()
-            .isReceiverSigRequired(true)
-            .isDeleted(false)
-            .expiry(pretendExpiry)
-            .isDeclinedReward(true)
-            .memo(pretendMemo)
-            .isSmartContract(false)
-            .key(pretendTreasuryKey)
-            .autoRenewPeriod(pretendAutoRenew)
-            .customizing(new MerkleAccount());
-        account.setKey(EntityNum.fromLong(275));
-        skippedCandidateClones.add(account);
+    private void givenSomeExtantAccounts() {
+        for (long n = 275; n <= 277; n++) {
+            final long stakedId;
+            if (n == 275) {
+                stakedId = pretendNodeStakedId;
+            } else if (n == 276) {
+                stakedId = pretendStakedAccountId;
+            } else {
+                stakedId = 0L;
+            }
+            final var account = new HederaAccountCustomizer()
+                .isReceiverSigRequired(true)
+                .isDeleted(false)
+                .expiry(pretendExpiry)
+                .isDeclinedReward(true)
+                .memo(pretendMemo)
+                .isSmartContract(false)
+                .stakedId(stakedId)
+                .maxAutomaticAssociations(pretendMaxAutoAssociations)
+                .key(pretendTreasuryKey)
+                .autoRenewPeriod(pretendAutoRenew)
+                .customizing(new MerkleAccount());
+            account.setKey(EntityNum.fromLong(n));
+            skippedCandidateClones.add(account);
+        }
         given(treasuryCloner.getSkippedCandidateClones()).willReturn(skippedCandidateClones);
     }
 
+    private static final long pretendStakedAccountId = 666L;
+    private static final long pretendNodeStakedId = -2L;
+    private static final int pretendMaxAutoAssociations = 20;
     private static final long pretendExpiry = 2 * now.getEpochSecond();
     private static final long pretendAutoRenew = 1_234_567;
     private static final String pretendMemo = "Thoughts and images";

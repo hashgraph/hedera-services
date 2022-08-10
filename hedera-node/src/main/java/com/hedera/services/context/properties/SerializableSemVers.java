@@ -35,9 +35,7 @@ import org.jetbrains.annotations.NotNull;
 
 public class SerializableSemVers implements SoftwareVersion {
 	private static final String IS_INCOMPARABLE_MSG = " cannot be compared to ";
-	private static final Set<SemanticVersion> SERVICE_VERSIONS_WITH_PATCH_MIGRATION_RECORDS = Set.of(
-			SemanticVersion.newBuilder().setMinor(28).setPatch(6).build()
-	);
+	private static final boolean hasPatchMigrationRecords = true;
 	public static final int RELEASE_027_VERSION = 1;
 	public static final long CLASS_ID = 0x6f2b1bc2df8cbd0bL;
 
@@ -102,7 +100,7 @@ public class SerializableSemVers implements SoftwareVersion {
 	}
 
 	public boolean hasMigrationRecordsFrom(@Nullable final SoftwareVersion other) {
-		return isNonPatchUpgradeFrom(other) || (this.isAfter(other) && SERVICE_VERSIONS_WITH_PATCH_MIGRATION_RECORDS.contains(this.getServices()));
+		return isNonPatchUpgradeFrom(other) || (this.isAfter(other) && hasPatchMigrationRecords);
 	}
 
 	@VisibleForTesting

@@ -25,6 +25,7 @@ import static com.hedera.services.utils.MiscUtils.asKeyUnchecked;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.protobuf.BoolValue;
 import com.google.protobuf.ByteString;
+import com.google.protobuf.Int32Value;
 import com.google.protobuf.StringValue;
 import com.hedera.services.config.AccountNumbers;
 import com.hedera.services.context.SideEffectsTracker;
@@ -39,6 +40,7 @@ import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.utils.EntityNum;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.Duration;
@@ -159,18 +161,7 @@ public class MigrationRecordsManager {
         // system accounts that were not created as treasury clones
         treasuryCloner
                 .getSkippedCandidateClones()
-                .forEach(
-                        account ->
-                                publishSyntheticUpdate(
-                                        account.getKey(),
-                                        account.getAutoRenewSecs(),
-                                        account.getExpiry(),
-                                        account.isReceiverSigRequired(),
-                                        account.isDeclinedReward(),
-                                        asKeyUnchecked(account.getAccountKey()),
-                                        account.getMemo(),
-                                        DETAILS_PUBLICATION_TXN_MEMO,
-                                        "account publication"));
+                .forEach(account -> publishSyntheticUpdate(account, DETAILS_PUBLICATION_TXN_MEMO));
 
         curNetworkCtx.markMigrationRecordsStreamed();
         treasuryCloner.forgetScannedSystemAccounts();
@@ -214,33 +205,15 @@ public class MigrationRecordsManager {
                 num.longValue());
     }
 
-    @SuppressWarnings("java:S107")
-    private void publishSyntheticUpdate(
-            final EntityNum num,
-            final long autoRenewPeriod,
-            final long expiry,
-            final boolean receiverSigRequired,
-            final boolean declineReward,
-            final Key key,
-            final String accountMemo,
-            final String recordMemo,
-            final String description) {
-        final var synthBody =
-                synthUpdate(
-                        autoRenewPeriod,
-                        expiry,
-                        key,
-                        accountMemo,
-                        receiverSigRequired,
-                        declineReward);
+    private void publishSyntheticUpdate(final MerkleAccount account, final String recordMemo) {
+        final var synthBody = synthUpdate(account);
         final var synthRecord =
                 creator.createSuccessfulSyntheticRecord(
                         NO_CUSTOM_FEES, sideEffectsFactory.get(), recordMemo);
         recordsHistorian.trackPrecedingChildRecord(DEFAULT_SOURCE_ID, synthBody, synthRecord);
         log.info(
-                "Published synthetic CryptoUpdate for {} account 0.0.{}",
-                description,
-                num.longValue());
+                "Published synthetic CryptoUpdate for externalizing account 0.0.{}",
+                account.getKey().longValue());
     }
 
     private TransactionBody.Builder synthCreation(
@@ -261,24 +234,34 @@ public class MigrationRecordsManager {
         return TransactionBody.newBuilder().setCryptoCreateAccount(txnBody);
     }
 
-    private TransactionBody.Builder synthUpdate(
-            final long autoRenewPeriod,
-            final long expiry,
-            final Key key,
-            final String memo,
-            final boolean receiverSigRequired,
-            final boolean declineReward) {
-        final var txnBody =
+    private TransactionBody.Builder synthUpdate(final MerkleAccount account) {
+        final var bodyBuilder =
                 CryptoUpdateTransactionBody.newBuilder()
-                        .setKey(key)
-                        .setMemo(StringValue.of(memo))
-                        .setExpirationTime(Timestamp.newBuilder().setSeconds(expiry).build())
-                        .setDeclineReward(BoolValue.newBuilder().setValue(declineReward))
+                        .setAccountIDToUpdate(
+                                AccountID.newBuilder()
+                                        .setAccountNum(account.getKey().longValue())
+                                        .build())
+                        .setKey(asKeyUnchecked(account.getAccountKey()))
+                        .setMemo(StringValue.of(account.getMemo()))
+                        .setMaxAutomaticTokenAssociations(
+                                Int32Value.newBuilder()
+                                        .setValue(account.getMaxAutomaticAssociations())
+                                        .build())
+                        .setExpirationTime(
+                                Timestamp.newBuilder().setSeconds(account.getExpiry()).build())
+                        .setDeclineReward(
+                                BoolValue.newBuilder().setValue(account.isDeclinedReward()))
                         .setReceiverSigRequiredWrapper(
-                                BoolValue.newBuilder().setValue(receiverSigRequired))
-                        .setAutoRenewPeriod(Duration.newBuilder().setSeconds(autoRenewPeriod))
-                        .build();
-        return TransactionBody.newBuilder().setCryptoUpdateAccount(txnBody);
+                                BoolValue.newBuilder().setValue(account.isReceiverSigRequired()))
+                        .setAutoRenewPeriod(
+                                Duration.newBuilder().setSeconds(account.getAutoRenewSecs()));
+        final var stakedId = account.getStakedId();
+        if (stakedId < 0) {
+            bodyBuilder.setStakedNodeId(-stakedId - 1);
+        } else if (stakedId > 0) {
+            bodyBuilder.setStakedAccountId(AccountID.newBuilder().setAccountNum(stakedId));
+        }
+        return TransactionBody.newBuilder().setCryptoUpdateAccount(bodyBuilder);
     }
 
     private void publishContractFreeAutoRenewalRecords() {
