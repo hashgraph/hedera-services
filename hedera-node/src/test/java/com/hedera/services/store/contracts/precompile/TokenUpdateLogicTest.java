@@ -270,6 +270,7 @@ class TokenUpdateLogicTest {
         givenContextForSuccessFullCalls();
         given(ledgers.accounts()).willReturn(accounts);
         given(store.get(fungible)).willReturn(merkleToken);
+        given(store.resolve(op.getToken())).willReturn(op.getToken());
         given(store.updateExpiryInfo(op)).willReturn(OK);
         // when
         subject.updateTokenExpiryInfo(op);
@@ -286,6 +287,7 @@ class TokenUpdateLogicTest {
         givenContextForSuccessFullCalls();
         given(ledgers.accounts()).willReturn(accounts);
         given(store.get(fungible)).willReturn(merkleToken);
+        given(store.resolve(op.getToken())).willReturn(op.getToken());
         given(store.updateExpiryInfo(op)).willReturn(INVALID_EXPIRATION_TIME);
         given(ledgers.accounts()).willReturn(accounts);
         given(ledgers.tokenRels()).willReturn(tokenRels);
@@ -306,7 +308,52 @@ class TokenUpdateLogicTest {
                 .willReturn(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
         given(ledgers.accounts()).willReturn(accounts);
         given(store.get(fungible)).willReturn(merkleToken);
+        given(store.resolve(op.getToken())).willReturn(op.getToken());
         given(ledgers.accounts()).willReturn(accounts);
+
+        Assertions.assertThrows(
+                InvalidTransactionException.class, () -> subject.updateTokenExpiryInfo(op));
+    }
+
+    @Test
+    void updateTokenExpiryInfoForEmptyExpiry() {
+        // given
+        final var txnBodyWithEmptyExpiry =
+                TokenUpdateTransactionBody.newBuilder()
+                        .setToken(fungible)
+                        .setName("name")
+                        .setMemo(StringValue.of("memo"))
+                        .setSymbol("symbol")
+                        .setTreasury(account)
+                        .setAutoRenewAccount(account)
+                        .setAutoRenewPeriod(Duration.newBuilder().setSeconds(2L))
+                        .build();
+        givenTokenUpdateLogic(true);
+        given(merkleToken.hasAdminKey()).willReturn(true);
+        given(merkleToken.hasAutoRenewAccount()).willReturn(true);
+        given(merkleToken.autoRenewAccount()).willReturn(treasuryId);
+        given(validator.expiryStatusGiven(accounts, account)).willReturn(OK);
+        given(validator.expiryStatusGiven(accounts, treasury)).willReturn(OK);
+        given(ledgers.accounts()).willReturn(accounts);
+        given(store.get(fungible)).willReturn(merkleToken);
+        given(store.resolve(txnBodyWithEmptyExpiry.getToken()))
+                .willReturn(txnBodyWithEmptyExpiry.getToken());
+        given(store.updateExpiryInfo(txnBodyWithEmptyExpiry)).willReturn(OK);
+        given(ledgers.accounts()).willReturn(accounts);
+
+        // when
+        subject.updateTokenExpiryInfo(txnBodyWithEmptyExpiry);
+        // then
+        verify(store).updateExpiryInfo(txnBodyWithEmptyExpiry);
+        verify(sigImpactHistorian).markEntityChanged(fungible.getTokenNum());
+    }
+
+    @Test
+    void updateTokenExpiryInfoFailsForMissingToken() {
+        // given
+        givenTokenUpdateLogic(true);
+        givenValidTransactionBody(true);
+        given(store.resolve(op.getToken())).willReturn(MISSING_TOKEN);
 
         Assertions.assertThrows(
                 InvalidTransactionException.class, () -> subject.updateTokenExpiryInfo(op));

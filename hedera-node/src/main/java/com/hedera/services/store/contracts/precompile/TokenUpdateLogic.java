@@ -152,8 +152,8 @@ public class TokenUpdateLogic {
     }
 
     public void updateTokenExpiryInfo(TokenUpdateTransactionBody op) {
-        final var tokenID = Id.fromGrpcToken(op.getToken()).asGrpcToken();
-        validateFalse(tokenID == MISSING_TOKEN, INVALID_TOKEN_ID);
+        final var tokenID = tokenStore.resolve(op.getToken());
+        validateTrueOrRevert(!tokenID.equals(MISSING_TOKEN), INVALID_TOKEN_ID);
         if (op.hasExpiry()) {
             validateTrueOrRevert(validator.isValidExpiry(op.getExpiry()), INVALID_EXPIRATION_TIME);
         }
