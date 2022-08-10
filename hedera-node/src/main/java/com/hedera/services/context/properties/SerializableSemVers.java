@@ -29,7 +29,7 @@ import org.jetbrains.annotations.NotNull;
 
 public class SerializableSemVers implements SoftwareVersion {
     private static final String IS_INCOMPARABLE_MSG = " cannot be compared to ";
-    private static boolean CURRENT_VERSION_HAS_PATCH_MIGRATION_RECORDS = false;
+    private static boolean currentVersionHasPatchMigrationRecords = false;
     public static final int RELEASE_027_VERSION = 1;
     public static final long CLASS_ID = 0x6f2b1bc2df8cbd0bL;
 
@@ -96,7 +96,7 @@ public class SerializableSemVers implements SoftwareVersion {
 
     public boolean hasMigrationRecordsFrom(@Nullable final SoftwareVersion other) {
         return isNonPatchUpgradeFrom(other)
-                || (this.isAfter(other) && CURRENT_VERSION_HAS_PATCH_MIGRATION_RECORDS);
+                || (this.isAfter(other) && currentVersionHasPatchMigrationRecords);
     }
 
     @VisibleForTesting
@@ -218,6 +218,6 @@ public class SerializableSemVers implements SoftwareVersion {
     @VisibleForTesting
     static void setCurrentVersionHasPatchMigrationRecords(
             boolean currentVersionHasPatchMigrationRecords) {
-        CURRENT_VERSION_HAS_PATCH_MIGRATION_RECORDS = currentVersionHasPatchMigrationRecords;
+        SerializableSemVers.currentVersionHasPatchMigrationRecords = currentVersionHasPatchMigrationRecords;
     }
 }
