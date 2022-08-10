@@ -155,6 +155,11 @@ jobs:
         uses: gradle/gradle-build-action@v2
         with:
           gradle-version: ${{ inputs.gradle-version }}
+          cache-read-only: false
+          gradle-home-cache-includes: |
+            caches
+            notifications
+            jdks
 
       - name: Gradle Update Version (As Specified)
         uses: gradle/gradle-build-action@v2
