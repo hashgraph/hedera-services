@@ -22,15 +22,16 @@ on:
         description: "Version Policy:"
         type: string
         required: true
+      # Valid options are none, integration, and preview
+      trigger-env-deploy:
+        description: "Deploy to Environment:"
+        type: string
+        required: true
+        default: "none"
       new-version:
         description: "New Version:"
         type: string
         required: false
-      enable-bucket-deployment:
-        description: "GCP Bucket Deploy Enabled"
-        type: boolean
-        required: false
-        default: true
       dry-run-enabled:
         description: "Perform Dry Run"
         type: boolean
@@ -61,6 +62,10 @@ on:
       access-token:
         required: true
       bucket-name:
+        required: true
+      jenkins-integration-url:
+        required: true
+      jenkins-preview-url:
         required: true
 
 defaults:
@@ -100,6 +105,36 @@ jobs:
           deterministic-zip --version
           echo "::endgroup::"
 
+      - name: Install JSON Tools
+        run: |
+          if ! command -v jq >/dev/null 2>&1; then
+            echo "::group::Setup JQ Command"
+            sudo apt update
+            sudo apt install -y jq
+            echo "::endgroup::"
+          fi
+          
+          set -x
+          JQ_VERSION="$(jq --version)"
+          set +x
+          if [[ "${JQ_VERSION}" != "jq-1.6" ]]; then
+            echo "::group::Updating JQ Version"
+            sudo apt update
+            sudo apt upgrade -y jq
+            echo "::endgroup::"
+          fi
+          
+          if ! command -v tee >/dev/null 2>&1; then
+            echo "::group::Setup Tee Command"
+            sudo apt update
+            sudo apt install -y coreutils
+            echo "::endgroup::"
+          fi
+          
+          echo "::group::Show JQ Version"
+          jq --version
+          echo "::endgroup::"
+
       - name: Verify Workflow Parameters
         id: parameters
         run: |
@@ -136,14 +171,14 @@ jobs:
 
       - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@v0
-        if: ${{ inputs.dry-run-enabled != true && inputs.enable-bucket-deployment == true && !cancelled() && !failure() }}
+        if: ${{ inputs.dry-run-enabled != true && !cancelled() && !failure() }}
         with:
           workload_identity_provider: "projects/1052213468738/locations/global/workloadIdentityPools/junit-reporting-pool/providers/junit-report-writer"
           service_account: "platform-junit-bucket-writer@swirlds-automation.iam.gserviceaccount.com"
 
       - name: Setup Google Cloud SDK
         uses: google-github-actions/setup-gcloud@v0
-        if: ${{ inputs.dry-run-enabled != true && inputs.enable-bucket-deployment == true && !cancelled() && !failure() }}
+        if: ${{ inputs.dry-run-enabled != true && !cancelled() && !failure() }}
 
       - name: Setup Java
         uses: actions/setup-java@v3
@@ -238,13 +273,42 @@ jobs:
 
       - name: Upload Artifacts (DevOps GCP)
         uses: google-github-actions/upload-cloud-storage@v0.10.2
-        if: ${{ inputs.dry-run-enabled != true && inputs.enable-bucket-deployment == true && !cancelled() && !failure() }}
+        if: ${{ inputs.dry-run-enabled != true && !cancelled() && !failure() }}
         with:
           path: ${{ steps.artifact-release.outputs.folder }}
           destination: ${{ secrets.bucket-name }}
           parent: false
 
-      - name: Invoke Jenkins Callbacks
-        if: ${{ inputs.dry-run-enabled != true && inputs.enable-bucket-deployment == true && !cancelled() && !failure() }}
-        run: |
-          exit 0
+#      - name: Build Jenkins Payload
+#        id: jenkins-payload
+#        if: ${{ inputs.dry-run-enabled != true && inputs.trigger-env-deploy != 'none' && !cancelled() && !failure() }}
+#        run: |
+#          PAYLOAD_FILE="$(mktemp -t "jenkins-json-payload.XXXXXXX")"
+#          echo "::set-output name=file::${PAYLOAD_FILE}"
+#
+#          echo "{}" | jq \
+#                --arg ref "main" \
+#                --arg username "nathan.klick" \
+#                --arg msg "some message" \
+#                --arg commit "${{ steps.parameters.outputs.commit-id }}" \
+#                --arg rt "${{ (startsWith(github.ref, 'refs/tags/v') && 'tag') || 'branch' }}" \
+#                '.ref |=  $ref | .ref_type |= $rt | .sender.login |= $username | .commits |= [{id: $commit, message: $msg}] | .head_commit.author.username |= $username | .head_commit.message |= $msg | .head_commit.id |= $commit' \
+#            | tee "${PAYLOAD_FILE}"
+#
+#          echo "::set-output name=json::$(cat "${PAYLOAD_FILE}")"
+
+      - name: Notify Jenkins of Release (Integration)
+        uses: fjogeleit/http-request-action@v1.10.0
+        if: ${{ inputs.dry-run-enabled != true && inputs.trigger-env-deploy == 'integration' && !cancelled() && !failure() }}
+        with:
+          url: ${{ secrets.jenkins-integration-url }}
+          data: ${{ toJSON(github.event) }}
+
+      - name: Notify Jenkins of Release (Preview)
+        uses: fjogeleit/http-request-action@v1.10.0
+        if: ${{ inputs.dry-run-enabled != true && inputs.trigger-env-deploy == 'preview' && !cancelled() && !failure() }}
+        with:
+          url: ${{ secrets.jenkins-preview-url }}
+          data: ${{ toJSON(github.event) }}
+
+
