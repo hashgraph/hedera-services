@@ -15,13 +15,11 @@
  */
 package com.hedera.services.bdd.suites.file;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.customHapiSpec;
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.ContractInfoAsserts.contractWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocal;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAliasedAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
@@ -145,44 +143,22 @@ public class FileUpdateSuite extends HapiApiSuite {
     public List<HapiApiSpec> getSpecsInSuite() {
         return List.of(
                 new HapiApiSpec[] {
-                    //                    vanillaUpdateSucceeds(),
-                    //                    updateFeesCompatibleWithCreates(),
-                    //                    apiPermissionsChangeDynamically(),
-                    //                    cannotUpdateExpirationPastMaxLifetime(),
-                    //                    optimisticSpecialFileUpdate(),
-                    //                    associateHasExpectedSemantics(),
-                    //                    notTooManyFeeScheduleCanBeCreated(),
-                    //                    allUnusedGasIsRefundedIfSoConfigured(),
-                    //                    maxRefundIsEnforced(),
-                    //                    gasLimitOverMaxGasLimitFailsPrecheck(),
-                    //                    autoCreationIsDynamic(),
-                    //                    kvLimitsEnforced(),
-                    //                    serviceFeeRefundedIfConsGasExhausted(),
-                    //                    chainIdChangesDynamically(),
-                    //                    entitiesNotCreatableAfterUsageLimitsReached(),
-                    getMainnetInfo(),
+                    vanillaUpdateSucceeds(),
+                    updateFeesCompatibleWithCreates(),
+                    apiPermissionsChangeDynamically(),
+                    cannotUpdateExpirationPastMaxLifetime(),
+                    optimisticSpecialFileUpdate(),
+                    associateHasExpectedSemantics(),
+                    notTooManyFeeScheduleCanBeCreated(),
+                    allUnusedGasIsRefundedIfSoConfigured(),
+                    maxRefundIsEnforced(),
+                    gasLimitOverMaxGasLimitFailsPrecheck(),
+                    autoCreationIsDynamic(),
+                    kvLimitsEnforced(),
+                    serviceFeeRefundedIfConsGasExhausted(),
+                    chainIdChangesDynamically(),
+                    entitiesNotCreatableAfterUsageLimitsReached(),
                 });
-    }
-
-    private HapiApiSpec getMainnetInfo() {
-        return customHapiSpec("GetMainnetInfo")
-                .withProperties(
-                        Map.of(
-                                "nodes", "35.237.200.180",
-                                "fees.useFixedOffer", "true",
-                                "fees.fixedOffer", "100000000",
-                                "default.payer", "0.0.950",
-                                "default.payer.pemKeyLoc", "mainnet-account950.pem",
-                                "default.payer.pemKeyPassphrase", "BtUiHHK7rAnn4TPA"))
-                .given()
-                .when()
-                .then(
-                        getAccountBalance(DEFAULT_PAYER).logged()
-                        //                cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, "0.0.256009",
-                        // ONE_HUNDRED_HBARS))
-                        //                    .fee(ONE_HBAR)
-                        //                    .signedBy(DEFAULT_PAYER)
-                        );
     }
 
     private HapiApiSpec associateHasExpectedSemantics() {
