@@ -202,10 +202,7 @@ jobs:
       - name: Write Artifact Version Descriptor
         working-directory: ${{ steps.artifact-staging.outputs.folder }}
         run: |
-          printf "VERSION=%s\nCOMMIT=%s\nDATE=%s" \
-                    "${{ steps.effective-version.outputs.number }}" \
-                    "${{ steps.parameters.outputs.commit-id-short }}" \ 
-                    "$(date -u)" \
+          printf "VERSION=%s\nCOMMIT=%s\nDATE=%s" "${{ steps.effective-version.outputs.number }}" "${{ steps.parameters.outputs.commit-id-short }}" "$(date -u)" \
             | tee VERSION
 
       - name: Create Artifact Archive
