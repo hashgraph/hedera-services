@@ -128,12 +128,28 @@ public class TransferLogic {
                     validity = tokenStore.tryTokenChange(change);
                 }
             } else if (change.isForHbar()) {
+                if (isKnownAlias(change.accountId())) {
+                    change.replaceAliasWith(
+                            workingView
+                                    .get()
+                                    .aliases()
+                                    .get(change.accountId().getAlias())
+                                    .toGrpcAccountId());
+                }
                 validity =
                         accountsLedger.validate(
                                 change.accountId(),
                                 scopedCheck.setBalanceChange(change),
                                 workingView);
             } else {
+                if (isKnownAlias(change.accountId())) {
+                    change.replaceAliasWith(
+                            workingView
+                                    .get()
+                                    .aliases()
+                                    .get(change.accountId().getAlias())
+                                    .toGrpcAccountId());
+                }
                 validity =
                         accountsLedger.validate(
                                 change.accountId(),

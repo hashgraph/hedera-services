@@ -42,6 +42,8 @@ public class AliasResolver {
     private int perceivedInvalidCreations = 0;
     private Map<ByteString, EntityNum> resolutions = new HashMap<>();
 
+    private Map<ByteString, EntityNum> localTokenResolutions = new HashMap<>();
+
     private enum Result {
         KNOWN_ALIAS,
         UNKNOWN_ALIAS,
@@ -106,12 +108,13 @@ public class AliasResolver {
         final List<TokenTransferList> resolvedTokenAdjusts = new ArrayList<>();
         for (var tokenAdjust : opTokenAdjusts) {
             final var resolvedTokenAdjust = TokenTransferList.newBuilder();
+            localTokenResolutions.clear();
 
             resolvedTokenAdjust.setToken(tokenAdjust.getToken());
             for (final var adjust : tokenAdjust.getTransfersList()) {
                 final var result =
                         resolveInternalFungible(
-                                aliasManager, adjust, resolvedTokenAdjust::addTransfers);
+                                aliasManager, adjust, resolvedTokenAdjust::addTransfers, true);
                 if (result == Result.UNKNOWN_ALIAS) {
                     if (adjust.getAmount() > 0) {
                         final var alias = adjust.getAccountID().getAlias();
@@ -177,7 +180,7 @@ public class AliasResolver {
         for (var adjust : opAdjusts.getAccountAmountsList()) {
             final var result =
                     resolveInternalFungible(
-                            aliasManager, adjust, resolvedAdjusts::addAccountAmounts);
+                            aliasManager, adjust, resolvedAdjusts::addAccountAmounts, false);
             if (result == Result.UNKNOWN_ALIAS) {
                 if (adjust.getAmount() > 0) {
                     final var alias = adjust.getAccountID().getAlias();
@@ -231,7 +234,8 @@ public class AliasResolver {
     private Result resolveInternalFungible(
             final AliasManager aliasManager,
             final AccountAmount adjust,
-            final Consumer<AccountAmount> resolvingAction) {
+            final Consumer<AccountAmount> resolvingAction,
+            final boolean isForToken) {
         AccountAmount resolvedAdjust = adjust;
         var isEvmAddress = false;
         var result = Result.KNOWN_ALIAS;
@@ -252,12 +256,17 @@ public class AliasResolver {
             }
             final var resolution = aliasManager.lookupIdBy(alias);
             if (resolution == MISSING_NUM) {
-                result = netOf(isEvmAddress, alias);
+                if (isForToken) {
+                    result = netOfTokens(isEvmAddress, alias);
+                } else {
+                    result = netOf(isEvmAddress, alias);
+                }
             } else {
                 resolvedAdjust =
                         adjust.toBuilder().setAccountID(resolution.toGrpcAccountId()).build();
             }
             resolutions.put(alias, resolution);
+            localTokenResolutions.put(alias, resolution);
         }
         resolvingAction.accept(resolvedAdjust);
         return result;
@@ -270,6 +279,16 @@ public class AliasResolver {
             return resolutions.containsKey(alias)
                     ? Result.REPEATED_UNKNOWN_ALIAS
                     : Result.UNKNOWN_ALIAS;
+        }
+    }
+
+    private Result netOfTokens(final boolean isEvmAddress, final ByteString alias) {
+        if (isEvmAddress) {
+            return Result.UNKNOWN_EVM_ADDRESS;
+        } else {
+            return localTokenResolutions.containsKey(alias)
+                    ? Result.REPEATED_UNKNOWN_ALIAS
+                    : resolutions.containsKey(alias) ? Result.KNOWN_ALIAS : Result.UNKNOWN_ALIAS;
         }
     }
 

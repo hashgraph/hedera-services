@@ -189,7 +189,7 @@ public class AutoCreationLogic {
                         .isSmartContract(false)
                         .alias(alias);
         if (change.isForFungibleToken() || change.isForNft()) {
-            customizer.maxAutomaticAssociations(1);
+            customizer.maxAutomaticAssociations((int) change.getAggregatedUnits());
         }
         customizer.customize(newId, accountsLedger);
         sideEffects.trackAutoCreation(newId, alias);

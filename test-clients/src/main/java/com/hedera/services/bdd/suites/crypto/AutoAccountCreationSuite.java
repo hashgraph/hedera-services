@@ -84,7 +84,8 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
     private static final String PAYER_4 = "payer4";
     private static final String TRANSFER_TXN_2 = "transferTxn2";
     private static final String TRANSFER_ALIAS = "transferAlias";
-    private static final String A_TOKEN = "token";
+    private static final String A_TOKEN = "tokenA";
+    private static final String B_TOKEN = "tokenB";
 
     public static void main(String... args) {
         new AutoAccountCreationSuite().runSuiteAsync();
@@ -122,95 +123,66 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
     private HapiApiSpec canAutoCreateWithHTSTransfers() {
         final var civilian = "somebody";
         final var autoCreateSponsor = "autoCreateSponsor";
-        final var creationTime = new AtomicLong();
         final String treasury = "treasury";
+        final String alias1 = "alias1";
 
         return defaultHapiSpec("canAutoCreateWithHTSTransfers")
                 .given(
                         newKeyNamed(VALID_ALIAS),
+                        newKeyNamed(alias1),
                         cryptoCreate(treasury).balance(ONE_HUNDRED_HBARS),
                         tokenCreate(A_TOKEN)
                                 .tokenType(TokenType.FUNGIBLE_COMMON)
                                 .initialSupply(Long.MAX_VALUE)
                                 .treasury(treasury)
-                                .via("tokenCreateTxn"),
-                        getTxnRecord("tokenCreateTxn").hasNewTokenAssociation(A_TOKEN, treasury),
+                                .via("tokenACreateTxn"),
+                        tokenCreate(B_TOKEN)
+                                .tokenType(TokenType.FUNGIBLE_COMMON)
+                                .initialSupply(Long.MAX_VALUE)
+                                .treasury(treasury)
+                                .via("tokenBCreateTxn"),
+                        //
+                        // getTxnRecord("tokenACreateTxn").hasNewTokenAssociation(A_TOKEN,
+                        // treasury),
+                        //
+                        // getTxnRecord("tokenBCreateTxn").hasNewTokenAssociation(B_TOKEN,
+                        // treasury),
                         cryptoCreate(civilian).balance(10 * ONE_HBAR),
                         cryptoCreate(autoCreateSponsor)
                                 .balance(INITIAL_BALANCE * ONE_HBAR)
                                 .maxAutomaticTokenAssociations(1))
                 .when(
-                        cryptoTransfer(moving(1, A_TOKEN).between(treasury, autoCreateSponsor))
+                        cryptoTransfer(moving(100, A_TOKEN).between(treasury, autoCreateSponsor))
                                 .via("transferAToSponsor"),
-                        cryptoTransfer(moving(1, A_TOKEN).between(autoCreateSponsor, VALID_ALIAS))
+                        //                        getAccountInfo(autoCreateSponsor).logged(),
+                        //                        getAccountInfo(treasury).logged(),
+
+                        //                        cryptoTransfer(moving(10,
+                        // A_TOKEN).between(autoCreateSponsor, VALID_ALIAS),
+                        //                                moving(10, A_TOKEN).between(treasury,
+                        // VALID_ALIAS))
+                        //                                .via("failedTransfer")
+                        //                                .payingWith(civilian)
+                        //                                .signedBy(civilian, autoCreateSponsor,
+                        // VALID_ALIAS, treasury)
+                        //                                .logged(),
+                        //
+                        // getTxnRecord("failedTransfer").andAllChildRecords().logged(),
+                        //                        getAliasedAccountInfo(VALID_ALIAS).logged(),
+                        //                        getAccountInfo(autoCreateSponsor).logged(),
+                        //                        getAccountInfo(treasury).logged(),
+
+                        cryptoTransfer(
+                                        moving(10, A_TOKEN).between(autoCreateSponsor, alias1),
+                                        moving(10, B_TOKEN).between(treasury, alias1))
                                 .via(TRANSFER_TXN)
                                 .payingWith(civilian)
-                                .signedBy(civilian, autoCreateSponsor, VALID_ALIAS)
+                                .signedBy(civilian, autoCreateSponsor, alias1, treasury)
                                 .logged())
                 .then(
-                        //                        getReceipt(TRANSFER_TXN)
-                        //                                .andAnyChildReceipts()
-                        //                                .hasChildAutoAccountCreations(1),
                         getTxnRecord(TRANSFER_TXN).andAllChildRecords().logged(),
                         getAccountInfo(autoCreateSponsor).logged(),
-                        getAliasedAccountInfo(VALID_ALIAS).logged()
-                        //                        assertionsHold(
-                        //                                (spec, opLog) -> {
-                        //                                    final var lookup =
-                        //                                            getTxnRecord(TRANSFER_TXN)
-                        //                                                    .andAllChildRecords()
-                        //
-                        // .hasNonStakingChildRecordCount(1)
-                        //
-                        // .hasAliasInChildRecord(VALID_ALIAS, 0)
-                        //                                                    .logged();
-                        //                                    allRunFor(spec, lookup);
-                        //                                    final var sponsor =
-                        //
-                        // spec.registry().getAccountID(autoCreateSponsor);
-                        //                                    final var payer =
-                        // spec.registry().getAccountID(civilian);
-                        //                                    final var parent =
-                        // lookup.getResponseRecord();
-                        //                                    final var child =
-                        // lookup.getChildRecord(0);
-                        //                                    assertAliasBalanceAndFeeInChildRecord(
-                        //                                            parent,
-                        //                                            child,
-                        //                                            sponsor,
-                        //                                            payer,
-                        //                                            ONE_HUNDRED_HBARS,
-                        //                                            10 * ONE_HBAR);
-                        //
-                        // creationTime.set(child.getConsensusTimestamp().getSeconds());
-                        //                                }),
-                        //                        sourcing(
-                        //                                () ->
-                        //                                        getAliasedAccountInfo(VALID_ALIAS)
-                        //                                                .has(
-                        //                                                        accountWith()
-                        //
-                        // .key(VALID_ALIAS)
-                        //
-                        // .expectedBalanceWithChargedUsd(
-                        //
-                        // ONE_HUNDRED_HBARS, 0, 0)
-                        //
-                        // .alias(VALID_ALIAS)
-                        //
-                        // .autoRenew(THREE_MONTHS_IN_SECONDS)
-                        //
-                        // .receiverSigReq(false)
-                        //                                                                .expiry(
-                        //
-                        // creationTime.get()
-                        //
-                        //      + THREE_MONTHS_IN_SECONDS,
-                        //                                                                        0)
-                        //
-                        // .memo(AUTO_MEMO))
-                        //                                                .logged())
-                        );
+                        getAliasedAccountInfo(alias1).logged());
     }
 
     private HapiApiSpec noStakePeriodStartIfNotStakingToNode() {
