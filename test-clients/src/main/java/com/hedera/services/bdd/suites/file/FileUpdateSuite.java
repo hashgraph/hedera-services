@@ -144,16 +144,13 @@ public class FileUpdateSuite extends HapiApiSuite {
 
     private static final String STORAGE_PRICE_TIERS_PROP = "contract.storageSlotPriceTiers";
     private static final String FREE_PRICE_TIER_PROP = "contracts.freeStorageTierLimit";
-    private static final String defaultStoragePriceTiers =
-            HapiSpecSetup.getDefaultNodeProps().get(STORAGE_PRICE_TIERS_PROP);
-    private static final String defaultFreePriceTier =
-            HapiSpecSetup.getDefaultNodeProps().get(FREE_PRICE_TIER_PROP);
 
     public static void main(String... args) {
         new FileUpdateSuite().runSuiteSync();
     }
 
     @Override
+    @SuppressWarnings("java:S3878")
     public List<HapiApiSpec> getSpecsInSuite() {
         return List.of(
                 new HapiApiSpec[] {
@@ -494,6 +491,7 @@ public class FileUpdateSuite extends HapiApiSuite {
                         getContractInfo(contract).has(contractWith().numKvPairs(14)));
     }
 
+    @SuppressWarnings("java:S5960")
     private HapiApiSpec serviceFeeRefundedIfConsGasExhausted() {
         final var contract = "User";
         final var gasToOffer = Long.parseLong(DEFAULT_MAX_CONS_GAS);

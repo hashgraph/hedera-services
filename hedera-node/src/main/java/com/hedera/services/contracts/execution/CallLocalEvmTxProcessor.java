@@ -84,8 +84,7 @@ public class CallLocalEvmTxProcessor extends EvmTxProcessor {
             final Address receiver,
             final long providedGasLimit,
             final long value,
-            final Bytes callData,
-            final Instant consensusTime) {
+            final Bytes callData) {
         final long gasPrice = 1;
 
         return super.execute(
