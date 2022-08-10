@@ -40,7 +40,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class HederaCreate2OperationTest {
     private static final long baseGas = 100L;
-    private static final long extraGas = 101L;
     private static final Bytes salt = Bytes.fromHexString("0x2a");
     private static final Bytes oneOffsetStackItem = Bytes.of(10);
     private static final Bytes twoOffsetStackItem = Bytes.of(20);
@@ -75,7 +74,7 @@ class HederaCreate2OperationTest {
 
         var actualGas = subject.cost(frame);
 
-        assertEquals(baseGas + extraGas, actualGas);
+        assertEquals(baseGas, actualGas);
     }
 
     @Test

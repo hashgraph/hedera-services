@@ -108,7 +108,7 @@ class CallLocalEvmTxProcessorTest {
         given(globalDynamicProperties.chainIdBytes32()).willReturn(Bytes32.ZERO);
         var result =
                 callLocalEvmTxProcessor.execute(
-                        sender, receiverAddress, 33_333L, 1234L, Bytes.EMPTY, consensusTime);
+                        sender, receiverAddress, 33_333L, 1234L, Bytes.EMPTY);
         assertTrue(result.isSuccessful());
         assertEquals(receiver.getId().asGrpcContract(), result.toGrpc().getContractID());
     }
@@ -145,8 +145,7 @@ class CallLocalEvmTxProcessorTest {
                                 receiverAddress,
                                 33_333L,
                                 1234L,
-                                Bytes.EMPTY,
-                                consensusTime),
+                                Bytes.EMPTY),
                 INVALID_CONTRACT_ID);
     }
 
