@@ -179,32 +179,19 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A>
         return desc.append("}").toString();
     }
 
-    public ResponseCodeEnum validate(
-            final K id,
-            final LedgerCheck<A, P> ledgerCheck) {
-        var unaliasedId = id;
-//        if (isAlias((AccountID) id)) {
-//            unaliasedId =
-//                    (K)
-//                            workingView
-//                                    .get()
-//                                    .aliases()
-//                                    .get(((AccountID) id).getAlias())
-//                                    .toGrpcAccountId();
-//        }
-
-        if (!exists(unaliasedId)) {
+    public ResponseCodeEnum validate(final K id, final LedgerCheck<A, P> ledgerCheck) {
+        if (!exists(id)) {
             return INVALID_ACCOUNT_ID;
         }
-        final var changeSet = changes.get(unaliasedId);
+        final var changeSet = changes.get(id);
         if (entitiesLedger == null) {
-            final var getterTarget = toGetterTarget(unaliasedId);
+            final var getterTarget = toGetterTarget(id);
             return ledgerCheck.checkUsing(getterTarget, changeSet);
         } else {
             // If we are backed by a ledger, it is far more efficient to source properties
             // by using get(), since each call to a ledger's getRef() creates a new entity
             // and sets all its properties.
-            final var extantProps = extantLedgerPropsFor(unaliasedId);
+            final var extantProps = extantLedgerPropsFor(id);
             return ledgerCheck.checkUsing(extantProps, changeSet);
         }
     }
@@ -315,16 +302,23 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A>
     /** {@inheritDoc} */
     @Override
     public boolean exists(final K id) {
-        var unaliasedId = id;
-        if (id instanceof  AccountID && isAlias((AccountID) id)) {
-            final var aliasNum = currentView.get().aliases().get(((AccountID) id).getAlias());
-            if (aliasNum != null) {
-                unaliasedId = (K) aliasNum.toGrpcAccountId();
-            } else {
-                return false;
-            }
+        final var unaliasedId = resolveIfAlias(id);
+        if (unaliasedId == null) {
+            return false;
         }
         return existsOrIsPendingCreation(unaliasedId) && !isZombie(unaliasedId);
+    }
+
+    private K resolveIfAlias(final K id) {
+        if (id instanceof AccountID && isAlias((AccountID) id)) {
+            final var aliasNum = currentView.get().aliases().get(((AccountID) id).getAlias());
+            if (aliasNum != null) {
+                return (K) aliasNum.toGrpcAccountId();
+            } else {
+                return null;
+            }
+        }
+        return id;
     }
 
     /** {@inheritDoc} */

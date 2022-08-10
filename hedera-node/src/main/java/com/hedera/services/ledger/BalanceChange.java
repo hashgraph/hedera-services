@@ -357,6 +357,6 @@ public class BalanceChange {
     }
 
     public boolean hasNonEmptyCounterPartyAlias() {
-        return counterPartyAccountId.getAccountNum() == 0 && !counterPartyAccountId.getAlias().isEmpty();
+        return counterPartyAccountId != null && counterPartyAccountId.getAccountNum() == 0 && !counterPartyAccountId.getAlias().isEmpty();
     }
 }

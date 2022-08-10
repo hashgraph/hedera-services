@@ -29,7 +29,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.TransactionContext;
-import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.ledger.properties.AccountProperty;
@@ -50,7 +49,6 @@ import com.hederahashgraph.api.proto.java.TokenID;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
-import java.util.function.Supplier;
 import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -110,6 +108,7 @@ public class TransferLogic {
         var validity = OK;
         var autoCreationFee = 0L;
         for (var change : changes) {
+            // If the change consists of any known alias, replace the alias with the account number
             autoCreationLogic.checkIfExistingAlias(change);
             // create a new account for alias when the no account is already created using the alias
             if (change.hasNonEmptyAlias() || (change.isForNft() && change.hasNonEmptyCounterPartyAlias())) {
@@ -148,7 +147,7 @@ public class TransferLogic {
         if (validity == OK) {
             adjustBalancesAndAllowances(changes);
             if (autoCreationFee > 0) {
-                payFundingFromPayer(autoCreationFee);
+                payAutoCreationFee(autoCreationFee);
                 autoCreationLogic.submitRecordsTo(recordsHistorian);
             }
         } else {
@@ -160,12 +159,13 @@ public class TransferLogic {
         }
     }
 
-    private void payFundingFromPayer(final long autoCreationFee) {
+    private void payAutoCreationFee(final long autoCreationFee) {
         final var funding = dynamicProperties.fundingAccount();
         final var fundingBalance = (long) accountsLedger.get(funding, BALANCE);
         final var newFundingBalance = fundingBalance + autoCreationFee;
         accountsLedger.set(funding, BALANCE, newFundingBalance);
 
+        // deduct the auto creation fee from payer of the transaction
         final var payerBalance = (long) accountsLedger.get(txnCtx.activePayer(), BALANCE);
         accountsLedger.set(txnCtx.activePayer(), BALANCE, payerBalance - autoCreationFee);
         txnCtx.addFeeChargedToPayer(autoCreationFee);

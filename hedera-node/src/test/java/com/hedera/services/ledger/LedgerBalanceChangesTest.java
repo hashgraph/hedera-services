@@ -170,8 +170,7 @@ class LedgerBalanceChangesTest {
                         dynamicProperties,
                         tokenRelsLedger,
                         nftsLedger,
-                        backingTokens,
-                        () -> workingView);
+                        backingTokens);
         transferLogic =
                 new TransferLogic(
                         accountsLedger,
@@ -283,8 +282,7 @@ class LedgerBalanceChangesTest {
                         dynamicProperties,
                         tokenRelsLedger,
                         nftsLedger,
-                        backingTokens,
-                        () -> workingView);
+                        backingTokens);
 
         transferLogic =
                 new TransferLogic(

@@ -28,6 +28,7 @@ import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
+import com.hederahashgraph.api.proto.java.NftTransfer;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TransferList;
 import java.util.ArrayList;
@@ -112,32 +113,16 @@ public class AliasResolver {
 
             resolvedTokenAdjust.setToken(tokenAdjust.getToken());
             for (final var adjust : tokenAdjust.getTransfersList()) {
-                final var result =
-                        resolveInternalFungible(
+                final var result = resolveInternalFungible(
                                 aliasManager, adjust, resolvedTokenAdjust::addTransfers, true);
-                if (result == Result.UNKNOWN_ALIAS) {
-                    if (adjust.getAmount() > 0) {
-                        final var alias = adjust.getAccountID().getAlias();
-                        if (isSerializedProtoKey(alias)) {
-                            perceivedCreations++;
-                        } else {
-                            perceivedInvalidCreations++;
-                        }
-                    } else {
-                        perceivedMissing++;
-                    }
-                } else if (result == Result.REPEATED_UNKNOWN_ALIAS) {
-                    perceivedInvalidCreations++;
-                } else if (result == Result.UNKNOWN_EVM_ADDRESS) {
-                    perceivedMissing++;
-                }
+                perceiveResult(result, adjust);
             }
+
             for (final var change : tokenAdjust.getNftTransfersList()) {
                 final var resolvedChange =
                         change.toBuilder().setSerialNumber(change.getSerialNumber());
 
-                final var senderResult =
-                        resolveInternal(
+                final var senderResult = resolveInternal(
                                 aliasManager,
                                 change.getSenderAccountID(),
                                 resolvedChange::setSenderAccountID);
@@ -149,27 +134,51 @@ public class AliasResolver {
                                 aliasManager,
                                 change.getReceiverAccountID(),
                                 resolvedChange::setReceiverAccountID);
-                if (receiverResult == Result.UNKNOWN_ALIAS) {
-                    if (change.getSerialNumber() > 0) {
-                        final var alias = change.getReceiverAccountID().getAlias();
-                        if (isSerializedProtoKey(alias)) {
-                            perceivedCreations++;
-                        } else {
-                            perceivedInvalidCreations++;
-                        }
-                    } else {
-                        perceivedMissing++;
-                    }
-                }
-                if (receiverResult == Result.UNKNOWN_EVM_ADDRESS) {
-                    perceivedMissing++;
-                }
+                perceiveNftReceiverResult(receiverResult, change);
+
                 resolvedTokenAdjust.addNftTransfers(resolvedChange.build());
             }
 
             resolvedTokenAdjusts.add(resolvedTokenAdjust.build());
         }
         return resolvedTokenAdjusts;
+    }
+
+    private void perceiveNftReceiverResult(final Result receiverResult, final NftTransfer change) {
+        if (receiverResult == Result.UNKNOWN_ALIAS) {
+            if (change.getSerialNumber() > 0) {
+                final var alias = change.getReceiverAccountID().getAlias();
+                if (isSerializedProtoKey(alias)) {
+                    perceivedCreations++;
+                } else {
+                    perceivedInvalidCreations++;
+                }
+            } else {
+                perceivedMissing++;
+            }
+        }
+        if (receiverResult == Result.UNKNOWN_EVM_ADDRESS) {
+            perceivedMissing++;
+        }
+    }
+
+    private void perceiveResult(final Result result, final AccountAmount adjust) {
+        if (result == Result.UNKNOWN_ALIAS) {
+            if (adjust.getAmount() > 0) {
+                final var alias = adjust.getAccountID().getAlias();
+                if (isSerializedProtoKey(alias)) {
+                    perceivedCreations++;
+                } else {
+                    perceivedInvalidCreations++;
+                }
+            } else {
+                perceivedMissing++;
+            }
+        } else if (result == Result.REPEATED_UNKNOWN_ALIAS) {
+            perceivedInvalidCreations++;
+        } else if (result == Result.UNKNOWN_EVM_ADDRESS) {
+            perceivedMissing++;
+        }
     }
 
     private TransferList resolveHbarAdjusts(
@@ -179,22 +188,7 @@ public class AliasResolver {
             final var result =
                     resolveInternalFungible(
                             aliasManager, adjust, resolvedAdjusts::addAccountAmounts, false);
-            if (result == Result.UNKNOWN_ALIAS) {
-                if (adjust.getAmount() > 0) {
-                    final var alias = adjust.getAccountID().getAlias();
-                    if (isSerializedProtoKey(alias)) {
-                        perceivedCreations++;
-                    } else {
-                        perceivedInvalidCreations++;
-                    }
-                } else {
-                    perceivedMissing++;
-                }
-            } else if (result == Result.REPEATED_UNKNOWN_ALIAS) {
-                perceivedInvalidCreations++;
-            } else if (result == Result.UNKNOWN_EVM_ADDRESS) {
-                perceivedMissing++;
-            }
+            perceiveResult(result, adjust);
         }
         return resolvedAdjusts.build();
     }

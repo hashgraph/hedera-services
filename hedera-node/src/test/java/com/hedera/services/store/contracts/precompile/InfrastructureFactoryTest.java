@@ -106,8 +106,6 @@ class InfrastructureFactoryTest {
     @Mock private WorldLedgers ledgers;
     @Mock private TransactionContext txnCtx;
 
-    @Mock private StateView workingView;
-
     private InfrastructureFactory subject;
 
     @BeforeEach
@@ -123,8 +121,7 @@ class InfrastructureFactoryTest {
                         sigImpactHistorian,
                         dissociationFactory,
                         dynamicProperties,
-                        txnCtx,
-                        () -> workingView);
+                        txnCtx);
     }
 
     @Test

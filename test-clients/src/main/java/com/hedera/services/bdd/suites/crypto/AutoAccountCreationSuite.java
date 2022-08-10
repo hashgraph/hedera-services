@@ -114,21 +114,21 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
     @Override
     public List<HapiApiSpec> getSpecsInSuite() {
         return List.of(
-                //                autoAccountCreationsHappyPath(),
-                //                autoAccountCreationBadAlias(),
-                //                autoAccountCreationUnsupportedAlias(),
-                //                transferToAccountAutoCreatedUsingAlias(),
-                //                transferToAccountAutoCreatedUsingAccount(),
-                //                transferFromAliasToAlias(),
-                //                transferFromAliasToAccount(),
-                //                multipleAutoAccountCreations(),
-                //                accountCreatedIfAliasUsedAsPubKey(),
-                //                aliasCanBeUsedOnManyAccountsNotAsAlias(),
-                //                autoAccountCreationWorksWhenUsingAliasOfDeletedAccount(),
-                //                canGetBalanceAndInfoViaAlias(),
-                //                noStakePeriodStartIfNotStakingToNode(),
-//                canAutoCreateWithFungibleTokenTransfersToAlias(),
-                canAutoCreateWithNftTransfersToAlias()
+                                autoAccountCreationsHappyPath(),
+                                autoAccountCreationBadAlias(),
+                                autoAccountCreationUnsupportedAlias(),
+                                transferToAccountAutoCreatedUsingAlias(),
+                                transferToAccountAutoCreatedUsingAccount(),
+                                transferFromAliasToAlias(),
+                                transferFromAliasToAccount(),
+                                multipleAutoAccountCreations(),
+                                accountCreatedIfAliasUsedAsPubKey(),
+                                aliasCanBeUsedOnManyAccountsNotAsAlias(),
+                                autoAccountCreationWorksWhenUsingAliasOfDeletedAccount(),
+                                canGetBalanceAndInfoViaAlias(),
+                                noStakePeriodStartIfNotStakingToNode(),
+                                canAutoCreateWithFungibleTokenTransfersToAlias(),
+                                canAutoCreateWithNftTransfersToAlias()
 //                repeatedAliasInSameTransferListFails()
         );
     }

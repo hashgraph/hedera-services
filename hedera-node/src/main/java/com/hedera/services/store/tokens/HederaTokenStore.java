@@ -15,6 +15,43 @@
  */
 package com.hedera.services.store.tokens;
 
+import com.hedera.services.context.SideEffectsTracker;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.ledger.HederaLedger;
+import com.hedera.services.ledger.TransactionalLedger;
+import com.hedera.services.ledger.backing.BackingStore;
+import com.hedera.services.ledger.ids.EntityIdSource;
+import com.hedera.services.ledger.properties.NftProperty;
+import com.hedera.services.ledger.properties.TokenRelProperty;
+import com.hedera.services.legacy.core.jproto.JKey;
+import com.hedera.services.sigs.utils.ImmutableKeyUtils;
+import com.hedera.services.state.enums.TokenType;
+import com.hedera.services.state.merkle.MerkleToken;
+import com.hedera.services.state.merkle.MerkleTokenRelStatus;
+import com.hedera.services.state.merkle.MerkleUniqueToken;
+import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.state.validation.UsageLimits;
+import com.hedera.services.store.HederaStore;
+import com.hedera.services.store.models.NftId;
+import com.hedera.services.txns.validation.OptionValidator;
+import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.Duration;
+import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.TokenID;
+import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
+import org.apache.commons.lang3.tuple.Pair;
+
+import javax.inject.Inject;
+import javax.inject.Singleton;
+import java.util.Optional;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.BiFunction;
+import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.function.Predicate;
+import java.util.function.Supplier;
+
 import static com.hedera.services.ledger.backing.BackingTokenRels.asTokenRel;
 import static com.hedera.services.ledger.properties.AccountProperty.IS_DELETED;
 import static com.hedera.services.ledger.properties.AccountProperty.MAX_AUTOMATIC_ASSOCIATIONS;
@@ -29,9 +66,7 @@ import static com.hedera.services.ledger.properties.TokenRelProperty.TOKEN_BALAN
 import static com.hedera.services.state.enums.TokenType.NON_FUNGIBLE_UNIQUE;
 import static com.hedera.services.state.merkle.MerkleToken.UNUSED_KEY;
 import static com.hedera.services.state.submerkle.EntityId.fromGrpcAccountId;
-import static com.hedera.services.utils.EntityIdUtils.isAlias;
 import static com.hedera.services.utils.EntityIdUtils.readableId;
-import static com.hedera.services.utils.EntityNum.MISSING_NUM;
 import static com.hedera.services.utils.EntityNum.fromTokenId;
 import static com.hedera.services.utils.MiscUtils.asFcKeyUnchecked;
 import static com.hedera.services.utils.MiscUtils.asUsableFcKey;
@@ -64,43 +99,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSO
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES;
 
-import com.hedera.services.context.SideEffectsTracker;
-import com.hedera.services.context.primitives.StateView;
-import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.ledger.HederaLedger;
-import com.hedera.services.ledger.TransactionalLedger;
-import com.hedera.services.ledger.backing.BackingStore;
-import com.hedera.services.ledger.ids.EntityIdSource;
-import com.hedera.services.ledger.properties.NftProperty;
-import com.hedera.services.ledger.properties.TokenRelProperty;
-import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.sigs.utils.ImmutableKeyUtils;
-import com.hedera.services.state.enums.TokenType;
-import com.hedera.services.state.merkle.MerkleToken;
-import com.hedera.services.state.merkle.MerkleTokenRelStatus;
-import com.hedera.services.state.merkle.MerkleUniqueToken;
-import com.hedera.services.state.submerkle.EntityId;
-import com.hedera.services.state.validation.UsageLimits;
-import com.hedera.services.store.HederaStore;
-import com.hedera.services.store.models.NftId;
-import com.hedera.services.txns.validation.OptionValidator;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.Duration;
-import com.hederahashgraph.api.proto.java.Key;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.TokenID;
-import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
-import java.util.Optional;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.BiFunction;
-import java.util.function.Consumer;
-import java.util.function.Function;
-import java.util.function.Predicate;
-import java.util.function.Supplier;
-import javax.inject.Inject;
-import javax.inject.Singleton;
-import org.apache.commons.lang3.tuple.Pair;
-
 /** Provides a managing store for arbitrary tokens. */
 @Singleton
 public class HederaTokenStore extends HederaStore implements TokenStore {
@@ -116,7 +114,6 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
     private final TransactionalLedger<
                     Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus>
             tokenRelsLedger;
-    private final Supplier<StateView> workingView;
     private final BackingStore<TokenID, MerkleToken> backingTokens;
 
     TokenID pendingId = NO_PENDING_ID;
@@ -133,8 +130,7 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
                             Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus>
                     tokenRelsLedger,
             final TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger,
-            final BackingStore<TokenID, MerkleToken> backingTokens,
-            final Supplier<StateView> workingView) {
+            final BackingStore<TokenID, MerkleToken> backingTokens) {
         super(ids);
         this.validator = validator;
         this.properties = properties;
@@ -143,23 +139,21 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
         this.backingTokens = backingTokens;
         this.tokenRelsLedger = tokenRelsLedger;
         this.sideEffectsTracker = sideEffectsTracker;
-        this.workingView = workingView;
     }
 
     @Override
     protected ResponseCodeEnum checkAccountUsability(final AccountID aId) {
-        var unaliasedId = aId;
-        var accountDoesNotExist = !accountsLedger.exists(unaliasedId);
+        var accountDoesNotExist = !accountsLedger.exists(aId);
 
         if (accountDoesNotExist) {
             return INVALID_ACCOUNT_ID;
         }
 
-        var deleted = (boolean) accountsLedger.get(unaliasedId, IS_DELETED);
+        var deleted = (boolean) accountsLedger.get(aId, IS_DELETED);
         if (deleted) {
             return ACCOUNT_DELETED;
         }
-        return validator.expiryStatusGiven(accountsLedger, unaliasedId);
+        return validator.expiryStatusGiven(accountsLedger, aId);
     }
 
     @Override

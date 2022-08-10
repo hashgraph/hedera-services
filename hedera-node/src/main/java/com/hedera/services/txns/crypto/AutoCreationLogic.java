@@ -169,12 +169,7 @@ public class AutoCreationLogic {
         if (!usageLimits.areCreatableAccounts(1)) {
             return Pair.of(MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED, 0L);
         }
-        final ByteString alias;
-        if (change.hasNonEmptyCounterPartyAlias()) {
-            alias = change.counterPartyAccountId().getAlias();
-        } else {
-            alias = change.alias();
-        }
+        final ByteString alias = getAlias(change);
 
         final var key = asPrimitiveKeyUnchecked(alias);
         final var syntheticCreation = syntheticTxnFactory.createAccount(key, 0L, change);
@@ -200,8 +195,12 @@ public class AutoCreationLogic {
             customizer.maxAutomaticAssociations((int) change.getAggregatedUnits());
         }
         customizer.customize(newId, accountsLedger);
+
         sideEffects.trackAutoCreation(newId, alias);
-        sideEffects.trackTokenUnitsChange(change.tokenId(), newId, change.getAggregatedUnits());
+        if (change.isForToken()) {
+            sideEffects.trackTokenUnitsChange(change.tokenId(), newId, change.getAggregatedUnits());
+        }
+
         final var childRecord =
                 creator.createSuccessfulSyntheticRecord(NO_CUSTOM_FEES, sideEffects, AUTO_MEMO);
         childRecord.setFee(fee);
@@ -280,5 +279,13 @@ public class AutoCreationLogic {
     private boolean isKnownAlias(final AccountID accountId, final Supplier<StateView> workingView) {
         final var aliases = workingView.get().aliases();
         return aliases.containsKey(accountId.getAlias());
+    }
+
+    private ByteString getAlias(final BalanceChange change) {
+        if (change.hasNonEmptyCounterPartyAlias()) {
+            return change.counterPartyAccountId().getAlias();
+        } else {
+            return change.alias();
+        }
     }
 }

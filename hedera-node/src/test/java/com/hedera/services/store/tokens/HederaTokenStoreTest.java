@@ -15,6 +15,53 @@
  */
 package com.hedera.services.store.tokens;
 
+import com.google.protobuf.StringValue;
+import com.hedera.services.context.SideEffectsTracker;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.ledger.BalanceChange;
+import com.hedera.services.ledger.HederaLedger;
+import com.hedera.services.ledger.TransactionalLedger;
+import com.hedera.services.ledger.backing.BackingTokens;
+import com.hedera.services.ledger.ids.EntityIdSource;
+import com.hedera.services.ledger.properties.AccountProperty;
+import com.hedera.services.ledger.properties.NftProperty;
+import com.hedera.services.ledger.properties.TokenRelProperty;
+import com.hedera.services.legacy.core.jproto.JKey;
+import com.hedera.services.sigs.utils.ImmutableKeyUtils;
+import com.hedera.services.state.enums.TokenType;
+import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.merkle.MerkleToken;
+import com.hedera.services.state.merkle.MerkleTokenRelStatus;
+import com.hedera.services.state.merkle.MerkleUniqueToken;
+import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.state.validation.UsageLimits;
+import com.hedera.services.store.models.Id;
+import com.hedera.services.store.models.NftId;
+import com.hedera.services.utils.EntityNumPair;
+import com.hedera.services.utils.NftNumPair;
+import com.hedera.test.factories.scenarios.TxnHandlingScenario;
+import com.hedera.test.utils.IdUtils;
+import com.hederahashgraph.api.proto.java.AccountAmount;
+import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.Duration;
+import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.Timestamp;
+import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
+import com.hederahashgraph.api.proto.java.TokenID;
+import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
+import org.apache.commons.lang3.tuple.Pair;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
+
+import java.util.EnumSet;
+import java.util.HashSet;
+import java.util.Optional;
+import java.util.Set;
+import java.util.function.Consumer;
+
 import static com.hedera.services.ledger.backing.BackingTokenRels.asTokenRel;
 import static com.hedera.services.ledger.properties.AccountProperty.IS_DELETED;
 import static com.hedera.services.ledger.properties.AccountProperty.MAX_AUTOMATIC_ASSOCIATIONS;
@@ -81,53 +128,6 @@ import static org.mockito.BDDMockito.never;
 import static org.mockito.BDDMockito.verify;
 import static org.mockito.BDDMockito.willCallRealMethod;
 import static org.mockito.BDDMockito.willThrow;
-
-import com.google.protobuf.StringValue;
-import com.hedera.services.context.SideEffectsTracker;
-import com.hedera.services.context.primitives.StateView;
-import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.ledger.BalanceChange;
-import com.hedera.services.ledger.HederaLedger;
-import com.hedera.services.ledger.TransactionalLedger;
-import com.hedera.services.ledger.backing.BackingTokens;
-import com.hedera.services.ledger.ids.EntityIdSource;
-import com.hedera.services.ledger.properties.AccountProperty;
-import com.hedera.services.ledger.properties.NftProperty;
-import com.hedera.services.ledger.properties.TokenRelProperty;
-import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.sigs.utils.ImmutableKeyUtils;
-import com.hedera.services.state.enums.TokenType;
-import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.merkle.MerkleToken;
-import com.hedera.services.state.merkle.MerkleTokenRelStatus;
-import com.hedera.services.state.merkle.MerkleUniqueToken;
-import com.hedera.services.state.submerkle.EntityId;
-import com.hedera.services.state.validation.UsageLimits;
-import com.hedera.services.store.models.Id;
-import com.hedera.services.store.models.NftId;
-import com.hedera.services.utils.EntityNumPair;
-import com.hedera.services.utils.NftNumPair;
-import com.hedera.test.factories.scenarios.TxnHandlingScenario;
-import com.hedera.test.utils.IdUtils;
-import com.hederahashgraph.api.proto.java.AccountAmount;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.Duration;
-import com.hederahashgraph.api.proto.java.Key;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.Timestamp;
-import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
-import com.hederahashgraph.api.proto.java.TokenID;
-import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
-import java.util.EnumSet;
-import java.util.HashSet;
-import java.util.Optional;
-import java.util.Set;
-import java.util.function.Consumer;
-import org.apache.commons.lang3.tuple.Pair;
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
 
 class HederaTokenStoreTest {
     private static final Key newKey = TxnHandlingScenario.TOKEN_REPLACE_KT.asKey();
@@ -200,7 +200,6 @@ class HederaTokenStoreTest {
     private UsageLimits usageLimits;
     private MerkleToken token;
     private MerkleToken nonfungibleToken;
-    private StateView workingView;
 
     private HederaTokenStore subject;
 
@@ -298,7 +297,6 @@ class HederaTokenStoreTest {
         usageLimits = mock(UsageLimits.class);
 
         sideEffectsTracker = new SideEffectsTracker();
-        workingView = mock(StateView.class);
         subject =
                 new HederaTokenStore(
                         ids,
@@ -308,8 +306,7 @@ class HederaTokenStoreTest {
                         properties,
                         tokenRelsLedger,
                         nftsLedger,
-                        backingTokens,
-                        () -> workingView);
+                        backingTokens);
         subject.setAccountsLedger(accountsLedger);
         subject.setHederaLedger(hederaLedger);
     }

@@ -112,8 +112,7 @@ class HederaLedgerLiveTest extends BaseHederaLedgerTestHelper {
                         new MockGlobalDynamicProps(),
                         tokenRelsLedger,
                         nftsLedger,
-                        new HashMapBackingTokens(),
-                       () -> workingView);
+                        new HashMapBackingTokens());
         subject =
                 new HederaLedger(
                         tokenStore,

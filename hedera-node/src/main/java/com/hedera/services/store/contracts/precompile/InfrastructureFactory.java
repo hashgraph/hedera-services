@@ -15,8 +15,6 @@
  */
 package com.hedera.services.store.contracts.precompile;
 
-import static com.hedera.services.ledger.ids.ExceptionalEntityIdSource.NOOP_ID_SOURCE;
-
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.primitives.StateView;
@@ -67,12 +65,14 @@ import com.hedera.services.txns.token.validators.CreateChecks;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
-import java.util.function.Supplier;
-import javax.inject.Inject;
-import javax.inject.Singleton;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.evm.frame.MessageFrame;
+
+import javax.inject.Inject;
+import javax.inject.Singleton;
+
+import static com.hedera.services.ledger.ids.ExceptionalEntityIdSource.NOOP_ID_SOURCE;
 
 @Singleton
 public class InfrastructureFactory {
@@ -86,7 +86,6 @@ public class InfrastructureFactory {
     private final DissociationFactory dissociationFactory;
     private final GlobalDynamicProperties dynamicProperties;
     private final TransactionContext txnCtx;
-    private final Supplier<StateView> workingView;
 
     @Inject
     public InfrastructureFactory(
@@ -99,8 +98,7 @@ public class InfrastructureFactory {
             final SigImpactHistorian sigImpactHistorian,
             final DissociationFactory dissociationFactory,
             final GlobalDynamicProperties dynamicProperties,
-            final TransactionContext txnCtx,
-            final Supplier<StateView> workingView) {
+            final TransactionContext txnCtx) {
         this.ids = ids;
         this.encoder = encoder;
         this.decoder = decoder;
@@ -111,7 +109,6 @@ public class InfrastructureFactory {
         this.sigImpactHistorian = sigImpactHistorian;
         this.dissociationFactory = dissociationFactory;
         this.txnCtx = txnCtx;
-        this.workingView = workingView;
     }
 
     public SideEffectsTracker newSideEffects() {
@@ -147,8 +144,7 @@ public class InfrastructureFactory {
                 dynamicProperties,
                 tokenRelsLedger,
                 nftsLedger,
-                backingTokens,
-                workingView);
+                backingTokens);
     }
 
     public BurnLogic newBurnLogic(
