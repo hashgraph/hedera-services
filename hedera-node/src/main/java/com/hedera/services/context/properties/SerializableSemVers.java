@@ -218,6 +218,7 @@ public class SerializableSemVers implements SoftwareVersion {
     @VisibleForTesting
     static void setCurrentVersionHasPatchMigrationRecords(
             boolean currentVersionHasPatchMigrationRecords) {
-        SerializableSemVers.currentVersionHasPatchMigrationRecords = currentVersionHasPatchMigrationRecords;
+        SerializableSemVers.currentVersionHasPatchMigrationRecords =
+                currentVersionHasPatchMigrationRecords;
     }
 }
