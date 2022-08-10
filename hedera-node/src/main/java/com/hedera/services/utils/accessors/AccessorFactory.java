@@ -20,7 +20,6 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAccoun
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.MiscUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ScheduleID;
@@ -31,8 +30,7 @@ public class AccessorFactory {
     private final GlobalDynamicProperties dynamicProperties;
 
     @Inject
-    public AccessorFactory(
-            final GlobalDynamicProperties dynamicProperties) {
+    public AccessorFactory(final GlobalDynamicProperties dynamicProperties) {
         this.dynamicProperties = dynamicProperties;
     }
 
