@@ -114,9 +114,7 @@ jobs:
             echo "::endgroup::"
           fi
           
-          set -x
           JQ_VERSION="$(jq --version)"
-          set +x
           if [[ "${JQ_VERSION}" != "jq-1.6" ]]; then
             echo "::group::Updating JQ Version"
             sudo apt update
@@ -221,7 +219,7 @@ jobs:
       - name: Compute Final Effective Version
         id: effective-version
         run: |
-          EFF_VERSION="$(./gradlew :hedera-node:showVersion --quiet | tr -d '[:space:]')"
+          EFF_VERSION="$(./gradlew :hedera-node:showVersion --quiet --scan | tr -d '[:space:]')"
           echo "::set-output name=number::${EFF_VERSION}"
 
       - name: Stage Artifact Build Folder
@@ -271,31 +269,13 @@ jobs:
           ARTIFACT_NAME="${{ steps.artifact-release.outputs.name }}"
           sha384sum "${ARTIFACT_NAME}.zip" | tee "${ARTIFACT_NAME}.sha384"
 
-      - name: Upload Artifacts (DevOps GCP)
+      - name: Upload Artifacts (DevOps GCP Bucket)
         uses: google-github-actions/upload-cloud-storage@v0.10.2
         if: ${{ inputs.dry-run-enabled != true && !cancelled() && !failure() }}
         with:
           path: ${{ steps.artifact-release.outputs.folder }}
           destination: ${{ secrets.bucket-name }}
           parent: false
-
-#      - name: Build Jenkins Payload
-#        id: jenkins-payload
-#        if: ${{ inputs.dry-run-enabled != true && inputs.trigger-env-deploy != 'none' && !cancelled() && !failure() }}
-#        run: |
-#          PAYLOAD_FILE="$(mktemp -t "jenkins-json-payload.XXXXXXX")"
-#          echo "::set-output name=file::${PAYLOAD_FILE}"
-#
-#          echo "{}" | jq \
-#                --arg ref "main" \
-#                --arg username "nathan.klick" \
-#                --arg msg "some message" \
-#                --arg commit "${{ steps.parameters.outputs.commit-id }}" \
-#                --arg rt "${{ (startsWith(github.ref, 'refs/tags/v') && 'tag') || 'branch' }}" \
-#                '.ref |=  $ref | .ref_type |= $rt | .sender.login |= $username | .commits |= [{id: $commit, message: $msg}] | .head_commit.author.username |= $username | .head_commit.message |= $msg | .head_commit.id |= $commit' \
-#            | tee "${PAYLOAD_FILE}"
-#
-#          echo "::set-output name=json::$(cat "${PAYLOAD_FILE}")"
 
       - name: Notify Jenkins of Release (Integration)
         uses: fjogeleit/http-request-action@v1.10.0
