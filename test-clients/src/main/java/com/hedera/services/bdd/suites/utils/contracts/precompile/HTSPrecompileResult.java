@@ -15,36 +15,6 @@
  */
 package com.hedera.services.bdd.suites.utils.contracts.precompile;
 
-import static com.hedera.services.contracts.ParsingConstants.ADDRESS;
-import static com.hedera.services.contracts.ParsingConstants.ARRAY_BRACKETS;
-import static com.hedera.services.contracts.ParsingConstants.BYTES32;
-import static com.hedera.services.contracts.ParsingConstants.FIXED_FEE;
-import static com.hedera.services.contracts.ParsingConstants.FRACTIONAL_FEE;
-import static com.hedera.services.contracts.ParsingConstants.HEDERA_TOKEN;
-import static com.hedera.services.contracts.ParsingConstants.RESPONSE_STATUS_AT_BEGINNING;
-import static com.hedera.services.contracts.ParsingConstants.ROYALTY_FEE;
-import static com.hedera.services.contracts.ParsingConstants.allowanceOfType;
-import static com.hedera.services.contracts.ParsingConstants.balanceOfType;
-import static com.hedera.services.contracts.ParsingConstants.burnReturnType;
-import static com.hedera.services.contracts.ParsingConstants.decimalsType;
-import static com.hedera.services.contracts.ParsingConstants.ercTransferType;
-import static com.hedera.services.contracts.ParsingConstants.getApprovedType;
-import static com.hedera.services.contracts.ParsingConstants.getTokenDefaultFreezeStatusType;
-import static com.hedera.services.contracts.ParsingConstants.getTokenDefaultKycStatusType;
-import static com.hedera.services.contracts.ParsingConstants.hapiAllowanceOfType;
-import static com.hedera.services.contracts.ParsingConstants.hapiGetApprovedType;
-import static com.hedera.services.contracts.ParsingConstants.hapiIsApprovedForAllType;
-import static com.hedera.services.contracts.ParsingConstants.isApprovedForAllType;
-import static com.hedera.services.contracts.ParsingConstants.isFrozenType;
-import static com.hedera.services.contracts.ParsingConstants.isKycType;
-import static com.hedera.services.contracts.ParsingConstants.mintReturnType;
-import static com.hedera.services.contracts.ParsingConstants.nameType;
-import static com.hedera.services.contracts.ParsingConstants.notSpecifiedType;
-import static com.hedera.services.contracts.ParsingConstants.ownerOfType;
-import static com.hedera.services.contracts.ParsingConstants.symbolType;
-import static com.hedera.services.contracts.ParsingConstants.tokenUriType;
-import static com.hedera.services.contracts.ParsingConstants.totalSupplyType;
-
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.esaulpaugh.headlong.abi.TupleType;
 import com.hedera.services.bdd.suites.contract.Utils;
@@ -63,6 +33,8 @@ import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.tuweni.bytes.Bytes;
+
+import static com.hedera.services.contracts.ParsingConstants.*;
 
 public class HTSPrecompileResult implements ContractCallResult {
     private HTSPrecompileResult() {}
@@ -140,6 +112,7 @@ public class HTSPrecompileResult implements ContractCallResult {
     private boolean tokenDefaultFreezeStatus;
     private boolean tokenDefaultKycStatus;
     private boolean isFrozen;
+    private boolean isToken;
     private List<CustomFee> customFees;
 
     public HTSPrecompileResult forFunction(final FunctionType functionType) {
@@ -169,6 +142,8 @@ public class HTSPrecompileResult implements ContractCallResult {
                     case GET_TOKEN_DEFAULT_KYC_STATUS -> getTokenDefaultKycStatusType;
                     case HAPI_IS_FROZEN -> isFrozenType;
                     case HAPI_GET_TOKEN_CUSTOM_FEES -> tokenGetCustomFeesReplacedAddress;
+                    case HAPI_IS_TOKEN -> isTokenType;
+                    case HAPI_GET_TOKEN_TYPE -> getTokenType;
                     default -> notSpecifiedType;
                 };
 
@@ -291,6 +266,11 @@ public class HTSPrecompileResult implements ContractCallResult {
         return this;
     }
 
+    public HTSPrecompileResult withIsToken(final boolean isToken) {
+        this.isToken = isToken;
+        return this;
+    }
+
     @Override
     public Bytes getBytes() {
         if (ParsingConstants.FunctionType.ERC_OWNER.equals(functionType)) {
@@ -329,6 +309,7 @@ public class HTSPrecompileResult implements ContractCallResult {
                             status.getNumber(), tokenDefaultKycStatus);
                     case HAPI_IS_FROZEN -> Tuple.of(status.getNumber(), isFrozen);
                     case HAPI_GET_TOKEN_CUSTOM_FEES -> getTupleForTokenGetCustomFees();
+                    case HAPI_IS_TOKEN -> Tuple.of(status.getNumber(), isToken);
                     default -> Tuple.of(status.getNumber());
                 };
 

@@ -5,19 +5,21 @@ import "./HederaResponseCodes.sol";
 
 contract TokenAndTypeCheck is HederaTokenService {
 
-    function isAToken(address token) public {
-        (int64 statusCode, bool isToken) = HederaTokenService.isToken(token);
+    function isAToken(address token) external returns(bool) {
+        (int statusCode, bool isToken) = HederaTokenService.isToken(token);
 
         if (statusCode != HederaResponseCodes.SUCCESS) {
             revert ("Token check failed!");
         }
+        return isToken;
     }
 
-    function getType(address token) public {
-        (int64 statusCode, int32 tokenType) = HederaTokenService.getTokenType(token);
+    function getType(address token) external returns(int) {
+        (int statusCode, int tokenType) = HederaTokenService.getTokenType(token);
 
         if (statusCode != HederaResponseCodes.SUCCESS) {
             revert ("Token type appraisal failed!");
         }
+        return tokenType;
     }
 }

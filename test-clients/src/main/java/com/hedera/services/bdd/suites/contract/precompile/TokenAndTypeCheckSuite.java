@@ -8,14 +8,17 @@ import com.hederahashgraph.api.proto.java.TokenID;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.math.BigInteger;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.isLiteralResult;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocal;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.*;
+import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.*;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
@@ -31,10 +34,9 @@ public class TokenAndTypeCheckSuite extends HapiApiSuite {
     private static final Logger log = LogManager.getLogger(TokenAndTypeCheckSuite.class);
     private static final String TOKEN_AND_TYPE_CHECK_CONTRACT = "TokenAndTypeCheck";
     private static final String ACCOUNT = "anybody";
-    private static final int GAS_TO_OFFER = 4_000_000;
+    private static final int GAS_TO_OFFER = 1_000_000;
     private static final String GET_TOKEN_TYPE = "getType";
     private static final String IS_TOKEN = "isAToken";
-    private static final String KEY = "key";
 
     public static void main(String... args) {
         new TokenAndTypeCheckSuite().runSuiteSync();
@@ -47,13 +49,13 @@ public class TokenAndTypeCheckSuite extends HapiApiSuite {
 
     @Override
     public List<HapiApiSpec> getSpecsInSuite() {
-        return List.of(getTokenTypePrecompile());
+        return List.of(checkTokenAndTypeNegativeCases());
     }
 
-    private HapiApiSpec getTokenTypePrecompile() {
+    private HapiApiSpec checkTokenAndTypeStandardCases() {
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
 
-        return defaultHapiSpec("getTokenTypePrecompile")
+        return defaultHapiSpec("checkTokenAndTypeStandardCases")
                 .given(
                         cryptoCreate(ACCOUNT)
                                 .balance(100 * ONE_HUNDRED_HBARS),
@@ -73,23 +75,84 @@ public class TokenAndTypeCheckSuite extends HapiApiSuite {
                                                 spec,
                                                 contractCallLocal(
                                                         TOKEN_AND_TYPE_CHECK_CONTRACT,
+                                                        IS_TOKEN,
+                                                        Tuple.singleton(
+                                                                expandByteArrayTo32Length(
+                                                                        asAddress(vanillaTokenID.get()))))
+                                                        .logged()
+                                                        .has(
+                                                                resultWith()
+                                                                        .resultViaFunctionName(
+                                                                                IS_TOKEN,
+                                                                                TOKEN_AND_TYPE_CHECK_CONTRACT,
+                                                                                isLiteralResult(
+                                                                                        new Object[] {
+                                                                                                Boolean.TRUE
+                                                                                        }))),
+                                                contractCallLocal(
+                                                        TOKEN_AND_TYPE_CHECK_CONTRACT,
                                                         GET_TOKEN_TYPE,
-                                                        asAddress(vanillaTokenID.get()))
-                                                )))
-
+                                                        Tuple.singleton(
+                                                                expandByteArrayTo32Length(
+                                                                        asAddress(vanillaTokenID.get()))))
+                                                        .logged()
+                                                        .has(
+                                                                resultWith()
+                                                                        .resultViaFunctionName(
+                                                                                GET_TOKEN_TYPE,
+                                                                                TOKEN_AND_TYPE_CHECK_CONTRACT,
+                                                                                isLiteralResult(
+                                                                                        new Object[] {
+                                                                                                BigInteger.valueOf(0)
+                                                                                        }))))))
                 .then();
-//                        childRecordsCheck(
-//                                "Tx",
-//                                SUCCESS,
-//                                recordWith()
-//                                        .status(SUCCESS)
-//                                        .contractCallResult(
-//                                                resultWith()
-//                                                        .contractCallResult(
-//                                                                htsPrecompileResult()
-//                                                                        .forFunction(
-//                                                                                ParsingConstants.FunctionType
-//                                                                                        .HAPI_GET_TOKEN_TYPE)
-//                                                                        .withStatus(SUCCESS)))));
+    }
+
+    private HapiApiSpec checkTokenAndTypeNegativeCases() {
+        final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
+
+        return defaultHapiSpec("checkTokenAndTypeNegativeCases")
+                .given(
+                        cryptoCreate(ACCOUNT)
+                                .balance(100 * ONE_HUNDRED_HBARS),
+                        cryptoCreate(TOKEN_TREASURY),
+                        tokenCreate(VANILLA_TOKEN)
+                                .tokenType(FUNGIBLE_COMMON)
+                                .treasury(TOKEN_TREASURY)
+                                .initialSupply(1_000)
+                                .exposingCreatedIdTo(id -> vanillaTokenID.set(asToken(id))),
+                        tokenAssociate(ACCOUNT, VANILLA_TOKEN),
+                        uploadInitCode(TOKEN_AND_TYPE_CHECK_CONTRACT),
+                        contractCreate(TOKEN_AND_TYPE_CHECK_CONTRACT))
+                .when(
+                        withOpContext(
+                                (spec, opLog) ->
+                                        allRunFor(
+                                                spec,
+                                                contractCall(
+                                                        TOKEN_AND_TYPE_CHECK_CONTRACT,
+                                                        IS_TOKEN,
+                                                        Tuple.singleton(
+                                                                expandByteArrayTo32Length(
+                                                                        asAddress(vanillaTokenID.get()))))
+                                                        .via("Tx")
+                                                        .payingWith(ACCOUNT)
+                                                        .gas(GAS_TO_OFFER)
+                                                        .logged())))
+                .then(
+                        childRecordsCheck(
+                                "Tx",
+                                SUCCESS,
+                                recordWith()
+                                        .status(SUCCESS)
+                                        .contractCallResult(
+                                                resultWith()
+                                                        .contractCallResult(
+                                                                htsPrecompileResult()
+                                                                        .forFunction(
+                                                                                ParsingConstants.FunctionType
+                                                                                        .HAPI_IS_TOKEN)
+                                                                        .withStatus(SUCCESS)
+                                                                        .withIsToken(false)))));
     }
 }

@@ -122,6 +122,9 @@ public final class ParsingConstants {
     public static final TupleType getTokenDefaultKycStatusType =
             TupleType.parse(INT_BOOL_PAIR_RETURN_TYPE);
 
+    public static final TupleType isTokenType = TupleType.parse(INT_BOOL_PAIR_RETURN_TYPE);
+    public static final TupleType getTokenType = TupleType.parse("(int32,int32)");
+
     public static final TupleType notSpecifiedType = TupleType.parse(INT32);
 
     public enum FunctionType {
