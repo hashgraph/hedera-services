@@ -17,11 +17,11 @@ name: "Deploy Release Artifact"
 on:
   workflow_dispatch:
     inputs:
-      new-version:
-        description: "New Version:"
-        type: string
-        required: false
-        default: ""
+      #      new-version:
+      #        description: "New Version:"
+      #        type: string
+      #        required: false
+      #        default: ""
       #      trigger-env-deploy:
       #        description: "Deploy to Environment:"
       #        type: choice
