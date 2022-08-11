@@ -15,11 +15,6 @@
  */
 package com.hedera.services.store.contracts.precompile.impl;
 
-import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
-import static com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils.GasCostType.UPDATE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.contracts.sources.EvmSigsVerifier;
 import com.hedera.services.ledger.accounts.ContractAliases;
@@ -32,19 +27,21 @@ import com.hedera.services.store.contracts.precompile.codec.TokenUpdateWrapper;
 import com.hedera.services.store.contracts.precompile.utils.KeyActivationUtils;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.services.store.models.Id;
-import com.hedera.services.store.tokens.HederaTokenStore;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import java.util.Objects;
-import java.util.function.UnaryOperator;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 
-public class TokenUpdatePrecompile extends AbstractWritePrecompile {
-    private HederaTokenStore hederaTokenStore;
+import java.util.Objects;
+import java.util.function.UnaryOperator;
+
+import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
+import static com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils.GasCostType.UPDATE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+
+public class TokenUpdatePrecompile extends AbstractTokenUpdatePrecompile {
     private TokenUpdateWrapper updateOp;
-    private final EvmSigsVerifier sigsVerifier;
-    private final ContractAliases aliases;
 
     public TokenUpdatePrecompile(
             WorldLedgers ledgers,
@@ -57,37 +54,26 @@ public class TokenUpdatePrecompile extends AbstractWritePrecompile {
             PrecompilePricingUtils precompilePricingUtils) {
         super(
                 ledgers,
+                aliases,
                 decoder,
+                sigsVerifier,
                 sideEffectsTracker,
                 syntheticTxnFactory,
                 infrastructureFactory,
                 precompilePricingUtils);
-        this.sigsVerifier = sigsVerifier;
-        this.aliases = aliases;
-    }
-
-    private void initializeHederaTokenStore() {
-        hederaTokenStore =
-                infrastructureFactory.newHederaTokenStore(
-                        sideEffects, ledgers.tokens(), ledgers.nfts(), ledgers.tokenRels());
     }
 
     @Override
     public TransactionBody.Builder body(Bytes input, UnaryOperator<byte[]> aliasResolver) {
         updateOp = decoder.decodeUpdateTokenInfo(input, aliasResolver);
         transactionBody = syntheticTxnFactory.createTokenUpdate(updateOp);
-        initializeHederaTokenStore();
         return transactionBody;
-    }
-
-    @Override
-    public long getMinimumFeeInTinybars(Timestamp consensusTime) {
-        return pricingUtils.getMinimumPriceInTinybars(UPDATE, consensusTime);
     }
 
     @Override
     public void run(MessageFrame frame) {
         Objects.requireNonNull(updateOp);
+        var hederaTokenStore = initializeHederaTokenStore();
         /* --- Check required signatures --- */
         final var tokenId = Id.fromGrpcToken(updateOp.tokenID());
         final var hasRequiredSigs =

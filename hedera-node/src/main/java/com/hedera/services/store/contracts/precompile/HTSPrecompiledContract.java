@@ -59,6 +59,7 @@ import com.hedera.services.store.contracts.precompile.impl.FungibleTokenInfoPrec
 import com.hedera.services.store.contracts.precompile.impl.GetApprovedPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.GetTokenDefaultFreezeStatus;
 import com.hedera.services.store.contracts.precompile.impl.GetTokenDefaultKycStatus;
+import com.hedera.services.store.contracts.precompile.impl.GetTokenKeyPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.GrantKycPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.IsApprovedForAllPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.IsFrozenPrecompile;
@@ -77,6 +78,7 @@ import com.hedera.services.store.contracts.precompile.impl.TokenCreatePrecompile
 import com.hedera.services.store.contracts.precompile.impl.TokenGetCustomFeesPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.TokenInfoPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.TokenURIPrecompile;
+import com.hedera.services.store.contracts.precompile.impl.TokenUpdateKeysPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.TokenUpdatePrecompile;
 import com.hedera.services.store.contracts.precompile.impl.TotalSupplyPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.TransferPrecompile;
@@ -521,6 +523,22 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
                             sideEffectsTracker,
                             syntheticTxnFactory,
                             infrastructureFactory,
+                            precompilePricingUtils);
+                    case AbiConstants.ABI_ID_UPDATE_TOKEN_KEYS -> new TokenUpdateKeysPrecompile(
+                            ledgers,
+                            updater.aliases(),
+                            decoder,
+                            sigsVerifier,
+                            sideEffectsTracker,
+                            syntheticTxnFactory,
+                            infrastructureFactory,
+                            precompilePricingUtils);
+                    case AbiConstants.ABI_ID_GET_TOKEN_KEY -> new GetTokenKeyPrecompile(
+                            null,
+                            syntheticTxnFactory,
+                            ledgers,
+                            encoder,
+                            decoder,
                             precompilePricingUtils);
                     case AbiConstants.ABI_ID_REDIRECT_FOR_TOKEN -> {
                         final var target = DescriptorUtils.getRedirectTarget(input);
