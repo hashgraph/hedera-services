@@ -15,6 +15,11 @@
  */
 package com.hedera.services.store.contracts.precompile.impl;
 
+import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
+import static com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils.GasCostType.UPDATE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.contracts.sources.EvmSigsVerifier;
 import com.hedera.services.ledger.accounts.ContractAliases;
@@ -29,11 +34,6 @@ import com.hedera.services.store.models.Id;
 import com.hedera.services.store.tokens.HederaTokenStore;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import org.hyperledger.besu.evm.frame.MessageFrame;
-
-import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
-import static com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils.GasCostType.UPDATE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 public abstract class AbstractTokenUpdatePrecompile extends AbstractWritePrecompile {
     protected final ContractAliases aliases;
@@ -88,7 +88,7 @@ public abstract class AbstractTokenUpdatePrecompile extends AbstractWritePrecomp
         final var validity = updateLogic.validate(transactionBody.build());
         validateTrue(validity == OK, validity);
         /* --- Execute the transaction and capture its results --- */
-        switch (type){
+        switch (type) {
             case UPDATE_TOKEN_INFO -> updateLogic.updateToken(
                     transactionBody.getTokenUpdate(), frame.getBlockValues().getTimestamp());
             case UPDATE_TOKEN_KEYS -> updateLogic.updateTokenKeys(
@@ -98,7 +98,8 @@ public abstract class AbstractTokenUpdatePrecompile extends AbstractWritePrecomp
 
     private HederaTokenStore initializeHederaTokenStore() {
         return infrastructureFactory.newHederaTokenStore(
-                sideEffects, ledgers.tokens(), ledgers.nfts(), ledgers.tokenRels());}
+                sideEffects, ledgers.tokens(), ledgers.nfts(), ledgers.tokenRels());
+    }
 
     protected enum UpdateType {
         UPDATE_TOKEN_KEYS,
