@@ -138,7 +138,7 @@ public class DecodingFacade {
     private static final Bytes ASSOCIATE_TOKEN_SELECTOR =
             Bytes.wrap(ASSOCIATE_TOKEN_FUNCTION.selector());
     private static final ABIType<Tuple> ASSOCIATE_TOKEN_DECODER =
-            TypeFactory.create(BYTES32_PAIR_RAW_TYPE);
+            TypeFactory.create(ADDRESS_PAIR_RAW_TYPE);
 
     private static final Function DISSOCIATE_TOKENS_FUNCTION =
             new Function("dissociateTokens(address,address[])", INT);
@@ -152,7 +152,7 @@ public class DecodingFacade {
     private static final Bytes DISSOCIATE_TOKEN_SELECTOR =
             Bytes.wrap(DISSOCIATE_TOKEN_FUNCTION.selector());
     private static final ABIType<Tuple> DISSOCIATE_TOKEN_DECODER =
-            TypeFactory.create(BYTES32_PAIR_RAW_TYPE);
+            TypeFactory.create(ADDRESS_PAIR_RAW_TYPE);
 
     private static final Function TOKEN_URI_NFT_FUNCTION =
             new Function("tokenURI(uint256)", STRING);
@@ -181,21 +181,21 @@ public class DecodingFacade {
     private static final Bytes IS_KYC_TOKEN_FUNCTION_SELECTOR =
             Bytes.wrap(IS_KYC_TOKEN_FUNCTION.selector());
     private static final ABIType<Tuple> IS_KYC_TOKEN_FUNCTION_DECODER =
-            TypeFactory.create(BYTES32_PAIR_RAW_TYPE);
+            TypeFactory.create(ADDRESS_PAIR_RAW_TYPE);
 
     private static final Function GRANT_TOKEN_KYC_FUNCTION =
             new Function("grantTokenKyc(address,address)", INT);
     private static final Bytes GRANT_TOKEN_KYC_FUNCTION_SELECTOR =
             Bytes.wrap(GRANT_TOKEN_KYC_FUNCTION.selector());
     private static final ABIType<Tuple> GRANT_TOKEN_KYC_FUNCTION_DECODER =
-            TypeFactory.create(BYTES32_PAIR_RAW_TYPE);
+            TypeFactory.create(ADDRESS_PAIR_RAW_TYPE);
 
     private static final Function REVOKE_TOKEN_KYC_FUNCTION =
             new Function("revokeTokenKyc(address,address)", INT);
     private static final Bytes REVOKE_TOKEN_KYC_FUNCTION_SELECTOR =
             Bytes.wrap(REVOKE_TOKEN_KYC_FUNCTION.selector());
     private static final ABIType<Tuple> REVOKE_TOKEN_KYC_FUNCTION_DECODER =
-            TypeFactory.create(BYTES32_PAIR_RAW_TYPE);
+            TypeFactory.create(ADDRESS_PAIR_RAW_TYPE);
 
     private static final Function WIPE_TOKEN_ACCOUNT_FUNCTION =
             new Function("wipeTokenAccount(address,address,uint32)", INT);
@@ -233,21 +233,21 @@ public class DecodingFacade {
     private static final Bytes IS_FROZEN_TOKEN_FUNCTION_SELECTOR =
             Bytes.wrap(IS_FROZEN_TOKEN_FUNCTION.selector());
     private static final ABIType<Tuple> IS_FROZEN_TOKEN_DECODER =
-            TypeFactory.create(BYTES32_PAIR_RAW_TYPE);
+            TypeFactory.create(ADDRESS_PAIR_RAW_TYPE);
 
     private static final Function FREEZE_TOKEN_FUNCTION =
             new Function("freezeToken(address,address)", INT);
     private static final Bytes FREEZE_TOKEN_FUNCTION_SELECTOR =
             Bytes.wrap(FREEZE_TOKEN_FUNCTION.selector());
     private static final ABIType<Tuple> FREEZE_TOKEN_ACCOUNT_DECODER =
-            TypeFactory.create(BYTES32_PAIR_RAW_TYPE);
+            TypeFactory.create(ADDRESS_PAIR_RAW_TYPE);
 
     private static final Function UNFREEZE_TOKEN_FUNCTION =
             new Function("unfreezeToken(address,address)", INT);
     private static final Bytes UNFREEZE_TOKEN_FUNCTION_SELECTOR =
             Bytes.wrap(UNFREEZE_TOKEN_FUNCTION.selector());
     private static final ABIType<Tuple> UNFREEZE_TOKEN_ACCOUNT_DECODER =
-            TypeFactory.create(BYTES32_PAIR_RAW_TYPE);
+            TypeFactory.create(ADDRESS_PAIR_RAW_TYPE);
 
     /* --- Token Create Structs --- */
     private static final String KEY_VALUE_DECODER = "(bool,bytes32,bytes,bytes,bytes32)";
@@ -342,7 +342,7 @@ public class DecodingFacade {
     private static final Bytes ERC_ALLOWANCE_SELECTOR =
             Bytes.wrap(ERC_ALLOWANCE_FUNCTION.selector());
     private static final ABIType<Tuple> ERC_ALLOWANCE_DECODER =
-            TypeFactory.create(BYTES32_PAIR_RAW_TYPE);
+            TypeFactory.create(ADDRESS_PAIR_RAW_TYPE);
 
     private static final Function ERC_GET_APPROVED_FUNCTION =
             new Function("getApproved(uint256)", INT);
@@ -356,7 +356,7 @@ public class DecodingFacade {
     private static final Bytes ERC_IS_APPROVED_FOR_ALL_SELECTOR =
             Bytes.wrap(ERC_IS_APPROVED_FOR_ALL.selector());
     private static final ABIType<Tuple> ERC_IS_APPROVED_FOR_ALL_DECODER =
-            TypeFactory.create(BYTES32_PAIR_RAW_TYPE);
+            TypeFactory.create(ADDRESS_PAIR_RAW_TYPE);
 
     private static final Function ERC_SET_APPROVAL_FOR_ALL =
             new Function("setApprovalForAll(address,bool)");
@@ -377,7 +377,7 @@ public class DecodingFacade {
     private static final Bytes HAPI_ALLOWANCE_SELECTOR =
             Bytes.wrap(HAPI_ALLOWANCE_FUNCTION.selector());
     private static final ABIType<Tuple> HAPI_ALLOWANCE_DECODER =
-            TypeFactory.create(BYTES32_TRIO_RAW_TYPE);
+            TypeFactory.create(ADDRESS_TRIO_RAW_TYPE);
 
     private static final Function HAPI_GET_APPROVED_FUNCTION =
             new Function("getApproved(address,uint256)", "(int,int)");
@@ -391,7 +391,7 @@ public class DecodingFacade {
     private static final Bytes HAPI_IS_APPROVED_FOR_ALL_SELECTOR =
             Bytes.wrap(HAPI_IS_APPROVED_FOR_ALL.selector());
     private static final ABIType<Tuple> HAPI_IS_APPROVED_FOR_ALL_DECODER =
-            TypeFactory.create(BYTES32_TRIO_RAW_TYPE);
+            TypeFactory.create(ADDRESS_TRIO_RAW_TYPE);
 
     private static final Function HAPI_SET_APPROVAL_FOR_ALL =
             new Function("setApprovalForAll(address,address,bool)", INT);
