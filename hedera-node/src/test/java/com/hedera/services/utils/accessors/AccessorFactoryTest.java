@@ -17,6 +17,7 @@ package com.hedera.services.utils.accessors;
 
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.google.protobuf.InvalidProtocolBufferException;
@@ -108,5 +109,13 @@ class AccessorFactoryTest {
         assertTrue(triggered.throttleExempt());
         assertEquals(payerId, triggered.getPayer());
         assertEquals(scheduleId, triggered.getScheduleRef());
+    }
+
+    @Test
+    void uncheckedSpecializedAccessorThrows() {
+        final var invalidTxnBytes = "InvalidTxnBytes".getBytes();
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> subject.uncheckedSpecializedAccessor(invalidTxnBytes));
     }
 }
