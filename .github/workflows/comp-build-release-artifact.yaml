@@ -113,7 +113,7 @@ jobs:
             sudo apt install -y jq
             echo "::endgroup::"
           fi
-          
+
           JQ_VERSION="$(jq --version)"
           if [[ "${JQ_VERSION}" != "jq-1.6" ]]; then
             echo "::group::Updating JQ Version"
@@ -121,14 +121,14 @@ jobs:
             sudo apt upgrade -y jq
             echo "::endgroup::"
           fi
-          
+
           if ! command -v tee >/dev/null 2>&1; then
             echo "::group::Setup Tee Command"
             sudo apt update
             sudo apt install -y coreutils
             echo "::endgroup::"
           fi
-          
+
           echo "::group::Show JQ Version"
           jq --version
           echo "::endgroup::"
@@ -290,5 +290,3 @@ jobs:
         with:
           url: ${{ secrets.jenkins-preview-url }}
           data: ${{ toJSON(github.event) }}
-
-
