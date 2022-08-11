@@ -1849,34 +1849,28 @@ public class CryptoApproveAllowanceSuite extends HapiApiSuite {
                                         movingUniqueWithAllowance(NON_FUNGIBLE_TOKEN, 3)
                                                 .between(OWNER, OTHER_RECEIVER))
                                 .payingWith(SPENDER)
-                                .signedBy(SPENDER)
                                 .hasKnownStatus(SPENDER_DOES_NOT_HAVE_ALLOWANCE),
                         cryptoTransfer(
                                         movingWithAllowance(50, FUNGIBLE_TOKEN)
                                                 .between(OWNER, RECEIVER))
                                 .payingWith(SPENDER)
-                                .signedBy(SPENDER)
                                 .hasKnownStatus(SPENDER_DOES_NOT_HAVE_ALLOWANCE),
                         cryptoTransfer(allowanceTinyBarsFromTo(OWNER, RECEIVER, 5 * ONE_HBAR))
                                 .payingWith(SPENDER)
-                                .signedBy(SPENDER)
                                 .hasKnownStatus(SPENDER_DOES_NOT_HAVE_ALLOWANCE),
                         scheduleSign(SCHEDULED_TXN).alsoSigningWith(OWNER),
                         cryptoTransfer(
                                         movingUniqueWithAllowance(NON_FUNGIBLE_TOKEN, 3)
                                                 .between(OWNER, OTHER_RECEIVER))
-                                .payingWith(SPENDER)
-                                .signedBy(SPENDER),
+                                .payingWith(SPENDER),
                         getAccountBalance(OTHER_RECEIVER).hasTokenBalance(NON_FUNGIBLE_TOKEN, 1),
                         cryptoTransfer(
                                         movingWithAllowance(50, FUNGIBLE_TOKEN)
                                                 .between(OWNER, RECEIVER))
-                                .payingWith(SPENDER)
-                                .signedBy(SPENDER),
+                                .payingWith(SPENDER),
                         getAccountBalance(RECEIVER).hasTokenBalance(FUNGIBLE_TOKEN, 50),
                         cryptoTransfer(allowanceTinyBarsFromTo(OWNER, RECEIVER, 5 * ONE_HBAR))
-                                .payingWith(SPENDER)
-                                .signedBy(SPENDER),
+                                .payingWith(SPENDER),
                         getAccountBalance(RECEIVER).hasTinyBars(15 * ONE_HBAR));
     }
 
