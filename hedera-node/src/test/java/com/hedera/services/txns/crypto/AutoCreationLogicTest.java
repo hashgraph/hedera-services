@@ -23,8 +23,11 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_ENTITIES_I
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 import com.google.protobuf.ByteString;
@@ -45,11 +48,14 @@ import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.state.validation.UsageLimits;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
+import com.hedera.services.store.models.Id;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.NftTransfer;
+import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.fee.FeeObject;
 import java.time.Instant;
@@ -59,6 +65,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
@@ -102,8 +109,14 @@ class AutoCreationLogicTest {
     }
 
     @Test
-    void happyPathWorks() {
+    void happyPathWithHbarChangeWorks() {
         givenCollaborators();
+        given(
+                syntheticTxnFactory.createAccount(
+                        aPrimitiveKey,
+                        0L,
+                        wellKnownChange()))
+                .willReturn(mockSyntheticCreation);
 
         final var input = wellKnownChange();
         final var expectedExpiry = consensusNow.getEpochSecond() + THREE_MONTHS_IN_SECONDS;
@@ -111,13 +124,97 @@ class AutoCreationLogicTest {
         final var result = subject.create(input, accountsLedger);
         subject.submitRecordsTo(recordsHistorian);
 
-        assertEquals(initialTransfer - totalFee, input.getAggregatedUnits());
-        assertEquals(initialTransfer - totalFee, input.getNewBalance());
+        assertEquals(initialTransfer, input.getAggregatedUnits());
+        assertEquals(initialTransfer, input.getNewBalance());
         verify(aliasManager).link(alias, createdNum);
         verify(sigImpactHistorian).markAliasChanged(alias);
         verify(sigImpactHistorian).markEntityChanged(createdNum.longValue());
         verify(accountsLedger)
                 .set(createdNum.toGrpcAccountId(), AccountProperty.EXPIRY, expectedExpiry);
+        verify(accountsLedger, never())
+                .set(createdNum.toGrpcAccountId(), AccountProperty.MAX_AUTOMATIC_ASSOCIATIONS, 1);
+        verify(recordsHistorian)
+                .trackPrecedingChildRecord(DEFAULT_SOURCE_ID, mockSyntheticCreation, mockBuilder);
+        assertEquals(totalFee, mockBuilder.getFee());
+        assertEquals(Pair.of(OK, totalFee), result);
+    }
+
+    @Test
+    void happyPathWithFungibleTokenChangeWorks() {
+        givenCollaborators();
+        given(
+                syntheticTxnFactory.createAccount(
+                        aPrimitiveKey,
+                        0L,
+                        wellKnownTokenChange()))
+                .willReturn(mockSyntheticCreation);
+
+        final var input = wellKnownTokenChange();
+        final var expectedExpiry = consensusNow.getEpochSecond() + THREE_MONTHS_IN_SECONDS;
+
+        final var result = subject.create(input, accountsLedger);
+        subject.submitRecordsTo(recordsHistorian);
+
+        assertEquals(initialTransfer, input.getAggregatedUnits());
+
+        verify(aliasManager).link(alias, createdNum);
+        verify(sigImpactHistorian).markAliasChanged(alias);
+        verify(sigImpactHistorian).markEntityChanged(createdNum.longValue());
+        verify(accountsLedger).create(createdNum.toGrpcAccountId());
+        verify(accountsLedger)
+                .set(createdNum.toGrpcAccountId(), AccountProperty.IS_RECEIVER_SIG_REQUIRED, false);
+        verify(accountsLedger)
+                .set(createdNum.toGrpcAccountId(), AccountProperty.IS_SMART_CONTRACT, false);
+        verify(accountsLedger)
+                .set(createdNum.toGrpcAccountId(), AccountProperty.AUTO_RENEW_PERIOD, THREE_MONTHS_IN_SECONDS);
+        verify(accountsLedger)
+                .set(createdNum.toGrpcAccountId(), AccountProperty.EXPIRY, expectedExpiry);
+        verify(accountsLedger)
+                .set(createdNum.toGrpcAccountId(), AccountProperty.MEMO, AUTO_MEMO);
+        verify(accountsLedger)
+                .set(createdNum.toGrpcAccountId(), AccountProperty.MAX_AUTOMATIC_ASSOCIATIONS, 16);
+
+        verify(recordsHistorian)
+                .trackPrecedingChildRecord(DEFAULT_SOURCE_ID, mockSyntheticCreation, mockBuilder);
+        assertEquals(totalFee, mockBuilder.getFee());
+        assertEquals(Pair.of(OK, totalFee), result);
+    }
+
+    @Test
+    void happyPathWithNonFungibleTokenChangeWorks() {
+        givenCollaborators();
+        given(
+                syntheticTxnFactory.createAccount(
+                        aPrimitiveKey,
+                        0L,
+                        wellKnownNftChange()))
+                .willReturn(mockSyntheticCreation);
+
+        final var input = wellKnownNftChange();
+        final var expectedExpiry = consensusNow.getEpochSecond() + THREE_MONTHS_IN_SECONDS;
+
+        final var result = subject.create(input, accountsLedger);
+        subject.submitRecordsTo(recordsHistorian);
+
+        assertEquals(20L, input.getAggregatedUnits());
+
+        verify(aliasManager).link(alias, createdNum);
+        verify(sigImpactHistorian).markAliasChanged(alias);
+        verify(sigImpactHistorian).markEntityChanged(createdNum.longValue());
+        verify(accountsLedger).create(createdNum.toGrpcAccountId());
+        verify(accountsLedger)
+                .set(createdNum.toGrpcAccountId(), AccountProperty.IS_RECEIVER_SIG_REQUIRED, false);
+        verify(accountsLedger)
+                .set(createdNum.toGrpcAccountId(), AccountProperty.IS_SMART_CONTRACT, false);
+        verify(accountsLedger)
+                .set(createdNum.toGrpcAccountId(), AccountProperty.AUTO_RENEW_PERIOD, THREE_MONTHS_IN_SECONDS);
+        verify(accountsLedger)
+                .set(createdNum.toGrpcAccountId(), AccountProperty.EXPIRY, expectedExpiry);
+        verify(accountsLedger)
+                .set(createdNum.toGrpcAccountId(), AccountProperty.MEMO, AUTO_MEMO);
+        verify(accountsLedger)
+                .set(createdNum.toGrpcAccountId(), AccountProperty.MAX_AUTOMATIC_ASSOCIATIONS, 1);
+
         verify(recordsHistorian)
                 .trackPrecedingChildRecord(DEFAULT_SOURCE_ID, mockSyntheticCreation, mockBuilder);
         assertEquals(totalFee, mockBuilder.getFee());
@@ -127,12 +224,6 @@ class AutoCreationLogicTest {
     private void givenCollaborators() {
         given(txnCtx.consensusTime()).willReturn(consensusNow);
         given(ids.newAccountId(any())).willReturn(created);
-        given(
-                        syntheticTxnFactory.createAccount(
-                                aPrimitiveKey,
-                                0L,
-                                BalanceChange.hbarAdjust(EntityNum.fromLong(10).toId(), 100)))
-                .willReturn(mockSyntheticCreation);
         given(feeCalculator.computeFee(any(), eq(EMPTY_KEY), eq(currentView), eq(consensusNow)))
                 .willReturn(fees);
         given(
@@ -147,6 +238,29 @@ class AutoCreationLogicTest {
                 AccountAmount.newBuilder()
                         .setAmount(initialTransfer)
                         .setAccountID(AccountID.newBuilder().setAlias(alias).build())
+                        .build(),
+                payer);
+    }
+
+    private BalanceChange wellKnownTokenChange() {
+        return BalanceChange.changingFtUnits(
+                Id.fromGrpcToken(token),
+                token,
+                AccountAmount.newBuilder()
+                        .setAmount(initialTransfer)
+                        .setAccountID(AccountID.newBuilder().setAlias(alias).build())
+                        .build(),
+                payer);
+    }
+
+    private BalanceChange wellKnownNftChange() {
+        return BalanceChange.changingNftOwnership(
+                Id.fromGrpcToken(token),
+                token,
+                NftTransfer.newBuilder()
+                        .setSenderAccountID(payer)
+                        .setReceiverAccountID(AccountID.newBuilder().setAlias(alias).build())
+                        .setSerialNumber(20L)
                         .build(),
                 payer);
     }
@@ -171,4 +285,5 @@ class AutoCreationLogicTest {
                     .setReceiptBuilder(
                             TxnReceipt.newBuilder()
                                     .setAccountId(new EntityId(0, 0, createdNum.longValue())));
+    public static final TokenID token = IdUtils.asToken("0.0.23456");
 }

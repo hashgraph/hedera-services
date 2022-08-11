@@ -72,6 +72,8 @@ import org.hyperledger.besu.evm.frame.MessageFrame;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
+import java.util.function.Supplier;
+
 import static com.hedera.services.ledger.ids.ExceptionalEntityIdSource.NOOP_ID_SOURCE;
 
 @Singleton
@@ -87,6 +89,8 @@ public class InfrastructureFactory {
     private final GlobalDynamicProperties dynamicProperties;
     private final TransactionContext txnCtx;
 
+    private final Supplier<StateView> currentView;
+
     @Inject
     public InfrastructureFactory(
             final UsageLimits usageLimits,
@@ -98,7 +102,8 @@ public class InfrastructureFactory {
             final SigImpactHistorian sigImpactHistorian,
             final DissociationFactory dissociationFactory,
             final GlobalDynamicProperties dynamicProperties,
-            final TransactionContext txnCtx) {
+            final TransactionContext txnCtx,
+            final Supplier<StateView> currentView) {
         this.ids = ids;
         this.encoder = encoder;
         this.decoder = decoder;
@@ -109,6 +114,7 @@ public class InfrastructureFactory {
         this.sigImpactHistorian = sigImpactHistorian;
         this.dissociationFactory = dissociationFactory;
         this.txnCtx = txnCtx;
+        this.currentView = currentView;
     }
 
     public SideEffectsTracker newSideEffects() {
@@ -202,7 +208,8 @@ public class InfrastructureFactory {
                 validator,
                 null,
                 recordsHistorian,
-                txnCtx);
+                txnCtx,
+                currentView);
     }
 
     public RedirectViewExecutor newRedirectExecutor(

@@ -838,8 +838,8 @@ class TransactionalLedgerTest {
 
         when(backingAccounts.contains(rand)).thenReturn(true);
         when(backingAccounts.getImmutableRef(rand)).thenReturn(randMerkleAccount);
-        when(backingAccounts.contains(aliasAccountId)).thenReturn(true);
-        when(backingAccounts.getImmutableRef(aliasAccountId)).thenReturn(aliasMerkleAccount);
+        when(backingAccounts.contains(EntityNum.fromLong(8L).toGrpcAccountId())).thenReturn(true);
+        given(workingView.aliases()).willReturn(Map.of(aliasAccountId.getAlias(), EntityNum.fromLong(8L)));
 
         accountsLedger.begin();
         accountsLedger.set(rand, AccountProperty.BALANCE, 4L);

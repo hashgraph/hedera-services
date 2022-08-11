@@ -15,19 +15,6 @@
  */
 package com.hedera.services.ledger;
 
-import static com.hedera.services.ledger.properties.NftProperty.SPENDER;
-import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
-import static com.hedera.test.mocks.TestContextValidator.TEST_VALIDATOR;
-import static com.hedera.test.utils.TxnUtils.assertFailsWith;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.verify;
-
 import com.google.protobuf.ByteString;
 import com.hedera.services.config.MockGlobalDynamicProps;
 import com.hedera.services.context.SideEffectsTracker;
@@ -56,17 +43,31 @@ import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.NftTransfer;
 import com.hederahashgraph.api.proto.java.TokenID;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.TreeMap;
-import java.util.TreeSet;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.TreeMap;
+import java.util.TreeSet;
+
+import static com.hedera.services.ledger.properties.NftProperty.SPENDER;
+import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
+import static com.hedera.test.mocks.TestContextValidator.TEST_VALIDATOR;
+import static com.hedera.test.utils.TxnUtils.assertFailsWith;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 class TransferLogicTest {
@@ -83,8 +84,6 @@ class TransferLogicTest {
     private final TokenID nonFungibleTokenID = TokenID.newBuilder().setTokenNum(1235L).build();
     private final FcTokenAllowanceId fungibleAllowanceId =
             FcTokenAllowanceId.from(EntityNum.fromTokenId(fungibleTokenID), payerNum);
-    private final FcTokenAllowanceId nftAllowanceId =
-            FcTokenAllowanceId.from(EntityNum.fromTokenId(nonFungibleTokenID), payerNum);
     private TreeMap<EntityNum, Long> cryptoAllowances =
             new TreeMap<>() {
                 {
@@ -141,7 +140,8 @@ class TransferLogicTest {
                         TEST_VALIDATOR,
                         autoCreationLogic,
                         recordsHistorian,
-                        txnCtx);
+                        txnCtx,
+                        () -> workingView);
     }
 
     @Test
@@ -162,7 +162,8 @@ class TransferLogicTest {
                         TEST_VALIDATOR,
                         null,
                         recordsHistorian,
-                        txnCtx);
+                        txnCtx,
+                        () -> workingView);
 
         final var triggerList = List.of(inappropriateTrigger);
         assertThrows(IllegalStateException.class, () -> subject.doZeroSum(triggerList));
@@ -209,7 +210,6 @@ class TransferLogicTest {
                             accountsLedger.create(firstNewAccount);
                             final var change = (BalanceChange) invocationOnMock.getArgument(0);
                             change.replaceAliasWith(firstNewAccount);
-                            change.aggregateUnits(-autoFee);
                             change.setNewBalance(change.getAggregatedUnits());
                             return Pair.of(OK, autoFee);
                         });
@@ -219,7 +219,6 @@ class TransferLogicTest {
                             accountsLedger.create(secondNewAccount);
                             final var change = (BalanceChange) invocationOnMock.getArgument(0);
                             change.replaceAliasWith(secondNewAccount);
-                            change.aggregateUnits(-autoFee);
                             change.setNewBalance(change.getAggregatedUnits());
                             return Pair.of(OK, autoFee);
                         });
@@ -228,15 +227,19 @@ class TransferLogicTest {
         final var funding = IdUtils.asAccount("0.0.98");
         accountsLedger.begin();
         accountsLedger.create(funding);
+        accountsLedger.create(payer);
+
+        given(txnCtx.activePayer()).willReturn(payer);
 
         subject.doZeroSum(changes);
 
         assertEquals(2 * autoFee, (long) accountsLedger.get(funding, AccountProperty.BALANCE));
+        assertEquals(-2 * autoFee, (long) accountsLedger.get(payer, AccountProperty.BALANCE));
         assertEquals(
-                firstAmount - autoFee,
+                firstAmount,
                 (long) accountsLedger.get(firstNewAccount, AccountProperty.BALANCE));
         assertEquals(
-                secondAmount - autoFee,
+                secondAmount,
                 (long) accountsLedger.get(secondNewAccount, AccountProperty.BALANCE));
         verify(autoCreationLogic).submitRecordsTo(recordsHistorian);
     }

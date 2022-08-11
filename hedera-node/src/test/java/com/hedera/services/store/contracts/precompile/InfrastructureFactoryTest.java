@@ -121,7 +121,8 @@ class InfrastructureFactoryTest {
                         sigImpactHistorian,
                         dissociationFactory,
                         dynamicProperties,
-                        txnCtx);
+                        txnCtx,
+                        () -> stateView);
     }
 
     @Test

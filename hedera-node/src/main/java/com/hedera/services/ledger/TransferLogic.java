@@ -29,6 +29,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.TransactionContext;
+import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.ledger.properties.AccountProperty;
@@ -49,6 +50,7 @@ import com.hederahashgraph.api.proto.java.TokenID;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
+import java.util.function.Supplier;
 import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -76,6 +78,7 @@ public class TransferLogic {
                     Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus>
             tokenRelsLedger;
     private final TransactionContext txnCtx;
+    private final Supplier<StateView> currentView;
 
     @Inject
     public TransferLogic(
@@ -90,7 +93,8 @@ public class TransferLogic {
             final OptionValidator validator,
             final @Nullable AutoCreationLogic autoCreationLogic,
             final RecordsHistorian recordsHistorian,
-            final TransactionContext txnCtx) {
+            final TransactionContext txnCtx,
+            final Supplier<StateView> currentView) {
         this.tokenStore = tokenStore;
         this.nftsLedger = nftsLedger;
         this.accountsLedger = accountsLedger;
@@ -100,6 +104,7 @@ public class TransferLogic {
         this.dynamicProperties = dynamicProperties;
         this.sideEffectsTracker = sideEffectsTracker;
         this.txnCtx = txnCtx;
+        this.currentView = currentView;
 
         scopedCheck = new MerkleAccountScopedCheck(validator, nftsLedger);
     }
@@ -109,7 +114,7 @@ public class TransferLogic {
         var autoCreationFee = 0L;
         for (var change : changes) {
             // If the change consists of any known alias, replace the alias with the account number
-            autoCreationLogic.checkIfExistingAlias(change);
+            checkIfExistingAlias(change);
             // create a new account for alias when the no account is already created using the alias
             if (change.hasNonEmptyAlias() || (change.isForNft() && change.hasNonEmptyCounterPartyAlias())) {
                 if (autoCreationLogic == null) {
@@ -240,5 +245,32 @@ public class TransferLogic {
             fungibleAllowances.put(allowanceId, newAllowance);
         }
         accountsLedger.set(ownerID, FUNGIBLE_TOKEN_ALLOWANCES, fungibleAllowances);
+    }
+
+    public void checkIfExistingAlias(final BalanceChange change) {
+        if (change.hasNonEmptyAlias() && isKnownAlias(change.accountId(), currentView)) {
+            final var aliasNum =
+                    currentView
+                            .get()
+                            .aliases()
+                            .get(change.accountId().getAlias())
+                            .toGrpcAccountId();
+            change.replaceAliasWith(aliasNum);
+        }
+        if (change.hasNonEmptyCounterPartyAlias()
+                && isKnownAlias(change.counterPartyAccountId(), currentView)) {
+            final var aliasNum =
+                    currentView
+                            .get()
+                            .aliases()
+                            .get(change.counterPartyAccountId().getAlias())
+                            .toGrpcAccountId();
+            change.replaceCounterPartyAliasWith(aliasNum);
+        }
+    }
+
+    private boolean isKnownAlias(final AccountID accountId, final Supplier<StateView> workingView) {
+        final var aliases = workingView.get().aliases();
+        return aliases.containsKey(accountId.getAlias());
     }
 }

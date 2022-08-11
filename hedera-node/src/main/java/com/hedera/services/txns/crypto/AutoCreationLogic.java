@@ -191,9 +191,7 @@ public class AutoCreationLogic {
                         .isReceiverSigRequired(false)
                         .isSmartContract(false)
                         .alias(alias);
-        if (change.isForToken()) {
-            customizer.maxAutomaticAssociations((int) change.getAggregatedUnits());
-        }
+        customizer.maxAutomaticAssociations(getMaxAssociationsForAutoAccount(change));
         customizer.customize(newId, accountsLedger);
 
         sideEffects.trackAutoCreation(newId, alias);
@@ -214,6 +212,15 @@ public class AutoCreationLogic {
         aliasManager.maybeLinkEvmAddress(jKey, EntityNum.fromAccountId(newId));
 
         return Pair.of(OK, fee);
+    }
+
+    public static int getMaxAssociationsForAutoAccount(final BalanceChange change) {
+        if (change.isForFungibleToken()) {
+            return (int) change.getAggregatedUnits();
+        } else if (change.isForNft()) {
+            return 1;
+        }
+        return 0;
     }
 
     private void setNewValuesInChange(final BalanceChange change, final AccountID newId) {
@@ -252,33 +259,6 @@ public class AutoCreationLogic {
         } catch (InvalidProtocolBufferException internal) {
             throw new IllegalStateException(internal);
         }
-    }
-
-    public void checkIfExistingAlias(final BalanceChange change) {
-        if (change.hasNonEmptyAlias() && isKnownAlias(change.accountId(), currentView)) {
-            final var aliasNum =
-                    currentView
-                            .get()
-                            .aliases()
-                            .get(change.accountId().getAlias())
-                            .toGrpcAccountId();
-            change.replaceAliasWith(aliasNum);
-        }
-        if (change.hasNonEmptyCounterPartyAlias()
-                && isKnownAlias(change.counterPartyAccountId(), currentView)) {
-            final var aliasNum =
-                    currentView
-                            .get()
-                            .aliases()
-                            .get(change.counterPartyAccountId().getAlias())
-                            .toGrpcAccountId();
-            change.replaceCounterPartyAliasWith(aliasNum);
-        }
-    }
-
-    private boolean isKnownAlias(final AccountID accountId, final Supplier<StateView> workingView) {
-        final var aliases = workingView.get().aliases();
-        return aliases.containsKey(accountId.getAlias());
     }
 
     private ByteString getAlias(final BalanceChange change) {

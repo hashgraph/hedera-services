@@ -182,7 +182,8 @@ class LedgerBalanceChangesTest {
                         validator,
                         autoCreationLogic,
                         historian,
-                        txnCtx);
+                        txnCtx,
+                        () -> workingView);
 
         subject =
                 new HederaLedger(
@@ -295,7 +296,8 @@ class LedgerBalanceChangesTest {
                         validator,
                         autoCreationLogic,
                         historian,
-                        txnCtx);
+                        txnCtx,
+                        () -> workingView);
         subject =
                 new HederaLedger(
                         tokenStore,
@@ -374,6 +376,7 @@ class LedgerBalanceChangesTest {
 
     @Test
     void happyPathTransfersWithAutoCreation() {
+        final var payerBalance = 500;
         final Key aliasA = KeyFactory.getDefaultInstance().newEd25519();
         final AccountID a =
                 AccountID.newBuilder().setShardNum(0).setRealmNum(0).setAccountNum(10L).build();
@@ -390,10 +393,13 @@ class LedgerBalanceChangesTest {
         final var validAliasAccount = MerkleAccountFactory.newAccount().get();
         final var fundingAccount = MerkleAccountFactory.newAccount().get();
         final var aAccount = MerkleAccountFactory.newAccount().balance(aStartBalance).get();
+        final var payerAccount = MerkleAccountFactory.newAccount().balance(payerBalance).get();
         backingAccounts.put(a, aAccount);
         backingAccounts.put(validAliasAccountWithId, validAliasAccount);
         backingAccounts.put(funding, fundingAccount);
+        backingAccounts.put(payer, payerAccount);
 
+        given(txnCtx.activePayer()).willReturn(payer);
         given(autoCreationLogic.create(any(), eq(accountsLedger)))
                 .willAnswer(
                         invocationOnMock -> {
@@ -409,6 +415,8 @@ class LedgerBalanceChangesTest {
         subject.commit();
 
         assertEquals(aStartBalance - 100, backingAccounts.getImmutableRef(a).getBalance());
+        assertEquals( payerBalance - 100, backingAccounts.getImmutableRef(payer).getBalance());
+        assertEquals( 100, backingAccounts.getImmutableRef(funding).getBalance());
         assertEquals(
                 0,
                 backingAccounts

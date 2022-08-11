@@ -18,6 +18,7 @@ package com.hedera.services.store.contracts.precompile;
 import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.HTS_PRECOMPILE_MIRROR_ID;
 import static com.hedera.services.txns.crypto.AutoCreationLogic.AUTO_MEMO;
 import static com.hedera.services.txns.crypto.AutoCreationLogic.THREE_MONTHS_IN_SECONDS;
+import static com.hedera.services.txns.crypto.AutoCreationLogic.getMaxAssociationsForAutoAccount;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
 import com.google.protobuf.BoolValue;
@@ -421,11 +422,8 @@ public class SyntheticTxnFactory {
     public TransactionBody.Builder createAccount(
             final Key alias, final long balance, final BalanceChange change) {
         final var baseBuilder = createAccountBase(alias, balance);
-        if (change.isForFungibleToken()) {
-            baseBuilder.setMaxAutomaticTokenAssociations((int) change.getAggregatedUnits());
-        } else if (change.isForNft()) {
-            baseBuilder.setMaxAutomaticTokenAssociations(1);
-        }
+        baseBuilder.setMaxAutomaticTokenAssociations(getMaxAssociationsForAutoAccount(change));
+
         return TransactionBody.newBuilder().setCryptoCreateAccount(baseBuilder.build());
     }
 
