@@ -79,8 +79,7 @@ public class TokenUpdateLogic {
     }
 
     public void updateToken(TokenUpdateTransactionBody op, long now) {
-        final var tokenID = Id.fromGrpcToken(op.getToken()).asGrpcToken();
-        validateFalse(tokenID.equals(MISSING_TOKEN), INVALID_TOKEN_ID);
+        final var tokenID = tokenValidityCheck(op);
         if (op.hasExpiry()) {
             validateTrueOrRevert(validator.isValidExpiry(op.getExpiry()), INVALID_EXPIRATION_TIME);
         }
@@ -149,6 +148,24 @@ public class TokenUpdateLogic {
             abortWith(outcome);
         }
         sigImpactHistorian.markEntityChanged(tokenID.getTokenNum());
+    }
+
+    public void updateTokenKeys(TokenUpdateTransactionBody op, long now) {
+        final var tokenID = tokenValidityCheck(op);
+        MerkleToken token = tokenStore.get(tokenID);
+        checkTokenPreconditions(token, op);
+        final var outcome = tokenStore.update(op, now);
+
+        if (outcome != OK) {
+            abortWith(outcome);
+        }
+        sigImpactHistorian.markEntityChanged(tokenID.getTokenNum());
+    }
+
+    private TokenID tokenValidityCheck(TokenUpdateTransactionBody op) {
+        final var tokenID = Id.fromGrpcToken(op.getToken()).asGrpcToken();
+        validateFalse(tokenID.equals(MISSING_TOKEN), INVALID_TOKEN_ID);
+        return tokenID;
     }
 
     private void checkTokenPreconditions(MerkleToken token, TokenUpdateTransactionBody op) {

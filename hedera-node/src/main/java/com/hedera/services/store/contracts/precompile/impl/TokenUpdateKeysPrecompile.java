@@ -24,10 +24,17 @@ import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.store.contracts.precompile.codec.DecodingFacade;
 import com.hedera.services.store.contracts.precompile.codec.TokenUpdateKeysWrapper;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
+import com.hedera.services.store.models.Id;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import java.util.function.UnaryOperator;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.evm.frame.MessageFrame;
+
+import java.util.Objects;
+import java.util.function.UnaryOperator;
+
+import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
+import static com.hedera.services.store.contracts.precompile.impl.AbstractTokenUpdatePrecompile.UpdateType.UPDATE_TOKEN_KEYS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 
 public class TokenUpdateKeysPrecompile extends AbstractTokenUpdatePrecompile {
     TokenUpdateKeysWrapper updateOp;
@@ -54,9 +61,17 @@ public class TokenUpdateKeysPrecompile extends AbstractTokenUpdatePrecompile {
 
     @Override
     public TransactionBody.Builder body(Bytes input, UnaryOperator<byte[]> aliasResolver) {
-        return null;
+        updateOp = decoder.decodeUpdateTokenKeys(input, aliasResolver);
+        transactionBody = syntheticTxnFactory.createTokenUpdateKeys(updateOp);
+        return transactionBody;
     }
 
     @Override
-    public void run(MessageFrame frame) {}
+    public void run(MessageFrame frame) {
+        Objects.requireNonNull(updateOp);
+        validateTrue(updateOp.tokenID() != null, INVALID_TOKEN_ID);
+        tokenId = Id.fromGrpcToken(updateOp.tokenID());
+        type = UPDATE_TOKEN_KEYS;
+        super.run(frame);
+    }
 }
