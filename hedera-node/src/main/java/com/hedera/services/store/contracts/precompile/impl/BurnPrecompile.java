@@ -18,9 +18,7 @@ package com.hedera.services.store.contracts.precompile.impl;
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils.GasCostType.BURN_FUNGIBLE;
 import static com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils.GasCostType.BURN_NFT;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
 import com.hedera.services.context.SideEffectsTracker;
@@ -86,7 +84,7 @@ public class BurnPrecompile extends AbstractWritePrecompile {
 
     @Override
     public void run(final MessageFrame frame) {
-        Objects.requireNonNull(burnOp);
+        Objects.requireNonNull(burnOp, "`body` method should be called before `run`");
 
         /* --- Check required signatures --- */
         final var tokenId = Id.fromGrpcToken(burnOp.tokenType());
@@ -123,7 +121,8 @@ public class BurnPrecompile extends AbstractWritePrecompile {
 
     @Override
     public long getMinimumFeeInTinybars(final Timestamp consensusTime) {
-        Objects.requireNonNull(burnOp);
+        Objects.requireNonNull(
+                burnOp, "`body` method should be called before `getMinimumFeeInTinybars`");
         return pricingUtils.getMinimumPriceInTinybars(
                 (burnOp.type() == NON_FUNGIBLE_UNIQUE) ? BURN_NFT : BURN_FUNGIBLE, consensusTime);
     }

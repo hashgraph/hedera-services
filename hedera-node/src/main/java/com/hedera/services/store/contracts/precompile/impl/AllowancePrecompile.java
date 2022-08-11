@@ -35,6 +35,7 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.UnaryOperator;
 import org.apache.tuweni.bytes.Bytes;
 
@@ -72,6 +73,9 @@ public class AllowancePrecompile extends AbstractReadOnlyPrecompile {
     @Override
     @SuppressWarnings("unchecked")
     public Bytes getSuccessResultFor(final ExpirableTxnRecord.Builder childRecord) {
+        Objects.requireNonNull(
+                allowanceWrapper, "`body` method should be called before `getSuccessResultsFor`");
+
         final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger =
                 ledgers.accounts();
         validateTrueOrRevert(

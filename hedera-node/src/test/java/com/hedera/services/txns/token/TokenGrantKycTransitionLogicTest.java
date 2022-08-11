@@ -77,8 +77,12 @@ class TokenGrantKycTransitionLogicTest {
         account = mock(Account.class);
 
         txnCtx = mock(TransactionContext.class);
+        accountStore = mock(AccountStore.class);
+        tokenStore = mock(TypedTokenStore.class);
 
-        subject = new TokenGrantKycTransitionLogic(txnCtx, tokenStore, accountStore);
+        GrantKycLogic grantKycLogic = new GrantKycLogic(tokenStore, accountStore);
+
+        subject = new TokenGrantKycTransitionLogic(txnCtx, grantKycLogic);
     }
 
     @Test
