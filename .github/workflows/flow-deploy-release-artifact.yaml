@@ -22,15 +22,15 @@ on:
         type: string
         required: false
         default: ""
-      trigger-env-deploy:
-        description: "Deploy to Environment:"
-        type: choice
-        required: true
-        options:
-          - none
-          - integration
-          - preview
-        default: none
+#      trigger-env-deploy:
+#        description: "Deploy to Environment:"
+#        type: choice
+#        required: true
+#        options:
+#          - none
+#          - integration
+#          - preview
+#        default: none
       dry-run-enabled:
         description: "Perform Dry Run"
         type: boolean
@@ -68,9 +68,11 @@ jobs:
     if: ${{ github.event_name == 'workflow_dispatch' }}
     uses: ./.github/workflows/comp-build-release-artifact.yaml
     with:
-      version-policy: ${{ github.event.inputs.new-verison != '' && 'specified' || 'branch-commit' }}
-      new-version: ${{ github.event.inputs.new-version }}
-      trigger-env-deploy: ${{ github.event.inputs.trigger-env-deploy }}
+#      version-policy: ${{ github.event.inputs.new-verison != '' && 'specified' || 'branch-commit' }}
+      version-policy: branch-commit
+#      new-version: ${{ github.event.inputs.new-version }}
+#      trigger-env-deploy: ${{ github.event.inputs.trigger-env-deploy }}
+      trigger-env-deploy: none
       dry-run-enabled: ${{ github.event.inputs.dry-run-enabled == 'true' }}
       java-version: ${{ github.event.inputs.java-version || '17.0.3' }}
       java-distribution: ${{ github.event.inputs.java-distribution || 'temurin' }}
