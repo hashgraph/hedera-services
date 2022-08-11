@@ -42,7 +42,6 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 import com.esaulpaugh.headlong.util.Integers;
-import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
@@ -195,7 +194,7 @@ class DissociatePrecompilesTest {
     }
 
     @Test
-    void dissociateTokenFailurePathWorks() throws InvalidProtocolBufferException {
+    void dissociateTokenFailurePathWorks() {
         givenFrameContext();
         givenPricingUtilsContext();
         Bytes pretendArguments = Bytes.ofUnsignedInt(ABI_ID_DISSOCIATE_TOKEN);
@@ -231,7 +230,7 @@ class DissociatePrecompilesTest {
     }
 
     @Test
-    void dissociateTokenHappyPathWorks() throws InvalidProtocolBufferException {
+    void dissociateTokenHappyPathWorks() {
         givenFrameContext();
         givenLedgers();
         givenPricingUtilsContext();
@@ -273,7 +272,7 @@ class DissociatePrecompilesTest {
     }
 
     @Test
-    void computeMultiDissociateTokenHappyPathWorks() throws InvalidProtocolBufferException {
+    void computeMultiDissociateTokenHappyPathWorks() {
         givenFrameContext();
         givenLedgers();
         givenPricingUtilsContext();
@@ -322,8 +321,7 @@ class DissociatePrecompilesTest {
     }
 
     @Test
-    void gasRequirementReturnsCorrectValueForDissociateTokens()
-            throws InvalidProtocolBufferException {
+    void gasRequirementReturnsCorrectValueForDissociateTokens() {
         // given
         givenMinFrameContext();
         givenPricingUtilsContext();
@@ -350,8 +348,7 @@ class DissociatePrecompilesTest {
     }
 
     @Test
-    void gasRequirementReturnsCorrectValueForDissociateToken()
-            throws InvalidProtocolBufferException {
+    void gasRequirementReturnsCorrectValueForDissociateToken() {
         // given
         givenMinFrameContext();
         givenPricingUtilsContext();

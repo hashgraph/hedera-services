@@ -44,7 +44,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.esaulpaugh.headlong.util.Integers;
-import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
@@ -196,7 +195,7 @@ class WipeFungiblePrecompileTest {
     }
 
     @Test
-    void fungibleWipeHappyPathWorks() throws InvalidProtocolBufferException {
+    void fungibleWipeHappyPathWorks() {
         givenFungibleFrameContext();
         givenLedgers();
         givenPricingUtilsContext();
@@ -258,8 +257,7 @@ class WipeFungiblePrecompileTest {
     }
 
     @Test
-    void fungibleWipeMissedSpecializedAccessorCausePrecompileFailure()
-            throws InvalidProtocolBufferException {
+    void fungibleWipeMissedSpecializedAccessorCausePrecompileFailure() {
         // given:
         given(worldUpdater.aliases()).willReturn(aliases);
         given(frame.getSenderAddress()).willReturn(contractAddress);
@@ -277,8 +275,8 @@ class WipeFungiblePrecompileTest {
                 .willReturn(new HederaBlockValues(10L, 123L, Instant.ofEpochSecond(123L)));
         given(feeCalculator.estimatedGasPriceInTinybars(any(), any()))
                 .willReturn(DEFAULT_GAS_PRICE);
-        when(accessorFactory.constructSpecializedAccessor(any()))
-                .thenThrow(new InvalidProtocolBufferException("error"));
+        when(accessorFactory.uncheckedSpecializedAccessor(any()))
+                .thenThrow(new IllegalArgumentException("error"));
 
         // then:
         assertThrows(
@@ -290,7 +288,7 @@ class WipeFungiblePrecompileTest {
     }
 
     @Test
-    void fungibleWipeForMaxAmountWorks() throws InvalidProtocolBufferException {
+    void fungibleWipeForMaxAmountWorks() {
         givenFrameContext();
         givenLedgers();
         givenPricingUtilsContext();
@@ -337,8 +335,7 @@ class WipeFungiblePrecompileTest {
     }
 
     @Test
-    void gasRequirementReturnsCorrectValueForWipeFungibleToken()
-            throws InvalidProtocolBufferException {
+    void gasRequirementReturnsCorrectValueForWipeFungibleToken() {
         // given
         givenMinFrameContext();
         givenPricingUtilsContext();

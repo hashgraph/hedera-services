@@ -72,7 +72,6 @@ import static org.mockito.Mockito.verify;
 
 import com.esaulpaugh.headlong.util.Integers;
 import com.google.protobuf.ByteString;
-import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.contracts.sources.TxnAwareEvmSigsVerifier;
@@ -716,7 +715,7 @@ class HTSPrecompiledContractTest {
     }
 
     @Test
-    void computeInternalThrowsExceptionForInsufficientGas() throws InvalidProtocolBufferException {
+    void computeInternalThrowsExceptionForInsufficientGas() {
         // given
         givenFrameContext();
         givenPricingUtilsContext();

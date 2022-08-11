@@ -15,7 +15,6 @@
  */
 package com.hedera.services.store.contracts.precompile.impl;
 
-import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.contracts.sources.EvmSigsVerifier;
@@ -65,7 +64,7 @@ public class AssociatePrecompile extends AbstractAssociatePrecompile {
     }
 
     @Override
-    public long getGasRequirement(long blockTimestamp) throws InvalidProtocolBufferException {
+    public long getGasRequirement(long blockTimestamp) {
         return pricingUtils.computeGasRequirement(blockTimestamp, this, transactionBody);
     }
 }

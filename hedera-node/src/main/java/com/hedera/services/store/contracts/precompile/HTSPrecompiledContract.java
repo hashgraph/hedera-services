@@ -26,7 +26,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
@@ -231,13 +230,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
         }
 
         final var now = frame.getBlockValues().getTimestamp();
-        try {
-            gasRequirement = precompile.getGasRequirement(now);
-        } catch (InvalidProtocolBufferException e) {
-            log.warn("Unexpected use of factory with invalid gRPC transaction", e);
-            throw new IllegalArgumentException(
-                    "Argument 'validSignedTxn' must be a valid signed txn");
-        }
+        gasRequirement = precompile.getGasRequirement(now);
         Bytes result = computeInternal(frame);
 
         return result == null

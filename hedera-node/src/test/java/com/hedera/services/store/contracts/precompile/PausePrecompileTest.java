@@ -34,7 +34,6 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
 import com.esaulpaugh.headlong.util.Integers;
-import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
@@ -176,7 +175,7 @@ class PausePrecompileTest {
     }
 
     @Test
-    void pauseHappyPathWorks() throws InvalidProtocolBufferException {
+    void pauseHappyPathWorks() {
         givenFungibleFrameContext();
         givenLedgers();
         givenPricingUtilsContext();
@@ -217,8 +216,7 @@ class PausePrecompileTest {
     }
 
     @Test
-    void gasRequirementReturnsCorrectValueForPauseFungibleToken()
-            throws InvalidProtocolBufferException {
+    void gasRequirementReturnsCorrectValueForPauseFungibleToken() {
         // given
         givenMinFrameContext();
         givenPricingUtilsContext();

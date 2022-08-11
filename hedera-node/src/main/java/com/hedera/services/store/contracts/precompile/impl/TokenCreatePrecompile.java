@@ -28,7 +28,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FULL_P
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
-import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.contracts.sources.EvmSigsVerifier;
 import com.hedera.services.exceptions.InvalidTransactionException;
@@ -256,7 +255,7 @@ public class TokenCreatePrecompile extends AbstractWritePrecompile {
     }
 
     @Override
-    public void handleSentHbars(final MessageFrame frame) throws InvalidProtocolBufferException {
+    public void handleSentHbars(final MessageFrame frame) {
         final var timestampSeconds = frame.getBlockValues().getTimestamp();
         final var timestamp = Timestamp.newBuilder().setSeconds(timestampSeconds).build();
         final var gasPriceInTinybars =

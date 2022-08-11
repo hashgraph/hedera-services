@@ -46,7 +46,6 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 import com.esaulpaugh.headlong.util.Integers;
-import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
@@ -199,7 +198,7 @@ class AssociatePrecompileTest {
     }
 
     @Test
-    void computeAssociateTokenFailurePathWorks() throws InvalidProtocolBufferException {
+    void computeAssociateTokenFailurePathWorks() {
         // given:
         givenCommonFrameContext();
         givenPricingUtilsContext();
@@ -240,8 +239,7 @@ class AssociatePrecompileTest {
     }
 
     @Test
-    void computeAssociateTokenFailurePathWorksWithNullLedgers()
-            throws InvalidProtocolBufferException {
+    void computeAssociateTokenFailurePathWorksWithNullLedgers() {
         // given:
         givenFrameContextWithDelegateCallFromParent();
         givenPricingUtilsContext();
@@ -280,8 +278,7 @@ class AssociatePrecompileTest {
     }
 
     @Test
-    void computeAssociateTokenHappyPathWorksWithDelegateCall()
-            throws InvalidProtocolBufferException {
+    void computeAssociateTokenHappyPathWorksWithDelegateCall() {
         givenPricingUtilsContext();
         given(frame.getContractAddress()).willReturn(contractAddress);
         given(frame.getRecipientAddress()).willReturn(contractAddress);
@@ -347,7 +344,7 @@ class AssociatePrecompileTest {
     }
 
     @Test
-    void computeAssociateTokenBadSyntax() throws InvalidProtocolBufferException {
+    void computeAssociateTokenBadSyntax() {
         givenPricingUtilsContext();
         given(frame.getContractAddress()).willReturn(contractAddress);
         given(frame.getRecipientAddress()).willReturn(contractAddress);
@@ -403,8 +400,7 @@ class AssociatePrecompileTest {
     }
 
     @Test
-    void computeAssociateTokenHappyPathWorksWithDelegateCallFromParentFrame()
-            throws InvalidProtocolBufferException {
+    void computeAssociateTokenHappyPathWorksWithDelegateCallFromParentFrame() {
         givenFrameContextWithDelegateCallFromParent();
         givenLedgers();
         givenPricingUtilsContext();
@@ -458,8 +454,7 @@ class AssociatePrecompileTest {
     }
 
     @Test
-    void computeAssociateTokenHappyPathWorksWithEmptyMessageFrameStack()
-            throws InvalidProtocolBufferException {
+    void computeAssociateTokenHappyPathWorksWithEmptyMessageFrameStack() {
         givenFrameContextWithEmptyMessageFrameStack();
         givenLedgers();
         givenPricingUtilsContext();
@@ -513,8 +508,7 @@ class AssociatePrecompileTest {
     }
 
     @Test
-    void computeAssociateTokenHappyPathWorksWithoutParentFrame()
-            throws InvalidProtocolBufferException {
+    void computeAssociateTokenHappyPathWorksWithoutParentFrame() {
         givenFrameContextWithoutParentFrame();
         givenLedgers();
         givenPricingUtilsContext();
@@ -568,7 +562,7 @@ class AssociatePrecompileTest {
     }
 
     @Test
-    void computeMultiAssociateTokenHappyPathWorks() throws InvalidProtocolBufferException {
+    void computeMultiAssociateTokenHappyPathWorks() {
         givenCommonFrameContext();
         givenLedgers();
         givenPricingUtilsContext();
@@ -622,8 +616,7 @@ class AssociatePrecompileTest {
     }
 
     @Test
-    void gasRequirementReturnsCorrectValueForAssociateTokens()
-            throws InvalidProtocolBufferException {
+    void gasRequirementReturnsCorrectValueForAssociateTokens() {
         // given
         givenFrameContext();
         givenPricingUtilsContext();
@@ -650,8 +643,7 @@ class AssociatePrecompileTest {
     }
 
     @Test
-    void gasRequirementReturnsCorrectValueForAssociateToken()
-            throws InvalidProtocolBufferException {
+    void gasRequirementReturnsCorrectValueForAssociateToken() {
         // given
         givenFrameContext();
         givenPricingUtilsContext();

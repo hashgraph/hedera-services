@@ -39,7 +39,6 @@ import static com.hederahashgraph.api.proto.java.SubType.TOKEN_FUNGIBLE_COMMON_W
 import static com.hederahashgraph.api.proto.java.SubType.TOKEN_NON_FUNGIBLE_UNIQUE;
 import static com.hederahashgraph.api.proto.java.SubType.TOKEN_NON_FUNGIBLE_UNIQUE_WITH_CUSTOM_FEES;
 
-import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.fees.HbarCentExchange;
@@ -135,8 +134,7 @@ public class PrecompilePricingUtils {
     public long gasFeeInTinybars(
             final TransactionBody.Builder txBody,
             final Instant consensusTime,
-            final Precompile precompile)
-            throws InvalidProtocolBufferException {
+            final Precompile precompile) {
         final var signedTxn =
                 SignedTransaction.newBuilder()
                         .setBodyBytes(txBody.build().toByteString())
@@ -147,7 +145,7 @@ public class PrecompilePricingUtils {
                         .setSignedTransactionBytes(signedTxn.toByteString())
                         .build();
 
-        final var accessor = accessorFactory.constructSpecializedAccessor(txn.toByteArray());
+        final var accessor = accessorFactory.uncheckedSpecializedAccessor(txn.toByteArray());
         precompile.addImplicitCostsIn(accessor);
         final var fees =
                 feeCalculator.get().computeFee(accessor, EMPTY_KEY, currentView, consensusTime);
@@ -177,8 +175,7 @@ public class PrecompilePricingUtils {
     public long computeGasRequirement(
             final long blockTimestamp,
             final Precompile precompile,
-            final TransactionBody.Builder transactionBody)
-            throws InvalidProtocolBufferException {
+            final TransactionBody.Builder transactionBody) {
         final Timestamp timestamp = Timestamp.newBuilder().setSeconds(blockTimestamp).build();
         final long gasPriceInTinybars =
                 feeCalculator.get().estimatedGasPriceInTinybars(ContractCall, timestamp);

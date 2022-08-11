@@ -32,7 +32,6 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
 import com.esaulpaugh.headlong.util.Integers;
-import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
@@ -153,7 +152,7 @@ class TokenGetCustomFeesPrecompileTest {
     }
 
     @Test
-    void getTokenCustomFeesWorks() throws InvalidProtocolBufferException {
+    void getTokenCustomFeesWorks() {
         givenMinimalFrameContext();
 
         final var tokenCustomFeesWrapper = new TokenGetCustomFeesWrapper(tokenMerkleId);
@@ -186,7 +185,7 @@ class TokenGetCustomFeesPrecompileTest {
     }
 
     @Test
-    void getTokenCustomFeesMissingTokenIdFails() throws InvalidProtocolBufferException {
+    void getTokenCustomFeesMissingTokenIdFails() {
         givenMinimalFrameContext();
 
         final var tokenCustomFeesWrapper = new TokenGetCustomFeesWrapper(tokenMerkleId);

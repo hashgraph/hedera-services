@@ -30,7 +30,6 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 
 import com.esaulpaugh.headlong.util.Integers;
-import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.contracts.sources.TxnAwareEvmSigsVerifier;
@@ -186,7 +185,7 @@ class FreezeTokenPrecompileTest {
     }
 
     @Test
-    void gasRequirementReturnsCorrectValueForFreezeToken() throws InvalidProtocolBufferException {
+    void gasRequirementReturnsCorrectValueForFreezeToken() {
         // given
         final var input = Bytes.of(Integers.toBytes(ABI_ID_FREEZE));
         givenMinimalFrameContext();

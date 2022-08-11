@@ -55,7 +55,6 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 import com.esaulpaugh.headlong.util.Integers;
-import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
@@ -204,7 +203,7 @@ class MintPrecompilesTest {
     }
 
     @Test
-    void mintFailurePathWorks() throws InvalidProtocolBufferException {
+    void mintFailurePathWorks() {
         Bytes pretendArguments = givenNonFungibleFrameContext();
         givenPricingUtilsContext();
 
@@ -242,7 +241,7 @@ class MintPrecompilesTest {
     }
 
     @Test
-    void mintRandomFailurePathWorks() throws InvalidProtocolBufferException {
+    void mintRandomFailurePathWorks() {
         Bytes pretendArguments = givenNonFungibleFrameContext();
         givenPricingUtilsContext();
 
@@ -275,7 +274,7 @@ class MintPrecompilesTest {
     }
 
     @Test
-    void nftMintHappyPathWorks() throws InvalidProtocolBufferException {
+    void nftMintHappyPathWorks() {
         Bytes pretendArguments = givenNonFungibleFrameContext();
         givenLedgers();
         givenPricingUtilsContext();
@@ -332,7 +331,7 @@ class MintPrecompilesTest {
     }
 
     @Test
-    void nftMintBadSyntaxWorks() throws InvalidProtocolBufferException {
+    void nftMintBadSyntaxWorks() {
         Bytes pretendArguments = givenNonFungibleFrameContext();
         givenLedgers();
         givenPricingUtilsContext();
@@ -374,7 +373,7 @@ class MintPrecompilesTest {
     }
 
     @Test
-    void fungibleMintHappyPathWorks() throws InvalidProtocolBufferException {
+    void fungibleMintHappyPathWorks() {
         Bytes pretendArguments = givenFungibleFrameContext();
         givenLedgers();
         givenFungibleCollaborators();
@@ -412,7 +411,7 @@ class MintPrecompilesTest {
     }
 
     @Test
-    void mintFailsWithMissingParentUpdater() throws InvalidProtocolBufferException {
+    void mintFailsWithMissingParentUpdater() {
         Bytes pretendArguments = givenFungibleFrameContext();
         givenLedgers();
         givenFungibleCollaborators();
@@ -459,7 +458,7 @@ class MintPrecompilesTest {
     }
 
     @Test
-    void fungibleMintForMaxAmountWorks() throws InvalidProtocolBufferException {
+    void fungibleMintForMaxAmountWorks() {
         // given:
         givenLedgers();
         givenPricingUtilsContext();
@@ -501,7 +500,7 @@ class MintPrecompilesTest {
     }
 
     @Test
-    void gasRequirementReturnsCorrectValueForMintToken() throws InvalidProtocolBufferException {
+    void gasRequirementReturnsCorrectValueForMintToken() {
         // given
         givenMinFrameContext();
         givenPricingUtilsContext();

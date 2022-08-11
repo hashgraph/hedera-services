@@ -212,7 +212,7 @@ class TransferPrecompilesTest {
     }
 
     @Test
-    void transferFailsFastGivenWrongSyntheticValidity() throws InvalidProtocolBufferException {
+    void transferFailsFastGivenWrongSyntheticValidity() {
         givenPricingUtilsContext();
         Bytes pretendArguments = Bytes.of(Integers.toBytes(ABI_ID_TRANSFER_TOKENS));
         given(frame.getWorldUpdater()).willReturn(worldUpdater);
@@ -323,6 +323,7 @@ class TransferPrecompilesTest {
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
         given(worldUpdater.aliases()).willReturn(aliases);
         given(frame.getSenderAddress()).willReturn(contractAddress);
+        when(accessorFactory.uncheckedSpecializedAccessor(any())).thenCallRealMethod();
         when(accessorFactory.constructSpecializedAccessor(any())).thenCallRealMethod();
 
         // when:
@@ -388,6 +389,7 @@ class TransferPrecompilesTest {
                         creator.createUnsuccessfulSyntheticRecord(
                                 CUSTOM_FEE_CHARGING_EXCEEDED_MAX_ACCOUNT_AMOUNTS))
                 .willReturn(mockRecordBuilder);
+        when(accessorFactory.uncheckedSpecializedAccessor(any())).thenCallRealMethod();
         when(accessorFactory.constructSpecializedAccessor(any())).thenCallRealMethod();
 
         // when:
@@ -457,6 +459,7 @@ class TransferPrecompilesTest {
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
         given(worldUpdater.aliases()).willReturn(aliases);
         given(frame.getSenderAddress()).willReturn(contractAddress);
+        when(accessorFactory.uncheckedSpecializedAccessor(any())).thenCallRealMethod();
         when(accessorFactory.constructSpecializedAccessor(any())).thenCallRealMethod();
 
         // when:
@@ -531,6 +534,7 @@ class TransferPrecompilesTest {
         given(aliases.resolveForEvm(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
         given(worldUpdater.aliases()).willReturn(aliases);
+        when(accessorFactory.uncheckedSpecializedAccessor(any())).thenCallRealMethod();
         when(accessorFactory.constructSpecializedAccessor(any())).thenCallRealMethod();
 
         // when:
@@ -605,6 +609,7 @@ class TransferPrecompilesTest {
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
         given(worldUpdater.aliases()).willReturn(aliases);
         given(frame.getSenderAddress()).willReturn(contractAddress);
+        when(accessorFactory.uncheckedSpecializedAccessor(any())).thenCallRealMethod();
         when(accessorFactory.constructSpecializedAccessor(any())).thenCallRealMethod();
 
         // when:
@@ -684,6 +689,7 @@ class TransferPrecompilesTest {
         given(aliases.resolveForEvm(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
         given(worldUpdater.aliases()).willReturn(aliases);
+        when(accessorFactory.uncheckedSpecializedAccessor(any())).thenCallRealMethod();
         when(accessorFactory.constructSpecializedAccessor(any())).thenCallRealMethod();
 
         // when:
@@ -769,6 +775,7 @@ class TransferPrecompilesTest {
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
         given(worldUpdater.aliases()).willReturn(aliases);
         given(frame.getSenderAddress()).willReturn(contractAddress);
+        when(accessorFactory.uncheckedSpecializedAccessor(any())).thenCallRealMethod();
         when(accessorFactory.constructSpecializedAccessor(any())).thenCallRealMethod();
 
         // when:
@@ -842,6 +849,7 @@ class TransferPrecompilesTest {
         given(aliases.resolveForEvm(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
         given(worldUpdater.aliases()).willReturn(aliases);
+        when(accessorFactory.uncheckedSpecializedAccessor(any())).thenCallRealMethod();
         when(accessorFactory.constructSpecializedAccessor(any())).thenCallRealMethod();
 
         // when:
@@ -877,7 +885,7 @@ class TransferPrecompilesTest {
     }
 
     @Test
-    void gasRequirementReturnsCorrectValueForTransferNfts() throws InvalidProtocolBufferException {
+    void gasRequirementReturnsCorrectValueForTransferNfts() {
         // given
         givenMinFrameContext();
         givenPricingUtilsContext();
@@ -902,7 +910,7 @@ class TransferPrecompilesTest {
     }
 
     @Test
-    void gasRequirementReturnsCorrectValueForTransferNft() throws InvalidProtocolBufferException {
+    void gasRequirementReturnsCorrectValueForTransferNft() {
         // given
         givenMinFrameContext();
         givenPricingUtilsContext();
@@ -927,8 +935,7 @@ class TransferPrecompilesTest {
     }
 
     @Test
-    void gasRequirementReturnsCorrectValueForSingleCryptoTransfer()
-            throws InvalidProtocolBufferException {
+    void gasRequirementReturnsCorrectValueForSingleCryptoTransfer() {
         // given
         givenMinFrameContext();
         givenPricingUtilsContext();
@@ -953,8 +960,7 @@ class TransferPrecompilesTest {
     }
 
     @Test
-    void gasRequirementReturnsCorrectValueForMultipleCryptoTransfers()
-            throws InvalidProtocolBufferException {
+    void gasRequirementReturnsCorrectValueForMultipleCryptoTransfers() {
         // given
         givenMinFrameContext();
         givenPricingUtilsContext();
@@ -988,8 +994,7 @@ class TransferPrecompilesTest {
     }
 
     @Test
-    void gasRequirementReturnsCorrectValueForTransferMultipleTokens()
-            throws InvalidProtocolBufferException {
+    void gasRequirementReturnsCorrectValueForTransferMultipleTokens() {
         // given
         givenMinFrameContext();
         givenPricingUtilsContext();
@@ -1014,8 +1019,7 @@ class TransferPrecompilesTest {
     }
 
     @Test
-    void gasRequirementReturnsCorrectValueForTransferSingleToken()
-            throws InvalidProtocolBufferException {
+    void gasRequirementReturnsCorrectValueForTransferSingleToken() {
         // given
         givenMinFrameContext();
         givenPricingUtilsContext();

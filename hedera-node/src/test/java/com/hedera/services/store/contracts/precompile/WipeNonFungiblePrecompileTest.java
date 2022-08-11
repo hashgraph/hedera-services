@@ -29,7 +29,6 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 import com.esaulpaugh.headlong.util.Integers;
-import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
@@ -177,7 +176,7 @@ class WipeNonFungiblePrecompileTest {
     }
 
     @Test
-    void nftWipeFailurePathWorks() throws InvalidProtocolBufferException {
+    void nftWipeFailurePathWorks() {
         givenNonfungibleFrameContext();
         givenPricingUtilsContext();
 
@@ -208,7 +207,7 @@ class WipeNonFungiblePrecompileTest {
     }
 
     @Test
-    void nftWipeHappyPathWorks() throws InvalidProtocolBufferException {
+    void nftWipeHappyPathWorks() {
         givenNonfungibleFrameContext();
         givenLedgers();
         givenPricingUtilsContext();
@@ -251,7 +250,7 @@ class WipeNonFungiblePrecompileTest {
     }
 
     @Test
-    void nftWipeWorksForInvalidSyntax() throws InvalidProtocolBufferException {
+    void nftWipeWorksForInvalidSyntax() {
         givenNonfungibleFrameContext();
         givenLedgers();
         givenPricingUtilsContext();
@@ -288,8 +287,7 @@ class WipeNonFungiblePrecompileTest {
     }
 
     @Test
-    void gasRequirementReturnsCorrectValueForWipeNonFungibleToken()
-            throws InvalidProtocolBufferException {
+    void gasRequirementReturnsCorrectValueForWipeNonFungibleToken() {
         // given
         givenMinFrameContext();
         givenPricingUtilsContext();

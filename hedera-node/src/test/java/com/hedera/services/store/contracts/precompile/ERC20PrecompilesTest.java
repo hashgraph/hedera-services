@@ -435,7 +435,7 @@ class ERC20PrecompilesTest {
     }
 
     @Test
-    void gasCalculationForReadOnlyMethod() throws InvalidProtocolBufferException {
+    void gasCalculationForReadOnlyMethod() {
         Bytes nestedPretendArguments = Bytes.of(Integers.toBytes(ABI_ID_ERC_NAME));
         Bytes pretendArguments = givenMinimalFrameContext(nestedPretendArguments);
 
@@ -532,6 +532,7 @@ class ERC20PrecompilesTest {
         given(encoder.encodeEcFungibleTransfer(true)).willReturn(successResult);
         given(frame.getBlockValues()).willReturn(blockValues);
         given(blockValues.getTimestamp()).willReturn(TEST_CONSENSUS_TIME);
+        when(accessorFactory.uncheckedSpecializedAccessor(any())).thenCallRealMethod();
         when(accessorFactory.constructSpecializedAccessor(any())).thenCallRealMethod();
         // when:
         subject.prepareFields(frame);
@@ -549,7 +550,7 @@ class ERC20PrecompilesTest {
     }
 
     @Test
-    void name() throws InvalidProtocolBufferException {
+    void name() {
         Bytes nestedPretendArguments = Bytes.of(Integers.toBytes(ABI_ID_ERC_NAME));
         Bytes pretendArguments = givenMinimalFrameContext(nestedPretendArguments);
 
@@ -592,7 +593,7 @@ class ERC20PrecompilesTest {
     }
 
     @Test
-    void symbol() throws InvalidProtocolBufferException {
+    void symbol() {
         Bytes nestedPretendArguments = Bytes.of(Integers.toBytes(ABI_ID_ERC_SYMBOL));
         Bytes pretendArguments = givenMinimalFrameContext(nestedPretendArguments);
 
@@ -630,7 +631,7 @@ class ERC20PrecompilesTest {
     }
 
     @Test
-    void decimals() throws InvalidProtocolBufferException {
+    void decimals() {
         Bytes nestedPretendArguments = Bytes.of(Integers.toBytes(ABI_ID_ERC_DECIMALS));
         Bytes pretendArguments = givenMinimalFrameContext(nestedPretendArguments);
 
@@ -670,7 +671,7 @@ class ERC20PrecompilesTest {
     }
 
     @Test
-    void totalSupply() throws InvalidProtocolBufferException {
+    void totalSupply() {
         Bytes nestedPretendArguments = Bytes.of(Integers.toBytes(ABI_ID_ERC_TOTAL_SUPPLY_TOKEN));
         Bytes pretendArguments = givenMinimalFrameContext(nestedPretendArguments);
         given(syntheticTxnFactory.createTransactionCall(1L, pretendArguments))
@@ -709,7 +710,7 @@ class ERC20PrecompilesTest {
     }
 
     @Test
-    void ercAllowance() throws InvalidProtocolBufferException {
+    void ercAllowance() {
         TreeMap<FcTokenAllowanceId, Long> alowances = new TreeMap<>();
         alowances.put(
                 FcTokenAllowanceId.from(
@@ -760,7 +761,7 @@ class ERC20PrecompilesTest {
     }
 
     @Test
-    void hapiAllowance() throws InvalidProtocolBufferException {
+    void hapiAllowance() {
         TreeMap<FcTokenAllowanceId, Long> alowances = new TreeMap<>();
         alowances.put(
                 FcTokenAllowanceId.from(
@@ -811,7 +812,7 @@ class ERC20PrecompilesTest {
     }
 
     @Test
-    void balanceOf() throws InvalidProtocolBufferException {
+    void balanceOf() {
         Bytes nestedPretendArguments = Bytes.of(Integers.toBytes(ABI_ID_ERC_BALANCE_OF_TOKEN));
         Bytes pretendArguments = givenMinimalFrameContext(nestedPretendArguments);
 
@@ -863,7 +864,7 @@ class ERC20PrecompilesTest {
     }
 
     @Test
-    void allowanceValidation() throws InvalidProtocolBufferException {
+    void allowanceValidation() {
         givenPricingUtilsContext();
 
         Bytes nestedPretendArguments = Bytes.of(Integers.toBytes(ABI_ID_ERC_APPROVE));
@@ -901,7 +902,7 @@ class ERC20PrecompilesTest {
     }
 
     @Test
-    void ercApprove() throws InvalidProtocolBufferException {
+    void ercApprove() {
         List<CryptoAllowance> cryptoAllowances = new ArrayList<>();
         List<TokenAllowance> tokenAllowances = new ArrayList<>();
         List<NftAllowance> nftAllowances = new ArrayList<>();
@@ -976,7 +977,7 @@ class ERC20PrecompilesTest {
     }
 
     @Test
-    void hapiApprove() throws InvalidProtocolBufferException {
+    void hapiApprove() {
         List<CryptoAllowance> cryptoAllowances = new ArrayList<>();
         List<TokenAllowance> tokenAllowances = new ArrayList<>();
         List<NftAllowance> nftAllowances = new ArrayList<>();
@@ -1048,7 +1049,7 @@ class ERC20PrecompilesTest {
     }
 
     @Test
-    void hapiApproveNFT() throws InvalidProtocolBufferException {
+    void hapiApproveNFT() {
         List<CryptoAllowance> cryptoAllowances = new ArrayList<>();
         List<TokenAllowance> tokenAllowances = new ArrayList<>();
         List<NftAllowance> nftAllowances = new ArrayList<>();
@@ -1180,6 +1181,7 @@ class ERC20PrecompilesTest {
         given(wrappedLedgers.canonicalAddress(recipientAddress)).willReturn(recipientAddress);
         given(wrappedLedgers.canonicalAddress(senderAddress)).willReturn(senderAddress);
         given(encoder.encodeEcFungibleTransfer(true)).willReturn(successResult);
+        when(accessorFactory.uncheckedSpecializedAccessor(any())).thenCallRealMethod();
         when(accessorFactory.constructSpecializedAccessor(any())).thenCallRealMethod();
         final var log =
                 EncodingFacade.LogBuilder.logBuilder()
@@ -1267,6 +1269,7 @@ class ERC20PrecompilesTest {
         given(wrappedLedgers.typeOf(token)).willReturn(TokenType.FUNGIBLE_COMMON);
         given(dynamicProperties.areAllowancesEnabled()).willReturn(true);
         given(encoder.encodeEcFungibleTransfer(true)).willReturn(successResult);
+        when(accessorFactory.uncheckedSpecializedAccessor(any())).thenCallRealMethod();
         when(accessorFactory.constructSpecializedAccessor(any())).thenCallRealMethod();
         // when:
         subject.prepareFields(frame);
@@ -1333,6 +1336,7 @@ class ERC20PrecompilesTest {
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
         given(worldUpdater.aliases()).willReturn(aliases);
         given(wrappedLedgers.typeOf(token)).willReturn(TokenType.FUNGIBLE_COMMON);
+        when(accessorFactory.uncheckedSpecializedAccessor(any())).thenCallRealMethod();
         when(accessorFactory.constructSpecializedAccessor(any())).thenCallRealMethod();
         // when:
         subject.prepareFields(frame);

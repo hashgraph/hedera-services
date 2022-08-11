@@ -53,7 +53,6 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 import com.esaulpaugh.headlong.util.Integers;
-import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
@@ -204,7 +203,7 @@ class BurnPrecompilesTest {
     }
 
     @Test
-    void nftBurnFailurePathWorks() throws InvalidProtocolBufferException {
+    void nftBurnFailurePathWorks() {
         givenNonfungibleFrameContext();
         givenPricingUtilsContext();
 
@@ -239,7 +238,7 @@ class BurnPrecompilesTest {
     }
 
     @Test
-    void nftBurnFailurePathWorksWithNullLedgers() throws InvalidProtocolBufferException {
+    void nftBurnFailurePathWorksWithNullLedgers() {
         givenNonfungibleFrameContext();
         givenPricingUtilsContext();
 
@@ -272,7 +271,7 @@ class BurnPrecompilesTest {
     }
 
     @Test
-    void nftBurnHappyPathWorks() throws InvalidProtocolBufferException {
+    void nftBurnHappyPathWorks() {
         givenNonfungibleFrameContext();
         givenLedgers();
         givenPricingUtilsContext();
@@ -318,7 +317,7 @@ class BurnPrecompilesTest {
     }
 
     @Test
-    void nftBurnWorksForInvalidSyntax() throws InvalidProtocolBufferException {
+    void nftBurnWorksForInvalidSyntax() {
         givenNonfungibleFrameContext();
         givenLedgers();
         givenPricingUtilsContext();
@@ -355,7 +354,7 @@ class BurnPrecompilesTest {
     }
 
     @Test
-    void fungibleBurnHappyPathWorks() throws InvalidProtocolBufferException {
+    void fungibleBurnHappyPathWorks() {
         givenFungibleFrameContext();
         givenLedgers();
         givenPricingUtilsContext();
@@ -417,7 +416,7 @@ class BurnPrecompilesTest {
     }
 
     @Test
-    void fungibleBurnForMaxAmountWorks() throws InvalidProtocolBufferException {
+    void fungibleBurnForMaxAmountWorks() {
         givenFrameContext();
         givenLedgers();
         givenPricingUtilsContext();
@@ -466,7 +465,7 @@ class BurnPrecompilesTest {
     }
 
     @Test
-    void gasRequirementReturnsCorrectValueForBurnToken() throws InvalidProtocolBufferException {
+    void gasRequirementReturnsCorrectValueForBurnToken() {
         // given
         givenMinFrameContext();
         givenPricingUtilsContext();
