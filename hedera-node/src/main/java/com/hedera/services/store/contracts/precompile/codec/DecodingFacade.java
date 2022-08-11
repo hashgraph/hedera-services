@@ -460,6 +460,20 @@ public class DecodingFacade {
     private static final ABIType<Tuple> TOKEN_UPDATE_INFO_DECODER =
             TypeFactory.create("(bytes32," + HEDERA_TOKEN_STRUCT_DECODER + ")");
 
+    private static final Function TOKEN_UPDATE_KEYS_FUNCTION =
+            new Function("updateTokenKeys(address," + TOKEN_KEY + ARRAY_BRACKETS + ")");
+    private static final Bytes TOKEN_UPDATE_KEYS_SELECTOR =
+            Bytes.wrap(TOKEN_UPDATE_KEYS_FUNCTION.selector());
+    private static final ABIType<Tuple> TOKEN_UPDATE_KEYS_DECODER =
+            TypeFactory.create("(bytes32," + TOKEN_KEY_DECODER + ARRAY_BRACKETS + ")");
+
+    private static final Function GET_TOKEN_KEYS_FUNCTION =
+            new Function("getTokenKey(address,uint256)");
+    private static final Bytes GET_TOKEN_KEYS_SELECTOR =
+            Bytes.wrap(GET_TOKEN_KEYS_FUNCTION.selector());
+    private static final ABIType<Tuple> GET_TOKEN_KEYS_DECODER = TypeFactory.create("(bytes32,uint256");
+
+
     @Inject
     public DecodingFacade() {
         // empty constructor
@@ -1364,6 +1378,23 @@ public class DecodingFacade {
         final var tokenExpiry = decodeTokenExpiry(hederaTokenStruct.get(8), aliasResolver);
         return new TokenUpdateWrapper(
                 tokenID, tokenName, tokenSymbol, tokenTreasury, tokenMemo, tokenKeys, tokenExpiry);
+    }
+
+    public TokenUpdateKeysWrapper decodeUpdateTokenKeys(
+            Bytes input, UnaryOperator<byte[]> aliasResolver) {
+        final Tuple decodedArguments =
+                decodeFunctionCall(input, TOKEN_UPDATE_KEYS_SELECTOR, TOKEN_UPDATE_KEYS_DECODER);
+        final var tokenID = convertAddressBytesToTokenID(decodedArguments.get(0));
+        final var tokenKeys = decodeTokenKeys(decodedArguments.get(1), aliasResolver);
+        return new TokenUpdateKeysWrapper(tokenID, tokenKeys);
+    }
+
+    public GetTokenKeyWrapper decodeGetTokenKeys(Bytes input) {
+        final Tuple decodedArguments =
+                decodeFunctionCall(input, GET_TOKEN_KEYS_SELECTOR, GET_TOKEN_KEYS_DECODER);
+        final var tokenID = convertAddressBytesToTokenID(decodedArguments.get(0));
+        final var tokenType = ((BigInteger) decodedArguments.get(1)).longValue();
+        return new GetTokenKeyWrapper(tokenID, tokenType);
     }
 
     private static AccountID convertLeftPaddedAddressToAccountId(
