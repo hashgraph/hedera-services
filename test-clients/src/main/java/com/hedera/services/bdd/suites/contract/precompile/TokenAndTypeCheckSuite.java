@@ -18,7 +18,6 @@ import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.re
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocal;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.*;
-import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.*;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
@@ -26,9 +25,8 @@ import static com.hedera.services.bdd.suites.contract.Utils.asToken;
 import static com.hedera.services.bdd.suites.token.TokenAssociationSpecs.VANILLA_TOKEN;
 import static com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult.expandByteArrayTo32Length;
 import static com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult.htsPrecompileResult;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
-import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
+import static com.hederahashgraph.api.proto.java.TokenType.*;
 
 public class TokenAndTypeCheckSuite extends HapiApiSuite {
     private static final Logger log = LogManager.getLogger(TokenAndTypeCheckSuite.class);
@@ -110,6 +108,7 @@ public class TokenAndTypeCheckSuite extends HapiApiSuite {
 
     private HapiApiSpec checkTokenAndTypeNegativeCases() {
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
+        Object notAnAddress = new byte[0];
 
         return defaultHapiSpec("checkTokenAndTypeNegativeCases")
                 .given(
@@ -132,16 +131,22 @@ public class TokenAndTypeCheckSuite extends HapiApiSuite {
                                                 contractCall(
                                                         TOKEN_AND_TYPE_CHECK_CONTRACT,
                                                         IS_TOKEN,
-                                                        Tuple.singleton(
-                                                                expandByteArrayTo32Length(
-                                                                        asAddress(vanillaTokenID.get()))))
-                                                        .via("Tx")
+                                                        notAnAddress)
+                                                        .via("FakeAddressTokenCheckTx")
+                                                        .payingWith(ACCOUNT)
+                                                        .gas(GAS_TO_OFFER),
+                                                contractCall(
+                                                        TOKEN_AND_TYPE_CHECK_CONTRACT,
+                                                        GET_TOKEN_TYPE,
+                                                        notAnAddress)
+                                                        .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
+                                                        .via("FakeAddressTokenTypeCheckTx")
                                                         .payingWith(ACCOUNT)
                                                         .gas(GAS_TO_OFFER)
                                                         .logged())))
                 .then(
                         childRecordsCheck(
-                                "Tx",
+                                "FakeAddressTokenCheckTx",
                                 SUCCESS,
                                 recordWith()
                                         .status(SUCCESS)
@@ -153,6 +158,11 @@ public class TokenAndTypeCheckSuite extends HapiApiSuite {
                                                                                 ParsingConstants.FunctionType
                                                                                         .HAPI_IS_TOKEN)
                                                                         .withStatus(SUCCESS)
-                                                                        .withIsToken(false)))));
+                                                                        .withIsToken(false)))),
+                        childRecordsCheck(
+                                "FakeAddressTokenTypeCheckTx",
+                                CONTRACT_REVERT_EXECUTED,
+                                recordWith()
+                                        .status(INVALID_TOKEN_ID)));
     }
 }

@@ -21,14 +21,8 @@ import com.hedera.services.bdd.suites.contract.Utils;
 import com.hedera.services.bdd.suites.utils.contracts.ContractCallResult;
 import com.hedera.services.contracts.ParsingConstants;
 import com.hedera.services.contracts.ParsingConstants.FunctionType;
-import com.hederahashgraph.api.proto.java.CustomFee;
-import com.hederahashgraph.api.proto.java.FixedFee;
-import com.hederahashgraph.api.proto.java.FractionalFee;
-import com.hederahashgraph.api.proto.java.Key;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.RoyaltyFee;
-import com.hederahashgraph.api.proto.java.TokenInfo;
-import com.hederahashgraph.api.proto.java.TokenNftInfo;
+import com.hederahashgraph.api.proto.java.*;
+
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
@@ -112,38 +106,29 @@ public class HTSPrecompileResult implements ContractCallResult {
     private boolean tokenDefaultFreezeStatus;
     private boolean tokenDefaultKycStatus;
     private boolean isFrozen;
-    private boolean isToken;
     private List<CustomFee> customFees;
+    private boolean isToken;
+    private int tokenType;
 
     public HTSPrecompileResult forFunction(final FunctionType functionType) {
         tupleType =
                 switch (functionType) {
                     case HAPI_MINT -> mintReturnType;
                     case HAPI_BURN -> burnReturnType;
-                    case ERC_TOTAL_SUPPLY -> totalSupplyType;
+                    case ERC_TOTAL_SUPPLY, ERC_ALLOWANCE, ERC_BALANCE -> bigIntegerTuple;
                     case ERC_DECIMALS -> decimalsType;
-                    case ERC_BALANCE -> balanceOfType;
-                    case ERC_OWNER -> ownerOfType;
-                    case ERC_GET_APPROVED -> getApprovedType;
-                    case ERC_NAME -> nameType;
-                    case ERC_SYMBOL -> symbolType;
-                    case ERC_TOKEN_URI -> tokenUriType;
-                    case ERC_TRANSFER -> ercTransferType;
-                    case ERC_ALLOWANCE -> allowanceOfType;
-                    case ERC_IS_APPROVED_FOR_ALL -> isApprovedForAllType;
+                    case ERC_OWNER, ERC_GET_APPROVED -> addressTuple;
+                    case ERC_NAME, ERC_TOKEN_URI, ERC_SYMBOL -> stringTuple;
+                    case ERC_TRANSFER, ERC_IS_APPROVED_FOR_ALL -> booleanTuple;
                     case HAPI_GET_APPROVED -> hapiGetApprovedType;
                     case HAPI_ALLOWANCE -> hapiAllowanceOfType;
-                    case HAPI_IS_APPROVED_FOR_ALL -> hapiIsApprovedForAllType;
+                    case HAPI_IS_APPROVED_FOR_ALL, HAPI_IS_TOKEN, HAPI_IS_FROZEN,
+                            GET_TOKEN_DEFAULT_KYC_STATUS, GET_TOKEN_DEFAULT_FREEZE_STATUS, HAPI_IS_KYC -> intBoolTuple;
                     case HAPI_GET_TOKEN_INFO -> getTokenInfoTypeReplacedAddress;
                     case HAPI_GET_FUNGIBLE_TOKEN_INFO -> getFungibleTokenInfoTypeReplacedAddress;
                     case HAPI_GET_NON_FUNGIBLE_TOKEN_INFO -> getNonFungibleTokenInfoTypeReplacedAddress;
-                    case HAPI_IS_KYC -> isKycType;
-                    case GET_TOKEN_DEFAULT_FREEZE_STATUS -> getTokenDefaultFreezeStatusType;
-                    case GET_TOKEN_DEFAULT_KYC_STATUS -> getTokenDefaultKycStatusType;
-                    case HAPI_IS_FROZEN -> isFrozenType;
                     case HAPI_GET_TOKEN_CUSTOM_FEES -> tokenGetCustomFeesReplacedAddress;
-                    case HAPI_IS_TOKEN -> isTokenType;
-                    case HAPI_GET_TOKEN_TYPE -> getTokenType;
+                    case HAPI_GET_TOKEN_TYPE -> intPairTuple;
                     default -> notSpecifiedType;
                 };
 
@@ -271,6 +256,11 @@ public class HTSPrecompileResult implements ContractCallResult {
         return this;
     }
 
+    public HTSPrecompileResult withTokenType(final int tokenType) {
+        this.tokenType = tokenType;
+        return this;
+    }
+
     @Override
     public Bytes getBytes() {
         if (ParsingConstants.FunctionType.ERC_OWNER.equals(functionType)) {
@@ -310,6 +300,7 @@ public class HTSPrecompileResult implements ContractCallResult {
                     case HAPI_IS_FROZEN -> Tuple.of(status.getNumber(), isFrozen);
                     case HAPI_GET_TOKEN_CUSTOM_FEES -> getTupleForTokenGetCustomFees();
                     case HAPI_IS_TOKEN -> Tuple.of(status.getNumber(), isToken);
+                    case HAPI_GET_TOKEN_TYPE -> Tuple.of(status.getNumber(), tokenType);
                     default -> Tuple.of(status.getNumber());
                 };
 
