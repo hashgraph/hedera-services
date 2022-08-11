@@ -141,11 +141,7 @@ class CallLocalEvmTxProcessorTest {
         assertFailsWith(
                 () ->
                         callLocalEvmTxProcessor.execute(
-                                sender,
-                                receiverAddress,
-                                33_333L,
-                                1234L,
-                                Bytes.EMPTY),
+                                sender, receiverAddress, 33_333L, 1234L, Bytes.EMPTY),
                 INVALID_CONTRACT_ID);
     }
 

@@ -24,7 +24,6 @@ import com.hedera.services.store.contracts.CodeCache;
 import com.hedera.services.store.contracts.HederaMutableWorldState;
 import com.hedera.services.store.models.Account;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
-import java.time.Instant;
 import java.util.Map;
 import java.util.Set;
 import javax.inject.Inject;
