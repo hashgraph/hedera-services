@@ -20,6 +20,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.test.utils.IdUtils;
@@ -107,8 +108,11 @@ class AccessorFactoryTest {
     @Test
     void uncheckedSpecializedAccessorThrows() {
         final var invalidTxnBytes = "InvalidTxnBytes".getBytes();
+        final var txn = Transaction.newBuilder()
+                .setSignedTransactionBytes(ByteString.copyFrom(invalidTxnBytes))
+                .build();
         assertThrows(
                 IllegalArgumentException.class,
-                () -> subject.uncheckedSpecializedAccessor(invalidTxnBytes));
+                () -> subject.uncheckedSpecializedAccessor(txn));
     }
 }

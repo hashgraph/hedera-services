@@ -82,9 +82,9 @@ public class AccessorFactory {
         return SignedTxnAccessor.from(transactionBytes, transaction);
     }
 
-    public TxnAccessor uncheckedSpecializedAccessor(byte[] signedTxnWrapperBytes) {
+    public TxnAccessor uncheckedSpecializedAccessor(final Transaction transaction) {
         try {
-            return constructSpecializedAccessor(signedTxnWrapperBytes);
+            return constructSpecializedAccessor(transaction);
         } catch (InvalidProtocolBufferException e) {
             throw new IllegalArgumentException("Not a valid signed transaction");
         }
