@@ -40,6 +40,7 @@ import com.hedera.services.store.contracts.WorldLedgers;
 import com.hedera.services.store.contracts.precompile.codec.DecodingFacade;
 import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
+import com.hedera.services.utils.accessors.AccessorFactory;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.io.IOException;
 import java.util.Optional;
@@ -75,6 +76,7 @@ class GetTokenDefaultKycStatusTest {
     @Mock private HbarCentExchange exchange;
     @Mock private TransactionBody.Builder mockSynthBodyBuilder;
     @Mock private InfrastructureFactory infrastructureFactory;
+    @Mock private AccessorFactory accessorFactory;
 
     @Mock private AssetsLoader assetLoader;
 
@@ -84,7 +86,12 @@ class GetTokenDefaultKycStatusTest {
     void setUp() throws IOException {
         PrecompilePricingUtils precompilePricingUtils =
                 new PrecompilePricingUtils(
-                        assetLoader, exchange, () -> feeCalculator, resourceCosts, stateView);
+                        assetLoader,
+                        exchange,
+                        () -> feeCalculator,
+                        resourceCosts,
+                        stateView,
+                        accessorFactory);
         subject =
                 new HTSPrecompiledContract(
                         dynamicProperties,
