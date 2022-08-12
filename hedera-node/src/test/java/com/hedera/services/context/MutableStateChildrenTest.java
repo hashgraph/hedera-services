@@ -71,7 +71,7 @@ class MutableStateChildrenTest {
     @Test
     void refusesToUpdateFromUninitializedState() {
         assertThrows(
-                IllegalArgumentException.class, () -> subject.updateFromSigned(state, signedAt));
+                IllegalArgumentException.class, () -> subject.updateFromImmutable(state, signedAt));
     }
 
     @Test
@@ -79,7 +79,7 @@ class MutableStateChildrenTest {
         givenStateWithMockChildren();
         given(state.isInitialized()).willReturn(true);
 
-        subject.updateFromSigned(state, signedAt);
+        subject.updateFromImmutable(state, signedAt);
 
         assertChildrenAreExpectedMocks();
         assertEquals(signedAt, subject.signedAt());
@@ -89,7 +89,7 @@ class MutableStateChildrenTest {
     void getsSizes() {
         givenStateWithMockChildren();
         given(state.isInitialized()).willReturn(true);
-        subject.updateFromSigned(state, signedAt);
+        subject.updateFromImmutable(state, signedAt);
 
         given(accounts.size()).willReturn(1);
         given(storage.size()).willReturn(2L);

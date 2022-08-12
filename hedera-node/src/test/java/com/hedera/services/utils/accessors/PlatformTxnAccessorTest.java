@@ -53,7 +53,7 @@ import com.hederahashgraph.api.proto.java.SubType;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
-import com.swirlds.common.system.transaction.SwirldTransaction;
+import com.swirlds.common.system.transaction.internal.SwirldTransaction;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -83,7 +83,7 @@ class PlatformTxnAccessorTest {
         // setup:
         Transaction signedTxnWithBody =
                 Transaction.newBuilder().setBodyBytes(someTxn.toByteString()).build();
-        SwirldTransaction platformTxn = new SwirldTransaction(signedTxnWithBody.toByteArray());
+        final var platformTxn = new SwirldTransaction(signedTxnWithBody.toByteArray());
 
         // given:
         PlatformTxnAccessor subject =
@@ -99,7 +99,7 @@ class PlatformTxnAccessorTest {
         // setup:
         Transaction signedTxnWithBody =
                 Transaction.newBuilder().setBodyBytes(someTxn.toByteString()).build();
-        SwirldTransaction platformTxn = new SwirldTransaction(signedTxnWithBody.toByteArray());
+        final var platformTxn = new SwirldTransaction(signedTxnWithBody.toByteArray());
 
         // given:
         PlatformTxnAccessor subject =
@@ -164,8 +164,7 @@ class PlatformTxnAccessorTest {
 
     @Test
     void failsOnInvalidSignedTxn() {
-        // given:
-        SwirldTransaction platformTxn = new SwirldTransaction(NONSENSE);
+        final var platformTxn = new SwirldTransaction(NONSENSE);
 
         // expect:
         assertThrows(
@@ -181,7 +180,7 @@ class PlatformTxnAccessorTest {
         Transaction signedNonsenseTxn =
                 Transaction.newBuilder().setBodyBytes(ByteString.copyFrom(NONSENSE)).build();
         // and:
-        SwirldTransaction platformTxn = new SwirldTransaction(signedNonsenseTxn.toByteArray());
+        final var platformTxn = new SwirldTransaction(signedNonsenseTxn.toByteArray());
 
         // then:
         assertThrows(
@@ -196,7 +195,7 @@ class PlatformTxnAccessorTest {
         // given:
         Transaction signedTxnWithBody =
                 Transaction.newBuilder().setBodyBytes(someTxn.toByteString()).build();
-        SwirldTransaction platformTxn = new SwirldTransaction(signedTxnWithBody.toByteArray());
+        final var platformTxn = new SwirldTransaction(signedTxnWithBody.toByteArray());
 
         // when:
         PlatformTxnAccessor subject =
@@ -224,7 +223,7 @@ class PlatformTxnAccessorTest {
                                                                 ByteString.copyFrom(
                                                                         "FAKE".getBytes()))))
                         .build();
-        SwirldTransaction platformTxn = new SwirldTransaction(signedTxnWithBody.toByteArray());
+        final var platformTxn = new SwirldTransaction(signedTxnWithBody.toByteArray());
 
         // when:
         PlatformTxnAccessor subject =
@@ -264,7 +263,7 @@ class PlatformTxnAccessorTest {
                         .setSignedTransactionBytes(signedTxn.toByteString())
                         .build();
 
-        SwirldTransaction platformTxn = new SwirldTransaction(txn.toByteArray());
+        final var platformTxn = new SwirldTransaction(txn.toByteArray());
 
         // when:
         PlatformTxnAccessor subject =
@@ -290,7 +289,7 @@ class PlatformTxnAccessorTest {
         AccountID payer = asAccount("0.0.2");
         Transaction signedTxnWithBody =
                 Transaction.newBuilder().setBodyBytes(someTxn.toByteString()).build();
-        SwirldTransaction platformTxn = new SwirldTransaction(signedTxnWithBody.toByteArray());
+        final var platformTxn = new SwirldTransaction(signedTxnWithBody.toByteArray());
 
         // when:
         PlatformTxnAccessor subject =
@@ -330,7 +329,7 @@ class PlatformTxnAccessorTest {
                         .setBodyBytes(someTxn.toByteString())
                         .setSigMap(onePairSigMap)
                         .build();
-        SwirldTransaction platformTxn = new SwirldTransaction(signedTxnWithBody.toByteArray());
+        final var platformTxn = new SwirldTransaction(signedTxnWithBody.toByteArray());
         final var aliasManager = mock(AliasManager.class);
         final var stateView = mock(StateView.class);
 
