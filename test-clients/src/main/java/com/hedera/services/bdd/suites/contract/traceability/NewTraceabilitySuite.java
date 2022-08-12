@@ -78,7 +78,7 @@ public class NewTraceabilitySuite extends HapiApiSuite {
 
     private HapiApiSpec vanillaBytecodeSidecar() {
         final var EMPTY_CONSTRUCTOR_CONTRACT = "EmptyConstructor";
-      final var vanillaBytecodeSidecar = "vanillaBytecodeSidecar";
+        final var vanillaBytecodeSidecar = "vanillaBytecodeSidecar";
         final var firstTxn = "firstTxn";
         return defaultHapiSpec(vanillaBytecodeSidecar)
                 .given(uploadInitCode(EMPTY_CONSTRUCTOR_CONTRACT))
