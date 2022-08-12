@@ -38,39 +38,36 @@ public class MiscRunningAvgs {
     public void registerWith(final Platform platform) {
         gasPerConsSec =
                 platform.getOrCreateMetric(
-                        new RunningAverageMetric.Config(
-                                STAT_CATEGORY,
-                                Names.GAS_PER_CONSENSUS_SEC).withDescription(
-                                Descriptions.GAS_PER_CONSENSUS_SEC).withFormat(
-                                RUNNING_AVG_FORMAT).withHalfLife(halfLife));
+                        new RunningAverageMetric.Config(STAT_CATEGORY, Names.GAS_PER_CONSENSUS_SEC)
+                                .withDescription(Descriptions.GAS_PER_CONSENSUS_SEC)
+                                .withFormat(RUNNING_AVG_FORMAT)
+                                .withHalfLife(halfLife));
         accountRetryWaitMs =
                 platform.getOrCreateMetric(
-                        new RunningAverageMetric.Config(
-                                STAT_CATEGORY,
-                                Names.ACCOUNT_RETRY_WAIT_MS).withDescription(
-                                Descriptions.ACCOUNT_RETRY_WAIT_MS).withFormat(
-                                RUNNING_AVG_FORMAT).withHalfLife(halfLife));
+                        new RunningAverageMetric.Config(STAT_CATEGORY, Names.ACCOUNT_RETRY_WAIT_MS)
+                                .withDescription(Descriptions.ACCOUNT_RETRY_WAIT_MS)
+                                .withFormat(RUNNING_AVG_FORMAT)
+                                .withHalfLife(halfLife));
         accountLookupRetries =
                 platform.getOrCreateMetric(
-                        new RunningAverageMetric.Config(
-                                STAT_CATEGORY,
-                                Names.ACCOUNT_LOOKUP_RETRIES).withDescription(
-                                Descriptions.ACCOUNT_LOOKUP_RETRIES).withFormat(
-                                RUNNING_AVG_FORMAT).withHalfLife(halfLife));
+                        new RunningAverageMetric.Config(STAT_CATEGORY, Names.ACCOUNT_LOOKUP_RETRIES)
+                                .withDescription(Descriptions.ACCOUNT_LOOKUP_RETRIES)
+                                .withFormat(RUNNING_AVG_FORMAT)
+                                .withHalfLife(halfLife));
         handledSubmitMessageSize =
                 platform.getOrCreateMetric(
                         new RunningAverageMetric.Config(
-                                STAT_CATEGORY,
-                                Names.HANDLED_SUBMIT_MESSAGE_SIZE).withDescription(
-                                Descriptions.HANDLED_SUBMIT_MESSAGE_SIZE).withFormat(
-                                RUNNING_AVG_FORMAT).withHalfLife(halfLife));
+                                        STAT_CATEGORY, Names.HANDLED_SUBMIT_MESSAGE_SIZE)
+                                .withDescription(Descriptions.HANDLED_SUBMIT_MESSAGE_SIZE)
+                                .withFormat(RUNNING_AVG_FORMAT)
+                                .withHalfLife(halfLife));
         writeQueueSizeRecordStream =
                 platform.getOrCreateMetric(
                         new RunningAverageMetric.Config(
-                                STAT_CATEGORY,
-                                Names.WRITE_QUEUE_SIZE_RECORD_STREAM).withDescription(
-                                Descriptions.WRITE_QUEUE_SIZE_RECORD_STREAM).withFormat(
-                                RUNNING_AVG_FORMAT).withHalfLife(halfLife));
+                                        STAT_CATEGORY, Names.WRITE_QUEUE_SIZE_RECORD_STREAM)
+                                .withDescription(Descriptions.WRITE_QUEUE_SIZE_RECORD_STREAM)
+                                .withFormat(RUNNING_AVG_FORMAT)
+                                .withHalfLife(halfLife));
         hashQueueSizeRecordStream =
                 platform.getOrCreateMetric(
                         new RunningAverageMetric.Config(

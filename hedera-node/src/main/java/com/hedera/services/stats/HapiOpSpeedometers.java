@@ -128,11 +128,10 @@ public class HapiOpSpeedometers {
                             }
                         });
         receivedDeprecatedTxnsConfig =
-                new SpeedometerMetric.Config(
-                        STAT_CATEGORY,
-                        SPEEDOMETER_DEPRECATED_TXNS_NAME).withDescription(
-                        SPEEDOMETER_DEPRECATED_TXNS_DESC).withFormat(
-                        SPEEDOMETER_FORMAT).withHalfLife(halfLife);
+                new SpeedometerMetric.Config(STAT_CATEGORY, SPEEDOMETER_DEPRECATED_TXNS_NAME)
+                        .withDescription(SPEEDOMETER_DEPRECATED_TXNS_DESC)
+                        .withFormat(SPEEDOMETER_FORMAT)
+                        .withHalfLife(halfLife);
         lastReceivedDeprecatedTxnCount = 0L;
     }
 
@@ -144,11 +143,10 @@ public class HapiOpSpeedometers {
         final var baseName = statNameFn.apply(function);
         var fullName = String.format(nameTpl, baseName);
         var description = String.format(descTpl, baseName);
-        return new SpeedometerMetric.Config(
-                STAT_CATEGORY,
-            fullName).withDescription(
-            description).withFormat(
-            SPEEDOMETER_FORMAT).withHalfLife(halfLife);
+        return new SpeedometerMetric.Config(STAT_CATEGORY, fullName)
+                .withDescription(description)
+                .withFormat(SPEEDOMETER_FORMAT)
+                .withHalfLife(halfLife);
     }
 
     public void registerWith(Platform platform) {

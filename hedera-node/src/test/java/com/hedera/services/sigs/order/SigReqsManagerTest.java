@@ -21,10 +21,6 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willAnswer;
 import static org.mockito.Mockito.verify;
 
-import static com.hedera.services.sigs.order.SigReqsManager.TOKEN_META_TRANSFORM;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.verify;
-
 import com.hedera.services.ServicesState;
 import com.hedera.services.config.FileNumbers;
 import com.hedera.services.context.MutableStateChildren;
