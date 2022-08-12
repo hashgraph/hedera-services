@@ -21,6 +21,7 @@ import static com.hedera.services.contracts.ParsingConstants.getFungibleTokenInf
 import static com.hedera.services.contracts.ParsingConstants.getNonFungibleTokenInfoType;
 import static com.hedera.services.contracts.ParsingConstants.getTokenCustomFeesType;
 import static com.hedera.services.contracts.ParsingConstants.getTokenInfoType;
+import static com.hedera.services.contracts.ParsingConstants.getTokenKeyType;
 import static com.hedera.services.contracts.ParsingConstants.notSpecifiedType;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
@@ -329,6 +330,14 @@ public class EncodingFacade {
                 .build();
     }
 
+    public Bytes encodeGetTokenKey(KeyValueWrapper keyValue) {
+        return functionResultBuilder()
+                .forFunction(FunctionType.HAPI_GET_TOKEN_KEY)
+                .withStatus(SUCCESS.getNumber())
+                .withKey(keyValue)
+                .build();
+    }
+
     private FunctionResultBuilder functionResultBuilder() {
         return new FunctionResultBuilder();
     }
@@ -358,6 +367,7 @@ public class EncodingFacade {
         private TokenNftInfo nonFungibleTokenInfo;
         private boolean isFrozen;
         private List<CustomFee> customFees;
+        private Tuple keyValue;
 
         private FunctionResultBuilder forFunction(final FunctionType functionType) {
             this.tupleType =
@@ -390,6 +400,7 @@ public class EncodingFacade {
                         case GET_TOKEN_DEFAULT_KYC_STATUS -> getTokenDefaultKycStatusType;
                         case HAPI_IS_FROZEN -> isTokenFrozenType;
                         case HAPI_GET_TOKEN_CUSTOM_FEES -> getTokenCustomFeesType;
+                        case HAPI_GET_TOKEN_KEY -> getTokenKeyType;
                         default -> notSpecifiedType;
                     };
 
@@ -511,6 +522,20 @@ public class EncodingFacade {
             return this;
         }
 
+        private FunctionResultBuilder withKey(KeyValueWrapper wrapper) {
+            this.keyValue =
+                    Tuple.of(
+                            wrapper.isShouldInheritAccountKeySet(),
+                            convertBesuAddressToHeadlongAddress(
+                                    EntityIdUtils.asTypedEvmAddress(wrapper.getContractID())),
+                            wrapper.getEd25519Key(),
+                            wrapper.getEcdsaSecp256k1(),
+                            convertBesuAddressToHeadlongAddress(
+                                    EntityIdUtils.asTypedEvmAddress(
+                                            wrapper.getDelegatableContractID())));
+            return this;
+        }
+
         private Bytes build() {
             final var result =
                     switch (functionType) {
@@ -548,6 +573,7 @@ public class EncodingFacade {
                                 status, tokenDefaultKycStatus);
                         case HAPI_IS_FROZEN -> Tuple.of(status, isFrozen);
                         case HAPI_GET_TOKEN_CUSTOM_FEES -> getTupleForTokenGetCustomFees();
+                        case HAPI_GET_TOKEN_KEY -> Tuple.of(status, keyValue);
                         default -> Tuple.of(status);
                     };
 
