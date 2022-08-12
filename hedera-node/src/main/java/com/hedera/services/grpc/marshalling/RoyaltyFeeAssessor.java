@@ -20,6 +20,7 @@ import static com.hedera.services.state.submerkle.FcCustomFee.FeeType.ROYALTY_FE
 import static com.hedera.services.store.models.Id.MISSING_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_AMOUNT_TRANSFERS_ONLY_ALLOWED_FOR_FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 import com.hedera.services.ledger.BalanceChange;
@@ -71,6 +72,9 @@ public class RoyaltyFeeAssessor {
             if (exchangedValue.isEmpty()) {
                 final var fallback = spec.fallbackFee();
                 if (fallback != null) {
+                    if (change.hasNonEmptyCounterPartyAlias()) {
+                        return INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE;
+                    }
                     final var receiver = Id.fromGrpcAccount(change.counterPartyAccountId());
                     final var fallbackFee =
                             FcCustomFee.fixedFee(
