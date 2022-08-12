@@ -128,8 +128,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class ServicesStateTest {
 
     private final SoftwareVersion some025xVersion = forHapiAndHedera("0.25.0", "0.25.2");
+    private final SoftwareVersion justPriorVersion = forHapiAndHedera("0.28.1", "0.27.9");
     private final SoftwareVersion currentVersion = SEMANTIC_VERSIONS.deployedSoftwareVersion();
-    private final SoftwareVersion futureVersion = forHapiAndHedera("0.28.0", "0.28.0");
+    private final SoftwareVersion futureVersion = forHapiAndHedera("0.29.0", "0.29.0");
     private final Instant creationTime = Instant.ofEpochSecond(1_234_567L, 8);
     private final Instant consensusTime = Instant.ofEpochSecond(2_345_678L, 9);
     private final NodeId selfId = new NodeId(false, 1L);
@@ -178,10 +179,10 @@ class ServicesStateTest {
     void setUp() {
         SEMANTIC_VERSIONS
                 .deployedSoftwareVersion()
-                .setProto(SemanticVersion.newBuilder().setMinor(27).build());
+                .setProto(SemanticVersion.newBuilder().setMinor(28).build());
         SEMANTIC_VERSIONS
                 .deployedSoftwareVersion()
-                .setServices(SemanticVersion.newBuilder().setMinor(27).build());
+                .setServices(SemanticVersion.newBuilder().setMinor(28).build());
         subject = new ServicesState();
         setAllChildren();
     }
@@ -552,7 +553,6 @@ class ServicesStateTest {
         given(app.initializationFlow()).willReturn(initFlow);
         given(app.dualStateAccessor()).willReturn(dualStateAccessor);
         given(app.sysFilesManager()).willReturn(systemFilesManager);
-        given(app.treasuryCloner()).willReturn(treasuryCloner);
         given(platform.getSelfId()).willReturn(selfId);
 
         APPS.save(selfId.getId(), app);
@@ -663,8 +663,7 @@ class ServicesStateTest {
     }
 
     @Test
-    void nonGenesisInitClearsPreparedUpgradeIfNonNullLastFrozenMatchesFreezeTime() {
-        ServicesState.setNftRationalization(nftRationalization);
+    void nonGenesisInitDoesNotClearPreparedUpgradeIfSameVersion() {
         subject.setChild(StateChildIndices.SPECIAL_FILES, specialFiles);
         subject.setChild(StateChildIndices.NETWORK_CTX, networkContext);
         subject.setChild(StateChildIndices.ACCOUNTS, accounts);
@@ -678,18 +677,43 @@ class ServicesStateTest {
         given(app.dualStateAccessor()).willReturn(dualStateAccessor);
         given(platform.getSelfId()).willReturn(selfId);
         given(app.sysFilesManager()).willReturn(systemFilesManager);
-        given(app.treasuryCloner()).willReturn(treasuryCloner);
         // and:
         APPS.save(selfId.getId(), app);
 
         // when:
         subject.init(platform, addressBook, dualState, RESTART, currentVersion);
 
+        verify(networkContext, never()).discardPreparedUpgradeMeta();
+        verify(dualState, never()).setFreezeTime(null);
+    }
+
+    @Test
+    void nonGenesisInitClearsPreparedUpgradeIfDeployedIsLaterVersion() {
+        mockMigrators();
+        subject.setChild(StateChildIndices.SPECIAL_FILES, specialFiles);
+        subject.setChild(StateChildIndices.NETWORK_CTX, networkContext);
+        subject.setChild(StateChildIndices.ACCOUNTS, accounts);
+
+        final var when = Instant.ofEpochSecond(1_234_567L, 890);
+        given(dualState.getFreezeTime()).willReturn(when);
+        given(dualState.getLastFrozenTime()).willReturn(when);
+        given(app.workingState()).willReturn(workingState);
+
+        given(app.hashLogger()).willReturn(hashLogger);
+        given(app.initializationFlow()).willReturn(initFlow);
+        given(app.dualStateAccessor()).willReturn(dualStateAccessor);
+        given(platform.getSelfId()).willReturn(selfId);
+        given(app.sysFilesManager()).willReturn(systemFilesManager);
+        given(app.treasuryCloner()).willReturn(treasuryCloner);
+        // and:
+        APPS.save(selfId.getId(), app);
+
+        // when:
+        subject.init(platform, addressBook, dualState, RESTART, justPriorVersion);
+
         verify(networkContext).discardPreparedUpgradeMeta();
         verify(dualState).setFreezeTime(null);
-
-        verifyNoInteractions(nftRationalization);
-        ServicesState.setNftRationalization(ReleaseTwentySevenMigration::fixNftCounts);
+        unmockMigrators();
     }
 
     @Test
@@ -777,7 +801,6 @@ class ServicesStateTest {
         given(app.dualStateAccessor()).willReturn(dualStateAccessor);
         given(platform.getSelfId()).willReturn(selfId);
         given(app.sysFilesManager()).willReturn(systemFilesManager);
-        given(app.treasuryCloner()).willReturn(treasuryCloner);
         // and:
         APPS.save(selfId.getId(), app);
 
