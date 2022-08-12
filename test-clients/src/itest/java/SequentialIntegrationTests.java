@@ -19,6 +19,7 @@ import com.hedera.services.bdd.suites.contract.hapi.ContractCallSuite;
 import com.hedera.services.bdd.suites.contract.precompile.AssociatePrecompileSuite;
 import com.hedera.services.bdd.suites.contract.precompile.DelegatePrecompileSuite;
 import com.hedera.services.bdd.suites.contract.precompile.DynamicGasCostSuite;
+import com.hedera.services.bdd.suites.contract.traceability.NewTraceabilitySuite;
 import com.hedera.services.bdd.suites.crypto.AutoAccountUpdateSuite;
 import com.hedera.services.bdd.suites.crypto.CryptoApproveAllowanceSuite;
 import com.hedera.services.bdd.suites.crypto.CryptoCreateSuite;
@@ -56,34 +57,35 @@ public class SequentialIntegrationTests extends IntegrationTestBase {
     @TestFactory
     Collection<DynamicContainer> sequential() {
         return List.of(
-                extractSpecsFromSuite(RecordCreationSuite::new),
-                extractSpecsFromSuite(AutoAccountUpdateSuite::new),
-                extractSpecsFromSuite(GracePeriodRestrictionsSuite::new),
-                extractSpecsFromSuite(CryptoApproveAllowanceSuite::new),
-                extractSpecsFromSuite(TokenPauseSpecs::new),
-                extractSpecsFromSuite(FileAppendSuite::new),
-                extractSpecsFromSuite(FileUpdateSuite::new),
-                extractSpecsFromSuite(ProtectedFilesUpdateSuite::new),
-                extractSpecsFromSuite(ExchangeRateControlSuite::new),
-                extractSpecsFromSuite(FileRecordsSanityCheckSuite::new),
-                extractSpecsFromSuite(FetchSystemFiles::new),
-                extractSpecsFromSuite(VersionInfoSpec::new),
-                extractSpecsFromSuite(ContractCallSuite::new),
-                extractSpecsFromSuite(ContractRecordsSanityCheckSuite::new),
-                //                extractSpecsFromSuite(TopicUpdateSuite::new),
-                extractSpecsFromSuite(TopicGetInfoSuite::new),
-                extractSpecsFromSuite(SpecialAccountsAreExempted::new),
-                extractSpecsFromSuite(CryptoUpdateSuite::new),
-                extractSpecsFromSuite(CryptoRecordsSanityCheckSuite::new),
-                extractSpecsFromSuite(ThrottleDefValidationSuite::new),
-                extractSpecsFromSuite(PrivilegedOpsSuite::new),
-                extractSpecsFromSuite(CongestionPricingSuite::new),
-                extractSpecsFromSuite(CryptoCreateSuite::new),
-                extractSpecsFromSuite(UmbrellaRedux::new),
-                extractSpecsFromSuite(ScheduleCreateSpecs::new),
-                extractSpecsFromSuite(ScheduleSignSpecs::new),
-                extractSpecsFromSuite(AssociatePrecompileSuite::new),
-                extractSpecsFromSuite(DelegatePrecompileSuite::new),
-                extractSpecsFromSuite(DynamicGasCostSuite::new));
+//                extractSpecsFromSuite(RecordCreationSuite::new),
+//                extractSpecsFromSuite(AutoAccountUpdateSuite::new),
+//                extractSpecsFromSuite(GracePeriodRestrictionsSuite::new),
+//                extractSpecsFromSuite(CryptoApproveAllowanceSuite::new),
+//                extractSpecsFromSuite(TokenPauseSpecs::new),
+//                extractSpecsFromSuite(FileAppendSuite::new),
+//                extractSpecsFromSuite(FileUpdateSuite::new),
+//                extractSpecsFromSuite(ProtectedFilesUpdateSuite::new),
+//                extractSpecsFromSuite(ExchangeRateControlSuite::new),
+//                extractSpecsFromSuite(FileRecordsSanityCheckSuite::new),
+//                extractSpecsFromSuite(FetchSystemFiles::new),
+//                extractSpecsFromSuite(VersionInfoSpec::new),
+//                extractSpecsFromSuite(ContractCallSuite::new),
+//                extractSpecsFromSuite(ContractRecordsSanityCheckSuite::new),
+//                //                extractSpecsFromSuite(TopicUpdateSuite::new),
+//                extractSpecsFromSuite(TopicGetInfoSuite::new),
+//                extractSpecsFromSuite(SpecialAccountsAreExempted::new),
+//                extractSpecsFromSuite(CryptoUpdateSuite::new),
+//                extractSpecsFromSuite(CryptoRecordsSanityCheckSuite::new),
+//                extractSpecsFromSuite(ThrottleDefValidationSuite::new),
+//                extractSpecsFromSuite(PrivilegedOpsSuite::new),
+//                extractSpecsFromSuite(CongestionPricingSuite::new),
+//                extractSpecsFromSuite(CryptoCreateSuite::new),
+//                extractSpecsFromSuite(UmbrellaRedux::new),
+//                extractSpecsFromSuite(ScheduleCreateSpecs::new),
+//                extractSpecsFromSuite(ScheduleSignSpecs::new),
+//                extractSpecsFromSuite(AssociatePrecompileSuite::new),
+//                extractSpecsFromSuite(DelegatePrecompileSuite::new),
+//                extractSpecsFromSuite(DynamicGasCostSuite::new));
+            extractSpecsFromSuite(NewTraceabilitySuite::new));
     }
 }
