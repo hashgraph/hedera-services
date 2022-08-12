@@ -1,16 +1,19 @@
+/*
+ * Copyright (C) 2022 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package com.hedera.services.bdd.suites.contract.precompile;
-
-import com.esaulpaugh.headlong.abi.Tuple;
-import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.suites.HapiApiSuite;
-import com.hedera.services.contracts.ParsingConstants;
-import com.hederahashgraph.api.proto.java.TokenID;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
-import java.math.BigInteger;
-import java.util.List;
-import java.util.concurrent.atomic.AtomicReference;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.isLiteralResult;
@@ -27,6 +30,17 @@ import static com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPreco
 import static com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult.htsPrecompileResult;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 import static com.hederahashgraph.api.proto.java.TokenType.*;
+
+import com.esaulpaugh.headlong.abi.Tuple;
+import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.contracts.ParsingConstants;
+import com.hederahashgraph.api.proto.java.TokenID;
+import java.math.BigInteger;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 public class TokenAndTypeCheckSuite extends HapiApiSuite {
     private static final Logger log = LogManager.getLogger(TokenAndTypeCheckSuite.class);
@@ -55,8 +69,7 @@ public class TokenAndTypeCheckSuite extends HapiApiSuite {
 
         return defaultHapiSpec("checkTokenAndTypeStandardCases")
                 .given(
-                        cryptoCreate(ACCOUNT)
-                                .balance(100 * ONE_HUNDRED_HBARS),
+                        cryptoCreate(ACCOUNT).balance(100 * ONE_HUNDRED_HBARS),
                         cryptoCreate(TOKEN_TREASURY),
                         tokenCreate(VANILLA_TOKEN)
                                 .tokenType(FUNGIBLE_COMMON)
@@ -72,11 +85,13 @@ public class TokenAndTypeCheckSuite extends HapiApiSuite {
                                         allRunFor(
                                                 spec,
                                                 contractCallLocal(
-                                                        TOKEN_AND_TYPE_CHECK_CONTRACT,
-                                                        IS_TOKEN,
-                                                        Tuple.singleton(
-                                                                expandByteArrayTo32Length(
-                                                                        asAddress(vanillaTokenID.get()))))
+                                                                TOKEN_AND_TYPE_CHECK_CONTRACT,
+                                                                IS_TOKEN,
+                                                                Tuple.singleton(
+                                                                        expandByteArrayTo32Length(
+                                                                                asAddress(
+                                                                                        vanillaTokenID
+                                                                                                .get()))))
                                                         .logged()
                                                         .has(
                                                                 resultWith()
@@ -84,15 +99,19 @@ public class TokenAndTypeCheckSuite extends HapiApiSuite {
                                                                                 IS_TOKEN,
                                                                                 TOKEN_AND_TYPE_CHECK_CONTRACT,
                                                                                 isLiteralResult(
-                                                                                        new Object[] {
-                                                                                                Boolean.TRUE
+                                                                                        new Object
+                                                                                                [] {
+                                                                                            Boolean
+                                                                                                    .TRUE
                                                                                         }))),
                                                 contractCallLocal(
-                                                        TOKEN_AND_TYPE_CHECK_CONTRACT,
-                                                        GET_TOKEN_TYPE,
-                                                        Tuple.singleton(
-                                                                expandByteArrayTo32Length(
-                                                                        asAddress(vanillaTokenID.get()))))
+                                                                TOKEN_AND_TYPE_CHECK_CONTRACT,
+                                                                GET_TOKEN_TYPE,
+                                                                Tuple.singleton(
+                                                                        expandByteArrayTo32Length(
+                                                                                asAddress(
+                                                                                        vanillaTokenID
+                                                                                                .get()))))
                                                         .logged()
                                                         .has(
                                                                 resultWith()
@@ -100,8 +119,11 @@ public class TokenAndTypeCheckSuite extends HapiApiSuite {
                                                                                 GET_TOKEN_TYPE,
                                                                                 TOKEN_AND_TYPE_CHECK_CONTRACT,
                                                                                 isLiteralResult(
-                                                                                        new Object[] {
-                                                                                                BigInteger.valueOf(0)
+                                                                                        new Object
+                                                                                                [] {
+                                                                                            BigInteger
+                                                                                                    .valueOf(
+                                                                                                            0)
                                                                                         }))))))
                 .then();
     }
@@ -112,8 +134,7 @@ public class TokenAndTypeCheckSuite extends HapiApiSuite {
 
         return defaultHapiSpec("checkTokenAndTypeNegativeCases")
                 .given(
-                        cryptoCreate(ACCOUNT)
-                                .balance(100 * ONE_HUNDRED_HBARS),
+                        cryptoCreate(ACCOUNT).balance(100 * ONE_HUNDRED_HBARS),
                         cryptoCreate(TOKEN_TREASURY),
                         tokenCreate(VANILLA_TOKEN)
                                 .tokenType(FUNGIBLE_COMMON)
@@ -129,16 +150,16 @@ public class TokenAndTypeCheckSuite extends HapiApiSuite {
                                         allRunFor(
                                                 spec,
                                                 contractCall(
-                                                        TOKEN_AND_TYPE_CHECK_CONTRACT,
-                                                        IS_TOKEN,
-                                                        notAnAddress)
+                                                                TOKEN_AND_TYPE_CHECK_CONTRACT,
+                                                                IS_TOKEN,
+                                                                notAnAddress)
                                                         .via("FakeAddressTokenCheckTx")
                                                         .payingWith(ACCOUNT)
                                                         .gas(GAS_TO_OFFER),
                                                 contractCall(
-                                                        TOKEN_AND_TYPE_CHECK_CONTRACT,
-                                                        GET_TOKEN_TYPE,
-                                                        notAnAddress)
+                                                                TOKEN_AND_TYPE_CHECK_CONTRACT,
+                                                                GET_TOKEN_TYPE,
+                                                                notAnAddress)
                                                         .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
                                                         .via("FakeAddressTokenTypeCheckTx")
                                                         .payingWith(ACCOUNT)
@@ -155,14 +176,14 @@ public class TokenAndTypeCheckSuite extends HapiApiSuite {
                                                         .contractCallResult(
                                                                 htsPrecompileResult()
                                                                         .forFunction(
-                                                                                ParsingConstants.FunctionType
+                                                                                ParsingConstants
+                                                                                        .FunctionType
                                                                                         .HAPI_IS_TOKEN)
                                                                         .withStatus(SUCCESS)
                                                                         .withIsToken(false)))),
                         childRecordsCheck(
                                 "FakeAddressTokenTypeCheckTx",
                                 CONTRACT_REVERT_EXECUTED,
-                                recordWith()
-                                        .status(INVALID_TOKEN_ID)));
+                                recordWith().status(INVALID_TOKEN_ID)));
     }
 }

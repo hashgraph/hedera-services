@@ -15,6 +15,8 @@
  */
 package com.hedera.services.bdd.suites.utils.contracts.precompile;
 
+import static com.hedera.services.contracts.ParsingConstants.*;
+
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.esaulpaugh.headlong.abi.TupleType;
 import com.hedera.services.bdd.suites.contract.Utils;
@@ -22,13 +24,10 @@ import com.hedera.services.bdd.suites.utils.contracts.ContractCallResult;
 import com.hedera.services.contracts.ParsingConstants;
 import com.hedera.services.contracts.ParsingConstants.FunctionType;
 import com.hederahashgraph.api.proto.java.*;
-
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.tuweni.bytes.Bytes;
-
-import static com.hedera.services.contracts.ParsingConstants.*;
 
 public class HTSPrecompileResult implements ContractCallResult {
     private HTSPrecompileResult() {}
@@ -122,8 +121,12 @@ public class HTSPrecompileResult implements ContractCallResult {
                     case ERC_TRANSFER, ERC_IS_APPROVED_FOR_ALL -> booleanTuple;
                     case HAPI_GET_APPROVED -> hapiGetApprovedType;
                     case HAPI_ALLOWANCE -> hapiAllowanceOfType;
-                    case HAPI_IS_APPROVED_FOR_ALL, HAPI_IS_TOKEN, HAPI_IS_FROZEN,
-                            GET_TOKEN_DEFAULT_KYC_STATUS, GET_TOKEN_DEFAULT_FREEZE_STATUS, HAPI_IS_KYC -> intBoolTuple;
+                    case HAPI_IS_APPROVED_FOR_ALL,
+                            HAPI_IS_TOKEN,
+                            HAPI_IS_FROZEN,
+                            GET_TOKEN_DEFAULT_KYC_STATUS,
+                            GET_TOKEN_DEFAULT_FREEZE_STATUS,
+                            HAPI_IS_KYC -> intBoolTuple;
                     case HAPI_GET_TOKEN_INFO -> getTokenInfoTypeReplacedAddress;
                     case HAPI_GET_FUNGIBLE_TOKEN_INFO -> getFungibleTokenInfoTypeReplacedAddress;
                     case HAPI_GET_NON_FUNGIBLE_TOKEN_INFO -> getNonFungibleTokenInfoTypeReplacedAddress;
