@@ -68,7 +68,7 @@ class RedirectViewExecutorTest {
     @Mock private MessageFrame frame;
     @Mock private EncodingFacade encodingFacade;
     @Mock private DecodingFacade decodingFacade;
-    @Mock private RedirectGasCalculator redirectGasCalculator;
+    @Mock private ViewGasCalculator viewGasCalculator;
     @Mock private HederaStackedWorldStateUpdater stackedWorldStateUpdater;
     @Mock private WorldLedgers worldLedgers;
     @Mock private BlockValues blockValues;
@@ -121,8 +121,8 @@ class RedirectViewExecutorTest {
     void computeAllowanceOf() {
         final var nestedInput = prerequisites(ABI_ID_ERC_ALLOWANCE, fungibleTokenAddress);
 
-        final var allowanceWrapper = new TokenAllowanceWrapper(account, spender);
-        given(decodingFacade.decodeTokenAllowance(eq(nestedInput), any()))
+        final var allowanceWrapper = new TokenAllowanceWrapper(fungible, account, spender);
+        given(decodingFacade.decodeTokenAllowance(eq(nestedInput), eq(fungible), any()))
                 .willReturn(allowanceWrapper);
         given(worldLedgers.staticAllowanceOf(account, spender, fungible)).willReturn(123L);
         given(encodingFacade.encodeAllowance(123L)).willReturn(answer);
@@ -134,8 +134,9 @@ class RedirectViewExecutorTest {
     void computeApprovedSpenderOf() {
         final var nestedInput = prerequisites(ABI_ID_ERC_GET_APPROVED, nonfungibleTokenAddress);
 
-        final var getApprovedWrapper = new GetApprovedWrapper(123L);
-        given(decodingFacade.decodeGetApproved(nestedInput)).willReturn(getApprovedWrapper);
+        final var getApprovedWrapper = new GetApprovedWrapper(nonfungibletoken, 123L);
+        given(decodingFacade.decodeGetApproved(nestedInput, nonfungibletoken))
+                .willReturn(getApprovedWrapper);
         given(worldLedgers.staticApprovedSpenderOf(NftId.fromGrpc(nonfungibletoken, 123L)))
                 .willReturn(Address.ALTBN128_ADD);
         given(worldLedgers.canonicalAddress(Address.ALTBN128_ADD)).willReturn(Address.ALTBN128_ADD);
@@ -149,8 +150,8 @@ class RedirectViewExecutorTest {
         final var nestedInput =
                 prerequisites(ABI_ID_ERC_IS_APPROVED_FOR_ALL, nonfungibleTokenAddress);
 
-        final var isApproveForAll = new IsApproveForAllWrapper(account, spender);
-        given(decodingFacade.decodeIsApprovedForAll(eq(nestedInput), any()))
+        final var isApproveForAll = new IsApproveForAllWrapper(nonfungibletoken, account, spender);
+        given(decodingFacade.decodeIsApprovedForAll(eq(nestedInput), eq(nonfungibletoken), any()))
                 .willReturn(isApproveForAll);
         given(worldLedgers.staticIsOperator(account, spender, nonfungibletoken)).willReturn(true);
         given(encodingFacade.encodeIsApprovedForAll(true)).willReturn(answer);
@@ -162,8 +163,8 @@ class RedirectViewExecutorTest {
     void revertsFrameAndReturnsNullOnRevertingException() {
         final var nestedInput = prerequisites(ABI_ID_ERC_ALLOWANCE, fungibleTokenAddress);
 
-        final var allowanceWrapper = new TokenAllowanceWrapper(account, spender);
-        given(decodingFacade.decodeTokenAllowance(eq(nestedInput), any()))
+        final var allowanceWrapper = new TokenAllowanceWrapper(fungible, account, spender);
+        given(decodingFacade.decodeTokenAllowance(eq(nestedInput), eq(fungible), any()))
                 .willReturn(allowanceWrapper);
         given(worldLedgers.staticAllowanceOf(account, spender, fungible))
                 .willThrow(new InvalidTransactionException(INVALID_ALLOWANCE_OWNER_ID, true));
@@ -259,13 +260,12 @@ class RedirectViewExecutorTest {
                         nestedInput);
         given(frame.getBlockValues()).willReturn(blockValues);
         given(blockValues.getTimestamp()).willReturn(timestamp);
-        given(redirectGasCalculator.compute(resultingTimestamp, MINIMUM_TINYBARS_COST))
-                .willReturn(gas);
+        given(viewGasCalculator.compute(resultingTimestamp, MINIMUM_TINYBARS_COST)).willReturn(gas);
         given(frame.getWorldUpdater()).willReturn(stackedWorldStateUpdater);
         given(stackedWorldStateUpdater.trackingLedgers()).willReturn(worldLedgers);
         this.subject =
                 new RedirectViewExecutor(
-                        input, frame, encodingFacade, decodingFacade, redirectGasCalculator);
+                        input, frame, encodingFacade, decodingFacade, viewGasCalculator);
         return nestedInput;
     }
 }

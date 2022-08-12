@@ -17,6 +17,7 @@ package com.hedera.services.state.logic;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.TransactionContext;
+import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.records.ConsensusTimeTracker;
 import com.hedera.services.state.expiry.EntityAutoRenewal;
@@ -46,6 +47,7 @@ public class StandardProcessLogic implements ProcessLogic {
     private final SigImpactHistorian sigImpactHistorian;
     private final TransactionContext txnCtx;
     private final ExecutionTimeTracker executionTimeTracker;
+    private final StateView workingView;
     private final ScheduleProcessing scheduleProcessing;
     private final RecordStreaming recordStreaming;
 
@@ -61,7 +63,8 @@ public class StandardProcessLogic implements ProcessLogic {
             final TransactionContext txnCtx,
             final ScheduleProcessing scheduleProcessing,
             final ExecutionTimeTracker executionTimeTracker,
-            final RecordStreaming recordStreaming) {
+            final RecordStreaming recordStreaming,
+            final StateView workingView) {
         this.expiries = expiries;
         this.invariantChecks = invariantChecks;
         this.expandHandleSpan = expandHandleSpan;
@@ -73,6 +76,7 @@ public class StandardProcessLogic implements ProcessLogic {
         this.scheduleProcessing = scheduleProcessing;
         this.sigImpactHistorian = sigImpactHistorian;
         this.recordStreaming = recordStreaming;
+        this.workingView = workingView;
     }
 
     @Override
@@ -80,7 +84,7 @@ public class StandardProcessLogic implements ProcessLogic {
             Transaction platformTxn, Instant consensusTime, long submittingMember) {
         try {
             final var accessor = expandHandleSpan.accessorFor(platformTxn);
-
+            accessor.setStateView(workingView);
             if (!invariantChecks.holdFor(accessor, consensusTime, submittingMember)) {
                 return;
             }
@@ -104,6 +108,7 @@ public class StandardProcessLogic implements ProcessLogic {
             }
 
             autoRenewal.execute(consensusTime);
+            platformTxn.clearSignatures();
         } catch (InvalidProtocolBufferException e) {
             log.warn("Consensus platform txn was not gRPC!", e);
         } catch (Exception internal) {

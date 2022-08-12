@@ -49,7 +49,6 @@ public class PrecompileUtils {
                             Collections.emptyList(),
                             Collections.emptyList(),
                             EvmFnResult.EMPTY,
-                            Collections.emptyMap(),
                             traceabilityOn ? messageFrame.getRemainingGas() : 0L,
                             traceabilityOn ? messageFrame.getValue().toLong() : 0L,
                             traceabilityOn

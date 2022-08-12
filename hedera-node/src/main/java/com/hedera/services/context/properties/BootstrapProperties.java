@@ -224,7 +224,7 @@ public final class BootstrapProperties implements PropertySource {
                     "contracts.maxKvPairs.individual",
                     "contracts.maxNumber",
                     "contracts.chainId",
-                    "contracts.enableTraceability",
+                    "contracts.sidecars",
                     "contracts.throttle.throttleByGas",
                     "contracts.maxRefundPercentOfGasLimit",
                     "contracts.scheduleThrottleMaxGasLimit",
@@ -235,6 +235,7 @@ public final class BootstrapProperties implements PropertySource {
                     "contracts.precompile.htsEnableTokenCreate",
                     "files.maxNumber",
                     "files.maxSizeKb",
+                    "hedera.recordStream.sidecarMaxSizeMb",
                     "fees.minCongestionPeriod",
                     "fees.percentCongestionMultipliers",
                     "fees.tokenTransferUsageMultiplier",
@@ -270,8 +271,10 @@ public final class BootstrapProperties implements PropertySource {
                     "sigs.expandFromImmutableState",
                     "staking.fees.nodeRewardPercentage",
                     "staking.fees.stakingRewardPercentage",
+                    "staking.nodeMaxToMinStakeRatios",
                     "staking.isEnabled",
                     "staking.maxDailyStakeRewardThPerH",
+                    "staking.requireMinStakeToReward",
                     "staking.rewardRate",
                     "staking.startThreshold",
                     "tokens.maxAggregateRels",
@@ -300,7 +303,8 @@ public final class BootstrapProperties implements PropertySource {
                     "hedera.allowances.maxAccountLimit",
                     "hedera.allowances.isEnabled",
                     "entities.limitTokenAssociations",
-                    "prng.isEnabled");
+                    "utilPrng.isEnabled",
+                    "hedera.recordStream.enableTraceabilityMigration");
 
     static final Set<String> NODE_PROPS =
             Set.of(
@@ -316,6 +320,7 @@ public final class BootstrapProperties implements PropertySource {
                     "hedera.profiles.active",
                     "hedera.recordStream.isEnabled",
                     "hedera.recordStream.logDir",
+                    "hedera.recordStream.sidecarDir",
                     "hedera.recordStream.logPeriod",
                     "hedera.recordStream.queueCapacity",
                     "iss.resetPeriod",
@@ -401,6 +406,8 @@ public final class BootstrapProperties implements PropertySource {
                     entry("hedera.recordStream.recordFileVersion", AS_INT),
                     entry("hedera.recordStream.signatureFileVersion", AS_INT),
                     entry("hedera.recordStream.queueCapacity", AS_INT),
+                    entry("hedera.recordStream.sidecarMaxSizeMb", AS_INT),
+                    entry("hedera.recordStream.enableTraceabilityMigration", AS_BOOLEAN),
                     entry("hedera.shard", AS_LONG),
                     entry("hedera.transaction.maxMemoUtf8Bytes", AS_INT),
                     entry("hedera.transaction.maxValidDuration", AS_LONG),
@@ -453,6 +460,7 @@ public final class BootstrapProperties implements PropertySource {
                     entry("staking.fees.stakingRewardPercentage", AS_INT),
                     entry("staking.periodMins", AS_LONG),
                     entry("staking.rewardHistory.numStoredPeriods", AS_INT),
+                    entry("staking.requireMinStakeToReward", AS_BOOLEAN),
                     entry("staking.rewardRate", AS_LONG),
                     entry("staking.startThreshold", AS_LONG),
                     entry("tokens.maxAggregateRels", AS_LONG),
@@ -482,7 +490,7 @@ public final class BootstrapProperties implements PropertySource {
                     entry("contracts.maxKvPairs.aggregate", AS_LONG),
                     entry("contracts.maxKvPairs.individual", AS_INT),
                     entry("contracts.chainId", AS_INT),
-                    entry("contracts.enableTraceability", AS_BOOLEAN),
+                    entry("contracts.sidecars", AS_SIDECARS),
                     entry("contracts.maxRefundPercentOfGasLimit", AS_INT),
                     entry("contracts.scheduleThrottleMaxGasLimit", AS_LONG),
                     entry("contracts.redirectTokenCalls", AS_BOOLEAN),
@@ -498,6 +506,7 @@ public final class BootstrapProperties implements PropertySource {
                     entry("scheduling.maxTxnPerSecond", AS_LONG),
                     entry("scheduling.maxExpirationFutureSeconds", AS_LONG),
                     entry("scheduling.whitelist", AS_FUNCTIONS),
+                    entry("staking.nodeMaxToMinStakeRatios", AS_NODE_STAKE_RATIOS),
                     entry("staking.isEnabled", AS_BOOLEAN),
                     entry("staking.maxDailyStakeRewardThPerH", AS_LONG),
                     entry("stats.entityUtils.gaugeUpdateIntervalMs", AS_LONG),
@@ -516,5 +525,5 @@ public final class BootstrapProperties implements PropertySource {
                     entry("hedera.allowances.maxAccountLimit", AS_INT),
                     entry("hedera.allowances.isEnabled", AS_BOOLEAN),
                     entry("entities.limitTokenAssociations", AS_BOOLEAN),
-                    entry("prng.isEnabled", AS_BOOLEAN));
+                    entry("utilPrng.isEnabled", AS_BOOLEAN));
 }

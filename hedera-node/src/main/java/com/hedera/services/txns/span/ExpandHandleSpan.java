@@ -15,8 +15,6 @@
  */
 package com.hedera.services.txns.span;
 
-import com.google.common.cache.Cache;
-import com.google.common.cache.CacheBuilder;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.ServicesState;
 import com.hedera.services.utils.accessors.AccessorFactory;
@@ -26,7 +24,6 @@ import com.swirlds.common.system.Round;
 import com.swirlds.common.system.SwirldDualState;
 import com.swirlds.common.system.events.Event;
 import com.swirlds.common.system.transaction.Transaction;
-import java.util.concurrent.TimeUnit;
 
 /**
  * Encapsulates a "span" that tracks our contact with a given {@link Transaction} between the {@link
@@ -52,31 +49,26 @@ import java.util.concurrent.TimeUnit;
  */
 public class ExpandHandleSpan {
     private final SpanMapManager spanMapManager;
-    private final Cache<Transaction, SwirldsTxnAccessor> accessorCache;
     private final AccessorFactory factory;
 
-    public ExpandHandleSpan(
-            final long duration,
-            final TimeUnit timeUnit,
-            final SpanMapManager spanMapManager,
-            final AccessorFactory factory) {
+    public ExpandHandleSpan(final SpanMapManager spanMapManager, final AccessorFactory factory) {
         this.spanMapManager = spanMapManager;
-        this.accessorCache = CacheBuilder.newBuilder().expireAfterWrite(duration, timeUnit).build();
         this.factory = factory;
     }
 
     public SwirldsTxnAccessor track(Transaction transaction) throws InvalidProtocolBufferException {
         final var accessor = spanAccessorFor(transaction);
-        accessorCache.put(transaction, accessor);
+        transaction.setMetadata(accessor);
         return accessor;
     }
 
     public SwirldsTxnAccessor accessorFor(
             final com.swirlds.common.system.transaction.Transaction transaction)
             throws InvalidProtocolBufferException {
-        final var cachedAccessor = accessorCache.getIfPresent(transaction);
+        final SwirldsTxnAccessor cachedAccessor = transaction.getMetadata();
         if (cachedAccessor != null) {
             spanMapManager.rationalizeSpan(cachedAccessor);
+            transaction.setMetadata(null);
             return cachedAccessor;
         } else {
             return spanAccessorFor(transaction);

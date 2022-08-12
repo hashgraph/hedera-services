@@ -71,11 +71,33 @@ public class SetApprovalForAllPrecompile extends AbstractWritePrecompile {
         this.currentView = currentView;
     }
 
+    public SetApprovalForAllPrecompile(
+            final WorldLedgers ledgers,
+            final DecodingFacade decoder,
+            final StateView currentView,
+            final SideEffectsTracker sideEffects,
+            final SyntheticTxnFactory syntheticTxnFactory,
+            final InfrastructureFactory infrastructureFactory,
+            final PrecompilePricingUtils pricingUtils,
+            final Address senderAddress) {
+        this(
+                null,
+                ledgers,
+                decoder,
+                currentView,
+                sideEffects,
+                syntheticTxnFactory,
+                infrastructureFactory,
+                pricingUtils,
+                senderAddress);
+    }
+
     @Override
     public TransactionBody.Builder body(
             final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
-        final var nestedInput = input.slice(24);
-        setApprovalForAllWrapper = decoder.decodeSetApprovalForAll(nestedInput, aliasResolver);
+        final var nestedInput = tokenId == null ? input : input.slice(24);
+        setApprovalForAllWrapper =
+                decoder.decodeSetApprovalForAll(nestedInput, tokenId, aliasResolver);
         transactionBody =
                 syntheticTxnFactory.createApproveAllowanceForAllNFT(
                         setApprovalForAllWrapper, tokenId);
@@ -84,7 +106,8 @@ public class SetApprovalForAllPrecompile extends AbstractWritePrecompile {
 
     @Override
     public void run(MessageFrame frame) {
-        Objects.requireNonNull(setApprovalForAllWrapper);
+        Objects.requireNonNull(
+                setApprovalForAllWrapper, "`body` method should be called before `run`");
         /* --- Build the necessary infrastructure to execute the transaction --- */
         final var accountStore = infrastructureFactory.newAccountStore(ledgers.accounts());
         final var tokenStore =

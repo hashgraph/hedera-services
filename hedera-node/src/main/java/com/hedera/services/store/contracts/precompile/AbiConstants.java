@@ -31,7 +31,8 @@ public final class AbiConstants {
     // transferToken(address token, address sender, address recipient, int64 amount)
     public static final int ABI_ID_TRANSFER_TOKEN = 0xeca36917;
     // transferNFTs(address token, address[] memory sender, address[] memory receiver, int64[]
-    // memory serialNumber)
+    // memory
+    // serialNumber)
     public static final int ABI_ID_TRANSFER_NFTS = 0x2c4ba191;
     // transferNFT(address token,  address sender, address recipient, int64 serialNum)
     public static final int ABI_ID_TRANSFER_NFT = 0x5cfc9011;
@@ -39,6 +40,8 @@ public final class AbiConstants {
     public static final int ABI_ID_MINT_TOKEN = 0x278e0b88;
     // burnToken(address token, uint64 amount, int64[] memory serialNumbers)
     public static final int ABI_ID_BURN_TOKEN = 0xacb9cff9;
+    // deleteToken(address token)
+    public static final int ABI_ID_DELETE_TOKEN = 0xf069f712;
     // associateTokens(address account, address[] memory tokens)
     public static final int ABI_ID_ASSOCIATE_TOKENS = 0x2e63879b;
     // associateToken(address account, address token)
@@ -47,6 +50,22 @@ public final class AbiConstants {
     public static final int ABI_ID_DISSOCIATE_TOKENS = 0x78b63918;
     // dissociateToken(address account, address token)
     public static final int ABI_ID_DISSOCIATE_TOKEN = 0x099794e8;
+    // pauseToken(address token)
+    public static final int ABI_ID_PAUSE_TOKEN = 0x7c41ad2c;
+    // unpauseToken(address token)
+    public static final int ABI_ID_UNPAUSE_TOKEN = 0x3b3bff0f;
+    // allowance(address token, address owner, address spender)
+    public static final int ABI_ID_ALLOWANCE = 0x927da105;
+    // approve(address token, address spender, uint256 amount)
+    public static final int ABI_ID_APPROVE = 0xe1f21c67;
+    // approveNFT(address token, address to, uint256 tokenId)
+    public static final int ABI_ID_APPROVE_NFT = 0x7336aaf0;
+    // setApprovalForAll(address token, address operator, bool approved)
+    public static final int ABI_ID_SET_APPROVAL_FOR_ALL = 0x367605ca;
+    // getApproved(address token, uint256 tokenId)
+    public static final int ABI_ID_GET_APPROVED = 0x098f2366;
+    // isApprovedForAll(address token, address owner, address operator)
+    public static final int ABI_ID_IS_APPROVED_FOR_ALL = 0xf49f40db;
 
     // **** HIP-218 + HIP-376 function selectors and event signatures ****
     // redirectForToken(address token, bytes memory data)
@@ -81,6 +100,16 @@ public final class AbiConstants {
     public static final int ABI_ID_ERC_OWNER_OF_NFT = 0x6352211e;
     // tokenURI(uint256 tokenId)
     public static final int ABI_ID_ERC_TOKEN_URI_NFT = 0xc87b56dd;
+    // wipeTokenAccount(address, address, uint32)
+    public static final int ABI_WIPE_TOKEN_ACCOUNT_FUNGIBLE = 0x9790686d;
+    // wipeTokenAccountNFT(address, address, int64[])
+    public static final int ABI_WIPE_TOKEN_ACCOUNT_NFT = 0xf7f38e26;
+    // isFrozen(address token, address account)
+    public static final int ABI_ID_IS_FROZEN = 0x46de0fb1;
+    // freezeToken(address token, address account)
+    public static final int ABI_ID_FREEZE = 0x5b8f8584;
+    // unfreezeToken(address token, address account)
+    public static final int ABI_ID_UNFREEZE = 0x52f91387;
     // Transfer(address indexed from, address indexed to, uint256 indexed tokenId)
     // Transfer(address indexed from, address indexed to, uint256 value)
     public static final Bytes TRANSFER_EVENT =
@@ -110,4 +139,24 @@ public final class AbiConstants {
     //  FixedFee[] memory fixedFees,
     //  RoyaltyFee[] memory royaltyFees)
     public static final int ABI_ID_CREATE_NON_FUNGIBLE_TOKEN_WITH_FEES = 0x5bc7c0e6;
+
+    // **** HIP-514 function selectors ****
+    // getFungibleTokenInfo(address token)
+    public static final int ABI_ID_GET_FUNGIBLE_TOKEN_INFO = 0x3f28a19b;
+    // getTokenInfo(address token)
+    public static final int ABI_ID_GET_TOKEN_INFO = 0x1f69565f;
+    // getNonFungibleTokenInfo(address token, int64 serialNumber)
+    public static final int ABI_ID_GET_NON_FUNGIBLE_TOKEN_INFO = 0x287e1da8;
+    // getTokenDefaultFreezeStatus(address token)
+    public static final int ABI_ID_GET_TOKEN_DEFAULT_FREEZE_STATUS = 0xa7daa18d;
+    // getTokenDefaultKycStatus(address token)
+    public static final int ABI_ID_GET_TOKEN_DEFAULT_KYC_STATUS = 0x335e04c1;
+    // isKyc(address token, address account)
+    public static final int ABI_ID_IS_KYC = 0xf2c31ff4;
+    // 	grantTokenKyc(address  token, address account)
+    public static final int ABI_ID_GRANT_TOKEN_KYC = 0x8f8d7f99;
+    // revokeTokenKyc(address token, address account)
+    public static final int ABI_ID_REVOKE_TOKEN_KYC = 0xaf99c633;
+    // getTokenCustomFees(address token)
+    public static final int ABI_ID_GET_TOKEN_CUSTOM_FEES = 0xae7611a0;
 }

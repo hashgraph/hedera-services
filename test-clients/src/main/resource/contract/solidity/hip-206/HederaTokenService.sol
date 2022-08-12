@@ -19,6 +19,14 @@ abstract contract HederaTokenService is HederaResponseCodes {
     uint constant FEE_SCHEDULE_KEY_TYPE = 32;
     uint constant PAUSE_KEY_TYPE = 64;
 
+    modifier nonEmptyExpiry(IHederaTokenService.HederaToken memory token)
+    {
+        if (token.expiry.second == 0 && token.expiry.autoRenewPeriod == 0) {
+            token.expiry.autoRenewPeriod = defaultAutoRenewPeriod;
+        }
+        _;
+    }
+
     /// Initiates a Token Transfer
     /// @param tokenTransfers the list of transfers to do
     /// @return responseCode The response code for the status of the request. SUCCESS is 22.
@@ -207,6 +215,230 @@ abstract contract HederaTokenService is HederaResponseCodes {
         (responseCode, tokenAddress) = success ? abi.decode(result, (int32, address)) : (HederaResponseCodes.UNKNOWN, address(0));
     }
 
+    /// Retrieves fungible specific token info for a fungible token
+    /// @param token The ID of the token as a solidity address
+    function getFungibleTokenInfo(address token) internal returns (int responseCode, IHederaTokenService.FungibleTokenInfo memory tokenInfo) {
+        (bool success, bytes memory result) = precompileAddress.call(
+            abi.encodeWithSelector(IHederaTokenService.getFungibleTokenInfo.selector, token));
+        IHederaTokenService.FungibleTokenInfo memory defaultTokenInfo;
+        (responseCode, tokenInfo) = success ? abi.decode(result, (int32, IHederaTokenService.FungibleTokenInfo)) : (HederaResponseCodes.UNKNOWN, defaultTokenInfo);
+    }
+
+    /// Retrieves general token info for a given token
+    /// @param token The ID of the token as a solidity address
+    function getTokenInfo(address token) internal returns (int responseCode, IHederaTokenService.TokenInfo memory tokenInfo) {
+        (bool success, bytes memory result) = precompileAddress.call(
+            abi.encodeWithSelector(IHederaTokenService.getTokenInfo.selector, token));
+        IHederaTokenService.TokenInfo memory defaultTokenInfo;
+        (responseCode, tokenInfo) = success ? abi.decode(result, (int32, IHederaTokenService.TokenInfo)) : (HederaResponseCodes.UNKNOWN, defaultTokenInfo);
+    }
+
+    /// Retrieves non-fungible specific token info for a given NFT
+    /// @param token The ID of the token as a solidity address
+    function getNonFungibleTokenInfo(address token, int64 serialNumber) internal returns (int responseCode, IHederaTokenService.NonFungibleTokenInfo memory tokenInfo) {
+        (bool success, bytes memory result) = precompileAddress.call(
+            abi.encodeWithSelector(IHederaTokenService.getNonFungibleTokenInfo.selector, token, serialNumber));
+        IHederaTokenService.NonFungibleTokenInfo memory defaultTokenInfo;
+        (responseCode, tokenInfo) = success ? abi.decode(result, (int32, IHederaTokenService.NonFungibleTokenInfo)) : (HederaResponseCodes.UNKNOWN, defaultTokenInfo);
+    }
+
+    /// Query token custom fees
+    /// @param token The token address to check
+    /// @return responseCode The response code for the status of the request. SUCCESS is 22.
+    /// @return fixedFees Set of fixed fees for `token`
+    /// @return fractionalFees Set of fractional fees for `token`
+    /// @return royaltyFees Set of royalty fees for `token`
+    function getTokenCustomFees(address token) internal returns (int64 responseCode,
+        IHederaTokenService.FixedFee[] memory fixedFees,
+        IHederaTokenService.FractionalFee[] memory fractionalFees,
+        IHederaTokenService.RoyaltyFee[] memory royaltyFees) {
+        (bool success, bytes memory result) = precompileAddress.call(
+            abi.encodeWithSelector(IHederaTokenService.getTokenCustomFees.selector, token));
+        IHederaTokenService.FixedFee[] memory defaultFixedFees;
+        IHederaTokenService.FractionalFee[] memory defaultFractionalFees;
+        IHederaTokenService.RoyaltyFee[] memory defaultRoyaltyFees;
+        (responseCode, fixedFees, fractionalFees, royaltyFees) =
+        success ? abi.decode
+        (result, (int32, IHederaTokenService.FixedFee[], IHederaTokenService.FractionalFee[], IHederaTokenService.RoyaltyFee[]))
+        : (HederaResponseCodes.UNKNOWN, defaultFixedFees, defaultFractionalFees, defaultRoyaltyFees);
+    }
+
+    /// Allows spender to withdraw from your account multiple times, up to the value amount. If this function is called
+    /// again it overwrites the current allowance with value.
+    /// Only Applicable to Fungible Tokens
+    /// @param token The hedera token address to approve
+    /// @param spender the account authorized to spend
+    /// @param amount the amount of tokens authorized to spend.
+    /// @return responseCode The response code for the status of the request. SUCCESS is 22.
+    function approve(address token, address spender, uint256 amount) internal returns (int responseCode)
+    {
+        (bool success, bytes memory result) = precompileAddress.call(
+            abi.encodeWithSelector(IHederaTokenService.approve.selector,
+            token, spender, amount));
+        responseCode = success ? abi.decode(result, (int32)) : HederaResponseCodes.UNKNOWN;
+    }
+
+    /// Returns the amount which spender is still allowed to withdraw from owner.
+    /// Only Applicable to Fungible Tokens
+    /// @param token The Hedera token address to check the allowance of
+    /// @param owner the owner of the tokens to be spent
+    /// @param spender the spender of the tokens
+    /// @return responseCode The response code for the status of the request. SUCCESS is 22.
+    function allowance(address token, address owner, address spender) internal returns (int responseCode, uint256 amount)
+    {
+        (bool success, bytes memory result) = precompileAddress.call(
+            abi.encodeWithSelector(IHederaTokenService.allowance.selector,
+            token, owner, spender));
+        (responseCode, amount) = success ? abi.decode(result, (int32, uint256)) : (HederaResponseCodes.UNKNOWN, 0);
+    }
+
+    /// Allow or reaffirm the approved address to transfer an NFT the approved address does not own.
+    /// Only Applicable to NFT Tokens
+    /// @param token The Hedera NFT token address to approve
+    /// @param approved The new approved NFT controller.  To revoke approvals pass in the zero address.
+    /// @param serialNumber The NFT serial number  to approve
+    /// @return responseCode The response code for the status of the request. SUCCESS is 22.
+    function approveNFT(address token, address approved, uint256 serialNumber) internal returns (int responseCode)
+    {
+        (bool success, bytes memory result) = precompileAddress.call(
+            abi.encodeWithSelector(IHederaTokenService.approveNFT.selector,
+            token, approved, serialNumber));
+        responseCode = success ? abi.decode(result, (int32)) : HederaResponseCodes.UNKNOWN;
+    }
+
+    /// Get the approved address for a single NFT
+    /// Only Applicable to NFT Tokens
+    /// @param token The Hedera NFT token address to check approval
+    /// @param serialNumber The NFT to find the approved address for
+    /// @return responseCode The response code for the status of the request. SUCCESS is 22.
+    /// @return approved The approved address for this NFT, or the zero address if there is none
+    function getApproved(address token, uint256 serialNumber) internal returns (int responseCode, address approved)
+    {
+        (bool success, bytes memory result) = precompileAddress.call(
+            abi.encodeWithSelector(IHederaTokenService.getApproved.selector,
+            token, serialNumber));
+        (responseCode, approved) =
+        success
+        ? abi.decode(result, (int32, address))
+        : (HederaResponseCodes.UNKNOWN, address(0));
+    }
+
+    /// Query if token account is frozen
+    /// @param token The token address to check
+    /// @param account The account address associated with the token
+    /// @return responseCode The response code for the status of the request. SUCCESS is 22.
+    /// @return frozen True if `account` is frozen for `token`
+    function isFrozen(address token, address account)internal returns (int64 responseCode, bool frozen){
+        (bool success, bytes memory result) = precompileAddress.call(
+            abi.encodeWithSelector(IHederaTokenService.isFrozen.selector, token, account));
+        (responseCode, frozen) = success ? abi.decode(result, (int32,bool)) : (HederaResponseCodes.UNKNOWN,false);
+    }
+
+    /// Operation to freeze token account
+    /// @param token The token address
+    /// @param account The account address to be frozen
+    /// @return responseCode The response code for the status of the request. SUCCESS is 22.
+    function freezeToken(address token, address account) internal returns (int64 responseCode){
+        (bool success, bytes memory result) = precompileAddress.call(
+            abi.encodeWithSelector(IHederaTokenService.freezeToken.selector, token, account));
+        (responseCode) = success ? abi.decode(result, (int32)) : HederaResponseCodes.UNKNOWN;
+    }
+
+    /// Operation to unfreeze token account
+    /// @param token The token address
+    /// @param account The account address to be unfrozen
+    /// @return responseCode The response code for the status of the request. SUCCESS is 22.
+    function unfreezeToken(address token, address account)internal returns (int64 responseCode){
+        (bool success, bytes memory result) = precompileAddress.call(
+            abi.encodeWithSelector(IHederaTokenService.unfreezeToken.selector, token, account));
+        (responseCode) = success ? abi.decode(result, (int32)) : HederaResponseCodes.UNKNOWN;
+    }
+
+
+    /// Enable or disable approval for a third party ("operator") to manage
+    ///  all of `msg.sender`'s assets
+    /// @param token The Hedera NFT token address to approve
+    /// @param operator Address to add to the set of authorized operators
+    /// @param approved True if the operator is approved, false to revoke approval
+    /// @return responseCode The response code for the status of the request. SUCCESS is 22.
+    function setApprovalForAll(address token, address operator, bool approved) internal returns (int responseCode)
+    {
+        (bool success, bytes memory result) = precompileAddress.call(
+            abi.encodeWithSelector(IHederaTokenService.setApprovalForAll.selector,
+            token, operator, approved));
+        responseCode = success ? abi.decode(result, (int32)) : HederaResponseCodes.UNKNOWN;
+    }
+
+
+    /// Query if an address is an authorized operator for another address
+    /// Only Applicable to NFT Tokens
+    /// @param token The Hedera NFT token address to approve
+    /// @param owner The address that owns the NFTs
+    /// @param operator The address that acts on behalf of the owner
+    /// @return responseCode The response code for the status of the request. SUCCESS is 22.
+    /// @return approved True if `operator` is an approved operator for `owner`, false otherwise
+    function isApprovedForAll(address token, address owner, address operator) internal returns (int responseCode, bool approved)
+    {
+        (bool success, bytes memory result) = precompileAddress.call(
+            abi.encodeWithSelector(IHederaTokenService.isApprovedForAll.selector,
+            token, owner, operator));
+        (responseCode, approved) =
+        success
+        ? abi.decode(result, (int32, bool))
+        : (HederaResponseCodes.UNKNOWN, false);
+    }
+
+    /// Query token default freeze status
+    /// @param token The token address to check
+    /// @return responseCode The response code for the status of the request. SUCCESS is 22.
+    /// @return defaultFreezeStatus True if `token` default freeze status is frozen.
+    function getTokenDefaultFreezeStatus(address token) internal returns (int responseCode, bool defaultFreezeStatus) {
+        (bool success, bytes memory result) = precompileAddress.call(
+            abi.encodeWithSelector(IHederaTokenService.getTokenDefaultFreezeStatus.selector, token));
+        (responseCode, defaultFreezeStatus) = success ? abi.decode(result, (int32, bool)) : (HederaResponseCodes.UNKNOWN, false);
+    }
+
+    /// Query token default kyc status
+    /// @param token The token address to check
+    /// @return responseCode The response code for the status of the request. SUCCESS is 22.
+    /// @return defaultKycStatus True if `token` default kyc status is KycNotApplicable and false if Revoked.
+    function getTokenDefaultKycStatus(address token) internal returns (int responseCode, bool defaultKycStatus) {
+        (bool success, bytes memory result) = precompileAddress.call(
+            abi.encodeWithSelector(IHederaTokenService.getTokenDefaultKycStatus.selector, token));
+        (responseCode, defaultKycStatus) = success ? abi.decode(result, (int32, bool)) : (HederaResponseCodes.UNKNOWN, false);
+    }
+
+    /// Query if token account has kyc granted
+    /// @param token The token address to check
+    /// @param account The account address associated with the token
+    /// @return responseCode The response code for the status of the request. SUCCESS is 22.
+    /// @return kycGranted True if `account` has kyc granted for `token`
+    function isKyc(address token, address account) internal returns (int64 responseCode, bool kycGranted) {
+        (bool success, bytes memory result) = precompileAddress.call(
+            abi.encodeWithSelector(IHederaTokenService.isKyc.selector, token, account));
+        (responseCode, kycGranted) = success ? abi.decode(result, (int32,bool)) : (HederaResponseCodes.UNKNOWN,false);
+    }
+
+    /// Operation to grant kyc to token account
+    /// @param token The token address
+    /// @param account The account address to grant kyc
+    /// @return responseCode The response code for the status of the request. SUCCESS is 22.
+    function grantTokenKyc(address token, address account) internal returns (int64 responseCode) {
+        (bool success, bytes memory result) = precompileAddress.call(
+            abi.encodeWithSelector(IHederaTokenService.grantTokenKyc.selector, token, account));
+        (responseCode) = success ? abi.decode(result, (int32)) : HederaResponseCodes.UNKNOWN;
+    }
+
+    /// Operation to revoke kyc to token account
+    /// @param token The token address
+    /// @param account The account address to revoke kyc
+    /// @return responseCode The response code for the status of the request. SUCCESS is 22.
+    function revokeTokenKyc(address token, address account) internal returns (int64 responseCode) {
+        (bool success, bytes memory result) = precompileAddress.call(
+            abi.encodeWithSelector(IHederaTokenService.revokeTokenKyc.selector, token, account));
+        (responseCode) = success ? abi.decode(result, (int32)) : HederaResponseCodes.UNKNOWN;
+    }
+
     /**********************
      * ABI v1 calls       *
      **********************/
@@ -270,12 +502,48 @@ abstract contract HederaTokenService is HederaResponseCodes {
         responseCode = success ? abi.decode(result, (int32)) : HederaResponseCodes.UNKNOWN;
     }
 
-    modifier nonEmptyExpiry(IHederaTokenService.HederaToken memory token)
+    /// Operation to pause token
+    /// @param token The token address to be paused
+    /// @return responseCode The response code for the status of the request. SUCCESS is 22.
+    function pauseToken(address token) external returns (int responseCode)
     {
-        if (token.expiry.second == 0 && token.expiry.autoRenewPeriod == 0) {
-            token.expiry.autoRenewPeriod = defaultAutoRenewPeriod;
-        }
-        _;
+        (bool success, bytes memory result) = precompileAddress.call(
+            abi.encodeWithSelector(IHederaTokenService.pauseToken.selector, token));
+        (responseCode) = success ? abi.decode(result, (int32)) : HederaResponseCodes.UNKNOWN;
     }
 
+    /// Operation to unpause token
+    /// @param token The token address to be unpaused
+    /// @return responseCode The response code for the status of the request. SUCCESS is 22.
+    function unpauseToken(address token) external returns (int responseCode)
+    {
+        (bool success, bytes memory result) = precompileAddress.call(
+            abi.encodeWithSelector(IHederaTokenService.unPauseToken.selector, token));
+        (responseCode) = success ? abi.decode(result, (int32)) : HederaResponseCodes.UNKNOWN;
+    }
+
+    /// Operation to wipe fungible tokens from account
+    /// @param token The token address
+    /// @param account The account address to revoke kyc
+    /// @param amount The number of tokens to wipe
+    /// @return responseCode The response code for the status of the request. SUCCESS is 22.
+    function wipeTokenAccount(address token, address account, uint32 amount) internal returns (int responseCode)
+    {
+        (bool success, bytes memory result) = precompileAddress.call(
+            abi.encodeWithSelector(IHederaTokenService.wipeTokenAccount.selector, token, account, amount));
+        (responseCode) = success ? abi.decode(result, (int32)) : HederaResponseCodes.UNKNOWN;
+    }
+
+    /// Operation to wipe non fungible tokens from account
+    /// @param token The token address
+    /// @param account The account address to revoke kyc
+    /// @param  serialNumbers The serial numbers of token to wipe
+    /// @return responseCode The response code for the status of the request. SUCCESS is 22.
+    function wipeTokenAccountNFT(address token, address account, int64[] memory serialNumbers) internal
+    returns (int responseCode)
+    {
+        (bool success, bytes memory result) = precompileAddress.call(
+            abi.encodeWithSelector(IHederaTokenService.wipeTokenAccountNFT.selector, token, account, serialNumbers));
+        (responseCode) = success ? abi.decode(result, (int32)) : HederaResponseCodes.UNKNOWN;
+    }
 }

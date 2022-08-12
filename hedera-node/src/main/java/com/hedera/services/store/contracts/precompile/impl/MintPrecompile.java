@@ -18,9 +18,7 @@ package com.hedera.services.store.contracts.precompile.impl;
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils.GasCostType.MINT_FUNGIBLE;
 import static com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils.GasCostType.MINT_NFT;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
 import com.google.protobuf.ByteString;
@@ -51,6 +49,7 @@ import org.hyperledger.besu.evm.frame.MessageFrame;
 
 public class MintPrecompile extends AbstractWritePrecompile {
     private static final List<ByteString> NO_METADATA = Collections.emptyList();
+    private static final String MINT = String.format(FAILURE_MESSAGE, "mint");
     private final EncodingFacade encoder;
     private final ContractAliases aliases;
     private final EvmSigsVerifier sigsVerifier;
@@ -93,6 +92,8 @@ public class MintPrecompile extends AbstractWritePrecompile {
 
     @Override
     public void run(final MessageFrame frame) {
+        Objects.requireNonNull(mintOp, "`body` method should be called before `run`");
+
         // --- Check required signatures ---
         final var tokenId = Id.fromGrpcToken(Objects.requireNonNull(mintOp).tokenType());
         final var hasRequiredSigs =
@@ -102,7 +103,7 @@ public class MintPrecompile extends AbstractWritePrecompile {
                         sigsVerifier::hasActiveSupplyKey,
                         ledgers,
                         aliases);
-        validateTrue(hasRequiredSigs, INVALID_SIGNATURE);
+        validateTrue(hasRequiredSigs, INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE, MINT);
 
         /* --- Build the necessary infrastructure to execute the transaction --- */
         final var accountStore = infrastructureFactory.newAccountStore(ledgers.accounts());

@@ -19,6 +19,7 @@ import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.mockito.BDDMockito.given;
 
 import com.hedera.services.context.SideEffectsTracker;
+import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.TransactionalLedger;
@@ -37,10 +38,12 @@ import com.hedera.services.state.validation.UsageLimits;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
+import com.hedera.services.store.contracts.WorldLedgers;
 import com.hedera.services.store.contracts.precompile.codec.DecodingFacade;
 import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
-import com.hedera.services.store.contracts.precompile.proxy.RedirectGasCalculator;
 import com.hedera.services.store.contracts.precompile.proxy.RedirectViewExecutor;
+import com.hedera.services.store.contracts.precompile.proxy.ViewExecutor;
+import com.hedera.services.store.contracts.precompile.proxy.ViewGasCalculator;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.tokens.HederaTokenStore;
 import com.hedera.services.txns.crypto.ApproveAllowanceLogic;
@@ -50,8 +53,16 @@ import com.hedera.services.txns.crypto.validators.DeleteAllowanceChecks;
 import com.hedera.services.txns.token.AssociateLogic;
 import com.hedera.services.txns.token.BurnLogic;
 import com.hedera.services.txns.token.CreateLogic;
+import com.hedera.services.txns.token.DeleteLogic;
 import com.hedera.services.txns.token.DissociateLogic;
+import com.hedera.services.txns.token.FreezeLogic;
+import com.hedera.services.txns.token.GrantKycLogic;
 import com.hedera.services.txns.token.MintLogic;
+import com.hedera.services.txns.token.PauseLogic;
+import com.hedera.services.txns.token.RevokeKycLogic;
+import com.hedera.services.txns.token.UnfreezeLogic;
+import com.hedera.services.txns.token.UnpauseLogic;
+import com.hedera.services.txns.token.WipeLogic;
 import com.hedera.services.txns.token.process.DissociationFactory;
 import com.hedera.services.txns.token.validators.CreateChecks;
 import com.hedera.services.txns.validation.OptionValidator;
@@ -88,8 +99,10 @@ class InfrastructureFactoryTest {
     @Mock private BackingStore<NftId, MerkleUniqueToken> uniqueTokens;
     @Mock private BackingStore<Pair<AccountID, TokenID>, MerkleTokenRelStatus> tokenRels;
     @Mock private MessageFrame frame;
-    @Mock private RedirectGasCalculator gasCalculator;
+    @Mock private ViewGasCalculator gasCalculator;
     @Mock private HederaStackedWorldStateUpdater worldStateUpdater;
+    @Mock private StateView stateView;
+    @Mock private WorldLedgers ledgers;
 
     private InfrastructureFactory subject;
 
@@ -151,6 +164,15 @@ class InfrastructureFactoryTest {
                                 tokens,
                                 uniqueTokens,
                                 tokenRels)));
+    }
+
+    @Test
+    void canCreateNewDeleteLogic() {
+        final var accountStore = subject.newAccountStore(accounts);
+        final var tokenStore =
+                subject.newTokenStore(
+                        accountStore, subject.newSideEffects(), tokens, uniqueTokens, tokenRels);
+        assertInstanceOf(DeleteLogic.class, subject.newDeleteLogic(accountStore, tokenStore));
     }
 
     @Test
@@ -237,6 +259,13 @@ class InfrastructureFactoryTest {
     }
 
     @Test
+    void canCreateNewViewExecutor() {
+        assertInstanceOf(
+                ViewExecutor.class,
+                subject.newViewExecutor(Bytes.EMPTY, frame, gasCalculator, stateView, ledgers));
+    }
+
+    @Test
     void canCreateNewApproveAllowanceLogic() {
         final var accountStore = subject.newAccountStore(accounts);
         final var tokenStore =
@@ -271,5 +300,68 @@ class InfrastructureFactoryTest {
     @Test
     void canCreateNewDeleteAllowanceChecks() {
         assertInstanceOf(DeleteAllowanceChecks.class, subject.newDeleteAllowanceChecks());
+    }
+
+    @Test
+    void canCreateNewGrantKycLogic() {
+        final var accountStore = subject.newAccountStore(accounts);
+        final var tokenStore =
+                subject.newTokenStore(
+                        accountStore, subject.newSideEffects(), tokens, uniqueTokens, tokenRels);
+        assertInstanceOf(GrantKycLogic.class, subject.newGrantKycLogic(accountStore, tokenStore));
+    }
+
+    @Test
+    void canCreateNewRevokeKycLogic() {
+        final var accountStore = subject.newAccountStore(accounts);
+        final var tokenStore =
+                subject.newTokenStore(
+                        accountStore, subject.newSideEffects(), tokens, uniqueTokens, tokenRels);
+        assertInstanceOf(RevokeKycLogic.class, subject.newRevokeKycLogic(accountStore, tokenStore));
+    }
+
+    @Test
+    void canCreateNewPauseLogic() {
+        final var accountStore = subject.newAccountStore(accounts);
+        final var tokenStore =
+                subject.newTokenStore(
+                        accountStore, subject.newSideEffects(), tokens, uniqueTokens, tokenRels);
+        assertInstanceOf(PauseLogic.class, subject.newPauseLogic(tokenStore));
+    }
+
+    @Test
+    void canCreateNewUnpauseLogic() {
+        final var accountStore = subject.newAccountStore(accounts);
+        final var tokenStore =
+                subject.newTokenStore(
+                        accountStore, subject.newSideEffects(), tokens, uniqueTokens, tokenRels);
+        assertInstanceOf(UnpauseLogic.class, subject.newUnpauseLogic(tokenStore));
+    }
+
+    @Test
+    void canCreateNewWipeLogic() {
+        final var accountStore = subject.newAccountStore(accounts);
+        final var tokenStore =
+                subject.newTokenStore(
+                        accountStore, subject.newSideEffects(), tokens, uniqueTokens, tokenRels);
+        assertInstanceOf(WipeLogic.class, subject.newWipeLogic(accountStore, tokenStore));
+    }
+
+    @Test
+    void canCreateNewFreezeLogic() {
+        final var accountStore = subject.newAccountStore(accounts);
+        final var tokenStore =
+                subject.newTokenStore(
+                        accountStore, subject.newSideEffects(), tokens, uniqueTokens, tokenRels);
+        assertInstanceOf(FreezeLogic.class, subject.newFreezeLogic(accountStore, tokenStore));
+    }
+
+    @Test
+    void canCreateNewUnfreezeLogic() {
+        final var accountStore = subject.newAccountStore(accounts);
+        final var tokenStore =
+                subject.newTokenStore(
+                        accountStore, subject.newSideEffects(), tokens, uniqueTokens, tokenRels);
+        assertInstanceOf(UnfreezeLogic.class, subject.newUnfreezeLogic(accountStore, tokenStore));
     }
 }

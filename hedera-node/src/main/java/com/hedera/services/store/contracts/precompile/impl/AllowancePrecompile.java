@@ -18,6 +18,7 @@ package com.hedera.services.store.contracts.precompile.impl;
 import static com.hedera.services.exceptions.ValidationUtils.validateTrueOrRevert;
 import static com.hedera.services.ledger.properties.AccountProperty.FUNGIBLE_TOKEN_ALLOWANCES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALLOWANCE_OWNER_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.properties.AccountProperty;
@@ -34,6 +35,7 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.UnaryOperator;
 import org.apache.tuweni.bytes.Bytes;
 
@@ -50,11 +52,20 @@ public class AllowancePrecompile extends AbstractReadOnlyPrecompile {
         super(tokenId, syntheticTxnFactory, ledgers, encoder, decoder, pricingUtils);
     }
 
+    public AllowancePrecompile(
+            final SyntheticTxnFactory syntheticTxnFactory,
+            final WorldLedgers ledgers,
+            final EncodingFacade encoder,
+            final DecodingFacade decoder,
+            final PrecompilePricingUtils pricingUtils) {
+        this(null, syntheticTxnFactory, ledgers, encoder, decoder, pricingUtils);
+    }
+
     @Override
     public TransactionBody.Builder body(
             final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
-        final var nestedInput = input.slice(24);
-        allowanceWrapper = decoder.decodeTokenAllowance(nestedInput, aliasResolver);
+        final var nestedInput = tokenId == null ? input : input.slice(24);
+        allowanceWrapper = decoder.decodeTokenAllowance(nestedInput, tokenId, aliasResolver);
 
         return super.body(input, aliasResolver);
     }
@@ -62,6 +73,9 @@ public class AllowancePrecompile extends AbstractReadOnlyPrecompile {
     @Override
     @SuppressWarnings("unchecked")
     public Bytes getSuccessResultFor(final ExpirableTxnRecord.Builder childRecord) {
+        Objects.requireNonNull(
+                allowanceWrapper, "`body` method should be called before `getSuccessResultsFor`");
+
         final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger =
                 ledgers.accounts();
         validateTrueOrRevert(
@@ -69,8 +83,11 @@ public class AllowancePrecompile extends AbstractReadOnlyPrecompile {
         final var allowances =
                 (Map<FcTokenAllowanceId, Long>)
                         accountsLedger.get(allowanceWrapper.owner(), FUNGIBLE_TOKEN_ALLOWANCES);
-        final var fcTokenAllowanceId = FcTokenAllowanceId.from(tokenId, allowanceWrapper.spender());
+        final var fcTokenAllowanceId =
+                FcTokenAllowanceId.from(allowanceWrapper.tokenID(), allowanceWrapper.spender());
         final var value = allowances.getOrDefault(fcTokenAllowanceId, 0L);
-        return encoder.encodeAllowance(value);
+        return tokenId == null
+                ? encoder.encodeAllowance(SUCCESS.getNumber(), value)
+                : encoder.encodeAllowance(value);
     }
 }

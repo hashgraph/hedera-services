@@ -16,6 +16,7 @@
 package com.hedera.services.store.contracts.precompile.impl;
 
 import static com.hedera.services.ledger.properties.AccountProperty.APPROVE_FOR_ALL_NFTS_ALLOWANCES;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
@@ -27,6 +28,7 @@ import com.hedera.services.store.contracts.precompile.codec.IsApproveForAllWrapp
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import java.util.Objects;
 import java.util.Set;
 import java.util.function.UnaryOperator;
 import org.apache.tuweni.bytes.Bytes;
@@ -44,17 +46,31 @@ public class IsApprovedForAllPrecompile extends AbstractReadOnlyPrecompile {
         super(tokenId, syntheticTxnFactory, ledgers, encoder, decoder, pricingUtils);
     }
 
+    public IsApprovedForAllPrecompile(
+            final SyntheticTxnFactory syntheticTxnFactory,
+            final WorldLedgers ledgers,
+            final EncodingFacade encoder,
+            final DecodingFacade decoder,
+            final PrecompilePricingUtils pricingUtils) {
+        this(null, syntheticTxnFactory, ledgers, encoder, decoder, pricingUtils);
+    }
+
     @Override
     public TransactionBody.Builder body(
             final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
-        final var nestedInput = input.slice(24);
-        isApproveForAllWrapper = decoder.decodeIsApprovedForAll(nestedInput, aliasResolver);
+        final var nestedInput = tokenId == null ? input : input.slice(24);
+        isApproveForAllWrapper =
+                decoder.decodeIsApprovedForAll(nestedInput, tokenId, aliasResolver);
         return super.body(input, aliasResolver);
     }
 
     @Override
     @SuppressWarnings("unchecked")
     public Bytes getSuccessResultFor(final ExpirableTxnRecord.Builder childRecord) {
+        Objects.requireNonNull(
+                isApproveForAllWrapper,
+                "`body` method should be called before `getSuccessResultsFor`");
+
         final var accountsLedger = ledgers.accounts();
         var answer = true;
         final var ownerId = isApproveForAllWrapper.owner();
@@ -65,9 +81,12 @@ public class IsApprovedForAllPrecompile extends AbstractReadOnlyPrecompile {
             final var allowances =
                     (Set<FcTokenAllowanceId>)
                             accountsLedger.get(ownerId, APPROVE_FOR_ALL_NFTS_ALLOWANCES);
-            final var allowanceId = FcTokenAllowanceId.from(tokenId, operatorId);
+            final var allowanceId =
+                    FcTokenAllowanceId.from(isApproveForAllWrapper.tokenId(), operatorId);
             answer &= allowances.contains(allowanceId);
         }
-        return encoder.encodeIsApprovedForAll(answer);
+        return tokenId == null
+                ? encoder.encodeIsApprovedForAll(SUCCESS.getNumber(), answer)
+                : encoder.encodeIsApprovedForAll(answer);
     }
 }

@@ -17,6 +17,7 @@ package com.hedera.services.state.logic;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.BDDMockito.given;
@@ -28,6 +29,8 @@ import static org.mockito.Mockito.verifyNoInteractions;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.TransactionContext;
+import com.hedera.services.context.primitives.StateView;
+import com.hedera.services.keys.HederaKeyActivation;
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.records.ConsensusTimeTracker;
 import com.hedera.services.state.expiry.EntityAutoRenewal;
@@ -58,7 +61,6 @@ class StandardProcessLogicTest {
     private final long member = 1L;
     private final Instant consensusNow = Instant.ofEpochSecond(1_234_567L, 890);
     private final Instant triggeredConsensusNow = consensusNow.plusNanos(1L);
-    ;
 
     @Mock private ExpiryManager expiries;
     @Mock private InvariantChecks invariantChecks;
@@ -73,6 +75,7 @@ class StandardProcessLogicTest {
     @Mock private ConsensusTimeTracker consensusTimeTracker;
     @Mock private RecordStreaming recordStreaming;
     @Mock private ScheduleProcessing scheduleProcessing;
+    @Mock private StateView workingView;
 
     @LoggingTarget private LogCaptor logCaptor;
     @LoggingSubject private StandardProcessLogic subject;
@@ -93,7 +96,8 @@ class StandardProcessLogicTest {
                         txnCtx,
                         scheduleProcessing,
                         executionTimeTracker,
-                        recordStreaming);
+                        recordStreaming,
+                        workingView);
     }
 
     @Test
@@ -115,6 +119,8 @@ class StandardProcessLogicTest {
         given(scheduleProcessing.shouldProcessScheduledTransactions(consensusNow)).willReturn(true);
         given(scheduleProcessing.getMaxProcessingLoopIterations()).willReturn(10L);
 
+        txn.add(HederaKeyActivation.VALID_IMPLICIT_SIG);
+
         // when:
         subject.incorporateConsensusTxn(txn, consensusNow, member);
 
@@ -132,6 +138,7 @@ class StandardProcessLogicTest {
         inOrder.verify(scheduleProcessing)
                 .triggerNextTransactionExpiringAsNeeded(consensusNow, null, true);
         inOrder.verify(autoRenewal).execute(consensusNow);
+        assertTrue(txn.getSignatures().isEmpty());
     }
 
     @Test

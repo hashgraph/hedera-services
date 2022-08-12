@@ -311,9 +311,7 @@ public class ServicesState extends PartialNaryMerkleInternal
             if (trigger == RESTART) {
                 networkCtx().discardPreparedUpgradeMeta();
                 dualState.setFreezeTime(null);
-                // By default, don't (re-)stream migration records on a patch release; this will
-                // almost always be the desired behavior, though exceptions are conceivable
-                if (deployedVersion.isNonPatchUpgradeFrom(deserializedVersion)) {
+                if (deployedVersion.hasMigrationRecordsFrom(deserializedVersion)) {
                     networkCtx().markMigrationRecordsNotYetStreamed();
                 }
             }
@@ -347,6 +345,9 @@ public class ServicesState extends PartialNaryMerkleInternal
                 // Do this separately from ensureSystemAccounts(), as that call is expensive with a
                 // large saved state
                 app.treasuryCloner().ensureTreasuryClonesExist();
+            }
+            if (trigger == RECONNECT) {
+                app.migrationRecordsManager().markTraceabilityMigrationAsDone();
             }
         }
     }

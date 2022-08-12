@@ -22,12 +22,16 @@ import static com.hedera.services.ledger.properties.AccountProperty.ALIAS;
 import static com.hedera.services.ledger.properties.AccountProperty.APPROVE_FOR_ALL_NFTS_ALLOWANCES;
 import static com.hedera.services.ledger.properties.NftProperty.METADATA;
 import static com.hedera.services.ledger.properties.NftProperty.OWNER;
+import static com.hedera.services.ledger.properties.TokenProperty.ACC_FROZEN_BY_DEFAULT;
+import static com.hedera.services.ledger.properties.TokenProperty.ACC_KYC_GRANTED_BY_DEFAULT;
 import static com.hedera.services.ledger.properties.TokenProperty.DECIMALS;
 import static com.hedera.services.ledger.properties.TokenProperty.NAME;
 import static com.hedera.services.ledger.properties.TokenProperty.SYMBOL;
 import static com.hedera.services.ledger.properties.TokenProperty.TOKEN_TYPE;
 import static com.hedera.services.ledger.properties.TokenProperty.TOTAL_SUPPLY;
 import static com.hedera.services.ledger.properties.TokenProperty.TREASURY;
+import static com.hedera.services.ledger.properties.TokenRelProperty.IS_FROZEN;
+import static com.hedera.services.ledger.properties.TokenRelProperty.IS_KYC_GRANTED;
 import static com.hedera.services.ledger.properties.TokenRelProperty.TOKEN_BALANCE;
 import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
 import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.URI_QUERY_NON_EXISTING_TOKEN_ERROR;
@@ -122,6 +126,15 @@ public class WorldLedgers {
         }
     }
 
+    public boolean defaultFreezeStatus(final TokenID tokenId) {
+        return propertyOf(tokenId, ACC_FROZEN_BY_DEFAULT, StaticEntityAccess::defaultFreezeStatus);
+    }
+
+    public boolean defaultKycStatus(final TokenID tokenId) {
+        return propertyOf(
+                tokenId, ACC_KYC_GRANTED_BY_DEFAULT, StaticEntityAccess::defaultKycStatus);
+    }
+
     public String nameOf(final TokenID tokenId) {
         return propertyOf(tokenId, NAME, StaticEntityAccess::nameOf);
     }
@@ -152,6 +165,30 @@ public class WorldLedgers {
             return tokenRelsLedger.exists(balanceKey)
                     ? (long) tokenRelsLedger.get(balanceKey, TOKEN_BALANCE)
                     : 0;
+        }
+    }
+
+    public boolean isKyc(final AccountID accountId, final TokenID tokenId) {
+        if (staticEntityAccess != null) {
+            return staticEntityAccess.isKyc(accountId, tokenId);
+        } else {
+            validateTrue(tokensLedger.exists(tokenId), INVALID_TOKEN_ID);
+            validateTrue(accountsLedger.exists(accountId), INVALID_ACCOUNT_ID);
+            final var isKycKey = Pair.of(accountId, tokenId);
+            return tokenRelsLedger.exists(isKycKey)
+                    && (boolean) tokenRelsLedger.get(isKycKey, IS_KYC_GRANTED);
+        }
+    }
+
+    public boolean isFrozen(final AccountID accountId, final TokenID tokenId) {
+        if (staticEntityAccess != null) {
+            return staticEntityAccess.isFrozen(accountId, tokenId);
+        } else {
+            validateTrue(tokensLedger.exists(tokenId), INVALID_TOKEN_ID);
+            validateTrue(accountsLedger.exists(accountId), INVALID_ACCOUNT_ID);
+            final var isFrozenKey = Pair.of(accountId, tokenId);
+            return tokenRelsLedger.exists(isFrozenKey)
+                    && (boolean) tokenRelsLedger.get(isFrozenKey, IS_FROZEN);
         }
     }
 

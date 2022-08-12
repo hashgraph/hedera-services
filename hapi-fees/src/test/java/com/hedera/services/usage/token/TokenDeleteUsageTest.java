@@ -17,21 +17,13 @@ package com.hedera.services.usage.token;
 
 import static com.hedera.services.test.UsageUtils.A_USAGES_MATRIX;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.BDDMockito.any;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.BDDMockito.mock;
-import static org.mockito.BDDMockito.verify;
+import static org.mockito.BDDMockito.*;
 
 import com.hedera.services.test.IdUtils;
 import com.hedera.services.usage.EstimatorFactory;
 import com.hedera.services.usage.SigUsage;
-import com.hedera.services.usage.TxnUsage;
 import com.hedera.services.usage.TxnUsageEstimator;
-import com.hederahashgraph.api.proto.java.Timestamp;
-import com.hederahashgraph.api.proto.java.TokenDeleteTransactionBody;
-import com.hederahashgraph.api.proto.java.TokenID;
-import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.api.proto.java.TransactionID;
+import com.hederahashgraph.api.proto.java.*;
 import com.hederahashgraph.fee.FeeBuilder;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -56,15 +48,13 @@ class TokenDeleteUsageTest {
 
         factory = mock(EstimatorFactory.class);
         given(factory.get(any(), any(), any())).willReturn(base);
-
-        TxnUsage.setEstimatorFactory(factory);
     }
 
     @Test
     void createsExpectedDelta() {
         givenOp();
         // and:
-        subject = TokenDeleteUsage.newEstimate(txn, sigUsage);
+        subject = TokenDeleteUsage.newEstimate(txn, base);
 
         // when:
         var actual = subject.get();
@@ -77,7 +67,7 @@ class TokenDeleteUsageTest {
 
     @Test
     void assertSelf() {
-        subject = TokenDeleteUsage.newEstimate(txn, sigUsage);
+        subject = TokenDeleteUsage.newEstimate(txn, base);
         assertEquals(subject, subject.self());
     }
 
