@@ -235,6 +235,7 @@ class BootstrapPropertiesTest {
                     entry("ledger.xferBalanceChanges.maxLen", 20),
                     entry("tokens.nfts.areEnabled", true),
                     entry("tokens.nfts.useTreasuryWildcards", true),
+                    entry("tokens.nfts.useVirtualMerkle", false),
                     entry("tokens.nfts.maxQueryRange", 100L),
                     entry("tokens.nfts.maxBatchSizeWipe", 10),
                     entry("tokens.nfts.maxBatchSizeMint", 10),
