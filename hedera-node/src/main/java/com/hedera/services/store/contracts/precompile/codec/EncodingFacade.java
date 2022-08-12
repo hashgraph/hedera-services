@@ -355,8 +355,13 @@ public class EncodingFacade {
                         case ERC_NAME, ERC_TOKEN_URI, ERC_SYMBOL -> stringTuple;
                         case ERC_TRANSFER, ERC_IS_APPROVED_FOR_ALL, ERC_APPROVE -> booleanTuple;
                         case HAPI_ALLOWANCE -> hapiAllowanceOfType;
-                        case HAPI_APPROVE, HAPI_IS_TOKEN, HAPI_IS_FROZEN, GET_TOKEN_DEFAULT_KYC_STATUS,
-                                GET_TOKEN_DEFAULT_FREEZE_STATUS, HAPI_IS_KYC, HAPI_IS_APPROVED_FOR_ALL -> intBoolTuple;
+                        case HAPI_APPROVE,
+                                HAPI_IS_TOKEN,
+                                HAPI_IS_FROZEN,
+                                GET_TOKEN_DEFAULT_KYC_STATUS,
+                                GET_TOKEN_DEFAULT_FREEZE_STATUS,
+                                HAPI_IS_KYC,
+                                HAPI_IS_APPROVED_FOR_ALL -> intBoolTuple;
                         case HAPI_APPROVE_NFT -> intTuple;
                         case HAPI_GET_TOKEN_INFO -> getTokenInfoType;
                         case HAPI_GET_FUNGIBLE_TOKEN_INFO -> getFungibleTokenInfoType;
@@ -621,7 +626,8 @@ public class EncodingFacade {
         }
 
         private Tuple getFixedFeeTuple(
-                @NotNull final FixedFee fixedFee, final com.esaulpaugh.headlong.abi.Address feeCollector) {
+                @NotNull final FixedFee fixedFee,
+                final com.esaulpaugh.headlong.abi.Address feeCollector) {
             return Tuple.of(
                     fixedFee.getAmount(),
                     convertBesuAddressToHeadlongAddress(

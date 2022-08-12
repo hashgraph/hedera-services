@@ -1245,7 +1245,8 @@ public class DecodingFacade {
     }
 
     private List<FractionalFeeWrapper> decodeFractionalFees(
-            @NotNull final Tuple[] fractionalFeesTuples, final UnaryOperator<byte[]> aliasResolver) {
+            @NotNull final Tuple[] fractionalFeesTuples,
+            final UnaryOperator<byte[]> aliasResolver) {
         final List<FractionalFeeWrapper> fractionalFees =
                 new ArrayList<>(fractionalFeesTuples.length);
         for (final var fractionalFeeTuple : fractionalFeesTuples) {
@@ -1345,7 +1346,8 @@ public class DecodingFacade {
         return accountIDs;
     }
 
-    private static List<TokenID> decodeTokenIDsFromBytesArray(@NotNull final byte[][] accountBytesArray) {
+    private static List<TokenID> decodeTokenIDsFromBytesArray(
+            @NotNull final byte[][] accountBytesArray) {
         final List<TokenID> accountIDs = new ArrayList<>();
         for (final var account : accountBytesArray) {
             accountIDs.add(convertAddressBytesToTokenID(account));

@@ -47,7 +47,7 @@ public class TokenAndTypeCheckSuite extends HapiApiSuite {
 
     @Override
     public List<HapiApiSpec> getSpecsInSuite() {
-        return List.of(checkTokenAndTypeNegativeCases());
+        return List.of(checkTokenAndTypeStandardCases(), checkTokenAndTypeNegativeCases());
     }
 
     private HapiApiSpec checkTokenAndTypeStandardCases() {
