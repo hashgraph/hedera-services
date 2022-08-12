@@ -208,21 +208,6 @@ import org.junit.jupiter.api.TestFactory;
 @SuppressWarnings({"java:S2699", "java:S3577"})
 class EndToEndPackageRunner extends TestBase {
 
-    @BeforeAll
-    static void beforeAll() {
-        //        final var portSystemProperty = System.getProperty("defaultPort");
-        //        final var defaultPort = portSystemProperty != null ? portSystemProperty : "50211";
-        //        final var defaultProperties = JutilPropertySource.getDefaultInstance();
-        //        HapiApiSpec.runInCiMode(
-        //                defaultPort + ":50212",
-        //                defaultProperties.get("default.payer"),
-        //                defaultProperties.get("default.node").split("\\.")[2],
-        //                defaultProperties.get("tls"),
-        //                defaultProperties.get("txn.proto.structure"),
-        //                defaultProperties.get("node.selector"),
-        //                Collections.emptyMap());
-    }
-
     @Tag("autorenew")
     @TestFactory
     Collection<DynamicContainer> autorenew() {
