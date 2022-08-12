@@ -187,9 +187,7 @@ public class WipeTokenAccountPrecompileSuite extends HapiApiSuite {
                 .given(
                         newKeyNamed(WIPE_KEY),
                         newKeyNamed(MULTI_KEY),
-                        cryptoCreate(ADMIN_ACCOUNT)
-                                .key(WIPE_KEY)
-                                .exposingCreatedIdTo(adminAccountID::set),
+                        cryptoCreate(ADMIN_ACCOUNT).exposingCreatedIdTo(adminAccountID::set),
                         cryptoCreate(ACCOUNT)
                                 .balance(INITIAL_BALANCE)
                                 .exposingCreatedIdTo(accountID::set),
@@ -215,6 +213,17 @@ public class WipeTokenAccountPrecompileSuite extends HapiApiSuite {
                                     serialNumbers.add(1L);
                                     allRunFor(
                                             spec,
+                                            contractCall(
+                                                            WIPE_CONTRACT,
+                                                            WIPE_NON_FUNGIBLE_TOKEN,
+                                                            asAddress(vanillaTokenID.get()),
+                                                            asAddress(accountID.get()),
+                                                            serialNumbers)
+                                                    .payingWith(ADMIN_ACCOUNT)
+                                                    .via("wipeNonFungibleAccountDoesNotOwnWipeKeyTxn")
+                                                    .gas(GAS_TO_OFFER)
+                                                    .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
+                                            cryptoUpdate(ADMIN_ACCOUNT).key(WIPE_KEY),
                                             contractCall(
                                                             WIPE_CONTRACT,
                                                             WIPE_NON_FUNGIBLE_TOKEN,
@@ -257,6 +266,17 @@ public class WipeTokenAccountPrecompileSuite extends HapiApiSuite {
                                                     .gas(GAS_TO_OFFER));
                                 }))
                 .then(
+                        childRecordsCheck(
+                                "wipeNonFungibleAccountDoesNotOwnWipeKeyTxn",
+                                CONTRACT_REVERT_EXECUTED,
+                                recordWith()
+                                        .status(INVALID_SIGNATURE)
+                                        .contractCallResult(
+                                                resultWith()
+                                                        .contractCallResult(
+                                                                htsPrecompileResult()
+                                                                        .withStatus(
+                                                                                INVALID_SIGNATURE)))),
                         childRecordsCheck(
                                 "wipeNonFungibleAccountDoesNotOwnTheSerialTxn",
                                 CONTRACT_REVERT_EXECUTED,
