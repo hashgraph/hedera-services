@@ -60,19 +60,6 @@ public class AccessorFactory {
     }
 
     /**
-     * Parses the gRPC {@link Transaction} represented by a given byte array and returns a {@link
-     * SignedTxnAccessor} specialized to handle the transaction's logical operation.
-     *
-     * @param transactionBytes the raw gRPC transaction
-     * @return a specialized accessor
-     */
-    public SignedTxnAccessor constructSpecializedAccessor(final byte[] transactionBytes)
-            throws InvalidProtocolBufferException {
-        return internalSpecializedConstruction(
-                transactionBytes, Transaction.parseFrom(transactionBytes));
-    }
-
-    /**
      * Given a gRPC {@link Transaction}, returns a {@link SignedTxnAccessor} specialized to handle
      * the transaction's logical operation.
      *
