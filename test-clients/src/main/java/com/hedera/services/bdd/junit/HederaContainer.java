@@ -34,6 +34,7 @@ public class HederaContainer extends GenericContainer<HederaContainer> {
     public static final int GRPC_PORT = 50211;
 
     private final int id;
+    private File recordPath;
 
     public HederaContainer(DockerImageName dockerImageName, int id) {
         super(dockerImageName);
@@ -101,8 +102,10 @@ public class HederaContainer extends GenericContainer<HederaContainer> {
     public HederaContainer withWorkspace(File workspace) {
         final var outputPath = new File(workspace, "output/node_" + id);
         final var savedPath = new File(workspace, "saved/node_" + id);
+        recordPath = new File(workspace, "records/node_" + id);
         outputPath.mkdirs();
         savedPath.mkdirs();
+        recordPath.mkdirs();
         return this.withFileSystemBind(
                         outputPath.getAbsolutePath(),
                         "/opt/hedera/services/output",
@@ -110,7 +113,15 @@ public class HederaContainer extends GenericContainer<HederaContainer> {
                 .withFileSystemBind(
                         savedPath.getAbsolutePath(),
                         "/opt/hedera/services/data/saved",
+                        BindMode.READ_WRITE)
+                .withFileSystemBind(
+                        recordPath.getAbsolutePath(),
+                        "/opt/hedera/services/network/itest/data/recordStreams/record0.0.3",
                         BindMode.READ_WRITE);
+    }
+
+    public String getRecordPath() {
+        return recordPath.getAbsolutePath();
     }
 
     public boolean isActive() {

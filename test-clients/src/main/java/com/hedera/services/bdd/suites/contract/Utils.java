@@ -41,6 +41,7 @@ import java.util.stream.IntStream;
 import org.apache.commons.io.FileUtils;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
+import org.bouncycastle.util.encoders.Hex;
 import org.hyperledger.besu.crypto.Hash;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -97,6 +98,16 @@ public class Utils {
         try {
             final var bytes = Files.readAllBytes(Path.of(path));
             return ByteString.copyFrom(bytes);
+        } catch (IOException e) {
+            e.printStackTrace();
+            return ByteString.EMPTY;
+        }
+    }
+
+    public static ByteString extractBytecodeUnhexed(final String path) {
+        try {
+            final var bytes = Files.readAllBytes(Path.of(path));
+            return ByteString.copyFrom(Hex.decode(bytes));
         } catch (IOException e) {
             e.printStackTrace();
             return ByteString.EMPTY;

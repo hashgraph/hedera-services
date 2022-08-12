@@ -19,7 +19,7 @@ import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.props.JutilPropertySource;
 import java.io.File;
 import java.time.Duration;
-import java.util.Collections;
+import java.util.Map;
 import java.util.concurrent.TimeoutException;
 import org.junit.jupiter.api.BeforeAll;
 import org.testcontainers.containers.Network;
@@ -60,6 +60,6 @@ public abstract class IntegrationTestBase extends TestBase {
                 defaultProperties.get("tls"),
                 defaultProperties.get("txn.proto.structure"),
                 defaultProperties.get("node.selector"),
-                Collections.emptyMap());
+                Map.of("recordStream.path", NODE_0.getRecordPath()));
     }
 }

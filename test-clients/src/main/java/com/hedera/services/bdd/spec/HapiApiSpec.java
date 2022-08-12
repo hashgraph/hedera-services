@@ -514,6 +514,10 @@ public class HapiApiSpec implements Runnable {
     private static Map<String, String> otherOverrides;
     private static boolean runningInCi = false;
 
+    public static boolean isRunningInCi() {
+        return  runningInCi;
+    }
+
     public static void runInCiMode(
             String nodes,
             String payer,
@@ -539,7 +543,7 @@ public class HapiApiSpec implements Runnable {
         return customizedHapiSpec(name, prioritySource).withProperties();
     }
 
-    private static Map<String, String> ciPropOverrides() {
+    public static Map<String, String> ciPropOverrides() {
         if (ciPropsSource == null) {
             dynamicNodes =
                     Stream.of(dynamicNodes.split(","))
