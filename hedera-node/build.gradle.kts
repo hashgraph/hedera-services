@@ -131,3 +131,9 @@ val cleanRun = tasks.register("cleanRun") {
 tasks.clean {
     dependsOn(cleanRun)
 }
+
+tasks.register("showHapiVersion") {
+    doLast {
+        println(versionCatalogs.named("libs").findVersion("hapi-version").get().requiredVersion)
+    }
+}
