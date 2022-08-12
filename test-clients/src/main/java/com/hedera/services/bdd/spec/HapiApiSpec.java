@@ -515,7 +515,7 @@ public class HapiApiSpec implements Runnable {
     private static boolean runningInCi = false;
 
     public static boolean isRunningInCi() {
-        return  runningInCi;
+        return runningInCi;
     }
 
     public static void runInCiMode(

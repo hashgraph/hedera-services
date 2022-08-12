@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 import com.hedera.services.bdd.junit.TestBase;
 import com.hedera.services.bdd.suites.autorenew.AccountAutoRenewalSuite;
 import com.hedera.services.bdd.suites.autorenew.AutoRemovalCasesSuite;
@@ -211,17 +210,17 @@ class EndToEndPackageRunner extends TestBase {
 
     @BeforeAll
     static void beforeAll() {
-//        final var portSystemProperty = System.getProperty("defaultPort");
-//        final var defaultPort = portSystemProperty != null ? portSystemProperty : "50211";
-//        final var defaultProperties = JutilPropertySource.getDefaultInstance();
-//        HapiApiSpec.runInCiMode(
-//                defaultPort + ":50212",
-//                defaultProperties.get("default.payer"),
-//                defaultProperties.get("default.node").split("\\.")[2],
-//                defaultProperties.get("tls"),
-//                defaultProperties.get("txn.proto.structure"),
-//                defaultProperties.get("node.selector"),
-//                Collections.emptyMap());
+        //        final var portSystemProperty = System.getProperty("defaultPort");
+        //        final var defaultPort = portSystemProperty != null ? portSystemProperty : "50211";
+        //        final var defaultProperties = JutilPropertySource.getDefaultInstance();
+        //        HapiApiSpec.runInCiMode(
+        //                defaultPort + ":50212",
+        //                defaultProperties.get("default.payer"),
+        //                defaultProperties.get("default.node").split("\\.")[2],
+        //                defaultProperties.get("tls"),
+        //                defaultProperties.get("txn.proto.structure"),
+        //                defaultProperties.get("node.selector"),
+        //                Collections.emptyMap());
     }
 
     @Tag("autorenew")
@@ -433,9 +432,7 @@ class EndToEndPackageRunner extends TestBase {
     @TestFactory
     Collection<DynamicContainer> contractTraceability() {
         // FUTURE WORK - re-add traceability suites when updated for sidecar support
-        return List.of(
-            extractSpecsFromSuite(NewTraceabilitySuite::new)
-        );
+        return List.of(extractSpecsFromSuite(NewTraceabilitySuite::new));
     }
 
     @Tag("contract")
