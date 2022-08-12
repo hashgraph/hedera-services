@@ -108,11 +108,11 @@ class AccessorFactoryTest {
     @Test
     void uncheckedSpecializedAccessorThrows() {
         final var invalidTxnBytes = "InvalidTxnBytes".getBytes();
-        final var txn = Transaction.newBuilder()
-                .setSignedTransactionBytes(ByteString.copyFrom(invalidTxnBytes))
-                .build();
+        final var txn =
+                Transaction.newBuilder()
+                        .setSignedTransactionBytes(ByteString.copyFrom(invalidTxnBytes))
+                        .build();
         assertThrows(
-                IllegalArgumentException.class,
-                () -> subject.uncheckedSpecializedAccessor(txn));
+                IllegalArgumentException.class, () -> subject.uncheckedSpecializedAccessor(txn));
     }
 }
