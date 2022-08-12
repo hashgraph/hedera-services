@@ -114,7 +114,7 @@ public class SidecarWatcher {
             final var expectedSidecarPair = expectedSidecars.poll();
             final var expectedSidecar = expectedSidecarPair.getValue();
             if ((actualSidecar.hasBytecode() || actualSidecar.hasStateChanges())
-                    && !actualSidecar.equals(expectedSidecar)) {
+                    && actualSidecar.equals(expectedSidecar)) {
                 final var spec = expectedSidecarPair.getKey();
                 final var list = failedSidecars.getOrDefault(spec, new ArrayList<>());
                 list.add(Pair.of(expectedSidecar, actualSidecar));
