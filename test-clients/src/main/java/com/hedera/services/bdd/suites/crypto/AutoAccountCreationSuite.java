@@ -17,6 +17,7 @@ package com.hedera.services.bdd.suites.crypto;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -25,16 +26,22 @@ import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ThresholdKey;
+import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
+import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TokenType;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
+import com.hederahashgraph.api.proto.java.TransferList;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiPropertySource.accountIdFromHexedMirrorAddress;
+import static com.hedera.services.bdd.spec.HapiPropertySource.asSolidityAddress;
 import static com.hedera.services.bdd.spec.PropertySource.asAccountString;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
 import static com.hedera.services.bdd.spec.assertions.ContractInfoAsserts.contractWith;
@@ -66,8 +73,12 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.assertionsHold;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.suites.contract.Utils.aaWith;
+import static com.hedera.services.bdd.suites.contract.Utils.accountId;
+import static com.hedera.services.bdd.suites.contract.Utils.ocWith;
 import static com.hedera.services.bdd.suites.contract.hapi.ContractUpdateSuite.ADMIN_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE_FOR_CUSTOM_FEE_VALUE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE;
@@ -99,6 +110,8 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
     private static final String NFT_INFINITE_SUPPLY_TOKEN = "nftA";
     private static final String NFT_FINITE_SUPPLY_TOKEN = "nftB";
     private static final String MULTI_KEY = "multi";
+    private static final String PARTY = "party";
+    private static final String COUNTERPARTY = "counterparty";
 
     public static void main(String... args) {
         new AutoAccountCreationSuite().runSuiteAsync();
@@ -117,22 +130,24 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
     @Override
     public List<HapiApiSpec> getSpecsInSuite() {
         return List.of(
-                autoAccountCreationsHappyPath(),
-                autoAccountCreationBadAlias(),
-                autoAccountCreationUnsupportedAlias(),
-                transferToAccountAutoCreatedUsingAlias(),
-                transferToAccountAutoCreatedUsingAccount(),
-                transferFromAliasToAlias(),
-                transferFromAliasToAccount(),
-                multipleAutoAccountCreations(),
-                accountCreatedIfAliasUsedAsPubKey(),
-                aliasCanBeUsedOnManyAccountsNotAsAlias(),
-                autoAccountCreationWorksWhenUsingAliasOfDeletedAccount(),
-                canGetBalanceAndInfoViaAlias(),
-                noStakePeriodStartIfNotStakingToNode(),
-                canAutoCreateWithFungibleTokenTransfersToAlias(),
-                canAutoCreateWithNftTransfersToAlias(),
-                autoCreateWithNftFallBackFeeFails(),
+                /* --- Hbar auto creates ---*/
+//                autoAccountCreationsHappyPath(),
+//                autoAccountCreationBadAlias(),
+//                autoAccountCreationUnsupportedAlias(),
+//                transferToAccountAutoCreatedUsingAlias(),
+//                transferToAccountAutoCreatedUsingAccount(),
+//                transferFromAliasToAlias(),
+//                transferFromAliasToAccount(),
+//                multipleAutoAccountCreations(),
+//                accountCreatedIfAliasUsedAsPubKey(),
+//                aliasCanBeUsedOnManyAccountsNotAsAlias(),
+//                autoAccountCreationWorksWhenUsingAliasOfDeletedAccount(),
+//                canGetBalanceAndInfoViaAlias(),
+//                noStakePeriodStartIfNotStakingToNode(),
+//                /* -- HTS auto creates -- */
+//                canAutoCreateWithFungibleTokenTransfersToAlias(),
+//                canAutoCreateWithNftTransfersToAlias(),
+//                autoCreateWithNftFallBackFeeFails(),
                 repeatedAliasInSameTransferListFails()
         );
     }
@@ -141,14 +156,30 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
         final var civilian = "somebody";
         final var autoCreateSponsor = "autoCreateSponsor";
 
+        final AtomicReference<TokenID> ftId = new AtomicReference<>();
+        final AtomicReference<TokenID> nftId = new AtomicReference<>();
+        final AtomicReference<AccountID> partyId = new AtomicReference<>();
+        final AtomicReference<AccountID> counterId = new AtomicReference<>();
+        final AtomicReference<ByteString> partyAlias = new AtomicReference<>();
+        final AtomicReference<ByteString> counterAlias = new AtomicReference<>();
+
+
         return defaultHapiSpec("repeatedAliasInSameTransferListFails")
                 .given(
                         newKeyNamed(VALID_ALIAS),
                         newKeyNamed(MULTI_KEY),
                         newKeyNamed(VALID_ALIAS),
+                        cryptoCreate(PARTY).maxAutomaticTokenAssociations(2),
+                        cryptoCreate(COUNTERPARTY).maxAutomaticTokenAssociations(2),
+
                         cryptoCreate(TOKEN_TREASURY)
                                 .balance(ONE_HUNDRED_HBARS)
                                 .maxAutomaticTokenAssociations(2),
+                        tokenCreate(A_TOKEN)
+                                .tokenType(TokenType.FUNGIBLE_COMMON)
+                                .initialSupply(Long.MAX_VALUE)
+                                .treasury(TOKEN_TREASURY)
+                                .via("tokenACreateTxn"),
                         tokenCreate(NFT_INFINITE_SUPPLY_TOKEN)
                                 .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
                                 .adminKey(MULTI_KEY)
@@ -157,14 +188,6 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
                                 .initialSupply(0)
                                 .treasury(TOKEN_TREASURY)
                                 .via("nftCreateTxn"),
-                        tokenCreate(NFT_FINITE_SUPPLY_TOKEN)
-                                .supplyType(TokenSupplyType.FINITE)
-                                .tokenType(NON_FUNGIBLE_UNIQUE)
-                                .treasury(TOKEN_TREASURY)
-                                .maxSupply(12L)
-                                .supplyKey(MULTI_KEY)
-                                .adminKey(MULTI_KEY)
-                                .initialSupply(0L),
                         mintToken(
                                 NFT_INFINITE_SUPPLY_TOKEN,
                                 List.of(
@@ -173,14 +196,7 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
                                         ByteString.copyFromUtf8("c"),
                                         ByteString.copyFromUtf8("d"),
                                         ByteString.copyFromUtf8("e"))),
-                        mintToken(
-                                NFT_FINITE_SUPPLY_TOKEN,
-                                List.of(
-                                        ByteString.copyFromUtf8("a"),
-                                        ByteString.copyFromUtf8("b"),
-                                        ByteString.copyFromUtf8("c"),
-                                        ByteString.copyFromUtf8("d"),
-                                        ByteString.copyFromUtf8("e"))),
+
                         cryptoCreate(civilian).balance(10 * ONE_HBAR),
                         cryptoCreate(autoCreateSponsor)
                                 .balance(INITIAL_BALANCE * ONE_HBAR)
@@ -188,29 +204,46 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
                 .when(
                         tokenAssociate(
                                 autoCreateSponsor,
-                                NFT_FINITE_SUPPLY_TOKEN,
                                 NFT_INFINITE_SUPPLY_TOKEN),
                         cryptoTransfer(
-                                movingUnique(NFT_FINITE_SUPPLY_TOKEN, 3L, 4L)
-                                        .between(TOKEN_TREASURY, autoCreateSponsor),
                                 movingUnique(NFT_INFINITE_SUPPLY_TOKEN, 1L, 2L)
                                         .between(TOKEN_TREASURY, autoCreateSponsor)),
                         getAccountInfo(autoCreateSponsor).logged(),
                         getAccountInfo(TOKEN_TREASURY).logged(),
+                        withOpContext(
+                                (spec, opLog) -> {
+                                    final var registry = spec.registry();
+                                    ftId.set(registry.getTokenID(A_TOKEN));
+                                    nftId.set(registry.getTokenID(NFT_INFINITE_SUPPLY_TOKEN));
+                                    partyId.set(registry.getAccountID(PARTY));
+                                    counterId.set(registry.getAccountID(COUNTERPARTY));
+                                    partyAlias.set(
+                                            ByteString.copyFrom(asSolidityAddress(partyId.get())));
+                                    counterAlias.set(
+                                            ByteString.copyFrom(
+                                                    asSolidityAddress(counterId.get())));
+                                }))
+                .then(
                         cryptoTransfer(
-                                movingUnique(NFT_FINITE_SUPPLY_TOKEN, 3, 4)
-                                        .between(autoCreateSponsor, VALID_ALIAS),
-                                movingUnique(NFT_INFINITE_SUPPLY_TOKEN, 1, 2)
-                                        .between(autoCreateSponsor, VALID_ALIAS))
-                                .via("multiTransfer")
-                                .payingWith(civilian)
-                                .signedBy(civilian, autoCreateSponsor, VALID_ALIAS)
-                                .logged(),
-                        getTxnRecord("multiTransfer").andAllChildRecords().logged(),
-                        getAliasedAccountInfo(VALID_ALIAS).logged(),
-                        getAccountInfo(autoCreateSponsor).logged(),
-                        getAccountInfo(TOKEN_TREASURY).logged())
-                .then();
+                                (spec, b) ->
+                                        b.setTokenTransfers(0,
+                                                TokenTransferList.newBuilder()
+                                                        .addTransfers(
+                                                                aaWith(
+                                                                        autoCreateSponsor,
+                                                                        -1))
+                                                        .addTransfers(
+                                                                aaWith(partyAlias.get(), +1))
+                                                        .addTransfers(
+                                                                aaWith(
+                                                                        TOKEN_TREASURY,
+                                                                        -1))
+                                                        .addTransfers(
+                                                                aaWith(
+                                                                        partyAlias.get(),
+                                                                        +2))))
+                                .signedBy(DEFAULT_PAYER, PARTY, autoCreateSponsor)
+                                .hasKnownStatus(ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS));
     }
 
     private HapiApiSpec autoCreateWithNftFallBackFeeFails() {
