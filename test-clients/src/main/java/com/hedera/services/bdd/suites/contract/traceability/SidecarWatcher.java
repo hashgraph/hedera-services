@@ -120,6 +120,7 @@ public class SidecarWatcher {
                 list.add(Pair.of(expectedSidecar, actualSidecar));
                 failedSidecars.put(spec, list);
             } else if (actualSidecar.hasActions()) {
+                // to be completed
                 //                if (!expectedSidecar
                 //                        .getConsensusTimestamp()
                 //                        .equals(actualSidecar.getConsensusTimestamp())) {

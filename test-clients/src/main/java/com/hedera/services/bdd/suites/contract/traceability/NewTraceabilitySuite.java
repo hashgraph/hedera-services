@@ -43,10 +43,9 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 public class NewTraceabilitySuite extends HapiApiSuite {
-    public static final String EMPTY_CONSTRUCTOR_CONTRACT = "EmptyConstructor";
     private static final Logger log = LogManager.getLogger(NewTraceabilitySuite.class);
 
-    /* Fields for sidecar assertion */
+    private static final String EMPTY_CONSTRUCTOR_CONTRACT = "EmptyConstructor";
     private static SidecarWatcher sidecarWatcher;
     private static CompletableFuture<Void> sidecarWatcherTask;
 
@@ -201,20 +200,6 @@ public class NewTraceabilitySuite extends HapiApiSuite {
                                             "There are some sidecars that have not been yet"
                                                     + " externalized in the sidecar files after all"
                                                     + " specs.");
-                                    //                                    assertTrue(
-                                    //
-                                    // failedSidecars.isEmpty(),
-                                    //                                            "Mismatch(es)
-                                    // between actual/expected sidecars present: "
-                                    //                                                    +
-                                    // prettyPrintFailedSidecars());
-                                    //                                    assertEquals(
-                                    //                                            0,
-                                    //
-                                    // expectedSidecars.size(),
-                                    //                                            "There are some
-                                    // sidecars that have not been yet externalized in the sidecar
-                                    // files after all specs.");
                                 }));
     }
 
