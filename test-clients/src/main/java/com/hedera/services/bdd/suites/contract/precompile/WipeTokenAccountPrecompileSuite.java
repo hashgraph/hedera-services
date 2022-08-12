@@ -220,7 +220,8 @@ public class WipeTokenAccountPrecompileSuite extends HapiApiSuite {
                                                             asAddress(accountID.get()),
                                                             serialNumbers)
                                                     .payingWith(ADMIN_ACCOUNT)
-                                                    .via("wipeNonFungibleAccountDoesNotOwnWipeKeyTxn")
+                                                    .via(
+                                                            "wipeNonFungibleAccountDoesNotOwnWipeKeyTxn")
                                                     .gas(GAS_TO_OFFER)
                                                     .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
                                             cryptoUpdate(ADMIN_ACCOUNT).key(WIPE_KEY),
