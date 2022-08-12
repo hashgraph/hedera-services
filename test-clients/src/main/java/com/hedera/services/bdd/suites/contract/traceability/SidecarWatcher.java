@@ -37,14 +37,15 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 public class SidecarWatcher {
-
-    public static final Pattern SIDECAR_FILE_REGEX =
-            Pattern.compile("\\d{4}-\\d{2}-\\d{2}T\\d{2}_\\d{2}_\\d{2}\\.\\d{9}Z_\\d{2}.rcd");
     private static final Logger log = LogManager.getLogger(SidecarWatcher.class);
+    private static final Pattern SIDECAR_FILE_REGEX =
+            Pattern.compile("\\d{4}-\\d{2}-\\d{2}T\\d{2}_\\d{2}_\\d{2}\\.\\d{9}Z_\\d{2}.rcd");
+
     private final Queue<Pair<String, TransactionSidecarRecord>> expectedSidecars =
             new LinkedBlockingDeque<>();
     private final Map<String, List<Pair<TransactionSidecarRecord, TransactionSidecarRecord>>>
             failedSidecars = new HashMap<>();
+
     private boolean shouldTerminateAfterNext = false;
     private boolean hasSeenFirst = false;
 
@@ -92,7 +93,6 @@ public class SidecarWatcher {
                         return;
                     }
                     onNewSidecarFile(pair.get());
-                    //                    sidecarConsumer.accept(pair.get());
                     if (shouldTerminateAfterNext) {
                         watchService.close();
                         return;
@@ -144,7 +144,7 @@ public class SidecarWatcher {
             list.add(Pair.of(expectedSidecar, actualSidecar));
             failedSidecars.put(spec, list);
         } else if (actualSidecar.hasActions()) {
-            // to be completed
+            // FUTURE WORK to be completed with actions assertions
             //                if (!expectedSidecar
             //                        .getConsensusTimestamp()
             //                        .equals(actualSidecar.getConsensusTimestamp())) {

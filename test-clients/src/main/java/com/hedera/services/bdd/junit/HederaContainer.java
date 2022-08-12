@@ -102,10 +102,8 @@ public class HederaContainer extends GenericContainer<HederaContainer> {
     public HederaContainer withWorkspace(File workspace) {
         final var outputPath = new File(workspace, "output/node_" + id);
         final var savedPath = new File(workspace, "saved/node_" + id);
-        recordPath = new File(workspace, "records/node_" + id);
         outputPath.mkdirs();
         savedPath.mkdirs();
-        recordPath.mkdirs();
         return this.withFileSystemBind(
                         outputPath.getAbsolutePath(),
                         "/opt/hedera/services/output",
@@ -113,11 +111,17 @@ public class HederaContainer extends GenericContainer<HederaContainer> {
                 .withFileSystemBind(
                         savedPath.getAbsolutePath(),
                         "/opt/hedera/services/data/saved",
-                        BindMode.READ_WRITE)
-                .withFileSystemBind(
-                        recordPath.getAbsolutePath(),
-                        "/opt/hedera/services/network/itest/data/recordStreams/record0.0.3",
                         BindMode.READ_WRITE);
+    }
+
+    public HederaContainer withRecordStreamFolderBinding(
+            final File workspace, final String recordStreamFolder) {
+        recordPath = new File(workspace, "records/node_" + id);
+        recordPath.mkdirs();
+        return this.withFileSystemBind(
+                recordPath.getAbsolutePath(),
+                "/opt/hedera/services/" + recordStreamFolder + "/record0.0.3",
+                BindMode.READ_WRITE);
     }
 
     public String getRecordPath() {

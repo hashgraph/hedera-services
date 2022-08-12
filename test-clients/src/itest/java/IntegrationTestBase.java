@@ -45,7 +45,8 @@ public abstract class IntegrationTestBase extends TestBase {
             new HederaContainer(IMAGE, 0)
                     .withClasspathResourceMappingDir("network/config")
                     .withWorkspace(WORKSPACE)
-                    .withNetwork(NETWORK);
+                    .withNetwork(NETWORK)
+                    .withRecordStreamFolderBinding(WORKSPACE, "network/itest/data/recordStreams");
 
     /** Before any test runs, configure HapiApiSpec to use the Testcontainer we created */
     @BeforeAll

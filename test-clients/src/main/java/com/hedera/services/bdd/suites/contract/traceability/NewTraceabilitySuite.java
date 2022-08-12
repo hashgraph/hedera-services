@@ -45,7 +45,6 @@ import org.apache.logging.log4j.Logger;
 public class NewTraceabilitySuite extends HapiApiSuite {
     private static final Logger log = LogManager.getLogger(NewTraceabilitySuite.class);
 
-    private static final String EMPTY_CONSTRUCTOR_CONTRACT = "EmptyConstructor";
     private static SidecarWatcher sidecarWatcher;
     private static CompletableFuture<Void> sidecarWatcherTask;
 
@@ -59,16 +58,12 @@ public class NewTraceabilitySuite extends HapiApiSuite {
                 CompletableFuture.runAsync(
                         () -> {
                             try {
-                                String recordStreamPath;
-                                if (HapiApiSpec.isRunningInCi()) {
-                                    recordStreamPath =
-                                            HapiApiSpec.ciPropOverrides().get("recordStream.path");
-                                } else {
-                                    recordStreamPath =
-                                            HapiSpecSetup.getDefaultPropertySource()
-                                                    .get("recordStream.path");
-                                }
-                                sidecarWatcher.startWatching(recordStreamPath);
+                                sidecarWatcher.startWatching(
+                                        HapiApiSpec.isRunningInCi()
+                                                ? HapiApiSpec.ciPropOverrides()
+                                                        .get("recordStream.path")
+                                                : HapiSpecSetup.getDefaultPropertySource()
+                                                        .get("recordStream.path"));
                             } catch (IOException e) {
                                 e.printStackTrace();
                             }
@@ -82,7 +77,8 @@ public class NewTraceabilitySuite extends HapiApiSuite {
     }
 
     private HapiApiSpec vanillaBytecodeSidecar() {
-        final var vanillaBytecodeSidecar = "vanillaBytecodeSidecar";
+        final var EMPTY_CONSTRUCTOR_CONTRACT = "EmptyConstructor";
+      final var vanillaBytecodeSidecar = "vanillaBytecodeSidecar";
         final var firstTxn = "firstTxn";
         return defaultHapiSpec(vanillaBytecodeSidecar)
                 .given(uploadInitCode(EMPTY_CONSTRUCTOR_CONTRACT))
