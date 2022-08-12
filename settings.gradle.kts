@@ -1,9 +1,6 @@
-/*-
- * ‌
- * Hedera Services
- * ​
- * Copyright (C) 2018 - 2022 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2022 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -15,8 +12,10 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+plugins {
+    id("com.gradle.enterprise").version("3.10.3")
+}
 
 rootProject.name = "hedera-services"
 
@@ -25,6 +24,14 @@ include(":hapi-utils")
 include(":hapi-fees")
 include(":hedera-node")
 include(":test-clients")
+
+// Enable Gradle Build Scan
+gradleEnterprise {
+    buildScan {
+        termsOfServiceUrl = "https://gradle.com/terms-of-service"
+        termsOfServiceAgree = "yes"
+    }
+}
 
 // Define the library catalogs available for projects to make use of
 dependencyResolutionManagement {
@@ -69,8 +76,18 @@ dependencyResolutionManagement {
             // Use when you need to depend upon netty
             bundle("netty", listOf("netty-handler", "netty-transport-native-epoll"))
             // Use when you depend upon all or swirlds
-            bundle("swirlds", listOf("swirlds-common", "swirlds-platform-core", "swirlds-fchashmap",
-                "swirlds-merkle", "swirlds-fcqueue", "swirlds-jasperdb", "swirlds-virtualmap"))
+            bundle(
+                "swirlds",
+                listOf(
+                    "swirlds-common",
+                    "swirlds-platform-core",
+                    "swirlds-fchashmap",
+                    "swirlds-merkle",
+                    "swirlds-fcqueue",
+                    "swirlds-jasperdb",
+                    "swirlds-virtualmap"
+                )
+            )
 
             // Define the individual libraries
             library("besu-bls12-381", "org.hyperledger.besu", "bls12-381").versionRef("besu-native-version")
