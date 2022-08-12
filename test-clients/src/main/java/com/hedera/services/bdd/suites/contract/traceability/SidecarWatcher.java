@@ -46,6 +46,7 @@ public class SidecarWatcher {
     private final Map<String, List<Pair<TransactionSidecarRecord, TransactionSidecarRecord>>>
             failedSidecars = new HashMap<>();
     private boolean shouldTerminateAfterNext = false;
+    private boolean hasSeenFirst = false;
 
     public void startWatching(String s) throws IOException {
         final var watchService = FileSystems.getDefault().newWatchService();
@@ -111,23 +112,45 @@ public class SidecarWatcher {
 
     private void onNewSidecarFile(final SidecarFile sidecarFile) {
         for (final var actualSidecar : sidecarFile.getSidecarRecordsList()) {
-            final var expectedSidecarPair = expectedSidecars.poll();
-            final var expectedSidecar = expectedSidecarPair.getValue();
-            if ((actualSidecar.hasBytecode() || actualSidecar.hasStateChanges())
-                    && actualSidecar.equals(expectedSidecar)) {
-                final var spec = expectedSidecarPair.getKey();
-                final var list = failedSidecars.getOrDefault(spec, new ArrayList<>());
-                list.add(Pair.of(expectedSidecar, actualSidecar));
-                failedSidecars.put(spec, list);
-            } else if (actualSidecar.hasActions()) {
-                // to be completed
-                //                if (!expectedSidecar
-                //                        .getConsensusTimestamp()
-                //                        .equals(actualSidecar.getConsensusTimestamp())) {
-                //                    areSidecarsValid = false;
-                //                    throw new RuntimeException();
-                //                }
+            if (hasSeenFirst) {
+                assertIncomingSidecar(actualSidecar);
+            } else {
+                // sidecar records from different suites can be present in the sidecar
+                // files before our first expected sidecar so skip sidecars until we reach
+                // the first expected one in the queue
+                if (expectedSidecars.isEmpty()) {
+                    continue;
+                }
+                if (expectedSidecars
+                        .peek()
+                        .getValue()
+                        .getConsensusTimestamp()
+                        .equals(actualSidecar.getConsensusTimestamp())) {
+                    hasSeenFirst = true;
+                    assertIncomingSidecar(actualSidecar);
+                }
             }
+        }
+    }
+
+    private void assertIncomingSidecar(final TransactionSidecarRecord actualSidecar) {
+        final var expectedSidecarPair = expectedSidecars.poll();
+        final var expectedSidecar = expectedSidecarPair.getValue();
+
+        if ((actualSidecar.hasBytecode() || actualSidecar.hasStateChanges())
+                && !actualSidecar.equals(expectedSidecar)) {
+            final var spec = expectedSidecarPair.getKey();
+            final var list = failedSidecars.getOrDefault(spec, new ArrayList<>());
+            list.add(Pair.of(expectedSidecar, actualSidecar));
+            failedSidecars.put(spec, list);
+        } else if (actualSidecar.hasActions()) {
+            // to be completed
+            //                if (!expectedSidecar
+            //                        .getConsensusTimestamp()
+            //                        .equals(actualSidecar.getConsensusTimestamp())) {
+            //                    areSidecarsValid = false;
+            //                    throw new RuntimeException();
+            //                }
         }
     }
 
