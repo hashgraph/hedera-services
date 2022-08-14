@@ -27,7 +27,7 @@ import com.hedera.services.txns.ProcessLogic;
 import com.hedera.services.txns.schedule.ScheduleProcessing;
 import com.hedera.services.txns.span.ExpandHandleSpan;
 import com.hedera.services.utils.accessors.TxnAccessor;
-import com.swirlds.common.system.transaction.SwirldTransaction;
+import com.swirlds.common.system.transaction.Transaction;
 import java.time.Instant;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -81,7 +81,7 @@ public class StandardProcessLogic implements ProcessLogic {
 
     @Override
     public void incorporateConsensusTxn(
-            SwirldTransaction platformTxn, Instant consensusTime, long submittingMember) {
+            Transaction platformTxn, Instant consensusTime, long submittingMember) {
         try {
             final var accessor = expandHandleSpan.accessorFor(platformTxn);
             accessor.setStateView(workingView);
@@ -108,6 +108,7 @@ public class StandardProcessLogic implements ProcessLogic {
             }
 
             autoRenewal.execute(consensusTime);
+            platformTxn.clearSignatures();
         } catch (InvalidProtocolBufferException e) {
             log.warn("Consensus platform txn was not gRPC!", e);
         } catch (Exception internal) {

@@ -56,7 +56,7 @@ public class SignedStateViewFactory {
      */
     public void tryToUpdateToLatestSignedChildren(final MutableStateChildren children)
             throws NoValidSignedStateException {
-        doWithLatest(state -> children.updateFromSigned(state, state.getTimeOfLastHandledTxn()));
+        doWithLatest(state -> children.updateFromImmutable(state, state.getTimeOfLastHandledTxn()));
     }
 
     /**
@@ -92,7 +92,7 @@ public class SignedStateViewFactory {
      * @param state a services state
      * @return if the given state is usable
      */
-    boolean isUsable(final ServicesState state) {
+    public static boolean isUsable(final ServicesState state) {
         if (state == null) {
             return false;
         }

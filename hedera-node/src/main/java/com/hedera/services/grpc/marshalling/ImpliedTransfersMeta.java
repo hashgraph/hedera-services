@@ -22,9 +22,9 @@ import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.txns.customfees.CustomFeeSchedules;
 import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.swirlds.common.system.Round;
 import com.swirlds.common.system.SwirldDualState;
-import com.swirlds.common.system.transaction.SwirldTransaction;
-import java.time.Instant;
+import com.swirlds.common.system.events.Event;
 import java.util.List;
 import java.util.Map;
 import org.apache.commons.lang3.builder.EqualsBuilder;
@@ -36,10 +36,8 @@ import org.apache.commons.lang3.builder.HashCodeBuilder;
  * adjustments.
  *
  * <p>Note that we need to remember these two parameters in order to safely reuse this validation
- * across "span" between the {@link
- * com.hedera.services.ServicesState#expandSignatures(SwirldTransaction)} and {@link
- * com.hedera.services.ServicesState#handleTransaction(long, boolean, Instant, Instant,
- * SwirldTransaction, SwirldDualState)} callbacks.
+ * across "span" between the {@link com.hedera.services.ServicesState#preHandle(Event)} and {@link
+ * com.hedera.services.ServicesState#handleConsensusRound(Round, SwirldDualState)} callbacks.
  *
  * <p>This is because either parameter <i>could</i> change due to an update of file 0.0.121 between
  * the two callbacks. So we have to double-check that neither <i>did</i> change before reusing the

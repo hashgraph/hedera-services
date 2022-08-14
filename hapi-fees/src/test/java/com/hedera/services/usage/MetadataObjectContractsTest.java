@@ -22,7 +22,7 @@ import com.hedera.services.usage.token.meta.ExtantFeeScheduleContext;
 import com.hedera.services.usage.token.meta.FeeScheduleUpdateMeta;
 import org.junit.jupiter.api.Test;
 
-class CommonUtilsHelpersSanityCheckTest {
+class MetadataObjectContractsTest {
     @Test
     void baseTxnMetaObjContractSanityChecks() {
         // given:

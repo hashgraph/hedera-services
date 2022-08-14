@@ -47,7 +47,7 @@ import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.fees.calculation.UsagePricesProvider;
 import com.hedera.services.pricing.AssetsLoader;
 import com.hedera.services.store.contracts.precompile.Precompile;
-import com.hedera.services.utils.accessors.SignedTxnAccessor;
+import com.hedera.services.utils.accessors.AccessorFactory;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.SignatureMap;
@@ -88,6 +88,7 @@ public class PrecompilePricingUtils {
     private final Provider<FeeCalculator> feeCalculator;
     private final UsagePricesProvider resourceCosts;
     private final StateView currentView;
+    private final AccessorFactory accessorFactory;
     Map<GasCostType, Long> canonicalOperationCostsInTinyCents;
 
     @Inject
@@ -96,11 +97,13 @@ public class PrecompilePricingUtils {
             final HbarCentExchange exchange,
             final Provider<FeeCalculator> feeCalculator,
             final UsagePricesProvider resourceCosts,
-            final StateView currentView) {
+            final StateView currentView,
+            final AccessorFactory accessorFactory) {
         this.exchange = exchange;
         this.feeCalculator = feeCalculator;
         this.resourceCosts = resourceCosts;
         this.currentView = currentView;
+        this.accessorFactory = accessorFactory;
 
         canonicalOperationCostsInTinyCents = new EnumMap<>(GasCostType.class);
         Map<HederaFunctionality, Map<SubType, BigDecimal>> canonicalPrices;
@@ -144,7 +147,7 @@ public class PrecompilePricingUtils {
                         .setSignedTransactionBytes(signedTxn.toByteString())
                         .build();
 
-        final var accessor = SignedTxnAccessor.uncheckedFrom(txn);
+        final var accessor = accessorFactory.uncheckedSpecializedAccessor(txn);
         precompile.addImplicitCostsIn(accessor);
         final var fees =
                 feeCalculator.get().computeFee(accessor, EMPTY_KEY, currentView, consensusTime);
