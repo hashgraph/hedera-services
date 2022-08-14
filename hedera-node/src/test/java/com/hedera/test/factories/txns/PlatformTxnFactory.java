@@ -15,14 +15,15 @@
  */
 package com.hedera.test.factories.txns;
 
-import com.swirlds.common.system.transaction.SwirldTransaction;
+import com.swirlds.common.system.transaction.Transaction;
+import com.swirlds.common.system.transaction.internal.SwirldTransaction;
 
 public class PlatformTxnFactory {
-    public static SwirldTransaction from(com.hederahashgraph.api.proto.java.Transaction signedTxn) {
+    public static Transaction from(com.hederahashgraph.api.proto.java.Transaction signedTxn) {
         return new SwirldTransaction(signedTxn.toByteArray());
     }
 
-    public static TransactionWithClearFlag withClearFlag(SwirldTransaction txn) {
+    public static TransactionWithClearFlag withClearFlag(Transaction txn) {
         return new TransactionWithClearFlag(txn.getContents());
     }
 

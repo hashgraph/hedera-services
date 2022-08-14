@@ -197,6 +197,7 @@ class TxnAwareRecordsHistorianTest {
         given(topLevelRecord.build()).willReturn(mockTopLevelRecord);
 
         given(txnCtx.recordSoFar()).willReturn(topLevelRecord);
+        given(txnCtx.sidecars()).willReturn(List.of(TransactionSidecarRecord.newBuilder()));
         given(creator.saveExpiringRecord(effPayer, mockTopLevelRecord, nows, submittingMember))
                 .willReturn(mockTopLevelRecord);
 
