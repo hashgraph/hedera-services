@@ -116,7 +116,8 @@ public class TransferLogic {
             // If the change consists of any known alias, replace the alias with the account number
             checkIfExistingAlias(change);
             // create a new account for alias when the no account is already created using the alias
-            if (change.hasNonEmptyAlias() || (change.isForNft() && change.hasNonEmptyCounterPartyAlias())) {
+            if (change.hasNonEmptyAlias()
+                    || (change.isForNft() && change.hasNonEmptyCounterPartyAlias())) {
                 if (autoCreationLogic == null) {
                     throw new IllegalStateException(
                             "Cannot auto-create account from "
@@ -132,13 +133,11 @@ public class TransferLogic {
             } else if (change.isForHbar()) {
                 validity =
                         accountsLedger.validate(
-                                change.accountId(),
-                                scopedCheck.setBalanceChange(change));
+                                change.accountId(), scopedCheck.setBalanceChange(change));
             } else {
                 validity =
                         accountsLedger.validate(
-                                change.accountId(),
-                                scopedCheck.setBalanceChange(change));
+                                change.accountId(), scopedCheck.setBalanceChange(change));
 
                 if (validity == OK) {
                     validity = tokenStore.tryTokenChange(change);

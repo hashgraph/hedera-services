@@ -483,7 +483,8 @@ class TransactionalLedgerTest {
         accountsLedger.create(asAccount(EntityNum.fromLong(1L).toEntityId()));
 
         boolean has1 = accountsLedger.exists(aliasedId);
-        boolean has2 = accountsLedger.exists(AccountID.newBuilder().setAlias(nonExistingAlias).build());
+        boolean has2 =
+                accountsLedger.exists(AccountID.newBuilder().setAlias(nonExistingAlias).build());
 
         assertTrue(has1);
         assertFalse(has2);
@@ -763,12 +764,9 @@ class TransactionalLedgerTest {
         when(backingTestAccounts.contains(4L)).thenReturn(true);
         when(backingTestAccounts.getImmutableRef(4L)).thenReturn(account4);
 
-        assertEquals(
-                ACCOUNT_IS_NOT_GENESIS_ACCOUNT,
-                testLedger.validate(2L, scopedCheck));
+        assertEquals(ACCOUNT_IS_NOT_GENESIS_ACCOUNT, testLedger.validate(2L, scopedCheck));
         assertEquals(ACCOUNT_IS_TREASURY, testLedger.validate(3L, scopedCheck));
-        assertEquals(
-                ACCOUNT_STILL_OWNS_NFTS, testLedger.validate(4L, scopedCheck));
+        assertEquals(ACCOUNT_STILL_OWNS_NFTS, testLedger.validate(4L, scopedCheck));
     }
 
     @Test
@@ -786,9 +784,7 @@ class TransactionalLedgerTest {
         testLedger.set(1L, HBAR_ALLOWANCES, MISSING);
         testLedger.commit();
 
-        assertEquals(
-                SPENDER_DOES_NOT_HAVE_ALLOWANCE,
-                testLedger.validate(1L, scopedCheck));
+        assertEquals(SPENDER_DOES_NOT_HAVE_ALLOWANCE, testLedger.validate(1L, scopedCheck));
     }
 
     @Test
@@ -806,8 +802,7 @@ class TransactionalLedgerTest {
         testLedger.set(1L, HBAR_ALLOWANCES, INSUFFICIENT);
         testLedger.commit();
 
-        assertEquals(
-                AMOUNT_EXCEEDS_ALLOWANCE, testLedger.validate(1L, scopedCheck));
+        assertEquals(AMOUNT_EXCEEDS_ALLOWANCE, testLedger.validate(1L, scopedCheck));
     }
 
     @Test
@@ -839,7 +834,8 @@ class TransactionalLedgerTest {
         when(backingAccounts.contains(rand)).thenReturn(true);
         when(backingAccounts.getImmutableRef(rand)).thenReturn(randMerkleAccount);
         when(backingAccounts.contains(EntityNum.fromLong(8L).toGrpcAccountId())).thenReturn(true);
-        given(workingView.aliases()).willReturn(Map.of(aliasAccountId.getAlias(), EntityNum.fromLong(8L)));
+        given(workingView.aliases())
+                .willReturn(Map.of(aliasAccountId.getAlias(), EntityNum.fromLong(8L)));
 
         accountsLedger.begin();
         accountsLedger.set(rand, AccountProperty.BALANCE, 4L);

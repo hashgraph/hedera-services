@@ -355,7 +355,8 @@ class SyntheticTxnFactoryTest {
                 subject.createAccount(
                         alias,
                         balance,
-                        BalanceChange.tokenAdjust(EntityNum.fromLong(10).toId(), Id.fromGrpcToken(token), 100));
+                        BalanceChange.tokenAdjust(
+                                EntityNum.fromLong(10).toId(), Id.fromGrpcToken(token), 100));
         final var txnBody = result.build();
 
         assertTrue(txnBody.hasCryptoCreateAccount());
@@ -383,11 +384,7 @@ class SyntheticTxnFactoryTest {
 
         final var nftChange = changingNftOwnership(Id.fromGrpcToken(token), token, xfer, payer);
 
-        final var result =
-                subject.createAccount(
-                        alias,
-                        balance,
-                        nftChange);
+        final var result = subject.createAccount(alias, balance, nftChange);
 
         final var txnBody = result.build();
 

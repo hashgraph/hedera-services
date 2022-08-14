@@ -15,7 +15,6 @@
  */
 package com.hedera.services.bdd.spec.transactions.token;
 
-import static com.hedera.services.bdd.spec.transactions.TxnUtils.asId;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.asIdForKeyLookUp;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.asTokenId;
 

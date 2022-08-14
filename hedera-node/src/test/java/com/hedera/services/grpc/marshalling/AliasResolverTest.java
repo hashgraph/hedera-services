@@ -99,7 +99,8 @@ class AliasResolverTest {
                                                                         .setAlias(anAlias))
                                                         .setReceiverAccountID(
                                                                 AccountID.newBuilder()
-                                                                        .setAlias(anotherValidAlias))
+                                                                        .setAlias(
+                                                                                anotherValidAlias))
                                                         .setSerialNumber(2L)
                                                         .build()))
                         .build();
@@ -116,7 +117,15 @@ class AliasResolverTest {
         assertEquals(1, subject.perceivedInvalidCreations());
         assertEquals(1, subject.perceivedAutoCreations());
         assertEquals(
-                Map.of(anAlias, aNum, someAlias, MISSING_NUM, otherAlias, MISSING_NUM, anotherValidAlias, MISSING_NUM),
+                Map.of(
+                        anAlias,
+                        aNum,
+                        someAlias,
+                        MISSING_NUM,
+                        otherAlias,
+                        MISSING_NUM,
+                        anotherValidAlias,
+                        MISSING_NUM),
                 subject.resolutions());
         final var tokensAdjusts = resolvedOp.getTokenTransfers(0);
         assertEquals(someToken, tokensAdjusts.getToken());

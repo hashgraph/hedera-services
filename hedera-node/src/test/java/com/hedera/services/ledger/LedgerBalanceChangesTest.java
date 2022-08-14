@@ -415,8 +415,8 @@ class LedgerBalanceChangesTest {
         subject.commit();
 
         assertEquals(aStartBalance - 100, backingAccounts.getImmutableRef(a).getBalance());
-        assertEquals( payerBalance - 100, backingAccounts.getImmutableRef(payer).getBalance());
-        assertEquals( 100, backingAccounts.getImmutableRef(funding).getBalance());
+        assertEquals(payerBalance - 100, backingAccounts.getImmutableRef(payer).getBalance());
+        assertEquals(100, backingAccounts.getImmutableRef(funding).getBalance());
         assertEquals(
                 0,
                 backingAccounts

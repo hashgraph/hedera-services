@@ -50,7 +50,6 @@ import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fix
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHtsFeeInheritingRoyaltyCollector;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fractionalFee;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fractionalFeeNetOfTransfers;
-import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.royaltyFeeNoFallback;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.royaltyFeeWithFallback;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingHbar;
@@ -114,52 +113,57 @@ public class TokenTransactSpecs extends HapiApiSuite {
     public List<HapiApiSpec> getSpecsInSuite() {
         return List.of(
                 new HapiApiSpec[] {
-//                    balancesChangeOnTokenTransfer(),
-//                    accountsMustBeExplicitlyUnfrozenOnlyIfDefaultFreezeIsTrue(),
-//                    senderSigsAreValid(),
-//                    balancesAreChecked(),
-//                    duplicateAccountsInTokenTransferRejected(),
-//                    tokenOnlyTxnsAreAtomic(),
-//                    tokenPlusHbarTxnsAreAtomic(),
-//                    nonZeroTransfersRejected(),
-//                    missingEntitiesRejected(),
-//                    allRequiredSigsAreChecked(),
-//                    uniqueTokenTxnAccountBalance(),
-//                    uniqueTokenTxnAccountBalancesForTreasury(),
-//                    uniqueTokenTxnWithNoAssociation(),
-//                    uniqueTokenTxnWithFrozenAccount(),
-//                    uniqueTokenTxnWithSenderNotSigned(),
-//                    uniqueTokenTxnWithReceiverNotSigned(),
-//                    uniqueTokenTxnsAreAtomic(),
-//                    uniqueTokenDeletedTxn(),
-//                    cannotSendFungibleToDissociatedContractsOrAccounts(),
-//                    cannotGiveNftsToDissociatedContractsOrAccounts(),
-//                    recordsIncludeBothFungibleTokenChangesAndOwnershipChange(),
-//                    transferListsEnforceTokenTypeRestrictions(),
-//                    /* HIP-18 charging case studies */
-//                    fixedHbarCaseStudy(),
-//                    fractionalCaseStudy(),
-//                    simpleHtsFeeCaseStudy(),
-//                    nestedHbarCaseStudy(),
-//                    nestedFractionalCaseStudy(),
-//                    nestedHtsCaseStudy(),
-//                    treasuriesAreExemptFromAllCustomFees(),
-//                    collectorsAreExemptFromTheirOwnFeesButNotOthers(),
+                    //                    balancesChangeOnTokenTransfer(),
+                    //
+                    // accountsMustBeExplicitlyUnfrozenOnlyIfDefaultFreezeIsTrue(),
+                    //                    senderSigsAreValid(),
+                    //                    balancesAreChecked(),
+                    //                    duplicateAccountsInTokenTransferRejected(),
+                    //                    tokenOnlyTxnsAreAtomic(),
+                    //                    tokenPlusHbarTxnsAreAtomic(),
+                    //                    nonZeroTransfersRejected(),
+                    //                    missingEntitiesRejected(),
+                    //                    allRequiredSigsAreChecked(),
+                    //                    uniqueTokenTxnAccountBalance(),
+                    //                    uniqueTokenTxnAccountBalancesForTreasury(),
+                    //                    uniqueTokenTxnWithNoAssociation(),
+                    //                    uniqueTokenTxnWithFrozenAccount(),
+                    //                    uniqueTokenTxnWithSenderNotSigned(),
+                    //                    uniqueTokenTxnWithReceiverNotSigned(),
+                    //                    uniqueTokenTxnsAreAtomic(),
+                    //                    uniqueTokenDeletedTxn(),
+                    //                    cannotSendFungibleToDissociatedContractsOrAccounts(),
+                    //                    cannotGiveNftsToDissociatedContractsOrAccounts(),
+                    //
+                    // recordsIncludeBothFungibleTokenChangesAndOwnershipChange(),
+                    //                    transferListsEnforceTokenTypeRestrictions(),
+                    //                    /* HIP-18 charging case studies */
+                    //                    fixedHbarCaseStudy(),
+                    //                    fractionalCaseStudy(),
+                    //                    simpleHtsFeeCaseStudy(),
+                    //                    nestedHbarCaseStudy(),
+                    //                    nestedFractionalCaseStudy(),
+                    //                    nestedHtsCaseStudy(),
+                    //                    treasuriesAreExemptFromAllCustomFees(),
+                    //                    collectorsAreExemptFromTheirOwnFeesButNotOthers(),
                     multipleRoyaltyFallbackCaseStudy()
-//                    normalRoyaltyCaseStudy(),
-//                    canTransactInTokenWithSelfDenominatedFixedFee(),
-//                    nftOwnersChangeAtomically(),
-//                    fractionalNetOfTransfersCaseStudy(),
-//                    royaltyAndFractionalTogetherCaseStudy(),
-//                    respondsCorrectlyWhenNonFungibleTokenWithRoyaltyUsedInTransferList(),
-//                    /* HIP-23 */
-//                    happyPathAutoAssociationsWorkForBothTokenTypes(),
-//                    failedAutoAssociationHasNoSideEffectsOrHistoryForUnrelatedProblem(),
-//                    newSlotsCanBeOpenedViaUpdate(),
-//                    newSlotsCanBeOpenedViaDissociate(),
-//                    autoAssociationWithKycTokenHasNoSideEffectsOrHistory(),
-//                    autoAssociationWithFrozenByDefaultTokenHasNoSideEffectsOrHistory(),
-//                    autoAssociationWorksForContracts()
+                    //                    normalRoyaltyCaseStudy(),
+                    //                    canTransactInTokenWithSelfDenominatedFixedFee(),
+                    //                    nftOwnersChangeAtomically(),
+                    //                    fractionalNetOfTransfersCaseStudy(),
+                    //                    royaltyAndFractionalTogetherCaseStudy(),
+                    //
+                    // respondsCorrectlyWhenNonFungibleTokenWithRoyaltyUsedInTransferList(),
+                    //                    /* HIP-23 */
+                    //                    happyPathAutoAssociationsWorkForBothTokenTypes(),
+                    //
+                    // failedAutoAssociationHasNoSideEffectsOrHistoryForUnrelatedProblem(),
+                    //                    newSlotsCanBeOpenedViaUpdate(),
+                    //                    newSlotsCanBeOpenedViaDissociate(),
+                    //                    autoAssociationWithKycTokenHasNoSideEffectsOrHistory(),
+                    //
+                    // autoAssociationWithFrozenByDefaultTokenHasNoSideEffectsOrHistory(),
+                    //                    autoAssociationWorksForContracts()
                 });
     }
 
@@ -1639,13 +1643,15 @@ public class TokenTransactSpecs extends HapiApiSuite {
                                                 100,
                                                 fixedHtsFeeInheritingRoyaltyCollector(1, usdc),
                                                 westWindTreasury)),
-//                                .withCustom(royaltyFeeNoFallback(10, 100, westWindDirector))
-//                                .withCustom(
-//                                        royaltyFeeWithFallback(
-//                                                5,
-//                                                100,
-//                                                fixedHtsFeeInheritingRoyaltyCollector(1, usdc),
-//                                                westWindOwner)),
+                        //                                .withCustom(royaltyFeeNoFallback(10, 100,
+                        // westWindDirector))
+                        //                                .withCustom(
+                        //                                        royaltyFeeWithFallback(
+                        //                                                5,
+                        //                                                100,
+                        //
+                        // fixedHtsFeeInheritingRoyaltyCollector(1, usdc),
+                        //                                                westWindOwner)),
                         tokenAssociate(amelie, List.of(westWindArt, usdc)),
                         tokenAssociate(zephyr, List.of(westWindArt, usdc)),
                         mintToken(westWindArt, List.of(copyFromUtf8("Fugues and fantastics"))))

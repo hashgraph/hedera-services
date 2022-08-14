@@ -116,7 +116,8 @@ public class AliasResolver {
 
             resolvedTokenAdjust.setToken(tokenAdjust.getToken());
             for (final var adjust : tokenAdjust.getTransfersList()) {
-                final var result = resolveInternalFungible(
+                final var result =
+                        resolveInternalFungible(
                                 aliasManager, adjust, resolvedTokenAdjust::addTransfers, true);
                 perceiveResult(result, adjust);
             }
@@ -125,7 +126,8 @@ public class AliasResolver {
                 final var resolvedChange =
                         change.toBuilder().setSerialNumber(change.getSerialNumber());
 
-                final var senderResult = resolveInternal(
+                final var senderResult =
+                        resolveInternal(
                                 aliasManager,
                                 change.getSenderAccountID(),
                                 resolvedChange::setSenderAccountID);
@@ -291,7 +293,9 @@ public class AliasResolver {
         if (isEvmAddress) {
             return Result.UNKNOWN_EVM_ADDRESS;
         } else {
-            return resolutions.containsKey(alias) ? Result.REPEATED_UNKNOWN_ALIAS : Result.UNKNOWN_ALIAS;
+            return resolutions.containsKey(alias)
+                    ? Result.REPEATED_UNKNOWN_ALIAS
+                    : Result.UNKNOWN_ALIAS;
         }
     }
 

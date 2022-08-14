@@ -211,7 +211,7 @@ public class BalanceChange {
         return token != null && counterPartyAccountId != null;
     }
 
-    public boolean isForToken(){
+    public boolean isForToken() {
         return isForFungibleToken() || isForNft();
     }
 
@@ -357,6 +357,8 @@ public class BalanceChange {
     }
 
     public boolean hasNonEmptyCounterPartyAlias() {
-        return counterPartyAccountId != null && counterPartyAccountId.getAccountNum() == 0 && !counterPartyAccountId.getAlias().isEmpty();
+        return counterPartyAccountId != null
+                && counterPartyAccountId.getAccountNum() == 0
+                && !counterPartyAccountId.getAlias().isEmpty();
     }
 }

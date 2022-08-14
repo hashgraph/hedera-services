@@ -156,7 +156,7 @@ class BalanceChangeTest {
     }
 
     @Test
-    void checksCounterPartyAliasExists(){
+    void checksCounterPartyAliasExists() {
         var xfer =
                 NftTransfer.newBuilder()
                         .setSenderAccountID(a)

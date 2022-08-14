@@ -15,43 +15,6 @@
  */
 package com.hedera.services.store.tokens;
 
-import com.hedera.services.context.SideEffectsTracker;
-import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.ledger.HederaLedger;
-import com.hedera.services.ledger.TransactionalLedger;
-import com.hedera.services.ledger.backing.BackingStore;
-import com.hedera.services.ledger.ids.EntityIdSource;
-import com.hedera.services.ledger.properties.NftProperty;
-import com.hedera.services.ledger.properties.TokenRelProperty;
-import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.sigs.utils.ImmutableKeyUtils;
-import com.hedera.services.state.enums.TokenType;
-import com.hedera.services.state.merkle.MerkleToken;
-import com.hedera.services.state.merkle.MerkleTokenRelStatus;
-import com.hedera.services.state.merkle.MerkleUniqueToken;
-import com.hedera.services.state.submerkle.EntityId;
-import com.hedera.services.state.validation.UsageLimits;
-import com.hedera.services.store.HederaStore;
-import com.hedera.services.store.models.NftId;
-import com.hedera.services.txns.validation.OptionValidator;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.Duration;
-import com.hederahashgraph.api.proto.java.Key;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.TokenID;
-import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
-import org.apache.commons.lang3.tuple.Pair;
-
-import javax.inject.Inject;
-import javax.inject.Singleton;
-import java.util.Optional;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.BiFunction;
-import java.util.function.Consumer;
-import java.util.function.Function;
-import java.util.function.Predicate;
-import java.util.function.Supplier;
-
 import static com.hedera.services.ledger.backing.BackingTokenRels.asTokenRel;
 import static com.hedera.services.ledger.properties.AccountProperty.IS_DELETED;
 import static com.hedera.services.ledger.properties.AccountProperty.MAX_AUTOMATIC_ASSOCIATIONS;
@@ -98,6 +61,42 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_IS_PAUSE
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES;
+
+import com.hedera.services.context.SideEffectsTracker;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.ledger.HederaLedger;
+import com.hedera.services.ledger.TransactionalLedger;
+import com.hedera.services.ledger.backing.BackingStore;
+import com.hedera.services.ledger.ids.EntityIdSource;
+import com.hedera.services.ledger.properties.NftProperty;
+import com.hedera.services.ledger.properties.TokenRelProperty;
+import com.hedera.services.legacy.core.jproto.JKey;
+import com.hedera.services.sigs.utils.ImmutableKeyUtils;
+import com.hedera.services.state.enums.TokenType;
+import com.hedera.services.state.merkle.MerkleToken;
+import com.hedera.services.state.merkle.MerkleTokenRelStatus;
+import com.hedera.services.state.merkle.MerkleUniqueToken;
+import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.state.validation.UsageLimits;
+import com.hedera.services.store.HederaStore;
+import com.hedera.services.store.models.NftId;
+import com.hedera.services.txns.validation.OptionValidator;
+import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.Duration;
+import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.TokenID;
+import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
+import java.util.Optional;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.BiFunction;
+import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.function.Predicate;
+import java.util.function.Supplier;
+import javax.inject.Inject;
+import javax.inject.Singleton;
+import org.apache.commons.lang3.tuple.Pair;
 
 /** Provides a managing store for arbitrary tokens. */
 @Singleton

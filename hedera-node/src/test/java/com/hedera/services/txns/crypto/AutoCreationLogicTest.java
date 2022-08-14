@@ -23,8 +23,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_ENTITIES_I
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
@@ -65,7 +63,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
@@ -111,11 +108,7 @@ class AutoCreationLogicTest {
     @Test
     void happyPathWithHbarChangeWorks() {
         givenCollaborators();
-        given(
-                syntheticTxnFactory.createAccount(
-                        aPrimitiveKey,
-                        0L,
-                        wellKnownChange()))
+        given(syntheticTxnFactory.createAccount(aPrimitiveKey, 0L, wellKnownChange()))
                 .willReturn(mockSyntheticCreation);
 
         final var input = wellKnownChange();
@@ -142,11 +135,7 @@ class AutoCreationLogicTest {
     @Test
     void happyPathWithFungibleTokenChangeWorks() {
         givenCollaborators();
-        given(
-                syntheticTxnFactory.createAccount(
-                        aPrimitiveKey,
-                        0L,
-                        wellKnownTokenChange()))
+        given(syntheticTxnFactory.createAccount(aPrimitiveKey, 0L, wellKnownTokenChange()))
                 .willReturn(mockSyntheticCreation);
 
         final var input = wellKnownTokenChange();
@@ -166,11 +155,13 @@ class AutoCreationLogicTest {
         verify(accountsLedger)
                 .set(createdNum.toGrpcAccountId(), AccountProperty.IS_SMART_CONTRACT, false);
         verify(accountsLedger)
-                .set(createdNum.toGrpcAccountId(), AccountProperty.AUTO_RENEW_PERIOD, THREE_MONTHS_IN_SECONDS);
+                .set(
+                        createdNum.toGrpcAccountId(),
+                        AccountProperty.AUTO_RENEW_PERIOD,
+                        THREE_MONTHS_IN_SECONDS);
         verify(accountsLedger)
                 .set(createdNum.toGrpcAccountId(), AccountProperty.EXPIRY, expectedExpiry);
-        verify(accountsLedger)
-                .set(createdNum.toGrpcAccountId(), AccountProperty.MEMO, AUTO_MEMO);
+        verify(accountsLedger).set(createdNum.toGrpcAccountId(), AccountProperty.MEMO, AUTO_MEMO);
         verify(accountsLedger)
                 .set(createdNum.toGrpcAccountId(), AccountProperty.MAX_AUTOMATIC_ASSOCIATIONS, 16);
 
@@ -183,11 +174,7 @@ class AutoCreationLogicTest {
     @Test
     void happyPathWithNonFungibleTokenChangeWorks() {
         givenCollaborators();
-        given(
-                syntheticTxnFactory.createAccount(
-                        aPrimitiveKey,
-                        0L,
-                        wellKnownNftChange()))
+        given(syntheticTxnFactory.createAccount(aPrimitiveKey, 0L, wellKnownNftChange()))
                 .willReturn(mockSyntheticCreation);
 
         final var input = wellKnownNftChange();
@@ -207,11 +194,13 @@ class AutoCreationLogicTest {
         verify(accountsLedger)
                 .set(createdNum.toGrpcAccountId(), AccountProperty.IS_SMART_CONTRACT, false);
         verify(accountsLedger)
-                .set(createdNum.toGrpcAccountId(), AccountProperty.AUTO_RENEW_PERIOD, THREE_MONTHS_IN_SECONDS);
+                .set(
+                        createdNum.toGrpcAccountId(),
+                        AccountProperty.AUTO_RENEW_PERIOD,
+                        THREE_MONTHS_IN_SECONDS);
         verify(accountsLedger)
                 .set(createdNum.toGrpcAccountId(), AccountProperty.EXPIRY, expectedExpiry);
-        verify(accountsLedger)
-                .set(createdNum.toGrpcAccountId(), AccountProperty.MEMO, AUTO_MEMO);
+        verify(accountsLedger).set(createdNum.toGrpcAccountId(), AccountProperty.MEMO, AUTO_MEMO);
         verify(accountsLedger)
                 .set(createdNum.toGrpcAccountId(), AccountProperty.MAX_AUTOMATIC_ASSOCIATIONS, 1);
 
