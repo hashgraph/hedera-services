@@ -24,7 +24,6 @@ import static org.apache.commons.lang3.StringUtils.EMPTY;
 import com.google.common.primitives.Ints;
 import com.google.common.primitives.Longs;
 import com.google.protobuf.ByteString;
-import com.hedera.services.bdd.suites.contract.traceability.NewTraceabilitySuite;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
