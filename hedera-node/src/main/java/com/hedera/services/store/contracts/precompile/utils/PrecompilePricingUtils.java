@@ -147,7 +147,7 @@ public class PrecompilePricingUtils {
                         .setSignedTransactionBytes(signedTxn.toByteString())
                         .build();
 
-        final var accessor = accessorFactory.uncheckedSpecializedAccessor(txn.toByteArray());
+        final var accessor = accessorFactory.uncheckedSpecializedAccessor(txn);
         precompile.addImplicitCostsIn(accessor);
         final var fees =
                 feeCalculator.get().computeFee(accessor, EMPTY_KEY, currentView, consensusTime);

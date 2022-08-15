@@ -213,9 +213,10 @@ public class MutableStateChildren implements StateChildren {
         return Objects.requireNonNull(aliases.get());
     }
 
-    public void updateFromSigned(final ServicesState signedState, final Instant signingTime) {
+    public void updateFromImmutable(
+            final ServicesState signedState, final Instant lowerBoundOnSigningTime) {
         updateFrom(signedState);
-        signedAt = signingTime;
+        signedAt = lowerBoundOnSigningTime;
     }
 
     public void updateFrom(final ServicesState state) {
