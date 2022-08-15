@@ -66,8 +66,7 @@ public class NewTraceabilitySuite extends HapiApiSuite {
                                                 : HapiSpecSetup.getDefaultPropertySource()
                                                         .get("recordStream.path"));
                             } catch (IOException e) {
-                                log.warn("Sidecar watching couldn't be initialized.");
-                                e.printStackTrace();
+                                log.warn("Sidecar watching couldn't be initialized.", e);
                             }
                         });
     }
