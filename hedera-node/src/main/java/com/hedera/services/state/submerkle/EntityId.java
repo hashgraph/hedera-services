@@ -97,7 +97,7 @@ public class EntityId implements SelfSerializable {
     /**
      * Builds an entity id from just the entity number.
      *
-     * <p>The shard and realm numbers are set to the default values configured in properties.</p>
+     * <p>The shard and realm numbers are set to the default values configured in properties.
      *
      * @param num the number of the entity id.
      * @return the equivalent entity id using the node's shard and realm.
@@ -108,7 +108,6 @@ public class EntityId implements SelfSerializable {
                 StaticPropertiesHolder.STATIC_PROPERTIES.getRealm(),
                 num);
     }
-
 
     @Override
     public int getVersion() {
