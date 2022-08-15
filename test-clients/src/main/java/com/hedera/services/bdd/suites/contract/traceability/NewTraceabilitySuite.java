@@ -32,6 +32,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
+import com.hedera.services.bdd.spec.utilops.CustomSpecAssert;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hedera.services.stream.proto.ContractBytecode;
 import com.hedera.services.stream.proto.TransactionSidecarRecord;
@@ -82,48 +83,13 @@ public class NewTraceabilitySuite extends HapiApiSuite {
         final var firstTxn = "firstTxn";
         return defaultHapiSpec(vanillaBytecodeSidecar)
                 .given(uploadInitCode(EMPTY_CONSTRUCTOR_CONTRACT))
-                .when()
-                .then(
+                .when(
                         contractCreate(EMPTY_CONSTRUCTOR_CONTRACT)
                                 .hasKnownStatus(SUCCESS)
-                                .via(firstTxn),
-                        withOpContext(
-                                (spec, opLog) -> {
-                                    final var txnRecord = getTxnRecord(firstTxn);
-                                    final String runtimeBytecode = "runtimeBytecode";
-                                    final var contractBytecode =
-                                            getContractBytecode(EMPTY_CONSTRUCTOR_CONTRACT)
-                                                    .saveResultTo(runtimeBytecode);
-                                    allRunFor(spec, txnRecord, contractBytecode);
-                                    final var consensusTimestamp =
-                                            txnRecord.getResponseRecord().getConsensusTimestamp();
-                                    final var initCode =
-                                            extractBytecodeUnhexed(
-                                                    getResourcePath(
-                                                            EMPTY_CONSTRUCTOR_CONTRACT, ".bin"));
-                                    sidecarWatcher.addExpectedSidecar(
-                                            Pair.of(
-                                                    vanillaBytecodeSidecar,
-                                                    TransactionSidecarRecord.newBuilder()
-                                                            .setConsensusTimestamp(
-                                                                    consensusTimestamp)
-                                                            .setBytecode(
-                                                                    ContractBytecode.newBuilder()
-                                                                            .setContractId(
-                                                                                    txnRecord
-                                                                                            .getResponseRecord()
-                                                                                            .getContractCreateResult()
-                                                                                            .getContractID())
-                                                                            .setInitcode(initCode)
-                                                                            .setRuntimeBytecode(
-                                                                                    ByteString
-                                                                                            .copyFrom(
-                                                                                                    spec.registry()
-                                                                                                            .getBytes(
-                                                                                                                    runtimeBytecode)))
-                                                                            .build())
-                                                            .build()));
-                                }));
+                                .via(firstTxn))
+                .then(
+                        contractBytecodeSidecar(
+                                EMPTY_CONSTRUCTOR_CONTRACT, vanillaBytecodeSidecar, firstTxn));
     }
 
     HapiApiSpec vanillaBytecodeSidecar2() {
@@ -131,46 +97,9 @@ public class NewTraceabilitySuite extends HapiApiSuite {
         final String trivialCreate = "vanillaBytecodeSidecar2";
         final var firstTxn = "firstTxn";
         return defaultHapiSpec(trivialCreate)
-                .given(uploadInitCode(contract), contractCreate(contract).via(firstTxn))
-                .when()
-                .then(
-                        withOpContext(
-                                (spec, opLog) -> {
-                                    final var txnRecord = getTxnRecord(firstTxn);
-                                    final String runtimeBytecode = "runtimeBytecode2";
-                                    final var contractBytecode =
-                                            getContractBytecode(contract)
-                                                    .saveResultTo(runtimeBytecode);
-                                    allRunFor(spec, txnRecord, contractBytecode);
-                                    final var consensusTimestamp =
-                                            txnRecord.getResponseRecord().getConsensusTimestamp();
-                                    final var initCode =
-                                            extractBytecodeUnhexed(
-                                                    getResourcePath(contract, ".bin"));
-
-                                    sidecarWatcher.addExpectedSidecar(
-                                            Pair.of(
-                                                    trivialCreate,
-                                                    TransactionSidecarRecord.newBuilder()
-                                                            .setConsensusTimestamp(
-                                                                    consensusTimestamp)
-                                                            .setBytecode(
-                                                                    ContractBytecode.newBuilder()
-                                                                            .setContractId(
-                                                                                    txnRecord
-                                                                                            .getResponseRecord()
-                                                                                            .getContractCreateResult()
-                                                                                            .getContractID())
-                                                                            .setInitcode(initCode)
-                                                                            .setRuntimeBytecode(
-                                                                                    ByteString
-                                                                                            .copyFrom(
-                                                                                                    spec.registry()
-                                                                                                            .getBytes(
-                                                                                                                    runtimeBytecode)))
-                                                                            .build())
-                                                            .build()));
-                                }));
+                .given(uploadInitCode(contract))
+                .when(contractCreate(contract).via(firstTxn))
+                .then(contractBytecodeSidecar(contract, trivialCreate, firstTxn));
     }
 
     @SuppressWarnings("java:S5960")
@@ -202,5 +131,41 @@ public class NewTraceabilitySuite extends HapiApiSuite {
     @Override
     protected Logger getResultsLogger() {
         return log;
+    }
+
+    private CustomSpecAssert contractBytecodeSidecar(
+            final String contractName, final String specName, final String contractCreateTxn) {
+        return withOpContext(
+                (spec, opLog) -> {
+                    final var txnRecord = getTxnRecord(contractCreateTxn);
+                    final String runtimeBytecode = "runtimeBytecode";
+                    final var contractBytecode =
+                            getContractBytecode(contractName).saveResultTo(runtimeBytecode);
+                    allRunFor(spec, txnRecord, contractBytecode);
+                    final var consensusTimestamp =
+                            txnRecord.getResponseRecord().getConsensusTimestamp();
+                    final var initCode =
+                            extractBytecodeUnhexed(getResourcePath(contractName, ".bin"));
+                    sidecarWatcher.addExpectedSidecar(
+                            Pair.of(
+                                    specName,
+                                    TransactionSidecarRecord.newBuilder()
+                                            .setConsensusTimestamp(consensusTimestamp)
+                                            .setBytecode(
+                                                    ContractBytecode.newBuilder()
+                                                            .setContractId(
+                                                                    txnRecord
+                                                                            .getResponseRecord()
+                                                                            .getContractCreateResult()
+                                                                            .getContractID())
+                                                            .setInitcode(initCode)
+                                                            .setRuntimeBytecode(
+                                                                    ByteString.copyFrom(
+                                                                            spec.registry()
+                                                                                    .getBytes(
+                                                                                            runtimeBytecode)))
+                                                            .build())
+                                            .build()));
+                });
     }
 }
