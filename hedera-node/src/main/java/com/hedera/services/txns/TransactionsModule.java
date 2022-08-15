@@ -46,7 +46,6 @@ import dagger.Module;
 import dagger.Provides;
 import dagger.multibindings.IntoMap;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 import javax.inject.Singleton;
 
 @Module(
@@ -78,7 +77,7 @@ public interface TransactionsModule {
     @Singleton
     static ExpandHandleSpan provideExpandHandleSpan(
             SpanMapManager spanMapManager, AccessorFactory factory) {
-        return new ExpandHandleSpan(10, TimeUnit.SECONDS, spanMapManager, factory);
+        return new ExpandHandleSpan(spanMapManager, factory);
     }
 
     @Provides
