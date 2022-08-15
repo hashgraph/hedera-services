@@ -18,10 +18,12 @@ package com.hedera.services.recordstreaming;
 import com.hedera.services.stream.proto.RecordStreamFile;
 import com.hedera.services.stream.proto.SidecarFile;
 import com.hedera.services.stream.proto.SignatureFile;
+import java.io.ByteArrayOutputStream;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Optional;
+import java.util.zip.GZIPInputStream;
 import org.apache.commons.lang3.tuple.Pair;
 
 /** Minimal utility to read record stream files and their corresponding signature files. */
@@ -30,11 +32,13 @@ public class RecordStreamingUtils {
 
     public static Pair<Integer, Optional<RecordStreamFile>> readRecordStreamFile(
             final String fileLoc) throws IOException {
-        try (final var fin = new FileInputStream(fileLoc)) {
-            final var recordFileVersion = ByteBuffer.wrap(fin.readNBytes(4)).getInt();
-            final var recordStreamFile = RecordStreamFile.parseFrom(fin);
-            return Pair.of(recordFileVersion, Optional.ofNullable(recordStreamFile));
-        }
+        final var uncompressedFileContents = getUncompressedStreamFileBytes(fileLoc);
+        final var recordFileVersion = ByteBuffer.wrap(uncompressedFileContents, 0, 4).getInt();
+        final var recordStreamFile =
+                RecordStreamFile.parseFrom(
+                        ByteBuffer.wrap(
+                                uncompressedFileContents, 4, uncompressedFileContents.length - 4));
+        return Pair.of(recordFileVersion, Optional.ofNullable(recordStreamFile));
     }
 
     public static Pair<Integer, Optional<SignatureFile>> readSignatureFile(final String fileLoc)
@@ -47,9 +51,21 @@ public class RecordStreamingUtils {
     }
 
     public static Optional<SidecarFile> readSidecarFile(final String fileLoc) throws IOException {
-        try (final var fin = new FileInputStream(fileLoc)) {
-            final var recordStreamSidecarFile = SidecarFile.parseFrom(fin);
-            return Optional.ofNullable(recordStreamSidecarFile);
+        final var recordStreamSidecarFile =
+                SidecarFile.parseFrom(getUncompressedStreamFileBytes(fileLoc));
+        return Optional.ofNullable(recordStreamSidecarFile);
+    }
+
+    private static byte[] getUncompressedStreamFileBytes(final String fileLoc) throws IOException {
+        try (final var fin = new GZIPInputStream(new FileInputStream(fileLoc));
+                final var byteArrayOutputStream = new ByteArrayOutputStream()) {
+            final var buffer = new byte[1024];
+            int len;
+            while ((len = fin.read(buffer)) > 0) {
+                byteArrayOutputStream.write(buffer, 0, len);
+            }
+
+            return byteArrayOutputStream.toByteArray();
         }
     }
 }

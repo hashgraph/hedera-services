@@ -15,7 +15,6 @@
  */
 package com.hedera.services.stream;
 
-import static com.swirlds.common.stream.LinkedObjectStreamUtilities.generateSigFilePath;
 import static com.swirlds.common.stream.LinkedObjectStreamUtilities.generateStreamFileNameFromInstant;
 import static com.swirlds.common.stream.StreamAligned.NO_ALIGNMENT;
 import static com.swirlds.common.utility.Units.MB_TO_BYTES;
@@ -30,7 +29,6 @@ import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.verify;
 
 import com.google.protobuf.ByteString;
@@ -63,10 +61,10 @@ import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.HashingOutputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
-import com.swirlds.common.stream.LinkedObjectStreamUtilities;
 import com.swirlds.common.stream.Signer;
 import java.io.File;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.security.MessageDigest;
@@ -90,7 +88,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.MockedConstruction;
-import org.mockito.MockedStatic;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -483,7 +480,8 @@ class RecordStreamFileWriterTest {
                         Instant.ofEpochSecond(
                                 firstTxnTimestamp.getEpochSecond(), firstTxnTimestamp.getNano()));
         final var recordStreamFilePair =
-                RecordStreamingUtils.readRecordStreamFile(recordStreamFilePath);
+                RecordStreamingUtils.readRecordStreamFile(
+                        recordStreamFilePath + compressedExtension);
 
         assertEquals(RECORD_STREAM_VERSION, recordStreamFilePair.getLeft());
         final var recordStreamFileOptional = recordStreamFilePair.getRight();
@@ -495,7 +493,7 @@ class RecordStreamFileWriterTest {
                 blockRSOs,
                 startRunningHash,
                 recordStreamFile,
-                new File(recordStreamFilePath),
+                new File(recordStreamFilePath + compressedExtension),
                 sidecarIdToExpectedSidecarTypes,
                 sidecarIdToExpectedSidecars);
         assertSignatureFile(
@@ -586,15 +584,12 @@ class RecordStreamFileWriterTest {
                     sidecarFileOptional.get().getSidecarRecordsList());
             final var sidecarFile = new File(pathToSidecarFile);
             assertFalse(sidecarFile.length() > maxSidecarFileSize);
-            final var expectedSidecarHash =
-                    LinkedObjectStreamUtilities.computeEntireHash(sidecarFile);
+            final var messageDigest = MessageDigest.getInstance(DigestType.SHA_384.algorithmName());
+            messageDigest.update(sidecarFileOptional.get().toByteArray());
             final var actualSidecarHash = sidecarMetadata.getHash();
             assertEquals(HashAlgorithm.SHA_384, actualSidecarHash.getAlgorithm());
-            assertEquals(
-                    expectedSidecarHash.getDigestType().digestLength(),
-                    actualSidecarHash.getLength());
-            assertArrayEquals(
-                    expectedSidecarHash.getValue(), actualSidecarHash.getHash().toByteArray());
+            assertEquals(messageDigest.getDigestLength(), actualSidecarHash.getLength());
+            assertArrayEquals(messageDigest.digest(), actualSidecarHash.getHash().toByteArray());
             assertTrue(
                     logCaptor
                             .debugLogs()
@@ -624,8 +619,7 @@ class RecordStreamFileWriterTest {
             final Integer recordStreamVersion,
             final RecordStreamFile recordStreamFileProto)
             throws IOException, NoSuchAlgorithmException {
-        final var recordStreamFile = new File(recordStreamFilePath);
-        final var signatureFilePath = generateSigFilePath(recordStreamFile);
+        final var signatureFilePath = recordStreamFilePath + "_sig";
         final var signatureFilePair = RecordStreamingUtils.readSignatureFile(signatureFilePath);
         assertEquals(RECORD_STREAM_VERSION, signatureFilePair.getLeft());
 
@@ -636,13 +630,13 @@ class RecordStreamFileWriterTest {
         /* --- assert entire file signature --- */
         final var entireFileSignatureObject = signatureFile.getFileSignature();
         // assert entire file hash
-        final var expectedEntireHash =
-                LinkedObjectStreamUtilities.computeEntireHash(recordStreamFile);
+        final var messageDigest = MessageDigest.getInstance(DigestType.SHA_384.algorithmName());
+        messageDigest.update(ByteBuffer.allocate(4).putInt(recordStreamVersion).array());
+        messageDigest.update(recordStreamFileProto.toByteArray());
         final var actualEntireHash = entireFileSignatureObject.getHashObject();
         assertEquals(HashAlgorithm.SHA_384, actualEntireHash.getAlgorithm());
-        assertEquals(
-                expectedEntireHash.getDigestType().digestLength(), actualEntireHash.getLength());
-        assertArrayEquals(expectedEntireHash.getValue(), actualEntireHash.getHash().toByteArray());
+        assertEquals(messageDigest.getDigestLength(), actualEntireHash.getLength());
+        assertArrayEquals(messageDigest.digest(), actualEntireHash.getHash().toByteArray());
         // assert entire file signature
         assertEquals(SignatureType.SHA_384_WITH_RSA, entireFileSignatureObject.getType());
         assertEquals(expectedEntireFileSignature.length, entireFileSignatureObject.getLength());
@@ -827,7 +821,8 @@ class RecordStreamFileWriterTest {
         final var firstTransactionInstant =
                 LocalDateTime.of(2022, 1, 24, 11, 2, 55).toInstant(ZoneOffset.UTC);
         final var expectedRecordFileName =
-                generateStreamFileNameFromInstant(firstTransactionInstant, streamType);
+                generateStreamFileNameFromInstant(firstTransactionInstant, streamType)
+                        + compressedExtension;
         final var recordFile =
                 new File(expectedExportDir() + File.separator + expectedRecordFileName)
                         .createNewFile();
@@ -1013,27 +1008,16 @@ class RecordStreamFileWriterTest {
                 .willReturn(secondBlockMetadataSignature);
         final var firstTransactionInstant =
                 LocalDateTime.of(2022, 5, 11, 16, 2, 55).toInstant(ZoneOffset.UTC);
+        // bear in mind that IOException can't really be thrown from this invocation,
+        // but this is the only way we can test the expected behavior
+        given(streamType.getSigFileHeader())
+                .willAnswer(
+                        invocation -> {
+                            throw new IOException();
+                        });
 
-        // when
-        try (final MockedStatic<LinkedObjectStreamUtilities> mockedStatic =
-                mockStatic(LinkedObjectStreamUtilities.class)) {
-            mockedStatic
-                    .when(() -> LinkedObjectStreamUtilities.generateSigFilePath(any(File.class)))
-                    .thenReturn("non/existent/directory");
-            mockedStatic
-                    .when(
-                            () ->
-                                    LinkedObjectStreamUtilities.getPeriod(
-                                            any(Instant.class), anyLong()))
-                    .thenCallRealMethod();
-            mockedStatic
-                    .when(() -> LinkedObjectStreamUtilities.computeEntireHash(any(File.class)))
-                    .thenCallRealMethod();
+        sendRSOsForBlock1And2StartingFrom(firstTransactionInstant);
 
-            sendRSOsForBlock1And2StartingFrom(firstTransactionInstant);
-        }
-
-        // then
         assertThat(
                 logCaptor.errorLogs(),
                 contains(
@@ -1111,7 +1095,8 @@ class RecordStreamFileWriterTest {
                 expectedExportDir()
                         + File.separator
                         + "2022-05-26T11_02_55.000000000Z_05."
-                        + streamType.getSidecarExtension();
+                        + streamType.getSidecarExtension()
+                        + compressedExtension;
         assertEquals(expected, actualSidecarFileName);
     }
 
@@ -1130,7 +1115,8 @@ class RecordStreamFileWriterTest {
                 expectedExportDir()
                         + File.separator
                         + "2022-05-26T11_02_55.000000000Z_10."
-                        + streamType.getSidecarExtension();
+                        + streamType.getSidecarExtension()
+                        + compressedExtension;
         assertEquals(expected, actualSidecarFileName);
     }
 
@@ -1160,6 +1146,7 @@ class RecordStreamFileWriterTest {
                 .collect(Collectors.toList());
     }
 
+    private static final String compressedExtension = ".gz";
     private static final long logPeriodMs = 2000L;
     private static final int maxSidecarFileSize = MB_TO_BYTES;
     private static final int RECORD_STREAM_VERSION = 6;

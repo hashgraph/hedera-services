@@ -25,9 +25,9 @@ class RecordStreamingUtilsTest {
 
     private static final String PATH_TO_FILES = "src/test/resources/recordstream";
 
-    private static final String V6_RECORD_FILE = "2022-06-14T14_49_22.456975294Z.rcd";
+    private static final String V6_RECORD_FILE = "2022-08-15T14_02_51.642641228Z.rcd.gz";
     private static final String V6_RECORD_SIGNATURE_FILE = "2022-06-14T14_49_22.456975294Z.rcd_sig";
-    private static final String V6_SIDECAR_FILE = "2022-06-30T09_07_20.147156221Z_03.rcd";
+    private static final String V6_SIDECAR_FILE = "2022-08-15T14_02_58.158861963Z_01.rcd.gz";
     private static final String V5_RECORD_FILE = "V5_2022-05-27T08_27_14.157194938Z.rcd";
     private static final String V5_RECORD_SIGNATURE_FILE =
             "V5_2022-05-27T08_27_14.157194938Z.rcd_sig";
