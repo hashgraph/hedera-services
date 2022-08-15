@@ -21,6 +21,7 @@ import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_GET_TOKEN_CUSTOM_FEES;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_GET_TOKEN_DEFAULT_FREEZE_STATUS;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_GET_TOKEN_DEFAULT_KYC_STATUS;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_GET_TOKEN_EXPIRY_INFO;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_GET_TOKEN_INFO;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_IS_FROZEN;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_IS_KYC;
@@ -150,6 +151,17 @@ public class ViewExecutor {
                         ResponseCodeEnum.INVALID_TOKEN_ID);
                 final var customFees = stateView.tokenCustomFees(wrapper.tokenID());
                 return encoder.encodeTokenGetCustomFees(customFees);
+            }
+            case ABI_ID_GET_TOKEN_EXPIRY_INFO -> {
+                final var wrapper = decoder.decodeGetTokenExpiryInfo(input);
+                validateTrueOrRevert(
+                        stateView.tokenExists(wrapper.tokenID()),
+                        ResponseCodeEnum.INVALID_TOKEN_ID);
+                final var expiryInfo = stateView.tokenExpiryInfo(wrapper.tokenID()).orElse(null);
+                validateTrueOrRevert(
+                        expiryInfo != null, ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT);
+
+                return encoder.encodeGetTokenExpiryInfo(expiryInfo);
             }
                 // Only view functions can be used inside a ContractCallLocal
             default -> throw new InvalidTransactionException(NOT_SUPPORTED);

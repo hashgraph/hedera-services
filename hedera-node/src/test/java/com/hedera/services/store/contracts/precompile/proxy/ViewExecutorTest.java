@@ -20,9 +20,11 @@ import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_GET_TOKEN_CUSTOM_FEES;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_GET_TOKEN_DEFAULT_FREEZE_STATUS;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_GET_TOKEN_DEFAULT_KYC_STATUS;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_GET_TOKEN_EXPIRY_INFO;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_GET_TOKEN_INFO;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_IS_FROZEN;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_IS_KYC;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.payer;
 import static com.hedera.services.store.contracts.precompile.proxy.RedirectViewExecutor.MINIMUM_TINYBARS_COST;
 import static com.hedera.test.factories.fees.CustomFeeBuilder.fixedHbar;
 import static com.hedera.test.factories.fees.CustomFeeBuilder.fixedHts;
@@ -43,7 +45,9 @@ import com.hedera.services.store.contracts.precompile.codec.DecodingFacade;
 import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
 import com.hedera.services.store.contracts.precompile.codec.GetTokenDefaultFreezeStatusWrapper;
 import com.hedera.services.store.contracts.precompile.codec.GetTokenDefaultKycStatusWrapper;
+import com.hedera.services.store.contracts.precompile.codec.GetTokenExpiryInfoWrapper;
 import com.hedera.services.store.contracts.precompile.codec.GrantRevokeKycWrapper;
+import com.hedera.services.store.contracts.precompile.codec.TokenExpiryWrapper;
 import com.hedera.services.store.contracts.precompile.codec.TokenFreezeUnfreezeWrapper;
 import com.hedera.services.store.contracts.precompile.codec.TokenGetCustomFeesWrapper;
 import com.hedera.services.store.contracts.precompile.codec.TokenInfoWrapper;
@@ -324,6 +328,36 @@ class ViewExecutorTest {
 
         given(stateView.infoForToken(any())).willReturn(Optional.of(tokenInfo));
         given(stateView.infoForNft(any())).willReturn(Optional.empty());
+
+        assertEquals(Pair.of(gas, null), subject.computeCosted());
+        verify(frame).setState(MessageFrame.State.REVERT);
+    }
+
+    @Test
+    void computeGetTokenExpiryInfo() {
+        final var input = prerequisites(ABI_ID_GET_TOKEN_EXPIRY_INFO, fungibleTokenAddress);
+        final var tokenExpiryInfoEncoded =
+                Bytes.fromHexString(
+                        "0x0000000000000000000000000000000000000000000000000000000000000016000000000000000000000000000000000000000000000000000000006370f6ca00000000000000000000000000000000000000000000000000000000000004c2000000000000000000000000000000000000000000000000000000000076a700");
+
+        given(decodingFacade.decodeGetTokenExpiryInfo(input))
+                .willReturn(new GetTokenExpiryInfoWrapper(fungible));
+        given(stateView.tokenExpiryInfo(fungible))
+                .willReturn(Optional.of(new TokenExpiryWrapper(442L, payer, 555L)));
+        given(stateView.tokenExists(fungible)).willReturn(true);
+        given(encodingFacade.encodeGetTokenExpiryInfo(any())).willReturn(tokenExpiryInfoEncoded);
+
+        assertEquals(Pair.of(gas, tokenExpiryInfoEncoded), subject.computeCosted());
+    }
+
+    @Test
+    void computeGetTokenExpiryInfoFailsAsExpected() {
+        final var input = prerequisites(ABI_ID_GET_TOKEN_EXPIRY_INFO, fungibleTokenAddress);
+
+        given(decodingFacade.decodeGetTokenExpiryInfo(input))
+                .willReturn(new GetTokenExpiryInfoWrapper(fungible));
+        given(stateView.tokenExpiryInfo(fungible)).willReturn(Optional.empty());
+        given(stateView.tokenExists(fungible)).willReturn(true);
 
         assertEquals(Pair.of(gas, null), subject.computeCosted());
         verify(frame).setState(MessageFrame.State.REVERT);

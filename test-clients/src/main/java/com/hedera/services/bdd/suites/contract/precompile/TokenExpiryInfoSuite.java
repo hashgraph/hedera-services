@@ -18,6 +18,7 @@ package com.hedera.services.bdd.suites.contract.precompile;
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocal;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
@@ -69,6 +70,7 @@ public class TokenExpiryInfoSuite extends HapiApiSuite {
     public static final long MONTH_IN_SECONDS = 2629800L;
     private static final String ADMIN_KEY = TokenKeyType.ADMIN_KEY.name();
     public static final String UPDATE_EXPIRY_INFO_FOR_TOKEN = "updateExpiryInfoForToken";
+    public static final String GET_EXPIRY_INFO_FOR_TOKEN = "getExpiryInfoForToken";
 
     public static void main(String... args) {
         new TokenExpiryInfoSuite().runSuiteSync();
@@ -112,7 +114,7 @@ public class TokenExpiryInfoSuite extends HapiApiSuite {
                                                 spec,
                                                 contractCall(
                                                                 TOKEN_EXPIRY_CONTRACT,
-                                                                "getExpiryInfoForToken",
+                                                                GET_EXPIRY_INFO_FOR_TOKEN,
                                                                 Tuple.singleton(
                                                                         expandByteArrayTo32Length(
                                                                                 asAddress(
@@ -125,13 +127,23 @@ public class TokenExpiryInfoSuite extends HapiApiSuite {
                                                         .payingWith(GENESIS),
                                                 contractCall(
                                                                 TOKEN_EXPIRY_CONTRACT,
-                                                                "getExpiryInfoForToken",
+                                                                GET_EXPIRY_INFO_FOR_TOKEN,
                                                                 Tuple.singleton(
                                                                         expandByteArrayTo32Length(
                                                                                 asAddress(
                                                                                         vanillaTokenID
                                                                                                 .get()))))
                                                         .via("expiryTxn")
+                                                        .gas(GAS_TO_OFFER)
+                                                        .payingWith(GENESIS),
+                                                contractCallLocal(
+                                                                TOKEN_EXPIRY_CONTRACT,
+                                                                GET_EXPIRY_INFO_FOR_TOKEN,
+                                                                Tuple.singleton(
+                                                                        expandByteArrayTo32Length(
+                                                                                asAddress(
+                                                                                        vanillaTokenID
+                                                                                                .get()))))
                                                         .gas(GAS_TO_OFFER)
                                                         .payingWith(GENESIS))))
                 .then(
