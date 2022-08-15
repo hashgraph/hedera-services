@@ -39,7 +39,8 @@ public record GetTokenKeyWrapper(TokenID tokenID, long keyType) {
             case 16 -> SUPPLY_KEY;
             case 32 -> FEE_SCHEDULE_KEY;
             case 64 -> PAUSE_KEY;
-            default -> throw new InvalidTransactionException(ResponseCodeEnum.KEY_PREFIX_MISMATCH);
+            default -> throw new InvalidTransactionException(
+                    ResponseCodeEnum.KEY_NOT_PROVIDED, true);
         };
     }
 }
