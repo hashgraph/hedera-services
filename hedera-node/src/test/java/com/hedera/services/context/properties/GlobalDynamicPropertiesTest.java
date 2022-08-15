@@ -82,7 +82,7 @@ class GlobalDynamicPropertiesTest {
         assertTrue(subject.areNftsEnabled());
         assertTrue(subject.shouldThrottleByGas());
         assertFalse(subject.isAutoCreationEnabled());
-        assertFalse(subject.expandSigsFromLastSignedState());
+        assertFalse(subject.expandSigsFromImmutableState());
         assertTrue(subject.shouldExportPrecompileResults());
         assertFalse(subject.isCreate2Enabled());
         assertTrue(subject.isRedirectTokenCallsEnabled());
@@ -223,7 +223,7 @@ class GlobalDynamicPropertiesTest {
         assertFalse(subject.areNftsEnabled());
         assertFalse(subject.shouldThrottleByGas());
         assertTrue(subject.isAutoCreationEnabled());
-        assertTrue(subject.expandSigsFromLastSignedState());
+        assertTrue(subject.expandSigsFromImmutableState());
         assertFalse(subject.shouldExportPrecompileResults());
         assertTrue(subject.isCreate2Enabled());
         assertFalse(subject.isRedirectTokenCallsEnabled());
@@ -419,7 +419,7 @@ class GlobalDynamicPropertiesTest {
         given(properties.getLongProperty("contracts.precompile.htsDefaultGasCost"))
                 .willReturn(i + 52L);
         given(properties.getBooleanProperty("autoCreation.enabled")).willReturn(i % 2 == 0);
-        given(properties.getBooleanProperty("sigs.expandFromLastSignedState"))
+        given(properties.getBooleanProperty("sigs.expandFromImmutableState"))
                 .willReturn(i % 2 == 0);
         given(properties.getLongProperty("contracts.maxKvPairs.aggregate")).willReturn(i + 52L);
         given(properties.getIntProperty("contracts.maxKvPairs.individual")).willReturn(i + 53);

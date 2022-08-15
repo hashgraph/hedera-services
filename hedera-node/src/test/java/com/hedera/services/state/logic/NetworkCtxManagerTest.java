@@ -477,4 +477,21 @@ class NetworkCtxManagerTest {
         assertFalse(updateTest.test(now, thenSameMinute));
         assertTrue(updateTest.test(now, thenNextMinute));
     }
+
+    @Test
+    void isSameDayUTCTest() {
+        Instant instant1_1 = Instant.parse("2019-08-14T23:59:59.0Z");
+        Instant instant1_2 = Instant.parse("2019-08-14T23:59:59.99999Z");
+        Instant instant2_1 = Instant.parse("2019-08-14T24:00:00.0Z");
+        Instant instant2_2 = Instant.parse("2019-08-15T00:00:00.0Z");
+        Instant instant2_3 = Instant.parse("2019-08-15T00:00:00.00001Z");
+
+        assertTrue(NetworkCtxManager.inSameUtcDay(instant1_1, instant1_2));
+
+        assertFalse(NetworkCtxManager.inSameUtcDay(instant1_1, instant2_1));
+        assertFalse(NetworkCtxManager.inSameUtcDay(instant1_2, instant2_1));
+
+        assertTrue(NetworkCtxManager.inSameUtcDay(instant2_1, instant2_2));
+        assertTrue(NetworkCtxManager.inSameUtcDay(instant2_2, instant2_3));
+    }
 }

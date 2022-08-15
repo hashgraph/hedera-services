@@ -32,7 +32,6 @@ import static org.mockito.BDDMockito.argThat;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.verify;
-import static org.mockito.BDDMockito.willCallRealMethod;
 
 import com.google.common.cache.Cache;
 import com.google.protobuf.InvalidProtocolBufferException;
@@ -43,7 +42,6 @@ import com.hedera.services.state.submerkle.ExchangeRates;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.state.submerkle.TxnId;
-import com.hedera.services.utils.accessors.AccessorFactory;
 import com.hedera.services.utils.accessors.PlatformTxnAccessor;
 import com.hedera.services.utils.accessors.SignedTxnAccessor;
 import com.hedera.test.utils.IdUtils;
@@ -55,7 +53,7 @@ import com.hederahashgraph.api.proto.java.TimestampSeconds;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
-import com.swirlds.common.system.transaction.SwirldTransaction;
+import com.swirlds.common.system.transaction.internal.SwirldTransaction;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
@@ -75,7 +73,6 @@ class RecordCacheTest {
     @Mock private Map<TransactionID, TxnIdRecentHistory> histories;
     @Mock private TxnIdRecentHistory recentHistory;
     @Mock private TxnIdRecentHistory recentChildHistory;
-    @Mock private AccessorFactory factory;
 
     private RecordCache subject;
 
@@ -298,15 +295,7 @@ class RecordCacheTest {
         final var effectivePayer = IdUtils.asAccount("0.0.3");
         final var effectiveScheduleID = IdUtils.asSchedule("0.0.123");
         given(histories.computeIfAbsent(argThat(txnId::equals), any())).willReturn(recentHistory);
-        willCallRealMethod()
-                .given(factory)
-                .triggeredTxn(
-                        signedTxn.toByteArray(), effectivePayer, effectiveScheduleID, false, false);
-        given(factory.constructSpecializedAccessor(signedTxn.toByteArray()))
-                .willReturn(SignedTxnAccessor.from(signedTxn.toByteArray()));
-        final var accessor =
-                factory.triggeredTxn(
-                        signedTxn.toByteArray(), effectivePayer, effectiveScheduleID, false, false);
+        final var accessor = SignedTxnAccessor.from(signedTxn.toByteArray());
         final var expirableTxnRecordBuilder =
                 ExpirableTxnRecord.newBuilder()
                         .setTxnId(TxnId.fromGrpc(txnId))
