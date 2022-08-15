@@ -48,7 +48,7 @@ dependencyResolutionManagement {
             version("commons-codec-version", "1.15")
             version("commons-io-version", "2.11.0")
             version("commons-lang3-version", "3.12.0")
-            version("dagger-version", "2.41")
+            version("dagger-version", "2.42")
             version("eddsa-version", "0.3.0")
             version("grpc-version", "1.39.0")
             version("guava-version", "31.1-jre")
@@ -61,7 +61,7 @@ dependencyResolutionManagement {
             version("log4j-version", "2.17.2")
             version("netty-version", "4.1.66.Final")
             version("protobuf-java-version", "3.19.4")
-            version("swirlds-version", "0.28.0-alpha.3")
+            version("swirlds-version", "0.29.0")
             version("tuweni-version", "2.2.0")
 
             // List of bundles provided for us. When applicable, favor using these over individual libraries.
@@ -136,7 +136,7 @@ dependencyResolutionManagement {
             version("hamcrest-version", "2.2")
             version("json-version", "20210307")
             version("junit5-version", "5.8.2")
-            version("mockito-version", "4.4.0")
+            version("mockito-version", "4.6.1")
             version("picocli-version", "4.6.3")
             version("snakeyaml-version", "1.26")
             version("testcontainers-version", "1.17.2")

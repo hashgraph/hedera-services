@@ -15,7 +15,8 @@
  */
 package com.hedera.services.txns;
 
-import com.swirlds.common.system.transaction.SwirldTransaction;
+import com.swirlds.common.system.Round;
+import com.swirlds.common.system.transaction.Transaction;
 import java.time.Instant;
 
 /**
@@ -29,6 +30,16 @@ import java.time.Instant;
  */
 public interface ProcessLogic {
     /**
+     * Incorporates an entire round of consensus transactions within the current app context.
+     *
+     * @param round a round of consensus transactions
+     */
+    default void incorporateConsensus(final Round round) {
+        round.forEachEventTransaction(
+                (e, t) -> incorporateConsensusTxn(t, t.getConsensusTimestamp(), e.getCreatorId()));
+    }
+
+    /**
      * Orchestrates a process to express the full implications of the given consensus transaction at
      * the specified time.
      *
@@ -37,5 +48,5 @@ public interface ProcessLogic {
      * @param submittingMember the id of the member that submitted the txn
      */
     void incorporateConsensusTxn(
-            SwirldTransaction platformTxn, Instant consensusTime, long submittingMember);
+            Transaction platformTxn, Instant consensusTime, long submittingMember);
 }

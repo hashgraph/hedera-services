@@ -23,13 +23,14 @@ import com.hedera.services.utils.accessors.SwirldsTxnAccessor;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.swirlds.common.crypto.Signature;
-import java.time.Instant;
+import com.swirlds.common.system.Round;
+import com.swirlds.common.system.SwirldDualState;
 
 /**
  * Provides an "expand" operation that acts in-place on the {@link
  * com.swirlds.common.crypto.TransactionSignature} list of a {@link
- * com.swirlds.common.system.transaction.SwirldTransaction} whose contents are known to be a valid
- * Hedera gRPC {@link Transaction}.
+ * com.swirlds.common.system.transaction.Transaction} whose contents are known to be a valid Hedera
+ * gRPC {@link Transaction}.
  *
  * <p>This operation allows Hedera Services to use the Platform to efficiently verify <i>many</i> of
  * the cryptographic signatures in its gRPC transactions. (There are still cases where Hedera
@@ -39,9 +40,8 @@ import java.time.Instant;
  * have active signatures for the wrapped gRPC txn to be valid; and creates the cryptographic
  * signatures at the bases of the signing hierarchies for these keys. This implicitly requests the
  * Platform to verify these cryptographic signatures, by setting them in the sigs list of the
- * platform txn, <b>before</b> {@link com.hedera.services.ServicesState#handleTransaction(long,
- * boolean, Instant, Instant, SwirldTransaction, SwirldDualState)} is called with {@code
- * isConsensus=true}.
+ * platform txn, <b>before</b> {@link com.hedera.services.ServicesState#handleConsensusRound(Round,
+ * SwirldDualState)} is called with {@code isConsensus=true}.
  */
 public final class HederaToPlatformSigOps {
     private HederaToPlatformSigOps() {
