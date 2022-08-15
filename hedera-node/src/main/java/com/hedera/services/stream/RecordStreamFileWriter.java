@@ -66,7 +66,7 @@ class RecordStreamFileWriter implements LinkedObjectStream<RecordStreamObject> {
     private static final Logger LOG = LogManager.getLogger(RecordStreamFileWriter.class);
 
     private static final DigestType currentDigestType = DigestType.SHA_384;
-    private static final String compressionExtension = ".gz";
+    private static final String COMPRESSION_EXTENSION = ".gz";
 
     /** < * the current record stream type; used to obtain file extensions and versioning */
     private final RecordStreamType streamType;
@@ -260,7 +260,7 @@ class RecordStreamFileWriter implements LinkedObjectStream<RecordStreamObject> {
             // generate recordFile name
             assertFirstTxnInstantIsKnown();
             final var uncompressedRecordFilePath = generateRecordFilePath(firstTxnInstant);
-            final var recordFile = new File(uncompressedRecordFilePath + compressionExtension);
+            final var recordFile = new File(uncompressedRecordFilePath + COMPRESSION_EXTENSION);
             final var recordFileNameShort = recordFile.getName(); // for logging purposes
             if (recordFile.exists() && !recordFile.isDirectory()) {
                 LOG.debug(
@@ -507,7 +507,7 @@ class RecordStreamFileWriter implements LinkedObjectStream<RecordStreamObject> {
                 + String.format("%02d", sidecarId)
                 + "."
                 + streamType.getSidecarExtension()
-                + compressionExtension;
+                + COMPRESSION_EXTENSION;
     }
 
     public void setRunningHash(final Hash hash) {
