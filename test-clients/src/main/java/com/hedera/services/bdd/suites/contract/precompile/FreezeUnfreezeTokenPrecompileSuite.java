@@ -65,9 +65,9 @@ import org.apache.logging.log4j.Logger;
 public class FreezeUnfreezeTokenPrecompileSuite extends HapiApiSuite {
     private static final Logger log =
             LogManager.getLogger(FreezeUnfreezeTokenPrecompileSuite.class);
-    private static final String FREEZE_CONTRACT = "TokenChecksContract";
+    private static final String FREEZE_CONTRACT = "FreezeUnfreezeContract";
     private static final String IS_FROZEN_FUNC = "isTokenFrozen";
-    private static final String TOKEN_FREEZE_FUNC = "isAToken";
+    private static final String TOKEN_FREEZE_FUNC = "tokenFreeze";
     private static final String TOKEN_UNFREEZE_FUNC = "tokenUnfreeze";
     private static final String IS_FROZEN_TXN = "isFrozenTxn";
     private static final String ACCOUNT_HAS_NO_KEY_TXN = "accountHasNoFreezeKey";
@@ -92,7 +92,10 @@ public class FreezeUnfreezeTokenPrecompileSuite extends HapiApiSuite {
 
     @Override
     public List<HapiApiSpec> getSpecsInSuite() {
-        return List.of(tst());
+        return List.of(
+                freezeUnfreezeFungibleWithNegativeCases(),
+                freezeUnfreezeNftsWithNegativeCases(),
+                isFrozenHappyPathWithLocalCall());
     }
 
     private HapiApiSpec freezeUnfreezeFungibleWithNegativeCases() {
@@ -349,46 +352,6 @@ public class FreezeUnfreezeTokenPrecompileSuite extends HapiApiSuite {
                                                                                         Boolean.TRUE
                                                                                     })));
                                     allRunFor(spec, freezeCall, isFrozenLocalCall);
-                                }))
-                .then();
-    }
-
-    private HapiApiSpec tst() {
-        final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
-
-        return defaultHapiSpec("isFrozenHappyPathWithLocalCall")
-                .given(
-                        newKeyNamed(FREEZE_KEY),
-                        newKeyNamed(MULTI_KEY),
-                        cryptoCreate(ACCOUNT)
-                                .balance(100 * ONE_HBAR)
-                                .key(FREEZE_KEY)
-                                .exposingCreatedIdTo(accountID::set),
-                        cryptoCreate(TOKEN_TREASURY),
-                        tokenCreate(VANILLA_TOKEN)
-                                .tokenType(FUNGIBLE_COMMON)
-                                .treasury(TOKEN_TREASURY)
-                                .freezeKey(FREEZE_KEY)
-                                .initialSupply(1_000)
-                                .exposingCreatedIdTo(id -> vanillaTokenID.set(asToken(id))),
-                        uploadInitCode(FREEZE_CONTRACT),
-                        contractCreate(FREEZE_CONTRACT),
-                        tokenAssociate(ACCOUNT, VANILLA_TOKEN),
-                        cryptoTransfer(moving(500, VANILLA_TOKEN).between(TOKEN_TREASURY, ACCOUNT)))
-                .when(
-                        assertionsHold(
-                                (spec, ctxLog) -> {
-                                    final var isFrozenLocalCall =
-                                            contractCallLocal(
-                                                    FREEZE_CONTRACT,
-                                                    "getTypeOfToken",
-                                                    asAddress(vanillaTokenID.get()));
-                                    final var s =
-                                            contractCallLocal(
-                                                    FREEZE_CONTRACT,
-                                                    "isAToken",
-                                                    asAddress(vanillaTokenID.get()));
-                                    allRunFor(spec, s, isFrozenLocalCall);
                                 }))
                 .then();
     }

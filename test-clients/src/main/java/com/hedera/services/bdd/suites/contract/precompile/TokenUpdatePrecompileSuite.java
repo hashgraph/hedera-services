@@ -86,9 +86,11 @@ public class TokenUpdatePrecompileSuite extends HapiApiSuite {
     private static final long GAS_TO_OFFER = 4_000_000L;
     private static final long AUTO_RENEW_PERIOD = 8_000_000L;
     private static final String ACCOUNT = "account";
-    public static final String VANILLA_TOKEN = "TokenD";
-    public static final String NFT_TOKEN = "TokenD";
-    public static final String MULTI_KEY = "multiKey";
+    private static final String VANILLA_TOKEN = "TokenD";
+    private static final String NFT_TOKEN = "TokenD";
+    private static final String MULTI_KEY = "multiKey";
+    private static final String UPDATE_KEY_FUNC = "tokenUpdateKeys";
+    private static final String GET_KEY_FUNC = "getKeyFromToken";
     private static final String TOKEN_UPDATE_CONTRACT = "UpdateTokenInfoContract";
     private static final String UPDATE_TXN = "updateTxn";
     private static final String GET_KYC_KEY_TXN = "getKycTokenKeyTxn";
@@ -314,9 +316,9 @@ public class TokenUpdatePrecompileSuite extends HapiApiSuite {
                                 .supplyKey(MULTI_KEY)
                                 .pauseKey(MULTI_KEY)
                                 .exposingCreatedIdTo(id -> nftToken.set(asToken(id))),
-                        mintToken(VANILLA_TOKEN, List.of(ByteString.copyFromUtf8("memo1"))),
+                        mintToken(VANILLA_TOKEN, List.of(ByteString.copyFromUtf8("nft0"))),
                         tokenAssociate(newTokenTreasury, VANILLA_TOKEN),
-                        mintToken(NO_ADMIN_TOKEN, List.of(ByteString.copyFromUtf8("memo2"))))
+                        mintToken(NO_ADMIN_TOKEN, List.of(ByteString.copyFromUtf8("nft1"))))
                 .when(
                         withOpContext(
                                 (spec, opLog) ->
@@ -793,7 +795,7 @@ public class TokenUpdatePrecompileSuite extends HapiApiSuite {
                                                 spec,
                                                 contractCall(
                                                                 TOKEN_UPDATE_CONTRACT,
-                                                                "tokenUpdateKeys",
+                                                                UPDATE_KEY_FUNC,
                                                                 asAddress(vanillaTokenID.get()),
                                                                 spec.registry()
                                                                         .getKey(ED25519KEY)
@@ -820,7 +822,7 @@ public class TokenUpdatePrecompileSuite extends HapiApiSuite {
                                                                         TOKEN_UPDATE_CONTRACT)),
                                                 contractCall(
                                                                 TOKEN_UPDATE_CONTRACT,
-                                                                "getKeyFromToken",
+                                                                GET_KEY_FUNC,
                                                                 Tuple.of(
                                                                         expandByteArrayTo32Length(
                                                                                 asAddress(
@@ -831,7 +833,7 @@ public class TokenUpdatePrecompileSuite extends HapiApiSuite {
                                                         .via(GET_ADMIN_KEY_TXN),
                                                 contractCall(
                                                                 TOKEN_UPDATE_CONTRACT,
-                                                                "getKeyFromToken",
+                                                                GET_KEY_FUNC,
                                                                 Tuple.of(
                                                                         expandByteArrayTo32Length(
                                                                                 asAddress(
@@ -842,7 +844,7 @@ public class TokenUpdatePrecompileSuite extends HapiApiSuite {
                                                         .via(GET_KYC_KEY_TXN),
                                                 contractCall(
                                                                 TOKEN_UPDATE_CONTRACT,
-                                                                "getKeyFromToken",
+                                                                GET_KEY_FUNC,
                                                                 Tuple.of(
                                                                         expandByteArrayTo32Length(
                                                                                 asAddress(
@@ -853,7 +855,7 @@ public class TokenUpdatePrecompileSuite extends HapiApiSuite {
                                                         .via(GET_FREEZE_KEY_TXN),
                                                 contractCall(
                                                                 TOKEN_UPDATE_CONTRACT,
-                                                                "getKeyFromToken",
+                                                                GET_KEY_FUNC,
                                                                 Tuple.of(
                                                                         expandByteArrayTo32Length(
                                                                                 asAddress(
@@ -864,7 +866,7 @@ public class TokenUpdatePrecompileSuite extends HapiApiSuite {
                                                         .via(GET_WIPE_KEY_TXN),
                                                 contractCall(
                                                                 TOKEN_UPDATE_CONTRACT,
-                                                                "getKeyFromToken",
+                                                                GET_KEY_FUNC,
                                                                 Tuple.of(
                                                                         expandByteArrayTo32Length(
                                                                                 asAddress(
@@ -875,7 +877,7 @@ public class TokenUpdatePrecompileSuite extends HapiApiSuite {
                                                         .via(GET_FEE_KEY_TXN),
                                                 contractCall(
                                                                 TOKEN_UPDATE_CONTRACT,
-                                                                "getKeyFromToken",
+                                                                GET_KEY_FUNC,
                                                                 Tuple.of(
                                                                         expandByteArrayTo32Length(
                                                                                 asAddress(
@@ -886,7 +888,7 @@ public class TokenUpdatePrecompileSuite extends HapiApiSuite {
                                                         .via(GET_SUPPLY_KEY_TXN),
                                                 contractCall(
                                                                 TOKEN_UPDATE_CONTRACT,
-                                                                "getKeyFromToken",
+                                                                GET_KEY_FUNC,
                                                                 Tuple.of(
                                                                         expandByteArrayTo32Length(
                                                                                 asAddress(
@@ -897,7 +899,7 @@ public class TokenUpdatePrecompileSuite extends HapiApiSuite {
                                                         .via(GET_PAUSE_KEY_TXN),
                                                 contractCallLocal(
                                                         TOKEN_UPDATE_CONTRACT,
-                                                        "getKeyFromToken",
+                                                        GET_KEY_FUNC,
                                                         Tuple.of(
                                                                 expandByteArrayTo32Length(
                                                                         asAddress(
@@ -1059,7 +1061,6 @@ public class TokenUpdatePrecompileSuite extends HapiApiSuite {
     }
 
     public HapiApiSpec updateOnlyKeysForNonFungibleToken() {
-        final AtomicReference<TokenID> nftToken = new AtomicReference<>();
         return defaultHapiSpec("updateOnlyKeysForNonFungibleToken")
                 .given(
                         cryptoCreate(TOKEN_TREASURY),
@@ -1083,7 +1084,7 @@ public class TokenUpdatePrecompileSuite extends HapiApiSuite {
                                 .freezeKey(MULTI_KEY)
                                 .kycKey(MULTI_KEY)
                                 .exposingCreatedIdTo(id -> nftToken.set(asToken(id))),
-                        mintToken(VANILLA_TOKEN, List.of(ByteString.copyFromUtf8("memo1"))),
+                        mintToken(VANILLA_TOKEN, List.of(ByteString.copyFromUtf8("nft3"))),
                         tokenAssociate(ACCOUNT, VANILLA_TOKEN))
                 .when(
                         withOpContext(
@@ -1092,7 +1093,7 @@ public class TokenUpdatePrecompileSuite extends HapiApiSuite {
                                                 spec,
                                                 contractCall(
                                                                 TOKEN_UPDATE_CONTRACT,
-                                                                "tokenUpdateKeys",
+                                                                UPDATE_KEY_FUNC,
                                                                 asAddress(nftToken.get()),
                                                                 spec.registry()
                                                                         .getKey(ED25519KEY)
@@ -1161,7 +1162,7 @@ public class TokenUpdatePrecompileSuite extends HapiApiSuite {
                                 .freezeKey(MULTI_KEY)
                                 .kycKey(MULTI_KEY)
                                 .exposingCreatedIdTo(id -> nftToken.set(asToken(id))),
-                        mintToken(NFT_TOKEN, List.of(ByteString.copyFromUtf8("memo1"))),
+                        mintToken(NFT_TOKEN, List.of(ByteString.copyFromUtf8("nft4"))),
                         tokenAssociate(ACCOUNT, NFT_TOKEN))
                 .when(
                         withOpContext(
@@ -1170,7 +1171,7 @@ public class TokenUpdatePrecompileSuite extends HapiApiSuite {
                                                 spec,
                                                 contractCall(
                                                                 TOKEN_UPDATE_CONTRACT,
-                                                                "tokenUpdateKeys",
+                                                                UPDATE_KEY_FUNC,
                                                                 new byte[] {},
                                                                 spec.registry()
                                                                         .getKey(ED25519KEY)
@@ -1191,7 +1192,7 @@ public class TokenUpdatePrecompileSuite extends HapiApiSuite {
                                                         .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
                                                 contractCall(
                                                                 TOKEN_UPDATE_CONTRACT,
-                                                                "tokenUpdateKeys",
+                                                                UPDATE_KEY_FUNC,
                                                                 asAddress(nftToken.get()),
                                                                 spec.registry()
                                                                         .getKey(ED25519KEY)
@@ -1242,7 +1243,7 @@ public class TokenUpdatePrecompileSuite extends HapiApiSuite {
                                 .initialSupply(0)
                                 .supplyKey(MULTI_KEY)
                                 .exposingCreatedIdTo(id -> nftToken.set(asToken(id))),
-                        mintToken(NFT_TOKEN, List.of(ByteString.copyFromUtf8("memo1"))),
+                        mintToken(NFT_TOKEN, List.of(ByteString.copyFromUtf8("nft5"))),
                         tokenAssociate(ACCOUNT, VANILLA_TOKEN))
                 .when(
                         withOpContext(
@@ -1251,7 +1252,7 @@ public class TokenUpdatePrecompileSuite extends HapiApiSuite {
                                                 spec,
                                                 contractCallLocal(
                                                         TOKEN_UPDATE_CONTRACT,
-                                                        "getKeyFromToken",
+                                                        GET_KEY_FUNC,
                                                         Tuple.of(
                                                                 expandByteArrayTo32Length(
                                                                         asAddress(nftToken.get())),
@@ -1259,7 +1260,7 @@ public class TokenUpdatePrecompileSuite extends HapiApiSuite {
                                                                         SUPPLY_KEY_TYPE))),
                                                 contractCall(
                                                                 TOKEN_UPDATE_CONTRACT,
-                                                                "getKeyFromToken",
+                                                                GET_KEY_FUNC,
                                                                 Tuple.of(
                                                                         expandByteArrayTo32Length(
                                                                                 asAddress(
@@ -1270,7 +1271,7 @@ public class TokenUpdatePrecompileSuite extends HapiApiSuite {
                                                         .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
                                                 contractCall(
                                                                 TOKEN_UPDATE_CONTRACT,
-                                                                "getKeyFromToken",
+                                                                GET_KEY_FUNC,
                                                                 Tuple.of(
                                                                         new byte[32],
                                                                         BigInteger.valueOf(
@@ -1279,7 +1280,7 @@ public class TokenUpdatePrecompileSuite extends HapiApiSuite {
                                                         .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
                                                 contractCall(
                                                                 TOKEN_UPDATE_CONTRACT,
-                                                                "getKeyFromToken",
+                                                                GET_KEY_FUNC,
                                                                 Tuple.of(
                                                                         expandByteArrayTo32Length(
                                                                                 asAddress(
