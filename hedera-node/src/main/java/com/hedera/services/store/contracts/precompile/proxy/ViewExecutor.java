@@ -22,13 +22,16 @@ import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_GET_TOKEN_DEFAULT_FREEZE_STATUS;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_GET_TOKEN_DEFAULT_KYC_STATUS;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_GET_TOKEN_INFO;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_GET_TOKEN_KEY;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_IS_FROZEN;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_IS_KYC;
+import static com.hedera.services.store.contracts.precompile.utils.PrecompileUtils.buildKeyValueWrapper;
 import static com.hedera.services.utils.MiscUtils.asSecondsTimestamp;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.exceptions.InvalidTransactionException;
+import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.store.contracts.WorldLedgers;
 import com.hedera.services.store.contracts.precompile.codec.DecodingFacade;
 import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
@@ -150,6 +153,14 @@ public class ViewExecutor {
                         ResponseCodeEnum.INVALID_TOKEN_ID);
                 final var customFees = stateView.tokenCustomFees(wrapper.tokenID());
                 return encoder.encodeTokenGetCustomFees(customFees);
+            }
+            case ABI_ID_GET_TOKEN_KEY -> {
+                final var wrapper = decoder.decodeGetTokenKey(input);
+                validateTrueOrRevert(
+                        stateView.tokenExists(wrapper.tokenID()),
+                        ResponseCodeEnum.INVALID_TOKEN_ID);
+                JKey key = (JKey) ledgers.tokens().get(wrapper.tokenID(), wrapper.tokenKeyType());
+                return encoder.encodeGetTokenKey(buildKeyValueWrapper(key));
             }
                 // Only view functions can be used inside a ContractCallLocal
             default -> throw new InvalidTransactionException(NOT_SUPPORTED);

@@ -21,6 +21,7 @@ import static com.hedera.services.contracts.ParsingConstants.BYTES32;
 import static com.hedera.services.contracts.ParsingConstants.FIXED_FEE;
 import static com.hedera.services.contracts.ParsingConstants.FRACTIONAL_FEE;
 import static com.hedera.services.contracts.ParsingConstants.HEDERA_TOKEN;
+import static com.hedera.services.contracts.ParsingConstants.KEY_VALUE;
 import static com.hedera.services.contracts.ParsingConstants.RESPONSE_STATUS_AT_BEGINNING;
 import static com.hedera.services.contracts.ParsingConstants.ROYALTY_FEE;
 import static com.hedera.services.contracts.ParsingConstants.allowanceOfType;
@@ -31,7 +32,6 @@ import static com.hedera.services.contracts.ParsingConstants.ercTransferType;
 import static com.hedera.services.contracts.ParsingConstants.getApprovedType;
 import static com.hedera.services.contracts.ParsingConstants.getTokenDefaultFreezeStatusType;
 import static com.hedera.services.contracts.ParsingConstants.getTokenDefaultKycStatusType;
-import static com.hedera.services.contracts.ParsingConstants.getTokenKeyType;
 import static com.hedera.services.contracts.ParsingConstants.hapiAllowanceOfType;
 import static com.hedera.services.contracts.ParsingConstants.hapiGetApprovedType;
 import static com.hedera.services.contracts.ParsingConstants.hapiIsApprovedForAllType;
@@ -94,6 +94,9 @@ public class HTSPrecompileResult implements ContractCallResult {
     public static final String NON_FUNGIBLE_TOKEN_INFO_REPLACED_ADDRESS =
             "(" + TOKEN_INFO_REPLACED_ADDRESS + ",int64,bytes32,int64,bytes,bytes32" + ")";
 
+    public static final String KEY_VALUE_REPLACED_ADDRESS =
+            KEY_VALUE.replace(ADDRESS_TYPE, BYTES_32_TYPE);
+
     public static final TupleType getTokenInfoTypeReplacedAddress =
             TupleType.parse(RESPONSE_STATUS_AT_BEGINNING + TOKEN_INFO_REPLACED_ADDRESS + ")");
     public static final TupleType getFungibleTokenInfoTypeReplacedAddress =
@@ -114,6 +117,9 @@ public class HTSPrecompileResult implements ContractCallResult {
                             + ROYALTY_FEE_REPLACED_ADDRESS
                             + ARRAY_BRACKETS
                             + ")");
+
+    public static final TupleType getTokenKeyReplacedAddress =
+            TupleType.parse(RESPONSE_STATUS_AT_BEGINNING + KEY_VALUE_REPLACED_ADDRESS + ")");
 
     public static HTSPrecompileResult htsPrecompileResult() {
         return new HTSPrecompileResult();
@@ -140,6 +146,7 @@ public class HTSPrecompileResult implements ContractCallResult {
     private boolean tokenDefaultKycStatus;
     private boolean isFrozen;
     private List<CustomFee> customFees;
+    private Key key;
 
     public HTSPrecompileResult forFunction(final FunctionType functionType) {
         tupleType =
@@ -167,7 +174,7 @@ public class HTSPrecompileResult implements ContractCallResult {
                     case GET_TOKEN_DEFAULT_KYC_STATUS -> getTokenDefaultKycStatusType;
                     case HAPI_IS_FROZEN -> isFrozenType;
                     case HAPI_GET_TOKEN_CUSTOM_FEES -> tokenGetCustomFeesReplacedAddress;
-                    case HAPI_GET_TOKEN_KEY -> getTokenKeyType;
+                    case HAPI_GET_TOKEN_KEY -> getTokenKeyReplacedAddress;
                     default -> notSpecifiedType;
                 };
 
@@ -285,6 +292,11 @@ public class HTSPrecompileResult implements ContractCallResult {
         return this;
     }
 
+    public HTSPrecompileResult withTokenKeyValue(final Key key) {
+        this.key = key;
+        return this;
+    }
+
     @Override
     public Bytes getBytes() {
         if (ParsingConstants.FunctionType.ERC_OWNER.equals(functionType)) {
@@ -322,6 +334,8 @@ public class HTSPrecompileResult implements ContractCallResult {
                             status.getNumber(), tokenDefaultKycStatus);
                     case HAPI_IS_FROZEN -> Tuple.of(status.getNumber(), isFrozen);
                     case HAPI_GET_TOKEN_CUSTOM_FEES -> getTupleForTokenGetCustomFees();
+                    case HAPI_GET_TOKEN_KEY -> getKeyValueTupleWithResponseCode(
+                            status.getNumber(), key);
                     default -> Tuple.of(status.getNumber());
                 };
 
@@ -490,19 +504,24 @@ public class HTSPrecompileResult implements ContractCallResult {
     }
 
     private static Tuple getKeyTuple(final BigInteger keyType, final Key key) {
+        return Tuple.of(keyType, getKeyValueTuple(key));
+    }
+
+    private static Tuple getKeyValueTupleWithResponseCode(final int responseCode, final Key key) {
+        return Tuple.of(responseCode, getKeyValueTuple(key));
+    }
+
+    private static Tuple getKeyValueTuple(final Key key) {
         return Tuple.of(
-                keyType,
-                Tuple.of(
-                        false,
-                        key.getContractID().getContractNum() > 0
-                                ? expandByteArrayTo32Length(Utils.asAddress(key.getContractID()))
-                                : new byte[32],
-                        key.getEd25519().toByteArray(),
-                        key.getECDSASecp256K1().toByteArray(),
-                        key.getDelegatableContractId().getContractNum() > 0
-                                ? expandByteArrayTo32Length(
-                                        Utils.asAddress(key.getDelegatableContractId()))
-                                : new byte[32]));
+                false,
+                key.getContractID().getContractNum() > 0
+                        ? expandByteArrayTo32Length(Utils.asAddress(key.getContractID()))
+                        : new byte[32],
+                key.getEd25519().toByteArray(),
+                key.getECDSASecp256K1().toByteArray(),
+                key.getDelegatableContractId().getContractNum() > 0
+                        ? expandByteArrayTo32Length(Utils.asAddress(key.getDelegatableContractId()))
+                        : new byte[32]);
     }
 
     private static String removeBrackets(final String type) {

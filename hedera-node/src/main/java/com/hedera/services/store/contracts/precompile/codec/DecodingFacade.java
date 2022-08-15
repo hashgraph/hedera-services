@@ -472,7 +472,7 @@ public class DecodingFacade {
     private static final Bytes GET_TOKEN_KEYS_SELECTOR =
             Bytes.wrap(GET_TOKEN_KEYS_FUNCTION.selector());
     private static final ABIType<Tuple> GET_TOKEN_KEYS_DECODER =
-            TypeFactory.create("(bytes32,uint256)");
+            TypeFactory.create(ADDRESS_UINT256_RAW_TYPE);
 
     @Inject
     public DecodingFacade() {
@@ -1389,7 +1389,7 @@ public class DecodingFacade {
         return new TokenUpdateKeysWrapper(tokenID, tokenKeys);
     }
 
-    public GetTokenKeyWrapper decodeGetTokenKeys(Bytes input) {
+    public GetTokenKeyWrapper decodeGetTokenKey(Bytes input) {
         final Tuple decodedArguments =
                 decodeFunctionCall(input, GET_TOKEN_KEYS_SELECTOR, GET_TOKEN_KEYS_DECODER);
         final var tokenID = convertAddressBytesToTokenID(decodedArguments.get(0));

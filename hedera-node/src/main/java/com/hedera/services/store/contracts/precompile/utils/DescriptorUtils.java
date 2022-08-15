@@ -21,6 +21,7 @@ import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_GET_TOKEN_DEFAULT_FREEZE_STATUS;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_GET_TOKEN_DEFAULT_KYC_STATUS;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_GET_TOKEN_INFO;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_GET_TOKEN_KEY;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_IS_FROZEN;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_IS_KYC;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_REDIRECT_FOR_TOKEN;
@@ -44,7 +45,8 @@ public class DescriptorUtils {
                     ABI_ID_GET_TOKEN_DEFAULT_KYC_STATUS,
                     ABI_ID_IS_FROZEN,
                     ABI_ID_IS_KYC,
-                    ABI_ID_GET_TOKEN_CUSTOM_FEES -> true;
+                    ABI_ID_GET_TOKEN_CUSTOM_FEES,
+                    ABI_ID_GET_TOKEN_KEY -> true;
             default -> false;
         };
     }
