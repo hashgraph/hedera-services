@@ -192,7 +192,7 @@ public class SidecarWatcher {
         return messageBuilder.toString();
     }
 
-    public boolean thereAreNoWaitingSidecars() {
+    public boolean thereAreNoPendingSidecars() {
         return expectedSidecars.isEmpty();
     }
 }

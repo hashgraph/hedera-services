@@ -66,6 +66,7 @@ public class NewTraceabilitySuite extends HapiApiSuite {
                                                 : HapiSpecSetup.getDefaultPropertySource()
                                                         .get("recordStream.path"));
                             } catch (IOException e) {
+                                log.warn("Sidecar watching couldn't be initialized.");
                                 e.printStackTrace();
                             }
                         });
@@ -121,7 +122,7 @@ public class NewTraceabilitySuite extends HapiApiSuite {
                                             sidecarWatcher.thereAreNoMismatchedSidecars(),
                                             sidecarWatcher.printErrors());
                                     assertTrue(
-                                            sidecarWatcher.thereAreNoWaitingSidecars(),
+                                            sidecarWatcher.thereAreNoPendingSidecars(),
                                             "There are some sidecars that have not been yet"
                                                     + " externalized in the sidecar files after all"
                                                     + " specs.");
