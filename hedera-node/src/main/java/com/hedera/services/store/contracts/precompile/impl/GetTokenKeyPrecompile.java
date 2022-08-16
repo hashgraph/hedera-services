@@ -35,7 +35,6 @@ import org.apache.tuweni.bytes.Bytes;
 
 public class GetTokenKeyPrecompile extends AbstractReadOnlyPrecompile {
     private TokenProperty keyType;
-    private final StateView stateView;
 
     public GetTokenKeyPrecompile(
             TokenID tokenId,
@@ -43,10 +42,8 @@ public class GetTokenKeyPrecompile extends AbstractReadOnlyPrecompile {
             WorldLedgers ledgers,
             EncodingFacade encoder,
             DecodingFacade decoder,
-            PrecompilePricingUtils pricingUtils,
-            StateView stateView) {
+            PrecompilePricingUtils pricingUtils) {
         super(tokenId, syntheticTxnFactory, ledgers, encoder, decoder, pricingUtils);
-        this.stateView = stateView;
     }
 
     @Override
@@ -59,7 +56,7 @@ public class GetTokenKeyPrecompile extends AbstractReadOnlyPrecompile {
 
     @Override
     public Bytes getSuccessResultFor(ExpirableTxnRecord.Builder childRecord) {
-        validateTrue(stateView.tokenExists(tokenId), ResponseCodeEnum.INVALID_TOKEN_ID);
+        validateTrue(ledgers.tokens().exists(tokenId), ResponseCodeEnum.INVALID_TOKEN_ID);
         JKey key = (JKey) ledgers.tokens().get(tokenId, keyType);
         return encoder.encodeGetTokenKey(buildKeyValueWrapper(key));
     }

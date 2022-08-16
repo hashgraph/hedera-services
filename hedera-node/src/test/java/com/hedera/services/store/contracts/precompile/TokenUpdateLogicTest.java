@@ -223,6 +223,38 @@ class TokenUpdateLogicTest {
     }
 
     @Test
+    void updateTokenKeysHappyPathForNonFungible(){
+        //given
+        givenTokenUpdateLogic(true);
+        givenValidTransactionBody(false);
+        given(merkleToken.hasAdminKey()).willReturn(true);
+        given(store.get(nonFungible)).willReturn(merkleToken);
+        given(store.update(op, CONSENSUS_TIME)).willReturn(OK);
+        given(transactionBody.getTokenUpdate()).willReturn(op);
+        // when
+        subject.validate(transactionBody);
+        subject.updateTokenKeys(op, CONSENSUS_TIME);
+        // then
+        verify(store).update(op, CONSENSUS_TIME);
+        verify(sigImpactHistorian).markEntityChanged(nonFungible.getTokenNum());
+    }
+
+    @Test
+    void updateTokenKeysForNonFungibleFails(){
+        //given
+        givenTokenUpdateLogic(true);
+        givenValidTransactionBody(false);
+        givenMinimalLedgers();
+        given(ledgers.nfts()).willReturn(nfts);
+        given(merkleToken.hasAdminKey()).willReturn(true);
+        given(store.get(nonFungible)).willReturn(merkleToken);
+        given(store.update(op, CONSENSUS_TIME)).willReturn(FAIL_INVALID);
+        // then
+        Assertions.assertThrows(
+                InvalidTransactionException.class, () -> subject.updateTokenKeys(op, CONSENSUS_TIME));
+    }
+
+    @Test
     void updateTokenForNonFungibleTokenFailsDueToWrongNftAllowance() {
         // given
         givenTokenUpdateLogic(false);

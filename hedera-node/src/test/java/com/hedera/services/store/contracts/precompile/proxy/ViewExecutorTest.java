@@ -21,6 +21,7 @@ import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_GET_TOKEN_DEFAULT_FREEZE_STATUS;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_GET_TOKEN_DEFAULT_KYC_STATUS;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_GET_TOKEN_INFO;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_GET_TOKEN_KEY;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_IS_FROZEN;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_IS_KYC;
 import static com.hedera.services.store.contracts.precompile.proxy.RedirectViewExecutor.MINIMUM_TINYBARS_COST;
@@ -38,12 +39,18 @@ import static org.mockito.Mockito.verify;
 import com.esaulpaugh.headlong.util.Integers;
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.primitives.StateView;
+import com.hedera.services.ledger.TransactionalLedger;
+import com.hedera.services.ledger.properties.TokenProperty;
+import com.hedera.services.legacy.core.jproto.JKey;
+import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.store.contracts.WorldLedgers;
 import com.hedera.services.store.contracts.precompile.codec.DecodingFacade;
 import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
 import com.hedera.services.store.contracts.precompile.codec.GetTokenDefaultFreezeStatusWrapper;
 import com.hedera.services.store.contracts.precompile.codec.GetTokenDefaultKycStatusWrapper;
+import com.hedera.services.store.contracts.precompile.codec.GetTokenKeyWrapper;
 import com.hedera.services.store.contracts.precompile.codec.GrantRevokeKycWrapper;
+import com.hedera.services.store.contracts.precompile.codec.KeyValueWrapper;
 import com.hedera.services.store.contracts.precompile.codec.TokenFreezeUnfreezeWrapper;
 import com.hedera.services.store.contracts.precompile.codec.TokenGetCustomFeesWrapper;
 import com.hedera.services.store.contracts.precompile.codec.TokenInfoWrapper;
@@ -52,6 +59,7 @@ import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.test.factories.fees.CustomFeeBuilder;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.CustomFee;
 import com.hederahashgraph.api.proto.java.NftID;
 import com.hederahashgraph.api.proto.java.Timestamp;
@@ -81,6 +89,8 @@ class ViewExecutorTest {
     @Mock private BlockValues blockValues;
     @Mock private StateView stateView;
     @Mock private WorldLedgers ledgers;
+    @Mock private TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokens;
+    @Mock private JKey key;
 
     public static final AccountID account = IdUtils.asAccount("0.0.777");
     public static final AccountID spender = IdUtils.asAccount("0.0.888");
@@ -256,6 +266,22 @@ class ViewExecutorTest {
         given(encodingFacade.encodeTokenGetCustomFees(any())).willReturn(tokenCustomFeesEncoded);
 
         assertEquals(Pair.of(gas, tokenCustomFeesEncoded), subject.computeCosted());
+    }
+
+    @Test
+    void computeGetTokenKey(){
+        final var input = prerequisites(ABI_ID_GET_TOKEN_KEY, fungibleTokenAddress);
+        final var getTokenKeyEncoded =
+                Bytes.fromHexString(
+                        "0x000000000000000000000000000000000000000000000000000000000000001600000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000a000000000000000000000000000000000000000000000000000000000000000e0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000209e417334d2ea6be459624060e3efdc1b459a884bc6a9c232349af35e9060ed620000000000000000000000000000000000000000000000000000000000000000");
+        given(decodingFacade.decodeGetTokenKey(input)).willReturn(new GetTokenKeyWrapper(fungible,1));
+        given(stateView.tokenExists(fungible)).willReturn(true);
+        given(ledgers.tokens()).willReturn(tokens);
+        given(tokens.get(fungible,TokenProperty.ADMIN_KEY)).willReturn(key);
+        given(key.getECDSASecp256k1Key()).willReturn(new byte[0]);
+        given(encodingFacade.encodeGetTokenKey(any())).willReturn(getTokenKeyEncoded);
+
+        assertEquals(Pair.of(gas, getTokenKeyEncoded), subject.computeCosted());
     }
 
     @Test

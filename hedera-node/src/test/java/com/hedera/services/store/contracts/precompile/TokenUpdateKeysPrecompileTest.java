@@ -1,34 +1,4 @@
-/*
- * Copyright (C) 2022 Hedera Hashgraph, LLC
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
 package com.hedera.services.store.contracts.precompile;
-
-import static com.hedera.services.state.EntityCreator.EMPTY_MEMO;
-import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_UPDATE_TOKEN_INFO;
-import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.contractAddr;
-import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.contractAddress;
-import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.createFungibleTokenUpdateWrapperWithKeys;
-import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.failResult;
-import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.fungibleTokenAddr;
-import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.successResult;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.BDDMockito.given;
 
 import com.esaulpaugh.headlong.util.Integers;
 import com.hedera.services.context.SideEffectsTracker;
@@ -58,19 +28,19 @@ import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.services.store.contracts.WorldLedgers;
 import com.hedera.services.store.contracts.precompile.codec.DecodingFacade;
 import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
-import com.hedera.services.store.contracts.precompile.codec.TokenUpdateWrapper;
+import com.hedera.services.store.contracts.precompile.codec.KeyValueWrapper;
+import com.hedera.services.store.contracts.precompile.codec.TokenKeyWrapper;
+import com.hedera.services.store.contracts.precompile.codec.TokenUpdateKeysWrapper;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.tokens.HederaTokenStore;
+import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ExchangeRate;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import java.time.Instant;
-import java.util.Collections;
-import java.util.Optional;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Wei;
@@ -83,8 +53,27 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.time.Instant;
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
+
+import static com.hedera.services.state.EntityCreator.EMPTY_MEMO;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_UPDATE_TOKEN_KEYS;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.contractAddr;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.contractAddress;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.failResult;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.fungible;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.fungibleTokenAddr;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.successResult;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.BDDMockito.given;
+
 @ExtendWith(MockitoExtension.class)
-class TokenUpdatePrecompileTest {
+class TokenUpdateKeysPrecompileTest {
     @Mock private HederaTokenStore hederaTokenStore;
     @Mock private GlobalDynamicProperties dynamicProperties;
     @Mock private GasCalculator gasCalculator;
@@ -117,8 +106,7 @@ class TokenUpdatePrecompileTest {
     @Mock private AssetsLoader assetLoader;
     @Mock private HbarCentExchange exchange;
     @Mock private ExchangeRate exchangeRate;
-    private final TokenUpdateWrapper updateWrapper = createFungibleTokenUpdateWrapperWithKeys(null);
-
+    private final TokenUpdateKeysWrapper updateWrapper = getUpdateWrapper();
     private static final int CENTS_RATE = 12;
     private static final int HBAR_RATE = 1;
 
@@ -150,9 +138,9 @@ class TokenUpdatePrecompileTest {
     }
 
     @Test
-    void computeCallsSuccessfullyForUpdateFungibleToken() {
+    void computeCallsSuccessfullyUpdateKeysForFungibleToken() {
         // given
-        final var input = Bytes.of(Integers.toBytes(ABI_ID_UPDATE_TOKEN_INFO));
+        final var input = Bytes.of(Integers.toBytes(ABI_ID_UPDATE_TOKEN_KEYS));
         givenFrameContext();
         given(frame.getBlockValues())
                 .willReturn(new HederaBlockValues(10L, 123L, Instant.ofEpochSecond(123L)));
@@ -174,7 +162,7 @@ class TokenUpdatePrecompileTest {
     @Test
     void failsWithWrongValidityForUpdateFungibleToken() {
         // given
-        final var input = Bytes.of(Integers.toBytes(ABI_ID_UPDATE_TOKEN_INFO));
+        final var input = Bytes.of(Integers.toBytes(ABI_ID_UPDATE_TOKEN_KEYS));
         givenFrameContext();
         givenLedgers();
         givenMinimalContextForSuccessfulCall();
@@ -221,8 +209,8 @@ class TokenUpdatePrecompileTest {
                         infrastructureFactory.newTokenUpdateLogic(
                                 hederaTokenStore, wrappedLedgers, sideEffects))
                 .willReturn(updateLogic);
-        given(decoder.decodeUpdateTokenInfo(any(), any())).willReturn(updateWrapper);
-        given(syntheticTxnFactory.createTokenUpdate(updateWrapper))
+        given(decoder.decodeUpdateTokenKeys(any(), any())).willReturn(updateWrapper);
+        given(syntheticTxnFactory.createTokenUpdateKeys(updateWrapper))
                 .willReturn(
                         TransactionBody.newBuilder()
                                 .setTokenUpdate(TokenUpdateTransactionBody.newBuilder()));
@@ -250,5 +238,25 @@ class TokenUpdatePrecompileTest {
         given(worldUpdater.aliases()).willReturn(aliases);
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+    }
+
+    private TokenUpdateKeysWrapper getUpdateWrapper() {
+        final var adminKey =
+                new KeyValueWrapper(
+                        false,
+                        null,
+                        new byte[] {},
+                        new byte[] {},
+                        EntityIdUtils.contractIdFromEvmAddress(contractAddress));
+        final var multiKey =
+                new KeyValueWrapper(
+                        false,
+                        EntityIdUtils.contractIdFromEvmAddress(contractAddress),
+                        new byte[] {},
+                        new byte[] {},
+                        null);
+        return new TokenUpdateKeysWrapper(
+                fungible,
+                List.of(new TokenKeyWrapper(112, multiKey), new TokenKeyWrapper(1, adminKey)));
     }
 }

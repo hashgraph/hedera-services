@@ -539,8 +539,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
                             ledgers,
                             encoder,
                             decoder,
-                            precompilePricingUtils,
-                            currentView);
+                            precompilePricingUtils);
                     case AbiConstants.ABI_ID_REDIRECT_FOR_TOKEN -> {
                         final var target = DescriptorUtils.getRedirectTarget(input);
                         final var tokenId = target.tokenId();
