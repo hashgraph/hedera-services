@@ -24,7 +24,6 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.txns.span.ExpandHandleSpan;
 import com.hedera.services.txns.span.SpanMapManager;
-import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.accessors.AccessorFactory;
 import com.hedera.services.utils.accessors.SwirldsTxnAccessor;
 import com.hedera.test.utils.IdUtils;
@@ -43,10 +42,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class ExpandHandleSpanTest {
     @Mock private SpanMapManager handleSpanMap;
     @Mock private GlobalDynamicProperties dynamicProperties;
-    @Mock private OptionValidator validator;
 
-    private final AccessorFactory accessorFactory =
-            new AccessorFactory(dynamicProperties, validator);
+    private final AccessorFactory accessorFactory = new AccessorFactory(dynamicProperties);
 
     private final byte[] validTxnBytes =
             Transaction.newBuilder()

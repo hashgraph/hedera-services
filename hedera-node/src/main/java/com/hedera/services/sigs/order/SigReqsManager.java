@@ -17,6 +17,7 @@ package com.hedera.services.sigs.order;
 
 import static com.hedera.services.context.primitives.SignedStateViewFactory.isUsable;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.hedera.services.ServicesState;
 import com.hedera.services.config.FileNumbers;
 import com.hedera.services.context.MutableStateChildren;
@@ -35,6 +36,8 @@ import com.swirlds.common.system.events.Event;
 import java.util.function.Function;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * Used by {@link com.hedera.services.sigs.EventExpansion#expandAllSigs(Event, ServicesState)} to
@@ -56,6 +59,8 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class SigReqsManager {
+    private static final Logger log = LogManager.getLogger(SigReqsManager.class);
+
     // The token-to-signing-metadata transformation used to construct instances of SigRequirements
     public static final Function<MerkleToken, TokenSigningMetadata> TOKEN_META_TRANSFORM =
             TokenMetaUtils::signingMetaFrom;
@@ -65,16 +70,15 @@ public class SigReqsManager {
     private final SignatureWaivers signatureWaivers;
     private final MutableStateChildren workingState;
     private final GlobalDynamicProperties dynamicProperties;
-    // Convenience wrapper for the latest state children received from
-    // Platform#getLastCompleteSwirldState()
-    private final MutableStateChildren signedChildren = new MutableStateChildren();
+    // Convenience wrapper for children of a given immutable state
+    private final MutableStateChildren immutableChildren = new MutableStateChildren();
 
     private SigReqsFactory sigReqsFactory = SigRequirements::new;
     private StateChildrenLookupsFactory lookupsFactory = StateChildrenSigMetadataLookup::new;
 
     // Used to expand signatures when sigs.expandFromImmutableState=true and an
-    // initialized, signed state of the current version is available
-    private SigRequirements signedSigReqs;
+    // initialized, immutable state of the current version is available
+    private SigRequirements immutableSigReqs;
     // Used to expand signatures when one or more of the above conditions is not met
     private SigRequirements workingSigReqs;
 
@@ -131,21 +135,23 @@ public class SigReqsManager {
             return false;
         }
         try {
-            // Update our children (e.g., MerkleMaps and VirtualMaps) from the current signed state.
+            // Update our children (e.g., MerkleMaps and VirtualMaps) from given immutable state.
             // Because event intake is single-threaded, there's no risk of another thread getting
             // inconsistent results while we are doing this. Also, note that MutableStateChildren
-            // uses weak references, so we won't keep this signed state from GC eligibility.
-            signedChildren.updateFromSigned(sourceState, sourceState.getTimeOfLastHandledTxn());
-            expandFromSignedState(accessor);
+            // uses weak references, so we won't keep this immutable state from GC eligibility.
+            immutableChildren.updateFromImmutable(
+                    sourceState, sourceState.getTimeOfLastHandledTxn());
+            expandFromImmutableState(accessor);
             return true;
-        } catch (Exception ignore) {
+        } catch (Exception e) {
+            log.warn("Unable to expand signatures from immutable state", e);
             return false;
         }
     }
 
-    private void expandFromSignedState(final SwirldsTxnAccessor accessor) {
-        ensureSignedStateSigReqsIsConstructed();
-        expansionHelper.expandIn(accessor, signedSigReqs, accessor.getPkToSigsFn());
+    private void expandFromImmutableState(final SwirldsTxnAccessor accessor) {
+        ensureImmutableStateSigReqsIsConstructed();
+        expansionHelper.expandIn(accessor, immutableSigReqs, accessor.getPkToSigsFn());
     }
 
     private void ensureWorkingStateSigReqsIsConstructed() {
@@ -155,11 +161,11 @@ public class SigReqsManager {
         }
     }
 
-    private void ensureSignedStateSigReqsIsConstructed() {
-        if (signedSigReqs == null) {
+    private void ensureImmutableStateSigReqsIsConstructed() {
+        if (immutableSigReqs == null) {
             final var lookup =
-                    lookupsFactory.from(fileNumbers, signedChildren, TOKEN_META_TRANSFORM);
-            signedSigReqs = sigReqsFactory.from(lookup, signatureWaivers);
+                    lookupsFactory.from(fileNumbers, immutableChildren, TOKEN_META_TRANSFORM);
+            immutableSigReqs = sigReqsFactory.from(lookup, signatureWaivers);
         }
     }
 
@@ -183,5 +189,10 @@ public class SigReqsManager {
 
     void setLookupsFactory(final StateChildrenLookupsFactory lookupsFactory) {
         this.lookupsFactory = lookupsFactory;
+    }
+
+    @VisibleForTesting
+    MutableStateChildren getImmutableChildren() {
+        return immutableChildren;
     }
 }

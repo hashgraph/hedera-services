@@ -69,6 +69,7 @@ public class StoreInitializationFlow {
         backingNfts.rebuildFromSources();
         log.info("Backing stores rebuilt");
 
+        usageLimits.resetNumContracts();
         aliasManager.rebuildAliasesMap(
                 workingState.accounts(),
                 (num, account) -> {

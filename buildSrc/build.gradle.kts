@@ -1,9 +1,6 @@
-/*-
- * ‌
- * Hedera Build Sources
- * ​
- * Copyright (C) 2018 - 2022 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2022 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -15,9 +12,7 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
-
 plugins {
     // Support convention plugins written in Kotlin. Convention plugins are build scripts in 'src/main'
     // that automatically become available as plugins in the main build.
@@ -37,4 +32,6 @@ dependencies {
     implementation("me.champeau.jmh:jmh-gradle-plugin:0.6.6")
     implementation("com.diffplug.spotless:spotless-plugin-gradle:6.8.0")
     implementation("gradle.plugin.com.github.johnrengelman:shadow:7.1.2")
+    implementation("gradle.plugin.lazy.zoo.gradle:git-data-plugin:1.2.2")
+    implementation("net.swiftzer.semver:semver:1.1.2")
 }

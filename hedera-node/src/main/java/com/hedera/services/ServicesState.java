@@ -310,7 +310,8 @@ public class ServicesState extends PartialNaryMerkleInternal
                     deployedVersion);
             app.systemExits().fail(1);
         } else {
-            if (trigger == RESTART) {
+            final var isUpgrade = deployedVersion.isAfter(deserializedVersion);
+            if (trigger == RESTART && isUpgrade) {
                 networkCtx().discardPreparedUpgradeMeta();
                 dualState.setFreezeTime(null);
                 if (deployedVersion.hasMigrationRecordsFrom(deserializedVersion)) {

@@ -20,7 +20,6 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAccoun
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.MiscUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ScheduleID;
@@ -29,30 +28,26 @@ import javax.inject.Inject;
 
 public class AccessorFactory {
     private final GlobalDynamicProperties dynamicProperties;
-    private final OptionValidator validator;
 
     @Inject
-    public AccessorFactory(
-            final GlobalDynamicProperties dynamicProperties, final OptionValidator validator) {
+    public AccessorFactory(final GlobalDynamicProperties dynamicProperties) {
         this.dynamicProperties = dynamicProperties;
-        this.validator = validator;
     }
 
-    public TxnAccessor nonTriggeredTxn(byte[] signedTxnWrapperBytes)
+    public TxnAccessor nonTriggeredTxn(byte[] transactionBytes)
             throws InvalidProtocolBufferException {
-        final var subtype = constructSpecializedAccessor(signedTxnWrapperBytes);
-        subtype.setScheduleRef(null);
-        return subtype;
+        return internalSpecializedConstruction(
+                transactionBytes, Transaction.parseFrom(transactionBytes));
     }
 
     public TxnAccessor triggeredTxn(
-            byte[] signedTxnWrapperBytes,
+            Transaction transaction,
             final AccountID payer,
             ScheduleID parent,
             boolean markThrottleExempt,
             boolean markCongestionExempt)
             throws InvalidProtocolBufferException {
-        final var subtype = constructSpecializedAccessor(signedTxnWrapperBytes);
+        final var subtype = constructSpecializedAccessor(transaction);
         subtype.setScheduleRef(parent);
         subtype.setPayer(payer);
         if (markThrottleExempt) {
@@ -65,20 +60,33 @@ public class AccessorFactory {
     }
 
     /**
-     * parse the signedTxnWrapperBytes, figure out what specialized implementation to use construct
-     * the subtype instance
+     * Given a gRPC {@link Transaction}, returns a {@link SignedTxnAccessor} specialized to handle
+     * the transaction's logical operation.
      *
-     * @param signedTxnWrapperBytes
-     * @return
+     * @param transaction the gRPC transaction
+     * @return a specialized accessor
      */
-    public TxnAccessor constructSpecializedAccessor(byte[] signedTxnWrapperBytes)
+    public SignedTxnAccessor constructSpecializedAccessor(final Transaction transaction)
             throws InvalidProtocolBufferException {
-        final var signedTxn = Transaction.parseFrom(signedTxnWrapperBytes);
-        final var body = extractTransactionBody(signedTxn);
+        return internalSpecializedConstruction(transaction.toByteArray(), transaction);
+    }
+
+    private SignedTxnAccessor internalSpecializedConstruction(
+            final byte[] transactionBytes, final Transaction transaction)
+            throws InvalidProtocolBufferException {
+        final var body = extractTransactionBody(transaction);
         final var function = MiscUtils.FUNCTION_EXTRACTOR.apply(body);
         if (function == TokenAccountWipe) {
-            return new TokenWipeAccessor(signedTxnWrapperBytes, signedTxn, dynamicProperties);
+            return new TokenWipeAccessor(transactionBytes, transaction, dynamicProperties);
         }
-        return SignedTxnAccessor.from(signedTxnWrapperBytes, signedTxn);
+        return SignedTxnAccessor.from(transactionBytes, transaction);
+    }
+
+    public TxnAccessor uncheckedSpecializedAccessor(final Transaction transaction) {
+        try {
+            return constructSpecializedAccessor(transaction);
+        } catch (InvalidProtocolBufferException e) {
+            throw new IllegalArgumentException("Not a valid signed transaction");
+        }
     }
 }
