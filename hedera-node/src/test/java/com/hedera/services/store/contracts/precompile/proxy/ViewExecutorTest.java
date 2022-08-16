@@ -50,7 +50,6 @@ import com.hedera.services.store.contracts.precompile.codec.GetTokenDefaultFreez
 import com.hedera.services.store.contracts.precompile.codec.GetTokenDefaultKycStatusWrapper;
 import com.hedera.services.store.contracts.precompile.codec.GetTokenKeyWrapper;
 import com.hedera.services.store.contracts.precompile.codec.GrantRevokeKycWrapper;
-import com.hedera.services.store.contracts.precompile.codec.KeyValueWrapper;
 import com.hedera.services.store.contracts.precompile.codec.TokenFreezeUnfreezeWrapper;
 import com.hedera.services.store.contracts.precompile.codec.TokenGetCustomFeesWrapper;
 import com.hedera.services.store.contracts.precompile.codec.TokenInfoWrapper;
@@ -59,7 +58,6 @@ import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.test.factories.fees.CustomFeeBuilder;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.CustomFee;
 import com.hederahashgraph.api.proto.java.NftID;
 import com.hederahashgraph.api.proto.java.Timestamp;
@@ -269,15 +267,16 @@ class ViewExecutorTest {
     }
 
     @Test
-    void computeGetTokenKey(){
+    void computeGetTokenKey() {
         final var input = prerequisites(ABI_ID_GET_TOKEN_KEY, fungibleTokenAddress);
         final var getTokenKeyEncoded =
                 Bytes.fromHexString(
                         "0x000000000000000000000000000000000000000000000000000000000000001600000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000a000000000000000000000000000000000000000000000000000000000000000e0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000209e417334d2ea6be459624060e3efdc1b459a884bc6a9c232349af35e9060ed620000000000000000000000000000000000000000000000000000000000000000");
-        given(decodingFacade.decodeGetTokenKey(input)).willReturn(new GetTokenKeyWrapper(fungible,1));
+        given(decodingFacade.decodeGetTokenKey(input))
+                .willReturn(new GetTokenKeyWrapper(fungible, 1));
         given(stateView.tokenExists(fungible)).willReturn(true);
         given(ledgers.tokens()).willReturn(tokens);
-        given(tokens.get(fungible,TokenProperty.ADMIN_KEY)).willReturn(key);
+        given(tokens.get(fungible, TokenProperty.ADMIN_KEY)).willReturn(key);
         given(key.getECDSASecp256k1Key()).willReturn(new byte[0]);
         given(encodingFacade.encodeGetTokenKey(any())).willReturn(getTokenKeyEncoded);
 

@@ -1053,16 +1053,15 @@ class DecodingFacadeTest {
     }
 
     @Test
-    void decodeFungibleTokenGetKey(){
-        final var decodedInput =
-                subject.decodeGetTokenKey(GET_TOKEN_KEY_INPUT);
+    void decodeFungibleTokenGetKey() {
+        final var decodedInput = subject.decodeGetTokenKey(GET_TOKEN_KEY_INPUT);
         assertTrue(decodedInput.tokenID().getTokenNum() > 0);
-        assertEquals(1L,decodedInput.keyType());
-        assertEquals(TokenProperty.ADMIN_KEY,decodedInput.tokenKeyType());
+        assertEquals(1L, decodedInput.keyType());
+        assertEquals(TokenProperty.ADMIN_KEY, decodedInput.tokenKeyType());
     }
 
     @Test
-    void decodeUpdateTokenKeysForFungible(){
+    void decodeUpdateTokenKeysForFungible() {
         final var decodedInput =
                 subject.decodeUpdateTokenKeys(UPDATE_FUNGIBLE_TOKEN_KEYS, identity());
         assertTrue(decodedInput.tokenID().getTokenNum() > 0);

@@ -797,9 +797,12 @@ class SyntheticTxnFactoryTest {
                         new byte[] {},
                         new byte[] {},
                         null);
-        final var tokenUpdateKeysWrapper = new TokenUpdateKeysWrapper(fungible,List.of(
-                new TokenKeyWrapper(112, multiKey),
-                new TokenKeyWrapper(1, adminKey)));
+        final var tokenUpdateKeysWrapper =
+                new TokenUpdateKeysWrapper(
+                        fungible,
+                        List.of(
+                                new TokenKeyWrapper(112, multiKey),
+                                new TokenKeyWrapper(1, adminKey)));
         final var result = subject.createTokenUpdateKeys(tokenUpdateKeysWrapper);
         final var txnBody = result.build().getTokenUpdate();
 

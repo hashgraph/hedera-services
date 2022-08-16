@@ -223,8 +223,8 @@ class TokenUpdateLogicTest {
     }
 
     @Test
-    void updateTokenKeysHappyPathForNonFungible(){
-        //given
+    void updateTokenKeysHappyPathForNonFungible() {
+        // given
         givenTokenUpdateLogic(true);
         givenValidTransactionBody(false);
         given(merkleToken.hasAdminKey()).willReturn(true);
@@ -240,8 +240,8 @@ class TokenUpdateLogicTest {
     }
 
     @Test
-    void updateTokenKeysForNonFungibleFails(){
-        //given
+    void updateTokenKeysForNonFungibleFails() {
+        // given
         givenTokenUpdateLogic(true);
         givenValidTransactionBody(false);
         givenMinimalLedgers();
@@ -251,7 +251,8 @@ class TokenUpdateLogicTest {
         given(store.update(op, CONSENSUS_TIME)).willReturn(FAIL_INVALID);
         // then
         Assertions.assertThrows(
-                InvalidTransactionException.class, () -> subject.updateTokenKeys(op, CONSENSUS_TIME));
+                InvalidTransactionException.class,
+                () -> subject.updateTokenKeys(op, CONSENSUS_TIME));
     }
 
     @Test
