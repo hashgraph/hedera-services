@@ -88,7 +88,7 @@ import org.apache.logging.log4j.Logger;
 public class CreatePrecompileSuite extends HapiApiSuite {
     private static final Logger log = LogManager.getLogger(CreatePrecompileSuite.class);
 
-    private static final long GAS_TO_OFFER = 4_000_000L;
+    private static final long GAS_TO_OFFER = 1_000_000L;
     private static final long AUTO_RENEW_PERIOD = 8_000_000L;
     private static final String TOKEN_SYMBOL = "tokenSymbol";
     private static final String TOKEN_NAME = "tokenName";
@@ -125,32 +125,32 @@ public class CreatePrecompileSuite extends HapiApiSuite {
     List<HapiApiSpec> positiveSpecs() {
         return List.of(
                 new HapiApiSpec[] {
-                    fungibleTokenCreateHappyPath(),
-                    fungibleTokenCreateWithFeesHappyPath(),
+//                    fungibleTokenCreateHappyPath(),
+//                    fungibleTokenCreateWithFeesHappyPath(),
                     nonFungibleTokenCreateHappyPath(),
                     nonFungibleTokenCreateWithFeesHappyPath(),
-                    fungibleTokenCreateThenQueryAndTransfer(),
-                    nonFungibleTokenCreateThenQuery(),
-                    inheritsSenderAutoRenewAccountIfAnyForNftCreate(),
-                    inheritsSenderAutoRenewAccountForTokenCreate(),
-                    createTokenWithDefaultExpiryAndEmptyKeys()
+//                    fungibleTokenCreateThenQueryAndTransfer(),
+//                    nonFungibleTokenCreateThenQuery(),
+//                    inheritsSenderAutoRenewAccountIfAnyForNftCreate(),
+//                    inheritsSenderAutoRenewAccountForTokenCreate(),
+//                    createTokenWithDefaultExpiryAndEmptyKeys()
                 });
     }
 
     List<HapiApiSpec> negativeSpecs() {
         return List.of(
                 new HapiApiSpec[] {
-                    tokenCreateWithEmptyKeysReverts(),
-                    tokenCreateWithKeyWithMultipleKeyValuesReverts(),
-                    tokenCreateWithFixedFeeWithMultiplePaymentsReverts(),
-                    createTokenWithEmptyTokenStruct(),
-                    createTokenWithInvalidExpiry(),
-                    createTokenWithInvalidRoyaltyFee(),
-                    createTokenWithInvalidTreasury(),
-                    createTokenWithInvalidFixedFeeWithERC721Denomination(),
-                    createTokenWithInvalidFeeCollector(),
-                    createTokenWithInsufficientValueSent(),
-                    delegateCallTokenCreateFails()
+//                    tokenCreateWithEmptyKeysReverts(),
+//                    tokenCreateWithKeyWithMultipleKeyValuesReverts(),
+//                    tokenCreateWithFixedFeeWithMultiplePaymentsReverts(),
+//                    createTokenWithEmptyTokenStruct(),
+//                    createTokenWithInvalidExpiry(),
+//                    createTokenWithInvalidRoyaltyFee()
+//                    createTokenWithInvalidTreasury(),
+//                    createTokenWithInvalidFixedFeeWithERC721Denomination(),
+//                    createTokenWithInvalidFeeCollector(),
+//                    createTokenWithInsufficientValueSent(),
+//                    delegateCallTokenCreateFails()
                 });
     }
 
@@ -757,7 +757,11 @@ public class CreatePrecompileSuite extends HapiApiSuite {
                                                                         spec.registry()
                                                                                 .getAccountID(
                                                                                         ACCOUNT)),
-                                                                AUTO_RENEW_PERIOD)
+                                                                AUTO_RENEW_PERIOD,
+                                                    spec.registry()
+                                                        .getKey(ED25519KEY)
+                                                        .getEd25519()
+                                                        .toByteArray())
                                                         .via(FIRST_CREATE_TXN)
                                                         .gas(GAS_TO_OFFER)
                                                         .sending(DEFAULT_AMOUNT_TO_SEND)
@@ -1428,6 +1432,7 @@ public class CreatePrecompileSuite extends HapiApiSuite {
                         contractCreate(TOKEN_CREATE_CONTRACT).gas(GAS_TO_OFFER),
                         tokenCreate(EXISTING_TOKEN)
                                 .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
+                            .supplyKey(ECDSA_KEY)
                                 .initialSupply(0L))
                 .when(
                         withOpContext(
