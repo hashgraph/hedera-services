@@ -153,6 +153,15 @@ import org.junit.jupiter.api.Assertions;
 
 public class UtilVerbs {
 
+    /**
+     * Private constructor to prevent instantiation.
+     *
+     * @throws UnsupportedOperationException if invoked by reflection or other means.
+     */
+    private UtilVerbs() {
+        throw new UnsupportedOperationException();
+    }
+
     public static HapiFreeze freeze() {
         return new HapiFreeze();
     }
@@ -379,10 +388,7 @@ public class UtilVerbs {
     }
 
     public static CustomSpecAssert exportAccountBalances(Supplier<String> acctBalanceFile) {
-        return new CustomSpecAssert(
-                (spec, log) -> {
-                    spec.exportAccountBalances(acctBalanceFile);
-                });
+        return new CustomSpecAssert((spec, log) -> spec.exportAccountBalances(acctBalanceFile));
     }
 
     /* Stream validation. */
@@ -408,8 +414,8 @@ public class UtilVerbs {
                 (spec, workLog) -> {
                     HapiGetTxnRecord subOp = getTxnRecord(forTxn);
                     allRunFor(spec, subOp);
-                    TransactionRecord record = subOp.getResponseRecord();
-                    long fee = record.getTransactionFee();
+                    TransactionRecord rcd = subOp.getResponseRecord();
+                    long fee = rcd.getTransactionFee();
                     spec.registry().saveAmount(byName, fee);
                 });
     }
@@ -447,7 +453,7 @@ public class UtilVerbs {
                                     .andAllChildRecords()
                                     .hasPriority(
                                             recordWith().status(parentalStatus).txnId(parentId))
-                                    .hasChildRecords(childRecordAsserts)
+                                    .hasChildRecords(parentId, childRecordAsserts)
                                     .logged());
                 });
     }
@@ -465,10 +471,10 @@ public class UtilVerbs {
             String filePath, int chunkSize, String payer, String topic, AtomicLong count) {
         return withOpContext(
                 (spec, ctxLog) -> {
-                    List<HapiSpecOperation> opsList = new ArrayList<HapiSpecOperation>();
-                    String overriddenFile = new String(filePath);
+                    List<HapiSpecOperation> opsList = new ArrayList<>();
+                    String overriddenFile = filePath;
                     int overriddenChunkSize = chunkSize;
-                    String overriddenTopic = new String(topic);
+                    String overriddenTopic = topic;
                     boolean validateRunningHash = false;
 
                     long currentCount = count.getAndIncrement();
@@ -651,7 +657,7 @@ public class UtilVerbs {
                 feeSchedule.getTransactionFeeScheduleBuilderList().stream()
                         .filter(tfs -> tfs.getHederaFunctionality() == function)
                         .findAny()
-                        .get()
+                        .orElseThrow()
                         .getFeesBuilderList();
 
         for (FeeData.Builder builder : feesList) {
@@ -916,11 +922,12 @@ public class UtilVerbs {
         return updateLargeFile(GENESIS, fileName, registryEntry);
     }
 
+    @SuppressWarnings("java:S5960")
     public static HapiSpecOperation contractListWithPropertiesInheritedFrom(
             final String contractList, final long expectedSize, final String parent) {
         return withOpContext(
                 (spec, ctxLog) -> {
-                    List<HapiSpecOperation> opsList = new ArrayList<HapiSpecOperation>();
+                    List<HapiSpecOperation> opsList = new ArrayList<>();
                     long contractListSize = spec.registry().getAmount(contractList + "Size");
                     Assertions.assertEquals(
                             expectedSize, contractListSize, contractList + " has bad size!");
@@ -968,15 +975,15 @@ public class UtilVerbs {
                     var subOp = getTxnRecord(txn).logged();
                     allRunFor(spec, subOp);
 
-                    var record = subOp.getResponseRecord();
+                    var rcd = subOp.getResponseRecord();
                     double actualUsdCharged =
-                            (1.0 * record.getTransactionFee())
+                            (1.0 * rcd.getTransactionFee())
                                     / ONE_HBAR
-                                    / record.getReceipt()
+                                    / rcd.getReceipt()
                                             .getExchangeRate()
                                             .getCurrentRate()
                                             .getHbarEquiv()
-                                    * record.getReceipt()
+                                    * rcd.getReceipt()
                                             .getExchangeRate()
                                             .getCurrentRate()
                                             .getCentEquiv()
@@ -1000,22 +1007,22 @@ public class UtilVerbs {
                     var subOp = getTxnRecord(txn);
                     allRunFor(spec, subOp);
 
-                    var record = subOp.getResponseRecord();
+                    var rcd = subOp.getResponseRecord();
                     double actualUsdCharged =
-                            (1.0 * record.getTransactionFee())
+                            (1.0 * rcd.getTransactionFee())
                                     / ONE_HBAR
-                                    / record.getReceipt()
+                                    / rcd.getReceipt()
                                             .getExchangeRate()
                                             .getCurrentRate()
                                             .getHbarEquiv()
-                                    * record.getReceipt()
+                                    * rcd.getReceipt()
                                             .getExchangeRate()
                                             .getCurrentRate()
                                             .getCentEquiv()
                                     / 100;
 
                     feeTableBuilder.append(
-                            String.format("%30s | %1.5f \t |\n", operation, actualUsdCharged));
+                            String.format("%30s | %1.5f \t |%n", operation, actualUsdCharged));
                 });
     }
 
@@ -1058,17 +1065,15 @@ public class UtilVerbs {
                                     .payingWith(EXCHANGE_RATE_CONTROL)
                                     .expectStrictCostAnswer();
                     allRunFor(spec, subOp);
-                    TransactionRecord record =
+                    TransactionRecord rcd =
                             subOp.getResponse().getTransactionGetRecord().getTransactionRecord();
                     long realFee =
-                            record.getTransferList().getAccountAmountsList().stream()
+                            rcd.getTransferList().getAccountAmountsList().stream()
                                     .filter(aa -> feeRecipients.contains(aa.getAccountID()))
                                     .mapToLong(AccountAmount::getAmount)
                                     .sum();
                     Assertions.assertEquals(
-                            realFee,
-                            record.getTransactionFee(),
-                            "Inconsistent transactionFee field!");
+                            realFee, rcd.getTransactionFee(), "Inconsistent transactionFee field!");
                 });
     }
 
@@ -1084,7 +1089,7 @@ public class UtilVerbs {
 
     public static HapiSpecOperation validateTransferListForBalances(
             List<String> txns, List<String> accounts) {
-        return validateTransferListForBalances(txns, accounts, Collections.EMPTY_SET);
+        return validateTransferListForBalances(txns, accounts, Collections.emptySet());
     }
 
     public static HapiSpecOperation validateTransferListForBalances(
@@ -1112,7 +1117,8 @@ public class UtilVerbs {
                                                                     spec.registry()
                                                                             .getBalanceSnapshot(
                                                                                     "x");
-                                                        } catch (Throwable ignore) {
+                                                        } catch (Exception ignore) {
+                                                            // Intentionally ignored
                                                         }
                                                         return balance;
                                                     }));
@@ -1123,15 +1129,15 @@ public class UtilVerbs {
                         HapiGetTxnRecord subOp =
                                 getTxnRecord(txn).logged().payingWith(EXCHANGE_RATE_CONTROL);
                         allRunFor(spec, subOp);
-                        TransactionRecord record =
+                        TransactionRecord rcd =
                                 subOp.getResponse()
                                         .getTransactionGetRecord()
                                         .getTransactionRecord();
-                        transfers.addAll(record.getTransferList().getAccountAmountsList());
+                        transfers.addAll(rcd.getTransferList().getAccountAmountsList());
                     }
 
                     Map<String, Long> changes = changesAccordingTo(transfers);
-                    assertLog.info("Balance changes according to transfer list: " + changes);
+                    assertLog.info("Balance changes according to transfer list: {}", changes);
                     changes.entrySet()
                             .forEach(
                                     change -> {
@@ -1143,20 +1149,19 @@ public class UtilVerbs {
                                                     spec.registry()
                                                             .getBalanceSnapshot(
                                                                     account + "Snapshot");
-                                        } catch (Throwable ignore) {
+                                        } catch (Exception ignored) {
+                                            // Intentionally ignored
                                         }
                                         long expectedBalance =
                                                 change.getValue() + Math.max(0L, oldBalance);
                                         long actualBalance =
                                                 actualBalances.getOrDefault(account, -1L);
                                         assertLog.info(
-                                                "Balance of "
-                                                        + account
-                                                        + " was expected to be "
-                                                        + expectedBalance
-                                                        + ", is actually "
-                                                        + actualBalance
-                                                        + "...");
+                                                "Balance of {} was expected to be {}, is actually"
+                                                        + " {}...",
+                                                account,
+                                                expectedBalance,
+                                                actualBalance);
                                         Assertions.assertEquals(
                                                 expectedBalance,
                                                 actualBalance,

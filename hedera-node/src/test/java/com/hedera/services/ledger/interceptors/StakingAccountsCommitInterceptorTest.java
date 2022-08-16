@@ -53,7 +53,7 @@ import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.merkle.MerkleStakingInfo;
-import com.hedera.services.state.validation.UsageLimits;
+import com.hedera.services.state.validation.AccountUsageTracking;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.test.factories.accounts.MerkleAccountFactory;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -75,7 +75,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class StakingAccountsCommitInterceptorTest {
-    @Mock private UsageLimits usageLimits;
+    @Mock private AccountUsageTracking usageTracking;
     @Mock private SideEffectsTracker sideEffectsTracker;
     @Mock private MerkleNetworkContext networkCtx;
     @Mock private GlobalDynamicProperties dynamicProperties;
@@ -118,7 +118,7 @@ class StakingAccountsCommitInterceptorTest {
                         stakeInfoManager,
                         accountNumbers,
                         txnCtx,
-                        usageLimits);
+                        usageTracking);
         reset();
     }
 
@@ -237,6 +237,23 @@ class StakingAccountsCommitInterceptorTest {
         subject.preview(changes);
 
         assertEquals(counterpartyBalance / 5, node0Info.getUnclaimedStakeRewardStart());
+    }
+
+    @Test
+    void anAccountDoesNotUnclaimRewardsIfStakingNotActivated() {
+        given(dynamicProperties.isStakingEnabled()).willReturn(true);
+        final var changes = new EntityChangeSet<AccountID, MerkleAccount, AccountProperty>();
+        final var node0Info = stakingInfo.get(node0Id);
+        node0Info.setStakeRewardStart(2 * counterpartyBalance);
+
+        final Map<AccountProperty, Object> nodeChange = Map.of(AccountProperty.STAKED_ID, -2L);
+        changes.include(counterpartyId, counterparty, nodeChange);
+        counterparty.setStakePeriodStart(stakePeriodStart);
+        counterparty.setStakeAtStartOfLastRewardedPeriod(counterpartyBalance / 5);
+
+        subject.preview(changes);
+
+        assertEquals(0, node0Info.getUnclaimedStakeRewardStart());
     }
 
     @Test
@@ -646,7 +663,7 @@ class StakingAccountsCommitInterceptorTest {
                         stakeInfoManager,
                         accountNumbers,
                         txnCtx,
-                        usageLimits);
+                        usageTracking);
 
         subject.preview(pendingChanges);
         verify(rewardCalculator, times(2))
@@ -701,7 +718,7 @@ class StakingAccountsCommitInterceptorTest {
                         stakeInfoManager,
                         accountNumbers,
                         txnCtx,
-                        usageLimits);
+                        usageTracking);
 
         subject.preview(pendingChanges);
         verify(rewardCalculator, times(2))
@@ -749,7 +766,7 @@ class StakingAccountsCommitInterceptorTest {
                         stakeInfoManager,
                         accountNumbers,
                         txnCtx,
-                        usageLimits);
+                        usageTracking);
 
         assertThrows(IllegalStateException.class, () -> subject.preview(pendingChanges));
     }
@@ -781,7 +798,7 @@ class StakingAccountsCommitInterceptorTest {
                         stakeInfoManager,
                         accountNumbers,
                         txnCtx,
-                        usageLimits);
+                        usageTracking);
 
         subject.getRewardsEarned()[1] = 0;
         subject.getRewardsEarned()[2] = 1;
@@ -829,7 +846,7 @@ class StakingAccountsCommitInterceptorTest {
                         stakeInfoManager,
                         accountNumbers,
                         txnCtx,
-                        usageLimits);
+                        usageTracking);
 
         subject.getRewardsEarned()[0] = -1;
         subject.getRewardsEarned()[1] = -1;

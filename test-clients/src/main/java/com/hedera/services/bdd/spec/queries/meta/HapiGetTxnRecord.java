@@ -62,6 +62,7 @@ import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.api.proto.java.TransferList;
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.io.ObjectOutputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -398,6 +399,7 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
         return this;
     }
 
+    @SuppressWarnings("java:S5960")
     private void assertPriority(HapiApiSpec spec, TransactionRecord actualRecord) throws Throwable {
         if (priorityExpectations.isPresent()) {
             ErroringAsserts<TransactionRecord> asserts =
@@ -469,7 +471,7 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
     }
 
     private void assertTransactionHash(HapiApiSpec spec, TransactionRecord actualRecord)
-            throws Throwable {
+            throws InvalidProtocolBufferException {
         Transaction transaction = Transaction.parseFrom(spec.registry().getBytes(txn));
         assertArrayEquals(
                 sha384HashOf(transaction).toByteArray(),
@@ -478,7 +480,7 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
     }
 
     private void assertTopicRunningHash(HapiApiSpec spec, TransactionRecord actualRecord)
-            throws Throwable {
+            throws IOException {
         if (topicToValidate.isPresent()) {
             if (actualRecord.getReceipt().getStatus().equals(ResponseCodeEnum.SUCCESS)) {
                 var previousRunningHash = spec.registry().getBytes(topicToValidate.get());
@@ -600,10 +602,10 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
                                     actualNewTokenAssociations));
         }
         if (!childExpectations.isEmpty()) {
-            for (final var index : childExpectations.keySet()) {
-                final var expectations = childExpectations.get(index);
+            for (final var index : childExpectations.entrySet()) {
+                final var expectations = index.getValue();
                 if (expectations.aliasingKey() != null) {
-                    final var childRecord = childRecords.get(index);
+                    final var childRecord = childRecords.get(index.getKey());
                     final var literalKey = spec.registry().getKey(expectations.aliasingKey());
                     assertEquals(
                             literalKey.toByteString().toStringUtf8(),
@@ -631,7 +633,7 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
             final var transferList = actualRecord.getTransferList();
             final var pendingRewards =
                     actualRecord.getPaidStakingRewardsList().stream()
-                            .mapToLong(val -> val.getAmount())
+                            .mapToLong(AccountAmount::getAmount)
                             .sum();
             assertStakingAccountFees(transferList, actualTxnFee, pendingRewards);
         }
@@ -643,7 +645,9 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
         if (noPseudoRandomData) {
             final var actualByteString = actualRecord.getPrngBytes();
             final var actualRandomNum = actualRecord.getPrngNumber();
-            assertEquals(0, actualByteString.size());
+            assertEquals(
+                    TransactionRecord.EntropyCase.ENTROPY_NOT_SET, actualRecord.getEntropyCase());
+            assertEquals(ByteString.EMPTY, actualByteString);
             assertEquals(0, actualRandomNum);
         }
         if (pseudorandomBytesExpected) {
@@ -664,10 +668,9 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
     private void assertNoStakingAccountFees(final TransferList transferList) {
         for (final var adjust : transferList.getAccountAmountsList()) {
             final var id = adjust.getAccountID();
-            if (id.equals(801L) || id.equals(800L)) {
-                if (adjust.getAmount() > 0) {
-                    Assertions.fail("Staking fees present in the txnRecord");
-                }
+            if ((id.getAccountNum() == 801L || id.getAccountNum() == 800L)
+                    && adjust.getAmount() > 0) {
+                Assertions.fail("Staking fees present in the txnRecord");
             }
         }
     }
@@ -677,17 +680,17 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
         long amount = 0L;
         for (final var adjust : transferList.getAccountAmountsList()) {
             final var id = adjust.getAccountID();
-            if (id.equals(3L) || id.equals(98L)) {
+            if (id.getAccountNum() == 3L || id.getAccountNum() == 98L) {
                 amount += adjust.getAmount();
             }
         }
         final var stakingFee = actualTxnFee - amount;
         for (final var adjust : transferList.getAccountAmountsList()) {
             final var id = adjust.getAccountID();
-            if (id.equals(800L)) {
+            if (id.getAccountNum() == 800L) {
                 assertEquals(stakingFee / 2 - pendingRewards, adjust.getAmount());
             }
-            if (id.equals(801L)) {
+            if (id.getAccountNum() == 801L) {
                 assertEquals(stakingFee / 2, adjust.getAmount());
             }
         }
@@ -834,6 +837,7 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
     }
 
     @Override
+    @SuppressWarnings("java:S1874")
     protected void submitWith(HapiApiSpec spec, Transaction payment)
             throws InvalidProtocolBufferException {
         Query query = getRecordQuery(spec, payment, false);
@@ -841,11 +845,11 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
                 spec.clients()
                         .getCryptoSvcStub(targetNodeFor(spec), useTls)
                         .getTxRecordByTxID(query);
-        final TransactionRecord record = response.getTransactionGetRecord().getTransactionRecord();
+        final TransactionRecord rcd = response.getTransactionGetRecord().getTransactionRecord();
         if (contractResultAbi != null) {
-            exposeRequestedEventsFrom(record);
+            exposeRequestedEventsFrom(rcd);
         }
-        observer.ifPresent(obs -> obs.accept(record));
+        observer.ifPresent(obs -> obs.accept(rcd));
         childRecords = response.getTransactionGetRecord().getChildTransactionRecordsList();
         childRecordsCount.ifPresent(
                 count -> {
@@ -872,45 +876,47 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 
         if (verboseLoggingOn) {
             if (format.isPresent()) {
-                format.get().accept(record, log);
+                format.get().accept(rcd, log);
             } else {
-                var fee = record.getTransactionFee();
+                var fee = rcd.getTransactionFee();
                 var rates = spec.ratesProvider();
                 var priceInUsd = sdec(rates.toUsdWithActiveRates(fee), 5);
-                log.info(spec.logPrefix() + "Record (charged ${}): {}", priceInUsd, record);
                 log.info(
-                        spec.logPrefix() + "  And {} child record{}: {}",
-                        childRecords.size(),
-                        childRecords.size() > 1 ? "s" : "",
-                        childRecords);
+                        "{}Record (charged ${}): {}", spec::logPrefix, () -> priceInUsd, () -> rcd);
+                log.info(
+                        "{}  And {} child record{}: {}",
+                        spec::logPrefix,
+                        childRecords::size,
+                        () -> childRecords.size() > 1 ? "s" : "",
+                        () -> childRecords);
                 log.info(
                         "Duplicates: {}",
                         response.getTransactionGetRecord().getDuplicateTransactionRecordsList());
             }
         }
         if (response.getTransactionGetRecord().getHeader().getNodeTransactionPrecheckCode() == OK) {
-            priceConsumer.ifPresent(pc -> pc.accept(record.getTransactionFee()));
-            debitsConsumer.ifPresent(dc -> dc.accept(asDebits(record.getTransferList())));
+            priceConsumer.ifPresent(pc -> pc.accept(rcd.getTransactionFee()));
+            debitsConsumer.ifPresent(dc -> dc.accept(asDebits(rcd.getTransferList())));
         }
         if (registryEntry.isPresent()) {
             spec.registry()
                     .saveContractList(
                             registryEntry.get() + "CreateResult",
-                            record.getContractCreateResult().getCreatedContractIDsList());
+                            rcd.getContractCreateResult().getCreatedContractIDsList());
             spec.registry()
                     .saveContractList(
                             registryEntry.get() + "CallResult",
-                            record.getContractCallResult().getCreatedContractIDsList());
+                            rcd.getContractCallResult().getCreatedContractIDsList());
         }
         if (saveTxnRecordToRegistry.isPresent()) {
-            spec.registry().saveTransactionRecord(saveTxnRecordToRegistry.get(), record);
+            spec.registry().saveTransactionRecord(saveTxnRecordToRegistry.get(), rcd);
         }
     }
 
-    private void exposeRequestedEventsFrom(final TransactionRecord record) {
+    private void exposeRequestedEventsFrom(final TransactionRecord rcd) {
         final var abi = Abi.fromJson(contractResultAbi);
         final var matcher = abi.findEvent(eventMatcher);
-        final var logs = record.getContractCallResult().getLogInfoList();
+        final var logs = rcd.getContractCallResult().getLogInfoList();
         for (final var log : logs) {
             final var data = log.getData().toByteArray();
             final var topics = new byte[log.getTopicCount()][];

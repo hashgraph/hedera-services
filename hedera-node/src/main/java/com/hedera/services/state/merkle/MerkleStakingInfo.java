@@ -15,26 +15,6 @@
  */
 package com.hedera.services.state.merkle;
 
-/*
- * ‌
- * Hedera Services Node
- * ​
- * Copyright (C) 2018 - 2020 Hedera Hashgraph, LLC
- * ​
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- * ‍
- */
-
 import static com.hedera.services.ServicesState.EMPTY_HASH;
 import static com.hedera.services.legacy.proto.utils.CommonUtils.noThrowSha384HashOf;
 import static com.hedera.services.state.merkle.internals.ByteUtils.getHashBytes;
@@ -42,7 +22,6 @@ import static com.hedera.services.state.merkle.internals.ByteUtils.getHashBytes;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.MoreObjects;
 import com.hedera.services.context.properties.BootstrapProperties;
-import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.EntityNum;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
@@ -55,6 +34,7 @@ import com.swirlds.common.merkle.utility.Keyed;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.Objects;
 import javax.annotation.Nullable;
@@ -87,8 +67,10 @@ public class MerkleStakingInfo extends PartialMerkleLeaf implements Keyed<Entity
     }
 
     public MerkleStakingInfo(final BootstrapProperties properties) {
-        final var numRewardablePeriods =
-                properties.getIntProperty("staking.rewardHistory.numStoredPeriods");
+        this(properties.getIntProperty("staking.rewardHistory.numStoredPeriods"));
+    }
+
+    public MerkleStakingInfo(final int numRewardablePeriods) {
         rewardSumHistory = new long[numRewardablePeriods + 1];
     }
 
@@ -134,7 +116,10 @@ public class MerkleStakingInfo extends PartialMerkleLeaf implements Keyed<Entity
         return stakeRewardStart;
     }
 
-    public long updateRewardSumHistory(final long perHbarRate, long maxPerHbarRate) {
+    public long updateRewardSumHistory(
+            final long perHbarRate,
+            final long maxPerHbarRate,
+            final boolean requireMinStakeToReward) {
         assertMutableRewardSumHistory();
         rewardSumHistory = Arrays.copyOf(rewardSumHistory, rewardSumHistory.length);
         final var droppedRewardSum = rewardSumHistory[rewardSumHistory.length - 1];
@@ -151,15 +136,21 @@ public class MerkleStakingInfo extends PartialMerkleLeaf implements Keyed<Entity
         // for this staking period, unless its effective stake was less than minStake, and hence
         // zero here (note
         // the active condition will only be checked in a later release)
-        if (Math.min(stakeRewardStart, stake) > 0) {
+        final var rewardableStake =
+                requireMinStakeToReward ? Math.min(stakeRewardStart, stake) : stakeRewardStart;
+        if (rewardableStake > 0) {
             perHbarRateThisNode = perHbarRate;
             // But if the node had more the maximum stakeRewardStart, "down-scale" its reward rate
-            // to
-            // ensure the accounts staking to this node will receive a fraction of the total rewards
-            // that
-            // does not exceed node.stakedRewardStart / totalStakedRewardedStart
+            // to ensure the accounts staking to this node will receive a fraction of the total 
+            // rewards that does not exceed node.stakedRewardStart / totalStakedRewardedStart; use
+            // arbitrary-precision arithmetic because there is no inherent bound on (maxStake * 
+            // perHbarRateThisNode)
             if (stakeRewardStart > maxStake) {
-                perHbarRateThisNode = (perHbarRateThisNode * maxStake) / stakeRewardStart;
+                perHbarRateThisNode =
+                        BigInteger.valueOf(perHbarRateThisNode)
+                                .multiply(BigInteger.valueOf(maxStake))
+                                .divide(BigInteger.valueOf(stakeRewardStart))
+                                .longValueExact();
             }
         }
         perHbarRateThisNode = Math.min(perHbarRateThisNode, maxPerHbarRate);
@@ -194,7 +185,8 @@ public class MerkleStakingInfo extends PartialMerkleLeaf implements Keyed<Entity
         unclaimedStakeRewardStart += amount;
         if (unclaimedStakeRewardStart > stakeRewardStart) {
             log.warn(
-                    "Asked to release {} stake reward start for node{}, but only {} was staked",
+                    "Asked to release {} more rewards for node{} (now {}), but only {} was staked",
+                    amount,
                     number,
                     unclaimedStakeRewardStart,
                     stakeRewardStart);
@@ -352,7 +344,7 @@ public class MerkleStakingInfo extends PartialMerkleLeaf implements Keyed<Entity
     @Override
     public String toString() {
         return MoreObjects.toStringHelper(MerkleStakingInfo.class)
-                .add("id", EntityIdUtils.asScopedSerialNoLiteral(number))
+                .add("id", number)
                 .add("minStake", minStake)
                 .add("maxStake", maxStake)
                 .add("stakeToReward", stakeToReward)

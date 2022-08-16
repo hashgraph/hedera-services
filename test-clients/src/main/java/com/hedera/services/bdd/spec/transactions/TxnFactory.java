@@ -44,7 +44,6 @@ import com.hederahashgraph.api.proto.java.FileCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.FileDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.FileUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.FreezeTransactionBody;
-import com.hederahashgraph.api.proto.java.PrngTransactionBody;
 import com.hederahashgraph.api.proto.java.ScheduleCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.ScheduleDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.ScheduleSignTransactionBody;
@@ -70,6 +69,8 @@ import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.UncheckedSubmitBody;
+import com.hederahashgraph.api.proto.java.UtilPrngTransactionBody;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.time.Clock;
 import java.time.Instant;
@@ -167,75 +168,74 @@ public class TxnFactory {
     }
 
     public <T, B extends Message.Builder> T body(Class<T> tClass, Consumer<B> def)
-            throws Throwable {
+            throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
         Method newBuilder = tClass.getMethod("newBuilder");
         B opBuilder = (B) newBuilder.invoke(null);
-        String defaultBodyMethod = String.format("defaultDef_%s", tClass.getSimpleName());
+        String defaultBodyMethod = String.format("defaultDef%s", tClass.getSimpleName());
         Method defaultBody = this.getClass().getMethod(defaultBodyMethod);
         ((Consumer<B>) defaultBody.invoke(this)).andThen(def).accept(opBuilder);
         return (T) opBuilder.build();
     }
 
     public Consumer<TokenAssociateTransactionBody.Builder>
-            defaultDef_TokenAssociateTransactionBody() {
+            defaultDefTokenAssociateTransactionBody() {
         return builder -> {};
     }
 
     public Consumer<TokenDissociateTransactionBody.Builder>
-            defaultDef_TokenDissociateTransactionBody() {
+            defaultDefTokenDissociateTransactionBody() {
         return builder -> {};
     }
 
     public Consumer<TokenWipeAccountTransactionBody.Builder>
-            defaultDef_TokenWipeAccountTransactionBody() {
+            defaultDefTokenWipeAccountTransactionBody() {
         return builder -> {};
     }
 
     public Consumer<TokenRevokeKycTransactionBody.Builder>
-            defaultDef_TokenRevokeKycTransactionBody() {
+            defaultDefTokenRevokeKycTransactionBody() {
         return builder -> {};
     }
 
-    public Consumer<TokenGrantKycTransactionBody.Builder>
-            defaultDef_TokenGrantKycTransactionBody() {
+    public Consumer<TokenGrantKycTransactionBody.Builder> defaultDefTokenGrantKycTransactionBody() {
         return builder -> {};
     }
 
-    public Consumer<TokenBurnTransactionBody.Builder> defaultDef_TokenBurnTransactionBody() {
+    public Consumer<TokenBurnTransactionBody.Builder> defaultDefTokenBurnTransactionBody() {
         return builder -> {};
     }
 
-    public Consumer<TokenMintTransactionBody.Builder> defaultDef_TokenMintTransactionBody() {
+    public Consumer<TokenMintTransactionBody.Builder> defaultDefTokenMintTransactionBody() {
         return builder -> {};
     }
 
-    public Consumer<TokenDeleteTransactionBody.Builder> defaultDef_TokenDeleteTransactionBody() {
+    public Consumer<TokenDeleteTransactionBody.Builder> defaultDefTokenDeleteTransactionBody() {
         return builder -> {};
     }
 
     public Consumer<TokenFreezeAccountTransactionBody.Builder>
-            defaultDef_TokenFreezeAccountTransactionBody() {
+            defaultDefTokenFreezeAccountTransactionBody() {
         return builder -> {};
     }
 
     public Consumer<TokenUnfreezeAccountTransactionBody.Builder>
-            defaultDef_TokenUnfreezeAccountTransactionBody() {
+            defaultDefTokenUnfreezeAccountTransactionBody() {
         return builder -> {};
     }
 
-    public Consumer<TokenUpdateTransactionBody.Builder> defaultDef_TokenUpdateTransactionBody() {
+    public Consumer<TokenUpdateTransactionBody.Builder> defaultDefTokenUpdateTransactionBody() {
         return builder -> {};
     }
 
-    public Consumer<TokenPauseTransactionBody.Builder> defaultDef_TokenPauseTransactionBody() {
+    public Consumer<TokenPauseTransactionBody.Builder> defaultDefTokenPauseTransactionBody() {
         return builder -> {};
     }
 
-    public Consumer<TokenUnpauseTransactionBody.Builder> defaultDef_TokenUnpauseTransactionBody() {
+    public Consumer<TokenUnpauseTransactionBody.Builder> defaultDefTokenUnpauseTransactionBody() {
         return builder -> {};
     }
 
-    public Consumer<TokenCreateTransactionBody.Builder> defaultDef_TokenCreateTransactionBody() {
+    public Consumer<TokenCreateTransactionBody.Builder> defaultDefTokenCreateTransactionBody() {
         return builder -> {
             builder.setTreasury(setup.defaultPayer());
             builder.setDecimals(setup.defaultTokenDecimals());
@@ -245,76 +245,74 @@ public class TxnFactory {
         };
     }
 
-    public Consumer<UncheckedSubmitBody.Builder> defaultDef_UncheckedSubmitBody() {
+    public Consumer<UncheckedSubmitBody.Builder> defaultDefUncheckedSubmitBody() {
         return builder -> {};
     }
 
     public Consumer<ConsensusSubmitMessageTransactionBody.Builder>
-            defaultDef_ConsensusSubmitMessageTransactionBody() {
+            defaultDefConsensusSubmitMessageTransactionBody() {
         return builder -> {
             builder.setMessage(ByteString.copyFrom(setup.defaultConsensusMessage().getBytes()));
         };
     }
 
     public Consumer<ConsensusUpdateTopicTransactionBody.Builder>
-            defaultDef_ConsensusUpdateTopicTransactionBody() {
+            defaultDefConsensusUpdateTopicTransactionBody() {
         return builder -> {};
     }
 
     public Consumer<ConsensusCreateTopicTransactionBody.Builder>
-            defaultDef_ConsensusCreateTopicTransactionBody() {
+            defaultDefConsensusCreateTopicTransactionBody() {
         return builder -> {
             builder.setAutoRenewPeriod(setup.defaultAutoRenewPeriod());
         };
     }
 
     public Consumer<ConsensusDeleteTopicTransactionBody.Builder>
-            defaultDef_ConsensusDeleteTopicTransactionBody() {
+            defaultDefConsensusDeleteTopicTransactionBody() {
         return builder -> {};
     }
 
-    public Consumer<FreezeTransactionBody.Builder> defaultDef_FreezeTransactionBody() {
+    public Consumer<FreezeTransactionBody.Builder> defaultDefFreezeTransactionBody() {
         return builder -> {};
     }
 
-    public Consumer<FileDeleteTransactionBody.Builder> defaultDef_FileDeleteTransactionBody() {
+    public Consumer<FileDeleteTransactionBody.Builder> defaultDefFileDeleteTransactionBody() {
         return builder -> {};
     }
 
     public Consumer<ContractDeleteTransactionBody.Builder>
-            defaultDef_ContractDeleteTransactionBody() {
+            defaultDefContractDeleteTransactionBody() {
         return builder -> {
             builder.setTransferAccountID(setup.defaultTransfer());
         };
     }
 
     public Consumer<ContractUpdateTransactionBody.Builder>
-            defaultDef_ContractUpdateTransactionBody() {
+            defaultDefContractUpdateTransactionBody() {
         return builder -> {};
     }
 
-    public Consumer<ContractCallTransactionBody.Builder> defaultDef_ContractCallTransactionBody() {
+    public Consumer<ContractCallTransactionBody.Builder> defaultDefContractCallTransactionBody() {
         return builder -> builder.setGas(setup.defaultCallGas());
     }
 
-    public Consumer<EthereumTransactionBody.Builder> defaultDef_EthereumTransactionBody() {
+    public Consumer<EthereumTransactionBody.Builder> defaultDefEthereumTransactionBody() {
         return builder -> builder.setMaxGasAllowance(setup.defaultCallGas());
     }
 
     public Consumer<ContractCreateTransactionBody.Builder>
-            defaultDef_ContractCreateTransactionBody() {
+            defaultDefContractCreateTransactionBody() {
         return builder ->
                 builder.setAutoRenewPeriod(setup.defaultAutoRenewPeriod())
-                        .setAutoRenewAccountId(setup.defaultPayer())
                         .setGas(setup.defaultCreateGas())
                         .setInitialBalance(setup.defaultContractBalance())
                         .setMemo(setup.defaultMemo())
                         .setShardID(setup.defaultShard())
-                        .setRealmID(setup.defaultRealm())
-                        .setProxyAccountID(setup.defaultProxy());
+                        .setRealmID(setup.defaultRealm());
     }
 
-    public Consumer<FileCreateTransactionBody.Builder> defaultDef_FileCreateTransactionBody() {
+    public Consumer<FileCreateTransactionBody.Builder> defaultDefFileCreateTransactionBody() {
         return builder ->
                 builder.setRealmID(setup.defaultRealm())
                         .setShardID(setup.defaultShard())
@@ -322,11 +320,11 @@ public class TxnFactory {
                         .setExpirationTime(defaultExpiry());
     }
 
-    public Consumer<FileAppendTransactionBody.Builder> defaultDef_FileAppendTransactionBody() {
+    public Consumer<FileAppendTransactionBody.Builder> defaultDefFileAppendTransactionBody() {
         return builder -> builder.setContents(ByteString.copyFrom(setup.defaultFileContents()));
     }
 
-    public Consumer<FileUpdateTransactionBody.Builder> defaultDef_FileUpdateTransactionBody() {
+    public Consumer<FileUpdateTransactionBody.Builder> defaultDefFileUpdateTransactionBody() {
         return builder -> {};
     }
 
@@ -342,65 +340,65 @@ public class TxnFactory {
                 .build();
     }
 
-    public Consumer<CryptoDeleteTransactionBody.Builder> defaultDef_CryptoDeleteTransactionBody() {
+    public Consumer<CryptoDeleteTransactionBody.Builder> defaultDefCryptoDeleteTransactionBody() {
         return builder -> builder.setTransferAccountID(setup.defaultTransfer());
     }
 
-    public Consumer<SystemDeleteTransactionBody.Builder> defaultDef_SystemDeleteTransactionBody() {
+    public Consumer<SystemDeleteTransactionBody.Builder> defaultDefSystemDeleteTransactionBody() {
         return builder -> {};
     }
 
     public Consumer<SystemUndeleteTransactionBody.Builder>
-            defaultDef_SystemUndeleteTransactionBody() {
+            defaultDefSystemUndeleteTransactionBody() {
         return builder -> {};
     }
 
-    public Consumer<CryptoCreateTransactionBody.Builder> defaultDef_CryptoCreateTransactionBody() {
+    public Consumer<CryptoCreateTransactionBody.Builder> defaultDefCryptoCreateTransactionBody() {
         return builder ->
                 builder.setInitialBalance(setup.defaultBalance())
                         .setAutoRenewPeriod(setup.defaultAutoRenewPeriod())
                         .setReceiverSigRequired(setup.defaultReceiverSigRequired());
     }
 
-    public Consumer<CryptoUpdateTransactionBody.Builder> defaultDef_CryptoUpdateTransactionBody() {
+    public Consumer<CryptoUpdateTransactionBody.Builder> defaultDefCryptoUpdateTransactionBody() {
         return builder -> {};
     }
 
     public Consumer<CryptoTransferTransactionBody.Builder>
-            defaultDef_CryptoTransferTransactionBody() {
+            defaultDefCryptoTransferTransactionBody() {
         return builder -> {};
     }
 
     public Consumer<CryptoApproveAllowanceTransactionBody.Builder>
-            defaultDef_CryptoApproveAllowanceTransactionBody() {
+            defaultDefCryptoApproveAllowanceTransactionBody() {
         return builder -> {};
     }
 
     public Consumer<CryptoDeleteAllowanceTransactionBody.Builder>
-            defaultDef_CryptoDeleteAllowanceTransactionBody() {
+            defaultDefCryptoDeleteAllowanceTransactionBody() {
         return builder -> {};
     }
 
     public Consumer<ScheduleCreateTransactionBody.Builder>
-            defaultDef_ScheduleCreateTransactionBody() {
+            defaultDefScheduleCreateTransactionBody() {
         return builder -> {};
     }
 
-    public Consumer<ScheduleSignTransactionBody.Builder> defaultDef_ScheduleSignTransactionBody() {
+    public Consumer<ScheduleSignTransactionBody.Builder> defaultDefScheduleSignTransactionBody() {
         return builder -> {};
     }
 
     public Consumer<ScheduleDeleteTransactionBody.Builder>
-            defaultDef_ScheduleDeleteTransactionBody() {
+            defaultDefScheduleDeleteTransactionBody() {
         return builder -> {};
     }
 
     public Consumer<TokenFeeScheduleUpdateTransactionBody.Builder>
-            defaultDef_TokenFeeScheduleUpdateTransactionBody() {
+            defaultDefTokenFeeScheduleUpdateTransactionBody() {
         return builder -> {};
     }
 
-    public Consumer<PrngTransactionBody.Builder> defaultDef_PrngTransactionBody() {
+    public Consumer<UtilPrngTransactionBody.Builder> defaultDefUtilPrngTransactionBody() {
         return builder -> {};
     }
 }

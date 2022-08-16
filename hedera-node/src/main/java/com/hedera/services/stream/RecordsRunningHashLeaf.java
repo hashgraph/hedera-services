@@ -15,6 +15,8 @@
  */
 package com.hedera.services.stream;
 
+import static com.hedera.services.ServicesState.EMPTY_HASH;
+
 import com.google.common.annotations.VisibleForTesting;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.RunningHash;
@@ -38,7 +40,9 @@ public class RecordsRunningHashLeaf extends PartialMerkleLeaf implements MerkleL
     static final int RELEASE_0280_VERSION = 2;
     /** a runningHash of all RecordStreamObject */
     private RunningHash runningHash;
-    /** runningHash of the previous RecordStreamObjects. They are needed for the Prng transaction */
+    /**
+     * runningHash of the previous RecordStreamObjects. They are needed for the UtilPrng transaction
+     */
     private RunningHash nMinus1RunningHash;
 
     private RunningHash nMinus2RunningHash;
@@ -49,9 +53,7 @@ public class RecordsRunningHashLeaf extends PartialMerkleLeaf implements MerkleL
 
     public RecordsRunningHashLeaf(final RunningHash runningHash) {
         this.runningHash = runningHash;
-        this.nMinus1RunningHash = new RunningHash();
-        this.nMinus2RunningHash = new RunningHash();
-        this.nMinus3RunningHash = new RunningHash();
+        resetMinusHashes(true);
     }
 
     private RecordsRunningHashLeaf(final RecordsRunningHashLeaf runningHashLeaf) {
@@ -88,13 +90,13 @@ public class RecordsRunningHashLeaf extends PartialMerkleLeaf implements MerkleL
         runningHash = new RunningHash();
         runningHash.setHash(in.readSerializable());
 
-        nMinus1RunningHash = new RunningHash();
-        nMinus2RunningHash = new RunningHash();
-        nMinus3RunningHash = new RunningHash();
         if (version >= RELEASE_0280_VERSION) {
+            resetMinusHashes(false);
             nMinus1RunningHash.setHash(in.readSerializable());
             nMinus2RunningHash.setHash(in.readSerializable());
             nMinus3RunningHash.setHash(in.readSerializable());
+        } else {
+            resetMinusHashes(true);
         }
     }
 
@@ -205,6 +207,12 @@ public class RecordsRunningHashLeaf extends PartialMerkleLeaf implements MerkleL
                 && this.nMinus1RunningHash.getHash().equals(that.nMinus1RunningHash.getHash())
                 && this.nMinus2RunningHash.getHash().equals(that.nMinus2RunningHash.getHash())
                 && this.nMinus3RunningHash.getHash().equals(that.nMinus3RunningHash.getHash());
+    }
+
+    private void resetMinusHashes(final boolean alreadyCompleted) {
+        nMinus1RunningHash = alreadyCompleted ? new RunningHash(EMPTY_HASH) : new RunningHash();
+        nMinus2RunningHash = alreadyCompleted ? new RunningHash(EMPTY_HASH) : new RunningHash();
+        nMinus3RunningHash = alreadyCompleted ? new RunningHash(EMPTY_HASH) : new RunningHash();
     }
 
     @VisibleForTesting

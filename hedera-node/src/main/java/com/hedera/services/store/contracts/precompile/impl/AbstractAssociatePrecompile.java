@@ -1,11 +1,6 @@
-package com.hedera.services.store.contracts.precompile.impl;
-
-/*-
- * ‌
- * Hedera Services Node
- * ​
- * Copyright (C) 2018 - 2022 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2022 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,8 +12,13 @@ package com.hedera.services.store.contracts.precompile.impl;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+package com.hedera.services.store.contracts.precompile.impl;
+
+import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
+import static com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils.GasCostType.ASSOCIATE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.primitives.StateView;
@@ -36,77 +36,86 @@ import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUti
 import com.hedera.services.store.models.Id;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import org.hyperledger.besu.evm.frame.MessageFrame;
-
-import javax.inject.Provider;
 import java.util.Objects;
-
-import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
-import static com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils.GasCostType.ASSOCIATE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import javax.inject.Provider;
+import org.hyperledger.besu.evm.frame.MessageFrame;
 
 /* --- Constructor functional interfaces for mocking --- */
 public abstract class AbstractAssociatePrecompile implements Precompile {
-	private final WorldLedgers ledgers;
-	private final ContractAliases aliases;
-	private final EvmSigsVerifier sigsVerifier;
-	private final SideEffectsTracker sideEffects;
-	private final InfrastructureFactory infrastructureFactory;
-	protected final PrecompilePricingUtils pricingUtils;
-	protected TransactionBody.Builder transactionBody;
-	protected Association associateOp;
-	protected final DecodingFacade decoder;
-	protected final SyntheticTxnFactory syntheticTxnFactory;
-	protected final Provider<FeeCalculator> feeCalculator;
-	protected final StateView currentView;
+    private static final String ASSOCIATE_FAILURE_MESSAGE =
+            "Invalid full prefix for associate precompile!";
+    private final WorldLedgers ledgers;
+    private final ContractAliases aliases;
+    private final EvmSigsVerifier sigsVerifier;
+    private final SideEffectsTracker sideEffects;
+    private final InfrastructureFactory infrastructureFactory;
+    protected final PrecompilePricingUtils pricingUtils;
+    protected TransactionBody.Builder transactionBody;
+    protected Association associateOp;
+    protected final DecodingFacade decoder;
+    protected final SyntheticTxnFactory syntheticTxnFactory;
+    protected final Provider<FeeCalculator> feeCalculator;
+    protected final StateView currentView;
 
-	protected AbstractAssociatePrecompile(
-			final WorldLedgers ledgers,
-			final DecodingFacade decoder,
-			final ContractAliases aliases,
-			final EvmSigsVerifier sigsVerifier,
-			final SideEffectsTracker sideEffects,
-			final SyntheticTxnFactory syntheticTxnFactory,
-			final InfrastructureFactory infrastructureFactory,
-			final PrecompilePricingUtils pricingUtils,
-			final Provider<FeeCalculator> feeCalculator,
-			final StateView currentView
-	) {
-		this.decoder = decoder;
-		this.ledgers = ledgers;
-		this.aliases = aliases;
-		this.sigsVerifier = sigsVerifier;
-		this.sideEffects = sideEffects;
-		this.pricingUtils = pricingUtils;
-		this.syntheticTxnFactory = syntheticTxnFactory;
-		this.infrastructureFactory = infrastructureFactory;
-		this.feeCalculator = feeCalculator;
-		this.currentView = currentView;
-	}
+    protected AbstractAssociatePrecompile(
+            final WorldLedgers ledgers,
+            final DecodingFacade decoder,
+            final ContractAliases aliases,
+            final EvmSigsVerifier sigsVerifier,
+            final SideEffectsTracker sideEffects,
+            final SyntheticTxnFactory syntheticTxnFactory,
+            final InfrastructureFactory infrastructureFactory,
+            final PrecompilePricingUtils pricingUtils,
+            final Provider<FeeCalculator> feeCalculator,
+            final StateView currentView) {
+        this.decoder = decoder;
+        this.ledgers = ledgers;
+        this.aliases = aliases;
+        this.sigsVerifier = sigsVerifier;
+        this.sideEffects = sideEffects;
+        this.pricingUtils = pricingUtils;
+        this.syntheticTxnFactory = syntheticTxnFactory;
+        this.infrastructureFactory = infrastructureFactory;
+        this.feeCalculator = feeCalculator;
+        this.currentView = currentView;
+    }
 
-	@Override
-	public void run(final MessageFrame frame) {
-		// --- Check required signatures ---
-		final var accountId = Id.fromGrpcAccount(Objects.requireNonNull(associateOp).accountId());
-		final var hasRequiredSigs = KeyActivationUtils.validateKey(
-				frame, accountId.asEvmAddress(), sigsVerifier::hasActiveKey, ledgers, aliases);
-		validateTrue(hasRequiredSigs, INVALID_SIGNATURE);
+    @Override
+    public void run(final MessageFrame frame) {
+        // --- Check required signatures ---
+        final var accountId = Id.fromGrpcAccount(Objects.requireNonNull(associateOp).accountId());
+        final var hasRequiredSigs =
+                KeyActivationUtils.validateKey(
+                        frame,
+                        accountId.asEvmAddress(),
+                        sigsVerifier::hasActiveKey,
+                        ledgers,
+                        aliases);
+        validateTrue(
+                hasRequiredSigs,
+                INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE,
+                ASSOCIATE_FAILURE_MESSAGE);
 
-		// --- Build the necessary infrastructure to execute the transaction ---
-		final var accountStore = infrastructureFactory.newAccountStore(ledgers.accounts());
-		final var tokenStore = infrastructureFactory.newTokenStore(
-				accountStore, sideEffects, ledgers.tokens(), ledgers.nfts(), ledgers.tokenRels());
+        // --- Build the necessary infrastructure to execute the transaction ---
+        final var accountStore = infrastructureFactory.newAccountStore(ledgers.accounts());
+        final var tokenStore =
+                infrastructureFactory.newTokenStore(
+                        accountStore,
+                        sideEffects,
+                        ledgers.tokens(),
+                        ledgers.nfts(),
+                        ledgers.tokenRels());
 
-		// --- Execute the transaction and capture its results ---
-		final var associateLogic = infrastructureFactory.newAssociateLogic(accountStore, tokenStore);
-		final var validity = associateLogic.validateSyntax(transactionBody.build());
-		validateTrue(validity == OK, validity);
-		associateLogic.associate(accountId, associateOp.tokenIds());
-	}
+        // --- Execute the transaction and capture its results ---
+        final var associateLogic =
+                infrastructureFactory.newAssociateLogic(accountStore, tokenStore);
+        final var validity = associateLogic.validateSyntax(transactionBody.build());
+        validateTrue(validity == OK, validity);
+        associateLogic.associate(accountId, associateOp.tokenIds());
+    }
 
-	@Override
-	public long getMinimumFeeInTinybars(final Timestamp consensusTime) {
-		return pricingUtils.getMinimumPriceInTinybars(ASSOCIATE, consensusTime);
-	}
+    @Override
+    public long getMinimumFeeInTinybars(final Timestamp consensusTime) {
+        return pricingUtils.getMinimumPriceInTinybars(ASSOCIATE, consensusTime);
+    }
 }

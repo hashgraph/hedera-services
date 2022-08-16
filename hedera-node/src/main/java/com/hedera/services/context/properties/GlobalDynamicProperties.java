@@ -23,11 +23,13 @@ import com.hedera.services.config.HederaNumbers;
 import com.hedera.services.context.annotations.CompositeProps;
 import com.hedera.services.fees.ContractStoragePriceTiers;
 import com.hedera.services.fees.calculation.CongestionMultipliers;
+import com.hedera.services.stream.proto.SidecarType;
 import com.hedera.services.sysfiles.domain.KnownBlockValues;
 import com.hedera.services.sysfiles.domain.throttling.ThrottleReqOpsScaleFactor;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import java.util.Map;
 import java.util.Set;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -102,7 +104,7 @@ public class GlobalDynamicProperties {
     private long htsDefaultGasCost;
     private int changeHistorianMemorySecs;
     private boolean autoCreationEnabled;
-    private boolean expandSigsFromLastSignedState;
+    private boolean expandSigsFromImmutableState;
     private long maxAggregateContractKvPairs;
     private int maxIndividualContractKvPairs;
     private int maxMostRecentQueryableRecords;
@@ -111,7 +113,6 @@ public class GlobalDynamicProperties {
     private boolean exportPrecompileResults;
     private boolean create2Enabled;
     private boolean redirectTokenCalls;
-    private boolean enableTraceability;
     private boolean enableAllowances;
     private boolean limitTokenAssociations;
     private boolean enableHTSPrecompileCreate;
@@ -138,7 +139,12 @@ public class GlobalDynamicProperties {
     private long maxNumTokenRels;
     private long maxNumTopics;
     private long maxNumSchedules;
-    private boolean prngEnabled;
+    private boolean utilPrngEnabled;
+    private Set<SidecarType> enabledSidecars;
+    private boolean requireMinStakeToReward;
+    private Map<Long, Long> nodeMaxMinStakeRatios;
+    private int sidecarMaxSizeMb;
+    private boolean enableTraceabilityMigration;
 
     @Inject
     public GlobalDynamicProperties(
@@ -226,8 +232,8 @@ public class GlobalDynamicProperties {
         htsDefaultGasCost = properties.getLongProperty("contracts.precompile.htsDefaultGasCost");
         changeHistorianMemorySecs = properties.getIntProperty("ledger.changeHistorian.memorySecs");
         autoCreationEnabled = properties.getBooleanProperty("autoCreation.enabled");
-        expandSigsFromLastSignedState =
-                properties.getBooleanProperty("sigs.expandFromLastSignedState");
+        expandSigsFromImmutableState =
+                properties.getBooleanProperty("sigs.expandFromImmutableState");
         maxAggregateContractKvPairs = properties.getLongProperty("contracts.maxKvPairs.aggregate");
         maxIndividualContractKvPairs = properties.getIntProperty("contracts.maxKvPairs.individual");
         maxMostRecentQueryableRecords =
@@ -240,7 +246,7 @@ public class GlobalDynamicProperties {
                 properties.getBooleanProperty("contracts.precompile.exportRecordResults");
         create2Enabled = properties.getBooleanProperty("contracts.allowCreate2");
         redirectTokenCalls = properties.getBooleanProperty("contracts.redirectTokenCalls");
-        enableTraceability = properties.getBooleanProperty("contracts.enableTraceability");
+        enabledSidecars = properties.getSidecarsProperty("contracts.sidecars");
         enableAllowances = properties.getBooleanProperty("hedera.allowances.isEnabled");
         final var autoRenewTargetTypes = properties.getTypesProperty("autoRenew.targetTypes");
         expireAccounts = autoRenewTargetTypes.contains(ACCOUNT);
@@ -275,7 +281,13 @@ public class GlobalDynamicProperties {
         maxNumTokens = properties.getLongProperty("tokens.maxNumber");
         maxNumTokenRels = properties.getLongProperty("tokens.maxAggregateRels");
         maxNumTopics = properties.getLongProperty("topics.maxNumber");
-        prngEnabled = properties.getBooleanProperty("prng.isEnabled");
+        utilPrngEnabled = properties.getBooleanProperty("utilPrng.isEnabled");
+        requireMinStakeToReward = properties.getBooleanProperty("staking.requireMinStakeToReward");
+        nodeMaxMinStakeRatios =
+                properties.getNodeStakeRatiosProperty("staking.nodeMaxToMinStakeRatios");
+        sidecarMaxSizeMb = properties.getIntProperty("hedera.recordStream.sidecarMaxSizeMb");
+        enableTraceabilityMigration =
+                properties.getBooleanProperty("hedera.recordStream.enableTraceabilityMigration");
     }
 
     public int maxTokensPerAccount() {
@@ -522,8 +534,8 @@ public class GlobalDynamicProperties {
         return autoCreationEnabled;
     }
 
-    public boolean expandSigsFromLastSignedState() {
-        return expandSigsFromLastSignedState;
+    public boolean expandSigsFromImmutableState() {
+        return expandSigsFromImmutableState;
     }
 
     public long maxAggregateContractKvPairs() {
@@ -548,10 +560,6 @@ public class GlobalDynamicProperties {
 
     public boolean shouldExportPrecompileResults() {
         return exportPrecompileResults;
-    }
-
-    public boolean shouldEnableTraceability() {
-        return enableTraceability;
     }
 
     public boolean isCreate2Enabled() {
@@ -670,11 +678,31 @@ public class GlobalDynamicProperties {
         return maxNumSchedules;
     }
 
-    public boolean isPrngEnabled() {
-        return prngEnabled;
+    public boolean isUtilPrngEnabled() {
+        return utilPrngEnabled;
     }
 
     public long maxNumTokenRels() {
         return maxNumTokenRels;
+    }
+
+    public Set<SidecarType> enabledSidecars() {
+        return enabledSidecars;
+    }
+
+    public boolean requireMinStakeToReward() {
+        return requireMinStakeToReward;
+    }
+
+    public Map<Long, Long> nodeMaxMinStakeRatios() {
+        return nodeMaxMinStakeRatios;
+    }
+
+    public int getSidecarMaxSizeMb() {
+        return sidecarMaxSizeMb;
+    }
+
+    public boolean isTraceabilityMigrationEnabled() {
+        return enableTraceabilityMigration;
     }
 }

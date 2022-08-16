@@ -17,9 +17,11 @@ package com.hedera.services.state.initialization;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.argThat;
 import static org.mockito.BDDMockito.given;
@@ -31,6 +33,7 @@ import static org.mockito.Mockito.mockStatic;
 import static org.mockito.internal.verification.VerificationModeFactory.times;
 
 import com.google.protobuf.ByteString;
+import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.files.HFileMeta;
 import com.hedera.services.files.SysFileCallbacks;
@@ -48,6 +51,7 @@ import com.hedera.test.extensions.LoggingSubject;
 import com.hedera.test.extensions.LoggingTarget;
 import com.hedera.test.utils.IdUtils;
 import com.hedera.test.utils.SerdeUtils;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CurrentAndNextFeeSchedule;
 import com.hederahashgraph.api.proto.java.ExchangeRate;
 import com.hederahashgraph.api.proto.java.ExchangeRateSet;
@@ -74,9 +78,11 @@ import java.util.Properties;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import org.apache.commons.codec.DecoderException;
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 
 @ExtendWith(LogCaptureExtension.class)
 class HfsSystemFilesManagerTest {
@@ -122,11 +128,14 @@ class HfsSystemFilesManagerTest {
                     .setCurrentRate(fromRatio(curCentEquiv, curHbarEquiv, expiry))
                     .setNextRate(fromRatio(nxtCentEquiv, nxtHbarEquiv, nextExpiry))
                     .build();
+    private static final byte[] aKeyEncoding = "not-really-A-key".getBytes();
+    private static final byte[] bKeyEncoding = "not-really-B-key".getBytes();
+
+    private Address addressA;
+    private Address addressB;
     private Map<FileID, byte[]> data;
     private Map<FileID, HFileMeta> metadata;
     private JEd25519Key masterKey;
-    private static final byte[] aKeyEncoding = "not-really-A-key".getBytes();
-    private static final byte[] bKeyEncoding = "not-really-B-key".getBytes();
     private AddressBook currentBook;
     private HFileMeta expectedInfo;
     private TieredHederaFs hfs;
@@ -164,7 +173,7 @@ class HfsSystemFilesManagerTest {
 
         final var keyA = mock(PublicKey.class);
         given(keyA.getEncoded()).willReturn(aKeyEncoding);
-        final var addressA = mock(Address.class);
+        addressA = mock(Address.class);
         final var aIpv4 = new byte[] {(byte) 1, (byte) 2, (byte) 3, (byte) 4};
         final var memoA = "A new memo that is not the node account ID.";
         given(addressA.getId()).willReturn(111L);
@@ -174,7 +183,7 @@ class HfsSystemFilesManagerTest {
 
         final var keyB = mock(PublicKey.class);
         given(keyB.getEncoded()).willReturn(bKeyEncoding);
-        final var addressB = mock(Address.class);
+        addressB = mock(Address.class);
         final var bIpv4 = new byte[] {(byte) 2, (byte) 3, (byte) 4, (byte) 5};
         final var memoB = "0.0.3";
         given(addressB.getId()).willReturn(222L);
@@ -234,6 +243,39 @@ class HfsSystemFilesManagerTest {
                         hfs,
                         () -> masterKey,
                         callbacks);
+    }
+
+    @Test
+    void warnsIfForSomeReasonExtantBookIsUnobtainable() {
+        subject.updateStakeDetails();
+
+        assertThat(
+                logCaptor.errorLogs(),
+                contains(Matchers.startsWith("Existing address book was missing or corrupt")));
+    }
+
+    @Test
+    void canUpdateStake() throws InvalidProtocolBufferException {
+        final ArgumentCaptor<byte[]> updateCaptor = ArgumentCaptor.forClass(byte[].class);
+        given(addressA.getMemo()).willReturn("0.0.4");
+        final var book = legacyBookConstruction(currentBook);
+        given(data.get(detailsId)).willReturn(book.toByteArray());
+
+        given(addressA.getStake()).willReturn(123L);
+        given(addressB.getStake()).willReturn(456L);
+
+        subject.updateStakeDetails();
+
+        verify(data).put(eq(detailsId), updateCaptor.capture());
+        final var updatedBook = NodeAddressBook.parseFrom(updateCaptor.getValue());
+        // then:
+        final var updatedA = updatedBook.getNodeAddress(0);
+        assertEquals(AccountID.newBuilder().setAccountNum(4L).build(), updatedA.getNodeAccountId());
+        assertEquals(123L, updatedA.getStake());
+        // and:
+        final var updatedB = updatedBook.getNodeAddress(1);
+        assertEquals(AccountID.newBuilder().setAccountNum(3L).build(), updatedB.getNodeAccountId());
+        assertEquals(456L, updatedB.getStake());
     }
 
     @Test
@@ -684,11 +726,11 @@ class HfsSystemFilesManagerTest {
         verify(keySupplier).get();
     }
 
-    private static final FileID expectedFid(final long num) {
+    private static FileID expectedFid(final long num) {
         return FileID.newBuilder().setFileNum(num).build();
     }
 
-    private static final NodeAddressBook legacyBookConstruction(final AddressBook fromBook) {
+    private static NodeAddressBook legacyBookConstruction(final AddressBook fromBook) {
         final var builder = NodeAddressBook.newBuilder();
         for (int i = 0; i < fromBook.getSize(); i++) {
             final var address = fromBook.getAddress(i);

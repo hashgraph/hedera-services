@@ -29,7 +29,7 @@ import com.hedera.services.fees.charging.StorageFeeCharging;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.validation.UsageLimits;
+import com.hedera.services.state.validation.ContractStorageLimits;
 import com.hedera.services.state.virtual.ContractKey;
 import com.hedera.services.state.virtual.IterableContractValue;
 import com.hedera.services.state.virtual.VirtualBlobKey;
@@ -48,6 +48,8 @@ import java.util.function.Supplier;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.tuweni.bytes.Bytes;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.units.bigints.UInt256;
 
 /**
@@ -61,12 +63,14 @@ import org.apache.tuweni.units.bigints.UInt256;
  */
 @Singleton
 public class SizeLimitedStorage {
+    private static final Logger log = LogManager.getLogger(SizeLimitedStorage.class);
     public static final IterableContractValue ZERO_VALUE = IterableContractValue.from(ZERO);
 
     // Used to validate new storage slots are available
-    private final UsageLimits usageLimits;
+    private final ContractStorageLimits usageLimits;
     // Used to charge storage fees before committing changes
     private final StorageFeeCharging storageFeeCharging;
+    //
     // Used to upsert to a contract's doubly-linked list of storage mappings
     private final IterableStorageUpserter storageUpserter;
     // Used to remove from a contract's doubly-linked list of storage mappings
@@ -91,7 +95,7 @@ public class SizeLimitedStorage {
 
     @Inject
     public SizeLimitedStorage(
-            final UsageLimits usageLimits,
+            final ContractStorageLimits usageLimits,
             final StorageFeeCharging storageFeeCharging,
             final IterableStorageUpserter storageUpserter,
             final IterableStorageRemover storageRemover,
@@ -401,10 +405,27 @@ public class SizeLimitedStorage {
                                     : firstKeyLookup(id);
                     for (final var changedKey : changeSet) {
                         final var newValue = newMappings.get(changedKey);
-                        firstKey =
-                                storageUpserter.upsertMapping(
-                                        changedKey, newValue, firstKey, firstValue, curStorage);
-                        firstValue = firstKey.equals(changedKey) ? newValue : null;
+                        final var preInsertSize = curStorage.size();
+                        try {
+                            firstKey =
+                                    storageUpserter.upsertMapping(
+                                            changedKey, newValue, firstKey, firstValue, curStorage);
+                        } catch (Exception irreparable) {
+                            log.error(
+                                    "Failed link management when upserting {} -> {}; will be unable"
+                                            + " to expire all slots for this contract",
+                                    changedKey,
+                                    newValue,
+                                    irreparable);
+                        }
+                        // If newValue was just added to the map, it is the mutable root value; but
+                        // if we only
+                        // updated the existing root value, then newValue is NOT the mutable root
+                        // value
+                        firstValue =
+                                (changedKey.equals(firstKey) && curStorage.size() > preInsertSize)
+                                        ? newValue
+                                        : null;
                     }
                     newFirstKeys.put(id, firstKey);
                 });
@@ -419,7 +440,16 @@ public class SizeLimitedStorage {
                 (id, zeroedOut) -> {
                     var firstKey = firstKeyLookup(id);
                     for (final var removedKey : zeroedOut) {
-                        firstKey = storageRemover.removeMapping(removedKey, firstKey, curStorage);
+                        try {
+                            firstKey =
+                                    storageRemover.removeMapping(removedKey, firstKey, curStorage);
+                        } catch (Exception irreparable) {
+                            log.error(
+                                    "Failed link management when removing {}; will be unable to"
+                                            + " expire all slots for this contract",
+                                    removedKey,
+                                    irreparable);
+                        }
                     }
                     newFirstKeys.put(id, firstKey);
                 });

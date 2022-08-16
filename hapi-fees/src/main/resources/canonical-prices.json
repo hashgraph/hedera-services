@@ -196,7 +196,7 @@
   "SystemUndelete": {
 	"DEFAULT": 0
   },
-  "PRNG": {
+  "UtilPrng": {
 	"DEFAULT": 0.001
   }
 }

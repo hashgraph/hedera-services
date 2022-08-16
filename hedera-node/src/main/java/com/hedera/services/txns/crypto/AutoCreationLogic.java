@@ -203,7 +203,8 @@ public class AutoCreationLogic {
                 creator.createSuccessfulSyntheticRecord(NO_CUSTOM_FEES, sideEffects, AUTO_MEMO);
         childRecord.setFee(fee);
         final var inProgress =
-                new InProgressChildRecord(DEFAULT_SOURCE_ID, syntheticCreation, childRecord);
+                new InProgressChildRecord(
+                        DEFAULT_SOURCE_ID, syntheticCreation, childRecord, Collections.emptyList());
         pendingCreations.add(inProgress);
         // If the transaction fails, we will get an opportunity to unlink this alias in
         // reclaimPendingAliases()

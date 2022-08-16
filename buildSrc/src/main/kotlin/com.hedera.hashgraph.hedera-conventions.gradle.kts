@@ -1,14 +1,6 @@
-import gradle.kotlin.dsl.accessors._de3ff27eccbd9efdc5c099f60a1d8f4c.check
-import org.sonarqube.gradle.SonarQubeTask
-import java.text.SimpleDateFormat
-import java.util.*
-
-/*-
- * ‌
- * Hedera Conventions
- * ​
- * Copyright (C) 2018 - 2022 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2022 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -20,14 +12,20 @@ import java.util.*
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+import gradle.kotlin.dsl.accessors._de3ff27eccbd9efdc5c099f60a1d8f4c.check
+import net.swiftzer.semver.SemVer
+import java.text.SimpleDateFormat
+import java.util.*
 
 plugins {
     `java-library`
     `maven-publish`
     jacoco
-    id("com.diffplug.spotless")
+    id("com.hedera.hashgraph.spotless-conventions")
+    id("com.hedera.hashgraph.spotless-java-conventions")
+    id("com.hedera.hashgraph.spotless-kotlin-conventions")
+    id("lazy.zoo.gradle.git-data-plugin")
 }
 
 group = "com.hedera.hashgraph"
@@ -74,55 +72,6 @@ repositories {
     maven {
         url = uri("https://oss.sonatype.org/content/repositories/comhederahashgraph-1531")
     }
-}
-
-spotless {
-    // optional: limit format enforcement to just the files changed by this feature branch
-    ratchetFrom("origin/master")
-
-    format("misc", {
-        // define the files to apply `misc` to
-        target("*.gradle", "*.md", ".gitignore")
-
-        // define the steps to apply to those files
-        trimTrailingWhitespace()
-        indentWithSpaces()
-        endWithNewline()
-    })
-    java({
-        // fix errors due to dashed comment blocks (eg: /*-, /*--, etc)
-        addStep(RepairDashedCommentsFormatterStep.create())
-        // Remove the old license headers as the spotless licenseHeader formatter
-        // cannot find them if they are located between the package and import statements.
-        addStep(StripOldLicenseFormatterStep.create())
-        // enable toggle comment support
-        toggleOffOn()
-        // don't need to set target, it is inferred from java
-        // apply a specific flavor of google-java-format
-        googleJavaFormat().aosp().reflowLongStrings()
-        // make sure every file has the following copyright header.
-        // optionally, Spotless can set copyright years by digging
-        // through git history (see "license" section below).
-        // The delimiter override below is required to support some
-        // of our test classes which are in the default package.
-        licenseHeader("""
-           /*
-            * Copyright (C) ${'$'}YEAR Hedera Hashgraph, LLC
-            *
-            * Licensed under the Apache License, Version 2.0 (the "License");
-            * you may not use this file except in compliance with the License.
-            * You may obtain a copy of the License at
-            *
-            *      http://www.apache.org/licenses/LICENSE-2.0
-            *
-            * Unless required by applicable law or agreed to in writing, software
-            * distributed under the License is distributed on an "AS IS" BASIS,
-            * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-            * See the License for the specific language governing permissions and
-            * limitations under the License.
-            */
-        """.trimIndent(), "(package|import)")
-    })
 }
 
 // Enable maven publications
@@ -242,8 +191,10 @@ tasks.jacocoTestReport {
         html.required.set(true)
     }
 
-    val testExtension: JacocoTaskExtension = tasks.test.get().extensions.getByType<JacocoTaskExtension>()
-    val iTestExtension: JacocoTaskExtension = tasks.getByName("itest").extensions.getByType<JacocoTaskExtension>()
+    val testExtension: JacocoTaskExtension =
+        tasks.test.get().extensions.getByType<JacocoTaskExtension>()
+    val iTestExtension: JacocoTaskExtension =
+        tasks.getByName("itest").extensions.getByType<JacocoTaskExtension>()
     executionData.from(testExtension.destinationFile, iTestExtension.destinationFile)
 }
 
@@ -252,3 +203,53 @@ tasks.check {
 }
 
 
+tasks.create("showVersion") {
+    doLast {
+        println(project.version)
+    }
+}
+
+tasks.create("versionAsPrefixedCommit") {
+    doLast {
+        gitData.lastCommitHash?.let {
+            val prefix = findProperty("commitPrefix")?.toString() ?: "adhoc"
+            val newPrerel = prefix + ".x" + it.take(8)
+            val currVer = SemVer.parse(rootProject.version.toString())
+            try {
+                val newVer = SemVer(currVer.major, currVer.minor, currVer.patch, newPrerel)
+                Utils.updateVersion(rootProject, newVer)
+            } catch (e: java.lang.IllegalArgumentException) {
+                throw IllegalArgumentException(String.format("%s: %s", e.message, newPrerel), e)
+            }
+        }
+    }
+}
+
+tasks.create("versionAsSnapshot") {
+    doLast {
+        val currVer = SemVer.parse(rootProject.version.toString())
+        val newVer = SemVer(currVer.major, currVer.minor, currVer.patch, "SNAPSHOT")
+
+        Utils.updateVersion(rootProject, newVer)
+    }
+}
+
+tasks.create("versionAsSpecified") {
+    doLast {
+        val verStr = findProperty("newVersion")?.toString()
+
+        if (verStr == null) {
+            throw IllegalArgumentException("No newVersion property provided! Please add the parameter -PnewVersion=<version> when running this task.")
+        }
+
+        val newVer = SemVer.parse(verStr)
+        Utils.updateVersion(rootProject, newVer)
+    }
+}
+
+tasks.withType<Jar> {
+    isReproducibleFileOrder = true
+    isPreserveFileTimestamps = false
+    fileMode = 664
+    dirMode = 775
+}

@@ -1,9 +1,6 @@
-/*-
- * ‌
- * Hedera Services Test Clients
- * ​
- * Copyright (C) 2018 - 2022 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2022 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -15,11 +12,10 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
-
 plugins {
     id("com.hedera.hashgraph.hedera-conventions")
+    id("com.hedera.hashgraph.shadow-jar")
 }
 
 description = "Hedera Services Test Clients for End to End Tests (EET)"
@@ -84,4 +80,22 @@ tasks.itest {
 tasks.eet {
     systemProperty("TAG", "services-node:" + project.version)
     systemProperty("networkWorkspaceDir", File(project.buildDir, "network/eet"))
+}
+
+tasks.shadowJar {
+    archiveFileName.set("SuiteRunner.jar")
+    isReproducibleFileOrder = true
+    isPreserveFileTimestamps = false
+    fileMode = 664
+    dirMode = 775
+
+    manifest {
+        attributes(
+            "Main-Class" to "com.hedera.services.bdd.suites.SuiteRunner"
+        )
+    }
+}
+
+tasks.assemble {
+    dependsOn(tasks.shadowJar)
 }

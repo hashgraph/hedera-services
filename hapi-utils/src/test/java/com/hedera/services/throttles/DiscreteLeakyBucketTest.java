@@ -1,164 +1,159 @@
-package com.hedera.services.throttles;
-
-/*-
- * ‌
- * Hedera Services API Utilities
- * ​
- * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2021-2022 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
-
-import org.junit.jupiter.api.Test;
+package com.hedera.services.throttles;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import org.junit.jupiter.api.Test;
+
 class DiscreteLeakyBucketTest {
-	private long totalCapacity = 64_000L;
-	private long capacityUsed = totalCapacity / 4;
+    private long totalCapacity = 64_000L;
+    private long capacityUsed = totalCapacity / 4;
 
-	@Test
-	void requiresPositiveCapacity() {
-		// expect:
-		assertThrows(IllegalArgumentException.class, () -> new DiscreteLeakyBucket(-1L));
-		assertThrows(IllegalArgumentException.class, () -> new DiscreteLeakyBucket(0L));
-	}
+    @Test
+    void requiresPositiveCapacity() {
+        // expect:
+        assertThrows(IllegalArgumentException.class, () -> new DiscreteLeakyBucket(-1L));
+        assertThrows(IllegalArgumentException.class, () -> new DiscreteLeakyBucket(0L));
+    }
 
-	@Test
-	void startsEmptyIfNoInitialUsageGiven() {
-		// given:
-		var subject = new DiscreteLeakyBucket(totalCapacity);
+    @Test
+    void startsEmptyIfNoInitialUsageGiven() {
+        // given:
+        var subject = new DiscreteLeakyBucket(totalCapacity);
 
-		// expect:
-		assertEquals(0L, subject.capacityUsed());
-		assertEquals(totalCapacity, subject.totalCapacity());
-		assertEquals(totalCapacity, subject.capacityFree());
-	}
+        // expect:
+        assertEquals(0L, subject.capacityUsed());
+        assertEquals(totalCapacity, subject.totalCapacity());
+        assertEquals(totalCapacity, subject.capacityFree());
+    }
 
-	@Test
-	void assertCapacityAndUsed() {
-		// given:
-		var subject = new DiscreteLeakyBucket(1234L, totalCapacity);
+    @Test
+    void assertCapacityAndUsed() {
+        // given:
+        var subject = new DiscreteLeakyBucket(1234L, totalCapacity);
 
-		// expect:
-		assertEquals(totalCapacity, subject.totalCapacity());
-		assertEquals(1234L, subject.capacityUsed());
-	}
+        // expect:
+        assertEquals(totalCapacity, subject.totalCapacity());
+        assertEquals(1234L, subject.capacityUsed());
+    }
 
-	@Test
-	void leaksAsExpected() {
-		// given:
-		var subject = new DiscreteLeakyBucket(capacityUsed, totalCapacity);
+    @Test
+    void leaksAsExpected() {
+        // given:
+        var subject = new DiscreteLeakyBucket(capacityUsed, totalCapacity);
 
-		// when:
-		subject.leak(capacityUsed);
+        // when:
+        subject.leak(capacityUsed);
 
-		// then:
-		assertEquals(0, subject.capacityUsed());
-		assertEquals(totalCapacity, subject.capacityFree());
-	}
+        // then:
+        assertEquals(0, subject.capacityUsed());
+        assertEquals(totalCapacity, subject.capacityFree());
+    }
 
-	@Test
-	void leaksToEmptyButNeverMore() {
-		// given:
-		var subject = new DiscreteLeakyBucket(capacityUsed, totalCapacity);
+    @Test
+    void leaksToEmptyButNeverMore() {
+        // given:
+        var subject = new DiscreteLeakyBucket(capacityUsed, totalCapacity);
 
-		// when:
-		subject.leak(Long.MAX_VALUE);
+        // when:
+        subject.leak(Long.MAX_VALUE);
 
-		// then:
-		assertEquals(0L, subject.capacityUsed());
-	}
+        // then:
+        assertEquals(0L, subject.capacityUsed());
+    }
 
-	@Test
-	void mustHaveNonZeroCapacity() {
-		// expect:
-		assertThrows(IllegalArgumentException.class, () -> new DiscreteLeakyBucket(0, 0));
+    @Test
+    void mustHaveNonZeroCapacity() {
+        // expect:
+        assertThrows(IllegalArgumentException.class, () -> new DiscreteLeakyBucket(0, 0));
+    }
 
-	}
+    @Test
+    void cannotLeakNegativeUnits() {
+        // given:
+        var subject = new DiscreteLeakyBucket(capacityUsed, totalCapacity);
 
-	@Test
-	void cannotLeakNegativeUnits() {
-		// given:
-		var subject = new DiscreteLeakyBucket(capacityUsed, totalCapacity);
+        // when:
+        assertThrows(IllegalArgumentException.class, () -> subject.leak(-1));
+    }
 
-		// when:
-		assertThrows(IllegalArgumentException.class, () -> subject.leak(-1));
+    @Test
+    void prohibitsNegativeUse() {
+        // given:
+        var subject = new DiscreteLeakyBucket(capacityUsed, totalCapacity);
 
-	}
+        // when:
+        assertThrows(IllegalArgumentException.class, () -> subject.useCapacity(-1));
+    }
 
-	@Test
-	void prohibitsNegativeUse() {
-		// given:
-		var subject = new DiscreteLeakyBucket(capacityUsed, totalCapacity);
+    @Test
+    void prohibitsExcessUsageViaOverflow() {
+        // given:
+        var subject = new DiscreteLeakyBucket(capacityUsed, totalCapacity);
+        // and:
+        var overflowAmount = Long.MAX_VALUE - capacityUsed + 1L;
 
-		// when:
-		assertThrows(IllegalArgumentException.class, () -> subject.useCapacity(-1));
-	}
+        // when:
+        assertThrows(IllegalArgumentException.class, () -> subject.useCapacity(overflowAmount));
+    }
 
-	@Test
-	void prohibitsExcessUsageViaOverflow() {
-		// given:
-		var subject = new DiscreteLeakyBucket(capacityUsed, totalCapacity);
-		// and:
-		var overflowAmount = Long.MAX_VALUE - capacityUsed + 1L;
+    @Test
+    void prohibitsExcessUsage() {
+        // given:
+        var subject = new DiscreteLeakyBucket(capacityUsed, totalCapacity);
 
-		// when:
-		assertThrows(IllegalArgumentException.class, () -> subject.useCapacity(overflowAmount));
-	}
+        // when:
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> subject.useCapacity(1 + totalCapacity - capacityUsed));
+    }
 
-	@Test
-	void prohibitsExcessUsage() {
-		// given:
-		var subject = new DiscreteLeakyBucket(capacityUsed, totalCapacity);
+    @Test
+    void permitsUse() {
+        // given:
+        var subject = new DiscreteLeakyBucket(capacityUsed, totalCapacity);
 
-		// when:
-		assertThrows(IllegalArgumentException.class, () -> subject.useCapacity(1 + totalCapacity - capacityUsed));
-	}
+        // when:
+        subject.useCapacity(totalCapacity - capacityUsed);
 
-	@Test
-	void permitsUse() {
-		// given:
-		var subject = new DiscreteLeakyBucket(capacityUsed, totalCapacity);
+        // then:
+        assertEquals(totalCapacity, subject.capacityUsed());
+    }
 
-		// when:
-		subject.useCapacity(totalCapacity - capacityUsed);
+    @Test
+    void permitsResettingUsedAmount() {
+        // given:
+        var subject = new DiscreteLeakyBucket(capacityUsed, totalCapacity);
 
-		// then:
-		assertEquals(totalCapacity, subject.capacityUsed());
-	}
+        // when:
+        subject.resetUsed(1L);
 
-	@Test
-	void permitsResettingUsedAmount() {
-		// given:
-		var subject = new DiscreteLeakyBucket(capacityUsed, totalCapacity);
+        // then:
+        assertEquals(1L, subject.capacityUsed());
+    }
 
-		// when:
-		subject.resetUsed(1L);
+    @Test
+    void rejectsNonsenseUsage() {
+        // given:
+        var subject = new DiscreteLeakyBucket(totalCapacity);
 
-		// then:
-		assertEquals(1L, subject.capacityUsed());
-	}
-
-	@Test
-	void rejectsNonsenseUsage() {
-		// given:
-		var subject = new DiscreteLeakyBucket(totalCapacity);
-
-		// expect:
-		assertThrows(IllegalArgumentException.class, () -> subject.resetUsed(-1L));
-		assertThrows(IllegalArgumentException.class, () -> subject.resetUsed(totalCapacity + 1L));
-	}
+        // expect:
+        assertThrows(IllegalArgumentException.class, () -> subject.resetUsed(-1L));
+        assertThrows(IllegalArgumentException.class, () -> subject.resetUsed(totalCapacity + 1L));
+    }
 }

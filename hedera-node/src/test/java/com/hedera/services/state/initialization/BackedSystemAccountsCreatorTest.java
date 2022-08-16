@@ -69,11 +69,14 @@ class BackedSystemAccountsCreatorTest {
     private PropertySource properties;
     private AddressBook book;
     private BackingStore<AccountID, MerkleAccount> backingAccounts;
+    private TreasuryCloner treasuryCloner;
+    private AccountNumbers accountNums;
 
     @LoggingTarget private LogCaptor logCaptor;
     @LoggingSubject private BackedSystemAccountsCreator subject;
 
     @BeforeEach
+    @SuppressWarnings("unchecked")
     void setup()
             throws DecoderException, NegativeAccountBalanceException, IllegalArgumentException {
         genesisKey =
@@ -87,7 +90,7 @@ class BackedSystemAccountsCreatorTest {
         HederaNumbers hederaNums = mock(HederaNumbers.class);
         given(hederaNums.realm()).willReturn(realm);
         given(hederaNums.shard()).willReturn(shard);
-        AccountNumbers accountNums = mock(AccountNumbers.class);
+        accountNums = mock(AccountNumbers.class);
         given(accountNums.treasury()).willReturn(2L);
         given(accountNums.stakingRewardAccount()).willReturn(800L);
         given(accountNums.nodeRewardAccount()).willReturn(801L);
@@ -112,7 +115,11 @@ class BackedSystemAccountsCreatorTest {
         given(backingAccounts.getImmutableRef(accountWith(3))).willReturn(withExpectedBalance(0));
         given(backingAccounts.getImmutableRef(accountWith(4))).willReturn(withExpectedBalance(0));
 
-        subject = new BackedSystemAccountsCreator(accountNums, properties, () -> pretendKey);
+        treasuryCloner = mock(TreasuryCloner.class);
+
+        subject =
+                new BackedSystemAccountsCreator(
+                        accountNums, properties, () -> pretendKey, treasuryCloner);
     }
 
     @Test
@@ -185,7 +192,7 @@ class BackedSystemAccountsCreatorTest {
     }
 
     @Test
-    void createsStakingFundAccounts() {
+    void createsStakingFundAndTreasuryCloneAccounts() {
         final var captor = ArgumentCaptor.forClass(MerkleAccount.class);
         final var funding801 = AccountID.newBuilder().setAccountNum(801).build();
         given(backingAccounts.contains(any())).willReturn(true);
@@ -196,6 +203,7 @@ class BackedSystemAccountsCreatorTest {
         verify(backingAccounts).put(eq(funding801), captor.capture());
         final var new801 = captor.getValue();
         assertEquals(canonicalFundingAccount(), new801);
+        verify(treasuryCloner).ensureTreasuryClonesExist();
     }
 
     private MerkleAccount canonicalFundingAccount() {

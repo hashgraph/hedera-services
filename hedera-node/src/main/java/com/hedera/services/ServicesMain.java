@@ -60,7 +60,7 @@ public class ServicesMain implements SwirldMain {
     }
 
     @Override
-    public void init(Platform ignore, NodeId nodeId) {
+    public void init(final Platform ignore, final NodeId nodeId) {
         try {
             app = APPS.get(nodeId.getId());
             initApp();

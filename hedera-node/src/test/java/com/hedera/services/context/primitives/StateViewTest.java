@@ -15,7 +15,6 @@
  */
 package com.hedera.services.context.primitives;
 
-import static com.hedera.services.context.primitives.StateView.BYTES_PER_EVM_KEY_VALUE_PAIR;
 import static com.hedera.services.context.primitives.StateView.EMPTY_CTX;
 import static com.hedera.services.context.primitives.StateView.REMOVED_TOKEN;
 import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
@@ -124,6 +123,7 @@ import com.swirlds.virtualmap.VirtualMap;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -243,6 +243,7 @@ class StateViewTest {
         tokenAccount.setAlias(TxnHandlingScenario.TOKEN_ADMIN_KT.asKey().getEd25519());
         tokenAccount.setHeadTokenId(tokenId.getTokenNum());
         tokenAccount.setNumAssociations(1);
+        tokenAccount.setStakePeriodStart(1);
         tokenAccount.setNumPositiveBalances(0);
         tokenAccount.setStakedId(10L);
         tokenAccount.setDeclineReward(true);
@@ -568,12 +569,10 @@ class StateViewTest {
 
     @Test
     void getsContractInfo() throws Exception {
-        final var contractNum = EntityNum.fromContractId(cid);
-        final var rawEvmAddress = contractNum.toRawEvmAddress();
-        given(contracts.get(contractNum)).willReturn(contract);
-        given(bytecode.get(rawEvmAddress)).willReturn(expectedBytecode);
+        final var target = EntityNum.fromContractId(cid);
+        given(contracts.get(EntityNum.fromContractId(cid))).willReturn(contract);
         final var expectedTotalStorage =
-                BYTES_PER_EVM_KEY_VALUE_PAIR * wellKnownNumKvPairs + expectedBytecode.length;
+                StateView.BYTES_PER_EVM_KEY_VALUE_PAIR * wellKnownNumKvPairs;
         given(networkInfo.ledgerId()).willReturn(ledgerId);
 
         List<TokenRelationship> rels =
@@ -617,7 +616,8 @@ class StateViewTest {
         final var target = EntityNum.fromContractId(cid);
         given(contracts.get(EntityNum.fromContractId(cid))).willReturn(contract);
         contract.setAlias(ByteString.EMPTY);
-        final var expectedTotalStorage = BYTES_PER_EVM_KEY_VALUE_PAIR * wellKnownNumKvPairs;
+        final var expectedTotalStorage =
+                StateView.BYTES_PER_EVM_KEY_VALUE_PAIR * wellKnownNumKvPairs;
         given(networkInfo.ledgerId()).willReturn(ledgerId);
 
         List<TokenRelationship> rels =
@@ -1000,6 +1000,21 @@ class StateViewTest {
     }
 
     @Test
+    void getAliasesFromChildren() {
+        final var children = new MutableStateChildren();
+        final var aliases = new HashMap<ByteString, EntityNum>();
+        aliases.put(ByteString.copyFromUtf8("test"), EntityNum.fromLong(10L));
+        children.setAliases(aliases);
+        children.setNetworkCtx(networkContext);
+
+        subject = new StateView(null, children, null);
+
+        final var actualAliases = subject.aliases();
+
+        assertEquals(aliases, actualAliases);
+    }
+
+    @Test
     void returnsEmptyOptionalIfContractMissing() {
         given(contracts.get(any())).willReturn(null);
 
@@ -1229,6 +1244,7 @@ class StateViewTest {
         assertSame(StateView.EMPTY_MM, subject.accounts());
         assertSame(StateView.EMPTY_MM, subject.topics());
         assertSame(StateView.EMPTY_MM, subject.stakingInfo());
+        assertSame(StateView.EMPTY_HM, subject.aliases());
         assertSame(EMPTY_CTX, subject.networkCtx());
         assertTrue(subject.contentsOf(target).isEmpty());
         assertTrue(subject.infoForFile(target).isEmpty());
@@ -1269,6 +1285,29 @@ class StateViewTest {
         assertEquals(
                 tokenRels,
                 ((BackingTokenRels) subject.asReadOnlyAssociationStore()).getDelegate().get());
+    }
+
+    @Test
+    void tokenCustomFeesWorks() {
+        given(tokens.get(tokenNum)).willReturn(token);
+        assertEquals(grpcCustomFees, subject.tokenCustomFees(tokenId));
+    }
+
+    @Test
+    void tokenCustomFeesFailsGracefully() {
+        given(tokens.get(tokenNum)).willThrow(IllegalArgumentException.class);
+        assertTrue(subject.tokenCustomFees(tokenId).isEmpty());
+    }
+
+    @Test
+    void tokenCustomFeesMissingTokenIdReturnsEmptyList() {
+        assertTrue(subject.tokenCustomFees(missingTokenId).isEmpty());
+    }
+
+    @Test
+    void tokenCustomFeesWorksForMissing() {
+        subject = new StateView(null, null, null);
+        assertTrue(subject.tokenCustomFees(tokenId).isEmpty());
     }
 
     private final Instant nftCreation = Instant.ofEpochSecond(1_234_567L, 8);

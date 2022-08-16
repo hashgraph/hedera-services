@@ -29,11 +29,14 @@ import com.hedera.services.fees.ContractStoragePriceTiers;
 import com.hedera.services.fees.calculation.CongestionMultipliers;
 import com.hedera.services.sysfiles.domain.KnownBlockValues;
 import com.hederahashgraph.api.proto.java.ServicesConfigurationList;
+import java.util.Collections;
+import java.util.Map;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
@@ -47,6 +50,25 @@ class StandardizedPropertySourcesTest {
     @BeforeEach
     private void setup() {
         subject = new StandardizedPropertySources(bootstrapProps, dynamicGlobalProps, nodeProps);
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void getsExpectedRatios() {
+        final var prop = "0:3,1:-1,2:,3:1.1,4:NONSENSE,5:4,12345";
+        final Map<Long, Long> ratios =
+                (Map<Long, Long>) PropertySource.AS_NODE_STAKE_RATIOS.apply(prop);
+        final var expected = Map.of(0L, 3L, 5L, 4L);
+        assertEquals(expected, ratios);
+
+        final var name = "ratios";
+        final var mockSubject = Mockito.mock(PropertySource.class);
+        doCallRealMethod().when(mockSubject).getNodeStakeRatiosProperty(name);
+        given(mockSubject.getProperty(name)).willReturn(expected);
+        doCallRealMethod().when(mockSubject).getTypedProperty(Map.class, name);
+        assertEquals(expected, mockSubject.getNodeStakeRatiosProperty(name));
+
+        assertEquals(Collections.emptyMap(), PropertySource.AS_NODE_STAKE_RATIOS.apply(""));
     }
 
     @Test

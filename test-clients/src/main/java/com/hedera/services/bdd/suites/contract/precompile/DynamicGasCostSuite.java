@@ -76,7 +76,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_DELET
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_EXECUTION_EXCEPTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OBTAINER_SAME_CONTRACT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REVERTED_SUCCESS;
@@ -98,7 +98,7 @@ import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
-import com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult;
+import com.hedera.services.contracts.ParsingConstants.FunctionType;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.NftTransfer;
@@ -117,20 +117,36 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 public class DynamicGasCostSuite extends HapiApiSuite {
-    private static final Logger log = LogManager.getLogger(DynamicGasCostSuite.class);
+
+    private static final Logger LOG = LogManager.getLogger(DynamicGasCostSuite.class);
 
     private static final String ACCOUNT = "anybody";
     private static final String SECOND_ACCOUNT = "anybody2";
     private static final String MULTI_KEY = "Multi key";
     private static final String FREEZE_KEY = "Freeze key";
-    public static final String DEFAULT_GAS_COST = "10000";
-    public static final String FULL_GAS_REFUND = "100";
-    public static final String ZERO_GAS_COST = "0";
-    public static final String HTS_DEFAULT_GAS_COST = "contracts.precompile.htsDefaultGasCost";
-    public static final String MAX_REFUND_PERCENT_OF_GAS_LIMIT =
+    private static final String DEFAULT_GAS_COST = "10000";
+    private static final String FULL_GAS_REFUND = "100";
+    private static final String ZERO_GAS_COST = "0";
+    private static final String HTS_DEFAULT_GAS_COST = "contracts.precompile.htsDefaultGasCost";
+    private static final String MAX_REFUND_PERCENT_OF_GAS_LIMIT =
             "contracts.maxRefundPercentOfGasLimit";
-
     private static final String SAFE_OPERATIONS_CONTRACT = "SafeOperations";
+    private static final String CREATION = "creation";
+    private static final String CONTRACTS_THROTTLE_THROTTLE_BY_GAS =
+            "contracts.throttle.throttleByGas";
+    private static final String FALSE = "false";
+    private static final String GET_BYTECODE = "getBytecode";
+    private static final String DEPLOY = "deploy";
+    private static final String CREATE_2_TXN = "create2Txn";
+    private static final String SWISS = "swiss";
+    private static final String SALT =
+            "aabbccddeeff0011aabbccddeeff0011aabbccddeeff0011aabbccddeeff0011";
+    private static final String RETURNER = "Returner";
+    private static final String CALL_RETURNER = "callReturner";
+    private static final String RETURNER_REPORTED_LOG_MESSAGE =
+            "Returner reported {} when called with mirror address";
+    private static final String CONTRACT_REPORTED_LOG_MESSAGE =
+            "Contract reported TestContract initcode is {} bytes";
 
     public static void main(String... args) {
         new DynamicGasCostSuite().runSuiteSync();
@@ -138,7 +154,7 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 
     @Override
     protected Logger getResultsLogger() {
-        return log;
+        return LOG;
     }
 
     @Override
@@ -155,21 +171,19 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 
     List<HapiApiSpec> create2Specs() {
         return List.of(
-                new HapiApiSpec[] {
-                    //						create2FactoryWorksAsExpected(),
-                    //						canDeleteViaAlias(),
-                    //						cannotSelfDestructToMirrorAddress(),
-                    //						priorityAddressIsCreate2ForStaticHapiCalls(),
-                    canInternallyCallAliasedAddressesOnlyViaCreate2Address(),
-                    //						create2InputAddressIsStableWithTopLevelCallWhetherMirrorOrAliasIsUsed(),
-                    //						canUseAliasesInPrecompilesAndContractKeys(),
-                    //						inlineCreateCanFailSafely(),
-                    //						inlineCreate2CanFailSafely(),
-                    //						allLogOpcodesResolveExpectedContractId(),
-                    //						eip1014AliasIsPriorityInErcOwnerPrecompile(),
-                    //						canAssociateInConstructor(),
-                    //						childInheritanceOfAdminKeyAuthorizesParentAssociationInConstructor()
-                });
+                create2FactoryWorksAsExpected(),
+                canDeleteViaAlias(),
+                cannotSelfDestructToMirrorAddress(),
+                priorityAddressIsCreate2ForStaticHapiCalls(),
+                canInternallyCallAliasedAddressesOnlyViaCreate2Address(),
+                create2InputAddressIsStableWithTopLevelCallWhetherMirrorOrAliasIsUsed(),
+                canUseAliasesInPrecompilesAndContractKeys(),
+                inlineCreateCanFailSafely(),
+                inlineCreate2CanFailSafely(),
+                allLogOpcodesResolveExpectedContractId(),
+                eip1014AliasIsPriorityInErcOwnerPrecompile(),
+                canAssociateInConstructor(),
+                childInheritanceOfAdminKeyAuthorizesParentAssociationInConstructor());
     }
 
     List<HapiApiSpec> positiveSpecs() {
@@ -186,8 +200,8 @@ public class DynamicGasCostSuite extends HapiApiSuite {
                 nftsTransferDynamicGasCostPrecompile());
     }
 
+    @SuppressWarnings("java:S5669")
     private HapiApiSpec allLogOpcodesResolveExpectedContractId() {
-        final var creation = "creation";
         final var contract = "OuterCreator";
 
         final AtomicLong outerCreatorNum = new AtomicLong();
@@ -199,7 +213,7 @@ public class DynamicGasCostSuite extends HapiApiSuite {
                         uploadInitCode(contract),
                         contractCreate(contract)
                                 .payingWith(GENESIS)
-                                .via(creation)
+                                .via(CREATION)
                                 .exposingNumTo(outerCreatorNum::set))
                 .when(contractCall(contract, "startChain", msg).gas(4_000_000).via(noisyTxn))
                 .then(
@@ -239,7 +253,6 @@ public class DynamicGasCostSuite extends HapiApiSuite {
     // https://github.com/hashgraph/hedera-services/issues/2868
     private HapiApiSpec inlineCreate2CanFailSafely() {
         final var tcValue = 1_234L;
-        final var creation = "creation";
         final var contract = "RevertingCreateFactory";
         final var foo = 22;
         final var salt = 23;
@@ -250,11 +263,11 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 
         return defaultHapiSpec("InlineCreate2CanFailSafely")
                 .given(
-                        overriding("contracts.throttle.throttleByGas", "false"),
+                        overriding(CONTRACTS_THROTTLE_THROTTLE_BY_GAS, FALSE),
                         uploadInitCode(contract),
                         contractCreate(contract)
                                 .payingWith(GENESIS)
-                                .via(creation)
+                                .via(CREATION)
                                 .exposingNumTo(
                                         num -> {
                                             factoryEntityNum.set(num);
@@ -266,7 +279,7 @@ public class DynamicGasCostSuite extends HapiApiSuite {
                                 () ->
                                         contractCallLocal(
                                                         contract,
-                                                        "getBytecode",
+                                                        GET_BYTECODE,
                                                         factoryEvmAddress.get(),
                                                         foo)
                                                 .exposingTypedResultsTo(
@@ -274,9 +287,8 @@ public class DynamicGasCostSuite extends HapiApiSuite {
                                                             final var tcInitcode =
                                                                     (byte[]) results[0];
                                                             testContractInitcode.set(tcInitcode);
-                                                            log.info(
-                                                                    "Contract reported TestContract"
-                                                                        + " initcode is {} bytes",
+                                                            LOG.info(
+                                                                    CONTRACT_REPORTED_LOG_MESSAGE,
                                                                     tcInitcode.length);
                                                         })
                                                 .payingWith(GENESIS)
@@ -290,21 +302,21 @@ public class DynamicGasCostSuite extends HapiApiSuite {
                                                                 () ->
                                                                         contractCall(
                                                                                         contract,
-                                                                                        "deploy",
+                                                                                        DEPLOY,
                                                                                         testContractInitcode
                                                                                                 .get(),
                                                                                         salt)
                                                                                 .payingWith(GENESIS)
                                                                                 .gas(4_000_000L)
                                                                                 .sending(tcValue)
-                                                                                .via(creation)))
+                                                                                .via(CREATION)))
                                         .toArray(HapiSpecOperation[]::new)),
                         sourcing(
                                 () ->
                                         cryptoCreate("nextUp")
                                                 .exposingCreatedIdTo(
                                                         id ->
-                                                                log.info(
+                                                                LOG.info(
                                                                         "Next entity num was {}"
                                                                             + " instead of expected"
                                                                             + " {}",
@@ -313,9 +325,10 @@ public class DynamicGasCostSuite extends HapiApiSuite {
                                                                                 + 1))));
     }
 
+    @SuppressWarnings("java:S5669")
     private HapiApiSpec inlineCreateCanFailSafely() {
         final var tcValue = 1_234L;
-        final var creation = "creation";
+        final var creation = CREATION;
         final var contract = "RevertingCreateFactory";
 
         final var foo = 22;
@@ -326,7 +339,7 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 
         return defaultHapiSpec("InlineCreateCanFailSafely")
                 .given(
-                        overriding("contracts.throttle.throttleByGas", "false"),
+                        overriding(CONTRACTS_THROTTLE_THROTTLE_BY_GAS, FALSE),
                         uploadInitCode(contract),
                         contractCreate(contract)
                                 .payingWith(GENESIS)
@@ -342,7 +355,7 @@ public class DynamicGasCostSuite extends HapiApiSuite {
                                 () ->
                                         contractCallLocal(
                                                         contract,
-                                                        "getBytecode",
+                                                        GET_BYTECODE,
                                                         factoryEvmAddress.get(),
                                                         foo)
                                                 .exposingTypedResultsTo(
@@ -350,7 +363,7 @@ public class DynamicGasCostSuite extends HapiApiSuite {
                                                             final var tcInitcode =
                                                                     (byte[]) results[0];
                                                             testContractInitcode.set(tcInitcode);
-                                                            log.info(
+                                                            LOG.info(
                                                                     "Contract reported TestContract"
                                                                         + " initcode is {} bytes",
                                                                     tcInitcode.length);
@@ -366,7 +379,7 @@ public class DynamicGasCostSuite extends HapiApiSuite {
                                                                 () ->
                                                                         contractCall(
                                                                                         contract,
-                                                                                        "deploy",
+                                                                                        DEPLOY,
                                                                                         testContractInitcode
                                                                                                 .get())
                                                                                 .payingWith(GENESIS)
@@ -379,7 +392,7 @@ public class DynamicGasCostSuite extends HapiApiSuite {
                                         cryptoCreate("nextUp")
                                                 .exposingCreatedIdTo(
                                                         id ->
-                                                                log.info(
+                                                                LOG.info(
                                                                         "Next entity num was {}"
                                                                             + " instead of expected"
                                                                             + " {}",
@@ -391,7 +404,6 @@ public class DynamicGasCostSuite extends HapiApiSuite {
     private HapiApiSpec canAssociateInConstructor() {
         final var token = "token";
         final var contract = "SelfAssociating";
-        final var creation = "creation";
         final AtomicReference<String> tokenMirrorAddr = new AtomicReference<>();
 
         return defaultHapiSpec("CanAssociateInConstructor")
@@ -412,7 +424,7 @@ public class DynamicGasCostSuite extends HapiApiSuite {
                                                 .payingWith(GENESIS)
                                                 .omitAdminKey()
                                                 .gas(4_000_000)
-                                                .via(creation)))
+                                                .via(CREATION)))
                 .then(
                         //						tokenDissociate(contract, token)
                         getContractInfo(contract).logged());
@@ -420,9 +432,9 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 
     // https://github.com/hashgraph/hedera-services/issues/2867
     // https://github.com/hashgraph/hedera-services/issues/2868
+    @SuppressWarnings("java:S5960")
     private HapiApiSpec create2FactoryWorksAsExpected() {
         final var tcValue = 1_234L;
-        final var creation2 = "create2Txn";
         final var contract = "Create2Factory";
         final var testContract = "TestContract";
         final var salt = 42;
@@ -451,7 +463,7 @@ public class DynamicGasCostSuite extends HapiApiSuite {
                                         "staking.startThreshold", "100_000_000")),
                         newKeyNamed(adminKey),
                         newKeyNamed(replAdminKey),
-                        overriding("contracts.throttle.throttleByGas", "false"),
+                        overriding(CONTRACTS_THROTTLE_THROTTLE_BY_GAS, FALSE),
                         uploadInitCode(contract),
                         cryptoCreate(autoRenewAccountID).balance(ONE_HUNDRED_HBARS),
                         contractCreate(contract)
@@ -460,7 +472,7 @@ public class DynamicGasCostSuite extends HapiApiSuite {
                                 .entityMemo(entityMemo)
                                 .autoRenewSecs(customAutoRenew)
                                 .autoRenewAccountId(autoRenewAccountID)
-                                .via(creation2)
+                                .via(CREATE_2_TXN)
                                 .exposingNumTo(
                                         num ->
                                                 factoryEvmAddress.set(
@@ -473,7 +485,7 @@ public class DynamicGasCostSuite extends HapiApiSuite {
                                 () ->
                                         contractCallLocal(
                                                         contract,
-                                                        "getBytecode",
+                                                        GET_BYTECODE,
                                                         factoryEvmAddress.get(),
                                                         salt)
                                                 .exposingTypedResultsTo(
@@ -481,7 +493,7 @@ public class DynamicGasCostSuite extends HapiApiSuite {
                                                             final var tcInitcode =
                                                                     (byte[]) results[0];
                                                             testContractInitcode.set(tcInitcode);
-                                                            log.info(
+                                                            LOG.info(
                                                                     "Contract reported TestContract"
                                                                         + " initcode is {} bytes",
                                                                     tcInitcode.length);
@@ -497,7 +509,7 @@ public class DynamicGasCostSuite extends HapiApiSuite {
                                                         salt)
                                                 .exposingTypedResultsTo(
                                                         results -> {
-                                                            log.info(
+                                                            LOG.info(
                                                                     "Contract reported address"
                                                                             + " results {}",
                                                                     results);
@@ -505,7 +517,7 @@ public class DynamicGasCostSuite extends HapiApiSuite {
                                                                     (byte[]) results[0];
                                                             final var hexedAddress =
                                                                     hex(expectedAddrBytes);
-                                                            log.info(
+                                                            LOG.info(
                                                                     "  --> Expected CREATE2 address"
                                                                             + " is {}",
                                                                     hexedAddress);
@@ -514,18 +526,18 @@ public class DynamicGasCostSuite extends HapiApiSuite {
                                                         })
                                                 .payingWith(GENESIS)),
                         // First check the feature toggle
-                        overriding("contracts.allowCreate2", "false"),
+                        overriding("contracts.allowCreate2", FALSE),
                         sourcing(
                                 () ->
                                         contractCall(
                                                         contract,
-                                                        "deploy",
+                                                        DEPLOY,
                                                         testContractInitcode.get(),
                                                         salt)
                                                 .payingWith(GENESIS)
                                                 .gas(4_000_000L)
                                                 .sending(tcValue)
-                                                .via(creation2)
+                                                .via(CREATE_2_TXN)
                                                 .hasKnownStatus(CONTRACT_EXECUTION_EXCEPTION)),
                         // Now re-enable CREATE2 and proceed
                         overriding("contracts.allowCreate2", "true"),
@@ -550,7 +562,7 @@ public class DynamicGasCostSuite extends HapiApiSuite {
                                 () ->
                                         contractCall(
                                                         contract,
-                                                        "deploy",
+                                                        DEPLOY,
                                                         testContractInitcode.get(),
                                                         salt)
                                                 .payingWith(GENESIS)
@@ -565,18 +577,18 @@ public class DynamicGasCostSuite extends HapiApiSuite {
                                 () ->
                                         contractCall(
                                                         contract,
-                                                        "deploy",
+                                                        DEPLOY,
                                                         testContractInitcode.get(),
                                                         salt)
                                                 .payingWith(GENESIS)
                                                 .gas(4_000_000L)
                                                 .sending(tcValue)
-                                                .via(creation2)),
+                                                .via(CREATE_2_TXN)),
                         logIt("Re-deployed the CREATE2 contract"),
                         sourcing(
                                 () ->
                                         childRecordsCheck(
-                                                creation2,
+                                                CREATE_2_TXN,
                                                 SUCCESS,
                                                 recordWith()
                                                         .contractCreateResult(
@@ -620,7 +632,7 @@ public class DynamicGasCostSuite extends HapiApiSuite {
                                 () ->
                                         contractCall(
                                                         contract,
-                                                        "deploy",
+                                                        DEPLOY,
                                                         testContractInitcode.get(),
                                                         salt)
                                                 .payingWith(GENESIS)
@@ -690,12 +702,11 @@ public class DynamicGasCostSuite extends HapiApiSuite {
                                                 .hasCostAnswerPrecheck(INVALID_CONTRACT_ID)));
     }
 
+    @SuppressWarnings("java:S5669")
     private HapiApiSpec eip1014AliasIsPriorityInErcOwnerPrecompile() {
-        final var creation2 = "create2Txn";
         final var ercContract = "ERC721Contract";
         final var pc2User = "Create2PrecompileUser";
         final var nft = "nonFungibleToken";
-        final var multiKey = "swiss";
         final var lookup = "ownerOfPrecompile";
 
         final AtomicReference<String> userAliasAddr = new AtomicReference<>();
@@ -703,22 +714,21 @@ public class DynamicGasCostSuite extends HapiApiSuite {
         final AtomicReference<String> userLiteralId = new AtomicReference<>();
         final AtomicReference<byte[]> nftAddress = new AtomicReference<>();
 
-        final byte[] salt =
-                unhex("aabbccddeeff0011aabbccddeeff0011aabbccddeeff0011aabbccddeeff0011");
+        final byte[] salt = unhex(SALT);
 
         return defaultHapiSpec("Eip1014AliasIsPriorityInErcOwnerPrecompile")
                 .given(
-                        newKeyNamed(multiKey),
+                        newKeyNamed(SWISS),
                         cryptoCreate(TOKEN_TREASURY),
                         uploadInitCode(ercContract, pc2User),
                         contractCreate(ercContract).omitAdminKey(),
-                        contractCreate(pc2User).adminKey(multiKey).payingWith(GENESIS),
+                        contractCreate(pc2User).adminKey(SWISS).payingWith(GENESIS),
                         contractCall(pc2User, "createUser", salt)
                                 .payingWith(GENESIS)
                                 .gas(4_000_000L)
-                                .via(creation2),
+                                .via(CREATE_2_TXN),
                         captureOneChildCreate2MetaFor(
-                                "Precompile user", creation2, userMirrorAddr, userAliasAddr),
+                                "Precompile user", CREATE_2_TXN, userMirrorAddr, userAliasAddr),
                         sourcing(
                                 () ->
                                         getAliasedContractBalance(userAliasAddr.get())
@@ -737,9 +747,9 @@ public class DynamicGasCostSuite extends HapiApiSuite {
                                                 .tokenType(NON_FUNGIBLE_UNIQUE)
                                                 .treasury(userLiteralId.get())
                                                 .initialSupply(0L)
-                                                .supplyKey(multiKey)
+                                                .supplyKey(SWISS)
                                                 .fee(ONE_HUNDRED_HBARS)
-                                                .signedBy(DEFAULT_PAYER, multiKey)),
+                                                .signedBy(DEFAULT_PAYER, SWISS)),
                         mintToken(nft, List.of(ByteString.copyFromUtf8("PRICELESS"))))
                 .when(
                         withOpContext(
@@ -766,9 +776,8 @@ public class DynamicGasCostSuite extends HapiApiSuite {
                                                                         .contractCallResult(
                                                                                 htsPrecompileResult()
                                                                                         .forFunction(
-                                                                                                HTSPrecompileResult
-                                                                                                        .FunctionType
-                                                                                                        .OWNER)
+                                                                                                FunctionType
+                                                                                                        .ERC_OWNER)
                                                                                         .withOwner(
                                                                                                 unhex(
                                                                                                         userAliasAddr
@@ -776,9 +785,8 @@ public class DynamicGasCostSuite extends HapiApiSuite {
     }
 
     private HapiApiSpec childInheritanceOfAdminKeyAuthorizesParentAssociationInConstructor() {
-        final var initcode = "initcode";
         final var ft = "fungibleToken";
-        final var multiKey = "swiss";
+        final var multiKey = SWISS;
         final var creationAndAssociation = "creationAndAssociation";
         final var immediateChildAssoc = "ImmediateChildAssociation";
 
@@ -811,13 +819,14 @@ public class DynamicGasCostSuite extends HapiApiSuite {
                 .then(sourcing(() -> getContractInfo(childMirrorAddr.get()).logged()));
     }
 
+    @SuppressWarnings("java:S5669")
     private HapiApiSpec canUseAliasesInPrecompilesAndContractKeys() {
-        final var creation2 = "create2Txn";
+        final var creation2 = CREATE_2_TXN;
         final var contract = "Create2PrecompileUser";
         final var userContract = "Create2User";
         final var ft = "fungibleToken";
         final var nft = "nonFungibleToken";
-        final var multiKey = "swiss";
+        final var multiKey = SWISS;
         final var ftFail = "ofInterest";
         final var nftFail = "alsoOfInterest";
         final var helperMintFail = "alsoOfExtremeInterest";
@@ -828,7 +837,7 @@ public class DynamicGasCostSuite extends HapiApiSuite {
         final AtomicReference<String> userLiteralId = new AtomicReference<>();
         final AtomicReference<String> hexedNftType = new AtomicReference<>();
 
-        final var salt = unhex("aabbccddeeff0011aabbccddeeff0011aabbccddeeff0011aabbccddeeff0011");
+        final var salt = unhex(SALT);
 
         return defaultHapiSpec("CanUseAliasesInPrecompiles")
                 .given(
@@ -965,19 +974,18 @@ public class DynamicGasCostSuite extends HapiApiSuite {
                                 /* First record is of helper creation */
                                 recordWith().status(SUCCESS),
                                 recordWith()
-                                        .status(INVALID_SIGNATURE)
+                                        .status(INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE)
                                         .contractCallResult(
                                                 resultWith()
                                                         .contractCallResult(
                                                                 htsPrecompileResult()
                                                                         .forFunction(
-                                                                                HTSPrecompileResult
-                                                                                        .FunctionType
-                                                                                        .MINT)
+                                                                                FunctionType
+                                                                                        .HAPI_MINT)
                                                                         .withTotalSupply(0)
                                                                         .withSerialNumbers()
                                                                         .withStatus(
-                                                                                INVALID_SIGNATURE)))),
+                                                                                INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE)))),
                         childRecordsCheck(
                                 ftFail,
                                 CONTRACT_REVERT_EXECUTED,
@@ -1064,8 +1072,9 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 
     // https://github.com/hashgraph/hedera-services/issues/2874
     // https://github.com/hashgraph/hedera-services/issues/2925
+    @SuppressWarnings("java:S5669")
     private HapiApiSpec cannotSelfDestructToMirrorAddress() {
-        final var creation2 = "create2Txn";
+        final var creation2 = CREATE_2_TXN;
         final var messyCreation2 = "messyCreate2Txn";
         final var contract = "CreateDonor";
         final var donorContract = "Donor";
@@ -1075,7 +1084,7 @@ public class DynamicGasCostSuite extends HapiApiSuite {
         final AtomicReference<String> mDonorAliasAddr = new AtomicReference<>();
         final AtomicReference<String> mDonorMirrorAddr = new AtomicReference<>();
 
-        final var salt = unhex("aabbccddeeff0011aabbccddeeff0011aabbccddeeff0011aabbccddeeff0011");
+        final var salt = unhex(SALT);
         final var otherSalt =
                 unhex("aabbccddee880011aabbccddee880011aabbccddee880011aabbccddee880011");
 
@@ -1130,9 +1139,10 @@ public class DynamicGasCostSuite extends HapiApiSuite {
     }
 
     // https://github.com/hashgraph/hedera-services/issues/2874
+    @SuppressWarnings("java:S5669")
     private HapiApiSpec canDeleteViaAlias() {
         final var adminKey = "adminKey";
-        final var creation2 = "create2Txn";
+        final var creation2 = CREATE_2_TXN;
         final var deletion = "deletion";
         final var contract = "SaltingCreatorFactory";
         final var saltingCreator = "SaltingCreator";
@@ -1141,7 +1151,7 @@ public class DynamicGasCostSuite extends HapiApiSuite {
         final AtomicReference<String> saltingCreatorMirrorAddr = new AtomicReference<>();
         final AtomicReference<String> saltingCreatorLiteralId = new AtomicReference<>();
 
-        final var salt = unhex("aabbccddeeff0011aabbccddeeff0011aabbccddeeff0011aabbccddeeff0011");
+        final var salt = unhex(SALT);
         final var otherSalt =
                 unhex("aabbccddee330011aabbccddee330011aabbccddee330011aabbccddee330011");
 
@@ -1257,8 +1267,9 @@ public class DynamicGasCostSuite extends HapiApiSuite {
                                                                                 .get()))));
     }
 
+    @SuppressWarnings("java:S5669")
     private HapiApiSpec create2InputAddressIsStableWithTopLevelCallWhetherMirrorOrAliasIsUsed() {
-        final var creation2 = "create2Txn";
+        final var creation2 = CREATE_2_TXN;
         final var innerCreation2 = "innerCreate2Txn";
         final var delegateCreation2 = "delegateCreate2Txn";
         final var contract = "SaltingCreatorFactory";
@@ -1271,7 +1282,7 @@ public class DynamicGasCostSuite extends HapiApiSuite {
         final AtomicReference<String> tcAliasAddr2 = new AtomicReference<>();
         final AtomicReference<String> tcMirrorAddr2 = new AtomicReference<>();
 
-        final var salt = unhex("aabbccddeeff0011aabbccddeeff0011aabbccddeeff0011aabbccddeeff0011");
+        final var salt = unhex(SALT);
 
         return defaultHapiSpec(
                         "Create2InputAddressIsStableWithTopLevelCallWhetherMirrorOrAliasIsUsed")
@@ -1366,18 +1377,16 @@ public class DynamicGasCostSuite extends HapiApiSuite {
                                 }));
     }
 
+    @SuppressWarnings("java:S5669")
     private HapiApiSpec priorityAddressIsCreate2ForStaticHapiCalls() {
         final var contract = "AddressValueRet";
-        final var returner = "Returner";
-        final var creation2 = "create2Txn";
-        final var placeholderCreation = "creation";
 
         final AtomicReference<String> aliasAddr = new AtomicReference<>();
         final AtomicReference<String> mirrorAddr = new AtomicReference<>();
         final AtomicReference<BigInteger> staticCallAliasAns = new AtomicReference<>();
         final AtomicReference<BigInteger> staticCallMirrorAns = new AtomicReference<>();
 
-        final var salt = unhex("aabbccddeeff0011aabbccddeeff0011aabbccddeeff0011aabbccddeeff0011");
+        final var salt = unhex(SALT);
 
         return defaultHapiSpec("PriorityAddressIsCreate2ForStaticHapiCalls")
                 .given(
@@ -1386,21 +1395,20 @@ public class DynamicGasCostSuite extends HapiApiSuite {
                         contractCall(contract, "createReturner", salt)
                                 .payingWith(GENESIS)
                                 .gas(4_000_000L)
-                                .via(creation2),
-                        captureOneChildCreate2MetaFor("Returner", creation2, mirrorAddr, aliasAddr))
+                                .via(CREATE_2_TXN),
+                        captureOneChildCreate2MetaFor(
+                                DynamicGasCostSuite.RETURNER, CREATE_2_TXN, mirrorAddr, aliasAddr))
                 .when(
                         sourcing(
                                 () ->
                                         contractCallLocalWithFunctionAbi(
                                                         mirrorAddr.get(),
-                                                        getABIFor(FUNCTION, "returnThis", returner))
+                                                        getABIFor(FUNCTION, "returnThis", RETURNER))
                                                 .payingWith(GENESIS)
                                                 .exposingTypedResultsTo(
                                                         results -> {
-                                                            log.info(
-                                                                    "Returner reported {} when"
-                                                                            + " called with mirror"
-                                                                            + " address",
+                                                            LOG.info(
+                                                                    RETURNER_REPORTED_LOG_MESSAGE,
                                                                     results);
                                                             staticCallMirrorAns.set(
                                                                     (BigInteger) results[0]);
@@ -1409,11 +1417,11 @@ public class DynamicGasCostSuite extends HapiApiSuite {
                                 () ->
                                         contractCallLocalWithFunctionAbi(
                                                         aliasAddr.get(),
-                                                        getABIFor(FUNCTION, "returnThis", returner))
+                                                        getABIFor(FUNCTION, "returnThis", RETURNER))
                                                 .payingWith(GENESIS)
                                                 .exposingTypedResultsTo(
                                                         results -> {
-                                                            log.info(
+                                                            LOG.info(
                                                                     "Returner reported {} when"
                                                                             + " called with alias"
                                                                             + " address",
@@ -1443,14 +1451,14 @@ public class DynamicGasCostSuite extends HapiApiSuite {
                                                         getABIFor(
                                                                 FUNCTION,
                                                                 "createPlaceholder",
-                                                                returner))
+                                                                RETURNER))
                                                 .gas(4_000_000L)
                                                 .payingWith(GENESIS)
-                                                .via(placeholderCreation)));
+                                                .via(CREATION)));
     }
 
+    @SuppressWarnings("java:S5669")
     private HapiApiSpec canInternallyCallAliasedAddressesOnlyViaCreate2Address() {
-        final var creation2 = "create2Txn";
         final var contract = "AddressValueRet";
         final var aliasCall = "aliasCall";
         final var mirrorCall = "mirrorCall";
@@ -1460,7 +1468,7 @@ public class DynamicGasCostSuite extends HapiApiSuite {
         final AtomicReference<BigInteger> staticCallAliasAns = new AtomicReference<>();
         final AtomicReference<BigInteger> staticCallMirrorAns = new AtomicReference<>();
 
-        final var salt = unhex("aabbccddeeff0011aabbccddeeff0011aabbccddeeff0011aabbccddeeff0011");
+        final var salt = unhex(SALT);
 
         return defaultHapiSpec("CanInternallyCallAliasedAddressesOnlyViaCreate2Address")
                 .given(
@@ -1469,32 +1477,30 @@ public class DynamicGasCostSuite extends HapiApiSuite {
                         contractCall(contract, "createReturner", salt)
                                 .payingWith(GENESIS)
                                 .gas(4_000_000L)
-                                .via(creation2),
-                        captureOneChildCreate2MetaFor("Returner", creation2, mirrorAddr, aliasAddr))
+                                .via(CREATE_2_TXN),
+                        captureOneChildCreate2MetaFor(
+                                RETURNER, CREATE_2_TXN, mirrorAddr, aliasAddr))
                 .when(
                         sourcing(
                                 () ->
-                                        contractCallLocal(
-                                                        contract, "callReturner", mirrorAddr.get())
+                                        contractCallLocal(contract, CALL_RETURNER, mirrorAddr.get())
                                                 .hasAnswerOnlyPrecheck(INVALID_SOLIDITY_ADDRESS)
                                                 .payingWith(GENESIS)
                                                 .exposingTypedResultsTo(
                                                         results -> {
-                                                            log.info(
-                                                                    "Returner reported {} when"
-                                                                            + " called with mirror"
-                                                                            + " address",
+                                                            LOG.info(
+                                                                    RETURNER_REPORTED_LOG_MESSAGE,
                                                                     results);
                                                             staticCallMirrorAns.set(
                                                                     (BigInteger) results[0]);
                                                         })),
                         sourcing(
                                 () ->
-                                        contractCallLocal(contract, "callReturner", aliasAddr.get())
+                                        contractCallLocal(contract, CALL_RETURNER, aliasAddr.get())
                                                 .payingWith(GENESIS)
                                                 .exposingTypedResultsTo(
                                                         results -> {
-                                                            log.info(
+                                                            LOG.info(
                                                                     "Returner reported {} when"
                                                                             + " called with alias"
                                                                             + " address",
@@ -1504,12 +1510,12 @@ public class DynamicGasCostSuite extends HapiApiSuite {
                                                         })),
                         sourcing(
                                 () ->
-                                        contractCall(contract, "callReturner", aliasAddr.get())
+                                        contractCall(contract, CALL_RETURNER, aliasAddr.get())
                                                 .payingWith(GENESIS)
                                                 .via(aliasCall)),
                         sourcing(
                                 () ->
-                                        contractCall(contract, "callReturner", mirrorAddr.get())
+                                        contractCall(contract, CALL_RETURNER, mirrorAddr.get())
                                                 .hasKnownStatus(INVALID_SOLIDITY_ADDRESS)
                                                 .payingWith(GENESIS)
                                                 .via(mirrorCall)))
@@ -2511,14 +2517,13 @@ public class DynamicGasCostSuite extends HapiApiSuite {
                     final var numRecords = response.getChildTransactionRecordsCount();
                     int numExpectedChildren = givenNumExpectedChildren;
                     int childOfInterest = givenChildOfInterest;
-                    if (numRecords == numExpectedChildren + 1) {
+                    if (numRecords == numExpectedChildren + 1
+                            && TxnUtils.isEndOfStakingPeriodRecord(
+                                    response.getChildTransactionRecords(0))) {
                         // This transaction may have had a preceding record for the end-of-day
                         // staking calculations
-                        if (TxnUtils.isEndOfStakingPeriodRecord(
-                                response.getChildTransactionRecords(0))) {
-                            numExpectedChildren++;
-                            childOfInterest++;
-                        }
+                        numExpectedChildren++;
+                        childOfInterest++;
                     }
                     assertEquals(numExpectedChildren, response.getChildTransactionRecordsCount());
                     final var create2Record = response.getChildTransactionRecords(childOfInterest);

@@ -1,3 +1,18 @@
+##
+# Copyright (C) 2022 Hedera Hashgraph, LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+##
 name: "ZComponent: Compile"
 on:
   workflow_call:
@@ -27,6 +42,16 @@ on:
         type: boolean
         required: false
         default: false
+      enable-fossa-scan:
+        description: "FOSSA Scan Enabled"
+        type: boolean
+        required: false
+        default: false
+      enable-fossa-test:
+        description: "FOSSA Test Enabled"
+        type: boolean
+        required: false
+        default: false
       java-distribution:
         description: "Java JDK Distribution:"
         type: string
@@ -37,6 +62,16 @@ on:
         type: string
         required: false
         default: "17.0.3"
+      gradle-version:
+        description: "Gradle Version:"
+        type: string
+        required: false
+        default: "wrapper"
+      node-version:
+        description: "NodeJS Version:"
+        type: string
+        required: false
+        default: "16"
       custom-job-label:
         description: "Custom Job Label:"
         type: string
@@ -50,6 +85,9 @@ on:
       sonar-token:
         description: "The SonarCloud access token used by the SonarQube agent to report an analysis."
         required: false
+      fossa-api-token:
+        description: "The FOSSA API access token used to run FOSSA scan and test features."
+        required: false
 
 defaults:
   run:
@@ -57,7 +95,7 @@ defaults:
 
 permissions:
   id-token: write
-  actions: write
+  actions: read
   pull-requests: write
   statuses: write
   checks: write
@@ -69,10 +107,10 @@ jobs:
     runs-on: [self-hosted, Linux, services, standard, ephemeral]
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Expand Shallow Clone for SonarQube
-        if: ${{ inputs.enable-sonar-analysis && !cancelled() }}
+        if: ${{ (inputs.enable-sonar-analysis || inputs.enable-unit-tests) && !cancelled() }}
         run: |
           git fetch --unshallow --no-recurse-submodules
 
@@ -80,29 +118,42 @@ jobs:
         uses: gradle/wrapper-validation-action@v1
 
       - name: Setup Java
-        uses: actions/setup-java@v2
+        uses: actions/setup-java@v3
         with:
           distribution: ${{ inputs.java-distribution }}
           java-version: ${{ inputs.java-version }}
+
+      - name: Setup Gradle
+        uses: gradle/gradle-build-action@v2
+        with:
+          gradle-version: ${{ inputs.gradle-version }}
+
+      - name: Setup NodeJS
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ inputs.node-version }}
 
       - name: Compile
         id: gradle-build
         uses: gradle/gradle-build-action@v2
         with:
-          arguments: assemble
+          gradle-version: ${{ inputs.gradle-version }}
+          arguments: assemble --scan
 
       - name: Javadoc
         uses: gradle/gradle-build-action@v2
         if: ${{ inputs.enable-javadoc && !cancelled() }}
         with:
-          arguments: javadoc
+          gradle-version: ${{ inputs.gradle-version }}
+          arguments: javadoc --scan
 
       - name: Unit Testing
         id: gradle-test
         uses: gradle/gradle-build-action@v2
         if: ${{ inputs.enable-unit-tests && steps.gradle-build.conclusion == 'success' && !cancelled() }}
         with:
-          arguments: check
+          gradle-version: ${{ inputs.gradle-version }}
+          arguments: check --scan
 
       - name: Publish Unit Test Report
         uses: mikepenz/action-junit-report@v3
@@ -110,7 +161,7 @@ jobs:
         with:
           check_name: Unit Test Results
           report_paths: "**/build/test-results/test/TEST-*.xml"
-          require_tests: 'false'
+          require_tests: "false"
 
       - name: Build Docker Image # build the image for hedera-node
         if: ${{ (inputs.enable-integration-tests || inputs.enable-e2e-tests) && steps.gradle-build.conclusion == 'success' && !cancelled() }}
@@ -121,7 +172,8 @@ jobs:
         uses: gradle/gradle-build-action@v2
         if: ${{ inputs.enable-integration-tests && steps.gradle-build.conclusion == 'success' && !cancelled() }}
         with:
-          arguments: itest
+          gradle-version: ${{ inputs.gradle-version }}
+          arguments: itest --scan
 
       - name: Publish Integration Test Report
         uses: mikepenz/action-junit-report@v3
@@ -129,14 +181,15 @@ jobs:
         with:
           check_name: Integration Test Results
           report_paths: "**/build/test-results/itest/TEST-*.xml"
-          require_tests: 'false'
+          require_tests: false
 
       - name: E2E Testing
         id: gradle-eet
         uses: gradle/gradle-build-action@v2
         if: ${{ inputs.enable-e2e-tests && steps.gradle-build.conclusion == 'success' && !cancelled() }}
         with:
-          arguments: eet
+          gradle-version: ${{ inputs.gradle-version }}
+          arguments: eet --scan
 
       - name: Publish E2E Test Report
         uses: mikepenz/action-junit-report@v3
@@ -144,24 +197,18 @@ jobs:
         with:
           check_name: E2E Test Results
           report_paths: "**/build/test-results/eet/TEST-*.xml"
-          require_tests: 'false'
+          require_tests: false
 
       - name: Jacoco Coverage Report
         uses: gradle/gradle-build-action@v2
         if: ${{ inputs.enable-unit-tests && !cancelled() }}
         with:
-          arguments: jacocoTestReport
+          gradle-version: ${{ inputs.gradle-version }}
+          arguments: jacocoTestReport --scan
 
       - name: Publish To Codecov
         if: ${{ inputs.enable-unit-tests && !cancelled() }}
         uses: codecov/codecov-action@v3
-
-#      - name: Publish Code Coverage Data
-#        uses: actions/upload-artifact@v3
-#        if: ${{ inputs.enable-unit-tests && !cancelled() }}
-#        with:
-#          name: Jacoco Data
-#          path: "**/build/reports/jacoco/test/jacocoTestReport.xml"
 
       - name: Publish Test Reports
         uses: actions/upload-artifact@v3
@@ -169,20 +216,6 @@ jobs:
         with:
           name: Test Reports
           path: "**/build/reports/tests/**"
-
-#      - name: Show Integration Test Folder Structures
-#        if: ${{ always() }}
-#        run: |
-#          if ! command -v tree >/dev/null 2>&1; then
-#            echo "::group::Install Tree Command"
-#            sudo apt update
-#            sudo apt install -y tree
-#            echo "::endgroup::"
-#          fi
-#
-#          echo "::group::Show Network Folder Contents"
-#          tree -apshug  "${{ github.workspace }}/test-clients/build/network"
-#          echo "::endgroup::"
 
       - name: Publish Test Network Logs
         uses: actions/upload-artifact@v3
@@ -203,7 +236,7 @@ jobs:
           if [[ "${IS_PULL_REQUEST}" == true ]]; then
             SONAR_OPTS=""
           fi
-          
+
           echo "::set-output name=options::${SONAR_OPTS}"
 
       - name: SonarCloud Scan
@@ -214,4 +247,18 @@ jobs:
           SONAR_OPTS: ${{ steps.sonar-cloud.outputs.options }}
         if: ${{ inputs.enable-sonar-analysis && steps.gradle-build.conclusion == 'success' && !cancelled() }}
         with:
-          arguments: sonarqube --info
+          gradle-version: ${{ inputs.gradle-version }}
+          arguments: sonarqube --info --scan
+
+      - name: FOSSA Scan
+        uses: fossas/fossa-action@v1.3.1
+        if: ${{ inputs.enable-fossa-scan && !cancelled() }}
+        with:
+          api-key: ${{ secrets.fossa-api-token }}
+
+      - name: FOSSA Test
+        uses: fossas/fossa-action@v1.3.1
+        if: ${{ inputs.enable-fossa-test && !cancelled() }}
+        with:
+          api-key: ${{ secrets.fossa-api-token }}
+          run-tests: true

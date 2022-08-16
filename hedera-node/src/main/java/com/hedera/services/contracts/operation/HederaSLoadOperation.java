@@ -15,32 +15,11 @@
  */
 package com.hedera.services.contracts.operation;
 
-/*
- * -
- * ‌
- * Hedera Services Node
- * ​
- * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
- * ​
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *       http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- * ‍
- *
- */
-
 import static com.hedera.services.contracts.operation.HederaOperationUtil.cacheExistingValue;
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
+import com.hedera.services.stream.proto.SidecarType;
 import java.util.Optional;
 import java.util.OptionalLong;
 import javax.inject.Inject;
@@ -84,9 +63,10 @@ public class HederaSLoadOperation extends AbstractOperation {
     @Override
     public OperationResult execute(final MessageFrame frame, final EVM evm) {
         try {
-            final var address = frame.getRecipientAddress();
+            final var addressOrAlias = frame.getRecipientAddress();
             final var worldUpdater = (HederaStackedWorldStateUpdater) frame.getWorldUpdater();
-            final Account account = worldUpdater.get(address);
+            final Account account = worldUpdater.get(addressOrAlias);
+            final Address address = account.getAddress();
             final Bytes32 key = UInt256.fromBytes(frame.popStackItem());
             final boolean slotIsWarm = frame.warmUpStorage(address, key);
             final OptionalLong optionalCost = slotIsWarm ? warmCost : coldCost;
@@ -95,8 +75,10 @@ public class HederaSLoadOperation extends AbstractOperation {
                         optionalCost, Optional.of(ExceptionalHaltReason.INSUFFICIENT_GAS));
             } else {
                 UInt256 storageValue = account.getStorageValue(UInt256.fromBytes(key));
-                if (dynamicProperties.shouldEnableTraceability()) {
-                    cacheExistingValue(frame, address, key, storageValue);
+                if (dynamicProperties
+                        .enabledSidecars()
+                        .contains(SidecarType.CONTRACT_STATE_CHANGE)) {
+                    HederaOperationUtil.cacheExistingValue(frame, address, key, storageValue);
                 }
 
                 frame.pushStackItem(storageValue);

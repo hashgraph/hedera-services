@@ -15,27 +15,21 @@
  */
 package com.hedera.services.contracts.execution;
 
-/*
- * -
- * ‌
- * Hedera Services Node
- * ​
- * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
- * ​
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *       http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- * ‍
- *
- */
+import static com.hedera.services.ethereum.EthTxData.WEIBARS_TO_TINYBARS;
+import static com.hedera.test.utils.TxnUtils.assertFailsWith;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_GAS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ETHEREUM_TRANSACTION;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.doCallRealMethod;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 
 import static com.hedera.services.ethereum.EthTxData.WEIBARS_TO_TINYBARS;
 import static com.hedera.test.utils.TxnUtils.assertFailsWith;
@@ -55,19 +49,27 @@ import static org.mockito.Mockito.verify;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.BytesValue;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.contracts.execution.traceability.ContractActionType;
+import com.hedera.services.contracts.execution.traceability.HederaTracer;
+import com.hedera.services.contracts.execution.traceability.SolidityAction;
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.ledger.accounts.AliasManager;
+import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.store.contracts.CodeCache;
 import com.hedera.services.store.contracts.HederaWorldState;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.utils.EntityIdUtils;
+import com.hedera.services.stream.proto.SidecarType;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.math.BigInteger;
 import java.time.Instant;
 import java.util.ArrayDeque;
+import java.util.Collections;
 import java.util.Deque;
+import java.util.EnumSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -85,12 +87,15 @@ import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.operation.Operation;
 import org.hyperledger.besu.evm.precompile.PrecompiledContract;
+import org.hyperledger.besu.evm.tracing.OperationTracer.ExecuteOperation;
 import org.hyperledger.besu.evm.worldstate.WorldUpdater;
 import org.hyperledger.besu.plugin.data.Transaction;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
+import org.mockito.MockedConstruction;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
@@ -261,11 +266,12 @@ class CallEvmTxProcessorTest {
     }
 
     @Test
-    void assertSuccessExecutionPopulatesStorageChanges() {
+    void assertSuccessExecutionPopulatesStateChanges() {
         givenValidMock();
         given(globalDynamicProperties.fundingAccount())
                 .willReturn(new Id(0, 0, 1010).asGrpcAccount());
-        given(globalDynamicProperties.shouldEnableTraceability()).willReturn(true);
+        given(globalDynamicProperties.enabledSidecars())
+                .willReturn(EnumSet.of(SidecarType.CONTRACT_STATE_CHANGE));
         givenSenderWithBalance(350_000L);
         given(aliasManager.resolveForEvm(receiverAddress)).willReturn(receiverAddress);
         final var contractAddress = "0xffff";
@@ -289,28 +295,13 @@ class CallEvmTxProcessorTest {
 
         assertTrue(result.isSuccessful());
         assertEquals(receiver.getId().asGrpcContract(), result.toGrpc().getContractID());
-        assertEquals(1, result.toGrpc().getStateChangesCount());
-        final var contractStateChange = result.toGrpc().getStateChanges(0);
-        assertEquals(
-                EntityIdUtils.contractIdFromEvmAddress(Address.fromHexString(contractAddress)),
-                contractStateChange.getContractID());
-        assertEquals(
-                ByteString.copyFrom(
-                        Bytes.wrap(UInt256.valueOf(slot)).trimLeadingZeros().toArrayUnsafe()),
-                contractStateChange.getStorageChanges(0).getSlot());
-        assertEquals(
-                ByteString.copyFrom(
-                        Bytes.wrap(UInt256.valueOf(oldSlotValue))
-                                .trimLeadingZeros()
-                                .toArrayUnsafe()),
-                contractStateChange.getStorageChanges(0).getValueRead());
-        assertEquals(
-                BytesValue.of(
-                        ByteString.copyFrom(
-                                Bytes.wrap(UInt256.valueOf(newSlotValue))
-                                        .trimLeadingZeros()
-                                        .toArrayUnsafe())),
-                contractStateChange.getStorageChanges(0).getValueWritten());
+        assertEquals(1, result.getStateChanges().size());
+        final var contractStateChange =
+                result.getStateChanges()
+                        .get(Address.fromHexString(contractAddress))
+                        .get(UInt256.valueOf(slot));
+        assertEquals(UInt256.valueOf(oldSlotValue), contractStateChange.getLeft());
+        assertEquals(UInt256.valueOf(newSlotValue), contractStateChange.getRight());
     }
 
     @Test
@@ -318,7 +309,7 @@ class CallEvmTxProcessorTest {
         givenValidMock();
         given(globalDynamicProperties.fundingAccount())
                 .willReturn(new Id(0, 0, 1010).asGrpcAccount());
-        given(globalDynamicProperties.shouldEnableTraceability()).willReturn(false);
+        given(globalDynamicProperties.enabledSidecars()).willReturn(Collections.emptySet());
         givenSenderWithBalance(350_000L);
         given(aliasManager.resolveForEvm(receiverAddress)).willReturn(receiverAddress);
         given(globalDynamicProperties.chainIdBytes32()).willReturn(Bytes32.ZERO);
@@ -329,9 +320,60 @@ class CallEvmTxProcessorTest {
 
         assertTrue(result.isSuccessful());
         assertEquals(receiver.getId().asGrpcContract(), result.toGrpc().getContractID());
-        assertEquals(0, result.toGrpc().getStateChangesCount());
+        assertEquals(0, result.getStateChanges().size());
 
         verify(updater, never()).getFinalStateChanges();
+    }
+
+    @Test
+    void assertSuccessExecutionPopulatesContractActionsWhenEnabled() {
+        givenValidMock();
+        given(globalDynamicProperties.fundingAccount())
+                .willReturn(new Id(0, 0, 1010).asGrpcAccount());
+        givenSenderWithBalance(350_000L);
+        given(aliasManager.resolveForEvm(receiverAddress)).willReturn(receiverAddress);
+        given(storageExpiry.hapiCallOracle()).willReturn(oracle);
+        given(globalDynamicProperties.chainIdBytes32()).willReturn(Bytes32.ZERO);
+
+        final var action =
+                new SolidityAction(
+                        ContractActionType.CALL,
+                        EntityId.fromAddress(Address.ALTBN128_ADD),
+                        null,
+                        500L,
+                        "input".getBytes(),
+                        EntityId.fromAddress(Address.BLAKE2B_F_COMPRESSION),
+                        null,
+                        0L,
+                        0);
+        final var action2 =
+                new SolidityAction(
+                        ContractActionType.CREATE,
+                        null,
+                        EntityId.fromAddress(Address.ALTBN128_ADD),
+                        5555L,
+                        "input2".getBytes(),
+                        null,
+                        EntityId.fromAddress(Address.BLAKE2B_F_COMPRESSION),
+                        666L,
+                        1);
+        try (MockedConstruction<HederaTracer> ignored =
+                Mockito.mockConstruction(
+                        HederaTracer.class,
+                        (mock, context) -> {
+                            doCallRealMethod()
+                                    .when(mock)
+                                    .traceExecution(
+                                            any(MessageFrame.class), any(ExecuteOperation.class));
+                            doReturn(List.of(action, action2)).when(mock).getActions();
+                        })) {
+
+            final var result =
+                    callEvmTxProcessor.execute(
+                            sender, receiverAddress, 33_333L, 1234L, Bytes.EMPTY, consensusTime);
+
+            assertEquals(List.of(action, action2), result.getActions());
+        }
     }
 
     @Test
@@ -783,7 +825,6 @@ class CallEvmTxProcessorTest {
     @Test
     void assertThrowsEthereumTransactionWhenSenderGasPriceIs0AndAllowanceCannotCoverFees() {
         given(worldState.updater()).willReturn(updater);
-        ;
         given(gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, false)).willReturn(0L);
         given(worldState.updater()).willReturn(updater);
         final var wrappedSenderAccount = mock(EvmAccount.class);
@@ -828,7 +869,6 @@ class CallEvmTxProcessorTest {
     void
             assertThrowsEthereumTransactionWhenSenderGasPriceIs0AndRelayerDoesNotHaveBalanceForAllowance() {
         given(worldState.updater()).willReturn(updater);
-        ;
         given(gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, false)).willReturn(0L);
         given(worldState.updater()).willReturn(updater);
         final var wrappedSenderAccount = mock(EvmAccount.class);
@@ -923,7 +963,6 @@ class CallEvmTxProcessorTest {
     @Test
     void assertThrowsEthereumTransactionWhenSenderGasPriceBiggerThanGasPriceButBalanceNotEnough() {
         given(worldState.updater()).willReturn(updater);
-        ;
         given(gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, false)).willReturn(0L);
         given(worldState.updater()).willReturn(updater);
         final var wrappedSenderAccount = mock(EvmAccount.class);

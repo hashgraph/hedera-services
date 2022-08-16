@@ -1290,10 +1290,10 @@ public class CreatePrecompileSuite extends HapiApiSuite {
                                 FIRST_CREATE_TXN,
                                 ResponseCodeEnum.CONTRACT_REVERT_EXECUTED,
                                 TransactionRecordAsserts.recordWith()
-                                        .status(INVALID_RENEWAL_PERIOD)
+                                        .status(INVALID_EXPIRATION_TIME)
                                         .contractCallResult(
                                                 ContractFnResultAsserts.resultWith()
-                                                        .error(INVALID_RENEWAL_PERIOD.name()))));
+                                                        .error(INVALID_EXPIRATION_TIME.name()))));
     }
 
     // TEST-012

@@ -1,11 +1,6 @@
-package com.hedera.services.fees.calculation.token.txns;
-
-/*-
- * ‌
- * Hedera Services Node
- * ​
- * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,112 +12,118 @@ package com.hedera.services.fees.calculation.token.txns;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+package com.hedera.services.fees.calculation.token.txns;
+
+import static com.hedera.services.usage.SingletonEstimatorUtils.ESTIMATOR_UTILS;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.mock;
+import static org.mockito.Mockito.mockStatic;
 
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.utils.EntityNum;
+import com.hedera.services.usage.EstimatorFactory;
 import com.hedera.services.usage.SigUsage;
+import com.hedera.services.usage.TxnUsageEstimator;
 import com.hedera.services.usage.token.TokenDissociateUsage;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.test.utils.IdUtils;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.FeeData;
-import com.hederahashgraph.api.proto.java.TokenDissociateTransactionBody;
-import com.hederahashgraph.api.proto.java.TokenID;
-import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.hederahashgraph.api.proto.java.*;
 import com.hederahashgraph.fee.SigValueObj;
 import com.swirlds.merkle.map.MerkleMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.util.function.BiFunction;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.BDDMockito.mock;
-
 class TokenDissociateResourceUsageTest {
-	private TokenDissociateResourceUsage subject;
+    private TokenDissociateResourceUsage subject;
 
-	AccountID target = IdUtils.asAccount("1.2.3");
-	MerkleAccount account;
-	MerkleMap<EntityNum, MerkleAccount> accounts;
+    AccountID target = IdUtils.asAccount("1.2.3");
+    MerkleAccount account;
+    MerkleMap<EntityNum, MerkleAccount> accounts;
 
-	private TransactionBody nonTokenDissociateTxn;
-	private TransactionBody tokenDissociateTxn;
+    private TransactionBody nonTokenDissociateTxn;
+    private TransactionBody tokenDissociateTxn;
 
-	StateView view;
-	int numSigs = 10, sigsSize = 100, numPayerKeys = 3;
-	SigValueObj obj = new SigValueObj(numSigs, numPayerKeys, sigsSize);
-	SigUsage sigUsage = new SigUsage(numSigs, sigsSize, numPayerKeys);
-	FeeData expected;
+    StateView view;
+    int numSigs = 10, sigsSize = 100, numPayerKeys = 3;
+    SigValueObj obj = new SigValueObj(numSigs, numPayerKeys, sigsSize);
+    SigUsage sigUsage = new SigUsage(numSigs, sigsSize, numPayerKeys);
+    FeeData expected;
 
-	TokenDissociateUsage usage;
-	BiFunction<TransactionBody, SigUsage, TokenDissociateUsage> factory;
+    TokenDissociateUsage usage;
 
-	long expiry = 1_234_567L;
-	TokenID firstToken = IdUtils.asToken("0.0.123");
-	TokenID secondToken = IdUtils.asToken("0.0.124");
+    long expiry = 1_234_567L;
+    TokenID firstToken = IdUtils.asToken("0.0.123");
+    TokenID secondToken = IdUtils.asToken("0.0.124");
+    TxnUsageEstimator txnUsageEstimator;
 
-	@BeforeEach
-	private void setup() throws Throwable {
-		expected = mock(FeeData.class);
-		account = mock(MerkleAccount.class);
-		given(account.getExpiry()).willReturn(expiry);
-		accounts = mock(MerkleMap.class);
-		given(accounts.get(EntityNum.fromAccountId(target))).willReturn(account);
-		view = mock(StateView.class);
-		given(view.accounts()).willReturn(accounts);
+    @BeforeEach
+    private void setup() throws Throwable {
+        expected = mock(FeeData.class);
+        account = mock(MerkleAccount.class);
+        given(account.getExpiry()).willReturn(expiry);
+        accounts = mock(MerkleMap.class);
+        given(accounts.get(EntityNum.fromAccountId(target))).willReturn(account);
+        view = mock(StateView.class);
+        given(view.accounts()).willReturn(accounts);
 
-		tokenDissociateTxn = mock(TransactionBody.class);
-		given(tokenDissociateTxn.hasTokenDissociate()).willReturn(true);
-		given(tokenDissociateTxn.getTokenDissociate())
-				.willReturn(TokenDissociateTransactionBody.newBuilder()
-						.setAccount(IdUtils.asAccount("1.2.3"))
-						.addTokens(firstToken)
-						.addTokens(secondToken)
-						.build());
+        tokenDissociateTxn = mock(TransactionBody.class);
+        given(tokenDissociateTxn.hasTokenDissociate()).willReturn(true);
+        given(tokenDissociateTxn.getTokenDissociate())
+                .willReturn(
+                        TokenDissociateTransactionBody.newBuilder()
+                                .setAccount(IdUtils.asAccount("1.2.3"))
+                                .addTokens(firstToken)
+                                .addTokens(secondToken)
+                                .build());
 
-		nonTokenDissociateTxn = mock(TransactionBody.class);
-		given(nonTokenDissociateTxn.hasTokenAssociate()).willReturn(false);
+        nonTokenDissociateTxn = mock(TransactionBody.class);
+        given(nonTokenDissociateTxn.hasTokenAssociate()).willReturn(false);
 
-		factory = (BiFunction<TransactionBody, SigUsage, TokenDissociateUsage>) mock(BiFunction.class);
-		given(factory.apply(tokenDissociateTxn, sigUsage)).willReturn(usage);
+        usage = mock(TokenDissociateUsage.class);
+        given(usage.get()).willReturn(expected);
 
-		usage = mock(TokenDissociateUsage.class);
-		given(usage.get()).willReturn(expected);
+        txnUsageEstimator = mock(TxnUsageEstimator.class);
+        EstimatorFactory estimatorFactory = mock(EstimatorFactory.class);
+        given(estimatorFactory.get(sigUsage, tokenDissociateTxn, ESTIMATOR_UTILS))
+                .willReturn(txnUsageEstimator);
+        subject = new TokenDissociateResourceUsage(estimatorFactory);
+    }
 
-		TokenDissociateResourceUsage.factory = factory;
-		given(factory.apply(tokenDissociateTxn, sigUsage)).willReturn(usage);
+    @Test
+    void recognizesApplicability() {
+        // expect:
+        assertTrue(subject.applicableTo(tokenDissociateTxn));
+        assertFalse(subject.applicableTo(nonTokenDissociateTxn));
+    }
 
-		subject = new TokenDissociateResourceUsage();
-	}
+    @Test
+    void delegatesToCorrectEstimate() throws Exception {
+        final var mockStatic = mockStatic(TokenDissociateUsage.class);
+        mockStatic
+                .when(() -> TokenDissociateUsage.newEstimate(tokenDissociateTxn, txnUsageEstimator))
+                .thenReturn(usage);
 
-	@Test
-	void recognizesApplicability() {
-		// expect:
-		assertTrue(subject.applicableTo(tokenDissociateTxn));
-		assertFalse(subject.applicableTo(nonTokenDissociateTxn));
-	}
+        // expect:
+        assertEquals(expected, subject.usageGiven(tokenDissociateTxn, obj, view));
 
-	@Test
-	void delegatesToCorrectEstimate() throws Exception {
-		// expect:
-		assertEquals(
-				expected,
-				subject.usageGiven(tokenDissociateTxn, obj, view));
-	}
+        mockStatic.close();
+    }
 
-	@Test
-	void returnsDefaultIfInfoMissing() throws Exception {
-		given(accounts.get(EntityNum.fromAccountId(target))).willReturn(null);
+    @Test
+    void returnsDefaultIfInfoMissing() throws Exception {
+        final var mockStatic = mockStatic(TokenDissociateUsage.class);
+        mockStatic
+                .when(() -> TokenDissociateUsage.newEstimate(tokenDissociateTxn, txnUsageEstimator))
+                .thenReturn(usage);
 
-		// expect:
-		assertEquals(
-				FeeData.getDefaultInstance(),
-				subject.usageGiven(tokenDissociateTxn, obj, view));
-	}
+        given(accounts.get(EntityNum.fromAccountId(target))).willReturn(null);
+
+        // expect:
+        assertEquals(
+                FeeData.getDefaultInstance(), subject.usageGiven(tokenDissociateTxn, obj, view));
+
+        mockStatic.close();
+    }
 }

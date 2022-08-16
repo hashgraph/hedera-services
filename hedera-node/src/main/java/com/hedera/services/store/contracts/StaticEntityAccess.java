@@ -15,27 +15,17 @@
  */
 package com.hedera.services.store.contracts;
 
-/*
- * -
- * ‌
- * Hedera Services Node
- * ​
- * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
- * ​
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *       http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- * ‍
- *
- */
+import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
+import static com.hedera.services.exceptions.ValidationUtils.validateTrueOrRevert;
+import static com.hedera.services.state.merkle.internals.BitPackUtils.codeFromNum;
+import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
+import static com.hedera.services.utils.EntityNum.fromAccountId;
+import static com.hedera.services.utils.EntityNumPair.fromAccountTokenRel;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALLOWANCE_OWNER_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hedera.services.exceptions.ValidationUtils.validateTrueOrRevert;
@@ -209,8 +199,18 @@ public class StaticEntityAccess implements EntityAccess {
     }
 
     // We don't put these methods on the EntityAccess interface, because they would never be used
-    // when processing
-    // a non-static EVM call; then the WorldLedgers should get all such information from its ledgers
+    // when processing a non-static EVM call; then the WorldLedgers should get all such information 
+    // from its ledgers
+
+    public boolean defaultFreezeStatus(final TokenID tokenId) {
+        final var token = lookupToken(tokenId);
+        return token.accountsAreFrozenByDefault();
+    }
+
+    public boolean defaultKycStatus(final TokenID tokenID) {
+        final var token = lookupToken(tokenID);
+        return token.accountsKycGrantedByDefault();
+    }
 
     /**
      * Returns the name of the given token.
@@ -281,6 +281,22 @@ public class StaticEntityAccess implements EntityAccess {
         final var balanceKey = fromAccountTokenRel(accountId, tokenId);
         final var relStatus = tokenAssociations.get(balanceKey);
         return (relStatus != null) ? relStatus.getBalance() : 0;
+    }
+
+    /**
+     * Returns the frozen status of the given token for the given account.
+     *
+     * @param accountId the account of interest
+     * @param tokenId the token of interest
+     * @return the token's freeze status
+     */
+    public boolean isFrozen(final AccountID accountId, final TokenID tokenId) {
+        lookupToken(tokenId);
+        final var accountNum = EntityNum.fromAccountId(accountId);
+        validateTrue(accounts.containsKey(accountNum), INVALID_ACCOUNT_ID);
+        final var isFrozenKey = fromAccountTokenRel(accountId, tokenId);
+        final var relStatus = tokenAssociations.get(isFrozenKey);
+        return relStatus != null && relStatus.isFrozen();
     }
 
     /**
@@ -366,6 +382,15 @@ public class StaticEntityAccess implements EntityAccess {
      */
     public String metadataOf(final NftId nftId) {
         return nftPropertyOf(nftId, nft -> new String(nft.getMetadata()));
+    }
+
+    public boolean isKyc(final AccountID accountId, final TokenID tokenId) {
+        lookupToken(tokenId);
+        final var accountNum = EntityNum.fromAccountId(accountId);
+        validateTrue(accounts.containsKey(accountNum), INVALID_ACCOUNT_ID);
+        final var isKycKey = fromAccountTokenRel(accountId, tokenId);
+        final var relStatus = tokenAssociations.get(isKycKey);
+        return relStatus != null && relStatus.isKycGranted();
     }
 
     private <T> T nftPropertyOf(final NftId nftId, final Function<MerkleUniqueToken, T> getter) {

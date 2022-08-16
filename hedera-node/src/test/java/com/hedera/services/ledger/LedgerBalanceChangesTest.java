@@ -174,7 +174,6 @@ class LedgerBalanceChangesTest {
                         validator,
                         autoCreationLogic,
                         historian);
-        tokenStore.rebuildViews();
 
         subject =
                 new HederaLedger(
@@ -301,7 +300,6 @@ class LedgerBalanceChangesTest {
                         autoCreationLogic);
         subject.setTokenRelsLedger(tokenRelsLedger);
         subject.setMutableEntityAccess(mutableEntityAccess);
-        tokenStore.rebuildViews();
         givenUnexpiredEntities();
 
         givenInitialBalancesAndOwnership();

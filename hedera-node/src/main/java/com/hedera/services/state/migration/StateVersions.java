@@ -22,6 +22,9 @@ import javax.annotation.Nullable;
 
 /** Gives the versions of the current and previous world states. */
 public final class StateVersions {
+    private static final String BASE_0260_VERSION = "0.26.0";
+    private static final String BASE_0270_VERSION = "0.27.0";
+
     // For the record,
     //   - Release 0.7.x was state version 1
     //   - Release 0.8.x was state version 2
@@ -43,22 +46,24 @@ public final class StateVersions {
     public static final int RELEASE_0260_VERSION = 19;
     public static final int RELEASE_0270_VERSION = 20;
     public static final int RELEASE_0280_VERSION = 21;
+    public static final int RELEASE_0290_VERSION = 22;
 
     public static final SerializableSemVers LAST_025X_VERSION =
             forHapiAndHedera("0.25.1", "0.25.4");
     public static final SerializableSemVers FIRST_026X_VERSION =
-            forHapiAndHedera("0.26.0", "0.26.0");
+            forHapiAndHedera(BASE_0260_VERSION, BASE_0260_VERSION);
     public static final SerializableSemVers LAST_026X_VERSION =
-            forHapiAndHedera("0.26.0", "0.26.3");
+            forHapiAndHedera(BASE_0260_VERSION, "0.26.3");
     public static final SerializableSemVers FIRST_027X_VERSION =
-            forHapiAndHedera("0.27.0", "0.27.0");
+            forHapiAndHedera(BASE_0270_VERSION, BASE_0270_VERSION);
     public static final SerializableSemVers LAST_027X_VERSION =
-            forHapiAndHedera("0.27.0", "0.27.3");
+            forHapiAndHedera(BASE_0270_VERSION, "0.27.3");
     public static final SerializableSemVers FIRST_028X_VERSION =
             forHapiAndHedera("0.28.0", "0.28.0");
 
     public static final int MINIMUM_SUPPORTED_VERSION = RELEASE_025X_VERSION;
     public static final int CURRENT_VERSION = RELEASE_0280_VERSION;
+    public static final int CURRENT_VERSION = RELEASE_0290_VERSION;
 
     @Nullable
     public static SerializableSemVers lastSoftwareVersionOf(final int stateVersion) {

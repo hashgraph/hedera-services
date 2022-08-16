@@ -20,6 +20,8 @@ public interface SystemFilesManager {
 
     void createNodeDetailsIfMissing();
 
+    void updateStakeDetails();
+
     void createUpdateFilesIfMissing();
 
     default void createManagedFilesIfMissing() {

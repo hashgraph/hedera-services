@@ -27,7 +27,7 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 
 @Singleton
-public class UsageLimits {
+public class UsageLimits implements ContractStorageLimits, AccountUsageTracking {
     // We keep snapshots of the last seen entity counts, so we can update
     // the utilization stats without touching the working state
     private long numAccounts;
@@ -53,6 +53,10 @@ public class UsageLimits {
 
     public void refreshAccounts() {
         updatedNumAccounts();
+    }
+
+    public void resetNumContracts() {
+        numContracts = 0;
     }
 
     public void recordContracts(final int n) {

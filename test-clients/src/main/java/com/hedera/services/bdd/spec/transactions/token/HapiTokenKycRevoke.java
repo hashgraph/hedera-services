@@ -1,11 +1,6 @@
-package com.hedera.services.bdd.spec.transactions.token;
-
-/*-
- * ‌
- * Hedera Services Test Clients
- * ​
- * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,97 +12,98 @@ package com.hedera.services.bdd.spec.transactions.token;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+package com.hedera.services.bdd.spec.transactions.token;
+
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.suFrom;
+import static com.hedera.services.usage.SingletonEstimatorUtils.ESTIMATOR_UTILS;
 
 import com.google.common.base.MoreObjects;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
+import com.hedera.services.usage.TxnUsageEstimator;
 import com.hedera.services.usage.token.TokenRevokeKycUsage;
-import com.hederahashgraph.api.proto.java.FeeData;
-import com.hederahashgraph.api.proto.java.HederaFunctionality;
-import com.hederahashgraph.api.proto.java.Key;
-import com.hederahashgraph.api.proto.java.TokenRevokeKycTransactionBody;
-import com.hederahashgraph.api.proto.java.Transaction;
-import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.api.proto.java.TransactionResponse;
+import com.hederahashgraph.api.proto.java.*;
 import com.hederahashgraph.fee.SigValueObj;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Function;
-
-import static com.hedera.services.bdd.spec.transactions.TxnUtils.suFrom;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 public class HapiTokenKycRevoke extends HapiTxnOp<HapiTokenKycRevoke> {
-	static final Logger log = LogManager.getLogger(HapiTokenKycRevoke.class);
+    static final Logger log = LogManager.getLogger(HapiTokenKycRevoke.class);
 
-	private String token;
-	private String account;
+    private String token;
+    private String account;
 
-	@Override
-	public HederaFunctionality type() {
-		return HederaFunctionality.TokenRevokeKycFromAccount;
-	}
+    @Override
+    public HederaFunctionality type() {
+        return HederaFunctionality.TokenRevokeKycFromAccount;
+    }
 
-	public HapiTokenKycRevoke(String token, String account) {
-		this.token = token;
-		this.account = account;
-	}
+    public HapiTokenKycRevoke(String token, String account) {
+        this.token = token;
+        this.account = account;
+    }
 
-	@Override
-	protected HapiTokenKycRevoke self() {
-		return this;
-	}
+    @Override
+    protected HapiTokenKycRevoke self() {
+        return this;
+    }
 
-	@Override
-	protected long feeFor(HapiApiSpec spec, Transaction txn, int numPayerKeys) throws Throwable {
-		return spec.fees().forActivityBasedOp(
-				HederaFunctionality.TokenRevokeKycFromAccount, this::usageEstimate, txn, numPayerKeys);
-	}
+    @Override
+    protected long feeFor(HapiApiSpec spec, Transaction txn, int numPayerKeys) throws Throwable {
+        return spec.fees()
+                .forActivityBasedOp(
+                        HederaFunctionality.TokenRevokeKycFromAccount,
+                        this::usageEstimate,
+                        txn,
+                        numPayerKeys);
+    }
 
-	private FeeData usageEstimate(TransactionBody txn, SigValueObj svo) {
-		return TokenRevokeKycUsage.newEstimate(txn, suFrom(svo)).get();
-	}
+    private FeeData usageEstimate(TransactionBody txn, SigValueObj svo) {
+        return TokenRevokeKycUsage.newEstimate(
+                        txn, new TxnUsageEstimator(suFrom(svo), txn, ESTIMATOR_UTILS))
+                .get();
+    }
 
-	@Override
-	protected Consumer<TransactionBody.Builder> opBodyDef(HapiApiSpec spec) throws Throwable {
-		var aId = TxnUtils.asId(account, spec);
-		var tId = TxnUtils.asTokenId(token, spec);
-		TokenRevokeKycTransactionBody opBody = spec
-				.txns()
-				.<TokenRevokeKycTransactionBody, TokenRevokeKycTransactionBody.Builder>body(
-						TokenRevokeKycTransactionBody.class, b -> {
-							b.setAccount(aId);
-							b.setToken(tId);
-						});
-		return b -> b.setTokenRevokeKyc(opBody);
-	}
+    @Override
+    protected Consumer<TransactionBody.Builder> opBodyDef(HapiApiSpec spec) throws Throwable {
+        var aId = TxnUtils.asId(account, spec);
+        var tId = TxnUtils.asTokenId(token, spec);
+        TokenRevokeKycTransactionBody opBody =
+                spec.txns()
+                        .<TokenRevokeKycTransactionBody, TokenRevokeKycTransactionBody.Builder>body(
+                                TokenRevokeKycTransactionBody.class,
+                                b -> {
+                                    b.setAccount(aId);
+                                    b.setToken(tId);
+                                });
+        return b -> b.setTokenRevokeKyc(opBody);
+    }
 
-	@Override
-	protected List<Function<HapiApiSpec, Key>> defaultSigners() {
-		return List.of(
-				spec -> spec.registry().getKey(effectivePayer(spec)),
-				spec -> spec.registry().getKycKey(token));
-	}
+    @Override
+    protected List<Function<HapiApiSpec, Key>> defaultSigners() {
+        return List.of(
+                spec -> spec.registry().getKey(effectivePayer(spec)),
+                spec -> spec.registry().getKycKey(token));
+    }
 
-	@Override
-	protected Function<Transaction, TransactionResponse> callToUse(HapiApiSpec spec) {
-		return spec.clients().getTokenSvcStub(targetNodeFor(spec), useTls)::revokeKycFromTokenAccount;
-	}
+    @Override
+    protected Function<Transaction, TransactionResponse> callToUse(HapiApiSpec spec) {
+        return spec.clients().getTokenSvcStub(targetNodeFor(spec), useTls)
+                ::revokeKycFromTokenAccount;
+    }
 
-	@Override
-	protected void updateStateOf(HapiApiSpec spec) {
-	}
+    @Override
+    protected void updateStateOf(HapiApiSpec spec) {}
 
-	@Override
-	protected MoreObjects.ToStringHelper toStringHelper() {
-		MoreObjects.ToStringHelper helper = super.toStringHelper()
-				.add("token", token)
-				.add("account", account);
-		return helper;
-	}
+    @Override
+    protected MoreObjects.ToStringHelper toStringHelper() {
+        MoreObjects.ToStringHelper helper =
+                super.toStringHelper().add("token", token).add("account", account);
+        return helper;
+    }
 }
