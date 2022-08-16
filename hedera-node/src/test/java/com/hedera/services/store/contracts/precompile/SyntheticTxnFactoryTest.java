@@ -43,6 +43,8 @@ import static org.mockito.Mockito.verify;
 
 import com.google.protobuf.BoolValue;
 import com.google.protobuf.ByteString;
+import com.hedera.services.config.HederaNumbers;
+import com.hedera.services.context.properties.BootstrapProperties;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ethereum.EthTxData;
 import com.hedera.services.ledger.accounts.ContractCustomizer;
@@ -90,12 +92,18 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class SyntheticTxnFactoryTest {
     @Mock private EthTxData ethTxData;
     @Mock private ContractCustomizer customizer;
-    @Mock private GlobalDynamicProperties dynamicProperties;
+    private GlobalDynamicProperties dynamicProperties;
+    private BootstrapProperties propertySource;
 
     private SyntheticTxnFactory subject;
 
     @BeforeEach
     void setUp() {
+        propertySource = new BootstrapProperties();
+        propertySource.ensureProps();
+        dynamicProperties =
+                new GlobalDynamicProperties(new HederaNumbers(propertySource), propertySource);
+
         subject = new SyntheticTxnFactory(dynamicProperties);
     }
 
@@ -177,7 +185,6 @@ class SyntheticTxnFactoryTest {
         given(ethTxData.callData()).willReturn(callData);
         given(ethTxData.gasLimit()).willReturn(gasLimit);
         given(ethTxData.value()).willReturn(value);
-        given(dynamicProperties.typedMinAutoRenewDuration()).willReturn(autoRenewPeriod);
 
         final var optSynthBody = subject.synthContractOpFromEth(ethTxData);
 
@@ -198,7 +205,6 @@ class SyntheticTxnFactoryTest {
         given(ethTxData.callData()).willReturn(callData);
         given(ethTxData.gasLimit()).willReturn(gasLimit);
         given(ethTxData.value()).willReturn(value);
-        given(dynamicProperties.typedMinAutoRenewDuration()).willReturn(autoRenewPeriod);
 
         final var synthBody = subject.synthPrecheckContractOpFromEth(ethTxData);
 
@@ -214,7 +220,6 @@ class SyntheticTxnFactoryTest {
     void synthesizesPrecheckCreateFromEthDataWithoutInitcode() {
         given(ethTxData.gasLimit()).willReturn(gasLimit);
         given(ethTxData.value()).willReturn(value);
-        given(dynamicProperties.typedMinAutoRenewDuration()).willReturn(autoRenewPeriod);
         given(ethTxData.replaceCallData(MOCK_INITCODE)).willReturn(ethTxData);
         given(ethTxData.callData()).willReturn(MOCK_INITCODE);
 
@@ -340,7 +345,6 @@ class SyntheticTxnFactoryTest {
     @Test
     void createsExpectedNodeStakeUpdate() {
         final var now = Instant.now();
-        final var rewardRate = 10_000_000L;
         final var timestamp =
                 Timestamp.newBuilder()
                         .setSeconds(now.getEpochSecond())
@@ -356,8 +360,12 @@ class SyntheticTxnFactoryTest {
                                 .setStake(987_654_321L)
                                 .setStakeRewarded(54_321L)
                                 .build());
+        propertySource.ensureProps();
+        dynamicProperties =
+                new GlobalDynamicProperties(new HederaNumbers(propertySource), propertySource);
+        subject = new SyntheticTxnFactory(dynamicProperties);
 
-        final var txnBody = subject.nodeStakeUpdate(timestamp, nodeStakes);
+        final var txnBody = subject.nodeStakeUpdate(timestamp, nodeStakes, propertySource);
 
         assertTrue(txnBody.hasNodeStakeUpdate());
         assertEquals(timestamp, txnBody.getNodeStakeUpdate().getEndOfStakingPeriod());
@@ -365,6 +373,19 @@ class SyntheticTxnFactoryTest {
         assertEquals(1_234_567L, txnBody.getNodeStakeUpdate().getNodeStake(0).getStakeRewarded());
         assertEquals(987_654_321L, txnBody.getNodeStakeUpdate().getNodeStake(1).getStake());
         assertEquals(54_321L, txnBody.getNodeStakeUpdate().getNodeStake(1).getStakeRewarded());
+        assertEquals(17_808L, txnBody.getNodeStakeUpdate().getMaxStakingRewardRatePerHbar());
+        assertEquals(0L, txnBody.getNodeStakeUpdate().getNodeRewardFeeFraction().getNumerator());
+        assertEquals(
+                100L, txnBody.getNodeStakeUpdate().getNodeRewardFeeFraction().getDenominator());
+        assertEquals(365, txnBody.getNodeStakeUpdate().getStakingPeriodsStored());
+        assertEquals(1L, txnBody.getNodeStakeUpdate().getStakingPeriod());
+        assertEquals(
+                100L, txnBody.getNodeStakeUpdate().getStakingRewardFeeFraction().getNumerator());
+        assertEquals(
+                100L, txnBody.getNodeStakeUpdate().getStakingRewardFeeFraction().getDenominator());
+        assertEquals(
+                25_000_000_000_000_000L, txnBody.getNodeStakeUpdate().getStakingStartThreshold());
+        assertEquals(0L, txnBody.getNodeStakeUpdate().getStakingRewardRate());
     }
 
     @Test
@@ -969,5 +990,5 @@ class SyntheticTxnFactoryTest {
     private static final byte[] callData = "Between the idea and the reality".getBytes();
     private static final byte[] addressTo = unhex("abcdefabcdefabcdefbabcdefabcdefabcdefbbb");
     private static final Duration autoRenewPeriod =
-            Duration.newBuilder().setSeconds(1_234_567).build();
+            Duration.newBuilder().setSeconds(6_999_999).build();
 }
