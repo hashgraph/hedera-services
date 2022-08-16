@@ -49,12 +49,14 @@ import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.CONSTRU
 import static com.hedera.services.bdd.suites.contract.Utils.eventSignatureOf;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static org.apache.commons.lang3.StringUtils.EMPTY;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hedera.services.ethereum.EthTxData;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -174,14 +176,14 @@ public class HelloWorldEthereumSuite extends HapiApiSuite {
                                                 .payingWith(RELAYER)
                                                 .via(maliciousTxn)
                                                 .nonce(0)
-                                                .gasLimit(4_000_000L)
+                                                .gasLimit(1_000_000L)
                                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED)))
                 .then(
                         getTxnRecord(maliciousTxn).andAllChildRecords().logged(),
                         childRecordsCheck(
                                 maliciousTxn,
                                 CONTRACT_REVERT_EXECUTED,
-                                recordWith().status(INVALID_SIGNATURE)),
+                                recordWith().status(INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE)),
                         sourcing(
                                 () ->
                                         getAccountBalance(maliciousEOAId.get())
@@ -225,7 +227,7 @@ public class HelloWorldEthereumSuite extends HapiApiSuite {
                                 .gasPrice(100L)
                                 .maxFeePerGas(100L)
                                 .maxPriorityGas(2_000_000L)
-                                .gasLimit(2_000_000L)
+                                .gasLimit(1_000_000L)
                                 .sending(depositAmount))
                 .then(
                         getAccountInfo(RELAYER)
@@ -239,7 +241,8 @@ public class HelloWorldEthereumSuite extends HapiApiSuite {
     HapiApiSpec depositSuccess() {
         return defaultHapiSpec("DepositSuccess")
                 .given(
-                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
+                    UtilVerbs.overriding("contracts.throttle.throttleByGas", "false"),
+                    newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS),
                         cryptoTransfer(
                                         tinyBarsFromAccountToAlias(
@@ -258,7 +261,7 @@ public class HelloWorldEthereumSuite extends HapiApiSuite {
                                 .nonce(0)
                                 .maxFeePerGas(50L)
                                 .maxPriorityGas(2L)
-                                .gasLimit(2_000_000L)
+                                .gasLimit(1_000_000L)
                                 .sending(depositAmount)
                                 .hasKnownStatus(ResponseCodeEnum.SUCCESS),
                         // Legacy Ethereum Calls Work
@@ -282,7 +285,7 @@ public class HelloWorldEthereumSuite extends HapiApiSuite {
                                 .nonce(2)
                                 .maxFeePerGas(50L)
                                 .maxPriorityGas(2L)
-                                .gasLimit(2_000_000L)
+                                .gasLimit(1_000_000L)
                                 .sending(depositAmount)
                                 .createCallDataFile()
                                 .hasKnownStatus(ResponseCodeEnum.SUCCESS))
@@ -312,7 +315,8 @@ public class HelloWorldEthereumSuite extends HapiApiSuite {
                                                                                         spec.registry()
                                                                                                 .getBytes(
                                                                                                         ETH_HASH_KEY)))))),
-                        getAliasedAccountInfo(SECP_256K1_SOURCE_KEY).has(accountWith().nonce(3L)));
+                        getAliasedAccountInfo(SECP_256K1_SOURCE_KEY).has(accountWith().nonce(3L)),
+                    UtilVerbs.resetToDefault("contracts.throttle.throttleByGas"));
     }
 
     HapiApiSpec ethereumCallWithCalldataBiggerThanMaxSucceeds() {
