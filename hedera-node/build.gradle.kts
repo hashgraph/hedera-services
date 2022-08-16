@@ -40,6 +40,7 @@ dependencies {
         }
     )
 
+    testImplementation(testLibs.bundles.truth)
     testImplementation(testLibs.bundles.testing)
 
     runtimeOnly(libs.bundles.netty)

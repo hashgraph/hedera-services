@@ -441,6 +441,7 @@ class ServicesStateTest {
         given(app.initializationFlow()).willReturn(initFlow);
         given(app.dualStateAccessor()).willReturn(dualStateAccessor);
         given(app.sysFilesManager()).willReturn(systemFilesManager);
+        given(app.treasuryCloner()).willReturn(treasuryCloner);
         given(platform.getSelfId()).willReturn(selfId);
 
         APPS.save(selfId.getId(), app);
@@ -567,6 +568,7 @@ class ServicesStateTest {
         given(app.dualStateAccessor()).willReturn(dualStateAccessor);
         given(platform.getSelfId()).willReturn(selfId);
         given(app.sysFilesManager()).willReturn(systemFilesManager);
+        given(app.treasuryCloner()).willReturn(treasuryCloner);
         // and:
         APPS.save(selfId.getId(), app);
 

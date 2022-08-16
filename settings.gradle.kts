@@ -140,7 +140,9 @@ dependencyResolutionManagement {
             version("picocli-version", "4.6.3")
             version("snakeyaml-version", "1.26")
             version("testcontainers-version", "1.17.2")
+            version("truth-version", "1.1.3")
 
+            bundle("truth", listOf("truth", "truth-java8-extension"))
             bundle("junit5", listOf("junit-jupiter-api", "junit-jupiter-params", "junit-jupiter"))
             bundle("mockito", listOf("mockito-core", "mockito-jupiter"))
             bundle("testcontainers", listOf("testcontainers-core", "testcontainers-junit"))
@@ -152,6 +154,8 @@ dependencyResolutionManagement {
             library("ethereumj", "com.hedera.hashgraph", "ethereumj-core").versionRef("ethereumj-version")
             library("hamcrest", "org.hamcrest", "hamcrest").versionRef("hamcrest-version")
             library("json", "org.json", "json").versionRef("json-version")
+            library("truth", "com.google.truth", "truth").versionRef("truth-version")
+            library("truth-java8-extension", "com.google.truth.extensions", "truth-java8-extension").versionRef("truth-version")
             library("junit-jupiter", "org.junit.jupiter", "junit-jupiter").versionRef("junit5-version")
             library("junit-jupiter-api", "org.junit.jupiter", "junit-jupiter-api").versionRef("junit5-version")
             library("junit-jupiter-params", "org.junit.jupiter", "junit-jupiter-params").versionRef("junit5-version")
