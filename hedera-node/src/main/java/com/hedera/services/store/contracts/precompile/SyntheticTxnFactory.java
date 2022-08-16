@@ -289,13 +289,14 @@ public class SyntheticTxnFactory {
     }
 
     public TransactionBody.Builder createApproveAllowanceForAllNFT(
-            final SetApprovalForAllWrapper setApprovalForAllWrapper, final TokenID tokenID) {
+            final SetApprovalForAllWrapper setApprovalForAllWrapper) {
+
         final var builder = CryptoApproveAllowanceTransactionBody.newBuilder();
 
         builder.addNftAllowances(
                 NftAllowance.newBuilder()
                         .setApprovedForAll(BoolValue.of(setApprovalForAllWrapper.approved()))
-                        .setTokenId(tokenID)
+                        .setTokenId(setApprovalForAllWrapper.tokenId())
                         .setSpender(setApprovalForAllWrapper.to())
                         .build());
 
