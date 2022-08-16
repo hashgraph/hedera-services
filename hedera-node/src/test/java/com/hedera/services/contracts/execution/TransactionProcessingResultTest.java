@@ -121,7 +121,8 @@ class TransactionProcessingResultTest {
                         1234L,
                         Bytes.EMPTY,
                         recipient.getId().asEvmAddress(),
-                        Collections.emptyMap());
+                        Collections.emptyMap(),
+                        Collections.emptyList());
         result.setCreatedContracts(listOfCreatedContracts);
 
         assertEquals(expect.getGasUsed(), result.getGasUsed());
@@ -168,7 +169,8 @@ class TransactionProcessingResultTest {
                         GAS_PRICE,
                         revertReason,
                         Optional.of(exception),
-                        Map.of());
+                        Map.of(),
+                        List.of());
 
         assertEquals(expect.getGasUsed(), result.getGasUsed());
         assertEquals(GAS_PRICE, result.getGasPrice());
@@ -187,7 +189,8 @@ class TransactionProcessingResultTest {
                         GAS_PRICE,
                         Bytes.EMPTY,
                         recipient.getId().asEvmAddress(),
-                        Map.of());
+                        Map.of(),
+                        List.of());
 
         assertEquals(GAS_PRICE, result.getGasPrice());
     }
@@ -202,7 +205,8 @@ class TransactionProcessingResultTest {
                         GAS_PRICE,
                         Bytes.EMPTY,
                         recipient.getId().asEvmAddress(),
-                        Map.of());
+                        Map.of(),
+                        List.of());
 
         assertEquals(GAS_REFUND, result.getSbhRefund());
     }
@@ -217,7 +221,8 @@ class TransactionProcessingResultTest {
                         GAS_PRICE,
                         Bytes.EMPTY,
                         recipient.getId().asEvmAddress(),
-                        Map.of());
+                        Map.of(),
+                        List.of());
 
         assertEquals(GAS_USAGE, result.getGasUsed());
     }
@@ -232,7 +237,8 @@ class TransactionProcessingResultTest {
                         GAS_PRICE,
                         Bytes.EMPTY,
                         recipient.getId().asEvmAddress(),
-                        Map.of());
+                        Map.of(),
+                        List.of());
 
         assertTrue(result.isSuccessful());
     }
