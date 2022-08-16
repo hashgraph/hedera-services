@@ -17,6 +17,28 @@ package com.hedera.services.context.properties;
 
 import static com.hedera.services.context.properties.BootstrapProperties.GLOBAL_DYNAMIC_PROPS;
 import static com.hedera.services.context.properties.BootstrapProperties.transformFor;
+import static com.hedera.services.context.properties.PropertyNames.BALANCES_EXPORT_DIR_PATH;
+import static com.hedera.services.context.properties.PropertyNames.BALANCES_EXPORT_ENABLED;
+import static com.hedera.services.context.properties.PropertyNames.BALANCES_EXPORT_PERIOD_SECS;
+import static com.hedera.services.context.properties.PropertyNames.BALANCES_NODE_BALANCE_WARN_THRESHOLD;
+import static com.hedera.services.context.properties.PropertyNames.CACHE_RECORDS_TTL;
+import static com.hedera.services.context.properties.PropertyNames.CONTRACTS_DEFAULT_LIFETIME;
+import static com.hedera.services.context.properties.PropertyNames.CONTRACTS_LOCAL_CALL_EST_RET_BYTES;
+import static com.hedera.services.context.properties.PropertyNames.CONTRACTS_MAX_GAS_PER_SEC;
+import static com.hedera.services.context.properties.PropertyNames.CONTRACTS_MAX_REFUND_PERCENT_OF_GAS_LIMIT;
+import static com.hedera.services.context.properties.PropertyNames.FILES_MAX_SIZE_KB;
+import static com.hedera.services.context.properties.PropertyNames.HEDERA_TXN_MAX_VALID_DURATION;
+import static com.hedera.services.context.properties.PropertyNames.HEDERA_TXN_MIN_VALIDITY_BUFFER_SECS;
+import static com.hedera.services.context.properties.PropertyNames.HEDERA_TXN_MIN_VALID_DURATION;
+import static com.hedera.services.context.properties.PropertyNames.LEDGER_AUTO_RENEW_PERIOD_MAX_DURATION;
+import static com.hedera.services.context.properties.PropertyNames.LEDGER_AUTO_RENEW_PERIOD_MIN_DURATION;
+import static com.hedera.services.context.properties.PropertyNames.LEDGER_FUNDING_ACCOUNT;
+import static com.hedera.services.context.properties.PropertyNames.LEDGER_TOKEN_TRANSFERS_MAX_LEN;
+import static com.hedera.services.context.properties.PropertyNames.LEDGER_TRANSFERS_MAX_LEN;
+import static com.hedera.services.context.properties.PropertyNames.RATES_INTRA_DAY_CHANGE_LIMIT_PERCENT;
+import static com.hedera.services.context.properties.PropertyNames.SCHEDULING_WHITE_LIST;
+import static com.hedera.services.context.properties.PropertyNames.TOKENS_MAX_SYMBOL_UTF8_BYTES;
+import static com.hedera.services.context.properties.PropertyNames.TOKENS_MAX_TOKEN_NAME_UTF8_BYTES;
 import static com.hedera.services.utils.EntityIdUtils.parseAccount;
 import static java.util.Map.entry;
 
@@ -53,23 +75,23 @@ public final class ScreenedSysFileProps implements PropertySource {
 
     private static final Map<String, String> STANDARDIZED_NAMES =
             Map.ofEntries(
-                    entry("defaultContractDurationSec", "contracts.defaultLifetime"),
-                    entry("maxGasLimit", "contracts.maxGasPerSec"),
-                    entry("maxFileSize", "files.maxSizeKb"),
-                    entry("defaultFeeCollectionAccount", "ledger.fundingAccount"),
-                    entry("txReceiptTTL", "cache.records.ttl"),
-                    entry("exchangeRateAllowedPercentage", "rates.intradayChangeLimitPercent"),
-                    entry("accountBalanceExportPeriodMinutes", "balances.exportPeriodSecs"),
-                    entry("accountBalanceExportEnabled", "balances.exportEnabled"),
-                    entry("nodeAccountBalanceValidity", "balances.nodeBalanceWarningThreshold"),
-                    entry("accountBalanceExportDir", "balances.exportDir.path"),
-                    entry("transferListSizeLimit", "ledger.transfers.maxLen"),
-                    entry("txMaximumDuration", "hedera.transaction.maxValidDuration"),
-                    entry("txMinimumDuration", "hedera.transaction.minValidDuration"),
-                    entry("txMinimumRemaining", "hedera.transaction.minValidityBufferSecs"),
-                    entry("maximumAutoRenewDuration", "ledger.autoRenewPeriod.maxDuration"),
-                    entry("minimumAutoRenewDuration", "ledger.autoRenewPeriod.minDuration"),
-                    entry("localCallEstReturnBytes", "contracts.localCall.estRetBytes"));
+                    entry("defaultContractDurationSec", CONTRACTS_DEFAULT_LIFETIME),
+                    entry("maxGasLimit", CONTRACTS_MAX_GAS_PER_SEC),
+                    entry("maxFileSize", FILES_MAX_SIZE_KB),
+                    entry("defaultFeeCollectionAccount", LEDGER_FUNDING_ACCOUNT),
+                    entry("txReceiptTTL", CACHE_RECORDS_TTL),
+                    entry("exchangeRateAllowedPercentage", RATES_INTRA_DAY_CHANGE_LIMIT_PERCENT),
+                    entry("accountBalanceExportPeriodMinutes", BALANCES_EXPORT_PERIOD_SECS),
+                    entry("accountBalanceExportEnabled", BALANCES_EXPORT_ENABLED),
+                    entry("nodeAccountBalanceValidity", BALANCES_NODE_BALANCE_WARN_THRESHOLD),
+                    entry("accountBalanceExportDir", BALANCES_EXPORT_DIR_PATH),
+                    entry("transferListSizeLimit", LEDGER_TRANSFERS_MAX_LEN),
+                    entry("txMaximumDuration", HEDERA_TXN_MAX_VALID_DURATION),
+                    entry("txMinimumDuration", HEDERA_TXN_MIN_VALID_DURATION),
+                    entry("txMinimumRemaining", HEDERA_TXN_MIN_VALIDITY_BUFFER_SECS),
+                    entry("maximumAutoRenewDuration", LEDGER_AUTO_RENEW_PERIOD_MAX_DURATION),
+                    entry("minimumAutoRenewDuration", LEDGER_AUTO_RENEW_PERIOD_MIN_DURATION),
+                    entry("localCallEstReturnBytes", CONTRACTS_LOCAL_CALL_EST_RET_BYTES));
     private static final Map<String, UnaryOperator<String>> STANDARDIZED_FORMATS =
             Map.ofEntries(
                     entry(
@@ -83,29 +105,29 @@ public final class ScreenedSysFileProps implements PropertySource {
     private static final Map<String, Predicate<Object>> VALUE_SCREENS =
             Map.ofEntries(
                     entry(
-                            "rates.intradayChangeLimitPercent",
+                            RATES_INTRA_DAY_CHANGE_LIMIT_PERCENT,
                             limitPercent -> (int) limitPercent > 0),
                     entry(
-                            "scheduling.whitelist",
+                            SCHEDULING_WHITE_LIST,
                             whitelist ->
                                     ((Set<HederaFunctionality>) whitelist)
                                             .stream()
                                                     .noneMatch(
                                                             MiscUtils.QUERY_FUNCTIONS::contains)),
                     entry(
-                            "tokens.maxSymbolUtf8Bytes",
+                            TOKENS_MAX_SYMBOL_UTF8_BYTES,
                             maxUtf8Bytes ->
                                     (int) maxUtf8Bytes
                                             <= MerkleToken.UPPER_BOUND_SYMBOL_UTF8_BYTES),
                     entry(
-                            "tokens.maxTokenNameUtf8Bytes",
+                            TOKENS_MAX_TOKEN_NAME_UTF8_BYTES,
                             maxUtf8Bytes ->
                                     (int) maxUtf8Bytes
                                             <= MerkleToken.UPPER_BOUND_TOKEN_NAME_UTF8_BYTES),
-                    entry("ledger.transfers.maxLen", maxLen -> (int) maxLen >= 2),
-                    entry("ledger.tokenTransfers.maxLen", maxLen -> (int) maxLen >= 2),
+                    entry(LEDGER_TRANSFERS_MAX_LEN, maxLen -> (int) maxLen >= 2),
+                    entry(LEDGER_TOKEN_TRANSFERS_MAX_LEN, maxLen -> (int) maxLen >= 2),
                     entry(
-                            "contracts.maxRefundPercentOfGasLimit",
+                            CONTRACTS_MAX_REFUND_PERCENT_OF_GAS_LIMIT,
                             maxRefundPercentage ->
                                     (int) maxRefundPercentage >= 0
                                             && (int) maxRefundPercentage <= 100));
