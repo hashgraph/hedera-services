@@ -134,6 +134,9 @@ public class SidecarWatcher {
     }
 
     private void assertIncomingSidecar(final TransactionSidecarRecord actualSidecar) {
+        // there should always be an expected sidecar at this point;
+        // if a NPE is thrown here, the specs have missed a sidecar
+        // and must be updated to account for it
         final var expectedSidecarPair = expectedSidecars.poll();
         final var expectedSidecar = expectedSidecarPair.getValue();
 
@@ -145,12 +148,6 @@ public class SidecarWatcher {
             failedSidecars.put(spec, list);
         } else if (actualSidecar.hasActions()) {
             // FUTURE WORK to be completed with actions assertions
-            //                if (!expectedSidecar
-            //                        .getConsensusTimestamp()
-            //                        .equals(actualSidecar.getConsensusTimestamp())) {
-            //                    areSidecarsValid = false;
-            //                    throw new RuntimeException();
-            //                }
         }
     }
 
