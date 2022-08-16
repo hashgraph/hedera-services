@@ -75,7 +75,7 @@ import com.hedera.services.sigs.utils.ImmutableKeyUtils;
 import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
-import com.hedera.services.state.merkle.MerkleUniqueToken;
+import com.hedera.services.state.migration.UniqueTokenAdapter;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.validation.UsageLimits;
 import com.hedera.services.store.HederaStore;
@@ -109,7 +109,7 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
     private final OptionValidator validator;
     private final GlobalDynamicProperties properties;
     private final SideEffectsTracker sideEffectsTracker;
-    private final TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger;
+    private final TransactionalLedger<NftId, NftProperty, UniqueTokenAdapter> nftsLedger;
     private final TransactionalLedger<
                     Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus>
             tokenRelsLedger;
@@ -128,7 +128,7 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
             final TransactionalLedger<
                             Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus>
                     tokenRelsLedger,
-            final TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger,
+            final TransactionalLedger<NftId, NftProperty, UniqueTokenAdapter> nftsLedger,
             final BackingStore<TokenID, MerkleToken> backingTokens) {
         super(ids);
         this.validator = validator;

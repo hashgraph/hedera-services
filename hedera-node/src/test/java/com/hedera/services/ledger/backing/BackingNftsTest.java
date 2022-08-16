@@ -23,6 +23,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.hedera.services.state.merkle.MerkleUniqueToken;
+import com.hedera.services.state.migration.UniqueTokenAdapter;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.store.models.NftId;
@@ -42,9 +43,12 @@ class BackingNftsTest {
     private final EntityNumPair aKey = EntityNumPair.fromLongs(3, 4);
     private final EntityNumPair bKey = EntityNumPair.fromLongs(4, 5);
     private final EntityNumPair cKey = EntityNumPair.fromLongs(5, 6);
-    private final MerkleUniqueToken aValue =
-            new MerkleUniqueToken(
-                    new EntityId(0, 0, 3), "abcdefgh".getBytes(), new RichInstant(1_234_567L, 1));
+    private final UniqueTokenAdapter aValue =
+            UniqueTokenAdapter.wrap(
+                    new MerkleUniqueToken(
+                            new EntityId(0, 0, 3),
+                            "abcdefgh".getBytes(),
+                            new RichInstant(1_234_567L, 1)));
     private final MerkleUniqueToken theToken =
             new MerkleUniqueToken(
                     MISSING_ENTITY_ID, "HI".getBytes(StandardCharsets.UTF_8), MISSING_INSTANT);
@@ -90,7 +94,7 @@ class BackingNftsTest {
         final var mutable = subject.getRef(aNftId);
 
         // then:
-        assertEquals(theToken, mutable);
+        assertEquals(theToken, mutable.merkleUniqueToken());
         assertFalse(mutable.isImmutable());
     }
 
@@ -100,7 +104,7 @@ class BackingNftsTest {
         final var immutable = subject.getImmutableRef(aNftId);
 
         // then:
-        assertEquals(theToken, immutable);
+        assertEquals(theToken, immutable.merkleUniqueToken());
     }
 
     @Test

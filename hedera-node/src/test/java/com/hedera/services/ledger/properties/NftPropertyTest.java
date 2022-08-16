@@ -19,6 +19,7 @@ import static com.hedera.services.state.merkle.internals.BitPackUtils.packedTime
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.hedera.services.state.merkle.MerkleUniqueToken;
+import com.hedera.services.state.migration.UniqueTokenAdapter;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.RichInstant;
 import org.junit.jupiter.api.Test;
@@ -34,7 +35,8 @@ class NftPropertyTest {
     @Test
     void gettersWork() {
         // given:
-        final var aSubject = new MerkleUniqueToken(aEntity, aMeta, aInstant);
+        final var aSubject =
+                UniqueTokenAdapter.wrap(new MerkleUniqueToken(aEntity, aMeta, aInstant));
 
         // expect:
         assertEquals(aEntity, NftProperty.OWNER.getter().apply(aSubject));
@@ -46,8 +48,10 @@ class NftPropertyTest {
 
     @Test
     void setterWorks() {
-        final var aSubject = new MerkleUniqueToken(aEntity, aMeta, aInstant);
-        final var bSubject = new MerkleUniqueToken(bEntity, bMeta, bInstant);
+        final var aSubject =
+                UniqueTokenAdapter.wrap(new MerkleUniqueToken(aEntity, aMeta, aInstant));
+        final var bSubject =
+                UniqueTokenAdapter.wrap(new MerkleUniqueToken(bEntity, bMeta, bInstant));
 
         NftProperty.OWNER.setter().accept(aSubject, bEntity);
         NftProperty.CREATION_TIME
