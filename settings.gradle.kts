@@ -1,9 +1,6 @@
-/*-
- * ‌
- * Hedera Services
- * ​
- * Copyright (C) 2018 - 2022 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2022 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -15,8 +12,10 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+plugins {
+    id("com.gradle.enterprise").version("3.10.3")
+}
 
 rootProject.name = "hedera-services"
 
@@ -25,6 +24,14 @@ include(":hapi-utils")
 include(":hapi-fees")
 include(":hedera-node")
 include(":test-clients")
+
+// Enable Gradle Build Scan
+gradleEnterprise {
+    buildScan {
+        termsOfServiceUrl = "https://gradle.com/terms-of-service"
+        termsOfServiceAgree = "yes"
+    }
+}
 
 // Define the library catalogs available for projects to make use of
 dependencyResolutionManagement {
@@ -41,11 +48,11 @@ dependencyResolutionManagement {
             version("commons-codec-version", "1.15")
             version("commons-io-version", "2.11.0")
             version("commons-lang3-version", "3.12.0")
-            version("dagger-version", "2.41")
+            version("dagger-version", "2.42")
             version("eddsa-version", "0.3.0")
             version("grpc-version", "1.39.0")
             version("guava-version", "31.1-jre")
-            version("hapi-version", "0.28.0-random-SNAPSHOT")
+            version("hapi-version", "0.29.0-utilprng-SNAPSHOT")
             version("headlong-version", "6.1.1")
             version("jackson-version", "2.12.6.1")
             version("javax-annotation-version", "1.3.2")
@@ -54,7 +61,7 @@ dependencyResolutionManagement {
             version("log4j-version", "2.17.2")
             version("netty-version", "4.1.66.Final")
             version("protobuf-java-version", "3.19.4")
-            version("swirlds-version", "0.27.1")
+            version("swirlds-version", "0.29.0")
             version("tuweni-version", "2.2.0")
 
             // List of bundles provided for us. When applicable, favor using these over individual libraries.
@@ -69,8 +76,18 @@ dependencyResolutionManagement {
             // Use when you need to depend upon netty
             bundle("netty", listOf("netty-handler", "netty-transport-native-epoll"))
             // Use when you depend upon all or swirlds
-            bundle("swirlds", listOf("swirlds-common", "swirlds-platform-core", "swirlds-fchashmap",
-                "swirlds-merkle", "swirlds-fcqueue", "swirlds-jasperdb", "swirlds-virtualmap"))
+            bundle(
+                "swirlds",
+                listOf(
+                    "swirlds-common",
+                    "swirlds-platform-core",
+                    "swirlds-fchashmap",
+                    "swirlds-merkle",
+                    "swirlds-fcqueue",
+                    "swirlds-jasperdb",
+                    "swirlds-virtualmap"
+                )
+            )
 
             // Define the individual libraries
             library("besu-bls12-381", "org.hyperledger.besu", "bls12-381").versionRef("besu-native-version")
@@ -119,7 +136,7 @@ dependencyResolutionManagement {
             version("hamcrest-version", "2.2")
             version("json-version", "20210307")
             version("junit5-version", "5.8.2")
-            version("mockito-version", "4.4.0")
+            version("mockito-version", "4.6.1")
             version("picocli-version", "4.6.3")
             version("snakeyaml-version", "1.26")
             version("testcontainers-version", "1.17.2")

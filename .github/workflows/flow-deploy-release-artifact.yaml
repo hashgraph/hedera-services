@@ -1,0 +1,143 @@
+##
+# Copyright (C) 2022 Hedera Hashgraph, LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+##
+name: "Deploy Release Artifact"
+on:
+  workflow_dispatch:
+    inputs:
+      #      new-version:
+      #        description: "New Version:"
+      #        type: string
+      #        required: false
+      #        default: ""
+      #      trigger-env-deploy:
+      #        description: "Deploy to Environment:"
+      #        type: choice
+      #        required: true
+      #        options:
+      #          - none
+      #          - integration
+      #          - preview
+      #        default: none
+      dry-run-enabled:
+        description: "Perform Dry Run"
+        type: boolean
+        required: false
+        default: false
+      java-version:
+        description: "Java JDK Version:"
+        type: string
+        required: false
+        default: "17.0.3"
+      java-distribution:
+        description: "Java JDK Distribution:"
+        type: string
+        required: false
+        default: "temurin"
+      gradle-version:
+        description: "Gradle Version:"
+        type: string
+        required: false
+        default: "wrapper"
+  push:
+    branches:
+      - master
+      - main
+    tags:
+      - "v[0-9]+.[0-9]+.[0-9]+-?*"
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  release-adhoc:
+    name: Release / Adhoc
+    if: ${{ github.event_name == 'workflow_dispatch' }}
+    uses: ./.github/workflows/comp-build-release-artifact.yaml
+    with:
+      #      version-policy: ${{ github.event.inputs.new-verison != '' && 'specified' || 'branch-commit' }}
+      version-policy: branch-commit
+      #      new-version: ${{ github.event.inputs.new-version }}
+      #      trigger-env-deploy: ${{ github.event.inputs.trigger-env-deploy }}
+      trigger-env-deploy: none
+      dry-run-enabled: ${{ github.event.inputs.dry-run-enabled == 'true' }}
+      java-version: ${{ github.event.inputs.java-version || '17.0.3' }}
+      java-distribution: ${{ github.event.inputs.java-distribution || 'temurin' }}
+      gradle-version: ${{ github.event.inputs.gradle-version || 'wrapper' }}
+
+    secrets:
+      access-token: ${{ secrets.GITHUB_TOKEN }}
+      bucket-name: ${{ secrets.RELEASE_ARTIFACT_BUCKET_NAME }}
+      jenkins-integration-url: ${{ secrets.RELEASE_JENKINS_INTEGRATION_URL }}
+      jenkins-preview-url: ${{ secrets.RELEASE_JENKINS_PREVIEW_URL }}
+
+  prepare-tag-release:
+    name: Release / Tag / Prepare
+    runs-on: [self-hosted, Linux, services, standard, ephemeral]
+    if: ${{ github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v') }}
+    outputs:
+      version: ${{ steps.tag.outputs.version }}
+    steps:
+      - name: Install Semantic Version Tools
+        run: |
+          echo "::group::Download SemVer Binary"
+          sudo curl -L -o /usr/local/bin/semver https://raw.githubusercontent.com/fsaintjacques/semver-tool/master/src/semver
+          echo "::endgroup::"
+          echo "::group::Change SemVer Binary Permissions"
+          sudo chmod -v +x /usr/local/bin/semver
+          echo "::endgroup::"
+          echo "::group::Show SemVer Binary Version Info"
+          semver --version
+          echo "::endgroup::"
+
+      - name: Extract Tag Version
+        id: tag
+        run: |
+          RELEASE_VERSION="$(semver get release "${{ github.ref_name }}")"
+          PRERELEASE_VERSION="$(semver get prerel "${{ github.ref_name }}")"
+
+          FINAL_VERSION="${RELEASE_VERSION}"
+          [[ -n "${PRERELEASE_VERSION}" ]] && FINAL_VERSION="${RELEASE_VERSION}-${PRERELEASE_VERSION}"
+
+          echo "::set-output name=version::${FINAL_VERSION}"
+
+  release-tag:
+    name: Release / Tag
+    uses: ./.github/workflows/comp-build-release-artifact.yaml
+    needs:
+      - prepare-tag-release
+    with:
+      version-policy: specified
+      new-version: ${{ needs.prepare-tag-release.outputs.version }}
+      trigger-env-deploy: preview
+    secrets:
+      access-token: ${{ secrets.GITHUB_TOKEN }}
+      bucket-name: ${{ secrets.RELEASE_ARTIFACT_BUCKET_NAME }}
+      jenkins-integration-url: ${{ secrets.RELEASE_JENKINS_INTEGRATION_URL }}
+      jenkins-preview-url: ${{ secrets.RELEASE_JENKINS_PREVIEW_URL }}
+
+  release-branch:
+    name: Release / Branch
+    uses: ./.github/workflows/comp-build-release-artifact.yaml
+    if: ${{ github.event_name == 'push' && !startsWith(github.ref, 'refs/tags/v') }}
+    with:
+      version-policy: branch-commit
+      trigger-env-deploy: integration
+    secrets:
+      access-token: ${{ secrets.GITHUB_TOKEN }}
+      bucket-name: ${{ secrets.RELEASE_ARTIFACT_BUCKET_NAME }}
+      jenkins-integration-url: ${{ secrets.RELEASE_JENKINS_INTEGRATION_URL }}
+      jenkins-preview-url: ${{ secrets.RELEASE_JENKINS_PREVIEW_URL }}

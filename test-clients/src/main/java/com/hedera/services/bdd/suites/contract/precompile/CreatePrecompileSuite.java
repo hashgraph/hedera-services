@@ -124,30 +124,34 @@ public class CreatePrecompileSuite extends HapiApiSuite {
 
     List<HapiApiSpec> positiveSpecs() {
         return List.of(
-                fungibleTokenCreateHappyPath(),
-                fungibleTokenCreateWithFeesHappyPath(),
-                nonFungibleTokenCreateHappyPath(),
-                nonFungibleTokenCreateWithFeesHappyPath(),
-                fungibleTokenCreateThenQueryAndTransfer(),
-                nonFungibleTokenCreateThenQuery(),
-                inheritsSenderAutoRenewAccountIfAnyForNftCreate(),
-                inheritsSenderAutoRenewAccountForTokenCreate(),
-                createTokenWithDefaultExpiryAndEmptyKeys());
+                new HapiApiSpec[] {
+                    fungibleTokenCreateHappyPath(),
+                    fungibleTokenCreateWithFeesHappyPath(),
+                    nonFungibleTokenCreateHappyPath(),
+                    nonFungibleTokenCreateWithFeesHappyPath(),
+                    fungibleTokenCreateThenQueryAndTransfer(),
+                    nonFungibleTokenCreateThenQuery(),
+                    inheritsSenderAutoRenewAccountIfAnyForNftCreate(),
+                    inheritsSenderAutoRenewAccountForTokenCreate(),
+                    createTokenWithDefaultExpiryAndEmptyKeys()
+                });
     }
 
     List<HapiApiSpec> negativeSpecs() {
         return List.of(
-                tokenCreateWithEmptyKeysReverts(),
-                tokenCreateWithKeyWithMultipleKeyValuesReverts(),
-                tokenCreateWithFixedFeeWithMultiplePaymentsReverts(),
-                createTokenWithEmptyTokenStruct(),
-                createTokenWithInvalidExpiry(),
-                createTokenWithInvalidRoyaltyFee(),
-                createTokenWithInvalidTreasury(),
-                createTokenWithInvalidFixedFeeWithERC721Denomination(),
-                createTokenWithInvalidFeeCollector(),
-                createTokenWithInsufficientValueSent(),
-                delegateCallTokenCreateFails());
+                new HapiApiSpec[] {
+                    tokenCreateWithEmptyKeysReverts(),
+                    tokenCreateWithKeyWithMultipleKeyValuesReverts(),
+                    tokenCreateWithFixedFeeWithMultiplePaymentsReverts(),
+                    createTokenWithEmptyTokenStruct(),
+                    createTokenWithInvalidExpiry(),
+                    createTokenWithInvalidRoyaltyFee(),
+                    createTokenWithInvalidTreasury(),
+                    createTokenWithInvalidFixedFeeWithERC721Denomination(),
+                    createTokenWithInvalidFeeCollector(),
+                    createTokenWithInsufficientValueSent(),
+                    delegateCallTokenCreateFails()
+                });
     }
 
     // TEST-001
@@ -648,8 +652,9 @@ public class CreatePrecompileSuite extends HapiApiSuite {
 
                                     final var delta =
                                             subop3.getResponseRecord().getTransactionFee();
+                                    final var effectivePayer = ACCOUNT;
                                     final var subop4 =
-                                            getAccountBalance(ACCOUNT)
+                                            getAccountBalance(effectivePayer)
                                                     .hasTinyBars(
                                                             changeFromSnapshot(
                                                                     ACCOUNT_BALANCE,

@@ -24,12 +24,11 @@ import java.time.Instant;
  * GasLimitBucketThrottle} under the hood.
  */
 public class GasLimitDeterministicThrottle {
-
     private static final Instant NEVER = null;
 
     private final GasLimitBucketThrottle delegate;
     private Instant lastDecisionTime;
-    private long capacity;
+    private final long capacity;
 
     /**
      * Creates a new instance of the throttle with capacity - the total amount of gas allowed per
@@ -68,6 +67,21 @@ public class GasLimitDeterministicThrottle {
         var decision = delegate.allow(txGasLimit, elapsedNanos);
         lastDecisionTime = now;
         return decision;
+    }
+
+    /**
+     * Returns the percent usage of this throttle, at a time which may be later than the last
+     * throttling decision (which would imply some capacity has been freed).
+     *
+     * @param now a time which will be ignored if before the last throttling decision
+     * @return the capacity available at this time
+     */
+    public double percentUsed(final Instant now) {
+        if (lastDecisionTime == null) {
+            return 0.0;
+        }
+        final var elapsedNanos = Math.max(0, Duration.between(lastDecisionTime, now).toNanos());
+        return delegate.percentUsed(elapsedNanos);
     }
 
     /**

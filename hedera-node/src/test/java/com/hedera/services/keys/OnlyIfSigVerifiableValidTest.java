@@ -1,131 +1,144 @@
-package com.hedera.services.keys;
-
-/*-
- * ‌
- * Hedera Services Node
- * ​
- * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2021-2022 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+package com.hedera.services.keys;
 
-import com.hedera.services.sigs.verification.SyncVerifier;
-import com.swirlds.common.crypto.CryptographyException;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.startsWith;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.BDDMockito.willThrow;
+
+import com.hedera.test.extensions.LogCaptor;
+import com.hedera.test.extensions.LogCaptureExtension;
+import com.hedera.test.extensions.LoggingSubject;
+import com.hedera.test.extensions.LoggingTarget;
 import com.swirlds.common.crypto.TransactionSignature;
 import com.swirlds.common.crypto.VerificationStatus;
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeEach;
+import java.util.Arrays;
+import java.util.List;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.util.List;
-
-import static org.mockito.BDDMockito.willAnswer;
-import static org.mockito.BDDMockito.willThrow;
-
-@ExtendWith(MockitoExtension.class)
+@ExtendWith({MockitoExtension.class, LogCaptureExtension.class})
 class OnlyIfSigVerifiableValidTest {
-	@Mock
-	private SyncVerifier syncVerifier;
+    @Mock private Future<Void> syncFuture;
 
-	private OnlyIfSigVerifiableValid subject;
+    @LoggingTarget private LogCaptor logCaptor;
+    @LoggingSubject private OnlyIfSigVerifiableValid subject = new OnlyIfSigVerifiableValid();
 
-	@BeforeEach
-	void setUp() {
-		subject = new OnlyIfSigVerifiableValid(syncVerifier);
-	}
+    @Test
+    void acceptsValidSig() {
+        final var sig = new SignatureWithStatuses(VerificationStatus.VALID);
+        sig.setFuture(syncFuture);
 
-	@Test
-	void acceptsValidSig() {
-		// given:
-		final var sig = new SignatureWithStatus(VerificationStatus.VALID);
+        assertTrue(subject.test(null, sig));
+    }
 
-		// expect:
-		Assertions.assertTrue(subject.test(null, sig));
-	}
+    @Test
+    void dealsWithInterruptedException() throws ExecutionException, InterruptedException {
+        final var sig = new SignatureWithStatuses(VerificationStatus.UNKNOWN);
+        sig.setFuture(syncFuture);
+        willThrow(InterruptedException.class).given(syncFuture).get();
 
-	@Test
-	void acceptsVerifiableValidSig() {
-		// given:
-		final var sig = new SignatureWithStatus(VerificationStatus.UNKNOWN);
-		// and:
-		willAnswer(invocationOnMock -> {
-			final List<SignatureWithStatus> sigs = invocationOnMock.getArgument(0);
-			sigs.get(0).setStatus(VerificationStatus.VALID);
-			return null;
-		}).given(syncVerifier).verifySync(List.of(sig));
+        assertFalse(subject.test(null, sig));
 
-		// expect:
-		Assertions.assertTrue(subject.test(null, sig));
-	}
+        assertThat(
+                logCaptor.warnLogs(),
+                contains(
+                        startsWith(
+                                "Interrupted while validating signature, this will be fatal outside"
+                                        + " reconnect")));
+    }
 
-	@Test
-	void rejectsVerifiableInvalidSig() {
-		// given:
-		final var sig = new SignatureWithStatus(VerificationStatus.UNKNOWN);
-		// and:
-		willAnswer(invocationOnMock -> {
-			final List<SignatureWithStatus> sigs = invocationOnMock.getArgument(0);
-			sigs.get(0).setStatus(VerificationStatus.INVALID);
-			return null;
-		}).given(syncVerifier).verifySync(List.of(sig));
+    @Test
+    void dealsWithExecutionException() throws ExecutionException, InterruptedException {
+        final var sig = new SignatureWithStatuses(VerificationStatus.UNKNOWN);
+        sig.setFuture(syncFuture);
+        willThrow(ExecutionException.class).given(syncFuture).get();
 
-		// expect:
-		Assertions.assertFalse(subject.test(null, sig));
-	}
+        assertFalse(subject.test(null, sig));
 
-	@Test
-	void rejectsUnverifiableSig() {
-		// given:
-		final var sig = new SignatureWithStatus(VerificationStatus.UNKNOWN);
-		// and:
-		willThrow(CryptographyException.class).given(syncVerifier).verifySync(List.of(sig));
+        assertThat(
+                logCaptor.errorLogs(),
+                contains(startsWith("Erred while validating signature, this is likely fatal")));
+    }
 
-		// expect:
-		Assertions.assertFalse(subject.test(null, sig));
-	}
+    @Test
+    void resolvesValidSlowAsyncVerifyAsExpected() {
+        final var sig =
+                new SignatureWithStatuses(VerificationStatus.UNKNOWN, VerificationStatus.VALID);
+        sig.setFuture(syncFuture);
 
-	@Test
-	void rejectsInvalidSig() {
-		// given:
-		final var sig = new SignatureWithStatus(VerificationStatus.INVALID);
+        assertTrue(subject.test(null, sig));
+    }
 
-		// expect:
-		Assertions.assertFalse(subject.test(null, sig));
-	}
+    @Test
+    void resolvesInvalidSlowAsyncVerifyAsExpected() {
+        final var sig =
+                new SignatureWithStatuses(VerificationStatus.UNKNOWN, VerificationStatus.INVALID);
+        sig.setFuture(syncFuture);
 
-	private static class SignatureWithStatus extends TransactionSignature {
-		private VerificationStatus status;
+        assertFalse(subject.test(null, sig));
+    }
 
-		private static byte[] MEANINGLESS_BYTE = new byte[] {
-				(byte) 0xAB
-		};
+    @Test
+    void rejectsInvalidSig() {
+        // given:
+        final var sig = new SignatureWithStatuses(VerificationStatus.INVALID);
+        sig.setFuture(syncFuture);
 
-		public SignatureWithStatus(VerificationStatus status) {
-			super(MEANINGLESS_BYTE, 0, 0, 0, 0, 0, 0);
-			this.status = status;
-		}
+        // expect:
+        assertFalse(subject.test(null, sig));
+    }
 
-		@Override
-		public VerificationStatus getSignatureStatus() {
-			return status;
-		}
+    private static class SignatureWithStatuses extends TransactionSignature {
+        private int nextStatus = 0;
+        private Future<Void> future;
+        private List<VerificationStatus> statuses;
 
-		public void setStatus(VerificationStatus status) {
-			this.status = status;
-		}
-	}
+        private static byte[] MEANINGLESS_BYTE = new byte[] {(byte) 0xAB};
+
+        public SignatureWithStatuses(VerificationStatus... statuses) {
+            super(MEANINGLESS_BYTE, 0, 0, 0, 0, 0, 0);
+            this.statuses = Arrays.asList(statuses);
+        }
+
+        @Override
+        public VerificationStatus getSignatureStatus() {
+            return statuses.get(nextStatus++);
+        }
+
+        public void setStatus(VerificationStatus status) {
+            this.statuses = List.of(status);
+            nextStatus = 0;
+        }
+
+        @Override
+        public synchronized Future<Void> waitForFuture() {
+            return future;
+        }
+
+        @Override
+        public void setFuture(Future<Void> future) {
+            this.future = future;
+        }
+    }
 }

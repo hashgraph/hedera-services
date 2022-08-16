@@ -70,7 +70,7 @@ import com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts;
 import com.hedera.services.bdd.spec.queries.meta.HapiGetTxnRecord;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hedera.services.bdd.suites.contract.Utils;
-import com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult;
+import com.hedera.services.contracts.ParsingConstants.FunctionType;
 import com.hedera.services.ethereum.EthTxData;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenType;
@@ -680,26 +680,27 @@ public class EthereumSuite extends HapiApiSuite {
                         contractCreate(ERC20_CONTRACT).adminKey(THRESHOLD))
                 .when(
                         withOpContext(
-                                (spec, opLog) ->
-                                        allRunFor(
-                                                spec,
-                                                ethereumCallWithFunctionAbi(
-                                                                true,
-                                                                FUNGIBLE_TOKEN,
-                                                                getABIFor(
-                                                                        Utils.FunctionType.FUNCTION,
-                                                                        "totalSupply",
-                                                                        "ERC20ABI"))
-                                                        .type(EthTxData.EthTransactionType.EIP1559)
-                                                        .signingWith(SECP_256K1_SOURCE_KEY)
-                                                        .payingWith(RELAYER)
-                                                        .via("totalSupplyTxn")
-                                                        .nonce(0)
-                                                        .gasPrice(50L)
-                                                        .maxGasAllowance(FIVE_HBARS)
-                                                        .maxPriorityGas(2L)
-                                                        .gasLimit(1_000_000L)
-                                                        .hasKnownStatus(ResponseCodeEnum.SUCCESS))))
+                                (spec, opLog) -> {
+                                    allRunFor(
+                                            spec,
+                                            ethereumCallWithFunctionAbi(
+                                                            true,
+                                                            FUNGIBLE_TOKEN,
+                                                            getABIFor(
+                                                                    Utils.FunctionType.FUNCTION,
+                                                                    "totalSupply",
+                                                                    "ERC20ABI"))
+                                                    .type(EthTxData.EthTransactionType.EIP1559)
+                                                    .signingWith(SECP_256K1_SOURCE_KEY)
+                                                    .payingWith(RELAYER)
+                                                    .via("totalSupplyTxn")
+                                                    .nonce(0)
+                                                    .gasPrice(50L)
+                                                    .maxGasAllowance(FIVE_HBARS)
+                                                    .maxPriorityGas(2L)
+                                                    .gasLimit(1_000_000L)
+                                                    .hasKnownStatus(ResponseCodeEnum.SUCCESS));
+                                }))
                 .then(
                         childRecordsCheck(
                                 "totalSupplyTxn",
@@ -711,9 +712,8 @@ public class EthereumSuite extends HapiApiSuite {
                                                         .contractCallResult(
                                                                 htsPrecompileResult()
                                                                         .forFunction(
-                                                                                HTSPrecompileResult
-                                                                                        .FunctionType
-                                                                                        .TOTAL_SUPPLY)
+                                                                                FunctionType
+                                                                                        .ERC_TOTAL_SUPPLY)
                                                                         .withTotalSupply(
                                                                                 totalSupply)))));
     }

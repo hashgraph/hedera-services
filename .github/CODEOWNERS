@@ -1,0 +1,8 @@
+/.github/ @hashgraph/release-engineering
+**/pom.xml @hashgraph/release-engineering
+/gradle/ @hashgraph/release-engineering
+gradlew @hashgraph/release-engineering
+gradlew.bat @hashgraph/release-engineering
+**/buildSrc/ @hashgraph/release-engineering
+**/gradle.* @hashgraph/release-engineering
+**/*.gradle.* @hashgraph/release-engineering

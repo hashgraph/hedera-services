@@ -1,11 +1,6 @@
-package com.hedera.services.utils.accessors;
-
-/*-
- * ‌
- * Hedera Services Node
- * ​
- * Copyright (C) 2018 - 2022 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2022 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,9 +12,10 @@ package com.hedera.services.utils.accessors;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+package com.hedera.services.utils.accessors;
 
+import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.txns.span.ExpandHandleSpanMapAccessor;
 import com.hedera.services.usage.BaseTransactionMeta;
@@ -35,110 +31,125 @@ import com.hederahashgraph.api.proto.java.SubType;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
-
 import java.util.Map;
 
 /**
- * Defines a type that gives access to several commonly referenced parts of a Hedera Services gRPC {@link Transaction}.
+ * Defines a type that gives access to several commonly referenced parts of a Hedera Services gRPC
+ * {@link Transaction}.
  */
 public interface TxnAccessor {
-	// --- Used to complete transaction-specific logic ---
-	<T extends TxnAccessor> T castToSpecialized();
+    // --- Used to calculate and charge fee for any transaction ---
+    long getOfferedFee();
 
-	// --- Used to calculate and charge fee for any transaction ---
-	long getOfferedFee();
+    SubType getSubType();
 
-	SubType getSubType();
+    AccountID getPayer();
 
-	AccountID getPayer();
+    TransactionID getTxnId();
 
-	TransactionID getTxnId();
+    HederaFunctionality getFunction();
 
-	HederaFunctionality getFunction();
+    BaseTransactionMeta baseUsageMeta();
 
-	BaseTransactionMeta baseUsageMeta();
+    SigUsage usageGiven(int numPayerKeys);
 
-	SigUsage usageGiven(int numPayerKeys);
+    // --- Used to process and validate any transaction ---
+    byte[] getMemoUtf8Bytes();
 
-	// --- Used to process and validate any transaction ---
-	byte[] getMemoUtf8Bytes();
+    boolean memoHasZeroByte();
 
-	boolean memoHasZeroByte();
+    boolean canTriggerTxn();
 
-	boolean canTriggerTxn();
+    boolean isTriggeredTxn();
 
-	boolean isTriggeredTxn();
+    /**
+     * @return true if the transaction should be affected by throttles
+     */
+    boolean throttleExempt();
 
-	/**
-	 * @return true if the transaction should be affected by throttles
-	 */
-	boolean throttleExempt();
+    void markThrottleExempt();
 
-	/**
-	 * @return true if the transaction should not be charged congestion pricing.
-	 */
-	boolean congestionExempt();
+    /**
+     * @return true if the transaction should not be charged congestion pricing.
+     */
+    boolean congestionExempt();
 
-	TransactionBody getTxn();
+    void markCongestionExempt();
 
-	long getGasLimitForContractTx();
+    TransactionBody getTxn();
 
-	// --- Used to construct the record for any transaction ---
-	String getMemo();
+    long getGasLimitForContractTx();
 
-	byte[] getHash();
+    // --- Used to construct the record for any transaction ---
+    String getMemo();
 
-	ScheduleID getScheduleRef();
+    byte[] getHash();
 
-	void setScheduleRef(ScheduleID parent);
+    ScheduleID getScheduleRef();
 
-	// --- Used to track the results of creating signatures for all linked keys ---
-	void setExpandedSigStatus(ResponseCodeEnum status);
+    void setScheduleRef(ScheduleID parent);
 
-	ResponseCodeEnum getExpandedSigStatus();
+    // --- Used to track the results of creating signatures for all linked keys ---
+    void setExpandedSigStatus(ResponseCodeEnum status);
 
-	// --- Used to log failures for any transaction ---
-	String toLoggableString();
+    ResponseCodeEnum getExpandedSigStatus();
 
-	void setPayer(AccountID payer);
+    // --- Used to log failures for any transaction ---
+    String toLoggableString();
 
-	// --- Used universally for transaction submission
-	byte[] getSignedTxnWrapperBytes();
+    void setPayer(AccountID payer);
 
-	// --- Used universally for logging ---
-	Transaction getSignedTxnWrapper();
+    // --- Used universally for transaction submission
+    byte[] getSignedTxnWrapperBytes();
 
-	byte[] getTxnBytes();
+    // --- Used universally for logging ---
+    Transaction getSignedTxnWrapper();
 
-	// --- Used only by specific transactions and will be moved to Custom accessors in future PR ---
+    byte[] getTxnBytes();
 
-	// Used only for CryptoTransfer
-	CryptoTransferMeta availXferUsageMeta();
+    // --- Used only by specific transactions and will be moved to Custom accessors in future PR ---
 
-	void setNumAutoCreations(int numAutoCreations);
+    // Used only for CryptoTransfer
+    CryptoTransferMeta availXferUsageMeta();
 
-	int getNumAutoCreations();
+    void setNumAutoCreations(int numAutoCreations);
 
-	boolean areAutoCreationsCounted();
+    int getNumAutoCreations();
 
-	void countAutoCreationsWith(AliasManager aliasManager);
+    boolean areAutoCreationsCounted();
 
-	// Used only for SubmitMessage
-	SubmitMessageMeta availSubmitUsageMeta();
+    void countAutoCreationsWith(AliasManager aliasManager);
 
-	// Used only for ScheduleCreate/Sign, to find valid signatures that apply to a scheduled transaction
-	SignatureMap getSigMap();
+    // Used only for SubmitMessage
+    SubmitMessageMeta availSubmitUsageMeta();
 
-	// ---- These will be removed by using the fields in custom accessors in future PR ---
+    // Used only for ScheduleCreate/Sign, to find valid signatures that apply to a scheduled
+    // transaction
+    SignatureMap getSigMap();
 
-	/**
-	 * Used in {@code handleTransaction} to reset this accessor's span map to new, <b>unmodifiable</b> map
-	 * with the authoritative results of expanding from the working state. This protects the authoritative
-	 * values from contamination by a pre-fetch thread.
-	 */
-	void setRationalizedSpanMap(Map<String, Object> newSpanMap);
+    // ---- These will be removed by using the fields in custom accessors in future PR ---
 
-	Map<String, Object> getSpanMap();
+    /**
+     * Used in {@code handleTransaction} to reset this accessor's span map to new,
+     * <b>unmodifiable</b> map with the authoritative results of expanding from the working state.
+     * This protects the authoritative values from contamination by a pre-fetch thread.
+     */
+    void setRationalizedSpanMap(Map<String, Object> newSpanMap);
 
-	ExpandHandleSpanMapAccessor getSpanMapAccessor();
+    Map<String, Object> getSpanMap();
+
+    ExpandHandleSpanMapAccessor getSpanMapAccessor();
+
+    /* --- Used for delegating precheck to custom accessors --- */
+    default boolean supportsPrecheck() {
+        return false;
+    }
+
+    default ResponseCodeEnum doPrecheck() {
+        throw new UnsupportedOperationException();
+    }
+
+    void setStateView(StateView view);
+
+    StateView getStateView();
 }

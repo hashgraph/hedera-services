@@ -47,7 +47,6 @@ import java.nio.file.Path;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.IntStream;
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.lang3.ArrayUtils;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.hyperledger.besu.crypto.Hash;
@@ -66,36 +65,31 @@ public class Utils {
         return ByteString.copyFrom(Bytes32.fromHexStringLenient(Long.toHexString(n)).toArray());
     }
 
-    public static Byte[] asByteAddress(final TokenID id) {
-        return asSolidityAddress((int) id.getShardNum(), id.getRealmNum(), id.getTokenNum());
+    public static String asHexedAddress(final TokenID id) {
+        return Bytes.wrap(
+                        asSolidityAddress(
+                                (int) id.getShardNum(), id.getRealmNum(), id.getTokenNum()))
+                .toHexString();
     }
 
     public static byte[] asAddress(final TokenID id) {
-        return ArrayUtils.toPrimitive(asByteAddress(id));
-    }
-
-    public static Byte[] asByteAddress(final AccountID id) {
-        return asSolidityAddress((int) id.getShardNum(), id.getRealmNum(), id.getAccountNum());
+        return asSolidityAddress((int) id.getShardNum(), id.getRealmNum(), id.getTokenNum());
     }
 
     public static byte[] asAddress(final AccountID id) {
-        return ArrayUtils.toPrimitive(asByteAddress(id));
-    }
-
-    public static Byte[] asByteAddress(final ContractID id) {
-        return asSolidityAddress((int) id.getShardNum(), id.getRealmNum(), id.getContractNum());
+        return asSolidityAddress((int) id.getShardNum(), id.getRealmNum(), id.getAccountNum());
     }
 
     public static byte[] asAddress(final ContractID id) {
-        return ArrayUtils.toPrimitive(asByteAddress(id));
+        return asSolidityAddress((int) id.getShardNum(), id.getRealmNum(), id.getContractNum());
     }
 
-    public static Byte[] asSolidityAddress(final int shard, final long realm, final long num) {
-        final Byte[] solidityAddress = new Byte[20];
+    public static byte[] asSolidityAddress(final int shard, final long realm, final long num) {
+        final byte[] solidityAddress = new byte[20];
 
-        arraycopy(ArrayUtils.toObject(Ints.toByteArray(shard)), 0, solidityAddress, 0, 4);
-        arraycopy(ArrayUtils.toObject(Longs.toByteArray(realm)), 0, solidityAddress, 4, 8);
-        arraycopy(ArrayUtils.toObject(Longs.toByteArray(num)), 0, solidityAddress, 12, 8);
+        arraycopy(Ints.toByteArray(shard), 0, solidityAddress, 0, 4);
+        arraycopy(Longs.toByteArray(realm), 0, solidityAddress, 4, 8);
+        arraycopy(Longs.toByteArray(num), 0, solidityAddress, 12, 8);
 
         return solidityAddress;
     }

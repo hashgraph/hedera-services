@@ -83,19 +83,21 @@ public class ContractUpdateSuite extends HapiApiSuite {
     @Override
     public List<HapiApiSpec> getSpecsInSuite() {
         return List.of(
-                updateWithBothMemoSettersWorks(),
-                updatingExpiryWorks(),
-                rejectsExpiryTooFarInTheFuture(),
-                updateAutoRenewWorks(),
-                updateAdminKeyWorks(),
-                canMakeContractImmutableWithEmptyKeyList(),
-                givenAdminKeyMustBeValid(),
-                fridayThe13thSpec(),
-                updateDoesNotChangeBytecode(),
-                eip1014AddressAlwaysHasPriority(),
-                immutableContractKeyFormIsStandard(),
-                updateAutoRenewAccountWorks(),
-                updateStakingFieldsWorks());
+                new HapiApiSpec[] {
+                    updateWithBothMemoSettersWorks(),
+                    updatingExpiryWorks(),
+                    rejectsExpiryTooFarInTheFuture(),
+                    updateAutoRenewWorks(),
+                    updateAdminKeyWorks(),
+                    canMakeContractImmutableWithEmptyKeyList(),
+                    givenAdminKeyMustBeValid(),
+                    fridayThe13thSpec(),
+                    updateDoesNotChangeBytecode(),
+                    eip1014AddressAlwaysHasPriority(),
+                    immutableContractKeyFormIsStandard(),
+                    updateAutoRenewAccountWorks(),
+                    updateStakingFieldsWorks()
+                });
     }
 
     private HapiApiSpec updateStakingFieldsWorks() {
