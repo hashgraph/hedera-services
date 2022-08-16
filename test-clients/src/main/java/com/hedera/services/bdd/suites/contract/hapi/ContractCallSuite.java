@@ -23,7 +23,6 @@ import static com.hedera.services.bdd.spec.HapiPropertySource.contractIdFromHexe
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.changeFromSnapshot;
 import static com.hedera.services.bdd.spec.assertions.AssertUtils.inOrder;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.isLiteralResult;
-import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.isRandomResult;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.ContractInfoAsserts.contractWith;
 import static com.hedera.services.bdd.spec.assertions.ContractLogAsserts.logWith;
@@ -245,65 +244,7 @@ public class ContractCallSuite extends HapiApiSuite {
                 exchangeRatePrecompileWorks(),
                 canMintAndTransferInSameContractOperation(),
                 workingHoursDemo(),
-                lpFarmSimulation(),
-                prngPrecompileWorks());
-    }
-
-    private HapiApiSpec prngPrecompileWorks() {
-        final var range = 100;
-        final var prng = "PrngSystemContract";
-        final var gasToOffer = 400_000;
-        return defaultHapiSpec("prngPrecompileWorks")
-                .given(cryptoCreate("bob"), uploadInitCode(prng), contractCreate(prng))
-                .when(
-                        sourcing(
-                                () ->
-                                        contractCall(prng, "getPseudorandomSeed")
-                                                .gas(gasToOffer)
-                                                .payingWith("bob")
-                                                .via("randomBits")
-                                                .logged()),
-                        getTxnRecord("randomBits")
-                                .andAllChildRecords()
-                                .hasChildRecordCount(1)
-                                .hasChildRecords(
-                                        recordWith()
-                                                .pseudoRandomBytes()
-                                                .contractCallResult(
-                                                        resultWith()
-                                                                .resultViaFunctionName(
-                                                                        "getPseudorandomSeed",
-                                                                        prng,
-                                                                        isRandomResult(
-                                                                                new Object[] {
-                                                                                    new byte[32]
-                                                                                }))))
-                                .logged())
-                .then(
-                        sourcing(
-                                () ->
-                                        contractCall(prng, "getPseudorandomNumber", range)
-                                                .gas(gasToOffer)
-                                                .payingWith("bob")
-                                                .via("randomNumber")
-                                                .logged()),
-                        getTxnRecord("randomNumber")
-                                .andAllChildRecords()
-                                .hasChildRecordCount(1)
-                                .hasChildRecords(
-                                        recordWith()
-                                                .pseudoRandomNumber(range)
-                                                .contractCallResult(
-                                                        resultWith()
-                                                                .resultViaFunctionName(
-                                                                        "getPseudorandomNumber",
-                                                                        prng,
-                                                                        isRandomResult(
-                                                                                new Object[] {
-                                                                                    Integer.valueOf(
-                                                                                            range)
-                                                                                }))))
-                                .logged());
+                lpFarmSimulation());
     }
 
     private HapiApiSpec whitelistingAliasedContract() {
