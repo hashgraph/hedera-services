@@ -16,6 +16,18 @@
 package com.hedera.services.context.properties;
 
 import static com.hedera.services.context.properties.PropUtils.loadOverride;
+import static com.hedera.services.context.properties.PropertyNames.BOOTSTRAP_FEE_SCHEDULE_JSON_RESOURCE;
+import static com.hedera.services.context.properties.PropertyNames.BOOTSTRAP_GENESIS_PUBLIC_KEY;
+import static com.hedera.services.context.properties.PropertyNames.BOOTSTRAP_HAPI_PERMISSIONS_PATH;
+import static com.hedera.services.context.properties.PropertyNames.BOOTSTRAP_NETWORK_PROPERTIES_PATH;
+import static com.hedera.services.context.properties.PropertyNames.BOOTSTRAP_RATES_CURRENT_CENT_EQUIV;
+import static com.hedera.services.context.properties.PropertyNames.BOOTSTRAP_RATES_CURRENT_EXPIRY;
+import static com.hedera.services.context.properties.PropertyNames.BOOTSTRAP_RATES_CURRENT_HBAR_EQUIV;
+import static com.hedera.services.context.properties.PropertyNames.BOOTSTRAP_RATES_NEXT_CENT_EQUIV;
+import static com.hedera.services.context.properties.PropertyNames.BOOTSTRAP_RATES_NEXT_EXPIRY;
+import static com.hedera.services.context.properties.PropertyNames.BOOTSTRAP_RATES_NEXT_HBAR_EQUIV;
+import static com.hedera.services.context.properties.PropertyNames.BOOTSTRAP_SYSTEM_ENTITY_EXPIRY;
+import static com.hedera.services.context.properties.PropertyNames.BOOTSTRAP_THROTTLE_DEF_JSON_RESOURCE;
 import static java.util.Collections.unmodifiableSet;
 import static java.util.Map.entry;
 import static java.util.stream.Collectors.toSet;
@@ -160,18 +172,18 @@ public final class BootstrapProperties implements PropertySource {
 
     private static final Set<String> BOOTSTRAP_PROPS =
             Set.of(
-                    "bootstrap.feeSchedulesJson.resource",
-                    "bootstrap.genesisPublicKey",
-                    "bootstrap.hapiPermissions.path",
-                    "bootstrap.networkProperties.path",
-                    "bootstrap.rates.currentHbarEquiv",
-                    "bootstrap.rates.currentCentEquiv",
-                    "bootstrap.rates.currentExpiry",
-                    "bootstrap.rates.nextHbarEquiv",
-                    "bootstrap.rates.nextCentEquiv",
-                    "bootstrap.rates.nextExpiry",
-                    "bootstrap.system.entityExpiry",
-                    "bootstrap.throttleDefsJson.resource");
+                    BOOTSTRAP_FEE_SCHEDULE_JSON_RESOURCE,
+                    BOOTSTRAP_GENESIS_PUBLIC_KEY,
+                    BOOTSTRAP_HAPI_PERMISSIONS_PATH,
+                    BOOTSTRAP_NETWORK_PROPERTIES_PATH,
+                    BOOTSTRAP_RATES_CURRENT_HBAR_EQUIV,
+                    BOOTSTRAP_RATES_CURRENT_CENT_EQUIV,
+                    BOOTSTRAP_RATES_CURRENT_EXPIRY,
+                    BOOTSTRAP_RATES_NEXT_HBAR_EQUIV,
+                    BOOTSTRAP_RATES_NEXT_CENT_EQUIV,
+                    BOOTSTRAP_RATES_NEXT_EXPIRY,
+                    BOOTSTRAP_SYSTEM_ENTITY_EXPIRY,
+                    BOOTSTRAP_THROTTLE_DEF_JSON_RESOURCE);
 
     private static final Set<String> GLOBAL_STATIC_PROPS =
             Set.of(
@@ -426,13 +438,13 @@ public final class BootstrapProperties implements PropertySource {
                     entry("queries.blob.lookupRetries", AS_INT),
                     entry("netty.startRetries", AS_INT),
                     entry("netty.startRetryIntervalMs", AS_LONG),
-                    entry("bootstrap.rates.currentHbarEquiv", AS_INT),
-                    entry("bootstrap.rates.currentCentEquiv", AS_INT),
-                    entry("bootstrap.rates.currentExpiry", AS_LONG),
-                    entry("bootstrap.rates.nextHbarEquiv", AS_INT),
-                    entry("bootstrap.rates.nextCentEquiv", AS_INT),
-                    entry("bootstrap.rates.nextExpiry", AS_LONG),
-                    entry("bootstrap.system.entityExpiry", AS_LONG),
+                    entry(BOOTSTRAP_RATES_CURRENT_HBAR_EQUIV, AS_INT),
+                    entry(BOOTSTRAP_RATES_CURRENT_CENT_EQUIV, AS_INT),
+                    entry(BOOTSTRAP_RATES_CURRENT_EXPIRY, AS_LONG),
+                    entry(BOOTSTRAP_RATES_NEXT_HBAR_EQUIV, AS_INT),
+                    entry(BOOTSTRAP_RATES_NEXT_CENT_EQUIV, AS_INT),
+                    entry(BOOTSTRAP_RATES_NEXT_EXPIRY, AS_LONG),
+                    entry(BOOTSTRAP_SYSTEM_ENTITY_EXPIRY, AS_LONG),
                     entry("fees.minCongestionPeriod", AS_INT),
                     entry("fees.tokenTransferUsageMultiplier", AS_INT),
                     entry("fees.percentCongestionMultipliers", AS_CONGESTION_MULTIPLIERS),

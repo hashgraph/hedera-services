@@ -15,6 +15,18 @@
  */
 package com.hedera.services.context.properties;
 
+import static com.hedera.services.context.properties.PropertyNames.BOOTSTRAP_FEE_SCHEDULE_JSON_RESOURCE;
+import static com.hedera.services.context.properties.PropertyNames.BOOTSTRAP_GENESIS_PUBLIC_KEY;
+import static com.hedera.services.context.properties.PropertyNames.BOOTSTRAP_HAPI_PERMISSIONS_PATH;
+import static com.hedera.services.context.properties.PropertyNames.BOOTSTRAP_NETWORK_PROPERTIES_PATH;
+import static com.hedera.services.context.properties.PropertyNames.BOOTSTRAP_RATES_CURRENT_CENT_EQUIV;
+import static com.hedera.services.context.properties.PropertyNames.BOOTSTRAP_RATES_CURRENT_EXPIRY;
+import static com.hedera.services.context.properties.PropertyNames.BOOTSTRAP_RATES_CURRENT_HBAR_EQUIV;
+import static com.hedera.services.context.properties.PropertyNames.BOOTSTRAP_RATES_NEXT_CENT_EQUIV;
+import static com.hedera.services.context.properties.PropertyNames.BOOTSTRAP_RATES_NEXT_EXPIRY;
+import static com.hedera.services.context.properties.PropertyNames.BOOTSTRAP_RATES_NEXT_HBAR_EQUIV;
+import static com.hedera.services.context.properties.PropertyNames.BOOTSTRAP_SYSTEM_ENTITY_EXPIRY;
+import static com.hedera.services.context.properties.PropertyNames.BOOTSTRAP_THROTTLE_DEF_JSON_RESOURCE;
 import static com.hedera.services.stream.proto.SidecarType.CONTRACT_ACTION;
 import static com.hedera.services.stream.proto.SidecarType.CONTRACT_BYTECODE;
 import static com.hedera.services.stream.proto.SidecarType.CONTRACT_STATE_CHANGE;
@@ -66,22 +78,20 @@ class BootstrapPropertiesTest {
 
     private static final Map<String, Object> expectedProps =
             Map.ofEntries(
-                    entry("bootstrap.feeSchedulesJson.resource", "feeSchedules.json"),
+                    entry(BOOTSTRAP_FEE_SCHEDULE_JSON_RESOURCE, "feeSchedules.json"),
                     entry(
-                            "bootstrap.genesisPublicKey",
+                            BOOTSTRAP_GENESIS_PUBLIC_KEY,
                             "0aa8e21064c61eab86e2a9c164565b4e7a9a4146106e0a6cd03a8c395a110e92"),
-                    entry(
-                            "bootstrap.hapiPermissions.path",
-                            "data/config/api-permission.properties"),
-                    entry("bootstrap.networkProperties.path", "data/config/application.properties"),
-                    entry("bootstrap.rates.currentHbarEquiv", 1),
-                    entry("bootstrap.rates.currentCentEquiv", 12),
-                    entry("bootstrap.rates.currentExpiry", 4102444800L),
-                    entry("bootstrap.rates.nextHbarEquiv", 1),
-                    entry("bootstrap.rates.nextCentEquiv", 15),
-                    entry("bootstrap.rates.nextExpiry", 4102444800L),
-                    entry("bootstrap.system.entityExpiry", 1812637686L),
-                    entry("bootstrap.throttleDefsJson.resource", "throttles.json"),
+                    entry(BOOTSTRAP_HAPI_PERMISSIONS_PATH, "data/config/api-permission.properties"),
+                    entry(BOOTSTRAP_NETWORK_PROPERTIES_PATH, "data/config/application.properties"),
+                    entry(BOOTSTRAP_RATES_CURRENT_HBAR_EQUIV, 1),
+                    entry(BOOTSTRAP_RATES_CURRENT_CENT_EQUIV, 12),
+                    entry(BOOTSTRAP_RATES_CURRENT_EXPIRY, 4102444800L),
+                    entry(BOOTSTRAP_RATES_NEXT_HBAR_EQUIV, 1),
+                    entry(BOOTSTRAP_RATES_NEXT_CENT_EQUIV, 15),
+                    entry(BOOTSTRAP_RATES_NEXT_EXPIRY, 4102444800L),
+                    entry(BOOTSTRAP_SYSTEM_ENTITY_EXPIRY, 1812637686L),
+                    entry(BOOTSTRAP_THROTTLE_DEF_JSON_RESOURCE, "throttles.json"),
                     entry("accounts.addressBookAdmin", 55L),
                     entry("balances.exportDir.path", "/opt/hgcapp/accountBalances/"),
                     entry("balances.exportEnabled", true),
@@ -378,7 +388,7 @@ class BootstrapPropertiesTest {
     @Test
     void logsLoadedPropsOnInit() {
         subject.bootstrapPropsResource = STD_PROPS_RESOURCE;
-        subject.getProperty("bootstrap.feeSchedulesJson.resource");
+        subject.getProperty(BOOTSTRAP_FEE_SCHEDULE_JSON_RESOURCE);
 
         assertThat(
                 logCaptor.infoLogs(),

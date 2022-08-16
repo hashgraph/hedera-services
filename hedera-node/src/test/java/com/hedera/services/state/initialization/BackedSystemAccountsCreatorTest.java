@@ -15,6 +15,7 @@
  */
 package com.hedera.services.state.initialization;
 
+import static com.hedera.services.context.properties.PropertyNames.BOOTSTRAP_SYSTEM_ENTITY_EXPIRY;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -98,7 +99,7 @@ class BackedSystemAccountsCreatorTest {
 
         given(properties.getIntProperty("ledger.numSystemAccounts")).willReturn(numAccounts);
         given(properties.getLongProperty("ledger.totalTinyBarFloat")).willReturn(totalBalance);
-        given(properties.getLongProperty("bootstrap.system.entityExpiry")).willReturn(expiry);
+        given(properties.getLongProperty(BOOTSTRAP_SYSTEM_ENTITY_EXPIRY)).willReturn(expiry);
 
         var address = mock(Address.class);
         given(address.getMemo()).willReturn("0.0.3");

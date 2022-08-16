@@ -16,6 +16,7 @@
 package com.hedera.services.state.initialization;
 
 import static com.hedera.services.context.BasicTransactionContext.EMPTY_KEY;
+import static com.hedera.services.context.properties.PropertyNames.BOOTSTRAP_SYSTEM_ENTITY_EXPIRY;
 import static com.hedera.services.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
 import static com.hedera.services.utils.MiscUtils.asFcKeyUnchecked;
 import static com.hedera.services.utils.MiscUtils.asKeyUnchecked;
@@ -70,7 +71,7 @@ public class BackedSystemAccountsCreator implements SystemAccountsCreator {
     public void ensureSystemAccounts(
             final BackingStore<AccountID, MerkleAccount> accounts, final AddressBook addressBook) {
         long systemAccounts = properties.getIntProperty("ledger.numSystemAccounts");
-        long expiry = properties.getLongProperty("bootstrap.system.entityExpiry");
+        long expiry = properties.getLongProperty(BOOTSTRAP_SYSTEM_ENTITY_EXPIRY);
         long tinyBarFloat = properties.getLongProperty("ledger.totalTinyBarFloat");
 
         for (long num = 1; num <= systemAccounts; num++) {
