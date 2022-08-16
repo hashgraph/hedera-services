@@ -981,7 +981,8 @@ class ContractCreateTransitionLogicTest {
                         124L,
                         Bytes.EMPTY,
                         contractAccount.getId().asEvmAddress(),
-                        Map.of(), List.of());
+                        Map.of(),
+                        List.of());
         given(txnCtx.consensusTime()).willReturn(consensusTime);
         final var newEvmAddress = contractAccount.getId().asEvmAddress();
         given(worldState.newContractAddress(senderAccount.getId().asEvmAddress()))

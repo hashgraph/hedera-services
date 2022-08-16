@@ -26,11 +26,9 @@ import static org.mockito.Mockito.mock;
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
-
-import java.util.*;
-
 import com.hedera.services.store.contracts.HederaWorldState;
 import com.hedera.services.stream.proto.SidecarType;
+import java.util.*;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.units.bigints.UInt256;

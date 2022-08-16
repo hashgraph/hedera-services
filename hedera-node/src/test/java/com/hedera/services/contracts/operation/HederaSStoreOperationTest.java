@@ -27,12 +27,11 @@ import static org.mockito.Mockito.verify;
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.store.contracts.HederaWorldUpdater;
+import com.hedera.services.stream.proto.SidecarType;
 import java.util.ArrayDeque;
 import java.util.Optional;
 import java.util.OptionalLong;
 import java.util.Set;
-
-import com.hedera.services.stream.proto.SidecarType;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
@@ -151,7 +150,8 @@ class HederaSStoreOperationTest {
         messageStack.add(frame);
         given(frame.getMessageFrameStack()).willReturn(messageStack);
         given(updater.parentUpdater()).willReturn(Optional.empty());
-        given(dynamicProperties.enabledSidecars()).willReturn(Set.of(SidecarType.CONTRACT_STATE_CHANGE));
+        given(dynamicProperties.enabledSidecars())
+                .willReturn(Set.of(SidecarType.CONTRACT_STATE_CHANGE));
 
         final var actual = subject.execute(frame, evm);
 

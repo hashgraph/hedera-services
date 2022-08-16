@@ -24,7 +24,6 @@ import static com.hedera.services.ledger.properties.AccountProperty.IS_DELETED;
 import static com.hedera.services.records.TxnAwareRecordsHistorian.DEFAULT_SOURCE_ID;
 import static com.hedera.services.state.EntityCreator.NO_CUSTOM_FEES;
 import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_SIZE_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
 
 import com.hedera.services.context.SideEffectsTracker;
@@ -41,7 +40,6 @@ import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.stream.proto.TransactionSidecarRecord;
 import com.hederahashgraph.api.proto.java.AccountID;
-
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -53,7 +51,8 @@ import org.apache.tuweni.bytes.Bytes;
 public class RecordedStorageFeeCharging implements StorageFeeCharging {
     public static final String MEMO = "Contract storage fees";
 
-    private static final List<TransactionSidecarRecord.Builder> NO_SIDECARS = Collections.emptyList();
+    private static final List<TransactionSidecarRecord.Builder> NO_SIDECARS =
+            Collections.emptyList();
 
     // Used to created the synthetic record if itemizing is enabled
     private final EntityCreator creator;
@@ -107,7 +106,8 @@ public class RecordedStorageFeeCharging implements StorageFeeCharging {
             final var synthBody = syntheticTxnFactory.synthCryptoTransfer(charges);
             final var synthRecord =
                     creator.createSuccessfulSyntheticRecord(NO_CUSTOM_FEES, sideEffects, MEMO);
-            recordsHistorian.trackFollowingChildRecord(DEFAULT_SOURCE_ID, synthBody, synthRecord, NO_SIDECARS);
+            recordsHistorian.trackFollowingChildRecord(
+                    DEFAULT_SOURCE_ID, synthBody, synthRecord, NO_SIDECARS);
         }
     }
 

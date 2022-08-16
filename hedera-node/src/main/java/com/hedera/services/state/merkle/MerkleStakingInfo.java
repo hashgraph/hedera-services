@@ -141,9 +141,9 @@ public class MerkleStakingInfo extends PartialMerkleLeaf implements Keyed<Entity
         if (rewardableStake > 0) {
             perHbarRateThisNode = perHbarRate;
             // But if the node had more the maximum stakeRewardStart, "down-scale" its reward rate
-            // to ensure the accounts staking to this node will receive a fraction of the total 
+            // to ensure the accounts staking to this node will receive a fraction of the total
             // rewards that does not exceed node.stakedRewardStart / totalStakedRewardedStart; use
-            // arbitrary-precision arithmetic because there is no inherent bound on (maxStake * 
+            // arbitrary-precision arithmetic because there is no inherent bound on (maxStake *
             // perHbarRateThisNode)
             if (stakeRewardStart > maxStake) {
                 perHbarRateThisNode =

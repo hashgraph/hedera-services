@@ -970,10 +970,7 @@ class SyntheticTxnFactoryTest {
     }
 
     private AccountAmount aaWith(final AccountID id, final long amount) {
-        return AccountAmount.newBuilder()
-                .setAccountID(id)
-                .setAmount(amount)
-                .build();
+        return AccountAmount.newBuilder().setAccountID(id).setAmount(amount).build();
     }
 
     private static final long serialNo = 100;

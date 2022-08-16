@@ -124,7 +124,6 @@ public interface PropertySource {
         return getTypedProperty(CongestionMultipliers.class, name);
     }
 
-
     default ContractStoragePriceTiers getContractStoragePriceTiers(String name) {
         return getTypedProperty(ContractStoragePriceTiers.class, name);
     }

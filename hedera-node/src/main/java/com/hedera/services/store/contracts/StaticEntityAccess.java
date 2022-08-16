@@ -27,18 +27,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
-import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
-import static com.hedera.services.exceptions.ValidationUtils.validateTrueOrRevert;
-import static com.hedera.services.state.merkle.internals.BitPackUtils.codeFromNum;
-import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
-import static com.hedera.services.utils.EntityNum.fromAccountId;
-import static com.hedera.services.utils.EntityNumPair.fromAccountTokenRel;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALLOWANCE_OWNER_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.ledger.TransactionalLedger;
@@ -199,7 +187,7 @@ public class StaticEntityAccess implements EntityAccess {
     }
 
     // We don't put these methods on the EntityAccess interface, because they would never be used
-    // when processing a non-static EVM call; then the WorldLedgers should get all such information 
+    // when processing a non-static EVM call; then the WorldLedgers should get all such information
     // from its ledgers
 
     public boolean defaultFreezeStatus(final TokenID tokenId) {

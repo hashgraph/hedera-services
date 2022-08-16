@@ -15,8 +15,6 @@
  */
 package com.hedera.services.contracts.operation;
 
-import static com.hedera.services.contracts.operation.HederaOperationUtil.cacheExistingValue;
-
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.services.stream.proto.SidecarType;
