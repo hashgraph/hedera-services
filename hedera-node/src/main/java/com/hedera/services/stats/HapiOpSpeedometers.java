@@ -1,11 +1,6 @@
-package com.hedera.services.stats;
-
-/*-
- * ‌
- * Hedera Services Node
- * ​
- * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,22 +12,8 @@ package com.hedera.services.stats;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
-
-import com.google.common.annotations.VisibleForTesting;
-import com.hedera.services.context.properties.NodeLocalProperties;
-import com.hederahashgraph.api.proto.java.HederaFunctionality;
-import com.swirlds.common.metrics.Metric;
-import com.swirlds.common.metrics.SpeedometerMetric;
-import com.swirlds.common.system.Platform;
-
-import java.util.Arrays;
-import java.util.EnumMap;
-import java.util.Map;
-import java.util.function.Function;
-import java.util.function.Supplier;
-import java.util.function.ToLongFunction;
+package com.hedera.services.stats;
 
 import static com.hedera.services.stats.ServicesStatsConfig.IGNORED_FUNCTIONS;
 import static com.hedera.services.stats.ServicesStatsConfig.SPEEDOMETER_ANSWERED_DESC_TPL;
@@ -49,168 +30,211 @@ import static com.hedera.services.stats.ServicesStatsManager.SPEEDOMETER_FORMAT;
 import static com.hedera.services.stats.ServicesStatsManager.STAT_CATEGORY;
 import static com.hedera.services.utils.MiscUtils.QUERY_FUNCTIONS;
 
+import com.google.common.annotations.VisibleForTesting;
+import com.hedera.services.context.properties.NodeLocalProperties;
+import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import com.swirlds.common.metrics.Metric;
+import com.swirlds.common.metrics.SpeedometerMetric;
+import com.swirlds.common.system.Platform;
+import java.util.Arrays;
+import java.util.EnumMap;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.function.Supplier;
+import java.util.function.ToLongFunction;
+
 public class HapiOpSpeedometers {
-	static Supplier<HederaFunctionality[]> allFunctions = HederaFunctionality.class::getEnumConstants;
+    static Supplier<HederaFunctionality[]> allFunctions =
+            HederaFunctionality.class::getEnumConstants;
 
-	private final HapiOpCounters counters;
-	private final Function<HederaFunctionality, String> statNameFn;
+    private final HapiOpCounters counters;
+    private final Function<HederaFunctionality, String> statNameFn;
 
-	private final Map<HederaFunctionality, Long> lastReceivedOpsCount = new EnumMap<>(HederaFunctionality.class);
-	private final Map<HederaFunctionality, Long> lastHandledTxnsCount = new EnumMap<>(HederaFunctionality.class);
-	private final Map<HederaFunctionality, Long> lastSubmittedTxnsCount = new EnumMap<>(HederaFunctionality.class);
-	private final Map<HederaFunctionality, Long> lastAnsweredQueriesCount = new EnumMap<>(HederaFunctionality.class);
-	private Long lastReceivedDeprecatedTxnCount;
+    private final Map<HederaFunctionality, Long> lastReceivedOpsCount =
+            new EnumMap<>(HederaFunctionality.class);
+    private final Map<HederaFunctionality, Long> lastHandledTxnsCount =
+            new EnumMap<>(HederaFunctionality.class);
+    private final Map<HederaFunctionality, Long> lastSubmittedTxnsCount =
+            new EnumMap<>(HederaFunctionality.class);
+    private final Map<HederaFunctionality, Long> lastAnsweredQueriesCount =
+            new EnumMap<>(HederaFunctionality.class);
+    private Long lastReceivedDeprecatedTxnCount;
 
-	private final EnumMap<HederaFunctionality, SpeedometerMetric> receivedOps = new EnumMap<>(HederaFunctionality.class);
-	private final EnumMap<HederaFunctionality, SpeedometerMetric> handledTxns = new EnumMap<>(HederaFunctionality.class);
-	private final EnumMap<HederaFunctionality, SpeedometerMetric> submittedTxns = new EnumMap<>(HederaFunctionality.class);
-	private final EnumMap<HederaFunctionality, SpeedometerMetric> answeredQueries = new EnumMap<>(HederaFunctionality.class);
-	private SpeedometerMetric receivedDeprecatedTxns;
-	public HapiOpSpeedometers(
-			final HapiOpCounters counters,
-			final NodeLocalProperties properties,
-			final Function<HederaFunctionality, String> statNameFn
-	) {
-		this.counters = counters;
-		this.statNameFn = statNameFn;
+    private final EnumMap<HederaFunctionality, SpeedometerMetric> receivedOps =
+            new EnumMap<>(HederaFunctionality.class);
+    private final EnumMap<HederaFunctionality, SpeedometerMetric> handledTxns =
+            new EnumMap<>(HederaFunctionality.class);
+    private final EnumMap<HederaFunctionality, SpeedometerMetric> submittedTxns =
+            new EnumMap<>(HederaFunctionality.class);
+    private final EnumMap<HederaFunctionality, SpeedometerMetric> answeredQueries =
+            new EnumMap<>(HederaFunctionality.class);
+    private SpeedometerMetric receivedDeprecatedTxns;
 
-		double halfLife = properties.statsSpeedometerHalfLifeSecs();
-		Arrays.stream(allFunctions.get())
-				.filter(function -> !IGNORED_FUNCTIONS.contains(function))
-				.forEach(function -> {
-					receivedOps.put(function, speedometerFor(
-							function, SPEEDOMETER_RECEIVED_NAME_TPL, SPEEDOMETER_RECEIVED_DESC_TPL, halfLife));
-					lastReceivedOpsCount.put(function, 0L);
-					if (QUERY_FUNCTIONS.contains(function)) {
-						answeredQueries.put(function, speedometerFor(
-								function, SPEEDOMETER_ANSWERED_NAME_TPL, SPEEDOMETER_ANSWERED_DESC_TPL, halfLife));
-						lastAnsweredQueriesCount.put(function, 0L);
-					} else {
-						submittedTxns.put(function, speedometerFor(
-								function, SPEEDOMETER_SUBMITTED_NAME_TPL, SPEEDOMETER_SUBMITTED_DESC_TPL, halfLife));
-						lastSubmittedTxnsCount.put(function, 0L);
-						handledTxns.put(function, speedometerFor(
-								function, SPEEDOMETER_HANDLED_NAME_TPL, SPEEDOMETER_HANDLED_DESC_TPL, halfLife));
-						lastHandledTxnsCount.put(function, 0L);
-					}
-				});
-		receivedDeprecatedTxns = new SpeedometerMetric(
-				STAT_CATEGORY,
-				SPEEDOMETER_DEPRECATED_TXNS_NAME,
-				SPEEDOMETER_DEPRECATED_TXNS_DESC,
-				SPEEDOMETER_FORMAT,
-				halfLife);
-		lastReceivedDeprecatedTxnCount = 0L;
-	}
+    public HapiOpSpeedometers(
+            final HapiOpCounters counters,
+            final NodeLocalProperties properties,
+            final Function<HederaFunctionality, String> statNameFn) {
+        this.counters = counters;
+        this.statNameFn = statNameFn;
 
-	public SpeedometerMetric speedometerFor(
-			final HederaFunctionality function,
-			final String nameTpl,
-			final String descTpl,
-			final double halfLife
-	) {
-		final var baseName = statNameFn.apply(function);
-		var fullName = String.format(nameTpl, baseName);
-		var description = String.format(descTpl, baseName);
-		return new SpeedometerMetric(STAT_CATEGORY, fullName, description, SPEEDOMETER_FORMAT, halfLife);
-	}
+        double halfLife = properties.statsSpeedometerHalfLifeSecs();
+        Arrays.stream(allFunctions.get())
+                .filter(function -> !IGNORED_FUNCTIONS.contains(function))
+                .forEach(
+                        function -> {
+                            receivedOps.put(
+                                    function,
+                                    speedometerFor(
+                                            function,
+                                            SPEEDOMETER_RECEIVED_NAME_TPL,
+                                            SPEEDOMETER_RECEIVED_DESC_TPL,
+                                            halfLife));
+                            lastReceivedOpsCount.put(function, 0L);
+                            if (QUERY_FUNCTIONS.contains(function)) {
+                                answeredQueries.put(
+                                        function,
+                                        speedometerFor(
+                                                function,
+                                                SPEEDOMETER_ANSWERED_NAME_TPL,
+                                                SPEEDOMETER_ANSWERED_DESC_TPL,
+                                                halfLife));
+                                lastAnsweredQueriesCount.put(function, 0L);
+                            } else {
+                                submittedTxns.put(
+                                        function,
+                                        speedometerFor(
+                                                function,
+                                                SPEEDOMETER_SUBMITTED_NAME_TPL,
+                                                SPEEDOMETER_SUBMITTED_DESC_TPL,
+                                                halfLife));
+                                lastSubmittedTxnsCount.put(function, 0L);
+                                handledTxns.put(
+                                        function,
+                                        speedometerFor(
+                                                function,
+                                                SPEEDOMETER_HANDLED_NAME_TPL,
+                                                SPEEDOMETER_HANDLED_DESC_TPL,
+                                                halfLife));
+                                lastHandledTxnsCount.put(function, 0L);
+                            }
+                        });
+        receivedDeprecatedTxns =
+                new SpeedometerMetric(
+                        STAT_CATEGORY,
+                        SPEEDOMETER_DEPRECATED_TXNS_NAME,
+                        SPEEDOMETER_DEPRECATED_TXNS_DESC,
+                        SPEEDOMETER_FORMAT,
+                        halfLife);
+        lastReceivedDeprecatedTxnCount = 0L;
+    }
 
-	public void registerWith(Platform platform) {
-		registerSpeedometers(platform, receivedOps);
-		registerSpeedometers(platform, submittedTxns);
-		registerSpeedometers(platform, handledTxns);
-		registerSpeedometers(platform, answeredQueries);
-		platform.addAppMetrics(receivedDeprecatedTxns);
-	}
+    public SpeedometerMetric speedometerFor(
+            final HederaFunctionality function,
+            final String nameTpl,
+            final String descTpl,
+            final double halfLife) {
+        final var baseName = statNameFn.apply(function);
+        var fullName = String.format(nameTpl, baseName);
+        var description = String.format(descTpl, baseName);
+        return new SpeedometerMetric(
+                STAT_CATEGORY, fullName, description, SPEEDOMETER_FORMAT, halfLife);
+    }
 
-	private void registerSpeedometers(
-			final Platform platform,
-			final Map<HederaFunctionality, SpeedometerMetric> speedometers
-	) {
-		platform.addAppMetrics(speedometers.values().toArray(Metric[]::new));
-	}
+    public void registerWith(Platform platform) {
+        registerSpeedometers(platform, receivedOps);
+        registerSpeedometers(platform, submittedTxns);
+        registerSpeedometers(platform, handledTxns);
+        registerSpeedometers(platform, answeredQueries);
+        platform.addAppMetrics(receivedDeprecatedTxns);
+    }
 
-	public void updateAll() {
-		updateSpeedometers(receivedOps, lastReceivedOpsCount, counters::receivedSoFar);
-		updateSpeedometers(submittedTxns, lastSubmittedTxnsCount, counters::submittedSoFar);
-		updateSpeedometers(handledTxns, lastHandledTxnsCount, counters::handledSoFar);
-		updateSpeedometers(answeredQueries, lastAnsweredQueriesCount, counters::answeredSoFar);
+    private void registerSpeedometers(
+            final Platform platform,
+            final Map<HederaFunctionality, SpeedometerMetric> speedometers) {
+        platform.addAppMetrics(speedometers.values().toArray(Metric[]::new));
+    }
 
-		receivedDeprecatedTxns.update((double) counters.receivedDeprecatedTxnSoFar() - lastReceivedDeprecatedTxnCount);
-		lastReceivedDeprecatedTxnCount = counters.receivedDeprecatedTxnSoFar();
-	}
+    public void updateAll() {
+        updateSpeedometers(receivedOps, lastReceivedOpsCount, counters::receivedSoFar);
+        updateSpeedometers(submittedTxns, lastSubmittedTxnsCount, counters::submittedSoFar);
+        updateSpeedometers(handledTxns, lastHandledTxnsCount, counters::handledSoFar);
+        updateSpeedometers(answeredQueries, lastAnsweredQueriesCount, counters::answeredSoFar);
 
-	private void updateSpeedometers(
-			Map<HederaFunctionality, SpeedometerMetric> speedometers,
-			Map<HederaFunctionality, Long> lastMeasurements,
-			ToLongFunction<HederaFunctionality> currMeasurement
-	) {
-		for (Map.Entry<HederaFunctionality, SpeedometerMetric> entry : speedometers.entrySet()) {
-			var function = entry.getKey();
-			long last = lastMeasurements.get(function);
-			long curr = currMeasurement.applyAsLong(function);
-			entry.getValue().update((double) curr - last);
-			lastMeasurements.put(function, curr);
-		}
-	}
+        receivedDeprecatedTxns.update(
+                (double) counters.receivedDeprecatedTxnSoFar() - lastReceivedDeprecatedTxnCount);
+        lastReceivedDeprecatedTxnCount = counters.receivedDeprecatedTxnSoFar();
+    }
 
-	@VisibleForTesting
-	EnumMap<HederaFunctionality, SpeedometerMetric> getReceivedOps() {
-		return receivedOps;
-	}
+    private void updateSpeedometers(
+            Map<HederaFunctionality, SpeedometerMetric> speedometers,
+            Map<HederaFunctionality, Long> lastMeasurements,
+            ToLongFunction<HederaFunctionality> currMeasurement) {
+        for (Map.Entry<HederaFunctionality, SpeedometerMetric> entry : speedometers.entrySet()) {
+            var function = entry.getKey();
+            long last = lastMeasurements.get(function);
+            long curr = currMeasurement.applyAsLong(function);
+            entry.getValue().update((double) curr - last);
+            lastMeasurements.put(function, curr);
+        }
+    }
 
-	@VisibleForTesting
-	EnumMap<HederaFunctionality, SpeedometerMetric> getHandledTxns() {
-		return handledTxns;
-	}
+    @VisibleForTesting
+    EnumMap<HederaFunctionality, SpeedometerMetric> getReceivedOps() {
+        return receivedOps;
+    }
 
-	@VisibleForTesting
-	EnumMap<HederaFunctionality, SpeedometerMetric> getSubmittedTxns() {
-		return submittedTxns;
-	}
+    @VisibleForTesting
+    EnumMap<HederaFunctionality, SpeedometerMetric> getHandledTxns() {
+        return handledTxns;
+    }
 
-	@VisibleForTesting
-	EnumMap<HederaFunctionality, SpeedometerMetric> getAnsweredQueries() {
-		return answeredQueries;
-	}
+    @VisibleForTesting
+    EnumMap<HederaFunctionality, SpeedometerMetric> getSubmittedTxns() {
+        return submittedTxns;
+    }
 
-	@VisibleForTesting
-	Map<HederaFunctionality, Long> getLastReceivedOpsCount() {
-		return lastReceivedOpsCount;
-	}
+    @VisibleForTesting
+    EnumMap<HederaFunctionality, SpeedometerMetric> getAnsweredQueries() {
+        return answeredQueries;
+    }
 
-	@VisibleForTesting
-	Map<HederaFunctionality, Long> getLastHandledTxnsCount() {
-		return lastHandledTxnsCount;
-	}
+    @VisibleForTesting
+    Map<HederaFunctionality, Long> getLastReceivedOpsCount() {
+        return lastReceivedOpsCount;
+    }
 
-	@VisibleForTesting
-	Map<HederaFunctionality, Long> getLastSubmittedTxnsCount() {
-		return lastSubmittedTxnsCount;
-	}
+    @VisibleForTesting
+    Map<HederaFunctionality, Long> getLastHandledTxnsCount() {
+        return lastHandledTxnsCount;
+    }
 
-	@VisibleForTesting
-	Map<HederaFunctionality, Long> getLastAnsweredQueriesCount() {
-		return lastAnsweredQueriesCount;
-	}
+    @VisibleForTesting
+    Map<HederaFunctionality, Long> getLastSubmittedTxnsCount() {
+        return lastSubmittedTxnsCount;
+    }
 
-	@VisibleForTesting
-	Long getLastReceivedDeprecatedTxnCount() {
-		return lastReceivedDeprecatedTxnCount;
-	}
+    @VisibleForTesting
+    Map<HederaFunctionality, Long> getLastAnsweredQueriesCount() {
+        return lastAnsweredQueriesCount;
+    }
 
-	@VisibleForTesting
-	static void setAllFunctions(Supplier<HederaFunctionality[]> allFunctions) {
-		HapiOpSpeedometers.allFunctions = allFunctions;
-	}
+    @VisibleForTesting
+    Long getLastReceivedDeprecatedTxnCount() {
+        return lastReceivedDeprecatedTxnCount;
+    }
 
-	@VisibleForTesting
-	void setLastReceivedDeprecatedTxnCount(Long lastReceivedDeprecatedTxnCount) {
-		this.lastReceivedDeprecatedTxnCount = lastReceivedDeprecatedTxnCount;
-	}
+    @VisibleForTesting
+    static void setAllFunctions(Supplier<HederaFunctionality[]> allFunctions) {
+        HapiOpSpeedometers.allFunctions = allFunctions;
+    }
 
-	@VisibleForTesting
-	void setReceivedDeprecatedTxns(final SpeedometerMetric receivedDeprecatedTxns) {
-		this.receivedDeprecatedTxns = receivedDeprecatedTxns;
-	}
+    @VisibleForTesting
+    void setLastReceivedDeprecatedTxnCount(Long lastReceivedDeprecatedTxnCount) {
+        this.lastReceivedDeprecatedTxnCount = lastReceivedDeprecatedTxnCount;
+    }
+
+    @VisibleForTesting
+    void setReceivedDeprecatedTxns(final SpeedometerMetric receivedDeprecatedTxns) {
+        this.receivedDeprecatedTxns = receivedDeprecatedTxns;
+    }
 }

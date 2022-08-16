@@ -1,11 +1,6 @@
-package com.hedera.services.state.initialization;
-
-/*-
- * ‌
- * Hedera Services Node
- * ​
- * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,8 +12,13 @@ package com.hedera.services.state.initialization;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+package com.hedera.services.state.initialization;
+
+import static com.hedera.services.context.BasicTransactionContext.EMPTY_KEY;
+import static com.hedera.services.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
+import static com.hedera.services.utils.MiscUtils.asFcKeyUnchecked;
+import static com.hedera.services.utils.MiscUtils.asKeyUnchecked;
 
 import com.hedera.services.config.AccountNumbers;
 import com.hedera.services.context.annotations.CompositeProps;
@@ -33,124 +33,124 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
 import com.swirlds.common.system.address.AddressBook;
+import java.util.List;
+import java.util.function.Supplier;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import javax.inject.Inject;
-import javax.inject.Singleton;
-import java.util.List;
-import java.util.function.Supplier;
-
-import static com.hedera.services.context.BasicTransactionContext.EMPTY_KEY;
-import static com.hedera.services.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
-import static com.hedera.services.utils.MiscUtils.asFcKeyUnchecked;
-import static com.hedera.services.utils.MiscUtils.asKeyUnchecked;
-
 @Singleton
 public class BackedSystemAccountsCreator implements SystemAccountsCreator {
-	private static final Logger log = LogManager.getLogger(BackedSystemAccountsCreator.class);
+    private static final Logger log = LogManager.getLogger(BackedSystemAccountsCreator.class);
 
-	public static final long FUNDING_ACCOUNT_EXPIRY = 33197904000L;
+    public static final long FUNDING_ACCOUNT_EXPIRY = 33197904000L;
 
-	private final AccountNumbers accountNums;
-	private final PropertySource properties;
-	private final Supplier<JEd25519Key> genesisKeySource;
+    private final AccountNumbers accountNums;
+    private final PropertySource properties;
+    private final Supplier<JEd25519Key> genesisKeySource;
 
-	private JKey genesisKey;
+    private JKey genesisKey;
 
-	@Inject
-	public BackedSystemAccountsCreator(
-			final AccountNumbers accountNums,
-			final @CompositeProps PropertySource properties,
-			final Supplier<JEd25519Key> genesisKeySource
-	) {
-		this.accountNums = accountNums;
-		this.properties = properties;
-		this.genesisKeySource = genesisKeySource;
-	}
+    @Inject
+    public BackedSystemAccountsCreator(
+            final AccountNumbers accountNums,
+            final @CompositeProps PropertySource properties,
+            final Supplier<JEd25519Key> genesisKeySource) {
+        this.accountNums = accountNums;
+        this.properties = properties;
+        this.genesisKeySource = genesisKeySource;
+    }
 
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public void ensureSystemAccounts(
-			final BackingStore<AccountID, MerkleAccount> accounts,
-			final AddressBook addressBook
-	) {
-		long systemAccounts = properties.getIntProperty("ledger.numSystemAccounts");
-		long expiry = properties.getLongProperty("bootstrap.system.entityExpiry");
-		long tinyBarFloat = properties.getLongProperty("ledger.totalTinyBarFloat");
+    /** {@inheritDoc} */
+    @Override
+    public void ensureSystemAccounts(
+            final BackingStore<AccountID, MerkleAccount> accounts, final AddressBook addressBook) {
+        long systemAccounts = properties.getIntProperty("ledger.numSystemAccounts");
+        long expiry = properties.getLongProperty("bootstrap.system.entityExpiry");
+        long tinyBarFloat = properties.getLongProperty("ledger.totalTinyBarFloat");
 
-		for (long num = 1; num <= systemAccounts; num++) {
-			var id = STATIC_PROPERTIES.scopedAccountWith(num);
-			if (accounts.contains(id)) {
-				continue;
-			}
-			if (num == accountNums.treasury()) {
-				accounts.put(id, accountWith(tinyBarFloat, expiry));
-			} else {
-				accounts.put(id, accountWith(0, expiry));
-			}
-		}
+        for (long num = 1; num <= systemAccounts; num++) {
+            var id = STATIC_PROPERTIES.scopedAccountWith(num);
+            if (accounts.contains(id)) {
+                continue;
+            }
+            if (num == accountNums.treasury()) {
+                accounts.put(id, accountWith(tinyBarFloat, expiry));
+            } else {
+                accounts.put(id, accountWith(0, expiry));
+            }
+        }
 
-		final var stakingRewardAccountNum = accountNums.stakingRewardAccount();
-		final var stakingRewardAccountId = STATIC_PROPERTIES.scopedAccountWith(stakingRewardAccountNum);
-		final var nodeRewardAccountNum = accountNums.nodeRewardAccount();
-		final var nodeRewardAccountId = STATIC_PROPERTIES.scopedAccountWith(nodeRewardAccountNum);
-		final var stakingFundAccounts = List.of(stakingRewardAccountId, nodeRewardAccountId);
-		for (final var id : stakingFundAccounts) {
-			if (!accounts.contains(id)) {
-				final var stakingFundAccount = new MerkleAccount();
-				customizeAsStakingFund(stakingFundAccount);
-				accounts.put(id, stakingFundAccount);
-			}
-		}
-		for (long num = 900; num <= 1000; num++) {
-			var id = STATIC_PROPERTIES.scopedAccountWith(num);
-			if (!accounts.contains(id)) {
-				accounts.put(id, accountWith(0, expiry));
-			}
-		}
+        final var stakingRewardAccountNum = accountNums.stakingRewardAccount();
+        final var stakingRewardAccountId =
+                STATIC_PROPERTIES.scopedAccountWith(stakingRewardAccountNum);
+        final var nodeRewardAccountNum = accountNums.nodeRewardAccount();
+        final var nodeRewardAccountId = STATIC_PROPERTIES.scopedAccountWith(nodeRewardAccountNum);
+        final var stakingFundAccounts = List.of(stakingRewardAccountId, nodeRewardAccountId);
+        for (final var id : stakingFundAccounts) {
+            if (!accounts.contains(id)) {
+                final var stakingFundAccount = new MerkleAccount();
+                customizeAsStakingFund(stakingFundAccount);
+                accounts.put(id, stakingFundAccount);
+            }
+        }
+        for (long num = 900; num <= 1000; num++) {
+            var id = STATIC_PROPERTIES.scopedAccountWith(num);
+            if (!accounts.contains(id)) {
+                accounts.put(id, accountWith(0, expiry));
+            }
+        }
 
-		var allIds = accounts.idSet();
-		var ledgerFloat = allIds.stream().mapToLong(id -> accounts.getImmutableRef(id).getBalance()).sum();
-		var msg = String.format("Ledger float is %d tinyBars in %d accounts.", ledgerFloat, allIds.size());
-		log.info(msg);
-	}
+        var allIds = accounts.idSet();
+        var ledgerFloat =
+                allIds.stream().mapToLong(id -> accounts.getImmutableRef(id).getBalance()).sum();
+        var msg =
+                String.format(
+                        "Ledger float is %d tinyBars in %d accounts.", ledgerFloat, allIds.size());
+        log.info(msg);
+    }
 
-	public static void customizeAsStakingFund(final MerkleAccount account) {
-		account.setExpiry(FUNDING_ACCOUNT_EXPIRY);
-		account.setAccountKey(EMPTY_KEY);
-		account.setSmartContract(false);
-		account.setReceiverSigRequired(false);
-		account.setMaxAutomaticAssociations(0);
-	}
+    public static void customizeAsStakingFund(final MerkleAccount account) {
+        account.setExpiry(FUNDING_ACCOUNT_EXPIRY);
+        account.setAccountKey(EMPTY_KEY);
+        account.setSmartContract(false);
+        account.setReceiverSigRequired(false);
+        account.setMaxAutomaticAssociations(0);
+    }
 
-	private MerkleAccount accountWith(long balance, long expiry) {
-		var account = new HederaAccountCustomizer()
-				.isReceiverSigRequired(false)
-				.isDeleted(false)
-				.expiry(expiry)
-				.memo("")
-				.isSmartContract(false)
-				.key(getGenesisKey())
-				.autoRenewPeriod(expiry)
-				.customizing(new MerkleAccount());
-		try {
-			account.setBalance(balance);
-		} catch (NegativeAccountBalanceException e) {
-			throw new IllegalStateException(e);
-		}
-		return account;
-	}
+    private MerkleAccount accountWith(long balance, long expiry) {
+        var account =
+                new HederaAccountCustomizer()
+                        .isReceiverSigRequired(false)
+                        .isDeleted(false)
+                        .expiry(expiry)
+                        .memo("")
+                        .isSmartContract(false)
+                        .key(getGenesisKey())
+                        .autoRenewPeriod(expiry)
+                        .customizing(new MerkleAccount());
+        try {
+            account.setBalance(balance);
+        } catch (NegativeAccountBalanceException e) {
+            throw new IllegalStateException(e);
+        }
+        return account;
+    }
 
-	private JKey getGenesisKey() {
-		if (genesisKey == null) {
-			// Traditionally the genesis key has been a key list, keep that way to avoid breaking any clients
-			genesisKey = asFcKeyUnchecked(Key.newBuilder()
-					.setKeyList(KeyList.newBuilder().addKeys(asKeyUnchecked(genesisKeySource.get())))
-					.build());
-		}
-		return genesisKey;
-	}
+    private JKey getGenesisKey() {
+        if (genesisKey == null) {
+            // Traditionally the genesis key has been a key list, keep that way to avoid breaking
+            // any clients
+            genesisKey =
+                    asFcKeyUnchecked(
+                            Key.newBuilder()
+                                    .setKeyList(
+                                            KeyList.newBuilder()
+                                                    .addKeys(
+                                                            asKeyUnchecked(genesisKeySource.get())))
+                                    .build());
+        }
+        return genesisKey;
+    }
 }

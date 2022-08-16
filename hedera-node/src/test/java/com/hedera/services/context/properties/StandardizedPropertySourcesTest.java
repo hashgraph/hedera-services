@@ -1,11 +1,6 @@
-package com.hedera.services.context.properties;
-
-/*-
- * ‌
- * Hedera Services Node
- * ​
- * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,8 +12,18 @@ package com.hedera.services.context.properties;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+package com.hedera.services.context.properties;
+
+import static com.hedera.services.context.properties.BootstrapProperties.BOOTSTRAP_PROP_NAMES;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.verify;
+import static org.mockito.Mockito.doCallRealMethod;
+import static org.mockito.Mockito.mock;
 
 import com.hedera.services.fees.ContractStoragePriceTiers;
 import com.hedera.services.fees.calculation.CongestionMultipliers;
@@ -31,111 +36,103 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import static com.hedera.services.context.properties.BootstrapProperties.BOOTSTRAP_PROP_NAMES;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertInstanceOf;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.BDDMockito.verify;
-import static org.mockito.Mockito.doCallRealMethod;
-import static org.mockito.Mockito.mock;
-
 @ExtendWith(MockitoExtension.class)
 class StandardizedPropertySourcesTest {
-	@Mock
-	private PropertySource bootstrapProps;
-	@Mock
-	private ScreenedSysFileProps dynamicGlobalProps;
-	@Mock
-	private ScreenedNodeFileProps nodeProps;
+    @Mock private PropertySource bootstrapProps;
+    @Mock private ScreenedSysFileProps dynamicGlobalProps;
+    @Mock private ScreenedNodeFileProps nodeProps;
 
-	private StandardizedPropertySources subject;
+    private StandardizedPropertySources subject;
 
-	@BeforeEach
-	private void setup() {
-		subject = new StandardizedPropertySources(bootstrapProps, dynamicGlobalProps, nodeProps);
-	}
+    @BeforeEach
+    private void setup() {
+        subject = new StandardizedPropertySources(bootstrapProps, dynamicGlobalProps, nodeProps);
+    }
 
-	@Test
-	void usesDynamicGlobalAsPriority() {
-		given(dynamicGlobalProps.containsProperty("testProp")).willReturn(true);
-		given(dynamicGlobalProps.getProperty("testProp")).willReturn("perfectAnswer");
+    @Test
+    void usesDynamicGlobalAsPriority() {
+        given(dynamicGlobalProps.containsProperty("testProp")).willReturn(true);
+        given(dynamicGlobalProps.getProperty("testProp")).willReturn("perfectAnswer");
 
-		subject.reloadFrom(ServicesConfigurationList.getDefaultInstance());
+        subject.reloadFrom(ServicesConfigurationList.getDefaultInstance());
 
-		assertEquals("perfectAnswer", subject.asResolvingSource().getStringProperty("testProp"));
-	}
+        assertEquals("perfectAnswer", subject.asResolvingSource().getStringProperty("testProp"));
+    }
 
-	@Test
-	void usesNodeAsSecondPriority() {
-		given(nodeProps.containsProperty("testProp2")).willReturn(true);
-		given(nodeProps.getProperty("testProp2")).willReturn("goodEnoughForMe");
-		given(dynamicGlobalProps.containsProperty("testProp")).willReturn(true);
-		given(dynamicGlobalProps.getProperty("testProp")).willReturn("perfectAnswer");
+    @Test
+    void usesNodeAsSecondPriority() {
+        given(nodeProps.containsProperty("testProp2")).willReturn(true);
+        given(nodeProps.getProperty("testProp2")).willReturn("goodEnoughForMe");
+        given(dynamicGlobalProps.containsProperty("testProp")).willReturn(true);
+        given(dynamicGlobalProps.getProperty("testProp")).willReturn("perfectAnswer");
 
-		subject.reloadFrom(ServicesConfigurationList.getDefaultInstance());
+        subject.reloadFrom(ServicesConfigurationList.getDefaultInstance());
 
-		assertEquals("perfectAnswer", subject.asResolvingSource().getStringProperty("testProp"));
-		assertEquals("goodEnoughForMe", subject.asResolvingSource().getStringProperty("testProp2"));
-	}
+        assertEquals("perfectAnswer", subject.asResolvingSource().getStringProperty("testProp"));
+        assertEquals("goodEnoughForMe", subject.asResolvingSource().getStringProperty("testProp2"));
+    }
 
-	@Test
-	void propagatesReloadToDynamicGlobalProps() {
-		subject.reloadFrom(ServicesConfigurationList.getDefaultInstance());
+    @Test
+    void propagatesReloadToDynamicGlobalProps() {
+        subject.reloadFrom(ServicesConfigurationList.getDefaultInstance());
 
-		verify(dynamicGlobalProps).screenNew(ServicesConfigurationList.getDefaultInstance());
-	}
+        verify(dynamicGlobalProps).screenNew(ServicesConfigurationList.getDefaultInstance());
+    }
 
-	@Test
-	void usesBootstrapSourceAsApropos() {
-		subject.getNodeProps().getFromFile().clear();
+    @Test
+    void usesBootstrapSourceAsApropos() {
+        subject.getNodeProps().getFromFile().clear();
 
-		final var properties = subject.asResolvingSource();
-		BOOTSTRAP_PROP_NAMES.forEach(properties::getProperty);
+        final var properties = subject.asResolvingSource();
+        BOOTSTRAP_PROP_NAMES.forEach(properties::getProperty);
 
-		for (final var bootstrapProp : BOOTSTRAP_PROP_NAMES) {
-			verify(bootstrapProps).getProperty(bootstrapProp);
-		}
-	}
+        for (final var bootstrapProp : BOOTSTRAP_PROP_NAMES) {
+            verify(bootstrapProps).getProperty(bootstrapProp);
+        }
+    }
 
-	@Test
-	void noClassCastExceptionForRangeProp() {
-		final var updateRange = Pair.of(150L, 159L);
-		given(bootstrapProps.getProperty("files.softwareUpdateRange")).willReturn(updateRange);
-		final var properties = subject.asResolvingSource();
+    @Test
+    void noClassCastExceptionForRangeProp() {
+        final var updateRange = Pair.of(150L, 159L);
+        given(bootstrapProps.getProperty("files.softwareUpdateRange")).willReturn(updateRange);
+        final var properties = subject.asResolvingSource();
 
-		assertSame(updateRange, properties.getEntityNumRange("files.softwareUpdateRange"));
-	}
+        assertSame(updateRange, properties.getEntityNumRange("files.softwareUpdateRange"));
+    }
 
-	@Test
-	void defaultMethodsParseTypes() {
-		final var otherSubject = mock(PropertySource.class);
-		final var valuesLiteral = "c9e37a7a454638ca62662bd1a06de49ef40b3444203fe329bbc81363604ea7f8@666";
-		final var tiersLiteral = "10@50";
-		final var multiplierLiteral = "90,10x,95,25x,99,100x";
+    @Test
+    void defaultMethodsParseTypes() {
+        final var otherSubject = mock(PropertySource.class);
+        final var valuesLiteral =
+                "c9e37a7a454638ca62662bd1a06de49ef40b3444203fe329bbc81363604ea7f8@666";
+        final var tiersLiteral = "10@50";
+        final var multiplierLiteral = "90,10x,95,25x,99,100x";
 
-		doCallRealMethod().when(otherSubject).getTypedProperty(any(), any());
-		otherSubject.getTypedProperty(KnownBlockValues.class, "contracts.knownBlockHash");
-		doCallRealMethod().when(otherSubject).getBlockValuesProperty("contracts.knownBlockHash");
-		doCallRealMethod().when(otherSubject).getContractStoragePriceTiers("contract.storageSlotPriceTiers");
-		doCallRealMethod().when(otherSubject).getCongestionMultiplierProperty("fees.percentCongestionMultipliers");
+        doCallRealMethod().when(otherSubject).getTypedProperty(any(), any());
+        otherSubject.getTypedProperty(KnownBlockValues.class, "contracts.knownBlockHash");
+        doCallRealMethod().when(otherSubject).getBlockValuesProperty("contracts.knownBlockHash");
+        doCallRealMethod()
+                .when(otherSubject)
+                .getContractStoragePriceTiers("contract.storageSlotPriceTiers");
+        doCallRealMethod()
+                .when(otherSubject)
+                .getCongestionMultiplierProperty("fees.percentCongestionMultipliers");
 
-		given(otherSubject.getProperty("contracts.knownBlockHash"))
-				.willReturn(KnownBlockValues.from(valuesLiteral));
-		given(otherSubject.getProperty("contract.storageSlotPriceTiers"))
-				.willReturn(ContractStoragePriceTiers.from(tiersLiteral));
-		given(otherSubject.getProperty("fees.percentCongestionMultipliers"))
-				.willReturn(CongestionMultipliers.from(multiplierLiteral));
+        given(otherSubject.getProperty("contracts.knownBlockHash"))
+                .willReturn(KnownBlockValues.from(valuesLiteral));
+        given(otherSubject.getProperty("contract.storageSlotPriceTiers"))
+                .willReturn(ContractStoragePriceTiers.from(tiersLiteral));
+        given(otherSubject.getProperty("fees.percentCongestionMultipliers"))
+                .willReturn(CongestionMultipliers.from(multiplierLiteral));
 
-		assertInstanceOf(
-				KnownBlockValues.class,
-				otherSubject.getBlockValuesProperty("contracts.knownBlockHash"));
-		assertInstanceOf(
-				ContractStoragePriceTiers.class,
-				otherSubject.getContractStoragePriceTiers("contract.storageSlotPriceTiers"));
-		assertInstanceOf(
-				CongestionMultipliers.class,
-				otherSubject.getCongestionMultiplierProperty("fees.percentCongestionMultipliers"));
-	}
+        assertInstanceOf(
+                KnownBlockValues.class,
+                otherSubject.getBlockValuesProperty("contracts.knownBlockHash"));
+        assertInstanceOf(
+                ContractStoragePriceTiers.class,
+                otherSubject.getContractStoragePriceTiers("contract.storageSlotPriceTiers"));
+        assertInstanceOf(
+                CongestionMultipliers.class,
+                otherSubject.getCongestionMultiplierProperty("fees.percentCongestionMultipliers"));
+    }
 }
