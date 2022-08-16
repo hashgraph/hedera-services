@@ -496,12 +496,13 @@ class SyntheticTxnFactoryTest {
     void createsAdjustAllowanceForAllNFT() {
         var allowances = new SetApprovalForAllWrapper(nonFungible, receiver, true);
 
-        final var result = subject.createApproveAllowanceForAllNFT(allowances, token);
+        final var result = subject.createApproveAllowanceForAllNFT(allowances);
         final var txnBody = result.build();
 
         assertEquals(
                 receiver, txnBody.getCryptoApproveAllowance().getNftAllowances(0).getSpender());
-        assertEquals(token, txnBody.getCryptoApproveAllowance().getNftAllowances(0).getTokenId());
+        assertEquals(
+                nonFungible, txnBody.getCryptoApproveAllowance().getNftAllowances(0).getTokenId());
         assertEquals(
                 BoolValue.of(true),
                 txnBody.getCryptoApproveAllowance().getNftAllowances(0).getApprovedForAll());
