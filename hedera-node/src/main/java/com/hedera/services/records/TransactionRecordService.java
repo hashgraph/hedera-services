@@ -115,7 +115,10 @@ public class TransactionRecordService {
             txnCtx.addSidecarRecord(
                     SidecarUtils.createStateChangesSidecarFrom(result.getStateChanges()));
         }
-        // FUTURE WORK - we should put the actions in the list here as well when they are added
+        final var actions = result.getActions();
+        if (!actions.isEmpty()) {
+            txnCtx.addSidecarRecord(SidecarUtils.createContractActionsSidecar(actions));
+        }
     }
 
     public void updateForEvmCall(EthTxData callContext, EntityId senderId) {
