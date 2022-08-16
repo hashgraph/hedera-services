@@ -16,6 +16,7 @@
 package com.hedera.services.config;
 
 import static com.hedera.services.config.EntityNumbers.UNKNOWN_NUMBER;
+import static com.hedera.services.context.properties.PropertyNames.ACCOUNTS_ADDRESS_BOOK_ADMIN;
 
 import com.hedera.services.context.annotations.CompositeProps;
 import com.hedera.services.context.properties.PropertySource;
@@ -65,7 +66,7 @@ public class AccountNumbers {
 
     public long addressBookAdmin() {
         if (addressBookAdmin == UNKNOWN_NUMBER) {
-            addressBookAdmin = properties.getLongProperty("accounts.addressBookAdmin");
+            addressBookAdmin = properties.getLongProperty(ACCOUNTS_ADDRESS_BOOK_ADMIN);
         }
         return addressBookAdmin;
     }

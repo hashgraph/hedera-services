@@ -15,6 +15,8 @@
  */
 package com.hedera.services.context.properties;
 
+import static com.hedera.services.context.properties.PropertyNames.ACCOUNTS_ADDRESS_BOOK_ADMIN;
+import static com.hedera.services.context.properties.PropertyNames.ACCOUNTS_EXCHANGE_RATES_ADMIN;
 import static com.hedera.services.context.properties.PropertyNames.BOOTSTRAP_FEE_SCHEDULE_JSON_RESOURCE;
 import static com.hedera.services.context.properties.PropertyNames.BOOTSTRAP_GENESIS_PUBLIC_KEY;
 import static com.hedera.services.context.properties.PropertyNames.BOOTSTRAP_HAPI_PERMISSIONS_PATH;
@@ -27,6 +29,15 @@ import static com.hedera.services.context.properties.PropertyNames.BOOTSTRAP_RAT
 import static com.hedera.services.context.properties.PropertyNames.BOOTSTRAP_RATES_NEXT_HBAR_EQUIV;
 import static com.hedera.services.context.properties.PropertyNames.BOOTSTRAP_SYSTEM_ENTITY_EXPIRY;
 import static com.hedera.services.context.properties.PropertyNames.BOOTSTRAP_THROTTLE_DEF_JSON_RESOURCE;
+import static com.hedera.services.context.properties.PropertyNames.FILES_ADDRESS_BOOK;
+import static com.hedera.services.context.properties.PropertyNames.FILES_EXCHANGE_RATES;
+import static com.hedera.services.context.properties.PropertyNames.FILES_FEE_SCHEDULES;
+import static com.hedera.services.context.properties.PropertyNames.FILES_HAPI_PERMISSIONS;
+import static com.hedera.services.context.properties.PropertyNames.FILES_NETWORK_PROPERTIES;
+import static com.hedera.services.context.properties.PropertyNames.FILES_NODE_DETAILS;
+import static com.hedera.services.context.properties.PropertyNames.FILES_THROTTLE_DEFINITIONS;
+import static com.hedera.services.context.properties.PropertyNames.STAKING_PERIOD_MINS;
+import static com.hedera.services.context.properties.PropertyNames.STAKING_REWARD_HISTORY_NUM_STORED_PERIODS;
 import static com.hedera.services.stream.proto.SidecarType.CONTRACT_ACTION;
 import static com.hedera.services.stream.proto.SidecarType.CONTRACT_BYTECODE;
 import static com.hedera.services.stream.proto.SidecarType.CONTRACT_STATE_CHANGE;
@@ -92,13 +103,13 @@ class BootstrapPropertiesTest {
                     entry(BOOTSTRAP_RATES_NEXT_EXPIRY, 4102444800L),
                     entry(BOOTSTRAP_SYSTEM_ENTITY_EXPIRY, 1812637686L),
                     entry(BOOTSTRAP_THROTTLE_DEF_JSON_RESOURCE, "throttles.json"),
-                    entry("accounts.addressBookAdmin", 55L),
-                    entry("balances.exportDir.path", "/opt/hgcapp/accountBalances/"),
+                    entry(ACCOUNTS_ADDRESS_BOOK_ADMIN, 55L),
+                    entry("", "/opt/hgcapp/accountBalances/"),
                     entry("balances.exportEnabled", true),
                     entry("balances.exportPeriodSecs", 900),
                     entry("balances.exportTokenBalances", true),
                     entry("balances.nodeBalanceWarningThreshold", 0L),
-                    entry("accounts.exchangeRatesAdmin", 57L),
+                    entry(ACCOUNTS_EXCHANGE_RATES_ADMIN, 57L),
                     entry("accounts.feeSchedulesAdmin", 56L),
                     entry("accounts.nodeRewardAccount", 801L),
                     entry("accounts.stakingRewardAccount", 800L),
@@ -132,13 +143,13 @@ class BootstrapPropertiesTest {
                             "fees.percentCongestionMultipliers",
                             CongestionMultipliers.from("90,10x,95,25x,99,100x")),
                     entry("fees.minCongestionPeriod", 60),
-                    entry("files.addressBook", 101L),
-                    entry("files.networkProperties", 121L),
-                    entry("files.exchangeRates", 112L),
-                    entry("files.feeSchedules", 111L),
-                    entry("files.hapiPermissions", 122L),
-                    entry("files.throttleDefinitions", 123L),
-                    entry("files.nodeDetails", 102L),
+                    entry(FILES_ADDRESS_BOOK, 101L),
+                    entry(FILES_NETWORK_PROPERTIES, 121L),
+                    entry(FILES_EXCHANGE_RATES, 112L),
+                    entry(FILES_FEE_SCHEDULES, 111L),
+                    entry(FILES_HAPI_PERMISSIONS, 122L),
+                    entry(FILES_THROTTLE_DEFINITIONS, 123L),
+                    entry(FILES_NODE_DETAILS, 102L),
                     entry("files.softwareUpdateRange", Pair.of(150L, 159L)),
                     entry("grpc.port", 50211),
                     entry("grpc.tlsPort", 50212),
@@ -230,9 +241,9 @@ class BootstrapPropertiesTest {
                     entry("stats.executionTimesToTrack", 0),
                     entry("staking.isEnabled", true),
                     entry("staking.nodeMaxToMinStakeRatios", Map.of()),
-                    entry("staking.periodMins", 1440L),
+                    entry(STAKING_PERIOD_MINS, 1440L),
                     entry("staking.requireMinStakeToReward", false),
-                    entry("staking.rewardHistory.numStoredPeriods", 365),
+                    entry(STAKING_REWARD_HISTORY_NUM_STORED_PERIODS, 365),
                     entry("staking.rewardRate", 0L),
                     entry("staking.startThreshold", 25000000000000000L),
                     entry("staking.fees.nodeRewardPercentage", 0),
