@@ -28,10 +28,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willAnswer;
-import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.*;
 import static org.mockito.internal.verification.VerificationModeFactory.times;
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
@@ -323,7 +320,6 @@ class CallEvmTxProcessorTest {
                 .willReturn(new Id(0, 0, 1010).asGrpcAccount());
         givenSenderWithBalance(350_000L);
         given(aliasManager.resolveForEvm(receiverAddress)).willReturn(receiverAddress);
-        given(storageExpiry.hapiCallOracle()).willReturn(oracle);
         given(globalDynamicProperties.chainIdBytes32()).willReturn(Bytes32.ZERO);
 
         final var action =

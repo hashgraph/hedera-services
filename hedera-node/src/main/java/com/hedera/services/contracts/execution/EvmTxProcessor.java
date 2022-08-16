@@ -300,7 +300,8 @@ abstract class EvmTxProcessor {
                         gasPrice,
                         Optional.of(e.messageBytes()),
                         Optional.empty(),
-                        Collections.emptyMap());
+                        Collections.emptyMap(),
+                        List.of());
             }
         }
 
