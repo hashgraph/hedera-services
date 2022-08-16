@@ -56,8 +56,10 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import com.esaulpaugh.headlong.util.Integers;
+import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
@@ -94,6 +96,7 @@ import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.tokens.HederaTokenStore;
 import com.hedera.services.utils.EntityIdUtils;
+import com.hedera.services.utils.accessors.AccessorFactory;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
 import com.hederahashgraph.api.proto.java.ExchangeRate;
@@ -146,6 +149,7 @@ class TransferPrecompilesTest {
     @Mock private HederaStackedWorldStateUpdater worldUpdater;
     @Mock private WorldLedgers wrappedLedgers;
     @Mock private TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nfts;
+    @Mock private AccessorFactory accessorFactory;
 
     @Mock
     private TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus>
@@ -181,7 +185,12 @@ class TransferPrecompilesTest {
     void setUp() {
         PrecompilePricingUtils precompilePricingUtils =
                 new PrecompilePricingUtils(
-                        assetLoader, exchange, () -> feeCalculator, resourceCosts, stateView);
+                        assetLoader,
+                        exchange,
+                        () -> feeCalculator,
+                        resourceCosts,
+                        stateView,
+                        accessorFactory);
         subject =
                 new HTSPrecompiledContract(
                         dynamicProperties,
@@ -257,7 +266,7 @@ class TransferPrecompilesTest {
     }
 
     @Test
-    void transferTokenHappyPathWorks() {
+    void transferTokenHappyPathWorks() throws InvalidProtocolBufferException {
         Bytes pretendArguments = Bytes.of(Integers.toBytes(ABI_ID_TRANSFER_TOKENS));
         givenMinimalFrameContext();
         givenLedgers();
@@ -314,6 +323,8 @@ class TransferPrecompilesTest {
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
         given(worldUpdater.aliases()).willReturn(aliases);
         given(frame.getSenderAddress()).willReturn(contractAddress);
+        when(accessorFactory.uncheckedSpecializedAccessor(any())).thenCallRealMethod();
+        when(accessorFactory.constructSpecializedAccessor(any())).thenCallRealMethod();
 
         // when:
         subject.prepareFields(frame);
@@ -331,7 +342,7 @@ class TransferPrecompilesTest {
     }
 
     @Test
-    void abortsIfImpliedCustomFeesCannotBeAssessed() {
+    void abortsIfImpliedCustomFeesCannotBeAssessed() throws InvalidProtocolBufferException {
         givenPricingUtilsContext();
         Bytes pretendArguments = Bytes.of(Integers.toBytes(ABI_ID_TRANSFER_TOKENS));
 
@@ -378,6 +389,8 @@ class TransferPrecompilesTest {
                         creator.createUnsuccessfulSyntheticRecord(
                                 CUSTOM_FEE_CHARGING_EXCEEDED_MAX_ACCOUNT_AMOUNTS))
                 .willReturn(mockRecordBuilder);
+        when(accessorFactory.uncheckedSpecializedAccessor(any())).thenCallRealMethod();
+        when(accessorFactory.constructSpecializedAccessor(any())).thenCallRealMethod();
 
         // when:
         subject.prepareFields(frame);
@@ -390,7 +403,7 @@ class TransferPrecompilesTest {
     }
 
     @Test
-    void transferTokenWithSenderOnlyHappyPathWorks() {
+    void transferTokenWithSenderOnlyHappyPathWorks() throws InvalidProtocolBufferException {
         Bytes pretendArguments = Bytes.of(Integers.toBytes(ABI_ID_TRANSFER_TOKENS));
 
         givenMinimalFrameContext();
@@ -446,6 +459,8 @@ class TransferPrecompilesTest {
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
         given(worldUpdater.aliases()).willReturn(aliases);
         given(frame.getSenderAddress()).willReturn(contractAddress);
+        when(accessorFactory.uncheckedSpecializedAccessor(any())).thenCallRealMethod();
+        when(accessorFactory.constructSpecializedAccessor(any())).thenCallRealMethod();
 
         // when:
         subject.prepareFields(frame);
@@ -463,7 +478,7 @@ class TransferPrecompilesTest {
     }
 
     @Test
-    void transferTokenWithReceiverOnlyHappyPathWorks() {
+    void transferTokenWithReceiverOnlyHappyPathWorks() throws InvalidProtocolBufferException {
         Bytes pretendArguments = Bytes.of(Integers.toBytes(ABI_ID_TRANSFER_TOKENS));
 
         givenMinimalFrameContext();
@@ -519,6 +534,8 @@ class TransferPrecompilesTest {
         given(aliases.resolveForEvm(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
         given(worldUpdater.aliases()).willReturn(aliases);
+        when(accessorFactory.uncheckedSpecializedAccessor(any())).thenCallRealMethod();
+        when(accessorFactory.constructSpecializedAccessor(any())).thenCallRealMethod();
 
         // when:
         subject.prepareFields(frame);
@@ -536,7 +553,7 @@ class TransferPrecompilesTest {
     }
 
     @Test
-    void transferNftsHappyPathWorks() {
+    void transferNftsHappyPathWorks() throws InvalidProtocolBufferException {
         Bytes pretendArguments = Bytes.of(Integers.toBytes(ABI_ID_TRANSFER_NFTS));
 
         givenMinimalFrameContext();
@@ -592,6 +609,8 @@ class TransferPrecompilesTest {
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
         given(worldUpdater.aliases()).willReturn(aliases);
         given(frame.getSenderAddress()).willReturn(contractAddress);
+        when(accessorFactory.uncheckedSpecializedAccessor(any())).thenCallRealMethod();
+        when(accessorFactory.constructSpecializedAccessor(any())).thenCallRealMethod();
 
         // when:
         subject.prepareFields(frame);
@@ -609,7 +628,7 @@ class TransferPrecompilesTest {
     }
 
     @Test
-    void transferNftHappyPathWorks() {
+    void transferNftHappyPathWorks() throws InvalidProtocolBufferException {
         Bytes pretendArguments = Bytes.of(Integers.toBytes(ABI_ID_TRANSFER_NFT));
 
         final var recipientAddr = Address.ALTBN128_ADD;
@@ -670,6 +689,8 @@ class TransferPrecompilesTest {
         given(aliases.resolveForEvm(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
         given(worldUpdater.aliases()).willReturn(aliases);
+        when(accessorFactory.uncheckedSpecializedAccessor(any())).thenCallRealMethod();
+        when(accessorFactory.constructSpecializedAccessor(any())).thenCallRealMethod();
 
         // when:
         subject.prepareFields(frame);
@@ -700,7 +721,7 @@ class TransferPrecompilesTest {
     }
 
     @Test
-    void cryptoTransferHappyPathWorks() {
+    void cryptoTransferHappyPathWorks() throws InvalidProtocolBufferException {
         Bytes pretendArguments = Bytes.of(Integers.toBytes(ABI_ID_CRYPTO_TRANSFER));
 
         givenMinimalFrameContext();
@@ -754,6 +775,8 @@ class TransferPrecompilesTest {
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
         given(worldUpdater.aliases()).willReturn(aliases);
         given(frame.getSenderAddress()).willReturn(contractAddress);
+        when(accessorFactory.uncheckedSpecializedAccessor(any())).thenCallRealMethod();
+        when(accessorFactory.constructSpecializedAccessor(any())).thenCallRealMethod();
 
         // when:
         subject.prepareFields(frame);
@@ -771,7 +794,7 @@ class TransferPrecompilesTest {
     }
 
     @Test
-    void transferFailsAndCatchesProperly() {
+    void transferFailsAndCatchesProperly() throws InvalidProtocolBufferException {
         Bytes pretendArguments = Bytes.of(Integers.toBytes(ABI_ID_TRANSFER_TOKEN));
 
         givenMinimalFrameContext();
@@ -826,6 +849,8 @@ class TransferPrecompilesTest {
         given(aliases.resolveForEvm(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
         given(worldUpdater.aliases()).willReturn(aliases);
+        when(accessorFactory.uncheckedSpecializedAccessor(any())).thenCallRealMethod();
+        when(accessorFactory.constructSpecializedAccessor(any())).thenCallRealMethod();
 
         // when:
         subject.prepareFields(frame);

@@ -308,7 +308,8 @@ public class ServicesState extends PartialNaryMerkleInternal
                     deployedVersion);
             app.systemExits().fail(1);
         } else {
-            if (trigger == RESTART) {
+            final var isUpgrade = deployedVersion.isAfter(deserializedVersion);
+            if (trigger == RESTART && isUpgrade) {
                 networkCtx().discardPreparedUpgradeMeta();
                 dualState.setFreezeTime(null);
                 if (deployedVersion.hasMigrationRecordsFrom(deserializedVersion)) {
@@ -341,7 +342,7 @@ public class ServicesState extends PartialNaryMerkleInternal
                 // Once we have a dynamic address book, this will run unconditionally
                 app.sysFilesManager().updateStakeDetails();
             }
-            if (trigger == RESTART) {
+            if (trigger == RESTART && isUpgrade) {
                 // Do this separately from ensureSystemAccounts(), as that call is expensive with a
                 // large saved state
                 app.treasuryCloner().ensureTreasuryClonesExist();

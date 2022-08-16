@@ -101,7 +101,7 @@ class StructuralPrecheckTest {
     @Test
     void mustHaveBodyBytes() throws InvalidProtocolBufferException {
         txn = Transaction.getDefaultInstance();
-        willCallRealMethod().given(accessorFactory).constructSpecializedAccessor(txn.toByteArray());
+        willCallRealMethod().given(accessorFactory).constructSpecializedAccessor(txn);
         given(accessor.getTxn()).willReturn(txn.getBody());
 
         final var assess = subject.assess(txn);
@@ -117,7 +117,7 @@ class StructuralPrecheckTest {
                         .setSignedTransactionBytes(ByteString.copyFromUtf8("w/e"))
                         .setBodyBytes(ByteString.copyFromUtf8("doesn't matter"))
                         .build();
-        willCallRealMethod().given(accessorFactory).constructSpecializedAccessor(txn.toByteArray());
+        willCallRealMethod().given(accessorFactory).constructSpecializedAccessor(txn);
         given(accessor.getTxn()).willReturn(txn.getBody());
 
         final var assess = subject.assess(txn);
@@ -134,7 +134,7 @@ class StructuralPrecheckTest {
                         .setSignedTransactionBytes(ByteString.copyFromUtf8("w/e"))
                         .setSigMap(SignatureMap.getDefaultInstance())
                         .build();
-        willCallRealMethod().given(accessorFactory).constructSpecializedAccessor(txn.toByteArray());
+        willCallRealMethod().given(accessorFactory).constructSpecializedAccessor(txn);
         given(accessor.getTxn()).willReturn(txn.getBody());
 
         final var assess = subject.assess(txn);
@@ -154,7 +154,7 @@ class StructuralPrecheckTest {
                                                 .mapToObj(i -> "A")
                                                 .collect(joining())))
                         .build();
-        willCallRealMethod().given(accessorFactory).constructSpecializedAccessor(txn.toByteArray());
+        willCallRealMethod().given(accessorFactory).constructSpecializedAccessor(txn);
         given(accessor.getTxn()).willReturn(txn.getBody());
 
         final var assess = subject.assess(txn);
