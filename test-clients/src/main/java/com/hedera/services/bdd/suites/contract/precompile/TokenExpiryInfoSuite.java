@@ -137,15 +137,13 @@ public class TokenExpiryInfoSuite extends HapiApiSuite {
                                                         .gas(GAS_TO_OFFER)
                                                         .payingWith(GENESIS),
                                                 contractCallLocal(
-                                                                TOKEN_EXPIRY_CONTRACT,
-                                                                GET_EXPIRY_INFO_FOR_TOKEN,
-                                                                Tuple.singleton(
-                                                                        expandByteArrayTo32Length(
-                                                                                asAddress(
-                                                                                        vanillaTokenID
-                                                                                                .get()))))
-                                                        .gas(GAS_TO_OFFER)
-                                                        .payingWith(GENESIS))))
+                                                        TOKEN_EXPIRY_CONTRACT,
+                                                        GET_EXPIRY_INFO_FOR_TOKEN,
+                                                        Tuple.singleton(
+                                                                expandByteArrayTo32Length(
+                                                                        asAddress(
+                                                                                vanillaTokenID
+                                                                                        .get())))))))
                 .then(
                         childRecordsCheck(
                                 "expiryForInvalidTokenIDTxn",
