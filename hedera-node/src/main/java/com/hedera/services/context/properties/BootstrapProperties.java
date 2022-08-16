@@ -271,13 +271,6 @@ public final class BootstrapProperties implements PropertySource {
                     "scheduling.maxNumber",
                     "scheduling.maxExpirationFutureSeconds",
                     "scheduling.whitelist",
-<<<<<<< HEAD
-                    "sigs.expandFromLastSignedState",
-                    "staking.fees.nodeRewardPercentage",
-                    "staking.fees.stakingRewardPercentage",
-                    "staking.isEnabled",
-                    "staking.maxDailyStakeRewardThPerH",
-=======
                     "sigs.expandFromImmutableState",
                     "staking.fees.nodeRewardPercentage",
                     "staking.fees.stakingRewardPercentage",
@@ -285,7 +278,6 @@ public final class BootstrapProperties implements PropertySource {
                     "staking.isEnabled",
                     "staking.maxDailyStakeRewardThPerH",
                     "staking.requireMinStakeToReward",
->>>>>>> origin/master
                     "staking.rewardRate",
                     "staking.startThreshold",
                     "tokens.maxAggregateRels",
@@ -314,12 +306,8 @@ public final class BootstrapProperties implements PropertySource {
                     "hedera.allowances.maxAccountLimit",
                     "hedera.allowances.isEnabled",
                     "entities.limitTokenAssociations",
-<<<<<<< HEAD
-                    "prng.isEnabled");
-=======
                     "utilPrng.isEnabled",
                     "hedera.recordStream.enableTraceabilityMigration");
->>>>>>> origin/master
 
     static final Set<String> NODE_PROPS =
             Set.of(
@@ -335,10 +323,7 @@ public final class BootstrapProperties implements PropertySource {
                     "hedera.profiles.active",
                     "hedera.recordStream.isEnabled",
                     "hedera.recordStream.logDir",
-<<<<<<< HEAD
-=======
                     "hedera.recordStream.sidecarDir",
->>>>>>> origin/master
                     "hedera.recordStream.logPeriod",
                     "hedera.recordStream.queueCapacity",
                     "iss.resetPeriod",
@@ -424,11 +409,8 @@ public final class BootstrapProperties implements PropertySource {
                     entry("hedera.recordStream.recordFileVersion", AS_INT),
                     entry("hedera.recordStream.signatureFileVersion", AS_INT),
                     entry("hedera.recordStream.queueCapacity", AS_INT),
-<<<<<<< HEAD
-=======
                     entry("hedera.recordStream.sidecarMaxSizeMb", AS_INT),
                     entry("hedera.recordStream.enableTraceabilityMigration", AS_BOOLEAN),
->>>>>>> origin/master
                     entry("hedera.shard", AS_LONG),
                     entry("hedera.transaction.maxMemoUtf8Bytes", AS_INT),
                     entry("hedera.transaction.maxValidDuration", AS_LONG),
@@ -481,10 +463,7 @@ public final class BootstrapProperties implements PropertySource {
                     entry("staking.fees.stakingRewardPercentage", AS_INT),
                     entry("staking.periodMins", AS_LONG),
                     entry("staking.rewardHistory.numStoredPeriods", AS_INT),
-<<<<<<< HEAD
-=======
                     entry("staking.requireMinStakeToReward", AS_BOOLEAN),
->>>>>>> origin/master
                     entry("staking.rewardRate", AS_LONG),
                     entry("staking.startThreshold", AS_LONG),
                     entry("tokens.maxAggregateRels", AS_LONG),

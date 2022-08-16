@@ -122,9 +122,6 @@ class ContractCreateTransitionLogicTest {
     private final Account senderAccount = new Account(new Id(0, 0, 1002));
     private final Account relayerAccount = new Account(new Id(0, 0, 1003));
     private final Account contractAccount = new Account(new Id(0, 0, 1006));
-    private long gas = 33_333;
-    private long customAutoRenewPeriod = 100_001L;
-    private Long balance = 1_234L;
     @Mock private HederaFs hfs;
     @Mock private OptionValidator validator;
     @Mock private TransactionContext txnCtx;
@@ -630,8 +627,7 @@ class ContractCreateTransitionLogicTest {
                                 gas,
                                 balance,
                                 Bytes.fromHexString(new String(bytecode)),
-                                txnCtx.consensusTime(),
-                                expiry))
+                                txnCtx.consensusTime()))
                 .willReturn(result);
         given(properties.enabledSidecars()).willReturn(EnumSet.of(SidecarType.CONTRACT_BYTECODE));
         final var sidecarRecord =
@@ -693,8 +689,7 @@ class ContractCreateTransitionLogicTest {
                                 gas,
                                 balance,
                                 Bytes.of(bytecode),
-                                txnCtx.consensusTime(),
-                                expiry))
+                                txnCtx.consensusTime()))
                 .willReturn(result);
         given(
                         accountStore.loadAccountOrFailWith(
@@ -828,8 +823,7 @@ class ContractCreateTransitionLogicTest {
                                 gas,
                                 balance,
                                 initCode,
-                                txnCtx.consensusTime(),
-                                expiry))
+                                txnCtx.consensusTime()))
                 .willReturn(result);
         given(properties.enabledSidecars()).willReturn(EnumSet.of(SidecarType.CONTRACT_BYTECODE));
         final var sidecarRecord =
@@ -916,8 +910,7 @@ class ContractCreateTransitionLogicTest {
                                 gas,
                                 balance,
                                 Bytes.wrap(bytecode),
-                                txnCtx.consensusTime(),
-                                expiry))
+                                txnCtx.consensusTime()))
                 .willReturn(result);
         given(properties.enabledSidecars()).willReturn(EnumSet.of(SidecarType.CONTRACT_BYTECODE));
         final var sidecarRecord =
@@ -988,7 +981,7 @@ class ContractCreateTransitionLogicTest {
                         124L,
                         Bytes.EMPTY,
                         contractAccount.getId().asEvmAddress(),
-                        Map.of(), List.of();
+                        Map.of(), List.of());
         given(txnCtx.consensusTime()).willReturn(consensusTime);
         final var newEvmAddress = contractAccount.getId().asEvmAddress();
         given(worldState.newContractAddress(senderAccount.getId().asEvmAddress()))
@@ -1084,7 +1077,6 @@ class ContractCreateTransitionLogicTest {
                                 balance,
                                 initCode,
                                 txnCtx.consensusTime(),
-                                expiry,
                                 relayerAccount,
                                 biOfferedGasPrice,
                                 maxGas))

@@ -269,7 +269,7 @@ class RecordedStorageFeeChargingTest {
 
         verify(recordsHistorian)
                 .trackFollowingChildRecord(
-                        eq(DEFAULT_SOURCE_ID), bodyCaptor.capture(), eq(mockRecord));
+                        eq(DEFAULT_SOURCE_ID), bodyCaptor.capture(), eq(mockRecord), eq(Collections.emptyList()));
         final var body = bodyCaptor.getValue().build();
         final var op = body.getCryptoTransfer();
         final var transfers = op.getTransfers().getAccountAmountsList();

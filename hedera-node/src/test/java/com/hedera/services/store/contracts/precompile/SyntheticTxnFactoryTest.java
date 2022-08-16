@@ -969,6 +969,13 @@ class SyntheticTxnFactoryTest {
                 .build();
     }
 
+    private AccountAmount aaWith(final AccountID id, final long amount) {
+        return AccountAmount.newBuilder()
+                .setAccountID(id)
+                .setAmount(amount)
+                .build();
+    }
+
     private static final long serialNo = 100;
     private static final long secondAmount = 200;
     private static final long newExpiry = 1_234_567L;

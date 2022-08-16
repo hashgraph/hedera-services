@@ -332,7 +332,6 @@ class CallEvmTxProcessorTest {
                 .willReturn(new Id(0, 0, 1010).asGrpcAccount());
         givenSenderWithBalance(350_000L);
         given(aliasManager.resolveForEvm(receiverAddress)).willReturn(receiverAddress);
-        given(storageExpiry.hapiCallOracle()).willReturn(oracle);
         given(globalDynamicProperties.chainIdBytes32()).willReturn(Bytes32.ZERO);
 
         final var action =

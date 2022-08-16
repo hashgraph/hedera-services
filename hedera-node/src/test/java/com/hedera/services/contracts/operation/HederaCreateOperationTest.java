@@ -40,11 +40,7 @@ package com.hedera.services.contracts.operation;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.BDDMockito.given;
 
-<<<<<<< HEAD
-=======
 import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.contracts.gascalculator.StorageGasCalculator;
->>>>>>> origin/master
 import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.state.EntityCreator;
 import com.hedera.services.store.contracts.HederaWorldUpdater;
@@ -62,10 +58,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class HederaCreateOperationTest {
     private static final long baseGas = 100L;
-<<<<<<< HEAD
-=======
-    private static final long extraGas = 101L;
->>>>>>> origin/master
 
     private final Address recipientAddr =
             Address.fromHexString("0x0102030405060708090a0b0c0d0e0f1011121314");
@@ -76,11 +68,7 @@ class HederaCreateOperationTest {
     @Mock private SyntheticTxnFactory syntheticTxnFactory;
     @Mock private EntityCreator creator;
     @Mock private RecordsHistorian recordsHistorian;
-<<<<<<< HEAD
-=======
-    @Mock private StorageGasCalculator storageGasCalculator;
     @Mock private GlobalDynamicProperties dynamicProperties;
->>>>>>> origin/master
 
     private HederaCreateOperation subject;
 
@@ -88,16 +76,11 @@ class HederaCreateOperationTest {
     void setup() {
         subject =
                 new HederaCreateOperation(
-<<<<<<< HEAD
-                        gasCalculator, creator, syntheticTxnFactory, recordsHistorian);
-=======
                         gasCalculator,
                         creator,
                         syntheticTxnFactory,
                         recordsHistorian,
-                        storageGasCalculator,
                         dynamicProperties);
->>>>>>> origin/master
     }
 
     @Test
@@ -108,18 +91,10 @@ class HederaCreateOperationTest {
     @Test
     void computesExpectedCost() {
         given(gasCalculator.createOperationGasCost(frame)).willReturn(baseGas);
-<<<<<<< HEAD
 
         var actualGas = subject.cost(frame);
 
         assertEquals(baseGas, actualGas);
-=======
-        given(storageGasCalculator.creationGasCost(frame, gasCalculator)).willReturn(extraGas);
-
-        var actualGas = subject.cost(frame);
-
-        assertEquals(baseGas + extraGas, actualGas);
->>>>>>> origin/master
     }
 
     @Test

@@ -37,6 +37,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import com.hedera.services.exceptions.InvalidTransactionException;
+import com.hedera.services.fees.charging.StorageFeeCharging;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.state.merkle.MerkleAccount;
@@ -193,7 +194,7 @@ class SizeLimitedStorageTest {
         subject.putStorage(firstAccount, bLiteralKey, UInt256.ZERO);
         subject.putStorage(nextAccount, aLiteralKey, UInt256.ZERO);
 
-        subject.validateAndCommit();
+        subject.validateAndCommit(accountsLedger);
         subject.recordNewKvUsageTo(accountsLedger);
 
         inOrder.verify(storageRemover, times(3)).removeMapping(any(), any(), eq(storage));
@@ -254,14 +255,9 @@ class SizeLimitedStorageTest {
         subject.putStorage(nextAccount, aLiteralKey, aLiteralValue);
         subject.putStorage(firstAccount, dLiteralKey, dLiteralValue);
 
-        subject.validateAndCommit();
+        subject.validateAndCommit(accountsLedger);
 
         verify(storageUpserter, times(4)).upsertMapping(any(), any(), any(), any(), any());
-    }
-
-    @Test
-    void okToCommitNoChanges() {
-        assertDoesNotThrow(subject::validateAndCommit);
     }
 
     @Test
@@ -284,7 +280,7 @@ class SizeLimitedStorageTest {
         subject.putStorage(nextAccount, aLiteralKey, aLiteralValue);
         subject.putStorage(firstAccount, dLiteralKey, dLiteralValue);
 
-        subject.validateAndCommit();
+        subject.validateAndCommit(accountsLedger);
 
         inOrder.verify(storageUpserter)
                 .upsertMapping(firstAKey, aValue, firstRootKey, null, storage);

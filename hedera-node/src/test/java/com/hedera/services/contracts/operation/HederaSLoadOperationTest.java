@@ -22,12 +22,16 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
-import java.util.ArrayDeque;
-import java.util.Optional;
-import java.util.OptionalLong;
+
+import java.util.*;
+
+import com.hedera.services.store.contracts.HederaWorldState;
+import com.hedera.services.stream.proto.SidecarType;
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
@@ -78,10 +82,6 @@ class HederaSLoadOperationTest {
         given(messageFrame.getRemainingGas()).willReturn(300L);
         given(messageFrame.warmUpStorage(any(), any())).willReturn(false);
 
-        var frameStack = new ArrayDeque<MessageFrame>();
-        frameStack.add(messageFrame);
-
-        given(messageFrame.getMessageFrameStack()).willReturn(frameStack);
         given(dynamicProperties.enabledSidecars()).willReturn(EnumSet.noneOf(SidecarType.class));
 
         final var coldResult = subject.execute(messageFrame, evm);

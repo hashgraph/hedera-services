@@ -52,7 +52,8 @@ public class HederaCreate2Operation extends AbstractRecordingCreateOperation {
                 gasCalculator,
                 creator,
                 syntheticTxnFactory,
-                recordsHistorian);
+                recordsHistorian,
+                dynamicProperties);
         this.dynamicProperties = dynamicProperties;
     }
 

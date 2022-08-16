@@ -37,7 +37,8 @@ public class HederaCreateOperation extends AbstractRecordingCreateOperation {
             final GasCalculator gasCalculator,
             final EntityCreator creator,
             final SyntheticTxnFactory syntheticTxnFactory,
-            final RecordsHistorian recordsHistorian) {
+            final RecordsHistorian recordsHistorian,
+            final GlobalDynamicProperties dynamicProperties) {
         super(
                 0xF0,
                 "ħCREATE",
@@ -47,7 +48,8 @@ public class HederaCreateOperation extends AbstractRecordingCreateOperation {
                 gasCalculator,
                 creator,
                 syntheticTxnFactory,
-                recordsHistorian);
+                recordsHistorian,
+                dynamicProperties);
     }
 
     @Override

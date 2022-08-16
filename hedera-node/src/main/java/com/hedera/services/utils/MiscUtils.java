@@ -237,11 +237,7 @@ public final class MiscUtils {
     private static final Set<HederaFunctionality> CONSENSUS_THROTTLED_FUNCTIONS =
             EnumSet.of(ContractCallLocal, ContractCall, ContractCreate, EthereumTransaction);
 
-<<<<<<< HEAD
-    public static Function<TransactionBody, HederaFunctionality> functionExtractor =
-=======
     public static final Function<TransactionBody, HederaFunctionality> FUNCTION_EXTRACTOR =
->>>>>>> origin/master
             trans -> {
                 try {
                     return functionOf(trans);
@@ -274,11 +270,7 @@ public final class MiscUtils {
     static final String SCHEDULE_DELETE_METRIC = "deleteSchedule";
     static final String SCHEDULE_SIGN_METRIC = "signSchedule";
     static final String SCHEDULE_GET_INFO_METRIC = "getScheduleInfo";
-<<<<<<< HEAD
-    static final String PRNG_METRIC = "prng";
-=======
     static final String UTIL_PRNG_METRIC = "utilPrng";
->>>>>>> origin/master
 
     private static final Map<Query.QueryCase, HederaFunctionality> queryFunctions =
             new EnumMap<>(Query.QueryCase.class);
@@ -356,11 +348,7 @@ public final class MiscUtils {
         BASE_STAT_NAMES.put(Freeze, FREEZE_METRIC);
         BASE_STAT_NAMES.put(SystemDelete, SYSTEM_DELETE_METRIC);
         BASE_STAT_NAMES.put(SystemUndelete, SYSTEM_UNDELETE_METRIC);
-<<<<<<< HEAD
-        BASE_STAT_NAMES.put(PRNG, PRNG_METRIC);
-=======
         BASE_STAT_NAMES.put(UtilPrng, UTIL_PRNG_METRIC);
->>>>>>> origin/master
         /* Queries */
         BASE_STAT_NAMES.put(ConsensusGetTopicInfo, GET_TOPIC_INFO_METRIC);
         BASE_STAT_NAMES.put(GetBySolidityID, GET_SOLIDITY_ADDRESS_INFO_METRIC);
@@ -722,13 +710,8 @@ public final class MiscUtils {
         if (txn.hasEthereumTransaction()) {
             return EthereumTransaction;
         }
-<<<<<<< HEAD
-        if (txn.hasPrng()) {
-            return PRNG;
-=======
         if (txn.hasUtilPrng()) {
             return UtilPrng;
->>>>>>> origin/master
         }
         throw new UnknownHederaFunctionality();
     }
@@ -834,13 +817,8 @@ public final class MiscUtils {
             ordinary.setTokenPause(scheduledTxn.getTokenPause());
         } else if (scheduledTxn.hasTokenUnpause()) {
             ordinary.setTokenUnpause(scheduledTxn.getTokenUnpause());
-<<<<<<< HEAD
-        } else if (scheduledTxn.hasPrng()) {
-            ordinary.setPrng(scheduledTxn.getPrng());
-=======
         } else if (scheduledTxn.hasUtilPrng()) {
             ordinary.setUtilPrng(scheduledTxn.getUtilPrng());
->>>>>>> origin/master
         }
         return ordinary.build();
     }

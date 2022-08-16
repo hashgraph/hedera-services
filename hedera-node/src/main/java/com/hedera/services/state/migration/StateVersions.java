@@ -62,7 +62,6 @@ public final class StateVersions {
             forHapiAndHedera("0.28.0", "0.28.0");
 
     public static final int MINIMUM_SUPPORTED_VERSION = RELEASE_025X_VERSION;
-    public static final int CURRENT_VERSION = RELEASE_0280_VERSION;
     public static final int CURRENT_VERSION = RELEASE_0290_VERSION;
 
     @Nullable
