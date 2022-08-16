@@ -442,7 +442,7 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 
             final var numActualRecords = actualRecords.size();
             assertEquals(
-                    expectedChildRecords.size(),
+                    numExpectations,
                     numActualRecords - numStakingRecords,
                     "Wrong # of (non-staking) child records");
             for (int i = numStakingRecords; i < numActualRecords; i++) {
@@ -869,9 +869,10 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
                     .saveAccountId(rec.getAlias().toStringUtf8(), rec.getReceipt().getAccountID());
             spec.registry().saveKey(rec.getAlias().toStringUtf8(), Key.parseFrom(rec.getAlias()));
             log.info(
-                    spec.logPrefix() + "  Saving alias {} to registry for Account ID {}",
-                    rec.getAlias().toStringUtf8(),
-                    rec.getReceipt().getAccountID());
+                    "{}  Saving alias {} to registry for Account ID {}",
+                    spec::logPrefix,
+                    () -> rec.getAlias().toStringUtf8(),
+                    () -> rec.getReceipt().getAccountID());
         }
 
         if (verboseLoggingOn) {
@@ -908,20 +909,18 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
                             registryEntry.get() + "CallResult",
                             rcd.getContractCallResult().getCreatedContractIDsList());
         }
-        if (saveTxnRecordToRegistry.isPresent()) {
-            spec.registry().saveTransactionRecord(saveTxnRecordToRegistry.get(), rcd);
-        }
+        saveTxnRecordToRegistry.ifPresent(s -> spec.registry().saveTransactionRecord(s, rcd));
     }
 
     private void exposeRequestedEventsFrom(final TransactionRecord rcd) {
         final var abi = Abi.fromJson(contractResultAbi);
         final var matcher = abi.findEvent(eventMatcher);
         final var logs = rcd.getContractCallResult().getLogInfoList();
-        for (final var log : logs) {
-            final var data = log.getData().toByteArray();
-            final var topics = new byte[log.getTopicCount()][];
-            for (int i = 0, n = log.getTopicCount(); i < n; i++) {
-                topics[i] = log.getTopic(i).toByteArray();
+        for (final var contractLog : logs) {
+            final var data = contractLog.getData().toByteArray();
+            final var topics = new byte[contractLog.getTopicCount()][];
+            for (int i = 0, n = contractLog.getTopicCount(); i < n; i++) {
+                topics[i] = contractLog.getTopic(i).toByteArray();
             }
             final var decodedLog = matcher.decode(data, topics);
             eventDataObserver.accept(decodedLog);

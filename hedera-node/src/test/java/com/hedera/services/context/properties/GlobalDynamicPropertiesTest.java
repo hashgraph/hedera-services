@@ -99,6 +99,7 @@ class GlobalDynamicPropertiesTest {
         assertFalse(subject.isUtilPrngEnabled());
         assertTrue(subject.requireMinStakeToReward());
         assertTrue(subject.isTraceabilityMigrationEnabled());
+        assertTrue(subject.shouldChargeBytecodeRent());
     }
 
     @Test
@@ -499,6 +500,8 @@ class GlobalDynamicPropertiesTest {
         given(properties.getIntProperty("hedera.recordStream.sidecarMaxSizeMb"))
                 .willReturn((i + 88));
         given(properties.getBooleanProperty("hedera.recordStream.enableTraceabilityMigration"))
+                .willReturn((i + 81) % 2 == 0);
+        given(properties.getBooleanProperty("contracts.chargeBytecodeRent"))
                 .willReturn((i + 81) % 2 == 0);
     }
 

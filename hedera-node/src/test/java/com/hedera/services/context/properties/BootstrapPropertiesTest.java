@@ -104,6 +104,7 @@ class BootstrapPropertiesTest {
                     entry("accounts.treasury", 2L),
                     entry("contracts.allowCreate2", true),
                     entry("contracts.allowAutoAssociations", false),
+                    entry("contracts.chargeBytecodeRent", false),
                     entry("contracts.defaultLifetime", 7890000L),
                     entry("contracts.localCall.estRetBytes", 32),
                     entry("contracts.maxGasPerSec", 15000000L),

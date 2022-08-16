@@ -105,19 +105,33 @@ class RecordedStorageFeeChargingTest {
     }
 
     @Test
-    void chargesBytecode() {
+    void chargesBytecodeIfRequested() {
         givenStandardSetup();
         final var expectedACharge =
                 canonicalTiers.codePrice(
                         someRate, canonicalLifetime, numKvPairsUsed, oneKbCode, aExpiry);
         givenChargeableContract(aContract, expectedACharge * 2, aExpiry, null);
         given(accountsLedger.get(funding, BALANCE)).willReturn(0L);
+        given(dynamicProperties.shouldChargeBytecodeRent()).willReturn(true);
 
         final var newCodes = Map.of(aContract, oneKbCode);
         subject.chargeStorageFees(numKvPairsUsed, newCodes, Collections.emptyMap(), accountsLedger);
 
         verify(accountsLedger).set(aContract, BALANCE, expectedACharge);
         verify(accountsLedger).set(funding, BALANCE, expectedACharge);
+    }
+
+    @Test
+    void doesntChargesBytecodeIfNotRequested() {
+        given(dynamicProperties.storageSlotLifetime()).willReturn(canonicalLifetime);
+        given(dynamicProperties.storagePriceTiers()).willReturn(canonicalTiers);
+        given(txnCtx.consensusTime()).willReturn(now);
+        given(exchange.activeRate(now)).willReturn(someRate);
+
+        final var newCodes = Map.of(aContract, oneKbCode);
+        subject.chargeStorageFees(numKvPairsUsed, newCodes, Collections.emptyMap(), accountsLedger);
+
+        verifyNoInteractions(accountsLedger);
     }
 
     @Test
@@ -256,6 +270,7 @@ class RecordedStorageFeeChargingTest {
         final var newCodes = Map.of(aContract, oneKbCode);
         final var mockRecord = ExpirableTxnRecord.newBuilder();
         // and:
+        given(dynamicProperties.shouldChargeBytecodeRent()).willReturn(true);
         given(dynamicProperties.shouldItemizeStorageFees()).willReturn(true);
         given(
                         creator.createSuccessfulSyntheticRecord(

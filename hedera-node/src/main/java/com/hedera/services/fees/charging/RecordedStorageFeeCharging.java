@@ -122,7 +122,7 @@ public class RecordedStorageFeeCharging implements StorageFeeCharging {
         final var slotLifetime = dynamicProperties.storageSlotLifetime();
         final var storagePriceTiers = dynamicProperties.storagePriceTiers();
 
-        if (!newBytecodes.isEmpty()) {
+        if (dynamicProperties.shouldChargeBytecodeRent() && !newBytecodes.isEmpty()) {
             newBytecodes.forEach(
                     (id, code) -> {
                         final var lifetime = (long) accounts.get(id, EXPIRY) - thisSecond;

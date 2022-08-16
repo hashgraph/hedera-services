@@ -145,6 +145,7 @@ public class GlobalDynamicProperties {
     private Map<Long, Long> nodeMaxMinStakeRatios;
     private int sidecarMaxSizeMb;
     private boolean enableTraceabilityMigration;
+    private boolean chargeBytecodeRent;
 
     @Inject
     public GlobalDynamicProperties(
@@ -288,6 +289,7 @@ public class GlobalDynamicProperties {
         sidecarMaxSizeMb = properties.getIntProperty("hedera.recordStream.sidecarMaxSizeMb");
         enableTraceabilityMigration =
                 properties.getBooleanProperty("hedera.recordStream.enableTraceabilityMigration");
+        chargeBytecodeRent = properties.getBooleanProperty("contracts.chargeBytecodeRent");
     }
 
     public int maxTokensPerAccount() {
@@ -704,5 +706,9 @@ public class GlobalDynamicProperties {
 
     public boolean isTraceabilityMigrationEnabled() {
         return enableTraceabilityMigration;
+    }
+
+    public boolean shouldChargeBytecodeRent() {
+        return chargeBytecodeRent;
     }
 }

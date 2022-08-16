@@ -34,8 +34,6 @@ import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 public class HederaCreate2Operation extends AbstractRecordingCreateOperation {
     private static final Bytes PREFIX = Bytes.fromHexString("0xFF");
 
-    private final GlobalDynamicProperties dynamicProperties;
-
     @Inject
     public HederaCreate2Operation(
             final GasCalculator gasCalculator,
@@ -54,7 +52,6 @@ public class HederaCreate2Operation extends AbstractRecordingCreateOperation {
                 syntheticTxnFactory,
                 recordsHistorian,
                 dynamicProperties);
-        this.dynamicProperties = dynamicProperties;
     }
 
     @Override

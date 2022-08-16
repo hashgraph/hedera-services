@@ -67,7 +67,8 @@ public record ContractStoragePriceTiers(long[] usageTiers, long[] prices) {
 
     /**
      * Returns the price in tinybars to keep the given bytecode in storage for a given period. The
-     * answer is calculated by
+     * answer is calculated by treating the bytecode as the number of key/value pairs that the same
+     * total bytes.
      *
      * @param numKvPairsUsed the number of total key/value pairs in network storage
      * @param rate the active exchange rate
