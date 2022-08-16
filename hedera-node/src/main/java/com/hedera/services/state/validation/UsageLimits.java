@@ -55,6 +55,10 @@ public class UsageLimits implements ContractStorageLimits, AccountUsageTracking 
         updatedNumAccounts();
     }
 
+    public void resetNumContracts() {
+        numContracts = 0;
+    }
+
     public void recordContracts(final int n) {
         numContracts += n;
     }

@@ -23,6 +23,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_T
 import static org.hyperledger.besu.evm.MainnetEVMs.registerLondonOperations;
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.contracts.execution.traceability.HederaTracer;
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.exceptions.ResourceLimitException;
 import com.hedera.services.store.contracts.HederaMutableWorldState;
@@ -226,8 +227,12 @@ abstract class EvmTxProcessor {
                 buildInitialFrame(commonInitialFrame, receiver, payload, value);
         messageFrameStack.addFirst(initialFrame);
 
+        final var hederaTracer =
+                new HederaTracer(
+                        dynamicProperties.enabledSidecars().contains(SidecarType.CONTRACT_ACTION));
+        hederaTracer.init(initialFrame);
         while (!messageFrameStack.isEmpty()) {
-            process(messageFrameStack.peekFirst(), new HederaTracer());
+            process(messageFrameStack.peekFirst(), hederaTracer);
         }
 
         var gasUsedByTransaction = calculateGasUsedByTX(gasLimit, initialFrame);
@@ -308,7 +313,8 @@ abstract class EvmTxProcessor {
                     gasPrice,
                     initialFrame.getOutputData(),
                     mirrorReceiver,
-                    stateChanges);
+                    stateChanges,
+                    hederaTracer.getActions());
         } else {
             return TransactionProcessingResult.failed(
                     gasUsedByTransaction,
@@ -316,7 +322,8 @@ abstract class EvmTxProcessor {
                     gasPrice,
                     initialFrame.getRevertReason(),
                     initialFrame.getExceptionalHaltReason(),
-                    stateChanges);
+                    stateChanges,
+                    hederaTracer.getActions());
         }
     }
 

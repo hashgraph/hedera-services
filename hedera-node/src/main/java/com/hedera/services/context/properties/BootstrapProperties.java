@@ -131,7 +131,7 @@ public final class BootstrapProperties implements PropertySource {
         }
     }
 
-    void ensureProps() throws IllegalStateException {
+    public void ensureProps() throws IllegalStateException {
         if (bootstrapProps == MISSING_PROPS) {
             initPropsFromResource();
         }
@@ -272,7 +272,7 @@ public final class BootstrapProperties implements PropertySource {
                     "scheduling.maxNumber",
                     "scheduling.maxExpirationFutureSeconds",
                     "scheduling.whitelist",
-                    "sigs.expandFromLastSignedState",
+                    "sigs.expandFromImmutableState",
                     "staking.fees.nodeRewardPercentage",
                     "staking.fees.stakingRewardPercentage",
                     "staking.nodeMaxToMinStakeRatios",
@@ -508,7 +508,7 @@ public final class BootstrapProperties implements PropertySource {
                     entry("contracts.throttle.throttleByGas", AS_BOOLEAN),
                     entry("rates.intradayChangeLimitPercent", AS_INT),
                     entry("rates.midnightCheckInterval", AS_LONG),
-                    entry("sigs.expandFromLastSignedState", AS_BOOLEAN),
+                    entry("sigs.expandFromImmutableState", AS_BOOLEAN),
                     entry("scheduling.longTermEnabled", AS_BOOLEAN),
                     entry("scheduling.maxTxnPerSecond", AS_LONG),
                     entry("scheduling.maxExpirationFutureSeconds", AS_LONG),

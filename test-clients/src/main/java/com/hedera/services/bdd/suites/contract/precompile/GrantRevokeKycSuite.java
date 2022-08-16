@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2022 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -94,6 +94,7 @@ public class GrantRevokeKycSuite extends HapiApiSuite {
         final AtomicReference<AccountID> accountID = new AtomicReference<>();
         final AtomicReference<AccountID> secondAccountID = new AtomicReference<>();
         final AtomicReference<TokenID> tokenWithoutKeyID = new AtomicReference<>();
+        final var invalidTokenID = TokenID.newBuilder().build();
 
         return defaultHapiSpec("GrantRevokeKycFail")
                 .given(
@@ -160,7 +161,7 @@ public class GrantRevokeKycSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 GRANT_REVOKE_KYC_CONTRACT,
                                                                 TOKEN_REVOKE_KYC,
-                                                                asAddress(accountID.get()),
+                                                                asAddress(invalidTokenID),
                                                                 asAddress(secondAccountID.get()))
                                                         .payingWith(ACCOUNT)
                                                         .via("RevokeKycWrongTokenTx")
@@ -169,7 +170,7 @@ public class GrantRevokeKycSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 GRANT_REVOKE_KYC_CONTRACT,
                                                                 TOKEN_GRANT_KYC,
-                                                                asAddress(accountID.get()),
+                                                                asAddress(invalidTokenID),
                                                                 asAddress(secondAccountID.get()))
                                                         .payingWith(ACCOUNT)
                                                         .via("GrantKycWrongTokenTx")

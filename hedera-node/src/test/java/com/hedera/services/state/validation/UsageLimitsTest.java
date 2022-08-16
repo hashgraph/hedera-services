@@ -104,6 +104,13 @@ class UsageLimitsTest {
     }
 
     @Test
+    void canResetContracts() {
+        subject.recordContracts(2);
+        subject.resetNumContracts();
+        assertEquals(0, subject.getNumContracts());
+    }
+
+    @Test
     void getsPercentsUsed() {
         given(dynamicProperties.maxNumAccounts()).willReturn(5L);
         given(dynamicProperties.maxNumContracts()).willReturn(5L);
