@@ -41,7 +41,6 @@ import com.hedera.services.bdd.suites.contract.precompile.DelegatePrecompileSuit
 import com.hedera.services.bdd.suites.contract.precompile.ERCPrecompileSuite;
 import com.hedera.services.bdd.suites.contract.records.LogsSuite;
 import com.hedera.services.bdd.suites.contract.records.RecordsSuite;
-import com.hedera.services.bdd.suites.contract.traceability.ContractTraceabilitySuite;
 import com.hedera.services.bdd.suites.crypto.AutoAccountUpdateSuite;
 import com.hedera.services.bdd.suites.crypto.CryptoApproveAllowanceSuite;
 import com.hedera.services.bdd.suites.crypto.CryptoCreateSuite;
@@ -137,8 +136,6 @@ public class SequentialIntegrationTests extends IntegrationTestBase {
                 // contract.records
                 extractSpecsFromSuite(LogsSuite::new),
                 extractSpecsFromSuite(RecordsSuite::new),
-                // contract.traceability
-                extractSpecsFromSuite(ContractTraceabilitySuite::new),
                 // contract.ethereum
                 extractSpecsFromSuite(EthereumSuite::new),
                 extractSpecsFromSuite(HelloWorldEthereumSuite::new));
