@@ -91,7 +91,7 @@ public class PropertyNames {
     public static final String CONTRACTS_MAX_KV_PAIRS_AGGREGATE = "contracts.maxKvPairs.aggregate";
     public static final String CONTRACTS_MAX_KV_PAIRS_INDIVIDUAL =
             "contracts.maxKvPairs.individual";
-    public static final String CONTRACTS_MAX_NUMBER = "contracts.maxNumber";
+    public static final String CONTRACTS_MAX_NUM = "contracts.maxNumber";
     public static final String CONTRACTS_CHAIN_ID = "contracts.chainId";
     public static final String CONTRACTS_SIDECARS = "contracts.sidecars";
     public static final String CONTRACTS_THROTTLE_THROTTLE_BY_GAS =
