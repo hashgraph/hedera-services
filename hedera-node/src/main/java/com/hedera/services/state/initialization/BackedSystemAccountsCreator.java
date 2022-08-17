@@ -17,6 +17,7 @@ package com.hedera.services.state.initialization;
 
 import static com.hedera.services.context.BasicTransactionContext.EMPTY_KEY;
 import static com.hedera.services.context.properties.PropertyNames.BOOTSTRAP_SYSTEM_ENTITY_EXPIRY;
+import static com.hedera.services.context.properties.PropertyNames.LEDGER_TOTAL_TINY_BAR_FLOAT;
 import static com.hedera.services.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
 import static com.hedera.services.utils.MiscUtils.asFcKeyUnchecked;
 import static com.hedera.services.utils.MiscUtils.asKeyUnchecked;
@@ -72,7 +73,7 @@ public class BackedSystemAccountsCreator implements SystemAccountsCreator {
             final BackingStore<AccountID, MerkleAccount> accounts, final AddressBook addressBook) {
         long systemAccounts = properties.getIntProperty("ledger.numSystemAccounts");
         long expiry = properties.getLongProperty(BOOTSTRAP_SYSTEM_ENTITY_EXPIRY);
-        long tinyBarFloat = properties.getLongProperty("ledger.totalTinyBarFloat");
+        long tinyBarFloat = properties.getLongProperty(LEDGER_TOTAL_TINY_BAR_FLOAT);
 
         for (long num = 1; num <= systemAccounts; num++) {
             var id = STATIC_PROPERTIES.scopedAccountWith(num);

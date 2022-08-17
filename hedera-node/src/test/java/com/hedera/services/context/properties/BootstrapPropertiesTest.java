@@ -267,7 +267,7 @@ class BootstrapPropertiesTest {
 
     @Test
     void containsProperty() {
-        assertTrue(subject.containsProperty("tokens.nfts.maxQueryRange"));
+        assertTrue(subject.containsProperty(TOKENS_NFTS_MAX_QUERY_RANGE));
     }
 
     @BeforeEach
@@ -338,8 +338,8 @@ class BootstrapPropertiesTest {
 
         subject.ensureProps();
 
-        assertEquals(30, subject.getProperty("tokens.maxRelsPerInfoQuery"));
-        assertEquals(30, subject.getProperty("tokens.maxPerAccount"));
+        assertEquals(30, subject.getProperty(TOKENS_MAX_RELS_PER_INFO_QUERY));
+        assertEquals(30, subject.getProperty(TOKENS_MAX_PER_ACCOUNT));
         assertEquals(
                 EnumSet.of(CONTRACT_STATE_CHANGE, CONTRACT_ACTION, CONTRACT_BYTECODE),
                 subject.getProperty("contracts.sidecars"));

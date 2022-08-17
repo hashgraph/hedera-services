@@ -15,6 +15,7 @@
  */
 package com.hedera.services.state.validation;
 
+import static com.hedera.services.context.properties.PropertyNames.LEDGER_TOTAL_TINY_BAR_FLOAT;
 import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -49,7 +50,7 @@ class BasedLedgerValidatorTest {
         given(hederaNums.shard()).willReturn(shard);
 
         properties = mock(PropertySource.class);
-        given(properties.getLongProperty("ledger.totalTinyBarFloat")).willReturn(100L);
+        given(properties.getLongProperty(LEDGER_TOTAL_TINY_BAR_FLOAT)).willReturn(100L);
 
         subject = new BasedLedgerValidator(properties);
     }

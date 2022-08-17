@@ -50,7 +50,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
 @ExtendWith(LogCaptureExtension.class)
 class MerkleStakingInfoTest {
-	@LoggingTarget private LogCaptor logCaptor;
+    @LoggingTarget private LogCaptor logCaptor;
     @LoggingSubject private MerkleStakingInfo subject;
 
     private final int number = 34;
