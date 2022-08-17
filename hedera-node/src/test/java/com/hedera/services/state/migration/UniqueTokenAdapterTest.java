@@ -18,6 +18,7 @@ package com.hedera.services.state.migration;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.hedera.services.state.merkle.MerkleUniqueToken;
@@ -208,5 +209,20 @@ public class UniqueTokenAdapterTest {
 
         Assertions.assertNull(virtualSubject.merkleUniqueToken());
         Assertions.assertNotNull(virtualSubject.uniqueTokenValue());
+    }
+
+    @Test
+    void testHashCode() {
+        // Hashcode is deterministic
+        assertEquals(virtualSubject.hashCode(), virtualSubject.hashCode());
+        // Hashcode for different objects differ
+        assertNotEquals(virtualSubject.hashCode(), merkleSubject.hashCode());
+        // Hashcode for objects with same content is the same
+        assertEquals(
+                virtualSubject.hashCode(),
+                UniqueTokenAdapter.wrap(virtualSubject.uniqueTokenValue()).hashCode());
+        assertEquals(
+                merkleSubject.hashCode(),
+                UniqueTokenAdapter.wrap(merkleSubject.merkleUniqueToken()).hashCode());
     }
 }

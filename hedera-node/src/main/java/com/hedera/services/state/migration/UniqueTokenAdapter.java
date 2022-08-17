@@ -183,4 +183,9 @@ public class UniqueTokenAdapter {
                 ? uniqueTokenValue.equals(((UniqueTokenAdapter) other).uniqueTokenValue)
                 : merkleUniqueToken.equals(((UniqueTokenAdapter) other).merkleUniqueToken);
     }
+
+    @Override
+    public int hashCode() {
+        return isVirtual ? uniqueTokenValue.hashCode() : merkleUniqueToken.hashCode();
+    }
 }

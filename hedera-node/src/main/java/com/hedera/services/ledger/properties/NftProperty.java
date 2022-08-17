@@ -29,7 +29,7 @@ public enum NftProperty implements BeanProperty<UniqueTokenAdapter> {
 
         @Override
         public Function<UniqueTokenAdapter, Object> getter() {
-            return t -> t.getOwner();
+            return UniqueTokenAdapter::getOwner;
         }
     },
     CREATION_TIME {
@@ -40,7 +40,7 @@ public enum NftProperty implements BeanProperty<UniqueTokenAdapter> {
 
         @Override
         public Function<UniqueTokenAdapter, Object> getter() {
-            return t -> t.getPackedCreationTime();
+            return UniqueTokenAdapter::getPackedCreationTime;
         }
     },
     METADATA {
@@ -51,7 +51,7 @@ public enum NftProperty implements BeanProperty<UniqueTokenAdapter> {
 
         @Override
         public Function<UniqueTokenAdapter, Object> getter() {
-            return t -> t.getMetadata();
+            return UniqueTokenAdapter::getMetadata;
         }
     },
     SPENDER {
@@ -62,7 +62,7 @@ public enum NftProperty implements BeanProperty<UniqueTokenAdapter> {
 
         @Override
         public Function<UniqueTokenAdapter, Object> getter() {
-            return t -> t.getSpender();
+            return UniqueTokenAdapter::getSpender;
         }
     },
 }
