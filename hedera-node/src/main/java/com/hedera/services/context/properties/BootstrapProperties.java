@@ -207,7 +207,7 @@ public final class BootstrapProperties implements PropertySource {
 
     static final Set<String> GLOBAL_DYNAMIC_PROPS =
             Set.of(
-                    ACCOUNTS_MAX_NUMBER,
+                    ACCOUNTS_MAX_NUM,
                     AUTO_CREATION_ENABLED,
                     BALANCES_EXPORT_DIR_PATH,
                     BALANCES_EXPORT_ENABLED,
@@ -368,7 +368,7 @@ public final class BootstrapProperties implements PropertySource {
                     entry(ACCOUNTS_EXCHANGE_RATES_ADMIN, AS_LONG),
                     entry(ACCOUNTS_FEE_SCHEDULE_ADMIN, AS_LONG),
                     entry(ACCOUNTS_FREEZE_ADMIN, AS_LONG),
-                    entry(ACCOUNTS_MAX_NUMBER, AS_LONG),
+                    entry(ACCOUNTS_MAX_NUM, AS_LONG),
                     entry(ACCOUNTS_NODE_REWARD_ACCOUNT, AS_LONG),
                     entry(ACCOUNTS_STAKING_REWARD_ACCOUNT, AS_LONG),
                     entry(ACCOUNTS_SYSTEM_ADMIN, AS_LONG),

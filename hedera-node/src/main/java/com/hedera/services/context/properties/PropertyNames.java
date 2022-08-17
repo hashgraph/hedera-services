@@ -71,7 +71,7 @@ public class PropertyNames {
             "staking.rewardHistory.numStoredPeriods";
 
     /* ---- Global dynamic properties ---- */
-    public static final String ACCOUNTS_MAX_NUMBER = "accounts.maxNumber";
+    public static final String ACCOUNTS_MAX_NUM = "accounts.maxNumber";
     public static final String AUTO_CREATION_ENABLED = "autoCreation.enabled";
     public static final String BALANCES_EXPORT_DIR_PATH = "balances.exportDir.path";
     public static final String BALANCES_EXPORT_ENABLED = "balances.exportEnabled";
