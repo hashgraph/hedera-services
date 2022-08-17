@@ -454,7 +454,7 @@ public class FileUpdateSuite extends HapiApiSuite {
                         /* And this one fails because 8 + 3 = 11 > 10 */
                         contractCall(contract, INSERT_ABI, 3, 9)
                                 .payingWith(GENESIS)
-                                .hasKnownStatus(MAX_CONTRACT_STORAGE_EXCEEDED)
+                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
                                 .gas(gasToOffer),
                         /* Confirm the storage size didn't change */
                         getContractInfo(contract).has(contractWith().numKvPairs(8)),
@@ -467,7 +467,7 @@ public class FileUpdateSuite extends HapiApiSuite {
                                                 AGGREGATE_KV_LIMIT_PROP, "1")),
                         contractCall(contract, INSERT_ABI, 3, 9)
                                 .payingWith(GENESIS)
-                                .hasKnownStatus(MAX_STORAGE_IN_PRICE_REGIME_HAS_BEEN_USED)
+                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
                                 .gas(gasToOffer),
                         getContractInfo(contract).has(contractWith().numKvPairs(8)))
                 .then(
@@ -623,7 +623,7 @@ public class FileUpdateSuite extends HapiApiSuite {
                         cryptoCreate(notToBe)
                                 .hasKnownStatus(MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED),
                         contractCreate("Multipurpose")
-                                .hasKnownStatus(MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED),
+                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
                         fileCreate(notToBe)
                                 .contents("NOPE")
                                 .hasKnownStatus(MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED),
