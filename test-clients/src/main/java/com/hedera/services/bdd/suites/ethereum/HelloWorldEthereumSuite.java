@@ -50,7 +50,6 @@ import static com.hedera.services.bdd.suites.contract.Utils.eventSignatureOf;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static org.apache.commons.lang3.StringUtils.EMPTY;
 
@@ -241,8 +240,8 @@ public class HelloWorldEthereumSuite extends HapiApiSuite {
     HapiApiSpec depositSuccess() {
         return defaultHapiSpec("DepositSuccess")
                 .given(
-                    UtilVerbs.overriding("contracts.throttle.throttleByGas", "false"),
-                    newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
+                        UtilVerbs.overriding("contracts.throttle.throttleByGas", "false"),
+                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS),
                         cryptoTransfer(
                                         tinyBarsFromAccountToAlias(
@@ -316,7 +315,7 @@ public class HelloWorldEthereumSuite extends HapiApiSuite {
                                                                                                 .getBytes(
                                                                                                         ETH_HASH_KEY)))))),
                         getAliasedAccountInfo(SECP_256K1_SOURCE_KEY).has(accountWith().nonce(3L)),
-                    UtilVerbs.resetToDefault("contracts.throttle.throttleByGas"));
+                        UtilVerbs.resetToDefault("contracts.throttle.throttleByGas"));
     }
 
     HapiApiSpec ethereumCallWithCalldataBiggerThanMaxSucceeds() {

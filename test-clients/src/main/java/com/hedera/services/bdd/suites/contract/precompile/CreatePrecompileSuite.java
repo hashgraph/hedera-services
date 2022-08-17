@@ -724,8 +724,8 @@ public class CreatePrecompileSuite extends HapiApiSuite {
         return defaultHapiSpec("nonFungibleTokenCreateWithFeesHappyPath")
                 .given(
                         newKeyNamed(ECDSA_KEY).shape(SECP256K1),
-                    newKeyNamed(ED25519KEY).shape(ED25519),
-                    newKeyNamed(treasuryAndFeeCollectorKey),
+                        newKeyNamed(ED25519KEY).shape(ED25519),
+                        newKeyNamed(treasuryAndFeeCollectorKey),
                         cryptoCreate(ACCOUNT).balance(ONE_MILLION_HBARS).key(ECDSA_KEY),
                         cryptoCreate(feeCollector)
                                 .key(treasuryAndFeeCollectorKey)
@@ -759,10 +759,10 @@ public class CreatePrecompileSuite extends HapiApiSuite {
                                                                                 .getAccountID(
                                                                                         ACCOUNT)),
                                                                 AUTO_RENEW_PERIOD,
-                                                    spec.registry()
-                                                        .getKey(ED25519KEY)
-                                                        .getEd25519()
-                                                        .toByteArray())
+                                                                spec.registry()
+                                                                        .getKey(ED25519KEY)
+                                                                        .getEd25519()
+                                                                        .toByteArray())
                                                         .via(FIRST_CREATE_TXN)
                                                         .gas(GAS_TO_OFFER)
                                                         .sending(DEFAULT_AMOUNT_TO_SEND)
@@ -771,7 +771,7 @@ public class CreatePrecompileSuite extends HapiApiSuite {
                                                                 ECDSA_KEY,
                                                                 treasuryAndFeeCollectorKey)
                                                         .alsoSigningWithFullPrefix(
-                                                            ED25519KEY,
+                                                                ED25519KEY,
                                                                 treasuryAndFeeCollectorKey)
                                                         .exposingResultTo(
                                                                 result -> {
@@ -1309,9 +1309,8 @@ public class CreatePrecompileSuite extends HapiApiSuite {
         return defaultHapiSpec("createTokenWithInvalidRoyaltyFee")
                 .given(
                         newKeyNamed(ECDSA_KEY).shape(SECP256K1),
-                    newKeyNamed(ED25519KEY).shape(ED25519),
-
-                    newKeyNamed(contractAdminKey),
+                        newKeyNamed(ED25519KEY).shape(ED25519),
+                        newKeyNamed(contractAdminKey),
                         newKeyNamed(treasuryAndFeeCollectorKey),
                         cryptoCreate(ACCOUNT).balance(ONE_MILLION_HBARS).key(ECDSA_KEY),
                         cryptoCreate(feeCollector)
@@ -1346,10 +1345,11 @@ public class CreatePrecompileSuite extends HapiApiSuite {
                                                                         spec.registry()
                                                                                 .getAccountID(
                                                                                         ACCOUNT)),
-                                                                AUTO_RENEW_PERIOD,                                                     spec.registry()
-                                                        .getKey(ED25519KEY)
-                                                        .getEd25519()
-                                                        .toByteArray())
+                                                                AUTO_RENEW_PERIOD,
+                                                                spec.registry()
+                                                                        .getKey(ED25519KEY)
+                                                                        .getEd25519()
+                                                                        .toByteArray())
                                                         .via(FIRST_CREATE_TXN)
                                                         .gas(GAS_TO_OFFER)
                                                         .sending(DEFAULT_AMOUNT_TO_SEND)
@@ -1357,7 +1357,8 @@ public class CreatePrecompileSuite extends HapiApiSuite {
                                                         .signedBy(
                                                                 ECDSA_KEY,
                                                                 treasuryAndFeeCollectorKey)
-                                                        .alsoSigningWithFullPrefix(ED25519KEY,
+                                                        .alsoSigningWithFullPrefix(
+                                                                ED25519KEY,
                                                                 treasuryAndFeeCollectorKey)
                                                         .hasKnownStatus(CONTRACT_REVERT_EXECUTED))))
                 .then(
@@ -1439,7 +1440,7 @@ public class CreatePrecompileSuite extends HapiApiSuite {
                         contractCreate(TOKEN_CREATE_CONTRACT).gas(GAS_TO_OFFER),
                         tokenCreate(EXISTING_TOKEN)
                                 .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
-                            .supplyKey(ECDSA_KEY)
+                                .supplyKey(ECDSA_KEY)
                                 .initialSupply(0L))
                 .when(
                         withOpContext(
