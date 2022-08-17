@@ -37,6 +37,7 @@ import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.migration.UniqueTokenAdapter;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.RichInstant;
+import com.hedera.services.state.virtual.UniqueTokenValue;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.NftId;
@@ -237,6 +238,30 @@ class ReadOnlyTokenStoreTest {
                 UniqueTokenAdapter.wrap(
                         new MerkleUniqueToken(
                                 new EntityId(Id.DEFAULT),
+                                new byte[0],
+                                RichInstant.MISSING_INSTANT));
+        uniqueTokenHolder.setSpender(new EntityId(Id.DEFAULT));
+        final var serialNumbers = List.of(1L, 2L);
+        given(uniqueTokens.getImmutableRef(any())).willReturn(uniqueTokenHolder);
+
+        subject.loadUniqueTokens(aToken, serialNumbers);
+
+        assertEquals(2, aToken.getLoadedUniqueTokens().size());
+
+        given(uniqueTokens.getImmutableRef(any())).willReturn(null);
+        assertThrows(
+                InvalidTransactionException.class,
+                () -> subject.loadUniqueTokens(aToken, serialNumbers));
+    }
+
+    @Test
+    void loadsUniqueTokensVirtual() {
+        final var aToken = new Token(miscId);
+        final var uniqueTokenHolder =
+                UniqueTokenAdapter.wrap(
+                        new UniqueTokenValue(
+                                Id.DEFAULT.num(),
+                                Id.DEFAULT.num(),
                                 new byte[0],
                                 RichInstant.MISSING_INSTANT));
         uniqueTokenHolder.setSpender(new EntityId(Id.DEFAULT));

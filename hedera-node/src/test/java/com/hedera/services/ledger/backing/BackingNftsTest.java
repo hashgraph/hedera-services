@@ -20,12 +20,14 @@ import static com.hedera.services.state.submerkle.RichInstant.MISSING_INSTANT;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.migration.UniqueTokenAdapter;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.RichInstant;
+import com.hedera.services.state.virtual.UniqueTokenValue;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.utils.EntityNumPair;
 import com.swirlds.merkle.map.MerkleMap;
@@ -129,5 +131,13 @@ class BackingNftsTest {
     @Test
     void sizePropagatesCallToDelegate() {
         assertEquals(delegate.size(), subject.size());
+    }
+
+    @Test
+    void putVirtualToken() {
+        subject.remove(aNftId);
+        final var token = UniqueTokenAdapter.wrap(
+                new UniqueTokenValue(123L, 456L, "hello".getBytes(), MISSING_INSTANT));
+        assertThrows(UnsupportedOperationException.class, () -> subject.put(aNftId, token));
     }
 }

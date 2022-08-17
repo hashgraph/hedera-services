@@ -43,6 +43,7 @@ import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.migration.UniqueTokenAdapter;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.RichInstant;
+import com.hedera.services.state.virtual.UniqueTokenValue;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.NftId;
@@ -409,6 +410,42 @@ class TypedTokenStoreTest {
         final var mut2 =
                 UniqueTokenAdapter.wrap(
                         new MerkleUniqueToken(miscId.asEntityId(), meta2, MISSING_INSTANT));
+        given(uniqueTokens.getRef(nftId1)).willReturn(mut1);
+        given(uniqueTokens.getRef(nftId2)).willReturn(mut2);
+
+        subject.persistNft(nft1);
+        subject.persistNft(nft2);
+
+        mut1.setSpender(autoRenewId.asEntityId());
+        mut2.setSpender(autoRenewId.asEntityId());
+
+        verify(uniqueTokens).put(nftId1, mut1);
+        verify(uniqueTokens).put(nftId2, mut2);
+    }
+
+    @Test
+    void persistsNftsUsingUniqueTokenValueWorksAsExpected() {
+        final var nftId1 = new NftId(1, 2, 3, 1);
+        final var nftId2 = new NftId(1, 2, 3, 2);
+        final var nft1 = new UniqueToken(IdUtils.asModelId("1.2.3"), 1L);
+        final var nft2 = new UniqueToken(IdUtils.asModelId("1.2.3"), 2L);
+        final var meta1 = "aa".getBytes(StandardCharsets.UTF_8);
+        final var meta2 = "bb".getBytes(StandardCharsets.UTF_8);
+        nft1.setOwner(treasuryId);
+        nft1.setMetadata(meta1);
+        nft1.setCreationTime(MISSING_INSTANT);
+        nft1.setSpender(autoRenewId);
+        nft2.setOwner(miscId);
+        nft2.setMetadata(meta2);
+        nft2.setCreationTime(MISSING_INSTANT);
+        nft2.setSpender(autoRenewId);
+
+        final var mut1 =
+                UniqueTokenAdapter.wrap(
+                        new UniqueTokenValue(treasuryId.num(), 0, meta1, MISSING_INSTANT));
+        final var mut2 =
+                UniqueTokenAdapter.wrap(
+                        new UniqueTokenValue(miscId.num(), 0, meta2, MISSING_INSTANT));
         given(uniqueTokens.getRef(nftId1)).willReturn(mut1);
         given(uniqueTokens.getRef(nftId2)).willReturn(mut2);
 
