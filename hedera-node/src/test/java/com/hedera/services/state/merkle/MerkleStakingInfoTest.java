@@ -16,6 +16,7 @@
 package com.hedera.services.state.merkle;
 
 import static com.hedera.services.ServicesState.EMPTY_HASH;
+import static com.hedera.services.context.properties.PropertyNames.STAKING_REWARD_HISTORY_NUM_STORED_PERIODS;
 import static com.hedera.services.state.merkle.internals.ByteUtils.getHashBytes;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
@@ -49,7 +50,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
 @ExtendWith(LogCaptureExtension.class)
 class MerkleStakingInfoTest {
-    @LoggingTarget private LogCaptor logCaptor;
+	@LoggingTarget private LogCaptor logCaptor;
     @LoggingSubject private MerkleStakingInfo subject;
 
     private final int number = 34;
@@ -239,7 +240,7 @@ class MerkleStakingInfoTest {
     @Test
     void gettersAndSettersWork() {
         final var props = mock(BootstrapProperties.class);
-        given(props.getIntProperty("staking.rewardHistory.numStoredPeriods")).willReturn(2);
+        given(props.getIntProperty(STAKING_REWARD_HISTORY_NUM_STORED_PERIODS)).willReturn(2);
         var subject = new MerkleStakingInfo(props);
 
         subject.setKey(key);
