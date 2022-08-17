@@ -15,11 +15,6 @@
  */
 package com.hedera.services.context.properties;
 
-import com.hedera.services.context.annotations.CompositeProps;
-import java.util.List;
-import javax.inject.Inject;
-import javax.inject.Singleton;
-
 import static com.hedera.services.context.properties.PropertyNames.DEV_DEFAULT_LISTENING_NODE_ACCOUNT;
 import static com.hedera.services.context.properties.PropertyNames.DEV_ONLY_DEFAULT_NODE_LISTENS;
 import static com.hedera.services.context.properties.PropertyNames.GRPC_PORT;
@@ -58,6 +53,11 @@ import static com.hedera.services.context.properties.PropertyNames.STATS_HAPI_TH
 import static com.hedera.services.context.properties.PropertyNames.STATS_RUNNING_AVG_HALF_LIFE_SECS;
 import static com.hedera.services.context.properties.PropertyNames.STATS_SPEEDOMETER_HALF_LIFE_SECS;
 import static com.hedera.services.context.properties.PropertyNames.STATS_THROTTLE_UTILS_GAUGE_UPDATE_INTERVAL_MS;
+
+import com.hedera.services.context.annotations.CompositeProps;
+import java.util.List;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 
 @Singleton
 public class NodeLocalProperties {
@@ -117,7 +117,8 @@ public class NodeLocalProperties {
                 properties.getLongProperty(STATS_HAPI_OPS_SPEEDOMETER_UPDATE_INTERVAL_MS);
         statsSpeedometerHalfLifeSecs =
                 properties.getDoubleProperty(STATS_SPEEDOMETER_HALF_LIFE_SECS);
-        statsRunningAvgHalfLifeSecs = properties.getDoubleProperty(STATS_RUNNING_AVG_HALF_LIFE_SECS);
+        statsRunningAvgHalfLifeSecs =
+                properties.getDoubleProperty(STATS_RUNNING_AVG_HALF_LIFE_SECS);
         recordLogDir = properties.getStringProperty(HEDERA_RECORD_STREAM_LOG_DIR);
         sidecarDir = properties.getStringProperty(HEDERA_RECORD_STREAM_SIDE_CAR_DIR);
         recordLogPeriod = properties.getLongProperty(HEDERA_RECORD_STREAM_LOG_PERIOD);
@@ -129,7 +130,8 @@ public class NodeLocalProperties {
         nettyTlsKeyPath = properties.getStringProperty(NETTY_TLS_KEY_PATH);
         nettyProdKeepAliveTimeout = properties.getLongProperty(NETTY_PROD_KEEP_ALIVE_TIMEOUT);
         nettyMaxConnectionAge = properties.getLongProperty(NETTY_PROD_MAX_CONNECTION_AGE);
-        nettyMaxConnectionAgeGrace = properties.getLongProperty(NETTY_PROD_MAX_CONNECTION_AGE_GRACE);
+        nettyMaxConnectionAgeGrace =
+                properties.getLongProperty(NETTY_PROD_MAX_CONNECTION_AGE_GRACE);
         nettyMaxConnectionIdle = properties.getLongProperty(NETTY_PROD_MAX_CONNECTION_IDLE);
         nettyMaxConcurrentCalls = properties.getIntProperty(NETTY_PROD_MAX_CONCURRENT_CALLS);
         nettyFlowControlWindow = properties.getIntProperty(NETTY_PROD_FLOW_CONTROL_WINDOW);

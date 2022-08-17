@@ -192,44 +192,56 @@ public class PropertyNames {
     public static final String TOKENS_NFTS_MAX_BATCH_SIZE_MINT = "tokens.nfts.maxBatchSizeMint";
     public static final String TOKENS_NFTS_MAX_ALLOWED_MINTS = "tokens.nfts.maxAllowedMints";
     public static final String TOKENS_NFTS_MAX_QUERY_RANGE = "tokens.nfts.maxQueryRange";
-    public static final String TOKENS_NFTS_MINT_THORTTLE_SCALE_FACTOR = "tokens.nfts.mintThrottleScaleFactor";
+    public static final String TOKENS_NFTS_MINT_THORTTLE_SCALE_FACTOR =
+            "tokens.nfts.mintThrottleScaleFactor";
     public static final String TOPICS_MAX_NUM = "topics.maxNumber";
-    public static final String TOKENS_NFTS_USE_TREASURY_WILD_CARDS = "tokens.nfts.useTreasuryWildcards";
-    public static final String CONSENSUS_MESSAGE_MAX_BYTES_ALLOWED = "consensus.message.maxBytesAllowed";
-    public static final String CONSENSUS_HANDLE_MAX_PRECEDING_RECORDS = "consensus.handle.maxPrecedingRecords";
-    public static final String CONSENSUS_HANDLE_MAX_FOLLOWING_RECORDS = "consensus.handle.maxFollowingRecords";
+    public static final String TOKENS_NFTS_USE_TREASURY_WILD_CARDS =
+            "tokens.nfts.useTreasuryWildcards";
+    public static final String CONSENSUS_MESSAGE_MAX_BYTES_ALLOWED =
+            "consensus.message.maxBytesAllowed";
+    public static final String CONSENSUS_HANDLE_MAX_PRECEDING_RECORDS =
+            "consensus.handle.maxPrecedingRecords";
+    public static final String CONSENSUS_HANDLE_MAX_FOLLOWING_RECORDS =
+            "consensus.handle.maxFollowingRecords";
     public static final String UPGRADE_ARTIFACTS_PATH = "upgrade.artifacts.path";
-    public static final String HEDERA_ALLOWANCES_MAX_TXN_LIMIT = "hedera.allowances.maxTransactionLimit";
-    public static final String HEDERA_ALLOWANCES_MAX_ACCOUNT_LIMIT = "hedera.allowances.maxAccountLimit";
+    public static final String HEDERA_ALLOWANCES_MAX_TXN_LIMIT =
+            "hedera.allowances.maxTransactionLimit";
+    public static final String HEDERA_ALLOWANCES_MAX_ACCOUNT_LIMIT =
+            "hedera.allowances.maxAccountLimit";
     public static final String HEDERA_ALLOWANCES_IS_ENABLED = "hedera.allowances.isEnabled";
-    public static final String ENTITIES_LIMIT_TOKEN_ASSOCIATIONS = "entities.limitTokenAssociations";
+    public static final String ENTITIES_LIMIT_TOKEN_ASSOCIATIONS =
+            "entities.limitTokenAssociations";
     public static final String UTIL_PRNG_IS_ENABLED = "utilPrng.isEnabled";
     public static final String HEDERA_RECORD_STREAM_ENABLE_TRACEABILITY_MIGRATION =
             "hedera.recordStream.enableTraceabilityMigration";
 
     /* ---- Node properties ----- */
     public static final String DEV_ONLY_DEFAULT_NODE_LISTENS = "dev.onlyDefaultNodeListens";
-    public static final String DEV_DEFAULT_LISTENING_NODE_ACCOUNT = "dev.defaultListeningNodeAccount";
+    public static final String DEV_DEFAULT_LISTENING_NODE_ACCOUNT =
+            "dev.defaultListeningNodeAccount";
     public static final String GRPC_PORT = "grpc.port";
     public static final String GRPC_TLS_PORT = "grpc.tlsPort";
     public static final String HEDERA_ACCOUNTS_EXPORT_PATH = "hedera.accountsExportPath";
     public static final String HEDERA_EXPORT_ACCOUNTS_ON_STARTUP = "hedera.exportAccountsOnStartup";
     public static final String HEDERA_PREFETCH_QUEUE_CAPACITY = "hedera.prefetch.queueCapacity";
     public static final String HEDERA_PREFETCH_THREAD_POOL_SIZE = "hedera.prefetch.threadPoolSize";
-    public static final String HEDERA_PREFETCH_CODE_CACHE_TTL_SECS = "hedera.prefetch.codeCacheTtlSecs";
+    public static final String HEDERA_PREFETCH_CODE_CACHE_TTL_SECS =
+            "hedera.prefetch.codeCacheTtlSecs";
     public static final String HEDERA_PROFILES_ACTIVE = "hedera.profiles.active";
     public static final String HEDERA_RECORD_STREAM_IS_ENABLED = "hedera.recordStream.isEnabled";
     public static final String HEDERA_RECORD_STREAM_LOG_DIR = "hedera.recordStream.logDir";
     public static final String HEDERA_RECORD_STREAM_SIDE_CAR_DIR = "hedera.recordStream.sidecarDir";
     public static final String HEDERA_RECORD_STREAM_LOG_PERIOD = "hedera.recordStream.logPeriod";
-    public static final String HEDERA_RECORD_STREAM_QUEUE_CAPACITY = "hedera.recordStream.queueCapacity";
+    public static final String HEDERA_RECORD_STREAM_QUEUE_CAPACITY =
+            "hedera.recordStream.queueCapacity";
     public static final String ISS_RESET_PERIOD = "iss.resetPeriod";
     public static final String ISS_ROUNDS_TO_LOG = "iss.roundsToLog";
     public static final String NETTY_MODE = "netty.mode";
     public static final String NETTY_PROD_FLOW_CONTROL_WINDOW = "netty.prod.flowControlWindow";
     public static final String NETTY_PROD_MAX_CONCURRENT_CALLS = "netty.prod.maxConcurrentCalls";
     public static final String NETTY_PROD_MAX_CONNECTION_AGE = "netty.prod.maxConnectionAge";
-    public static final String NETTY_PROD_MAX_CONNECTION_AGE_GRACE = "netty.prod.maxConnectionAgeGrace";
+    public static final String NETTY_PROD_MAX_CONNECTION_AGE_GRACE =
+            "netty.prod.maxConnectionAgeGrace";
     public static final String NETTY_PROD_MAX_CONNECTION_IDLE = "netty.prod.maxConnectionIdle";
     public static final String NETTY_PROD_KEEP_ALIVE_TIME = "netty.prod.keepAliveTime";
     public static final String NETTY_PROD_KEEP_ALIVE_TIMEOUT = "netty.prod.keepAliveTimeout";

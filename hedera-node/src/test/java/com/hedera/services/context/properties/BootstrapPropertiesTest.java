@@ -229,7 +229,7 @@ class BootstrapPropertiesTest {
                     entry(STAKING_FEES_STAKING_REWARD_PERCENT, 100),
                     entry(STAKING_MAX_DAILY_STAKE_REWARD_THRESH_PER_HBAR, 17808L),
                     entry(CONSENSUS_MESSAGE_MAX_BYTES_ALLOWED, 1024),
-                    entry( CONSENSUS_HANDLE_MAX_PRECEDING_RECORDS, 3L),
+                    entry(CONSENSUS_HANDLE_MAX_PRECEDING_RECORDS, 3L),
                     entry(CONSENSUS_HANDLE_MAX_FOLLOWING_RECORDS, 50L),
                     entry(LEDGER_NFT_TRANSFERS_MAX_LEN, 10),
                     entry(LEDGER_XFER_BAL_CHANGES_MAX_LEN, 20),

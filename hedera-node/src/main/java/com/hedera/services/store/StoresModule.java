@@ -15,6 +15,8 @@
  */
 package com.hedera.services.store;
 
+import static com.hedera.services.context.properties.PropertyNames.TOKENS_NFTS_USE_TREASURY_WILD_CARDS;
+
 import com.hedera.services.config.AccountNumbers;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.TransactionContext;
@@ -63,8 +65,6 @@ import dagger.Provides;
 import java.util.function.Supplier;
 import javax.inject.Singleton;
 import org.apache.commons.lang3.tuple.Pair;
-
-import static com.hedera.services.context.properties.PropertyNames.TOKENS_NFTS_USE_TREASURY_WILD_CARDS;
 
 @Module
 public interface StoresModule {

@@ -222,8 +222,7 @@ class NodeLocalPropertiesTest {
                 .willReturn(i % 2 == 0 ? "A" : "B");
         given(properties.getBooleanProperty(HEDERA_EXPORT_ACCOUNTS_ON_STARTUP))
                 .willReturn(i % 2 == 0);
-        given(properties.getProfileProperty(NETTY_MODE))
-                .willReturn(LEGACY_ENV_ORDER[(i + 21) % 3]);
+        given(properties.getProfileProperty(NETTY_MODE)).willReturn(LEGACY_ENV_ORDER[(i + 21) % 3]);
         given(properties.getIntProperty(NETTY_START_RETRIES)).willReturn(i + 22);
         given(properties.getLongProperty(NETTY_START_RETRY_INTERVAL_MS)).willReturn(i + 23L);
         given(properties.getIntProperty(STATS_EXECUTION_TIMES_TO_TRACK)).willReturn(i + 24);
