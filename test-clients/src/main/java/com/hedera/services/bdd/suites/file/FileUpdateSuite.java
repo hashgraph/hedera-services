@@ -58,6 +58,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.usableTxnIdNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.utils.contracts.SimpleBytesResult.bigIntResult;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONSENSUS_GAS_EXHAUSTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEES_LIST_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
@@ -408,6 +409,9 @@ public class FileUpdateSuite extends HapiApiSuite {
                         overriding(CONS_MAX_GAS_PROP, "100"))
                 .when()
                 .then(
+                        contractCallLocal(CONTRACT, INDIRECT_GET_ABI)
+                                .gas(101L)
+                                .hasCostAnswerPrecheckFrom(BUSY, MAX_GAS_LIMIT_EXCEEDED),
                         resetToDefault(CONS_MAX_GAS_PROP));
     }
 
