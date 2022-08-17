@@ -58,13 +58,13 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.usableTxnIdNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.utils.contracts.SimpleBytesResult.bigIntResult;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONSENSUS_GAS_EXHAUSTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEES_LIST_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_CONTRACT_STORAGE_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_GAS_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_STORAGE_IN_PRICE_REGIME_HAS_BEEN_USED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
@@ -388,8 +388,9 @@ public class FileUpdateSuite extends HapiApiSuite {
         return defaultHapiSpec("AllUnusedGasIsRefundedIfSoConfigured")
                 .given(
                         overriding(MAX_REFUND_GAS_PROP, "100"),
+                        overriding(CONS_MAX_GAS_PROP, DEFAULT_MAX_CONS_GAS),
                         uploadInitCode(CONTRACT),
-                        contractCreate(CONTRACT))
+                        contractCreate(CONTRACT).gas(100_000L))
                 .when(contractCall(CONTRACT, CREATE_TXN).gas(1_000_000L))
                 .then(
                         contractCallLocal(CONTRACT, INDIRECT_GET_ABI)
@@ -401,6 +402,7 @@ public class FileUpdateSuite extends HapiApiSuite {
     private HapiApiSpec gasLimitOverMaxGasLimitFailsPrecheck() {
         return defaultHapiSpec("GasLimitOverMaxGasLimitFailsPrecheck")
                 .given(
+                        overriding(CONS_MAX_GAS_PROP, DEFAULT_MAX_CONS_GAS),
                         uploadInitCode(CONTRACT),
                         contractCreate(CONTRACT),
                         overriding(CONS_MAX_GAS_PROP, "100"))
@@ -408,20 +410,16 @@ public class FileUpdateSuite extends HapiApiSuite {
                 .then(
                         contractCallLocal(CONTRACT, INDIRECT_GET_ABI)
                                 .gas(101L)
-                                .hasCostAnswerPrecheck(BUSY),
+                                .hasCostAnswerPrecheck(MAX_GAS_LIMIT_EXCEEDED),
                         resetToDefault(CONS_MAX_GAS_PROP));
     }
 
     private HapiApiSpec kvLimitsEnforced() {
         final var contract = "User";
-        final var gasToOffer = 4_000_000;
+        final var gasToOffer = 1_000_000;
 
         return defaultHapiSpec("KvLimitsEnforced")
                 .given(
-                        uploadInitCode(contract),
-                        /* This contract has 0 key/value mappings at creation */
-                        contractCreate(contract),
-                        /* Now we update the per-contract limit to 10 mappings */
                         fileUpdate(APP_PROPERTIES)
                                 .payingWith(ADDRESS_BOOK_CONTROL)
                                 .overridingProps(
@@ -429,7 +427,12 @@ public class FileUpdateSuite extends HapiApiSuite {
                                                 INDIVIDUAL_KV_LIMIT_PROP,
                                                 "10",
                                                 CONS_MAX_GAS_PROP,
-                                                "100_000_000")))
+                                                "100_000_000")),
+                        uploadInitCode(contract),
+                        /* This contract has 0 key/value mappings at creation */
+                        contractCreate(contract))
+                /* Now we update the per-contract limit to 10 mappings */
+
                 .when(
                         /* The first call to insert adds 5 mappings */
                         contractCall(contract, INSERT_ABI, 1, 1)
