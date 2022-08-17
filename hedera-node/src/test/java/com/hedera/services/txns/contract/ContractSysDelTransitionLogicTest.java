@@ -15,6 +15,7 @@
  */
 package com.hedera.services.txns.contract;
 
+import static com.hedera.services.context.properties.PropertyNames.ENTITIES_SYSTEM_DELETABLE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
@@ -80,7 +81,7 @@ class ContractSysDelTransitionLogicTest {
         sigImpactHistorian = mock(SigImpactHistorian.class);
         properties = mock(PropertySource.class);
 
-        given(properties.getTypesProperty("entities.systemDeletable"))
+        given(properties.getTypesProperty(ENTITIES_SYSTEM_DELETABLE))
                 .willReturn(EnumSet.of(EntityType.CONTRACT));
 
         subject =
@@ -96,7 +97,7 @@ class ContractSysDelTransitionLogicTest {
     @Test
     void abortsIfNotSupported() {
         givenValidTxnCtx();
-        given(properties.getTypesProperty("entities.systemDeletable"))
+        given(properties.getTypesProperty(ENTITIES_SYSTEM_DELETABLE))
                 .willReturn(EnumSet.of(EntityType.TOKEN));
 
         subject =

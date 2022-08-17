@@ -342,7 +342,7 @@ class BootstrapPropertiesTest {
         assertEquals(30, subject.getProperty(TOKENS_MAX_PER_ACCOUNT));
         assertEquals(
                 EnumSet.of(CONTRACT_STATE_CHANGE, CONTRACT_ACTION, CONTRACT_BYTECODE),
-                subject.getProperty("contracts.sidecars"));
+                subject.getProperty(CONTRACTS_SIDECARS));
     }
 
     @Test

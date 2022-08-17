@@ -15,6 +15,7 @@
  */
 package com.hedera.services.ledger.accounts.staking;
 
+import static com.hedera.services.context.properties.PropertyNames.ACCOUNTS_STAKING_REWARD_ACCOUNT;
 import static com.hedera.services.context.properties.PropertyNames.STAKING_REWARD_RATE;
 import static com.hedera.services.utils.Units.HBARS_TO_TINYBARS;
 import static org.mockito.BDDMockito.given;
@@ -107,7 +108,7 @@ class PendingRewardsManagementTest {
     }
 
     private void given800Balance(final long balance) {
-        given(properties.getLongProperty("accounts.stakingRewardAccount")).willReturn(800L);
+        given(properties.getLongProperty(ACCOUNTS_STAKING_REWARD_ACCOUNT)).willReturn(800L);
         given(accounts.get(EntityNum.fromLong(800)))
                 .willReturn(MerkleAccountFactory.newAccount().balance(balance).get());
     }
