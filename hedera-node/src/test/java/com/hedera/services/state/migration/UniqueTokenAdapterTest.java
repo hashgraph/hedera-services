@@ -103,74 +103,66 @@ public class UniqueTokenAdapterTest {
 
     @Test
     void testEqualsForSelfReferentialCases() {
-        assertTrue(virtualSubject.equals(virtualSubject));
-        assertTrue(merkleSubject.equals(merkleSubject));
+        assertEquals(virtualSubject, virtualSubject);
+        assertEquals(merkleSubject, merkleSubject);
     }
 
     @Test
     void testEqualsForSameTypes() {
-        assertTrue(
-                virtualSubject.equals(
-                        UniqueTokenAdapter.wrap(
-                                new UniqueTokenValue(
-                                        123L,
-                                        456L,
-                                        "hello".getBytes(),
-                                        RichInstant.MISSING_INSTANT))));
-
-        MerkleUniqueToken merkleUniqueToken =
+        final var uniqueToken =
+                new UniqueTokenValue(123L, 456L, "hello".getBytes(), RichInstant.MISSING_INSTANT);
+        final var merkleUniqueToken =
                 new MerkleUniqueToken(
                         EntityId.fromNum(123L), "hello".getBytes(), RichInstant.MISSING_INSTANT);
         merkleUniqueToken.setSpender(EntityId.fromNum(456L));
-        assertTrue(merkleSubject.equals(UniqueTokenAdapter.wrap(merkleUniqueToken)));
+
+        assertEquals(UniqueTokenAdapter.wrap(uniqueToken), virtualSubject);
+        assertEquals(UniqueTokenAdapter.wrap(merkleUniqueToken), merkleSubject);
     }
 
     @Test
     void testEqualsFalseForVirtualAndMerkleComparisons() {
-        assertFalse(virtualSubject.equals(merkleSubject));
-        assertFalse(merkleSubject.equals(virtualSubject));
+        assertNotEquals(virtualSubject, merkleSubject);
+        assertNotEquals(merkleSubject, virtualSubject);
     }
 
     @Test
     void testEqualsFalseForNullComparisons() {
-        assertFalse(virtualSubject.equals(null));
-        assertFalse(merkleSubject.equals(null));
+        assertNotEquals(virtualSubject, null);
+        assertNotEquals(merkleSubject, null);
     }
 
     @Test
     void testEqualsFalseForDifferentTypeComparisons() {
-        assertFalse(virtualSubject.equals(new Object()));
-        assertFalse(merkleSubject.equals(new Object()));
+        assertNotEquals(virtualSubject, new Object());
+        assertNotEquals(merkleSubject, new Object());
     }
 
     @Test
     void testEqualsFalseWhenFieldsDiffer() {
-        assertFalse(
-                virtualSubject.equals(
-                        UniqueTokenAdapter.wrap(
-                                new UniqueTokenValue(
-                                        1L,
-                                        456L,
-                                        "hello".getBytes(),
-                                        RichInstant.MISSING_INSTANT))));
-        assertFalse(
-                virtualSubject.equals(
-                        UniqueTokenAdapter.wrap(
-                                new UniqueTokenValue(
-                                        123L,
-                                        4L,
-                                        "hello".getBytes(),
-                                        RichInstant.MISSING_INSTANT))));
-        assertFalse(
-                virtualSubject.equals(
-                        UniqueTokenAdapter.wrap(
-                                new UniqueTokenValue(
-                                        123L, 456L, "h".getBytes(), RichInstant.MISSING_INSTANT))));
-        assertFalse(
-                virtualSubject.equals(
-                        UniqueTokenAdapter.wrap(
-                                new UniqueTokenValue(
-                                        123L, 456L, "hello".getBytes(), new RichInstant(3, 4)))));
+        assertNotEquals(
+                virtualSubject,
+                UniqueTokenAdapter.wrap(
+                        new UniqueTokenValue(
+                                1L, 456L, "hello".getBytes(), RichInstant.MISSING_INSTANT)));
+
+        assertNotEquals(
+                virtualSubject,
+                UniqueTokenAdapter.wrap(
+                        new UniqueTokenValue(
+                                123L, 4L, "hello".getBytes(), RichInstant.MISSING_INSTANT)));
+
+        assertNotEquals(
+                virtualSubject,
+                UniqueTokenAdapter.wrap(
+                        new UniqueTokenValue(
+                                123L, 456L, "h".getBytes(), RichInstant.MISSING_INSTANT)));
+
+        assertNotEquals(
+                virtualSubject,
+                UniqueTokenAdapter.wrap(
+                        new UniqueTokenValue(
+                                123L, 456L, "hello".getBytes(), new RichInstant(3, 4))));
 
         UniqueTokenAdapter merkleValue =
                 UniqueTokenAdapter.wrap(
@@ -182,24 +174,24 @@ public class UniqueTokenAdapterTest {
         merkleValue.setSpender(EntityId.fromNum(456L));
 
         merkleValue.setOwner(EntityId.fromNum(1L));
-        assertFalse(merkleSubject.equals(merkleValue));
+        assertNotEquals(merkleSubject, merkleValue);
 
         merkleValue.setOwner(EntityId.fromNum(123L));
         merkleValue.setSpender(EntityId.fromNum(4L));
-        assertFalse(merkleSubject.equals(merkleValue));
+        assertNotEquals(merkleSubject, merkleValue);
 
         merkleValue.setSpender(EntityId.fromNum(456L));
         merkleValue.setMetadata("h".getBytes());
-        assertFalse(merkleSubject.equals(merkleValue));
+        assertNotEquals(merkleSubject, merkleValue);
 
         merkleValue.setMetadata("hello".getBytes());
         merkleValue.setPackedCreationTime(22L);
-        assertFalse(merkleSubject.equals(merkleValue));
+        assertNotEquals(merkleSubject, merkleValue);
 
         merkleValue.setPackedCreationTime(0L);
-        assertTrue(merkleSubject.equals(merkleValue));
+        assertEquals(merkleSubject, merkleValue);
 
-        assertFalse(merkleSubject.equals(UniqueTokenAdapter.newEmptyMerkleToken()));
+        assertNotEquals(merkleSubject, UniqueTokenAdapter.newEmptyMerkleToken());
     }
 
     @Test
