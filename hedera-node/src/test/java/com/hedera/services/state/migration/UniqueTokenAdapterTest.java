@@ -29,7 +29,7 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-public class UniqueTokenAdapterTest {
+class UniqueTokenAdapterTest {
 
     public UniqueTokenAdapter merkleSubject;
     public UniqueTokenAdapter virtualSubject;
@@ -128,8 +128,9 @@ public class UniqueTokenAdapterTest {
 
     @Test
     void testEqualsFalseForNullComparisons() {
-        assertNotEquals(virtualSubject, null);
-        assertNotEquals(merkleSubject, null);
+        assertNotEquals(
+                virtualSubject, null); // NOSONAR: explicitly test virtualSubject.equals(null)
+        assertNotEquals(merkleSubject, null); // NOSONAR: explicitly test merkleSubject.equals(null)
     }
 
     @Test
