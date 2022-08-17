@@ -125,32 +125,32 @@ public class CreatePrecompileSuite extends HapiApiSuite {
     List<HapiApiSpec> positiveSpecs() {
         return List.of(
                 new HapiApiSpec[] {
-//                    fungibleTokenCreateHappyPath(),
-//                    fungibleTokenCreateWithFeesHappyPath(),
+                    fungibleTokenCreateHappyPath(),
+                    fungibleTokenCreateWithFeesHappyPath(),
                     nonFungibleTokenCreateHappyPath(),
                     nonFungibleTokenCreateWithFeesHappyPath(),
-//                    fungibleTokenCreateThenQueryAndTransfer(),
-//                    nonFungibleTokenCreateThenQuery(),
-//                    inheritsSenderAutoRenewAccountIfAnyForNftCreate(),
-//                    inheritsSenderAutoRenewAccountForTokenCreate(),
-//                    createTokenWithDefaultExpiryAndEmptyKeys()
+                    fungibleTokenCreateThenQueryAndTransfer(),
+                    nonFungibleTokenCreateThenQuery(),
+                    inheritsSenderAutoRenewAccountIfAnyForNftCreate(),
+                    inheritsSenderAutoRenewAccountForTokenCreate(),
+                    createTokenWithDefaultExpiryAndEmptyKeys()
                 });
     }
 
     List<HapiApiSpec> negativeSpecs() {
         return List.of(
                 new HapiApiSpec[] {
-//                    tokenCreateWithEmptyKeysReverts(),
-//                    tokenCreateWithKeyWithMultipleKeyValuesReverts(),
-//                    tokenCreateWithFixedFeeWithMultiplePaymentsReverts(),
-//                    createTokenWithEmptyTokenStruct(),
-//                    createTokenWithInvalidExpiry(),
-//                    createTokenWithInvalidRoyaltyFee()
-//                    createTokenWithInvalidTreasury(),
-//                    createTokenWithInvalidFixedFeeWithERC721Denomination(),
-//                    createTokenWithInvalidFeeCollector(),
-//                    createTokenWithInsufficientValueSent(),
-//                    delegateCallTokenCreateFails()
+                    tokenCreateWithEmptyKeysReverts(),
+                    tokenCreateWithKeyWithMultipleKeyValuesReverts(),
+                    tokenCreateWithFixedFeeWithMultiplePaymentsReverts(),
+                    createTokenWithEmptyTokenStruct(),
+                    createTokenWithInvalidExpiry(),
+                    createTokenWithInvalidRoyaltyFee(),
+                    createTokenWithInvalidTreasury(),
+                    createTokenWithInvalidFixedFeeWithERC721Denomination(),
+                    createTokenWithInvalidFeeCollector(),
+                    createTokenWithInsufficientValueSent(),
+                    delegateCallTokenCreateFails()
                 });
     }
 
@@ -724,7 +724,8 @@ public class CreatePrecompileSuite extends HapiApiSuite {
         return defaultHapiSpec("nonFungibleTokenCreateWithFeesHappyPath")
                 .given(
                         newKeyNamed(ECDSA_KEY).shape(SECP256K1),
-                        newKeyNamed(treasuryAndFeeCollectorKey),
+                    newKeyNamed(ED25519KEY).shape(ED25519),
+                    newKeyNamed(treasuryAndFeeCollectorKey),
                         cryptoCreate(ACCOUNT).balance(ONE_MILLION_HBARS).key(ECDSA_KEY),
                         cryptoCreate(feeCollector)
                                 .key(treasuryAndFeeCollectorKey)
@@ -770,6 +771,7 @@ public class CreatePrecompileSuite extends HapiApiSuite {
                                                                 ECDSA_KEY,
                                                                 treasuryAndFeeCollectorKey)
                                                         .alsoSigningWithFullPrefix(
+                                                            ED25519KEY,
                                                                 treasuryAndFeeCollectorKey)
                                                         .exposingResultTo(
                                                                 result -> {
@@ -1307,7 +1309,9 @@ public class CreatePrecompileSuite extends HapiApiSuite {
         return defaultHapiSpec("createTokenWithInvalidRoyaltyFee")
                 .given(
                         newKeyNamed(ECDSA_KEY).shape(SECP256K1),
-                        newKeyNamed(contractAdminKey),
+                    newKeyNamed(ED25519KEY).shape(ED25519),
+
+                    newKeyNamed(contractAdminKey),
                         newKeyNamed(treasuryAndFeeCollectorKey),
                         cryptoCreate(ACCOUNT).balance(ONE_MILLION_HBARS).key(ECDSA_KEY),
                         cryptoCreate(feeCollector)
@@ -1342,7 +1346,10 @@ public class CreatePrecompileSuite extends HapiApiSuite {
                                                                         spec.registry()
                                                                                 .getAccountID(
                                                                                         ACCOUNT)),
-                                                                AUTO_RENEW_PERIOD)
+                                                                AUTO_RENEW_PERIOD,                                                     spec.registry()
+                                                        .getKey(ED25519KEY)
+                                                        .getEd25519()
+                                                        .toByteArray())
                                                         .via(FIRST_CREATE_TXN)
                                                         .gas(GAS_TO_OFFER)
                                                         .sending(DEFAULT_AMOUNT_TO_SEND)
@@ -1350,7 +1357,7 @@ public class CreatePrecompileSuite extends HapiApiSuite {
                                                         .signedBy(
                                                                 ECDSA_KEY,
                                                                 treasuryAndFeeCollectorKey)
-                                                        .alsoSigningWithFullPrefix(
+                                                        .alsoSigningWithFullPrefix(ED25519KEY,
                                                                 treasuryAndFeeCollectorKey)
                                                         .hasKnownStatus(CONTRACT_REVERT_EXECUTED))))
                 .then(
