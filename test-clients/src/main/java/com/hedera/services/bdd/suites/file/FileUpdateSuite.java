@@ -389,7 +389,6 @@ public class FileUpdateSuite extends HapiApiSuite {
         return defaultHapiSpec("AllUnusedGasIsRefundedIfSoConfigured")
                 .given(
                         overriding(MAX_REFUND_GAS_PROP, "100"),
-                        overriding(CONS_MAX_GAS_PROP, DEFAULT_MAX_CONS_GAS),
                         uploadInitCode(CONTRACT),
                         contractCreate(CONTRACT).gas(100_000L))
                 .when(contractCall(CONTRACT, CREATE_TXN).gas(1_000_000L))
@@ -403,7 +402,6 @@ public class FileUpdateSuite extends HapiApiSuite {
     private HapiApiSpec gasLimitOverMaxGasLimitFailsPrecheck() {
         return defaultHapiSpec("GasLimitOverMaxGasLimitFailsPrecheck")
                 .given(
-                        overriding(CONS_MAX_GAS_PROP, DEFAULT_MAX_CONS_GAS),
                         uploadInitCode(CONTRACT),
                         contractCreate(CONTRACT).gas(1_000_000L),
                         overriding(CONS_MAX_GAS_PROP, "100"))
