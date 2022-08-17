@@ -30,8 +30,8 @@ start a local network of Hedera Services nodes using Docker Compose.
 ## Developer IntelliJ quickstart 
 
 The [IntelliJ quickstart](docs/intellij-quickstart.md) covers how to 
-start a local network of Hedera Services nodes from IntelliJ for
-testing and development.
+start a local network of Services nodes from IntelliJ for testing and 
+development.
 
 ## Support
 
