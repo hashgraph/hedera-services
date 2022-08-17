@@ -83,6 +83,7 @@ class StoreInitializationFlowTest {
         // then:
         verify(backingTokenRels).rebuildFromSources();
         verify(backingAccounts).rebuildFromSources();
+        verify(usageLimits).resetNumContracts();
         verify(backingNfts).rebuildFromSources();
         verify(aliasManager).rebuildAliasesMap(eq(accounts), captor.capture());
         final var observer = captor.getValue();
