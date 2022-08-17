@@ -136,8 +136,9 @@ class BackingNftsTest {
     @Test
     void putVirtualToken() {
         subject.remove(aNftId);
-        final var token = UniqueTokenAdapter.wrap(
-                new UniqueTokenValue(123L, 456L, "hello".getBytes(), MISSING_INSTANT));
+        final var token =
+                UniqueTokenAdapter.wrap(
+                        new UniqueTokenValue(123L, 456L, "hello".getBytes(), MISSING_INSTANT));
         assertThrows(UnsupportedOperationException.class, () -> subject.put(aNftId, token));
     }
 }
