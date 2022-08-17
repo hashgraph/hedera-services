@@ -83,7 +83,7 @@ class BootstrapPropertiesTest {
                     entry(BOOTSTRAP_SYSTEM_ENTITY_EXPIRY, 1812637686L),
                     entry(BOOTSTRAP_THROTTLE_DEF_JSON_RESOURCE, "throttles.json"),
                     entry(ACCOUNTS_ADDRESS_BOOK_ADMIN, 55L),
-                    entry("", "/opt/hgcapp/accountBalances/"),
+                    entry(BALANCES_EXPORT_DIR_PATH, "/opt/hgcapp/accountBalances/"),
                     entry(BALANCES_EXPORT_ENABLED, true),
                     entry(BALANCES_EXPORT_PERIOD_SECS, 900),
                     entry(BALANCES_EXPORT_TOKEN_BALANCES, true),
