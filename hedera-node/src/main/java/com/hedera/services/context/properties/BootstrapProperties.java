@@ -132,7 +132,7 @@ public final class BootstrapProperties implements PropertySource {
         }
     }
 
-    void ensureProps() throws IllegalStateException {
+    public void ensureProps() throws IllegalStateException {
         if (bootstrapProps == MISSING_PROPS) {
             initPropsFromResource();
         }
