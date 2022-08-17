@@ -408,9 +408,6 @@ public class FileUpdateSuite extends HapiApiSuite {
                         overriding(CONS_MAX_GAS_PROP, "100"))
                 .when()
                 .then(
-                        contractCallLocal(CONTRACT, INDIRECT_GET_ABI)
-                                .gas(101L)
-                                .hasCostAnswerPrecheck(MAX_GAS_LIMIT_EXCEEDED),
                         resetToDefault(CONS_MAX_GAS_PROP));
     }
 
