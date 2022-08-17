@@ -411,7 +411,8 @@ public class FileUpdateSuite extends HapiApiSuite {
                 .then(
                         contractCallLocal(CONTRACT, INDIRECT_GET_ABI)
                                 .gas(101L)
-                                .hasCostAnswerPrecheckFrom(BUSY, MAX_GAS_LIMIT_EXCEEDED),
+                                // for some reason BUSY is returned in CI
+                                .hasCostAnswerPrecheckFrom(MAX_GAS_LIMIT_EXCEEDED, BUSY),
                         resetToDefault(CONS_MAX_GAS_PROP));
     }
 
@@ -421,6 +422,10 @@ public class FileUpdateSuite extends HapiApiSuite {
 
         return defaultHapiSpec("KvLimitsEnforced")
                 .given(
+                        uploadInitCode(contract),
+                        /* This contract has 0 key/value mappings at creation */
+                        contractCreate(contract),
+                        /* Now we update the per-contract limit to 10 mappings */
                         fileUpdate(APP_PROPERTIES)
                                 .payingWith(ADDRESS_BOOK_CONTROL)
                                 .overridingProps(
@@ -428,12 +433,7 @@ public class FileUpdateSuite extends HapiApiSuite {
                                                 INDIVIDUAL_KV_LIMIT_PROP,
                                                 "10",
                                                 CONS_MAX_GAS_PROP,
-                                                "100_000_000")),
-                        uploadInitCode(contract),
-                        /* This contract has 0 key/value mappings at creation */
-                        contractCreate(contract))
-                /* Now we update the per-contract limit to 10 mappings */
-
+                                                "100_000_000")))
                 .when(
                         /* The first call to insert adds 5 mappings */
                         contractCall(contract, INSERT_ABI, 1, 1)
