@@ -94,6 +94,7 @@ class GlobalDynamicPropertiesTest {
         assertFalse(subject.isUtilPrngEnabled());
         assertTrue(subject.requireMinStakeToReward());
         assertTrue(subject.isTraceabilityMigrationEnabled());
+        assertFalse(subject.shouldCompressRecordFilesOnCreation());
     }
 
     @Test
@@ -238,6 +239,7 @@ class GlobalDynamicPropertiesTest {
         assertFalse(subject.isStakingEnabled());
         assertTrue(subject.isUtilPrngEnabled());
         assertFalse(subject.isTraceabilityMigrationEnabled());
+        assertTrue(subject.shouldCompressRecordFilesOnCreation());
     }
 
     @Test
@@ -488,6 +490,8 @@ class GlobalDynamicPropertiesTest {
                 .willReturn((i + 88));
         given(properties.getBooleanProperty("hedera.recordStream.enableTraceabilityMigration"))
                 .willReturn((i + 81) % 2 == 0);
+        given(properties.getBooleanProperty("hedera.recordStream.compressFilesOnCreation"))
+                .willReturn((i + 82) % 2 == 0);
     }
 
     private Set<EntityType> typesFor(final int i) {
