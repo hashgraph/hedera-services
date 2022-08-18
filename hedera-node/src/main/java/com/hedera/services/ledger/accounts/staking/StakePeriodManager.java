@@ -15,6 +15,8 @@
  */
 package com.hedera.services.ledger.accounts.staking;
 
+import static com.hedera.services.context.properties.PropertyNames.STAKING_PERIOD_MINS;
+import static com.hedera.services.context.properties.PropertyNames.STAKING_REWARD_HISTORY_NUM_STORED_PERIODS;
 import static com.hedera.services.ledger.accounts.staking.StakingUtils.NA;
 import static com.hedera.services.utils.Units.MINUTES_TO_MILLISECONDS;
 import static com.hedera.services.utils.Units.MINUTES_TO_SECONDS;
@@ -53,8 +55,9 @@ public class StakePeriodManager {
             final @CompositeProps PropertySource properties) {
         this.txnCtx = txnCtx;
         this.networkCtx = networkCtx;
-        this.numStoredPeriods = properties.getIntProperty("staking.rewardHistory.numStoredPeriods");
-        this.stakingPeriodMins = properties.getLongProperty("staking.periodMins");
+        this.numStoredPeriods =
+                properties.getIntProperty(STAKING_REWARD_HISTORY_NUM_STORED_PERIODS);
+        this.stakingPeriodMins = properties.getLongProperty(STAKING_PERIOD_MINS);
     }
 
     public long epochSecondAtStartOfPeriod(final long stakePeriod) {

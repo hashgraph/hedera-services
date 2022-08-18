@@ -16,6 +16,7 @@
 package com.hedera.services;
 
 import static com.hedera.services.context.AppsManager.APPS;
+import static com.hedera.services.context.properties.PropertyNames.HEDERA_FIRST_USER_ENTITY;
 import static com.hedera.services.context.properties.SemanticVersions.SEMANTIC_VERSIONS;
 import static com.hedera.services.state.migration.StateChildIndices.NUM_025X_CHILDREN;
 import static com.hedera.services.state.migration.StateVersions.CURRENT_VERSION;
@@ -258,7 +259,7 @@ public class ServicesState extends PartialNaryMerkleInternal
 
         // Create the top-level children in the Merkle tree
         final var bootstrapProps = new BootstrapProperties();
-        final var seqStart = bootstrapProps.getLongProperty("hedera.firstUserEntity");
+        final var seqStart = bootstrapProps.getLongProperty(HEDERA_FIRST_USER_ENTITY);
         createGenesisChildren(addressBook, seqStart, bootstrapProps);
 
         internalInit(platform, bootstrapProps, dualState, GENESIS, null);
@@ -308,7 +309,8 @@ public class ServicesState extends PartialNaryMerkleInternal
                     deployedVersion);
             app.systemExits().fail(1);
         } else {
-            if (trigger == RESTART) {
+            final var isUpgrade = deployedVersion.isAfter(deserializedVersion);
+            if (trigger == RESTART && isUpgrade) {
                 networkCtx().discardPreparedUpgradeMeta();
                 dualState.setFreezeTime(null);
                 if (deployedVersion.hasMigrationRecordsFrom(deserializedVersion)) {
@@ -341,7 +343,7 @@ public class ServicesState extends PartialNaryMerkleInternal
                 // Once we have a dynamic address book, this will run unconditionally
                 app.sysFilesManager().updateStakeDetails();
             }
-            if (trigger == RESTART) {
+            if (trigger == RESTART && isUpgrade) {
                 // Do this separately from ensureSystemAccounts(), as that call is expensive with a
                 // large saved state
                 app.treasuryCloner().ensureTreasuryClonesExist();

@@ -15,6 +15,9 @@
  */
 package com.hedera.services.state.initialization;
 
+import static com.hedera.services.context.properties.PropertyNames.BOOTSTRAP_SYSTEM_ENTITY_EXPIRY;
+import static com.hedera.services.context.properties.PropertyNames.LEDGER_NUM_SYSTEM_ACCOUNTS;
+import static com.hedera.services.context.properties.PropertyNames.LEDGER_TOTAL_TINY_BAR_FLOAT;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -96,9 +99,9 @@ class BackedSystemAccountsCreatorTest {
         given(accountNums.nodeRewardAccount()).willReturn(801L);
         properties = mock(PropertySource.class);
 
-        given(properties.getIntProperty("ledger.numSystemAccounts")).willReturn(numAccounts);
-        given(properties.getLongProperty("ledger.totalTinyBarFloat")).willReturn(totalBalance);
-        given(properties.getLongProperty("bootstrap.system.entityExpiry")).willReturn(expiry);
+        given(properties.getIntProperty(LEDGER_NUM_SYSTEM_ACCOUNTS)).willReturn(numAccounts);
+        given(properties.getLongProperty(LEDGER_TOTAL_TINY_BAR_FLOAT)).willReturn(totalBalance);
+        given(properties.getLongProperty(BOOTSTRAP_SYSTEM_ENTITY_EXPIRY)).willReturn(expiry);
 
         var address = mock(Address.class);
         given(address.getMemo()).willReturn("0.0.3");
@@ -125,7 +128,7 @@ class BackedSystemAccountsCreatorTest {
     @Test
     void throwsOnNegativeBalance() {
         givenMissingTreasury();
-        given(properties.getLongProperty("ledger.totalTinyBarFloat")).willReturn(-100L);
+        given(properties.getLongProperty(LEDGER_TOTAL_TINY_BAR_FLOAT)).willReturn(-100L);
 
         // expect:
         assertThrows(

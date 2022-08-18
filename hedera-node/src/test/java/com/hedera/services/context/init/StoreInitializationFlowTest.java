@@ -84,6 +84,7 @@ class StoreInitializationFlowTest {
         verify(backingTokenRels).rebuildFromSources();
         verify(backingAccounts).rebuildFromSources();
         verify(backingNfts).rebuildFromSources();
+        verify(usageLimits).resetNumContracts();
         verify(aliasManager).rebuildAliasesMap(eq(accounts), captor.capture());
         final var observer = captor.getValue();
         observer.accept(EntityNum.fromInt(1), MerkleAccountFactory.newAccount().get());
