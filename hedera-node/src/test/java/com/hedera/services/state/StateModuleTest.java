@@ -15,6 +15,7 @@
  */
 package com.hedera.services.state;
 
+import static com.hedera.services.context.properties.PropertyNames.BOOTSTRAP_GENESIS_PUBLIC_KEY;
 import static com.hedera.services.state.StateModule.provideStateViews;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -70,7 +71,7 @@ class StateModuleTest {
         final var keyBytes = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".getBytes();
         final var hexedKeyBytes = CommonUtils.hex(keyBytes);
 
-        given(properties.getStringProperty("bootstrap.genesisPublicKey")).willReturn(hexedKeyBytes);
+        given(properties.getStringProperty(BOOTSTRAP_GENESIS_PUBLIC_KEY)).willReturn(hexedKeyBytes);
 
         // when:
         final var keySupplier = StateModule.provideSystemFileKey(properties);
@@ -86,7 +87,7 @@ class StateModuleTest {
         final var keyBytes = "aaaaaaaaaaaaaaaa".getBytes();
         final var hexedKeyBytes = CommonUtils.hex(keyBytes);
 
-        given(properties.getStringProperty("bootstrap.genesisPublicKey")).willReturn(hexedKeyBytes);
+        given(properties.getStringProperty(BOOTSTRAP_GENESIS_PUBLIC_KEY)).willReturn(hexedKeyBytes);
 
         final var keySupplier = StateModule.provideSystemFileKey(properties);
         assertThrows(IllegalStateException.class, keySupplier::get);

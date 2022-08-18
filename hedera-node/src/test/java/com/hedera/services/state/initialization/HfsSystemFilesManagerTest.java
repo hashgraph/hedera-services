@@ -15,6 +15,17 @@
  */
 package com.hedera.services.state.initialization;
 
+import static com.hedera.services.context.properties.PropertyNames.BOOTSTRAP_FEE_SCHEDULE_JSON_RESOURCE;
+import static com.hedera.services.context.properties.PropertyNames.BOOTSTRAP_HAPI_PERMISSIONS_PATH;
+import static com.hedera.services.context.properties.PropertyNames.BOOTSTRAP_NETWORK_PROPERTIES_PATH;
+import static com.hedera.services.context.properties.PropertyNames.BOOTSTRAP_RATES_CURRENT_CENT_EQUIV;
+import static com.hedera.services.context.properties.PropertyNames.BOOTSTRAP_RATES_CURRENT_EXPIRY;
+import static com.hedera.services.context.properties.PropertyNames.BOOTSTRAP_RATES_CURRENT_HBAR_EQUIV;
+import static com.hedera.services.context.properties.PropertyNames.BOOTSTRAP_RATES_NEXT_CENT_EQUIV;
+import static com.hedera.services.context.properties.PropertyNames.BOOTSTRAP_RATES_NEXT_EXPIRY;
+import static com.hedera.services.context.properties.PropertyNames.BOOTSTRAP_RATES_NEXT_HBAR_EQUIV;
+import static com.hedera.services.context.properties.PropertyNames.BOOTSTRAP_SYSTEM_ENTITY_EXPIRY;
+import static com.hedera.services.context.properties.PropertyNames.BOOTSTRAP_THROTTLE_DEF_JSON_RESOURCE;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -209,22 +220,22 @@ class HfsSystemFilesManagerTest {
         given(specialFiles.contains(fileNumbers.toFid(111))).willReturn(false);
 
         properties = mock(PropertySource.class);
-        given(properties.getStringProperty("bootstrap.hapiPermissions.path"))
+        given(properties.getStringProperty(BOOTSTRAP_HAPI_PERMISSIONS_PATH))
                 .willReturn(bootstrapJutilPermsLoc);
-        given(properties.getStringProperty("bootstrap.networkProperties.path"))
+        given(properties.getStringProperty(BOOTSTRAP_NETWORK_PROPERTIES_PATH))
                 .willReturn(bootstrapJutilPropsLoc);
-        given(properties.getLongProperty("bootstrap.system.entityExpiry")).willReturn(expiry);
-        given(properties.getIntProperty("bootstrap.rates.currentHbarEquiv"))
+        given(properties.getLongProperty(BOOTSTRAP_SYSTEM_ENTITY_EXPIRY)).willReturn(expiry);
+        given(properties.getIntProperty(BOOTSTRAP_RATES_CURRENT_HBAR_EQUIV))
                 .willReturn(curHbarEquiv);
-        given(properties.getIntProperty("bootstrap.rates.currentCentEquiv"))
+        given(properties.getIntProperty(BOOTSTRAP_RATES_CURRENT_CENT_EQUIV))
                 .willReturn(curCentEquiv);
-        given(properties.getLongProperty("bootstrap.rates.currentExpiry")).willReturn(expiry);
-        given(properties.getIntProperty("bootstrap.rates.nextHbarEquiv")).willReturn(nxtHbarEquiv);
-        given(properties.getIntProperty("bootstrap.rates.nextCentEquiv")).willReturn(nxtCentEquiv);
-        given(properties.getLongProperty("bootstrap.rates.nextExpiry")).willReturn(nextExpiry);
-        given(properties.getStringProperty("bootstrap.feeSchedulesJson.resource"))
+        given(properties.getLongProperty(BOOTSTRAP_RATES_CURRENT_EXPIRY)).willReturn(expiry);
+        given(properties.getIntProperty(BOOTSTRAP_RATES_NEXT_HBAR_EQUIV)).willReturn(nxtHbarEquiv);
+        given(properties.getIntProperty(BOOTSTRAP_RATES_NEXT_CENT_EQUIV)).willReturn(nxtCentEquiv);
+        given(properties.getLongProperty(BOOTSTRAP_RATES_NEXT_EXPIRY)).willReturn(nextExpiry);
+        given(properties.getStringProperty(BOOTSTRAP_FEE_SCHEDULE_JSON_RESOURCE))
                 .willReturn("R4FeeSchedule.json");
-        given(properties.getStringProperty("bootstrap.throttleDefsJson.resource"))
+        given(properties.getStringProperty(BOOTSTRAP_THROTTLE_DEF_JSON_RESOURCE))
                 .willReturn("bootstrap/throttles.json");
 
         ratesCb = mock(Consumer.class);
@@ -584,7 +595,7 @@ class HfsSystemFilesManagerTest {
     @Test
     void bootstrapsPermissionsAsDefaultConfigListIfNoDiskProperties() throws IOException {
         final var defaultPermissions = defaultApiPermissionsFromResource();
-        given(properties.getStringProperty("bootstrap.hapiPermissions.path"))
+        given(properties.getStringProperty(BOOTSTRAP_HAPI_PERMISSIONS_PATH))
                 .willReturn(nonexistentBootstrapJutilLoc);
         given(hfs.exists(apiPermsId)).willReturn(false);
         given(hfs.cat(apiPermsId)).willReturn(defaultPermissions.toByteArray());
@@ -610,7 +621,7 @@ class HfsSystemFilesManagerTest {
     void bootstrapsPermissionsAsEmptyConfigListIfNoDiskPropertiesAndNoResourceWithErrorLog() {
         final var emptyPermissions = ServicesConfigurationList.getDefaultInstance();
         subject.setPermsSysFileDefaultResource("not-a-real-resource");
-        given(properties.getStringProperty("bootstrap.hapiPermissions.path"))
+        given(properties.getStringProperty(BOOTSTRAP_HAPI_PERMISSIONS_PATH))
                 .willReturn(nonexistentBootstrapJutilLoc);
         given(hfs.exists(apiPermsId)).willReturn(false);
         given(hfs.cat(apiPermsId)).willReturn(emptyPermissions.toByteArray());
@@ -641,7 +652,7 @@ class HfsSystemFilesManagerTest {
     void bootstrapsPropsAsEmptyConfigListIfNoDiskPropertiesAndNoResourceWithErrorLog() {
         final var emptyProps = ServicesConfigurationList.getDefaultInstance();
         subject.setPropsSysFileDefaultResource("not-a-real-resource");
-        given(properties.getStringProperty("bootstrap.networkProperties.path"))
+        given(properties.getStringProperty(BOOTSTRAP_NETWORK_PROPERTIES_PATH))
                 .willReturn(nonexistentBootstrapJutilLoc);
         given(hfs.exists(appPropsId)).willReturn(false);
         given(hfs.cat(appPropsId)).willReturn(emptyProps.toByteArray());
