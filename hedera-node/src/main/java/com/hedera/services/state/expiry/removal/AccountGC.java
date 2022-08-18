@@ -23,7 +23,7 @@ import com.hedera.services.ledger.backing.BackingStore;
 import com.hedera.services.state.expiry.TokenRelsListMutation;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
-import com.hedera.services.state.merkle.MerkleUniqueToken;
+import com.hedera.services.state.migration.UniqueTokenMapAdapter;
 import com.hedera.services.state.submerkle.CurrencyAdjustments;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.utils.EntityNum;
@@ -62,7 +62,7 @@ public class AccountGC {
     private final TreasuryReturnHelper treasuryReturnHelper;
     private final BackingStore<AccountID, MerkleAccount> backingAccounts;
     private final Supplier<MerkleMap<EntityNumPair, MerkleTokenRelStatus>> tokenRels;
-    private final Supplier<MerkleMap<EntityNumPair, MerkleUniqueToken>> uniqueTokens;
+    private final Supplier<UniqueTokenMapAdapter> uniqueTokens;
     private final GlobalDynamicProperties dynamicProperties;
 
     private RemovalFacilitation removalFacilitation =
@@ -75,7 +75,7 @@ public class AccountGC {
             final TreasuryReturnHelper treasuryReturnHelper,
             final BackingStore<AccountID, MerkleAccount> backingAccounts,
             final Supplier<MerkleMap<EntityNumPair, MerkleTokenRelStatus>> tokenRels,
-            final Supplier<MerkleMap<EntityNumPair, MerkleUniqueToken>> uniqueTokens,
+            final Supplier<UniqueTokenMapAdapter> uniqueTokens,
             final GlobalDynamicProperties dynamicProperties) {
         this.tokenRels = tokenRels;
         this.aliasManager = aliasManager;
@@ -138,7 +138,7 @@ public class AccountGC {
             final long nftsOwned,
             final long headNftNum,
             final long headSerialNum,
-            final MerkleMap<EntityNumPair, MerkleUniqueToken> currUniqueTokens) {
+            final UniqueTokenMapAdapter currUniqueTokens) {
         var nftKey = EntityNumPair.fromLongs(headNftNum, headSerialNum);
         var i = Math.min(nftsOwned, dynamicProperties.getMaxReturnedNftsPerTouch());
         while (nftKey != null && i-- > 0) {

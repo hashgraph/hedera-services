@@ -30,7 +30,7 @@ import com.hedera.services.ledger.backing.BackingStore;
 import com.hedera.services.state.expiry.TokenRelsListMutation;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
-import com.hedera.services.state.merkle.MerkleUniqueToken;
+import com.hedera.services.state.migration.UniqueTokenMapAdapter;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
 import com.hedera.test.factories.accounts.MerkleAccountFactory;
@@ -51,7 +51,7 @@ class AccountGCTest {
     @Mock private TreasuryReturnHelper treasuryReturnHelper;
     @Mock private BackingStore<AccountID, MerkleAccount> backingAccounts;
     @Mock private MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenRels;
-    @Mock private MerkleMap<EntityNumPair, MerkleUniqueToken> uniqueTokens;
+    @Mock private UniqueTokenMapAdapter uniqueTokens;
     @Mock private GlobalDynamicProperties dynamicProperties;
     @Mock private AccountGC.RemovalFacilitation removalFacilitation;
     @Mock private TokenRelsListMutation listRemoval;

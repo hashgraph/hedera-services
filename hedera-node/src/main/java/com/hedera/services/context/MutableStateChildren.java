@@ -26,7 +26,7 @@ import com.hedera.services.state.merkle.MerkleStakingInfo;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleTopic;
-import com.hedera.services.state.merkle.MerkleUniqueToken;
+import com.hedera.services.state.migration.UniqueTokenMapAdapter;
 import com.hedera.services.state.virtual.ContractKey;
 import com.hedera.services.state.virtual.IterableContractValue;
 import com.hedera.services.state.virtual.VirtualBlobKey;
@@ -52,7 +52,7 @@ public class MutableStateChildren implements StateChildren {
     private WeakReference<MerkleMap<EntityNum, MerkleAccount>> accounts;
     private WeakReference<MerkleMap<EntityNum, MerkleTopic>> topics;
     private WeakReference<MerkleMap<EntityNum, MerkleToken>> tokens;
-    private WeakReference<MerkleMap<EntityNumPair, MerkleUniqueToken>> uniqueTokens;
+    private WeakReference<UniqueTokenMapAdapter> uniqueTokens;
     private WeakReference<MerkleScheduledTransactions> schedules;
     private WeakReference<VirtualMap<VirtualBlobKey, VirtualBlobValue>> storage;
     private WeakReference<VirtualMap<ContractKey, IterableContractValue>> contractStorage;
@@ -182,7 +182,7 @@ public class MutableStateChildren implements StateChildren {
     }
 
     @Override
-    public MerkleMap<EntityNumPair, MerkleUniqueToken> uniqueTokens() {
+    public UniqueTokenMapAdapter uniqueTokens() {
         return Objects.requireNonNull(uniqueTokens.get());
     }
 
@@ -190,7 +190,7 @@ public class MutableStateChildren implements StateChildren {
         return uniqueTokens().size();
     }
 
-    public void setUniqueTokens(MerkleMap<EntityNumPair, MerkleUniqueToken> uniqueTokens) {
+    public void setUniqueTokens(UniqueTokenMapAdapter uniqueTokens) {
         this.uniqueTokens = new WeakReference<>(uniqueTokens);
     }
 

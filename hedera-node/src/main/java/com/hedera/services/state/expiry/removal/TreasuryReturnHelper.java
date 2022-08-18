@@ -22,7 +22,7 @@ import static com.hedera.services.utils.NftNumPair.MISSING_NFT_NUM_PAIR;
 
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
-import com.hedera.services.state.merkle.MerkleUniqueToken;
+import com.hedera.services.state.migration.UniqueTokenMapAdapter;
 import com.hedera.services.state.submerkle.CurrencyAdjustments;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
@@ -70,15 +70,15 @@ public class TreasuryReturnHelper {
     }
 
     EntityNumPair updateNftReturns(
-            final EntityNumPair nftKey,
-            final MerkleMap<EntityNumPair, MerkleUniqueToken> currUniqueTokens) {
+            final EntityNumPair nftKey, final UniqueTokenMapAdapter currUniqueTokens) {
+        final var nftIdKey = nftKey.asNftNumPair().nftId();
         final var curTokens = tokens.get();
         final var tokenNum = nftKey.getHiOrderAsNum();
         final var token = curTokens.get(tokenNum);
-        final var uniqueToken = currUniqueTokens.getForModify(nftKey);
+        final var uniqueToken = currUniqueTokens.getForModify(nftIdKey);
         if (token != null && token.tokenType() == NON_FUNGIBLE_UNIQUE && uniqueToken != null) {
             if (token.isDeleted()) {
-                currUniqueTokens.remove(nftKey);
+                currUniqueTokens.remove(nftIdKey);
             } else {
                 uniqueToken.setOwner(MISSING_ENTITY_ID);
             }

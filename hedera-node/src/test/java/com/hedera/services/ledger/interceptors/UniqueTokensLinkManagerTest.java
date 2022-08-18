@@ -22,11 +22,13 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 
+import com.hedera.services.context.properties.BootstrapProperties;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
-import com.hedera.services.state.merkle.MerkleUniqueToken;
+import com.hedera.services.state.migration.UniqueTokenAdapter;
+import com.hedera.services.state.migration.UniqueTokenMapAdapter;
+import com.hedera.services.store.models.NftId;
 import com.hedera.services.utils.EntityNum;
-import com.hedera.services.utils.EntityNumPair;
 import com.hedera.services.utils.NftNumPair;
 import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
@@ -42,14 +44,20 @@ import org.junit.jupiter.api.extension.ExtendWith;
 class UniqueTokensLinkManagerTest {
     private final MerkleMap<EntityNum, MerkleAccount> accounts = new MerkleMap<>();
     private final MerkleMap<EntityNum, MerkleToken> tokens = new MerkleMap<>();
-    private final MerkleMap<EntityNumPair, MerkleUniqueToken> uniqueTokens = new MerkleMap<>();
+    private final UniqueTokenMapAdapter uniqueTokens =
+            UniqueTokenMapAdapter.wrap(new MerkleMap<>());
 
     @LoggingTarget private LogCaptor logCaptor;
     @LoggingSubject private UniqueTokensLinkManager subject;
 
     @BeforeEach
     void setUp() {
-        subject = new UniqueTokensLinkManager(() -> accounts, () -> tokens, () -> uniqueTokens);
+        subject =
+                new UniqueTokensLinkManager(
+                        () -> accounts,
+                        () -> tokens,
+                        () -> uniqueTokens,
+                        new BootstrapProperties());
     }
 
     @Test
@@ -146,7 +154,7 @@ class UniqueTokensLinkManagerTest {
         final var updatedNft1 = uniqueTokens.get(nftKey1);
         assertEquals(nftNumPair2, updatedNft1.getPrev());
         final var updatedNft2 = uniqueTokens.get(nftKey2);
-        assertSame(updatedNft2, mintedNft);
+        assertSame(updatedNft2.merkleUniqueToken(), mintedNft.merkleUniqueToken());
         assertEquals(nftNumPair1, updatedNft2.getNext());
         final var updatedOwner = accounts.get(newOwner);
         assertEquals(tokenNum, updatedOwner.getHeadNftId());
@@ -185,16 +193,16 @@ class UniqueTokensLinkManagerTest {
     final EntityNum newOwner = EntityNum.fromLong(newOwnerNum);
     final EntityNum treasury = EntityNum.fromLong(treasuryNum);
     final EntityNum token = EntityNum.fromLong(tokenNum);
-    final EntityNumPair nftKey1 = EntityNumPair.fromLongs(tokenNum, serialNum1);
-    final EntityNumPair nftKey2 = EntityNumPair.fromLongs(tokenNum, serialNum2);
-    final EntityNumPair nftKey3 = EntityNumPair.fromLongs(tokenNum, serialNum3);
-    final NftNumPair nftNumPair1 = nftKey1.asNftNumPair();
-    final NftNumPair nftNumPair2 = nftKey2.asNftNumPair();
-    final NftNumPair nftNumPair3 = nftKey3.asNftNumPair();
+    final NftId nftKey1 = NftId.withDefaultShardRealm(tokenNum, serialNum1);
+    final NftId nftKey2 = NftId.withDefaultShardRealm(tokenNum, serialNum2);
+    final NftId nftKey3 = NftId.withDefaultShardRealm(tokenNum, serialNum3);
+    final NftNumPair nftNumPair1 = nftKey1.asEntityNumPair().asNftNumPair();
+    final NftNumPair nftNumPair2 = nftKey2.asEntityNumPair().asNftNumPair();
+    final NftNumPair nftNumPair3 = nftKey3.asEntityNumPair().asNftNumPair();
     private MerkleAccount oldOwnerAccount = new MerkleAccount();
     private MerkleAccount newOwnerAccount = new MerkleAccount();
     private MerkleToken nftToken = new MerkleToken();
-    private MerkleUniqueToken nft1 = new MerkleUniqueToken();
-    private MerkleUniqueToken nft2 = new MerkleUniqueToken();
-    private MerkleUniqueToken nft3 = new MerkleUniqueToken();
+    private UniqueTokenAdapter nft1 = UniqueTokenAdapter.newEmptyMerkleToken();
+    private UniqueTokenAdapter nft2 = UniqueTokenAdapter.newEmptyMerkleToken();
+    private UniqueTokenAdapter nft3 = UniqueTokenAdapter.newEmptyMerkleToken();
 }

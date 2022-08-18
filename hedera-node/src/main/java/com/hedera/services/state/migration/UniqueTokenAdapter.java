@@ -17,7 +17,10 @@ package com.hedera.services.state.migration;
 
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.state.virtual.UniqueTokenValue;
+import com.hedera.services.utils.NftNumPair;
+import com.swirlds.common.FastCopyable;
 
 /**
  * Intermediate adapter class for an NFT token.
@@ -26,7 +29,7 @@ import com.hedera.services.state.virtual.UniqueTokenValue;
  * {@link UniqueTokenValue}. It serves to adapt the selected underlying representation to where it
  * is used.
  */
-public class UniqueTokenAdapter {
+public class UniqueTokenAdapter implements FastCopyable {
 
     private final UniqueTokenValue uniqueTokenValue;
     private final MerkleUniqueToken merkleUniqueToken;
@@ -34,11 +37,11 @@ public class UniqueTokenAdapter {
     private final boolean isVirtual;
 
     public static UniqueTokenAdapter wrap(MerkleUniqueToken token) {
-        return new UniqueTokenAdapter(token);
+        return token == null ? null : new UniqueTokenAdapter(token);
     }
 
     public static UniqueTokenAdapter wrap(UniqueTokenValue token) {
-        return new UniqueTokenAdapter(token);
+        return token == null ? null : new UniqueTokenAdapter(token);
     }
 
     public static UniqueTokenAdapter newEmptyMerkleToken() {
@@ -87,6 +90,13 @@ public class UniqueTokenAdapter {
      */
     public EntityId getSpender() {
         return isVirtual ? uniqueTokenValue.getSpender() : merkleUniqueToken.getSpender();
+    }
+
+    @Override
+    public UniqueTokenAdapter copy() {
+        return isVirtual
+                ? UniqueTokenAdapter.wrap(uniqueTokenValue.copy())
+                : UniqueTokenAdapter.wrap(merkleUniqueToken.copy());
     }
 
     /**
@@ -171,6 +181,30 @@ public class UniqueTokenAdapter {
         }
     }
 
+    public void setPrev(NftNumPair prev) {
+        if (isVirtual) {
+            uniqueTokenValue.setPrev(prev);
+        } else {
+            merkleUniqueToken.setPrev(prev);
+        }
+    }
+
+    public void setNext(NftNumPair next) {
+        if (isVirtual) {
+            uniqueTokenValue.setNext(next);
+        } else {
+            merkleUniqueToken.setNext(next);
+        }
+    }
+
+    public NftNumPair getPrev() {
+        return isVirtual ? uniqueTokenValue.getPrev() : merkleUniqueToken.getPrev();
+    }
+
+    public NftNumPair getNext() {
+        return isVirtual ? uniqueTokenValue.getNext() : merkleUniqueToken.getNext();
+    }
+
     @Override
     public boolean equals(final Object other) {
         if (other == null || other.getClass() != UniqueTokenAdapter.class) {
@@ -187,5 +221,9 @@ public class UniqueTokenAdapter {
     @Override
     public int hashCode() {
         return isVirtual ? uniqueTokenValue.hashCode() : merkleUniqueToken.hashCode();
+    }
+
+    public RichInstant getCreationTime() {
+        return isVirtual ? uniqueTokenValue.getCreationTime() : merkleUniqueToken.getCreationTime();
     }
 }

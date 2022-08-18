@@ -20,12 +20,17 @@ import static com.hedera.services.utils.MapValueListUtils.insertInPlaceAtMapValu
 import static com.hedera.services.utils.MapValueListUtils.linkInPlaceAtMapValueListHead;
 import static com.hedera.services.utils.MapValueListUtils.unlinkInPlaceFromMapValueList;
 
+import com.hedera.services.context.properties.BootstrapProperties;
+import com.hedera.services.context.properties.PropertyNames;
 import com.hedera.services.state.expiry.UniqueTokensListRemoval;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
+import com.hedera.services.state.migration.UniqueTokenAdapter;
+import com.hedera.services.state.migration.UniqueTokenMapAdapter;
+import com.hedera.services.state.virtual.UniqueTokenValue;
+import com.hedera.services.store.models.NftId;
 import com.hedera.services.utils.EntityNum;
-import com.hedera.services.utils.EntityNumPair;
 import com.swirlds.merkle.map.MerkleMap;
 import java.util.function.Supplier;
 import javax.annotation.Nonnull;
@@ -39,16 +44,21 @@ public class UniqueTokensLinkManager {
 
     private final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts;
     private final Supplier<MerkleMap<EntityNum, MerkleToken>> tokens;
-    private final Supplier<MerkleMap<EntityNumPair, MerkleUniqueToken>> uniqueTokens;
+    private final Supplier<UniqueTokenMapAdapter> uniqueTokens;
+    private final boolean enableVirtualNft;
 
     @Inject
     public UniqueTokensLinkManager(
             final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts,
             final Supplier<MerkleMap<EntityNum, MerkleToken>> tokens,
-            final Supplier<MerkleMap<EntityNumPair, MerkleUniqueToken>> uniqueTokens) {
+            final Supplier<UniqueTokenMapAdapter> uniqueTokens,
+            final BootstrapProperties bootstrapProperties) {
         this.accounts = accounts;
         this.tokens = tokens;
         this.uniqueTokens = uniqueTokens;
+        this.enableVirtualNft =
+                bootstrapProperties.getBooleanProperty(
+                        PropertyNames.TOKENS_NFTS_USE_VIRTUAL_MERKLE);
     }
 
     /**
@@ -67,18 +77,18 @@ public class UniqueTokensLinkManager {
      * @return the newly minted NFT, if one needed to be inserted
      */
     @Nullable
-    public MerkleUniqueToken updateLinks(
+    public UniqueTokenAdapter updateLinks(
             @Nullable final EntityNum from,
             @Nullable final EntityNum to,
-            @Nonnull final EntityNumPair nftId) {
+            @Nonnull final NftId nftId) {
         final var curAccounts = accounts.get();
         final var curTokens = tokens.get();
         final var curUniqueTokens = uniqueTokens.get();
 
-        final var token = curTokens.get(nftId.getHiOrderAsNum());
+        final var token = curTokens.get(EntityNum.fromLong(nftId.num()));
         final var listMutation = new UniqueTokensListRemoval(curUniqueTokens);
 
-        MerkleUniqueToken insertedNft = null;
+        UniqueTokenAdapter insertedNft = null;
         // Update "from" account
         if (isValidAndNotTreasury(from, token)) {
             final var fromAccount = curAccounts.getForModify(from);
@@ -88,14 +98,13 @@ public class UniqueTokensLinkManager {
             } else {
                 log.error("Invariant failure: {} owns NFT {}, but has no root link", from, nftId);
             }
-            fromAccount.setHeadNftId((rootKey == null) ? 0 : rootKey.getHiOrderAsLong());
-            fromAccount.setHeadNftSerialNum((rootKey == null) ? 0 : rootKey.getLowOrderAsLong());
+            fromAccount.setHeadNftId((rootKey == null) ? 0 : rootKey.num());
+            fromAccount.setHeadNftSerialNum((rootKey == null) ? 0 : rootKey.serialNo());
         }
 
         // Update "to" account
         if (isValidAndNotTreasury(to, token)) {
             final var toAccount = curAccounts.getForModify(to);
-            final var nftNumPair = nftId.asNftNumPair();
             var nft = listMutation.getForModify(nftId);
             var rootKey = rootKeyOf(toAccount);
             if (nft != null) {
@@ -103,11 +112,14 @@ public class UniqueTokensLinkManager {
             } else {
                 // This is "non-treasury mint" done via a multi-stage contract op; we need to
                 // create a NFT whose link pointers we can update, since it doesn't exist yet
-                insertedNft = new MerkleUniqueToken();
+                insertedNft =
+                        enableVirtualNft
+                                ? UniqueTokenAdapter.wrap(new UniqueTokenValue())
+                                : UniqueTokenAdapter.wrap(new MerkleUniqueToken());
                 insertInPlaceAtMapValueListHead(nftId, insertedNft, rootKey, null, listMutation);
             }
-            toAccount.setHeadNftId(nftNumPair.tokenNum());
-            toAccount.setHeadNftSerialNum(nftNumPair.serialNum());
+            toAccount.setHeadNftId(nftId.num());
+            toAccount.setHeadNftSerialNum(nftId.serialNo());
         }
 
         return insertedNft;
@@ -120,9 +132,9 @@ public class UniqueTokensLinkManager {
     }
 
     @Nullable
-    private EntityNumPair rootKeyOf(final MerkleAccount account) {
+    private NftId rootKeyOf(final MerkleAccount account) {
         final var headNum = account.getHeadNftId();
         final var headSerialNum = account.getHeadNftSerialNum();
-        return headNum == 0 ? null : EntityNumPair.fromLongs(headNum, headSerialNum);
+        return headNum == 0 ? null : NftId.withDefaultShardRealm(headNum, headSerialNum);
     }
 }

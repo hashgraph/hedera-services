@@ -58,8 +58,8 @@ import com.hedera.services.state.merkle.MerkleStakingInfo;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleTopic;
-import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.migration.UniqueTokenAdapter;
+import com.hedera.services.state.migration.UniqueTokenMapAdapter;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.RawTokenRelationship;
 import com.hedera.services.state.virtual.ContractKey;
@@ -363,8 +363,7 @@ public class StateView {
     public Optional<TokenNftInfo> infoForNft(final NftID target) {
         final var currentNfts = uniqueTokens();
         final var tokenId = EntityNum.fromTokenId(target.getTokenID());
-        final var targetKey =
-                EntityNumPair.fromLongs(tokenId.longValue(), target.getSerialNumber());
+        final var targetKey = NftId.fromGrpc(target);
         if (!currentNfts.containsKey(targetKey)) {
             return Optional.empty();
         }
@@ -394,9 +393,7 @@ public class StateView {
     }
 
     public boolean nftExists(final NftID id) {
-        final var tokenNum = EntityNum.fromTokenId(id.getTokenID());
-        final var key = EntityNumPair.fromLongs(tokenNum.longValue(), id.getSerialNumber());
-        return uniqueTokens().containsKey(key);
+        return uniqueTokens().containsKey(NftId.fromGrpc(id));
     }
 
     public Optional<TokenType> tokenType(final TokenID tokenId) {
@@ -700,8 +697,10 @@ public class StateView {
         return stateChildren == null ? emptyMm() : stateChildren.tokenAssociations();
     }
 
-    public MerkleMap<EntityNumPair, MerkleUniqueToken> uniqueTokens() {
-        return stateChildren == null ? emptyMm() : stateChildren.uniqueTokens();
+    public UniqueTokenMapAdapter uniqueTokens() {
+        return stateChildren == null
+                ? UniqueTokenMapAdapter.wrap(emptyMm())
+                : stateChildren.uniqueTokens();
     }
 
     public VirtualMap<VirtualBlobKey, VirtualBlobValue> storage() {

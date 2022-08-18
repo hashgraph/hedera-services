@@ -48,6 +48,7 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
+import com.hedera.services.state.migration.UniqueTokenMapAdapter;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.state.virtual.ContractKey;
@@ -138,7 +139,7 @@ class StaticEntityAccessTest {
         given(stateView.accounts()).willReturn(accounts);
         given(stateView.contractStorage()).willReturn(storage);
         given(stateView.tokenAssociations()).willReturn(tokenAssociations);
-        given(stateView.uniqueTokens()).willReturn(nfts);
+        given(stateView.uniqueTokens()).willReturn(UniqueTokenMapAdapter.wrap(nfts));
 
         subject = new StaticEntityAccess(stateView, aliases, validator);
     }

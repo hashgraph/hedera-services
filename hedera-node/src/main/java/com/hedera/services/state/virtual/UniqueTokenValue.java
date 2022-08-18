@@ -119,14 +119,14 @@ public class UniqueTokenValue implements VirtualValue {
     }
 
     @Override
-    public VirtualValue copy() {
+    public UniqueTokenValue copy() {
         // Make parent immutable as defined by the FastCopyable contract.
         this.isImmutable = true;
         return new UniqueTokenValue(this);
     }
 
     @Override
-    public VirtualValue asReadOnly() {
+    public UniqueTokenValue asReadOnly() {
         UniqueTokenValue copy = new UniqueTokenValue(this);
         copy.isImmutable = true;
         return copy;

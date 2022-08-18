@@ -27,6 +27,8 @@ import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
+import com.hedera.services.state.migration.UniqueTokenAdapter;
+import com.hedera.services.state.migration.UniqueTokenMapAdapter;
 import com.hedera.services.state.submerkle.CurrencyAdjustments;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.utils.EntityNum;
@@ -48,7 +50,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class TreasuryReturnHelperTest {
     @Mock private MerkleMap<EntityNum, MerkleToken> tokens;
-    @Mock private MerkleMap<EntityNumPair, MerkleUniqueToken> uniqueTokens;
+    @Mock private UniqueTokenMapAdapter uniqueTokens;
     @Mock private MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenRels;
 
     private List<CurrencyAdjustments> returnTransfers = new ArrayList<>();
@@ -75,7 +77,7 @@ class TreasuryReturnHelperTest {
 
         given(tokens.get(missingTokenNum)).willReturn(token);
         given(token.tokenType()).willReturn(TokenType.NON_FUNGIBLE_UNIQUE);
-        given(uniqueTokens.getForModify(key)).willReturn(null);
+        given(uniqueTokens.getForModify(key.asNftNumPair().nftId())).willReturn(null);
 
         assertNull(subject.updateNftReturns(key, uniqueTokens));
     }
@@ -90,11 +92,12 @@ class TreasuryReturnHelperTest {
         given(tokens.get(missingTokenNum)).willReturn(token);
         given(token.tokenType()).willReturn(TokenType.NON_FUNGIBLE_UNIQUE);
         given(token.isDeleted()).willReturn(true);
-        given(uniqueTokens.getForModify(key)).willReturn(nft);
+        given(uniqueTokens.getForModify(key.asNftNumPair().nftId()))
+                .willReturn(UniqueTokenAdapter.wrap(nft));
         given(nft.getNext()).willReturn(nextKey.asNftNumPair());
 
         assertEquals(nextKey, subject.updateNftReturns(key, uniqueTokens));
-        verify(uniqueTokens).remove(key);
+        verify(uniqueTokens).remove(key.asNftNumPair().nftId());
     }
 
     @Test
@@ -107,7 +110,8 @@ class TreasuryReturnHelperTest {
         given(tokens.get(missingTokenNum)).willReturn(token);
         given(token.tokenType()).willReturn(TokenType.NON_FUNGIBLE_UNIQUE);
         given(token.isDeleted()).willReturn(false);
-        given(uniqueTokens.getForModify(key)).willReturn(nft);
+        given(uniqueTokens.getForModify(key.asNftNumPair().nftId()))
+                .willReturn(UniqueTokenAdapter.wrap(nft));
         given(nft.getNext()).willReturn(nextKey.asNftNumPair());
 
         assertEquals(nextKey, subject.updateNftReturns(key, uniqueTokens));

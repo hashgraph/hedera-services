@@ -37,7 +37,8 @@ import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
-import com.hedera.services.state.merkle.MerkleUniqueToken;
+import com.hedera.services.state.migration.UniqueTokenAdapter;
+import com.hedera.services.state.migration.UniqueTokenMapAdapter;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
 import com.hedera.services.state.virtual.ContractKey;
 import com.hedera.services.state.virtual.IterableContractValue;
@@ -66,7 +67,7 @@ public class StaticEntityAccess implements EntityAccess {
     private final OptionValidator validator;
     private final MerkleMap<EntityNum, MerkleToken> tokens;
     private final MerkleMap<EntityNum, MerkleAccount> accounts;
-    private final MerkleMap<EntityNumPair, MerkleUniqueToken> nfts;
+    private final UniqueTokenMapAdapter nfts;
     private final MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenAssociations;
     private final VirtualMap<ContractKey, IterableContractValue> storage;
     private final VirtualMap<VirtualBlobKey, VirtualBlobValue> bytecode;
@@ -311,7 +312,7 @@ public class StaticEntityAccess implements EntityAccess {
      * @return the token's supply
      */
     public Address approvedSpenderOf(final NftId nftId) {
-        final var nft = nfts.get(EntityNumPair.fromNftId(nftId));
+        final var nft = nfts.get(nftId);
         validateTrueOrRevert(nft != null, INVALID_TOKEN_NFT_SERIAL_NUMBER);
         return nft.getSpender().toEvmAddress();
     }
@@ -353,7 +354,7 @@ public class StaticEntityAccess implements EntityAccess {
                 nft -> {
                     var owner = nft.getOwner();
                     if (MISSING_ENTITY_ID.equals(owner)) {
-                        final var token = tokens.get(nft.getKey().getHiOrderAsNum());
+                        final var token = tokens.get(nftId.asEntityNumPair().getHiOrderAsNum());
                         validateTrue(token != null, INVALID_TOKEN_ID);
                         owner = token.treasury();
                     }
@@ -380,9 +381,8 @@ public class StaticEntityAccess implements EntityAccess {
         return relStatus != null && relStatus.isKycGranted();
     }
 
-    private <T> T nftPropertyOf(final NftId nftId, final Function<MerkleUniqueToken, T> getter) {
-        final var key = EntityNumPair.fromNftId(nftId);
-        var nft = nfts.get(key);
+    private <T> T nftPropertyOf(final NftId nftId, final Function<UniqueTokenAdapter, T> getter) {
+        var nft = nfts.get(nftId);
         validateTrue(nft != null, INVALID_TOKEN_NFT_SERIAL_NUMBER);
         return getter.apply(nft);
     }

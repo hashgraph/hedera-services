@@ -45,8 +45,8 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
-import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.migration.UniqueTokenAdapter;
+import com.hedera.services.state.migration.UniqueTokenMapAdapter;
 import com.hedera.services.state.validation.UsageLimits;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.schedule.HederaScheduleStore;
@@ -84,7 +84,7 @@ public interface StoresModule {
     @Provides
     @Singleton
     static TransactionalLedger<NftId, NftProperty, UniqueTokenAdapter> provideNftsLedger(
-            final Supplier<MerkleMap<EntityNumPair, MerkleUniqueToken>> uniqueTokens) {
+            final Supplier<UniqueTokenMapAdapter> uniqueTokens) {
         return new TransactionalLedger<>(
                 NftProperty.class,
                 UniqueTokenAdapter::newEmptyMerkleToken,

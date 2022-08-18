@@ -33,6 +33,7 @@ import static com.swirlds.common.system.InitTrigger.RESTART;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.properties.BootstrapProperties;
+import com.hedera.services.context.properties.PropertyNames;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.merkle.MerkleScheduledTransactions;
@@ -47,11 +48,14 @@ import com.hedera.services.state.migration.LongTermScheduledTransactionsMigratio
 import com.hedera.services.state.migration.ReleaseTwentySevenMigration;
 import com.hedera.services.state.migration.ReleaseTwentySixMigration;
 import com.hedera.services.state.migration.StateChildIndices;
+import com.hedera.services.state.migration.UniqueTokenMapAdapter;
 import com.hedera.services.state.org.StateMetadata;
 import com.hedera.services.state.submerkle.ExchangeRates;
 import com.hedera.services.state.submerkle.SequenceNumber;
 import com.hedera.services.state.virtual.ContractKey;
 import com.hedera.services.state.virtual.IterableContractValue;
+import com.hedera.services.state.virtual.UniqueTokenKey;
+import com.hedera.services.state.virtual.UniqueTokenValue;
 import com.hedera.services.state.virtual.VirtualBlobKey;
 import com.hedera.services.state.virtual.VirtualBlobValue;
 import com.hedera.services.state.virtual.VirtualMapFactory;
@@ -109,6 +113,8 @@ public class ServicesState extends PartialNaryMerkleInternal
     private int deserializedStateVersion = CURRENT_VERSION;
     /* All of the state that is not itself hashed or serialized, but only derived from such state */
     private StateMetadata metadata;
+    /* Set to true if virtual NFTs are enabled. */
+    private boolean enabledVirtualNft;
 
     /**
      * For scheduled transaction migration we need to initialize the new scheduled transactions'
@@ -248,8 +254,10 @@ public class ServicesState extends PartialNaryMerkleInternal
                     new MerkleScheduledTransactions(
                             ((MerkleMap<?, ?>) getChild(StateChildIndices.SCHEDULE_TXS)).size());
         }
-
-        internalInit(platform, new BootstrapProperties(), dualState, trigger, deserializedVersion);
+        final var bootstrapProps = new BootstrapProperties();
+        enabledVirtualNft =
+                bootstrapProps.getBooleanProperty(PropertyNames.TOKENS_NFTS_USE_VIRTUAL_MERKLE);
+        internalInit(platform, bootstrapProps, dualState, trigger, deserializedVersion);
     }
 
     private void genesisInit(
@@ -260,6 +268,8 @@ public class ServicesState extends PartialNaryMerkleInternal
         // Create the top-level children in the Merkle tree
         final var bootstrapProps = new BootstrapProperties();
         final var seqStart = bootstrapProps.getLongProperty(HEDERA_FIRST_USER_ENTITY);
+        enabledVirtualNft =
+                bootstrapProps.getBooleanProperty(PropertyNames.TOKENS_NFTS_USE_VIRTUAL_MERKLE);
         createGenesisChildren(addressBook, seqStart, bootstrapProps);
 
         internalInit(platform, bootstrapProps, dualState, GENESIS, null);
@@ -475,8 +485,14 @@ public class ServicesState extends PartialNaryMerkleInternal
         return getChild(StateChildIndices.RECORD_STREAM_RUNNING_HASH);
     }
 
-    public MerkleMap<EntityNumPair, MerkleUniqueToken> uniqueTokens() {
-        return getChild(StateChildIndices.UNIQUE_TOKENS);
+    public UniqueTokenMapAdapter uniqueTokens() {
+        // TODO: Consider caching this decision and/or result
+        final var tokensMap = getChild(StateChildIndices.UNIQUE_TOKENS);
+        return tokensMap.getClass() == MerkleMap.class
+                ? UniqueTokenMapAdapter.wrap(
+                        (MerkleMap<EntityNumPair, MerkleUniqueToken>) tokensMap)
+                : UniqueTokenMapAdapter.wrap(
+                        (VirtualMap<UniqueTokenKey, UniqueTokenValue>) tokensMap);
     }
 
     public VirtualMap<ContractKey, IterableContractValue> contractStorage() {
@@ -495,7 +511,13 @@ public class ServicesState extends PartialNaryMerkleInternal
             AddressBook addressBook, long seqStart, BootstrapProperties bootstrapProperties) {
         final var virtualMapFactory = new VirtualMapFactory(JasperDbBuilder::new);
 
-        setChild(StateChildIndices.UNIQUE_TOKENS, new MerkleMap<>());
+        if (enabledVirtualNft) {
+            setChild(
+                    StateChildIndices.UNIQUE_TOKENS,
+                    virtualMapFactory.newVirtualizedUniqueTokenStorage());
+        } else {
+            setChild(StateChildIndices.UNIQUE_TOKENS, new MerkleMap<>());
+        }
         setChild(StateChildIndices.TOKEN_ASSOCIATIONS, new MerkleMap<>());
         setChild(StateChildIndices.TOPICS, new MerkleMap<>());
         setChild(StateChildIndices.STORAGE, virtualMapFactory.newVirtualizedBlobs());
@@ -547,7 +569,8 @@ public class ServicesState extends PartialNaryMerkleInternal
                     KvPairIterationMigrator::new,
                     VirtualMapMigration::extractVirtualMapData,
                     vmFactory.apply(JasperDbBuilder::new).newVirtualizedIterableStorage());
-            ownedNftsLinkMigrator.buildAccountNftsOwnedLinkedList(accounts(), uniqueTokens());
+            ownedNftsLinkMigrator.buildAccountNftsOwnedLinkedList(
+                    accounts(), uniqueTokens().merkleMap());
 
             // When enabling expiry, we will grant all contracts a ~90 day auto-renewal via the
             // autoRenewalMigrator
