@@ -141,6 +141,7 @@ public class GlobalDynamicProperties {
     private Map<Long, Long> nodeMaxMinStakeRatios;
     private int sidecarMaxSizeMb;
     private boolean enableTraceabilityMigration;
+    private boolean compressRecordFilesOnCreation;
 
     @Inject
     public GlobalDynamicProperties(
@@ -280,6 +281,7 @@ public class GlobalDynamicProperties {
         sidecarMaxSizeMb = properties.getIntProperty("hedera.recordStream.sidecarMaxSizeMb");
         enableTraceabilityMigration =
                 properties.getBooleanProperty("hedera.recordStream.enableTraceabilityMigration");
+        compressRecordFilesOnCreation = properties.getBooleanProperty("hedera.recordStream.compressFilesOnCreation");
     }
 
     public int maxTokensPerAccount() {
@@ -684,5 +686,9 @@ public class GlobalDynamicProperties {
 
     public boolean isTraceabilityMigrationEnabled() {
         return enableTraceabilityMigration;
+    }
+
+    public boolean shouldCompressRecordFilesOnCreation() {
+        return compressRecordFilesOnCreation;
     }
 }

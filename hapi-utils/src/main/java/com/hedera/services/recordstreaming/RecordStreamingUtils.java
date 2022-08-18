@@ -30,6 +30,15 @@ import org.apache.commons.lang3.tuple.Pair;
 public class RecordStreamingUtils {
     private RecordStreamingUtils() {}
 
+    public static Pair<Integer, Optional<RecordStreamFile>> readUncompressedRecordStreamFile(
+        final String fileLoc) throws IOException {
+        try (final var fin = new FileInputStream(fileLoc)) {
+            final var recordFileVersion = ByteBuffer.wrap(fin.readNBytes(4)).getInt();
+            final var recordStreamFile = RecordStreamFile.parseFrom(fin);
+            return Pair.of(recordFileVersion, Optional.ofNullable(recordStreamFile));
+        }
+    }
+
     public static Pair<Integer, Optional<RecordStreamFile>> readRecordStreamFile(
             final String fileLoc) throws IOException {
         final var uncompressedFileContents = getUncompressedStreamFileBytes(fileLoc);
@@ -47,6 +56,13 @@ public class RecordStreamingUtils {
             final var recordFileVersion = fin.read();
             final var recordStreamSignatureFile = SignatureFile.parseFrom(fin);
             return Pair.of(recordFileVersion, Optional.ofNullable(recordStreamSignatureFile));
+        }
+    }
+
+    public static Optional<SidecarFile> readUncompressedSidecarFile(final String fileLoc) throws IOException {
+        try (final var fin = new FileInputStream(fileLoc)) {
+            final var recordStreamSidecarFile = SidecarFile.parseFrom(fin);
+            return Optional.ofNullable(recordStreamSidecarFile);
         }
     }
 

@@ -33,6 +33,7 @@ import static org.mockito.Mockito.verify;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.config.MockGlobalDynamicProps;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.recordstreaming.RecordStreamingUtils;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.state.submerkle.RichInstant;
@@ -86,6 +87,8 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mock;
 import org.mockito.MockedConstruction;
 import org.mockito.Mockito;
@@ -105,15 +108,17 @@ class RecordStreamFileWriterTest {
                         false,
                         streamType,
                         expectedExportDir(),
-                        maxSidecarFileSize);
+                        maxSidecarFileSize,
+                        globalDynamicProperties);
         messageDigest = MessageDigest.getInstance(DigestType.SHA_384.algorithmName());
         messageDigest.digest("yumyum".getBytes(StandardCharsets.UTF_8));
         final var startRunningHash = new Hash(messageDigest.digest());
         subject.setRunningHash(startRunningHash);
     }
 
-    @Test
-    void recordSignatureAndSidecarFilesAreCreatedAsExpected()
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    void recordSignatureAndSidecarFilesAreCreatedAsExpected(final boolean isCompressed)
             throws IOException, NoSuchAlgorithmException {
         // given
         given(streamType.getFileHeader()).willReturn(FILE_HEADER_VALUES);
@@ -121,6 +126,8 @@ class RecordStreamFileWriterTest {
         given(streamType.getExtension()).willReturn(RecordStreamType.RECORD_EXTENSION);
         given(streamType.getSidecarExtension())
                 .willReturn(RecordStreamType.SIDECAR_RECORD_EXTENSION);
+        given(globalDynamicProperties.shouldCompressRecordFilesOnCreation()).willReturn(isCompressed);
+
         final var firstBlockEntireFileSignature =
                 "entireSignatureBlock1".getBytes(StandardCharsets.UTF_8);
         final var firstBlockMetadataSignature =
@@ -171,7 +178,8 @@ class RecordStreamFileWriterTest {
                 firstBlockEntireFileSignature,
                 firstBlockMetadataSignature,
                 Map.of(1, allSidecarTypesEnum),
-                Map.of(1, transformToExpectedSidecars(allSidecarTypes, numberOfRSOsInFirstBlock)));
+                Map.of(1, transformToExpectedSidecars(allSidecarTypes, numberOfRSOsInFirstBlock)),
+            isCompressed);
         assertRecordStreamFiles(
                 2L,
                 secondBlockRSOs,
@@ -181,16 +189,19 @@ class RecordStreamFileWriterTest {
                 Map.of(1, someSidecarTypesEnum),
                 Map.of(
                         1,
-                        transformToExpectedSidecars(someSidecarTypes, numberOfRSOsInSecondBlock)));
+                        transformToExpectedSidecars(someSidecarTypes, numberOfRSOsInSecondBlock)),
+            isCompressed);
     }
 
-    @Test
-    void objectsFromFirstPeriodAreNotExternalizedWhenStartWriteAtCompleteWindowIsTrue()
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    void objectsFromFirstPeriodAreNotExternalizedWhenStartWriteAtCompleteWindowIsTrue(final boolean isCompressed)
             throws IOException, NoSuchAlgorithmException {
         // given
         given(streamType.getFileHeader()).willReturn(FILE_HEADER_VALUES);
         given(streamType.getSigFileHeader()).willReturn(SIG_FILE_HEADER_VALUES);
         given(streamType.getExtension()).willReturn(RecordStreamType.RECORD_EXTENSION);
+        given(globalDynamicProperties.shouldCompressRecordFilesOnCreation()).willReturn(isCompressed);
         final var secondBlockEntireFileSignature =
                 "entireSignatureBlock2".getBytes(StandardCharsets.UTF_8);
         final var secondBlockMetadataSignature =
@@ -237,16 +248,19 @@ class RecordStreamFileWriterTest {
                 secondBlockEntireFileSignature,
                 secondBlockMetadataSignature,
                 Map.of(1, allSidecarTypesEnum),
-                Map.of(1, transformToExpectedSidecars(allSidecarTypes, numberOfRSOsInSecondBlock)));
+                Map.of(1, transformToExpectedSidecars(allSidecarTypes, numberOfRSOsInSecondBlock)),
+            isCompressed);
     }
 
-    @Test
-    void objectsFromDifferentPeriodsButWithSameAlignmentAreExternalizedInSameFile()
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    void objectsFromDifferentPeriodsButWithSameAlignmentAreExternalizedInSameFile(final boolean isCompressed)
             throws IOException, NoSuchAlgorithmException {
         // given
         given(streamType.getFileHeader()).willReturn(FILE_HEADER_VALUES);
         given(streamType.getSigFileHeader()).willReturn(SIG_FILE_HEADER_VALUES);
         given(streamType.getExtension()).willReturn(RecordStreamType.RECORD_EXTENSION);
+        given(globalDynamicProperties.shouldCompressRecordFilesOnCreation()).willReturn(isCompressed);
         final var firstBlockEntireFileSignature =
                 "entireSignatureBlock1".getBytes(StandardCharsets.UTF_8);
         final var firstBlockMetadataSignature =
@@ -293,16 +307,19 @@ class RecordStreamFileWriterTest {
                 firstBlockEntireFileSignature,
                 firstBlockMetadataSignature,
                 Map.of(1, allSidecarTypesEnum),
-                Map.of(1, transformToExpectedSidecars(allSidecarTypes, numberOfRSOsInFirstBlock)));
+                Map.of(1, transformToExpectedSidecars(allSidecarTypes, numberOfRSOsInFirstBlock)),
+            isCompressed);
     }
 
-    @Test
-    void alignmentIsIgnoredForObjectsWithNoAlignment()
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    void alignmentIsIgnoredForObjectsWithNoAlignment(final boolean isCompressed)
             throws IOException, NoSuchAlgorithmException {
         // given
         given(streamType.getFileHeader()).willReturn(FILE_HEADER_VALUES);
         given(streamType.getSigFileHeader()).willReturn(SIG_FILE_HEADER_VALUES);
         given(streamType.getExtension()).willReturn(RecordStreamType.RECORD_EXTENSION);
+        given(globalDynamicProperties.shouldCompressRecordFilesOnCreation()).willReturn(isCompressed);
         final var firstBlockEntireFileSignature =
                 "entireSignatureBlock1".getBytes(StandardCharsets.UTF_8);
         final var firstBlockMetadataSignature =
@@ -348,17 +365,20 @@ class RecordStreamFileWriterTest {
                 firstBlockEntireFileSignature,
                 firstBlockMetadataSignature,
                 Map.of(1, allSidecarTypesEnum),
-                Map.of(1, transformToExpectedSidecars(allSidecarTypes, numberOfRSOsInFirstBlock)));
+                Map.of(1, transformToExpectedSidecars(allSidecarTypes, numberOfRSOsInFirstBlock)),
+            isCompressed);
     }
 
-    @Test
-    void sidecarFileSizeLimitIsRespected() throws IOException, NoSuchAlgorithmException {
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    void sidecarFileSizeLimitIsRespected(final boolean isCompressed) throws IOException, NoSuchAlgorithmException {
         // given
         given(streamType.getFileHeader()).willReturn(FILE_HEADER_VALUES);
         given(streamType.getSigFileHeader()).willReturn(SIG_FILE_HEADER_VALUES);
         given(streamType.getExtension()).willReturn(RecordStreamType.RECORD_EXTENSION);
         given(streamType.getSidecarExtension())
                 .willReturn(RecordStreamType.SIDECAR_RECORD_EXTENSION);
+        given(globalDynamicProperties.shouldCompressRecordFilesOnCreation()).willReturn(isCompressed);
         final var firstBlockEntireFileSignature =
                 "entireSignatureBlock1".getBytes(StandardCharsets.UTF_8);
         final var firstBlockMetadataSignature =
@@ -425,7 +445,7 @@ class RecordStreamFileWriterTest {
                         EnumSet.of(SidecarType.CONTRACT_BYTECODE),
                         2,
                         EnumSet.of(SidecarType.CONTRACT_STATE_CHANGE)),
-                sidecarIdToExpectedContainedSidecars);
+                sidecarIdToExpectedContainedSidecars, isCompressed);
     }
 
     private List<RecordStreamObject> generateNRecordStreamObjectsForBlockMStartingFromT(
@@ -472,7 +492,8 @@ class RecordStreamFileWriterTest {
             final byte[] expectedEntireFileSignature,
             final byte[] expectedMetadataSignature,
             final Map<Integer, EnumSet<SidecarType>> sidecarIdToExpectedSidecarTypes,
-            final Map<Integer, List<TransactionSidecarRecord.Builder>> sidecarIdToExpectedSidecars)
+            final Map<Integer, List<Builder>> sidecarIdToExpectedSidecars,
+        final boolean isCompressed)
             throws IOException, NoSuchAlgorithmException {
         final var firstTxnTimestamp = blockRSOs.get(0).getTimestamp();
         final var recordStreamFilePath =
@@ -480,8 +501,7 @@ class RecordStreamFileWriterTest {
                         Instant.ofEpochSecond(
                                 firstTxnTimestamp.getEpochSecond(), firstTxnTimestamp.getNano()));
         final var recordStreamFilePair =
-                RecordStreamingUtils.readRecordStreamFile(
-                        recordStreamFilePath + compressedExtension);
+            isCompressed ? RecordStreamingUtils.readRecordStreamFile(recordStreamFilePath + compressedExtension) : RecordStreamingUtils.readUncompressedRecordStreamFile(recordStreamFilePath);
 
         assertEquals(RECORD_STREAM_VERSION, recordStreamFilePair.getLeft());
         final var recordStreamFileOptional = recordStreamFilePair.getRight();
@@ -493,9 +513,10 @@ class RecordStreamFileWriterTest {
                 blockRSOs,
                 startRunningHash,
                 recordStreamFile,
-                new File(recordStreamFilePath + compressedExtension),
+                new File(isCompressed ? recordStreamFilePath + compressedExtension : recordStreamFilePath),
                 sidecarIdToExpectedSidecarTypes,
-                sidecarIdToExpectedSidecars);
+                sidecarIdToExpectedSidecars,
+            isCompressed);
         assertSignatureFile(
                 recordStreamFilePath,
                 expectedEntireFileSignature,
@@ -511,7 +532,8 @@ class RecordStreamFileWriterTest {
             final RecordStreamFile recordStreamFile,
             final File recordFile,
             final Map<Integer, EnumSet<SidecarType>> sidecarIdToExpectedSidecarTypes,
-            final Map<Integer, List<Builder>> sidecarIdToExpectedSidecars)
+            final Map<Integer, List<Builder>> sidecarIdToExpectedSidecars,
+        final boolean isCompressed)
             throws IOException, NoSuchAlgorithmException {
         assertTrue(logCaptor.debugLogs().contains("Stream file created " + recordFile.getName()));
 
@@ -577,7 +599,7 @@ class RecordStreamFileWriterTest {
                     sidecarMetadata.getTypesList());
             final var pathToSidecarFile =
                     subject.generateSidecarFilePath(firstTxnInstant, sidecarId);
-            final var sidecarFileOptional = RecordStreamingUtils.readSidecarFile(pathToSidecarFile);
+            final var sidecarFileOptional = isCompressed ? RecordStreamingUtils.readSidecarFile(pathToSidecarFile) : RecordStreamingUtils.readUncompressedSidecarFile(pathToSidecarFile);
             assertTrue(sidecarFileOptional.isPresent());
             assertAllSidecarsAreInFile(
                     sidecarIdToExpectedSidecars.get(sidecarId),
@@ -818,6 +840,7 @@ class RecordStreamFileWriterTest {
     void logAndDontDoAnythingWhenStreamFileAlreadyExists() throws IOException {
         // given
         given(streamType.getFileHeader()).willReturn(FILE_HEADER_VALUES);
+        given(globalDynamicProperties.shouldCompressRecordFilesOnCreation()).willReturn(true);
         final var firstTransactionInstant =
                 LocalDateTime.of(2022, 1, 24, 11, 2, 55).toInstant(ZoneOffset.UTC);
         final var expectedRecordFileName =
@@ -1085,6 +1108,7 @@ class RecordStreamFileWriterTest {
         // given
         given(streamType.getSidecarExtension())
                 .willReturn(RecordStreamType.SIDECAR_RECORD_EXTENSION);
+        given(globalDynamicProperties.shouldCompressRecordFilesOnCreation()).willReturn(true);
         final var instant = Instant.parse("2022-05-26T11:02:55.000000000Z");
 
         // when
@@ -1105,6 +1129,7 @@ class RecordStreamFileWriterTest {
         // given
         given(streamType.getSidecarExtension())
                 .willReturn(RecordStreamType.SIDECAR_RECORD_EXTENSION);
+        given(globalDynamicProperties.shouldCompressRecordFilesOnCreation()).willReturn(true);
         final var instant = Instant.parse("2022-05-26T11:02:55.000000000Z");
 
         // when
@@ -1206,6 +1231,7 @@ class RecordStreamFileWriterTest {
 
     @Mock private RecordStreamType streamType;
     @Mock private Signer signer;
+    @Mock private GlobalDynamicProperties globalDynamicProperties;
     @LoggingTarget private LogCaptor logCaptor;
     @LoggingSubject private RecordStreamFileWriter subject;
 
