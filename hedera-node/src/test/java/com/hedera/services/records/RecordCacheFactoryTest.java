@@ -15,6 +15,7 @@
  */
 package com.hedera.services.records;
 
+import static com.hedera.services.context.properties.PropertyNames.CACHE_RECORDS_TTL;
 import static com.hedera.services.utils.SleepingPause.SLEEPING_PAUSE;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -50,7 +51,7 @@ class RecordCacheFactoryTest {
     @BeforeEach
     void setUp() {
         properties = mock(PropertySource.class);
-        given(properties.getIntProperty("cache.records.ttl")).willReturn(1);
+        given(properties.getIntProperty(CACHE_RECORDS_TTL)).willReturn(1);
 
         subject = new RecordCacheFactory(properties);
     }
