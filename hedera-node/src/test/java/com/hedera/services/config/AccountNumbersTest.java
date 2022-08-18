@@ -15,6 +15,16 @@
  */
 package com.hedera.services.config;
 
+import static com.hedera.services.context.properties.PropertyNames.ACCOUNTS_ADDRESS_BOOK_ADMIN;
+import static com.hedera.services.context.properties.PropertyNames.ACCOUNTS_EXCHANGE_RATES_ADMIN;
+import static com.hedera.services.context.properties.PropertyNames.ACCOUNTS_FEE_SCHEDULE_ADMIN;
+import static com.hedera.services.context.properties.PropertyNames.ACCOUNTS_FREEZE_ADMIN;
+import static com.hedera.services.context.properties.PropertyNames.ACCOUNTS_NODE_REWARD_ACCOUNT;
+import static com.hedera.services.context.properties.PropertyNames.ACCOUNTS_STAKING_REWARD_ACCOUNT;
+import static com.hedera.services.context.properties.PropertyNames.ACCOUNTS_SYSTEM_ADMIN;
+import static com.hedera.services.context.properties.PropertyNames.ACCOUNTS_SYSTEM_DELETE_ADMIN;
+import static com.hedera.services.context.properties.PropertyNames.ACCOUNTS_SYSTEM_UNDELETE_ADMIN;
+import static com.hedera.services.context.properties.PropertyNames.ACCOUNTS_TREASURY;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -32,16 +42,16 @@ class AccountNumbersTest {
     @BeforeEach
     private void setup() {
         properties = mock(PropertySource.class);
-        given(properties.getLongProperty("accounts.addressBookAdmin")).willReturn(55L);
-        given(properties.getLongProperty("accounts.feeSchedulesAdmin")).willReturn(56L);
-        given(properties.getLongProperty("accounts.freezeAdmin")).willReturn(58L);
-        given(properties.getLongProperty("accounts.exchangeRatesAdmin")).willReturn(57L);
-        given(properties.getLongProperty("accounts.nodeRewardAccount")).willReturn(801L);
-        given(properties.getLongProperty("accounts.stakingRewardAccount")).willReturn(800L);
-        given(properties.getLongProperty("accounts.systemDeleteAdmin")).willReturn(59L);
-        given(properties.getLongProperty("accounts.systemUndeleteAdmin")).willReturn(60L);
-        given(properties.getLongProperty("accounts.systemAdmin")).willReturn(50L);
-        given(properties.getLongProperty("accounts.treasury")).willReturn(2L);
+        given(properties.getLongProperty(ACCOUNTS_ADDRESS_BOOK_ADMIN)).willReturn(55L);
+        given(properties.getLongProperty(ACCOUNTS_FEE_SCHEDULE_ADMIN)).willReturn(56L);
+        given(properties.getLongProperty(ACCOUNTS_FREEZE_ADMIN)).willReturn(58L);
+        given(properties.getLongProperty(ACCOUNTS_EXCHANGE_RATES_ADMIN)).willReturn(57L);
+        given(properties.getLongProperty(ACCOUNTS_NODE_REWARD_ACCOUNT)).willReturn(801L);
+        given(properties.getLongProperty(ACCOUNTS_STAKING_REWARD_ACCOUNT)).willReturn(800L);
+        given(properties.getLongProperty(ACCOUNTS_SYSTEM_DELETE_ADMIN)).willReturn(59L);
+        given(properties.getLongProperty(ACCOUNTS_SYSTEM_UNDELETE_ADMIN)).willReturn(60L);
+        given(properties.getLongProperty(ACCOUNTS_SYSTEM_ADMIN)).willReturn(50L);
+        given(properties.getLongProperty(ACCOUNTS_TREASURY)).willReturn(2L);
 
         subject = new AccountNumbers(properties);
     }
