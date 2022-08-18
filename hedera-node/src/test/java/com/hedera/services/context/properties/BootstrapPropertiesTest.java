@@ -244,6 +244,7 @@ class BootstrapPropertiesTest {
                     entry(
                             TOKENS_NFTS_MINT_THORTTLE_SCALE_FACTOR,
                             ThrottleReqOpsScaleFactor.from("5:2")),
+                    entry(TOKENS_NFTS_USE_VIRTUAL_MERKLE, false),
                     entry(
                             UPGRADE_ARTIFACTS_PATH,
                             "/opt/hgcapp/services-hedera/HapiApp2.0/data/upgrade/current"),

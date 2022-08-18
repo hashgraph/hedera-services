@@ -194,6 +194,7 @@ public class PropertyNames {
     public static final String TOKENS_NFTS_MAX_QUERY_RANGE = "tokens.nfts.maxQueryRange";
     public static final String TOKENS_NFTS_MINT_THORTTLE_SCALE_FACTOR =
             "tokens.nfts.mintThrottleScaleFactor";
+    public static final String TOKENS_NFTS_USE_VIRTUAL_MERKLE = "tokens.nfts.useVirtualMerkle";
     public static final String TOPICS_MAX_NUM = "topics.maxNumber";
     public static final String TOKENS_NFTS_USE_TREASURY_WILD_CARDS =
             "tokens.nfts.useTreasuryWildcards";
