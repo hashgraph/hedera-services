@@ -15,6 +15,7 @@
  */
 package com.hedera.services.utils.accessors;
 
+import static com.hedera.services.legacy.proto.utils.ByteStringUtils.unwrapUnsafelyIfPossible;
 import static com.hedera.services.legacy.proto.utils.CommonUtils.noThrowSha384HashOf;
 import static com.hedera.services.usage.token.TokenOpsUsageUtils.TOKEN_OPS_USAGE_UTILS;
 import static com.hedera.services.utils.EntityIdUtils.isAlias;
@@ -158,14 +159,14 @@ public class SignedTxnAccessor implements TxnAccessor {
 
         final var signedTxnBytes = signedTxnWrapper.getSignedTransactionBytes();
         if (signedTxnBytes.isEmpty()) {
-            txnBytes = signedTxnWrapper.getBodyBytes().toByteArray();
+            txnBytes = unwrapUnsafelyIfPossible(signedTxnWrapper.getBodyBytes());
             sigMap = signedTxnWrapper.getSigMap();
             hash = noThrowSha384HashOf(signedTxnWrapperBytes);
         } else {
             final var signedTxn = SignedTransaction.parseFrom(signedTxnBytes);
-            txnBytes = signedTxn.getBodyBytes().toByteArray();
+            txnBytes = unwrapUnsafelyIfPossible(signedTxn.getBodyBytes());
             sigMap = signedTxn.getSigMap();
-            hash = noThrowSha384HashOf(signedTxnBytes.toByteArray());
+            hash = noThrowSha384HashOf(unwrapUnsafelyIfPossible(signedTxnBytes));
         }
         pubKeyToSigBytes = new PojoSigMapPubKeyToSigBytes(sigMap);
 

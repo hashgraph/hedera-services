@@ -62,7 +62,7 @@ public class NodeLivenessTimeout extends UtilOp {
         var deadline = now.plus(duration, unit.toChronoUnit());
         var nextDeadLog = now.plus(logIntervalDuration, unit.toChronoUnit());
         while (Instant.now().isBefore(deadline)) {
-            var op = getAccountInfo("0.0.2").setNode(node).noLogging();
+            var op = getAccountInfo("0.0.2").setNode(node);
             var error = op.execFor(spec);
             if (error.isEmpty()) {
                 log.info(
@@ -76,10 +76,11 @@ public class NodeLivenessTimeout extends UtilOp {
             numSleeps++;
             if ((now = Instant.now()).isAfter(nextDeadLog)) {
                 log.info(
-                        " --> Node {} not available after {} {}",
+                        " --> Node {} not available after {} {} response {}",
                         node,
                         numSleeps * retryIntervalDuration,
-                        unit);
+                        unit,
+                        error.get());
                 nextDeadLog = now.plus(logIntervalDuration, unit.toChronoUnit());
             }
         }

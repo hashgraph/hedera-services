@@ -104,7 +104,7 @@ public class HapiOpCounters {
                         STAT_CATEGORY,
                         COUNTER_DEPRECATED_TXNS_NAME,
                         COUNTER_RECEIVED_DEPRECATED_DESC,
-                        Counter.CounterMode.INCREASE_ONLY);
+                        Counter.Mode.INCREASE_ONLY);
     }
 
     private Counter counterFor(
@@ -114,7 +114,7 @@ public class HapiOpCounters {
                 STAT_CATEGORY,
                 String.format(nameTpl, baseName),
                 String.format(descTpl, baseName),
-                Counter.CounterMode.INCREASE_ONLY);
+                Counter.Mode.INCREASE_ONLY);
     }
 
     public void registerWith(final Platform platform) {

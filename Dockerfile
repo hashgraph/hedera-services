@@ -30,10 +30,7 @@ FROM base-runtime AS services-builder
 # Maven
 # Note: Java 17 requires Maven 3.8+ so the distro provided one just won't do
 RUN apt-get update && \
-    apt-get install -y wget unzip && \
-    wget https://dlcdn.apache.org/maven/maven-3/3.8.6/binaries/apache-maven-3.8.6-bin.zip && \
-    unzip apache-maven-3.8.6-bin.zip -d /opt && \
-    rm apache-maven-3.8.6-bin.zip
+    apt-get install -y wget unzip
 ENV PATH=/opt/apache-maven-3.8.6/bin:$PATH
 
 WORKDIR /opt/hedera/services
@@ -41,7 +38,6 @@ WORKDIR /opt/hedera/services
 COPY .env /opt/hedera/services
 RUN for PIECE in $(cat .env | head -1 | tr '=' ' '); do \
   if [ "$IS_VERSION" = "true" ]; then echo $PIECE >> .VERSION ; else IS_VERSION=true; fi done
-COPY pom.xml /opt/hedera/services
 RUN mkdir /opt/hedera/services/hapi-utils
 COPY hapi-utils /opt/hedera/services/hapi-utils
 RUN mkdir /opt/hedera/services/hapi-fees

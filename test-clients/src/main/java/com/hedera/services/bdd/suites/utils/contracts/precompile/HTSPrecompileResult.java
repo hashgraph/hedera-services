@@ -36,6 +36,7 @@ import static com.hedera.services.contracts.ParsingConstants.hapiGetApprovedType
 import static com.hedera.services.contracts.ParsingConstants.hapiIsApprovedForAllType;
 import static com.hedera.services.contracts.ParsingConstants.isApprovedForAllType;
 import static com.hedera.services.contracts.ParsingConstants.isFrozenType;
+import static com.hedera.services.contracts.ParsingConstants.isKycType;
 import static com.hedera.services.contracts.ParsingConstants.mintReturnType;
 import static com.hedera.services.contracts.ParsingConstants.nameType;
 import static com.hedera.services.contracts.ParsingConstants.notSpecifiedType;
@@ -135,6 +136,7 @@ public class HTSPrecompileResult implements ContractCallResult {
     private boolean isApprovedForAllStatus;
     private TokenInfo tokenInfo;
     private TokenNftInfo nonFungibleTokenInfo;
+    private boolean isKyc;
     private boolean tokenDefaultFreezeStatus;
     private boolean tokenDefaultKycStatus;
     private boolean isFrozen;
@@ -162,6 +164,7 @@ public class HTSPrecompileResult implements ContractCallResult {
                     case HAPI_GET_TOKEN_INFO -> getTokenInfoTypeReplacedAddress;
                     case HAPI_GET_FUNGIBLE_TOKEN_INFO -> getFungibleTokenInfoTypeReplacedAddress;
                     case HAPI_GET_NON_FUNGIBLE_TOKEN_INFO -> getNonFungibleTokenInfoTypeReplacedAddress;
+                    case HAPI_IS_KYC -> isKycType;
                     case GET_TOKEN_DEFAULT_FREEZE_STATUS -> getTokenDefaultFreezeStatusType;
                     case GET_TOKEN_DEFAULT_KYC_STATUS -> getTokenDefaultKycStatusType;
                     case HAPI_IS_FROZEN -> isFrozenType;
@@ -262,6 +265,11 @@ public class HTSPrecompileResult implements ContractCallResult {
         return this;
     }
 
+    public HTSPrecompileResult withIsKyc(final boolean isKyc) {
+        this.isKyc = isKyc;
+        return this;
+    }
+
     public HTSPrecompileResult withCustomFees(final List<CustomFee> customFees) {
         this.customFees = customFees;
         return this;
@@ -314,6 +322,7 @@ public class HTSPrecompileResult implements ContractCallResult {
                     case HAPI_GET_TOKEN_INFO -> getTupleForGetTokenInfo();
                     case HAPI_GET_FUNGIBLE_TOKEN_INFO -> getTupleForGetFungibleTokenInfo();
                     case HAPI_GET_NON_FUNGIBLE_TOKEN_INFO -> getTupleForGetNonFungibleTokenInfo();
+                    case HAPI_IS_KYC -> Tuple.of(status.getNumber(), isKyc);
                     case GET_TOKEN_DEFAULT_FREEZE_STATUS -> Tuple.of(
                             status.getNumber(), tokenDefaultFreezeStatus);
                     case GET_TOKEN_DEFAULT_KYC_STATUS -> Tuple.of(

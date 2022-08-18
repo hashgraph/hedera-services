@@ -15,6 +15,7 @@
  */
 package com.hedera.services.state.logic;
 
+import static com.hedera.services.context.properties.PropertyNames.HEDERA_RECORD_STREAM_LOG_PERIOD;
 import static com.hedera.services.state.merkle.MerkleNetworkContext.ethHashFrom;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -51,7 +52,7 @@ class BlockManagerTest {
 
     @BeforeEach
     void setUp() {
-        given(bootstrapProperties.getLongProperty("hedera.recordStream.logPeriod"))
+        given(bootstrapProperties.getLongProperty(HEDERA_RECORD_STREAM_LOG_PERIOD))
                 .willReturn(blockPeriodSecs);
         subject =
                 new BlockManager(bootstrapProperties, () -> networkContext, () -> runningHashLeaf);

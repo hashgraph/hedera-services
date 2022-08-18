@@ -154,10 +154,9 @@ public enum InfrastructureType {
                 final String dir, final InfrastructureBundle bundle) {
             final var vMaploc = dir + File.separator + VM_META_FILE_NAME;
             final VirtualMap<ContractKey, IterableContractValue> kvStore = new VirtualMap<>();
-            final var storage = new File(dir);
             try (final var fin =
                     new MerkleDataInputStream(Files.newInputStream(Paths.get(vMaploc)))) {
-                kvStore.deserialize(fin, storage, 1);
+                kvStore.deserialize(fin, Paths.get(dir), 1);
             } catch (IOException e) {
                 throw new UncheckedIOException(e);
             }
@@ -174,7 +173,7 @@ public enum InfrastructureType {
             CRYPTO.digestTreeSync(contractStorage);
             try (final var fout =
                     new SerializableDataOutputStream(Files.newOutputStream(Paths.get(metaLoc)))) {
-                contractStorage.serialize(fout, new File(dir));
+                contractStorage.serialize(fout, Paths.get(dir));
             } catch (IOException e) {
                 throw new UncheckedIOException(e);
             }
@@ -203,7 +202,7 @@ public enum InfrastructureType {
         final var mMapLoc = locWithin(dir);
         try (final var fin = new MerkleDataInputStream(Files.newInputStream(Paths.get(mMapLoc)))) {
             fin.readProtocolVersion();
-            return fin.readMerkleTree(new File(dir), Integer.MAX_VALUE);
+            return fin.readMerkleTree(Paths.get(dir), Integer.MAX_VALUE);
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
@@ -215,7 +214,7 @@ public enum InfrastructureType {
         try (final var mMapOut =
                 new MerkleDataOutputStream(Files.newOutputStream(Paths.get(mMapLoc)))) {
             mMapOut.writeProtocolVersion();
-            mMapOut.writeMerkleTree(new File(dir), fromBundle);
+            mMapOut.writeMerkleTree(Paths.get(dir), fromBundle);
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }

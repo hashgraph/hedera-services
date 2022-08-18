@@ -116,6 +116,7 @@ public final class ParsingConstants {
     public static final TupleType hapiGetApprovedType = TupleType.parse("(int32,bytes32)");
     public static final TupleType hapiIsApprovedForAllType =
             TupleType.parse(INT_BOOL_PAIR_RETURN_TYPE);
+    public static final TupleType isKycType = TupleType.parse(INT_BOOL_PAIR_RETURN_TYPE);
     public static final TupleType getTokenDefaultFreezeStatusType =
             TupleType.parse(INT_BOOL_PAIR_RETURN_TYPE);
     public static final TupleType getTokenDefaultKycStatusType =

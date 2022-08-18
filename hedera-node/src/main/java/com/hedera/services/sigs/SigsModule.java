@@ -60,8 +60,8 @@ public interface SigsModule {
 
     @Provides
     @Singleton
-    static BiPredicate<JKey, TransactionSignature> provideValidityTest(SyncVerifier syncVerifier) {
-        return new OnlyIfSigVerifiableValid(syncVerifier);
+    static BiPredicate<JKey, TransactionSignature> provideValidityTest() {
+        return new OnlyIfSigVerifiableValid();
     }
 
     @Provides
