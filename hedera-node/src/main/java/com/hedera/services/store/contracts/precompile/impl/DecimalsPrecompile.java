@@ -18,10 +18,10 @@ package com.hedera.services.store.contracts.precompile.impl;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.store.contracts.WorldLedgers;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
-import com.hedera.services.store.contracts.precompile.codec.DecodingFacade;
 import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hederahashgraph.api.proto.java.TokenID;
+import java.util.function.UnaryOperator;
 import org.apache.tuweni.bytes.Bytes;
 
 public class DecimalsPrecompile extends AbstractReadOnlyPrecompile {
@@ -30,9 +30,14 @@ public class DecimalsPrecompile extends AbstractReadOnlyPrecompile {
             final SyntheticTxnFactory syntheticTxnFactory,
             final WorldLedgers ledgers,
             final EncodingFacade encoder,
-            final DecodingFacade decoder,
             final PrecompilePricingUtils pricingUtils) {
-        super(tokenId, syntheticTxnFactory, ledgers, encoder, decoder, pricingUtils);
+        super(tokenId, syntheticTxnFactory, ledgers, encoder, pricingUtils);
+    }
+
+    @Override
+    public Record decode(Bytes input, UnaryOperator<byte[]> aliasResolver) {
+        // No need to decode input parameters
+        return null;
     }
 
     @Override

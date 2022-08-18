@@ -15,10 +15,23 @@
  */
 package com.hedera.services.store.contracts.precompile.impl;
 
+import static com.hedera.services.contracts.ParsingConstants.BOOL;
 import static com.hedera.services.exceptions.ValidationUtils.validateTrueOrRevert;
+import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.ADDRESS_ADDRESS_UINT256_RAW_TYPE;
+import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.ADDRESS_UINT256_RAW_TYPE;
+import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.NO_FUNGIBLE_TRANSFERS;
+import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.NO_NFT_EXCHANGES;
+import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.addApprovedAdjustment;
+import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.addSignedAdjustment;
+import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.convertLeftPaddedAddressToAccountId;
+import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.decodeFunctionCall;
 import static com.hedera.services.utils.EntityIdUtils.asTypedEvmAddress;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER;
 
+import com.esaulpaugh.headlong.abi.ABIType;
+import com.esaulpaugh.headlong.abi.Function;
+import com.esaulpaugh.headlong.abi.Tuple;
+import com.esaulpaugh.headlong.abi.TypeFactory;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.contracts.sources.EvmSigsVerifier;
 import com.hedera.services.exceptions.InvalidTransactionException;
@@ -30,8 +43,8 @@ import com.hedera.services.store.contracts.WorldLedgers;
 import com.hedera.services.store.contracts.precompile.AbiConstants;
 import com.hedera.services.store.contracts.precompile.InfrastructureFactory;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
-import com.hedera.services.store.contracts.precompile.codec.DecodingFacade;
 import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
+import com.hedera.services.store.contracts.precompile.codec.TokenTransferWrapper;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.utils.EntityIdUtils;
@@ -39,6 +52,9 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.math.BigInteger;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.Objects;
 import java.util.function.UnaryOperator;
 import org.apache.tuweni.bytes.Bytes;
@@ -47,6 +63,17 @@ import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.log.Log;
 
 public class ERCTransferPrecompile extends TransferPrecompile {
+    private static final Function ERC_TRANSFER_FUNCTION =
+            new Function("transfer(address,uint256)", BOOL);
+    private static final Bytes ERC_TRANSFER_SELECTOR = Bytes.wrap(ERC_TRANSFER_FUNCTION.selector());
+    private static final ABIType<Tuple> ERC_TRANSFER_DECODER =
+            TypeFactory.create(ADDRESS_UINT256_RAW_TYPE);
+    private static final Function ERC_TRANSFER_FROM_FUNCTION =
+            new Function("transferFrom(address,address,uint256)");
+    private static final Bytes ERC_TRANSFER_FROM_SELECTOR =
+            Bytes.wrap(ERC_TRANSFER_FROM_FUNCTION.selector());
+    private static final ABIType<Tuple> ERC_TRANSFER_FROM_DECODER =
+            TypeFactory.create(ADDRESS_ADDRESS_UINT256_RAW_TYPE);
     private final TokenID tokenID;
     private final AccountID callerAccountID;
     private final boolean isFungible;
@@ -57,7 +84,6 @@ public class ERCTransferPrecompile extends TransferPrecompile {
             final Address callerAccount,
             final boolean isFungible,
             final WorldLedgers ledgers,
-            final DecodingFacade decoder,
             final EncodingFacade encoder,
             final HederaStackedWorldStateUpdater updater,
             final EvmSigsVerifier sigsVerifier,
@@ -69,7 +95,6 @@ public class ERCTransferPrecompile extends TransferPrecompile {
             final ImpliedTransfersMarshal impliedTransfersMarshal) {
         super(
                 ledgers,
-                decoder,
                 updater,
                 sigsVerifier,
                 sideEffects,
@@ -90,23 +115,8 @@ public class ERCTransferPrecompile extends TransferPrecompile {
             final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
         initializeHederaTokenStore();
 
-        final var nestedInput = input.slice(24);
-        transferOp =
-                switch (nestedInput.getInt(0)) {
-                    case AbiConstants.ABI_ID_ERC_TRANSFER -> decoder.decodeERCTransfer(
-                            nestedInput, tokenID, callerAccountID, aliasResolver);
-                    case AbiConstants.ABI_ID_ERC_TRANSFER_FROM -> {
-                        final var operatorId = EntityId.fromGrpcAccountId(callerAccountID);
-                        yield decoder.decodeERCTransferFrom(
-                                nestedInput,
-                                tokenID,
-                                isFungible,
-                                aliasResolver,
-                                ledgers,
-                                operatorId);
-                    }
-                    default -> null;
-                };
+        transferOp = decode(input, aliasResolver);
+
         transactionBody = syntheticTxnFactory.createCryptoTransfer(transferOp);
         extrapolateDetailsFromSyntheticTxn();
         return transactionBody;
@@ -131,6 +141,71 @@ public class ERCTransferPrecompile extends TransferPrecompile {
             frame.addLog(getLogForFungibleTransfer(asTypedEvmAddress(tokenID)));
         } else {
             frame.addLog(getLogForNftExchange(asTypedEvmAddress(tokenID)));
+        }
+    }
+
+    @Override
+    public List<TokenTransferWrapper> decode(
+            final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
+        final var nestedInput = input.slice(24);
+        return switch (nestedInput.getInt(0)) {
+            case AbiConstants.ABI_ID_ERC_TRANSFER -> decodeERCTransfer(nestedInput, aliasResolver);
+            case AbiConstants.ABI_ID_ERC_TRANSFER_FROM -> decodeERCTransferFrom(
+                    nestedInput, aliasResolver);
+            default -> null;
+        };
+    }
+
+    private List<TokenTransferWrapper> decodeERCTransfer(
+            final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
+        final Tuple decodedArguments =
+                decodeFunctionCall(input, ERC_TRANSFER_SELECTOR, ERC_TRANSFER_DECODER);
+
+        final var recipient =
+                convertLeftPaddedAddressToAccountId(decodedArguments.get(0), aliasResolver);
+        final var amount = (BigInteger) decodedArguments.get(1);
+
+        final List<SyntheticTxnFactory.FungibleTokenTransfer> fungibleTransfers = new ArrayList<>();
+        addSignedAdjustment(fungibleTransfers, tokenID, recipient, amount.longValue());
+        addSignedAdjustment(fungibleTransfers, tokenID, callerAccountID, -amount.longValue());
+
+        return Collections.singletonList(
+                new TokenTransferWrapper(NO_NFT_EXCHANGES, fungibleTransfers));
+    }
+
+    private List<TokenTransferWrapper> decodeERCTransferFrom(
+            final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
+        final Tuple decodedArguments =
+                decodeFunctionCall(input, ERC_TRANSFER_FROM_SELECTOR, ERC_TRANSFER_FROM_DECODER);
+
+        final var from =
+                convertLeftPaddedAddressToAccountId(decodedArguments.get(0), aliasResolver);
+        final var to = convertLeftPaddedAddressToAccountId(decodedArguments.get(1), aliasResolver);
+        if (isFungible) {
+            final List<SyntheticTxnFactory.FungibleTokenTransfer> fungibleTransfers =
+                    new ArrayList<>();
+            final var amount = (BigInteger) decodedArguments.get(2);
+            addSignedAdjustment(fungibleTransfers, tokenID, to, amount.longValue());
+            if (from.equals(callerAccountID)) {
+                addSignedAdjustment(fungibleTransfers, tokenID, from, -amount.longValue());
+            } else {
+                addApprovedAdjustment(fungibleTransfers, tokenID, from, -amount.longValue());
+            }
+            return Collections.singletonList(
+                    new TokenTransferWrapper(NO_NFT_EXCHANGES, fungibleTransfers));
+        } else {
+            final List<SyntheticTxnFactory.NftExchange> nonFungibleTransfers = new ArrayList<>();
+            final var serialNo = ((BigInteger) decodedArguments.get(2)).longValue();
+            final var ownerId = ledgers.ownerIfPresent(NftId.fromGrpc(tokenID, serialNo));
+            if (EntityId.fromGrpcAccountId(callerAccountID).equals(ownerId)) {
+                nonFungibleTransfers.add(
+                        new SyntheticTxnFactory.NftExchange(serialNo, tokenID, from, to));
+            } else {
+                nonFungibleTransfers.add(
+                        SyntheticTxnFactory.NftExchange.fromApproval(serialNo, tokenID, from, to));
+            }
+            return Collections.singletonList(
+                    new TokenTransferWrapper(nonFungibleTransfers, NO_FUNGIBLE_TRANSFERS));
         }
     }
 

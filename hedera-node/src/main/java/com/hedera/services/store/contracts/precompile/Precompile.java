@@ -88,6 +88,8 @@ public interface Precompile {
 
     long getGasRequirement(long blockTimestamp);
 
+    Object decode(final Bytes input, final UnaryOperator<byte[]> aliasResolver);
+
     default void customizeTrackingLedgers(final WorldLedgers worldLedgers) {
         // No-op
     }

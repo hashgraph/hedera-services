@@ -188,7 +188,6 @@ class BurnPrecompilesTest {
                         gasCalculator,
                         recordsHistorian,
                         sigsVerifier,
-                        decoder,
                         encoder,
                         syntheticTxnFactory,
                         creator,
@@ -405,7 +404,8 @@ class BurnPrecompilesTest {
         given(frame.getWorldUpdater()).willReturn(worldUpdater);
         given(worldUpdater.wrappedTrackingLedgers(any())).willReturn(wrappedLedgers);
         doCallRealMethod().when(frame).setRevertReason(any());
-        given(decoder.decodeBurn(pretendArguments)).willReturn(fungibleBurnAmountOversize);
+        given(subject.getPrecompile().decode(pretendArguments, any()))
+                .willReturn(fungibleBurnAmountOversize);
         // when:
         final var result = subject.computePrecompile(pretendArguments, frame);
         // then:
@@ -421,7 +421,8 @@ class BurnPrecompilesTest {
         givenLedgers();
         givenPricingUtilsContext();
 
-        given(decoder.decodeBurn(pretendArguments)).willReturn(fungibleBurnMaxAmount);
+        given(subject.getPrecompile().decode(pretendArguments, any()))
+                .willReturn(fungibleBurnMaxAmount);
         given(syntheticTxnFactory.createBurn(fungibleBurnMaxAmount))
                 .willReturn(mockSynthBodyBuilder);
         given(
@@ -470,7 +471,7 @@ class BurnPrecompilesTest {
         givenMinFrameContext();
         givenPricingUtilsContext();
         Bytes input = Bytes.of(Integers.toBytes(ABI_ID_BURN_TOKEN));
-        given(decoder.decodeBurn(any())).willReturn(fungibleBurn);
+        given(subject.getPrecompile().decode(any(), any())).willReturn(fungibleBurn);
         given(syntheticTxnFactory.createBurn(any()))
                 .willReturn(
                         TransactionBody.newBuilder()
@@ -492,13 +493,13 @@ class BurnPrecompilesTest {
 
     private void givenNonfungibleFrameContext() {
         givenFrameContext();
-        given(decoder.decodeBurn(pretendArguments)).willReturn(nonFungibleBurn);
+        given(subject.getPrecompile().decode(pretendArguments, any())).willReturn(nonFungibleBurn);
         given(syntheticTxnFactory.createBurn(nonFungibleBurn)).willReturn(mockSynthBodyBuilder);
     }
 
     private void givenFungibleFrameContext() {
         givenFrameContext();
-        given(decoder.decodeBurn(pretendArguments)).willReturn(fungibleBurn);
+        given(subject.getPrecompile().decode(pretendArguments, any())).willReturn(fungibleBurn);
         given(syntheticTxnFactory.createBurn(fungibleBurn)).willReturn(mockSynthBodyBuilder);
     }
 

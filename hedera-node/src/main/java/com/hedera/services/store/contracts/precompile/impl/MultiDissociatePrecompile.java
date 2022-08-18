@@ -15,6 +15,15 @@
  */
 package com.hedera.services.store.contracts.precompile.impl;
 
+import static com.hedera.services.contracts.ParsingConstants.INT;
+import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.convertLeftPaddedAddressToAccountId;
+import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.decodeFunctionCall;
+import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.decodeTokenIDsFromBytesArray;
+
+import com.esaulpaugh.headlong.abi.ABIType;
+import com.esaulpaugh.headlong.abi.Function;
+import com.esaulpaugh.headlong.abi.Tuple;
+import com.esaulpaugh.headlong.abi.TypeFactory;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.contracts.sources.EvmSigsVerifier;
@@ -23,7 +32,7 @@ import com.hedera.services.ledger.accounts.ContractAliases;
 import com.hedera.services.store.contracts.WorldLedgers;
 import com.hedera.services.store.contracts.precompile.InfrastructureFactory;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
-import com.hedera.services.store.contracts.precompile.codec.DecodingFacade;
+import com.hedera.services.store.contracts.precompile.codec.Dissociation;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.util.function.UnaryOperator;
@@ -31,9 +40,15 @@ import javax.inject.Provider;
 import org.apache.tuweni.bytes.Bytes;
 
 public class MultiDissociatePrecompile extends AbstractDissociatePrecompile {
+    private static final Function DISSOCIATE_TOKENS_FUNCTION =
+            new Function("dissociateTokens(address,address[])", INT);
+    private static final Bytes DISSOCIATE_TOKENS_SELECTOR =
+            Bytes.wrap(DISSOCIATE_TOKENS_FUNCTION.selector());
+    private static final ABIType<Tuple> DISSOCIATE_TOKENS_DECODER =
+            TypeFactory.create("(bytes32,bytes32[])");
+
     public MultiDissociatePrecompile(
             final WorldLedgers ledgers,
-            final DecodingFacade decoder,
             final ContractAliases aliases,
             final EvmSigsVerifier sigsVerifier,
             final SideEffectsTracker sideEffects,
@@ -44,7 +59,6 @@ public class MultiDissociatePrecompile extends AbstractDissociatePrecompile {
             final StateView currentView) {
         super(
                 ledgers,
-                decoder,
                 aliases,
                 sigsVerifier,
                 sideEffects,
@@ -58,7 +72,7 @@ public class MultiDissociatePrecompile extends AbstractDissociatePrecompile {
     @Override
     public TransactionBody.Builder body(
             final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
-        dissociateOp = decoder.decodeMultipleDissociations(input, aliasResolver);
+        dissociateOp = decode(input, aliasResolver);
         transactionBody = syntheticTxnFactory.createDissociate(dissociateOp);
         return transactionBody;
     }
@@ -66,5 +80,17 @@ public class MultiDissociatePrecompile extends AbstractDissociatePrecompile {
     @Override
     public long getGasRequirement(long blockTimestamp) {
         return pricingUtils.computeGasRequirement(blockTimestamp, this, transactionBody);
+    }
+
+    @Override
+    public Dissociation decode(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
+        final Tuple decodedArguments =
+                decodeFunctionCall(input, DISSOCIATE_TOKENS_SELECTOR, DISSOCIATE_TOKENS_DECODER);
+
+        final var accountID =
+                convertLeftPaddedAddressToAccountId(decodedArguments.get(0), aliasResolver);
+        final var tokenIDs = decodeTokenIDsFromBytesArray(decodedArguments.get(1));
+
+        return Dissociation.multiDissociation(accountID, tokenIDs);
     }
 }

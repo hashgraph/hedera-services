@@ -15,14 +15,21 @@
  */
 package com.hedera.services.store.contracts.precompile.impl;
 
+import static com.hedera.services.contracts.ParsingConstants.BYTES32;
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
+import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.convertAddressBytesToTokenID;
+import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.decodeFunctionCall;
 
+import com.esaulpaugh.headlong.abi.ABIType;
+import com.esaulpaugh.headlong.abi.Function;
+import com.esaulpaugh.headlong.abi.Tuple;
+import com.esaulpaugh.headlong.abi.TypeFactory;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.store.contracts.WorldLedgers;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
-import com.hedera.services.store.contracts.precompile.codec.DecodingFacade;
 import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
+import com.hedera.services.store.contracts.precompile.codec.TokenGetCustomFeesWrapper;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -31,6 +38,11 @@ import java.util.function.UnaryOperator;
 import org.apache.tuweni.bytes.Bytes;
 
 public class TokenGetCustomFeesPrecompile extends AbstractReadOnlyPrecompile {
+    private static final Function TOKEN_GET_CUSTOM_FEES_FUNCTION =
+            new Function("getTokenCustomFees(address)");
+    private static final Bytes TOKEN_GET_CUSTOM_FEES_SELECTOR =
+            Bytes.wrap(TOKEN_GET_CUSTOM_FEES_FUNCTION.selector());
+    private static final ABIType<Tuple> TOKEN_GET_CUSTOM_FEES_DECODER = TypeFactory.create(BYTES32);
 
     private final StateView stateView;
 
@@ -39,16 +51,15 @@ public class TokenGetCustomFeesPrecompile extends AbstractReadOnlyPrecompile {
             final SyntheticTxnFactory syntheticTxnFactory,
             final WorldLedgers ledgers,
             final EncodingFacade encoder,
-            final DecodingFacade decoder,
             final PrecompilePricingUtils pricingUtils,
             final StateView stateView) {
-        super(tokenId, syntheticTxnFactory, ledgers, encoder, decoder, pricingUtils);
+        super(tokenId, syntheticTxnFactory, ledgers, encoder, pricingUtils);
         this.stateView = stateView;
     }
 
     @Override
     public Builder body(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
-        final var tokenGetCustomFeesWrapper = decoder.decodeTokenGetCustomFees(input);
+        final var tokenGetCustomFeesWrapper = decode(input, aliasResolver);
         tokenId = tokenGetCustomFeesWrapper.tokenID();
         return super.body(input, aliasResolver);
     }
@@ -59,5 +70,16 @@ public class TokenGetCustomFeesPrecompile extends AbstractReadOnlyPrecompile {
         final var customFees = stateView.tokenCustomFees(tokenId);
 
         return encoder.encodeTokenGetCustomFees(customFees);
+    }
+
+    @Override
+    public TokenGetCustomFeesWrapper decode(
+            final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
+        final Tuple decodedArguments =
+                decodeFunctionCall(
+                        input, TOKEN_GET_CUSTOM_FEES_SELECTOR, TOKEN_GET_CUSTOM_FEES_DECODER);
+
+        final var tokenID = convertAddressBytesToTokenID(decodedArguments.get(0));
+        return new TokenGetCustomFeesWrapper(tokenID);
     }
 }

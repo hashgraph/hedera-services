@@ -15,22 +15,29 @@
  */
 package com.hedera.services.store.contracts.precompile.impl;
 
+import static com.hedera.services.contracts.ParsingConstants.INT;
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
+import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.convertAddressBytesToTokenID;
+import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.decodeFunctionCall;
 import static com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils.GasCostType.MINT_FUNGIBLE;
 import static com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils.GasCostType.MINT_NFT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
+import com.esaulpaugh.headlong.abi.ABIType;
+import com.esaulpaugh.headlong.abi.Function;
+import com.esaulpaugh.headlong.abi.Tuple;
+import com.esaulpaugh.headlong.abi.TypeFactory;
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.contracts.sources.EvmSigsVerifier;
 import com.hedera.services.ledger.accounts.ContractAliases;
+import com.hedera.services.legacy.proto.utils.ByteStringUtils;
 import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.store.contracts.WorldLedgers;
 import com.hedera.services.store.contracts.precompile.InfrastructureFactory;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
-import com.hedera.services.store.contracts.precompile.codec.DecodingFacade;
 import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
 import com.hedera.services.store.contracts.precompile.codec.MintWrapper;
 import com.hedera.services.store.contracts.precompile.utils.KeyActivationUtils;
@@ -40,6 +47,7 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
@@ -50,6 +58,11 @@ import org.hyperledger.besu.evm.frame.MessageFrame;
 public class MintPrecompile extends AbstractWritePrecompile {
     private static final List<ByteString> NO_METADATA = Collections.emptyList();
     private static final String MINT = String.format(FAILURE_MESSAGE, "mint");
+    private static final Function MINT_TOKEN_FUNCTION =
+            new Function("mintToken(address,uint64,bytes[])", INT);
+    private static final Bytes MINT_TOKEN_SELECTOR = Bytes.wrap(MINT_TOKEN_FUNCTION.selector());
+    private static final ABIType<Tuple> MINT_TOKEN_DECODER =
+            TypeFactory.create("(bytes32,int64,bytes[])");
     private final EncodingFacade encoder;
     private final ContractAliases aliases;
     private final EvmSigsVerifier sigsVerifier;
@@ -59,7 +72,6 @@ public class MintPrecompile extends AbstractWritePrecompile {
 
     public MintPrecompile(
             final WorldLedgers ledgers,
-            final DecodingFacade decoder,
             final EncodingFacade encoder,
             final ContractAliases aliases,
             final EvmSigsVerifier sigsVerifier,
@@ -68,13 +80,7 @@ public class MintPrecompile extends AbstractWritePrecompile {
             final SyntheticTxnFactory syntheticTxnFactory,
             final InfrastructureFactory infrastructureFactory,
             final PrecompilePricingUtils pricingUtils) {
-        super(
-                ledgers,
-                decoder,
-                sideEffects,
-                syntheticTxnFactory,
-                infrastructureFactory,
-                pricingUtils);
+        super(ledgers, sideEffects, syntheticTxnFactory, infrastructureFactory, pricingUtils);
         this.encoder = encoder;
         this.aliases = aliases;
         this.sigsVerifier = sigsVerifier;
@@ -85,7 +91,7 @@ public class MintPrecompile extends AbstractWritePrecompile {
     public TransactionBody.Builder body(
             final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
         this.transactionBody = null;
-        mintOp = decoder.decodeMint(input);
+        mintOp = decode(input, aliasResolver);
         transactionBody = syntheticTxnFactory.createMint(mintOp);
         return transactionBody;
     }
@@ -148,5 +154,24 @@ public class MintPrecompile extends AbstractWritePrecompile {
     @Override
     public Bytes getFailureResultFor(final ResponseCodeEnum status) {
         return encoder.encodeMintFailure(status);
+    }
+
+    @Override
+    public MintWrapper decode(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
+        final Tuple decodedArguments =
+                decodeFunctionCall(input, MINT_TOKEN_SELECTOR, MINT_TOKEN_DECODER);
+
+        final var tokenID = convertAddressBytesToTokenID(decodedArguments.get(0));
+        final var fungibleAmount = (long) decodedArguments.get(1);
+        final var metadataList = (byte[][]) decodedArguments.get(2);
+        final List<ByteString> wrappedMetadata = new ArrayList<>();
+        for (final var meta : metadataList) {
+            wrappedMetadata.add(ByteStringUtils.wrapUnsafely(meta));
+        }
+        if (fungibleAmount > 0) {
+            return MintWrapper.forFungible(tokenID, fungibleAmount);
+        } else {
+            return MintWrapper.forNonFungible(tokenID, wrappedMetadata);
+        }
     }
 }

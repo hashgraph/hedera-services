@@ -15,18 +15,25 @@
  */
 package com.hedera.services.store.contracts.precompile.impl;
 
+import static com.hedera.services.contracts.ParsingConstants.BYTES32;
+import static com.hedera.services.contracts.ParsingConstants.INT;
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
+import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.convertAddressBytesToTokenID;
+import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.decodeFunctionCall;
 import static com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils.GasCostType.DELETE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
+import com.esaulpaugh.headlong.abi.ABIType;
+import com.esaulpaugh.headlong.abi.Function;
+import com.esaulpaugh.headlong.abi.Tuple;
+import com.esaulpaugh.headlong.abi.TypeFactory;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.contracts.sources.EvmSigsVerifier;
 import com.hedera.services.ledger.accounts.ContractAliases;
 import com.hedera.services.store.contracts.WorldLedgers;
 import com.hedera.services.store.contracts.precompile.InfrastructureFactory;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
-import com.hedera.services.store.contracts.precompile.codec.DecodingFacade;
 import com.hedera.services.store.contracts.precompile.codec.DeleteWrapper;
 import com.hedera.services.store.contracts.precompile.utils.KeyActivationUtils;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
@@ -39,13 +46,15 @@ import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 
 public class DeleteTokenPrecompile extends AbstractWritePrecompile {
+    private static final Function DELETE_TOKEN_FUNCTION = new Function("deleteToken(address)", INT);
+    private static final Bytes DELETE_TOKEN_SELECTOR = Bytes.wrap(DELETE_TOKEN_FUNCTION.selector());
+    private static final ABIType<Tuple> DELETE_TOKEN_DECODER = TypeFactory.create(BYTES32);
     private DeleteWrapper deleteOp;
     private final ContractAliases aliases;
     private final EvmSigsVerifier sigsVerifier;
 
     public DeleteTokenPrecompile(
             WorldLedgers ledgers,
-            DecodingFacade decoder,
             ContractAliases aliases,
             EvmSigsVerifier sigsVerifier,
             SideEffectsTracker sideEffectsTracker,
@@ -54,7 +63,6 @@ public class DeleteTokenPrecompile extends AbstractWritePrecompile {
             PrecompilePricingUtils precompilePricingUtils) {
         super(
                 ledgers,
-                decoder,
                 sideEffectsTracker,
                 syntheticTxnFactory,
                 infrastructureFactory,
@@ -65,7 +73,7 @@ public class DeleteTokenPrecompile extends AbstractWritePrecompile {
 
     @Override
     public TransactionBody.Builder body(Bytes input, UnaryOperator<byte[]> aliasResolver) {
-        deleteOp = decoder.decodeDelete(input);
+        deleteOp = decode(input, aliasResolver);
         transactionBody = syntheticTxnFactory.createDelete(deleteOp);
         return transactionBody;
     }
@@ -108,5 +116,14 @@ public class DeleteTokenPrecompile extends AbstractWritePrecompile {
 
         /* --- Execute the transaction and capture its results --- */
         deleteLogic.delete(deleteOp.tokenID());
+    }
+
+    @Override
+    public DeleteWrapper decode(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
+        final Tuple decodedArguments =
+                decodeFunctionCall(input, DELETE_TOKEN_SELECTOR, DELETE_TOKEN_DECODER);
+        final var tokenID = convertAddressBytesToTokenID(decodedArguments.get(0));
+
+        return new DeleteWrapper(tokenID);
     }
 }
