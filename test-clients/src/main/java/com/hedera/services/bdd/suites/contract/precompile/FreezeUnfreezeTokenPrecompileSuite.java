@@ -43,10 +43,7 @@ import static com.hedera.services.bdd.suites.contract.Utils.asToken;
 import static com.hedera.services.bdd.suites.token.TokenAssociationSpecs.KNOWABLE_TOKEN;
 import static com.hedera.services.bdd.suites.token.TokenAssociationSpecs.VANILLA_TOKEN;
 import static com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult.htsPrecompileResult;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_FREEZE_KEY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
@@ -79,7 +76,8 @@ public class FreezeUnfreezeTokenPrecompileSuite extends HapiApiSuite {
     private static final String MULTI_KEY = "purpose";
     private static final long GAS_TO_OFFER = 4_000_000L;
 
-    final AtomicReference<AccountID> accountID = new AtomicReference<>();
+    private final AtomicReference<AccountID> accountID = new AtomicReference<>();
+    private final Object notAnAddress = new byte[0];
 
     public static void main(String... args) {
         new FreezeUnfreezeTokenPrecompileSuite().runSuiteSync();
@@ -95,7 +93,136 @@ public class FreezeUnfreezeTokenPrecompileSuite extends HapiApiSuite {
         return List.of(
                 freezeUnfreezeFungibleWithNegativeCases(),
                 freezeUnfreezeNftsWithNegativeCases(),
-                isFrozenHappyPathWithLocalCall());
+                isFrozenHappyPathWithLocalCall(),
+                noTokenIdReverts(),
+                noKeyReverts());
+    }
+
+    private HapiApiSpec noTokenIdReverts() {
+        final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
+
+        return defaultHapiSpec("noTokenIdReverts")
+                .given(
+                        newKeyNamed(FREEZE_KEY),
+                        newKeyNamed(MULTI_KEY),
+                        cryptoCreate(ACCOUNT)
+                                .balance(100 * ONE_HBAR)
+                                .exposingCreatedIdTo(accountID::set),
+                        cryptoCreate(TOKEN_TREASURY),
+                        tokenCreate(VANILLA_TOKEN)
+                                .tokenType(FUNGIBLE_COMMON)
+                                .treasury(TOKEN_TREASURY)
+                                .freezeKey(FREEZE_KEY)
+                                .initialSupply(1_000)
+                                .exposingCreatedIdTo(id -> vanillaTokenID.set(asToken(id))),
+                        uploadInitCode(FREEZE_CONTRACT),
+                        contractCreate(FREEZE_CONTRACT),
+                        tokenAssociate(ACCOUNT, VANILLA_TOKEN))
+                .when(
+                        withOpContext(
+                                (spec, opLog) ->
+                                        allRunFor(
+                                                spec,
+                                                contractCall(
+                                                                FREEZE_CONTRACT,
+                                                                TOKEN_UNFREEZE_FUNC,
+                                                                notAnAddress,
+                                                                asAddress(accountID.get()))
+                                                        .payingWith(ACCOUNT)
+                                                        .gas(GAS_TO_OFFER)
+                                                        .via("UnfreezeTx")
+                                                        .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
+                                                cryptoUpdate(ACCOUNT).key(FREEZE_KEY),
+                                                contractCall(
+                                                                FREEZE_CONTRACT,
+                                                                TOKEN_FREEZE_FUNC,
+                                                                notAnAddress,
+                                                                asAddress(accountID.get()))
+                                                        .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
+                                                        .payingWith(ACCOUNT)
+                                                        .gas(GAS_TO_OFFER)
+                                                        .via("FreezeTx"))))
+                .then(
+                        childRecordsCheck(
+                                "UnfreezeTx",
+                                CONTRACT_REVERT_EXECUTED,
+                                recordWith().status(INVALID_TOKEN_ID)),
+                        childRecordsCheck(
+                                "FreezeTx",
+                                CONTRACT_REVERT_EXECUTED,
+                                recordWith().status(INVALID_TOKEN_ID)));
+    }
+
+    private HapiApiSpec noKeyReverts() {
+        final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
+        final AtomicReference<TokenID> withoutKeyID = new AtomicReference<>();
+
+        return defaultHapiSpec("noKeyReverts")
+                .given(
+                        newKeyNamed(FREEZE_KEY),
+                        newKeyNamed(MULTI_KEY),
+                        cryptoCreate(ACCOUNT)
+                                .balance(100 * ONE_HBAR)
+                                .exposingCreatedIdTo(accountID::set),
+                        cryptoCreate(TOKEN_TREASURY),
+                        tokenCreate(TOKEN_WITHOUT_KEY)
+                                .exposingCreatedIdTo(id -> withoutKeyID.set(asToken(id))),
+                        tokenCreate(VANILLA_TOKEN)
+                                .tokenType(FUNGIBLE_COMMON)
+                                .treasury(TOKEN_TREASURY)
+                                .freezeKey(FREEZE_KEY)
+                                .initialSupply(1_000)
+                                .exposingCreatedIdTo(id -> vanillaTokenID.set(asToken(id))),
+                        uploadInitCode(FREEZE_CONTRACT),
+                        contractCreate(FREEZE_CONTRACT),
+                        tokenAssociate(ACCOUNT, VANILLA_TOKEN))
+                .when(
+                        withOpContext(
+                                (spec, opLog) ->
+                                        allRunFor(
+                                                spec,
+                                                contractCall(
+                                                                FREEZE_CONTRACT,
+                                                                TOKEN_UNFREEZE_FUNC,
+                                                                asAddress(withoutKeyID.get()),
+                                                                asAddress(accountID.get()))
+                                                        .payingWith(ACCOUNT)
+                                                        .gas(GAS_TO_OFFER)
+                                                        .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
+                                                        .via("UnfreezeTx"),
+                                                cryptoUpdate(ACCOUNT).key(FREEZE_KEY),
+                                                contractCall(
+                                                                FREEZE_CONTRACT,
+                                                                TOKEN_FREEZE_FUNC,
+                                                                asAddress(withoutKeyID.get()),
+                                                                asAddress(accountID.get()))
+                                                        .payingWith(ACCOUNT)
+                                                        .gas(GAS_TO_OFFER)
+                                                        .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
+                                                        .via("FreezeTx"))))
+                .then(
+                        childRecordsCheck(
+                                "UnfreezeTx",
+                                CONTRACT_REVERT_EXECUTED,
+                                recordWith()
+                                        .status(TOKEN_HAS_NO_FREEZE_KEY)
+                                        .contractCallResult(
+                                                resultWith()
+                                                        .contractCallResult(
+                                                                htsPrecompileResult()
+                                                                        .withStatus(
+                                                                                TOKEN_HAS_NO_FREEZE_KEY)))),
+                        childRecordsCheck(
+                                "FreezeTx",
+                                CONTRACT_REVERT_EXECUTED,
+                                recordWith()
+                                        .status(TOKEN_HAS_NO_FREEZE_KEY)
+                                        .contractCallResult(
+                                                resultWith()
+                                                        .contractCallResult(
+                                                                htsPrecompileResult()
+                                                                        .withStatus(
+                                                                                TOKEN_HAS_NO_FREEZE_KEY)))));
     }
 
     private HapiApiSpec freezeUnfreezeFungibleWithNegativeCases() {
