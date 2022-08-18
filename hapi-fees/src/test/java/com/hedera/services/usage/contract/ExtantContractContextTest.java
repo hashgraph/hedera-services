@@ -39,7 +39,7 @@ class ExtantContractContextTest {
 
     @BeforeEach
     void setUp() {
-        subject = new ExtantContractContext(kvPairs, bytecodeSize, currentCryptoContext);
+        subject = new ExtantContractContext(kvPairs, currentCryptoContext);
     }
 
     @Test
@@ -49,12 +49,5 @@ class ExtantContractContextTest {
         final var expectedRb = CONTRACT_ENTITY_SIZES.fixedBytesInContractRepr() + nonBaseBytes;
 
         assertEquals(expectedRb, subject.currentRb());
-    }
-
-    @Test
-    void getsExpectedSb() {
-        final var expectedSb = ContractEntitySizes.NUM_BYTES_PER_KV_PAIR * kvPairs + bytecodeSize;
-
-        assertEquals(expectedSb, subject.currentSb());
     }
 }

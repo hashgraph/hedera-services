@@ -303,11 +303,9 @@ public class BaseOperationUsage {
         final var contractContext =
                 new ExtantContractContext(
                         CANONICAL_NUM_CONTRACT_KV_PAIRS,
-                        CANONICAL_CONTRACT_BYTECODE_SIZE,
                         accountContext);
         final var into = new UsageAccumulator();
         into.addRbs(THREE_MONTHS_IN_SECONDS * contractContext.currentRb());
-        into.addSbs(THREE_MONTHS_IN_SECONDS * contractContext.currentSb());
         return into;
     }
 

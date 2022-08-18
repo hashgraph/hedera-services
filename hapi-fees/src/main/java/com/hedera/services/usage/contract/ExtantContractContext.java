@@ -22,15 +22,12 @@ import com.hedera.services.usage.crypto.ExtantCryptoContext;
 
 public class ExtantContractContext {
     private final int currentNumKvPairs;
-    private final int currentBytecodeSize;
     private final ExtantCryptoContext currentCryptoContext;
 
     public ExtantContractContext(
             final int currentNumKvPairs,
-            final int currentBytecodeSize,
             final ExtantCryptoContext currentCryptoContext) {
         this.currentNumKvPairs = currentNumKvPairs;
-        this.currentBytecodeSize = currentBytecodeSize;
         this.currentCryptoContext = currentCryptoContext;
     }
 
@@ -39,7 +36,7 @@ public class ExtantContractContext {
                 + currentCryptoContext.currentNonBaseRb();
     }
 
-    public long currentSb() {
-        return (long) NUM_BYTES_PER_KV_PAIR * currentNumKvPairs + currentBytecodeSize;
+    public long currentNumKvPairs(){
+        return currentNumKvPairs;
     }
 }

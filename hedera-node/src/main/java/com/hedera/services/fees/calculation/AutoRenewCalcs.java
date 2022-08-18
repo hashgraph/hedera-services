@@ -15,7 +15,6 @@
  */
 package com.hedera.services.fees.calculation;
 
-import static com.hedera.services.store.contracts.StaticEntityAccess.explicitCodeFetch;
 import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.getCryptoAllowancesList;
 import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.getFungibleTokenAllowancesList;
 import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.getNftApprovedForAll;
@@ -25,11 +24,13 @@ import static com.hederahashgraph.fee.FeeBuilder.HRS_DIVISOR;
 import static com.hederahashgraph.fee.FeeBuilder.getTinybarsFromTinyCents;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.submerkle.FcTokenAllowance;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
 import com.hedera.services.state.virtual.VirtualBlobKey;
 import com.hedera.services.state.virtual.VirtualBlobValue;
+import com.hedera.services.store.contracts.KvUsageInfo;
 import com.hedera.services.usage.contract.ExtantContractContext;
 import com.hedera.services.usage.crypto.CryptoOpsUsage;
 import com.hedera.services.usage.crypto.ExtantCryptoContext;
@@ -54,6 +55,7 @@ public class AutoRenewCalcs {
 
     private final CryptoOpsUsage cryptoOpsUsage;
     private final Supplier<VirtualMap<VirtualBlobKey, VirtualBlobValue>> bytecode;
+    private final GlobalDynamicProperties properties;
 
     private Triple<Map<SubType, FeeData>, Instant, Map<SubType, FeeData>> accountPricesSeq = null;
     private Triple<Map<SubType, FeeData>, Instant, Map<SubType, FeeData>> contractPricesSeq = null;
@@ -73,9 +75,11 @@ public class AutoRenewCalcs {
     @Inject
     public AutoRenewCalcs(
             final CryptoOpsUsage cryptoOpsUsage,
-            final Supplier<VirtualMap<VirtualBlobKey, VirtualBlobValue>> bytecode) {
+            final Supplier<VirtualMap<VirtualBlobKey, VirtualBlobValue>> bytecode,
+            final GlobalDynamicProperties properties) {
         this.bytecode = bytecode;
         this.cryptoOpsUsage = cryptoOpsUsage;
+        this.properties = properties;
     }
 
     public void setAccountRenewalPriceSeq(
@@ -145,12 +149,19 @@ public class AutoRenewCalcs {
         final long fixedPrice =
                 isBeforeSwitch ? firstContractConstantFee : secondContractConstantFee;
         final long rbhPrice = isBeforeSwitch ? firstContractRbhPrice : secondContractRbhPrice;
-        final long sbhPrice = isBeforeSwitch ? firstContractSbhPrice : secondContractSbhPrice;
 
         final var contractContext = contractContextFrom(contract);
-        final var hourlyPrice =
-                rbhPrice * contractContext.currentRb() + sbhPrice * contractContext.currentSb();
+        // Since contract bytecode is not charged any fees - we ignore sbh in the renewal fee calculation
+        final var storageFee = storageFee(contractContext, rate, contract.getAutoRenewSecs());
+        final var hourlyPrice = (rbhPrice * contractContext.currentRb()) + storageFee;
         return new RenewalFees(inTinybars(fixedPrice, rate), inTinybars(hourlyPrice, rate));
+    }
+
+    private long storageFee(final ExtantContractContext contractContext, final ExchangeRate rate,
+            final long requestedLifetime) {
+        final var storagePriceTiers = properties.storagePriceTiers();
+        final var kvPairsUsed = contractContext.currentNumKvPairs();
+        return storagePriceTiers.priceOfPendingUsage(rate, kvPairsUsed, requestedLifetime, new KvUsageInfo((int) kvPairsUsed));
     }
 
     private RenewalFees accountRenewalPrices(
@@ -193,9 +204,7 @@ public class AutoRenewCalcs {
     private ExtantContractContext contractContextFrom(final MerkleAccount contract) {
         final var accountContext = accountContextFrom(contract);
         final var numKvPairs = contract.getNumContractKvPairs();
-        final var code = explicitCodeFetch(bytecode.get(), contract.getKey().longValue());
-        final var codeSize = code == null ? 0 : code.size();
-        return new ExtantContractContext(numKvPairs, codeSize, accountContext);
+        return new ExtantContractContext(numKvPairs, accountContext);
     }
 
     private ExtantCryptoContext accountContextFrom(final MerkleAccount account) {
