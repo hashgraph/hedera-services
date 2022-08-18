@@ -15,28 +15,6 @@
  */
 package com.hedera.services.contracts.execution;
 
-/*
- * -
- * ‌
- * Hedera Services Node
- * ​
- * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
- * ​
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *       http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- * ‍
- *
- */
-
 import static com.hedera.services.ethereum.EthTxData.WEIBARS_TO_TINYBARS;
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_GAS;
@@ -45,6 +23,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_T
 import static org.hyperledger.besu.evm.MainnetEVMs.registerLondonOperations;
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.contracts.execution.traceability.HederaTracer;
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.store.contracts.HederaMutableWorldState;
 import com.hedera.services.store.contracts.HederaWorldState;
@@ -311,8 +290,12 @@ abstract class EvmTxProcessor {
                 buildInitialFrame(commonInitialFrame, receiver, payload, value);
         messageFrameStack.addFirst(initialFrame);
 
+        final var hederaTracer =
+                new HederaTracer(
+                        dynamicProperties.enabledSidecars().contains(SidecarType.CONTRACT_ACTION));
+        hederaTracer.init(initialFrame);
         while (!messageFrameStack.isEmpty()) {
-            process(messageFrameStack.peekFirst(), new HederaTracer());
+            process(messageFrameStack.peekFirst(), hederaTracer);
         }
 
         var gasUsedByTransaction = calculateGasUsedByTX(gasLimit, initialFrame);
@@ -366,7 +349,8 @@ abstract class EvmTxProcessor {
                     gasPrice,
                     initialFrame.getOutputData(),
                     mirrorReceiver,
-                    stateChanges);
+                    stateChanges,
+                    hederaTracer.getActions());
         } else {
             return TransactionProcessingResult.failed(
                     gasUsedByTransaction,
@@ -374,7 +358,8 @@ abstract class EvmTxProcessor {
                     gasPrice,
                     initialFrame.getRevertReason(),
                     initialFrame.getExceptionalHaltReason(),
-                    stateChanges);
+                    stateChanges,
+                    hederaTracer.getActions());
         }
     }
 

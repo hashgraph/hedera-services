@@ -15,6 +15,8 @@
  */
 package com.hedera.services.files.sysfiles;
 
+import static com.hedera.services.context.properties.PropertyNames.LEDGER_TOTAL_TINY_BAR_FLOAT;
+
 import com.hedera.services.context.annotations.CompositeProps;
 import com.hedera.services.context.domain.security.HapiOpPermissions;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
@@ -86,7 +88,7 @@ public class ConfigCallbacks {
             scheduleThrottling.applyGasConfig();
             networkCtx.get().renumberBlocksToMatch(dynamicProps.knownBlockValues());
             updateMinAndMaxStakesWith(
-                    properties.getLongProperty("ledger.totalTinyBarFloat"),
+                    properties.getLongProperty(LEDGER_TOTAL_TINY_BAR_FLOAT),
                     addressBook.get().getSize(),
                     dynamicProps.nodeMaxMinStakeRatios());
         };

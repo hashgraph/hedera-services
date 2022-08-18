@@ -456,7 +456,6 @@ public class ApproveAllowanceSuite extends HapiApiSuite {
                                                                                                                 spec.registry()
                                                                                                                         .getAccountID(
                                                                                                                                 theSpender)))))))),
-                        getTxnRecord(allowanceTxn).andAllChildRecords().logged(),
                         UtilVerbs.resetToDefault(EXPORT_RECORD_RESULTS_FEATURE_FLAG));
     }
 
@@ -510,10 +509,11 @@ public class ApproveAllowanceSuite extends HapiApiSuite {
                                                                                         theSpender)),
                                                                 true)
                                                         .payingWith(OWNER)
+                                                        .gas(5_000_000L)
                                                         .via(allowanceTxn)
                                                         .hasKnownStatus(SUCCESS))))
                 .then(
-                        getTxnRecord(allowanceTxn).andAllChildRecords().logged(),
+                        childRecordsCheck(allowanceTxn, SUCCESS, recordWith().status(SUCCESS)),
                         UtilVerbs.resetToDefault(EXPORT_RECORD_RESULTS_FEATURE_FLAG));
     }
 }

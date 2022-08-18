@@ -135,7 +135,8 @@ class EvmFnResultTest {
                         0,
                         Optional.of(HederaMessageCallProcessor.INVALID_TRANSFER),
                         Optional.empty(),
-                        Collections.emptyMap());
+                        Collections.emptyMap(),
+                        Collections.emptyList());
 
         final var actual = EvmFnResult.fromCall(input);
 
@@ -167,7 +168,8 @@ class EvmFnResultTest {
                         0,
                         Bytes.wrap(result),
                         recipient,
-                        Collections.emptyMap());
+                        Collections.emptyMap(),
+                        Collections.emptyList());
         input.setCreatedContracts(grpcCreatedContractIds);
 
         final var actual = EvmFnResult.fromCall(input);
@@ -209,7 +211,8 @@ class EvmFnResultTest {
                         0,
                         Bytes.wrap(result),
                         recipient,
-                        Collections.emptyMap());
+                        Collections.emptyMap(),
+                        Collections.emptyList());
         input.setCreatedContracts(grpcCreatedContractIds);
 
         final var actual = EvmFnResult.fromCreate(input, evmAddress);
