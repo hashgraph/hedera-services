@@ -15,6 +15,7 @@
  */
 package com.hedera.services.txns.validation;
 
+import static com.hedera.services.context.properties.PropertyNames.ENTITIES_MAX_LIFETIME;
 import static com.hedera.services.legacy.core.jproto.JKey.equalUpToDecodability;
 import static com.hedera.services.utils.EntityNum.fromContractId;
 import static com.hedera.test.utils.IdUtils.asAccount;
@@ -144,7 +145,7 @@ class ContextOptionValidatorTest {
         dynamicProperties = mock(GlobalDynamicProperties.class);
         given(dynamicProperties.maxMemoUtf8Bytes()).willReturn(100);
         properties = mock(PropertySource.class);
-        given(properties.getLongProperty("entities.maxLifetime")).willReturn(maxLifetime);
+        given(properties.getLongProperty(ENTITIES_MAX_LIFETIME)).willReturn(maxLifetime);
 
         topics = mock(MerkleMap.class);
         deletedMerkleTopic = TopicFactory.newTopic().deleted(true).get();

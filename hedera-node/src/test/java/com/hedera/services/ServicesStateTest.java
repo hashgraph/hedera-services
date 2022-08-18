@@ -17,6 +17,8 @@ package com.hedera.services;
 
 import static com.hedera.services.ServicesState.EMPTY_HASH;
 import static com.hedera.services.context.AppsManager.APPS;
+import static com.hedera.services.context.properties.PropertyNames.LEDGER_TOTAL_TINY_BAR_FLOAT;
+import static com.hedera.services.context.properties.PropertyNames.STAKING_REWARD_HISTORY_NUM_STORED_PERIODS;
 import static com.hedera.services.context.properties.SemanticVersions.SEMANTIC_VERSIONS;
 import static com.hedera.services.context.properties.SerializableSemVers.forHapiAndHedera;
 import static com.swirlds.common.system.InitTrigger.RECONNECT;
@@ -125,6 +127,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class ServicesStateTest {
     private final String signedStateDir = "src/test/resources/signedState/";
     private final SoftwareVersion some025xVersion = forHapiAndHedera("0.25.0", "0.25.2");
+    private final SoftwareVersion justPriorVersion = forHapiAndHedera("0.28.1", "0.27.9");
     private final SoftwareVersion currentVersion = SEMANTIC_VERSIONS.deployedSoftwareVersion();
     private final SoftwareVersion futureVersion = forHapiAndHedera("1.0.0", "1.0.0");
     private final Instant consensusTime = Instant.ofEpochSecond(2_345_678L, 9);
@@ -488,7 +491,6 @@ class ServicesStateTest {
         given(app.initializationFlow()).willReturn(initFlow);
         given(app.dualStateAccessor()).willReturn(dualStateAccessor);
         given(app.sysFilesManager()).willReturn(systemFilesManager);
-        given(app.treasuryCloner()).willReturn(treasuryCloner);
         given(platform.getSelfId()).willReturn(selfId);
 
         APPS.save(selfId.getId(), app);
@@ -601,7 +603,7 @@ class ServicesStateTest {
     }
 
     @Test
-    void nonGenesisInitClearsPreparedUpgradeIfNonNullLastFrozenMatchesFreezeTime() {
+    void nonGenesisInitDoesNotClearPreparedUpgradeIfSameVersion() {
         subject.setChild(StateChildIndices.SPECIAL_FILES, specialFiles);
         subject.setChild(StateChildIndices.NETWORK_CTX, networkContext);
         subject.setChild(StateChildIndices.ACCOUNTS, accounts);
@@ -615,15 +617,44 @@ class ServicesStateTest {
         given(app.dualStateAccessor()).willReturn(dualStateAccessor);
         given(platform.getSelfId()).willReturn(selfId);
         given(app.sysFilesManager()).willReturn(systemFilesManager);
-        given(app.treasuryCloner()).willReturn(treasuryCloner);
         // and:
         APPS.save(selfId.getId(), app);
 
         // when:
         subject.init(platform, addressBook, dualState, RESTART, currentVersion);
 
+        verify(networkContext, never()).discardPreparedUpgradeMeta();
+        verify(dualState, never()).setFreezeTime(null);
+    }
+
+    @Test
+    void nonGenesisInitClearsPreparedUpgradeIfDeployedIsLaterVersion() {
+        mockMigrators();
+        subject.setChild(StateChildIndices.SPECIAL_FILES, specialFiles);
+        subject.setChild(StateChildIndices.NETWORK_CTX, networkContext);
+        subject.setChild(StateChildIndices.ACCOUNTS, accounts);
+
+        final var when = Instant.ofEpochSecond(1_234_567L, 890);
+        given(dualState.getFreezeTime()).willReturn(when);
+        given(dualState.getLastFrozenTime()).willReturn(when);
+        given(app.workingState()).willReturn(workingState);
+
+        given(app.hashLogger()).willReturn(hashLogger);
+        given(app.initializationFlow()).willReturn(initFlow);
+        given(app.dualStateAccessor()).willReturn(dualStateAccessor);
+        given(platform.getSelfId()).willReturn(selfId);
+        given(app.sysFilesManager()).willReturn(systemFilesManager);
+        given(app.treasuryCloner()).willReturn(treasuryCloner);
+        // and:
+        APPS.save(selfId.getId(), app);
+
+        // when:
+        System.out.println(currentVersion);
+        subject.init(platform, addressBook, dualState, RESTART, justPriorVersion);
+
         verify(networkContext).discardPreparedUpgradeMeta();
         verify(dualState).setFreezeTime(null);
+        unmockMigrators();
     }
 
     @Test
@@ -712,7 +743,6 @@ class ServicesStateTest {
         given(app.dualStateAccessor()).willReturn(dualStateAccessor);
         given(platform.getSelfId()).willReturn(selfId);
         given(app.sysFilesManager()).willReturn(systemFilesManager);
-        given(app.treasuryCloner()).willReturn(treasuryCloner);
         // and:
         APPS.save(selfId.getId(), app);
 
@@ -907,9 +937,9 @@ class ServicesStateTest {
         given(addressBook.getSize()).willReturn(1);
         given(addressBook.getAddress(0)).willReturn(address);
         given(address.getId()).willReturn(0L);
-        given(bootstrapProperties.getLongProperty("ledger.totalTinyBarFloat"))
+        given(bootstrapProperties.getLongProperty(LEDGER_TOTAL_TINY_BAR_FLOAT))
                 .willReturn(3_000_000_000L);
-        given(bootstrapProperties.getIntProperty("staking.rewardHistory.numStoredPeriods"))
+        given(bootstrapProperties.getIntProperty(STAKING_REWARD_HISTORY_NUM_STORED_PERIODS))
                 .willReturn(2);
         File databaseFolder = new File("database");
         try {

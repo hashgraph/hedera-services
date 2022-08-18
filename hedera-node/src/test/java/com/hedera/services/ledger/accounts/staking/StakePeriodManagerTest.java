@@ -15,6 +15,8 @@
  */
 package com.hedera.services.ledger.accounts.staking;
 
+import static com.hedera.services.context.properties.PropertyNames.STAKING_PERIOD_MINS;
+import static com.hedera.services.context.properties.PropertyNames.STAKING_REWARD_HISTORY_NUM_STORED_PERIODS;
 import static com.hedera.services.ledger.accounts.staking.StakePeriodManager.ZONE_UTC;
 import static com.hedera.services.ledger.accounts.staking.StakingUtils.NA;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -56,7 +58,7 @@ class StakePeriodManagerTest {
 
     @Test
     void stakePeriodStartForNonProdSettingIsPeriodTimesSeconds() {
-        given(properties.getLongProperty("staking.periodMins")).willReturn(2L);
+        given(properties.getLongProperty(STAKING_PERIOD_MINS)).willReturn(2L);
         subject = new StakePeriodManager(txnCtx, () -> networkCtx, properties);
 
         final var somePeriod = 1_234_567L;
@@ -209,7 +211,7 @@ class StakePeriodManagerTest {
 
     @Test
     void calculatesCurrentStakingPeriodForCustomStakingPeriodProperty() {
-        given(properties.getLongProperty("staking.periodMins")).willReturn(2880L);
+        given(properties.getLongProperty(STAKING_PERIOD_MINS)).willReturn(2880L);
         subject = new StakePeriodManager(txnCtx, () -> networkCtx, properties);
         final var instant = Instant.ofEpochSecond(12345L);
         final var expectedPeriod = LocalDate.ofInstant(instant, ZONE_UTC).toEpochDay() / 2;
@@ -217,7 +219,7 @@ class StakePeriodManagerTest {
         final var period = subject.currentStakePeriod();
         assertEquals(expectedPeriod, period);
 
-        given(properties.getLongProperty("staking.periodMins")).willReturn(10L);
+        given(properties.getLongProperty(STAKING_PERIOD_MINS)).willReturn(10L);
         subject = new StakePeriodManager(txnCtx, () -> networkCtx, properties);
         given(txnCtx.consensusTime()).willReturn(instant.plusSeconds(12345L));
         assertEquals(41L, subject.currentStakePeriod());
@@ -228,13 +230,13 @@ class StakePeriodManagerTest {
     }
 
     private void givenProdManager() {
-        given(properties.getIntProperty("staking.rewardHistory.numStoredPeriods")).willReturn(365);
-        given(properties.getLongProperty("staking.periodMins")).willReturn(1440L);
+        given(properties.getIntProperty(STAKING_REWARD_HISTORY_NUM_STORED_PERIODS)).willReturn(365);
+        given(properties.getLongProperty(STAKING_PERIOD_MINS)).willReturn(1440L);
         subject = new StakePeriodManager(txnCtx, () -> networkCtx, properties);
     }
 
     private void givenDevManager() {
-        given(properties.getLongProperty("staking.periodMins")).willReturn(1L);
+        given(properties.getLongProperty(STAKING_PERIOD_MINS)).willReturn(1L);
         subject = new StakePeriodManager(txnCtx, () -> networkCtx, properties);
     }
 }

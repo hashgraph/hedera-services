@@ -46,6 +46,7 @@ import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.EVM;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
+import org.hyperledger.besu.evm.internal.Words;
 import org.hyperledger.besu.evm.operation.CallOperation;
 import org.hyperledger.besu.evm.precompile.PrecompiledContract;
 
@@ -87,5 +88,10 @@ public class HederaCallOperation extends CallOperation {
                 () -> super.execute(frame, evm),
                 addressValidator,
                 precompiledContractMap);
+    }
+
+    @Override
+    protected long gas(final MessageFrame frame) {
+        return Words.clampedToLong(frame.getStackItem(0));
     }
 }

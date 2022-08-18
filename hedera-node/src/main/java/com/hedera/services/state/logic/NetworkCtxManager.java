@@ -16,6 +16,7 @@
 package com.hedera.services.state.logic;
 
 import static com.hedera.services.context.domain.trackers.IssEventStatus.ONGOING_ISS;
+import static com.hedera.services.context.properties.PropertyNames.STAKING_PERIOD_MINS;
 import static com.hedera.services.ledger.accounts.staking.StakePeriodManager.DEFAULT_STAKING_PERIOD_MINS;
 import static com.hedera.services.utils.MiscUtils.isGasThrottled;
 import static com.hedera.services.utils.Units.MINUTES_TO_MILLISECONDS;
@@ -102,7 +103,7 @@ public class NetworkCtxManager {
         this.runningAvgs = runningAvgs;
         this.txnCtx = txnCtx;
         this.endOfStakingPeriodCalculator = endOfStakingPeriodCalculator;
-        this.stakingPeriod = propertySource.getLongProperty("staking.periodMins");
+        this.stakingPeriod = propertySource.getLongProperty(STAKING_PERIOD_MINS);
     }
 
     public void setObservableFilesNotLoaded() {

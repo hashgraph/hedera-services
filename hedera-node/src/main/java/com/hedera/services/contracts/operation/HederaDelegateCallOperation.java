@@ -43,6 +43,7 @@ import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.EVM;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
+import org.hyperledger.besu.evm.internal.Words;
 import org.hyperledger.besu.evm.operation.DelegateCallOperation;
 
 /**
@@ -71,5 +72,10 @@ public class HederaDelegateCallOperation extends DelegateCallOperation {
                 () -> cost(frame),
                 () -> super.execute(frame, evm),
                 addressValidator);
+    }
+
+    @Override
+    protected long gas(final MessageFrame frame) {
+        return Words.clampedToLong(frame.getStackItem(0));
     }
 }
