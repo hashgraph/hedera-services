@@ -15,6 +15,10 @@
  */
 package com.hedera.services.context.properties;
 
+import static com.hedera.services.context.properties.PropertyNames.CONTRACTS_MAX_REFUND_PERCENT_OF_GAS_LIMIT;
+import static com.hedera.services.context.properties.PropertyNames.LEDGER_FUNDING_ACCOUNT;
+import static com.hedera.services.context.properties.PropertyNames.LEDGER_TRANSFERS_MAX_LEN;
+import static com.hedera.services.context.properties.PropertyNames.TOKENS_MAX_RELS_PER_INFO_QUERY;
 import static com.hedera.services.context.properties.ScreenedSysFileProps.DEPRECATED_PROP_TPL;
 import static com.hedera.services.context.properties.ScreenedSysFileProps.MISPLACED_PROP_TPL;
 import static com.hedera.services.context.properties.ScreenedSysFileProps.UNPARSEABLE_PROP_TPL;
@@ -55,11 +59,11 @@ class ScreenedSysFilePropsTest {
 
     @Test
     void delegationWorks() {
-        subject.from121 = Map.of("tokens.maxRelsPerInfoQuery", 42);
+        subject.from121 = Map.of(TOKENS_MAX_RELS_PER_INFO_QUERY, 42);
 
-        assertEquals(Set.of("tokens.maxRelsPerInfoQuery"), subject.allPropertyNames());
-        assertEquals(42, subject.getProperty("tokens.maxRelsPerInfoQuery"));
-        assertTrue(subject.containsProperty("tokens.maxRelsPerInfoQuery"));
+        assertEquals(Set.of(TOKENS_MAX_RELS_PER_INFO_QUERY), subject.allPropertyNames());
+        assertEquals(42, subject.getProperty(TOKENS_MAX_RELS_PER_INFO_QUERY));
+        assertTrue(subject.containsProperty(TOKENS_MAX_RELS_PER_INFO_QUERY));
         assertFalse(subject.containsProperty("nonsense"));
     }
 
@@ -80,13 +84,13 @@ class ScreenedSysFilePropsTest {
         subject.screenNew(
                 withAllOf(
                         Map.of(
-                                "tokens.maxRelsPerInfoQuery", "42",
-                                "ledger.transfers.maxLen", "42",
-                                "contracts.maxRefundPercentOfGasLimit", "42")));
+                                TOKENS_MAX_RELS_PER_INFO_QUERY, "42",
+                                LEDGER_TRANSFERS_MAX_LEN, "42",
+                                CONTRACTS_MAX_REFUND_PERCENT_OF_GAS_LIMIT, "42")));
 
-        assertEquals(42, subject.from121.get("tokens.maxRelsPerInfoQuery"));
-        assertEquals(42, subject.from121.get("ledger.transfers.maxLen"));
-        assertEquals(42, subject.from121.get("contracts.maxRefundPercentOfGasLimit"));
+        assertEquals(42, subject.from121.get(TOKENS_MAX_RELS_PER_INFO_QUERY));
+        assertEquals(42, subject.from121.get(LEDGER_TRANSFERS_MAX_LEN));
+        assertEquals(42, subject.from121.get(CONTRACTS_MAX_REFUND_PERCENT_OF_GAS_LIMIT));
         assertNotSame(oldMap, subject.from121);
     }
 
@@ -95,14 +99,14 @@ class ScreenedSysFilePropsTest {
         subject.screenNew(withJust("defaultFeeCollectionAccount", "0.0.98"));
 
         assertEquals(1, subject.from121.size());
-        assertEquals(98L, subject.from121.get("ledger.fundingAccount"));
+        assertEquals(98L, subject.from121.get(LEDGER_FUNDING_ACCOUNT));
         assertThat(
                 logCaptor.warnLogs(),
                 contains(
                         String.format(
                                 DEPRECATED_PROP_TPL,
                                 "defaultFeeCollectionAccount",
-                                "ledger.fundingAccount")));
+                                LEDGER_FUNDING_ACCOUNT)));
     }
 
     @ParameterizedTest

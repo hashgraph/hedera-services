@@ -15,6 +15,8 @@
  */
 package com.hedera.services.records;
 
+import static com.hedera.services.context.properties.PropertyNames.CACHE_RECORDS_TTL;
+
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.hedera.services.context.annotations.CompositeProps;
@@ -42,7 +44,7 @@ public final class RecordCacheFactory {
     }
 
     public Cache<TransactionID, Boolean> getCache() {
-        final var ttl = properties.getIntProperty("cache.records.ttl");
+        final var ttl = properties.getIntProperty(CACHE_RECORDS_TTL);
 
         log.info("Constructing the node-local txn id cache with ttl={}s", ttl);
         return CacheBuilder.newBuilder().expireAfterWrite(ttl, TimeUnit.SECONDS).build();

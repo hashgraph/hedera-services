@@ -15,6 +15,7 @@
  */
 package com.hedera.services.state.exports;
 
+import static com.hedera.services.context.properties.PropertyNames.LEDGER_TOTAL_TINY_BAR_FLOAT;
 import static com.hedera.services.state.exports.SignedStateBalancesExporter.SINGLE_ACCOUNT_BALANCES_COMPARATOR;
 import static com.hedera.services.utils.EntityNum.fromAccountId;
 import static com.hedera.services.utils.EntityNum.fromTokenId;
@@ -189,7 +190,7 @@ class SignedStateBalancesExporterTest {
         assurance = mock(DirectoryAssurance.class);
 
         properties = mock(PropertySource.class);
-        given(properties.getLongProperty("ledger.totalTinyBarFloat")).willReturn(ledgerFloat);
+        given(properties.getLongProperty(LEDGER_TOTAL_TINY_BAR_FLOAT)).willReturn(ledgerFloat);
 
         var firstNodeAddress = mock(Address.class);
         given(firstNodeAddress.getMemo()).willReturn("0.0.3");

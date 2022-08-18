@@ -16,6 +16,7 @@
 package com.hedera.services.txns.contract;
 
 import static com.hedera.services.context.properties.EntityType.CONTRACT;
+import static com.hedera.services.context.properties.PropertyNames.ENTITIES_SYSTEM_DELETABLE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
@@ -67,7 +68,7 @@ public class ContractSysUndelTransitionLogic implements TransitionLogic {
         this.delegate = delegate;
         this.contracts = contracts;
         this.sigImpactHistorian = sigImpactHistorian;
-        this.supported = properties.getTypesProperty("entities.systemDeletable").contains(CONTRACT);
+        this.supported = properties.getTypesProperty(ENTITIES_SYSTEM_DELETABLE).contains(CONTRACT);
     }
 
     @FunctionalInterface
