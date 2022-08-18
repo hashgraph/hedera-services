@@ -264,7 +264,11 @@ class RecordStreamFileWriter implements LinkedObjectStream<RecordStreamObject> {
             // generate record file name
             assertFirstTxnInstantIsKnown();
             final var uncompressedRecordFilePath = generateRecordFilePath(firstTxnInstant);
-            final var recordFile = new File(dynamicProperties.shouldCompressRecordFilesOnCreation() ? uncompressedRecordFilePath + COMPRESSION_EXTENSION : uncompressedRecordFilePath);
+            final var recordFile =
+                    new File(
+                            dynamicProperties.shouldCompressRecordFilesOnCreation()
+                                    ? uncompressedRecordFilePath + COMPRESSION_EXTENSION
+                                    : uncompressedRecordFilePath);
             final var recordFileNameShort = recordFile.getName(); // for logging purposes
             if (recordFile.exists() && !recordFile.isDirectory()) {
                 LOG.debug(
@@ -325,12 +329,18 @@ class RecordStreamFileWriter implements LinkedObjectStream<RecordStreamObject> {
 
                 // create record file
                 try (FileOutputStream stream = new FileOutputStream(recordFile, false);
-                        GZIPOutputStream gzipStream = dynamicProperties.shouldCompressRecordFilesOnCreation() ? new GZIPOutputStream(stream) : null;
+                        GZIPOutputStream gzipStream =
+                                dynamicProperties.shouldCompressRecordFilesOnCreation()
+                                        ? new GZIPOutputStream(stream)
+                                        : null;
                         SerializableDataOutputStream dos =
                                 new SerializableDataOutputStream(
                                         new BufferedOutputStream(
                                                 new HashingOutputStream(
-                                                        streamDigest, gzipStream != null ? gzipStream : stream)))) {
+                                                        streamDigest,
+                                                        gzipStream != null
+                                                                ? gzipStream
+                                                                : stream)))) {
                     LOG.debug(
                             OBJECT_STREAM_FILE.getMarker(),
                             "Stream file created {}",
@@ -508,13 +518,14 @@ class RecordStreamFileWriter implements LinkedObjectStream<RecordStreamObject> {
      * @return the new sidecar file path
      */
     String generateSidecarFilePath(final Instant consensusTimestamp, final int sidecarId) {
-        var sidecarPath = sidecarDirPath
-            + File.separator
-            + convertInstantToStringWithPadding(consensusTimestamp)
-            + "_"
-            + String.format("%02d", sidecarId)
-            + "."
-            + streamType.getSidecarExtension();
+        var sidecarPath =
+                sidecarDirPath
+                        + File.separator
+                        + convertInstantToStringWithPadding(consensusTimestamp)
+                        + "_"
+                        + String.format("%02d", sidecarId)
+                        + "."
+                        + streamType.getSidecarExtension();
         if (dynamicProperties.shouldCompressRecordFilesOnCreation()) {
             sidecarPath += COMPRESSION_EXTENSION;
         }
@@ -648,12 +659,16 @@ class RecordStreamFileWriter implements LinkedObjectStream<RecordStreamObject> {
     private void createSidecarFile(final Builder sidecarFileBuilder, final File sidecarFile)
             throws IOException {
         try (FileOutputStream stream = new FileOutputStream(sidecarFile, false);
-                GZIPOutputStream gzipStream = dynamicProperties.shouldCompressRecordFilesOnCreation() ? new GZIPOutputStream(stream) : null;
+                GZIPOutputStream gzipStream =
+                        dynamicProperties.shouldCompressRecordFilesOnCreation()
+                                ? new GZIPOutputStream(stream)
+                                : null;
                 SerializableDataOutputStream dos =
                         new SerializableDataOutputStream(
                                 new BufferedOutputStream(
                                         new HashingOutputStream(
-                                                sidecarStreamDigest, gzipStream != null ? gzipStream : stream)))) {
+                                                sidecarStreamDigest,
+                                                gzipStream != null ? gzipStream : stream)))) {
             // write contents of sidecar
             dos.write(serialize(sidecarFileBuilder));
 

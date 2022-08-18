@@ -264,8 +264,7 @@ class BootstrapPropertiesTest {
                     entry("contracts.sidecars", EnumSet.noneOf(SidecarType.class)),
                     entry("hedera.recordStream.sidecarMaxSizeMb", 256),
                     entry("hedera.recordStream.enableTraceabilityMigration", true),
-                    entry("hedera.recordStream.compressFilesOnCreation", true)
-                );
+                    entry("hedera.recordStream.compressFilesOnCreation", true));
 
     @Test
     void containsProperty() {

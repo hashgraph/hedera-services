@@ -281,7 +281,8 @@ public class GlobalDynamicProperties {
         sidecarMaxSizeMb = properties.getIntProperty("hedera.recordStream.sidecarMaxSizeMb");
         enableTraceabilityMigration =
                 properties.getBooleanProperty("hedera.recordStream.enableTraceabilityMigration");
-        compressRecordFilesOnCreation = properties.getBooleanProperty("hedera.recordStream.compressFilesOnCreation");
+        compressRecordFilesOnCreation =
+                properties.getBooleanProperty("hedera.recordStream.compressFilesOnCreation");
     }
 
     public int maxTokensPerAccount() {
