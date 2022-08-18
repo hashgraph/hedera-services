@@ -23,6 +23,7 @@ import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 import com.google.protobuf.BoolValue;
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.ethereum.EthTxData;
 import com.hedera.services.ledger.accounts.ContractCustomizer;
 import com.hedera.services.legacy.proto.utils.ByteStringUtils;
@@ -57,6 +58,7 @@ import com.hederahashgraph.api.proto.java.CryptoDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.Duration;
+import com.hederahashgraph.api.proto.java.Fraction;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.NftAllowance;
 import com.hederahashgraph.api.proto.java.NftRemoveAllowance;
@@ -289,13 +291,14 @@ public class SyntheticTxnFactory {
     }
 
     public TransactionBody.Builder createApproveAllowanceForAllNFT(
-            final SetApprovalForAllWrapper setApprovalForAllWrapper, final TokenID tokenID) {
+            final SetApprovalForAllWrapper setApprovalForAllWrapper) {
+
         final var builder = CryptoApproveAllowanceTransactionBody.newBuilder();
 
         builder.addNftAllowances(
                 NftAllowance.newBuilder()
                         .setApprovedForAll(BoolValue.of(setApprovalForAllWrapper.approved()))
-                        .setTokenId(tokenID)
+                        .setTokenId(setApprovalForAllWrapper.tokenId())
                         .setSpender(setApprovalForAllWrapper.to())
                         .build());
 
@@ -430,11 +433,39 @@ public class SyntheticTxnFactory {
     }
 
     public TransactionBody.Builder nodeStakeUpdate(
-            final Timestamp stakingPeriodEnd, final List<NodeStake> nodeStakes) {
+            final Timestamp stakingPeriodEnd,
+            final List<NodeStake> nodeStakes,
+            final PropertySource properties) {
+        final var stakingRewardRate = dynamicProperties.getStakingRewardRate();
+        final var threshold = dynamicProperties.getStakingStartThreshold();
+        final var stakingPeriod = properties.getLongProperty("staking.periodMins");
+        final var stakingPeriodsStored =
+                properties.getIntProperty("staking.rewardHistory.numStoredPeriods");
+        final var maxStakingRewardRateThPerH =
+                properties.getLongProperty("staking.maxDailyStakeRewardThPerH");
+
+        final var nodeRewardFeeFraction =
+                Fraction.newBuilder()
+                        .setNumerator(dynamicProperties.getNodeRewardPercent())
+                        .setDenominator(100L)
+                        .build();
+        final var stakingRewardFeeFraction =
+                Fraction.newBuilder()
+                        .setNumerator(dynamicProperties.getStakingRewardPercent())
+                        .setDenominator(100L)
+                        .build();
+
         final var txnBody =
                 NodeStakeUpdateTransactionBody.newBuilder()
                         .setEndOfStakingPeriod(stakingPeriodEnd)
                         .addAllNodeStake(nodeStakes)
+                        .setMaxStakingRewardRatePerHbar(maxStakingRewardRateThPerH)
+                        .setNodeRewardFeeFraction(nodeRewardFeeFraction)
+                        .setStakingPeriodsStored(stakingPeriodsStored)
+                        .setStakingPeriod(stakingPeriod)
+                        .setStakingRewardFeeFraction(stakingRewardFeeFraction)
+                        .setStakingStartThreshold(threshold)
+                        .setStakingRewardRate(stakingRewardRate)
                         .build();
 
         return TransactionBody.newBuilder().setNodeStakeUpdate(txnBody);

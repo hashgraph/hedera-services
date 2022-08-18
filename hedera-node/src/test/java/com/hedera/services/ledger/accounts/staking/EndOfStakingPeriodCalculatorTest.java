@@ -81,7 +81,7 @@ class EndOfStakingPeriodCalculatorTest {
 
         verify(merkleNetworkContext, never()).setTotalStakedRewardStart(anyLong());
         verify(merkleNetworkContext, never()).setTotalStakedStart(anyLong());
-        verify(syntheticTxnFactory, never()).nodeStakeUpdate(any(), anyList());
+        verify(syntheticTxnFactory, never()).nodeStakeUpdate(any(), anyList(), any());
     }
 
     @Test
