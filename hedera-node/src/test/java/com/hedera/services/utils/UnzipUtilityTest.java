@@ -101,7 +101,7 @@ class UnzipUtilityTest {
                 "Failed to extract one or more files from the zip archive. This is due to a zip"
                         + " file which does not contain directory entries.");
         assertTrue(
-                nodeJar.exists(),
+                nodeJar.exists() && nodeJar.isFile(),
                 "Failed to extract the data/apps/HederaNode.jar file. This is due to a zip file"
                         + " which does contain directory entries.");
     }

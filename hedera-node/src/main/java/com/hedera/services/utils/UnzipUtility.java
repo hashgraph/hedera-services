@@ -91,10 +91,7 @@ public final class UnzipUtility {
     }
 
     static void ensureDirectoriesExist(final File file) {
-        File directory = file;
-        if (file.isFile()) {
-            directory = file.getParentFile();
-        }
+        final File directory = file.getParentFile();
 
         if (!directory.exists() && !directory.mkdirs()) {
             log.fatal("Unable to create the parent directories for the file: {}", file);
