@@ -453,6 +453,18 @@ public class DecodingFacade {
             Bytes.wrap(TOKEN_GET_CUSTOM_FEES_FUNCTION.selector());
     private static final ABIType<Tuple> TOKEN_GET_CUSTOM_FEES_DECODER = TypeFactory.create(BYTES32);
 
+    private static final Function IS_TOKEN_FUNCTION =
+            new Function("isToken(address)", INT_BOOL_PAIR);
+    private static final Bytes IS_TOKEN_FUNCTION_SELECTOR =
+            Bytes.wrap(IS_TOKEN_FUNCTION.selector());
+    private static final ABIType<Tuple> IS_TOKEN_DECODER = TypeFactory.create(BYTES32);
+
+    private static final Function GET_TOKEN_TYPE_FUNCTION =
+            new Function("getTokenType(address)", "(int,int32)");
+    private static final Bytes GET_TOKEN_TYPE_SELECTOR =
+            Bytes.wrap(GET_TOKEN_TYPE_FUNCTION.selector());
+    private static final ABIType<Tuple> GET_TOKEN_TYPE_DECODER = TypeFactory.create(BYTES32);
+
     private static final Function TOKEN_UPDATE_INFO_FUNCTION =
             new Function("updateTokenInfo(address," + HEDERA_TOKEN_STRUCT + ")");
     private static final Bytes TOKEN_UPDATE_INFO_SELECTOR =
@@ -1086,6 +1098,20 @@ public class DecodingFacade {
 
         final var tokenID = convertAddressBytesToTokenID(decodedArguments.get(0));
         return new TokenGetCustomFeesWrapper(tokenID);
+    }
+
+    public TokenInfoWrapper decodeIsToken(final Bytes input) {
+        final Tuple decodedArguments =
+                decodeFunctionCall(input, IS_TOKEN_FUNCTION_SELECTOR, IS_TOKEN_DECODER);
+        final var tokenID = convertAddressBytesToTokenID(decodedArguments.get(0));
+        return TokenInfoWrapper.forToken(tokenID);
+    }
+
+    public TokenInfoWrapper decodeGetTokenType(final Bytes input) {
+        final Tuple decodedArguments =
+                decodeFunctionCall(input, GET_TOKEN_TYPE_SELECTOR, GET_TOKEN_TYPE_DECODER);
+        final var tokenID = convertAddressBytesToTokenID(decodedArguments.get(0));
+        return TokenInfoWrapper.forToken(tokenID);
     }
 
     public GetTokenExpiryInfoWrapper decodeGetTokenExpiryInfo(final Bytes input) {

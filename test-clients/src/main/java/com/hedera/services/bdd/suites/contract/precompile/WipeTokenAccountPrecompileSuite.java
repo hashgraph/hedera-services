@@ -48,6 +48,7 @@ import org.apache.logging.log4j.Logger;
 public class WipeTokenAccountPrecompileSuite extends HapiApiSuite {
     private static final Logger log = LogManager.getLogger(WipeTokenAccountPrecompileSuite.class);
     private static final String WIPE_CONTRACT = "WipeTokenAccount";
+    private static final String ADMIN_ACCOUNT = "admin";
     private static final String ACCOUNT = "anybody";
     private static final String SECOND_ACCOUNT = "anybodySecond";
     private static final String WIPE_KEY = "wipeKey";
@@ -71,6 +72,7 @@ public class WipeTokenAccountPrecompileSuite extends HapiApiSuite {
     }
 
     private HapiApiSpec wipeFungibleTokenScenarios() {
+        final AtomicReference<AccountID> adminAccountID = new AtomicReference<>();
         final AtomicReference<AccountID> accountID = new AtomicReference<>();
         final AtomicReference<AccountID> secondAccountID = new AtomicReference<>();
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
@@ -78,9 +80,9 @@ public class WipeTokenAccountPrecompileSuite extends HapiApiSuite {
         return defaultHapiSpec("WipeFungibleTokenScenarios")
                 .given(
                         newKeyNamed(WIPE_KEY),
+                        cryptoCreate(ADMIN_ACCOUNT).exposingCreatedIdTo(adminAccountID::set),
                         cryptoCreate(ACCOUNT).exposingCreatedIdTo(accountID::set),
                         cryptoCreate(SECOND_ACCOUNT).exposingCreatedIdTo(secondAccountID::set),
-                        cryptoUpdate(SECOND_ACCOUNT).key(WIPE_KEY),
                         cryptoCreate(TOKEN_TREASURY),
                         tokenCreate(VANILLA_TOKEN)
                                 .tokenType(FUNGIBLE_COMMON)
@@ -104,18 +106,18 @@ public class WipeTokenAccountPrecompileSuite extends HapiApiSuite {
                                                                 asAddress(vanillaTokenID.get()),
                                                                 asAddress(accountID.get()),
                                                                 10L)
-                                                        .payingWith(ACCOUNT)
+                                                        .payingWith(ADMIN_ACCOUNT)
                                                         .via("accountDoesNotOwnWipeKeyTxn")
                                                         .gas(GAS_TO_OFFER)
                                                         .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
-                                                cryptoUpdate(ACCOUNT).key(WIPE_KEY),
+                                                cryptoUpdate(ADMIN_ACCOUNT).key(WIPE_KEY),
                                                 contractCall(
                                                                 WIPE_CONTRACT,
                                                                 WIPE_FUNGIBLE_TOKEN,
                                                                 asAddress(vanillaTokenID.get()),
                                                                 asAddress(accountID.get()),
                                                                 1_000L)
-                                                        .payingWith(ACCOUNT)
+                                                        .payingWith(ADMIN_ACCOUNT)
                                                         .via("amountLargerThanBalanceTxn")
                                                         .gas(GAS_TO_OFFER)
                                                         .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
@@ -125,7 +127,7 @@ public class WipeTokenAccountPrecompileSuite extends HapiApiSuite {
                                                                 asAddress(vanillaTokenID.get()),
                                                                 asAddress(secondAccountID.get()),
                                                                 10L)
-                                                        .payingWith(SECOND_ACCOUNT)
+                                                        .payingWith(ADMIN_ACCOUNT)
                                                         .via("accountDoesNotOwnTokensTxn")
                                                         .gas(GAS_TO_OFFER)
                                                         .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
@@ -135,7 +137,7 @@ public class WipeTokenAccountPrecompileSuite extends HapiApiSuite {
                                                                 asAddress(vanillaTokenID.get()),
                                                                 asAddress(accountID.get()),
                                                                 10L)
-                                                        .payingWith(ACCOUNT)
+                                                        .payingWith(ADMIN_ACCOUNT)
                                                         .via("wipeFungibleTxn")
                                                         .gas(GAS_TO_OFFER))))
                 .then(
@@ -177,6 +179,7 @@ public class WipeTokenAccountPrecompileSuite extends HapiApiSuite {
     }
 
     private HapiApiSpec wipeNonFungibleTokenScenarios() {
+        final AtomicReference<AccountID> adminAccountID = new AtomicReference<>();
         final AtomicReference<AccountID> accountID = new AtomicReference<>();
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
 
@@ -184,10 +187,10 @@ public class WipeTokenAccountPrecompileSuite extends HapiApiSuite {
                 .given(
                         newKeyNamed(WIPE_KEY),
                         newKeyNamed(MULTI_KEY),
+                        cryptoCreate(ADMIN_ACCOUNT).exposingCreatedIdTo(adminAccountID::set),
                         cryptoCreate(ACCOUNT)
                                 .balance(INITIAL_BALANCE)
                                 .exposingCreatedIdTo(accountID::set),
-                        cryptoUpdate(ACCOUNT).key(WIPE_KEY),
                         cryptoCreate(TOKEN_TREASURY),
                         tokenCreate(VANILLA_TOKEN)
                                 .tokenType(NON_FUNGIBLE_UNIQUE)
@@ -215,8 +218,20 @@ public class WipeTokenAccountPrecompileSuite extends HapiApiSuite {
                                                             WIPE_NON_FUNGIBLE_TOKEN,
                                                             asAddress(vanillaTokenID.get()),
                                                             asAddress(accountID.get()),
+                                                            serialNumbers)
+                                                    .payingWith(ADMIN_ACCOUNT)
+                                                    .via(
+                                                            "wipeNonFungibleAccountDoesNotOwnWipeKeyTxn")
+                                                    .gas(GAS_TO_OFFER)
+                                                    .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
+                                            cryptoUpdate(ADMIN_ACCOUNT).key(WIPE_KEY),
+                                            contractCall(
+                                                            WIPE_CONTRACT,
+                                                            WIPE_NON_FUNGIBLE_TOKEN,
+                                                            asAddress(vanillaTokenID.get()),
+                                                            asAddress(accountID.get()),
                                                             List.of(2L))
-                                                    .payingWith(ACCOUNT)
+                                                    .payingWith(ADMIN_ACCOUNT)
                                                     .via(
                                                             "wipeNonFungibleAccountDoesNotOwnTheSerialTxn")
                                                     .gas(GAS_TO_OFFER)
@@ -227,7 +242,7 @@ public class WipeTokenAccountPrecompileSuite extends HapiApiSuite {
                                                             asAddress(vanillaTokenID.get()),
                                                             asAddress(accountID.get()),
                                                             List.of(-2L))
-                                                    .payingWith(ACCOUNT)
+                                                    .payingWith(ADMIN_ACCOUNT)
                                                     .via("wipeNonFungibleNegativeSerialTxn")
                                                     .gas(GAS_TO_OFFER)
                                                     .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
@@ -237,7 +252,7 @@ public class WipeTokenAccountPrecompileSuite extends HapiApiSuite {
                                                             asAddress(vanillaTokenID.get()),
                                                             asAddress(accountID.get()),
                                                             List.of(3L))
-                                                    .payingWith(ACCOUNT)
+                                                    .payingWith(ADMIN_ACCOUNT)
                                                     .via("wipeNonFungibleSerialDoesNotExistsTxn")
                                                     .gas(GAS_TO_OFFER)
                                                     .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
@@ -247,11 +262,22 @@ public class WipeTokenAccountPrecompileSuite extends HapiApiSuite {
                                                             asAddress(vanillaTokenID.get()),
                                                             asAddress(accountID.get()),
                                                             serialNumbers)
-                                                    .payingWith(ACCOUNT)
+                                                    .payingWith(ADMIN_ACCOUNT)
                                                     .via("wipeNonFungibleTxn")
                                                     .gas(GAS_TO_OFFER));
                                 }))
                 .then(
+                        childRecordsCheck(
+                                "wipeNonFungibleAccountDoesNotOwnWipeKeyTxn",
+                                CONTRACT_REVERT_EXECUTED,
+                                recordWith()
+                                        .status(INVALID_SIGNATURE)
+                                        .contractCallResult(
+                                                resultWith()
+                                                        .contractCallResult(
+                                                                htsPrecompileResult()
+                                                                        .withStatus(
+                                                                                INVALID_SIGNATURE)))),
                         childRecordsCheck(
                                 "wipeNonFungibleAccountDoesNotOwnTheSerialTxn",
                                 CONTRACT_REVERT_EXECUTED,

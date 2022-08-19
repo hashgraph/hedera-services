@@ -101,13 +101,12 @@ import com.hederahashgraph.api.proto.java.UtilPrngTransactionBody;
 import com.hederahashgraph.builder.RequestBuilder;
 import com.hederahashgraph.fee.FeeBuilder;
 import com.swirlds.common.crypto.TransactionSignature;
-import com.swirlds.common.system.transaction.SwirldTransaction;
+import com.swirlds.common.system.transaction.internal.SwirldTransaction;
 import java.math.BigInteger;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
-import org.bouncycastle.util.encoders.Hex;
 import org.junit.jupiter.api.Test;
 
 class SignedTxnAccessorTest {
@@ -1058,7 +1057,7 @@ class SignedTxnAccessorTest {
                 EthereumTransactionBody.newBuilder()
                         .setEthereumData(
                                 ByteString.copyFrom(
-                                        Hex.decode(
+                                        com.swirlds.common.utility.CommonUtils.unhex(
                                                 "f864012f83018000947e3a9eaf9bcc39e2ffa38eb30bf7a93feacbc18180827653820277a0f9fbff985d374be4a55f296915002eec11ac96f1ce2df183adf992baa9390b2fa00c1e867cc960d9c74ec2e6a662b7908ec4c8cc9f3091e886bcefbeb2290fb792")))
                         .build();
         return TransactionBody.newBuilder()

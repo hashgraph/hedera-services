@@ -15,6 +15,9 @@
  */
 package com.hedera.services.store.contracts.precompile;
 
+import static com.hedera.services.context.properties.PropertyNames.STAKING_MAX_DAILY_STAKE_REWARD_THRESH_PER_HBAR;
+import static com.hedera.services.context.properties.PropertyNames.STAKING_PERIOD_MINS;
+import static com.hedera.services.context.properties.PropertyNames.STAKING_REWARD_HISTORY_NUM_STORED_PERIODS;
 import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.HTS_PRECOMPILE_MIRROR_ID;
 import static com.hedera.services.txns.crypto.AutoCreationLogic.AUTO_MEMO;
 import static com.hedera.services.txns.crypto.AutoCreationLogic.THREE_MONTHS_IN_SECONDS;
@@ -24,6 +27,7 @@ import com.google.protobuf.BoolValue;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.StringValue;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.ethereum.EthTxData;
 import com.hedera.services.ledger.accounts.ContractCustomizer;
 import com.hedera.services.legacy.proto.utils.ByteStringUtils;
@@ -60,6 +64,7 @@ import com.hederahashgraph.api.proto.java.CryptoDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.Duration;
+import com.hederahashgraph.api.proto.java.Fraction;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.NftAllowance;
 import com.hederahashgraph.api.proto.java.NftRemoveAllowance;
@@ -293,13 +298,14 @@ public class SyntheticTxnFactory {
     }
 
     public TransactionBody.Builder createApproveAllowanceForAllNFT(
-            final SetApprovalForAllWrapper setApprovalForAllWrapper, final TokenID tokenID) {
+            final SetApprovalForAllWrapper setApprovalForAllWrapper) {
+
         final var builder = CryptoApproveAllowanceTransactionBody.newBuilder();
 
         builder.addNftAllowances(
                 NftAllowance.newBuilder()
                         .setApprovedForAll(BoolValue.of(setApprovalForAllWrapper.approved()))
-                        .setTokenId(tokenID)
+                        .setTokenId(setApprovalForAllWrapper.tokenId())
                         .setSpender(setApprovalForAllWrapper.to())
                         .build());
 
@@ -434,11 +440,39 @@ public class SyntheticTxnFactory {
     }
 
     public TransactionBody.Builder nodeStakeUpdate(
-            final Timestamp stakingPeriodEnd, final List<NodeStake> nodeStakes) {
+            final Timestamp stakingPeriodEnd,
+            final List<NodeStake> nodeStakes,
+            final PropertySource properties) {
+        final var stakingRewardRate = dynamicProperties.getStakingRewardRate();
+        final var threshold = dynamicProperties.getStakingStartThreshold();
+        final var stakingPeriod = properties.getLongProperty(STAKING_PERIOD_MINS);
+        final var stakingPeriodsStored =
+                properties.getIntProperty(STAKING_REWARD_HISTORY_NUM_STORED_PERIODS);
+        final var maxStakingRewardRateThPerH =
+                properties.getLongProperty(STAKING_MAX_DAILY_STAKE_REWARD_THRESH_PER_HBAR);
+
+        final var nodeRewardFeeFraction =
+                Fraction.newBuilder()
+                        .setNumerator(dynamicProperties.getNodeRewardPercent())
+                        .setDenominator(100L)
+                        .build();
+        final var stakingRewardFeeFraction =
+                Fraction.newBuilder()
+                        .setNumerator(dynamicProperties.getStakingRewardPercent())
+                        .setDenominator(100L)
+                        .build();
+
         final var txnBody =
                 NodeStakeUpdateTransactionBody.newBuilder()
                         .setEndOfStakingPeriod(stakingPeriodEnd)
                         .addAllNodeStake(nodeStakes)
+                        .setMaxStakingRewardRatePerHbar(maxStakingRewardRateThPerH)
+                        .setNodeRewardFeeFraction(nodeRewardFeeFraction)
+                        .setStakingPeriodsStored(stakingPeriodsStored)
+                        .setStakingPeriod(stakingPeriod)
+                        .setStakingRewardFeeFraction(stakingRewardFeeFraction)
+                        .setStakingStartThreshold(threshold)
+                        .setStakingRewardRate(stakingRewardRate)
                         .build();
 
         return TransactionBody.newBuilder().setNodeStakeUpdate(txnBody);
@@ -507,10 +541,11 @@ public class SyntheticTxnFactory {
 
     public TransactionBody.Builder createTokenUpdate(TokenUpdateWrapper updateWrapper) {
         final var builder = TokenUpdateTransactionBody.newBuilder();
-        builder.setToken(updateWrapper.tokenID())
-                .setName(updateWrapper.name())
-                .setSymbol(updateWrapper.symbol())
-                .setMemo(StringValue.of(updateWrapper.memo()));
+        builder.setToken(updateWrapper.tokenID());
+
+        if (updateWrapper.name() != null) builder.setName(updateWrapper.name());
+        if (updateWrapper.symbol() != null) builder.setSymbol(updateWrapper.symbol());
+        if (updateWrapper.memo() != null) builder.setMemo(StringValue.of(updateWrapper.memo()));
         if (updateWrapper.treasury() != null) builder.setTreasury(updateWrapper.treasury());
 
         if (updateWrapper.expiry().second() != 0) {

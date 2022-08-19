@@ -95,6 +95,7 @@ import com.hedera.services.store.models.NftId;
 import com.hedera.services.txns.token.CreateLogic;
 import com.hedera.services.txns.token.validators.CreateChecks;
 import com.hedera.services.utils.EntityIdUtils;
+import com.hedera.services.utils.accessors.AccessorFactory;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
@@ -161,6 +162,7 @@ class CreatePrecompileTest {
     @Mock private InfrastructureFactory infrastructureFactory;
     @Mock private AssetsLoader assetLoader;
     @Mock private HbarCentExchange exchange;
+    @Mock private AccessorFactory accessorFactory;
 
     private HTSPrecompiledContract subject;
     private UpdateTrackingLedgerAccount senderMutableAccount;
@@ -179,7 +181,12 @@ class CreatePrecompileTest {
     void setUp() {
         PrecompilePricingUtils precompilePricingUtils =
                 new PrecompilePricingUtils(
-                        assetLoader, exchange, () -> feeCalculator, resourceCosts, stateView);
+                        assetLoader,
+                        exchange,
+                        () -> feeCalculator,
+                        resourceCosts,
+                        stateView,
+                        accessorFactory);
         subject =
                 new HTSPrecompiledContract(
                         dynamicProperties,

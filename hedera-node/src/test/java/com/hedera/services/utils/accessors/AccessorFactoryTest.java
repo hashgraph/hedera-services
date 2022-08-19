@@ -17,11 +17,12 @@ package com.hedera.services.utils.accessors;
 
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ScheduleID;
@@ -29,7 +30,7 @@ import com.hederahashgraph.api.proto.java.TokenWipeAccountTransactionBody;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
-import com.swirlds.common.system.transaction.SwirldTransaction;
+import com.swirlds.common.system.transaction.internal.SwirldTransaction;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -41,7 +42,6 @@ class AccessorFactoryTest {
     private static final AccountID payerId = IdUtils.asAccount("0.0.456");
     private static final ScheduleID scheduleId = IdUtils.asSchedule("0.0.333333");
 
-    @Mock private OptionValidator validator;
     @Mock private GlobalDynamicProperties properties;
 
     AccessorFactory subject;
@@ -60,7 +60,7 @@ class AccessorFactoryTest {
 
     @BeforeEach
     void setUp() {
-        subject = new AccessorFactory(properties, validator);
+        subject = new AccessorFactory(properties);
     }
 
     @Test
@@ -92,15 +92,10 @@ class AccessorFactoryTest {
                                 .toByteArray());
         assertTrue(subject.nonTriggeredTxn(platformTxn.getContents()) instanceof SignedTxnAccessor);
 
-        SwirldTransaction wipeTxn =
-                new SwirldTransaction(
-                        Transaction.newBuilder()
-                                .setBodyBytes(tokenWipeTxn.toByteString())
-                                .build()
-                                .toByteArray());
+        final var grpcWipeTxn =
+                Transaction.newBuilder().setBodyBytes(tokenWipeTxn.toByteString()).build();
 
-        var triggered =
-                subject.triggeredTxn(wipeTxn.getContents(), payerId, scheduleId, true, true);
+        var triggered = subject.triggeredTxn(grpcWipeTxn, payerId, scheduleId, true, true);
 
         assertTrue(triggered instanceof SignedTxnAccessor);
 
@@ -108,5 +103,16 @@ class AccessorFactoryTest {
         assertTrue(triggered.throttleExempt());
         assertEquals(payerId, triggered.getPayer());
         assertEquals(scheduleId, triggered.getScheduleRef());
+    }
+
+    @Test
+    void uncheckedSpecializedAccessorThrows() {
+        final var invalidTxnBytes = "InvalidTxnBytes".getBytes();
+        final var txn =
+                Transaction.newBuilder()
+                        .setSignedTransactionBytes(ByteString.copyFrom(invalidTxnBytes))
+                        .build();
+        assertThrows(
+                IllegalArgumentException.class, () -> subject.uncheckedSpecializedAccessor(txn));
     }
 }

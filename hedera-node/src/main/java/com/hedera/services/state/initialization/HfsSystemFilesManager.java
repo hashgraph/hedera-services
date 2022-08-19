@@ -16,6 +16,17 @@
 package com.hedera.services.state.initialization;
 
 import static com.google.protobuf.TextFormat.escapeBytes;
+import static com.hedera.services.context.properties.PropertyNames.BOOTSTRAP_FEE_SCHEDULE_JSON_RESOURCE;
+import static com.hedera.services.context.properties.PropertyNames.BOOTSTRAP_HAPI_PERMISSIONS_PATH;
+import static com.hedera.services.context.properties.PropertyNames.BOOTSTRAP_NETWORK_PROPERTIES_PATH;
+import static com.hedera.services.context.properties.PropertyNames.BOOTSTRAP_RATES_CURRENT_CENT_EQUIV;
+import static com.hedera.services.context.properties.PropertyNames.BOOTSTRAP_RATES_CURRENT_EXPIRY;
+import static com.hedera.services.context.properties.PropertyNames.BOOTSTRAP_RATES_CURRENT_HBAR_EQUIV;
+import static com.hedera.services.context.properties.PropertyNames.BOOTSTRAP_RATES_NEXT_CENT_EQUIV;
+import static com.hedera.services.context.properties.PropertyNames.BOOTSTRAP_RATES_NEXT_EXPIRY;
+import static com.hedera.services.context.properties.PropertyNames.BOOTSTRAP_RATES_NEXT_HBAR_EQUIV;
+import static com.hedera.services.context.properties.PropertyNames.BOOTSTRAP_SYSTEM_ENTITY_EXPIRY;
+import static com.hedera.services.context.properties.PropertyNames.BOOTSTRAP_THROTTLE_DEF_JSON_RESOURCE;
 import static com.hedera.services.sysfiles.serdes.FeesJsonToProtoSerde.loadFeeScheduleFromStream;
 import static com.hedera.services.utils.EntityIdUtils.parseAccount;
 import static com.swirlds.common.system.address.Address.ipString;
@@ -144,7 +155,7 @@ public final class HfsSystemFilesManager implements SystemFilesManager {
         loadConfigWithJutilPropsFallback(
                 fileNumbers.apiPermissions(),
                 PERMISSIONS_SYS_FILE_NAME,
-                "bootstrap.hapiPermissions.path",
+                BOOTSTRAP_HAPI_PERMISSIONS_PATH,
                 permsSysFileDefaultResource,
                 callbacks.permissionsCb());
     }
@@ -154,7 +165,7 @@ public final class HfsSystemFilesManager implements SystemFilesManager {
         loadConfigWithJutilPropsFallback(
                 fileNumbers.applicationProperties(),
                 PROPERTIES_SYS_FILE_NAME,
-                "bootstrap.networkProperties.path",
+                BOOTSTRAP_NETWORK_PROPERTIES_PATH,
                 propsSysFileDefaultResource,
                 callbacks.propertiesCb());
     }
@@ -395,7 +406,7 @@ public final class HfsSystemFilesManager implements SystemFilesManager {
         return new HFileMeta(
                 false,
                 new JKeyList(List.of(masterKey())),
-                properties.getLongProperty("bootstrap.system.entityExpiry"));
+                properties.getLongProperty(BOOTSTRAP_SYSTEM_ENTITY_EXPIRY));
     }
 
     private void writeFromBookIfMissing(final long disNum, final Supplier<byte[]> scribe) {
@@ -441,13 +452,13 @@ public final class HfsSystemFilesManager implements SystemFilesManager {
     }
 
     private CurrentAndNextFeeSchedule defaultSchedules() throws Exception {
-        final var resource = properties.getStringProperty("bootstrap.feeSchedulesJson.resource");
+        final var resource = properties.getStringProperty(BOOTSTRAP_FEE_SCHEDULE_JSON_RESOURCE);
         final var in = HfsSystemFilesManager.class.getClassLoader().getResourceAsStream(resource);
         return loadFeeScheduleFromStream(in);
     }
 
     private ThrottleDefinitions defaultThrottles() throws Exception {
-        final var resource = properties.getStringProperty("bootstrap.throttleDefsJson.resource");
+        final var resource = properties.getStringProperty(BOOTSTRAP_THROTTLE_DEF_JSON_RESOURCE);
         try (final var in =
                 HfsSystemFilesManager.class.getClassLoader().getResourceAsStream(resource)) {
             return ThrottlesJsonToProtoSerde.loadProtoDefs(in);
@@ -458,14 +469,14 @@ public final class HfsSystemFilesManager implements SystemFilesManager {
         return ExchangeRateSet.newBuilder()
                 .setCurrentRate(
                         rateFrom(
-                                properties.getIntProperty("bootstrap.rates.currentCentEquiv"),
-                                properties.getIntProperty("bootstrap.rates.currentHbarEquiv"),
-                                properties.getLongProperty("bootstrap.rates.currentExpiry")))
+                                properties.getIntProperty(BOOTSTRAP_RATES_CURRENT_CENT_EQUIV),
+                                properties.getIntProperty(BOOTSTRAP_RATES_CURRENT_HBAR_EQUIV),
+                                properties.getLongProperty(BOOTSTRAP_RATES_CURRENT_EXPIRY)))
                 .setNextRate(
                         rateFrom(
-                                properties.getIntProperty("bootstrap.rates.nextCentEquiv"),
-                                properties.getIntProperty("bootstrap.rates.nextHbarEquiv"),
-                                properties.getLongProperty("bootstrap.rates.nextExpiry")))
+                                properties.getIntProperty(BOOTSTRAP_RATES_NEXT_CENT_EQUIV),
+                                properties.getIntProperty(BOOTSTRAP_RATES_NEXT_HBAR_EQUIV),
+                                properties.getLongProperty(BOOTSTRAP_RATES_NEXT_EXPIRY)))
                 .build();
     }
 

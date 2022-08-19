@@ -455,13 +455,7 @@ public class HTSTestsUtil {
     public static TokenUpdateWrapper createNonFungibleTokenUpdateWrapperWithKeys(
             final List<TokenKeyWrapper> keys) {
         return new TokenUpdateWrapper(
-                nonFungible,
-                "NFT",
-                "NFT",
-                account,
-                "NFT token memo",
-                keys,
-                new TokenExpiryWrapper(0, null, 0));
+                nonFungible, null, null, null, null, keys, new TokenExpiryWrapper(0, null, 0));
     }
 
     public static final TokenCreateWrapper.FixedFeeWrapper fixedFee =

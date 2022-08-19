@@ -84,6 +84,8 @@ public class EncodingFacade {
     private static final TupleType getTokenDefaultKycStatusType =
             TupleType.parse(INT_BOOL_PAIR_RETURN_TYPE);
     private static final TupleType isTokenFrozenType = TupleType.parse(INT_BOOL_PAIR_RETURN_TYPE);
+    private static final TupleType isTokenType = TupleType.parse(INT_BOOL_PAIR_RETURN_TYPE);
+    private static final TupleType getTokenType = TupleType.parse("(int32,int32)");
 
     @Inject
     public EncodingFacade() {
@@ -330,6 +332,22 @@ public class EncodingFacade {
                 .build();
     }
 
+    public Bytes encodeIsToken(final boolean isToken) {
+        return functionResultBuilder()
+                .forFunction(FunctionType.HAPI_IS_TOKEN)
+                .withStatus(SUCCESS.getNumber())
+                .withIsToken(isToken)
+                .build();
+    }
+
+    public Bytes encodeGetTokenType(final int tokenType) {
+        return functionResultBuilder()
+                .forFunction(FunctionType.HAPI_GET_TOKEN_TYPE)
+                .withStatus(SUCCESS.getNumber())
+                .withGetTokenType(tokenType)
+                .build();
+    }
+
     public Bytes encodeGetTokenExpiryInfo(final TokenExpiryWrapper tokenExpiryWrapper) {
         return functionResultBuilder()
                 .forFunction(FunctionType.HAPI_GET_TOKEN_EXPIRY_INFO)
@@ -367,6 +385,8 @@ public class EncodingFacade {
         private TokenNftInfo nonFungibleTokenInfo;
         private boolean isFrozen;
         private List<CustomFee> customFees;
+        private boolean isToken;
+        private int tokentype;
         private Tuple tokenExpiryInfo;
 
         private FunctionResultBuilder forFunction(final FunctionType functionType) {
@@ -400,6 +420,8 @@ public class EncodingFacade {
                         case GET_TOKEN_DEFAULT_KYC_STATUS -> getTokenDefaultKycStatusType;
                         case HAPI_IS_FROZEN -> isTokenFrozenType;
                         case HAPI_GET_TOKEN_CUSTOM_FEES -> getTokenCustomFeesType;
+                        case HAPI_IS_TOKEN -> isTokenType;
+                        case HAPI_GET_TOKEN_TYPE -> getTokenType;
                         case HAPI_GET_TOKEN_EXPIRY_INFO -> getTokenExpiryInfoType;
                         default -> notSpecifiedType;
                     };
@@ -522,6 +544,16 @@ public class EncodingFacade {
             return this;
         }
 
+        private FunctionResultBuilder withIsToken(final boolean isToken) {
+            this.isToken = isToken;
+            return this;
+        }
+
+        private FunctionResultBuilder withGetTokenType(final int tokenType) {
+            this.tokentype = tokenType;
+            return this;
+        }
+
         private FunctionResultBuilder withExpiry(final TokenExpiryWrapper tokenExpiryInfo) {
             this.tokenExpiryInfo =
                     Tuple.of(
@@ -570,6 +602,8 @@ public class EncodingFacade {
                                 status, tokenDefaultKycStatus);
                         case HAPI_IS_FROZEN -> Tuple.of(status, isFrozen);
                         case HAPI_GET_TOKEN_CUSTOM_FEES -> getTupleForTokenGetCustomFees();
+                        case HAPI_IS_TOKEN -> Tuple.of(status, isToken);
+                        case HAPI_GET_TOKEN_TYPE -> Tuple.of(status, tokentype);
                         case HAPI_GET_TOKEN_EXPIRY_INFO -> getTupleForGetTokenExpiryInfo();
                         default -> Tuple.of(status);
                     };
