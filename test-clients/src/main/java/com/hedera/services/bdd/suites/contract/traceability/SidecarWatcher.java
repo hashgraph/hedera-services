@@ -15,6 +15,8 @@
  */
 package com.hedera.services.bdd.suites.contract.traceability;
 
+import com.google.common.collect.HashMultimap;
+import com.google.common.collect.Multimap;
 import com.hedera.services.recordstreaming.RecordStreamingUtils;
 import com.hedera.services.stream.proto.SidecarFile;
 import com.hedera.services.stream.proto.TransactionSidecarRecord;
@@ -25,87 +27,87 @@ import java.nio.file.Paths;
 import java.nio.file.StandardWatchEventKinds;
 import java.nio.file.WatchEvent;
 import java.nio.file.WatchKey;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.regex.Pattern;
-import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 public class SidecarWatcher {
+
+    record ExpectedSidecar(String spec, TransactionSidecarRecord expectedSidecarRecord){}
+    record MismatchedSidecar(TransactionSidecarRecord expectedSidecarRecord, TransactionSidecarRecord actualSidecarRecord){}
+
     private static final Logger log = LogManager.getLogger(SidecarWatcher.class);
     private static final Pattern SIDECAR_FILE_REGEX =
             Pattern.compile("\\d{4}-\\d{2}-\\d{2}T\\d{2}_\\d{2}_\\d{2}\\.\\d{9}Z_\\d{2}.rcd");
 
-    private final Queue<Pair<String, TransactionSidecarRecord>> expectedSidecars =
+    private final Queue<ExpectedSidecar> expectedSidecars =
             new LinkedBlockingDeque<>();
-    private final Map<String, List<Pair<TransactionSidecarRecord, TransactionSidecarRecord>>>
-            failedSidecars = new HashMap<>();
+    private final Multimap<String, MismatchedSidecar>
+            failedSidecars = HashMultimap.create();
 
-    private boolean shouldTerminateAfterNext = false;
+    private boolean shouldTerminateAfterNextSidecar = false;
     private boolean hasSeenFirst = false;
 
+
     public void startWatching(String s) throws IOException {
-        final var watchService = FileSystems.getDefault().newWatchService();
-        final var path = Paths.get(s);
-        path.register(watchService, StandardWatchEventKinds.ENTRY_CREATE);
+        try (final var watchService = FileSystems.getDefault().newWatchService()) {
+            final var path = Paths.get(s);
+            path.register(watchService, StandardWatchEventKinds.ENTRY_MODIFY);
 
-        for (; ; ) {
-            // wait for key to be signaled
-            WatchKey key;
-            try {
-                key = watchService.take();
-            } catch (InterruptedException x) {
-                Thread.currentThread().interrupt();
-                return;
-            }
-
-            for (final var event : key.pollEvents()) {
-                final var kind = event.kind();
-
-                // This key is registered only
-                // for ENTRY_CREATE events,
-                // but an OVERFLOW event can
-                // occur regardless if events
-                // are lost or discarded.
-                if (kind == StandardWatchEventKinds.OVERFLOW) {
-                    continue;
+            for (; ; ) {
+                // wait for key to be signaled
+                WatchKey key;
+                try {
+                    key = watchService.take();
+                } catch (InterruptedException x) {
+                    Thread.currentThread().interrupt();
+                    return;
                 }
 
-                // The filename is the
-                // context of the event.
-                final var ev = (WatchEvent<Path>) event;
-                final var filename = ev.context();
-                final var child = path.resolve(filename);
-                log.info("Record stream file created -> {} ", child.getFileName());
-                final var newFilePath = child.toAbsolutePath().toString();
-                if (SIDECAR_FILE_REGEX.matcher(newFilePath).find()) {
-                    log.info("We have a new sidecar.");
-                    final var pair = RecordStreamingUtils.readSidecarFile(newFilePath);
-                    if (pair.isEmpty()) {
-                        log.fatal(
-                                "An invalid sidecar file was generated from the consensus node."
-                                        + " This is very bad.");
-                        return;
+                for (final var event : key.pollEvents()) {
+                    final var kind = event.kind();
+
+                    // This key is registered only
+                    // for ENTRY_CREATE events,
+                    // but an OVERFLOW event can
+                    // occur regardless if events
+                    // are lost or discarded.
+                    if (kind == StandardWatchEventKinds.OVERFLOW) {
+                        continue;
                     }
-                    onNewSidecarFile(pair.get());
-                    if (shouldTerminateAfterNext) {
-                        watchService.close();
-                        return;
+
+                    // The filename is the
+                    // context of the event.
+                    final var ev = (WatchEvent<Path>) event;
+                    final var filename = ev.context();
+                    final var child = path.resolve(filename);
+                    log.info("Event - {}, Record stream file created -> {} ", kind, child.getFileName());
+                    final var newFilePath = child.toAbsolutePath().toString();
+                    if (SIDECAR_FILE_REGEX.matcher(newFilePath).find()) {
+                        log.info("We have a new sidecar.");
+                        final var pair = RecordStreamingUtils.readSidecarFile(newFilePath);
+                        if (pair.isEmpty()) {
+                            log.fatal(
+                                    "An invalid sidecar file was generated from the consensus node."
+                                            + " This is very bad.");
+                            return;
+                        }
+                        onNewSidecarFile(pair.get());
+                        if (shouldTerminateAfterNextSidecar) {
+                            return;
+                        }
                     }
                 }
-            }
-            // Reset the key -- this step is critical if you want to
-            // receive further watch events.  If the key is no longer valid,
-            // the directory is inaccessible so exit the loop.
-            final var valid = key.reset();
-            if (!valid) {
-                log.fatal("Error occurred in WatchServiceAPI. Exiting now.");
-                break;
+                // Reset the key -- this step is critical if you want to
+                // receive further watch events.  If the key is no longer valid,
+                // the directory is inaccessible so exit the loop.
+                final var valid = key.reset();
+                if (!valid) {
+                    log.fatal("Error occurred in WatchServiceAPI. Exiting now.");
+                    break;
+                }
             }
         }
     }
@@ -123,7 +125,7 @@ public class SidecarWatcher {
                 }
                 if (expectedSidecars
                         .peek()
-                        .getValue()
+                        .expectedSidecarRecord()
                         .getConsensusTimestamp()
                         .equals(actualSidecar.getConsensusTimestamp())) {
                     hasSeenFirst = true;
@@ -137,25 +139,23 @@ public class SidecarWatcher {
         // there should always be an expected sidecar at this point;
         // if a NPE is thrown here, the specs have missed a sidecar
         // and must be updated to account for it
-        final var expectedSidecarPair = expectedSidecars.poll();
-        final var expectedSidecar = expectedSidecarPair.getValue();
+        final var expectedSidecar = expectedSidecars.poll();
+        final var expectedSidecarRecord = expectedSidecar.expectedSidecarRecord();
 
         if ((actualSidecar.hasBytecode() || actualSidecar.hasStateChanges())
-                && !actualSidecar.equals(expectedSidecar)) {
-            final var spec = expectedSidecarPair.getKey();
-            final var list = failedSidecars.getOrDefault(spec, new ArrayList<>());
-            list.add(Pair.of(expectedSidecar, actualSidecar));
-            failedSidecars.put(spec, list);
+                && !actualSidecar.equals(expectedSidecarRecord)) {
+            final var spec = expectedSidecar.spec();
+            failedSidecars.put(spec, new MismatchedSidecar(expectedSidecarRecord, actualSidecar));
         } else if (actualSidecar.hasActions()) {
             // FUTURE WORK to be completed with actions assertions
         }
     }
 
     public void finishWatchingAfterNextSidecar() {
-        shouldTerminateAfterNext = true;
+        shouldTerminateAfterNextSidecar = true;
     }
 
-    public void addExpectedSidecar(Pair<String, TransactionSidecarRecord> newExpectedSidecar) {
+    public void addExpectedSidecar(final ExpectedSidecar newExpectedSidecar) {
         this.expectedSidecars.add(newExpectedSidecar);
     }
 
@@ -163,16 +163,16 @@ public class SidecarWatcher {
         return failedSidecars.isEmpty();
     }
 
-    public String printErrors() {
+    public String getErrors() {
         final var messageBuilder = new StringBuilder();
         messageBuilder.append("Mismatch(es) between actual/expected sidecars present: ");
-        for (final var entry : failedSidecars.entrySet()) {
-            final var faultySidecars = entry.getValue();
+        for (final var key : failedSidecars.keySet()) {
+            final var faultySidecars = failedSidecars.get(key);
             messageBuilder
                     .append("\n\n")
                     .append(faultySidecars.size())
                     .append(" SIDECAR MISMATCH(ES) in SPEC {")
-                    .append(entry.getKey())
+                    .append(key)
                     .append("}:");
             int i = 1;
             for (final var pair : faultySidecars) {
@@ -181,9 +181,9 @@ public class SidecarWatcher {
                         .append(i++)
                         .append("******\n")
                         .append("***Expected sidecar***\n")
-                        .append(pair.getLeft())
+                        .append(pair.expectedSidecarRecord())
                         .append("***Actual sidecar***\n")
-                        .append(pair.getRight());
+                        .append(pair.actualSidecarRecord());
             }
         }
         return messageBuilder.toString();

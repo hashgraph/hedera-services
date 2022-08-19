@@ -18,6 +18,7 @@ import com.hedera.services.bdd.junit.TestBase;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.props.JutilPropertySource;
 import java.io.File;
+import java.nio.file.Path;
 import java.time.Duration;
 import java.util.Map;
 import java.util.concurrent.TimeoutException;
@@ -46,7 +47,7 @@ public abstract class IntegrationTestBase extends TestBase {
                     .withClasspathResourceMappingDir("network/config")
                     .withWorkspace(WORKSPACE)
                     .withNetwork(NETWORK)
-                    .withRecordStreamFolderBinding(WORKSPACE, "network/itest/data/recordStreams");
+                    .withRecordStreamFolderBinding(WORKSPACE, Path.of("network", "itest", "data", "recordStreams").toString());
 
     /** Before any test runs, configure HapiApiSpec to use the Testcontainer we created */
     @BeforeAll

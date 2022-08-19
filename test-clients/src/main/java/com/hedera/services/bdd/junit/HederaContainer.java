@@ -18,6 +18,7 @@ package com.hedera.services.bdd.junit;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 import java.io.File;
+import java.nio.file.Path;
 import java.time.Duration;
 import java.util.concurrent.TimeoutException;
 import org.testcontainers.containers.BindMode;
@@ -34,7 +35,7 @@ public class HederaContainer extends GenericContainer<HederaContainer> {
     public static final int GRPC_PORT = 50211;
 
     private final int id;
-    private File recordPath;
+    private Path recordPath;
 
     public HederaContainer(DockerImageName dockerImageName, int id) {
         super(dockerImageName);
@@ -115,17 +116,18 @@ public class HederaContainer extends GenericContainer<HederaContainer> {
     }
 
     public HederaContainer withRecordStreamFolderBinding(
-            final File workspace, final String recordStreamFolder) {
-        recordPath = new File(workspace, "records/node_" + id);
-        recordPath.mkdirs();
+            final File workspace, final String recordStreamFolderName) {
+        recordPath = Path.of(workspace.getAbsolutePath(), "records", "node_" + id).toAbsolutePath();
+        final var recordStreamFolder = new File(recordPath.toString());
+        recordStreamFolder.mkdirs();
         return this.withFileSystemBind(
-                recordPath.getAbsolutePath(),
-                "/opt/hedera/services/" + recordStreamFolder + "/record0.0.3",
+                recordPath.toString(),
+                Path.of(File.separator, "opt", "hedera", "services", recordStreamFolderName, "record0.0.3").toString(),
                 BindMode.READ_WRITE);
     }
 
     public String getRecordPath() {
-        return recordPath.getAbsolutePath();
+        return recordPath.toString();
     }
 
     public boolean isActive() {

@@ -34,6 +34,7 @@ import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.utilops.CustomSpecAssert;
 import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.suites.contract.traceability.SidecarWatcher.ExpectedSidecar;
 import com.hedera.services.stream.proto.ContractBytecode;
 import com.hedera.services.stream.proto.TransactionSidecarRecord;
 import java.io.IOException;
@@ -119,7 +120,7 @@ public class NewTraceabilitySuite extends HapiApiSuite {
 
                                     assertTrue(
                                             sidecarWatcher.thereAreNoMismatchedSidecars(),
-                                            sidecarWatcher.printErrors());
+                                            sidecarWatcher.getErrors());
                                     assertTrue(
                                             sidecarWatcher.thereAreNoPendingSidecars(),
                                             "There are some sidecars that have not been yet"
@@ -147,7 +148,7 @@ public class NewTraceabilitySuite extends HapiApiSuite {
                     final var initCode =
                             extractBytecodeUnhexed(getResourcePath(contractName, ".bin"));
                     sidecarWatcher.addExpectedSidecar(
-                            Pair.of(
+                            new ExpectedSidecar(
                                     specName,
                                     TransactionSidecarRecord.newBuilder()
                                             .setConsensusTimestamp(consensusTimestamp)
