@@ -66,7 +66,7 @@ public class PauseUnpauseTokenAccountPrecompileSuite extends HapiApiSuite {
 
     private final AtomicReference<AccountID> accountID = new AtomicReference<>();
     private final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
-    private final Object notAnAddress = new byte[0];
+    private final Object invalidAddress = "0x0000000000000000000000000000000000123456";
 
     public static void main(String... args) {
         new PauseUnpauseTokenAccountPrecompileSuite().runSuiteSync();
@@ -111,7 +111,7 @@ public class PauseUnpauseTokenAccountPrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 PAUSE_UNPAUSE_CONTRACT,
                                                                 PAUSE_TOKEN_ACCOUNT_FUNCTION_NAME,
-                                                                notAnAddress)
+                                                                invalidAddress)
                                                         .payingWith(ACCOUNT)
                                                         .gas(GAS_TO_OFFER)
                                                         .via("PauseTx")
@@ -119,7 +119,7 @@ public class PauseUnpauseTokenAccountPrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 PAUSE_UNPAUSE_CONTRACT,
                                                                 UNPAUSE_TOKEN_ACCOUNT_FUNCTION_NAME,
-                                                                notAnAddress)
+                                                                invalidAddress)
                                                         .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
                                                         .payingWith(ACCOUNT)
                                                         .gas(GAS_TO_OFFER)
@@ -223,7 +223,8 @@ public class PauseUnpauseTokenAccountPrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 PAUSE_UNPAUSE_CONTRACT,
                                                                 PAUSE_TOKEN_ACCOUNT_FUNCTION_NAME,
-                                                                asHexedAddress(vanillaTokenID.get()))
+                                                                asHexedAddress(
+                                                                        vanillaTokenID.get()))
                                                         .payingWith(ACCOUNT)
                                                         .via(
                                                                 "pauseFungibleAccountDoesNotOwnPauseKeyFailingTxn")
@@ -233,7 +234,8 @@ public class PauseUnpauseTokenAccountPrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 PAUSE_UNPAUSE_CONTRACT,
                                                                 PAUSE_TOKEN_ACCOUNT_FUNCTION_NAME,
-                                                                asHexedAddress(vanillaTokenID.get()))
+                                                                asHexedAddress(
+                                                                        vanillaTokenID.get()))
                                                         .payingWith(ACCOUNT)
                                                         .via(PAUSE_FUNGIBLE_TXN)
                                                         .gas(GAS_TO_OFFER),
@@ -243,7 +245,8 @@ public class PauseUnpauseTokenAccountPrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 PAUSE_UNPAUSE_CONTRACT,
                                                                 PAUSE_TOKEN_ACCOUNT_FUNCTION_NAME,
-                                                                asHexedAddress(vanillaTokenID.get()))
+                                                                asHexedAddress(
+                                                                        vanillaTokenID.get()))
                                                         .payingWith(ACCOUNT)
                                                         .via(
                                                                 "pauseFungibleAccountIsDeletedFailingTxn")
@@ -296,7 +299,8 @@ public class PauseUnpauseTokenAccountPrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 PAUSE_UNPAUSE_CONTRACT,
                                                                 UNPAUSE_TOKEN_ACCOUNT_FUNCTION_NAME,
-                                                                asHexedAddress(vanillaTokenID.get()))
+                                                                asHexedAddress(
+                                                                        vanillaTokenID.get()))
                                                         .payingWith(ACCOUNT)
                                                         .via(
                                                                 "unpauseFungibleAccountDoesNotOwnPauseKeyFailingTxn")
@@ -306,7 +310,8 @@ public class PauseUnpauseTokenAccountPrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 PAUSE_UNPAUSE_CONTRACT,
                                                                 UNPAUSE_TOKEN_ACCOUNT_FUNCTION_NAME,
-                                                                asHexedAddress(vanillaTokenID.get()))
+                                                                asHexedAddress(
+                                                                        vanillaTokenID.get()))
                                                         .payingWith(ACCOUNT)
                                                         .via(UNPAUSE_FUNGIBLE_TXN)
                                                         .gas(GAS_TO_OFFER))))
@@ -350,7 +355,8 @@ public class PauseUnpauseTokenAccountPrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 PAUSE_UNPAUSE_CONTRACT,
                                                                 PAUSE_TOKEN_ACCOUNT_FUNCTION_NAME,
-                                                                asHexedAddress(vanillaTokenID.get()))
+                                                                asHexedAddress(
+                                                                        vanillaTokenID.get()))
                                                         .payingWith(ACCOUNT)
                                                         .via(
                                                                 "pauseNonFungibleAccountDoesNotOwnPauseKeyFailingTxn")
@@ -360,7 +366,8 @@ public class PauseUnpauseTokenAccountPrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 PAUSE_UNPAUSE_CONTRACT,
                                                                 PAUSE_TOKEN_ACCOUNT_FUNCTION_NAME,
-                                                                asHexedAddress(vanillaTokenID.get()))
+                                                                asHexedAddress(
+                                                                        vanillaTokenID.get()))
                                                         .payingWith(ACCOUNT)
                                                         .via(PAUSE_NONFUNGIBLE_TXN)
                                                         .gas(GAS_TO_OFFER),
@@ -370,7 +377,8 @@ public class PauseUnpauseTokenAccountPrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 PAUSE_UNPAUSE_CONTRACT,
                                                                 PAUSE_TOKEN_ACCOUNT_FUNCTION_NAME,
-                                                                asHexedAddress(vanillaTokenID.get()))
+                                                                asHexedAddress(
+                                                                        vanillaTokenID.get()))
                                                         .payingWith(ACCOUNT)
                                                         .via(
                                                                 "pauseNonFungibleAccountIsDeletedFailingTxn")
@@ -425,7 +433,8 @@ public class PauseUnpauseTokenAccountPrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 PAUSE_UNPAUSE_CONTRACT,
                                                                 UNPAUSE_TOKEN_ACCOUNT_FUNCTION_NAME,
-                                                                asHexedAddress(vanillaTokenID.get()))
+                                                                asHexedAddress(
+                                                                        vanillaTokenID.get()))
                                                         .payingWith(ACCOUNT)
                                                         .via(
                                                                 "unpauseNonFungibleAccountDoesNotOwnPauseKeyFailingTxn")
@@ -435,7 +444,8 @@ public class PauseUnpauseTokenAccountPrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 PAUSE_UNPAUSE_CONTRACT,
                                                                 UNPAUSE_TOKEN_ACCOUNT_FUNCTION_NAME,
-                                                                asHexedAddress(vanillaTokenID.get()))
+                                                                asHexedAddress(
+                                                                        vanillaTokenID.get()))
                                                         .payingWith(ACCOUNT)
                                                         .via(UNPAUSE_NONFUNGIBLE_TXN)
                                                         .gas(GAS_TO_OFFER))))

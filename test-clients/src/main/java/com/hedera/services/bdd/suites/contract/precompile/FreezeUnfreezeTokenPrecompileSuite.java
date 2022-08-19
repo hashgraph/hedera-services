@@ -79,7 +79,7 @@ public class FreezeUnfreezeTokenPrecompileSuite extends HapiApiSuite {
 
     private final AtomicReference<AccountID> accountID = new AtomicReference<>();
     private final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
-    private final Object notAnAddress = new byte[0];
+    private final Object invalidAddress = "0x0000000000000000000000000000000000123456";
 
     public static void main(String... args) {
         new FreezeUnfreezeTokenPrecompileSuite().runSuiteSync();
@@ -125,7 +125,7 @@ public class FreezeUnfreezeTokenPrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 FREEZE_CONTRACT,
                                                                 TOKEN_UNFREEZE_FUNC,
-                                                                notAnAddress,
+                                                                invalidAddress,
                                                                 asAddress(accountID.get()))
                                                         .payingWith(ACCOUNT)
                                                         .gas(GAS_TO_OFFER)
@@ -135,7 +135,7 @@ public class FreezeUnfreezeTokenPrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 FREEZE_CONTRACT,
                                                                 TOKEN_FREEZE_FUNC,
-                                                                notAnAddress,
+                                                                invalidAddress,
                                                                 asAddress(accountID.get()))
                                                         .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
                                                         .payingWith(ACCOUNT)
