@@ -176,7 +176,9 @@ public class ViewExecutor {
                         ResponseCodeEnum.INVALID_TOKEN_ID);
                 final var tokenInfo = stateView.infoForToken(wrapper.tokenID()).orElse(null);
 
-                validateTrueOrRevert(tokenInfo != null, ResponseCodeEnum.INVALID_TOKEN_ID);
+                if (tokenInfo == null) {
+                    throw new InvalidTransactionException(ResponseCodeEnum.INVALID_TOKEN_ID, true);
+                }
 
                 final var expiryInfo =
                         new TokenExpiryWrapper(

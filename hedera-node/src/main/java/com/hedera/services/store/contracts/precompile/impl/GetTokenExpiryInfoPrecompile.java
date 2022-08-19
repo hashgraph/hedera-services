@@ -18,6 +18,7 @@ package com.hedera.services.store.contracts.precompile.impl;
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 
 import com.hedera.services.context.primitives.StateView;
+import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.store.contracts.WorldLedgers;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
@@ -58,7 +59,9 @@ public class GetTokenExpiryInfoPrecompile extends AbstractReadOnlyPrecompile {
         validateTrue(stateView.tokenExists(tokenId), ResponseCodeEnum.INVALID_TOKEN_ID);
         final var tokenInfo = stateView.infoForToken(tokenId).orElse(null);
 
-        validateTrue(tokenInfo != null, ResponseCodeEnum.INVALID_TOKEN_ID);
+        if (tokenInfo == null) {
+            throw new InvalidTransactionException(ResponseCodeEnum.INVALID_TOKEN_ID);
+        }
 
         final var expiryInfo =
                 new TokenExpiryWrapper(
