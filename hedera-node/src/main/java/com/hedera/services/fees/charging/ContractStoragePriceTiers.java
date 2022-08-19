@@ -95,9 +95,35 @@ public record ContractStoragePriceTiers(
             final long totalKvPairsUsed,
             final long requestedLifetime,
             final KvUsageInfo usageInfo) {
-        final var requestedKvPairs = usageInfo.pendingUsageDelta();
+        return priceOfUsage(
+                rate,
+                totalKvPairsUsed,
+                requestedLifetime,
+                usageInfo.pendingUsage(),
+                usageInfo.pendingUsageDelta());
+    }
+
+    public long priceOfAutoRenewal(
+            final ExchangeRate rate,
+            final long totalKvPairsUsed,
+            final long requestedLifetime,
+            final KvUsageInfo usageInfo) {
+        return priceOfUsage(
+                rate,
+                totalKvPairsUsed,
+                requestedLifetime,
+                usageInfo.pendingUsage(),
+                usageInfo.currentUsage());
+    }
+
+    private long priceOfUsage(
+            final ExchangeRate rate,
+            final long totalKvPairsUsed,
+            final long requestedLifetime,
+            final long pendingUsage,
+            final long requestedKvPairs) {
         assertValidArgs(requestedKvPairs, requestedLifetime);
-        if (usageInfo.pendingUsage() < freeTierLimit) {
+        if (pendingUsage < freeTierLimit) {
             return 0;
         }
 

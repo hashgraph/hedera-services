@@ -39,4 +39,8 @@ public class KvUsageInfo {
     public int pendingUsage() {
         return pending;
     }
+
+    public int currentUsage() {
+        return current;
+    }
 }

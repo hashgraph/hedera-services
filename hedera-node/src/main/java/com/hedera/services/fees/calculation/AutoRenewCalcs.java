@@ -158,8 +158,8 @@ public class AutoRenewCalcs {
 
         // Since contract bytecode is not charged any fees - we ignore sbh in the renewal fee
         // calculation
-        final var storageFee = storageFee(contractContext, rate, reqPeriod);
-        final var hourlyPrice = (rbhPrice * contractContext.currentRb()) + storageFee;
+        final var storagePrice = storageFee(contractContext, rate, reqPeriod);
+        final var hourlyPrice = (rbhPrice * contractContext.currentRb()) + storagePrice;
         return new RenewalFees(inTinybars(fixedPrice, rate), inTinybars(hourlyPrice, rate));
     }
 
@@ -170,9 +170,7 @@ public class AutoRenewCalcs {
         final var storagePriceTiers = properties.storagePriceTiers();
         final var kvPairsUsed = contractContext.currentNumKvPairs();
         final var usageInfo = new KvUsageInfo((int) kvPairsUsed);
-        // auto-renewal fee should cover fees for all the current KV pairs
-        usageInfo.updatePendingBy((int) kvPairsUsed);
-        return storagePriceTiers.priceOfPendingUsage(
+        return storagePriceTiers.priceOfAutoRenewal(
                 rate, kvPairsUsed, requestedLifetime, usageInfo);
     }
 
