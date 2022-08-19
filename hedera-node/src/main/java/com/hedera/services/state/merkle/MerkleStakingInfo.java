@@ -36,6 +36,7 @@ package com.hedera.services.state.merkle;
  */
 
 import static com.hedera.services.ServicesState.EMPTY_HASH;
+import static com.hedera.services.context.properties.PropertyNames.STAKING_REWARD_HISTORY_NUM_STORED_PERIODS;
 import static com.hedera.services.legacy.proto.utils.CommonUtils.noThrowSha384HashOf;
 import static com.hedera.services.state.merkle.internals.ByteUtils.getHashBytes;
 
@@ -87,7 +88,7 @@ public class MerkleStakingInfo extends PartialMerkleLeaf implements Keyed<Entity
     }
 
     public MerkleStakingInfo(final BootstrapProperties properties) {
-        this(properties.getIntProperty("staking.rewardHistory.numStoredPeriods"));
+        this(properties.getIntProperty(STAKING_REWARD_HISTORY_NUM_STORED_PERIODS));
     }
 
     public MerkleStakingInfo(final int numRewardablePeriods) {

@@ -30,7 +30,7 @@ import java.util.Optional;
  * of public keys and a source of the cryptographic signatures associated to those keys.
  */
 public class PlatformSigsCreationResult {
-    private List<TransactionSignature> platformSigs = new ArrayList<>();
+    private final List<TransactionSignature> platformSigs = new ArrayList<>();
     private Optional<Exception> terminatingEx = Optional.empty();
 
     public List<TransactionSignature> getPlatformSigs() {

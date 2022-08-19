@@ -20,6 +20,8 @@ import static org.hyperledger.besu.evm.frame.MessageFrame.State.COMPLETED_SUCCES
 import static org.hyperledger.besu.evm.frame.MessageFrame.State.EXCEPTIONAL_HALT;
 import static org.hyperledger.besu.evm.frame.MessageFrame.State.REVERT;
 
+import com.hedera.services.contracts.execution.traceability.ContractActionType;
+import com.hedera.services.contracts.execution.traceability.HederaOperationTracer;
 import com.hedera.services.store.contracts.precompile.HTSPrecompiledContract;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
@@ -29,6 +31,7 @@ import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.EVM;
 import org.hyperledger.besu.evm.frame.MessageFrame;
+import org.hyperledger.besu.evm.frame.MessageFrame.State;
 import org.hyperledger.besu.evm.precompile.PrecompileContractRegistry;
 import org.hyperledger.besu.evm.precompile.PrecompiledContract;
 import org.hyperledger.besu.evm.processor.MessageCallProcessor;
@@ -59,6 +62,16 @@ public class HederaMessageCallProcessor extends MessageCallProcessor {
         } else {
             super.start(frame, operationTracer);
         }
+        if (frame.getState() != State.CODE_EXECUTING) {
+            // only a precompile execution will not set the state to CODE_EXECUTING after
+            // start()
+            ((HederaOperationTracer) operationTracer)
+                    .tracePrecompileResult(
+                            frame,
+                            hederaPrecompile != null
+                                    ? ContractActionType.SYSTEM
+                                    : ContractActionType.PRECOMPILE);
+        }
     }
 
     void executeHederaPrecompile(
@@ -69,9 +82,6 @@ public class HederaMessageCallProcessor extends MessageCallProcessor {
         final Bytes output;
         if (contract instanceof HTSPrecompiledContract htsPrecompile) {
             final var costedResult = htsPrecompile.computeCosted(frame.getInputData(), frame);
-            if (frame.getState() == REVERT) {
-                return;
-            }
             output = costedResult.getValue();
             gasRequirement = costedResult.getKey();
         } else {
@@ -79,6 +89,9 @@ public class HederaMessageCallProcessor extends MessageCallProcessor {
             gasRequirement = contract.gasRequirement(frame.getInputData());
         }
         operationTracer.tracePrecompileCall(frame, gasRequirement, output);
+        if (frame.getState() == REVERT) {
+            return;
+        }
         if (frame.getRemainingGas() < gasRequirement) {
             frame.decrementRemainingGas(frame.getRemainingGas());
             frame.setExceptionalHaltReason(Optional.of(INSUFFICIENT_GAS));

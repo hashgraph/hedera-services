@@ -16,6 +16,8 @@
 package com.hedera.services.config;
 
 import static com.hedera.services.config.EntityNumbers.UNKNOWN_NUMBER;
+import static com.hedera.services.context.properties.PropertyNames.HEDERA_REALM;
+import static com.hedera.services.context.properties.PropertyNames.HEDERA_SHARD;
 
 import com.hedera.services.context.annotations.CompositeProps;
 import com.hedera.services.context.properties.PropertySource;
@@ -41,14 +43,14 @@ public class HederaNumbers {
 
     public long realm() {
         if (realm == UNKNOWN_NUMBER) {
-            realm = properties.getLongProperty("hedera.realm");
+            realm = properties.getLongProperty(HEDERA_REALM);
         }
         return realm;
     }
 
     public long shard() {
         if (shard == UNKNOWN_NUMBER) {
-            shard = properties.getLongProperty("hedera.shard");
+            shard = properties.getLongProperty(HEDERA_SHARD);
         }
         return shard;
     }
