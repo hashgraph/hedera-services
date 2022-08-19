@@ -60,6 +60,7 @@ import static com.hedera.services.context.properties.PropertyNames.FILES_MAX_SIZ
 import static com.hedera.services.context.properties.PropertyNames.HEDERA_ALLOWANCES_IS_ENABLED;
 import static com.hedera.services.context.properties.PropertyNames.HEDERA_ALLOWANCES_MAX_ACCOUNT_LIMIT;
 import static com.hedera.services.context.properties.PropertyNames.HEDERA_ALLOWANCES_MAX_TXN_LIMIT;
+import static com.hedera.services.context.properties.PropertyNames.HEDERA_RECORD_STREAM_COMPRESS_FILES_ON_CREATION;
 import static com.hedera.services.context.properties.PropertyNames.HEDERA_RECORD_STREAM_ENABLE_TRACEABILITY_MIGRATION;
 import static com.hedera.services.context.properties.PropertyNames.HEDERA_RECORD_STREAM_RECORD_FILE_VERSION;
 import static com.hedera.services.context.properties.PropertyNames.HEDERA_RECORD_STREAM_SIDECAR_MAX_SIZE_MB;
@@ -586,7 +587,7 @@ class GlobalDynamicPropertiesTest {
                 .willReturn((i + 88));
         given(properties.getBooleanProperty(HEDERA_RECORD_STREAM_ENABLE_TRACEABILITY_MIGRATION))
                 .willReturn((i + 81) % 2 == 0);
-        given(properties.getBooleanProperty("hedera.recordStream.compressFilesOnCreation"))
+        given(properties.getBooleanProperty(HEDERA_RECORD_STREAM_COMPRESS_FILES_ON_CREATION))
                 .willReturn((i + 82) % 2 == 0);
     }
 

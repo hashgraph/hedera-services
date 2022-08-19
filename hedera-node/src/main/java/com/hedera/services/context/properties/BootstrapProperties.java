@@ -246,7 +246,7 @@ public final class BootstrapProperties implements PropertySource {
                     HEDERA_TXN_MIN_VALIDITY_BUFFER_SECS,
                     HEDERA_RECORD_STREAM_RECORD_FILE_VERSION,
                     HEDERA_RECORD_STREAM_SIG_FILE_VERSION,
-                    "hedera.recordStream.compressFilesOnCreation,"
+                    HEDERA_RECORD_STREAM_COMPRESS_FILES_ON_CREATION,
                     AUTO_REMOVE_MAX_PURGED_KV_PAIRS_PER_TOUCH,
                     AUTO_REMOVE_MAX_RETURNED_NFTS_PER_TOUCH,
                     AUTO_RENEW_TARGET_TYPES,
@@ -411,9 +411,8 @@ public final class BootstrapProperties implements PropertySource {
                     entry(HEDERA_RECORD_STREAM_QUEUE_CAPACITY, AS_INT),
                     entry(HEDERA_RECORD_STREAM_SIDECAR_MAX_SIZE_MB, AS_INT),
                     entry(HEDERA_RECORD_STREAM_ENABLE_TRACEABILITY_MIGRATION, AS_BOOLEAN),
-                entry("hedera.recordStream.compressFilesOnCreation", AS_BOOLEAN),
-
-                entry(HEDERA_SHARD, AS_LONG),
+                    entry(HEDERA_RECORD_STREAM_COMPRESS_FILES_ON_CREATION, AS_BOOLEAN),
+                    entry(HEDERA_SHARD, AS_LONG),
                     entry(HEDERA_TXN_MAX_MEMO_UTF8_BYTES, AS_INT),
                     entry(HEDERA_TXN_MAX_VALID_DURATION, AS_LONG),
                     entry(HEDERA_TXN_MIN_VALID_DURATION, AS_LONG),
