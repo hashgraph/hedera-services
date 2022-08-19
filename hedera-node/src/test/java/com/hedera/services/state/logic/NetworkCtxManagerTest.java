@@ -15,6 +15,7 @@
  */
 package com.hedera.services.state.logic;
 
+import static com.hedera.services.context.properties.PropertyNames.STAKING_PERIOD_MINS;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenMint;
@@ -81,7 +82,7 @@ class NetworkCtxManagerTest {
 
     @BeforeEach
     void setUp() {
-        given(propertySource.getLongProperty("staking.periodMins")).willReturn(1440L);
+        given(propertySource.getLongProperty(STAKING_PERIOD_MINS)).willReturn(1440L);
         given(nodeLocalProperties.issResetPeriod()).willReturn(issResetPeriod);
 
         subject =
@@ -453,7 +454,7 @@ class NetworkCtxManagerTest {
         final var now = Instant.parse("2021-06-07T23:59:58.369613Z");
         final var thenSameMinute = now.plusSeconds(1);
         final var thenNextMinute = now.plusSeconds(61);
-        given(propertySource.getLongProperty("staking.periodMins")).willReturn(1L);
+        given(propertySource.getLongProperty(STAKING_PERIOD_MINS)).willReturn(1L);
         given(nodeLocalProperties.issResetPeriod()).willReturn(issResetPeriod);
 
         subject =

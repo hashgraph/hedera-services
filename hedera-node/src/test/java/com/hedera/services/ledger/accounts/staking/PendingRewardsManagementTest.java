@@ -15,6 +15,8 @@
  */
 package com.hedera.services.ledger.accounts.staking;
 
+import static com.hedera.services.context.properties.PropertyNames.ACCOUNTS_STAKING_REWARD_ACCOUNT;
+import static com.hedera.services.context.properties.PropertyNames.STAKING_REWARD_RATE;
 import static com.hedera.services.utils.Units.HBARS_TO_TINYBARS;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
@@ -73,7 +75,7 @@ class PendingRewardsManagementTest {
         given800Balance(1_000_000_000_000L);
         given(dynamicProperties.maxDailyStakeRewardThPerH()).willReturn(lastPeriodRewardRate);
         given(networkCtx.getTotalStakedRewardStart()).willReturn(totalStakedRewardStart);
-        given(properties.getLongProperty("staking.rewardRate")).willReturn(rewardRate);
+        given(properties.getLongProperty(STAKING_REWARD_RATE)).willReturn(rewardRate);
         given(stakingInfos.keySet()).willReturn(Set.of(onlyNodeNum));
         given(stakingInfos.getForModify(onlyNodeNum)).willReturn(info);
         given(info.stakeRewardStartMinusUnclaimed())
@@ -106,7 +108,7 @@ class PendingRewardsManagementTest {
     }
 
     private void given800Balance(final long balance) {
-        given(properties.getLongProperty("accounts.stakingRewardAccount")).willReturn(800L);
+        given(properties.getLongProperty(ACCOUNTS_STAKING_REWARD_ACCOUNT)).willReturn(800L);
         given(accounts.get(EntityNum.fromLong(800)))
                 .willReturn(MerkleAccountFactory.newAccount().balance(balance).get());
     }

@@ -16,6 +16,7 @@
 package com.hedera.services.txns.file;
 
 import static com.hedera.services.context.properties.EntityType.FILE;
+import static com.hedera.services.context.properties.PropertyNames.ENTITIES_SYSTEM_DELETABLE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FILE_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -61,7 +62,7 @@ public class FileSysUndelTransitionLogic implements TransitionLogic {
         this.expiries = expiries;
         this.txnCtx = txnCtx;
         this.sigImpactHistorian = sigImpactHistorian;
-        this.supported = properties.getTypesProperty("entities.systemDeletable").contains(FILE);
+        this.supported = properties.getTypesProperty(ENTITIES_SYSTEM_DELETABLE).contains(FILE);
     }
 
     @Override

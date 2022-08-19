@@ -15,6 +15,9 @@
  */
 package com.hedera.services.context.properties;
 
+import static com.hedera.services.context.properties.PropertyNames.GRPC_PORT;
+import static com.hedera.services.context.properties.PropertyNames.GRPC_TLS_PORT;
+import static com.hedera.services.context.properties.PropertyNames.HEDERA_PROFILES_ACTIVE;
 import static java.util.Map.entry;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -38,9 +41,9 @@ class ScreenedNodeFilePropsTest {
 
     private static final Map<String, Object> expectedProps =
             Map.ofEntries(
-                    entry("grpc.port", 60211),
-                    entry("grpc.tlsPort", 40212),
-                    entry("hedera.profiles.active", Profile.TEST));
+                    entry(GRPC_PORT, 60211),
+                    entry(GRPC_TLS_PORT, 40212),
+                    entry(HEDERA_PROFILES_ACTIVE, Profile.TEST));
 
     @BeforeEach
     void setup() {

@@ -61,7 +61,6 @@ import com.hedera.services.bdd.suites.contract.precompile.CreatePrecompileSuite;
 import com.hedera.services.bdd.suites.contract.precompile.CryptoTransferHTSSuite;
 import com.hedera.services.bdd.suites.contract.precompile.DelegatePrecompileSuite;
 import com.hedera.services.bdd.suites.contract.precompile.DissociatePrecompileSuite;
-import com.hedera.services.bdd.suites.contract.precompile.DynamicGasCostSuite;
 import com.hedera.services.bdd.suites.contract.precompile.MixedHTSPrecompileTestsSuite;
 import com.hedera.services.bdd.suites.contract.records.LogsSuite;
 import com.hedera.services.bdd.suites.contract.records.RecordsSuite;
@@ -280,7 +279,6 @@ class EndToEndPackageRunner extends TestBase {
                     extractSpecsFromSuite(CryptoTransferHTSSuite::new),
                     extractSpecsFromSuite(DelegatePrecompileSuite::new),
                     extractSpecsFromSuite(DissociatePrecompileSuite::new),
-                    extractSpecsFromSuite(DynamicGasCostSuite::new),
                     extractSpecsFromSuite(MixedHTSPrecompileTestsSuite::new)
                 });
     }
