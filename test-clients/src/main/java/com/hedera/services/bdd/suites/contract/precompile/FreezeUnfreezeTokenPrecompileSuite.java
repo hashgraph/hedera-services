@@ -68,7 +68,8 @@ public class FreezeUnfreezeTokenPrecompileSuite extends HapiApiSuite {
     private static final String TOKEN_UNFREEZE_FUNC = "tokenUnfreeze";
     private static final String IS_FROZEN_TXN = "isFrozenTxn";
     private static final String ACCOUNT_HAS_NO_KEY_TXN = "accountHasNoFreezeKey";
-    private static final String NO_FREEZE_KEY_TXN = "tokenHasNoFreezeKeyTxn";
+    private static final String NO_KEY_FREEZE_TXN = "noKeyFreezeTxn";
+    private static final String NO_KEY_UNFREEZE_TXN = "noKeyUnfreezeTxn";
     private static final String ACCOUNT = "anybody";
     private static final String ACCOUNT_WITHOUT_KEY = "accountWithoutKey";
     private static final String TOKEN_WITHOUT_KEY = "withoutKey";
@@ -77,6 +78,7 @@ public class FreezeUnfreezeTokenPrecompileSuite extends HapiApiSuite {
     private static final long GAS_TO_OFFER = 4_000_000L;
 
     private final AtomicReference<AccountID> accountID = new AtomicReference<>();
+    private final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
     private final Object notAnAddress = new byte[0];
 
     public static void main(String... args) {
@@ -94,13 +96,10 @@ public class FreezeUnfreezeTokenPrecompileSuite extends HapiApiSuite {
                 freezeUnfreezeFungibleWithNegativeCases(),
                 freezeUnfreezeNftsWithNegativeCases(),
                 isFrozenHappyPathWithLocalCall(),
-                noTokenIdReverts(),
-                noKeyReverts());
+                noTokenIdReverts());
     }
 
     private HapiApiSpec noTokenIdReverts() {
-        final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
-
         return defaultHapiSpec("noTokenIdReverts")
                 .given(
                         newKeyNamed(FREEZE_KEY),
@@ -153,80 +152,7 @@ public class FreezeUnfreezeTokenPrecompileSuite extends HapiApiSuite {
                                 recordWith().status(INVALID_TOKEN_ID)));
     }
 
-    private HapiApiSpec noKeyReverts() {
-        final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
-        final AtomicReference<TokenID> withoutKeyID = new AtomicReference<>();
-
-        return defaultHapiSpec("noKeyReverts")
-                .given(
-                        newKeyNamed(FREEZE_KEY),
-                        newKeyNamed(MULTI_KEY),
-                        cryptoCreate(ACCOUNT)
-                                .balance(100 * ONE_HBAR)
-                                .exposingCreatedIdTo(accountID::set),
-                        cryptoCreate(TOKEN_TREASURY),
-                        tokenCreate(TOKEN_WITHOUT_KEY)
-                                .exposingCreatedIdTo(id -> withoutKeyID.set(asToken(id))),
-                        tokenCreate(VANILLA_TOKEN)
-                                .tokenType(FUNGIBLE_COMMON)
-                                .treasury(TOKEN_TREASURY)
-                                .freezeKey(FREEZE_KEY)
-                                .initialSupply(1_000)
-                                .exposingCreatedIdTo(id -> vanillaTokenID.set(asToken(id))),
-                        uploadInitCode(FREEZE_CONTRACT),
-                        contractCreate(FREEZE_CONTRACT),
-                        tokenAssociate(ACCOUNT, VANILLA_TOKEN))
-                .when(
-                        withOpContext(
-                                (spec, opLog) ->
-                                        allRunFor(
-                                                spec,
-                                                contractCall(
-                                                                FREEZE_CONTRACT,
-                                                                TOKEN_UNFREEZE_FUNC,
-                                                                asAddress(withoutKeyID.get()),
-                                                                asAddress(accountID.get()))
-                                                        .payingWith(ACCOUNT)
-                                                        .gas(GAS_TO_OFFER)
-                                                        .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
-                                                        .via("UnfreezeTx"),
-                                                cryptoUpdate(ACCOUNT).key(FREEZE_KEY),
-                                                contractCall(
-                                                                FREEZE_CONTRACT,
-                                                                TOKEN_FREEZE_FUNC,
-                                                                asAddress(withoutKeyID.get()),
-                                                                asAddress(accountID.get()))
-                                                        .payingWith(ACCOUNT)
-                                                        .gas(GAS_TO_OFFER)
-                                                        .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
-                                                        .via("FreezeTx"))))
-                .then(
-                        childRecordsCheck(
-                                "UnfreezeTx",
-                                CONTRACT_REVERT_EXECUTED,
-                                recordWith()
-                                        .status(TOKEN_HAS_NO_FREEZE_KEY)
-                                        .contractCallResult(
-                                                resultWith()
-                                                        .contractCallResult(
-                                                                htsPrecompileResult()
-                                                                        .withStatus(
-                                                                                TOKEN_HAS_NO_FREEZE_KEY)))),
-                        childRecordsCheck(
-                                "FreezeTx",
-                                CONTRACT_REVERT_EXECUTED,
-                                recordWith()
-                                        .status(TOKEN_HAS_NO_FREEZE_KEY)
-                                        .contractCallResult(
-                                                resultWith()
-                                                        .contractCallResult(
-                                                                htsPrecompileResult()
-                                                                        .withStatus(
-                                                                                TOKEN_HAS_NO_FREEZE_KEY)))));
-    }
-
     private HapiApiSpec freezeUnfreezeFungibleWithNegativeCases() {
-        final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
         final AtomicReference<TokenID> withoutKeyID = new AtomicReference<>();
 
         return defaultHapiSpec("freezeUnfreezeFungibleWithNegativeCases")
@@ -272,9 +198,18 @@ public class FreezeUnfreezeTokenPrecompileSuite extends HapiApiSuite {
                                                                 asAddress(accountID.get()))
                                                         .logged()
                                                         .payingWith(ACCOUNT)
-                                                        .via(NO_FREEZE_KEY_TXN)
+                                                        .via(NO_KEY_FREEZE_TXN)
                                                         .gas(GAS_TO_OFFER)
                                                         .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
+                                                contractCall(
+                                                                FREEZE_CONTRACT,
+                                                                TOKEN_UNFREEZE_FUNC,
+                                                                asAddress(withoutKeyID.get()),
+                                                                asAddress(accountID.get()))
+                                                        .payingWith(ACCOUNT)
+                                                        .gas(GAS_TO_OFFER)
+                                                        .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
+                                                        .via(NO_KEY_UNFREEZE_TXN),
                                                 cryptoUpdate(ACCOUNT).key(FREEZE_KEY),
                                                 contractCall(
                                                                 FREEZE_CONTRACT,
@@ -319,7 +254,18 @@ public class FreezeUnfreezeTokenPrecompileSuite extends HapiApiSuite {
                                                                         .withStatus(
                                                                                 INVALID_SIGNATURE)))),
                         childRecordsCheck(
-                                NO_FREEZE_KEY_TXN,
+                                NO_KEY_FREEZE_TXN,
+                                CONTRACT_REVERT_EXECUTED,
+                                recordWith()
+                                        .status(TOKEN_HAS_NO_FREEZE_KEY)
+                                        .contractCallResult(
+                                                resultWith()
+                                                        .contractCallResult(
+                                                                htsPrecompileResult()
+                                                                        .withStatus(
+                                                                                TOKEN_HAS_NO_FREEZE_KEY)))),
+                        childRecordsCheck(
+                                NO_KEY_UNFREEZE_TXN,
                                 CONTRACT_REVERT_EXECUTED,
                                 recordWith()
                                         .status(TOKEN_HAS_NO_FREEZE_KEY)
@@ -332,8 +278,6 @@ public class FreezeUnfreezeTokenPrecompileSuite extends HapiApiSuite {
     }
 
     private HapiApiSpec freezeUnfreezeNftsWithNegativeCases() {
-        final AtomicReference<TokenID> nftTokenID = new AtomicReference<>();
-
         return defaultHapiSpec("freezeUnfreezeNftsWithNegativeCases")
                 .given(
                         newKeyNamed(FREEZE_KEY),
@@ -348,7 +292,7 @@ public class FreezeUnfreezeTokenPrecompileSuite extends HapiApiSuite {
                                 .freezeKey(FREEZE_KEY)
                                 .supplyKey(MULTI_KEY)
                                 .initialSupply(0)
-                                .exposingCreatedIdTo(id -> nftTokenID.set(asToken(id))),
+                                .exposingCreatedIdTo(id -> vanillaTokenID.set(asToken(id))),
                         mintToken(KNOWABLE_TOKEN, List.of(copyFromUtf8("First!"))),
                         uploadInitCode(FREEZE_CONTRACT),
                         contractCreate(FREEZE_CONTRACT),
@@ -363,7 +307,7 @@ public class FreezeUnfreezeTokenPrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 FREEZE_CONTRACT,
                                                                 TOKEN_UNFREEZE_FUNC,
-                                                                asAddress(nftTokenID.get()),
+                                                                asAddress(vanillaTokenID.get()),
                                                                 asAddress(accountID.get()))
                                                         .payingWith(ACCOUNT)
                                                         .gas(GAS_TO_OFFER)
@@ -373,7 +317,7 @@ public class FreezeUnfreezeTokenPrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 FREEZE_CONTRACT,
                                                                 TOKEN_FREEZE_FUNC,
-                                                                asAddress(nftTokenID.get()),
+                                                                asAddress(vanillaTokenID.get()),
                                                                 asAddress(accountID.get()))
                                                         .payingWith(ACCOUNT)
                                                         .gas(GAS_TO_OFFER),
@@ -387,14 +331,14 @@ public class FreezeUnfreezeTokenPrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 FREEZE_CONTRACT,
                                                                 TOKEN_UNFREEZE_FUNC,
-                                                                asAddress(nftTokenID.get()),
+                                                                asAddress(vanillaTokenID.get()),
                                                                 asAddress(accountID.get()))
                                                         .payingWith(ACCOUNT)
                                                         .gas(GAS_TO_OFFER),
                                                 contractCall(
                                                                 FREEZE_CONTRACT,
                                                                 IS_FROZEN_FUNC,
-                                                                asAddress(nftTokenID.get()),
+                                                                asAddress(vanillaTokenID.get()),
                                                                 asAddress(accountID.get()))
                                                         .logged()
                                                         .payingWith(ACCOUNT)
@@ -430,8 +374,6 @@ public class FreezeUnfreezeTokenPrecompileSuite extends HapiApiSuite {
     }
 
     private HapiApiSpec isFrozenHappyPathWithLocalCall() {
-        final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
-
         return defaultHapiSpec("isFrozenHappyPathWithLocalCall")
                 .given(
                         newKeyNamed(FREEZE_KEY),
