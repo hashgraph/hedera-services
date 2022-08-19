@@ -784,10 +784,6 @@ class SyntheticTxnFactoryTest {
 
         // then
 
-        assertEquals("NFT", txnBody.getName());
-        assertEquals("NFT", txnBody.getSymbol());
-        assertEquals(account, txnBody.getTreasury());
-        assertEquals("NFT token memo", txnBody.getMemo().getValue());
         assertEquals(0, txnBody.getExpiry().getSeconds());
         assertEquals(0, txnBody.getAutoRenewPeriod().getSeconds());
         assertFalse(txnBody.hasAutoRenewAccount());
