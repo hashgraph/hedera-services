@@ -16,6 +16,8 @@
 package com.hedera.services.config;
 
 import static com.hedera.services.config.EntityNumbers.UNKNOWN_NUMBER;
+import static com.hedera.services.context.properties.PropertyNames.HEDERA_REALM;
+import static com.hedera.services.context.properties.PropertyNames.HEDERA_SHARD;
 
 import com.hedera.services.context.annotations.CompositeProps;
 import com.hedera.services.context.properties.PropertySource;
@@ -26,6 +28,8 @@ import javax.inject.Singleton;
 public class HederaNumbers {
     public static final long NUM_RESERVED_SYSTEM_ENTITIES = 750L;
     public static final long FIRST_POST_SYSTEM_FILE_ENTITY = 200L;
+    public static final long FIRST_RESERVED_SYSTEM_CONTRACT = 350L;
+    public static final long LAST_RESERVED_SYSTEM_CONTRACT = 399L;
 
     private final PropertySource properties;
 
@@ -39,14 +43,14 @@ public class HederaNumbers {
 
     public long realm() {
         if (realm == UNKNOWN_NUMBER) {
-            realm = properties.getLongProperty("hedera.realm");
+            realm = properties.getLongProperty(HEDERA_REALM);
         }
         return realm;
     }
 
     public long shard() {
         if (shard == UNKNOWN_NUMBER) {
-            shard = properties.getLongProperty("hedera.shard");
+            shard = properties.getLongProperty(HEDERA_SHARD);
         }
         return shard;
     }

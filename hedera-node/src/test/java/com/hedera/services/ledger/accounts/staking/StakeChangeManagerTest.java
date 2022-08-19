@@ -15,6 +15,8 @@
  */
 package com.hedera.services.ledger.accounts.staking;
 
+import static com.hedera.services.context.properties.PropertyNames.LEDGER_TOTAL_TINY_BAR_FLOAT;
+import static com.hedera.services.context.properties.PropertyNames.STAKING_REWARD_HISTORY_NUM_STORED_PERIODS;
 import static com.hedera.services.ledger.accounts.staking.StakingUtilsTest.buildPendingNodeStakeChanges;
 import static com.hedera.services.state.migration.ReleaseTwentySevenMigration.buildStakingInfoMap;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -134,9 +136,9 @@ class StakeChangeManagerTest {
     }
 
     public MerkleMap<EntityNum, MerkleStakingInfo> buildsStakingInfoMap() {
-        given(bootstrapProperties.getLongProperty("ledger.totalTinyBarFloat"))
+        given(bootstrapProperties.getLongProperty(LEDGER_TOTAL_TINY_BAR_FLOAT))
                 .willReturn(2_000_000_000L);
-        given(bootstrapProperties.getIntProperty("staking.rewardHistory.numStoredPeriods"))
+        given(bootstrapProperties.getIntProperty(STAKING_REWARD_HISTORY_NUM_STORED_PERIODS))
                 .willReturn(2);
         given(addressBook.getSize()).willReturn(2);
         given(addressBook.getAddress(0)).willReturn(address1);

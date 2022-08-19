@@ -43,7 +43,8 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.swirlds.common.crypto.TransactionSignature;
-import com.swirlds.common.system.transaction.SwirldTransaction;
+import com.swirlds.common.system.transaction.Transaction;
+import com.swirlds.common.system.transaction.internal.SwirldTransaction;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
@@ -63,7 +64,6 @@ class RationalizationTest {
     private final SigningOrderResult<ResponseCodeEnum> othersError =
             CODE_ORDER_RESULT_FACTORY.forImmutableContract();
 
-    @Mock private SwirldTransaction swirldsTxn;
     @Mock private PlatformTxnAccessor txnAccessor;
     @Mock private SyncVerifier syncVerifier;
     @Mock private SigRequirements keyOrderer;
@@ -73,6 +73,8 @@ class RationalizationTest {
     @Mock private SigImpactHistorian sigImpactHistorian;
     @Mock private AccountID payer;
     @Mock private LinkedRefs linkedRefs;
+
+    private Transaction swirldsTxn = new SwirldTransaction();
 
     private Rationalization subject;
 
@@ -91,7 +93,6 @@ class RationalizationTest {
         subject = new Rationalization(syncVerifier, keyOrderer, sigFactory);
 
         given(txnAccessor.getPkToSigsFn()).willReturn(pkToSigFn);
-        given(swirldsTxn.getSignatures()).willReturn(mockSigs);
         // and:
         subject.getRealPayerSigs().add(null);
         subject.getRealOtherPartySigs().add(null);
@@ -109,7 +110,7 @@ class RationalizationTest {
         assertSame(syncVerifier, subject.getSyncVerifier());
         assertSame(keyOrderer, subject.getSigReqs());
         assertSame(pkToSigFn, subject.getPkToSigFn());
-        assertSame(mockSigs, subject.getTxnSigs());
+        assertEquals(mockSigs, subject.getTxnSigs());
         // and:
         assertTrue(subject.getRealPayerSigs().isEmpty());
         assertTrue(subject.getRealOtherPartySigs().isEmpty());

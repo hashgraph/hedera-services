@@ -54,6 +54,7 @@ import com.hedera.services.store.contracts.precompile.codec.DecodingFacade;
 import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.services.store.models.NftId;
+import com.hedera.services.utils.accessors.AccessorFactory;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.SubType;
@@ -103,6 +104,7 @@ class IsFrozenPrecompileTest {
     @Mock private TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accounts;
     @Mock private TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokens;
     @Mock private TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nfts;
+    @Mock private AccessorFactory accessorFactory;
 
     @Mock
     private TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus>
@@ -121,7 +123,12 @@ class IsFrozenPrecompileTest {
         given(assetLoader.loadCanonicalPrices()).willReturn(canonicalPrices);
         PrecompilePricingUtils precompilePricingUtils =
                 new PrecompilePricingUtils(
-                        assetLoader, exchange, () -> feeCalculator, resourceCosts, stateView);
+                        assetLoader,
+                        exchange,
+                        () -> feeCalculator,
+                        resourceCosts,
+                        stateView,
+                        accessorFactory);
         subject =
                 new HTSPrecompiledContract(
                         dynamicProperties,

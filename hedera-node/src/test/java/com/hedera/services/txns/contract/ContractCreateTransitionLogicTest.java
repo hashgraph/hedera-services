@@ -88,6 +88,7 @@ import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.merkle.map.MerkleMap;
 import java.math.BigInteger;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
@@ -104,9 +105,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class ContractCreateTransitionLogicTest {
     private static final long maxGas = 666_666L;
     private static final BigInteger biOfferedGasPrice = BigInteger.valueOf(111L);
-    private long gas = 33_333;
-    private long customAutoRenewPeriod = 100_001L;
-    private Long balance = 1_234L;
     private final AccountID proxy = AccountID.newBuilder().setAccountNum(4_321L).build();
     private final AccountID autoRenewAccount =
             AccountID.newBuilder().setAccountNum(12_345L).build();
@@ -116,7 +114,13 @@ class ContractCreateTransitionLogicTest {
                  + "ac469a3401491cfed6040caf961950f8964fe5ca3fe264736f6c634300050b0032")
                     .getBytes();
     private final int maxAutoAssociations = 10;
-
+    private final Instant consensusTime = Instant.ofEpochSecond(1_234_567L);
+    private final Account senderAccount = new Account(new Id(0, 0, 1002));
+    private final Account relayerAccount = new Account(new Id(0, 0, 1003));
+    private final Account contractAccount = new Account(new Id(0, 0, 1006));
+    private long gas = 33_333;
+    private long customAutoRenewPeriod = 100_001L;
+    private Long balance = 1_234L;
     @Mock private HederaFs hfs;
     @Mock private OptionValidator validator;
     @Mock private TransactionContext txnCtx;
@@ -134,13 +138,7 @@ class ContractCreateTransitionLogicTest {
     @Mock private Account autoRenewModel;
     @Mock private MerkleMap<EntityNum, MerkleAccount> accounts;
     @Mock private NodeInfo nodeInfo;
-
     private ContractCreateTransitionLogic subject;
-
-    private final Instant consensusTime = Instant.ofEpochSecond(1_234_567L);
-    private final Account senderAccount = new Account(new Id(0, 0, 1002));
-    private final Account relayerAccount = new Account(new Id(0, 0, 1003));
-    private final Account contractAccount = new Account(new Id(0, 0, 1006));
     private TransactionBody contractCreateTxn;
 
     @BeforeEach
@@ -386,7 +384,8 @@ class ContractCreateTransitionLogicTest {
                         124L,
                         Bytes.EMPTY,
                         contractAccount.getId().asEvmAddress(),
-                        Map.of());
+                        Map.of(),
+                        new ArrayList<>());
         given(txnCtx.consensusTime()).willReturn(consensusTime);
         given(worldState.newContractAddress(senderAccount.getId().asEvmAddress()))
                 .willReturn(contractAccount.getId().asEvmAddress());
@@ -450,7 +449,8 @@ class ContractCreateTransitionLogicTest {
                         124L,
                         Bytes.EMPTY,
                         contractAccount.getId().asEvmAddress(),
-                        Map.of());
+                        Map.of(),
+                        new ArrayList<>());
         given(txnCtx.consensusTime()).willReturn(consensusTime);
         given(worldState.newContractAddress(senderAccount.getId().asEvmAddress()))
                 .willReturn(contractAccount.getId().asEvmAddress());
@@ -526,7 +526,8 @@ class ContractCreateTransitionLogicTest {
                         124L,
                         Bytes.EMPTY,
                         contractAccount.getId().asEvmAddress(),
-                        Map.of());
+                        Map.of(),
+                        new ArrayList<>());
         given(txnCtx.consensusTime()).willReturn(consensusTime);
         given(worldState.newContractAddress(senderAccount.getId().asEvmAddress()))
                 .willReturn(contractAccount.getId().asEvmAddress());
@@ -581,7 +582,13 @@ class ContractCreateTransitionLogicTest {
                         .getSeconds();
         var result =
                 TransactionProcessingResult.failed(
-                        1234L, 0L, 124L, Optional.empty(), Optional.empty(), Map.of());
+                        1234L,
+                        0L,
+                        124L,
+                        Optional.empty(),
+                        Optional.empty(),
+                        Map.of(),
+                        new ArrayList<>());
         given(
                         evmTxProcessor.execute(
                                 senderAccount,
@@ -625,9 +632,16 @@ class ContractCreateTransitionLogicTest {
                                 consensusTime,
                                 Duration.newBuilder().setSeconds(customAutoRenewPeriod).build())
                         .getSeconds();
+
         var result =
                 TransactionProcessingResult.failed(
-                        1234L, 0L, 124L, Optional.empty(), Optional.empty(), Map.of());
+                        1234L,
+                        0L,
+                        124L,
+                        Optional.empty(),
+                        Optional.empty(),
+                        Map.of(),
+                        new ArrayList<>());
         given(
                         evmTxProcessor.execute(
                                 senderAccount,
@@ -684,7 +698,13 @@ class ContractCreateTransitionLogicTest {
                         .getSeconds();
         var result =
                 TransactionProcessingResult.failed(
-                        1234L, 0L, 124L, Optional.empty(), Optional.empty(), Map.of());
+                        1234L,
+                        0L,
+                        124L,
+                        Optional.empty(),
+                        Optional.empty(),
+                        Map.of(),
+                        new ArrayList<>());
         given(
                         evmTxProcessor.execute(
                                 senderAccount,
@@ -739,7 +759,8 @@ class ContractCreateTransitionLogicTest {
                         124L,
                         Bytes.EMPTY,
                         contractAccount.getId().asEvmAddress(),
-                        Map.of());
+                        Map.of(),
+                        new ArrayList<>());
         given(txnCtx.consensusTime()).willReturn(consensusTime);
         var expiry =
                 RequestBuilder.getExpirationTime(
@@ -813,7 +834,8 @@ class ContractCreateTransitionLogicTest {
                         124L,
                         output,
                         contractAccount.getId().asEvmAddress(),
-                        Map.of());
+                        Map.of(),
+                        List.of());
         given(txnCtx.consensusTime()).willReturn(consensusTime);
         var expiry =
                 RequestBuilder.getExpirationTime(
@@ -901,7 +923,8 @@ class ContractCreateTransitionLogicTest {
                         124L,
                         output,
                         contractAccount.getId().asEvmAddress(),
-                        Map.of());
+                        Map.of(),
+                        List.of());
         given(txnCtx.consensusTime()).willReturn(consensusTime);
         var expiry =
                 RequestBuilder.getExpirationTime(
@@ -990,7 +1013,8 @@ class ContractCreateTransitionLogicTest {
                         124L,
                         Bytes.EMPTY,
                         contractAccount.getId().asEvmAddress(),
-                        Map.of());
+                        Map.of(),
+                        new ArrayList<>());
         given(txnCtx.consensusTime()).willReturn(consensusTime);
         var expiry =
                 RequestBuilder.getExpirationTime(
@@ -1072,7 +1096,8 @@ class ContractCreateTransitionLogicTest {
                         124L,
                         output,
                         contractAccount.getId().asEvmAddress(),
-                        Map.of());
+                        Map.of(),
+                        List.of());
         given(txnCtx.consensusTime()).willReturn(consensusTime);
         var expiry =
                 RequestBuilder.getExpirationTime(
