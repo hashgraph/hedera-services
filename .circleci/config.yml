@@ -1362,6 +1362,13 @@ workflows:
                 at: /
 
   GCP-Daily-Services-Comp-NI-Reconnect-Correctness-6N-1C:
+    triggers:
+      - schedule:
+          cron: "25 7 * * *"
+          filters:
+            branches:
+              only:
+                - master
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1378,6 +1385,13 @@ workflows:
                 at: /
 
   GCP-Daily-Services-Comp-ND-Reconnect-Correctness-6N-1C:
+    triggers:
+      - schedule:
+          cron: "25 8 * * *"
+          filters:
+            branches:
+              only:
+                - master
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1416,6 +1430,35 @@ workflows:
             - attach_workspace:
                 at: /
 
+  continuous-integration-gcp:
+      jobs:
+#        - build-artifact:
+#            name: "artifact-build"
+#            context: SonarCloud
+#            filters:
+#              branches:
+#                ignore:
+#                  - NONE
+#            workflow-name: "Continuous-integration"
+        - build-platform-and-services:
+            context: SonarCloud
+            workflow-name: "Continuous-integration-GCP"
+        - jrs-regression:
+            context: Slack
+            regression_path: /swirlds-platform/regression/assets
+            result_path: assets/results/4N_1C/CI
+            config_type: "ci"
+            workflow-name: "GCP-Commit-Services-Comp-Basic-4N-1C"
+            name: "run-continuous-integration-gcp"
+            continuous_integration: true
+            slack_results_channel: "hedera-cicd"
+            slack_summary_channel: "hedera-cicd"
+            requires:
+              - build-platform-and-services
+            pre-steps:
+              - install-tools
+              - attach_workspace:
+                  at: /
 jobs:
 #  build-artifact:
 #    parameters:
@@ -1534,7 +1577,6 @@ jobs:
             
             # Build JRS
             cd /swirlds-platform/regression
-            git checkout -b 02739-D-TransactionHistory-NIReconnect-1-16m-timing origin/02739-D-TransactionHistory-NIReconnect-1-16m-timing
             ./gradlew assemble --scan --parallel
 
       - run:
@@ -1612,10 +1654,10 @@ jobs:
         default: true
       slack_results_channel:
         type: string
-        default: "hedera-regression-test"
+        default: "hedera-regression"
       slack_summary_channel:
         type: string
-        default: "hedera-regression-test"
+        default: "hedera-regression-summary"
       workflow-name:
         type: string
         default: ""
