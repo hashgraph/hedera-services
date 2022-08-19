@@ -112,7 +112,7 @@ public record ContractStoragePriceTiers(
                 rate,
                 totalKvPairsUsed,
                 requestedLifetime,
-                usageInfo.pendingUsage(),
+                usageInfo.currentUsage(),
                 usageInfo.currentUsage());
     }
 
