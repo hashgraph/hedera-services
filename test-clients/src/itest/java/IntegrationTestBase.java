@@ -47,7 +47,9 @@ public abstract class IntegrationTestBase extends TestBase {
                     .withClasspathResourceMappingDir("network/config")
                     .withWorkspace(WORKSPACE)
                     .withNetwork(NETWORK)
-                    .withRecordStreamFolderBinding(WORKSPACE, Path.of("network", "itest", "data", "recordStreams").toString());
+                    .withRecordStreamFolderBinding(
+                            WORKSPACE,
+                            Path.of("network", "itest", "data", "recordStreams").toString());
 
     /** Before any test runs, configure HapiApiSpec to use the Testcontainer we created */
     @BeforeAll

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.hedera.services.bdd.suites.contract.traceability;
+package com.hedera.services.bdd.spec.verification.traceability;
 
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
@@ -23,10 +23,10 @@ import com.hedera.services.stream.proto.TransactionSidecarRecord;
 import java.io.IOException;
 import java.nio.file.FileSystems;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.nio.file.StandardWatchEventKinds;
 import java.nio.file.WatchEvent;
 import java.nio.file.WatchKey;
+import java.nio.file.WatchService;
 import java.util.Queue;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.regex.Pattern;
@@ -35,80 +35,80 @@ import org.apache.logging.log4j.Logger;
 
 public class SidecarWatcher {
 
-    record ExpectedSidecar(String spec, TransactionSidecarRecord expectedSidecarRecord){}
-    record MismatchedSidecar(TransactionSidecarRecord expectedSidecarRecord, TransactionSidecarRecord actualSidecarRecord){}
+    private final Path recordStreamFolderPath;
+    private WatchService watchService;
+
+    public SidecarWatcher(final Path recordStreamFolderPath) {
+        this.recordStreamFolderPath = recordStreamFolderPath;
+    }
 
     private static final Logger log = LogManager.getLogger(SidecarWatcher.class);
     private static final Pattern SIDECAR_FILE_REGEX =
             Pattern.compile("\\d{4}-\\d{2}-\\d{2}T\\d{2}_\\d{2}_\\d{2}\\.\\d{9}Z_\\d{2}.rcd");
 
-    private final Queue<ExpectedSidecar> expectedSidecars =
-            new LinkedBlockingDeque<>();
-    private final Multimap<String, MismatchedSidecar>
-            failedSidecars = HashMultimap.create();
+    private final Queue<ExpectedSidecar> expectedSidecars = new LinkedBlockingDeque<>();
+    private final Multimap<String, MismatchedSidecar> failedSidecars = HashMultimap.create();
 
     private boolean shouldTerminateAfterNextSidecar = false;
     private boolean hasSeenFirst = false;
 
+    public void prepareInfrastructure() throws IOException {
+        watchService = FileSystems.getDefault().newWatchService();
+        recordStreamFolderPath.register(watchService, StandardWatchEventKinds.ENTRY_CREATE);
+    }
 
-    public void startWatching(String s) throws IOException {
-        try (final var watchService = FileSystems.getDefault().newWatchService()) {
-            final var path = Paths.get(s);
-            path.register(watchService, StandardWatchEventKinds.ENTRY_MODIFY);
-
-            for (; ; ) {
-                // wait for key to be signaled
-                WatchKey key;
-                try {
-                    key = watchService.take();
-                } catch (InterruptedException x) {
-                    Thread.currentThread().interrupt();
-                    return;
+    public void watch() throws IOException {
+        for (; ; ) {
+            // wait for key to be signaled
+            WatchKey key;
+            try {
+                key = watchService.take();
+            } catch (InterruptedException x) {
+                Thread.currentThread().interrupt();
+                return;
+            }
+            for (final var event : key.pollEvents()) {
+                final var kind = event.kind();
+                // This key is registered only
+                // for ENTRY_CREATE events,
+                // but an OVERFLOW event can
+                // occur regardless if events
+                // are lost or discarded.
+                if (kind == StandardWatchEventKinds.OVERFLOW) {
+                    continue;
                 }
-
-                for (final var event : key.pollEvents()) {
-                    final var kind = event.kind();
-
-                    // This key is registered only
-                    // for ENTRY_CREATE events,
-                    // but an OVERFLOW event can
-                    // occur regardless if events
-                    // are lost or discarded.
-                    if (kind == StandardWatchEventKinds.OVERFLOW) {
-                        continue;
+                // The filename is the
+                // context of the event.
+                final var ev = (WatchEvent<Path>) event;
+                final var filename = ev.context();
+                final var child = recordStreamFolderPath.resolve(filename);
+                log.debug("Record stream file created -> {} ", child.getFileName());
+                final var newFilePath = child.toAbsolutePath().toString();
+                if (SIDECAR_FILE_REGEX.matcher(newFilePath).find()) {
+                    log.info("We have a new sidecar.");
+                    final var sidecarFile = RecordStreamingUtils.readSidecarFile(newFilePath);
+                    onNewSidecarFile(sidecarFile);
+                    if (shouldTerminateAfterNextSidecar) {
+                        return;
                     }
-
-                    // The filename is the
-                    // context of the event.
-                    final var ev = (WatchEvent<Path>) event;
-                    final var filename = ev.context();
-                    final var child = path.resolve(filename);
-                    log.info("Event - {}, Record stream file created -> {} ", kind, child.getFileName());
-                    final var newFilePath = child.toAbsolutePath().toString();
-                    if (SIDECAR_FILE_REGEX.matcher(newFilePath).find()) {
-                        log.info("We have a new sidecar.");
-                        final var pair = RecordStreamingUtils.readSidecarFile(newFilePath);
-                        if (pair.isEmpty()) {
-                            log.fatal(
-                                    "An invalid sidecar file was generated from the consensus node."
-                                            + " This is very bad.");
-                            return;
-                        }
-                        onNewSidecarFile(pair.get());
-                        if (shouldTerminateAfterNextSidecar) {
-                            return;
-                        }
-                    }
-                }
-                // Reset the key -- this step is critical if you want to
-                // receive further watch events.  If the key is no longer valid,
-                // the directory is inaccessible so exit the loop.
-                final var valid = key.reset();
-                if (!valid) {
-                    log.fatal("Error occurred in WatchServiceAPI. Exiting now.");
-                    break;
                 }
             }
+            // Reset the key -- this step is critical if you want to
+            // receive further watch events.  If the key is no longer valid,
+            // the directory is inaccessible so exit the loop.
+            final var valid = key.reset();
+            if (!valid) {
+                log.fatal("Error occurred in WatchServiceAPI. Exiting now.");
+                return;
+            }
+        }
+    }
+
+    public void tearDown() {
+        try {
+            watchService.close();
+        } catch (IOException e) {
+            log.warn("Watch service couldn't be closed.");
         }
     }
 
