@@ -111,6 +111,7 @@ import static com.hedera.services.context.properties.PropertyNames.TOKENS_NFTS_M
 import static com.hedera.services.context.properties.PropertyNames.TOKENS_NFTS_MAX_METADATA_BYTES;
 import static com.hedera.services.context.properties.PropertyNames.TOKENS_NFTS_MAX_QUERY_RANGE;
 import static com.hedera.services.context.properties.PropertyNames.TOKENS_NFTS_MINT_THORTTLE_SCALE_FACTOR;
+import static com.hedera.services.context.properties.PropertyNames.TOKENS_NFTS_USE_TREASURY_WILDCARDS;
 import static com.hedera.services.context.properties.PropertyNames.TOPICS_MAX_NUM;
 import static com.hedera.services.context.properties.PropertyNames.UPGRADE_ARTIFACTS_PATH;
 import static com.hedera.services.context.properties.PropertyNames.UTIL_PRNG_IS_ENABLED;
@@ -255,7 +256,7 @@ public class GlobalDynamicProperties {
         maxBatchSizeMint = properties.getIntProperty(TOKENS_NFTS_MAX_BATCH_SIZE_MINT);
         maxBatchSizeWipe = properties.getIntProperty(TOKENS_NFTS_MAX_BATCH_SIZE_WIPE);
         maxNftQueryRange = properties.getLongProperty(TOKENS_NFTS_MAX_QUERY_RANGE);
-        allowTreasuryToOwnNfts = properties.getBooleanProperty("tokens.nfts.useTreasuryWildcards");
+        allowTreasuryToOwnNfts = properties.getBooleanProperty(TOKENS_NFTS_USE_TREASURY_WILDCARDS);
         maxTokensPerAccount = properties.getIntProperty(TOKENS_MAX_PER_ACCOUNT);
         maxTokenRelsPerInfoQuery = properties.getIntProperty(TOKENS_MAX_RELS_PER_INFO_QUERY);
         maxTokenSymbolUtf8Bytes = properties.getIntProperty(TOKENS_MAX_SYMBOL_UTF8_BYTES);

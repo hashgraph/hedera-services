@@ -540,10 +540,11 @@ public class SyntheticTxnFactory {
 
     public TransactionBody.Builder createTokenUpdate(TokenUpdateWrapper updateWrapper) {
         final var builder = TokenUpdateTransactionBody.newBuilder();
-        builder.setToken(updateWrapper.tokenID())
-                .setName(updateWrapper.name())
-                .setSymbol(updateWrapper.symbol())
-                .setMemo(StringValue.of(updateWrapper.memo()));
+        builder.setToken(updateWrapper.tokenID());
+
+        if (updateWrapper.name() != null) builder.setName(updateWrapper.name());
+        if (updateWrapper.symbol() != null) builder.setSymbol(updateWrapper.symbol());
+        if (updateWrapper.memo() != null) builder.setMemo(StringValue.of(updateWrapper.memo()));
         if (updateWrapper.treasury() != null) builder.setTreasury(updateWrapper.treasury());
 
         if (updateWrapper.expiry().second() != 0) {
