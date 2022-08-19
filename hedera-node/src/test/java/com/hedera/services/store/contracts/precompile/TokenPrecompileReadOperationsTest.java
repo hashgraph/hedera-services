@@ -101,7 +101,12 @@ class TokenPrecompileReadOperationsTest {
 
         PrecompilePricingUtils precompilePricingUtils =
                 new PrecompilePricingUtils(
-                        assetLoader, exchange, () -> feeCalculator, resourceCosts, stateView, new AccessorFactory(dynamicProperties));
+                        assetLoader,
+                        exchange,
+                        () -> feeCalculator,
+                        resourceCosts,
+                        stateView,
+                        new AccessorFactory(dynamicProperties));
         subject =
                 new HTSPrecompiledContract(
                         dynamicProperties,
