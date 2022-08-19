@@ -37,7 +37,10 @@ public final class UnzipUtility {
     public static void unzip(final byte[] bytes, final String dstDir) throws IOException {
         final File destDir = new File(dstDir);
         if (!destDir.exists()) {
-            destDir.mkdir();
+            if (!destDir.mkdirs()) {
+                log.fatal("Unable to create the directory for update assets: {}", destDir);
+                return;
+            }
             log.info("Created directory {} for update assets", destDir);
         }
 
@@ -54,10 +57,13 @@ public final class UnzipUtility {
             }
 
             if (!entry.isDirectory()) {
+                ensureDirectoriesExist(fileOrDir);
                 extractSingleFile(zipIn, filePath);
                 log.info(" - Extracted update file {}", filePath);
             } else {
-                fileOrDir.mkdir();
+                if (!fileOrDir.mkdirs()) {
+                    log.error(" - Unable to create assets sub-directory: {}", fileOrDir);
+                }
                 log.info(" - Created assets sub-directory {}", fileOrDir);
             }
             zipIn.closeEntry();
@@ -81,6 +87,14 @@ public final class UnzipUtility {
             }
         } catch (IOException e) {
             log.error("Unable to write to file {}", filePath, e);
+        }
+    }
+
+    static void ensureDirectoriesExist(final File file) {
+        final File directory = file.getParentFile();
+
+        if (!directory.exists() && !directory.mkdirs()) {
+            log.fatal("Unable to create the parent directories for the file: {}", file);
         }
     }
 }

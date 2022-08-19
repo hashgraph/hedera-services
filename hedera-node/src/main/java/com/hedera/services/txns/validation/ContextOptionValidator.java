@@ -15,6 +15,7 @@
  */
 package com.hedera.services.txns.validation;
 
+import static com.hedera.services.context.properties.PropertyNames.ENTITIES_MAX_LIFETIME;
 import static com.hedera.services.ledger.properties.AccountProperty.BALANCE;
 import static com.hedera.services.ledger.properties.AccountProperty.EXPIRY;
 import static com.hedera.services.ledger.properties.AccountProperty.IS_SMART_CONTRACT;
@@ -77,7 +78,7 @@ public class ContextOptionValidator implements OptionValidator {
             final @CompositeProps PropertySource properties,
             final TransactionContext txnCtx,
             final GlobalDynamicProperties dynamicProperties) {
-        maxEntityLifetime = properties.getLongProperty("entities.maxLifetime");
+        maxEntityLifetime = properties.getLongProperty(ENTITIES_MAX_LIFETIME);
         this.txnCtx = txnCtx;
         this.nodeInfo = nodeInfo;
         this.dynamicProperties = dynamicProperties;

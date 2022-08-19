@@ -15,6 +15,7 @@
  */
 package com.hedera.services.txns.file;
 
+import static com.hedera.services.context.properties.PropertyNames.ENTITIES_SYSTEM_DELETABLE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FILE_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
@@ -113,7 +114,7 @@ class FileSysUndelTransitionLogicTest {
         given(hfs.exists(missing)).willReturn(false);
         given(hfs.getattr(undeleted)).willReturn(attr);
         given(hfs.getattr(deleted)).willReturn(deletedAttr);
-        given(properties.getTypesProperty("entities.systemDeletable"))
+        given(properties.getTypesProperty(ENTITIES_SYSTEM_DELETABLE))
                 .willReturn(EnumSet.allOf(EntityType.class));
 
         subject =
@@ -123,7 +124,7 @@ class FileSysUndelTransitionLogicTest {
 
     @Test
     void abortsIfNotSupported() {
-        given(properties.getTypesProperty("entities.systemDeletable"))
+        given(properties.getTypesProperty(ENTITIES_SYSTEM_DELETABLE))
                 .willReturn(EnumSet.noneOf(EntityType.class));
 
         subject =
