@@ -16,7 +16,6 @@
 package com.hedera.services.usage.contract;
 
 import static com.hedera.services.usage.contract.entities.ContractEntitySizes.CONTRACT_ENTITY_SIZES;
-import static com.hedera.services.usage.contract.entities.ContractEntitySizes.NUM_BYTES_PER_KV_PAIR;
 
 import com.hedera.services.usage.crypto.ExtantCryptoContext;
 
@@ -25,8 +24,7 @@ public class ExtantContractContext {
     private final ExtantCryptoContext currentCryptoContext;
 
     public ExtantContractContext(
-            final int currentNumKvPairs,
-            final ExtantCryptoContext currentCryptoContext) {
+            final int currentNumKvPairs, final ExtantCryptoContext currentCryptoContext) {
         this.currentNumKvPairs = currentNumKvPairs;
         this.currentCryptoContext = currentCryptoContext;
     }
@@ -36,7 +34,7 @@ public class ExtantContractContext {
                 + currentCryptoContext.currentNonBaseRb();
     }
 
-    public long currentNumKvPairs(){
+    public long currentNumKvPairs() {
         return currentNumKvPairs;
     }
 }

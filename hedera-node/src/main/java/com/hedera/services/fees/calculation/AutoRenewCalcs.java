@@ -124,23 +124,27 @@ public class AutoRenewCalcs {
         if (balance == 0L) {
             return NO_RENEWAL_POSSIBLE;
         }
-        final var renewalFees = renewalFees(at, rate, expiredAccountOrContract);
+        final var renewalFees = renewalFees(at, rate, expiredAccountOrContract, reqPeriod);
         return assess(renewalFees, reqPeriod, balance);
     }
 
     private RenewalFees renewalFees(
             final Instant at,
             final ExchangeRate rate,
-            final MerkleAccount expiredAccountOrContract) {
+            final MerkleAccount expiredAccountOrContract,
+            final long reqPeriod) {
         if (expiredAccountOrContract.isSmartContract()) {
-            return contractRenewalPrices(at, rate, expiredAccountOrContract);
+            return contractRenewalPrices(at, rate, expiredAccountOrContract, reqPeriod);
         } else {
             return accountRenewalPrices(at, rate, expiredAccountOrContract);
         }
     }
 
     private RenewalFees contractRenewalPrices(
-            final Instant at, final ExchangeRate rate, final MerkleAccount contract) {
+            final Instant at,
+            final ExchangeRate rate,
+            final MerkleAccount contract,
+            final long reqPeriod) {
         if (contractPricesSeq == null) {
             throw new IllegalStateException("No contract usage prices are set!");
         }
@@ -151,17 +155,25 @@ public class AutoRenewCalcs {
         final long rbhPrice = isBeforeSwitch ? firstContractRbhPrice : secondContractRbhPrice;
 
         final var contractContext = contractContextFrom(contract);
-        // Since contract bytecode is not charged any fees - we ignore sbh in the renewal fee calculation
-        final var storageFee = storageFee(contractContext, rate, contract.getAutoRenewSecs());
+
+        // Since contract bytecode is not charged any fees - we ignore sbh in the renewal fee
+        // calculation
+        final var storageFee = storageFee(contractContext, rate, reqPeriod);
         final var hourlyPrice = (rbhPrice * contractContext.currentRb()) + storageFee;
         return new RenewalFees(inTinybars(fixedPrice, rate), inTinybars(hourlyPrice, rate));
     }
 
-    private long storageFee(final ExtantContractContext contractContext, final ExchangeRate rate,
+    private long storageFee(
+            final ExtantContractContext contractContext,
+            final ExchangeRate rate,
             final long requestedLifetime) {
         final var storagePriceTiers = properties.storagePriceTiers();
         final var kvPairsUsed = contractContext.currentNumKvPairs();
-        return storagePriceTiers.priceOfPendingUsage(rate, kvPairsUsed, requestedLifetime, new KvUsageInfo((int) kvPairsUsed));
+        final var usageInfo = new KvUsageInfo((int) kvPairsUsed);
+        // auto-renewal fee should cover fees for all the current KV pairs
+        usageInfo.updatePendingBy((int) kvPairsUsed);
+        return storagePriceTiers.priceOfPendingUsage(
+                rate, kvPairsUsed, requestedLifetime, usageInfo);
     }
 
     private RenewalFees accountRenewalPrices(

@@ -16,7 +16,6 @@
 package com.hedera.services.fees.calculation;
 
 import static com.hedera.services.fees.calculation.AutoRenewCalcs.countSerials;
-import static com.hedera.services.pricing.BaseOperationUsage.CANONICAL_CONTRACT_BYTECODE_SIZE;
 import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.getCryptoAllowancesList;
 import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.getFungibleTokenAllowancesList;
 import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.getNftApprovedForAll;
@@ -29,8 +28,10 @@ import static com.hederahashgraph.fee.FeeBuilder.getTinybarsFromTinyCents;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.BDDMockito.given;
 
+import com.hedera.services.config.HederaNumbers;
+import com.hedera.services.context.properties.BootstrapProperties;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.pricing.BaseOperationUsage;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.submerkle.FcTokenAllowance;
@@ -82,9 +83,12 @@ class AutoRenewCalcsTest {
             ExchangeRate.newBuilder().setHbarEquiv(1).setCentEquiv(10).build();
     private final int associatedTokensCount = 123;
 
+    private final int KV_PAIRS_OUTSIDE_FREE_TIER = 100_000_001;
+
     @LoggingTarget private LogCaptor logCaptor;
     @Mock private VirtualBlobValue code;
     @Mock private VirtualMap<VirtualBlobKey, VirtualBlobValue> bytecode;
+    private GlobalDynamicProperties properties;
 
     @LoggingSubject private AutoRenewCalcs subject;
 
@@ -93,7 +97,11 @@ class AutoRenewCalcsTest {
         accountPrices = frozenPricesFrom("fees/feeSchedules.json", CryptoAccountAutoRenew);
         contractPrices = frozenPricesFrom("fees/feeSchedules.json", ContractAutoRenew);
 
-        subject = new AutoRenewCalcs(cryptoOpsUsage, () -> bytecode);
+        final var propertySource = new BootstrapProperties();
+        propertySource.ensureProps();
+        properties = new GlobalDynamicProperties(new HederaNumbers(propertySource), propertySource);
+
+        subject = new AutoRenewCalcs(cryptoOpsUsage, () -> bytecode, properties);
 
         subject.setAccountRenewalPriceSeq(accountPrices);
         subject.setContractRenewalPriceSeq(contractPrices);
@@ -152,8 +160,8 @@ class AutoRenewCalcsTest {
     }
 
     @Test
-    void computesExpectedUsdPriceForThreeMonthContractRenewal() {
-        long expectedFeeInTinycents = 260000000L;
+    void computesExpectedUsdPriceInFreeTierForThreeMonthContractRenewal() {
+        long expectedFeeInTinycents = 163806890L; // storage fee is 0 since it is < 100M
         long expectedFeeInTinybars = getTinybarsFromTinyCents(activeRates, expectedFeeInTinycents);
         long threeMonthsInSeconds = 7776000L;
         setupSuperStandardContractWith(Long.MAX_VALUE);
@@ -161,6 +169,35 @@ class AutoRenewCalcsTest {
         var preCutoffAssessment =
                 subject.assessCryptoRenewal(
                         expiredEntity, threeMonthsInSeconds, preCutoff, activeRates, expiredEntity);
+
+        var prePercent = (1.0 * preCutoffAssessment.fee()) / expectedFeeInTinybars * 100.0;
+        assertEquals(100.0, prePercent, 5.0);
+        assertEquals(threeMonthsInSeconds, preCutoffAssessment.renewalPeriod());
+
+        var postCutoffAssessment =
+                subject.assessCryptoRenewal(
+                        expiredEntity,
+                        threeMonthsInSeconds,
+                        postCutoff,
+                        activeRates,
+                        expiredEntity);
+        var postPercent = (1.0 * postCutoffAssessment.fee()) / expectedFeeInTinybars * 100.0;
+        assertEquals(100.0, postPercent, 5.0);
+        assertEquals(threeMonthsInSeconds, postCutoffAssessment.renewalPeriod());
+    }
+
+    @Test
+    void computesExpectedUsdPriceInNonFreeTierForThreeMonthContractRenewal() {
+        long expectedFeeInTinycents =
+                1065205470455690L; // the storage fee is added since it is > 100M
+        long expectedFeeInTinybars = getTinybarsFromTinyCents(activeRates, expectedFeeInTinycents);
+        long threeMonthsInSeconds = 7776000L;
+        setupContractWithNonFreeTierKvPairs(Long.MAX_VALUE);
+
+        var preCutoffAssessment =
+                subject.assessCryptoRenewal(
+                        expiredEntity, threeMonthsInSeconds, preCutoff, activeRates, expiredEntity);
+
         var prePercent = (1.0 * preCutoffAssessment.fee()) / expectedFeeInTinybars * 100.0;
         assertEquals(100.0, prePercent, 5.0);
         assertEquals(threeMonthsInSeconds, preCutoffAssessment.renewalPeriod());
@@ -201,7 +238,7 @@ class AutoRenewCalcsTest {
         setupAccountWith(1L);
 
         // given:
-        subject = new AutoRenewCalcs(cryptoOpsUsage, () -> bytecode);
+        subject = new AutoRenewCalcs(cryptoOpsUsage, () -> bytecode, properties);
 
         // expect:
         Assertions.assertThrows(
@@ -216,7 +253,7 @@ class AutoRenewCalcsTest {
         expiredEntity = MerkleAccountFactory.newAccount().isSmartContract(true).balance(1).get();
 
         // given:
-        subject = new AutoRenewCalcs(cryptoOpsUsage, () -> bytecode);
+        subject = new AutoRenewCalcs(cryptoOpsUsage, () -> bytecode, properties);
 
         // expect:
         Assertions.assertThrows(
@@ -351,10 +388,16 @@ class AutoRenewCalcsTest {
                         .balance(balance)
                         .get();
         expiredEntity.setKey(contractNum);
-        final var codeKey =
-                new VirtualBlobKey(VirtualBlobKey.Type.CONTRACT_BYTECODE, contractNum.intValue());
-        final var codeData = new byte[CANONICAL_CONTRACT_BYTECODE_SIZE];
-        given(code.getData()).willReturn(codeData);
-        given(bytecode.get(codeKey)).willReturn(code);
+    }
+
+    private void setupContractWithNonFreeTierKvPairs(long balance) {
+        expiredEntity =
+                MerkleAccountFactory.newAccount()
+                        .isSmartContract(true)
+                        .numKvPairs(KV_PAIRS_OUTSIDE_FREE_TIER)
+                        .accountKeys(TxnHandlingScenario.SIMPLE_NEW_ADMIN_KT.asJKeyUnchecked())
+                        .balance(balance)
+                        .get();
+        expiredEntity.setKey(contractNum);
     }
 }

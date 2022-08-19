@@ -19,7 +19,6 @@ import static com.hedera.services.usage.contract.entities.ContractEntitySizes.CO
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.BDDMockito.given;
 
-import com.hedera.services.usage.contract.entities.ContractEntitySizes;
 import com.hedera.services.usage.crypto.ExtantCryptoContext;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
