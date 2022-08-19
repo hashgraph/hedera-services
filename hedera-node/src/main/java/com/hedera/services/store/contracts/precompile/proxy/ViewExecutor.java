@@ -33,6 +33,7 @@ import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.store.contracts.WorldLedgers;
 import com.hedera.services.store.contracts.precompile.codec.DecodingFacade;
 import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
+import com.hedera.services.store.contracts.precompile.codec.TokenExpiryWrapper;
 import com.hederahashgraph.api.proto.java.NftID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import org.apache.commons.lang3.tuple.Pair;
@@ -157,9 +158,15 @@ public class ViewExecutor {
                 validateTrueOrRevert(
                         stateView.tokenExists(wrapper.tokenID()),
                         ResponseCodeEnum.INVALID_TOKEN_ID);
-                final var expiryInfo = stateView.tokenExpiryInfo(wrapper.tokenID()).orElse(null);
-                validateTrueOrRevert(
-                        expiryInfo != null, ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT);
+                final var tokenInfo = stateView.infoForToken(wrapper.tokenID()).orElse(null);
+
+                validateTrueOrRevert(tokenInfo != null, ResponseCodeEnum.INVALID_TOKEN_ID);
+
+                final var expiryInfo =
+                        new TokenExpiryWrapper(
+                                tokenInfo.getExpiry().getSeconds(),
+                                tokenInfo.getAutoRenewAccount(),
+                                tokenInfo.getAutoRenewPeriod().getSeconds());
 
                 return encoder.encodeGetTokenExpiryInfo(expiryInfo);
             }

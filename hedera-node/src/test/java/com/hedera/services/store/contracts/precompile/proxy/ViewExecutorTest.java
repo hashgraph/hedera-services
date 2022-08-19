@@ -24,7 +24,6 @@ import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_GET_TOKEN_INFO;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_IS_FROZEN;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_IS_KYC;
-import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.payer;
 import static com.hedera.services.store.contracts.precompile.proxy.RedirectViewExecutor.MINIMUM_TINYBARS_COST;
 import static com.hedera.test.factories.fees.CustomFeeBuilder.fixedHbar;
 import static com.hedera.test.factories.fees.CustomFeeBuilder.fixedHts;
@@ -47,7 +46,6 @@ import com.hedera.services.store.contracts.precompile.codec.GetTokenDefaultFreez
 import com.hedera.services.store.contracts.precompile.codec.GetTokenDefaultKycStatusWrapper;
 import com.hedera.services.store.contracts.precompile.codec.GetTokenExpiryInfoWrapper;
 import com.hedera.services.store.contracts.precompile.codec.GrantRevokeKycWrapper;
-import com.hedera.services.store.contracts.precompile.codec.TokenExpiryWrapper;
 import com.hedera.services.store.contracts.precompile.codec.TokenFreezeUnfreezeWrapper;
 import com.hedera.services.store.contracts.precompile.codec.TokenGetCustomFeesWrapper;
 import com.hedera.services.store.contracts.precompile.codec.TokenInfoWrapper;
@@ -342,8 +340,7 @@ class ViewExecutorTest {
 
         given(decodingFacade.decodeGetTokenExpiryInfo(input))
                 .willReturn(new GetTokenExpiryInfoWrapper(fungible));
-        given(stateView.tokenExpiryInfo(fungible))
-                .willReturn(Optional.of(new TokenExpiryWrapper(442L, payer, 555L)));
+        given(stateView.infoForToken(fungible)).willReturn(Optional.of(tokenInfo));
         given(stateView.tokenExists(fungible)).willReturn(true);
         given(encodingFacade.encodeGetTokenExpiryInfo(any())).willReturn(tokenExpiryInfoEncoded);
 
@@ -356,7 +353,7 @@ class ViewExecutorTest {
 
         given(decodingFacade.decodeGetTokenExpiryInfo(input))
                 .willReturn(new GetTokenExpiryInfoWrapper(fungible));
-        given(stateView.tokenExpiryInfo(fungible)).willReturn(Optional.empty());
+        given(stateView.infoForToken(fungible)).willReturn(Optional.empty());
         given(stateView.tokenExists(fungible)).willReturn(true);
 
         assertEquals(Pair.of(gas, null), subject.computeCosted());

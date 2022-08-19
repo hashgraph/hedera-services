@@ -18,7 +18,7 @@ package com.hedera.services.store.contracts.precompile;
 import static com.hedera.services.state.EntityCreator.EMPTY_MEMO;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_GET_TOKEN_EXPIRY_INFO;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.TEST_CONSENSUS_TIME;
-import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.invalidAutoRenewAccountResult;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.invalidTokenIdResult;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.payer;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.senderAddress;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.senderId;
@@ -50,10 +50,12 @@ import com.hedera.services.store.contracts.WorldLedgers;
 import com.hedera.services.store.contracts.precompile.codec.DecodingFacade;
 import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
 import com.hedera.services.store.contracts.precompile.codec.GetTokenExpiryInfoWrapper;
-import com.hedera.services.store.contracts.precompile.codec.TokenExpiryWrapper;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.services.utils.EntityIdUtils;
+import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import com.hederahashgraph.api.proto.java.Timestamp;
+import com.hederahashgraph.api.proto.java.TokenInfo;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.fee.FeeObject;
 import java.util.Collections;
@@ -143,7 +145,12 @@ class GetTokenExpiryInfoPrecompileTest {
         givenMinimalFrameContext();
 
         final var getTokenExpiryInfoWrapper = new GetTokenExpiryInfoWrapper(tokenMerkleId);
-        final var tokenExpiryWrapper = new TokenExpiryWrapper(442L, payer, 555L);
+        final var tokenInfo =
+                TokenInfo.newBuilder()
+                        .setExpiry(Timestamp.newBuilder().setSeconds(442L).build())
+                        .setAutoRenewAccount(payer)
+                        .setAutoRenewPeriod(Duration.newBuilder().setSeconds(555L))
+                        .build();
         final Bytes pretendArguments =
                 Bytes.concatenate(
                         Bytes.of(Integers.toBytes(ABI_ID_GET_TOKEN_EXPIRY_INFO)),
@@ -153,7 +160,7 @@ class GetTokenExpiryInfoPrecompileTest {
 
         given(encoder.encodeGetTokenExpiryInfo(any())).willReturn(successResult);
         given(stateView.tokenExists(tokenMerkleId)).willReturn(true);
-        given(stateView.tokenExpiryInfo(tokenMerkleId)).willReturn(Optional.of(tokenExpiryWrapper));
+        given(stateView.infoForToken(tokenMerkleId)).willReturn(Optional.of(tokenInfo));
 
         givenMinimalContextForSuccessfulCall(pretendArguments);
         givenReadOnlyFeeSchedule();
@@ -184,7 +191,7 @@ class GetTokenExpiryInfoPrecompileTest {
                 .willReturn(getTokenExpiryInfoWrapper);
 
         given(stateView.tokenExists(tokenMerkleId)).willReturn(true);
-        given(stateView.tokenExpiryInfo(tokenMerkleId)).willReturn(Optional.empty());
+        given(stateView.infoForToken(tokenMerkleId)).willReturn(Optional.empty());
 
         givenMinimalContextForSuccessfulCall(pretendArguments);
         givenReadOnlyFeeSchedule();
@@ -196,7 +203,7 @@ class GetTokenExpiryInfoPrecompileTest {
         final var result = subject.computeInternal(frame);
 
         // then:
-        assertEquals(invalidAutoRenewAccountResult, result);
+        assertEquals(invalidTokenIdResult, result);
     }
 
     private void givenMinimalFrameContext() {

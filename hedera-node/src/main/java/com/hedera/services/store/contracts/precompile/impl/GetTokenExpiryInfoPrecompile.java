@@ -23,6 +23,7 @@ import com.hedera.services.store.contracts.WorldLedgers;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.store.contracts.precompile.codec.DecodingFacade;
 import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
+import com.hedera.services.store.contracts.precompile.codec.TokenExpiryWrapper;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -55,8 +56,15 @@ public class GetTokenExpiryInfoPrecompile extends AbstractReadOnlyPrecompile {
     @Override
     public Bytes getSuccessResultFor(final ExpirableTxnRecord.Builder childRecord) {
         validateTrue(stateView.tokenExists(tokenId), ResponseCodeEnum.INVALID_TOKEN_ID);
-        final var expiryInfo = stateView.tokenExpiryInfo(tokenId).orElse(null);
-        validateTrue(expiryInfo != null, ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT);
+        final var tokenInfo = stateView.infoForToken(tokenId).orElse(null);
+
+        validateTrue(tokenInfo != null, ResponseCodeEnum.INVALID_TOKEN_ID);
+
+        final var expiryInfo =
+                new TokenExpiryWrapper(
+                        tokenInfo.getExpiry().getSeconds(),
+                        tokenInfo.getAutoRenewAccount(),
+                        tokenInfo.getAutoRenewPeriod().getSeconds());
 
         return encoder.encodeGetTokenExpiryInfo(expiryInfo);
     }
