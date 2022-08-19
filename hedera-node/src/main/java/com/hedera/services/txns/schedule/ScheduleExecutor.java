@@ -90,7 +90,7 @@ public final class ScheduleExecutor {
 
         final var transaction = schedule.asSignedTxn();
         return factory.triggeredTxn(
-                transaction.toByteArray(),
+                transaction,
                 schedule.effectivePayer().toGrpcAccountId(),
                 id,
                 throttleAndCongestionExempt,

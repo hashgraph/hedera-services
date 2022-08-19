@@ -15,6 +15,8 @@
  */
 package com.hedera.services.sigs.sourcing;
 
+import static com.hedera.services.legacy.proto.utils.ByteStringUtils.unwrapUnsafelyIfPossible;
+
 import com.google.common.base.MoreObjects;
 import com.hederahashgraph.api.proto.java.SignatureMap;
 
@@ -37,12 +39,12 @@ public class PojoSigMap {
         final var keyTypes = new KeyType[n];
         for (var i = 0; i < n; i++) {
             final var sigPair = sigMap.getSigPair(i);
-            rawMap[i][PUB_KEY_PREFIX_INDEX] = sigPair.getPubKeyPrefix().toByteArray();
+            rawMap[i][PUB_KEY_PREFIX_INDEX] = unwrapUnsafelyIfPossible(sigPair.getPubKeyPrefix());
             if (!sigPair.getECDSASecp256K1().isEmpty()) {
-                rawMap[i][SIG_BYTES_INDEX] = sigPair.getECDSASecp256K1().toByteArray();
+                rawMap[i][SIG_BYTES_INDEX] = unwrapUnsafelyIfPossible(sigPair.getECDSASecp256K1());
                 keyTypes[i] = KeyType.ECDSA_SECP256K1;
             } else {
-                rawMap[i][SIG_BYTES_INDEX] = sigPair.getEd25519().toByteArray();
+                rawMap[i][SIG_BYTES_INDEX] = unwrapUnsafelyIfPossible(sigPair.getEd25519());
                 keyTypes[i] = KeyType.ED25519;
             }
         }

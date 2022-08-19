@@ -15,6 +15,7 @@
  */
 package com.hedera.services.state.logic;
 
+import static com.hedera.services.context.properties.PropertyNames.STAKING_PERIOD_MINS;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenMint;
@@ -81,7 +82,7 @@ class NetworkCtxManagerTest {
 
     @BeforeEach
     void setUp() {
-        given(propertySource.getLongProperty("staking.periodMins")).willReturn(1440L);
+        given(propertySource.getLongProperty(STAKING_PERIOD_MINS)).willReturn(1440L);
         given(nodeLocalProperties.issResetPeriod()).willReturn(issResetPeriod);
 
         subject =
@@ -453,7 +454,7 @@ class NetworkCtxManagerTest {
         final var now = Instant.parse("2021-06-07T23:59:58.369613Z");
         final var thenSameMinute = now.plusSeconds(1);
         final var thenNextMinute = now.plusSeconds(61);
-        given(propertySource.getLongProperty("staking.periodMins")).willReturn(1L);
+        given(propertySource.getLongProperty(STAKING_PERIOD_MINS)).willReturn(1L);
         given(nodeLocalProperties.issResetPeriod()).willReturn(issResetPeriod);
 
         subject =
@@ -476,5 +477,22 @@ class NetworkCtxManagerTest {
 
         assertFalse(updateTest.test(now, thenSameMinute));
         assertTrue(updateTest.test(now, thenNextMinute));
+    }
+
+    @Test
+    void isSameDayUTCTest() {
+        Instant instant1_1 = Instant.parse("2019-08-14T23:59:59.0Z");
+        Instant instant1_2 = Instant.parse("2019-08-14T23:59:59.99999Z");
+        Instant instant2_1 = Instant.parse("2019-08-14T24:00:00.0Z");
+        Instant instant2_2 = Instant.parse("2019-08-15T00:00:00.0Z");
+        Instant instant2_3 = Instant.parse("2019-08-15T00:00:00.00001Z");
+
+        assertTrue(NetworkCtxManager.inSameUtcDay(instant1_1, instant1_2));
+
+        assertFalse(NetworkCtxManager.inSameUtcDay(instant1_1, instant2_1));
+        assertFalse(NetworkCtxManager.inSameUtcDay(instant1_2, instant2_1));
+
+        assertTrue(NetworkCtxManager.inSameUtcDay(instant2_1, instant2_2));
+        assertTrue(NetworkCtxManager.inSameUtcDay(instant2_2, instant2_3));
     }
 }

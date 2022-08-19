@@ -17,12 +17,12 @@ package com.hedera.services;
 
 import static com.hedera.services.ServicesState.EMPTY_HASH;
 import static com.hedera.services.context.AppsManager.APPS;
+import static com.hedera.services.context.properties.PropertyNames.LEDGER_TOTAL_TINY_BAR_FLOAT;
+import static com.hedera.services.context.properties.PropertyNames.STAKING_REWARD_HISTORY_NUM_STORED_PERIODS;
 import static com.hedera.services.context.properties.SemanticVersions.SEMANTIC_VERSIONS;
 import static com.hedera.services.context.properties.SerializableSemVers.forHapiAndHedera;
 import static com.swirlds.common.system.InitTrigger.RECONNECT;
 import static com.swirlds.common.system.InitTrigger.RESTART;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -48,11 +48,10 @@ import static org.mockito.internal.verification.VerificationModeFactory.times;
 import com.google.common.primitives.Ints;
 import com.google.common.primitives.Longs;
 import com.google.protobuf.ByteString;
-import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.MutableStateChildren;
 import com.hedera.services.context.init.ServicesInitFlow;
 import com.hedera.services.context.properties.BootstrapProperties;
-import com.hedera.services.sigs.order.SigReqsManager;
+import com.hedera.services.sigs.EventExpansion;
 import com.hedera.services.state.DualStateAccessor;
 import com.hedera.services.state.forensics.HashLogger;
 import com.hedera.services.state.initialization.SystemAccountsCreator;
@@ -75,12 +74,9 @@ import com.hedera.services.state.virtual.IterableContractValue;
 import com.hedera.services.state.virtual.VirtualMapFactory;
 import com.hedera.services.stream.RecordsRunningHashLeaf;
 import com.hedera.services.txns.ProcessLogic;
-import com.hedera.services.txns.prefetch.PrefetchProcessor;
-import com.hedera.services.txns.span.ExpandHandleSpan;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
 import com.hedera.services.utils.SystemExits;
-import com.hedera.services.utils.accessors.PlatformTxnAccessor;
 import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
 import com.hedera.test.extensions.LoggingSubject;
@@ -88,35 +84,37 @@ import com.hedera.test.extensions.LoggingTarget;
 import com.hedera.test.utils.ClassLoaderHelper;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.SemanticVersion;
+import com.swirlds.common.crypto.CryptoFactory;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.RunningHash;
 import com.swirlds.common.crypto.SerializablePublicKey;
 import com.swirlds.common.crypto.engine.CryptoEngine;
+import com.swirlds.common.exceptions.MutabilityException;
 import com.swirlds.common.system.InitTrigger;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.Platform;
+import com.swirlds.common.system.Round;
 import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.SwirldDualState;
 import com.swirlds.common.system.address.Address;
 import com.swirlds.common.system.address.AddressBook;
-import com.swirlds.common.system.transaction.SwirldTransaction;
+import com.swirlds.common.system.events.Event;
 import com.swirlds.fchashmap.FCHashMap;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.platform.state.DualStateImpl;
 import com.swirlds.platform.state.signed.SignedState;
-import com.swirlds.platform.state.signed.SignedStateFileManager;
+import com.swirlds.platform.state.signed.SignedStateFileReader;
 import com.swirlds.virtualmap.VirtualMap;
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Paths;
 import java.security.PublicKey;
 import java.time.Instant;
-import java.util.ConcurrentModificationException;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import org.apache.commons.io.FileUtils;
-import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -129,9 +127,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class ServicesStateTest {
     private final String signedStateDir = "src/test/resources/signedState/";
     private final SoftwareVersion some025xVersion = forHapiAndHedera("0.25.0", "0.25.2");
+    private final SoftwareVersion justPriorVersion = forHapiAndHedera("0.28.1", "0.27.9");
     private final SoftwareVersion currentVersion = SEMANTIC_VERSIONS.deployedSoftwareVersion();
     private final SoftwareVersion futureVersion = forHapiAndHedera("1.0.0", "1.0.0");
-    private final Instant creationTime = Instant.ofEpochSecond(1_234_567L, 8);
     private final Instant consensusTime = Instant.ofEpochSecond(2_345_678L, 9);
     private final NodeId selfId = new NodeId(false, 1L);
     private static final String bookMemo = "0.0.4";
@@ -143,20 +141,18 @@ class ServicesStateTest {
     @Mock private ServicesApp app;
     @Mock private MerkleSpecialFiles specialFiles;
     @Mock private MerkleNetworkContext networkContext;
-    @Mock private SwirldTransaction transaction;
+    @Mock private Round round;
+    @Mock private Event event;
+    @Mock private EventExpansion eventExpansion;
     @Mock private SwirldDualState dualState;
     @Mock private StateMetadata metadata;
     @Mock private ProcessLogic logic;
-    @Mock private PlatformTxnAccessor txnAccessor;
-    @Mock private ExpandHandleSpan expandHandleSpan;
-    @Mock private SigReqsManager sigReqsManager;
     @Mock private FCHashMap<ByteString, EntityNum> aliases;
     @Mock private MutableStateChildren workingState;
     @Mock private DualStateAccessor dualStateAccessor;
     @Mock private ServicesInitFlow initFlow;
     @Mock private TreasuryCloner treasuryCloner;
     @Mock private ServicesApp.Builder appBuilder;
-    @Mock private PrefetchProcessor prefetchProcessor;
     @Mock private MerkleMap<EntityNum, MerkleAccount> accounts;
     @Mock private MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenAssociations;
     @Mock private VirtualMapFactory virtualMapFactory;
@@ -422,89 +418,35 @@ class ServicesStateTest {
     }
 
     @Test
-    void expandsSigsAsExpected() throws InvalidProtocolBufferException {
-        // setup:
+    void preHandleUsesEventExpansion() {
         subject.setMetadata(metadata);
-
         given(metadata.app()).willReturn(app);
-        given(app.expandHandleSpan()).willReturn(expandHandleSpan);
-        given(app.prefetchProcessor()).willReturn(prefetchProcessor);
-        given(app.sigReqsManager()).willReturn(sigReqsManager);
-        given(expandHandleSpan.track(transaction)).willReturn(txnAccessor);
+        given(app.eventExpansion()).willReturn(eventExpansion);
 
-        // when:
-        subject.expandSignatures(transaction);
+        subject.preHandle(event);
 
-        // then:
-        verify(sigReqsManager).expandSigsInto(txnAccessor);
+        verify(eventExpansion).expandAllSigs(event, subject);
     }
 
     @Test
-    void warnsOfIpbe() throws InvalidProtocolBufferException {
-        // setup:
-        subject.setMetadata(metadata);
+    void handleThrowsIfImmutable() {
+        subject.copy();
 
-        given(metadata.app()).willReturn(app);
-        given(app.expandHandleSpan()).willReturn(expandHandleSpan);
-        given(expandHandleSpan.track(transaction)).willThrow(InvalidProtocolBufferException.class);
-
-        // when:
-        subject.expandSignatures(transaction);
-
-        // then:
-        assertThat(
-                logCaptor.warnLogs(),
-                contains(Matchers.startsWith("Method expandSignatures called with non-gRPC txn")));
+        assertThrows(
+                MutabilityException.class, () -> subject.handleConsensusRound(round, dualState));
     }
 
     @Test
-    void warnsOfRace() throws InvalidProtocolBufferException {
-        // setup:
-        subject.setMetadata(metadata);
-
-        given(metadata.app()).willReturn(app);
-        given(app.expandHandleSpan()).willReturn(expandHandleSpan);
-        given(app.expandHandleSpan()).willReturn(expandHandleSpan);
-        given(expandHandleSpan.track(transaction)).willThrow(ConcurrentModificationException.class);
-
-        // when:
-        subject.expandSignatures(transaction);
-
-        // then:
-        assertThat(
-                logCaptor.warnLogs(),
-                contains(
-                        Matchers.startsWith(
-                                "Unable to expand signatures, will be verified synchronously")));
-    }
-
-    @Test
-    void handleNonConsensusTransactionAsExpected() {
-        // setup:
-        subject.setMetadata(metadata);
-
-        // when:
-        subject.handleTransaction(1L, false, creationTime, null, transaction, dualState);
-
-        // then:
-        verifyNoInteractions(metadata);
-    }
-
-    @Test
-    void handleConsensusTransactionAsExpected() {
-        // setup:
+    void handlesRoundAsExpected() {
         subject.setMetadata(metadata);
 
         given(metadata.app()).willReturn(app);
         given(app.logic()).willReturn(logic);
         given(app.dualStateAccessor()).willReturn(dualStateAccessor);
 
-        // when:
-        subject.handleTransaction(1L, true, creationTime, consensusTime, transaction, dualState);
-
-        // then:
+        subject.handleConsensusRound(round, dualState);
         verify(dualStateAccessor).setDualState(dualState);
-        verify(logic).incorporateConsensusTxn(transaction, consensusTime, 1L);
+        verify(logic).incorporateConsensus(round);
     }
 
     @Test
@@ -549,7 +491,6 @@ class ServicesStateTest {
         given(app.initializationFlow()).willReturn(initFlow);
         given(app.dualStateAccessor()).willReturn(dualStateAccessor);
         given(app.sysFilesManager()).willReturn(systemFilesManager);
-        given(app.treasuryCloner()).willReturn(treasuryCloner);
         given(platform.getSelfId()).willReturn(selfId);
 
         APPS.save(selfId.getId(), app);
@@ -567,6 +508,7 @@ class ServicesStateTest {
         given(addressBook.getAddress(anyLong())).willReturn(address);
         given(address.getMemo()).willReturn(bookMemo);
         given(appBuilder.bootstrapProps(any())).willReturn(appBuilder);
+        given(appBuilder.crypto(any())).willReturn(appBuilder);
         given(appBuilder.staticAccountMemo(bookMemo)).willReturn(appBuilder);
         given(appBuilder.initialHash(EMPTY_HASH)).willReturn(appBuilder);
         given(appBuilder.platform(platform)).willReturn(appBuilder);
@@ -661,7 +603,7 @@ class ServicesStateTest {
     }
 
     @Test
-    void nonGenesisInitClearsPreparedUpgradeIfNonNullLastFrozenMatchesFreezeTime() {
+    void nonGenesisInitDoesNotClearPreparedUpgradeIfSameVersion() {
         subject.setChild(StateChildIndices.SPECIAL_FILES, specialFiles);
         subject.setChild(StateChildIndices.NETWORK_CTX, networkContext);
         subject.setChild(StateChildIndices.ACCOUNTS, accounts);
@@ -675,15 +617,44 @@ class ServicesStateTest {
         given(app.dualStateAccessor()).willReturn(dualStateAccessor);
         given(platform.getSelfId()).willReturn(selfId);
         given(app.sysFilesManager()).willReturn(systemFilesManager);
-        given(app.treasuryCloner()).willReturn(treasuryCloner);
         // and:
         APPS.save(selfId.getId(), app);
 
         // when:
         subject.init(platform, addressBook, dualState, RESTART, currentVersion);
 
+        verify(networkContext, never()).discardPreparedUpgradeMeta();
+        verify(dualState, never()).setFreezeTime(null);
+    }
+
+    @Test
+    void nonGenesisInitClearsPreparedUpgradeIfDeployedIsLaterVersion() {
+        mockMigrators();
+        subject.setChild(StateChildIndices.SPECIAL_FILES, specialFiles);
+        subject.setChild(StateChildIndices.NETWORK_CTX, networkContext);
+        subject.setChild(StateChildIndices.ACCOUNTS, accounts);
+
+        final var when = Instant.ofEpochSecond(1_234_567L, 890);
+        given(dualState.getFreezeTime()).willReturn(when);
+        given(dualState.getLastFrozenTime()).willReturn(when);
+        given(app.workingState()).willReturn(workingState);
+
+        given(app.hashLogger()).willReturn(hashLogger);
+        given(app.initializationFlow()).willReturn(initFlow);
+        given(app.dualStateAccessor()).willReturn(dualStateAccessor);
+        given(platform.getSelfId()).willReturn(selfId);
+        given(app.sysFilesManager()).willReturn(systemFilesManager);
+        given(app.treasuryCloner()).willReturn(treasuryCloner);
+        // and:
+        APPS.save(selfId.getId(), app);
+
+        // when:
+        System.out.println(currentVersion);
+        subject.init(platform, addressBook, dualState, RESTART, justPriorVersion);
+
         verify(networkContext).discardPreparedUpgradeMeta();
         verify(dualState).setFreezeTime(null);
+        unmockMigrators();
     }
 
     @Test
@@ -772,7 +743,6 @@ class ServicesStateTest {
         given(app.dualStateAccessor()).willReturn(dualStateAccessor);
         given(platform.getSelfId()).willReturn(selfId);
         given(app.sysFilesManager()).willReturn(systemFilesManager);
-        given(app.treasuryCloner()).willReturn(treasuryCloner);
         // and:
         APPS.save(selfId.getId(), app);
 
@@ -930,6 +900,7 @@ class ServicesStateTest {
         return DaggerServicesApp.builder()
                 .initialHash(new Hash())
                 .platform(platform)
+                .crypto(CryptoFactory.getInstance())
                 .selfId(platform.getSelfId().getId())
                 .staticAccountMemo("memo")
                 .bootstrapProps(new BootstrapProperties())
@@ -945,7 +916,7 @@ class ServicesStateTest {
     }
 
     private static SignedState loadSignedState(final String path) throws IOException {
-        var signedPair = SignedStateFileManager.readSignedStateFromFile(new File(path));
+        var signedPair = SignedStateFileReader.readStateFile(Paths.get(path));
         // Because it's possible we are loading old data, we cannot check equivalence of the hash.
         Assertions.assertNotNull(signedPair.signedState());
         return signedPair.signedState();
@@ -966,9 +937,9 @@ class ServicesStateTest {
         given(addressBook.getSize()).willReturn(1);
         given(addressBook.getAddress(0)).willReturn(address);
         given(address.getId()).willReturn(0L);
-        given(bootstrapProperties.getLongProperty("ledger.totalTinyBarFloat"))
+        given(bootstrapProperties.getLongProperty(LEDGER_TOTAL_TINY_BAR_FLOAT))
                 .willReturn(3_000_000_000L);
-        given(bootstrapProperties.getIntProperty("staking.rewardHistory.numStoredPeriods"))
+        given(bootstrapProperties.getIntProperty(STAKING_REWARD_HISTORY_NUM_STORED_PERIODS))
                 .willReturn(2);
         File databaseFolder = new File("database");
         try {

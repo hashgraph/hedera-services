@@ -25,14 +25,19 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.doCallRealMethod;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.contracts.execution.traceability.ContractActionType;
+import com.hedera.services.contracts.execution.traceability.HederaTracer;
+import com.hedera.services.contracts.execution.traceability.SolidityAction;
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.ledger.accounts.AliasManager;
+import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.store.contracts.CodeCache;
 import com.hedera.services.store.contracts.HederaWorldState;
 import com.hedera.services.store.models.Account;
@@ -47,6 +52,7 @@ import java.util.ArrayDeque;
 import java.util.Collections;
 import java.util.Deque;
 import java.util.EnumSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -64,12 +70,15 @@ import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.operation.Operation;
 import org.hyperledger.besu.evm.precompile.PrecompiledContract;
+import org.hyperledger.besu.evm.tracing.OperationTracer.ExecuteOperation;
 import org.hyperledger.besu.evm.worldstate.WorldUpdater;
 import org.hyperledger.besu.plugin.data.Transaction;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
+import org.mockito.MockedConstruction;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
@@ -306,6 +315,57 @@ class CallEvmTxProcessorTest {
         assertEquals(0, result.getStateChanges().size());
 
         verify(updater, never()).getFinalStateChanges();
+    }
+
+    @Test
+    void assertSuccessExecutionPopulatesContractActionsWhenEnabled() {
+        givenValidMock();
+        given(globalDynamicProperties.fundingAccount())
+                .willReturn(new Id(0, 0, 1010).asGrpcAccount());
+        givenSenderWithBalance(350_000L);
+        given(aliasManager.resolveForEvm(receiverAddress)).willReturn(receiverAddress);
+        given(storageExpiry.hapiCallOracle()).willReturn(oracle);
+        given(globalDynamicProperties.chainIdBytes32()).willReturn(Bytes32.ZERO);
+
+        final var action =
+                new SolidityAction(
+                        ContractActionType.CALL,
+                        EntityId.fromAddress(Address.ALTBN128_ADD),
+                        null,
+                        500L,
+                        "input".getBytes(),
+                        EntityId.fromAddress(Address.BLAKE2B_F_COMPRESSION),
+                        null,
+                        0L,
+                        0);
+        final var action2 =
+                new SolidityAction(
+                        ContractActionType.CREATE,
+                        null,
+                        EntityId.fromAddress(Address.ALTBN128_ADD),
+                        5555L,
+                        "input2".getBytes(),
+                        null,
+                        EntityId.fromAddress(Address.BLAKE2B_F_COMPRESSION),
+                        666L,
+                        1);
+        try (MockedConstruction<HederaTracer> ignored =
+                Mockito.mockConstruction(
+                        HederaTracer.class,
+                        (mock, context) -> {
+                            doCallRealMethod()
+                                    .when(mock)
+                                    .traceExecution(
+                                            any(MessageFrame.class), any(ExecuteOperation.class));
+                            doReturn(List.of(action, action2)).when(mock).getActions();
+                        })) {
+
+            final var result =
+                    callEvmTxProcessor.execute(
+                            sender, receiverAddress, 33_333L, 1234L, Bytes.EMPTY, consensusTime);
+
+            assertEquals(List.of(action, action2), result.getActions());
+        }
     }
 
     @Test

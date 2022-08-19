@@ -15,6 +15,7 @@
  */
 package com.hedera.services.files.sysfiles;
 
+import static com.hedera.services.context.properties.PropertyNames.LEDGER_TOTAL_TINY_BAR_FLOAT;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.verify;
 import static org.mockito.Mockito.times;
@@ -81,7 +82,7 @@ class ConfigCallbacksTest {
         final var numNodes = 10;
         final var hbarFloat = 50_000_000_000L * 100_000_000L;
         givenWellKnownStakingInfos();
-        given(properties.getLongProperty("ledger.totalTinyBarFloat")).willReturn(hbarFloat);
+        given(properties.getLongProperty(LEDGER_TOTAL_TINY_BAR_FLOAT)).willReturn(hbarFloat);
         given(addressBook.getSize()).willReturn(numNodes);
         given(dynamicProps.knownBlockValues()).willReturn(blockValues);
         given(dynamicProps.nodeMaxMinStakeRatios()).willReturn(Map.of(0L, 2L, 1L, 8L));
