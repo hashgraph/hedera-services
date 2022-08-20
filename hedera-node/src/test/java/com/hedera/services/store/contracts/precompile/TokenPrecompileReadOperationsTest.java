@@ -91,7 +91,6 @@ class TokenPrecompileReadOperationsTest {
     @Mock private InfrastructureFactory infrastructureFactory;
     @Mock private MerkleMap<EntityNum, MerkleToken> tokenMerkleMap;
     @Mock private AssetsLoader assetLoader;
-    @Mock private AccessorFactory accessorFactory;
     private MerkleToken merkleToken;
     private final TokenID tokenID = asToken("0.0.5");
 
