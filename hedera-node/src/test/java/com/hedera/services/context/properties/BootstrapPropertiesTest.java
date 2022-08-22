@@ -104,7 +104,7 @@ class BootstrapPropertiesTest {
                     entry(CONTRACTS_MAX_GAS_PER_SEC, 15000000L),
                     entry(CONTRACTS_MAX_KV_PAIRS_AGGREGATE, 500_000_000L),
                     entry(CONTRACTS_MAX_KV_PAIRS_INDIVIDUAL, 163_840),
-                    entry(CONTRACTS_CHAIN_ID, 1),
+                    entry(CONTRACTS_CHAIN_ID, 295),
                     entry(CONTRACTS_THROTTLE_THROTTLE_BY_GAS, true),
                     entry(CONTRACTS_KNOWN_BLOCK_HASH, MISSING_BLOCK_VALUES),
                     entry(CONTRACTS_MAX_REFUND_PERCENT_OF_GAS_LIMIT, 20),

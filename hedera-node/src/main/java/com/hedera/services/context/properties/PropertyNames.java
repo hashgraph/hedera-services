@@ -81,9 +81,11 @@ public class PropertyNames {
             "balances.nodeBalanceWarningThreshold";
     public static final String CACHE_RECORDS_TTL = "cache.records.ttl";
     public static final String CONTRACTS_ITEMIZE_STORAGE_FEES = "contracts.itemizeStorageFees";
-    public static final String CONTRACTS_REFERENCE_SLOT_LIFETIME = "contracts.referenceSlotLifetime";
+    public static final String CONTRACTS_REFERENCE_SLOT_LIFETIME =
+            "contracts.referenceSlotLifetime";
     public static final String CONTRACTS_FREE_STORAGE_TIER_LIMIT = "contracts.freeStorageTierLimit";
-    public static final String CONTRACTS_STORAGE_SLOT_PRICE_TIERS = "contract.storageSlotPriceTiers";
+    public static final String CONTRACTS_STORAGE_SLOT_PRICE_TIERS =
+            "contract.storageSlotPriceTiers";
     public static final String CONTRACTS_DEFAULT_LIFETIME = "contracts.defaultLifetime";
     public static final String CONTRACTS_KNOWN_BLOCK_HASH = "contracts.knownBlockHash";
     public static final String CONTRACTS_LOCAL_CALL_EST_RET_BYTES =
