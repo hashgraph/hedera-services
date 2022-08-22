@@ -15,6 +15,8 @@
  */
 package com.hedera.services.fees.calculation;
 
+import static com.hedera.services.fees.calculation.FeeCalcUtils.clampedAdd;
+import static com.hedera.services.fees.calculation.FeeCalcUtils.clampedMultiply;
 import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.getCryptoAllowancesList;
 import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.getFungibleTokenAllowancesList;
 import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.getNftApprovedForAll;
@@ -153,8 +155,8 @@ public class AutoRenewCalcs {
         // Since contract bytecode is not charged any fees, ignore sbh in the renewal fee
         // calculation
         final var storagePrice = storageFee(contractContext, rate, reqPeriod);
-        final long fixedPrice = fixedFee + storagePrice;
-        final var hourlyPrice = (rbhPrice * contractContext.currentRb());
+        final long fixedPrice = clampedAdd(fixedFee, storagePrice);
+        final var hourlyPrice = clampedMultiply(rbhPrice, contractContext.currentRb());
         return new RenewalFees(inTinybars(fixedPrice, rate), inTinybars(hourlyPrice, rate));
     }
 
