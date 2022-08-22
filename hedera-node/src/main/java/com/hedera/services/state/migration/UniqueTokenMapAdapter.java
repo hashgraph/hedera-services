@@ -24,81 +24,161 @@ import com.swirlds.common.crypto.Hash;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
 
+import javax.annotation.Nullable;
+
+/**
+ * Adaptor for NFT store that allows dropping in a MerkleMap/VirtualMap instances in places where the NFTs are read and
+ * written from their respectiev data store.
+ */
 public class UniqueTokenMapAdapter {
 
+    /**
+     * Pointer to the underlying MerkleMap to interface with. null if unavailable.
+     */
+    @Nullable
     private final MerkleMap<EntityNumPair, MerkleUniqueToken> merkleMap;
+
+    /**
+     * Pointer to the underlying VirtualMap to interface with. null if unavailable.
+     */
+    @Nullable
     private final VirtualMap<UniqueTokenKey, UniqueTokenValue> virtualMap;
+
+    /**
+     * True if {@link #virtualMap} is set. False if {@link #merkleMap} is set.
+     */
     private final boolean isVirtual;
 
+    /**
+     * Construct a UniqueTokenMapAdapter given a VirtualMap instance.
+     *
+     * @param virtualMap the VirtualMap instance to interface
+     * @return newly constructed adapter making use of the provided virtual map.
+     */
     public static UniqueTokenMapAdapter wrap(
-            VirtualMap<UniqueTokenKey, UniqueTokenValue> virtualMap) {
+            final VirtualMap<UniqueTokenKey, UniqueTokenValue> virtualMap) {
         return new UniqueTokenMapAdapter(virtualMap);
     }
 
+    /**
+     * Construct a UniqueTokenMapAdapter given a MerkleMap instance.
+     *
+     * @param merkleMap the MerkleMap instance to interface
+     * @return newly constructed adapter making use of the provided merkle map.
+     */
     public static UniqueTokenMapAdapter wrap(
-            MerkleMap<EntityNumPair, MerkleUniqueToken> merkleMap) {
+            final MerkleMap<EntityNumPair, MerkleUniqueToken> merkleMap) {
         return new UniqueTokenMapAdapter(merkleMap);
     }
 
-    UniqueTokenMapAdapter(VirtualMap<UniqueTokenKey, UniqueTokenValue> virtualMap) {
+    UniqueTokenMapAdapter(final VirtualMap<UniqueTokenKey, UniqueTokenValue> virtualMap) {
         isVirtual = true;
         this.virtualMap = virtualMap;
         this.merkleMap = null;
     }
 
-    UniqueTokenMapAdapter(MerkleMap<EntityNumPair, MerkleUniqueToken> merkleMap) {
+    UniqueTokenMapAdapter(final MerkleMap<EntityNumPair, MerkleUniqueToken> merkleMap) {
         isVirtual = false;
         this.merkleMap = merkleMap;
         this.virtualMap = null;
     }
 
+    /**
+     * @return true if the adapter makes use of a virtual map instance.
+     */
     public boolean isVirtual() {
         return isVirtual;
     }
 
+    /**
+     * @return the virtual map instance that the adapter is connecting to.
+     */
     public VirtualMap<UniqueTokenKey, UniqueTokenValue> virtualMap() {
         return virtualMap;
     }
 
+    /**
+     * @return the merkle map instance that the adapter is connecting to.
+     */
     public MerkleMap<EntityNumPair, MerkleUniqueToken> merkleMap() {
         return merkleMap;
     }
 
+    /**
+     * @return the number of entries the map is holding.
+     */
     public long size() {
         return isVirtual ? virtualMap.size() : merkleMap.size();
     }
 
-    public boolean containsKey(NftId nftId) {
+    /**
+     * Check if the map contains an entry for the given key.
+     *
+     * @param nftId the key to lookup
+     * @return true if the underlying map has a value associated with the provided key.
+     */
+    public boolean containsKey(final NftId nftId) {
         return isVirtual
                 ? virtualMap.containsKey(UniqueTokenKey.from(nftId))
                 : merkleMap.containsKey(EntityNumPair.fromNftId(nftId));
     }
 
-    public void put(NftId key, UniqueTokenAdapter value) {
+    /**
+     * Put or update the value into the map under the given key.
+     *
+     * @param key the key in the map in which to insert/replace the value of.
+     * @param value the new value to insert/replace in the map.
+     * @throws UnsupportedOperationException if one attempts to insert a virtual value for a non-virtual key or
+     *   vice versa
+     */
+    public void put(final NftId key, final UniqueTokenAdapter value) {
+        if (isVirtual != value.isVirtual()) {
+            throw new UnsupportedOperationException(
+                    isVirtual
+                            ? "Trying to insert non-virtual nft in VirtualMap"
+                            : "Trying to insert a virtual nft in MerkleMap");
+
+        }
+
         if (isVirtual) {
             virtualMap.put(UniqueTokenKey.from(key), value.uniqueTokenValue());
         } else {
-            if (value.isVirtual()) {
-                throw new UnsupportedOperationException(
-                        "Trying to insert virtual nft in MerkleMap");
-            }
             merkleMap.put(EntityNumPair.fromNftId(key), value.merkleUniqueToken());
         }
     }
 
-    public UniqueTokenAdapter get(NftId key) {
+    /**
+     * Retrieve a new copy of the value of the map with the given key.
+     *
+     * @param key of the value to retrieve.
+     * @return the value associated with the key.
+     */
+    public UniqueTokenAdapter get(final NftId key) {
         return isVirtual
                 ? UniqueTokenAdapter.wrap(virtualMap.get(UniqueTokenKey.from(key)))
                 : UniqueTokenAdapter.wrap(merkleMap.get(EntityNumPair.fromNftId(key)));
     }
 
-    public UniqueTokenAdapter getForModify(NftId key) {
+    /**
+     * Retrieve a reference to the value of the map with the given key.
+     *
+     * @param key of the value to retrieve.
+     * @return the value associated with the key. This value can be mutated and its updated contents will be updated in
+     * the map.
+     */
+    public UniqueTokenAdapter getForModify(final NftId key) {
         return isVirtual
                 ? UniqueTokenAdapter.wrap(virtualMap.getForModify(UniqueTokenKey.from(key)))
                 : UniqueTokenAdapter.wrap(merkleMap.getForModify(EntityNumPair.fromNftId(key)));
     }
 
-    public void remove(NftId key) {
+
+    /**
+     * Remove the entry in the map associated with the provided key.
+     *
+     * @param key of the value to remove from the map.
+     */
+    public void remove(final NftId key) {
         if (isVirtual) {
             virtualMap.remove(UniqueTokenKey.from(key));
         } else {
@@ -106,6 +186,9 @@ public class UniqueTokenMapAdapter {
         }
     }
 
+    /**
+     * Archive a copy of the map. This is a no-op for VirtualMap.
+     */
     public void archive() {
         // VirtualMap does not need to be archived. We can safely ignore the call.
         if (!isVirtual) {
@@ -113,6 +196,9 @@ public class UniqueTokenMapAdapter {
         }
     }
 
+    /**
+     * @return the computed hash of the map's entries.
+     */
     public Hash getHash() {
         return isVirtual ? virtualMap.getHash() : merkleMap.getHash();
     }
