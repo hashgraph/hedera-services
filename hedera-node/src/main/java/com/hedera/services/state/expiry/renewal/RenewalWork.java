@@ -13,21 +13,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.hedera.services.state.expiry;
+package com.hedera.services.state.expiry.renewal;
 
+import com.hedera.services.state.expiry.EntityProcessResult;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.utils.EntityNum;
-
 import javax.annotation.Nullable;
 import java.time.Instant;
 
-public interface RemovalWork {
+public interface RenewalWork {
     @Nullable MerkleAccount tryToGetNextMutableExpiryCandidate();
     MerkleAccount getMutableAutoRenewPayer();
 
     @Nullable MerkleAccount tryToGetNextExpiryCandidate();
     MerkleAccount getAutoRenewPayer();
 
-    EntityProcessResult tryToRemoveAccount(EntityNum account, final Instant cycleTime);
-    EntityProcessResult tryToRemoveContract(EntityNum contract, final Instant cycleTime);
+    EntityProcessResult tryToRenewAccount(EntityNum account, final Instant cycleTime);
+    EntityProcessResult tryToRenewContract(EntityNum contract, final Instant cycleTime);
 }

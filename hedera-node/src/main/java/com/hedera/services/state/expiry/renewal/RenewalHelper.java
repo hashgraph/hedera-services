@@ -13,13 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.hedera.services.state.expiry;
+package com.hedera.services.state.expiry.renewal;
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.fees.FeeCalculator;
-import com.hedera.services.state.expiry.renewal.ClassificationWork;
-import com.hedera.services.state.expiry.renewal.EntityLookup;
-import com.hedera.services.state.expiry.renewal.RenewalRecordsHelper;
+import com.hedera.services.state.expiry.EntityProcessResult;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.utils.EntityNum;
 import org.apache.logging.log4j.LogManager;
@@ -27,14 +25,15 @@ import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.Nullable;
 
 import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.time.Instant;
 
 import static com.hedera.services.state.expiry.EntityProcessResult.DONE;
 import static com.hedera.services.state.expiry.EntityProcessResult.NOTHING_TO_DO;
 import static com.hedera.services.utils.EntityNum.fromAccountId;
-
-public class AccountRenewalWork implements RenewalWork {
-    private static final Logger log = LogManager.getLogger(AccountRenewalWork.class);
+@Singleton
+public class RenewalHelper implements RenewalWork {
+    private static final Logger log = LogManager.getLogger(RenewalHelper.class);
     private final ClassificationWork classifier;
     private final GlobalDynamicProperties properties;
     private final FeeCalculator fees;
@@ -42,7 +41,7 @@ public class AccountRenewalWork implements RenewalWork {
     private final EntityLookup lookup;
 
     @Inject
-    public AccountRenewalWork(final EntityLookup lookup,
+    public RenewalHelper(final EntityLookup lookup,
             final ClassificationWork classifier,
             final GlobalDynamicProperties properties,
             final FeeCalculator fees,
