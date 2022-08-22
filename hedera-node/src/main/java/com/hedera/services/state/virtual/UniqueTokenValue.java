@@ -15,6 +15,12 @@
  */
 package com.hedera.services.state.virtual;
 
+import static com.hedera.services.state.merkle.internals.BitPackUtils.packedTime;
+import static com.hedera.services.state.merkle.internals.BitPackUtils.signedLowOrder32From;
+import static com.hedera.services.state.merkle.internals.BitPackUtils.unsignedHighOrder32From;
+import static com.hedera.services.utils.NftNumPair.MISSING_NFT_NUM_PAIR;
+import static java.lang.Math.min;
+
 import com.google.common.base.MoreObjects;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.submerkle.EntityId;
@@ -24,17 +30,10 @@ import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.jasperdb.files.DataFileCommon;
 import com.swirlds.virtualmap.VirtualValue;
-
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.Objects;
-
-import static com.hedera.services.state.merkle.internals.BitPackUtils.packedTime;
-import static com.hedera.services.state.merkle.internals.BitPackUtils.signedLowOrder32From;
-import static com.hedera.services.state.merkle.internals.BitPackUtils.unsignedHighOrder32From;
-import static com.hedera.services.utils.NftNumPair.MISSING_NFT_NUM_PAIR;
-import static java.lang.Math.min;
 
 /**
  * Represents the information stored in the virtualized merkle node associated with a unique token

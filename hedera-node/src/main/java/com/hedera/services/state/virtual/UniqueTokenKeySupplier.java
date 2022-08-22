@@ -24,7 +24,8 @@ public class UniqueTokenKeySupplier implements SelfSerializableSupplier<UniqueTo
     static final int CURRENT_VERSION = 1;
 
     @Override
-    public void deserialize(final SerializableDataInputStream serializableDataInputStream, final int i) {
+    public void deserialize(
+            final SerializableDataInputStream serializableDataInputStream, final int i) {
         /* No operations since no state needs to be restored. */
     }
 

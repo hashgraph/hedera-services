@@ -15,6 +15,10 @@
  */
 package com.hedera.services.state.virtual;
 
+import static com.google.common.truth.Truth.assertThat;
+import static com.hedera.services.utils.subjects.UniqueTokenValueSubject.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
 import com.google.common.primitives.Bytes;
 import com.google.common.primitives.Longs;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
@@ -25,9 +29,6 @@ import com.swirlds.common.exceptions.MutabilityException;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.jasperdb.files.DataFileCommon;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -35,10 +36,8 @@ import java.nio.ByteBuffer;
 import java.time.Instant;
 import java.util.HashSet;
 import java.util.List;
-
-import static com.google.common.truth.Truth.assertThat;
-import static com.hedera.services.utils.subjects.UniqueTokenValueSubject.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 class UniqueTokenValueTest {
 

@@ -22,11 +22,10 @@ import com.hedera.services.utils.NftNumPair;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.virtualmap.VirtualKey;
-import org.jetbrains.annotations.NotNull;
-
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Objects;
+import org.jetbrains.annotations.NotNull;
 
 /** Represents a key for a unique token (NFT). */
 public class UniqueTokenKey implements VirtualKey<UniqueTokenKey> {
@@ -129,8 +128,8 @@ public class UniqueTokenKey implements VirtualKey<UniqueTokenKey> {
         return packed & 0x0F;
     }
 
-    private static void writePartial(final long value, final int numBytes, final ByteConsumer output)
-            throws IOException {
+    private static void writePartial(
+            final long value, final int numBytes, final ByteConsumer output) throws IOException {
         for (int b = numBytes - 1; b >= 0; b--) {
             output.accept((byte) (value >> (b * 8)));
         }
@@ -187,7 +186,8 @@ public class UniqueTokenKey implements VirtualKey<UniqueTokenKey> {
         byte get() throws IOException;
     }
 
-    private static long decodeVariableField(final ByteSupplier input, final int numBytes) throws IOException {
+    private static long decodeVariableField(final ByteSupplier input, final int numBytes)
+            throws IOException {
         long value = 0;
         for (int n = Math.min(8, numBytes), shift = 8 * (n - 1); n > 0; n--, shift -= 8) {
             value |= ((long) input.get() & 0xFF) << shift;

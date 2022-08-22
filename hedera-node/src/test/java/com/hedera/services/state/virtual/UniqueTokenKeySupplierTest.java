@@ -15,14 +15,13 @@
  */
 package com.hedera.services.state.virtual;
 
+import static com.google.common.truth.Truth.assertThat;
+
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
-import org.junit.jupiter.api.Test;
-
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-
-import static com.google.common.truth.Truth.assertThat;
+import org.junit.jupiter.api.Test;
 
 class UniqueTokenKeySupplierTest {
     @Test

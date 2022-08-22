@@ -15,11 +15,11 @@
  */
 package com.hedera.services.state.virtual;
 
+import static com.google.common.truth.Truth.assertThat;
+
 import com.hedera.services.store.models.NftId;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
-import org.junit.jupiter.api.Test;
-
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -27,8 +27,7 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
-
-import static com.google.common.truth.Truth.assertThat;
+import org.junit.jupiter.api.Test;
 
 class UniqueTokenKeyTest {
 
@@ -63,14 +62,15 @@ class UniqueTokenKeyTest {
         assertThat(buffer3.position()).isLessThan(buffer4.position());
     }
 
-    private static ByteBuffer serializeToByteBuffer(final long num, final long serial) throws IOException {
+    private static ByteBuffer serializeToByteBuffer(final long num, final long serial)
+            throws IOException {
         final ByteBuffer buffer = ByteBuffer.wrap(new byte[UniqueTokenKey.ESTIMATED_SIZE_BYTES]);
         new UniqueTokenKey(num, serial).serialize(buffer);
         return buffer.rewind();
     }
 
-    private static UniqueTokenKey checkSerializeAndDeserializeByteBuffer(final long num, final long serial)
-            throws IOException {
+    private static UniqueTokenKey checkSerializeAndDeserializeByteBuffer(
+            final long num, final long serial) throws IOException {
         final UniqueTokenKey key = new UniqueTokenKey();
         key.deserialize(serializeToByteBuffer(num, serial), UniqueTokenKey.CURRENT_VERSION);
         assertThat(key.getNum()).isEqualTo(num);
@@ -112,12 +112,13 @@ class UniqueTokenKeyTest {
                 new SerializableDataOutputStream(byteOutputStream);
         new UniqueTokenKey(num, serial).serialize(outputStream);
 
-        final ByteArrayInputStream inputStream = new ByteArrayInputStream(byteOutputStream.toByteArray());
+        final ByteArrayInputStream inputStream =
+                new ByteArrayInputStream(byteOutputStream.toByteArray());
         return new SerializableDataInputStream(inputStream);
     }
 
-    private static UniqueTokenKey checkSerializeAndDeserializeStream(final long num, final long serial)
-            throws IOException {
+    private static UniqueTokenKey checkSerializeAndDeserializeStream(
+            final long num, final long serial) throws IOException {
         final UniqueTokenKey key = new UniqueTokenKey();
         key.deserialize(serializeToStream(num, serial), UniqueTokenKey.CURRENT_VERSION);
         assertThat(key.getNum()).isEqualTo(num);

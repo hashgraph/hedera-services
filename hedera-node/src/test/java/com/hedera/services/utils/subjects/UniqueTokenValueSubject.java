@@ -15,6 +15,8 @@
  */
 package com.hedera.services.utils.subjects;
 
+import static com.google.common.truth.Truth.assertAbout;
+
 import com.google.common.truth.FailureMetadata;
 import com.google.common.truth.LongSubject;
 import com.google.common.truth.PrimitiveByteArraySubject;
@@ -23,11 +25,8 @@ import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.state.virtual.UniqueTokenValue;
 import com.hedera.services.utils.NftNumPair;
-import org.jetbrains.annotations.Nullable;
-
 import java.time.Instant;
-
-import static com.google.common.truth.Truth.assertAbout;
+import org.jetbrains.annotations.Nullable;
 
 public class UniqueTokenValueSubject extends Subject {
     /** Truth extension hook for UniqueTokenValue to UniqueTokenValueSubject. */

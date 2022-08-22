@@ -15,19 +15,18 @@
  */
 package com.hedera.services.state.virtual;
 
+import static com.google.common.truth.Truth.assertThat;
+
 import com.google.common.primitives.Bytes;
 import com.google.common.primitives.Longs;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.jasperdb.files.DataFileCommon;
-import org.junit.jupiter.api.Test;
-
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-
-import static com.google.common.truth.Truth.assertThat;
+import org.junit.jupiter.api.Test;
 
 class UniqueTokenKeySerializerTest {
     private static final long EXAMPLE_SERIAL = 0xFAFF_FFFF_FFFF_FFFFL;
@@ -40,7 +39,8 @@ class UniqueTokenKeySerializerTest {
 
         final UniqueTokenKeySerializer serializer = new UniqueTokenKeySerializer();
         final ByteBuffer inputBuffer = ByteBuffer.wrap(byteStream.toByteArray());
-        final UniqueTokenKey dst = serializer.deserialize(inputBuffer, UniqueTokenKey.CURRENT_VERSION);
+        final UniqueTokenKey dst =
+                serializer.deserialize(inputBuffer, UniqueTokenKey.CURRENT_VERSION);
         assertThat(dst.getNum()).isEqualTo(Long.MAX_VALUE);
         assertThat(dst.getTokenSerial()).isEqualTo(EXAMPLE_SERIAL);
     }
