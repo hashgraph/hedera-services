@@ -49,4 +49,9 @@ class ExtantContractContextTest {
 
         assertEquals(expectedRb, subject.currentRb());
     }
+
+    @Test
+    void getsExpectedKvPairs() {
+        assertEquals(kvPairs, subject.currentNumKvPairs());
+    }
 }
