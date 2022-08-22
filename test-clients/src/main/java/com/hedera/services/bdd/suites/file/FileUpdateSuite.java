@@ -62,18 +62,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.updateSpecialFile;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.usableTxnIdNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.utils.contracts.SimpleBytesResult.bigIntResult;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONSENSUS_GAS_EXHAUSTED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEES_LIST_TOO_LONG;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ID_REPEATED_IN_TOKEN_LIST;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 import static com.hederahashgraph.api.proto.java.TokenFreezeStatus.FreezeNotApplicable;
 import static com.hederahashgraph.api.proto.java.TokenFreezeStatus.Frozen;
 import static com.hederahashgraph.api.proto.java.TokenFreezeStatus.Unfrozen;
@@ -153,45 +142,23 @@ public class FileUpdateSuite extends HapiApiSuite {
     public List<HapiApiSpec> getSpecsInSuite() {
         return List.of(
                 new HapiApiSpec[] {
-                    //                    vanillaUpdateSucceeds(),
-                    //                    updateFeesCompatibleWithCreates(),
-                    //                    apiPermissionsChangeDynamically(),
-                    //                    cannotUpdateExpirationPastMaxLifetime(),
-                    //                    optimisticSpecialFileUpdate(),
-                    //                    associateHasExpectedSemantics(),
-                    //                    notTooManyFeeScheduleCanBeCreated(),
-                    //                    allUnusedGasIsRefundedIfSoConfigured(),
-                    //                    maxRefundIsEnforced(),
-                    //                    gasLimitOverMaxGasLimitFailsPrecheck(),
-                    //                    autoCreationIsDynamic(),
-                    //                    kvLimitsEnforced(),
-                    //                    serviceFeeRefundedIfConsGasExhausted(),
-                    //                    chainIdChangesDynamically(),
-                    //                    entitiesNotCreatableAfterUsageLimitsReached(),
-                    //                    rentItemizedAsExpectedWithOverridePriceTiers(),
-                    getPreviewnetAccountInfo(),
+                                        vanillaUpdateSucceeds(),
+                                        updateFeesCompatibleWithCreates(),
+                                        apiPermissionsChangeDynamically(),
+                                        cannotUpdateExpirationPastMaxLifetime(),
+                                        optimisticSpecialFileUpdate(),
+                                        associateHasExpectedSemantics(),
+                                        notTooManyFeeScheduleCanBeCreated(),
+                                        allUnusedGasIsRefundedIfSoConfigured(),
+                                        maxRefundIsEnforced(),
+                                        gasLimitOverMaxGasLimitFailsPrecheck(),
+                                        autoCreationIsDynamic(),
+                                        kvLimitsEnforced(),
+                                        serviceFeeRefundedIfConsGasExhausted(),
+                                        chainIdChangesDynamically(),
+                                        entitiesNotCreatableAfterUsageLimitsReached(),
+                                        rentItemizedAsExpectedWithOverridePriceTiers(),
                 });
-    }
-
-    private HapiApiSpec getPreviewnetAccountInfo() {
-        return customHapiSpec("GetPreviewnetAccountInfo")
-                .withProperties(
-                        Map.of(
-                                "nodes", "35.231.208.148",
-                                "default.payer.pemKeyLoc", "previewtestnet-account2.pem",
-                                "default.payer.pemKeyPassphrase", "P1WUX2Xla2wFslpoPTN39avz"))
-                .given(
-                        cryptoCreate("civilian").balance(ONE_MILLION_HBARS),
-                        cryptoCreate("other")
-                                .maxAutomaticTokenAssociations(500_000_000)
-                                .payingWith("civilian")
-                                .balance(1L + ONE_HBAR)
-                                .via("hmm"))
-                .when()
-                .then(
-                        getTxnRecord("hmm").logged()
-                        //                        getAccountInfo("0.0.88").logged()
-                        );
     }
 
     private HapiApiSpec associateHasExpectedSemantics() {
