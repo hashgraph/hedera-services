@@ -398,24 +398,6 @@ class HederaLedgerTest extends BaseHederaLedgerTestHelper {
     }
 
     @Test
-    void addsToCollector() {
-        final var amount = 666L;
-
-        subject.adjustCollectorBalance(genesis, amount);
-
-        verify(accountsLedger).set(genesis, BALANCE, GENESIS_BALANCE + amount);
-    }
-
-    @Test
-    void stillRejectsNegativeBalanceForSafety() {
-        final var amount = -GENESIS_BALANCE - 1;
-
-        assertThrows(
-                InsufficientFundsException.class,
-                () -> subject.adjustCollectorBalance(genesis, amount));
-    }
-
-    @Test
     void throwsOnNegativeBalance() {
         final var overdraftAdjustment = -1 * GENESIS_BALANCE - 1;
 

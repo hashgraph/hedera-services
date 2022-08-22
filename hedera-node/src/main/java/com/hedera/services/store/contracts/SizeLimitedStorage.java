@@ -123,7 +123,7 @@ public class SizeLimitedStorage {
             final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger) {
         validatePendingSizeChanges();
         // If fees cannot be paid, throws an ITE,  rolling back this EVM transaction
-        storageFeeCharging.chargeStorageFees(totalKvPairs, usageChanges, accountsLedger);
+        storageFeeCharging.chargeStorageRent(totalKvPairs, usageChanges, accountsLedger);
 
         commitPendingRemovals();
         commitPendingUpdates();

@@ -95,10 +95,11 @@ class RecordedStorageFeeChargingTest {
     @BeforeEach
     void setUp() {
         final var syntheticTxnFactory = new SyntheticTxnFactory(dynamicProperties);
+        final var feeDistribution = new FeeDistribution(numbers, dynamicProperties);
         subject =
                 new RecordedStorageFeeCharging(
                         creator,
-                        numbers,
+                        feeDistribution,
                         exchange,
                         recordsHistorian,
                         txnCtx,
@@ -108,7 +109,7 @@ class RecordedStorageFeeChargingTest {
 
     @Test
     void createsNoRecordWithNothingToDo() {
-        subject.chargeStorageFees(NUM_SLOTS_USED, Collections.emptyMap(), accountsLedger);
+        subject.chargeStorageRent(NUM_SLOTS_USED, Collections.emptyMap(), accountsLedger);
         verifyNoInteractions(accountsLedger);
     }
 
@@ -123,7 +124,7 @@ class RecordedStorageFeeChargingTest {
         usageInfos.put(bContract.getAccountNum(), nonFreeUsageFor(-1));
         usageInfos.put(cContract.getAccountNum(), nonFreeUsageFor(+4));
 
-        subject.chargeStorageFees(50_000_000L, usageInfos, accountsLedger);
+        subject.chargeStorageRent(50_000_000L, usageInfos, accountsLedger);
         verifyNoInteractions(accountsLedger);
     }
 
@@ -152,7 +153,7 @@ class RecordedStorageFeeChargingTest {
         givenAutoRenew(anAutoRenew, expectedACharge + 1);
         givenChargeableContract(cContract, expectedCCharge + 2, cExpiry, null);
 
-        subject.chargeStorageFees(NUM_SLOTS_USED, usageInfos, accountsLedger);
+        subject.chargeStorageRent(NUM_SLOTS_USED, usageInfos, accountsLedger);
 
         verify(accountsLedger).set(anAutoRenew, BALANCE, 1L);
         verify(accountsLedger, never()).set(eq(aContract), eq(BALANCE), anyLong());
@@ -313,7 +314,7 @@ class RecordedStorageFeeChargingTest {
                 .willReturn(mockRecord);
 
         liveLedger.begin();
-        subject.chargeStorageFees(NUM_SLOTS_USED, usageInfos, liveLedger);
+        subject.chargeStorageRent(NUM_SLOTS_USED, usageInfos, liveLedger);
         liveLedger.commit();
 
         verify(recordsHistorian)
@@ -386,7 +387,7 @@ class RecordedStorageFeeChargingTest {
                 .willReturn(mockRecord);
 
         liveLedger.begin();
-        subject.chargeStorageFees(NUM_SLOTS_USED, usageInfos, liveLedger);
+        subject.chargeStorageRent(NUM_SLOTS_USED, usageInfos, liveLedger);
         liveLedger.commit();
 
         verify(recordsHistorian)
@@ -466,7 +467,7 @@ class RecordedStorageFeeChargingTest {
                 .willReturn(mockRecord);
 
         liveLedger.begin();
-        subject.chargeStorageFees(NUM_SLOTS_USED, usageInfos, liveLedger);
+        subject.chargeStorageRent(NUM_SLOTS_USED, usageInfos, liveLedger);
         liveLedger.commit();
 
         verify(recordsHistorian)
@@ -539,7 +540,7 @@ class RecordedStorageFeeChargingTest {
                 .willReturn(mockRecord);
 
         liveLedger.begin();
-        subject.chargeStorageFees(NUM_SLOTS_USED, usageInfos, liveLedger);
+        subject.chargeStorageRent(NUM_SLOTS_USED, usageInfos, liveLedger);
         liveLedger.commit();
 
         verify(recordsHistorian)
@@ -590,7 +591,7 @@ class RecordedStorageFeeChargingTest {
         given(dynamicProperties.shouldItemizeStorageFees()).willReturn(true);
 
         liveLedger.begin();
-        subject.chargeStorageFees(NUM_SLOTS_USED, usageInfos, liveLedger);
+        subject.chargeStorageRent(NUM_SLOTS_USED, usageInfos, liveLedger);
         liveLedger.commit();
 
         verifyNoInteractions(recordsHistorian);

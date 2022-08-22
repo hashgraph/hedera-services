@@ -26,7 +26,7 @@ import java.util.Map;
 public class NoopStorageFeeCharging implements StorageFeeCharging {
 
     @Override
-    public void chargeStorageFees(
+    public void chargeStorageRent(
             long numTotalKvPairs,
             Map<Long, KvUsageInfo> newUsageInfos,
             TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accounts) {

@@ -90,6 +90,7 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
+import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hedera.services.contracts.ParsingConstants.FunctionType;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -1492,5 +1493,51 @@ public class Create2OperationSuite extends HapiApiSuite {
                                             "Internal calls with mirror address should not be"
                                                     + " possible for aliased contracts");
                                 }));
+    }
+
+    /* --- Internal helpers --- */
+    public static HapiSpecOperation captureOneChildCreate2MetaFor(
+            final String desc,
+            final String creation2,
+            final AtomicReference<String> mirrorAddr,
+            final AtomicReference<String> create2Addr) {
+        return captureChildCreate2MetaFor(1, 0, desc, creation2, mirrorAddr, create2Addr);
+    }
+
+    public static HapiSpecOperation captureChildCreate2MetaFor(
+            final int givenNumExpectedChildren,
+            final int givenChildOfInterest,
+            final String desc,
+            final String creation2,
+            final AtomicReference<String> mirrorAddr,
+            final AtomicReference<String> create2Addr) {
+        return withOpContext(
+                (spec, opLog) -> {
+                    final var lookup = getTxnRecord(creation2).andAllChildRecords().logged();
+                    allRunFor(spec, lookup);
+                    final var response = lookup.getResponse().getTransactionGetRecord();
+                    final var numRecords = response.getChildTransactionRecordsCount();
+                    int numExpectedChildren = givenNumExpectedChildren;
+                    int childOfInterest = givenChildOfInterest;
+                    if (numRecords == numExpectedChildren + 1
+                            && TxnUtils.isEndOfStakingPeriodRecord(
+                                    response.getChildTransactionRecords(0))) {
+                        // This transaction may have had a preceding record for the end-of-day
+                        // staking calculations
+                        numExpectedChildren++;
+                        childOfInterest++;
+                    }
+                    assertEquals(
+                            numExpectedChildren,
+                            response.getChildTransactionRecordsCount(),
+                            "Wrong # of children");
+                    final var create2Record = response.getChildTransactionRecords(childOfInterest);
+                    final var create2Address =
+                            create2Record.getContractCreateResult().getEvmAddress().getValue();
+                    create2Addr.set(hex(create2Address.toByteArray()));
+                    final var createdId = create2Record.getReceipt().getContractID();
+                    mirrorAddr.set(hex(asSolidityAddress(createdId)));
+                    opLog.info("{} is @ {} (mirror {})", desc, create2Addr.get(), mirrorAddr.get());
+                });
     }
 }

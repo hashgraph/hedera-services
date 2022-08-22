@@ -17,8 +17,6 @@ package com.hedera.services.fees.charging;
 
 import static com.hedera.services.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
 import static com.hedera.services.exceptions.ValidationUtils.validateResourceLimit;
-import static com.hedera.services.fees.charging.NarratedLedgerCharging.nodeRewardFractionOf;
-import static com.hedera.services.fees.charging.NarratedLedgerCharging.stakingRewardFractionOf;
 import static com.hedera.services.ledger.TransactionalLedger.activeLedgerWrapping;
 import static com.hedera.services.ledger.properties.AccountProperty.AUTO_RENEW_ACCOUNT_ID;
 import static com.hedera.services.ledger.properties.AccountProperty.BALANCE;
@@ -30,7 +28,6 @@ import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_BALANCES_FOR_STORAGE_RENT;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.hedera.services.config.AccountNumbers;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
@@ -52,13 +49,16 @@ import java.util.Map;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
+/** {@inheritDoc} */
 @Singleton
 public class RecordedStorageFeeCharging implements StorageFeeCharging {
     private static final List<Builder> NO_SIDECARS = Collections.emptyList();
     public static final String MEMO = "Contract storage fees";
 
-    // Used to created the synthetic record if itemizing is enabled
+    // Used to create the synthetic record if itemizing is enabled
     private final EntityCreator creator;
+    // Used to distribute charged rent to collection accounts in correct percentages
+    private final FeeDistribution feeDistribution;
     // Used to get the current exchange rate
     private final HbarCentExchange exchange;
     // Used to track the storage fee payments in a succeeding child record
@@ -69,13 +69,11 @@ public class RecordedStorageFeeCharging implements StorageFeeCharging {
     private final TransactionContext txnCtx;
     // Used to get the storage slot lifetime and pricing tiers
     private final GlobalDynamicProperties dynamicProperties;
-    private final AccountID stakingRewardAccountId;
-    private final AccountID nodeRewardAccountId;
 
     @Inject
     public RecordedStorageFeeCharging(
             final EntityCreator creator,
-            final AccountNumbers accountNumbers,
+            final FeeDistribution feeDistribution,
             final HbarCentExchange exchange,
             final RecordsHistorian recordsHistorian,
             final TransactionContext txnCtx,
@@ -84,17 +82,15 @@ public class RecordedStorageFeeCharging implements StorageFeeCharging {
         this.txnCtx = txnCtx;
         this.creator = creator;
         this.exchange = exchange;
+        this.feeDistribution = feeDistribution;
         this.recordsHistorian = recordsHistorian;
         this.dynamicProperties = dynamicProperties;
         this.syntheticTxnFactory = syntheticTxnFactory;
-        this.stakingRewardAccountId =
-                STATIC_PROPERTIES.scopedAccountWith(accountNumbers.stakingRewardAccount());
-        this.nodeRewardAccountId =
-                STATIC_PROPERTIES.scopedAccountWith(accountNumbers.nodeRewardAccount());
     }
 
+    /** {@inheritDoc} */
     @Override
-    public void chargeStorageFees(
+    public void chargeStorageRent(
             final long totalKvPairs,
             final Map<Long, KvUsageInfo> newUsageInfos,
             final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accounts) {
@@ -188,36 +184,8 @@ public class RecordedStorageFeeCharging implements StorageFeeCharging {
             accounts.set(id, BALANCE, balance - amount);
             paid = amount;
         }
-        payToApropos(paid, accounts);
+        feeDistribution.distributeChargedFee(paid, accounts);
         return paid;
-    }
-
-    private void payToApropos(
-            final long amount,
-            final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accounts) {
-        long fundingAdjustment = amount;
-        final var fundingId = dynamicProperties.fundingAccount();
-        if (dynamicProperties.isStakingEnabled()) {
-            final var nodeRewardAdjustment = nodeRewardFractionOf(amount, dynamicProperties);
-            if (nodeRewardAdjustment != 0) {
-                final var nodeRewardBalance = (long) accounts.get(nodeRewardAccountId, BALANCE);
-                accounts.set(
-                        nodeRewardAccountId, BALANCE, nodeRewardBalance + nodeRewardAdjustment);
-            }
-            final var stakeRewardAdjustment = stakingRewardFractionOf(amount, dynamicProperties);
-            if (stakeRewardAdjustment != 0) {
-                final var stakeRewardBalance = (long) accounts.get(stakingRewardAccountId, BALANCE);
-                accounts.set(
-                        stakingRewardAccountId,
-                        BALANCE,
-                        stakeRewardBalance + stakeRewardAdjustment);
-            }
-            fundingAdjustment -= (nodeRewardAdjustment + stakeRewardAdjustment);
-        }
-        if (fundingAdjustment != 0) {
-            final var fundingBalance = (long) accounts.get(fundingId, BALANCE);
-            accounts.set(fundingId, BALANCE, fundingBalance + fundingAdjustment);
-        }
     }
 
     private AccountID keyFor(final Long num) {

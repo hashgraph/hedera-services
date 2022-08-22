@@ -171,7 +171,7 @@ public class AutoRenewCalcs {
         final var kvPairsUsed = contractContext.currentNumKvPairs();
         final var usageInfo = new KvUsageInfo((int) kvPairsUsed);
         return storagePriceTiers.priceOfAutoRenewal(
-                rate, kvPairsUsed, requestedLifetime, usageInfo);
+                rate, kvPairsUsed, requestedLifetime, usageInfo.currentUsage());
     }
 
     private RenewalFees accountRenewalPrices(
