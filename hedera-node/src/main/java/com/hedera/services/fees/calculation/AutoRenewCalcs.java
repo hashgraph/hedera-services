@@ -28,9 +28,8 @@ import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.submerkle.FcTokenAllowance;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
-import com.hedera.services.state.virtual.VirtualBlobKey;
-import com.hedera.services.state.virtual.VirtualBlobValue;
-import com.hedera.services.store.contracts.KvUsageInfo;
+import com.hedera.services.state.virtual.ContractKey;
+import com.hedera.services.state.virtual.IterableContractValue;
 import com.hedera.services.usage.contract.ExtantContractContext;
 import com.hedera.services.usage.crypto.CryptoOpsUsage;
 import com.hedera.services.usage.crypto.ExtantCryptoContext;
@@ -54,7 +53,7 @@ public class AutoRenewCalcs {
     private static final RenewAssessment NO_RENEWAL_POSSIBLE = new RenewAssessment(0L, 0L);
 
     private final CryptoOpsUsage cryptoOpsUsage;
-    private final Supplier<VirtualMap<VirtualBlobKey, VirtualBlobValue>> bytecode;
+    private final Supplier<VirtualMap<ContractKey, IterableContractValue>> storage;
     private final GlobalDynamicProperties properties;
 
     private Triple<Map<SubType, FeeData>, Instant, Map<SubType, FeeData>> accountPricesSeq = null;
@@ -69,15 +68,13 @@ public class AutoRenewCalcs {
     private long secondContractConstantFee = 0L;
     private long firstContractRbhPrice = 0L;
     private long secondContractRbhPrice = 0L;
-    private long firstContractSbhPrice = 0L;
-    private long secondContractSbhPrice = 0L;
 
     @Inject
     public AutoRenewCalcs(
             final CryptoOpsUsage cryptoOpsUsage,
-            final Supplier<VirtualMap<VirtualBlobKey, VirtualBlobValue>> bytecode,
+            final Supplier<VirtualMap<ContractKey, IterableContractValue>> storage,
             final GlobalDynamicProperties properties) {
-        this.bytecode = bytecode;
+        this.storage = storage;
         this.cryptoOpsUsage = cryptoOpsUsage;
         this.properties = properties;
     }
@@ -108,9 +105,7 @@ public class AutoRenewCalcs {
             this.firstContractConstantFee = constantFeeFrom(leftPrices);
             this.secondContractConstantFee = constantFeeFrom(rightPrices);
             this.firstContractRbhPrice = leftPrices.getServicedata().getRbh();
-            this.firstContractSbhPrice = leftPrices.getServicedata().getSbh();
             this.secondContractRbhPrice = rightPrices.getServicedata().getRbh();
-            this.secondContractSbhPrice = rightPrices.getServicedata().getSbh();
         }
     }
 
@@ -168,10 +163,9 @@ public class AutoRenewCalcs {
             final ExchangeRate rate,
             final long requestedLifetime) {
         final var storagePriceTiers = properties.storagePriceTiers();
-        final var kvPairsUsed = contractContext.currentNumKvPairs();
-        final var usageInfo = new KvUsageInfo((int) kvPairsUsed);
+        final var totalKvPairs = storage.get().size();
         return storagePriceTiers.priceOfAutoRenewal(
-                rate, kvPairsUsed, requestedLifetime, usageInfo.currentUsage());
+                rate, totalKvPairs, requestedLifetime, contractContext.currentNumKvPairs());
     }
 
     private RenewalFees accountRenewalPrices(
