@@ -57,14 +57,8 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingAllOf;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.suites.contract.Utils.*;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
-import static com.hedera.services.bdd.suites.contract.Utils.aaWith;
-import static com.hedera.services.bdd.suites.contract.Utils.accountId;
-import static com.hedera.services.bdd.suites.contract.Utils.aliasContractIdKey;
-import static com.hedera.services.bdd.suites.contract.Utils.aliasDelegateContractKey;
-import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
-import static com.hedera.services.bdd.suites.contract.Utils.captureOneChildCreate2MetaFor;
-import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
 import static com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult.htsPrecompileResult;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_STILL_OWNS_NFTS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_DELETED;
@@ -1493,51 +1487,5 @@ public class Create2OperationSuite extends HapiApiSuite {
                                             "Internal calls with mirror address should not be"
                                                     + " possible for aliased contracts");
                                 }));
-    }
-
-    /* --- Internal helpers --- */
-    public static HapiSpecOperation captureOneChildCreate2MetaFor(
-            final String desc,
-            final String creation2,
-            final AtomicReference<String> mirrorAddr,
-            final AtomicReference<String> create2Addr) {
-        return captureChildCreate2MetaFor(1, 0, desc, creation2, mirrorAddr, create2Addr);
-    }
-
-    public static HapiSpecOperation captureChildCreate2MetaFor(
-            final int givenNumExpectedChildren,
-            final int givenChildOfInterest,
-            final String desc,
-            final String creation2,
-            final AtomicReference<String> mirrorAddr,
-            final AtomicReference<String> create2Addr) {
-        return withOpContext(
-                (spec, opLog) -> {
-                    final var lookup = getTxnRecord(creation2).andAllChildRecords().logged();
-                    allRunFor(spec, lookup);
-                    final var response = lookup.getResponse().getTransactionGetRecord();
-                    final var numRecords = response.getChildTransactionRecordsCount();
-                    int numExpectedChildren = givenNumExpectedChildren;
-                    int childOfInterest = givenChildOfInterest;
-                    if (numRecords == numExpectedChildren + 1
-                            && TxnUtils.isEndOfStakingPeriodRecord(
-                                    response.getChildTransactionRecords(0))) {
-                        // This transaction may have had a preceding record for the end-of-day
-                        // staking calculations
-                        numExpectedChildren++;
-                        childOfInterest++;
-                    }
-                    assertEquals(
-                            numExpectedChildren,
-                            response.getChildTransactionRecordsCount(),
-                            "Wrong # of children");
-                    final var create2Record = response.getChildTransactionRecords(childOfInterest);
-                    final var create2Address =
-                            create2Record.getContractCreateResult().getEvmAddress().getValue();
-                    create2Addr.set(hex(create2Address.toByteArray()));
-                    final var createdId = create2Record.getReceipt().getContractID();
-                    mirrorAddr.set(hex(asSolidityAddress(createdId)));
-                    opLog.info("{} is @ {} (mirror {})", desc, create2Addr.get(), mirrorAddr.get());
-                });
     }
 }
