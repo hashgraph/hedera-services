@@ -65,6 +65,7 @@ public class GrantRevokeKycSuite extends HapiApiSuite {
     private static final String ACCOUNT = "anybody";
     private static final String SECOND_ACCOUNT = "anybodySecond";
     private static final String KYC_KEY = "kycKey";
+    private static final String NON_KYC_KEY = "nonKycKey";
     private static final String TOKEN_WITHOUT_KEY = "withoutKey";
 
     public static void main(String... args) {
@@ -99,6 +100,7 @@ public class GrantRevokeKycSuite extends HapiApiSuite {
         return defaultHapiSpec("GrantRevokeKycFail")
                 .given(
                         newKeyNamed(KYC_KEY),
+                        newKeyNamed(NON_KYC_KEY),
                         cryptoCreate(ACCOUNT)
                                 .balance(100 * ONE_HBAR)
                                 .exposingCreatedIdTo(accountID::set),
@@ -137,6 +139,27 @@ public class GrantRevokeKycSuite extends HapiApiSuite {
                                                                 asAddress(secondAccountID.get()))
                                                         .payingWith(ACCOUNT)
                                                         .via("RevokeKycAccountWithoutKeyTx")
+                                                        .gas(GAS_TO_OFFER)
+                                                        .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
+                                                cryptoUpdate(ACCOUNT).key(NON_KYC_KEY),
+                                                contractCall(
+                                                                GRANT_REVOKE_KYC_CONTRACT,
+                                                                TOKEN_GRANT_KYC,
+                                                                asAddress(vanillaTokenID.get()),
+                                                                asAddress(secondAccountID.get()))
+                                                        .payingWith(ACCOUNT)
+                                                        .via(
+                                                                "GrantKycAccountKeyNotMatchingTokenKeyTx")
+                                                        .gas(GAS_TO_OFFER)
+                                                        .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
+                                                contractCall(
+                                                                GRANT_REVOKE_KYC_CONTRACT,
+                                                                TOKEN_REVOKE_KYC,
+                                                                asAddress(vanillaTokenID.get()),
+                                                                asAddress(secondAccountID.get()))
+                                                        .payingWith(ACCOUNT)
+                                                        .via(
+                                                                "RevokeKycAccountKeyNotMatchingTokenKeyTx")
                                                         .gas(GAS_TO_OFFER)
                                                         .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
                                                 cryptoUpdate(ACCOUNT).key(KYC_KEY),
@@ -190,6 +213,28 @@ public class GrantRevokeKycSuite extends HapiApiSuite {
                                                                                 INVALID_SIGNATURE)))),
                         childRecordsCheck(
                                 "GrantKycAccountWithoutKeyTx",
+                                CONTRACT_REVERT_EXECUTED,
+                                recordWith()
+                                        .status(INVALID_SIGNATURE)
+                                        .contractCallResult(
+                                                resultWith()
+                                                        .contractCallResult(
+                                                                htsPrecompileResult()
+                                                                        .withStatus(
+                                                                                INVALID_SIGNATURE)))),
+                        childRecordsCheck(
+                                "GrantKycAccountKeyNotMatchingTokenKeyTx",
+                                CONTRACT_REVERT_EXECUTED,
+                                recordWith()
+                                        .status(INVALID_SIGNATURE)
+                                        .contractCallResult(
+                                                resultWith()
+                                                        .contractCallResult(
+                                                                htsPrecompileResult()
+                                                                        .withStatus(
+                                                                                INVALID_SIGNATURE)))),
+                        childRecordsCheck(
+                                "RevokeKycAccountKeyNotMatchingTokenKeyTx",
                                 CONTRACT_REVERT_EXECUTED,
                                 recordWith()
                                         .status(INVALID_SIGNATURE)
