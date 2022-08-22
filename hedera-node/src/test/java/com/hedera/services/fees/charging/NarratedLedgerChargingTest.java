@@ -260,8 +260,7 @@ class NarratedLedgerChargingTest {
         assertTrue(subject.isPayerWillingToCoverServiceFee());
     }
 
-    private void givenSetupToChargePayer(
-            final long payerBalance, final long totalOfferedFee) {
+    private void givenSetupToChargePayer(final long payerBalance, final long totalOfferedFee) {
         final var payerAccount = MerkleAccountFactory.newAccount().balance(payerBalance).get();
         given(accounts.get(payerId)).willReturn(payerAccount);
         given(ledger.getAccountsLedger()).willReturn(accountsLedger);

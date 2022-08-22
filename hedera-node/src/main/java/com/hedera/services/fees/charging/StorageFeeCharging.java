@@ -22,18 +22,16 @@ import com.hedera.services.store.contracts.KvUsageInfo;
 import com.hederahashgraph.api.proto.java.AccountID;
 import java.util.Map;
 
-/**
- * Defines a type able to charge storage rent due at the end of a contract transaction.
- */
+/** Defines a type able to charge storage rent due at the end of a contract transaction. */
 public interface StorageFeeCharging {
     /**
-     * Given the number of key/value pairs in state at the beginning of a transaction,
-     * and the new key/value usage for each contract number that changed storage in the
-     * transaction, charges the appropriate auto-renew accounts and/or contracts rent
-     * using the given {@code accounts} ledger.
+     * Given the number of key/value pairs in state at the beginning of a transaction, and the new
+     * key/value usage for each contract number that changed storage in the transaction, charges the
+     * appropriate auto-renew accounts and/or contracts rent using the given {@code accounts}
+     * ledger.
      *
-     * <p>If the property {@code contracts.itemizeStorageFees} is true, the rent charges will
-     * be itemized in a "following" child record whose memo is {@code "Contract storage fees"}.
+     * <p>If the property {@code contracts.itemizeStorageFees} is true, the rent charges will be
+     * itemized in a "following" child record whose memo is {@code "Contract storage fees"}.
      *
      * @param numTotalKvPairs the total key/value pairs in state
      * @param newUsageInfos the storage usage deltas in a transaction

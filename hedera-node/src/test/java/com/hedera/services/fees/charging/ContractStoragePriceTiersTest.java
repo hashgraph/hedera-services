@@ -98,8 +98,7 @@ class ContractStoragePriceTiersTest {
         final var expected = 101 * tinycentsToTinybars(basePrice, someRate);
 
         final var actual =
-                subject.priceOfAutoRenewal(
-                        someRate, used, DEFAULT_REFERENCE_LIFETIME, 101);
+                subject.priceOfAutoRenewal(someRate, used, DEFAULT_REFERENCE_LIFETIME, 101);
 
         assertEquals(expected, actual);
     }
@@ -110,8 +109,7 @@ class ContractStoragePriceTiersTest {
         final var used = 450_000_000L;
 
         final var actual =
-                subject.priceOfAutoRenewal(
-                        someRate, used, DEFAULT_REFERENCE_LIFETIME, 99);
+                subject.priceOfAutoRenewal(someRate, used, DEFAULT_REFERENCE_LIFETIME, 99);
 
         assertEquals(0, actual);
     }

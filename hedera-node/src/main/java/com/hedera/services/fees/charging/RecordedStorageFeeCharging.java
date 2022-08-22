@@ -28,7 +28,6 @@ import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_BALANCES_FOR_STORAGE_RENT;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.hedera.services.config.AccountNumbers;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
@@ -50,9 +49,7 @@ import java.util.Map;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
-/**
- * {@inheritDoc}
- */
+/** {@inheritDoc} */
 @Singleton
 public class RecordedStorageFeeCharging implements StorageFeeCharging {
     private static final List<Builder> NO_SIDECARS = Collections.emptyList();
@@ -91,9 +88,7 @@ public class RecordedStorageFeeCharging implements StorageFeeCharging {
         this.syntheticTxnFactory = syntheticTxnFactory;
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override
     public void chargeStorageRent(
             final long totalKvPairs,
