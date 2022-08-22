@@ -15,14 +15,14 @@
  */
 package com.hedera.services.state.expiry.renewal;
 
-import static com.hedera.services.state.expiry.renewal.RenewableEntityType.DETACHED_ACCOUNT;
-import static com.hedera.services.state.expiry.renewal.RenewableEntityType.DETACHED_ACCOUNT_GRACE_PERIOD_OVER;
-import static com.hedera.services.state.expiry.renewal.RenewableEntityType.DETACHED_CONTRACT;
-import static com.hedera.services.state.expiry.renewal.RenewableEntityType.DETACHED_CONTRACT_GRACE_PERIOD_OVER;
-import static com.hedera.services.state.expiry.renewal.RenewableEntityType.DETACHED_TREASURY_GRACE_PERIOD_OVER_BEFORE_TOKEN;
-import static com.hedera.services.state.expiry.renewal.RenewableEntityType.EXPIRED_ACCOUNT_READY_TO_RENEW;
-import static com.hedera.services.state.expiry.renewal.RenewableEntityType.EXPIRED_CONTRACT_READY_TO_RENEW;
-import static com.hedera.services.state.expiry.renewal.RenewableEntityType.OTHER;
+import static com.hedera.services.state.expiry.renewal.ClassificationResult.DETACHED_ACCOUNT;
+import static com.hedera.services.state.expiry.renewal.ClassificationResult.DETACHED_ACCOUNT_GRACE_PERIOD_OVER;
+import static com.hedera.services.state.expiry.renewal.ClassificationResult.DETACHED_CONTRACT;
+import static com.hedera.services.state.expiry.renewal.ClassificationResult.DETACHED_CONTRACT_GRACE_PERIOD_OVER;
+import static com.hedera.services.state.expiry.renewal.ClassificationResult.DETACHED_TREASURY_GRACE_PERIOD_OVER_BEFORE_TOKEN;
+import static com.hedera.services.state.expiry.renewal.ClassificationResult.EXPIRED_ACCOUNT_READY_TO_RENEW;
+import static com.hedera.services.state.expiry.renewal.ClassificationResult.EXPIRED_CONTRACT_READY_TO_RENEW;
+import static com.hedera.services.state.expiry.renewal.ClassificationResult.OTHER;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -53,11 +53,13 @@ class RenewableEntityClassifierTest {
     @Mock private MerkleMap<EntityNum, MerkleAccount> accounts;
     @Mock private AliasManager aliasManager;
 
-    private RenewableEntityClassifier subject;
+    private EntityLookup lookup;
+    private ClassificationWork subject;
 
     @BeforeEach
     void setUp() {
-        subject = new RenewableEntityClassifier(dynamicProps, () -> accounts);
+        lookup = new EntityLookup(() -> accounts);
+        subject = new ClassificationWork(dynamicProps, lookup);
     }
 
     @Test
@@ -187,7 +189,7 @@ class RenewableEntityClassifierTest {
         verify(accounts, times(2)).getForModify(key);
         verify(accounts).getForModify(fundingKey);
         verify(aliasManager, never()).forgetAlias(any());
-        assertEquals(key, subject.getPayerForAutoRenew());
+        assertEquals(key, subject.getPayerNumForAutoRenew());
     }
 
     @Test
@@ -214,7 +216,7 @@ class RenewableEntityClassifierTest {
         verify(accounts, times(1)).getForModify(autoRenewAccount);
         verify(accounts).getForModify(fundingKey);
         verify(aliasManager, never()).forgetAlias(any());
-        assertEquals(autoRenewAccount, subject.getPayerForAutoRenew());
+        assertEquals(autoRenewAccount, subject.getPayerNumForAutoRenew());
     }
 
     @Test
