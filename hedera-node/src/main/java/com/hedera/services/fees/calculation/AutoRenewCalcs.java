@@ -154,8 +154,9 @@ public class AutoRenewCalcs {
         // Since contract bytecode is not charged any fees - we ignore sbh in the renewal fee
         // calculation
         final var storagePrice = storageFee(contractContext, rate, reqPeriod);
-        final var hourlyPrice = (rbhPrice * contractContext.currentRb()) + storagePrice;
-        return new RenewalFees(inTinybars(fixedPrice, rate), inTinybars(hourlyPrice, rate));
+        final var hourlyPrice = (rbhPrice * contractContext.currentRb());
+        return new RenewalFees(
+                inTinybars(fixedPrice + storagePrice, rate), inTinybars(hourlyPrice, rate));
     }
 
     private long storageFee(
