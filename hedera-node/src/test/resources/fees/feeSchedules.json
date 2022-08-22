@@ -2241,49 +2241,47 @@
 		}
 	  },
 	  {
-		"transactionFeeSchedule": {
-		  "hederaFunctionality": "ContractAutoRenew",
-		  "fees": [
-			{
-			  "subType": "DEFAULT",
-			  "nodedata": {
-				"constant": 3399972997,
-				"bpt": 5435538,
-				"vpt": 13588844891,
-				"rbh": 3624,
-				"sbh": 272,
-				"gas": 36237,
-				"bpr": 5435538,
-				"sbpr": 135888,
-				"min": 0,
-				"max": 1000000000000000
-			  },
-			  "networkdata": {
-				"constant": 67999459941,
-				"bpt": 108710759,
-				"vpt": 271776897828,
-				"rbh": 72474,
-				"sbh": 5436,
-				"gas": 724738,
-				"bpr": 108710759,
-				"sbpr": 2717769,
-				"min": 0,
-				"max": 1000000000000000
-			  },
-			  "servicedata": {
-				"constant": 67999459941,
-				"bpt": 108710759,
-				"vpt": 271776897828,
-				"rbh": 72474,
-				"sbh": 5436,
-				"gas": 724738,
-				"bpr": 108710759,
-				"sbpr": 2717769,
-				"min": 0,
-				"max": 1000000000000000
-			  }
+		"transactionFeeSchedule" : {
+		  "hederaFunctionality" : "ContractAutoRenew",
+		  "fees" : [ {
+			"subType" : "DEFAULT",
+			"nodedata" : {
+			  "constant" : 5396134280,
+			  "bpt" : 8626802,
+			  "vpt" : 21567004154,
+			  "rbh" : 5751,
+			  "sbh" : 431,
+			  "gas" : 57512,
+			  "bpr" : 8626802,
+			  "sbpr" : 215670,
+			  "min" : 0,
+			  "max" : 1000000000000000
+			},
+			"networkdata" : {
+			  "constant" : 107922685608,
+			  "bpt" : 172536033,
+			  "vpt" : 431340083072,
+			  "rbh" : 115024,
+			  "sbh" : 8627,
+			  "gas" : 1150240,
+			  "bpr" : 172536033,
+			  "sbpr" : 4313401,
+			  "min" : 0,
+			  "max" : 1000000000000000
+			},
+			"servicedata" : {
+			  "constant" : 107922685608,
+			  "bpt" : 172536033,
+			  "vpt" : 431340083072,
+			  "rbh" : 115024,
+			  "sbh" : 8627,
+			  "gas" : 1150240,
+			  "bpr" : 172536033,
+			  "sbpr" : 4313401,
+			  "min" : 0,
+			  "max" : 1000000000000000
 			}
-		  ]
+		  } ]
 		}
 	  },
 	  {
@@ -5072,49 +5070,47 @@
 		}
 	  },
 	  {
-		"transactionFeeSchedule": {
-		  "hederaFunctionality": "ContractAutoRenew",
-		  "fees": [
-			{
-			  "subType": "DEFAULT",
-			  "nodedata": {
-				"constant": 3399972997,
-				"bpt": 5435538,
-				"vpt": 13588844891,
-				"rbh": 3624,
-				"sbh": 272,
-				"gas": 36237,
-				"bpr": 5435538,
-				"sbpr": 135888,
-				"min": 0,
-				"max": 1000000000000000
-			  },
-			  "networkdata": {
-				"constant": 67999459941,
-				"bpt": 108710759,
-				"vpt": 271776897828,
-				"rbh": 72474,
-				"sbh": 5436,
-				"gas": 724738,
-				"bpr": 108710759,
-				"sbpr": 2717769,
-				"min": 0,
-				"max": 1000000000000000
-			  },
-			  "servicedata": {
-				"constant": 67999459941,
-				"bpt": 108710759,
-				"vpt": 271776897828,
-				"rbh": 72474,
-				"sbh": 5436,
-				"gas": 724738,
-				"bpr": 108710759,
-				"sbpr": 2717769,
-				"min": 0,
-				"max": 1000000000000000
-			  }
+		"transactionFeeSchedule" : {
+		  "hederaFunctionality" : "ContractAutoRenew",
+		  "fees" : [ {
+			"subType" : "DEFAULT",
+			"nodedata" : {
+			  "constant" : 5396134280,
+			  "bpt" : 8626802,
+			  "vpt" : 21567004154,
+			  "rbh" : 5751,
+			  "sbh" : 431,
+			  "gas" : 57512,
+			  "bpr" : 8626802,
+			  "sbpr" : 215670,
+			  "min" : 0,
+			  "max" : 1000000000000000
+			},
+			"networkdata" : {
+			  "constant" : 107922685608,
+			  "bpt" : 172536033,
+			  "vpt" : 431340083072,
+			  "rbh" : 115024,
+			  "sbh" : 8627,
+			  "gas" : 1150240,
+			  "bpr" : 172536033,
+			  "sbpr" : 4313401,
+			  "min" : 0,
+			  "max" : 1000000000000000
+			},
+			"servicedata" : {
+			  "constant" : 107922685608,
+			  "bpt" : 172536033,
+			  "vpt" : 431340083072,
+			  "rbh" : 115024,
+			  "sbh" : 8627,
+			  "gas" : 1150240,
+			  "bpr" : 172536033,
+			  "sbpr" : 4313401,
+			  "min" : 0,
+			  "max" : 1000000000000000
 			}
-		  ]
+		  } ]
 		}
 	  },
 	  {

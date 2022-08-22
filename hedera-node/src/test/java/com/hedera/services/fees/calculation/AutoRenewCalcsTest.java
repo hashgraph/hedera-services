@@ -161,7 +161,7 @@ class AutoRenewCalcsTest {
 
     @Test
     void computesExpectedUsdPriceInFreeTierForThreeMonthContractRenewal() {
-        long expectedFeeInTinycents = 163806890L; // storage fee is 0 since it is < 100M
+        long expectedFeeInTinycents = 259991900L; // storage fee is 0 since it is < 100M
         long expectedFeeInTinybars = getTinybarsFromTinyCents(activeRates, expectedFeeInTinycents);
         long threeMonthsInSeconds = 7776000L;
         setupSuperStandardContractWith(Long.MAX_VALUE);
