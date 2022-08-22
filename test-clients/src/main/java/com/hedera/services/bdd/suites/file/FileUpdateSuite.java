@@ -15,6 +15,7 @@
  */
 package com.hedera.services.bdd.suites.file;
 
+import static com.hedera.services.bdd.spec.HapiApiSpec.customHapiSpec;
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.ContractInfoAsserts.contractWith;
@@ -152,23 +153,41 @@ public class FileUpdateSuite extends HapiApiSuite {
     public List<HapiApiSpec> getSpecsInSuite() {
         return List.of(
                 new HapiApiSpec[] {
-                    vanillaUpdateSucceeds(),
-                    updateFeesCompatibleWithCreates(),
-                    apiPermissionsChangeDynamically(),
-                    cannotUpdateExpirationPastMaxLifetime(),
-                    optimisticSpecialFileUpdate(),
-                    associateHasExpectedSemantics(),
-                    notTooManyFeeScheduleCanBeCreated(),
-                    allUnusedGasIsRefundedIfSoConfigured(),
-                    maxRefundIsEnforced(),
-                    gasLimitOverMaxGasLimitFailsPrecheck(),
-                    autoCreationIsDynamic(),
-                    kvLimitsEnforced(),
-                    serviceFeeRefundedIfConsGasExhausted(),
-                    chainIdChangesDynamically(),
-                    entitiesNotCreatableAfterUsageLimitsReached(),
-                    rentItemizedAsExpectedWithOverridePriceTiers()
+//                    vanillaUpdateSucceeds(),
+//                    updateFeesCompatibleWithCreates(),
+//                    apiPermissionsChangeDynamically(),
+//                    cannotUpdateExpirationPastMaxLifetime(),
+//                    optimisticSpecialFileUpdate(),
+//                    associateHasExpectedSemantics(),
+//                    notTooManyFeeScheduleCanBeCreated(),
+//                    allUnusedGasIsRefundedIfSoConfigured(),
+//                    maxRefundIsEnforced(),
+//                    gasLimitOverMaxGasLimitFailsPrecheck(),
+//                    autoCreationIsDynamic(),
+//                    kvLimitsEnforced(),
+//                    serviceFeeRefundedIfConsGasExhausted(),
+//                    chainIdChangesDynamically(),
+//                    entitiesNotCreatableAfterUsageLimitsReached(),
+//                    rentItemizedAsExpectedWithOverridePriceTiers(),
+                        getPreviewnetAccountInfo(),
                 });
+    }
+
+    private HapiApiSpec getPreviewnetAccountInfo() {
+        return customHapiSpec("GetPreviewnetAccountInfo").withProperties(Map.of(
+                        "nodes", "35.231.208.148",
+                        "default.payer.pemKeyLoc", "previewtestnet-account2.pem",
+                        "default.payer.pemKeyPassphrase", "P1WUX2Xla2wFslpoPTN39avz"))
+                .given(
+                        cryptoCreate("civilian").balance(ONE_MILLION_HBARS),
+                        cryptoCreate("other")
+                                .maxAutomaticTokenAssociations(500_000_000)
+                                .payingWith("civilian")
+                                .balance(1L + ONE_HBAR).via("hmm")
+                ).when( ).then(
+                        getTxnRecord("hmm").logged()
+//                        getAccountInfo("0.0.88").logged()
+                );
     }
 
     private HapiApiSpec associateHasExpectedSemantics() {

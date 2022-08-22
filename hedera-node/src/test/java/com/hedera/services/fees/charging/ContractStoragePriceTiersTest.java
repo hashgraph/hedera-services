@@ -77,6 +77,46 @@ class ContractStoragePriceTiersTest {
     }
 
     @Test
+    void congestionPricingOnlyActivePastUpperLimit() {
+        givenDefaultSubjectWith("0til50M,2000til450M");
+        final var used = 450_000_000L;
+        final var basePrice = 2000 * THOUSANDTHS_TO_TINY;
+        final var expected = tinycentsToTinybars(basePrice, someRate);
+
+        final var actual =
+                subject.priceOfPendingUsage(
+                        someRate, used, DEFAULT_REFERENCE_LIFETIME, nonFreeUsageFor(1));
+
+        assertEquals(expected, actual);
+    }
+
+    @Test
+    void autoRenewalWorksForNonFreeTiers() {
+        givenDefaultSubjectWith("0til50M,2000til450M");
+        final var used = 450_000_000L;
+        final var basePrice = 2000 * THOUSANDTHS_TO_TINY;
+        final var expected = 101 * tinycentsToTinybars(basePrice, someRate);
+
+        final var actual =
+                subject.priceOfAutoRenewal(
+                        someRate, used, DEFAULT_REFERENCE_LIFETIME, 101);
+
+        assertEquals(expected, actual);
+    }
+
+    @Test
+    void autoRenewalWorksForFreeTiers() {
+        givenDefaultSubjectWith("0til50M,2000til450M");
+        final var used = 450_000_000L;
+
+        final var actual =
+                subject.priceOfAutoRenewal(
+                        someRate, used, DEFAULT_REFERENCE_LIFETIME, 99);
+
+        assertEquals(0, actual);
+    }
+
+    @Test
     void partialReferenceLifetimesWork() {
         givenDefaultSubjectWith("0til50M,2000til450M");
         final var used = 100_000_000L;
@@ -160,7 +200,7 @@ class ContractStoragePriceTiersTest {
 
     @Test
     void costIsUnpayableWithNoSlotsRemaining() {
-        givenTypicalSubject();
+        givenDefaultSubjectWith("0til50M,2000til450M");
 
         final var actual =
                 subject.priceOfPendingUsage(

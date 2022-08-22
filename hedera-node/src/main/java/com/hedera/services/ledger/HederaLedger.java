@@ -245,14 +245,6 @@ public class HederaLedger {
         setBalance(id, newBalance);
     }
 
-    public void adjustCollectorBalance(final AccountID collectorId, final long adjustment) {
-        final var balance = getBalance(collectorId);
-        if (!isLegalToAdjust(balance, adjustment)) {
-            throw new InsufficientFundsException(collectorId, adjustment);
-        }
-        setBalance(collectorId, balance + adjustment);
-    }
-
     void doTransfer(AccountID from, AccountID to, long adjustment) {
         long newFromBalance = computeNewBalance(from, -1 * adjustment);
         long newToBalance = computeNewBalance(to, adjustment);

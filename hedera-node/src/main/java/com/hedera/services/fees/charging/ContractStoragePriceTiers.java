@@ -44,6 +44,35 @@ public record ContractStoragePriceTiers(
     public static final long TIER_MULTIPLIER = 1_000_000L;
     public static final long THOUSANDTHS_TO_TINY = 100_000_000L / 1_000L;
 
+    /**
+     * Creates a {@link ContractStoragePriceTiers} matching the given specification.
+     *
+     * <p>The {@code spec} parameter comes from the {@code contract.storageSlotPriceTiers} property,
+     * a comma-separated list whose default value is "{@code 0til100M,2000til450M}".
+     * Each term in the list states the price, in thousandths of a cent, to rent a single key/value
+     * pair for {@code referenceLifetime} seconds, given a maximum number of total key/value pairs
+     * in state. The prices must be non-decreasing, so that rent increases as utilization grows.
+     *
+     * <p>For example, with the default value of {@code referenceLifetime=31536000} (one year), the
+     * "{@code 2000til450M}" term means it costs USD {@literal $0.02} to rent a key/value pair for
+     * year, as long as there are at most 450 million key/value pairs in state.
+     *
+     * <p>Once usage has gone beyond the highest "til" expression in {@code spec}, congestion pricing
+     * begins. From then on, the highest given price is scaled by the reciprocal of the fraction of
+     * capacity still available. For example, with {@code maxTotalKvPairs=500M}, when 490M key/value pairs
+     * are in state, the fraction of capacity remaining is {@code 10M/500M = 1/50}; and the
+     * {@literal $0.02} price above is scaled to {@literal $1.00}.
+     *
+     * <p>There is one exception to the above, that applies to contracts with only a few storage slots,
+     * where "few" is set by the {@code freeTierLimit} parameter. Contracts with fewer than {@code freeTierLimit}
+     * key/value pairs do not pay any rent.
+     *
+     * @param spec a comma-separated list of price tiers as described above
+     * @param freeTierLimit the number of key/value pairs at which a contract starts paying rent
+     * @param maxTotalKvPairs the maximum allowed key/value pairs in the system
+     * @param referenceLifetime the lifetime assumed by the prices in the comma-separated spec
+     * @return a tiered price calculator obeying the given specification
+     */
     public static ContractStoragePriceTiers from(
             final String spec,
             final int freeTierLimit,
@@ -95,9 +124,25 @@ public record ContractStoragePriceTiers(
             final long totalKvPairsUsed,
             final long requestedLifetime,
             final KvUsageInfo usageInfo) {
-        final var requestedKvPairs = usageInfo.pendingUsageDelta();
+        return rentGiven(rate, totalKvPairsUsed, requestedLifetime, usageInfo.pendingUsageDelta(), usageInfo.pendingUsage());
+    }
+
+    public long priceOfAutoRenewal(
+            final ExchangeRate rate,
+            final long totalKvPairsUsed,
+            final long requestedLifetime,
+            final long contractKvPairsUsed) {
+        return rentGiven(rate, totalKvPairsUsed, requestedLifetime, contractKvPairsUsed, contractKvPairsUsed);
+    }
+
+    private long rentGiven(
+            final ExchangeRate rate,
+            final long totalKvPairsUsed,
+            final long requestedLifetime,
+            final long requestedKvPairs,
+            final long contractKvPairsUsed) {
         assertValidArgs(requestedKvPairs, requestedLifetime);
-        if (usageInfo.pendingUsage() < freeTierLimit) {
+        if (contractKvPairsUsed < freeTierLimit) {
             return 0;
         }
 
@@ -126,7 +171,7 @@ public record ContractStoragePriceTiers(
         }
         var cost =
                 Math.max(1, cappedMultiplication(tinycentsToTinybars(fee, rate), requestedKvPairs));
-        if (i == usageTiers.length - 1) {
+        if (i == usageTiers.length - 1 && totalKvPairsUsed > usageTiers[i]) {
             // Congestion pricing takes effect now
             final var slotsRemaining = maxTotalKvPairs - totalKvPairsUsed;
             cost =

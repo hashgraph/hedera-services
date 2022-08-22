@@ -22,8 +22,24 @@ import com.hedera.services.store.contracts.KvUsageInfo;
 import com.hederahashgraph.api.proto.java.AccountID;
 import java.util.Map;
 
+/**
+ * Defines a type able to charge storage rent due at the end of a contract transaction.
+ */
 public interface StorageFeeCharging {
-    void chargeStorageFees(
+    /**
+     * Given the number of key/value pairs in state at the beginning of a transaction,
+     * and the new key/value usage for each contract number that changed storage in the
+     * transaction, charges the appropriate auto-renew accounts and/or contracts rent
+     * using the given {@code accounts} ledger.
+     *
+     * <p>If the property {@code contracts.itemizeStorageFees} is true, the rent charges will
+     * be itemized in a "following" child record whose memo is {@code "Contract storage fees"}.
+     *
+     * @param numTotalKvPairs the total key/value pairs in state
+     * @param newUsageInfos the storage usage deltas in a transaction
+     * @param accounts the ledger to use for charging rent
+     */
+    void chargeStorageRent(
             long numTotalKvPairs,
             Map<Long, KvUsageInfo> newUsageInfos,
             TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accounts);
