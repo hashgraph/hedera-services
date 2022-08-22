@@ -16,7 +16,11 @@
 package com.hedera.services.bdd.suites.contract;
 
 import static com.hedera.services.bdd.spec.HapiPropertySource.asDotDelimitedLongArray;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
+import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.CONSTRUCTOR;
+import static com.swirlds.common.utility.CommonUtils.hex;
 import static com.swirlds.common.utility.CommonUtils.unhex;
 import static java.lang.System.arraycopy;
 import static org.apache.commons.lang3.StringUtils.EMPTY;
@@ -24,6 +28,9 @@ import static org.apache.commons.lang3.StringUtils.EMPTY;
 import com.google.common.primitives.Ints;
 import com.google.common.primitives.Longs;
 import com.google.protobuf.ByteString;
+import com.hedera.services.bdd.spec.HapiPropertySource;
+import com.hedera.services.bdd.spec.HapiSpecOperation;
+import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -37,6 +44,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.IntStream;
 import org.apache.commons.io.FileUtils;
 import org.apache.tuweni.bytes.Bytes;
@@ -243,5 +251,46 @@ public class Utils {
                                 .setEvmAddress(
                                         ByteString.copyFrom(CommonUtils.unhex(hexedEvmAddress))))
                 .build();
+    }
+
+    public static HapiSpecOperation captureOneChildCreate2MetaFor(
+            final String desc,
+            final String creation2,
+            final AtomicReference<String> mirrorAddr,
+            final AtomicReference<String> create2Addr) {
+        return captureChildCreate2MetaFor(1, 0, desc, creation2, mirrorAddr, create2Addr);
+    }
+
+    public static HapiSpecOperation captureChildCreate2MetaFor(
+            final int givenNumExpectedChildren,
+            final int givenChildOfInterest,
+            final String desc,
+            final String creation2,
+            final AtomicReference<String> mirrorAddr,
+            final AtomicReference<String> create2Addr) {
+        return withOpContext(
+                (spec, opLog) -> {
+                    final var lookup = getTxnRecord(creation2).andAllChildRecords().logged();
+                    allRunFor(spec, lookup);
+                    final var response = lookup.getResponse().getTransactionGetRecord();
+                    final var numRecords = response.getChildTransactionRecordsCount();
+                    int numExpectedChildren = givenNumExpectedChildren;
+                    int childOfInterest = givenChildOfInterest;
+                    if (numRecords == numExpectedChildren + 1
+                            && TxnUtils.isEndOfStakingPeriodRecord(
+                                    response.getChildTransactionRecords(0))) {
+                        // This transaction may have had a preceding record for the end-of-day
+                        // staking calculations
+                        numExpectedChildren++;
+                        childOfInterest++;
+                    }
+                    final var create2Record = response.getChildTransactionRecords(childOfInterest);
+                    final var create2Address =
+                            create2Record.getContractCreateResult().getEvmAddress().getValue();
+                    create2Addr.set(hex(create2Address.toByteArray()));
+                    final var createdId = create2Record.getReceipt().getContractID();
+                    mirrorAddr.set(hex(HapiPropertySource.asSolidityAddress(createdId)));
+                    opLog.info("{} is @ {} (mirror {})", desc, create2Addr.get(), mirrorAddr.get());
+                });
     }
 }
