@@ -15,7 +15,6 @@
  */
 package com.hedera.services.bdd.suites.file;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.customHapiSpec;
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.ContractInfoAsserts.contractWith;
@@ -142,22 +141,22 @@ public class FileUpdateSuite extends HapiApiSuite {
     public List<HapiApiSpec> getSpecsInSuite() {
         return List.of(
                 new HapiApiSpec[] {
-                                        vanillaUpdateSucceeds(),
-                                        updateFeesCompatibleWithCreates(),
-                                        apiPermissionsChangeDynamically(),
-                                        cannotUpdateExpirationPastMaxLifetime(),
-                                        optimisticSpecialFileUpdate(),
-                                        associateHasExpectedSemantics(),
-                                        notTooManyFeeScheduleCanBeCreated(),
-                                        allUnusedGasIsRefundedIfSoConfigured(),
-                                        maxRefundIsEnforced(),
-                                        gasLimitOverMaxGasLimitFailsPrecheck(),
-                                        autoCreationIsDynamic(),
-                                        kvLimitsEnforced(),
-                                        serviceFeeRefundedIfConsGasExhausted(),
-                                        chainIdChangesDynamically(),
-                                        entitiesNotCreatableAfterUsageLimitsReached(),
-                                        rentItemizedAsExpectedWithOverridePriceTiers(),
+                    vanillaUpdateSucceeds(),
+                    updateFeesCompatibleWithCreates(),
+                    apiPermissionsChangeDynamically(),
+                    cannotUpdateExpirationPastMaxLifetime(),
+                    optimisticSpecialFileUpdate(),
+                    associateHasExpectedSemantics(),
+                    notTooManyFeeScheduleCanBeCreated(),
+                    allUnusedGasIsRefundedIfSoConfigured(),
+                    maxRefundIsEnforced(),
+                    gasLimitOverMaxGasLimitFailsPrecheck(),
+                    autoCreationIsDynamic(),
+                    kvLimitsEnforced(),
+                    serviceFeeRefundedIfConsGasExhausted(),
+                    chainIdChangesDynamically(),
+                    entitiesNotCreatableAfterUsageLimitsReached(),
+                    rentItemizedAsExpectedWithOverridePriceTiers(),
                 });
     }
 
