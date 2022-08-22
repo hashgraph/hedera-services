@@ -15,12 +15,6 @@
  */
 package com.hedera.services.state.virtual;
 
-import static com.hedera.services.state.merkle.internals.BitPackUtils.packedTime;
-import static com.hedera.services.state.merkle.internals.BitPackUtils.signedLowOrder32From;
-import static com.hedera.services.state.merkle.internals.BitPackUtils.unsignedHighOrder32From;
-import static com.hedera.services.utils.NftNumPair.MISSING_NFT_NUM_PAIR;
-import static java.lang.Math.min;
-
 import com.google.common.base.MoreObjects;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.submerkle.EntityId;
@@ -30,10 +24,17 @@ import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.jasperdb.files.DataFileCommon;
 import com.swirlds.virtualmap.VirtualValue;
+
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.Objects;
+
+import static com.hedera.services.state.merkle.internals.BitPackUtils.packedTime;
+import static com.hedera.services.state.merkle.internals.BitPackUtils.signedLowOrder32From;
+import static com.hedera.services.state.merkle.internals.BitPackUtils.unsignedHighOrder32From;
+import static com.hedera.services.utils.NftNumPair.MISSING_NFT_NUM_PAIR;
+import static java.lang.Math.min;
 
 /**
  * Represents the information stored in the virtualized merkle node associated with a unique token
@@ -77,17 +78,17 @@ public class UniqueTokenValue implements VirtualValue {
     public UniqueTokenValue() {}
 
     public UniqueTokenValue(
-            long ownerAccountNum,
-            long spenderAccountNum,
-            byte[] metadata,
-            RichInstant creationTime) {
+            final long ownerAccountNum,
+            final long spenderAccountNum,
+            final byte[] metadata,
+            final RichInstant creationTime) {
         this.ownerAccountNum = ownerAccountNum;
         this.spenderAccountNum = spenderAccountNum;
         this.packedCreationTime = packedTime(creationTime.getSeconds(), creationTime.getNanos());
         this.metadata = metadata;
     }
 
-    public UniqueTokenValue(UniqueTokenValue other) {
+    public UniqueTokenValue(final UniqueTokenValue other) {
         this.ownerAccountNum = other.ownerAccountNum;
         this.spenderAccountNum = other.spenderAccountNum;
         this.metadata = other.metadata;
@@ -127,7 +128,7 @@ public class UniqueTokenValue implements VirtualValue {
 
     @Override
     public VirtualValue asReadOnly() {
-        UniqueTokenValue copy = new UniqueTokenValue(this);
+        final UniqueTokenValue copy = new UniqueTokenValue(this);
         copy.isImmutable = true;
         return copy;
     }
@@ -179,7 +180,7 @@ public class UniqueTokenValue implements VirtualValue {
     private static byte[] readBytes(
             final CheckedSupplier<Byte> readByteFn,
             final CheckedConsumer<byte[]> readBytesFn,
-            int maxBytes)
+            final int maxBytes)
             throws IOException {
         // Guard against mal-formed data by capping the max length.
         final int len = min(readByteFn.get(), maxBytes);

@@ -15,20 +15,21 @@
  */
 package com.hedera.services.state.virtual;
 
-import static com.google.common.truth.Truth.assertThat;
-
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
+import org.junit.jupiter.api.Test;
+
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import org.junit.jupiter.api.Test;
+
+import static com.google.common.truth.Truth.assertThat;
 
 class UniqueTokenKeySupplierTest {
     @Test
     void tokenSupplier_whenCalledMultipleTimes_producesNewCopies() {
-        UniqueTokenKeySupplier supplier = new UniqueTokenKeySupplier();
-        UniqueTokenKey key1 = supplier.get();
-        UniqueTokenKey key2 = supplier.get();
+        final UniqueTokenKeySupplier supplier = new UniqueTokenKeySupplier();
+        final UniqueTokenKey key1 = supplier.get();
+        final UniqueTokenKey key2 = supplier.get();
         assertThat(key1).isNotNull();
         assertThat(key2).isNotNull();
         assertThat(key1).isNotSameInstanceAs(key2);
@@ -48,14 +49,14 @@ class UniqueTokenKeySupplierTest {
 
     @Test
     void noopFunctions_forTestCoverage() {
-        UniqueTokenKeySupplier supplier = new UniqueTokenKeySupplier();
-        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-        SerializableDataOutputStream dataOutputStream =
+        final UniqueTokenKeySupplier supplier = new UniqueTokenKeySupplier();
+        final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+        final SerializableDataOutputStream dataOutputStream =
                 new SerializableDataOutputStream(outputStream);
         supplier.serialize(dataOutputStream);
         assertThat(outputStream.toByteArray()).isEmpty();
 
-        SerializableDataInputStream dataInputStream =
+        final SerializableDataInputStream dataInputStream =
                 new SerializableDataInputStream(
                         new ByteArrayInputStream(outputStream.toByteArray()));
         supplier.deserialize(dataInputStream, 1);

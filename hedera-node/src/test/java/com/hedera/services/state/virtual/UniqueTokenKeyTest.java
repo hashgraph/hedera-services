@@ -15,11 +15,11 @@
  */
 package com.hedera.services.state.virtual;
 
-import static com.google.common.truth.Truth.assertThat;
-
 import com.hedera.services.store.models.NftId;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
+import org.junit.jupiter.api.Test;
+
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -27,13 +27,14 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
-import org.junit.jupiter.api.Test;
+
+import static com.google.common.truth.Truth.assertThat;
 
 class UniqueTokenKeyTest {
 
     @Test
     void constructedKey_returnsValue() {
-        UniqueTokenKey key = new UniqueTokenKey(123L, 456L);
+        final UniqueTokenKey key = new UniqueTokenKey(123L, 456L);
         assertThat(key.getNum()).isEqualTo(123L);
         assertThat(key.getTokenSerial()).isEqualTo(456L);
     }
@@ -41,16 +42,16 @@ class UniqueTokenKeyTest {
     @Test
     void serializing_withDifferentTokenNums_yieldSmallerBufferPositionForLeadingZeros()
             throws IOException {
-        UniqueTokenKey key1 = new UniqueTokenKey(0, 0); // 1 byte
-        UniqueTokenKey key2 = new UniqueTokenKey(0, 0xFF); // 2 bytes
-        UniqueTokenKey key3 = new UniqueTokenKey(0xFFFF, 0); // 3 bytes
-        UniqueTokenKey key4 =
+        final UniqueTokenKey key1 = new UniqueTokenKey(0, 0); // 1 byte
+        final UniqueTokenKey key2 = new UniqueTokenKey(0, 0xFF); // 2 bytes
+        final UniqueTokenKey key3 = new UniqueTokenKey(0xFFFF, 0); // 3 bytes
+        final UniqueTokenKey key4 =
                 new UniqueTokenKey(0xFFFF_FFFF_FFFF_FFFFL, 0xFFFF_FFFF_FFFF_FFFFL); // 17 bytes
 
-        ByteBuffer buffer1 = ByteBuffer.wrap(new byte[UniqueTokenKey.ESTIMATED_SIZE_BYTES]);
-        ByteBuffer buffer2 = ByteBuffer.wrap(new byte[UniqueTokenKey.ESTIMATED_SIZE_BYTES]);
-        ByteBuffer buffer3 = ByteBuffer.wrap(new byte[UniqueTokenKey.ESTIMATED_SIZE_BYTES]);
-        ByteBuffer buffer4 = ByteBuffer.wrap(new byte[UniqueTokenKey.ESTIMATED_SIZE_BYTES]);
+        final ByteBuffer buffer1 = ByteBuffer.wrap(new byte[UniqueTokenKey.ESTIMATED_SIZE_BYTES]);
+        final ByteBuffer buffer2 = ByteBuffer.wrap(new byte[UniqueTokenKey.ESTIMATED_SIZE_BYTES]);
+        final ByteBuffer buffer3 = ByteBuffer.wrap(new byte[UniqueTokenKey.ESTIMATED_SIZE_BYTES]);
+        final ByteBuffer buffer4 = ByteBuffer.wrap(new byte[UniqueTokenKey.ESTIMATED_SIZE_BYTES]);
 
         key1.serialize(buffer1);
         key2.serialize(buffer2);
@@ -62,15 +63,15 @@ class UniqueTokenKeyTest {
         assertThat(buffer3.position()).isLessThan(buffer4.position());
     }
 
-    private static ByteBuffer serializeToByteBuffer(long num, long serial) throws IOException {
-        ByteBuffer buffer = ByteBuffer.wrap(new byte[UniqueTokenKey.ESTIMATED_SIZE_BYTES]);
+    private static ByteBuffer serializeToByteBuffer(final long num, final long serial) throws IOException {
+        final ByteBuffer buffer = ByteBuffer.wrap(new byte[UniqueTokenKey.ESTIMATED_SIZE_BYTES]);
         new UniqueTokenKey(num, serial).serialize(buffer);
         return buffer.rewind();
     }
 
-    private static UniqueTokenKey checkSerializeAndDeserializeByteBuffer(long num, long serial)
+    private static UniqueTokenKey checkSerializeAndDeserializeByteBuffer(final long num, final long serial)
             throws IOException {
-        UniqueTokenKey key = new UniqueTokenKey();
+        final UniqueTokenKey key = new UniqueTokenKey();
         key.deserialize(serializeToByteBuffer(num, serial), UniqueTokenKey.CURRENT_VERSION);
         assertThat(key.getNum()).isEqualTo(num);
         assertThat(key.getTokenSerial()).isEqualTo(serial);
@@ -80,7 +81,7 @@ class UniqueTokenKeyTest {
     @Test
     void deserializingByteBuffer_whenCurrentVersion_restoresValueAndRegeneratesHash()
             throws IOException {
-        List<Long> valuesToTest =
+        final List<Long> valuesToTest =
                 List.of(
                         0L,
                         0xFFL,
@@ -91,10 +92,10 @@ class UniqueTokenKeyTest {
                         0xFFFF_FFFF_FFFFL,
                         0xFF_FFFF_FFFF_FFFFL,
                         0xFFFF_FFFF_FFFF_FFFFL);
-        List<Integer> hashCodes = new ArrayList<>();
-        for (long num : valuesToTest) {
-            for (long serial : valuesToTest) {
-                UniqueTokenKey key = checkSerializeAndDeserializeByteBuffer(num, serial);
+        final List<Integer> hashCodes = new ArrayList<>();
+        for (final long num : valuesToTest) {
+            for (final long serial : valuesToTest) {
+                final UniqueTokenKey key = checkSerializeAndDeserializeByteBuffer(num, serial);
                 hashCodes.add(key.hashCode());
             }
         }
@@ -103,21 +104,21 @@ class UniqueTokenKeyTest {
         assertThat(new HashSet<>(hashCodes).size()).isAtLeast((int) (0.7 * hashCodes.size()));
     }
 
-    private static SerializableDataInputStream serializeToStream(long num, long serial)
+    private static SerializableDataInputStream serializeToStream(final long num, final long serial)
             throws IOException {
-        ByteArrayOutputStream byteOutputStream =
+        final ByteArrayOutputStream byteOutputStream =
                 new ByteArrayOutputStream(UniqueTokenKey.ESTIMATED_SIZE_BYTES);
-        SerializableDataOutputStream outputStream =
+        final SerializableDataOutputStream outputStream =
                 new SerializableDataOutputStream(byteOutputStream);
         new UniqueTokenKey(num, serial).serialize(outputStream);
 
-        ByteArrayInputStream inputStream = new ByteArrayInputStream(byteOutputStream.toByteArray());
+        final ByteArrayInputStream inputStream = new ByteArrayInputStream(byteOutputStream.toByteArray());
         return new SerializableDataInputStream(inputStream);
     }
 
-    private static UniqueTokenKey checkSerializeAndDeserializeStream(long num, long serial)
+    private static UniqueTokenKey checkSerializeAndDeserializeStream(final long num, final long serial)
             throws IOException {
-        UniqueTokenKey key = new UniqueTokenKey();
+        final UniqueTokenKey key = new UniqueTokenKey();
         key.deserialize(serializeToStream(num, serial), UniqueTokenKey.CURRENT_VERSION);
         assertThat(key.getNum()).isEqualTo(num);
         assertThat(key.getTokenSerial()).isEqualTo(serial);
@@ -127,7 +128,7 @@ class UniqueTokenKeyTest {
     @Test
     void deserializingStream_whenCurrentVersion_restoresValueAndRegeneratesHash()
             throws IOException {
-        List<Long> valuesToTest =
+        final List<Long> valuesToTest =
                 List.of(
                         0L,
                         0xFFL,
@@ -138,10 +139,10 @@ class UniqueTokenKeyTest {
                         0xFFFF_FFFF_FFFFL,
                         0xFF_FFFF_FFFF_FFFFL,
                         0xFFFF_FFFF_FFFF_FFFFL);
-        List<Integer> hashCodes = new ArrayList<>();
-        for (long num : valuesToTest) {
-            for (long serial : valuesToTest) {
-                UniqueTokenKey key = checkSerializeAndDeserializeStream(num, serial);
+        final List<Integer> hashCodes = new ArrayList<>();
+        for (final long num : valuesToTest) {
+            for (final long serial : valuesToTest) {
+                final UniqueTokenKey key = checkSerializeAndDeserializeStream(num, serial);
                 hashCodes.add(key.hashCode());
             }
         }
@@ -152,19 +153,19 @@ class UniqueTokenKeyTest {
 
     @Test
     void equals_whenNull_isFalse() {
-        UniqueTokenKey key = new UniqueTokenKey();
+        final UniqueTokenKey key = new UniqueTokenKey();
         assertThat(key.equals(null)).isFalse();
     }
 
     @Test
     void equals_whenDifferentType_isFalse() {
-        UniqueTokenKey key = new UniqueTokenKey();
+        final UniqueTokenKey key = new UniqueTokenKey();
         assertThat(key.equals(123L)).isFalse();
     }
 
     @Test
     void equals_whenSameType_matchesContentCorrectly() {
-        UniqueTokenKey key = new UniqueTokenKey(123L, 456L);
+        final UniqueTokenKey key = new UniqueTokenKey(123L, 456L);
         assertThat(key.equals(new UniqueTokenKey(123L, 456L))).isTrue();
         assertThat(key.equals(new UniqueTokenKey(456L, 123L))).isFalse();
         assertThat(key.equals(new UniqueTokenKey(123L, 333L))).isFalse();
@@ -173,10 +174,10 @@ class UniqueTokenKeyTest {
 
     @Test
     void comparing_comparesProperly() {
-        UniqueTokenKey key1 = new UniqueTokenKey(123L, 789L);
-        UniqueTokenKey key2 = new UniqueTokenKey(456L, 789L);
-        UniqueTokenKey key3 = new UniqueTokenKey(123L, 456L);
-        UniqueTokenKey key4 = new UniqueTokenKey(123L, 456L);
+        final UniqueTokenKey key1 = new UniqueTokenKey(123L, 789L);
+        final UniqueTokenKey key2 = new UniqueTokenKey(456L, 789L);
+        final UniqueTokenKey key3 = new UniqueTokenKey(123L, 456L);
+        final UniqueTokenKey key4 = new UniqueTokenKey(123L, 456L);
 
         // Check equality works
         assertThat(key1).isEqualTo(key1); // same instance
@@ -195,7 +196,7 @@ class UniqueTokenKeyTest {
         assertThat(key3.compareTo(key4)).isEqualTo(0); // differing instances
     }
 
-    private static ByteBuffer asByteBuffer(int value) {
+    private static ByteBuffer asByteBuffer(final int value) {
         return ByteBuffer.wrap(new byte[] {(byte) value});
     }
 
@@ -210,7 +211,7 @@ class UniqueTokenKeyTest {
 
     @Test
     void getVersion_isCurrent() {
-        UniqueTokenKey key1 = new UniqueTokenKey();
+        final UniqueTokenKey key1 = new UniqueTokenKey();
         // This will fail if the version number changes and force user to update the version number
         // here.
         assertThat(key1.getVersion()).isEqualTo(1);
@@ -222,7 +223,7 @@ class UniqueTokenKeyTest {
     @Test
     void getClassId_isExpected() {
         // Make sure the class id isn't accidentally changed.
-        UniqueTokenKey key1 = new UniqueTokenKey();
+        final UniqueTokenKey key1 = new UniqueTokenKey();
         assertThat(key1.getClassId()).isEqualTo(0x17f77b311f6L);
     }
 

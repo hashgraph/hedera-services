@@ -15,8 +15,6 @@
  */
 package com.hedera.services.utils.subjects;
 
-import static com.google.common.truth.Truth.assertAbout;
-
 import com.google.common.truth.FailureMetadata;
 import com.google.common.truth.LongSubject;
 import com.google.common.truth.PrimitiveByteArraySubject;
@@ -25,8 +23,11 @@ import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.state.virtual.UniqueTokenValue;
 import com.hedera.services.utils.NftNumPair;
-import java.time.Instant;
 import org.jetbrains.annotations.Nullable;
+
+import java.time.Instant;
+
+import static com.google.common.truth.Truth.assertAbout;
 
 public class UniqueTokenValueSubject extends Subject {
     /** Truth extension hook for UniqueTokenValue to UniqueTokenValueSubject. */
@@ -35,7 +36,7 @@ public class UniqueTokenValueSubject extends Subject {
     }
 
     /** Convenience function for mimicing assertThat for UniqueTokenValue. */
-    public static UniqueTokenValueSubject assertThat(@Nullable UniqueTokenValue actual) {
+    public static UniqueTokenValueSubject assertThat(@Nullable final UniqueTokenValue actual) {
         return assertAbout(uniqueTokenValues()).that(actual);
     }
 
@@ -91,23 +92,23 @@ public class UniqueTokenValueSubject extends Subject {
         return check("getMetadata()").that(actual.getMetadata());
     }
 
-    public void hasMetadata(byte[] expected) {
+    public void hasMetadata(final byte[] expected) {
         metadata().isEqualTo(expected);
     }
 
-    public void hasPrev(long tokenNum, long serialNum) {
+    public void hasPrev(final long tokenNum, final long serialNum) {
         check("getPrev()").that(actual.getPrev()).isEqualTo(new NftNumPair(tokenNum, serialNum));
     }
 
-    public void hasPrev(NftNumPair expected) {
+    public void hasPrev(final NftNumPair expected) {
         check("getPrev()").that(actual.getPrev()).isEqualTo(expected);
     }
 
-    public void hasNext(long tokenNum, long serialNum) {
+    public void hasNext(final long tokenNum, final long serialNum) {
         check("getNext()").that(actual.getNext()).isEqualTo(new NftNumPair(tokenNum, serialNum));
     }
 
-    public void hasNext(NftNumPair expected) {
+    public void hasNext(final NftNumPair expected) {
         check("getNext()").that(actual.getNext()).isEqualTo(expected);
     }
 

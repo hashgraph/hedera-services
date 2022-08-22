@@ -15,10 +15,6 @@
  */
 package com.hedera.services.state.virtual;
 
-import static com.google.common.truth.Truth.assertThat;
-import static com.hedera.services.utils.subjects.UniqueTokenValueSubject.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-
 import com.google.common.primitives.Bytes;
 import com.google.common.primitives.Longs;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
@@ -29,6 +25,9 @@ import com.swirlds.common.exceptions.MutabilityException;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.jasperdb.files.DataFileCommon;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -36,8 +35,10 @@ import java.nio.ByteBuffer;
 import java.time.Instant;
 import java.util.HashSet;
 import java.util.List;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+
+import static com.google.common.truth.Truth.assertThat;
+import static com.hedera.services.utils.subjects.UniqueTokenValueSubject.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class UniqueTokenValueTest {
 
@@ -109,7 +110,7 @@ class UniqueTokenValueTest {
         example1.serialize(new SerializableDataOutputStream(stream1));
 
         final ByteArrayInputStream stream2 = new ByteArrayInputStream(stream1.toByteArray());
-        UniqueTokenValue value = new UniqueTokenValue();
+        final UniqueTokenValue value = new UniqueTokenValue();
         value.deserialize(
                 new SerializableDataInputStream(stream2), UniqueTokenValue.CURRENT_VERSION);
         assertSameAsExample1(value);
@@ -121,7 +122,7 @@ class UniqueTokenValueTest {
         example2.serialize(new SerializableDataOutputStream(stream1));
 
         final ByteArrayInputStream stream2 = new ByteArrayInputStream(stream1.toByteArray());
-        UniqueTokenValue value = new UniqueTokenValue();
+        final UniqueTokenValue value = new UniqueTokenValue();
         value.deserialize(
                 new SerializableDataInputStream(stream2), UniqueTokenValue.CURRENT_VERSION);
         assertSameAsExample2(value);
@@ -130,30 +131,30 @@ class UniqueTokenValueTest {
     @Test
     void serialize_withMetadataExceedingMaxBytes_cappedAtMaximum() throws IOException {
         // Metadata with 100 bytes which is at the limit.
-        byte[] data1 =
+        final byte[] data1 =
                 "1111111111222222222233333333334444444444555555555566666666667777777777888888888899999999990000000000"
                         .getBytes();
         // Metadata with 103 bytes which exceeds the limit.
-        byte[] data2 =
+        final byte[] data2 =
                 "1111111111222222222233333333334444444444555555555566666666667777777777888888888899999999990000000000zzz"
                         .getBytes();
 
-        UniqueTokenValue value1 =
+        final UniqueTokenValue value1 =
                 new UniqueTokenValue(
                         1234L,
                         5678L,
                         data1,
                         RichInstant.fromJava(Instant.ofEpochMilli(1_000_000L)));
 
-        UniqueTokenValue value2 =
+        final UniqueTokenValue value2 =
                 new UniqueTokenValue(
                         1234L,
                         5678L,
                         data2,
                         RichInstant.fromJava(Instant.ofEpochMilli(1_000_000L)));
 
-        byte[] sdata1 = new byte[1024];
-        byte[] sdata2 = new byte[1024];
+        final byte[] sdata1 = new byte[1024];
+        final byte[] sdata2 = new byte[1024];
         value1.serialize(ByteBuffer.wrap(sdata1));
         value2.serialize(ByteBuffer.wrap(sdata2));
 
@@ -164,30 +165,30 @@ class UniqueTokenValueTest {
     @Test
     void serializeDataStream_withMetadataExceedingMaxBytes_cappedAtMaximum() throws IOException {
         // Metadata with 100 bytes which is at the limit.
-        byte[] data1 =
+        final byte[] data1 =
                 "1111111111222222222233333333334444444444555555555566666666667777777777888888888899999999990000000000"
                         .getBytes();
         // Metadata with 103 bytes which exceeds the limit.
-        byte[] data2 =
+        final byte[] data2 =
                 "1111111111222222222233333333334444444444555555555566666666667777777777888888888899999999990000000000zzz"
                         .getBytes();
 
-        UniqueTokenValue value1 =
+        final UniqueTokenValue value1 =
                 new UniqueTokenValue(
                         1234L,
                         5678L,
                         data1,
                         RichInstant.fromJava(Instant.ofEpochMilli(1_000_000L)));
 
-        UniqueTokenValue value2 =
+        final UniqueTokenValue value2 =
                 new UniqueTokenValue(
                         1234L,
                         5678L,
                         data2,
                         RichInstant.fromJava(Instant.ofEpochMilli(1_000_000L)));
 
-        ByteArrayOutputStream stream1 = new ByteArrayOutputStream();
-        ByteArrayOutputStream stream2 = new ByteArrayOutputStream();
+        final ByteArrayOutputStream stream1 = new ByteArrayOutputStream();
+        final ByteArrayOutputStream stream2 = new ByteArrayOutputStream();
 
         value1.serialize(new SerializableDataOutputStream(stream1));
         value2.serialize(new SerializableDataOutputStream(stream2));
@@ -199,7 +200,7 @@ class UniqueTokenValueTest {
     @Test
     void deserialize_withMetadataExceedingMaxBytes_cappedAtMaximum() throws IOException {
         // Manually crafted bad data (uses version 1). Need to update if encoding changes.
-        byte[] data1 =
+        final byte[] data1 =
                 Bytes.concat(
                         Longs.toByteArray(1234L),
                         Longs.toByteArray(5678L),
@@ -212,13 +213,13 @@ class UniqueTokenValueTest {
                         Longs.toByteArray(333L),
                         Longs.toByteArray(444L));
 
-        UniqueTokenValue value1 = new UniqueTokenValue();
-        UniqueTokenValue value2 = new UniqueTokenValue();
+        final UniqueTokenValue value1 = new UniqueTokenValue();
+        final UniqueTokenValue value2 = new UniqueTokenValue();
         // Deserialize with bytebuffer
         value1.deserialize(ByteBuffer.wrap(data1), 1);
 
         // Deserialize with datastream
-        ByteArrayInputStream stream = new ByteArrayInputStream(data1);
+        final ByteArrayInputStream stream = new ByteArrayInputStream(data1);
         value2.deserialize(new SerializableDataInputStream(stream), 1);
 
         assertThat(value1.getMetadata()).isEqualTo(value2.getMetadata());
@@ -231,13 +232,13 @@ class UniqueTokenValueTest {
 
     @Test
     void copiedResults_parentReleased_copyStillSame() throws IOException {
-        ByteBuffer encodedEmpty = ByteBuffer.wrap(new byte[128]);
+        final ByteBuffer encodedEmpty = ByteBuffer.wrap(new byte[128]);
         new UniqueTokenValue().serialize(encodedEmpty);
 
-        UniqueTokenValue src =
+        final UniqueTokenValue src =
                 new UniqueTokenValue(
                         1234L, 5678L, "hello world".getBytes(), new RichInstant(456, 789));
-        UniqueTokenValue copy = (UniqueTokenValue) src.copy();
+        final UniqueTokenValue copy = (UniqueTokenValue) src.copy();
 
         // Make sure parent is immutable and not modified.
         assertThat(src.isImmutable()).isTrue();
@@ -257,14 +258,14 @@ class UniqueTokenValueTest {
 
     @Test
     void asReadOnly_mutableObject_shouldMakeItImmutable() throws IOException {
-        ByteBuffer encodedEmpty = ByteBuffer.wrap(new byte[128]);
+        final ByteBuffer encodedEmpty = ByteBuffer.wrap(new byte[128]);
         new UniqueTokenValue().serialize(encodedEmpty);
 
-        UniqueTokenValue src =
+        final UniqueTokenValue src =
                 new UniqueTokenValue(
                         1234L, 5678L, "hello world".getBytes(), new RichInstant(456, 789));
 
-        UniqueTokenValue readOnlyCopy = (UniqueTokenValue) src.asReadOnly();
+        final UniqueTokenValue readOnlyCopy = (UniqueTokenValue) src.asReadOnly();
 
         // Make sure our source copy didn't turn immutable.
         assertThat(src.isImmutable()).isFalse();
@@ -282,24 +283,24 @@ class UniqueTokenValueTest {
 
     @Test
     void asReadOnly_immutableObject_shouldStayImmutable() {
-        UniqueTokenValue src =
+        final UniqueTokenValue src =
                 new UniqueTokenValue(
                         1234L, 5678L, "hello world".getBytes(), new RichInstant(456, 789));
 
-        UniqueTokenValue readOnlyCopy = (UniqueTokenValue) src.asReadOnly().asReadOnly();
+        final UniqueTokenValue readOnlyCopy = (UniqueTokenValue) src.asReadOnly().asReadOnly();
         assertThat(readOnlyCopy.isImmutable()).isTrue();
     }
 
     @Test
     void deserializing_whenObjectImmutable_shouldThrowException() throws IOException {
-        ByteBuffer encodedEmpty = ByteBuffer.wrap(new byte[128]);
+        final ByteBuffer encodedEmpty = ByteBuffer.wrap(new byte[128]);
         new UniqueTokenValue().serialize(encodedEmpty);
 
-        UniqueTokenValue src =
+        final UniqueTokenValue src =
                 new UniqueTokenValue(
                         1234L, 5678L, "hello world".getBytes(), new RichInstant(456, 789));
 
-        UniqueTokenValue readOnlyCopy = (UniqueTokenValue) src.asReadOnly();
+        final UniqueTokenValue readOnlyCopy = (UniqueTokenValue) src.asReadOnly();
         assertThrows(
                 MutabilityException.class,
                 () -> readOnlyCopy.deserialize(encodedEmpty, UniqueTokenValue.CURRENT_VERSION));
@@ -307,7 +308,7 @@ class UniqueTokenValueTest {
 
     @Test
     void toString_containsContents() {
-        UniqueTokenValue value =
+        final UniqueTokenValue value =
                 new UniqueTokenValue(
                         1234L, 5678L, "hello world".getBytes(), new RichInstant(456, 789));
         value.setPrev(NftNumPair.fromLongs(1111L, 2222L));
@@ -323,23 +324,23 @@ class UniqueTokenValueTest {
 
     @Test
     void hashCode_mostlyUnique() {
-        UniqueTokenValue value1 =
+        final UniqueTokenValue value1 =
                 new UniqueTokenValue(
                         1234L, 5678L, "hello world".getBytes(), new RichInstant(456, 789));
 
-        UniqueTokenValue value2 =
+        final UniqueTokenValue value2 =
                 new UniqueTokenValue(
                         1233L, 5678L, "hello world".getBytes(), new RichInstant(455, 789));
 
-        UniqueTokenValue value3 =
+        final UniqueTokenValue value3 =
                 new UniqueTokenValue(
                         1234L, 5678L, "hello world".getBytes(), new RichInstant(456, 788));
 
-        UniqueTokenValue value4 =
+        final UniqueTokenValue value4 =
                 new UniqueTokenValue(
                         1234L, 5678L, "hell0 world".getBytes(), new RichInstant(456, 788));
 
-        UniqueTokenValue value5 =
+        final UniqueTokenValue value5 =
                 new UniqueTokenValue(
                         1234L, 5677L, "hello world".getBytes(), new RichInstant(456, 789));
 
@@ -349,11 +350,11 @@ class UniqueTokenValueTest {
 
     @Test
     void hashCode_forCopies_areTheSame() {
-        UniqueTokenValue value1 =
+        final UniqueTokenValue value1 =
                 new UniqueTokenValue(
                         1234L, 5678L, "hello world".getBytes(), new RichInstant(456, 789));
 
-        UniqueTokenValue value2 =
+        final UniqueTokenValue value2 =
                 new UniqueTokenValue(
                         1234L, 5678L, "hello world".getBytes(), new RichInstant(456, 789));
 
@@ -370,13 +371,13 @@ class UniqueTokenValueTest {
 
     @Test
     void equals_whenSameDataOrCopies_matches() {
-        UniqueTokenValue value1 =
+        final UniqueTokenValue value1 =
                 new UniqueTokenValue(
                         1234L, 5678L, "hello world".getBytes(), new RichInstant(456, 789));
         value1.setPrev(NftNumPair.fromLongs(1, 2));
         value1.setNext(NftNumPair.fromLongs(3, 4));
 
-        UniqueTokenValue value2 =
+        final UniqueTokenValue value2 =
                 new UniqueTokenValue(
                         1234L, 5678L, "hello world".getBytes(), new RichInstant(456, 789));
         value2.setPrev(NftNumPair.fromLongs(1, 2));
@@ -393,46 +394,46 @@ class UniqueTokenValueTest {
 
     @Test
     void equals_whenDifferentData_doesNotMatch() {
-        UniqueTokenValue value1 =
+        final UniqueTokenValue value1 =
                 new UniqueTokenValue(
                         1234L, 5678L, "hello world".getBytes(), new RichInstant(456, 789));
 
-        UniqueTokenValue value2 =
+        final UniqueTokenValue value2 =
                 new UniqueTokenValue(
                         1233L, 5678L, "hello world".getBytes(), new RichInstant(456, 789));
 
-        UniqueTokenValue value3 =
+        final UniqueTokenValue value3 =
                 new UniqueTokenValue(
                         1234L, 5678L, "hello world".getBytes(), new RichInstant(457, 789));
 
-        UniqueTokenValue value4 =
+        final UniqueTokenValue value4 =
                 new UniqueTokenValue(
                         1234L, 5678L, "hello world".getBytes(), new RichInstant(456, 780));
 
-        UniqueTokenValue value5 =
+        final UniqueTokenValue value5 =
                 new UniqueTokenValue(
                         1234L, 5678L, "hello w0rld".getBytes(), new RichInstant(456, 789));
 
-        UniqueTokenValue value6 =
+        final UniqueTokenValue value6 =
                 new UniqueTokenValue(
                         1234L, 5677L, "hello world".getBytes(), new RichInstant(456, 789));
 
-        UniqueTokenValue value7 =
+        final UniqueTokenValue value7 =
                 new UniqueTokenValue(
                         1234L, 5677L, "hello world".getBytes(), new RichInstant(456, 789));
         value7.setPrev(NftNumPair.fromLongs(1, 2));
 
-        UniqueTokenValue value8 =
+        final UniqueTokenValue value8 =
                 new UniqueTokenValue(
                         1234L, 5677L, "hello world".getBytes(), new RichInstant(456, 789));
         value8.setPrev(NftNumPair.fromLongs(3, 4));
 
-        UniqueTokenValue value9 =
+        final UniqueTokenValue value9 =
                 new UniqueTokenValue(
                         1234L, 5677L, "hello world".getBytes(), new RichInstant(456, 789));
         value9.setNext(NftNumPair.fromLongs(1, 2));
 
-        UniqueTokenValue value10 =
+        final UniqueTokenValue value10 =
                 new UniqueTokenValue(
                         1234L, 5677L, "hello world".getBytes(), new RichInstant(456, 789));
         value10.setNext(NftNumPair.fromLongs(3, 4));
@@ -449,13 +450,13 @@ class UniqueTokenValueTest {
 
     @Test
     void equals_whenDifferentTypes_doesNotMatch() {
-        UniqueTokenValue value = new UniqueTokenValue();
+        final UniqueTokenValue value = new UniqueTokenValue();
         assertThat(value.equals(new UniqueTokenKey())).isFalse();
     }
 
     @Test
     void equals_whenNull_doesNotMatch() {
-        UniqueTokenValue value = new UniqueTokenValue();
+        final UniqueTokenValue value = new UniqueTokenValue();
         assertThat(value.equals(null)).isFalse();
     }
 
@@ -469,7 +470,7 @@ class UniqueTokenValueTest {
 
     @Test
     void checkVersion_isCurrent() {
-        UniqueTokenValue value = new UniqueTokenValue();
+        final UniqueTokenValue value = new UniqueTokenValue();
         // This will fail if the version number changes and force user to update the version number
         // here.
         assertThat(value.getVersion()).isEqualTo(1);
@@ -480,21 +481,21 @@ class UniqueTokenValueTest {
 
     @Test
     void getClassId_isExpected() {
-        UniqueTokenValue value = new UniqueTokenValue();
+        final UniqueTokenValue value = new UniqueTokenValue();
         // Make sure the class id isn't accidentally changed.
         assertThat(value.getClassId()).isEqualTo(0xefa8762aa03ce697L);
     }
 
     @Test
     void constructorWithMerkleToken_createsAssociatedToken() {
-        MerkleUniqueToken legacyToken = new MerkleUniqueToken();
+        final MerkleUniqueToken legacyToken = new MerkleUniqueToken();
         legacyToken.setNext(NftNumPair.fromLongs(1, 2));
         legacyToken.setPrev(NftNumPair.fromLongs(3, 4));
         legacyToken.setOwner(EntityId.fromNum(5));
         legacyToken.setPackedCreationTime(6L);
         legacyToken.setSpender(EntityId.fromNum(7L));
         legacyToken.setMetadata(new byte[] {8, 9, 10});
-        UniqueTokenValue token = UniqueTokenValue.from(legacyToken);
+        final UniqueTokenValue token = UniqueTokenValue.from(legacyToken);
         assertThat(token).hasNext(1, 2);
         assertThat(token).hasPrev(3, 4);
         assertThat(token).hasOwner(5);
@@ -505,7 +506,7 @@ class UniqueTokenValueTest {
 
     @Test
     void setGetOwner_whenMutable_worksAsExpected() {
-        UniqueTokenValue value = new UniqueTokenValue();
+        final UniqueTokenValue value = new UniqueTokenValue();
         assertThat(value).hasOwner(EntityId.MISSING_ENTITY_ID);
         value.setOwner(EntityId.fromNum(4));
         assertThat(value.getOwner()).isEqualTo(EntityId.fromNum(4));
@@ -515,7 +516,7 @@ class UniqueTokenValueTest {
 
     @Test
     void setGetSpender_whenMutable_worksAsExpected() {
-        UniqueTokenValue value = new UniqueTokenValue();
+        final UniqueTokenValue value = new UniqueTokenValue();
         assertThat(value).hasSpender(EntityId.MISSING_ENTITY_ID);
         value.setSpender(EntityId.fromNum(4));
         assertThat(value.getSpender()).isEqualTo(EntityId.fromNum(4));
@@ -525,14 +526,14 @@ class UniqueTokenValueTest {
 
     @Test
     void setGetMetadata_whenMutable_worksAsExpected() {
-        UniqueTokenValue value = new UniqueTokenValue();
+        final UniqueTokenValue value = new UniqueTokenValue();
         value.setMetadata("hello".getBytes());
         assertThat(value.getMetadata()).isEqualTo("hello".getBytes());
     }
 
     @Test
     void setGetPackedCreationTime_whenMutable_worksAsExpected() {
-        UniqueTokenValue value = new UniqueTokenValue();
+        final UniqueTokenValue value = new UniqueTokenValue();
         value.setPackedCreationTime(123);
         assertThat(value.getPackedCreationTime()).isEqualTo(123);
     }
