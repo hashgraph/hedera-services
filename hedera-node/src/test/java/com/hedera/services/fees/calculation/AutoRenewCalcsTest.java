@@ -188,7 +188,8 @@ class AutoRenewCalcsTest {
 
     @Test
     void computesExpectedUsdPriceInNonFreeTierForThreeMonthContractRenewal() {
-        long expectedFeeInTinycents = 986561196830L; // the storage fee is added since KV pairs are > 100M
+        long expectedFeeInTinycents =
+                986561196830L; // the storage fee is added since KV pairs are > 100M
         long expectedFeeInTinybars = getTinybarsFromTinyCents(activeRates, expectedFeeInTinycents);
         long threeMonthsInSeconds = 7776000L;
         setupContractWithNonFreeTierKvPairs(Long.MAX_VALUE);
