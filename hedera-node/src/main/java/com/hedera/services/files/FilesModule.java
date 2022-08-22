@@ -15,6 +15,8 @@
  */
 package com.hedera.services.files;
 
+import static com.hedera.services.context.properties.PropertyNames.FILES_HAPI_PERMISSIONS;
+import static com.hedera.services.context.properties.PropertyNames.FILES_NETWORK_PROPERTIES;
 import static com.hedera.services.files.DataMapFactory.dataMapFrom;
 import static com.hedera.services.files.MetadataMapFactory.metaMapFrom;
 import static com.hedera.services.files.interceptors.ConfigListUtils.uncheckedParse;
@@ -101,7 +103,7 @@ public interface FilesModule {
         final var propertiesManager =
                 new ValidatingCallbackInterceptor(
                         0,
-                        "files.networkProperties",
+                        FILES_NETWORK_PROPERTIES,
                         properties,
                         contents -> propertiesCb.accept(uncheckedParse(contents)),
                         ConfigListUtils::isConfigList);
@@ -110,7 +112,7 @@ public interface FilesModule {
         final var permissionsManager =
                 new ValidatingCallbackInterceptor(
                         0,
-                        "files.hapiPermissions",
+                        FILES_HAPI_PERMISSIONS,
                         properties,
                         contents -> permissionsCb.accept(uncheckedParse(contents)),
                         ConfigListUtils::isConfigList);

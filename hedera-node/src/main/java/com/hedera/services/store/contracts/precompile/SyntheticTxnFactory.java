@@ -15,6 +15,9 @@
  */
 package com.hedera.services.store.contracts.precompile;
 
+import static com.hedera.services.context.properties.PropertyNames.STAKING_MAX_DAILY_STAKE_REWARD_THRESH_PER_HBAR;
+import static com.hedera.services.context.properties.PropertyNames.STAKING_PERIOD_MINS;
+import static com.hedera.services.context.properties.PropertyNames.STAKING_REWARD_HISTORY_NUM_STORED_PERIODS;
 import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.HTS_PRECOMPILE_MIRROR_ID;
 import static com.hedera.services.txns.crypto.AutoCreationLogic.AUTO_MEMO;
 import static com.hedera.services.txns.crypto.AutoCreationLogic.THREE_MONTHS_IN_SECONDS;
@@ -307,13 +310,14 @@ public class SyntheticTxnFactory {
     }
 
     public TransactionBody.Builder createApproveAllowanceForAllNFT(
-            final SetApprovalForAllWrapper setApprovalForAllWrapper, final TokenID tokenID) {
+            final SetApprovalForAllWrapper setApprovalForAllWrapper) {
+
         final var builder = CryptoApproveAllowanceTransactionBody.newBuilder();
 
         builder.addNftAllowances(
                 NftAllowance.newBuilder()
                         .setApprovedForAll(BoolValue.of(setApprovalForAllWrapper.approved()))
-                        .setTokenId(tokenID)
+                        .setTokenId(setApprovalForAllWrapper.tokenId())
                         .setSpender(setApprovalForAllWrapper.to())
                         .build());
 
@@ -453,11 +457,11 @@ public class SyntheticTxnFactory {
             final PropertySource properties) {
         final var stakingRewardRate = dynamicProperties.getStakingRewardRate();
         final var threshold = dynamicProperties.getStakingStartThreshold();
-        final var stakingPeriod = properties.getLongProperty("staking.periodMins");
+        final var stakingPeriod = properties.getLongProperty(STAKING_PERIOD_MINS);
         final var stakingPeriodsStored =
-                properties.getIntProperty("staking.rewardHistory.numStoredPeriods");
+                properties.getIntProperty(STAKING_REWARD_HISTORY_NUM_STORED_PERIODS);
         final var maxStakingRewardRateThPerH =
-                properties.getLongProperty("staking.maxDailyStakeRewardThPerH");
+                properties.getLongProperty(STAKING_MAX_DAILY_STAKE_REWARD_THRESH_PER_HBAR);
 
         final var nodeRewardFeeFraction =
                 Fraction.newBuilder()

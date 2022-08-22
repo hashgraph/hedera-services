@@ -15,6 +15,7 @@
  */
 package com.hedera.services.context.properties;
 
+import static com.hedera.services.context.properties.PropertyNames.*;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -351,154 +352,153 @@ class GlobalDynamicPropertiesTest {
     }
 
     private void givenPropsWithSeed(int i) {
-        given(properties.getIntProperty("tokens.maxRelsPerInfoQuery")).willReturn(i);
-        given(properties.getIntProperty("tokens.maxPerAccount")).willReturn(i);
-        given(properties.getIntProperty("tokens.maxSymbolUtf8Bytes")).willReturn(i + 1);
+        given(properties.getIntProperty(TOKENS_MAX_RELS_PER_INFO_QUERY)).willReturn(i);
+        given(properties.getIntProperty(TOKENS_MAX_PER_ACCOUNT)).willReturn(i);
+        given(properties.getIntProperty(TOKENS_MAX_SYMBOL_UTF8_BYTES)).willReturn(i + 1);
         given(properties.getBooleanProperty("ledger.keepRecordsInState")).willReturn((i % 2) == 0);
-        given(properties.getIntProperty("files.maxSizeKb")).willReturn(i + 5);
-        given(properties.getLongProperty("ledger.fundingAccount")).willReturn((long) i + 6);
-        given(properties.getIntProperty("cache.records.ttl")).willReturn(i + 7);
-        given(properties.getIntProperty("rates.intradayChangeLimitPercent")).willReturn(i + 9);
-        given(properties.getIntProperty("balances.exportPeriodSecs")).willReturn(i + 10);
-        given(properties.getBooleanProperty("balances.exportEnabled"))
-                .willReturn((i + 11) % 2 == 0);
-        given(properties.getLongProperty("balances.nodeBalanceWarningThreshold"))
-                .willReturn(i + 12L);
-        given(properties.getStringProperty("balances.exportDir.path"))
+        given(properties.getIntProperty(FILES_MAX_SIZE_KB)).willReturn(i + 5);
+        given(properties.getLongProperty(LEDGER_FUNDING_ACCOUNT)).willReturn((long) i + 6);
+        given(properties.getIntProperty(CACHE_RECORDS_TTL)).willReturn(i + 7);
+        given(properties.getIntProperty(RATES_INTRA_DAY_CHANGE_LIMIT_PERCENT)).willReturn(i + 9);
+        given(properties.getIntProperty(BALANCES_EXPORT_PERIOD_SECS)).willReturn(i + 10);
+        given(properties.getBooleanProperty(BALANCES_EXPORT_ENABLED)).willReturn((i + 11) % 2 == 0);
+        given(properties.getLongProperty(BALANCES_NODE_BALANCE_WARN_THRESHOLD)).willReturn(i + 12L);
+        given(properties.getStringProperty(BALANCES_EXPORT_DIR_PATH))
                 .willReturn(balanceExportPaths[i % 2]);
-        given(properties.getBooleanProperty("balances.exportTokenBalances"))
+        given(properties.getBooleanProperty(BALANCES_EXPORT_TOKEN_BALANCES))
                 .willReturn((i + 13) % 2 == 0);
-        given(properties.getIntProperty("ledger.transfers.maxLen")).willReturn(i + 14);
-        given(properties.getIntProperty("ledger.tokenTransfers.maxLen")).willReturn(i + 15);
-        given(properties.getIntProperty("hedera.transaction.maxMemoUtf8Bytes")).willReturn(i + 16);
-        given(properties.getLongProperty("hedera.transaction.maxValidDuration"))
-                .willReturn(i + 17L);
-        given(properties.getLongProperty("hedera.transaction.minValidDuration"))
-                .willReturn(i + 18L);
-        given(properties.getIntProperty("hedera.transaction.minValidityBufferSecs"))
-                .willReturn(i + 19);
-        given(properties.getLongProperty("contracts.maxGasPerSec")).willReturn(i + 20L);
-        given(properties.getIntProperty("contracts.chainId")).willReturn(i + 21);
-        given(properties.getLongProperty("contracts.defaultLifetime")).willReturn(i + 22L);
-        given(properties.getIntProperty("fees.tokenTransferUsageMultiplier")).willReturn(i + 23);
-        given(properties.getLongProperty("ledger.autoRenewPeriod.maxDuration")).willReturn(i + 24L);
-        given(properties.getLongProperty("ledger.autoRenewPeriod.minDuration")).willReturn(i + 25L);
-        given(properties.getIntProperty("contracts.localCall.estRetBytes")).willReturn(i + 26);
-        given(properties.getIntProperty("ledger.schedule.txExpiryTimeSecs")).willReturn(i + 27);
-        given(properties.getIntProperty("consensus.message.maxBytesAllowed")).willReturn(i + 28);
-        given(properties.getBooleanProperty("scheduling.longTermEnabled")).willReturn(i % 2 == 0);
-        given(properties.getFunctionsProperty("scheduling.whitelist"))
+        given(properties.getIntProperty(LEDGER_TRANSFERS_MAX_LEN)).willReturn(i + 14);
+        given(properties.getIntProperty(LEDGER_TOKEN_TRANSFERS_MAX_LEN)).willReturn(i + 15);
+        given(properties.getIntProperty(HEDERA_TXN_MAX_MEMO_UTF8_BYTES)).willReturn(i + 16);
+        given(properties.getLongProperty(HEDERA_TXN_MAX_VALID_DURATION)).willReturn(i + 17L);
+        given(properties.getLongProperty(HEDERA_TXN_MIN_VALID_DURATION)).willReturn(i + 18L);
+        given(properties.getIntProperty(HEDERA_TXN_MIN_VALIDITY_BUFFER_SECS)).willReturn(i + 19);
+        given(properties.getLongProperty(CONTRACTS_MAX_GAS_PER_SEC)).willReturn(i + 20L);
+        given(properties.getIntProperty(CONTRACTS_CHAIN_ID)).willReturn(i + 21);
+        given(properties.getLongProperty(CONTRACTS_DEFAULT_LIFETIME)).willReturn(i + 22L);
+        given(properties.getIntProperty(FEES_TOKEN_TRANSFER_USAGE_MULTIPLIER)).willReturn(i + 23);
+        given(properties.getLongProperty(LEDGER_AUTO_RENEW_PERIOD_MAX_DURATION))
+                .willReturn(i + 24L);
+        given(properties.getLongProperty(LEDGER_AUTO_RENEW_PERIOD_MIN_DURATION))
+                .willReturn(i + 25L);
+        given(properties.getIntProperty(CONTRACTS_LOCAL_CALL_EST_RET_BYTES)).willReturn(i + 26);
+        given(properties.getIntProperty(LEDGER_SCHEDULE_TX_EXPIRY_TIME_SECS)).willReturn(i + 27);
+        given(properties.getIntProperty(CONSENSUS_MESSAGE_MAX_BYTES_ALLOWED)).willReturn(i + 28);
+        given(properties.getBooleanProperty(SCHEDULING_LONG_TERM_ENABLED)).willReturn(i % 2 == 0);
+        given(properties.getFunctionsProperty(SCHEDULING_WHITE_LIST))
                 .willReturn(
                         i % 2 == 0
                                 ? Set.of(HederaFunctionality.CryptoCreate)
                                 : Set.of(HederaFunctionality.CryptoTransfer));
-        given(properties.getCongestionMultiplierProperty("fees.percentCongestionMultipliers"))
+        given(properties.getCongestionMultiplierProperty(FEES_PERCENT_CONGESTION_MULTIPLIERS))
                 .willReturn(i % 2 == 0 ? evenCongestion : oddCongestion);
-        given(properties.getIntProperty("fees.minCongestionPeriod")).willReturn(i + 29);
-        given(properties.getIntProperty("autorenew.numberOfEntitiesToScan")).willReturn(i + 31);
-        given(properties.getIntProperty("autorenew.maxNumberOfEntitiesToRenewOrDelete"))
+        given(properties.getIntProperty(FEES_MIN_CONGESTION_PERIOD)).willReturn(i + 29);
+        given(properties.getIntProperty(AUTO_RENEW_NUM_OF_ENTITIES_TO_SCAN)).willReturn(i + 31);
+        given(properties.getIntProperty(AUTO_RENEW_MAX_NUM_OF_ENTITIES_TO_RENEW_OR_DELETE))
                 .willReturn(i + 32);
-        given(properties.getLongProperty("autorenew.gracePeriod")).willReturn(i + 33L);
-        given(properties.getIntProperty("tokens.maxCustomFeesAllowed")).willReturn(i + 35);
-        given(properties.getIntProperty("ledger.nftTransfers.maxLen")).willReturn(i + 36);
-        given(properties.getIntProperty("tokens.nfts.maxBatchSizeBurn")).willReturn(i + 37);
-        given(properties.getIntProperty("tokens.nfts.maxBatchSizeWipe")).willReturn(i + 38);
-        given(properties.getIntProperty("tokens.nfts.maxBatchSizeMint")).willReturn(i + 39);
-        given(properties.getLongProperty("tokens.nfts.maxQueryRange")).willReturn(i + 40L);
-        given(properties.getIntProperty("tokens.nfts.maxMetadataBytes")).willReturn(i + 41);
-        given(properties.getIntProperty("tokens.maxTokenNameUtf8Bytes")).willReturn(i + 42);
-        given(properties.getBooleanProperty("tokens.nfts.areEnabled"))
-                .willReturn((i + 43) % 2 == 0);
-        given(properties.getLongProperty("tokens.nfts.maxAllowedMints")).willReturn(i + 43L);
-        given(properties.getIntProperty("tokens.nfts.mintThrottleScaleFactor")).willReturn(i + 44);
-        given(properties.getIntProperty("ledger.xferBalanceChanges.maxLen")).willReturn(i + 45);
-        given(properties.getIntProperty("tokens.maxCustomFeeDepth")).willReturn(i + 46);
-        given(properties.getThrottleScaleFactor("tokens.nfts.mintThrottleScaleFactor"))
+        given(properties.getLongProperty(AUTO_RENEW_GRACE_PERIOD)).willReturn(i + 33L);
+        given(properties.getIntProperty(TOKENS_MAX_CUSTOM_FEES_ALLOWED)).willReturn(i + 35);
+        given(properties.getIntProperty(LEDGER_NFT_TRANSFERS_MAX_LEN)).willReturn(i + 36);
+        given(properties.getIntProperty(TOKENS_NFTS_MAX_BATCH_SIZE_BURN)).willReturn(i + 37);
+        given(properties.getIntProperty(TOKENS_NFTS_MAX_BATCH_SIZE_WIPE)).willReturn(i + 38);
+        given(properties.getIntProperty(TOKENS_NFTS_MAX_BATCH_SIZE_MINT)).willReturn(i + 39);
+        given(properties.getLongProperty(TOKENS_NFTS_MAX_QUERY_RANGE)).willReturn(i + 40L);
+        given(properties.getIntProperty(TOKENS_NFTS_MAX_METADATA_BYTES)).willReturn(i + 41);
+        given(properties.getIntProperty(TOKENS_MAX_TOKEN_NAME_UTF8_BYTES)).willReturn(i + 42);
+        given(properties.getBooleanProperty(TOKENS_NFTS_ARE_ENABLED)).willReturn((i + 43) % 2 == 0);
+        given(properties.getLongProperty(TOKENS_NFTS_MAX_ALLOWED_MINTS)).willReturn(i + 43L);
+        given(properties.getIntProperty(TOKENS_NFTS_MINT_THORTTLE_SCALE_FACTOR)).willReturn(i + 44);
+        given(properties.getIntProperty(LEDGER_XFER_BAL_CHANGES_MAX_LEN)).willReturn(i + 45);
+        given(properties.getIntProperty(TOKENS_MAX_CUSTOM_FEE_DEPTH)).willReturn(i + 46);
+        given(properties.getThrottleScaleFactor(TOKENS_NFTS_MINT_THORTTLE_SCALE_FACTOR))
                 .willReturn(i % 2 == 0 ? evenFactor : oddFactor);
-        given(properties.getStringProperty("upgrade.artifacts.path"))
+        given(properties.getStringProperty(UPGRADE_ARTIFACTS_PATH))
                 .willReturn(upgradeArtifactLocs[i % 2]);
-        given(properties.getBooleanProperty("contracts.throttle.throttleByGas"))
+        given(properties.getBooleanProperty(CONTRACTS_THROTTLE_THROTTLE_BY_GAS))
                 .willReturn((i + 47) % 2 == 0);
-        given(properties.getIntProperty("contracts.maxRefundPercentOfGasLimit")).willReturn(i + 47);
-        given(properties.getIntProperty("ledger.changeHistorian.memorySecs")).willReturn(i + 51);
-        given(properties.getLongProperty("contracts.precompile.htsDefaultGasCost"))
+        given(properties.getIntProperty(CONTRACTS_MAX_REFUND_PERCENT_OF_GAS_LIMIT))
+                .willReturn(i + 47);
+        given(properties.getIntProperty(LEDGER_CHANGE_HIST_MEM_SECS)).willReturn(i + 51);
+        given(properties.getLongProperty(CONTRACTS_PRECOMPILE_HTS_DEFAULT_GAS_COST))
                 .willReturn(i + 52L);
-        given(properties.getBooleanProperty("autoCreation.enabled")).willReturn(i % 2 == 0);
-        given(properties.getBooleanProperty("sigs.expandFromImmutableState"))
+        given(properties.getBooleanProperty(AUTO_CREATION_ENABLED)).willReturn(i % 2 == 0);
+        given(properties.getBooleanProperty(SIGS_EXPAND_FROM_IMMUTABLE_STATE))
                 .willReturn(i % 2 == 0);
-        given(properties.getLongProperty("contracts.maxKvPairs.aggregate")).willReturn(i + 52L);
-        given(properties.getIntProperty("contracts.maxKvPairs.individual")).willReturn(i + 53);
-        given(properties.getIntProperty("ledger.records.maxQueryableByAccount")).willReturn(i + 54);
-        given(properties.getIntProperty("hedera.allowances.maxTransactionLimit"))
-                .willReturn(i + 55);
-        given(properties.getIntProperty("hedera.allowances.maxAccountLimit")).willReturn(i + 56);
-        given(properties.getBooleanProperty("contracts.precompile.exportRecordResults"))
+        given(properties.getLongProperty(CONTRACTS_MAX_KV_PAIRS_AGGREGATE)).willReturn(i + 52L);
+        given(properties.getIntProperty(CONTRACTS_MAX_KV_PAIRS_INDIVIDUAL)).willReturn(i + 53);
+        given(properties.getIntProperty(LEDGER_RECORDS_MAX_QUERYABLE_BY_ACCOUNT))
+                .willReturn(i + 54);
+        given(properties.getIntProperty(HEDERA_ALLOWANCES_MAX_TXN_LIMIT)).willReturn(i + 55);
+        given(properties.getIntProperty(HEDERA_ALLOWANCES_MAX_ACCOUNT_LIMIT)).willReturn(i + 56);
+        given(properties.getBooleanProperty(CONTRACTS_PRECOMPILE_EXPORT_RECORD_RESULTS))
                 .willReturn((i + 57) % 2 == 0);
-        given(properties.getBooleanProperty("contracts.allowCreate2"))
-                .willReturn((i + 58) % 2 == 0);
-        given(properties.getBooleanProperty("contracts.redirectTokenCalls"))
+        given(properties.getBooleanProperty(CONTRACTS_ALLOW_CREATE2)).willReturn((i + 58) % 2 == 0);
+        given(properties.getBooleanProperty(CONTRACTS_REDIRECT_TOKEN_CALLS))
                 .willReturn((i + 59) % 2 == 0);
-        given(properties.getBooleanProperty("hedera.allowances.isEnabled"))
+        given(properties.getBooleanProperty(HEDERA_ALLOWANCES_IS_ENABLED))
                 .willReturn((i + 60) % 2 == 0);
-        given(properties.getTypesProperty("autoRenew.targetTypes")).willReturn(typesFor(i));
-        given(properties.getBooleanProperty("entities.limitTokenAssociations"))
+        given(properties.getTypesProperty(AUTO_RENEW_TARGET_TYPES)).willReturn(typesFor(i));
+        given(properties.getBooleanProperty(ENTITIES_LIMIT_TOKEN_ASSOCIATIONS))
                 .willReturn((i + 60) % 2 == 0);
-        given(properties.getBooleanProperty("contracts.precompile.htsEnableTokenCreate"))
+        given(properties.getBooleanProperty(CONTRACTS_PRECOMPILE_HTS_ENABLE_TOKEN_CREATE))
                 .willReturn((i + 61) % 2 == 0);
-        given(properties.getIntProperty("autoRemove.maxPurgedKvPairsPerTouch")).willReturn(i + 62);
-        given(properties.getIntProperty("autoRemove.maxReturnedNftsPerTouch")).willReturn(i + 63);
-        given(properties.getBlockValuesProperty("contracts.knownBlockHash"))
+        given(properties.getIntProperty(AUTO_REMOVE_MAX_PURGED_KV_PAIRS_PER_TOUCH))
+                .willReturn(i + 62);
+        given(properties.getIntProperty(AUTO_REMOVE_MAX_RETURNED_NFTS_PER_TOUCH))
+                .willReturn(i + 63);
+        given(properties.getBlockValuesProperty(CONTRACTS_KNOWN_BLOCK_HASH))
                 .willReturn(blockValues);
-        given(properties.getLongProperty("contracts.precompile.exchangeRateGasCost"))
+        given(properties.getLongProperty(CONTRACTS_PRECOMPILE_EXCHANGE_RATE_GAS_COST))
                 .willReturn(i + 64L);
-        given(properties.getLongProperty("scheduling.maxTxnPerSecond")).willReturn(i + 65L);
-        given(properties.getLongProperty("contracts.scheduleThrottleMaxGasLimit"))
+        given(properties.getLongProperty(SCHEDULING_MAX_TXN_PER_SEC)).willReturn(i + 65L);
+        given(properties.getLongProperty(CONTRACTS_SCHEDULE_THROTTLE_MAX_GAS_LIMIT))
                 .willReturn(i + 66L);
-        given(properties.getLongProperty("scheduling.maxExpirationFutureSeconds"))
+        given(properties.getLongProperty(SCHEDULING_MAX_EXPIRATION_FUTURE_SECS))
                 .willReturn(i + 67L);
-        given(properties.getLongProperty("consensus.handle.maxPrecedingRecords"))
+        given(properties.getLongProperty(CONSENSUS_HANDLE_MAX_PRECEDING_RECORDS))
                 .willReturn(i + 68L);
-        given(properties.getLongProperty("consensus.handle.maxFollowingRecords"))
+        given(properties.getLongProperty(CONSENSUS_HANDLE_MAX_FOLLOWING_RECORDS))
                 .willReturn(i + 69L);
-        given(properties.getLongProperty("staking.startThreshold")).willReturn(i + 70L);
-        given(properties.getIntProperty("staking.fees.nodeRewardPercentage")).willReturn(i + 71);
-        given(properties.getIntProperty("staking.fees.stakingRewardPercentage")).willReturn(i + 72);
-        given(properties.getLongProperty("staking.rewardRate")).willReturn(i + 74L);
-        given(properties.getBooleanProperty("contracts.allowAutoAssociations"))
+        given(properties.getLongProperty(STAKING_START_THRESH)).willReturn(i + 70L);
+        given(properties.getIntProperty(STAKING_FEES_NODE_REWARD_PERCENT)).willReturn(i + 71);
+        given(properties.getIntProperty(STAKING_FEES_STAKING_REWARD_PERCENT)).willReturn(i + 72);
+        given(properties.getLongProperty(STAKING_REWARD_RATE)).willReturn(i + 74L);
+        given(properties.getBooleanProperty(CONTRACTS_ALLOW_AUTO_ASSOCIATIONS))
                 .willReturn((i + 65) % 2 == 0);
-        given(properties.getLongProperty("staking.maxDailyStakeRewardThPerH")).willReturn(i + 75L);
-        given(properties.getBooleanProperty("staking.isEnabled")).willReturn((i + 73) % 2 == 0);
-        given(properties.getIntProperty("hedera.recordStream.recordFileVersion"))
+        given(properties.getLongProperty(STAKING_MAX_DAILY_STAKE_REWARD_THRESH_PER_HBAR))
+                .willReturn(i + 75L);
+        given(properties.getBooleanProperty(STAKING_IS_ENABLED)).willReturn((i + 73) % 2 == 0);
+        given(properties.getIntProperty(HEDERA_RECORD_STREAM_RECORD_FILE_VERSION))
                 .willReturn((i + 77));
-        given(properties.getIntProperty("hedera.recordStream.signatureFileVersion"))
+        given(properties.getIntProperty(HEDERA_RECORD_STREAM_SIG_FILE_VERSION))
                 .willReturn((i + 78));
-        given(properties.getLongProperty("accounts.maxNumber")).willReturn(i + 79L);
-        given(properties.getLongProperty("contracts.maxNumber")).willReturn(i + 80L);
-        given(properties.getLongProperty("files.maxNumber")).willReturn(i + 81L);
-        given(properties.getLongProperty("tokens.maxNumber")).willReturn(i + 82L);
-        given(properties.getLongProperty("topics.maxNumber")).willReturn(i + 83L);
-        given(properties.getLongProperty("scheduling.maxNumber")).willReturn(i + 84L);
-        given(properties.getLongProperty("tokens.maxAggregateRels")).willReturn(i + 85L);
-        given(properties.getBooleanProperty("utilPrng.isEnabled")).willReturn((i + 86) % 2 == 0);
-        given(properties.getSidecarsProperty("contracts.sidecars"))
+        given(properties.getLongProperty(ACCOUNTS_MAX_NUM)).willReturn(i + 79L);
+        given(properties.getLongProperty(CONTRACTS_MAX_NUM)).willReturn(i + 80L);
+        given(properties.getLongProperty(FILES_MAX_NUM)).willReturn(i + 81L);
+        given(properties.getLongProperty(TOKENS_MAX_NUM)).willReturn(i + 82L);
+        given(properties.getLongProperty(TOPICS_MAX_NUM)).willReturn(i + 83L);
+        given(properties.getLongProperty(SCHEDULING_MAX_NUM)).willReturn(i + 84L);
+        given(properties.getLongProperty(TOKENS_MAX_AGGREGATE_RELS)).willReturn(i + 85L);
+        given(properties.getBooleanProperty(UTIL_PRNG_IS_ENABLED)).willReturn((i + 86) % 2 == 0);
+        given(properties.getSidecarsProperty(CONTRACTS_SIDECARS))
                 .willReturn(
                         (i + 87) % 2 == 0
                                 ? Set.of(SidecarType.CONTRACT_STATE_CHANGE)
                                 : Set.of(SidecarType.CONTRACT_BYTECODE));
-        given(properties.getBooleanProperty("staking.requireMinStakeToReward"))
+        given(properties.getBooleanProperty(STAKING_REQUIRE_MIN_STAKE_TO_REWARD))
                 .willReturn((i + 79) % 2 == 0);
-        given(properties.getNodeStakeRatiosProperty("staking.nodeMaxToMinStakeRatios"))
+        given(properties.getNodeStakeRatiosProperty(STAKING_NODE_MAX_TO_MIN_STAKE_RATIOS))
                 .willReturn(Map.of(0L, 4L, 1L, 8L));
-        given(properties.getIntProperty("hedera.recordStream.sidecarMaxSizeMb"))
+        given(properties.getIntProperty(HEDERA_RECORD_STREAM_SIDECAR_MAX_SIZE_MB))
                 .willReturn((i + 88));
-        given(properties.getBooleanProperty("hedera.recordStream.enableTraceabilityMigration"))
+        given(properties.getBooleanProperty(HEDERA_RECORD_STREAM_ENABLE_TRACEABILITY_MIGRATION))
                 .willReturn((i + 81) % 2 == 0);
 
-        given(properties.getBooleanProperty("contracts.itemizeStorageFees"))
+        given(properties.getBooleanProperty(CONTRACTS_ITEMIZE_STORAGE_FEES))
                 .willReturn((i + 79) % 2 == 1);
-        given(properties.getLongProperty("contracts.referenceSlotLifetime")).willReturn(i + 86L);
-        given(properties.getIntProperty("contracts.freeStorageTierLimit")).willReturn(i + 87);
-        given(properties.getStringProperty("contract.storageSlotPriceTiers"))
+        given(properties.getLongProperty(CONTRACTS_REFERENCE_SLOT_LIFETIME)).willReturn(i + 86L);
+        given(properties.getIntProperty(CONTRACTS_FREE_STORAGE_TIER_LIMIT)).willReturn(i + 87);
+        given(properties.getStringProperty(CONTRACTS_STORAGE_SLOT_PRICE_TIERS))
                 .willReturn("0til100M,2000til450M");
     }
 
