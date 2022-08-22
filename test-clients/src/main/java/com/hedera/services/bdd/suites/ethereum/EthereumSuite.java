@@ -102,23 +102,25 @@ public class EthereumSuite extends HapiApiSuite {
 
     @Override
     public List<HapiApiSpec> getSpecsInSuite() {
-        return Stream.concat(Stream.of(setChainId()), Stream.concat(
-                        feePaymentMatrix().stream(),
-                        Stream.of(
-                                invalidTxData(),
-                                ETX_007_fungibleTokenCreateWithFeesHappyPath(),
-                                ETX_008_contractCreateExecutesWithExpectedRecord(),
-                                ETX_009_callsToTokenAddresses(),
-                                ETX_010_transferToCryptoAccountSucceeds(),
-                                ETX_012_precompileCallSucceedsWhenNeededSignatureInEthTxn(),
-                                ETX_013_precompileCallSucceedsWhenNeededSignatureInHederaTxn(),
-                                ETX_013_precompileCallFailsWhenSignatureMissingFromBothEthereumAndHederaTxn(),
-                                ETX_014_contractCreateInheritsSignerProperties(),
-                                ETX_026_accountWithoutAliasCannotMakeEthTxns(),
-                                ETX_009_callsToTokenAddresses(),
-                                originAndSenderAreEthereumSigner(),
-                                ETX_031_invalidNonceEthereumTxFailsAndChargesRelayer(),
-                                ETX_SVC_003_contractGetBytecodeQueryReturnsDeployedCode())))
+        return Stream.concat(
+                        Stream.of(setChainId()),
+                        Stream.concat(
+                                feePaymentMatrix().stream(),
+                                Stream.of(
+                                        invalidTxData(),
+                                        ETX_007_fungibleTokenCreateWithFeesHappyPath(),
+                                        ETX_008_contractCreateExecutesWithExpectedRecord(),
+                                        ETX_009_callsToTokenAddresses(),
+                                        ETX_010_transferToCryptoAccountSucceeds(),
+                                        ETX_012_precompileCallSucceedsWhenNeededSignatureInEthTxn(),
+                                        ETX_013_precompileCallSucceedsWhenNeededSignatureInHederaTxn(),
+                                        ETX_013_precompileCallFailsWhenSignatureMissingFromBothEthereumAndHederaTxn(),
+                                        ETX_014_contractCreateInheritsSignerProperties(),
+                                        ETX_026_accountWithoutAliasCannotMakeEthTxns(),
+                                        ETX_009_callsToTokenAddresses(),
+                                        originAndSenderAreEthereumSigner(),
+                                        ETX_031_invalidNonceEthereumTxFailsAndChargesRelayer(),
+                                        ETX_SVC_003_contractGetBytecodeQueryReturnsDeployedCode())))
                 .toList();
     }
 
@@ -305,8 +307,7 @@ public class EthereumSuite extends HapiApiSuite {
     }
 
     HapiApiSpec setChainId() {
-        return defaultHapiSpec("SetChainId")
-                .given() .when() .then(overriding(CHAIN_ID_PROP, "298"));
+        return defaultHapiSpec("SetChainId").given().when().then(overriding(CHAIN_ID_PROP, "298"));
     }
 
     HapiApiSpec invalidTxData() {
