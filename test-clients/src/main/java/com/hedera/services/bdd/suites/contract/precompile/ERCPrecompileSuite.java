@@ -56,10 +56,10 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hedera.services.bdd.suites.contract.Utils.asHexedAddress;
 import static com.hedera.services.bdd.suites.contract.Utils.asToken;
+import static com.hedera.services.bdd.suites.contract.Utils.captureChildCreate2MetaFor;
 import static com.hedera.services.bdd.suites.contract.Utils.eventSignatureOf;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
 import static com.hedera.services.bdd.suites.contract.Utils.parsedToByteString;
-import static com.hedera.services.bdd.suites.contract.precompile.DynamicGasCostSuite.captureChildCreate2MetaFor;
 import static com.hedera.services.bdd.suites.utils.contracts.AddressResult.hexedAddress;
 import static com.hedera.services.bdd.suites.utils.contracts.BoolResult.flag;
 import static com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult.htsPrecompileResult;
@@ -73,7 +73,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALLOWA
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SENDER_DOES_NOT_OWN_NFT_SERIAL_NO;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SPENDER_ACCOUNT_SAME_AS_OWNER;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SPENDER_DOES_NOT_HAVE_ALLOWANCE;
@@ -103,7 +102,7 @@ import org.apache.tuweni.bytes.Bytes;
 
 public class ERCPrecompileSuite extends HapiApiSuite {
     private static final Logger log = LogManager.getLogger(ERCPrecompileSuite.class);
-    private static final long GAS_TO_OFFER = 4_000_000L;
+    private static final long GAS_TO_OFFER = 1_000_000L;
     private static final String FUNGIBLE_TOKEN = "fungibleToken";
     private static final String NON_FUNGIBLE_TOKEN = "nonFungibleToken";
     private static final String MULTI_KEY = "purpose";
@@ -154,8 +153,8 @@ public class ERCPrecompileSuite extends HapiApiSuite {
     private static final String GET_BALANCE_OF = "getBalanceOf";
     private static final String MISSING_FROM = "MISSING_FROM";
     private static final String MISSING_TO = "MISSING_TO";
-    private static final String SOME_ERC_20_SCENARIOS = "someERC20Scenarios";
-    private static final String SOME_ERC_721_SCENARIOS = "someERC721Scenarios";
+    private static final String SOME_ERC_20_SCENARIOS = "SomeERC20Scenarios";
+    private static final String SOME_ERC_721_SCENARIOS = "SomeERC721Scenarios";
     private static final String GET_OWNER_OF = "getOwnerOf";
     private static final String OPERATOR_DOES_NOT_EXISTS = "OPERATOR_DOES_NOT_EXISTS";
     private static final String SET_APPROVAL_FOR_ALL = "setApprovalForAll";
@@ -686,7 +685,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                         tokenAddr.get(),
                                                         accountAddr.get(),
                                                         1)
-                                                .hasAnswerOnlyPrecheck(NOT_SUPPORTED)));
+                                                .hasAnswerOnlyPrecheck(CONTRACT_REVERT_EXECUTED)));
     }
 
     private HapiApiSpec transferErc20TokenReceiverContract() {
@@ -2799,7 +2798,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                         aCivilianMirrorAddr.get(),
                                                         666L)
                                                 .via("MISSING_SERIAL_NO")
-                                                .gas(4_000_000)
+                                                .gas(1_000_000)
                                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED)),
                         // * Can't approve a non-existent spender
                         sourcing(
@@ -2811,7 +2810,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                         zCivilianMirrorAddr.get(),
                                                         5L)
                                                 .via(MISSING_TO)
-                                                .gas(4_000_000)
+                                                .gas(1_000_000)
                                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED)),
                         getTokenNftInfo(NF_TOKEN, 5L).logged(),
                         childRecordsCheck(
@@ -2843,7 +2842,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                         aCivilianMirrorAddr.get(),
                                                         3L)
                                                 .via("NOT_AN_OPERATOR")
-                                                .gas(4_000_000)
+                                                .gas(1_000_000)
                                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED)),
                         // * Can't revoke if not owner or approvedForAll
                         sourcing(
@@ -2854,7 +2853,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                         tokenMirrorAddr.get(),
                                                         1L)
                                                 .via("MISSING_REVOKE")
-                                                .gas(4_000_000)
+                                                .gas(1_000_000)
                                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED)),
                         cryptoApproveAllowance()
                                 .payingWith(B_CIVILIAN)
@@ -2876,7 +2875,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                         aCivilianMirrorAddr.get(),
                                                         3L)
                                                 .via("E")
-                                                .gas(4_000_000)
+                                                .gas(1_000_000)
                                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED)),
                         // --- Positive cases for approve ---
                         // * owner == msg.sender can approve
@@ -2889,7 +2888,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                         bCivilianMirrorAddr.get(),
                                                         6L)
                                                 .via("EXTANT_TO")
-                                                .gas(4_000_000)),
+                                                .gas(1_000_000)),
                         getTokenNftInfo(NF_TOKEN, 6L).hasSpenderID(B_CIVILIAN),
                         // Approve the contract as an operator of aCivilian's NFTs
                         cryptoApproveAllowance()
@@ -2910,7 +2909,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                         tokenMirrorAddr.get(),
                                                         1L)
                                                 .via("B")
-                                                .gas(4_000_000)),
+                                                .gas(1_000_000)),
                         // These should work because the contract is an operator for aCivilian
                         sourcing(
                                 () ->
@@ -2921,7 +2920,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                         bCivilianMirrorAddr.get(),
                                                         2L)
                                                 .via("C")
-                                                .gas(4_000_000)),
+                                                .gas(1_000_000)),
                         sourcing(
                                 () ->
                                         contractCall(
@@ -2953,7 +2952,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                         tokenMirrorAddr.get(),
                                                         aCivilianMirrorAddr.get(),
                                                         3L)
-                                                .gas(4_000_000)),
+                                                .gas(1_000_000)),
                         cryptoTransfer(
                                         movingUniqueWithAllowance(NF_TOKEN, 3L)
                                                 .between(B_CIVILIAN, A_CIVILIAN))
@@ -2978,7 +2977,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                         REVOKE_SPECIFIC_APPROVAL,
                                                         tokenMirrorAddr.get(),
                                                         5L)
-                                                .gas(4_000_000)),
+                                                .gas(1_000_000)),
                         getTokenNftInfo(NF_TOKEN, 5L).hasAccountID(B_CIVILIAN).hasNoSpender());
     }
 
@@ -3033,7 +3032,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                         aCivilianMirrorAddr.get(),
                                                         0L)
                                                 .via("ACCOUNT_NOT_ASSOCIATED_TXN")
-                                                .gas(4_000_000)
+                                                .gas(1_000_000)
                                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED)),
                         tokenAssociate(SOME_ERC_20_SCENARIOS, TOKEN),
                         sourcing(
@@ -3045,7 +3044,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                         zCivilianMirrorAddr.get(),
                                                         5L)
                                                 .via(MISSING_TO)
-                                                .gas(4_000_000)
+                                                .gas(1_000_000)
                                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED)),
                         sourcing(
                                 () ->
@@ -3056,7 +3055,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                         contractMirrorAddr.get(),
                                                         5L)
                                                 .via("SPENDER_SAME_AS_OWNER_TXN")
-                                                .gas(4_000_000)
+                                                .gas(1_000_000)
                                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED)),
                         sourcing(
                                 () ->
@@ -3067,7 +3066,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                         aCivilianMirrorAddr.get(),
                                                         5L)
                                                 .via("SUCCESSFUL_APPROVE_TXN")
-                                                .gas(4_000_000)
+                                                .gas(1_000_000)
                                                 .hasKnownStatus(SUCCESS)),
                         sourcing(
                                 () ->
@@ -3078,7 +3077,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                         contractMirrorAddr.get(),
                                                         aCivilianMirrorAddr.get())
                                                 .via("ALLOWANCE_TXN")
-                                                .gas(4_000_000)
+                                                .gas(1_000_000)
                                                 .hasKnownStatus(SUCCESS)),
                         sourcing(
                                 () ->
@@ -3097,7 +3096,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                         aCivilianMirrorAddr.get(),
                                                         0L)
                                                 .via("SUCCESSFUL_REVOKE_TXN")
-                                                .gas(4_000_000)
+                                                .gas(1_000_000)
                                                 .hasKnownStatus(SUCCESS)),
                         sourcing(
                                 () ->
@@ -3108,7 +3107,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                         contractMirrorAddr.get(),
                                                         aCivilianMirrorAddr.get())
                                                 .via("ALLOWANCE_AFTER_REVOKE_TXN")
-                                                .gas(4_000_000)
+                                                .gas(1_000_000)
                                                 .hasKnownStatus(SUCCESS)),
                         sourcing(
                                 () ->
@@ -3119,7 +3118,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                         zCivilianMirrorAddr.get(),
                                                         aCivilianMirrorAddr.get())
                                                 .via("MISSING_OWNER_ID")
-                                                .gas(4_000_000)
+                                                .gas(1_000_000)
                                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED)))
                 .then(
                         childRecordsCheck(
@@ -3394,7 +3393,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                         aCivilianMirrorAddr.get(),
                                                         5L)
                                                 .via("APPROVE_AND_GET_ALLOWANCE_TXN")
-                                                .gas(4_000_000)
+                                                .gas(1_000_000)
                                                 .hasKnownStatus(SUCCESS)
                                                 .logged()))
                 .then(
@@ -3661,7 +3660,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                         zTokenMirrorAddr.get(),
                                                         1L)
                                                 .via(MISSING_TOKEN)
-                                                .gas(4_000_000)
+                                                .gas(1_000_000)
                                                 .hasKnownStatus(INVALID_SOLIDITY_ADDRESS)),
                         sourcing(
                                 () ->
@@ -3671,7 +3670,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                         tokenMirrorAddr.get(),
                                                         aCivilianMirrorAddr.get(),
                                                         1L)
-                                                .gas(4_000_000)),
+                                                .gas(1_000_000)),
                         sourcing(
                                 () ->
                                         contractCall(
@@ -3680,7 +3679,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                         tokenMirrorAddr.get(),
                                                         55L)
                                                 .via("MISSING_SERIAL")
-                                                .gas(4_000_000)
+                                                .gas(1_000_000)
                                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED)),
                         getTokenNftInfo(NF_TOKEN, 1L).logged(),
                         sourcing(
@@ -3691,7 +3690,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                         tokenMirrorAddr.get(),
                                                         2L)
                                                 .via("MISSING_SPENDER")
-                                                .gas(4_000_000)
+                                                .gas(1_000_000)
                                                 .hasKnownStatus(SUCCESS)),
                         sourcing(
                                 () ->
@@ -3701,7 +3700,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                         tokenMirrorAddr.get(),
                                                         1L)
                                                 .via(WITH_SPENDER)
-                                                .gas(4_000_000)
+                                                .gas(1_000_000)
                                                 .hasKnownStatus(SUCCESS)),
                         getTxnRecord(WITH_SPENDER).andAllChildRecords().logged(),
                         sourcing(
@@ -3712,7 +3711,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                         tokenMirrorAddr.get(),
                                                         1L)
                                                 .logged()
-                                                .gas(4_000_000)
+                                                .gas(1_000_000)
                                                 .has(
                                                         resultWith()
                                                                 .contractCallResult(
@@ -3813,7 +3812,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                         tokenMirrorAddr.get(),
                                                         aCivilianMirrorAddr.get())
                                                 .via("BALANCE_OF")
-                                                .gas(4_000_000)
+                                                .gas(1_000_000)
                                                 .hasKnownStatus(SUCCESS)),
                         sourcing(
                                 () ->
@@ -3823,7 +3822,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                         zTokenMirrorAddr.get(),
                                                         aCivilianMirrorAddr.get())
                                                 .via(MISSING_TOKEN)
-                                                .gas(4_000_000)
+                                                .gas(1_000_000)
                                                 .hasKnownStatus(INVALID_SOLIDITY_ADDRESS)),
                         sourcing(
                                 () ->
@@ -3833,7 +3832,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                         tokenMirrorAddr.get(),
                                                         bCivilianMirrorAddr.get())
                                                 .via("NOT_ASSOCIATED")
-                                                .gas(4_000_000)
+                                                .gas(1_000_000)
                                                 .hasKnownStatus(SUCCESS)))
                 .then(
                         childRecordsCheck(
@@ -3919,7 +3918,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                         zTokenMirrorAddr.get(),
                                                         1L)
                                                 .via(MISSING_TOKEN)
-                                                .gas(4_000_000)
+                                                .gas(1_000_000)
                                                 .hasKnownStatus(INVALID_SOLIDITY_ADDRESS)),
                         sourcing(
                                 () ->
@@ -3928,7 +3927,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                         GET_OWNER_OF,
                                                         tokenMirrorAddr.get(),
                                                         55L)
-                                                .gas(4_000_000)
+                                                .gas(1_000_000)
                                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED)),
                         sourcing(
                                 () ->
@@ -3938,7 +3937,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                         tokenMirrorAddr.get(),
                                                         2L)
                                                 .via("TREASURY_OWNER")
-                                                .gas(4_000_000)
+                                                .gas(1_000_000)
                                                 .hasKnownStatus(SUCCESS)),
                         cryptoTransfer(
                                 movingUnique(NF_TOKEN, 1L)
@@ -3951,7 +3950,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                         tokenMirrorAddr.get(),
                                                         1L)
                                                 .via("CIVILIAN_OWNER")
-                                                .gas(4_000_000)
+                                                .gas(1_000_000)
                                                 .hasKnownStatus(SUCCESS)))
                 .then(
                         withOpContext(
@@ -4058,7 +4057,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                         zCivilianMirrorAddr.get(),
                                                         contractMirrorAddr.get())
                                                 .via("OWNER_DOES_NOT_EXISTS")
-                                                .gas(4_000_000)),
+                                                .gas(1_000_000)),
                         sourcing(
                                 () ->
                                         contractCall(
@@ -4068,7 +4067,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                         aCivilianMirrorAddr.get(),
                                                         zCivilianMirrorAddr.get())
                                                 .via(OPERATOR_DOES_NOT_EXISTS)
-                                                .gas(4_000_000)
+                                                .gas(1_000_000)
                                                 .hasKnownStatus(SUCCESS)),
                         sourcing(
                                 () ->
@@ -4079,7 +4078,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                         aCivilianMirrorAddr.get(),
                                                         contractMirrorAddr.get())
                                                 .via("OPERATOR_IS_NOT_APPROVED")
-                                                .gas(4_000_000)
+                                                .gas(1_000_000)
                                                 .hasKnownStatus(SUCCESS)),
                         cryptoApproveAllowance()
                                 .payingWith(A_CIVILIAN)
@@ -4109,7 +4108,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                         aCivilianMirrorAddr.get(),
                                                         contractMirrorAddr.get())
                                                 .via("OPERATOR_IS_APPROVED_FOR_ALL")
-                                                .gas(4_000_000)
+                                                .gas(1_000_000)
                                                 .hasKnownStatus(SUCCESS)),
                         sourcing(
                                 () ->
@@ -4119,7 +4118,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                         tokenMirrorAddr.get(),
                                                         aCivilianMirrorAddr.get(),
                                                         contractMirrorAddr.get())
-                                                .gas(4_000_000)
+                                                .gas(1_000_000)
                                                 .has(resultWith().contractCallResult(flag(true)))))
                 .then(
                         withOpContext(
@@ -4231,7 +4230,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                         contractMirrorAddr.get(),
                                                         true)
                                                 .via("OPERATOR_SAME_AS_MSG_SENDER")
-                                                .gas(4_000_000)
+                                                .gas(1_000_000)
                                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED)),
                         sourcing(
                                 () ->
@@ -4242,7 +4241,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                         zCivilianMirrorAddr.get(),
                                                         true)
                                                 .via(OPERATOR_DOES_NOT_EXISTS)
-                                                .gas(4_000_000)
+                                                .gas(1_000_000)
                                                 .hasKnownStatus(SUCCESS)),
                         sourcing(
                                 () ->
@@ -4253,7 +4252,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                         aCivilianMirrorAddr.get(),
                                                         true)
                                                 .via("OPERATOR_EXISTS")
-                                                .gas(4_000_000)
+                                                .gas(1_000_000)
                                                 .hasKnownStatus(SUCCESS)),
                         sourcing(
                                 () ->
@@ -4264,7 +4263,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                         contractMirrorAddr.get(),
                                                         aCivilianMirrorAddr.get())
                                                 .via("SUCCESSFULLY_APPROVED_CHECK_TXN")
-                                                .gas(4_000_000)
+                                                .gas(1_000_000)
                                                 .hasKnownStatus(SUCCESS)),
                         sourcing(
                                 () ->
@@ -4275,7 +4274,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                         aCivilianMirrorAddr.get(),
                                                         false)
                                                 .via("OPERATOR_EXISTS_REVOKE_APPROVE_FOR_ALL")
-                                                .gas(4_000_000)
+                                                .gas(1_000_000)
                                                 .hasKnownStatus(SUCCESS)),
                         sourcing(
                                 () ->
@@ -4286,7 +4285,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                         contractMirrorAddr.get(),
                                                         aCivilianMirrorAddr.get())
                                                 .via("SUCCESSFULLY_REVOKED_CHECK_TXN")
-                                                .gas(4_000_000)
+                                                .gas(1_000_000)
                                                 .hasKnownStatus(SUCCESS)))
                 .then(
                         childRecordsCheck(

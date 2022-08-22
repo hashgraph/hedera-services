@@ -422,7 +422,7 @@ public class FileUpdateSuite extends HapiApiSuite {
                 .given(
                         overriding(MAX_REFUND_GAS_PROP, "100"),
                         uploadInitCode(CONTRACT),
-                        contractCreate(CONTRACT))
+                        contractCreate(CONTRACT).gas(100_000L))
                 .when(contractCall(CONTRACT, CREATE_TXN).gas(1_000_000L))
                 .then(
                         contractCallLocal(CONTRACT, INDIRECT_GET_ABI)
@@ -435,19 +435,20 @@ public class FileUpdateSuite extends HapiApiSuite {
         return defaultHapiSpec("GasLimitOverMaxGasLimitFailsPrecheck")
                 .given(
                         uploadInitCode(CONTRACT),
-                        contractCreate(CONTRACT),
+                        contractCreate(CONTRACT).gas(1_000_000L),
                         overriding(CONS_MAX_GAS_PROP, "100"))
                 .when()
                 .then(
                         contractCallLocal(CONTRACT, INDIRECT_GET_ABI)
                                 .gas(101L)
-                                .hasCostAnswerPrecheck(BUSY),
+                                // for some reason BUSY is returned in CI
+                                .hasCostAnswerPrecheckFrom(MAX_GAS_LIMIT_EXCEEDED, BUSY),
                         resetToDefault(CONS_MAX_GAS_PROP));
     }
 
     private HapiApiSpec kvLimitsEnforced() {
         final var contract = "User";
-        final var gasToOffer = 4_000_000;
+        final var gasToOffer = 1_000_000;
 
         return defaultHapiSpec("KvLimitsEnforced")
                 .given(

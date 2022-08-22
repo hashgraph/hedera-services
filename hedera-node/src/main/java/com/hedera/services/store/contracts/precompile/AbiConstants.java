@@ -159,4 +159,8 @@ public final class AbiConstants {
     public static final int ABI_ID_REVOKE_TOKEN_KYC = 0xaf99c633;
     // getTokenCustomFees(address token)
     public static final int ABI_ID_GET_TOKEN_CUSTOM_FEES = 0xae7611a0;
+    // isToken(address token)
+    public static final int ABI_ID_IS_TOKEN = 0x19f37361;
+    // getTokenType(address token)
+    public static final int ABI_ID_GET_TOKEN_TYPE = 0x93272baf;
 }
