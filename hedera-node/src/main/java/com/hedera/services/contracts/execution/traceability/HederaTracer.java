@@ -15,21 +15,19 @@
  */
 package com.hedera.services.contracts.execution.traceability;
 
-import static com.hedera.services.contracts.execution.traceability.ContractActionType.CALL;
-import static com.hedera.services.contracts.execution.traceability.ContractActionType.CREATE;
-import static com.hedera.services.contracts.operation.HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS;
-
 import com.hedera.services.state.submerkle.EntityId;
-import java.nio.charset.StandardCharsets;
-import java.util.ArrayDeque;
-import java.util.ArrayList;
-import java.util.Deque;
-import java.util.List;
-import java.util.Optional;
 import org.hyperledger.besu.evm.Code;
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.frame.MessageFrame.State;
+
+import java.nio.charset.StandardCharsets;
+import java.util.*;
+
+import static com.hedera.services.contracts.execution.traceability.ContractActionType.CALL;
+import static com.hedera.services.contracts.execution.traceability.ContractActionType.CREATE;
+import static com.hedera.services.contracts.operation.HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS;
+import static com.hedera.services.contracts.execution.traceability.CallOperationType.*;
 
 public class HederaTracer implements HederaOperationTracer {
 
@@ -87,7 +85,8 @@ public class HederaTracer implements HederaOperationTracer {
                         isCallToAccount ? EntityId.fromAddress(frame.getContractAddress()) : null,
                         !isCallToAccount ? EntityId.fromAddress(frame.getContractAddress()) : null,
                         frame.getValue().toLong(),
-                        callDepth);
+                        callDepth,
+                        toCallOperationType(frame.getCurrentOperation().getOpcode()));
         allActions.add(action);
         currentActionsStack.push(action);
     }
@@ -155,6 +154,18 @@ public class HederaTracer implements HederaOperationTracer {
         return switch (type) {
             case CONTRACT_CREATION -> CREATE;
             case MESSAGE_CALL -> CALL;
+        };
+    }
+
+    private CallOperationType toCallOperationType(final int opCode) {
+        return switch (opCode) {
+            case 0xF0 -> OP_CREATE;
+            case 0xF1 -> OP_CALL;
+            case 0xF2 -> OP_CALLCODE;
+            case 0xF4 -> OP_DELEGATECALL;
+            case 0xF5 -> OP_CREATE2;
+            case 0xFA -> OP_STATICCALL;
+            default -> OP_UNKNOWN;
         };
     }
 

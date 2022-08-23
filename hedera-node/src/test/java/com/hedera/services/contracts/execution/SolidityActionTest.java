@@ -15,17 +15,19 @@
  */
 package com.hedera.services.contracts.execution;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
+import com.hedera.services.contracts.execution.traceability.CallOperationType;
 import com.hedera.services.contracts.execution.traceability.ContractActionType;
 import com.hedera.services.contracts.execution.traceability.SolidityAction;
 import com.hedera.services.legacy.proto.utils.ByteStringUtils;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.stream.proto.ContractAction;
 import com.hedera.services.utils.EntityIdUtils;
-import java.nio.charset.StandardCharsets;
 import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.api.Test;
+
+import java.nio.charset.StandardCharsets;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class SolidityActionTest {
 
@@ -50,7 +52,8 @@ class SolidityActionTest {
                         recipient,
                         null,
                         value,
-                        0);
+                        0,
+                        CallOperationType.OP_CALL);
         actual.setGasUsed(gasUsed);
         actual.setOutput(output);
 
@@ -82,7 +85,8 @@ class SolidityActionTest {
                         null,
                         recipient,
                         value,
-                        0);
+                        0,
+                        CallOperationType.OP_CALL);
         actual.setGasUsed(gasUsed);
         actual.setRevertReason(output);
 
@@ -108,7 +112,16 @@ class SolidityActionTest {
     void toGrpcWhenInvalidRecipientAndErrorAreSet() {
         final var actual =
                 new SolidityAction(
-                        ContractActionType.CALL, null, sender, gas, input, null, null, value, 0);
+                        ContractActionType.CALL,
+                        null,
+                        sender,
+                        gas,
+                        input,
+                        null,
+                        null,
+                        value,
+                        0,
+                        CallOperationType.OP_CALL);
         actual.setGasUsed(gasUsed);
         actual.setError(output);
         actual.setInvalidSolidityAddress(recipient.toEvmAddress().toArrayUnsafe());

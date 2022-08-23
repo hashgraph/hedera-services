@@ -15,22 +15,9 @@
  */
 package com.hedera.services.records;
 
-import static com.hedera.services.contracts.operation.HederaExceptionalHaltReason.INVALID_SIGNATURE;
-import static com.hedera.services.contracts.operation.HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS;
-import static com.hedera.services.contracts.operation.HederaExceptionalHaltReason.SELF_DESTRUCT_TO_SELF;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_EXECUTION_EXCEPTION;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OBTAINER_SAME_CONTRACT_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.contracts.execution.TransactionProcessingResult;
+import com.hedera.services.contracts.execution.traceability.CallOperationType;
 import com.hedera.services.contracts.execution.traceability.ContractActionType;
 import com.hedera.services.contracts.execution.traceability.SolidityAction;
 import com.hedera.services.contracts.operation.HederaExceptionalHaltReason;
@@ -45,12 +32,6 @@ import com.hedera.services.utils.ResponseCodeUtil;
 import com.hedera.services.utils.SidecarUtils;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.TreeMap;
-import javax.annotation.Nullable;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
@@ -62,6 +43,19 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
+
+import javax.annotation.Nullable;
+import java.util.*;
+
+import static com.hedera.services.contracts.operation.HederaExceptionalHaltReason.INVALID_SIGNATURE;
+import static com.hedera.services.contracts.operation.HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS;
+import static com.hedera.services.contracts.operation.HederaExceptionalHaltReason.*;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class TransactionRecordServiceTest {
@@ -84,7 +78,8 @@ class TransactionRecordServiceTest {
                             null,
                             EntityId.fromAddress(Address.BLS12_PAIRING),
                             55,
-                            0));
+                            0,
+                            CallOperationType.OP_CALL));
 
     @Mock private TransactionContext txnCtx;
     @Mock private TransactionProcessingResult processingResult;
