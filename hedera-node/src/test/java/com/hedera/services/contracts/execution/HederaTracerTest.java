@@ -193,6 +193,8 @@ class HederaTracerTest {
     void finalizesCodeSuccessfulCreateMessageFrameAsExpected() {
         // given
         givenTracedExecutingFrame(Type.CONTRACT_CREATION);
+        given(messageFrame.getCurrentOperation().getOpcode()).willReturn(0xF0);
+
         subject.init(messageFrame);
         // when
         given(messageFrame.getState()).willReturn(State.CODE_SUCCESS);
@@ -204,6 +206,7 @@ class HederaTracerTest {
         final var solidityAction = actions.get(0);
         assertEquals(initialGas - remainingGasAfterExecution, solidityAction.getGasUsed());
         assertArrayEquals(new byte[0], solidityAction.getOutput());
+        assertEquals(solidityAction.getCallOperationType(), OP_CREATE);
     }
 
     @Test

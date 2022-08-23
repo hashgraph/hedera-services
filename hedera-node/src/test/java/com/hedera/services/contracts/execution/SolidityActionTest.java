@@ -67,6 +67,8 @@ class SolidityActionTest {
                         .setGasUsed(gasUsed)
                         .setOutput(ByteStringUtils.wrapUnsafely(output))
                         .setCallDepth(0)
+                        .setCallOperationType(
+                                com.hedera.services.stream.proto.CallOperationType.OP_CALL)
                         .build();
 
         assertEquals(expected, actual.toGrpc());
@@ -102,6 +104,8 @@ class SolidityActionTest {
                         .setGasUsed(gasUsed)
                         .setRevertReason(ByteStringUtils.wrapUnsafely(output))
                         .setCallDepth(0)
+                        .setCallOperationType(
+                                com.hedera.services.stream.proto.CallOperationType.OP_CALL)
                         .build();
 
         assertEquals(expected, actual.toGrpc());
@@ -139,6 +143,8 @@ class SolidityActionTest {
                         .setGasUsed(gasUsed)
                         .setError(ByteStringUtils.wrapUnsafely(output))
                         .setCallDepth(0)
+                        .setCallOperationType(
+                                com.hedera.services.stream.proto.CallOperationType.OP_CALL)
                         .build();
 
         assertEquals(expected, actual.toGrpc());

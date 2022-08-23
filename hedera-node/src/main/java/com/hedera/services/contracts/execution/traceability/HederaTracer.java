@@ -34,6 +34,13 @@ public class HederaTracer implements HederaOperationTracer {
     private final Deque<SolidityAction> currentActionsStack;
     private final boolean areActionSidecarsEnabled;
 
+    private static final int OP_CODE_CREATE = 0xF0;
+    private static final int OP_CODE_CALL = 0xF1;
+    private static final int OP_CODE_CALLCODE = 0xF2;
+    private static final int OP_CODE_DELEGATECALL = 0xF4;
+    private static final int OP_CODE_CREATE2 = 0xF5;
+    private static final int OP_CODE_STATICCALL = 0xFA;
+
     public HederaTracer(final boolean areActionSidecarsEnabled) {
         this.currentActionsStack = new ArrayDeque<>();
         this.allActions = new ArrayList<>();
@@ -158,12 +165,12 @@ public class HederaTracer implements HederaOperationTracer {
 
     private CallOperationType toCallOperationType(final int opCode) {
         return switch (opCode) {
-            case 0xF0 -> OP_CREATE;
-            case 0xF1 -> OP_CALL;
-            case 0xF2 -> OP_CALLCODE;
-            case 0xF4 -> OP_DELEGATECALL;
-            case 0xF5 -> OP_CREATE2;
-            case 0xFA -> OP_STATICCALL;
+            case OP_CODE_CREATE -> OP_CREATE;
+            case OP_CODE_CALL -> OP_CALL;
+            case OP_CODE_CALLCODE -> OP_CALLCODE;
+            case OP_CODE_DELEGATECALL -> OP_DELEGATECALL;
+            case OP_CODE_CREATE2 -> OP_CREATE2;
+            case OP_CODE_STATICCALL -> OP_STATICCALL;
             default -> OP_UNKNOWN;
         };
     }

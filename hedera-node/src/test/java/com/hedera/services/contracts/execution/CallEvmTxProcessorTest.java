@@ -338,7 +338,7 @@ class CallEvmTxProcessorTest {
                         EntityId.fromAddress(Address.BLAKE2B_F_COMPRESSION),
                         666L,
                         1,
-                        CallOperationType.OP_CALL);
+                        CallOperationType.OP_CREATE);
         try (MockedConstruction<HederaTracer> ignored =
                 Mockito.mockConstruction(
                         HederaTracer.class,
