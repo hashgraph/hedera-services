@@ -16,8 +16,7 @@
 package com.hedera.services.bdd.suites.contract.opcodes;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
-import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.isLiteralResult;
-import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
+import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.*;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocal;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
@@ -36,6 +35,7 @@ import com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import java.math.BigInteger;
 import java.util.List;
+import java.util.Set;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Assertions;
@@ -63,8 +63,9 @@ public class GlobalPropertiesSuite extends HapiApiSuite {
     }
 
     private HapiApiSpec chainIdWorks() {
-        final var expectedChainID =
-                new BigInteger(HapiSpecSetup.getDefaultNodeProps().get("contracts.chainId"));
+        final var defaultChainId = BigInteger.valueOf(295L);
+        final var devChainId = BigInteger.valueOf(298L);
+        final Set<Object> acceptableChainIds = Set.of(devChainId, defaultChainId);
         return defaultHapiSpec("chainIdWorks")
                 .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT))
                 .when(contractCall(CONTRACT, GET_CHAIN_ID).via("chainId"))
@@ -80,18 +81,15 @@ public class GlobalPropertiesSuite extends HapiApiSuite {
                                                                                 FUNCTION,
                                                                                 GET_CHAIN_ID,
                                                                                 CONTRACT),
-                                                                        isLiteralResult(
-                                                                                new Object[] {
-                                                                                    expectedChainID
-                                                                                })))),
+                                                                        isOneOfLiteral(
+                                                                                acceptableChainIds)))),
                         contractCallLocal(CONTRACT, GET_CHAIN_ID)
                                 .nodePayment(1_234_567)
                                 .has(
                                         ContractFnResultAsserts.resultWith()
                                                 .resultThruAbi(
                                                         getABIFor(FUNCTION, GET_CHAIN_ID, CONTRACT),
-                                                        ContractFnResultAsserts.isLiteralResult(
-                                                                new Object[] {expectedChainID}))));
+                                                        isOneOfLiteral(acceptableChainIds))));
     }
 
     private HapiApiSpec baseFeeWorks() {
