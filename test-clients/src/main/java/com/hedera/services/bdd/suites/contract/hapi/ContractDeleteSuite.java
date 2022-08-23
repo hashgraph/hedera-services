@@ -36,17 +36,21 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
+import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiPropertySource;
+import com.hedera.services.bdd.spec.HapiSpecSetup;
+import com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts;
 import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import com.hederahashgraph.api.proto.java.TokenType;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.IntStream;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -78,8 +82,61 @@ public class ContractDeleteSuite extends HapiApiSuite {
                     cannotDeleteOrSelfDestructTokenTreasury(),
                     cannotDeleteOrSelfDestructContractWithNonZeroBalance(),
                         cannotSendValueToTokenAccount(),
+                        cannotUseMoreThanChildContractLimit(),
                 });
     }
+
+    private HapiApiSpec cannotUseMoreThanChildContractLimit() {
+        final var illegalNumChildren = HapiSpecSetup.getDefaultNodeProps()
+                .getInteger("consensus.handle.maxFollowingRecords") + 1;
+        final var fungible = "fungible";
+        final var contract = "ManyChildren";
+        final var precompileViolation = "precompileViolation";
+        final var internalCreateViolation = "internalCreateViolation";
+        final AtomicReference<String> treasuryMirrorAddr = new AtomicReference<>();
+        final AtomicReference<String> tokenMirrorAddr = new AtomicReference<>();
+        return defaultHapiSpec("CannotUseMoreThanChildContractLimit")
+                .given(
+                        cryptoCreate(TOKEN_TREASURY).exposingCreatedIdTo(
+                                id -> treasuryMirrorAddr.set(asHexedSolidityAddress(id))),
+                        tokenCreate(fungible).treasury(TOKEN_TREASURY),
+                        tokenCreate(fungible)
+                                .tokenType(FUNGIBLE_COMMON)
+                                .treasury(TOKEN_TREASURY)
+                                .initialSupply(1234567)
+                                .exposingCreatedIdTo(
+                                        idLit ->
+                                                tokenMirrorAddr.set(
+                                                        asHexedSolidityAddress(
+                                                                HapiPropertySource.asToken(
+                                                                        idLit))))
+                )
+                .when(
+                        uploadInitCode(contract),
+                        contractCreate(contract),
+                        sourcing(() -> contractCall(contract,
+                                "checkBalanceRepeatedly",
+                                tokenMirrorAddr.get(), treasuryMirrorAddr.get(), illegalNumChildren)
+                                .via(precompileViolation)
+                                .hasKnownStatus(MAX_CHILD_RECORDS_EXCEEDED)),
+                        sourcing(() -> contractCall(contract,
+                                "createThingsRepeatedly", illegalNumChildren)
+                                .via(internalCreateViolation)
+                                .gas(15_000_000)
+                                .hasKnownStatus(MAX_CHILD_RECORDS_EXCEEDED))
+                ).then(
+                        getTxnRecord(precompileViolation)
+                                .andAllChildRecords()
+                                .hasChildRecords(IntStream.range(0, 50)
+                                        .mapToObj(i -> recordWith().status(REVERTED_SUCCESS))
+                                        .toArray(TransactionRecordAsserts[]::new)),
+                        getTxnRecord(internalCreateViolation)
+                                .andAllChildRecords()
+                                // Reverted internal CONTRACT_CREATION messages are not externalized
+                                .hasChildRecords()
+                );
+    }
+
 
     private HapiApiSpec cannotSendValueToTokenAccount() {
         final var multiKey = "multiKey";

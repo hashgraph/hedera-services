@@ -342,33 +342,6 @@ public class TxnUtils {
         assertTrue(ex.isReverting());
     }
 
-    public static <T extends SelfSerializable> void assertSerdeWorks(
-            final T original, final Supplier<T> factory, final int version) throws IOException {
-        final var baos = new ByteArrayOutputStream();
-        final var out = new SerializableDataOutputStream(baos);
-        original.serialize(out);
-
-        final var reconstruction = factory.get();
-
-        final var bais = new ByteArrayInputStream(baos.toByteArray());
-        final var in = new SerializableDataInputStream(bais);
-        reconstruction.deserialize(in, version);
-
-        assertEquals(original, reconstruction);
-    }
-
-    public static <T extends SelfSerializable> T deserializeFromHex(
-            final Supplier<T> factory, final int version, final String hexedForm)
-            throws IOException {
-        final var reconstruction = factory.get();
-
-        final var bais = new ByteArrayInputStream(CommonUtils.unhex(hexedForm));
-        final var in = new SerializableDataInputStream(bais);
-        reconstruction.deserialize(in, version);
-
-        return reconstruction;
-    }
-
     public static ExpirableTxnRecord recordOne() {
         return ExpirableTxnRecord.newBuilder()
                 .setReceipt(
