@@ -16,38 +16,24 @@
 package com.hedera.services.contracts.execution.traceability;
 
 public enum CallOperationType {
-    /**
-     * default operation type is UNKNOWN
-     */
+    /** default operation type is UNKNOWN */
     OP_UNKNOWN,
 
-    /**
-     * CALL operation type.
-     */
+    /** CALL operation type. */
     OP_CALL,
 
-    /**
-     * CALLCODE operation type
-     */
+    /** CALLCODE operation type */
     OP_CALLCODE,
 
-    /**
-     * DELEGATECALL operation type
-     */
+    /** DELEGATECALL operation type */
     OP_DELEGATECALL,
 
-    /**
-     * STATICCALL operation type
-     */
+    /** STATICCALL operation type */
     OP_STATICCALL,
 
-    /**
-     * CREATE operation type
-     */
+    /** CREATE operation type */
     OP_CREATE,
 
-    /**
-     * CREATE2 operation type
-     */
+    /** CREATE2 operation type */
     OP_CREATE2;
 }

@@ -149,7 +149,9 @@ public class SolidityAction {
         return callDepth;
     }
 
-    public CallOperationType getCallOperationType() { return callOperationType; }
+    public CallOperationType getCallOperationType() {
+        return callOperationType;
+    }
 
     public ContractAction toGrpc() {
         final var grpc = ContractAction.newBuilder();
@@ -179,7 +181,9 @@ public class SolidityAction {
             grpc.setError(ByteStringUtils.wrapUnsafely(error));
         }
         grpc.setCallDepth(callDepth);
-        // grpc.setCa
+        grpc.setCallOperationType(
+                com.hedera.services.stream.proto.CallOperationType.forNumber(
+                        callOperationType.ordinal()));
         return grpc.build();
     }
 }

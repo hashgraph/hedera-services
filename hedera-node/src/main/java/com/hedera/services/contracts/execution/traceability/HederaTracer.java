@@ -15,19 +15,18 @@
  */
 package com.hedera.services.contracts.execution.traceability;
 
+import static com.hedera.services.contracts.execution.traceability.CallOperationType.*;
+import static com.hedera.services.contracts.execution.traceability.ContractActionType.CALL;
+import static com.hedera.services.contracts.execution.traceability.ContractActionType.CREATE;
+import static com.hedera.services.contracts.operation.HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS;
+
 import com.hedera.services.state.submerkle.EntityId;
+import java.nio.charset.StandardCharsets;
+import java.util.*;
 import org.hyperledger.besu.evm.Code;
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.frame.MessageFrame.State;
-
-import java.nio.charset.StandardCharsets;
-import java.util.*;
-
-import static com.hedera.services.contracts.execution.traceability.ContractActionType.CALL;
-import static com.hedera.services.contracts.execution.traceability.ContractActionType.CREATE;
-import static com.hedera.services.contracts.operation.HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS;
-import static com.hedera.services.contracts.execution.traceability.CallOperationType.*;
 
 public class HederaTracer implements HederaOperationTracer {
 

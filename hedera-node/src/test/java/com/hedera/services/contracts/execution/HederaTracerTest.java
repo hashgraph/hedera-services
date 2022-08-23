@@ -15,9 +15,21 @@
  */
 package com.hedera.services.contracts.execution;
 
+import static com.hedera.services.contracts.execution.traceability.CallOperationType.*;
+import static com.hedera.services.contracts.execution.traceability.ContractActionType.CALL;
+import static com.hedera.services.contracts.execution.traceability.ContractActionType.CREATE;
+import static com.hedera.services.contracts.operation.HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.*;
+
 import com.hedera.services.contracts.execution.traceability.ContractActionType;
 import com.hedera.services.contracts.execution.traceability.HederaTracer;
 import com.hedera.services.state.submerkle.EntityId;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayDeque;
+import java.util.Deque;
+import java.util.Optional;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Hash;
@@ -34,19 +46,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-
-import java.nio.charset.StandardCharsets;
-import java.util.ArrayDeque;
-import java.util.Deque;
-import java.util.Optional;
-
-import static com.hedera.services.contracts.execution.traceability.CallOperationType.*;
-import static com.hedera.services.contracts.execution.traceability.ContractActionType.CALL;
-import static com.hedera.services.contracts.execution.traceability.ContractActionType.CREATE;
-import static com.hedera.services.contracts.operation.HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS;
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class HederaTracerTest {
@@ -427,32 +426,32 @@ class HederaTracerTest {
 
         given(messageFrame.getCurrentOperation().getOpcode()).willReturn(0xF1);
         subject.init(messageFrame);
-        action = subject.getActions().get(subject.getActions().size()-1);
+        action = subject.getActions().get(subject.getActions().size() - 1);
         assertEquals(OP_CALL, action.getCallOperationType());
 
         given(messageFrame.getCurrentOperation().getOpcode()).willReturn(0xF2);
         subject.init(messageFrame);
-        action = subject.getActions().get(subject.getActions().size()-1);
+        action = subject.getActions().get(subject.getActions().size() - 1);
         assertEquals(OP_CALLCODE, action.getCallOperationType());
 
         given(messageFrame.getCurrentOperation().getOpcode()).willReturn(0xF4);
         subject.init(messageFrame);
-        action = subject.getActions().get(subject.getActions().size()-1);
+        action = subject.getActions().get(subject.getActions().size() - 1);
         assertEquals(OP_DELEGATECALL, action.getCallOperationType());
 
         given(messageFrame.getCurrentOperation().getOpcode()).willReturn(0xF5);
         subject.init(messageFrame);
-        action = subject.getActions().get(subject.getActions().size()-1);
+        action = subject.getActions().get(subject.getActions().size() - 1);
         assertEquals(OP_CREATE2, action.getCallOperationType());
 
         given(messageFrame.getCurrentOperation().getOpcode()).willReturn(0xFA);
         subject.init(messageFrame);
-        action = subject.getActions().get(subject.getActions().size()-1);
+        action = subject.getActions().get(subject.getActions().size() - 1);
         assertEquals(OP_STATICCALL, action.getCallOperationType());
 
         given(messageFrame.getCurrentOperation().getOpcode()).willReturn(0x00);
         subject.init(messageFrame);
-        action = subject.getActions().get(subject.getActions().size()-1);
+        action = subject.getActions().get(subject.getActions().size() - 1);
         assertEquals(OP_UNKNOWN, action.getCallOperationType());
     }
 
