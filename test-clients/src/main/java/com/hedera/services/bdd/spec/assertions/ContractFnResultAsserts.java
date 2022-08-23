@@ -246,15 +246,18 @@ public class ContractFnResultAsserts extends BaseErroringAssertsProvider<Contrac
 
     public static Function<HapiApiSpec, Function<Object[], Optional<Throwable>>> isOneOfLiteral(
             Set<Object> values) {
-        return ignore -> actualObjs -> {
-            try {
-                Assertions.assertEquals(1, actualObjs.length, "Expected a single object");
-                Assertions.assertTrue(values.contains(actualObjs[0]), "Expected one of " + values + " but was " + actualObjs[0]);
-            } catch (Exception e) {
-                return Optional.of(e);
-            }
-            return Optional.empty();
-        };
+        return ignore ->
+                actualObjs -> {
+                    try {
+                        Assertions.assertEquals(1, actualObjs.length, "Expected a single object");
+                        Assertions.assertTrue(
+                                values.contains(actualObjs[0]),
+                                "Expected one of " + values + " but was " + actualObjs[0]);
+                    } catch (Exception e) {
+                        return Optional.of(e);
+                    }
+                    return Optional.empty();
+                };
     }
 
     public static Function<HapiApiSpec, Function<Object[], Optional<Throwable>>> isRandomResult(

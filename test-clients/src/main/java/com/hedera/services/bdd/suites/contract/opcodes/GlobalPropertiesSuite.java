@@ -34,10 +34,8 @@ import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import java.math.BigInteger;
-import java.util.Collections;
 import java.util.List;
 import java.util.Set;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Assertions;
@@ -91,8 +89,7 @@ public class GlobalPropertiesSuite extends HapiApiSuite {
                                         ContractFnResultAsserts.resultWith()
                                                 .resultThruAbi(
                                                         getABIFor(FUNCTION, GET_CHAIN_ID, CONTRACT),
-                                                                isOneOfLiteral(
-                                                                        acceptableChainIds))));
+                                                        isOneOfLiteral(acceptableChainIds))));
     }
 
     private HapiApiSpec baseFeeWorks() {
