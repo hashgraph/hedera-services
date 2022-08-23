@@ -1,4 +1,4 @@
-package com.hedera.services.state.expiry.renewal;
+package com.hedera.services.state.expiry.classification;
 
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.utils.EntityNum;

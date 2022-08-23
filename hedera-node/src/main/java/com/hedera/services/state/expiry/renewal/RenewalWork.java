@@ -21,13 +21,49 @@ import com.hedera.services.utils.EntityNum;
 import javax.annotation.Nullable;
 import java.time.Instant;
 
+/**
+ * Provides the logic needed for the account and contract auto-renewal cycle
+ */
 public interface RenewalWork {
+    /**
+     * Returns mutable expiring entity using {@code getForModify()} on the accounts {@link com.swirlds.merkle.map.MerkleMap}.
+     * @return mutable expiring entity
+     */
     @Nullable MerkleAccount tryToGetNextMutableExpiryCandidate();
+
+    /**
+     * Returns mutable payer for the auto-renewal of an entity using {@code getForModify} on the accounts {@link com.swirlds.merkle.map.MerkleMap}.
+     * @return mutable payer
+     */
     MerkleAccount getMutableAutoRenewPayer();
 
+    /**
+     * Returns immutable expiring entity using {@code get()} on the accounts {@link com.swirlds.merkle.map.MerkleMap}.
+     * @return immutable expiring entity
+     */
     @Nullable MerkleAccount tryToGetNextExpiryCandidate();
+
+    /**
+     * Returns immutable payer for the auto-renewal of an entity using {@code get()} on the accounts {@link com.swirlds.merkle.map.MerkleMap}.
+     * @return immutable payer
+     */
     MerkleAccount getAutoRenewPayer();
 
+    /**
+     * Tries to renew an account and returns {@code EntityProcessResult.DONE} if it is successful.
+     * If the auto-renewal for accounts is not enabled, returns {@code EntityProcessResult.NOTHING_TO_DO}
+     * @param account to be renewed account
+     * @param cycleTime consensus time for the current renewal cycle
+     * @return result for the successful renewal
+     */
     EntityProcessResult tryToRenewAccount(EntityNum account, final Instant cycleTime);
+
+    /**
+     * Tries to renew a contract and returns {@code EntityProcessResult.DONE} if it is successful.
+     * If the auto-renewal for contracts is not enabled, returns {@code EntityProcessResult.NOTHING_TO_DO}
+     * @param contract to be renewed contract
+     * @param cycleTime consensus time for the current renewal cycle
+     * @return result for the successful renewal
+     */
     EntityProcessResult tryToRenewContract(EntityNum contract, final Instant cycleTime);
 }

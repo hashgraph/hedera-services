@@ -17,6 +17,7 @@ package com.hedera.services.state.expiry.renewal;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.hedera.services.state.expiry.EntityProcessResult;
+import com.hedera.services.state.expiry.classification.ClassificationWork;
 import com.hedera.services.state.expiry.removal.RemovalWork;
 import com.hedera.services.utils.EntityNum;
 

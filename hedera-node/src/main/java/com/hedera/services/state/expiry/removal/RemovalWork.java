@@ -21,8 +21,22 @@ import com.hedera.services.utils.EntityNum;
 
 import javax.annotation.Nullable;
 import java.time.Instant;
-
+/**
+ * Provides the logic needed for the account and contract expiry and removal cycle
+ */
 public interface RemovalWork {
+    /**
+     * Tries to remove an expired account and returns {@code EntityProcessResult.DONE} if it is successful.
+     * If the auto-removal of expiring accounts is not enabled, returns {@code EntityProcessResult.NOTHING_TO_DO}
+     * @param account expired account
+     * @return result for the successful removal
+     */
     EntityProcessResult tryToRemoveAccount(EntityNum account);
+    /**
+     * Tries to remove an expired contract and returns {@code EntityProcessResult.DONE} if it is successful.
+     * If the auto-removal of expiring contracts is not enabled, returns {@code EntityProcessResult.NOTHING_TO_DO}
+     * @param contract expired contract
+     * @return result for the successful removal
+     */
     EntityProcessResult tryToRemoveContract(EntityNum contract);
 }

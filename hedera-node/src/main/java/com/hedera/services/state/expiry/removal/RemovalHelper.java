@@ -2,7 +2,7 @@ package com.hedera.services.state.expiry.removal;
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.state.expiry.EntityProcessResult;
-import com.hedera.services.state.expiry.renewal.ClassificationWork;
+import com.hedera.services.state.expiry.classification.ClassificationWork;
 import com.hedera.services.state.expiry.renewal.RenewalRecordsHelper;
 import com.hedera.services.utils.EntityNum;
 import org.apache.logging.log4j.LogManager;

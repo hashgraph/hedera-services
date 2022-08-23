@@ -13,16 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.hedera.services.state.expiry.renewal;
+package com.hedera.services.state.expiry.classification;
 
-import static com.hedera.services.state.expiry.renewal.ClassificationResult.DETACHED_ACCOUNT;
-import static com.hedera.services.state.expiry.renewal.ClassificationResult.DETACHED_ACCOUNT_GRACE_PERIOD_OVER;
-import static com.hedera.services.state.expiry.renewal.ClassificationResult.DETACHED_CONTRACT;
-import static com.hedera.services.state.expiry.renewal.ClassificationResult.DETACHED_CONTRACT_GRACE_PERIOD_OVER;
-import static com.hedera.services.state.expiry.renewal.ClassificationResult.DETACHED_TREASURY_GRACE_PERIOD_OVER_BEFORE_TOKEN;
-import static com.hedera.services.state.expiry.renewal.ClassificationResult.EXPIRED_ACCOUNT_READY_TO_RENEW;
-import static com.hedera.services.state.expiry.renewal.ClassificationResult.EXPIRED_CONTRACT_READY_TO_RENEW;
-import static com.hedera.services.state.expiry.renewal.ClassificationResult.OTHER;
+import static com.hedera.services.state.expiry.classification.ClassificationResult.DETACHED_ACCOUNT;
+import static com.hedera.services.state.expiry.classification.ClassificationResult.DETACHED_ACCOUNT_GRACE_PERIOD_OVER;
+import static com.hedera.services.state.expiry.classification.ClassificationResult.DETACHED_CONTRACT;
+import static com.hedera.services.state.expiry.classification.ClassificationResult.DETACHED_CONTRACT_GRACE_PERIOD_OVER;
+import static com.hedera.services.state.expiry.classification.ClassificationResult.DETACHED_TREASURY_GRACE_PERIOD_OVER_BEFORE_TOKEN;
+import static com.hedera.services.state.expiry.classification.ClassificationResult.EXPIRED_ACCOUNT_READY_TO_RENEW;
+import static com.hedera.services.state.expiry.classification.ClassificationResult.EXPIRED_CONTRACT_READY_TO_RENEW;
+import static com.hedera.services.state.expiry.classification.ClassificationResult.OTHER;
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.state.merkle.MerkleAccount;
@@ -103,7 +103,6 @@ public class ClassificationWork {
         return payerAccountForAutoRenew;
     }
 
-    // --- Internal helpers ---
     /**
      * If there is an autoRenewAccount on the contract with non-zero hbar balance and not deleted,
      * uses that account for paying autorenewal fee. Else uses contract's hbar funds for renewal.
