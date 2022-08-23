@@ -28,6 +28,7 @@ import static org.mockito.Mockito.mock;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.store.contracts.CodeCache;
+import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.services.store.contracts.HederaWorldState;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
@@ -69,6 +70,7 @@ class CallLocalEvmTxProcessorTest {
     @Mock private Set<Operation> operations;
     @Mock private Transaction transaction;
     @Mock private HederaWorldState.Updater updater;
+    @Mock private HederaStackedWorldStateUpdater stackedUpdater;
     @Mock private Map<String, PrecompiledContract> precompiledContractMap;
     @Mock private AliasManager aliasManager;
     @Mock private BlockMetaSource blockMetaSource;
@@ -187,7 +189,7 @@ class CallLocalEvmTxProcessorTest {
 
     private void givenValidMock() {
         given(worldState.updater()).willReturn(updater);
-        given(worldState.updater().updater()).willReturn(updater);
+        given(worldState.updater().updater()).willReturn(stackedUpdater);
         given(globalDynamicProperties.fundingAccount())
                 .willReturn(new Id(0, 0, 1010).asGrpcAccount());
 
@@ -199,7 +201,6 @@ class CallLocalEvmTxProcessorTest {
                 .willReturn(evmAccount);
         given(updater.getOrCreateSenderAccount(sender.getId().asEvmAddress()).getMutable())
                 .willReturn(mock(MutableAccount.class));
-        given(worldState.updater()).willReturn(updater);
         given(codeCache.getIfPresent(any())).willReturn(Code.EMPTY);
 
         var senderMutableAccount = mock(MutableAccount.class);
@@ -209,10 +210,9 @@ class CallLocalEvmTxProcessorTest {
         given(gasCalculator.getSelfDestructRefundAmount()).willReturn(0L);
         given(gasCalculator.getMaxRefundQuotient()).willReturn(2L);
 
-        given(updater.getSenderAccount(any())).willReturn(evmAccount);
-        given(updater.getSenderAccount(any()).getMutable()).willReturn(senderMutableAccount);
-        given(updater.getOrCreate(any())).willReturn(evmAccount);
-        given(updater.getOrCreate(any()).getMutable()).willReturn(senderMutableAccount);
-        given(updater.getSbhRefund()).willReturn(0L);
+        given(stackedUpdater.getSenderAccount(any())).willReturn(evmAccount);
+        given(stackedUpdater.getSenderAccount(any()).getMutable()).willReturn(senderMutableAccount);
+        given(stackedUpdater.getOrCreate(any())).willReturn(evmAccount);
+        given(stackedUpdater.getOrCreate(any()).getMutable()).willReturn(senderMutableAccount);
     }
 }

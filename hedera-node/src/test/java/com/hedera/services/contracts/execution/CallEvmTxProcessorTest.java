@@ -26,8 +26,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.BDDMockito.willAnswer;
+import static org.mockito.BDDMockito.*;
 import static org.mockito.Mockito.*;
 import static org.mockito.internal.verification.VerificationModeFactory.times;
 
@@ -43,6 +42,7 @@ import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.store.contracts.CodeCache;
+import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.services.store.contracts.HederaWorldState;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
@@ -99,6 +99,7 @@ class CallEvmTxProcessorTest {
     @Mock private Set<Operation> operations;
     @Mock private Transaction transaction;
     @Mock private HederaWorldState.Updater updater;
+    @Mock private HederaStackedWorldStateUpdater stackedUpdater;
     @Mock private AliasManager aliasManager;
     @Mock private Map<String, PrecompiledContract> precompiledContractMap;
     @Mock private HederaBlockValues hederaBlockValues;
@@ -526,19 +527,9 @@ class CallEvmTxProcessorTest {
                 (TransactionalLedger<AccountID, AccountProperty, MerkleAccount>)
                         mock(TransactionalLedger.class);
         given(updater.trackingAccounts()).willReturn(mockAccounts);
-        final var times = new AtomicInteger();
-        willAnswer(
-                        invocationOnMock -> {
-                            final var time = times.incrementAndGet();
-                            if (time > 1) {
-                                throw new ResourceLimitException(
-                                        INSUFFICIENT_BALANCES_FOR_STORAGE_RENT);
-                            }
-                            System.out.println("Boop - " + time);
-                            return null;
-                        })
-                .given(updater)
-                .commit();
+
+        willThrow(new ResourceLimitException(INSUFFICIENT_BALANCES_FOR_STORAGE_RENT))
+                .given(updater).commit();
         final var MAX_REFUND_PERCENTAGE = 100;
         given(globalDynamicProperties.maxGasRefundPercentage()).willReturn(MAX_REFUND_PERCENTAGE);
         given(globalDynamicProperties.fundingAccount())
@@ -1091,7 +1082,7 @@ class CallEvmTxProcessorTest {
 
     private void givenValidMock() {
         given(worldState.updater()).willReturn(updater);
-        given(worldState.updater().updater()).willReturn(updater);
+        given(updater.updater()).willReturn(stackedUpdater);
         given(globalDynamicProperties.fundingAccount())
                 .willReturn(new Id(0, 0, 1010).asGrpcAccount());
 
@@ -1101,7 +1092,7 @@ class CallEvmTxProcessorTest {
 
         given(updater.getOrCreateSenderAccount(sender.getId().asEvmAddress()))
                 .willReturn(evmAccount);
-        given(worldState.updater()).willReturn(updater);
+        given(updater.getOrCreate(any())).willReturn(evmAccount);
         given(codeCache.getIfPresent(any())).willReturn(Code.EMPTY);
 
         given(gasCalculator.getSelfDestructRefundAmount()).willReturn(0L);
@@ -1112,18 +1103,17 @@ class CallEvmTxProcessorTest {
         given(senderMutableAccount.incrementBalance(any())).willReturn(Wei.of(1500L));
         given(evmAccount.getMutable()).willReturn(senderMutableAccount);
 
-        given(updater.getSenderAccount(any())).willReturn(evmAccount);
-        given(updater.getSenderAccount(any()).getMutable()).willReturn(senderMutableAccount);
-        given(updater.getOrCreate(any())).willReturn(evmAccount);
-        given(updater.getOrCreate(any()).getMutable()).willReturn(senderMutableAccount);
-        given(updater.getSbhRefund()).willReturn(0L);
+        given(stackedUpdater.getSenderAccount(any())).willReturn(evmAccount);
+        given(stackedUpdater.getSenderAccount(any()).getMutable()).willReturn(senderMutableAccount);
+        given(stackedUpdater.getOrCreate(any())).willReturn(evmAccount);
+        given(stackedUpdater.getOrCreate(any()).getMutable()).willReturn(senderMutableAccount);
 
         given(blockMetaSource.computeBlockValues(anyLong())).willReturn(hederaBlockValues);
     }
 
     private void givenValidMockEth() {
         given(worldState.updater()).willReturn(updater);
-        given(worldState.updater().updater()).willReturn(updater);
+        given(updater.updater()).willReturn(stackedUpdater);
         given(globalDynamicProperties.fundingAccount())
                 .willReturn(new Id(0, 0, 1010).asGrpcAccount());
 
@@ -1131,7 +1121,7 @@ class CallEvmTxProcessorTest {
 
         given(gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, false)).willReturn(0L);
 
-        given(worldState.updater()).willReturn(updater);
+        given(updater.getOrCreate(any())).willReturn(evmAccount);
         given(codeCache.getIfPresent(any())).willReturn(Code.EMPTY);
 
         given(gasCalculator.getSelfDestructRefundAmount()).willReturn(0L);
@@ -1142,11 +1132,10 @@ class CallEvmTxProcessorTest {
         given(senderMutableAccount.incrementBalance(any())).willReturn(Wei.of(1500L));
         given(evmAccount.getMutable()).willReturn(senderMutableAccount);
 
-        given(updater.getSenderAccount(any())).willReturn(evmAccount);
-        given(updater.getSenderAccount(any()).getMutable()).willReturn(senderMutableAccount);
-        given(updater.getOrCreate(any())).willReturn(evmAccount);
-        given(updater.getOrCreate(any()).getMutable()).willReturn(senderMutableAccount);
-        given(updater.getSbhRefund()).willReturn(0L);
+        given(stackedUpdater.getSenderAccount(any())).willReturn(evmAccount);
+        given(stackedUpdater.getSenderAccount(any()).getMutable()).willReturn(senderMutableAccount);
+        given(stackedUpdater.getOrCreate(any())).willReturn(evmAccount);
+        given(stackedUpdater.getOrCreate(any()).getMutable()).willReturn(senderMutableAccount);
         given(blockMetaSource.computeBlockValues(anyLong())).willReturn(hederaBlockValues);
     }
 
