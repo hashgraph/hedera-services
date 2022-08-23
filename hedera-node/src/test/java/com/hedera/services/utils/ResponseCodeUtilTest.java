@@ -14,13 +14,8 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class ResponseCodeUtilTest {
     @Test
-    void nametranslatesResourceLimitReversions() {
-        final var statuses = List.of(
-                MAX_CHILD_RECORDS_EXCEEDED,
-                MAX_CONTRACT_STORAGE_EXCEEDED,
-                MAX_STORAGE_IN_PRICE_REGIME_HAS_BEEN_USED,
-                INSUFFICIENT_BALANCES_FOR_STORAGE_RENT);
-        for (final var status : statuses) {
+    void translatesResourceLimitReversions() {
+        for (final var status : ResponseCodeUtil.RESOURCE_EXHAUSTION_REVERSIONS.values()) {
             final var result = failureWithRevertReasonFrom(status);
             final var code = ResponseCodeUtil.getStatusOrDefault(result, OK);
             assertEquals(status, code);

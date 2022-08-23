@@ -50,10 +50,11 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 import static java.util.stream.Collectors.toMap;
 
 public final class ResponseCodeUtil {
-    private static final Map<BytesKey, ResponseCodeEnum> RESOURCE_EXHAUSTION_REVERSIONS = Stream.of(
+    static final Map<BytesKey, ResponseCodeEnum> RESOURCE_EXHAUSTION_REVERSIONS = Stream.of(
             MAX_CHILD_RECORDS_EXCEEDED,
             MAX_CONTRACT_STORAGE_EXCEEDED,
             MAX_STORAGE_IN_PRICE_REGIME_HAS_BEEN_USED,
+            MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED,
             INSUFFICIENT_BALANCES_FOR_STORAGE_RENT
     ).collect(toMap(status -> new BytesKey(new ResourceLimitException(status).messageBytes().toArrayUnsafe()),
             status -> status));
