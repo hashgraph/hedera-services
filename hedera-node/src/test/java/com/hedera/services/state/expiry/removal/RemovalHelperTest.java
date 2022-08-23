@@ -2,7 +2,6 @@ package com.hedera.services.state.expiry.removal;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.config.MockGlobalDynamicProps;
-import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.state.expiry.EntityProcessResult;
 import com.hedera.services.state.expiry.classification.ClassificationWork;
 import com.hedera.services.state.expiry.classification.EntityLookup;
@@ -17,17 +16,15 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.time.Instant;
 import java.util.Collections;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 class RemovalHelperTest {
-	@Mock
 	private MerkleMap<EntityNum, MerkleAccount> accounts;
-	@Mock private AliasManager aliasManager;
 	private final MockGlobalDynamicProps properties = new MockGlobalDynamicProps();
 	@Mock private ContractGC contractGC;
 	@Mock private AccountGC accountGC;
@@ -41,6 +38,10 @@ class RemovalHelperTest {
 	void setUp() {
 		lookup = new EntityLookup(() -> accounts);
 		classifier = new ClassificationWork(properties, lookup);
+		accounts = new MerkleMap<>();
+		accounts.put(EntityNum.fromLong(expiredDeletedAccountNum), expiredDeletedAccount);
+		accounts.put(EntityNum.fromLong(expiredDeletedContractNum), expiredDeletedContract);
+
 		subject = new RemovalHelper(classifier, properties, contractGC,accountGC, recordsHelper);
 	}
 
@@ -58,31 +59,41 @@ class RemovalHelperTest {
 	@Test
 	void removesAccountAsExpected(){
 		properties.enableAutoRenew();
+		final var expiredNum = EntityNum.fromLong(expiredDeletedAccountNum);
 
-		final var expectedReturns =
-				new TreasuryReturns(Collections.emptyList(), Collections.emptyList(), true);
+		final var expectedReturns = new TreasuryReturns(Collections.emptyList(), Collections.emptyList(), true);
+		given(accountGC.expireBestEffort(expiredNum, expiredDeletedAccount)).willReturn(expectedReturns);
 
-		var result = subject.tryToRemoveAccount(EntityNum.fromLong(nonExpiredAccountNum));
+		classifier.classify(expiredNum, now);
+		classifier.resolvePayerForAutoRenew();
+
+		var result = subject.tryToRemoveAccount(expiredNum);
+
+		verify(recordsHelper).streamCryptoRemoval(expiredNum, Collections.emptyList(), Collections.emptyList());
+		assertEquals(EntityProcessResult.DONE, result);
+	}
+	@Test
+	void removesContractAsExpected(){
+		properties.enableAutoRenew();
+		final var expiredNum = EntityNum.fromLong(expiredDeletedContractNum);
+
+		given(contractGC.expireBestEffort(expiredNum, expiredDeletedContract)).willReturn(true);
+		final var expectedReturns = new TreasuryReturns(Collections.emptyList(), Collections.emptyList(), true);
+		given(accountGC.expireBestEffort(expiredNum, expiredDeletedContract)).willReturn(expectedReturns);
+
+		classifier.classify(expiredNum, now);
+		classifier.resolvePayerForAutoRenew();
+
+		var result = subject.tryToRemoveContract(expiredNum);
+
+		verify(recordsHelper).streamCryptoRemoval(expiredNum, Collections.emptyList(), Collections.emptyList());
 		assertEquals(EntityProcessResult.DONE, result);
 	}
 
 	private final long now = 1_234_567L;
-	private final long requestedRenewalPeriod = 3601L;
-	private final long nonZeroBalance = 2L;
-
-	private final MerkleAccount mockAccount =
-			MerkleAccountFactory.newAccount()
-					.autoRenewPeriod(requestedRenewalPeriod)
-					.balance(nonZeroBalance)
-					.expirationTime(now - 1)
-					.get();
-	private final MerkleAccount mockContract =
-			MerkleAccountFactory.newContract()
-					.autoRenewPeriod(requestedRenewalPeriod)
-					.balance(nonZeroBalance)
-					.expirationTime(now - 1)
-					.get();
 	private final long nonExpiredAccountNum = 1002L;
+	private final long expiredDeletedAccountNum = 1003L;
+	private final long expiredDeletedContractNum = 1004L;
 
 	private final MerkleAccount expiredDeletedAccount =
 			MerkleAccountFactory.newAccount()
@@ -98,12 +109,5 @@ class RemovalHelperTest {
 					.deleted(true)
 					.alias(ByteString.copyFromUtf8("cccc"))
 					.expirationTime(now - 1)
-					.get();
-
-	private final MerkleAccount autoRenewMerkleAccountZeroBalance =
-			MerkleAccountFactory.newAccount()
-					.balance(0)
-					.expirationTime(now + 1)
-					.alias(ByteString.copyFromUtf8("aaaa"))
 					.get();
 }
