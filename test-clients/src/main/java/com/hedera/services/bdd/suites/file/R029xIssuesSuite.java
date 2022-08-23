@@ -8,6 +8,7 @@ import com.hedera.services.bdd.spec.queries.QueryVerbs;
 import com.hedera.services.bdd.spec.transactions.TxnVerbs;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -22,6 +23,8 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.*;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.LOCAL_CALL_MODIFICATION_EXCEPTION;
 import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
@@ -38,7 +41,6 @@ public class R029xIssuesSuite extends HapiApiSuite {
         return List.of(
                 new HapiApiSpec[] {
 //                        excessiveMaxAutoAssociationsAreFullyCharged(),
-//                        cannotSendValueToTokenAccount(),
                         cannotUseMoreThanChildContractLimit(),
                 });
     }
@@ -62,32 +64,6 @@ public class R029xIssuesSuite extends HapiApiSuite {
                 );
     }
 
-    private HapiApiSpec cannotSendValueToTokenAccount() {
-        final var multiKey = "multiKey";
-        final var nonFungibleToken = "NFT";
-        final AtomicReference<String> tokenMirrorAddr = new AtomicReference<>();
-        return defaultHapiSpec("CannotSendValueToTokenAccount")
-                .given(
-                        newKeyNamed(multiKey),
-                        cryptoCreate(TOKEN_TREASURY),
-                        tokenCreate(nonFungibleToken)
-                                .supplyType(TokenSupplyType.INFINITE)
-                                .tokenType(NON_FUNGIBLE_UNIQUE)
-                                .treasury(TOKEN_TREASURY)
-                                .initialSupply(0)
-                                .supplyKey(multiKey)
-                                .exposingCreatedIdTo(
-                                        idLit ->
-                                                tokenMirrorAddr.set(
-                                                        asHexedSolidityAddress(
-                                                                HapiPropertySource.asToken(
-                                                                        idLit))))
-                )
-                .when( )
-                .then(
-                        sourcing((() -> contractCall(tokenMirrorAddr.get()).sending(1L)))
-                );
-    }
 
     private HapiApiSpec cannotUseMoreThanChildContractLimit() {
         final var numChildren = 51;

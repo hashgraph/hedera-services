@@ -11,4 +11,22 @@ contract ManyChildren is HederaTokenService {
             IERC20(token).balanceOf(account);
         }    
     }
+
+    function createThingsRepeatedly(uint thingsToCreate) external {
+        for (uint i = 0; i < thingsToCreate; i++) {
+            new Thing(i);
+        }    
+    }
+
+    function sendSomeValueTo(address payable beneficiary) external payable {
+        beneficiary.transfer(msg.value); 
+    }
+}
+
+contract Thing {
+    uint256 i;
+
+    constructor(uint256 _i) {
+        i = _i;
+    }
 }
