@@ -15,6 +15,13 @@
  */
 package com.hedera.services.state.migration;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.RichInstant;
@@ -23,13 +30,6 @@ import com.hedera.services.utils.NftNumPair;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class UniqueTokenAdapterTest {
 
@@ -259,8 +259,8 @@ class UniqueTokenAdapterTest {
         assertEquals(RichInstant.MISSING_INSTANT, virtualSubject.getCreationTime());
 
         // High 32 bits is seconds, lower 32 bits is nanos
-        merkleSubject.setPackedCreationTime((1L << 32) + 2L );   // 1 second and 2 nanoseconds
-        virtualSubject.setPackedCreationTime((3L << 32) + 4L );  // 3 seconds and 4 nanoseconds
+        merkleSubject.setPackedCreationTime((1L << 32) + 2L); // 1 second and 2 nanoseconds
+        virtualSubject.setPackedCreationTime((3L << 32) + 4L); // 3 seconds and 4 nanoseconds
         assertEquals(new RichInstant(1, 2), merkleSubject.getCreationTime());
         assertEquals(new RichInstant(3, 4), virtualSubject.getCreationTime());
     }
