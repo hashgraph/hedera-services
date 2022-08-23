@@ -5,8 +5,9 @@ import com.hedera.services.utils.EntityNum;
 import com.swirlds.merkle.map.MerkleMap;
 
 import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.util.function.Supplier;
-
+@Singleton
 public class EntityLookup {
 	private final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts;
 	@Inject
