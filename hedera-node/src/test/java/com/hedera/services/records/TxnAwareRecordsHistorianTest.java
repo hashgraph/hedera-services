@@ -49,7 +49,6 @@ import com.hedera.services.stream.RecordStreamObject;
 import com.hedera.services.stream.proto.TransactionSidecarRecord;
 import com.hedera.services.utils.SidecarUtils;
 import com.hedera.services.utils.accessors.TxnAccessor;
-import com.hedera.test.utils.TxnUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.SignedTransaction;
@@ -482,7 +481,9 @@ class TxnAwareRecordsHistorianTest {
         assertFalse(subject.hasPrecedingChildRecords());
         assertFalse(subject.hasFollowingChildRecords());
 
-        final var record = new InProgressChildRecord(0, TransactionBody.newBuilder(), mockRecordBuilder, List.of());
+        final var record =
+                new InProgressChildRecord(
+                        0, TransactionBody.newBuilder(), mockRecordBuilder, List.of());
         subject.precedingChildRecords().add(record);
         subject.followingChildRecords().add(record);
 
@@ -491,7 +492,8 @@ class TxnAwareRecordsHistorianTest {
         final var sidecars = List.of(TransactionSidecarRecord.newBuilder());
 
         assertExhaustsResourceLimit(
-                () -> subject.trackFollowingChildRecord(1, txn, rec, sidecars), MAX_CHILD_RECORDS_EXCEEDED);
+                () -> subject.trackFollowingChildRecord(1, txn, rec, sidecars),
+                MAX_CHILD_RECORDS_EXCEEDED);
         assertExhaustsResourceLimit(
                 () -> subject.trackPrecedingChildRecord(1, txn, rec), MAX_CHILD_RECORDS_EXCEEDED);
 

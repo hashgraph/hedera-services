@@ -855,8 +855,10 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
         for (var rec : childRecords) {
             if (!rec.getAlias().isEmpty()) {
                 spec.registry()
-                        .saveAccountId(rec.getAlias().toStringUtf8(), rec.getReceipt().getAccountID());
-                spec.registry().saveKey(rec.getAlias().toStringUtf8(), Key.parseFrom(rec.getAlias()));
+                        .saveAccountId(
+                                rec.getAlias().toStringUtf8(), rec.getReceipt().getAccountID());
+                spec.registry()
+                        .saveKey(rec.getAlias().toStringUtf8(), Key.parseFrom(rec.getAlias()));
                 LOG.info(
                         "{}  Saving alias {} to registry for Account ID {}",
                         spec::logPrefix,

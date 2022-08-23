@@ -47,11 +47,9 @@ import com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts;
 import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
-import com.hederahashgraph.api.proto.java.TokenType;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.IntStream;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -81,14 +79,16 @@ public class ContractDeleteSuite extends HapiApiSuite {
                     deleteTransfersToContract(),
                     cannotDeleteOrSelfDestructTokenTreasury(),
                     cannotDeleteOrSelfDestructContractWithNonZeroBalance(),
-                        cannotSendValueToTokenAccount(),
-                        cannotUseMoreThanChildContractLimit(),
+                    cannotSendValueToTokenAccount(),
+                    cannotUseMoreThanChildContractLimit(),
                 });
     }
 
     private HapiApiSpec cannotUseMoreThanChildContractLimit() {
-        final var illegalNumChildren = HapiSpecSetup.getDefaultNodeProps()
-                .getInteger("consensus.handle.maxFollowingRecords") + 1;
+        final var illegalNumChildren =
+                HapiSpecSetup.getDefaultNodeProps()
+                                .getInteger("consensus.handle.maxFollowingRecords")
+                        + 1;
         final var fungible = "fungible";
         final var contract = "ManyChildren";
         final var precompileViolation = "precompileViolation";
@@ -97,8 +97,9 @@ public class ContractDeleteSuite extends HapiApiSuite {
         final AtomicReference<String> tokenMirrorAddr = new AtomicReference<>();
         return defaultHapiSpec("CannotUseMoreThanChildContractLimit")
                 .given(
-                        cryptoCreate(TOKEN_TREASURY).exposingCreatedIdTo(
-                                id -> treasuryMirrorAddr.set(asHexedSolidityAddress(id))),
+                        cryptoCreate(TOKEN_TREASURY)
+                                .exposingCreatedIdTo(
+                                        id -> treasuryMirrorAddr.set(asHexedSolidityAddress(id))),
                         tokenCreate(fungible).treasury(TOKEN_TREASURY),
                         tokenCreate(fungible)
                                 .tokenType(FUNGIBLE_COMMON)
@@ -109,34 +110,42 @@ public class ContractDeleteSuite extends HapiApiSuite {
                                                 tokenMirrorAddr.set(
                                                         asHexedSolidityAddress(
                                                                 HapiPropertySource.asToken(
-                                                                        idLit))))
-                )
+                                                                        idLit)))))
                 .when(
                         uploadInitCode(contract),
                         contractCreate(contract),
-                        sourcing(() -> contractCall(contract,
-                                "checkBalanceRepeatedly",
-                                tokenMirrorAddr.get(), treasuryMirrorAddr.get(), illegalNumChildren)
-                                .via(precompileViolation)
-                                .hasKnownStatus(MAX_CHILD_RECORDS_EXCEEDED)),
-                        sourcing(() -> contractCall(contract,
-                                "createThingsRepeatedly", illegalNumChildren)
-                                .via(internalCreateViolation)
-                                .gas(15_000_000)
-                                .hasKnownStatus(MAX_CHILD_RECORDS_EXCEEDED))
-                ).then(
+                        sourcing(
+                                () ->
+                                        contractCall(
+                                                        contract,
+                                                        "checkBalanceRepeatedly",
+                                                        tokenMirrorAddr.get(),
+                                                        treasuryMirrorAddr.get(),
+                                                        illegalNumChildren)
+                                                .via(precompileViolation)
+                                                .hasKnownStatus(MAX_CHILD_RECORDS_EXCEEDED)),
+                        sourcing(
+                                () ->
+                                        contractCall(
+                                                        contract,
+                                                        "createThingsRepeatedly",
+                                                        illegalNumChildren)
+                                                .via(internalCreateViolation)
+                                                .gas(15_000_000)
+                                                .hasKnownStatus(MAX_CHILD_RECORDS_EXCEEDED)))
+                .then(
                         getTxnRecord(precompileViolation)
                                 .andAllChildRecords()
-                                .hasChildRecords(IntStream.range(0, 50)
-                                        .mapToObj(i -> recordWith().status(REVERTED_SUCCESS))
-                                        .toArray(TransactionRecordAsserts[]::new)),
+                                .hasChildRecords(
+                                        IntStream.range(0, 50)
+                                                .mapToObj(
+                                                        i -> recordWith().status(REVERTED_SUCCESS))
+                                                .toArray(TransactionRecordAsserts[]::new)),
                         getTxnRecord(internalCreateViolation)
                                 .andAllChildRecords()
                                 // Reverted internal CONTRACT_CREATION messages are not externalized
-                                .hasChildRecords()
-                );
+                                .hasChildRecords());
     }
-
 
     private HapiApiSpec cannotSendValueToTokenAccount() {
         final var multiKey = "multiKey";
@@ -160,28 +169,33 @@ public class ContractDeleteSuite extends HapiApiSuite {
                                                 tokenMirrorAddr.set(
                                                         asHexedSolidityAddress(
                                                                 HapiPropertySource.asToken(
-                                                                        idLit))))
-                )
+                                                                        idLit)))))
                 .when(
                         uploadInitCode(contract),
                         contractCreate(contract),
-                        sourcing(() -> contractCall(contract,
-                                "sendSomeValueTo",
-                                tokenMirrorAddr.get())
-                                .sending(ONE_HBAR)
-                                .payingWith(TOKEN_TREASURY)
-                                .via(internalViolation)
-                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED)),
-                        sourcing((() -> contractCall(tokenMirrorAddr.get())
-                                .sending(1L)
-                                .payingWith(TOKEN_TREASURY)
-                                .via(externalViolation)
-                                .hasKnownStatus(LOCAL_CALL_MODIFICATION_EXCEPTION)))
-                )
+                        sourcing(
+                                () ->
+                                        contractCall(
+                                                        contract,
+                                                        "sendSomeValueTo",
+                                                        tokenMirrorAddr.get())
+                                                .sending(ONE_HBAR)
+                                                .payingWith(TOKEN_TREASURY)
+                                                .via(internalViolation)
+                                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED)),
+                        sourcing(
+                                (() ->
+                                        contractCall(tokenMirrorAddr.get())
+                                                .sending(1L)
+                                                .payingWith(TOKEN_TREASURY)
+                                                .via(externalViolation)
+                                                .hasKnownStatus(
+                                                        LOCAL_CALL_MODIFICATION_EXCEPTION))))
                 .then(
-                        getTxnRecord(internalViolation).hasPriority(recordWith().feeGreaterThan(0L)),
-                        getTxnRecord(externalViolation).hasPriority(recordWith().feeGreaterThan(0L))
-                );
+                        getTxnRecord(internalViolation)
+                                .hasPriority(recordWith().feeGreaterThan(0L)),
+                        getTxnRecord(externalViolation)
+                                .hasPriority(recordWith().feeGreaterThan(0L)));
     }
 
     HapiApiSpec cannotDeleteOrSelfDestructTokenTreasury() {

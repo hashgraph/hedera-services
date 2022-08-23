@@ -15,7 +15,6 @@
  */
 package com.hedera.services.records;
 
-import static com.hedera.services.exceptions.ValidationUtils.validateResourceLimit;
 import static com.hedera.services.legacy.proto.utils.ByteStringUtils.unwrapUnsafelyIfPossible;
 import static com.hedera.services.legacy.proto.utils.CommonUtils.noThrowSha384HashOf;
 import static com.hedera.services.state.submerkle.TxnId.USER_TRANSACTION_NONCE;
@@ -34,7 +33,6 @@ import com.hedera.services.stream.RecordStreamObject;
 import com.hedera.services.stream.proto.TransactionSidecarRecord;
 import com.hedera.services.utils.MiscUtils;
 import com.hederahashgraph.api.proto.java.*;
-
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -180,7 +178,8 @@ public class TxnAwareRecordsHistorian implements RecordsHistorian {
             final TransactionBody.Builder syntheticBody,
             final ExpirableTxnRecord.Builder recordSoFar,
             final List<TransactionSidecarRecord.Builder> sidecars) {
-        revertIfNot(consensusTimeTracker.isAllowableFollowingOffset(followingChildRecords.size() + 1L));
+        revertIfNot(
+                consensusTimeTracker.isAllowableFollowingOffset(followingChildRecords.size() + 1L));
         final var inProgress =
                 new InProgressChildRecord(sourceId, syntheticBody, recordSoFar, sidecars);
         followingChildRecords.add(inProgress);
@@ -191,7 +190,8 @@ public class TxnAwareRecordsHistorian implements RecordsHistorian {
             final int sourceId,
             final TransactionBody.Builder syntheticTxn,
             final ExpirableTxnRecord.Builder recordSoFar) {
-        revertIfNot(consensusTimeTracker.isAllowablePrecedingOffset(precedingChildRecords.size() + 1L));
+        revertIfNot(
+                consensusTimeTracker.isAllowablePrecedingOffset(precedingChildRecords.size() + 1L));
         final var inProgress =
                 new InProgressChildRecord(
                         sourceId, syntheticTxn, recordSoFar, Collections.emptyList());
@@ -339,7 +339,7 @@ public class TxnAwareRecordsHistorian implements RecordsHistorian {
     }
 
     @VisibleForTesting
-   List<InProgressChildRecord> followingChildRecords() {
+    List<InProgressChildRecord> followingChildRecords() {
         return followingChildRecords;
     }
 }

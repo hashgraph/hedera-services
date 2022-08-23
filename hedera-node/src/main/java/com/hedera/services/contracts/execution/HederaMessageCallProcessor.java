@@ -40,7 +40,8 @@ import org.hyperledger.besu.evm.tracing.OperationTracer;
 /** Overrides Besu precompiler handling, so we can break model layers in Precompile execution */
 public class HederaMessageCallProcessor extends MessageCallProcessor {
     private static final String INVALID_TRANSFER_MSG = "Transfer of Value to Hedera Precompile";
-    private static final Optional<ExceptionalHaltReason> ILLEGAL_STATE_CHANGE = Optional.of(ExceptionalHaltReason.ILLEGAL_STATE_CHANGE);
+    private static final Optional<ExceptionalHaltReason> ILLEGAL_STATE_CHANGE =
+            Optional.of(ExceptionalHaltReason.ILLEGAL_STATE_CHANGE);
     public static final Bytes INVALID_TRANSFER =
             Bytes.of(INVALID_TRANSFER_MSG.getBytes(StandardCharsets.UTF_8));
 
@@ -63,7 +64,7 @@ public class HederaMessageCallProcessor extends MessageCallProcessor {
             executeHederaPrecompile(hederaPrecompile, frame, operationTracer);
         } else {
             if (frame.getValue().greaterThan(Wei.ZERO)) {
-                final var updater =  (HederaStackedWorldStateUpdater)frame.getWorldUpdater();
+                final var updater = (HederaStackedWorldStateUpdater) frame.getWorldUpdater();
                 if (updater.isTokenAddress(frame.getRecipientAddress())) {
                     frame.setExceptionalHaltReason(ILLEGAL_STATE_CHANGE);
                     frame.setState(MessageFrame.State.EXCEPTIONAL_HALT);
@@ -74,7 +75,8 @@ public class HederaMessageCallProcessor extends MessageCallProcessor {
             }
             nonPrecompileResultState = frame.getState();
         }
-        if (nonPrecompileResultState != EXCEPTIONAL_HALT && nonPrecompileResultState != CODE_EXECUTING) {
+        if (nonPrecompileResultState != EXCEPTIONAL_HALT
+                && nonPrecompileResultState != CODE_EXECUTING) {
             // Pre-compile execution doesn't set the state to CODE_EXECUTING after start()
             ((HederaOperationTracer) operationTracer)
                     .tracePrecompileResult(

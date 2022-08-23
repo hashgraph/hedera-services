@@ -108,7 +108,7 @@ class HederaStackedWorldStateUpdaterTest {
         final var someAddress = Address.BLS12_MAP_FP2_TO_G2;
         given(trackingLedgers.isTokenAddress(someAddress)).willReturn(true);
         assertTrue(subject.isTokenAddress(someAddress));
-      }
+    }
 
     @Test
     void recognizesTreasuryAccount() {
