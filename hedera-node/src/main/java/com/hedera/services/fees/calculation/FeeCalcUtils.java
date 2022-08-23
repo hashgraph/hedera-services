@@ -90,6 +90,7 @@ public final class FeeCalcUtils {
             return a > 0 ? Long.MAX_VALUE : Long.MIN_VALUE;
         }
     }
+
     public static long clampedMultiply(final long a, final long b) {
         try {
             return Math.multiplyExact(a, b);
