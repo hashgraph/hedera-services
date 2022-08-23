@@ -29,34 +29,34 @@ public class BackingNfts implements BackingStore<NftId, UniqueTokenAdapter> {
     private static final Logger LOG = LogManager.getLogger(BackingNfts.class);
     private final Supplier<UniqueTokenMapAdapter> delegate;
 
-    public BackingNfts(Supplier<UniqueTokenMapAdapter> delegate) {
+    public BackingNfts(final Supplier<UniqueTokenMapAdapter> delegate) {
         this.delegate = delegate;
     }
 
     @Override
-    public UniqueTokenAdapter getRef(NftId id) {
+    public UniqueTokenAdapter getRef(final NftId id) {
         return delegate.get().getForModify(id);
     }
 
     @Override
-    public UniqueTokenAdapter getImmutableRef(NftId id) {
+    public UniqueTokenAdapter getImmutableRef(final NftId id) {
         return delegate.get().get(id);
     }
 
     @Override
-    public void put(NftId id, UniqueTokenAdapter nft) {
+    public void put(final NftId id, final UniqueTokenAdapter nft) {
         if (!delegate.get().containsKey(id)) {
             delegate.get().put(id, nft);
         }
     }
 
     @Override
-    public void remove(NftId id) {
+    public void remove(final NftId id) {
         delegate.get().remove(id);
     }
 
     @Override
-    public boolean contains(NftId id) {
+    public boolean contains(final NftId id) {
         return delegate.get().containsKey(id);
     }
 
@@ -65,6 +65,7 @@ public class BackingNfts implements BackingStore<NftId, UniqueTokenAdapter> {
         if (delegate.get().isVirtual()) {
             throw new UnsupportedOperationException();
         }
+        LOG.warn("idSet() called for BackingNfts. This is a slow operation.");
         return delegate.get().merkleMap().keySet().stream()
                 .map(EntityNumPair::asTokenNumAndSerialPair)
                 .map(pair -> NftId.withDefaultShardRealm(pair.getLeft(), pair.getRight()))

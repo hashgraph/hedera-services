@@ -17,7 +17,6 @@ package com.hedera.services.state.migration;
 
 import static com.google.common.truth.Truth.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -39,7 +38,7 @@ import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith({MockitoExtension.class})
-public class UniqueTokenMapAdapterTest {
+class UniqueTokenMapAdapterTest {
 
     private UniqueTokenMapAdapter merkleMapAdapter;
     private UniqueTokenMapAdapter virtualMapAdapter;
@@ -172,11 +171,11 @@ public class UniqueTokenMapAdapterTest {
     void testRemove() {
         final var merkleKey = NftId.withDefaultShardRealm(1, 2);
         merkleMapAdapter.remove(merkleKey);
-        verify(merkleMap, times(1)).remove(eq(EntityNumPair.fromNftId(merkleKey)));
+        verify(merkleMap, times(1)).remove(EntityNumPair.fromNftId(merkleKey));
 
         final var virtualKey = NftId.withDefaultShardRealm(3, 4);
         virtualMapAdapter.remove(virtualKey);
-        verify(virtualMap, times(1)).remove(eq(UniqueTokenKey.from(virtualKey)));
+        verify(virtualMap, times(1)).remove(UniqueTokenKey.from(virtualKey));
     }
 
     @Test

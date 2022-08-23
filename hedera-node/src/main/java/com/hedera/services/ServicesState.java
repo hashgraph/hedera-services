@@ -130,7 +130,7 @@ public class ServicesState extends PartialNaryMerkleInternal
         /* RuntimeConstructable */
     }
 
-    private ServicesState(ServicesState that) {
+    private ServicesState(final ServicesState that) {
         /* Copy the Merkle route from the source instance */
         super(that);
         /* Copy the non-null Merkle children from the source */
@@ -194,7 +194,7 @@ public class ServicesState extends PartialNaryMerkleInternal
     }
 
     @Override
-    public void addDeserializedChildren(List<MerkleNode> children, int version) {
+    public void addDeserializedChildren(final List<MerkleNode> children, final int version) {
         super.addDeserializedChildren(children, version);
         deserializedStateVersion = version;
     }
@@ -261,7 +261,9 @@ public class ServicesState extends PartialNaryMerkleInternal
     }
 
     private void genesisInit(
-            Platform platform, AddressBook addressBook, final SwirldDualState dualState) {
+            final Platform platform,
+            final AddressBook addressBook,
+            final SwirldDualState dualState) {
         log.info(
                 "Init called on Services node {} WITHOUT Merkle saved state", platform.getSelfId());
 
@@ -280,10 +282,10 @@ public class ServicesState extends PartialNaryMerkleInternal
             final BootstrapProperties bootstrapProps,
             SwirldDualState dualState,
             final InitTrigger trigger,
-            @Nullable SoftwareVersion deserializedVersion) {
+            @Nullable final SoftwareVersion deserializedVersion) {
         final var selfId = platform.getSelfId().getId();
 
-        ServicesApp app;
+        final ServicesApp app;
         if (APPS.includes(selfId)) {
             app = APPS.get(selfId);
         } else {
@@ -406,9 +408,9 @@ public class ServicesState extends PartialNaryMerkleInternal
     }
 
     /* -- Getters and helpers -- */
-    public AccountID getAccountFromNodeId(NodeId nodeId) {
-        var address = addressBook().getAddress(nodeId.getId());
-        var memo = address.getMemo();
+    public AccountID getAccountFromNodeId(final NodeId nodeId) {
+        final var address = addressBook().getAddress(nodeId.getId());
+        final var memo = address.getMemo();
         return parseAccount(memo);
     }
 
@@ -425,7 +427,7 @@ public class ServicesState extends PartialNaryMerkleInternal
     }
 
     public void logSummary() {
-        String ctxSummary;
+        final String ctxSummary;
         if (metadata != null) {
             final var app = metadata.app();
             app.hashLogger().logHashesFor(this);
@@ -462,7 +464,7 @@ public class ServicesState extends PartialNaryMerkleInternal
     }
 
     public MerkleScheduledTransactions scheduleTxs() {
-        MerkleNode scheduledTxns = getChild(StateChildIndices.SCHEDULE_TXS);
+        final MerkleNode scheduledTxns = getChild(StateChildIndices.SCHEDULE_TXS);
         if (scheduledTxns instanceof MerkleMap) {
             return migrationSchedules;
         }
@@ -486,7 +488,6 @@ public class ServicesState extends PartialNaryMerkleInternal
     }
 
     public UniqueTokenMapAdapter uniqueTokens() {
-        // TODO: Consider caching this decision and/or result
         final var tokensMap = getChild(StateChildIndices.UNIQUE_TOKENS);
         return tokensMap.getClass() == MerkleMap.class
                 ? UniqueTokenMapAdapter.wrap(
@@ -508,7 +509,9 @@ public class ServicesState extends PartialNaryMerkleInternal
     }
 
     void createGenesisChildren(
-            AddressBook addressBook, long seqStart, BootstrapProperties bootstrapProperties) {
+            final AddressBook addressBook,
+            final long seqStart,
+            final BootstrapProperties bootstrapProperties) {
         final var virtualMapFactory = new VirtualMapFactory(JasperDbBuilder::new);
 
         if (enabledVirtualNft) {
@@ -542,7 +545,7 @@ public class ServicesState extends PartialNaryMerkleInternal
         return new RecordsRunningHashLeaf(genesisRunningHash);
     }
 
-    private MerkleNetworkContext genesisNetworkCtxWith(long seqStart) {
+    private MerkleNetworkContext genesisNetworkCtxWith(final long seqStart) {
         return new MerkleNetworkContext(
                 null, new SequenceNumber(seqStart), seqStart - 1, new ExchangeRates());
     }
@@ -650,12 +653,12 @@ public class ServicesState extends PartialNaryMerkleInternal
     }
 
     @VisibleForTesting
-    static void setOwnedNftsLinkMigrator(OwnedNftsLinkMigrator ownedNftsLinkMigrator) {
+    static void setOwnedNftsLinkMigrator(final OwnedNftsLinkMigrator ownedNftsLinkMigrator) {
         ServicesState.ownedNftsLinkMigrator = ownedNftsLinkMigrator;
     }
 
     @VisibleForTesting
-    static void setStakingInfoBuilder(StakingInfoBuilder stakingInfoBuilder) {
+    static void setStakingInfoBuilder(final StakingInfoBuilder stakingInfoBuilder) {
         ServicesState.stakingInfoBuilder = stakingInfoBuilder;
     }
 
