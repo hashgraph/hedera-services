@@ -60,7 +60,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
@@ -529,7 +528,8 @@ class CallEvmTxProcessorTest {
         given(updater.trackingAccounts()).willReturn(mockAccounts);
 
         willThrow(new ResourceLimitException(INSUFFICIENT_BALANCES_FOR_STORAGE_RENT))
-                .given(updater).commit();
+                .given(updater)
+                .commit();
         final var MAX_REFUND_PERCENTAGE = 100;
         given(globalDynamicProperties.maxGasRefundPercentage()).willReturn(MAX_REFUND_PERCENTAGE);
         given(globalDynamicProperties.fundingAccount())
