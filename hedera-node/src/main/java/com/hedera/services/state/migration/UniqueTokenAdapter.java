@@ -18,6 +18,7 @@ package com.hedera.services.state.migration;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.virtual.UniqueTokenValue;
+import javax.annotation.Nullable;
 
 /**
  * Intermediate adapter class for an NFT token.
@@ -33,12 +34,14 @@ public class UniqueTokenAdapter {
 
     private final boolean isVirtual;
 
-    public static UniqueTokenAdapter wrap(MerkleUniqueToken token) {
-        return new UniqueTokenAdapter(token);
+    @Nullable
+    public static UniqueTokenAdapter wrap(@Nullable final MerkleUniqueToken token) {
+        return token == null ? null : new UniqueTokenAdapter(token);
     }
 
-    public static UniqueTokenAdapter wrap(UniqueTokenValue token) {
-        return new UniqueTokenAdapter(token);
+    @Nullable
+    public static UniqueTokenAdapter wrap(@Nullable final UniqueTokenValue token) {
+        return token == null ? null : new UniqueTokenAdapter(token);
     }
 
     public static UniqueTokenAdapter newEmptyMerkleToken() {
@@ -123,7 +126,7 @@ public class UniqueTokenAdapter {
      *
      * @param spender EntityId of the spender.
      */
-    public void setSpender(EntityId spender) {
+    public void setSpender(final EntityId spender) {
         if (isVirtual) {
             uniqueTokenValue.setSpender(spender);
         } else {
@@ -136,7 +139,7 @@ public class UniqueTokenAdapter {
      *
      * @param owner EntityId of the owner.
      */
-    public void setOwner(EntityId owner) {
+    public void setOwner(final EntityId owner) {
         if (isVirtual) {
             uniqueTokenValue.setOwner(owner);
         } else {
@@ -149,7 +152,7 @@ public class UniqueTokenAdapter {
      *
      * @param packedCreationTime long representing the pack creation timestamp.
      */
-    public void setPackedCreationTime(long packedCreationTime) {
+    public void setPackedCreationTime(final long packedCreationTime) {
         if (isVirtual) {
             uniqueTokenValue.setPackedCreationTime(packedCreationTime);
         } else {
@@ -163,7 +166,7 @@ public class UniqueTokenAdapter {
      * @param metadata byte array representing the updated metadata to set the instance's metadata
      *     to.
      */
-    public void setMetadata(byte[] metadata) {
+    public void setMetadata(final byte[] metadata) {
         if (isVirtual) {
             uniqueTokenValue.setMetadata(metadata);
         } else {
