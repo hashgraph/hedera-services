@@ -5,8 +5,6 @@ import com.hedera.services.state.expiry.EntityProcessResult;
 import com.hedera.services.state.expiry.classification.ClassificationWork;
 import com.hedera.services.state.expiry.renewal.RenewalRecordsHelper;
 import com.hedera.services.utils.EntityNum;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -17,7 +15,6 @@ import static com.hedera.services.state.expiry.EntityProcessResult.STILL_MORE_TO
 
 @Singleton
 public class RemovalHelper implements RemovalWork{
-	private static final Logger log = LogManager.getLogger(RemovalHelper.class);
 	private final ClassificationWork classifier;
 	private final GlobalDynamicProperties properties;
 	private final ContractGC contractGC;

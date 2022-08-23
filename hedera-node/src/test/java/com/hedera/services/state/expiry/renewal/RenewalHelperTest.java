@@ -5,6 +5,7 @@ import com.hedera.services.config.MockGlobalDynamicProps;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.fees.calculation.RenewAssessment;
 import com.hedera.services.ledger.accounts.AliasManager;
+import com.hedera.services.state.expiry.EntityProcessResult;
 import com.hedera.services.state.expiry.classification.ClassificationWork;
 import com.hedera.services.state.expiry.classification.EntityLookup;
 import com.hedera.services.state.merkle.MerkleAccount;
@@ -29,7 +30,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
-public class RenewalHelperTest {
+class RenewalHelperTest {
 	@Mock
 	private MerkleMap<EntityNum, MerkleAccount> accounts;
 	@Mock private AliasManager aliasManager;
@@ -106,6 +107,17 @@ public class RenewalHelperTest {
 		assertEquals(autoRenewAccount, classificationWork.getPayerNumForAutoRenew());
 	}
 
+	@Test
+	void doesNothingWhenDisabled(){
+		properties.disableAutoRenew();
+		var result = subject.tryToRenewAccount(EntityNum.fromLong(fundedExpiredAccountNum), Instant.ofEpochSecond(now));
+		assertEquals(EntityProcessResult.NOTHING_TO_DO, result);
+
+		properties.disableContractAutoRenew();
+		result = subject.tryToRenewContract(EntityNum.fromLong(fundedExpiredAccountNum), Instant.ofEpochSecond(now));
+		assertEquals(EntityProcessResult.NOTHING_TO_DO, result);
+	}
+
 
 	@Test
 	void cannotRenewIfNoLastClassified() {
@@ -167,39 +179,11 @@ public class RenewalHelperTest {
 					.expirationTime(now + 1)
 					.alias(ByteString.copyFromUtf8("aaaa"))
 					.get();
-	private final MerkleAccount autoRenewMerkleAccountZeroBalance =
-			MerkleAccountFactory.newAccount()
-					.balance(0)
-					.expirationTime(now + 1)
-					.alias(ByteString.copyFromUtf8("aaaa"))
-					.get();
 	private final MerkleAccount expiredAccountZeroBalance =
 			MerkleAccountFactory.newAccount()
 					.balance(0)
 					.expirationTime(now - 1)
 					.alias(ByteString.copyFromUtf8("bbbb"))
-					.get();
-	private final MerkleAccount expiredContractZeroBalance =
-			MerkleAccountFactory.newAccount()
-					.isSmartContract(true)
-					.balance(0)
-					.expirationTime(now - 1)
-					.alias(ByteString.copyFromUtf8("bbbb"))
-					.get();
-	private final MerkleAccount expiredDeletedAccount =
-			MerkleAccountFactory.newAccount()
-					.balance(0)
-					.deleted(true)
-					.alias(ByteString.copyFromUtf8("cccc"))
-					.expirationTime(now - 1)
-					.get();
-	private final MerkleAccount expiredDeletedContract =
-			MerkleAccountFactory.newAccount()
-					.isSmartContract(true)
-					.balance(0)
-					.deleted(true)
-					.alias(ByteString.copyFromUtf8("cccc"))
-					.expirationTime(now - 1)
 					.get();
 	private final MerkleAccount expiredAccountNonZeroBalance =
 			MerkleAccountFactory.newAccount()

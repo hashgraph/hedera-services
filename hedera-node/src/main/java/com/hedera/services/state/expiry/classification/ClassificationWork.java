@@ -15,6 +15,13 @@
  */
 package com.hedera.services.state.expiry.classification;
 
+import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.utils.EntityNum;
+
+import javax.inject.Inject;
+import javax.inject.Singleton;
+
 import static com.hedera.services.state.expiry.classification.ClassificationResult.DETACHED_ACCOUNT;
 import static com.hedera.services.state.expiry.classification.ClassificationResult.DETACHED_ACCOUNT_GRACE_PERIOD_OVER;
 import static com.hedera.services.state.expiry.classification.ClassificationResult.DETACHED_CONTRACT;
@@ -24,22 +31,12 @@ import static com.hedera.services.state.expiry.classification.ClassificationResu
 import static com.hedera.services.state.expiry.classification.ClassificationResult.EXPIRED_CONTRACT_READY_TO_RENEW;
 import static com.hedera.services.state.expiry.classification.ClassificationResult.OTHER;
 
-import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.utils.EntityNum;
-
-import javax.inject.Inject;
-import javax.inject.Singleton;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
 /**
  * Helper for renewing and removing expired entities. Only crypto accounts are supported in this
  * implementation.
  */
 @Singleton
 public class ClassificationWork {
-    private static final Logger log = LogManager.getLogger(ClassificationWork.class);
     private final GlobalDynamicProperties dynamicProperties;
     private final EntityLookup lookup;
     private EntityNum lastClassifiedNum;

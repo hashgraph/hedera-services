@@ -16,11 +16,7 @@
 package com.hedera.services.state.expiry.removal;
 
 import com.hedera.services.state.expiry.EntityProcessResult;
-import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.utils.EntityNum;
-
-import javax.annotation.Nullable;
-import java.time.Instant;
 /**
  * Provides the logic needed for the account and contract expiry and removal cycle
  */

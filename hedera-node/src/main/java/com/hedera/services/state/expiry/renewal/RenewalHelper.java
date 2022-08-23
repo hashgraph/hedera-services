@@ -30,7 +30,6 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.time.Instant;
 
-import static com.hedera.services.state.expiry.EntityProcessResult.DONE;
 import static com.hedera.services.state.expiry.EntityProcessResult.NOTHING_TO_DO;
 import static com.hedera.services.utils.EntityNum.fromAccountId;
 @Singleton
