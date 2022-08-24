@@ -15,8 +15,8 @@
  */
 package com.hedera.services.fees.calculation;
 
-import static com.hedera.services.fees.calculation.FeeCalcUtils.clampedAdd;
-import static com.hedera.services.fees.calculation.FeeCalcUtils.clampedMultiply;
+import static com.hedera.services.fees.calculation.utils.OverflowCheckingCalc.clampedAdd;
+import static com.hedera.services.fees.calculation.utils.OverflowCheckingCalc.clampedMultiply;
 import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.getCryptoAllowancesList;
 import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.getFungibleTokenAllowancesList;
 import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.getNftApprovedForAll;
