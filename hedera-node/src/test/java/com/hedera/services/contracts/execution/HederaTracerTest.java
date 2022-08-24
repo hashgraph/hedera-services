@@ -206,7 +206,7 @@ class HederaTracerTest {
         final var solidityAction = actions.get(0);
         assertEquals(initialGas - remainingGasAfterExecution, solidityAction.getGasUsed());
         assertArrayEquals(new byte[0], solidityAction.getOutput());
-        assertEquals(solidityAction.getCallOperationType(), OP_CREATE);
+        assertEquals(OP_CREATE, solidityAction.getCallOperationType());
     }
 
     @Test
