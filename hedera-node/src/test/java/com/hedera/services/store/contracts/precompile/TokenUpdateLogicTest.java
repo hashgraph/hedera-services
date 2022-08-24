@@ -23,6 +23,8 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
@@ -259,8 +261,13 @@ class TokenUpdateLogicTest {
         given(ledgers.nfts()).willReturn(nfts);
         given(merkleToken.treasury()).willReturn(treasuryId);
         // then
-        Assertions.assertThrows(
-                InvalidTransactionException.class, () -> subject.updateToken(op, CONSENSUS_TIME));
+
+        try {
+            subject.updateToken(op, CONSENSUS_TIME);
+        } catch (Exception e) {
+            assertTrue(e instanceof InvalidTransactionException);
+            assertEquals(FAIL_INVALID, ((InvalidTransactionException) e).getResponseCode());
+        }
     }
 
     @Test
