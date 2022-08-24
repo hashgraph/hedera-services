@@ -15,6 +15,7 @@
  */
 package com.hedera.services.store.contracts.precompile;
 
+import static com.hedera.services.ledger.properties.AccountProperty.NUM_TREASURY_TITLES;
 import static com.hedera.services.ledger.properties.TokenRelProperty.TOKEN_BALANCE;
 import static com.hedera.services.state.enums.TokenType.FUNGIBLE_COMMON;
 import static com.hedera.services.state.enums.TokenType.NON_FUNGIBLE_UNIQUE;
@@ -223,6 +224,33 @@ class TokenUpdateLogicTest {
         // then
         Assertions.assertThrows(
                 InvalidTransactionException.class, () -> subject.updateToken(op, CONSENSUS_TIME));
+    }
+
+    @Test
+    void updateTokenHappyPathWithNoTreasuryBalanceForNonFungibleToken() {
+        // given
+        givenTokenUpdateLogic(false);
+        givenValidTransactionBody(false, true);
+        givenContextForSuccessFullCalls();
+        given(ledgers.accounts()).willReturn(accounts);
+        given(ledgers.tokenRels()).willReturn(tokenRels);
+        given(store.get(nonFungible)).willReturn(merkleToken);
+        given(merkleToken.treasury()).willReturn(treasuryId);
+        given(merkleToken.tokenType()).willReturn(NON_FUNGIBLE_UNIQUE);
+        given(store.associationExists(any(), any())).willReturn(true);
+        given(accounts.get(treasury, NUM_TREASURY_TITLES)).willReturn(10);
+        given(accounts.get(account, NUM_TREASURY_TITLES)).willReturn(5);
+        final var tokenRel = Pair.of(treasury, nonFungible);
+        given(tokenRels.get(tokenRel, TOKEN_BALANCE)).willReturn(0L);
+        given(store.update(op, CONSENSUS_TIME)).willReturn(OK);
+        given(transactionBody.getTokenUpdate()).willReturn(op);
+
+        // when
+        subject.validate(transactionBody);
+        subject.updateToken(op, CONSENSUS_TIME);
+        // then
+        verify(store).update(op, CONSENSUS_TIME);
+        verify(sigImpactHistorian).markEntityChanged(nonFungible.getTokenNum());
     }
 
     @Test
