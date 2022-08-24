@@ -56,8 +56,7 @@ public class RemovalHelper implements RemovalWork{
 			return STILL_MORE_TO_DO;
 		}
 		final var treasuryReturns = accountGC.expireBestEffort(contractNum, lastClassified);
-		recordsHelper.streamCryptoRemoval(
-				contractNum, treasuryReturns.tokenTypes(), treasuryReturns.transfers());
+		recordsHelper.streamCryptoRemoval(contractNum, treasuryReturns.tokenTypes(), treasuryReturns.transfers());
 		return treasuryReturns.finished() ? DONE : STILL_MORE_TO_DO;
 	}
 }

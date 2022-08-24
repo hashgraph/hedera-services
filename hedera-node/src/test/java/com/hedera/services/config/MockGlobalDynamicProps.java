@@ -35,6 +35,7 @@ public class MockGlobalDynamicProps extends GlobalDynamicProperties {
     private boolean exportBalances = true;
     private CongestionMultipliers currentMultipliers = defaultMultipliers;
     private boolean throttleByGas;
+    private boolean overwriteFundingAccount = false;
 
     public MockGlobalDynamicProps() {
         super(null, null);

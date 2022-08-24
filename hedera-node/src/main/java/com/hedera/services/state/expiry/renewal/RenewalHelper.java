@@ -94,6 +94,7 @@ public class RenewalHelper implements RenewalWork {
     private EntityProcessResult renew(final EntityNum account, final Instant cycleTime, final boolean isContract){
         final var payer = getAutoRenewPayer();
         final var expiringEntity = tryToGetNextExpiryCandidate();
+        final var oldExpiry = expiringEntity.getExpiry();
 
         final long reqPeriod = expiringEntity.getAutoRenewSecs();
         final var assessment = fees.assessCryptoAutoRenewal(expiringEntity, reqPeriod, cycleTime, payer);
@@ -104,7 +105,7 @@ public class RenewalHelper implements RenewalWork {
         recordsHelper.streamCryptoRenewal(
                 account,
                 renewalFee,
-                expiringEntity.getExpiry() + renewalPeriod,
+                oldExpiry + renewalPeriod,
                 isContract,
                 EntityNum.fromLong(payer.state().number()));
         return result;
