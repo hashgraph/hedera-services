@@ -221,7 +221,7 @@ class TokenUpdateLogicTest {
         given(tokenRels.get(tokenRel, TOKEN_BALANCE)).willReturn(10L);
         // then
         Assertions.assertThrows(
-            InvalidTransactionException.class, () -> subject.updateToken(op, CONSENSUS_TIME));
+                InvalidTransactionException.class, () -> subject.updateToken(op, CONSENSUS_TIME));
     }
 
     @Test
@@ -241,7 +241,7 @@ class TokenUpdateLogicTest {
         given(store.unfreeze(account, fungible)).willReturn(INVALID_ACCOUNT_ID);
         // then
         Assertions.assertThrows(
-            InvalidTransactionException.class, () -> subject.updateToken(op, CONSENSUS_TIME));
+                InvalidTransactionException.class, () -> subject.updateToken(op, CONSENSUS_TIME));
     }
 
     @Test
@@ -372,7 +372,7 @@ class TokenUpdateLogicTest {
                                 .setAutoRenewAccount(account)
                                 .setAutoRenewPeriod(Duration.newBuilder().setSeconds(2L));
 
-        if(hasTreasury) {
+        if (hasTreasury) {
             builder.setTreasury(account);
         }
         op = builder.build();
