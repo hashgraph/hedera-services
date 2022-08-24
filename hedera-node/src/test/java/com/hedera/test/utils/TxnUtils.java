@@ -52,18 +52,10 @@ import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransferList;
-import com.swirlds.common.io.SelfSerializable;
-import com.swirlds.common.io.streams.SerializableDataInputStream;
-import com.swirlds.common.io.streams.SerializableDataOutputStream;
-import com.swirlds.common.utility.CommonUtils;
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.time.Instant;
 import java.util.List;
 import java.util.Random;
 import java.util.UUID;
-import java.util.function.Supplier;
 
 public class TxnUtils {
     public static TransferList withAdjustments(
@@ -340,33 +332,6 @@ public class TxnUtils {
         final var ex = assertThrows(InvalidTransactionException.class, something::run);
         assertEquals(status, ex.getResponseCode());
         assertTrue(ex.isReverting());
-    }
-
-    public static <T extends SelfSerializable> void assertSerdeWorks(
-            final T original, final Supplier<T> factory, final int version) throws IOException {
-        final var baos = new ByteArrayOutputStream();
-        final var out = new SerializableDataOutputStream(baos);
-        original.serialize(out);
-
-        final var reconstruction = factory.get();
-
-        final var bais = new ByteArrayInputStream(baos.toByteArray());
-        final var in = new SerializableDataInputStream(bais);
-        reconstruction.deserialize(in, version);
-
-        assertEquals(original, reconstruction);
-    }
-
-    public static <T extends SelfSerializable> T deserializeFromHex(
-            final Supplier<T> factory, final int version, final String hexedForm)
-            throws IOException {
-        final var reconstruction = factory.get();
-
-        final var bais = new ByteArrayInputStream(CommonUtils.unhex(hexedForm));
-        final var in = new SerializableDataInputStream(bais);
-        reconstruction.deserialize(in, version);
-
-        return reconstruction;
     }
 
     public static ExpirableTxnRecord recordOne() {
