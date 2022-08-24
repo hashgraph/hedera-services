@@ -25,7 +25,7 @@ public class NonAtomicReference<T> {
 
     public NonAtomicReference() {}
 
-    public NonAtomicReference(T value) {
+    public NonAtomicReference(final T value) {
         this.value = value;
     }
 
@@ -35,7 +35,7 @@ public class NonAtomicReference<T> {
         return value;
     }
 
-    public void set(T value) {
+    public void set(final T value) {
         this.value = value;
     }
 }

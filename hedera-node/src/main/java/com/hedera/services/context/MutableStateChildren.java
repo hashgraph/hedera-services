@@ -85,7 +85,7 @@ public class MutableStateChildren implements StateChildren {
         return accounts().size();
     }
 
-    public void setAccounts(MerkleMap<EntityNum, MerkleAccount> accounts) {
+    public void setAccounts(final MerkleMap<EntityNum, MerkleAccount> accounts) {
         this.accounts = new WeakReference<>(accounts);
     }
 
@@ -98,7 +98,7 @@ public class MutableStateChildren implements StateChildren {
         return topics().size();
     }
 
-    public void setTopics(MerkleMap<EntityNum, MerkleTopic> topics) {
+    public void setTopics(final MerkleMap<EntityNum, MerkleTopic> topics) {
         this.topics = new WeakReference<>(topics);
     }
 
@@ -111,7 +111,7 @@ public class MutableStateChildren implements StateChildren {
         return tokens().size();
     }
 
-    public void setTokens(MerkleMap<EntityNum, MerkleToken> tokens) {
+    public void setTokens(final MerkleMap<EntityNum, MerkleToken> tokens) {
         this.tokens = new WeakReference<>(tokens);
     }
 
@@ -124,7 +124,7 @@ public class MutableStateChildren implements StateChildren {
         return storage().size();
     }
 
-    public void setStorage(VirtualMap<VirtualBlobKey, VirtualBlobValue> storage) {
+    public void setStorage(final VirtualMap<VirtualBlobKey, VirtualBlobValue> storage) {
         this.storage = new WeakReference<>(storage);
     }
 
@@ -137,7 +137,8 @@ public class MutableStateChildren implements StateChildren {
         return contractStorage().size();
     }
 
-    public void setContractStorage(VirtualMap<ContractKey, IterableContractValue> contractStorage) {
+    public void setContractStorage(
+            final VirtualMap<ContractKey, IterableContractValue> contractStorage) {
         this.contractStorage = new WeakReference<>(contractStorage);
     }
 
@@ -160,7 +161,7 @@ public class MutableStateChildren implements StateChildren {
     }
 
     public void setTokenAssociations(
-            MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenAssociations) {
+            final MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenAssociations) {
         this.tokenAssociations = new WeakReference<>(tokenAssociations);
     }
 
@@ -179,7 +180,7 @@ public class MutableStateChildren implements StateChildren {
         return Objects.requireNonNull(specialFiles.get());
     }
 
-    public void setSpecialFiles(MerkleSpecialFiles specialFiles) {
+    public void setSpecialFiles(final MerkleSpecialFiles specialFiles) {
         this.specialFiles = new WeakReference<>(specialFiles);
     }
 
@@ -192,7 +193,7 @@ public class MutableStateChildren implements StateChildren {
         return uniqueTokens().size();
     }
 
-    public void setUniqueTokens(UniqueTokenMapAdapter uniqueTokens) {
+    public void setUniqueTokens(final UniqueTokenMapAdapter uniqueTokens) {
         this.uniqueTokens = new NonAtomicReference<>(uniqueTokens);
     }
 
@@ -201,7 +202,7 @@ public class MutableStateChildren implements StateChildren {
         return Objects.requireNonNull(stakingInfo.get());
     }
 
-    public void setStakingInfo(MerkleMap<EntityNum, MerkleStakingInfo> stakingInfo) {
+    public void setStakingInfo(final MerkleMap<EntityNum, MerkleStakingInfo> stakingInfo) {
         this.stakingInfo = new WeakReference<>(stakingInfo);
     }
 

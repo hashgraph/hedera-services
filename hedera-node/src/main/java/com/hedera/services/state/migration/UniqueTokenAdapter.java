@@ -19,9 +19,9 @@ import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.state.virtual.UniqueTokenValue;
-import javax.annotation.Nullable;
 import com.hedera.services.utils.NftNumPair;
 import com.swirlds.common.FastCopyable;
+import javax.annotation.Nullable;
 
 /**
  * Intermediate adapter class for an NFT token.

@@ -37,7 +37,6 @@ import com.hedera.services.utils.NonAtomicReference;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
-
 import java.lang.ref.WeakReference;
 import java.time.Instant;
 import java.util.Map;
@@ -67,7 +66,7 @@ public class ImmutableStateChildren implements StateChildren {
     private final WeakReference<MerkleMap<EntityNum, MerkleStakingInfo>> stakingInfo;
     private final Instant signedAt;
 
-    public ImmutableStateChildren(ServicesState state) {
+    public ImmutableStateChildren(final ServicesState state) {
         this.signedAt = state.getTimeOfLastHandledTxn();
 
         accounts = new WeakReference<>(state.accounts());
