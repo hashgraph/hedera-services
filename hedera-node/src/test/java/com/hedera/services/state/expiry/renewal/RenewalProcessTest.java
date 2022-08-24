@@ -15,30 +15,6 @@
  */
 package com.hedera.services.state.expiry.renewal;
 
-import com.hedera.services.config.MockGlobalDynamicProps;
-import com.hedera.services.fees.FeeCalculator;
-import com.hedera.services.fees.calculation.RenewAssessment;
-import com.hedera.services.state.expiry.classification.ClassificationWork;
-import com.hedera.services.state.expiry.classification.EntityLookup;
-import com.hedera.services.state.expiry.removal.AccountGC;
-import com.hedera.services.state.expiry.removal.ContractGC;
-import com.hedera.services.state.expiry.removal.RemovalHelper;
-import com.hedera.services.state.expiry.removal.RemovalWork;
-import com.hedera.services.state.expiry.removal.TreasuryReturns;
-import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.utils.EntityNum;
-import com.hedera.test.factories.accounts.MerkleAccountFactory;
-import com.swirlds.merkle.map.MerkleMap;
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
-
-import java.time.Instant;
-import java.util.Collections;
-
 import static com.hedera.services.state.expiry.EntityProcessResult.DONE;
 import static com.hedera.services.state.expiry.EntityProcessResult.NOTHING_TO_DO;
 import static com.hedera.services.state.expiry.EntityProcessResult.STILL_MORE_TO_DO;
@@ -55,6 +31,29 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
+
+import com.hedera.services.config.MockGlobalDynamicProps;
+import com.hedera.services.fees.FeeCalculator;
+import com.hedera.services.fees.calculation.RenewAssessment;
+import com.hedera.services.state.expiry.classification.ClassificationWork;
+import com.hedera.services.state.expiry.classification.EntityLookup;
+import com.hedera.services.state.expiry.removal.AccountGC;
+import com.hedera.services.state.expiry.removal.ContractGC;
+import com.hedera.services.state.expiry.removal.RemovalHelper;
+import com.hedera.services.state.expiry.removal.RemovalWork;
+import com.hedera.services.state.expiry.removal.TreasuryReturns;
+import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.utils.EntityNum;
+import com.hedera.test.factories.accounts.MerkleAccountFactory;
+import com.swirlds.merkle.map.MerkleMap;
+import java.time.Instant;
+import java.util.Collections;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class RenewalProcessTest {
@@ -319,7 +318,8 @@ class RenewalProcessTest {
         given(classifier.getPayerNumForAutoRenew()).willReturn(key);
 
         given(lookup.getMutableAccount(key)).willReturn(mockAccount);
-        given(lookup.getMutableAccount(EntityNum.fromLong(fundingAccountNum))).willReturn(fundingAccount);
+        given(lookup.getMutableAccount(EntityNum.fromLong(fundingAccountNum)))
+                .willReturn(fundingAccount);
         given(accounts.getForModify(EntityNum.fromLong(fundingAccountNum)))
                 .willReturn(fundingAccount);
         given(accounts.getForModify(EntityNum.fromLong(fundedExpiredAccountNum)))

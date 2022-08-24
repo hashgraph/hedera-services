@@ -105,7 +105,7 @@ import javax.inject.Singleton;
             ThrottlingModule.class,
             SubmissionModule.class,
             TransactionsModule.class,
-                ExpiryModule.class
+            ExpiryModule.class
         })
 public interface ServicesApp {
     /* Needed by ServicesState */

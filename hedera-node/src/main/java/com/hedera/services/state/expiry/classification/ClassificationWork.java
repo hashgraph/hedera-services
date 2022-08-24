@@ -15,13 +15,6 @@
  */
 package com.hedera.services.state.expiry.classification;
 
-import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.utils.EntityNum;
-
-import javax.inject.Inject;
-import javax.inject.Singleton;
-
 import static com.hedera.services.state.expiry.classification.ClassificationResult.DETACHED_ACCOUNT;
 import static com.hedera.services.state.expiry.classification.ClassificationResult.DETACHED_ACCOUNT_GRACE_PERIOD_OVER;
 import static com.hedera.services.state.expiry.classification.ClassificationResult.DETACHED_CONTRACT;
@@ -30,6 +23,12 @@ import static com.hedera.services.state.expiry.classification.ClassificationResu
 import static com.hedera.services.state.expiry.classification.ClassificationResult.EXPIRED_ACCOUNT_READY_TO_RENEW;
 import static com.hedera.services.state.expiry.classification.ClassificationResult.EXPIRED_CONTRACT_READY_TO_RENEW;
 import static com.hedera.services.state.expiry.classification.ClassificationResult.OTHER;
+
+import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.utils.EntityNum;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 
 /**
  * Helper for renewing and removing expired entities. Only crypto accounts are supported in this
@@ -46,8 +45,7 @@ public class ClassificationWork {
 
     @Inject
     public ClassificationWork(
-            final GlobalDynamicProperties dynamicProperties,
-            final EntityLookup lookup) {
+            final GlobalDynamicProperties dynamicProperties, final EntityLookup lookup) {
         this.dynamicProperties = dynamicProperties;
         this.lookup = lookup;
     }
@@ -89,6 +87,7 @@ public class ClassificationWork {
     public MerkleAccount getLastClassified() {
         return lastClassified;
     }
+
     public EntityNum getLastClassifiedNum() {
         return lastClassifiedNum;
     }
@@ -96,6 +95,7 @@ public class ClassificationWork {
     public EntityNum getPayerNumForAutoRenew() {
         return payerForAutoRenewNum;
     }
+
     public MerkleAccount getPayerAccountForAutoRenew() {
         return payerAccountForAutoRenew;
     }

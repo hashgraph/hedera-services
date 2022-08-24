@@ -15,6 +15,9 @@
  */
 package com.hedera.services.state.expiry.renewal;
 
+import static com.hedera.services.state.expiry.EntityProcessResult.NOTHING_TO_DO;
+import static com.hedera.services.utils.EntityNum.fromAccountId;
+
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.state.expiry.EntityProcessResult;
@@ -22,16 +25,13 @@ import com.hedera.services.state.expiry.classification.ClassificationWork;
 import com.hedera.services.state.expiry.classification.EntityLookup;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.utils.EntityNum;
+import java.time.Instant;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.Nullable;
 
-import javax.inject.Inject;
-import javax.inject.Singleton;
-import java.time.Instant;
-
-import static com.hedera.services.state.expiry.EntityProcessResult.NOTHING_TO_DO;
-import static com.hedera.services.utils.EntityNum.fromAccountId;
 @Singleton
 public class RenewalHelper implements RenewalWork {
     private static final Logger log = LogManager.getLogger(RenewalHelper.class);
@@ -42,7 +42,8 @@ public class RenewalHelper implements RenewalWork {
     private final EntityLookup lookup;
 
     @Inject
-    public RenewalHelper(final EntityLookup lookup,
+    public RenewalHelper(
+            final EntityLookup lookup,
             final ClassificationWork classifier,
             final GlobalDynamicProperties properties,
             final FeeCalculator fees,
@@ -53,6 +54,7 @@ public class RenewalHelper implements RenewalWork {
         this.fees = fees;
         this.recordsHelper = recordsHelper;
     }
+
     @Nullable
     @Override
     public MerkleAccount tryToGetNextMutableExpiryCandidate() {
@@ -76,8 +78,9 @@ public class RenewalHelper implements RenewalWork {
     }
 
     @Override
-    public EntityProcessResult tryToRenewContract(final EntityNum contract, final Instant cycleTime) {
-        if ( !properties.shouldAutoRenewContracts()) {
+    public EntityProcessResult tryToRenewContract(
+            final EntityNum contract, final Instant cycleTime) {
+        if (!properties.shouldAutoRenewContracts()) {
             return NOTHING_TO_DO;
         }
         return renew(contract, cycleTime, true);
@@ -85,19 +88,21 @@ public class RenewalHelper implements RenewalWork {
 
     @Override
     public EntityProcessResult tryToRenewAccount(final EntityNum account, final Instant cycleTime) {
-        if ( !properties.shouldAutoRenewAccounts()) {
+        if (!properties.shouldAutoRenewAccounts()) {
             return NOTHING_TO_DO;
         }
         return renew(account, cycleTime, false);
     }
 
-    private EntityProcessResult renew(final EntityNum account, final Instant cycleTime, final boolean isContract){
+    private EntityProcessResult renew(
+            final EntityNum account, final Instant cycleTime, final boolean isContract) {
         final var payer = getAutoRenewPayer();
         final var expiringEntity = tryToGetNextExpiryCandidate();
         final var oldExpiry = expiringEntity.getExpiry();
 
         final long reqPeriod = expiringEntity.getAutoRenewSecs();
-        final var assessment = fees.assessCryptoAutoRenewal(expiringEntity, reqPeriod, cycleTime, payer);
+        final var assessment =
+                fees.assessCryptoAutoRenewal(expiringEntity, reqPeriod, cycleTime, payer);
         final long renewalPeriod = assessment.renewalPeriod();
         final long renewalFee = assessment.fee();
         final var result = renewWith(renewalFee, renewalPeriod);
@@ -129,19 +134,25 @@ public class RenewalHelper implements RenewalWork {
         final long newFundingBalance = mutableFundingAccount.getBalance() + fee;
         mutableFundingAccount.setBalanceUnchecked(newFundingBalance);
 
-        log.debug("Renewed {} at a price of {}tb", classifier.getLastClassifiedNum() , fee);
+        log.debug("Renewed {} at a price of {}tb", classifier.getLastClassifiedNum(), fee);
         return EntityProcessResult.DONE;
     }
 
     private void assertHasLastClassifiedAccount() {
-        if ( classifier.getLastClassified() == null) {
+        if (classifier.getLastClassified() == null) {
             throw new IllegalStateException(
                     "Cannot remove a last classified account; none is present!");
         }
     }
+
     private void assertPayerAccountForRenewalCanAfford(long fee) {
         if (classifier.getPayerAccountForAutoRenew().getBalance() < fee) {
-            var msg = "Cannot charge " + fee + " to account number " + classifier.getPayerNumForAutoRenew() + "!";
+            var msg =
+                    "Cannot charge "
+                            + fee
+                            + " to account number "
+                            + classifier.getPayerNumForAutoRenew()
+                            + "!";
             throw new IllegalStateException(msg);
         }
     }

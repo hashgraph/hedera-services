@@ -257,6 +257,7 @@ public class MockGlobalDynamicProps extends GlobalDynamicProperties {
     public boolean shouldAutoRenewAccounts() {
         return useAutoRenew;
     }
+
     @Override
     public boolean schedulingLongTermEnabled() {
         return schedulingLongTermEnabled;

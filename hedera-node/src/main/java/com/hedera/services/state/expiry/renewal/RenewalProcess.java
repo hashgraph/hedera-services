@@ -15,17 +15,16 @@
  */
 package com.hedera.services.state.expiry.renewal;
 
+import static com.hedera.services.state.expiry.EntityProcessResult.NOTHING_TO_DO;
+
 import com.google.common.annotations.VisibleForTesting;
 import com.hedera.services.state.expiry.EntityProcessResult;
 import com.hedera.services.state.expiry.classification.ClassificationWork;
 import com.hedera.services.state.expiry.removal.RemovalWork;
 import com.hedera.services.utils.EntityNum;
-
+import java.time.Instant;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import java.time.Instant;
-
-import static com.hedera.services.state.expiry.EntityProcessResult.NOTHING_TO_DO;
 
 @Singleton
 public class RenewalProcess {
@@ -64,14 +63,16 @@ public class RenewalProcess {
 
         final var longNow = cycleTime.getEpochSecond();
         final var entityNum = EntityNum.fromLong(literalNum);
-        //ClassificationWork
+        // ClassificationWork
         final var classification = classifier.classify(entityNum, longNow);
 
         return switch (classification) {
             case DETACHED_ACCOUNT_GRACE_PERIOD_OVER -> removalWork.tryToRemoveAccount(entityNum);
             case DETACHED_CONTRACT_GRACE_PERIOD_OVER -> removalWork.tryToRemoveContract(entityNum);
-            case EXPIRED_ACCOUNT_READY_TO_RENEW -> renewalWork.tryToRenewAccount(entityNum, cycleTime);
-            case EXPIRED_CONTRACT_READY_TO_RENEW -> renewalWork.tryToRenewContract(entityNum, cycleTime);
+            case EXPIRED_ACCOUNT_READY_TO_RENEW -> renewalWork.tryToRenewAccount(
+                    entityNum, cycleTime);
+            case EXPIRED_CONTRACT_READY_TO_RENEW -> renewalWork.tryToRenewContract(
+                    entityNum, cycleTime);
             default -> NOTHING_TO_DO;
         };
     }
