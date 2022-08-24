@@ -16,10 +16,6 @@
 package com.hedera.services.fees.calculation.utils;
 
 public class OverflowCheckingCalc {
-    public OverflowCheckingCalc() {
-        /* no-op */
-    }
-
     public static long clampedAdd(final long a, final long b) {
         try {
             return Math.addExact(a, b);
