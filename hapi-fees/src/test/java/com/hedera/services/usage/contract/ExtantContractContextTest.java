@@ -19,7 +19,6 @@ import static com.hedera.services.usage.contract.entities.ContractEntitySizes.CO
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.BDDMockito.given;
 
-import com.hedera.services.usage.contract.entities.ContractEntitySizes;
 import com.hedera.services.usage.crypto.ExtantCryptoContext;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -39,7 +38,7 @@ class ExtantContractContextTest {
 
     @BeforeEach
     void setUp() {
-        subject = new ExtantContractContext(kvPairs, bytecodeSize, currentCryptoContext);
+        subject = new ExtantContractContext(kvPairs, currentCryptoContext);
     }
 
     @Test
@@ -52,9 +51,7 @@ class ExtantContractContextTest {
     }
 
     @Test
-    void getsExpectedSb() {
-        final var expectedSb = ContractEntitySizes.NUM_BYTES_PER_KV_PAIR * kvPairs + bytecodeSize;
-
-        assertEquals(expectedSb, subject.currentSb());
+    void getsExpectedKvPairs() {
+        assertEquals(kvPairs, subject.currentNumKvPairs());
     }
 }

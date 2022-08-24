@@ -30,6 +30,7 @@ import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.ethereum.EthTxData;
 import com.hedera.services.ledger.accounts.ContractCustomizer;
 import com.hedera.services.legacy.proto.utils.ByteStringUtils;
+import com.hedera.services.state.submerkle.CurrencyAdjustments;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.store.contracts.precompile.codec.ApproveWrapper;
 import com.hedera.services.store.contracts.precompile.codec.Association;
@@ -111,6 +112,21 @@ public class SyntheticTxnFactory {
     @Inject
     public SyntheticTxnFactory(final GlobalDynamicProperties dynamicProperties) {
         this.dynamicProperties = dynamicProperties;
+    }
+
+    public TransactionBody.Builder synthCryptoTransfer(final CurrencyAdjustments adjustments) {
+        final var opBuilder = CryptoTransferTransactionBody.newBuilder();
+        final var nums = adjustments.getAccountNums();
+        final var changes = adjustments.getHbars();
+        for (int i = 0; i < nums.length; i++) {
+            opBuilder
+                    .getTransfersBuilder()
+                    .addAccountAmounts(
+                            AccountAmount.newBuilder()
+                                    .setAccountID(AccountID.newBuilder().setAccountNum(nums[i]))
+                                    .setAmount(changes[i]));
+        }
+        return TransactionBody.newBuilder().setCryptoTransfer(opBuilder);
     }
 
     /**

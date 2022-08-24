@@ -18,9 +18,8 @@ package com.hedera.services.records;
 import static com.hedera.services.legacy.proto.utils.CommonUtils.noThrowSha384HashOf;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.asContract;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CHUNK_NUMBER;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
+import static com.hedera.test.utils.TxnUtils.assertExhaustsResourceLimit;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
@@ -34,6 +33,7 @@ import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.verify;
 import static org.mockito.BDDMockito.willCallRealMethod;
 import static org.mockito.Mockito.never;
+import static org.mockito.internal.verification.VerificationModeFactory.times;
 
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.legacy.core.jproto.TxnReceipt;
@@ -115,8 +115,9 @@ class TxnAwareRecordsHistorianTest {
     @Mock private TxnAccessor accessor;
     @Mock private RecordStreamObject rso;
     @Mock private ConsensusTimeTracker consensusTimeTracker;
+    @Mock private ExpirableTxnRecord.Builder mockRecordBuilder;
 
-    private RecordsHistorian subject;
+    private TxnAwareRecordsHistorian subject;
 
     @BeforeEach
     void setUp() {
@@ -127,27 +128,27 @@ class TxnAwareRecordsHistorianTest {
     @Test
     void lastUsedRunningHashIsLastSucceedingChildIfPreset() {
         final var mockHash = new RunningHash();
-        subject = mock(RecordsHistorian.class);
-        willCallRealMethod().given(subject).lastRunningHash();
+        final var mockSubject = mock(RecordsHistorian.class);
+        willCallRealMethod().given(mockSubject).lastRunningHash();
 
-        given(subject.hasFollowingChildRecords()).willReturn(true);
-        given(subject.getFollowingChildRecords())
+        given(mockSubject.hasFollowingChildRecords()).willReturn(true);
+        given(mockSubject.getFollowingChildRecords())
                 .willReturn(List.of(new RecordStreamObject(), rso));
         given(rso.getRunningHash()).willReturn(mockHash);
 
-        assertSame(mockHash, subject.lastRunningHash());
+        assertSame(mockHash, mockSubject.lastRunningHash());
     }
 
     @Test
     void lastUsedRunningHashIsTopLevelIfNoSuccesors() {
         final var mockHash = new RunningHash();
-        subject = mock(RecordsHistorian.class);
-        willCallRealMethod().given(subject).lastRunningHash();
+        final var mockSubject = mock(RecordsHistorian.class);
+        willCallRealMethod().given(mockSubject).lastRunningHash();
 
-        given(subject.getTopLevelRecord()).willReturn(rso);
+        given(mockSubject.getTopLevelRecord()).willReturn(rso);
         given(rso.getRunningHash()).willReturn(mockHash);
 
-        assertSame(mockHash, subject.lastRunningHash());
+        assertSame(mockHash, mockSubject.lastRunningHash());
     }
 
     @Test
@@ -480,18 +481,25 @@ class TxnAwareRecordsHistorianTest {
         assertFalse(subject.hasPrecedingChildRecords());
         assertFalse(subject.hasFollowingChildRecords());
 
+        final var record =
+                new InProgressChildRecord(
+                        0, TransactionBody.newBuilder(), mockRecordBuilder, List.of());
+        subject.precedingChildRecords().add(record);
+        subject.followingChildRecords().add(record);
+
         final var txn = TransactionBody.newBuilder();
         final var rec = ExpirableTxnRecord.newBuilder();
         final var sidecars = List.of(TransactionSidecarRecord.newBuilder());
 
-        assertThrows(
-                IllegalStateException.class,
-                () -> subject.trackFollowingChildRecord(1, txn, rec, sidecars));
-        assertThrows(
-                IllegalStateException.class, () -> subject.trackPrecedingChildRecord(1, txn, rec));
+        assertExhaustsResourceLimit(
+                () -> subject.trackFollowingChildRecord(1, txn, rec, sidecars),
+                MAX_CHILD_RECORDS_EXCEEDED);
+        assertExhaustsResourceLimit(
+                () -> subject.trackPrecedingChildRecord(1, txn, rec), MAX_CHILD_RECORDS_EXCEEDED);
 
-        verify(consensusTimeTracker).isAllowableFollowingOffset(1);
-        verify(consensusTimeTracker).isAllowablePrecedingOffset(1);
+        verify(consensusTimeTracker).isAllowableFollowingOffset(2);
+        verify(consensusTimeTracker).isAllowablePrecedingOffset(2);
+        verify(mockRecordBuilder, times(4)).revert();
     }
 
     private void givenTopLevelContext() {

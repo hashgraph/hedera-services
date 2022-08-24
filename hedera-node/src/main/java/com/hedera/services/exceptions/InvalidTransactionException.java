@@ -64,6 +64,10 @@ public class InvalidTransactionException extends RuntimeException {
         if (!isReverting()) {
             throw new IllegalStateException();
         }
+        return messageBytes();
+    }
+
+    public Bytes messageBytes() {
         final var detail = getMessage();
         return Bytes.of(detail.getBytes());
     }
