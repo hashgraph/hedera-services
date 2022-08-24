@@ -19,12 +19,11 @@ import static com.hedera.services.ledger.properties.TokenRelProperty.TOKEN_BALAN
 import static com.hedera.services.state.enums.TokenType.FUNGIBLE_COMMON;
 import static com.hedera.services.state.enums.TokenType.NON_FUNGIBLE_UNIQUE;
 import static com.hedera.services.store.tokens.TokenStore.MISSING_TOKEN;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
@@ -260,14 +259,10 @@ class TokenUpdateLogicTest {
         given(store.unfreeze(any(), any())).willReturn(FAIL_INVALID);
         given(ledgers.nfts()).willReturn(nfts);
         given(merkleToken.treasury()).willReturn(treasuryId);
-        // then
 
-        try {
-            subject.updateToken(op, CONSENSUS_TIME);
-        } catch (Exception e) {
-            assertTrue(e instanceof InvalidTransactionException);
-            assertEquals(FAIL_INVALID, ((InvalidTransactionException) e).getResponseCode());
-        }
+        // then
+        Assertions.assertThrows(
+                InvalidTransactionException.class, () -> subject.updateToken(op, CONSENSUS_TIME));
     }
 
     @Test
@@ -284,6 +279,50 @@ class TokenUpdateLogicTest {
         // when
         subject.validate(transactionBody);
         subject.updateToken(op, CONSENSUS_TIME);
+        // then
+        verify(store).update(op, CONSENSUS_TIME);
+        verify(sigImpactHistorian).markEntityChanged(nonFungible.getTokenNum());
+    }
+
+    @Test
+    void updateTokenFailsForNonFungibleTokenWithDetachedAutorenewAccount() {
+        // given
+        givenTokenUpdateLogic(true);
+        givenValidTransactionBody(false, true);
+        givenContextForUnsuccessFullCalls();
+        given(ledgers.accounts()).willReturn(accounts);
+        given(store.get(nonFungible)).willReturn(merkleToken);
+        given(transactionBody.getTokenUpdate()).willReturn(op);
+        // when
+        subject.validate(transactionBody);
+        // then
+
+        Assertions.assertThrows(
+                InvalidTransactionException.class, () -> subject.updateToken(op, CONSENSUS_TIME));
+    }
+
+    @Test
+    void updateTokenHappyPathForNonFungibleTokenWithMissingAutorenewAccount() {
+        // given
+        givenTokenUpdateLogic(true);
+        givenValidTransactionBody(false, true);
+        givenHederaStoreContextForNonFungible();
+        givenLedgers();
+        given(merkleToken.hasAdminKey()).willReturn(true);
+        given(validator.expiryStatusGiven(accounts, account)).willReturn(OK);
+        given(validator.expiryStatusGiven(accounts, treasury)).willReturn(OK);
+        given(validator.isValidExpiry(EXPIRY)).willReturn(true);
+        given(merkleToken.hasAutoRenewAccount()).willReturn(false);
+        given(merkleToken.treasury()).willReturn(treasuryId);
+        given(merkleToken.tokenType()).willReturn(NON_FUNGIBLE_UNIQUE);
+        given(ledgers.accounts()).willReturn(accounts);
+        given(store.get(nonFungible)).willReturn(merkleToken);
+        given(transactionBody.getTokenUpdate()).willReturn(op);
+
+        // when
+        subject.validate(transactionBody);
+        subject.updateToken(op, CONSENSUS_TIME);
+
         // then
         verify(store).update(op, CONSENSUS_TIME);
         verify(sigImpactHistorian).markEntityChanged(nonFungible.getTokenNum());
@@ -335,6 +374,13 @@ class TokenUpdateLogicTest {
         given(validator.isValidExpiry(EXPIRY)).willReturn(true);
         given(validator.expiryStatusGiven(accounts, account)).willReturn(OK);
         given(validator.expiryStatusGiven(accounts, treasury)).willReturn(OK);
+    }
+
+    private void givenContextForUnsuccessFullCalls() {
+        given(merkleToken.hasAdminKey()).willReturn(true);
+        given(validator.isValidExpiry(EXPIRY)).willReturn(true);
+        given(validator.expiryStatusGiven(accounts, account))
+                .willReturn(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
     }
 
     private void givenLedgers() {
