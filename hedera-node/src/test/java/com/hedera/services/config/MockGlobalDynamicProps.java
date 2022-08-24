@@ -190,6 +190,10 @@ public class MockGlobalDynamicProps extends GlobalDynamicProperties {
         useAutoRenew = true;
     }
 
+    public void enableContractAutoRenew() {
+        useContractAutoRenew = true;
+    }
+
     @Override
     public int autoRenewNumberOfEntitiesToScan() {
         return 100;
