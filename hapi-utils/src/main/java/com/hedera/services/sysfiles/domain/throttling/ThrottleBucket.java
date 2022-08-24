@@ -26,7 +26,6 @@ import static java.util.Collections.disjoint;
 
 import com.hedera.services.throttles.BucketThrottle;
 import com.hedera.services.throttles.DeterministicThrottle;
-import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -35,15 +34,25 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public final class ThrottleBucket {
+public final class ThrottleBucket<E extends Enum<E>> {
     private static final Logger log = LogManager.getLogger(ThrottleBucket.class);
+
+    private static final String BUCKET_PREFIX = "Bucket ";
 
     private int burstPeriod;
     private long burstPeriodMs;
     private String name;
-    private List<ThrottleGroup> throttleGroups = new ArrayList<>();
+    private List<ThrottleGroup<E>> throttleGroups = new ArrayList<>();
 
-    private static final String BUCKET_PREFIX = "Bucket ";
+    public ThrottleBucket() {
+        // Needed by Jackson
+    }
+
+    public ThrottleBucket(long burstPeriodMs, String name, List<ThrottleGroup<E>> throttleGroups) {
+        this.burstPeriodMs = burstPeriodMs;
+        this.name = name;
+        this.throttleGroups = throttleGroups;
+    }
 
     public long getBurstPeriodMs() {
         return burstPeriodMs;
@@ -69,30 +78,12 @@ public final class ThrottleBucket {
         this.name = name;
     }
 
-    public List<ThrottleGroup> getThrottleGroups() {
+    public List<ThrottleGroup<E>> getThrottleGroups() {
         return throttleGroups;
     }
 
-    public void setThrottleGroups(List<ThrottleGroup> throttleGroups) {
+    public void setThrottleGroups(List<ThrottleGroup<E>> throttleGroups) {
         this.throttleGroups = throttleGroups;
-    }
-
-    public static ThrottleBucket fromProto(
-            final com.hederahashgraph.api.proto.java.ThrottleBucket bucket) {
-        final var pojo = new ThrottleBucket();
-        pojo.name = bucket.getName();
-        pojo.burstPeriodMs = bucket.getBurstPeriodMs();
-        pojo.throttleGroups.addAll(
-                bucket.getThrottleGroupsList().stream().map(ThrottleGroup::fromProto).toList());
-        return pojo;
-    }
-
-    public com.hederahashgraph.api.proto.java.ThrottleBucket toProto() {
-        return com.hederahashgraph.api.proto.java.ThrottleBucket.newBuilder()
-                .setName(name)
-                .setBurstPeriodMs(impliedBurstPeriodMs())
-                .addAllThrottleGroups(throttleGroups.stream().map(ThrottleGroup::toProto).toList())
-                .build();
     }
 
     /**
@@ -105,7 +96,7 @@ public final class ThrottleBucket {
      *     many logical operations each assigned function will use from the throttle
      * @throws IllegalStateException if this bucket was constructed with invalid throttle groups
      */
-    public Pair<DeterministicThrottle, List<Pair<HederaFunctionality, Integer>>> asThrottleMapping(
+    public Pair<DeterministicThrottle, List<Pair<E, Integer>>> asThrottleMapping(
             final long capacitySplit) {
         if (throttleGroups.isEmpty()) {
             throw new IllegalStateException(
@@ -130,13 +121,13 @@ public final class ThrottleBucket {
         return ans;
     }
 
-    private Pair<DeterministicThrottle, List<Pair<HederaFunctionality, Integer>>> mappingWith(
+    private Pair<DeterministicThrottle, List<Pair<E, Integer>>> mappingWith(
             final long mtps, final long capacitySplit) {
         final var throttle = throttleFor(mtps, capacitySplit);
         final var totalCapacityUnits = throttle.capacity();
 
-        final Set<HederaFunctionality> seenSoFar = new HashSet<>();
-        final List<Pair<HederaFunctionality, Integer>> opsReqs = new ArrayList<>();
+        final Set<E> seenSoFar = new HashSet<>();
+        final List<Pair<E, Integer>> opsReqs = new ArrayList<>();
         for (final var throttleGroup : throttleGroups) {
             updateOpsReqs(
                     capacitySplit, mtps, totalCapacityUnits, throttleGroup, seenSoFar, opsReqs);
@@ -149,9 +140,9 @@ public final class ThrottleBucket {
             final long capacitySplit,
             final long mtps,
             final long totalCapacity,
-            final ThrottleGroup group,
-            final Set<HederaFunctionality> seenSoFar,
-            final List<Pair<HederaFunctionality, Integer>> opsReqs) {
+            final ThrottleGroup<E> group,
+            final Set<E> seenSoFar,
+            final List<Pair<E, Integer>> opsReqs) {
         final var opsReq = (int) (mtps / group.impliedMilliOpsPerSec());
         final var capacityReq = capacityRequiredFor(opsReq);
         if (capacityReq < 0 || capacityReq > totalCapacity) {
@@ -167,7 +158,7 @@ public final class ThrottleBucket {
 
         final var functions = group.getOperations();
         if (disjoint(seenSoFar, functions)) {
-            final Set<HederaFunctionality> listedSoFar = new HashSet<>();
+            final Set<E> listedSoFar = new HashSet<>();
             for (final var function : functions) {
                 if (!listedSoFar.contains(function)) {
                     opsReqs.add(Pair.of(function, opsReq));
@@ -255,7 +246,7 @@ public final class ThrottleBucket {
         return lcm;
     }
 
-    private long impliedBurstPeriodMs() {
+    public long impliedBurstPeriodMs() {
         return burstPeriodMs > 0 ? burstPeriodMs : 1_000L * burstPeriod;
     }
 
