@@ -33,9 +33,11 @@ import com.hedera.services.state.virtual.VirtualBlobValue;
 import com.hedera.services.stream.RecordsRunningHashLeaf;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
+import com.hedera.services.utils.NonAtomicReference;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
+
 import java.lang.ref.WeakReference;
 import java.time.Instant;
 import java.util.Map;
@@ -51,7 +53,8 @@ public class ImmutableStateChildren implements StateChildren {
     private final WeakReference<MerkleMap<EntityNum, MerkleAccount>> accounts;
     private final WeakReference<MerkleMap<EntityNum, MerkleTopic>> topics;
     private final WeakReference<MerkleMap<EntityNum, MerkleToken>> tokens;
-    private final WeakReference<UniqueTokenMapAdapter> uniqueTokens;
+    // UniqueTokenMapAdapter is constructed on demand, so a strong reference needs to be held.
+    private final NonAtomicReference<UniqueTokenMapAdapter> uniqueTokens;
     private final WeakReference<MerkleScheduledTransactions> schedules;
     private final WeakReference<VirtualMap<VirtualBlobKey, VirtualBlobValue>> storage;
     private final WeakReference<VirtualMap<ContractKey, IterableContractValue>> contractStorage;
@@ -77,7 +80,7 @@ public class ImmutableStateChildren implements StateChildren {
         networkCtx = new WeakReference<>(state.networkCtx());
         addressBook = new WeakReference<>(state.addressBook());
         specialFiles = new WeakReference<>(state.specialFiles());
-        uniqueTokens = new WeakReference<>(state.uniqueTokens());
+        uniqueTokens = new NonAtomicReference<>(state.uniqueTokens());
         runningHashLeaf = new WeakReference<>(state.runningHashLeaf());
         aliases = new WeakReference<>(state.aliases());
         stakingInfo = new WeakReference<>(state.stakingInfo());

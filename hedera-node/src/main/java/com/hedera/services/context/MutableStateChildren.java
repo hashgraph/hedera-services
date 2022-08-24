@@ -34,6 +34,7 @@ import com.hedera.services.state.virtual.VirtualBlobValue;
 import com.hedera.services.stream.RecordsRunningHashLeaf;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
+import com.hedera.services.utils.NonAtomicReference;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
@@ -52,7 +53,8 @@ public class MutableStateChildren implements StateChildren {
     private WeakReference<MerkleMap<EntityNum, MerkleAccount>> accounts;
     private WeakReference<MerkleMap<EntityNum, MerkleTopic>> topics;
     private WeakReference<MerkleMap<EntityNum, MerkleToken>> tokens;
-    private WeakReference<UniqueTokenMapAdapter> uniqueTokens;
+    // UniqueTokenMapAdapter is constructed on demand, so a strong reference needs to be held.
+    private NonAtomicReference<UniqueTokenMapAdapter> uniqueTokens;
     private WeakReference<MerkleScheduledTransactions> schedules;
     private WeakReference<VirtualMap<VirtualBlobKey, VirtualBlobValue>> storage;
     private WeakReference<VirtualMap<ContractKey, IterableContractValue>> contractStorage;
@@ -191,7 +193,7 @@ public class MutableStateChildren implements StateChildren {
     }
 
     public void setUniqueTokens(UniqueTokenMapAdapter uniqueTokens) {
-        this.uniqueTokens = new WeakReference<>(uniqueTokens);
+        this.uniqueTokens = new NonAtomicReference<>(uniqueTokens);
     }
 
     @Override
@@ -238,7 +240,7 @@ public class MutableStateChildren implements StateChildren {
         networkCtx = new WeakReference<>(state.networkCtx());
         addressBook = new WeakReference<>(state.addressBook());
         specialFiles = new WeakReference<>(state.specialFiles());
-        uniqueTokens = new WeakReference<>(state.uniqueTokens());
+        uniqueTokens = new NonAtomicReference<>(state.uniqueTokens());
         runningHashLeaf = new WeakReference<>(state.runningHashLeaf());
         aliases = new WeakReference<>(state.aliases());
         stakingInfo = new WeakReference<>(state.stakingInfo());

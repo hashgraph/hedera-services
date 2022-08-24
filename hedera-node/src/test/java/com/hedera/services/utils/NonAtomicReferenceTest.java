@@ -28,4 +28,12 @@ class NonAtomicReferenceTest {
         subject.set("HELLO");
         assertEquals("HELLO", subject.get());
     }
+
+    @Test
+    void constructorWithValueWorks() {
+        final NonAtomicReference<String> subject = new NonAtomicReference<>("hello");
+        assertEquals("hello", subject.get());
+        subject.set("HELLO");
+        assertEquals("HELLO", subject.get());
+    }
 }
