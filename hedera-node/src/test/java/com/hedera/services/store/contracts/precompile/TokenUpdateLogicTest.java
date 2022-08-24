@@ -316,6 +316,7 @@ class TokenUpdateLogicTest {
         given(merkleToken.tokenType()).willReturn(NON_FUNGIBLE_UNIQUE);
         given(merkleToken.treasury()).willReturn(EntityId.fromGrpcAccountId(account));
         // then
+
         Assertions.assertThrows(
                 InvalidTransactionException.class, () -> subject.updateToken(op, CONSENSUS_TIME));
     }

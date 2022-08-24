@@ -19,7 +19,9 @@ import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.ContractInfoAsserts.contractWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
+import static com.hedera.services.bdd.spec.assertions.TransferListAsserts.including;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocal;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocalWithFunctionAbi;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAliasedAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
@@ -50,27 +52,16 @@ import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingAllOf;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingThree;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingTwo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.resetToDefault;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.updateSpecialFile;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.usableTxnIdNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.utils.contracts.SimpleBytesResult.bigIntResult;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONSENSUS_GAS_EXHAUSTED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEES_LIST_TOO_LONG;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_CONTRACT_STORAGE_EXCEEDED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_GAS_LIMIT_EXCEEDED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_STORAGE_IN_PRICE_REGIME_HAS_BEEN_USED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ID_REPEATED_IN_TOKEN_LIST;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 import static com.hederahashgraph.api.proto.java.TokenFreezeStatus.FreezeNotApplicable;
 import static com.hederahashgraph.api.proto.java.TokenFreezeStatus.Frozen;
 import static com.hederahashgraph.api.proto.java.TokenFreezeStatus.Unfrozen;
@@ -86,9 +77,11 @@ import com.hedera.services.bdd.spec.transactions.TxnVerbs;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hedera.services.bdd.suites.token.TokenAssociationSpecs;
+import java.math.BigInteger;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicLong;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -121,10 +114,10 @@ public class FileUpdateSuite extends HapiApiSuite {
     private static final String MAX_CUSTOM_FEES_PROP = "tokens.maxCustomFeesAllowed";
     private static final String MAX_REFUND_GAS_PROP = "contracts.maxRefundPercentOfGasLimit";
     private static final String CONS_MAX_GAS_PROP = "contracts.maxGasPerSec";
-    private static final String CHAINID_PROP = "contracts.chainId";
+    private static final String CHAIN_ID_PROP = "contracts.chainId";
 
     private static final long DEFAULT_CHAIN_ID =
-            Long.parseLong(HapiSpecSetup.getDefaultNodeProps().get(CHAINID_PROP));
+            Long.parseLong(HapiSpecSetup.getDefaultNodeProps().get(CHAIN_ID_PROP));
     private static final long DEFAULT_MAX_LIFETIME =
             Long.parseLong(HapiSpecSetup.getDefaultNodeProps().get("entities.maxLifetime"));
     private static final String DEFAULT_MAX_CUSTOM_FEES =
@@ -136,11 +129,15 @@ public class FileUpdateSuite extends HapiApiSuite {
     private static final String DEFAULT_MAX_CONS_GAS =
             HapiSpecSetup.getDefaultNodeProps().get(CONS_MAX_GAS_PROP);
 
+    private static final String STORAGE_PRICE_TIERS_PROP = "contract.storageSlotPriceTiers";
+    private static final String FREE_PRICE_TIER_PROP = "contracts.freeStorageTierLimit";
+
     public static void main(String... args) {
         new FileUpdateSuite().runSuiteSync();
     }
 
     @Override
+    @SuppressWarnings("java:S3878")
     public List<HapiApiSpec> getSpecsInSuite() {
         return List.of(
                 new HapiApiSpec[] {
@@ -159,6 +156,7 @@ public class FileUpdateSuite extends HapiApiSuite {
                     serviceFeeRefundedIfConsGasExhausted(),
                     chainIdChangesDynamically(),
                     entitiesNotCreatableAfterUsageLimitsReached(),
+                    rentItemizedAsExpectedWithOverridePriceTiers(),
                 });
     }
 
@@ -481,6 +479,7 @@ public class FileUpdateSuite extends HapiApiSuite {
                         getContractInfo(contract).has(contractWith().numKvPairs(14)));
     }
 
+    @SuppressWarnings("java:S5960")
     private HapiApiSpec serviceFeeRefundedIfConsGasExhausted() {
         final var contract = "User";
         final var gasToOffer = Long.parseLong(DEFAULT_MAX_CONS_GAS);
@@ -554,7 +553,7 @@ public class FileUpdateSuite extends HapiApiSuite {
         final var secondCallTxn = "secondCallTxn";
         return defaultHapiSpec("ChainIdChangesDynamically")
                 .given(
-                        resetToDefault(CHAINID_PROP),
+                        resetToDefault(CHAIN_ID_PROP),
                         uploadInitCode(chainIdUser),
                         contractCreate(chainIdUser),
                         contractCall(chainIdUser, CHAIN_ID_GET_ABI).via(firstCallTxn),
@@ -577,7 +576,7 @@ public class FileUpdateSuite extends HapiApiSuite {
                                                 .contractCallResult(
                                                         bigIntResult(DEFAULT_CHAIN_ID))))
                 .when(
-                        overriding(CHAINID_PROP, "" + otherChainId),
+                        overriding(CHAIN_ID_PROP, "" + otherChainId),
                         contractCreate(chainIdUser),
                         contractCall(chainIdUser, CHAIN_ID_GET_ABI).via(secondCallTxn),
                         contractCallLocal(chainIdUser, CHAIN_ID_GET_ABI)
@@ -592,7 +591,7 @@ public class FileUpdateSuite extends HapiApiSuite {
                                                                                 otherChainId)))),
                         contractCallLocal(chainIdUser, "getSavedChainID")
                                 .has(resultWith().contractCallResult(bigIntResult(otherChainId))))
-                .then(resetToDefault(CHAINID_PROP));
+                .then(resetToDefault(CHAIN_ID_PROP));
     }
 
     private HapiApiSpec entitiesNotCreatableAfterUsageLimitsReached() {
@@ -632,6 +631,114 @@ public class FileUpdateSuite extends HapiApiSuite {
                                 "scheduling.maxNumber",
                                 "tokens.maxNumber",
                                 "topics.maxNumber"));
+    }
+
+    private HapiApiSpec rentItemizedAsExpectedWithOverridePriceTiers() {
+        final var slotUser = "SlotUser";
+        final var creation = "creation";
+        final var aSet = "aSet";
+        final var failedSet = "failedSet";
+        final var bSet = "bSet";
+        final var autoRenew = "autoRenew";
+        final var oddGasAmount = 666_666L;
+        final String datumAbi =
+                "{\"inputs\":[],\"name\":\"datum\",\"outputs\":"
+                        + "[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],"
+                        + "\"stateMutability\":\"view\",\"type\":\"function\"}";
+        final AtomicLong expectedStorageFee = new AtomicLong();
+        return defaultHapiSpec("RentItemizedAsExpectedWithOverridePriceTiers")
+                .given(
+                        resetToDefault(STORAGE_PRICE_TIERS_PROP, FREE_PRICE_TIER_PROP),
+                        uploadInitCode(slotUser),
+                        cryptoCreate(autoRenew).balance(0L),
+                        contractCreate(slotUser)
+                                .autoRenewAccountId(autoRenew)
+                                .autoRenewSecs(THREE_MONTHS_IN_SECONDS)
+                                .via(creation),
+                        getTxnRecord(creation).hasNonStakingChildRecordCount(1))
+                .when(
+                        overridingThree(
+                                STORAGE_PRICE_TIERS_PROP,
+                                "10000til100M",
+                                "staking.fees.nodeRewardPercentage",
+                                "0",
+                                "staking.fees.stakingRewardPercentage",
+                                "0"),
+                        // Validate free tier is respected
+                        contractCall(slotUser, "consumeB", 1L).via(bSet),
+                        getTxnRecord(bSet).hasNonStakingChildRecordCount(0),
+                        contractCallLocal(slotUser, "slotB")
+                                .exposingTypedResultsTo(
+                                        results -> assertEquals(BigInteger.ONE, results[0])),
+                        overriding(FREE_PRICE_TIER_PROP, "0"),
+                        // And validate auto-renew account must be storage fees must be payable
+                        contractCall(slotUser, "consumeA", 2L, 3L)
+                                .gas(oddGasAmount)
+                                .via(failedSet)
+                                .hasKnownStatus(INSUFFICIENT_BALANCES_FOR_STORAGE_RENT),
+                        // All gas should be consumed
+                        getTxnRecord(failedSet)
+                                .logged()
+                                .hasPriority(
+                                        recordWith()
+                                                .contractCallResult(
+                                                        resultWith().gasUsed(oddGasAmount))),
+                        // And of course no state should actually change
+                        contractCallLocal(slotUser, "slotA")
+                                .exposingTypedResultsTo(
+                                        results -> assertEquals(BigInteger.ZERO, results[0])),
+                        contractCallLocalWithFunctionAbi(slotUser, datumAbi)
+                                .exposingTypedResultsTo(
+                                        results -> assertEquals(BigInteger.ZERO, results[0])),
+                        // Now fund the contract's auto-renew account and confirm payment accepted
+                        cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, autoRenew, 5 * ONE_HBAR)),
+                        contractCall(slotUser, "consumeA", 2L, 1L).via(aSet),
+                        contractCallLocal(slotUser, "slotA")
+                                .exposingTypedResultsTo(
+                                        results -> assertEquals(BigInteger.TWO, results[0])),
+                        contractCallLocalWithFunctionAbi(slotUser, datumAbi)
+                                .exposingTypedResultsTo(
+                                        results -> assertEquals(BigInteger.ONE, results[0])),
+                        withOpContext(
+                                (spec, opLog) -> {
+                                    final var expiryLookup = getContractInfo(slotUser);
+                                    final var callTimeLookup = getTxnRecord(aSet);
+                                    allRunFor(spec, expiryLookup, callTimeLookup);
+                                    final var lifetime =
+                                            expiryLookup
+                                                            .getResponse()
+                                                            .getContractGetInfo()
+                                                            .getContractInfo()
+                                                            .getExpirationTime()
+                                                            .getSeconds()
+                                                    - callTimeLookup
+                                                            .getResponseRecord()
+                                                            .getConsensusTimestamp()
+                                                            .getSeconds();
+                                    final var tcFeePerSlot =
+                                            10 * TINY_PARTS_PER_WHOLE * lifetime / 31536000L;
+                                    final var tbFeePerSlot =
+                                            spec.ratesProvider().toTbWithActiveRates(tcFeePerSlot);
+                                    expectedStorageFee.set(2 * tbFeePerSlot);
+                                }),
+                        sourcing(
+                                () ->
+                                        getTxnRecord(aSet)
+                                                .logged()
+                                                .hasChildRecords(
+                                                        recordWith()
+                                                                .transfers(
+                                                                        including(
+                                                                                tinyBarsFromTo(
+                                                                                        autoRenew,
+                                                                                        FUNDING,
+                                                                                        expectedStorageFee
+                                                                                                .get()))))))
+                .then(
+                        resetToDefault(STORAGE_PRICE_TIERS_PROP, FREE_PRICE_TIER_PROP),
+                        overridingTwo(
+                                "staking.fees.nodeRewardPercentage", "10",
+                                "staking.fees.stakingRewardPercentage", "10"));
     }
 
     @Override
