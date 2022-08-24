@@ -150,7 +150,8 @@ public class StaticEntityAccess implements EntityAccess {
     }
 
     @Override
-    public void flushStorage() {
+    public void flushStorage(
+            TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger) {
         throw new UnsupportedOperationException();
     }
 
