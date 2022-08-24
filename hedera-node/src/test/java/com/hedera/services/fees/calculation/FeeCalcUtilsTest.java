@@ -199,6 +199,7 @@ public class FeeCalcUtilsTest {
             assertEquals(10, scopedUsage.getSbpr());
         }
     }
+
     @Test
     void clampedAddWorks() {
         long a = 100L;
