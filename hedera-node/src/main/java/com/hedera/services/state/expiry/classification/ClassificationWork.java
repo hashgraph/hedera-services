@@ -57,7 +57,7 @@ public class ClassificationWork {
         if (!lookup.accountsContainsKey(lastClassifiedNum)) {
             return OTHER;
         } else {
-            lastClassified = lookup.getAccount(lastClassifiedNum);
+            lastClassified = lookup.getImmutableAccount(lastClassifiedNum);
             final long expiry = lastClassified.getExpiry();
             if (expiry > now) {
                 return OTHER;
@@ -109,7 +109,7 @@ public class ClassificationWork {
     public MerkleAccount resolvePayerForAutoRenew() {
         if (lastClassified.isSmartContract() && lastClassified.hasAutoRenewAccount()) {
             payerForAutoRenewNum = lastClassified.getAutoRenewAccount().asNum();
-            payerAccountForAutoRenew = lookup.getAccount(payerForAutoRenewNum);
+            payerAccountForAutoRenew = lookup.getImmutableAccount(payerForAutoRenewNum);
             if (isValid(payerAccountForAutoRenew)) {
                 return payerAccountForAutoRenew;
             }
