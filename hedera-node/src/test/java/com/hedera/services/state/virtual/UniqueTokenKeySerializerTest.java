@@ -33,22 +33,23 @@ class UniqueTokenKeySerializerTest {
 
     @Test
     void deserializeToUniqueTokenKey_whenValidVersion_shouldMatch() throws IOException {
-        UniqueTokenKey src = new UniqueTokenKey(Long.MAX_VALUE, EXAMPLE_SERIAL);
-        ByteArrayOutputStream byteStream = new ByteArrayOutputStream();
+        final UniqueTokenKey src = new UniqueTokenKey(Long.MAX_VALUE, EXAMPLE_SERIAL);
+        final ByteArrayOutputStream byteStream = new ByteArrayOutputStream();
         src.serialize(new SerializableDataOutputStream(byteStream));
 
-        UniqueTokenKeySerializer serializer = new UniqueTokenKeySerializer();
-        ByteBuffer inputBuffer = ByteBuffer.wrap(byteStream.toByteArray());
-        UniqueTokenKey dst = serializer.deserialize(inputBuffer, UniqueTokenKey.CURRENT_VERSION);
+        final UniqueTokenKeySerializer serializer = new UniqueTokenKeySerializer();
+        final ByteBuffer inputBuffer = ByteBuffer.wrap(byteStream.toByteArray());
+        final UniqueTokenKey dst =
+                serializer.deserialize(inputBuffer, UniqueTokenKey.CURRENT_VERSION);
         assertThat(dst.getNum()).isEqualTo(Long.MAX_VALUE);
         assertThat(dst.getTokenSerial()).isEqualTo(EXAMPLE_SERIAL);
     }
 
     @Test
     void serializeUniqueTokenKey_shouldReturnExpectedBytes() throws IOException {
-        ByteArrayOutputStream byteStream = new ByteArrayOutputStream();
-        UniqueTokenKeySerializer serializer = new UniqueTokenKeySerializer();
-        int len =
+        final ByteArrayOutputStream byteStream = new ByteArrayOutputStream();
+        final UniqueTokenKeySerializer serializer = new UniqueTokenKeySerializer();
+        final int len =
                 serializer.serialize(
                         new UniqueTokenKey(Long.MAX_VALUE, EXAMPLE_SERIAL),
                         new SerializableDataOutputStream(byteStream));
@@ -64,10 +65,10 @@ class UniqueTokenKeySerializerTest {
 
     @Test
     void serializerEquals_whenCorrectDataVersion_shouldReturnTrue() throws IOException {
-        ByteBuffer buffer = ByteBuffer.wrap(new byte[17]);
+        final ByteBuffer buffer = ByteBuffer.wrap(new byte[17]);
         new UniqueTokenKey(Long.MAX_VALUE, EXAMPLE_SERIAL).serialize(buffer);
         buffer.rewind();
-        UniqueTokenKeySerializer serializer = new UniqueTokenKeySerializer();
+        final UniqueTokenKeySerializer serializer = new UniqueTokenKeySerializer();
 
         assertThat(
                         serializer.equals(
@@ -95,10 +96,10 @@ class UniqueTokenKeySerializerTest {
 
     @Test
     void deserializeKeySize_shouldReturnExpectedSize() throws IOException {
-        ByteBuffer buffer = ByteBuffer.wrap(new byte[17]);
+        final ByteBuffer buffer = ByteBuffer.wrap(new byte[17]);
         new UniqueTokenKey(Long.MAX_VALUE, EXAMPLE_SERIAL).serialize(buffer);
         buffer.rewind();
-        UniqueTokenKeySerializer serializer = new UniqueTokenKeySerializer();
+        final UniqueTokenKeySerializer serializer = new UniqueTokenKeySerializer();
         assertThat(serializer.deserializeKeySize(buffer)).isEqualTo(17);
     }
 
@@ -106,40 +107,40 @@ class UniqueTokenKeySerializerTest {
     // constants.
     @Test
     void serializer_shouldBeVariable() {
-        UniqueTokenKeySerializer serializer = new UniqueTokenKeySerializer();
+        final UniqueTokenKeySerializer serializer = new UniqueTokenKeySerializer();
         assertThat(serializer.getSerializedSize()).isEqualTo(DataFileCommon.VARIABLE_DATA_SIZE);
         assertThat(serializer.isVariableSize()).isTrue();
     }
 
     @Test
     void serializer_estimatedSize() {
-        UniqueTokenKeySerializer serializer = new UniqueTokenKeySerializer();
+        final UniqueTokenKeySerializer serializer = new UniqueTokenKeySerializer();
         assertThat(serializer.getTypicalSerializedSize()).isEqualTo(17);
     }
 
     @Test
     void serializer_version() {
-        UniqueTokenKeySerializer serializer = new UniqueTokenKeySerializer();
+        final UniqueTokenKeySerializer serializer = new UniqueTokenKeySerializer();
         assertThat(serializer.getVersion()).isEqualTo(1);
         assertThat(serializer.getCurrentDataVersion()).isEqualTo(1);
     }
 
     @Test
     void serializer_classId() {
-        UniqueTokenKeySerializer serializer = new UniqueTokenKeySerializer();
+        final UniqueTokenKeySerializer serializer = new UniqueTokenKeySerializer();
         assertThat(serializer.getClassId()).isEqualTo(0xb3c94b6cf62aa6c4L);
     }
 
     @Test
     void noopFunctions_forTestCoverage() throws IOException {
-        UniqueTokenKeySerializer serializer = new UniqueTokenKeySerializer();
-        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-        SerializableDataOutputStream dataOutputStream =
+        final UniqueTokenKeySerializer serializer = new UniqueTokenKeySerializer();
+        final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+        final SerializableDataOutputStream dataOutputStream =
                 new SerializableDataOutputStream(outputStream);
         serializer.serialize(dataOutputStream);
         assertThat(outputStream.toByteArray()).isEmpty();
 
-        SerializableDataInputStream dataInputStream =
+        final SerializableDataInputStream dataInputStream =
                 new SerializableDataInputStream(
                         new ByteArrayInputStream(outputStream.toByteArray()));
         serializer.deserialize(dataInputStream, 1);

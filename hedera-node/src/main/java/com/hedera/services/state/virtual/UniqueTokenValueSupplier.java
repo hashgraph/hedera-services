@@ -24,12 +24,12 @@ public class UniqueTokenValueSupplier implements SelfSerializableSupplier<Unique
     static final int CURRENT_VERSION = 1;
 
     @Override
-    public void deserialize(SerializableDataInputStream in, int version) {
+    public void deserialize(final SerializableDataInputStream in, final int version) {
         /* No operations since no state needs to be restored. */
     }
 
     @Override
-    public void serialize(SerializableDataOutputStream out) {
+    public void serialize(final SerializableDataOutputStream out) {
         /* No operations since no state needs to be saved. */
     }
 
