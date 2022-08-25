@@ -396,8 +396,7 @@ class ContractCreateTransitionLogicTest {
                                 gas,
                                 balance,
                                 Bytes.fromHexString(contractByteCodeString),
-                                txnCtx.consensusTime(),
-                                expiry))
+                                txnCtx.consensusTime()))
                 .willReturn(result);
         given(validator.attemptToDecodeOrThrow(IMMUTABILITY_SENTINEL_KEY, SERIALIZATION_FAILED))
                 .willReturn(EMPTY_KEY);
@@ -413,8 +412,7 @@ class ContractCreateTransitionLogicTest {
                         gas,
                         balance,
                         Bytes.fromHexString(contractByteCodeString),
-                        txnCtx.consensusTime(),
-                        expiry);
+                        txnCtx.consensusTime());
     }
 
     @Test
@@ -461,8 +459,7 @@ class ContractCreateTransitionLogicTest {
                                 gas,
                                 balance,
                                 Bytes.fromHexString(contractByteCodeString),
-                                txnCtx.consensusTime(),
-                                expiry))
+                                txnCtx.consensusTime()))
                 .willReturn(result);
 
         // when:
@@ -476,8 +473,7 @@ class ContractCreateTransitionLogicTest {
                         gas,
                         balance,
                         Bytes.fromHexString(contractByteCodeString),
-                        txnCtx.consensusTime(),
-                        expiry);
+                        txnCtx.consensusTime());
     }
 
     @Test
@@ -538,8 +534,7 @@ class ContractCreateTransitionLogicTest {
                                 gas,
                                 balance,
                                 Bytes.fromHexString(contractByteCodeString),
-                                txnCtx.consensusTime(),
-                                expiry))
+                                txnCtx.consensusTime()))
                 .willReturn(result);
 
         // when:
@@ -553,8 +548,7 @@ class ContractCreateTransitionLogicTest {
                         gas,
                         balance,
                         Bytes.fromHexString(contractByteCodeString),
-                        txnCtx.consensusTime(),
-                        expiry);
+                        txnCtx.consensusTime());
     }
 
     @Test
@@ -596,8 +590,7 @@ class ContractCreateTransitionLogicTest {
                                 gas,
                                 balance,
                                 Bytes.fromHexString(new String(bytecode)),
-                                txnCtx.consensusTime(),
-                                expiry))
+                                txnCtx.consensusTime()))
                 .willReturn(result);
 
         // when:
@@ -649,8 +642,7 @@ class ContractCreateTransitionLogicTest {
                                 gas,
                                 balance,
                                 Bytes.fromHexString(new String(bytecode)),
-                                txnCtx.consensusTime(),
-                                expiry))
+                                txnCtx.consensusTime()))
                 .willReturn(result);
         given(properties.enabledSidecars()).willReturn(EnumSet.of(SidecarType.CONTRACT_BYTECODE));
         final var sidecarRecord =
@@ -712,8 +704,7 @@ class ContractCreateTransitionLogicTest {
                                 gas,
                                 balance,
                                 Bytes.of(bytecode),
-                                txnCtx.consensusTime(),
-                                expiry))
+                                txnCtx.consensusTime()))
                 .willReturn(result);
         given(
                         accountStore.loadAccountOrFailWith(
@@ -777,8 +768,7 @@ class ContractCreateTransitionLogicTest {
                                 gas,
                                 balance,
                                 Bytes.fromHexString(new String(bytecode)),
-                                txnCtx.consensusTime(),
-                                expiry))
+                                txnCtx.consensusTime()))
                 .willReturn(result);
 
         // when:
@@ -853,8 +843,7 @@ class ContractCreateTransitionLogicTest {
                                 gas,
                                 balance,
                                 initCode,
-                                txnCtx.consensusTime(),
-                                expiry))
+                                txnCtx.consensusTime()))
                 .willReturn(result);
         given(properties.enabledSidecars()).willReturn(EnumSet.of(SidecarType.CONTRACT_BYTECODE));
         final var sidecarRecord =
@@ -941,8 +930,7 @@ class ContractCreateTransitionLogicTest {
                                 gas,
                                 balance,
                                 Bytes.wrap(bytecode),
-                                txnCtx.consensusTime(),
-                                expiry))
+                                txnCtx.consensusTime()))
                 .willReturn(result);
         given(properties.enabledSidecars()).willReturn(EnumSet.of(SidecarType.CONTRACT_BYTECODE));
         final var sidecarRecord =
@@ -1032,7 +1020,6 @@ class ContractCreateTransitionLogicTest {
                                 balance,
                                 Bytes.fromHexString(new String(bytecode)),
                                 txnCtx.consensusTime(),
-                                expiry,
                                 relayerAccount,
                                 biOfferedGasPrice,
                                 maxGas))
@@ -1116,7 +1103,6 @@ class ContractCreateTransitionLogicTest {
                                 balance,
                                 initCode,
                                 txnCtx.consensusTime(),
-                                expiry,
                                 relayerAccount,
                                 biOfferedGasPrice,
                                 maxGas))

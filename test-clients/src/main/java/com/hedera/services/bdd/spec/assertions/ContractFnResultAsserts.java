@@ -33,6 +33,7 @@ import java.math.BigInteger;
 import java.util.List;
 import java.util.Optional;
 import java.util.Random;
+import java.util.Set;
 import java.util.function.Function;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -241,6 +242,22 @@ public class ContractFnResultAsserts extends BaseErroringAssertsProvider<Contrac
     public static Function<HapiApiSpec, Function<Object[], Optional<Throwable>>> isLiteralResult(
             Object[] objs) {
         return ignore -> actualObjs -> matchErrors(objs, actualObjs);
+    }
+
+    public static Function<HapiApiSpec, Function<Object[], Optional<Throwable>>> isOneOfLiteral(
+            Set<Object> values) {
+        return ignore ->
+                actualObjs -> {
+                    try {
+                        Assertions.assertEquals(1, actualObjs.length, "Expected a single object");
+                        Assertions.assertTrue(
+                                values.contains(actualObjs[0]),
+                                "Expected one of " + values + " but was " + actualObjs[0]);
+                    } catch (Exception e) {
+                        return Optional.of(e);
+                    }
+                    return Optional.empty();
+                };
     }
 
     public static Function<HapiApiSpec, Function<Object[], Optional<Throwable>>> isRandomResult(

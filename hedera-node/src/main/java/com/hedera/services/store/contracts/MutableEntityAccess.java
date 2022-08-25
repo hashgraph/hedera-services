@@ -140,8 +140,9 @@ public class MutableEntityAccess implements EntityAccess {
     }
 
     @Override
-    public void flushStorage() {
-        sizeLimitedStorage.validateAndCommit();
+    public void flushStorage(
+            final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger) {
+        sizeLimitedStorage.validateAndCommit(accountsLedger);
     }
 
     @Override

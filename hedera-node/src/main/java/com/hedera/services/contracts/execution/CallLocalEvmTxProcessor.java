@@ -23,9 +23,7 @@ import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.store.contracts.CodeCache;
 import com.hedera.services.store.contracts.HederaMutableWorldState;
 import com.hedera.services.store.models.Account;
-import com.hedera.services.txns.contract.helpers.StorageExpiry;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
-import java.time.Instant;
 import java.util.Map;
 import java.util.Set;
 import javax.inject.Inject;
@@ -45,7 +43,6 @@ import org.hyperledger.besu.evm.precompile.PrecompiledContract;
 public class CallLocalEvmTxProcessor extends EvmTxProcessor {
     private final CodeCache codeCache;
     private final AliasManager aliasManager;
-    private final StorageExpiry storageExpiry;
 
     @Inject
     public CallLocalEvmTxProcessor(
@@ -55,8 +52,7 @@ public class CallLocalEvmTxProcessor extends EvmTxProcessor {
             final GasCalculator gasCalculator,
             final Set<Operation> hederaOperations,
             final Map<String, PrecompiledContract> precompiledContractMap,
-            final AliasManager aliasManager,
-            final StorageExpiry storageExpiry) {
+            final AliasManager aliasManager) {
         super(
                 livePricesSource,
                 dynamicProperties,
@@ -65,7 +61,6 @@ public class CallLocalEvmTxProcessor extends EvmTxProcessor {
                 precompiledContractMap);
         this.codeCache = codeCache;
         this.aliasManager = aliasManager;
-        this.storageExpiry = storageExpiry;
     }
 
     @Override
@@ -88,8 +83,7 @@ public class CallLocalEvmTxProcessor extends EvmTxProcessor {
             final Address receiver,
             final long providedGasLimit,
             final long value,
-            final Bytes callData,
-            final Instant consensusTime) {
+            final Bytes callData) {
         final long gasPrice = 1;
 
         return super.execute(
@@ -100,9 +94,7 @@ public class CallLocalEvmTxProcessor extends EvmTxProcessor {
                 value,
                 callData,
                 false,
-                consensusTime,
                 true,
-                storageExpiry.hapiStaticCallOracle(),
                 aliasManager.resolveForEvm(receiver),
                 null,
                 0,
