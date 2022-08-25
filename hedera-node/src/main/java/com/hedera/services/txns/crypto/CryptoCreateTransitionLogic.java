@@ -222,7 +222,8 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
     }
 
     private boolean tooManyAutoAssociations(final int n) {
-        return n > MAX_CHARGEABLE_AUTO_ASSOCIATIONS ||
-                (dynamicProperties.areTokenAssociationsLimited() && n > dynamicProperties.maxTokensPerAccount());
+        return n > MAX_CHARGEABLE_AUTO_ASSOCIATIONS
+                || (dynamicProperties.areTokenAssociationsLimited()
+                        && n > dynamicProperties.maxTokensPerAccount());
     }
 }

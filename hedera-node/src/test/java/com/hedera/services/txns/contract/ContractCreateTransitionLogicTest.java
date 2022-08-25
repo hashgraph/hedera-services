@@ -64,7 +64,6 @@ import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.SidecarUtils;
 import com.hedera.services.utils.accessors.SignedTxnAccessor;
 import com.hedera.test.utils.IdUtils;
-import com.hedera.test.utils.TxnUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -1168,7 +1167,10 @@ class ContractCreateTransitionLogicTest {
         given(accessor.getTxn()).willReturn(contractCreateTxn);
         given(txnCtx.activePayer()).willReturn(ourAccount());
         given(txnCtx.accessor()).willReturn(accessor);
-        given(hfs.cat(any())).willThrow(new IllegalArgumentException(TieredHederaFs.IllegalArgumentType.UNKNOWN_FILE.toString()));
+        given(hfs.cat(any()))
+                .willThrow(
+                        new IllegalArgumentException(
+                                TieredHederaFs.IllegalArgumentType.UNKNOWN_FILE.toString()));
         given(accountStore.loadAccount(senderAccount.getId())).willReturn(senderAccount);
         // when:
         Exception exception =
@@ -1235,8 +1237,12 @@ class ContractCreateTransitionLogicTest {
 
     @Test
     void throwsErrorOnUnfetchableBytecode() {
-        given(hfs.cat(any())).willThrow(new IllegalArgumentException(TieredHederaFs.IllegalArgumentType.DELETED_FILE.toString()));
-        assertFailsWith(() -> subject.prepareCodeWithConstructorArguments(transactionBody), FILE_DELETED);
+        given(hfs.cat(any()))
+                .willThrow(
+                        new IllegalArgumentException(
+                                TieredHederaFs.IllegalArgumentType.DELETED_FILE.toString()));
+        assertFailsWith(
+                () -> subject.prepareCodeWithConstructorArguments(transactionBody), FILE_DELETED);
     }
 
     private void givenValidTxnCtx() {

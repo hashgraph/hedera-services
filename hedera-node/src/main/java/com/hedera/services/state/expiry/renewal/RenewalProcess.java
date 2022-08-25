@@ -67,10 +67,10 @@ public class RenewalProcess {
 
         return switch (classification) {
             case NO_CAPACITY_FOR_CLASSIFICATION_WORK -> STILL_MORE_TO_DO;
-            // Removal work
+                // Removal work
             case DETACHED_ACCOUNT_GRACE_PERIOD_OVER -> removalWork.tryToRemoveAccount(entityNum);
             case DETACHED_CONTRACT_GRACE_PERIOD_OVER -> removalWork.tryToRemoveContract(entityNum);
-            // Renewal work
+                // Renewal work
             case EXPIRED_ACCOUNT_READY_TO_RENEW -> renewalWork.tryToRenewAccount(
                     entityNum, cycleTime);
             case EXPIRED_CONTRACT_READY_TO_RENEW -> renewalWork.tryToRenewContract(

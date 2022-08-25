@@ -16,7 +16,6 @@
 package com.hedera.services.txns.contract;
 
 import static com.hedera.services.exceptions.ValidationUtils.validateFalse;
-import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hedera.services.ledger.accounts.ContractCustomizer.fromHapiCreation;
 import static com.hedera.services.ledger.accounts.HederaAccountCustomizer.hasStakedId;
 import static com.hedera.services.state.EntityCreator.EMPTY_MEMO;
@@ -28,7 +27,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_FILE_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_NEGATIVE_GAS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_NEGATIVE_VALUE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FILE_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RENEWAL_PERIOD;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_STAKING_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_GAS_LIMIT_EXCEEDED;
@@ -44,7 +42,6 @@ import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.contracts.execution.CreateEvmTxProcessor;
 import com.hedera.services.contracts.execution.TransactionProcessingResult;
 import com.hedera.services.exceptions.InvalidTransactionException;
-import com.hedera.services.exceptions.ValidationUtils;
 import com.hedera.services.files.HederaFs;
 import com.hedera.services.files.TieredHederaFs;
 import com.hedera.services.ledger.SigImpactHistorian;
@@ -332,7 +329,9 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
             try {
                 bytecode = hfs.cat(bytecodeSrc);
             } catch (IllegalArgumentException e) {
-                final var failureReason = TieredHederaFs.IllegalArgumentType.valueOf(e.getMessage()).suggestedStatus();
+                final var failureReason =
+                        TieredHederaFs.IllegalArgumentType.valueOf(e.getMessage())
+                                .suggestedStatus();
                 throw new InvalidTransactionException(failureReason);
             }
             validateFalse(bytecode.length == 0, CONTRACT_FILE_EMPTY);

@@ -33,19 +33,17 @@ import com.hedera.services.throttling.ExpiryThrottle;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.test.factories.accounts.MerkleAccountFactory;
 import com.swirlds.merkle.map.MerkleMap;
+import java.time.Instant;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.time.Instant;
-
 @ExtendWith(MockitoExtension.class)
 class ClassificationWorkTest {
     @Mock private MerkleMap<EntityNum, MerkleAccount> accounts;
-    @Mock
-    private ExpiryThrottle expiryThrottle;
+    @Mock private ExpiryThrottle expiryThrottle;
 
     private EntityLookup lookup;
     private ClassificationWork subject;
@@ -65,7 +63,8 @@ class ClassificationWorkTest {
 
     @Test
     void classifiesNoCapacityToCheck() {
-        assertEquals(NO_CAPACITY_FOR_CLASSIFICATION_WORK, subject.classify(EntityNum.fromLong(4L), now));
+        assertEquals(
+                NO_CAPACITY_FOR_CLASSIFICATION_WORK, subject.classify(EntityNum.fromLong(4L), now));
     }
 
     @Test

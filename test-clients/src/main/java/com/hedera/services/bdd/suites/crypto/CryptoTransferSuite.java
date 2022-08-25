@@ -2065,8 +2065,10 @@ public class CryptoTransferSuite extends HapiApiSuite {
 
         return defaultHapiSpec("VanillaTransferSucceeds")
                 .given(
-                        cryptoCreate("somebody").maxAutomaticTokenAssociations(5001)
-                                .hasPrecheck(REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT),
+                        cryptoCreate("somebody")
+                                .maxAutomaticTokenAssociations(5001)
+                                .hasPrecheck(
+                                        REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT),
                         UtilVerbs.inParallel(
                                 cryptoCreate(PAYER),
                                 cryptoCreate(PAYEE_SIG_REQ).receiverSigRequired(true),

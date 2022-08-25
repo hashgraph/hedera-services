@@ -88,8 +88,7 @@ class RenewalHelperTest {
                 .willReturn(new RenewAssessment(nonZeroBalance, 3600L));
 
         // and:
-        subject.tryToRenewAccount(
-                EntityNum.fromLong(fundedExpiredAccountNum), now);
+        subject.tryToRenewAccount(EntityNum.fromLong(fundedExpiredAccountNum), now);
 
         // then:
         verify(accounts, times(2)).getForModify(key);
@@ -120,15 +119,11 @@ class RenewalHelperTest {
         // and:
         given(
                         fees.assessCryptoAutoRenewal(
-                                nonExpiredAccountWithAutoRenew,
-                                0L,
-                                now,
-                                autoRenewMerkleAccount))
+                                nonExpiredAccountWithAutoRenew, 0L, now, autoRenewMerkleAccount))
                 .willReturn(new RenewAssessment(nonZeroBalance, 3600L));
 
         // and:
-        subject.tryToRenewAccount(
-                EntityNum.fromLong(fundedExpiredAccountNum), now);
+        subject.tryToRenewAccount(EntityNum.fromLong(fundedExpiredAccountNum), now);
 
         // then:
         verify(accounts, times(1)).getForModify(autoRenewAccount);
@@ -140,15 +135,11 @@ class RenewalHelperTest {
     @Test
     void doesNothingWhenDisabled() {
         properties.disableAutoRenew();
-        var result =
-                subject.tryToRenewAccount(
-                        EntityNum.fromLong(fundedExpiredAccountNum), now);
+        var result = subject.tryToRenewAccount(EntityNum.fromLong(fundedExpiredAccountNum), now);
         assertEquals(EntityProcessResult.NOTHING_TO_DO, result);
 
         properties.disableContractAutoRenew();
-        result =
-                subject.tryToRenewContract(
-                        EntityNum.fromLong(fundedExpiredAccountNum), now);
+        result = subject.tryToRenewContract(EntityNum.fromLong(fundedExpiredAccountNum), now);
         assertEquals(EntityProcessResult.NOTHING_TO_DO, result);
     }
 
@@ -229,7 +220,7 @@ class RenewalHelperTest {
             MerkleAccountFactory.newAccount()
                     .isSmartContract(true)
                     .balance(1)
-                    .expirationTime(now .getEpochSecond()- 1)
+                    .expirationTime(now.getEpochSecond() - 1)
                     .get();
     private final long nonExpiredAccountNum = 1L;
     private final long brokeExpiredNum = 2L;

@@ -23,10 +23,10 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.throttling.ExpiryThrottle;
 import com.hedera.services.throttling.MapAccessType;
 import com.hedera.services.utils.EntityNum;
-import javax.inject.Inject;
-import javax.inject.Singleton;
 import java.time.Instant;
 import java.util.List;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 
 /**
  * Helper for renewing and removing expired entities. Only crypto accounts are supported in this
@@ -46,7 +46,9 @@ public class ClassificationWork {
 
     @Inject
     public ClassificationWork(
-            final GlobalDynamicProperties dynamicProperties, final EntityLookup lookup, final ExpiryThrottle expiryThrottle) {
+            final GlobalDynamicProperties dynamicProperties,
+            final EntityLookup lookup,
+            final ExpiryThrottle expiryThrottle) {
         this.dynamicProperties = dynamicProperties;
         this.expiryThrottle = expiryThrottle;
         this.lookup = lookup;

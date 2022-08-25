@@ -131,8 +131,7 @@ class RenewalProcessTest {
         subject.beginRenewalCycle(now);
 
         // expect:
-        Assertions.assertThrows(
-                IllegalStateException.class, () -> subject.beginRenewalCycle(now));
+        Assertions.assertThrows(IllegalStateException.class, () -> subject.beginRenewalCycle(now));
     }
 
     @Test
@@ -330,9 +329,7 @@ class RenewalProcessTest {
         given(accounts.getForModify(EntityNum.fromLong(fundedExpiredAccountNum)))
                 .willReturn(mockAccount);
 
-        given(
-                        fees.assessCryptoAutoRenewal(
-                                mockAccount, requestedRenewalPeriod, now, mockAccount))
+        given(fees.assessCryptoAutoRenewal(mockAccount, requestedRenewalPeriod, now, mockAccount))
                 .willReturn(new RenewAssessment(fee, actualRenewalPeriod));
         dynamicProperties.enableContractAutoRenew();
 
@@ -342,7 +339,8 @@ class RenewalProcessTest {
         assertEquals(DONE, result);
 
         verify(recordsHelper)
-                .streamCryptoRenewal(key, fee, now.getEpochSecond() - 1 + actualRenewalPeriod, false, key);
+                .streamCryptoRenewal(
+                        key, fee, now.getEpochSecond() - 1 + actualRenewalPeriod, false, key);
     }
 
     @Test
@@ -356,9 +354,7 @@ class RenewalProcessTest {
         given(classifier.getLastClassified()).willReturn(mockContract);
         given(classifier.getLastClassifiedNum())
                 .willReturn(EntityNum.fromLong(fundedExpiredContractNum));
-        given(
-                        fees.assessCryptoAutoRenewal(
-                                mockContract, requestedRenewalPeriod, now, mockContract))
+        given(fees.assessCryptoAutoRenewal(mockContract, requestedRenewalPeriod, now, mockContract))
                 .willReturn(new RenewAssessment(fee, actualRenewalPeriod));
         dynamicProperties.shouldAutoRenewContracts();
 
@@ -378,7 +374,8 @@ class RenewalProcessTest {
         assertEquals(DONE, result);
 
         verify(recordsHelper)
-                .streamCryptoRenewal(key, fee, now.getEpochSecond() - 1 + actualRenewalPeriod, true, key);
+                .streamCryptoRenewal(
+                        key, fee, now.getEpochSecond() - 1 + actualRenewalPeriod, true, key);
     }
 
     @Test

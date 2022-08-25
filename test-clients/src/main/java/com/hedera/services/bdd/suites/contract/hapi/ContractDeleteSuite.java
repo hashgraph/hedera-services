@@ -277,7 +277,9 @@ public class ContractDeleteSuite extends HapiApiSuite {
         final var tbdFile = "FTBD";
         final var tbdContract = "CTBD";
         return defaultHapiSpec("DeleteWorksWithMutableContract")
-                .given(fileCreate(tbdFile), fileDelete(tbdFile),
+                .given(
+                        fileCreate(tbdFile),
+                        fileDelete(tbdFile),
                         createDefaultContract(tbdContract)
                                 .bytecode(tbdFile)
                                 .hasKnownStatus(FILE_DELETED))
@@ -286,7 +288,6 @@ public class ContractDeleteSuite extends HapiApiSuite {
                         contractDelete(CONTRACT),
                         getContractInfo(CONTRACT).has(contractWith().isDeleted()));
     }
-
 
     private HapiApiSpec deleteFailsWithImmutableContract() {
         return defaultHapiSpec("DeleteFailsWithImmutableContract")
