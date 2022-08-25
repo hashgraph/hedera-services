@@ -15,6 +15,8 @@
  */
 package com.hedera.services.state.migration;
 
+import static com.hedera.services.utils.MiscUtils.forEach;
+
 import com.hedera.services.ServicesState;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.virtual.UniqueTokenKey;
@@ -24,12 +26,9 @@ import com.hedera.services.utils.EntityNumPair;
 import com.swirlds.jasperdb.JasperDbBuilder;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-
-import java.util.concurrent.atomic.AtomicInteger;
-
-import static com.hedera.services.utils.MiscUtils.forEach;
 
 public class UniqueTokensMigrator {
     private static final Logger LOG = LogManager.getLogger(UniqueTokensMigrator.class);
@@ -48,7 +47,8 @@ public class UniqueTokensMigrator {
             return;
         }
 
-        final MerkleMap<EntityNumPair, MerkleUniqueToken> legacyUniqueTokens = currentData.merkleMap();
+        final MerkleMap<EntityNumPair, MerkleUniqueToken> legacyUniqueTokens =
+                currentData.merkleMap();
         final VirtualMap<UniqueTokenKey, UniqueTokenValue> vmUniqueTokens =
                 virtualMapFactory.newVirtualizedUniqueTokenStorage();
         final AtomicInteger count = new AtomicInteger();
