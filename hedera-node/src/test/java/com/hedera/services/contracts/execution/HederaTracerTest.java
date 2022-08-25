@@ -15,31 +15,6 @@
  */
 package com.hedera.services.contracts.execution;
 
-import com.hedera.services.contracts.execution.traceability.ContractActionType;
-import com.hedera.services.contracts.execution.traceability.HederaTracer;
-import com.hedera.services.state.submerkle.EntityId;
-import org.apache.tuweni.bytes.Bytes;
-import org.hyperledger.besu.datatypes.Address;
-import org.hyperledger.besu.datatypes.Hash;
-import org.hyperledger.besu.datatypes.Wei;
-import org.hyperledger.besu.evm.Code;
-import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
-import org.hyperledger.besu.evm.frame.MessageFrame;
-import org.hyperledger.besu.evm.frame.MessageFrame.State;
-import org.hyperledger.besu.evm.frame.MessageFrame.Type;
-import org.hyperledger.besu.evm.operation.Operation;
-import org.hyperledger.besu.evm.tracing.OperationTracer;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
-
-import java.nio.charset.StandardCharsets;
-import java.util.ArrayDeque;
-import java.util.Deque;
-import java.util.Optional;
-
 import static com.hedera.services.contracts.execution.traceability.CallOperationType.OP_CALL;
 import static com.hedera.services.contracts.execution.traceability.CallOperationType.OP_CALLCODE;
 import static com.hedera.services.contracts.execution.traceability.CallOperationType.OP_CREATE;
@@ -56,6 +31,30 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.*;
+
+import com.hedera.services.contracts.execution.traceability.ContractActionType;
+import com.hedera.services.contracts.execution.traceability.HederaTracer;
+import com.hedera.services.state.submerkle.EntityId;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayDeque;
+import java.util.Deque;
+import java.util.Optional;
+import org.apache.tuweni.bytes.Bytes;
+import org.hyperledger.besu.datatypes.Address;
+import org.hyperledger.besu.datatypes.Hash;
+import org.hyperledger.besu.datatypes.Wei;
+import org.hyperledger.besu.evm.Code;
+import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
+import org.hyperledger.besu.evm.frame.MessageFrame;
+import org.hyperledger.besu.evm.frame.MessageFrame.State;
+import org.hyperledger.besu.evm.frame.MessageFrame.Type;
+import org.hyperledger.besu.evm.operation.Operation;
+import org.hyperledger.besu.evm.tracing.OperationTracer;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class HederaTracerTest {
