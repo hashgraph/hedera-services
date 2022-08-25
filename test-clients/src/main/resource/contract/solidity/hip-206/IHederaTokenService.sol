@@ -724,46 +724,38 @@ interface IHederaTokenService {
     /// @param tokenInfo The hedera token info to update token with
     /// @return responseCode The response code for the status of the request. SUCCESS is 22.
     function updateTokenInfo(address token, HederaToken memory tokenInfo)
-        external
-        returns (int64 responseCode);
+    external
+    returns (int64 responseCode);
 
     /// Operation to update token expiry info
     /// @param token The token address
     /// @param expiryInfo The hedera token expiry info
     /// @return responseCode The response code for the status of the request. SUCCESS is 22.
     function updateTokenExpiryInfo(address token, Expiry memory expiryInfo)
-        external
-        returns (int64 responseCode);
+    external
+    returns (int64 responseCode);
 
-    /// Operation to update token expiry info
-    /// @param token The token address
-    /// @param keys The token keys
-    /// @return responseCode The response code for the status of the request. SUCCESS is 22.
-    function updateTokenKeys(address token, TokenKey[] memory keys)
-        external
-        returns (int64 responseCode);
-
-    /// Query if valid token found for the given address
-    /// @param token The token address
-    /// @return responseCode The response code for the status of the request. SUCCESS is 22.
-    /// @return isToken True if valid token found for the given address
-    function isToken(address token)
-        external returns
-        (int64 responseCode, bool isToken);
-
-    /// Query to return the token type for a given address
-    /// @param token The token address
-    /// @return responseCode The response code for the status of the request. SUCCESS is 22.
-    /// @return tokenType the token type. 0 is FUNGIBLE_COMMON, 1 is NON_FUNGIBLE_UNIQUE, -1 is UNRECOGNIZED
-    function getTokenType(address token)
-        external returns
-        (int64 responseCode, int32 tokenType);
-
-    /// Operation to update token expiry info
+    /// Operation to update token keys
     /// @param token The token address
     /// @param keys The token keys
     /// @return responseCode The response code for the status of the request. SUCCESS is 22.
     function updateTokenKeys(address token, TokenKey[] memory keys)
     external
     returns (int64 responseCode);
+
+    /// Query if valid token found for the given address
+    /// @param token The token address
+    /// @return responseCode The response code for the status of the request. SUCCESS is 22.
+    /// @return isToken True if valid token found for the given address
+    function isToken(address token)
+    external returns
+    (int64 responseCode, bool isToken);
+
+    /// Query to return the token type for a given address
+    /// @param token The token address
+    /// @return responseCode The response code for the status of the request. SUCCESS is 22.
+    /// @return tokenType the token type. 0 is FUNGIBLE_COMMON, 1 is NON_FUNGIBLE_UNIQUE, -1 is UNRECOGNIZED
+    function getTokenType(address token)
+    external returns
+    (int64 responseCode, int32 tokenType);
 }
