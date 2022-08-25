@@ -192,7 +192,7 @@ class StaticEntityAccessTest {
         assertThrows(UnsupportedOperationException.class, () -> subject.storeCode(id, bytesKey));
         assertThrows(UnsupportedOperationException.class, () -> subject.currentManagedChangeSet());
         assertThrows(UnsupportedOperationException.class, () -> subject.recordNewKvUsageTo(null));
-        assertThrows(UnsupportedOperationException.class, subject::flushStorage);
+        assertThrows(UnsupportedOperationException.class, () -> subject.flushStorage(null));
         assertDoesNotThrow(subject::startAccess);
     }
 
@@ -220,10 +220,10 @@ class StaticEntityAccessTest {
     void getWorks() {
         given(storage.get(contractKey)).willReturn(contractVal);
 
-        final var unit256Val = subject.getStorage(id, uint256Key);
+        final var uint256Val = subject.getStorage(id, uint256Key);
 
         final var expectedVal = UInt256.fromBytes(Bytes.wrap(contractVal.getValue()));
-        assertEquals(expectedVal, unit256Val);
+        assertEquals(expectedVal, uint256Val);
     }
 
     @Test

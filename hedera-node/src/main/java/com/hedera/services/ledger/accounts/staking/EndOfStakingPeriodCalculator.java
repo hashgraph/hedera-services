@@ -15,6 +15,8 @@
  */
 package com.hedera.services.ledger.accounts.staking;
 
+import static com.hedera.services.context.properties.PropertyNames.ACCOUNTS_STAKING_REWARD_ACCOUNT;
+import static com.hedera.services.context.properties.PropertyNames.STAKING_REWARD_RATE;
 import static com.hedera.services.records.TxnAwareRecordsHistorian.DEFAULT_SOURCE_ID;
 import static com.hedera.services.state.EntityCreator.NO_CUSTOM_FEES;
 import static com.hedera.services.utils.Units.HBARS_TO_TINYBARS;
@@ -165,7 +167,9 @@ public class EndOfStakingPeriodCalculator {
 
         final var syntheticNodeStakeUpdateTxn =
                 syntheticTxnFactory.nodeStakeUpdate(
-                        lastInstantOfPreviousPeriodFor(consensusTime), nodeStakingInfos);
+                        lastInstantOfPreviousPeriodFor(consensusTime),
+                        nodeStakingInfos,
+                        properties);
         log.info("Exporting:\n{}", nodeStakingInfos);
         recordsHistorian.trackPrecedingChildRecord(
                 DEFAULT_SOURCE_ID,
@@ -182,7 +186,7 @@ public class EndOfStakingPeriodCalculator {
                 0,
                 Math.min(
                         rewardsBalance() - networkCtx.get().pendingRewards(),
-                        properties.getLongProperty("staking.rewardRate")));
+                        properties.getLongProperty(STAKING_REWARD_RATE)));
     }
 
     @VisibleForTesting
@@ -201,7 +205,7 @@ public class EndOfStakingPeriodCalculator {
         return accounts.get()
                 .get(
                         EntityNum.fromLong(
-                                properties.getLongProperty("accounts.stakingRewardAccount")))
+                                properties.getLongProperty(ACCOUNTS_STAKING_REWARD_ACCOUNT)))
                 .getBalance();
     }
 }

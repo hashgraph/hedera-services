@@ -16,6 +16,7 @@
 package com.hedera.services;
 
 import static com.hedera.services.context.AppsManager.APPS;
+import static com.hedera.services.context.properties.PropertyNames.HEDERA_FIRST_USER_ENTITY;
 import static com.hedera.services.context.properties.SemanticVersions.SEMANTIC_VERSIONS;
 import static com.hedera.services.state.migration.StateChildIndices.NUM_025X_CHILDREN;
 import static com.hedera.services.state.migration.StateVersions.CURRENT_VERSION;
@@ -31,7 +32,6 @@ import static com.swirlds.common.system.InitTrigger.RESTART;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.protobuf.ByteString;
-import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.properties.BootstrapProperties;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
@@ -60,6 +60,7 @@ import com.hedera.services.stream.RecordsRunningHashLeaf;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.swirlds.common.crypto.CryptoFactory;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.ImmutableHash;
 import com.swirlds.common.crypto.RunningHash;
@@ -69,11 +70,12 @@ import com.swirlds.common.merkle.impl.PartialNaryMerkleInternal;
 import com.swirlds.common.system.InitTrigger;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.Platform;
+import com.swirlds.common.system.Round;
 import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.SwirldDualState;
-import com.swirlds.common.system.SwirldState;
+import com.swirlds.common.system.SwirldState2;
 import com.swirlds.common.system.address.AddressBook;
-import com.swirlds.common.system.transaction.SwirldTransaction;
+import com.swirlds.common.system.events.Event;
 import com.swirlds.fchashmap.FCHashMap;
 import com.swirlds.jasperdb.JasperDbBuilder;
 import com.swirlds.merkle.map.MerkleMap;
@@ -94,7 +96,7 @@ import org.jetbrains.annotations.NotNull;
 
 /** The Merkle tree root of the Hedera Services world state. */
 public class ServicesState extends PartialNaryMerkleInternal
-        implements MerkleInternal, SwirldState.SwirldState2 {
+        implements MerkleInternal, SwirldState2 {
     private static final Logger log = LogManager.getLogger(ServicesState.class);
 
     private static final long RUNTIME_CONSTRUCTABLE_ID = 0x8e300b0dfdafbb1aL;
@@ -164,7 +166,7 @@ public class ServicesState extends PartialNaryMerkleInternal
                 contractStorage().size());
     }
 
-    /* --- MerkleInternal --- */
+    // --- MerkleInternal ---
     @Override
     public long getClassId() {
         return RUNTIME_CONSTRUCTABLE_ID;
@@ -191,6 +193,7 @@ public class ServicesState extends PartialNaryMerkleInternal
         deserializedStateVersion = version;
     }
 
+    // --- SwirldState ---
     @Override
     public void init(
             final Platform platform,
@@ -216,7 +219,19 @@ public class ServicesState extends PartialNaryMerkleInternal
         }
     }
 
-    /* --- SwirldState --- */
+    @Override
+    public void handleConsensusRound(final Round round, final SwirldDualState dualState) {
+        throwIfImmutable();
+        final var app = metadata.app();
+        app.dualStateAccessor().setDualState(dualState);
+        app.logic().incorporateConsensus(round);
+    }
+
+    @Override
+    public void preHandle(final Event event) {
+        metadata.app().eventExpansion().expandAllSigs(event, this);
+    }
+
     private void deserializedInit(
             final Platform platform,
             final AddressBook addressBook,
@@ -244,7 +259,7 @@ public class ServicesState extends PartialNaryMerkleInternal
 
         // Create the top-level children in the Merkle tree
         final var bootstrapProps = new BootstrapProperties();
-        final var seqStart = bootstrapProps.getLongProperty("hedera.firstUserEntity");
+        final var seqStart = bootstrapProps.getLongProperty(HEDERA_FIRST_USER_ENTITY);
         createGenesisChildren(addressBook, seqStart, bootstrapProps);
 
         internalInit(platform, bootstrapProps, dualState, GENESIS, null);
@@ -271,6 +286,7 @@ public class ServicesState extends PartialNaryMerkleInternal
                             .bootstrapProps(bootstrapProps)
                             .initialHash(initialHash)
                             .platform(platform)
+                            .crypto(CryptoFactory.getInstance())
                             .selfId(selfId)
                             .build();
             APPS.save(selfId, app);
@@ -293,7 +309,8 @@ public class ServicesState extends PartialNaryMerkleInternal
                     deployedVersion);
             app.systemExits().fail(1);
         } else {
-            if (trigger == RESTART) {
+            final var isUpgrade = deployedVersion.isAfter(deserializedVersion);
+            if (trigger == RESTART && isUpgrade) {
                 networkCtx().discardPreparedUpgradeMeta();
                 dualState.setFreezeTime(null);
                 if (deployedVersion.hasMigrationRecordsFrom(deserializedVersion)) {
@@ -326,7 +343,7 @@ public class ServicesState extends PartialNaryMerkleInternal
                 // Once we have a dynamic address book, this will run unconditionally
                 app.sysFilesManager().updateStakeDetails();
             }
-            if (trigger == RESTART) {
+            if (trigger == RESTART && isUpgrade) {
                 // Do this separately from ensureSystemAccounts(), as that call is expensive with a
                 // large saved state
                 app.treasuryCloner().ensureTreasuryClonesExist();
@@ -340,41 +357,6 @@ public class ServicesState extends PartialNaryMerkleInternal
     @Override
     public AddressBook getAddressBookCopy() {
         return addressBook().copy();
-    }
-
-    @Override
-    public synchronized void handleTransaction(
-            long submittingMember,
-            boolean isConsensus,
-            Instant creationTime,
-            Instant consensusTime,
-            SwirldTransaction transaction,
-            SwirldDualState dualState) {
-        if (isConsensus) {
-            final var app = metadata.app();
-            app.dualStateAccessor().setDualState(dualState);
-            app.logic().incorporateConsensusTxn(transaction, consensusTime, submittingMember);
-        }
-    }
-
-    @Override
-    public void expandSignatures(final SwirldTransaction platformTxn) {
-        try {
-            final var app = metadata.app();
-            final var accessor = app.expandHandleSpan().track(platformTxn);
-            // Submit the transaction for any prepare stage processing that can be performed
-            // such as pre-fetching of contract bytecode. This step is performed asynchronously
-            // so get this step started before synchronous signature expansion.
-            app.prefetchProcessor().submit(accessor);
-            app.sigReqsManager().expandSigsInto(accessor);
-        } catch (InvalidProtocolBufferException e) {
-            log.warn("Method expandSignatures called with non-gRPC txn", e);
-        } catch (Exception race) {
-            log.warn(
-                    "Unable to expand signatures, will be verified synchronously in"
-                            + " handleTransaction",
-                    race);
-        }
     }
 
     /* --- FastCopyable --- */

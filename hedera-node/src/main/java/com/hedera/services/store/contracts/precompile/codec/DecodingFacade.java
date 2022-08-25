@@ -15,19 +15,7 @@
  */
 package com.hedera.services.store.contracts.precompile.codec;
 
-import static com.hedera.services.contracts.ParsingConstants.ARRAY_BRACKETS;
-import static com.hedera.services.contracts.ParsingConstants.BOOL;
-import static com.hedera.services.contracts.ParsingConstants.BYTES32;
-import static com.hedera.services.contracts.ParsingConstants.BYTES32_PAIR_RAW_TYPE;
-import static com.hedera.services.contracts.ParsingConstants.EXPIRY;
-import static com.hedera.services.contracts.ParsingConstants.FIXED_FEE;
-import static com.hedera.services.contracts.ParsingConstants.FRACTIONAL_FEE;
-import static com.hedera.services.contracts.ParsingConstants.INT;
-import static com.hedera.services.contracts.ParsingConstants.INT_BOOL_PAIR;
-import static com.hedera.services.contracts.ParsingConstants.ROYALTY_FEE;
-import static com.hedera.services.contracts.ParsingConstants.STRING;
-import static com.hedera.services.contracts.ParsingConstants.TOKEN_KEY;
-import static com.hedera.services.contracts.ParsingConstants.UINT256;
+import static com.hedera.services.contracts.ParsingConstants.*;
 import static com.hedera.services.utils.EntityIdUtils.accountIdFromEvmAddress;
 
 import com.esaulpaugh.headlong.abi.ABIType;
@@ -59,6 +47,7 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
+import org.jetbrains.annotations.NotNull;
 
 @Singleton
 public class DecodingFacade {
@@ -66,11 +55,6 @@ public class DecodingFacade {
     private static final int ADDRESS_BYTES_LENGTH = 20;
     private static final int ADDRESS_SKIP_BYTES_LENGTH = 12;
     private static final int FUNCTION_SELECTOR_BYTES_LENGTH = 4;
-    private static final String ADDRESS_PAIR_RAW_TYPE = "(bytes32,bytes32)";
-    private static final String ADDRESS_TRIPLE_RAW_TYPE = "(bytes32,bytes32,bytes32)";
-    private static final String UINT256_RAW_TYPE = "(uint256)";
-    private static final String ADDRESS_UINT256_RAW_TYPE = "(bytes32,uint256)";
-    private static final String ADDRESS_ADDRESS_UINT256_RAW_TYPE = "(bytes32,bytes32,uint256)";
 
     private static final List<SyntheticTxnFactory.NftExchange> NO_NFT_EXCHANGES =
             Collections.emptyList();
@@ -154,7 +138,7 @@ public class DecodingFacade {
     private static final Bytes ASSOCIATE_TOKEN_SELECTOR =
             Bytes.wrap(ASSOCIATE_TOKEN_FUNCTION.selector());
     private static final ABIType<Tuple> ASSOCIATE_TOKEN_DECODER =
-            TypeFactory.create(BYTES32_PAIR_RAW_TYPE);
+            TypeFactory.create(ADDRESS_PAIR_RAW_TYPE);
 
     private static final Function DISSOCIATE_TOKENS_FUNCTION =
             new Function("dissociateTokens(address,address[])", INT);
@@ -168,7 +152,7 @@ public class DecodingFacade {
     private static final Bytes DISSOCIATE_TOKEN_SELECTOR =
             Bytes.wrap(DISSOCIATE_TOKEN_FUNCTION.selector());
     private static final ABIType<Tuple> DISSOCIATE_TOKEN_DECODER =
-            TypeFactory.create(BYTES32_PAIR_RAW_TYPE);
+            TypeFactory.create(ADDRESS_PAIR_RAW_TYPE);
 
     private static final Function TOKEN_URI_NFT_FUNCTION =
             new Function("tokenURI(uint256)", STRING);
@@ -365,7 +349,7 @@ public class DecodingFacade {
     private static final Bytes ERC_GET_APPROVED_FUNCTION_SELECTOR =
             Bytes.wrap(ERC_GET_APPROVED_FUNCTION.selector());
     private static final ABIType<Tuple> ERC_GET_APPROVED_FUNCTION_DECODER =
-            TypeFactory.create(UINT256_RAW_TYPE);
+            TypeFactory.create(UINT256);
 
     private static final Function ERC_IS_APPROVED_FOR_ALL =
             new Function("isApprovedForAll(address,address)", BOOL);
@@ -393,7 +377,7 @@ public class DecodingFacade {
     private static final Bytes HAPI_ALLOWANCE_SELECTOR =
             Bytes.wrap(HAPI_ALLOWANCE_FUNCTION.selector());
     private static final ABIType<Tuple> HAPI_ALLOWANCE_DECODER =
-            TypeFactory.create(ADDRESS_TRIPLE_RAW_TYPE);
+            TypeFactory.create(ADDRESS_TRIO_RAW_TYPE);
 
     private static final Function HAPI_GET_APPROVED_FUNCTION =
             new Function("getApproved(address,uint256)", "(int,int)");
@@ -407,7 +391,7 @@ public class DecodingFacade {
     private static final Bytes HAPI_IS_APPROVED_FOR_ALL_SELECTOR =
             Bytes.wrap(HAPI_IS_APPROVED_FOR_ALL.selector());
     private static final ABIType<Tuple> HAPI_IS_APPROVED_FOR_ALL_DECODER =
-            TypeFactory.create(ADDRESS_TRIPLE_RAW_TYPE);
+            TypeFactory.create(ADDRESS_TRIO_RAW_TYPE);
 
     private static final Function HAPI_SET_APPROVAL_FOR_ALL =
             new Function("setApprovalForAll(address,address,bool)", INT);
@@ -454,6 +438,18 @@ public class DecodingFacade {
     private static final Bytes TOKEN_GET_CUSTOM_FEES_SELECTOR =
             Bytes.wrap(TOKEN_GET_CUSTOM_FEES_FUNCTION.selector());
     private static final ABIType<Tuple> TOKEN_GET_CUSTOM_FEES_DECODER = TypeFactory.create(BYTES32);
+
+    private static final Function IS_TOKEN_FUNCTION =
+            new Function("isToken(address)", INT_BOOL_PAIR);
+    private static final Bytes IS_TOKEN_FUNCTION_SELECTOR =
+            Bytes.wrap(IS_TOKEN_FUNCTION.selector());
+    private static final ABIType<Tuple> IS_TOKEN_DECODER = TypeFactory.create(BYTES32);
+
+    private static final Function GET_TOKEN_TYPE_FUNCTION =
+            new Function("getTokenType(address)", "(int,int32)");
+    private static final Bytes GET_TOKEN_TYPE_SELECTOR =
+            Bytes.wrap(GET_TOKEN_TYPE_FUNCTION.selector());
+    private static final ABIType<Tuple> GET_TOKEN_TYPE_DECODER = TypeFactory.create(BYTES32);
 
     @Inject
     public DecodingFacade() {
@@ -1070,8 +1066,22 @@ public class DecodingFacade {
         return new TokenGetCustomFeesWrapper(tokenID);
     }
 
+    public TokenInfoWrapper decodeIsToken(final Bytes input) {
+        final Tuple decodedArguments =
+                decodeFunctionCall(input, IS_TOKEN_FUNCTION_SELECTOR, IS_TOKEN_DECODER);
+        final var tokenID = convertAddressBytesToTokenID(decodedArguments.get(0));
+        return TokenInfoWrapper.forToken(tokenID);
+    }
+
+    public TokenInfoWrapper decodeGetTokenType(final Bytes input) {
+        final Tuple decodedArguments =
+                decodeFunctionCall(input, GET_TOKEN_TYPE_SELECTOR, GET_TOKEN_TYPE_DECODER);
+        final var tokenID = convertAddressBytesToTokenID(decodedArguments.get(0));
+        return TokenInfoWrapper.forToken(tokenID);
+    }
+
     private TokenCreateWrapper decodeTokenCreateWithoutFees(
-            final Tuple tokenCreateStruct,
+            @NotNull final Tuple tokenCreateStruct,
             final boolean isFungible,
             final BigInteger initSupply,
             final BigInteger decimals,
@@ -1170,7 +1180,7 @@ public class DecodingFacade {
     }
 
     private List<TokenKeyWrapper> decodeTokenKeys(
-            final Tuple[] tokenKeysTuples, final UnaryOperator<byte[]> aliasResolver) {
+            @NotNull final Tuple[] tokenKeysTuples, final UnaryOperator<byte[]> aliasResolver) {
         final List<TokenKeyWrapper> tokenKeys = new ArrayList<>(tokenKeysTuples.length);
         for (final var tokenKeyTuple : tokenKeysTuples) {
             final var keyType = (int) tokenKeyTuple.get(0);
@@ -1202,7 +1212,7 @@ public class DecodingFacade {
     }
 
     private TokenExpiryWrapper decodeTokenExpiry(
-            final Tuple expiryTuple, final UnaryOperator<byte[]> aliasResolver) {
+            @NotNull final Tuple expiryTuple, final UnaryOperator<byte[]> aliasResolver) {
         final var second = (long) expiryTuple.get(0);
         final var autoRenewAccount =
                 convertLeftPaddedAddressToAccountId(expiryTuple.get(1), aliasResolver);
@@ -1214,7 +1224,7 @@ public class DecodingFacade {
     }
 
     private List<FixedFeeWrapper> decodeFixedFees(
-            final Tuple[] fixedFeesTuples, final UnaryOperator<byte[]> aliasResolver) {
+            @NotNull final Tuple[] fixedFeesTuples, final UnaryOperator<byte[]> aliasResolver) {
         final List<FixedFeeWrapper> fixedFees = new ArrayList<>(fixedFeesTuples.length);
         for (final var fixedFeeTuple : fixedFeesTuples) {
             final var amount = (long) fixedFeeTuple.get(0);
@@ -1235,7 +1245,8 @@ public class DecodingFacade {
     }
 
     private List<FractionalFeeWrapper> decodeFractionalFees(
-            final Tuple[] fractionalFeesTuples, final UnaryOperator<byte[]> aliasResolver) {
+            @NotNull final Tuple[] fractionalFeesTuples,
+            final UnaryOperator<byte[]> aliasResolver) {
         final List<FractionalFeeWrapper> fractionalFees =
                 new ArrayList<>(fractionalFeesTuples.length);
         for (final var fractionalFeeTuple : fractionalFeesTuples) {
@@ -1259,7 +1270,7 @@ public class DecodingFacade {
     }
 
     private List<RoyaltyFeeWrapper> decodeRoyaltyFees(
-            final Tuple[] royaltyFeesTuples, final UnaryOperator<byte[]> aliasResolver) {
+            @NotNull final Tuple[] royaltyFeesTuples, final UnaryOperator<byte[]> aliasResolver) {
         final List<RoyaltyFeeWrapper> decodedRoyaltyFees =
                 new ArrayList<>(royaltyFeesTuples.length);
         for (final var royaltyFeeTuple : royaltyFeesTuples) {
@@ -1315,7 +1326,7 @@ public class DecodingFacade {
     }
 
     private Tuple decodeFunctionCall(
-            final Bytes input, final Bytes selector, final ABIType<Tuple> decoder) {
+            @NotNull final Bytes input, final Bytes selector, final ABIType<Tuple> decoder) {
         if (!selector.equals(input.slice(0, FUNCTION_SELECTOR_BYTES_LENGTH))) {
             throw new IllegalArgumentException(
                     "Selector does not match, expected "
@@ -1327,7 +1338,7 @@ public class DecodingFacade {
     }
 
     private static List<AccountID> decodeAccountIds(
-            final byte[][] accountBytesArray, final UnaryOperator<byte[]> aliasResolver) {
+            @NotNull final byte[][] accountBytesArray, final UnaryOperator<byte[]> aliasResolver) {
         final List<AccountID> accountIDs = new ArrayList<>();
         for (final var account : accountBytesArray) {
             accountIDs.add(convertLeftPaddedAddressToAccountId(account, aliasResolver));
@@ -1335,7 +1346,8 @@ public class DecodingFacade {
         return accountIDs;
     }
 
-    private static List<TokenID> decodeTokenIDsFromBytesArray(final byte[][] accountBytesArray) {
+    private static List<TokenID> decodeTokenIDsFromBytesArray(
+            @NotNull final byte[][] accountBytesArray) {
         final List<TokenID> accountIDs = new ArrayList<>();
         for (final var account : accountBytesArray) {
             accountIDs.add(convertAddressBytesToTokenID(account));
@@ -1344,7 +1356,7 @@ public class DecodingFacade {
     }
 
     private static AccountID convertLeftPaddedAddressToAccountId(
-            final byte[] leftPaddedAddress, final UnaryOperator<byte[]> aliasResolver) {
+            final byte[] leftPaddedAddress, @NotNull final UnaryOperator<byte[]> aliasResolver) {
         final var addressOrAlias =
                 Arrays.copyOfRange(leftPaddedAddress, ADDRESS_SKIP_BYTES_LENGTH, WORD_LENGTH);
         return accountIdFromEvmAddress(aliasResolver.apply(addressOrAlias));
@@ -1360,7 +1372,7 @@ public class DecodingFacade {
 
     private List<SyntheticTxnFactory.NftExchange> bindNftExchangesFrom(
             final TokenID tokenType,
-            final Tuple[] abiExchanges,
+            @NotNull final Tuple[] abiExchanges,
             final UnaryOperator<byte[]> aliasResolver) {
         final List<SyntheticTxnFactory.NftExchange> nftExchanges = new ArrayList<>();
         for (final var exchange : abiExchanges) {
@@ -1376,7 +1388,7 @@ public class DecodingFacade {
 
     private List<SyntheticTxnFactory.FungibleTokenTransfer> bindFungibleTransfersFrom(
             final TokenID tokenType,
-            final Tuple[] abiTransfers,
+            @NotNull final Tuple[] abiTransfers,
             final UnaryOperator<byte[]> aliasResolver) {
         final List<SyntheticTxnFactory.FungibleTokenTransfer> fungibleTransfers = new ArrayList<>();
         for (final var transfer : abiTransfers) {
@@ -1389,7 +1401,7 @@ public class DecodingFacade {
     }
 
     private void addApprovedAdjustment(
-            final List<SyntheticTxnFactory.FungibleTokenTransfer> fungibleTransfers,
+            @NotNull final List<SyntheticTxnFactory.FungibleTokenTransfer> fungibleTransfers,
             final TokenID tokenId,
             final AccountID accountId,
             final long amount) {

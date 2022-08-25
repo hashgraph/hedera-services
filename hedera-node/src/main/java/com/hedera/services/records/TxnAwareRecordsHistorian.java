@@ -15,12 +15,16 @@
  */
 package com.hedera.services.records;
 
+import static com.hedera.services.legacy.proto.utils.ByteStringUtils.unwrapUnsafelyIfPossible;
 import static com.hedera.services.legacy.proto.utils.CommonUtils.noThrowSha384HashOf;
 import static com.hedera.services.state.submerkle.TxnId.USER_TRANSACTION_NONCE;
 import static com.hedera.services.utils.MiscUtils.nonNegativeNanosOffset;
 import static com.hedera.services.utils.MiscUtils.synthFromBody;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_CHILD_RECORDS_EXCEEDED;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.hedera.services.context.TransactionContext;
+import com.hedera.services.exceptions.ResourceLimitException;
 import com.hedera.services.state.EntityCreator;
 import com.hedera.services.state.expiry.ExpiryManager;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
@@ -28,10 +32,7 @@ import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.stream.RecordStreamObject;
 import com.hedera.services.stream.proto.TransactionSidecarRecord;
 import com.hedera.services.utils.MiscUtils;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.Transaction;
-import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.api.proto.java.TransactionID;
+import com.hederahashgraph.api.proto.java.*;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -106,11 +107,16 @@ public class TxnAwareRecordsHistorian implements RecordsHistorian {
         final var consensusNow = txnCtx.consensusTime();
         final var topLevel = txnCtx.recordSoFar();
         final var accessor = txnCtx.accessor();
-        final var sidecars = txnCtx.sidecars();
-        timestampSidecars(sidecars, consensusNow);
+        List<TransactionSidecarRecord.Builder> sidecars;
+        if (txnCtx.sidecars().isEmpty()) {
+            sidecars = Collections.emptyList();
+        } else {
+            sidecars = new ArrayList<>(txnCtx.sidecars());
+            timestampSidecars(sidecars, consensusNow);
+        }
+
         final var numChildren =
                 (short) (precedingChildRecords.size() + followingChildRecords.size());
-
         finalizeChildRecords(consensusNow, topLevel);
         final var topLevelRecord = topLevel.setNumChildRecords(numChildren).build();
         topLevelStreamObj =
@@ -172,14 +178,8 @@ public class TxnAwareRecordsHistorian implements RecordsHistorian {
             final TransactionBody.Builder syntheticBody,
             final ExpirableTxnRecord.Builder recordSoFar,
             final List<TransactionSidecarRecord.Builder> sidecars) {
-        if (!consensusTimeTracker.isAllowableFollowingOffset(followingChildRecords.size() + 1L)) {
-            log.error(
-                    "Cannot create more following records! currentCount={} consensusTimeTracker={}",
-                    followingChildRecords.size(),
-                    consensusTimeTracker);
-            throw new IllegalStateException("Cannot create more following records!");
-        }
-
+        revertIfNot(
+                consensusTimeTracker.isAllowableFollowingOffset(followingChildRecords.size() + 1L));
         final var inProgress =
                 new InProgressChildRecord(sourceId, syntheticBody, recordSoFar, sidecars);
         followingChildRecords.add(inProgress);
@@ -190,14 +190,8 @@ public class TxnAwareRecordsHistorian implements RecordsHistorian {
             final int sourceId,
             final TransactionBody.Builder syntheticTxn,
             final ExpirableTxnRecord.Builder recordSoFar) {
-        if (!consensusTimeTracker.isAllowablePrecedingOffset(precedingChildRecords.size() + 1L)) {
-            log.error(
-                    "Cannot create more preceding records! currentCount={} consensusTimeTracker={}",
-                    precedingChildRecords.size(),
-                    consensusTimeTracker);
-            throw new IllegalStateException("Cannot create more preceding records!");
-        }
-
+        revertIfNot(
+                consensusTimeTracker.isAllowablePrecedingOffset(precedingChildRecords.size() + 1L));
         final var inProgress =
                 new InProgressChildRecord(
                         sourceId, syntheticTxn, recordSoFar, Collections.emptyList());
@@ -275,7 +269,8 @@ public class TxnAwareRecordsHistorian implements RecordsHistorian {
 
             final var synthTxn = synthFrom(inProgress.syntheticBody(), child);
             final var synthHash =
-                    noThrowSha384HashOf(synthTxn.getSignedTransactionBytes().toByteArray());
+                    noThrowSha384HashOf(
+                            unwrapUnsafelyIfPossible(synthTxn.getSignedTransactionBytes()));
             child.setTxnHash(synthHash);
             final var sidecars = inProgress.sidecars();
             timestampSidecars(sidecars, childConsTime);
@@ -328,5 +323,23 @@ public class TxnAwareRecordsHistorian implements RecordsHistorian {
         for (final var sidecar : sidecars) {
             sidecar.setConsensusTimestamp(commonTimestamp);
         }
+    }
+
+    private void revertIfNot(final boolean allowable) {
+        if (!allowable) {
+            precedingChildRecords.forEach(rec -> rec.recordBuilder().revert());
+            followingChildRecords.forEach(rec -> rec.recordBuilder().revert());
+            throw new ResourceLimitException(MAX_CHILD_RECORDS_EXCEEDED);
+        }
+    }
+
+    @VisibleForTesting
+    List<InProgressChildRecord> precedingChildRecords() {
+        return precedingChildRecords;
+    }
+
+    @VisibleForTesting
+    List<InProgressChildRecord> followingChildRecords() {
+        return followingChildRecords;
     }
 }

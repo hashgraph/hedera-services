@@ -15,42 +15,7 @@
  */
 package com.hedera.services.contracts;
 
-import static com.hedera.services.contracts.ParsingConstants.ADDRESS;
-import static com.hedera.services.contracts.ParsingConstants.ARRAY_BRACKETS;
-import static com.hedera.services.contracts.ParsingConstants.BOOL;
-import static com.hedera.services.contracts.ParsingConstants.FIXED_FEE;
-import static com.hedera.services.contracts.ParsingConstants.FRACTIONAL_FEE;
-import static com.hedera.services.contracts.ParsingConstants.FUNGIBLE_TOKEN_INFO;
-import static com.hedera.services.contracts.ParsingConstants.INT32;
-import static com.hedera.services.contracts.ParsingConstants.NON_FUNGIBLE_TOKEN_INFO;
-import static com.hedera.services.contracts.ParsingConstants.RESPONSE_STATUS_AT_BEGINNING;
-import static com.hedera.services.contracts.ParsingConstants.ROYALTY_FEE;
-import static com.hedera.services.contracts.ParsingConstants.STRING;
-import static com.hedera.services.contracts.ParsingConstants.TOKEN_INFO;
-import static com.hedera.services.contracts.ParsingConstants.UINT256;
-import static com.hedera.services.contracts.ParsingConstants.UINT8;
-import static com.hedera.services.contracts.ParsingConstants.allowanceOfType;
-import static com.hedera.services.contracts.ParsingConstants.approveOfType;
-import static com.hedera.services.contracts.ParsingConstants.balanceOfType;
-import static com.hedera.services.contracts.ParsingConstants.burnReturnType;
-import static com.hedera.services.contracts.ParsingConstants.createReturnType;
-import static com.hedera.services.contracts.ParsingConstants.decimalsType;
-import static com.hedera.services.contracts.ParsingConstants.ercTransferType;
-import static com.hedera.services.contracts.ParsingConstants.getApprovedType;
-import static com.hedera.services.contracts.ParsingConstants.getFungibleTokenInfoType;
-import static com.hedera.services.contracts.ParsingConstants.getNonFungibleTokenInfoType;
-import static com.hedera.services.contracts.ParsingConstants.getTokenCustomFeesType;
-import static com.hedera.services.contracts.ParsingConstants.getTokenInfoType;
-import static com.hedera.services.contracts.ParsingConstants.hapiAllowanceOfType;
-import static com.hedera.services.contracts.ParsingConstants.hapiGetApprovedType;
-import static com.hedera.services.contracts.ParsingConstants.hapiIsApprovedForAllType;
-import static com.hedera.services.contracts.ParsingConstants.isApprovedForAllType;
-import static com.hedera.services.contracts.ParsingConstants.mintReturnType;
-import static com.hedera.services.contracts.ParsingConstants.nameType;
-import static com.hedera.services.contracts.ParsingConstants.notSpecifiedType;
-import static com.hedera.services.contracts.ParsingConstants.ownerOfType;
-import static com.hedera.services.contracts.ParsingConstants.symbolType;
-import static com.hedera.services.contracts.ParsingConstants.tokenUriType;
+import static com.hedera.services.contracts.ParsingConstants.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.esaulpaugh.headlong.abi.TupleType;
@@ -93,14 +58,18 @@ class ParsingConstantsTest {
 
     @Test
     void tupleTypesValidation() {
-        assertEquals(allowanceOfType, TupleType.parse(UINT256));
-        assertEquals(approveOfType, TupleType.parse(BOOL));
-        assertEquals(balanceOfType, TupleType.parse(UINT256));
-        assertEquals(burnReturnType, TupleType.parse("(int32,uint64)"));
-        assertEquals(createReturnType, TupleType.parse("(int32,address)"));
+        assertEquals(bigIntegerTuple, TupleType.parse(UINT256));
+        assertEquals(booleanTuple, TupleType.parse(BOOL));
         assertEquals(decimalsType, TupleType.parse(UINT8));
-        assertEquals(ercTransferType, TupleType.parse(BOOL));
-        assertEquals(getApprovedType, TupleType.parse(ADDRESS));
+        assertEquals(addressTuple, TupleType.parse(ADDRESS));
+        assertEquals(stringTuple, TupleType.parse(STRING));
+        assertEquals(notSpecifiedType, TupleType.parse(INT32));
+        assertEquals(intBoolTuple, TupleType.parse(INT_BOOL_PAIR_RETURN_TYPE));
+        assertEquals(burnReturnType, TupleType.parse("(int32,uint64)"));
+        assertEquals(intAddressTuple, TupleType.parse("(int32,address)"));
+        assertEquals(mintReturnType, TupleType.parse("(int32,uint64,int64[])"));
+        assertEquals(hapiAllowanceOfType, TupleType.parse("(int32,uint256)"));
+        assertEquals(hapiGetApprovedType, TupleType.parse("(int32,bytes32)"));
         assertEquals(
                 getFungibleTokenInfoType,
                 TupleType.parse(RESPONSE_STATUS_AT_BEGINNING + FUNGIBLE_TOKEN_INFO + ")"));
@@ -122,15 +91,5 @@ class ParsingConstantsTest {
                                 + ROYALTY_FEE
                                 + ARRAY_BRACKETS
                                 + ")"));
-        assertEquals(isApprovedForAllType, TupleType.parse(BOOL));
-        assertEquals(mintReturnType, TupleType.parse("(int32,uint64,int64[])"));
-        assertEquals(nameType, TupleType.parse(STRING));
-        assertEquals(notSpecifiedType, TupleType.parse(INT32));
-        assertEquals(ownerOfType, TupleType.parse(ADDRESS));
-        assertEquals(symbolType, TupleType.parse(STRING));
-        assertEquals(tokenUriType, TupleType.parse(STRING));
-        assertEquals(hapiAllowanceOfType, TupleType.parse("(int32,uint256)"));
-        assertEquals(hapiGetApprovedType, TupleType.parse("(int32,bytes32)"));
-        assertEquals(hapiIsApprovedForAllType, TupleType.parse("(int32,bool)"));
     }
 }

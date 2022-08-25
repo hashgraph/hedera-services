@@ -15,7 +15,6 @@
  */
 package com.hedera.services.utils.accessors;
 
-import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.MoreObjects;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.primitives.StateView;
@@ -39,38 +38,48 @@ import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.swirlds.common.crypto.TransactionSignature;
-import com.swirlds.common.system.transaction.SwirldTransaction;
 import java.util.Map;
 import java.util.function.Function;
 
 /**
- * Encapsulates access to several commonly referenced parts of a {@link
- * com.swirlds.common.system.transaction.SwirldTransaction} whose contents is <i>supposed</i> to be
- * a Hedera Services gRPC {@link Transaction}. (The constructor of this class immediately tries to
+ * Encapsulates access to commonly referenced parts of a {@link
+ * com.swirlds.common.system.transaction.Transaction} whose contents is <i>supposed</i> to be a
+ * Hedera Services gRPC {@link Transaction}. (The constructor of this class immediately tries to
  * parse the {@code byte[]} contents of the txn, and propagates any protobuf exceptions
  * encountered.)
  */
 public class PlatformTxnAccessor implements SwirldsTxnAccessor {
-    private final SwirldTransaction platformTxn;
-    private TxnAccessor delegate;
+    private final TxnAccessor delegate;
+    private final PubKeyToSigBytes pubKeyToSigBytes;
+    private final com.swirlds.common.system.transaction.Transaction platformTxn;
+
     private LinkedRefs linkedRefs;
     private ResponseCodeEnum expandedSigStatus;
-    private PubKeyToSigBytes pubKeyToSigBytes;
     private RationalizedSigMeta sigMeta = null;
 
-    protected PlatformTxnAccessor(final TxnAccessor delegate, SwirldTransaction platformTxn) {
+    protected PlatformTxnAccessor(
+            final TxnAccessor delegate,
+            final com.swirlds.common.system.transaction.Transaction platformTxn) {
         this.platformTxn = platformTxn;
         this.delegate = delegate;
         pubKeyToSigBytes = new PojoSigMapPubKeyToSigBytes(delegate.getSigMap());
     }
 
     public static PlatformTxnAccessor from(
-            final TxnAccessor delegate, final SwirldTransaction platformTxn) {
+            final TxnAccessor delegate,
+            final com.swirlds.common.system.transaction.Transaction platformTxn) {
         return new PlatformTxnAccessor(delegate, platformTxn);
     }
 
+    public static PlatformTxnAccessor from(
+            final com.swirlds.common.system.transaction.Transaction platformTxn)
+            throws InvalidProtocolBufferException {
+        return new PlatformTxnAccessor(
+                SignedTxnAccessor.from(platformTxn.getContents()), platformTxn);
+    }
+
     @Override
-    public SwirldTransaction getPlatformTxn() {
+    public com.swirlds.common.system.transaction.Transaction getPlatformTxn() {
         return platformTxn;
     }
 
@@ -321,12 +330,5 @@ public class PlatformTxnAccessor implements SwirldsTxnAccessor {
     @Override
     public StateView getStateView() {
         return delegate.getStateView();
-    }
-
-    @VisibleForTesting
-    public static PlatformTxnAccessor from(final SwirldTransaction platformTxn)
-            throws InvalidProtocolBufferException {
-        return new PlatformTxnAccessor(
-                SignedTxnAccessor.from(platformTxn.getContents()), platformTxn);
     }
 }

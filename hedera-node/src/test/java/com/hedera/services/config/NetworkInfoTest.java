@@ -15,6 +15,7 @@
  */
 package com.hedera.services.config;
 
+import static com.hedera.services.context.properties.PropertyNames.LEDGER_ID;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.given;
@@ -42,7 +43,7 @@ class NetworkInfoTest {
         final var bytes = new byte[] {4};
         final var ledgerId = "0x04";
 
-        given(properties.getStringProperty("ledger.id")).willReturn(ledgerId);
+        given(properties.getStringProperty(LEDGER_ID)).willReturn(ledgerId);
         final var actual = subject.ledgerId();
 
         assertArrayEquals(bytes, actual.toByteArray());
@@ -54,13 +55,13 @@ class NetworkInfoTest {
         final var invalidLedgerId2 = "0xv04";
         final var invalidLedgerId3 = "0xZZ04";
 
-        given(properties.getStringProperty("ledger.id")).willReturn(invalidLedgerId1);
+        given(properties.getStringProperty(LEDGER_ID)).willReturn(invalidLedgerId1);
         assertThrows(IllegalArgumentException.class, () -> subject.ledgerId());
 
-        given(properties.getStringProperty("ledger.id")).willReturn(invalidLedgerId2);
+        given(properties.getStringProperty(LEDGER_ID)).willReturn(invalidLedgerId2);
         assertThrows(IllegalArgumentException.class, () -> subject.ledgerId());
 
-        given(properties.getStringProperty("ledger.id")).willReturn(invalidLedgerId3);
+        given(properties.getStringProperty(LEDGER_ID)).willReturn(invalidLedgerId3);
         assertThrows(IllegalArgumentException.class, () -> subject.ledgerId());
     }
 }
