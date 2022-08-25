@@ -83,6 +83,7 @@ public class StandardProcessLogic implements ProcessLogic {
     public void incorporateConsensusTxn(
             Transaction platformTxn, Instant consensusTime, long submittingMember) {
         try {
+            log.error("HEREEEEEEEEEEEEEEEEEEEEEEEEEEEEEE" + platformTxn.getSize());
             final var accessor = expandHandleSpan.accessorFor(platformTxn);
             accessor.setStateView(workingView);
             if (!invariantChecks.holdFor(accessor, consensusTime, submittingMember)) {

@@ -25,6 +25,7 @@ import static org.hyperledger.besu.evm.MainnetEVMs.registerLondonOperations;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.contracts.execution.traceability.HederaTracer;
 import com.hedera.services.exceptions.InvalidTransactionException;
+import com.hedera.services.pricing.BaseOperationUsage;
 import com.hedera.services.store.contracts.HederaMutableWorldState;
 import com.hedera.services.store.contracts.HederaWorldState;
 import com.hedera.services.store.models.Account;
@@ -41,6 +42,8 @@ import java.util.Map;
 import java.util.Set;
 import javax.annotation.Nullable;
 import org.apache.commons.lang3.tuple.Pair;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.hyperledger.besu.datatypes.Address;
@@ -70,6 +73,7 @@ import org.hyperledger.besu.evm.tracing.OperationTracer;
  * Account)} method that handles the end-to-end execution of a EVM transaction.
  */
 abstract class EvmTxProcessor {
+    static final Logger log = LogManager.getLogger(EvmTxProcessor.class);
     private static final int MAX_STACK_SIZE = 1024;
     private static final int MAX_CODE_SIZE = 0x6000;
     private static final List<ContractValidationRule> VALIDATION_RULES =
@@ -342,6 +346,7 @@ abstract class EvmTxProcessor {
 
         // Externalise result
         if (initialFrame.getState() == MessageFrame.State.COMPLETED_SUCCESS) {
+            log.error("cmon");
             return TransactionProcessingResult.successful(
                     initialFrame.getLogs(),
                     gasUsedByTransaction,

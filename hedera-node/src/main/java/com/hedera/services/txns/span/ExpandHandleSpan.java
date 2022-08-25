@@ -63,7 +63,7 @@ public class ExpandHandleSpan {
     }
 
     public SwirldsTxnAccessor accessorFor(
-            final com.swirlds.common.system.transaction.Transaction transaction)
+            final Transaction transaction)
             throws InvalidProtocolBufferException {
         final SwirldsTxnAccessor cachedAccessor = transaction.getMetadata();
         if (cachedAccessor != null) {
