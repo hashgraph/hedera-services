@@ -400,7 +400,7 @@ class TokenUpdateLogicTest {
     void updateTokenExpiryInfoHappyPath() {
         // given
         givenTokenUpdateLogic(true);
-        givenValidTransactionBody(true);
+        givenValidTransactionBody(true, false);
         givenContextForSuccessFullCalls();
         given(ledgers.accounts()).willReturn(accounts);
         given(store.get(fungible)).willReturn(merkleToken);
@@ -417,7 +417,7 @@ class TokenUpdateLogicTest {
     void updateTokenExpiryInfoFailsForInvalidExpirationTime() {
         // given
         givenTokenUpdateLogic(true);
-        givenValidTransactionBody(true);
+        givenValidTransactionBody(true, false);
         givenContextForSuccessFullCalls();
         given(ledgers.accounts()).willReturn(accounts);
         given(store.get(fungible)).willReturn(merkleToken);
@@ -435,7 +435,7 @@ class TokenUpdateLogicTest {
     void updateTokenExpiryInfoFailsForExpiredAccount() {
         // given
         givenTokenUpdateLogic(true);
-        givenValidTransactionBody(true);
+        givenValidTransactionBody(true, false);
         given(merkleToken.hasAdminKey()).willReturn(true);
         given(validator.isValidExpiry(EXPIRY)).willReturn(true);
         given(validator.expiryStatusGiven(accounts, account))
@@ -486,7 +486,7 @@ class TokenUpdateLogicTest {
     void updateTokenExpiryInfoFailsForMissingToken() {
         // given
         givenTokenUpdateLogic(true);
-        givenValidTransactionBody(true);
+        givenValidTransactionBody(true, false);
         given(store.resolve(op.getToken())).willReturn(MISSING_TOKEN);
 
         Assertions.assertThrows(
@@ -496,7 +496,7 @@ class TokenUpdateLogicTest {
     @Test
     void updateTokenExpiryInfoFailsForDeletedToken() {
         givenTokenUpdateLogic(true);
-        givenValidTransactionBody(true);
+        givenValidTransactionBody(true, false);
         given(merkleToken.hasAdminKey()).willReturn(true);
         given(validator.isValidExpiry(EXPIRY)).willReturn(true);
         given(store.get(fungible)).willReturn(merkleToken);
@@ -509,7 +509,7 @@ class TokenUpdateLogicTest {
     @Test
     void updateTokenExpiryInfoFailsForPausedToken() {
         givenTokenUpdateLogic(true);
-        givenValidTransactionBody(true);
+        givenValidTransactionBody(true, false);
         given(merkleToken.hasAdminKey()).willReturn(true);
         given(validator.isValidExpiry(EXPIRY)).willReturn(true);
         given(store.get(fungible)).willReturn(merkleToken);
@@ -523,7 +523,7 @@ class TokenUpdateLogicTest {
     @Test
     void updateTokenExpiryInfoFailsForMissingAdminKey() {
         givenTokenUpdateLogic(true);
-        givenValidTransactionBody(true);
+        givenValidTransactionBody(true, false);
         given(merkleToken.hasAdminKey()).willReturn(false);
         given(validator.isValidExpiry(EXPIRY)).willReturn(true);
         given(store.get(fungible)).willReturn(merkleToken);

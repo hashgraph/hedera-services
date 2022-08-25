@@ -109,7 +109,7 @@ public final class ParsingConstants {
     public static final TupleType hapiAllowanceOfType = TupleType.parse("(int32,uint256)");
     public static final TupleType hapiGetApprovedType = TupleType.parse("(int32,bytes32)");
     public static final TupleType getTokenExpiryInfoType =
-        TupleType.parse(RESPONSE_STATUS_AT_BEGINNING + EXPIRY + ")");
+            TupleType.parse(RESPONSE_STATUS_AT_BEGINNING + EXPIRY + ")");
 
     public static final TupleType notSpecifiedType = TupleType.parse(INT32);
 
