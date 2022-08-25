@@ -326,8 +326,10 @@ public class MerkleNetworkContext extends PartialMerkleLeaf implements MerkleLea
             updateCongestionStartsFrom(multiplierSource);
             multiplierSource = null;
         }
-        updateExpirySnapshotFrom(expiryThrottle);
-        expiryThrottle = null;
+        if (expiryThrottle != null) {
+            updateExpirySnapshotFrom(expiryThrottle);
+            expiryThrottle = null;
+        }
 
         setImmutable(true);
         return new MerkleNetworkContext(this);
@@ -675,10 +677,10 @@ public class MerkleNetworkContext extends PartialMerkleLeaf implements MerkleLea
         gasThrottleUsageSnapshot = throttling.gasLimitThrottle().usageSnapshot();
     }
 
-    void updateExpirySnapshotFrom(@Nullable final ExpiryThrottle expiryThrottle) {
+    void updateExpirySnapshotFrom(final ExpiryThrottle expiryThrottle) {
         throwIfImmutable("Cannot update expiry usage snapshots on an immutable context");
-        expiryUsageSnapshot =
-                (expiryThrottle != null) ? expiryThrottle.getThrottleSnapshot() : null;
+        final var officialSnapshot = expiryThrottle.getThrottleSnapshot();
+        expiryUsageSnapshot = (officialSnapshot != null) ? officialSnapshot : NEVER_USED_SNAPSHOT;
     }
 
     void updateCongestionStartsFrom(FeeMultiplierSource feeMultiplierSource) {
