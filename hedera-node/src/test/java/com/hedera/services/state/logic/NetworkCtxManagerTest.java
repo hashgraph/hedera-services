@@ -78,8 +78,7 @@ class NetworkCtxManagerTest {
     @Mock private MiscRunningAvgs runningAvgs;
     @Mock private EndOfStakingPeriodCalculator endOfStakingPeriodCalculator;
     @Mock private PropertySource propertySource;
-    @Mock
-    private ExpiryThrottle expiryThrottle;
+    @Mock private ExpiryThrottle expiryThrottle;
 
     private NetworkCtxManager subject;
 

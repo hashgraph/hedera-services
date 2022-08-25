@@ -375,7 +375,8 @@ public class MerkleNetworkContext extends PartialMerkleLeaf implements MerkleLea
                     final var lastExpiryUsage = readNullable(in, RichInstant::from);
                     expiryUsageSnapshot =
                             new DeterministicThrottle.UsageSnapshot(
-                                    expiryCapacityUsed, (lastExpiryUsage == null) ? null : lastExpiryUsage.toJava());
+                                    expiryCapacityUsed,
+                                    (lastExpiryUsage == null) ? null : lastExpiryUsage.toJava());
                 }
             }
             blockHashes.clear();
@@ -568,7 +569,8 @@ public class MerkleNetworkContext extends PartialMerkleLeaf implements MerkleLea
         }
     }
 
-    private void appendDesc(final StringBuilder sb, final DeterministicThrottle.UsageSnapshot snapshot) {
+    private void appendDesc(
+            final StringBuilder sb, final DeterministicThrottle.UsageSnapshot snapshot) {
         sb.append(LINE_WRAP)
                 .append(snapshot.used())
                 .append(" used (last decision time ")

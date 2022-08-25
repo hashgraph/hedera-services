@@ -36,9 +36,9 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
- * A throttle to be used to control usage of {@link com.swirlds.merkle.map.MerkleMap} and
- * {@link com.swirlds.virtualmap.VirtualMap} objects during expiration work (auto-renewal
- * and auto-removal).
+ * A throttle to be used to control usage of {@link com.swirlds.merkle.map.MerkleMap} and {@link
+ * com.swirlds.virtualmap.VirtualMap} objects during expiration work (auto-renewal and
+ * auto-removal).
  */
 @Singleton
 public class ExpiryThrottle {

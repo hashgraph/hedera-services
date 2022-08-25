@@ -18,7 +18,8 @@ package com.hedera.services.throttling;
 import com.hedera.services.sysfiles.domain.throttling.ThrottleBucket;
 
 /**
- * Wrapper class so that Jackson will be able to infer the type of enums used in the expiry throttle bucket.
+ * Wrapper class so that Jackson will be able to infer the type of enums used in the expiry throttle
+ * bucket.
  */
 public class ExpiryThrottlePojo {
     private ThrottleBucket<MapAccessType> bucket;

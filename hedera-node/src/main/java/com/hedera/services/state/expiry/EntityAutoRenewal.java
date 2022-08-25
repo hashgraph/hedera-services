@@ -25,12 +25,11 @@ import com.hedera.services.state.expiry.renewal.RenewalProcess;
 import com.hedera.services.state.logic.NetworkCtxManager;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.submerkle.SequenceNumber;
+import com.hedera.services.throttling.ExpiryThrottle;
 import java.time.Instant;
 import java.util.function.Supplier;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-
-import com.hedera.services.throttling.ExpiryThrottle;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 

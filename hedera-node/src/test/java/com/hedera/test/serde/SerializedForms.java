@@ -116,9 +116,9 @@ public class SerializedForms {
 
     private static void generateSerializedData() {
         GENERATOR_MAPPING.get(MerkleNetworkContext.class).run();
-//        for (var entry : GENERATOR_MAPPING.entrySet()) {
-//            entry.getValue().run();
-//        }
+        //        for (var entry : GENERATOR_MAPPING.entrySet()) {
+        //            entry.getValue().run();
+        //        }
     }
 
     private static <T extends SelfSerializable> Map.Entry<Class<T>, Runnable> entry(
