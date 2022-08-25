@@ -21,6 +21,7 @@ import static com.hedera.services.state.enums.TokenType.FUNGIBLE_COMMON;
 import static com.hedera.services.state.enums.TokenType.NON_FUNGIBLE_UNIQUE;
 import static com.hedera.services.store.tokens.TokenStore.MISSING_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CURRENT_TREASURY_STILL_OWNS_NFTS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -160,7 +161,7 @@ class TokenUpdateLogicTest {
     }
 
     @Test
-    void updateTokenForFungibleTokenFailsWhenTransferingBetweenTreasuries() {
+    void updateTokenForFungibleTokenFailsWhenTransferringBetweenTreasuries() {
         // given
         givenTokenUpdateLogic(true);
         givenValidTransactionBody(true, true);
@@ -174,7 +175,7 @@ class TokenUpdateLogicTest {
         given(ledgers.nfts()).willReturn(nfts);
         // then
         Assertions.assertThrows(
-                InvalidTransactionException.class, () -> subject.updateToken(op, CONSENSUS_TIME));
+                InvalidTransactionException.class, () -> subject.updateToken(op, CONSENSUS_TIME), FAIL_INVALID.name());
     }
 
     @Test
@@ -203,7 +204,7 @@ class TokenUpdateLogicTest {
         given(store.autoAssociate(any(), any())).willReturn(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT);
         // then
         Assertions.assertThrows(
-                InvalidTransactionException.class, () -> subject.updateToken(op, CONSENSUS_TIME));
+                InvalidTransactionException.class, () -> subject.updateToken(op, CONSENSUS_TIME), TOKEN_NOT_ASSOCIATED_TO_ACCOUNT.name());
     }
 
     @Test
@@ -223,7 +224,7 @@ class TokenUpdateLogicTest {
         given(tokenRels.get(tokenRel, TOKEN_BALANCE)).willReturn(10L);
         // then
         Assertions.assertThrows(
-                InvalidTransactionException.class, () -> subject.updateToken(op, CONSENSUS_TIME));
+                InvalidTransactionException.class, () -> subject.updateToken(op, CONSENSUS_TIME), CURRENT_TREASURY_STILL_OWNS_NFTS.name());
     }
 
     @Test
@@ -270,7 +271,7 @@ class TokenUpdateLogicTest {
         given(store.unfreeze(account, fungible)).willReturn(INVALID_ACCOUNT_ID);
         // then
         Assertions.assertThrows(
-                InvalidTransactionException.class, () -> subject.updateToken(op, CONSENSUS_TIME));
+                InvalidTransactionException.class, () -> subject.updateToken(op, CONSENSUS_TIME), INVALID_ACCOUNT_ID.name());
     }
 
     @Test
@@ -290,7 +291,7 @@ class TokenUpdateLogicTest {
 
         // then
         Assertions.assertThrows(
-                InvalidTransactionException.class, () -> subject.updateToken(op, CONSENSUS_TIME));
+                InvalidTransactionException.class, () -> subject.updateToken(op, CONSENSUS_TIME), FAIL_INVALID.name());
     }
 
     @Test
@@ -372,7 +373,7 @@ class TokenUpdateLogicTest {
 
         // then
         Assertions.assertThrows(
-                InvalidTransactionException.class, () -> subject.updateToken(op, CONSENSUS_TIME));
+                InvalidTransactionException.class, () -> subject.updateToken(op, CONSENSUS_TIME), CURRENT_TREASURY_STILL_OWNS_NFTS.name());
     }
 
     @Test
@@ -392,7 +393,7 @@ class TokenUpdateLogicTest {
         // then
 
         Assertions.assertThrows(
-                InvalidTransactionException.class, () -> subject.updateToken(op, CONSENSUS_TIME));
+                InvalidTransactionException.class, () -> subject.updateToken(op, CONSENSUS_TIME), FAIL_INVALID.name());
     }
 
     private void givenContextForSuccessFullCalls() {
