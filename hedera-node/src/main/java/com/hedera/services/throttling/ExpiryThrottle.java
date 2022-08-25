@@ -117,6 +117,7 @@ public class ExpiryThrottle {
     }
 
     private int requiredOps(final List<MapAccessType> accessTypes) {
+        System.out.println("BOOP");
         var ans = 0;
         for (final var accessType : accessTypes) {
             ans += accessReqs.get(accessType);

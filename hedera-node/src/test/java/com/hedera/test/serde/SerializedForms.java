@@ -115,9 +115,10 @@ public class SerializedForms {
     }
 
     private static void generateSerializedData() {
-        for (var entry : GENERATOR_MAPPING.entrySet()) {
-            entry.getValue().run();
-        }
+        GENERATOR_MAPPING.get(MerkleNetworkContext.class).run();
+//        for (var entry : GENERATOR_MAPPING.entrySet()) {
+//            entry.getValue().run();
+//        }
     }
 
     private static <T extends SelfSerializable> Map.Entry<Class<T>, Runnable> entry(

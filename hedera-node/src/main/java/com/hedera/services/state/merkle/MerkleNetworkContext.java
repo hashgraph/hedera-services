@@ -370,6 +370,13 @@ public class MerkleNetworkContext extends PartialMerkleLeaf implements MerkleLea
                 totalStakedRewardStart = in.readLong();
                 totalStakedStart = in.readLong();
                 pendingRewards = in.readLong();
+                if (version >= RELEASE_0300_VERSION) {
+                    final var expiryCapacityUsed = in.readLong();
+                    final var lastExpiryUsage = readNullable(in, RichInstant::from);
+                    expiryUsageSnapshot =
+                            new DeterministicThrottle.UsageSnapshot(
+                                    expiryCapacityUsed, (lastExpiryUsage == null) ? null : lastExpiryUsage.toJava());
+                }
             }
             blockHashes.clear();
             in.readSerializable(true, () -> blockHashes);
@@ -485,6 +492,8 @@ public class MerkleNetworkContext extends PartialMerkleLeaf implements MerkleLea
                 + entitiesScannedThisSecond
                 + "\n  Entities touched last consensus second     :: "
                 + entitiesTouchedThisSecond
+                + "\n  Expiry work usage snapshot is              :: "
+                + expirySnapshotDesc()
                 + "\n  Throttle usage snapshots are               :: "
                 + usageSnapshotsDesc()
                 + "\n  Congestion level start times are           :: "
@@ -532,17 +541,25 @@ public class MerkleNetworkContext extends PartialMerkleLeaf implements MerkleLea
         return (firstConsTimeOfCurrentBlock == null) ? Instant.EPOCH : firstConsTimeOfCurrentBlock;
     }
 
+    private String expirySnapshotDesc() {
+        if (expiryUsageSnapshot == NEVER_USED_SNAPSHOT) {
+            System.out.println("BOOP");
+            return NOT_AVAILABLE_SUFFIX;
+        } else {
+            System.out.println("BEEP");
+            final var sb = new StringBuilder();
+            appendDesc(sb, expiryUsageSnapshot);
+            return sb.toString();
+        }
+    }
+
     private String usageSnapshotsDesc() {
         if (usageSnapshots.length == 0) {
             return NOT_AVAILABLE_SUFFIX;
         } else {
             final var sb = new StringBuilder();
             for (var snapshot : usageSnapshots) {
-                sb.append(LINE_WRAP)
-                        .append(snapshot.used())
-                        .append(" used (last decision time ")
-                        .append(reprOf(snapshot.lastDecisionTime()))
-                        .append(")");
+                appendDesc(sb, snapshot);
             }
             sb.append(LINE_WRAP)
                     .append(gasThrottleUsageSnapshot.used())
@@ -551,6 +568,14 @@ public class MerkleNetworkContext extends PartialMerkleLeaf implements MerkleLea
                     .append(")");
             return sb.toString();
         }
+    }
+
+    private void appendDesc(final StringBuilder sb, final DeterministicThrottle.UsageSnapshot snapshot) {
+        sb.append(LINE_WRAP)
+                .append(snapshot.used())
+                .append(" used (last decision time ")
+                .append(reprOf(snapshot.lastDecisionTime()))
+                .append(")");
     }
 
     private String congestionStartsDesc() {
@@ -697,6 +722,9 @@ public class MerkleNetworkContext extends PartialMerkleLeaf implements MerkleLea
         out.writeLong(totalStakedRewardStart);
         out.writeLong(totalStakedStart);
         out.writeLong(pendingRewards);
+        out.writeLong(expiryUsageSnapshot.used());
+        writeNullable(
+                fromJava(expiryUsageSnapshot.lastDecisionTime()), out, RichInstant::serialize);
     }
 
     private void reset(

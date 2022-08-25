@@ -17,12 +17,7 @@ package com.hedera.services.state.merkle;
 
 import static com.hedera.services.ServicesState.EMPTY_HASH;
 import static com.hedera.services.contracts.execution.BlockMetaSource.UNAVAILABLE_BLOCK_HASH;
-import static com.hedera.services.state.merkle.MerkleNetworkContext.CURRENT_VERSION;
-import static com.hedera.services.state.merkle.MerkleNetworkContext.NO_CONGESTION_STARTS;
-import static com.hedera.services.state.merkle.MerkleNetworkContext.NO_PREPARED_UPDATE_FILE_HASH;
-import static com.hedera.services.state.merkle.MerkleNetworkContext.NO_PREPARED_UPDATE_FILE_NUM;
-import static com.hedera.services.state.merkle.MerkleNetworkContext.NO_SNAPSHOTS;
-import static com.hedera.services.state.merkle.MerkleNetworkContext.ethHashFrom;
+import static com.hedera.services.state.merkle.MerkleNetworkContext.*;
 import static com.hedera.services.sysfiles.domain.KnownBlockValues.MISSING_BLOCK_VALUES;
 import static com.hedera.services.utils.Units.HBARS_TO_TINYBARS;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -430,6 +425,7 @@ class MerkleNetworkContextTest {
     void summarizesUnavailableAsExpected() {
         subject.setCongestionLevelStarts(new Instant[0]);
         subject.setUsageSnapshots(new DeterministicThrottle.UsageSnapshot[0]);
+        subject.setExpiryUsageSnapshot(NEVER_USED_SNAPSHOT);
 
         final var desired =
                 "The network context (state version 13) is,\n"
@@ -443,6 +439,7 @@ class MerkleNetworkContextTest {
                     + "  Last scanned entity                        :: 1000\n"
                     + "  Entities scanned last consensus second     :: 123456\n"
                     + "  Entities touched last consensus second     :: 123\n"
+                        + "  Expiry work usage snapshot is              :: <N/A>\n"
                     + "  Throttle usage snapshots are               :: <N/A>\n"
                     + "  Congestion level start times are           :: <N/A>\n"
                     + "  Block number is                            :: 0\n"
@@ -481,6 +478,8 @@ class MerkleNetworkContextTest {
                     + "  Last scanned entity                        :: 1000\n"
                     + "  Entities scanned last consensus second     :: 123456\n"
                     + "  Entities touched last consensus second     :: 123\n"
+                        + "  Expiry work usage snapshot is              :: \n"
+                        + "    666 used (last decision time +1000000000-12-31T23:59:59.999999999Z)\n"
                     + "  Throttle usage snapshots are               :: <N/A>\n"
                     + "  Congestion level start times are           :: <N/A>\n"
                     + "  Block number is                            :: 2\n"
@@ -521,6 +520,8 @@ class MerkleNetworkContextTest {
                     + "  Last scanned entity                        :: 1000\n"
                     + "  Entities scanned last consensus second     :: 123456\n"
                     + "  Entities touched last consensus second     :: 123\n"
+                     + "  Expiry work usage snapshot is              :: \n"
+                     + "    666 used (last decision time +1000000000-12-31T23:59:59.999999999Z)\n"
                     + "  Throttle usage snapshots are               :: \n"
                     + "    100 used (last decision time 1970-01-01T00:00:01.000000100Z)\n"
                     + "    200 used (last decision time 1970-01-01T00:00:02.000000200Z)\n"
@@ -548,6 +549,8 @@ class MerkleNetworkContextTest {
                     + "  Last scanned entity                        :: 1000\n"
                     + "  Entities scanned last consensus second     :: 123456\n"
                     + "  Entities touched last consensus second     :: 123\n"
+                    + "  Expiry work usage snapshot is              :: \n"
+                    + "    666 used (last decision time +1000000000-12-31T23:59:59.999999999Z)\n"
                     + "  Throttle usage snapshots are               :: \n"
                     + "    100 used (last decision time 1970-01-01T00:00:01.000000100Z)\n"
                     + "    200 used (last decision time 1970-01-01T00:00:02.000000200Z)\n"
@@ -574,6 +577,8 @@ class MerkleNetworkContextTest {
                     + "  Last scanned entity                        :: 1000\n"
                     + "  Entities scanned last consensus second     :: 123456\n"
                     + "  Entities touched last consensus second     :: 123\n"
+                    + "  Expiry work usage snapshot is              :: \n"
+                    + "    666 used (last decision time +1000000000-12-31T23:59:59.999999999Z)\n"
                     + "  Throttle usage snapshots are               :: \n"
                     + "    100 used (last decision time 1970-01-01T00:00:01.000000100Z)\n"
                     + "    200 used (last decision time 1970-01-01T00:00:02.000000200Z)\n"
@@ -628,6 +633,8 @@ class MerkleNetworkContextTest {
                     + "  Last scanned entity                        :: 1000\n"
                     + "  Entities scanned last consensus second     :: 123456\n"
                     + "  Entities touched last consensus second     :: 123\n"
+                        + "  Expiry work usage snapshot is              :: \n"
+                        + "    666 used (last decision time +1000000000-12-31T23:59:59.999999999Z)\n"
                     + "  Throttle usage snapshots are               :: \n"
                     + "    123 used (last decision time 1970-01-15T06:56:07.000054321Z)\n"
                     + "    456 used (last decision time 1970-01-15T06:56:08.000054321Z)\n"
@@ -656,6 +663,8 @@ class MerkleNetworkContextTest {
                     + "  Last scanned entity                        :: 1000\n"
                     + "  Entities scanned last consensus second     :: 123456\n"
                     + "  Entities touched last consensus second     :: 123\n"
+                        + "  Expiry work usage snapshot is              :: \n"
+                        + "    666 used (last decision time +1000000000-12-31T23:59:59.999999999Z)\n"
                     + "  Throttle usage snapshots are               :: \n"
                     + "    123 used (last decision time 1970-01-15T06:56:07.000054321Z)\n"
                     + "    456 used (last decision time 1970-01-15T06:56:08.000054321Z)\n"
