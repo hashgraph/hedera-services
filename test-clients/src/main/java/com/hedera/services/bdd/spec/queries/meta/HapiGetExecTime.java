@@ -116,7 +116,10 @@ public class HapiGetExecTime extends HapiQueryOp<HapiGetExecTime> {
                     .append(" ns")
                     .append(" <-> ")
                     .append(aligned("" + (nanos / 1_000), 8, true))
-                    .append(" µs");
+                    .append(" µs")
+                    .append(" <-> ")
+                    .append(aligned("" + (nanos / 1_000_000), 8, true))
+                    .append(" ms");
         }
         return sb.toString();
     }
