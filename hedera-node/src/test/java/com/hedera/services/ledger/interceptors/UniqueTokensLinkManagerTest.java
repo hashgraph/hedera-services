@@ -15,6 +15,14 @@
  */
 package com.hedera.services.ledger.interceptors;
 
+import static com.hedera.services.utils.NftNumPair.MISSING_NFT_NUM_PAIR;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.mockito.Mockito.when;
+
 import com.hedera.services.context.properties.BootstrapProperties;
 import com.hedera.services.context.properties.PropertyNames;
 import com.hedera.services.state.merkle.MerkleAccount;
@@ -38,14 +46,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mockito;
 
-import static com.hedera.services.utils.NftNumPair.MISSING_NFT_NUM_PAIR;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.mockito.Mockito.when;
-
 @ExtendWith(LogCaptureExtension.class)
 class UniqueTokensLinkManagerTest {
     private final MerkleMap<EntityNum, MerkleAccount> accounts = new MerkleMap<>();
@@ -67,10 +67,7 @@ class UniqueTokensLinkManagerTest {
                 .thenReturn(false);
         subject =
                 new UniqueTokensLinkManager(
-                        () -> accounts,
-                        () -> tokens,
-                        () -> uniqueTokens,
-                        bootstrapProperties);
+                        () -> accounts, () -> tokens, () -> uniqueTokens, bootstrapProperties);
 
         when(bootstrapProperties.getBooleanProperty(PropertyNames.TOKENS_NFTS_USE_VIRTUAL_MERKLE))
                 .thenReturn(true);

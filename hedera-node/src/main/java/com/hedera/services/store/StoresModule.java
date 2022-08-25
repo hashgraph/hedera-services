@@ -15,6 +15,9 @@
  */
 package com.hedera.services.store;
 
+import static com.hedera.services.context.properties.PropertyNames.TOKENS_NFTS_USE_TREASURY_WILD_CARDS;
+import static com.hedera.services.context.properties.PropertyNames.TOKENS_NFTS_USE_VIRTUAL_MERKLE;
+
 import com.hedera.services.config.AccountNumbers;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.TransactionContext;
@@ -61,13 +64,9 @@ import com.swirlds.merkle.map.MerkleMap;
 import dagger.Binds;
 import dagger.Module;
 import dagger.Provides;
-import org.apache.commons.lang3.tuple.Pair;
-
-import javax.inject.Singleton;
 import java.util.function.Supplier;
-
-import static com.hedera.services.context.properties.PropertyNames.TOKENS_NFTS_USE_TREASURY_WILD_CARDS;
-import static com.hedera.services.context.properties.PropertyNames.TOKENS_NFTS_USE_VIRTUAL_MERKLE;
+import javax.inject.Singleton;
+import org.apache.commons.lang3.tuple.Pair;
 
 @Module
 public interface StoresModule {
@@ -89,7 +88,8 @@ public interface StoresModule {
     static TransactionalLedger<NftId, NftProperty, UniqueTokenAdapter> provideNftsLedger(
             final BootstrapProperties bootstrapProperties,
             final Supplier<UniqueTokenMapAdapter> uniqueTokens) {
-        final boolean isVirtual = bootstrapProperties.getBooleanProperty(TOKENS_NFTS_USE_VIRTUAL_MERKLE);
+        final boolean isVirtual =
+                bootstrapProperties.getBooleanProperty(TOKENS_NFTS_USE_VIRTUAL_MERKLE);
 
         return new TransactionalLedger<>(
                 NftProperty.class,

@@ -21,7 +21,6 @@ import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.state.virtual.UniqueTokenValue;
 import com.hedera.services.utils.NftNumPair;
 import com.swirlds.common.FastCopyable;
-
 import javax.annotation.Nullable;
 
 /**
