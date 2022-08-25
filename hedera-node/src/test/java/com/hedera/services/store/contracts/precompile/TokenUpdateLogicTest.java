@@ -175,7 +175,9 @@ class TokenUpdateLogicTest {
         given(ledgers.nfts()).willReturn(nfts);
         // then
         Assertions.assertThrows(
-                InvalidTransactionException.class, () -> subject.updateToken(op, CONSENSUS_TIME), FAIL_INVALID.name());
+                InvalidTransactionException.class,
+                () -> subject.updateToken(op, CONSENSUS_TIME),
+                FAIL_INVALID.name());
     }
 
     @Test
@@ -204,7 +206,9 @@ class TokenUpdateLogicTest {
         given(store.autoAssociate(any(), any())).willReturn(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT);
         // then
         Assertions.assertThrows(
-                InvalidTransactionException.class, () -> subject.updateToken(op, CONSENSUS_TIME), TOKEN_NOT_ASSOCIATED_TO_ACCOUNT.name());
+                InvalidTransactionException.class,
+                () -> subject.updateToken(op, CONSENSUS_TIME),
+                TOKEN_NOT_ASSOCIATED_TO_ACCOUNT.name());
     }
 
     @Test
@@ -224,7 +228,9 @@ class TokenUpdateLogicTest {
         given(tokenRels.get(tokenRel, TOKEN_BALANCE)).willReturn(10L);
         // then
         Assertions.assertThrows(
-                InvalidTransactionException.class, () -> subject.updateToken(op, CONSENSUS_TIME), CURRENT_TREASURY_STILL_OWNS_NFTS.name());
+                InvalidTransactionException.class,
+                () -> subject.updateToken(op, CONSENSUS_TIME),
+                CURRENT_TREASURY_STILL_OWNS_NFTS.name());
     }
 
     @Test
@@ -271,7 +277,9 @@ class TokenUpdateLogicTest {
         given(store.unfreeze(account, fungible)).willReturn(INVALID_ACCOUNT_ID);
         // then
         Assertions.assertThrows(
-                InvalidTransactionException.class, () -> subject.updateToken(op, CONSENSUS_TIME), INVALID_ACCOUNT_ID.name());
+                InvalidTransactionException.class,
+                () -> subject.updateToken(op, CONSENSUS_TIME),
+                INVALID_ACCOUNT_ID.name());
     }
 
     @Test
@@ -291,7 +299,9 @@ class TokenUpdateLogicTest {
 
         // then
         Assertions.assertThrows(
-                InvalidTransactionException.class, () -> subject.updateToken(op, CONSENSUS_TIME), FAIL_INVALID.name());
+                InvalidTransactionException.class,
+                () -> subject.updateToken(op, CONSENSUS_TIME),
+                FAIL_INVALID.name());
     }
 
     @Test
@@ -373,7 +383,9 @@ class TokenUpdateLogicTest {
 
         // then
         Assertions.assertThrows(
-                InvalidTransactionException.class, () -> subject.updateToken(op, CONSENSUS_TIME), CURRENT_TREASURY_STILL_OWNS_NFTS.name());
+                InvalidTransactionException.class,
+                () -> subject.updateToken(op, CONSENSUS_TIME),
+                CURRENT_TREASURY_STILL_OWNS_NFTS.name());
     }
 
     @Test
@@ -393,7 +405,9 @@ class TokenUpdateLogicTest {
         // then
 
         Assertions.assertThrows(
-                InvalidTransactionException.class, () -> subject.updateToken(op, CONSENSUS_TIME), FAIL_INVALID.name());
+                InvalidTransactionException.class,
+                () -> subject.updateToken(op, CONSENSUS_TIME),
+                FAIL_INVALID.name());
     }
 
     private void givenContextForSuccessFullCalls() {
