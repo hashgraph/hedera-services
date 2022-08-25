@@ -223,6 +223,13 @@ public class ServicesState extends PartialNaryMerkleInternal
             if (SEMANTIC_VERSIONS.deployedSoftwareVersion().isAfter(deserializedVersion)) {
                 migrateFrom(deserializedVersion);
             }
+
+            // Because this flag can be toggled anytime (even post-launch), we need to check for
+            // migration regardless of
+            // versioning. This should be done after any other migrations are complete.
+            if (shouldMigrateNfts()) {
+                UniqueTokensMigrator.migrateFromUniqueTokenMerkleMap(this);
+            }
         }
     }
 
@@ -597,10 +604,6 @@ public class ServicesState extends PartialNaryMerkleInternal
             // it
             accounts().get(EntityNum.fromLong(800L)).forgetThirdChildIfPlaceholder();
             accounts().get(EntityNum.fromLong(801L)).forgetThirdChildIfPlaceholder();
-        }
-
-        if (shouldMigrateNfts()) {
-            UniqueTokensMigrator.migrateFromUniqueTokenMerkleMap(this);
         }
 
         // Keep the MutableStateChildren up-to-date (no harm done if they are already are)
