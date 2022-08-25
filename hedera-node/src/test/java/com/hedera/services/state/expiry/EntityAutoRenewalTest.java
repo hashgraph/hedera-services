@@ -35,6 +35,8 @@ import com.hedera.services.state.logic.NetworkCtxManager;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.submerkle.SequenceNumber;
 import java.time.Instant;
+
+import com.hedera.services.throttling.ExpiryThrottle;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -54,6 +56,8 @@ class EntityAutoRenewalTest {
     @Mock private NetworkCtxManager networkCtxManager;
     @Mock private MerkleNetworkContext networkCtx;
     @Mock private ConsensusTimeTracker consensusTimeTracker;
+    @Mock
+    private ExpiryThrottle expiryThrottle;
 
     private EntityAutoRenewal subject;
 
@@ -62,6 +66,7 @@ class EntityAutoRenewalTest {
         subject =
                 new EntityAutoRenewal(
                         mockHederaNums,
+                        expiryThrottle,
                         renewalProcess,
                         properties,
                         networkCtxManager,
@@ -80,6 +85,7 @@ class EntityAutoRenewalTest {
 
         // then:
         verifyNoInteractions(renewalProcess);
+        verify(networkCtx).syncExpiryThrottle(expiryThrottle);
 
         // cleanup:
         properties.enableAutoRenew();

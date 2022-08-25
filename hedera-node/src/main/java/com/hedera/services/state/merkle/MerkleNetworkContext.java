@@ -166,7 +166,7 @@ public class MerkleNetworkContext extends PartialMerkleLeaf implements MerkleLea
         }
     }
 
-    public void resetThrottlingFromSavedSnapshots(FunctionalityThrottling throttling) {
+    public void resetThrottlingFromSavedSnapshots(final FunctionalityThrottling throttling) {
         var activeThrottles = throttling.allActiveThrottles();
         if (activeThrottles.size() != usageSnapshots.length) {
             log.warn(
@@ -543,10 +543,8 @@ public class MerkleNetworkContext extends PartialMerkleLeaf implements MerkleLea
 
     private String expirySnapshotDesc() {
         if (expiryUsageSnapshot == NEVER_USED_SNAPSHOT) {
-            System.out.println("BOOP");
             return NOT_AVAILABLE_SUFFIX;
         } else {
-            System.out.println("BEEP");
             final var sb = new StringBuilder();
             appendDesc(sb, expiryUsageSnapshot);
             return sb.toString();

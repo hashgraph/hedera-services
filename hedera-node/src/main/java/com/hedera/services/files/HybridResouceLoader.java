@@ -26,6 +26,10 @@ import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+/**
+ * Helper that loads a resource as from <i>either</i> an asset in a JAR or from the Hedera file system.
+ * The choice is based on whether the {@code resourceLoc} matches the {@code 0.0.X} pattern.
+ */
 @Singleton
 public class HybridResouceLoader {
     private static final Pattern HFS_RESOURCE_PATTERN = Pattern.compile("\\d+[.]\\d+[.]\\d+");

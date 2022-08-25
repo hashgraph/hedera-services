@@ -38,6 +38,7 @@ import com.hedera.services.state.initialization.SystemFilesManager;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.stats.HapiOpCounters;
 import com.hedera.services.stats.MiscRunningAvgs;
+import com.hedera.services.throttling.ExpiryThrottle;
 import com.hedera.services.throttling.FunctionalityThrottling;
 import com.hedera.services.throttling.annotations.HandleThrottle;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
@@ -62,6 +63,7 @@ public class NetworkCtxManager {
 
     private final long stakingPeriod;
     private final IssEventInfo issInfo;
+    private final ExpiryThrottle expiryThrottle;
     private final MiscRunningAvgs runningAvgs;
     private final HapiOpCounters opCounters;
     private final HbarCentExchange exchange;
@@ -78,6 +80,7 @@ public class NetworkCtxManager {
     @Inject
     public NetworkCtxManager(
             final IssEventInfo issInfo,
+            final ExpiryThrottle expiryThrottle,
             final NodeLocalProperties nodeLocalProperties,
             final HapiOpCounters opCounters,
             final HbarCentExchange exchange,
@@ -93,6 +96,7 @@ public class NetworkCtxManager {
         issResetPeriod = nodeLocalProperties.issResetPeriod();
 
         this.issInfo = issInfo;
+        this.expiryThrottle = expiryThrottle;
         this.opCounters = opCounters;
         this.exchange = exchange;
         this.networkCtx = networkCtx;
@@ -119,6 +123,7 @@ public class NetworkCtxManager {
             networkCtxNow.resetThrottlingFromSavedSnapshots(handleThrottling);
             feeMultiplierSource.resetExpectations();
             networkCtxNow.resetMultiplierSourceFromSavedCongestionStarts(feeMultiplierSource);
+            networkCtxNow.resetExpiryThrottleFromSavedSnapshot(expiryThrottle);
         }
     }
 

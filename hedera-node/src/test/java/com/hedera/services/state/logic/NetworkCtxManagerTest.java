@@ -43,6 +43,7 @@ import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.submerkle.ExchangeRates;
 import com.hedera.services.stats.HapiOpCounters;
 import com.hedera.services.stats.MiscRunningAvgs;
+import com.hedera.services.throttling.ExpiryThrottle;
 import com.hedera.services.throttling.FunctionalityThrottling;
 import com.hedera.services.utils.accessors.SignedTxnAccessor;
 import java.time.Instant;
@@ -77,6 +78,8 @@ class NetworkCtxManagerTest {
     @Mock private MiscRunningAvgs runningAvgs;
     @Mock private EndOfStakingPeriodCalculator endOfStakingPeriodCalculator;
     @Mock private PropertySource propertySource;
+    @Mock
+    private ExpiryThrottle expiryThrottle;
 
     private NetworkCtxManager subject;
 
@@ -88,6 +91,7 @@ class NetworkCtxManagerTest {
         subject =
                 new NetworkCtxManager(
                         issInfo,
+                        expiryThrottle,
                         nodeLocalProperties,
                         opCounters,
                         exchange,
@@ -148,6 +152,7 @@ class NetworkCtxManagerTest {
         // then:
         verify(systemFilesManager).loadObservableSystemFiles();
         verify(networkCtx).resetThrottlingFromSavedSnapshots(handleThrottling);
+        verify(networkCtx).resetExpiryThrottleFromSavedSnapshot(expiryThrottle);
         verify(networkCtx).resetMultiplierSourceFromSavedCongestionStarts(feeMultiplierSource);
         verify(feeMultiplierSource).resetExpectations();
     }
@@ -460,6 +465,7 @@ class NetworkCtxManagerTest {
         subject =
                 new NetworkCtxManager(
                         issInfo,
+                        expiryThrottle,
                         nodeLocalProperties,
                         opCounters,
                         exchange,

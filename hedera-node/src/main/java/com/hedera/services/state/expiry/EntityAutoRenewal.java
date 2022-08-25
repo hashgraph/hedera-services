@@ -29,6 +29,8 @@ import java.time.Instant;
 import java.util.function.Supplier;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+
+import com.hedera.services.throttling.ExpiryThrottle;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -37,6 +39,7 @@ public class EntityAutoRenewal {
     private static final Logger log = LogManager.getLogger(EntityAutoRenewal.class);
 
     private final long firstEntityToScan;
+    private final ExpiryThrottle expiryThrottle;
     private final RenewalProcess renewalProcess;
     private final NetworkCtxManager networkCtxManager;
     private final GlobalDynamicProperties dynamicProps;
@@ -47,6 +50,7 @@ public class EntityAutoRenewal {
     @Inject
     public EntityAutoRenewal(
             final HederaNumbers hederaNumbers,
+            final ExpiryThrottle expiryThrottle,
             final RenewalProcess renewalProcess,
             final GlobalDynamicProperties dynamicProps,
             final NetworkCtxManager networkCtxManager,
@@ -56,6 +60,7 @@ public class EntityAutoRenewal {
         this.seqNo = seqNo;
         this.networkCtx = networkCtx;
         this.networkCtxManager = networkCtxManager;
+        this.expiryThrottle = expiryThrottle;
         this.renewalProcess = renewalProcess;
         this.dynamicProps = dynamicProps;
         this.consensusTimeTracker = consensusTimeTracker;
@@ -64,6 +69,12 @@ public class EntityAutoRenewal {
     }
 
     public void execute(final Instant currentConsTime) {
+        // This may use capacity from the expiry throttle
+        executeInternal(currentConsTime);
+        networkCtx.get().syncExpiryThrottle(expiryThrottle);
+    }
+
+    private void executeInternal(final Instant currentConsTime) {
         if (!dynamicProps.shouldAutoRenewSomeEntityType()) {
             return;
         }

@@ -35,6 +35,11 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+/**
+ * A throttle to be used to control usage of {@link com.swirlds.merkle.map.MerkleMap} and
+ * {@link com.swirlds.virtualmap.VirtualMap} objects during expiration work (auto-renewal
+ * and auto-removal).
+ */
 @Singleton
 public class ExpiryThrottle {
     private static final Logger log = LogManager.getLogger(ExpiryThrottle.class);
@@ -117,7 +122,6 @@ public class ExpiryThrottle {
     }
 
     private int requiredOps(final List<MapAccessType> accessTypes) {
-        System.out.println("BOOP");
         var ans = 0;
         for (final var accessType : accessTypes) {
             ans += accessReqs.get(accessType);
