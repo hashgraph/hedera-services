@@ -16,12 +16,23 @@
 package com.hedera.services.store.contracts.precompile.codec;
 
 import static com.hedera.services.contracts.ParsingConstants.FunctionType.HAPI_MINT;
-import static com.hedera.services.contracts.ParsingConstants.INT_BOOL_PAIR_RETURN_TYPE;
+import static com.hedera.services.contracts.ParsingConstants.addressTuple;
+import static com.hedera.services.contracts.ParsingConstants.bigIntegerTuple;
+import static com.hedera.services.contracts.ParsingConstants.booleanTuple;
+import static com.hedera.services.contracts.ParsingConstants.burnReturnType;
+import static com.hedera.services.contracts.ParsingConstants.decimalsType;
 import static com.hedera.services.contracts.ParsingConstants.getFungibleTokenInfoType;
 import static com.hedera.services.contracts.ParsingConstants.getNonFungibleTokenInfoType;
 import static com.hedera.services.contracts.ParsingConstants.getTokenCustomFeesType;
 import static com.hedera.services.contracts.ParsingConstants.getTokenInfoType;
+import static com.hedera.services.contracts.ParsingConstants.hapiAllowanceOfType;
+import static com.hedera.services.contracts.ParsingConstants.intAddressTuple;
+import static com.hedera.services.contracts.ParsingConstants.intBoolTuple;
+import static com.hedera.services.contracts.ParsingConstants.intPairTuple;
+import static com.hedera.services.contracts.ParsingConstants.intTuple;
+import static com.hedera.services.contracts.ParsingConstants.mintReturnType;
 import static com.hedera.services.contracts.ParsingConstants.notSpecifiedType;
+import static com.hedera.services.contracts.ParsingConstants.stringTuple;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.esaulpaugh.headlong.abi.Tuple;
@@ -48,50 +59,19 @@ import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.log.Log;
 import org.hyperledger.besu.evm.log.LogTopic;
+import org.jetbrains.annotations.NotNull;
 
 @Singleton
 public class EncodingFacade {
     public static final Bytes SUCCESS_RESULT = resultFrom(SUCCESS);
     private static final long[] NO_MINTED_SERIAL_NUMBERS = new long[0];
-    private static final String STRING_RETURN_TYPE = "(string)";
-    public static final String UINT256_RETURN_TYPE = "(uint256)";
-    public static final String BOOL_RETURN_TYPE = "(bool)";
-    private static final TupleType mintReturnType = TupleType.parse("(int32,uint64,int64[])");
-    private static final TupleType burnReturnType = TupleType.parse("(int32,uint64)");
-    private static final TupleType createReturnType = TupleType.parse("(int32,address)");
-    private static final TupleType totalSupplyType = TupleType.parse(UINT256_RETURN_TYPE);
-    private static final TupleType balanceOfType = TupleType.parse(UINT256_RETURN_TYPE);
-    private static final TupleType allowanceOfType = TupleType.parse(UINT256_RETURN_TYPE);
-    private static final TupleType hapiAllowanceOfType = TupleType.parse("(int32,uint256)");
-    private static final TupleType approveOfType = TupleType.parse(BOOL_RETURN_TYPE);
-    private static final TupleType hapiApproveOfType = TupleType.parse(INT_BOOL_PAIR_RETURN_TYPE);
-    private static final TupleType hapiApproveNftType = TupleType.parse("(int32)");
-    private static final TupleType decimalsType = TupleType.parse("(uint8)");
-    private static final TupleType ownerOfType = TupleType.parse("(address)");
-    private static final TupleType getApprovedType = TupleType.parse("(address)");
-    private static final TupleType hapiGetApprovedType = TupleType.parse("(int32,address)");
-    private static final TupleType nameType = TupleType.parse(STRING_RETURN_TYPE);
-    private static final TupleType symbolType = TupleType.parse(STRING_RETURN_TYPE);
-    private static final TupleType tokenUriType = TupleType.parse(STRING_RETURN_TYPE);
-    private static final TupleType ercTransferType = TupleType.parse(BOOL_RETURN_TYPE);
-    private static final TupleType isApprovedForAllType = TupleType.parse(BOOL_RETURN_TYPE);
-    private static final TupleType isTokenKycType = TupleType.parse(INT_BOOL_PAIR_RETURN_TYPE);
-    private static final TupleType hapiIsApprovedForAllType =
-            TupleType.parse(INT_BOOL_PAIR_RETURN_TYPE);
-    private static final TupleType getTokenDefaultFreezeStatusType =
-            TupleType.parse(INT_BOOL_PAIR_RETURN_TYPE);
-    private static final TupleType getTokenDefaultKycStatusType =
-            TupleType.parse(INT_BOOL_PAIR_RETURN_TYPE);
-    private static final TupleType isTokenFrozenType = TupleType.parse(INT_BOOL_PAIR_RETURN_TYPE);
-    private static final TupleType isTokenType = TupleType.parse(INT_BOOL_PAIR_RETURN_TYPE);
-    private static final TupleType getTokenType = TupleType.parse("(int32,int32)");
 
     @Inject
     public EncodingFacade() {
         /* For Dagger2 */
     }
 
-    public static Bytes resultFrom(final ResponseCodeEnum status) {
+    public static Bytes resultFrom(@NotNull final ResponseCodeEnum status) {
         return UInt256.valueOf(status.getNumber());
     }
 
@@ -210,7 +190,7 @@ public class EncodingFacade {
                 .build();
     }
 
-    public Bytes encodeMintFailure(final ResponseCodeEnum status) {
+    public Bytes encodeMintFailure(@NotNull final ResponseCodeEnum status) {
         return functionResultBuilder()
                 .forFunction(HAPI_MINT)
                 .withStatus(status.getNumber())
@@ -227,7 +207,7 @@ public class EncodingFacade {
                 .build();
     }
 
-    public Bytes encodeBurnFailure(final ResponseCodeEnum status) {
+    public Bytes encodeBurnFailure(@NotNull final ResponseCodeEnum status) {
         return functionResultBuilder()
                 .forFunction(FunctionType.HAPI_BURN)
                 .withStatus(status.getNumber())
@@ -250,7 +230,7 @@ public class EncodingFacade {
                 .build();
     }
 
-    public Bytes encodeCreateFailure(final ResponseCodeEnum status) {
+    public Bytes encodeCreateFailure(@NotNull final ResponseCodeEnum status) {
         return functionResultBuilder()
                 .forFunction(FunctionType.HAPI_CREATE)
                 .withStatus(status.getNumber())
@@ -377,41 +357,33 @@ public class EncodingFacade {
         private boolean isFrozen;
         private List<CustomFee> customFees;
         private boolean isToken;
-        private int tokentype;
+        private int tokenType;
 
         private FunctionResultBuilder forFunction(final FunctionType functionType) {
             this.tupleType =
                     switch (functionType) {
-                        case HAPI_CREATE -> createReturnType;
+                        case HAPI_CREATE, HAPI_GET_APPROVED -> intAddressTuple;
                         case HAPI_MINT -> mintReturnType;
                         case HAPI_BURN -> burnReturnType;
-                        case ERC_TOTAL_SUPPLY -> totalSupplyType;
+                        case ERC_TOTAL_SUPPLY, ERC_ALLOWANCE, ERC_BALANCE -> bigIntegerTuple;
                         case ERC_DECIMALS -> decimalsType;
-                        case ERC_BALANCE -> balanceOfType;
-                        case ERC_OWNER -> ownerOfType;
-                        case ERC_NAME -> nameType;
-                        case ERC_SYMBOL -> symbolType;
-                        case ERC_TOKEN_URI -> tokenUriType;
-                        case ERC_TRANSFER -> ercTransferType;
-                        case ERC_ALLOWANCE -> allowanceOfType;
-                        case ERC_APPROVE -> approveOfType;
-                        case ERC_GET_APPROVED -> getApprovedType;
-                        case ERC_IS_APPROVED_FOR_ALL -> isApprovedForAllType;
+                        case ERC_OWNER, ERC_GET_APPROVED -> addressTuple;
+                        case ERC_NAME, ERC_TOKEN_URI, ERC_SYMBOL -> stringTuple;
+                        case ERC_TRANSFER, ERC_IS_APPROVED_FOR_ALL, ERC_APPROVE -> booleanTuple;
                         case HAPI_ALLOWANCE -> hapiAllowanceOfType;
-                        case HAPI_APPROVE -> hapiApproveOfType;
-                        case HAPI_APPROVE_NFT -> hapiApproveNftType;
-                        case HAPI_GET_APPROVED -> hapiGetApprovedType;
-                        case HAPI_IS_APPROVED_FOR_ALL -> hapiIsApprovedForAllType;
+                        case HAPI_APPROVE,
+                                HAPI_IS_TOKEN,
+                                HAPI_IS_FROZEN,
+                                GET_TOKEN_DEFAULT_KYC_STATUS,
+                                GET_TOKEN_DEFAULT_FREEZE_STATUS,
+                                HAPI_IS_KYC,
+                                HAPI_IS_APPROVED_FOR_ALL -> intBoolTuple;
+                        case HAPI_APPROVE_NFT -> intTuple;
                         case HAPI_GET_TOKEN_INFO -> getTokenInfoType;
                         case HAPI_GET_FUNGIBLE_TOKEN_INFO -> getFungibleTokenInfoType;
                         case HAPI_GET_NON_FUNGIBLE_TOKEN_INFO -> getNonFungibleTokenInfoType;
-                        case HAPI_IS_KYC -> isTokenKycType;
-                        case GET_TOKEN_DEFAULT_FREEZE_STATUS -> getTokenDefaultFreezeStatusType;
-                        case GET_TOKEN_DEFAULT_KYC_STATUS -> getTokenDefaultKycStatusType;
-                        case HAPI_IS_FROZEN -> isTokenFrozenType;
                         case HAPI_GET_TOKEN_CUSTOM_FEES -> getTokenCustomFeesType;
-                        case HAPI_IS_TOKEN -> isTokenType;
-                        case HAPI_GET_TOKEN_TYPE -> getTokenType;
+                        case HAPI_GET_TOKEN_TYPE -> intPairTuple;
                         default -> notSpecifiedType;
                     };
 
@@ -539,7 +511,7 @@ public class EncodingFacade {
         }
 
         private FunctionResultBuilder withGetTokenType(final int tokenType) {
-            this.tokentype = tokenType;
+            this.tokenType = tokenType;
             return this;
         }
 
@@ -581,7 +553,7 @@ public class EncodingFacade {
                         case HAPI_IS_FROZEN -> Tuple.of(status, isFrozen);
                         case HAPI_GET_TOKEN_CUSTOM_FEES -> getTupleForTokenGetCustomFees();
                         case HAPI_IS_TOKEN -> Tuple.of(status, isToken);
-                        case HAPI_GET_TOKEN_TYPE -> Tuple.of(status, tokentype);
+                        case HAPI_GET_TOKEN_TYPE -> Tuple.of(status, tokenType);
                         default -> Tuple.of(status);
                     };
 
@@ -655,7 +627,7 @@ public class EncodingFacade {
                 final ArrayList<Tuple> fixedFees,
                 final ArrayList<Tuple> fractionalFees,
                 final ArrayList<Tuple> royaltyFees,
-                final CustomFee customFee) {
+                @NotNull final CustomFee customFee) {
             final var feeCollector =
                     convertBesuAddressToHeadlongAddress(
                             EntityIdUtils.asTypedEvmAddress(customFee.getFeeCollectorAccountId()));
@@ -670,7 +642,8 @@ public class EncodingFacade {
         }
 
         private Tuple getFixedFeeTuple(
-                final FixedFee fixedFee, final com.esaulpaugh.headlong.abi.Address feeCollector) {
+                @NotNull final FixedFee fixedFee,
+                final com.esaulpaugh.headlong.abi.Address feeCollector) {
             return Tuple.of(
                     fixedFee.getAmount(),
                     convertBesuAddressToHeadlongAddress(
@@ -681,7 +654,7 @@ public class EncodingFacade {
         }
 
         private Tuple getFractionalFeeTuple(
-                final FractionalFee fractionalFee,
+                @NotNull final FractionalFee fractionalFee,
                 final com.esaulpaugh.headlong.abi.Address feeCollector) {
             return Tuple.of(
                     fractionalFee.getFractionalAmount().getNumerator(),
@@ -693,7 +666,7 @@ public class EncodingFacade {
         }
 
         private Tuple getRoyaltyFeeTuple(
-                final RoyaltyFee royaltyFee,
+                @NotNull final RoyaltyFee royaltyFee,
                 final com.esaulpaugh.headlong.abi.Address feeCollector) {
             return Tuple.of(
                     royaltyFee.getExchangeValueFraction().getNumerator(),
@@ -760,7 +733,7 @@ public class EncodingFacade {
             return tokenKeysTuples;
         }
 
-        private static Tuple getKeyTuple(final BigInteger keyType, final Key key) {
+        private static Tuple getKeyTuple(final BigInteger keyType, @NotNull final Key key) {
             return Tuple.of(
                     keyType,
                     Tuple.of(
@@ -885,7 +858,7 @@ public class EncodingFacade {
     }
 
     static com.esaulpaugh.headlong.abi.Address convertBesuAddressToHeadlongAddress(
-            final Address address) {
+            @NotNull final Address address) {
         return com.esaulpaugh.headlong.abi.Address.wrap(
                 com.esaulpaugh.headlong.abi.Address.toChecksumAddress(
                         address.toUnsignedBigInteger()));

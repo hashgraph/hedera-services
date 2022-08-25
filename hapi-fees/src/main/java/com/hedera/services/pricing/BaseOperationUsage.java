@@ -301,13 +301,9 @@ public class BaseOperationUsage {
                         .setCurrentMaxAutomaticAssociations(0)
                         .build();
         final var contractContext =
-                new ExtantContractContext(
-                        CANONICAL_NUM_CONTRACT_KV_PAIRS,
-                        CANONICAL_CONTRACT_BYTECODE_SIZE,
-                        accountContext);
+                new ExtantContractContext(CANONICAL_NUM_CONTRACT_KV_PAIRS, accountContext);
         final var into = new UsageAccumulator();
         into.addRbs(THREE_MONTHS_IN_SECONDS * contractContext.currentRb());
-        into.addSbs(THREE_MONTHS_IN_SECONDS * contractContext.currentSb());
         return into;
     }
 
