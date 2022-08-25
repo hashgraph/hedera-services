@@ -308,6 +308,7 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
     }
 
     public HapiGetTxnRecord hasChildRecords(TransactionRecordAsserts... providers) {
+        requestChildRecords = true;
         childRecordsExpectations = Optional.of(Arrays.asList(providers));
         return this;
     }
@@ -852,14 +853,18 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
                     }
                 });
         for (var rec : childRecords) {
-            spec.registry()
-                    .saveAccountId(rec.getAlias().toStringUtf8(), rec.getReceipt().getAccountID());
-            spec.registry().saveKey(rec.getAlias().toStringUtf8(), Key.parseFrom(rec.getAlias()));
-            LOG.info(
-                    "{}  Saving alias {} to registry for Account ID {}",
-                    spec::logPrefix,
-                    rec.getAlias()::toStringUtf8,
-                    rec.getReceipt()::getAccountID);
+            if (!rec.getAlias().isEmpty()) {
+                spec.registry()
+                        .saveAccountId(
+                                rec.getAlias().toStringUtf8(), rec.getReceipt().getAccountID());
+                spec.registry()
+                        .saveKey(rec.getAlias().toStringUtf8(), Key.parseFrom(rec.getAlias()));
+                LOG.info(
+                        "{}  Saving alias {} to registry for Account ID {}",
+                        spec::logPrefix,
+                        rec.getAlias()::toStringUtf8,
+                        rec.getReceipt()::getAccountID);
+            }
         }
 
         if (verboseLoggingOn) {

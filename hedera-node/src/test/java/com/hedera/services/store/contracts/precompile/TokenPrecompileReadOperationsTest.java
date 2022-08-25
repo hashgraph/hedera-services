@@ -107,7 +107,7 @@ class TokenPrecompileReadOperationsTest {
                         () -> feeCalculator,
                         resourceCosts,
                         stateView,
-                        accessorFactory);
+                        new AccessorFactory(dynamicProperties));
         subject =
                 new HTSPrecompiledContract(
                         dynamicProperties,

@@ -15,11 +15,14 @@
  */
 package com.hedera.services.store.contracts.precompile;
 
+import static com.hedera.services.ledger.properties.AccountProperty.NUM_TREASURY_TITLES;
+import static com.hedera.services.ledger.properties.TokenRelProperty.TOKEN_BALANCE;
 import static com.hedera.services.state.enums.TokenType.FUNGIBLE_COMMON;
 import static com.hedera.services.state.enums.TokenType.NON_FUNGIBLE_UNIQUE;
 import static com.hedera.services.store.tokens.TokenStore.MISSING_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
@@ -112,7 +115,7 @@ class TokenUpdateLogicTest {
     @Test
     void callsWithInvalidExpiry() {
         givenTokenUpdateLogic(true);
-        givenValidTransactionBody(true);
+        givenValidTransactionBody(true, true);
         Assertions.assertThrows(
                 InvalidTransactionException.class, () -> subject.updateToken(op, CONSENSUS_TIME));
     }
@@ -121,7 +124,7 @@ class TokenUpdateLogicTest {
     void updateTokenHappyPathForFungibleToken() {
         // given
         givenTokenUpdateLogic(true);
-        givenValidTransactionBody(true);
+        givenValidTransactionBody(true, true);
         givenContextForSuccessFullCalls();
         givenLedgers();
         givenHederaStoreContextForFungible();
@@ -140,10 +143,28 @@ class TokenUpdateLogicTest {
     }
 
     @Test
+    void updateTokenHappyPathForFungibleTokenWithoutTreasury() {
+        // given
+        givenTokenUpdateLogic(true);
+        givenValidTransactionBody(true, false);
+        givenContextForSuccessFullCalls();
+        given(ledgers.accounts()).willReturn(accounts);
+        given(store.get(fungible)).willReturn(merkleToken);
+        given(store.update(op, CONSENSUS_TIME)).willReturn(OK);
+        given(transactionBody.getTokenUpdate()).willReturn(op);
+        // when
+        subject.validate(transactionBody);
+        subject.updateToken(op, CONSENSUS_TIME);
+        // then
+        verify(store).update(op, CONSENSUS_TIME);
+        verify(sigImpactHistorian).markEntityChanged(fungible.getTokenNum());
+    }
+
+    @Test
     void updateTokenForFungibleTokenFailsWhenTransferingBetweenTreasuries() {
         // given
         givenTokenUpdateLogic(true);
-        givenValidTransactionBody(true);
+        givenValidTransactionBody(true, true);
         givenContextForSuccessFullCalls();
         givenLedgers();
         givenHederaStoreContextForFungible();
@@ -161,7 +182,7 @@ class TokenUpdateLogicTest {
     void updateTokenForFungibleTokenWithoutAdminKey() {
         // given
         givenTokenUpdateLogic(true);
-        givenValidTransactionBody(true);
+        givenValidTransactionBody(true, true);
         given(validator.isValidExpiry(EXPIRY)).willReturn(true);
         given(store.get(fungible)).willReturn(merkleToken);
         // then
@@ -173,7 +194,7 @@ class TokenUpdateLogicTest {
     void updateTokenFailsWithAutoAssosiationErrorForFungibleToken() {
         // given
         givenTokenUpdateLogic(true);
-        givenValidTransactionBody(true);
+        givenValidTransactionBody(true, true);
         givenContextForSuccessFullCalls();
         given(ledgers.accounts()).willReturn(accounts);
         given(ledgers.tokenRels()).willReturn(tokenRels);
@@ -187,10 +208,77 @@ class TokenUpdateLogicTest {
     }
 
     @Test
+    void updateTokenFailsWithExistingTreasuryBalanceForNonFungibleToken() {
+        // given
+        givenTokenUpdateLogic(false);
+        givenValidTransactionBody(false, true);
+        givenContextForSuccessFullCalls();
+        given(ledgers.accounts()).willReturn(accounts);
+        given(ledgers.tokenRels()).willReturn(tokenRels);
+        given(ledgers.nfts()).willReturn(nfts);
+        given(store.get(nonFungible)).willReturn(merkleToken);
+        given(merkleToken.treasury()).willReturn(treasuryId);
+        given(merkleToken.tokenType()).willReturn(NON_FUNGIBLE_UNIQUE);
+        given(store.associationExists(any(), any())).willReturn(true);
+        final var tokenRel = Pair.of(treasury, nonFungible);
+        given(tokenRels.get(tokenRel, TOKEN_BALANCE)).willReturn(10L);
+        // then
+        Assertions.assertThrows(
+                InvalidTransactionException.class, () -> subject.updateToken(op, CONSENSUS_TIME));
+    }
+
+    @Test
+    void updateTokenHappyPathWithNoTreasuryBalanceForNonFungibleToken() {
+        // given
+        givenTokenUpdateLogic(false);
+        givenValidTransactionBody(false, true);
+        givenContextForSuccessFullCalls();
+        given(ledgers.accounts()).willReturn(accounts);
+        given(ledgers.tokenRels()).willReturn(tokenRels);
+        given(store.get(nonFungible)).willReturn(merkleToken);
+        given(merkleToken.treasury()).willReturn(treasuryId);
+        given(merkleToken.tokenType()).willReturn(NON_FUNGIBLE_UNIQUE);
+        given(store.associationExists(any(), any())).willReturn(true);
+        given(accounts.get(treasury, NUM_TREASURY_TITLES)).willReturn(10);
+        given(accounts.get(account, NUM_TREASURY_TITLES)).willReturn(5);
+        final var tokenRel = Pair.of(treasury, nonFungible);
+        given(tokenRels.get(tokenRel, TOKEN_BALANCE)).willReturn(0L);
+        given(store.update(op, CONSENSUS_TIME)).willReturn(OK);
+        given(transactionBody.getTokenUpdate()).willReturn(op);
+
+        // when
+        subject.validate(transactionBody);
+        subject.updateToken(op, CONSENSUS_TIME);
+        // then
+        verify(store).update(op, CONSENSUS_TIME);
+        verify(sigImpactHistorian).markEntityChanged(nonFungible.getTokenNum());
+    }
+
+    @Test
+    void updateTokenFailsOnPrepTreasuryChangeForNonFungibleToken() {
+        // given
+        givenTokenUpdateLogic(true);
+        givenValidTransactionBody(true, true);
+        givenContextForSuccessFullCalls();
+        given(ledgers.accounts()).willReturn(accounts);
+        given(ledgers.tokenRels()).willReturn(tokenRels);
+        given(ledgers.nfts()).willReturn(nfts);
+        given(validator.isValidExpiry(EXPIRY)).willReturn(true);
+        given(merkleToken.treasury()).willReturn(treasuryId);
+        given(merkleToken.hasFreezeKey()).willReturn(true);
+        given(store.associationExists(any(), any())).willReturn(true);
+        given(store.get(fungible)).willReturn(merkleToken);
+        given(store.unfreeze(account, fungible)).willReturn(INVALID_ACCOUNT_ID);
+        // then
+        Assertions.assertThrows(
+                InvalidTransactionException.class, () -> subject.updateToken(op, CONSENSUS_TIME));
+    }
+
+    @Test
     void updateTokenFailsWithInvalidFreezeKeyValue() {
         // given
         givenTokenUpdateLogic(true);
-        givenValidTransactionBody(true);
+        givenValidTransactionBody(true, true);
         givenContextForSuccessFullCalls();
         given(ledgers.accounts()).willReturn(accounts);
         given(ledgers.tokenRels()).willReturn(tokenRels);
@@ -200,6 +288,7 @@ class TokenUpdateLogicTest {
         given(store.unfreeze(any(), any())).willReturn(FAIL_INVALID);
         given(ledgers.nfts()).willReturn(nfts);
         given(merkleToken.treasury()).willReturn(treasuryId);
+
         // then
         Assertions.assertThrows(
                 InvalidTransactionException.class, () -> subject.updateToken(op, CONSENSUS_TIME));
@@ -209,7 +298,7 @@ class TokenUpdateLogicTest {
     void updateTokenHappyPathForNonFungibleToken() {
         // given
         givenTokenUpdateLogic(true);
-        givenValidTransactionBody(false);
+        givenValidTransactionBody(false, true);
         givenContextForSuccessFullCalls();
         givenLedgers();
         givenHederaStoreContextForNonFungible();
@@ -225,10 +314,54 @@ class TokenUpdateLogicTest {
     }
 
     @Test
+    void updateTokenFailsForNonFungibleTokenWithDetachedAutorenewAccount() {
+        // given
+        givenTokenUpdateLogic(true);
+        givenValidTransactionBody(false, true);
+        givenContextForUnsuccessFullCalls();
+        given(ledgers.accounts()).willReturn(accounts);
+        given(store.get(nonFungible)).willReturn(merkleToken);
+        given(transactionBody.getTokenUpdate()).willReturn(op);
+        // when
+        subject.validate(transactionBody);
+        // then
+
+        Assertions.assertThrows(
+                InvalidTransactionException.class, () -> subject.updateToken(op, CONSENSUS_TIME));
+    }
+
+    @Test
+    void updateTokenHappyPathForNonFungibleTokenWithMissingAutorenewAccount() {
+        // given
+        givenTokenUpdateLogic(true);
+        givenValidTransactionBody(false, true);
+        givenHederaStoreContextForNonFungible();
+        givenLedgers();
+        given(merkleToken.hasAdminKey()).willReturn(true);
+        given(validator.expiryStatusGiven(accounts, account)).willReturn(OK);
+        given(validator.expiryStatusGiven(accounts, treasury)).willReturn(OK);
+        given(validator.isValidExpiry(EXPIRY)).willReturn(true);
+        given(merkleToken.hasAutoRenewAccount()).willReturn(false);
+        given(merkleToken.treasury()).willReturn(treasuryId);
+        given(merkleToken.tokenType()).willReturn(NON_FUNGIBLE_UNIQUE);
+        given(ledgers.accounts()).willReturn(accounts);
+        given(store.get(nonFungible)).willReturn(merkleToken);
+        given(transactionBody.getTokenUpdate()).willReturn(op);
+
+        // when
+        subject.validate(transactionBody);
+        subject.updateToken(op, CONSENSUS_TIME);
+
+        // then
+        verify(store).update(op, CONSENSUS_TIME);
+        verify(sigImpactHistorian).markEntityChanged(nonFungible.getTokenNum());
+    }
+
+    @Test
     void updateTokenForNonFungibleTokenFailsDueToWrongNftAllowance() {
         // given
         givenTokenUpdateLogic(false);
-        givenValidTransactionBody(false);
+        givenValidTransactionBody(false, true);
         givenContextForSuccessFullCalls();
         givenMinimalLedgers();
         given(tokenRels.get(any(), any())).willReturn(100L);
@@ -247,7 +380,7 @@ class TokenUpdateLogicTest {
     void updateTokenForNonFungibleTokenFailsDueToWrongNftAllowanceAndUnsufficientBalance() {
         // given
         givenTokenUpdateLogic(false);
-        givenValidTransactionBody(false);
+        givenValidTransactionBody(false, true);
         givenContextForSuccessFullCalls();
         givenMinimalLedgers();
         given(ledgers.nfts()).willReturn(nfts);
@@ -258,6 +391,7 @@ class TokenUpdateLogicTest {
         given(merkleToken.tokenType()).willReturn(NON_FUNGIBLE_UNIQUE);
         given(merkleToken.treasury()).willReturn(EntityId.fromGrpcAccountId(account));
         // then
+
         Assertions.assertThrows(
                 InvalidTransactionException.class, () -> subject.updateToken(op, CONSENSUS_TIME));
     }
@@ -407,6 +541,13 @@ class TokenUpdateLogicTest {
         given(validator.expiryStatusGiven(accounts, treasury)).willReturn(OK);
     }
 
+    private void givenContextForUnsuccessFullCalls() {
+        given(merkleToken.hasAdminKey()).willReturn(true);
+        given(validator.isValidExpiry(EXPIRY)).willReturn(true);
+        given(validator.expiryStatusGiven(accounts, account))
+                .willReturn(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
+    }
+
     private void givenLedgers() {
         givenMinimalLedgers();
         given(accounts.get(any(), any())).willReturn(3);
@@ -431,28 +572,29 @@ class TokenUpdateLogicTest {
         given(store.changeOwnerWildCard(nftId, treasury, account)).willReturn(OK);
     }
 
-    private void givenValidTransactionBody(boolean isFungible) {
-        final var builder = TokenUpdateTransactionBody.newBuilder();
-        op =
+    private void givenValidTransactionBody(boolean isFungible, boolean hasTreasury) {
+        var builder = TokenUpdateTransactionBody.newBuilder();
+        builder =
                 isFungible
                         ? builder.setToken(fungible)
                                 .setName("name")
                                 .setMemo(StringValue.of("memo"))
                                 .setSymbol("symbol")
-                                .setTreasury(account)
                                 .setExpiry(EXPIRY)
                                 .setAutoRenewAccount(account)
                                 .setAutoRenewPeriod(Duration.newBuilder().setSeconds(2L))
-                                .build()
                         : builder.setToken(nonFungible)
                                 .setName("NFT")
                                 .setMemo(StringValue.of("NftMemo"))
                                 .setSymbol("NftSymbol")
-                                .setTreasury(account)
                                 .setExpiry(EXPIRY)
                                 .setAutoRenewAccount(account)
-                                .setAutoRenewPeriod(Duration.newBuilder().setSeconds(2L))
-                                .build();
+                                .setAutoRenewPeriod(Duration.newBuilder().setSeconds(2L));
+
+        if (hasTreasury) {
+            builder.setTreasury(account);
+        }
+        op = builder.build();
     }
 
     private void givenKeys() {
