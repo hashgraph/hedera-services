@@ -15,7 +15,10 @@
  */
 package com.hedera.services.state.expiry.removal;
 
+import static com.hedera.services.state.expiry.classification.ClassificationWork.CLASSIFICATION_WORK;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
@@ -26,9 +29,12 @@ import com.hedera.services.state.expiry.classification.ClassificationWork;
 import com.hedera.services.state.expiry.classification.EntityLookup;
 import com.hedera.services.state.expiry.renewal.RenewalRecordsHelper;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.throttling.ExpiryThrottle;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.test.factories.accounts.MerkleAccountFactory;
 import com.swirlds.merkle.map.MerkleMap;
+
+import java.time.Instant;
 import java.util.Collections;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -43,6 +49,7 @@ class RemovalHelperTest {
     @Mock private ContractGC contractGC;
     @Mock private AccountGC accountGC;
     @Mock private RenewalRecordsHelper recordsHelper;
+    @Mock private ExpiryThrottle expiryThrottle;
 
     private EntityLookup lookup;
     private ClassificationWork classifier;
@@ -51,7 +58,7 @@ class RemovalHelperTest {
     @BeforeEach
     void setUp() {
         lookup = new EntityLookup(() -> accounts);
-        classifier = new ClassificationWork(properties, lookup);
+        classifier = new ClassificationWork(properties, lookup, expiryThrottle);
         accounts = new MerkleMap<>();
         accounts.put(EntityNum.fromLong(expiredDeletedAccountNum), expiredDeletedAccount);
         accounts.put(EntityNum.fromLong(expiredDeletedContractNum), expiredDeletedContract);
@@ -79,6 +86,7 @@ class RemovalHelperTest {
                 new TreasuryReturns(Collections.emptyList(), Collections.emptyList(), true);
         given(accountGC.expireBestEffort(expiredNum, expiredDeletedAccount))
                 .willReturn(expectedReturns);
+        given(expiryThrottle.allow(eq(CLASSIFICATION_WORK), any(Instant.class))).willReturn(true);
 
         classifier.classify(expiredNum, now);
         classifier.resolvePayerForAutoRenew();
@@ -100,6 +108,7 @@ class RemovalHelperTest {
                 new TreasuryReturns(Collections.emptyList(), Collections.emptyList(), true);
         given(accountGC.expireBestEffort(expiredNum, expiredDeletedContract))
                 .willReturn(expectedReturns);
+        given(expiryThrottle.allow(eq(CLASSIFICATION_WORK), any(Instant.class))).willReturn(true);
 
         classifier.classify(expiredNum, now);
         classifier.resolvePayerForAutoRenew();
@@ -111,7 +120,7 @@ class RemovalHelperTest {
         assertEquals(EntityProcessResult.DONE, result);
     }
 
-    private final long now = 1_234_567L;
+    private final Instant now = Instant.ofEpochSecond(1_234_567L);
     private final long nonExpiredAccountNum = 1002L;
     private final long expiredDeletedAccountNum = 1003L;
     private final long expiredDeletedContractNum = 1004L;
@@ -121,7 +130,7 @@ class RemovalHelperTest {
                     .balance(0)
                     .deleted(true)
                     .alias(ByteString.copyFromUtf8("cccc"))
-                    .expirationTime(now - 1)
+                    .expirationTime(now.getEpochSecond() - 1)
                     .get();
     private final MerkleAccount expiredDeletedContract =
             MerkleAccountFactory.newAccount()
@@ -129,6 +138,6 @@ class RemovalHelperTest {
                     .balance(0)
                     .deleted(true)
                     .alias(ByteString.copyFromUtf8("cccc"))
-                    .expirationTime(now - 1)
+                    .expirationTime(now.getEpochSecond() - 1)
                     .get();
 }

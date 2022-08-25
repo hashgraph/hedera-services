@@ -15,20 +15,18 @@
  */
 package com.hedera.services.state.expiry.classification;
 
-import static com.hedera.services.state.expiry.classification.ClassificationResult.DETACHED_ACCOUNT;
-import static com.hedera.services.state.expiry.classification.ClassificationResult.DETACHED_ACCOUNT_GRACE_PERIOD_OVER;
-import static com.hedera.services.state.expiry.classification.ClassificationResult.DETACHED_CONTRACT;
-import static com.hedera.services.state.expiry.classification.ClassificationResult.DETACHED_CONTRACT_GRACE_PERIOD_OVER;
-import static com.hedera.services.state.expiry.classification.ClassificationResult.DETACHED_TREASURY_GRACE_PERIOD_OVER_BEFORE_TOKEN;
-import static com.hedera.services.state.expiry.classification.ClassificationResult.EXPIRED_ACCOUNT_READY_TO_RENEW;
-import static com.hedera.services.state.expiry.classification.ClassificationResult.EXPIRED_CONTRACT_READY_TO_RENEW;
-import static com.hedera.services.state.expiry.classification.ClassificationResult.OTHER;
+import static com.hedera.services.state.expiry.classification.ClassificationResult.*;
+import static com.hedera.services.throttling.MapAccessType.ACCOUNTS_GET;
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.throttling.ExpiryThrottle;
+import com.hedera.services.throttling.MapAccessType;
 import com.hedera.services.utils.EntityNum;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import java.time.Instant;
+import java.util.List;
 
 /**
  * Helper for renewing and removing expired entities. Only crypto accounts are supported in this
@@ -38,26 +36,35 @@ import javax.inject.Singleton;
 public class ClassificationWork {
     private final GlobalDynamicProperties dynamicProperties;
     private final EntityLookup lookup;
+    private final ExpiryThrottle expiryThrottle;
     private EntityNum lastClassifiedNum;
     private MerkleAccount lastClassified = null;
     private EntityNum payerForAutoRenewNum;
     private MerkleAccount payerAccountForAutoRenew = null;
 
+    public static final List<MapAccessType> CLASSIFICATION_WORK = List.of(ACCOUNTS_GET);
+
     @Inject
     public ClassificationWork(
-            final GlobalDynamicProperties dynamicProperties, final EntityLookup lookup) {
+            final GlobalDynamicProperties dynamicProperties, final EntityLookup lookup, final ExpiryThrottle expiryThrottle) {
         this.dynamicProperties = dynamicProperties;
+        this.expiryThrottle = expiryThrottle;
         this.lookup = lookup;
     }
 
-    public ClassificationResult classify(final EntityNum candidateNum, final long now) {
+    public ClassificationResult classify(final EntityNum candidateNum, final Instant now) {
+        if (!expiryThrottle.allow(CLASSIFICATION_WORK, now)) {
+            return NO_CAPACITY_FOR_CLASSIFICATION_WORK;
+        }
+
         lastClassifiedNum = candidateNum;
+        final var longNow = now.getEpochSecond();
         if (!lookup.accountsContainsKey(lastClassifiedNum)) {
             return OTHER;
         } else {
             lastClassified = lookup.getImmutableAccount(lastClassifiedNum);
             final long expiry = lastClassified.getExpiry();
-            if (expiry > now) {
+            if (expiry > longNow) {
                 return OTHER;
             }
             final var isContract = lastClassified.isSmartContract();
@@ -72,7 +79,7 @@ public class ClassificationWork {
                         : DETACHED_ACCOUNT_GRACE_PERIOD_OVER;
             }
             final long gracePeriodEnd = expiry + dynamicProperties.autoRenewGracePeriod();
-            if (gracePeriodEnd > now) {
+            if (gracePeriodEnd > longNow) {
                 return isContract ? DETACHED_CONTRACT : DETACHED_ACCOUNT;
             }
             if (lastClassified.isTokenTreasury()) {

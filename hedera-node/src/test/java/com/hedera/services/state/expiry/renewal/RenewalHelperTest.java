@@ -15,9 +15,11 @@
  */
 package com.hedera.services.state.expiry.renewal;
 
+import static com.hedera.services.state.expiry.classification.ClassificationWork.CLASSIFICATION_WORK;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -33,6 +35,7 @@ import com.hedera.services.state.expiry.classification.ClassificationWork;
 import com.hedera.services.state.expiry.classification.EntityLookup;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.throttling.ExpiryThrottle;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.test.factories.accounts.MerkleAccountFactory;
 import com.swirlds.merkle.map.MerkleMap;
@@ -50,6 +53,7 @@ class RenewalHelperTest {
     private final MockGlobalDynamicProps properties = new MockGlobalDynamicProps();
     @Mock private FeeCalculator fees;
     @Mock private RenewalRecordsHelper recordsHelper;
+    @Mock private ExpiryThrottle expiryThrottle;
 
     private EntityLookup lookup;
     private ClassificationWork classificationWork;
@@ -58,7 +62,7 @@ class RenewalHelperTest {
     @BeforeEach
     void setUp() {
         lookup = new EntityLookup(() -> accounts);
-        classificationWork = new ClassificationWork(properties, lookup);
+        classificationWork = new ClassificationWork(properties, lookup, expiryThrottle);
         subject = new RenewalHelper(lookup, classificationWork, properties, fees, recordsHelper);
     }
 
@@ -70,6 +74,7 @@ class RenewalHelperTest {
 
         givenPresent(fundedExpiredAccountNum, expiredAccountNonZeroBalance, true);
         givenPresent(98, fundingAccount, true);
+        given(expiryThrottle.allow(eq(CLASSIFICATION_WORK), any(Instant.class))).willReturn(true);
 
         // when:
         classificationWork.classify(EntityNum.fromLong(fundedExpiredAccountNum), now);
@@ -78,13 +83,13 @@ class RenewalHelperTest {
                         fees.assessCryptoAutoRenewal(
                                 expiredAccountNonZeroBalance,
                                 0L,
-                                Instant.ofEpochSecond(now),
+                                now,
                                 expiredAccountNonZeroBalance))
                 .willReturn(new RenewAssessment(nonZeroBalance, 3600L));
 
         // and:
         subject.tryToRenewAccount(
-                EntityNum.fromLong(fundedExpiredAccountNum), Instant.ofEpochSecond(now));
+                EntityNum.fromLong(fundedExpiredAccountNum), now);
 
         // then:
         verify(accounts, times(2)).getForModify(key);
@@ -106,6 +111,7 @@ class RenewalHelperTest {
         given(accounts.get(key)).willReturn(nonExpiredAccountWithAutoRenew);
         given(accounts.get(autoRenewAccount)).willReturn(nonExpiredAccount);
         givenPresent(98, fundingAccount, true);
+        given(expiryThrottle.allow(eq(CLASSIFICATION_WORK), any(Instant.class))).willReturn(true);
 
         // when:
         classificationWork.classify(EntityNum.fromLong(nonExpiredAccountNum), now);
@@ -116,13 +122,13 @@ class RenewalHelperTest {
                         fees.assessCryptoAutoRenewal(
                                 nonExpiredAccountWithAutoRenew,
                                 0L,
-                                Instant.ofEpochSecond(now),
+                                now,
                                 autoRenewMerkleAccount))
                 .willReturn(new RenewAssessment(nonZeroBalance, 3600L));
 
         // and:
         subject.tryToRenewAccount(
-                EntityNum.fromLong(fundedExpiredAccountNum), Instant.ofEpochSecond(now));
+                EntityNum.fromLong(fundedExpiredAccountNum), now);
 
         // then:
         verify(accounts, times(1)).getForModify(autoRenewAccount);
@@ -136,13 +142,13 @@ class RenewalHelperTest {
         properties.disableAutoRenew();
         var result =
                 subject.tryToRenewAccount(
-                        EntityNum.fromLong(fundedExpiredAccountNum), Instant.ofEpochSecond(now));
+                        EntityNum.fromLong(fundedExpiredAccountNum), now);
         assertEquals(EntityProcessResult.NOTHING_TO_DO, result);
 
         properties.disableContractAutoRenew();
         result =
                 subject.tryToRenewContract(
-                        EntityNum.fromLong(fundedExpiredAccountNum), Instant.ofEpochSecond(now));
+                        EntityNum.fromLong(fundedExpiredAccountNum), now);
         assertEquals(EntityProcessResult.NOTHING_TO_DO, result);
     }
 
@@ -155,6 +161,7 @@ class RenewalHelperTest {
     @Test
     void rejectsAsIseIfFeeIsUnaffordable() {
         givenPresent(brokeExpiredNum, expiredAccountZeroBalance);
+        given(expiryThrottle.allow(eq(CLASSIFICATION_WORK), any(Instant.class))).willReturn(true);
 
         // when:
         classificationWork.classify(EntityNum.fromLong(brokeExpiredNum), now);
@@ -178,39 +185,39 @@ class RenewalHelperTest {
         }
     }
 
-    private final long now = 1_234_567L;
+    private final Instant now = Instant.ofEpochSecond(1_234_567L);
     private final long nonZeroBalance = 1L;
 
     private final MerkleAccount nonExpiredAccount =
             MerkleAccountFactory.newAccount()
                     .balance(10)
-                    .expirationTime(now + 1)
+                    .expirationTime(now.getEpochSecond() + 1)
                     .alias(ByteString.copyFromUtf8("aaaa"))
                     .get();
     private final MerkleAccount nonExpiredAccountWithAutoRenew =
             MerkleAccountFactory.newAccount()
                     .isSmartContract(true)
                     .balance(10)
-                    .expirationTime(now + 1)
+                    .expirationTime(now.getEpochSecond() + 1)
                     .alias(ByteString.copyFromUtf8("aaaa"))
                     .autoRenewAccount(EntityId.fromIdentityCode(10).toGrpcAccountId())
                     .get();
     private final MerkleAccount autoRenewMerkleAccount =
             MerkleAccountFactory.newAccount()
                     .balance(10)
-                    .expirationTime(now + 1)
+                    .expirationTime(now.getEpochSecond() + 1)
                     .alias(ByteString.copyFromUtf8("aaaa"))
                     .get();
     private final MerkleAccount expiredAccountZeroBalance =
             MerkleAccountFactory.newAccount()
                     .balance(0)
-                    .expirationTime(now - 1)
+                    .expirationTime(now.getEpochSecond() - 1)
                     .alias(ByteString.copyFromUtf8("bbbb"))
                     .get();
     private final MerkleAccount expiredAccountNonZeroBalance =
             MerkleAccountFactory.newAccount()
                     .balance(nonZeroBalance)
-                    .expirationTime(now - 1)
+                    .expirationTime(now.getEpochSecond() - 1)
                     .alias(ByteString.copyFromUtf8("dddd"))
                     .get();
     private final MerkleAccount fundingAccount =
@@ -222,7 +229,7 @@ class RenewalHelperTest {
             MerkleAccountFactory.newAccount()
                     .isSmartContract(true)
                     .balance(1)
-                    .expirationTime(now - 1)
+                    .expirationTime(now .getEpochSecond()- 1)
                     .get();
     private final long nonExpiredAccountNum = 1L;
     private final long brokeExpiredNum = 2L;

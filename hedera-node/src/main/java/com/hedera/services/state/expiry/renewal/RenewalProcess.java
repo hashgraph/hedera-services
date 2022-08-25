@@ -16,6 +16,7 @@
 package com.hedera.services.state.expiry.renewal;
 
 import static com.hedera.services.state.expiry.EntityProcessResult.NOTHING_TO_DO;
+import static com.hedera.services.state.expiry.EntityProcessResult.STILL_MORE_TO_DO;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.hedera.services.state.expiry.EntityProcessResult;
@@ -61,14 +62,15 @@ public class RenewalProcess {
     public EntityProcessResult process(final long literalNum) {
         assertInCycle();
 
-        final var longNow = cycleTime.getEpochSecond();
         final var entityNum = EntityNum.fromLong(literalNum);
-        // ClassificationWork
-        final var classification = classifier.classify(entityNum, longNow);
+        final var classification = classifier.classify(entityNum, cycleTime);
 
         return switch (classification) {
+            case NO_CAPACITY_FOR_CLASSIFICATION_WORK -> STILL_MORE_TO_DO;
+            // Removal work
             case DETACHED_ACCOUNT_GRACE_PERIOD_OVER -> removalWork.tryToRemoveAccount(entityNum);
             case DETACHED_CONTRACT_GRACE_PERIOD_OVER -> removalWork.tryToRemoveContract(entityNum);
+            // Renewal work
             case EXPIRED_ACCOUNT_READY_TO_RENEW -> renewalWork.tryToRenewAccount(
                     entityNum, cycleTime);
             case EXPIRED_CONTRACT_READY_TO_RENEW -> renewalWork.tryToRenewContract(
