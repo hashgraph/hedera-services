@@ -54,7 +54,6 @@ class AccountGCTest {
     @Mock private UniqueTokenMapAdapter uniqueTokens;
     @Mock private GlobalDynamicProperties dynamicProperties;
     @Mock private AccountGC.RemovalFacilitation removalFacilitation;
-    @Mock private TokenRelsListMutation listRemoval;
 
     private AccountGC subject;
 

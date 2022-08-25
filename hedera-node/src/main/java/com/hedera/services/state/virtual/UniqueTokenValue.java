@@ -77,17 +77,17 @@ public class UniqueTokenValue implements VirtualValue {
     public UniqueTokenValue() {}
 
     public UniqueTokenValue(
-            long ownerAccountNum,
-            long spenderAccountNum,
-            byte[] metadata,
-            RichInstant creationTime) {
+            final long ownerAccountNum,
+            final long spenderAccountNum,
+            final byte[] metadata,
+            final RichInstant creationTime) {
         this.ownerAccountNum = ownerAccountNum;
         this.spenderAccountNum = spenderAccountNum;
         this.packedCreationTime = packedTime(creationTime.getSeconds(), creationTime.getNanos());
         this.metadata = metadata;
     }
 
-    public UniqueTokenValue(UniqueTokenValue other) {
+    public UniqueTokenValue(final UniqueTokenValue other) {
         this.ownerAccountNum = other.ownerAccountNum;
         this.spenderAccountNum = other.spenderAccountNum;
         this.metadata = other.metadata;
@@ -126,8 +126,8 @@ public class UniqueTokenValue implements VirtualValue {
     }
 
     @Override
-    public UniqueTokenValue asReadOnly() {
-        UniqueTokenValue copy = new UniqueTokenValue(this);
+    public VirtualValue asReadOnly() {
+        final UniqueTokenValue copy = new UniqueTokenValue(this);
         copy.isImmutable = true;
         return copy;
     }
@@ -179,7 +179,7 @@ public class UniqueTokenValue implements VirtualValue {
     private static byte[] readBytes(
             final CheckedSupplier<Byte> readByteFn,
             final CheckedConsumer<byte[]> readBytesFn,
-            int maxBytes)
+            final int maxBytes)
             throws IOException {
         // Guard against mal-formed data by capping the max length.
         final int len = min(readByteFn.get(), maxBytes);

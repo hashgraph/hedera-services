@@ -17,108 +17,13 @@ package com.hedera.services.context.properties;
 
 import static com.hedera.services.context.properties.EntityType.ACCOUNT;
 import static com.hedera.services.context.properties.EntityType.CONTRACT;
-import static com.hedera.services.context.properties.PropertyNames.ACCOUNTS_MAX_NUM;
-import static com.hedera.services.context.properties.PropertyNames.AUTO_CREATION_ENABLED;
-import static com.hedera.services.context.properties.PropertyNames.AUTO_REMOVE_MAX_PURGED_KV_PAIRS_PER_TOUCH;
-import static com.hedera.services.context.properties.PropertyNames.AUTO_REMOVE_MAX_RETURNED_NFTS_PER_TOUCH;
-import static com.hedera.services.context.properties.PropertyNames.AUTO_RENEW_GRACE_PERIOD;
-import static com.hedera.services.context.properties.PropertyNames.AUTO_RENEW_MAX_NUM_OF_ENTITIES_TO_RENEW_OR_DELETE;
-import static com.hedera.services.context.properties.PropertyNames.AUTO_RENEW_NUM_OF_ENTITIES_TO_SCAN;
-import static com.hedera.services.context.properties.PropertyNames.AUTO_RENEW_TARGET_TYPES;
-import static com.hedera.services.context.properties.PropertyNames.BALANCES_EXPORT_DIR_PATH;
-import static com.hedera.services.context.properties.PropertyNames.BALANCES_EXPORT_ENABLED;
-import static com.hedera.services.context.properties.PropertyNames.BALANCES_EXPORT_PERIOD_SECS;
-import static com.hedera.services.context.properties.PropertyNames.BALANCES_EXPORT_TOKEN_BALANCES;
-import static com.hedera.services.context.properties.PropertyNames.BALANCES_NODE_BALANCE_WARN_THRESHOLD;
-import static com.hedera.services.context.properties.PropertyNames.CACHE_RECORDS_TTL;
-import static com.hedera.services.context.properties.PropertyNames.CONSENSUS_HANDLE_MAX_FOLLOWING_RECORDS;
-import static com.hedera.services.context.properties.PropertyNames.CONSENSUS_HANDLE_MAX_PRECEDING_RECORDS;
-import static com.hedera.services.context.properties.PropertyNames.CONSENSUS_MESSAGE_MAX_BYTES_ALLOWED;
-import static com.hedera.services.context.properties.PropertyNames.CONTRACTS_ALLOW_AUTO_ASSOCIATIONS;
-import static com.hedera.services.context.properties.PropertyNames.CONTRACTS_ALLOW_CREATE2;
-import static com.hedera.services.context.properties.PropertyNames.CONTRACTS_CHAIN_ID;
-import static com.hedera.services.context.properties.PropertyNames.CONTRACTS_DEFAULT_LIFETIME;
-import static com.hedera.services.context.properties.PropertyNames.CONTRACTS_KNOWN_BLOCK_HASH;
-import static com.hedera.services.context.properties.PropertyNames.CONTRACTS_LOCAL_CALL_EST_RET_BYTES;
-import static com.hedera.services.context.properties.PropertyNames.CONTRACTS_MAX_GAS_PER_SEC;
-import static com.hedera.services.context.properties.PropertyNames.CONTRACTS_MAX_KV_PAIRS_AGGREGATE;
-import static com.hedera.services.context.properties.PropertyNames.CONTRACTS_MAX_KV_PAIRS_INDIVIDUAL;
-import static com.hedera.services.context.properties.PropertyNames.CONTRACTS_MAX_NUM;
-import static com.hedera.services.context.properties.PropertyNames.CONTRACTS_MAX_REFUND_PERCENT_OF_GAS_LIMIT;
-import static com.hedera.services.context.properties.PropertyNames.CONTRACTS_PRECOMPILE_EXCHANGE_RATE_GAS_COST;
-import static com.hedera.services.context.properties.PropertyNames.CONTRACTS_PRECOMPILE_EXPORT_RECORD_RESULTS;
-import static com.hedera.services.context.properties.PropertyNames.CONTRACTS_PRECOMPILE_HTS_DEFAULT_GAS_COST;
-import static com.hedera.services.context.properties.PropertyNames.CONTRACTS_PRECOMPILE_HTS_ENABLE_TOKEN_CREATE;
-import static com.hedera.services.context.properties.PropertyNames.CONTRACTS_REDIRECT_TOKEN_CALLS;
-import static com.hedera.services.context.properties.PropertyNames.CONTRACTS_SCHEDULE_THROTTLE_MAX_GAS_LIMIT;
-import static com.hedera.services.context.properties.PropertyNames.CONTRACTS_SIDECARS;
-import static com.hedera.services.context.properties.PropertyNames.CONTRACTS_THROTTLE_THROTTLE_BY_GAS;
-import static com.hedera.services.context.properties.PropertyNames.ENTITIES_LIMIT_TOKEN_ASSOCIATIONS;
-import static com.hedera.services.context.properties.PropertyNames.FEES_MIN_CONGESTION_PERIOD;
-import static com.hedera.services.context.properties.PropertyNames.FEES_PERCENT_CONGESTION_MULTIPLIERS;
-import static com.hedera.services.context.properties.PropertyNames.FEES_TOKEN_TRANSFER_USAGE_MULTIPLIER;
-import static com.hedera.services.context.properties.PropertyNames.FILES_MAX_NUM;
-import static com.hedera.services.context.properties.PropertyNames.FILES_MAX_SIZE_KB;
-import static com.hedera.services.context.properties.PropertyNames.HEDERA_ALLOWANCES_IS_ENABLED;
-import static com.hedera.services.context.properties.PropertyNames.HEDERA_ALLOWANCES_MAX_ACCOUNT_LIMIT;
-import static com.hedera.services.context.properties.PropertyNames.HEDERA_ALLOWANCES_MAX_TXN_LIMIT;
-import static com.hedera.services.context.properties.PropertyNames.HEDERA_RECORD_STREAM_ENABLE_TRACEABILITY_MIGRATION;
-import static com.hedera.services.context.properties.PropertyNames.HEDERA_RECORD_STREAM_RECORD_FILE_VERSION;
-import static com.hedera.services.context.properties.PropertyNames.HEDERA_RECORD_STREAM_SIDECAR_MAX_SIZE_MB;
-import static com.hedera.services.context.properties.PropertyNames.HEDERA_RECORD_STREAM_SIG_FILE_VERSION;
-import static com.hedera.services.context.properties.PropertyNames.HEDERA_TXN_MAX_MEMO_UTF8_BYTES;
-import static com.hedera.services.context.properties.PropertyNames.HEDERA_TXN_MAX_VALID_DURATION;
-import static com.hedera.services.context.properties.PropertyNames.HEDERA_TXN_MIN_VALIDITY_BUFFER_SECS;
-import static com.hedera.services.context.properties.PropertyNames.HEDERA_TXN_MIN_VALID_DURATION;
-import static com.hedera.services.context.properties.PropertyNames.LEDGER_AUTO_RENEW_PERIOD_MAX_DURATION;
-import static com.hedera.services.context.properties.PropertyNames.LEDGER_AUTO_RENEW_PERIOD_MIN_DURATION;
-import static com.hedera.services.context.properties.PropertyNames.LEDGER_CHANGE_HIST_MEM_SECS;
-import static com.hedera.services.context.properties.PropertyNames.LEDGER_FUNDING_ACCOUNT;
-import static com.hedera.services.context.properties.PropertyNames.LEDGER_NFT_TRANSFERS_MAX_LEN;
-import static com.hedera.services.context.properties.PropertyNames.LEDGER_RECORDS_MAX_QUERYABLE_BY_ACCOUNT;
-import static com.hedera.services.context.properties.PropertyNames.LEDGER_SCHEDULE_TX_EXPIRY_TIME_SECS;
-import static com.hedera.services.context.properties.PropertyNames.LEDGER_TOKEN_TRANSFERS_MAX_LEN;
-import static com.hedera.services.context.properties.PropertyNames.LEDGER_TRANSFERS_MAX_LEN;
-import static com.hedera.services.context.properties.PropertyNames.LEDGER_XFER_BAL_CHANGES_MAX_LEN;
-import static com.hedera.services.context.properties.PropertyNames.RATES_INTRA_DAY_CHANGE_LIMIT_PERCENT;
-import static com.hedera.services.context.properties.PropertyNames.SCHEDULING_LONG_TERM_ENABLED;
-import static com.hedera.services.context.properties.PropertyNames.SCHEDULING_MAX_EXPIRATION_FUTURE_SECS;
-import static com.hedera.services.context.properties.PropertyNames.SCHEDULING_MAX_NUM;
-import static com.hedera.services.context.properties.PropertyNames.SCHEDULING_MAX_TXN_PER_SEC;
-import static com.hedera.services.context.properties.PropertyNames.SCHEDULING_WHITE_LIST;
-import static com.hedera.services.context.properties.PropertyNames.SIGS_EXPAND_FROM_IMMUTABLE_STATE;
-import static com.hedera.services.context.properties.PropertyNames.STAKING_FEES_NODE_REWARD_PERCENT;
-import static com.hedera.services.context.properties.PropertyNames.STAKING_FEES_STAKING_REWARD_PERCENT;
-import static com.hedera.services.context.properties.PropertyNames.STAKING_IS_ENABLED;
-import static com.hedera.services.context.properties.PropertyNames.STAKING_MAX_DAILY_STAKE_REWARD_THRESH_PER_HBAR;
-import static com.hedera.services.context.properties.PropertyNames.STAKING_NODE_MAX_TO_MIN_STAKE_RATIOS;
-import static com.hedera.services.context.properties.PropertyNames.STAKING_REQUIRE_MIN_STAKE_TO_REWARD;
-import static com.hedera.services.context.properties.PropertyNames.STAKING_REWARD_RATE;
-import static com.hedera.services.context.properties.PropertyNames.STAKING_START_THRESH;
-import static com.hedera.services.context.properties.PropertyNames.TOKENS_MAX_AGGREGATE_RELS;
-import static com.hedera.services.context.properties.PropertyNames.TOKENS_MAX_CUSTOM_FEES_ALLOWED;
-import static com.hedera.services.context.properties.PropertyNames.TOKENS_MAX_CUSTOM_FEE_DEPTH;
-import static com.hedera.services.context.properties.PropertyNames.TOKENS_MAX_NUM;
-import static com.hedera.services.context.properties.PropertyNames.TOKENS_MAX_PER_ACCOUNT;
-import static com.hedera.services.context.properties.PropertyNames.TOKENS_MAX_RELS_PER_INFO_QUERY;
-import static com.hedera.services.context.properties.PropertyNames.TOKENS_MAX_SYMBOL_UTF8_BYTES;
-import static com.hedera.services.context.properties.PropertyNames.TOKENS_MAX_TOKEN_NAME_UTF8_BYTES;
-import static com.hedera.services.context.properties.PropertyNames.TOKENS_NFTS_ARE_ENABLED;
-import static com.hedera.services.context.properties.PropertyNames.TOKENS_NFTS_MAX_ALLOWED_MINTS;
-import static com.hedera.services.context.properties.PropertyNames.TOKENS_NFTS_MAX_BATCH_SIZE_BURN;
-import static com.hedera.services.context.properties.PropertyNames.TOKENS_NFTS_MAX_BATCH_SIZE_MINT;
-import static com.hedera.services.context.properties.PropertyNames.TOKENS_NFTS_MAX_BATCH_SIZE_WIPE;
-import static com.hedera.services.context.properties.PropertyNames.TOKENS_NFTS_MAX_METADATA_BYTES;
-import static com.hedera.services.context.properties.PropertyNames.TOKENS_NFTS_MAX_QUERY_RANGE;
-import static com.hedera.services.context.properties.PropertyNames.TOKENS_NFTS_MINT_THORTTLE_SCALE_FACTOR;
-import static com.hedera.services.context.properties.PropertyNames.TOPICS_MAX_NUM;
-import static com.hedera.services.context.properties.PropertyNames.UPGRADE_ARTIFACTS_PATH;
-import static com.hedera.services.context.properties.PropertyNames.UTIL_PRNG_IS_ENABLED;
+import static com.hedera.services.context.properties.PropertyNames.*;
 
 import com.esaulpaugh.headlong.util.Integers;
 import com.hedera.services.config.HederaNumbers;
 import com.hedera.services.context.annotations.CompositeProps;
 import com.hedera.services.fees.calculation.CongestionMultipliers;
+import com.hedera.services.fees.charging.ContractStoragePriceTiers;
 import com.hedera.services.stream.proto.SidecarType;
 import com.hedera.services.sysfiles.domain.KnownBlockValues;
 import com.hedera.services.sysfiles.domain.throttling.ThrottleReqOpsScaleFactor;
@@ -238,6 +143,8 @@ public class GlobalDynamicProperties {
     private Map<Long, Long> nodeMaxMinStakeRatios;
     private int sidecarMaxSizeMb;
     private boolean enableTraceabilityMigration;
+    private boolean itemizeStorageFees;
+    private ContractStoragePriceTiers storagePriceTiers;
 
     @Inject
     public GlobalDynamicProperties(
@@ -382,6 +289,13 @@ public class GlobalDynamicProperties {
         sidecarMaxSizeMb = properties.getIntProperty(HEDERA_RECORD_STREAM_SIDECAR_MAX_SIZE_MB);
         enableTraceabilityMigration =
                 properties.getBooleanProperty(HEDERA_RECORD_STREAM_ENABLE_TRACEABILITY_MIGRATION);
+        storagePriceTiers =
+                ContractStoragePriceTiers.from(
+                        properties.getStringProperty(CONTRACTS_STORAGE_SLOT_PRICE_TIERS),
+                        properties.getIntProperty(CONTRACTS_FREE_STORAGE_TIER_LIMIT),
+                        maxAggregateContractKvPairs,
+                        properties.getLongProperty(CONTRACTS_REFERENCE_SLOT_LIFETIME));
+        itemizeStorageFees = properties.getBooleanProperty(CONTRACTS_ITEMIZE_STORAGE_FEES);
     }
 
     public int maxTokensPerAccount() {
@@ -786,5 +700,13 @@ public class GlobalDynamicProperties {
 
     public boolean isTraceabilityMigrationEnabled() {
         return enableTraceabilityMigration;
+    }
+
+    public ContractStoragePriceTiers storagePriceTiers() {
+        return storagePriceTiers;
+    }
+
+    public boolean shouldItemizeStorageFees() {
+        return itemizeStorageFees;
     }
 }

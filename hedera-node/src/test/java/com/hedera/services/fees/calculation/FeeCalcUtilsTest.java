@@ -16,6 +16,8 @@
 package com.hedera.services.fees.calculation;
 
 import static com.hedera.services.fees.calculation.FeeCalcUtils.ZERO_EXPIRY;
+import static com.hedera.services.fees.calculation.FeeCalcUtils.clampedAdd;
+import static com.hedera.services.fees.calculation.FeeCalcUtils.clampedMultiply;
 import static com.hedera.services.fees.calculation.FeeCalcUtils.lookupAccountExpiry;
 import static com.hedera.services.fees.calculation.FeeCalcUtils.lookupFileExpiry;
 import static com.hedera.services.fees.calculation.FeeCalcUtils.sumOfUsages;
@@ -196,5 +198,33 @@ public class FeeCalcUtilsTest {
             assertEquals(10, scopedUsage.getBpr());
             assertEquals(10, scopedUsage.getSbpr());
         }
+    }
+
+    @Test
+    void clampedAddWorks() {
+        long a = 100L;
+        long b = Long.MAX_VALUE;
+        assertEquals(Long.MAX_VALUE, clampedAdd(a, b));
+
+        b = 100L;
+        assertEquals(200L, clampedAdd(a, b));
+
+        a = -100L;
+        b = Long.MIN_VALUE;
+        assertEquals(Long.MIN_VALUE, clampedAdd(a, b));
+    }
+
+    @Test
+    void clampedMultiplicationWorks() {
+        long a = 100L;
+        long b = Long.MAX_VALUE;
+        assertEquals(Long.MAX_VALUE, clampedMultiply(a, b));
+
+        b = 100L;
+        assertEquals(10000L, clampedMultiply(a, b));
+
+        a = -100L;
+        b = Long.MAX_VALUE;
+        assertEquals(Long.MIN_VALUE, clampedMultiply(a, b));
     }
 }
