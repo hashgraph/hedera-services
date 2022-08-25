@@ -15,21 +15,9 @@
  */
 package com.hedera.services.contracts.execution;
 
-import static com.hedera.services.contracts.execution.traceability.CallOperationType.*;
-import static com.hedera.services.contracts.execution.traceability.ContractActionType.CALL;
-import static com.hedera.services.contracts.execution.traceability.ContractActionType.CREATE;
-import static com.hedera.services.contracts.operation.HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS;
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.*;
-
 import com.hedera.services.contracts.execution.traceability.ContractActionType;
 import com.hedera.services.contracts.execution.traceability.HederaTracer;
 import com.hedera.services.state.submerkle.EntityId;
-import java.nio.charset.StandardCharsets;
-import java.util.ArrayDeque;
-import java.util.Deque;
-import java.util.Optional;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Hash;
@@ -46,6 +34,28 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayDeque;
+import java.util.Deque;
+import java.util.Optional;
+
+import static com.hedera.services.contracts.execution.traceability.CallOperationType.OP_CALL;
+import static com.hedera.services.contracts.execution.traceability.CallOperationType.OP_CALLCODE;
+import static com.hedera.services.contracts.execution.traceability.CallOperationType.OP_CREATE;
+import static com.hedera.services.contracts.execution.traceability.CallOperationType.OP_CREATE2;
+import static com.hedera.services.contracts.execution.traceability.CallOperationType.OP_DELEGATECALL;
+import static com.hedera.services.contracts.execution.traceability.CallOperationType.OP_STATICCALL;
+import static com.hedera.services.contracts.execution.traceability.CallOperationType.OP_UNKNOWN;
+import static com.hedera.services.contracts.execution.traceability.ContractActionType.CALL;
+import static com.hedera.services.contracts.execution.traceability.ContractActionType.CREATE;
+import static com.hedera.services.contracts.operation.HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class HederaTracerTest {

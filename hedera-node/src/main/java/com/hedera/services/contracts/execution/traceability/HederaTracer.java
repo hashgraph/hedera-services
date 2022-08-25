@@ -15,18 +15,29 @@
  */
 package com.hedera.services.contracts.execution.traceability;
 
-import static com.hedera.services.contracts.execution.traceability.CallOperationType.*;
-import static com.hedera.services.contracts.execution.traceability.ContractActionType.CALL;
-import static com.hedera.services.contracts.execution.traceability.ContractActionType.CREATE;
-import static com.hedera.services.contracts.operation.HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS;
-
 import com.hedera.services.state.submerkle.EntityId;
-import java.nio.charset.StandardCharsets;
-import java.util.*;
 import org.hyperledger.besu.evm.Code;
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.frame.MessageFrame.State;
+
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.Deque;
+import java.util.List;
+import java.util.Optional;
+
+import static com.hedera.services.contracts.execution.traceability.CallOperationType.OP_CALL;
+import static com.hedera.services.contracts.execution.traceability.CallOperationType.OP_CALLCODE;
+import static com.hedera.services.contracts.execution.traceability.CallOperationType.OP_CREATE;
+import static com.hedera.services.contracts.execution.traceability.CallOperationType.OP_CREATE2;
+import static com.hedera.services.contracts.execution.traceability.CallOperationType.OP_DELEGATECALL;
+import static com.hedera.services.contracts.execution.traceability.CallOperationType.OP_STATICCALL;
+import static com.hedera.services.contracts.execution.traceability.CallOperationType.OP_UNKNOWN;
+import static com.hedera.services.contracts.execution.traceability.ContractActionType.CALL;
+import static com.hedera.services.contracts.execution.traceability.ContractActionType.CREATE;
+import static com.hedera.services.contracts.operation.HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS;
 
 public class HederaTracer implements HederaOperationTracer {
 
