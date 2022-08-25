@@ -67,6 +67,6 @@ public class MerkleNetworkContextSerdeTest extends SelfSerializableDataTest<Merk
 
     @Override
     protected MerkleNetworkContext getExpectedObject(final SeededPropertySource propertySource) {
-        return propertySource.next0270NetworkContext();
+        return propertySource.next0300NetworkContext();
     }
 }
