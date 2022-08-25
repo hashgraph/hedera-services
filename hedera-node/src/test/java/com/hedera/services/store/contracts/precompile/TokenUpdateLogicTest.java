@@ -359,6 +359,45 @@ class TokenUpdateLogicTest {
                 InvalidTransactionException.class, () -> subject.updateTokenExpiryInfo(op));
     }
 
+    @Test
+    void updateTokenExpiryInfoFailsForDeletedToken() {
+        givenTokenUpdateLogic(true);
+        givenValidTransactionBody(true);
+        given(merkleToken.hasAdminKey()).willReturn(true);
+        given(validator.isValidExpiry(EXPIRY)).willReturn(true);
+        given(store.get(fungible)).willReturn(merkleToken);
+        given(store.resolve(op.getToken())).willReturn(op.getToken());
+        given(merkleToken.isDeleted()).willReturn(true);
+        Assertions.assertThrows(
+                InvalidTransactionException.class, () -> subject.updateTokenExpiryInfo(op));
+    }
+
+    @Test
+    void updateTokenExpiryInfoFailsForPausedToken() {
+        givenTokenUpdateLogic(true);
+        givenValidTransactionBody(true);
+        given(merkleToken.hasAdminKey()).willReturn(true);
+        given(validator.isValidExpiry(EXPIRY)).willReturn(true);
+        given(store.get(fungible)).willReturn(merkleToken);
+        given(store.resolve(op.getToken())).willReturn(op.getToken());
+        given(merkleToken.isDeleted()).willReturn(false);
+        given(merkleToken.isPaused()).willReturn(true);
+        Assertions.assertThrows(
+                InvalidTransactionException.class, () -> subject.updateTokenExpiryInfo(op));
+    }
+
+    @Test
+    void updateTokenExpiryInfoFailsForMissingAdminKey() {
+        givenTokenUpdateLogic(true);
+        givenValidTransactionBody(true);
+        given(merkleToken.hasAdminKey()).willReturn(false);
+        given(validator.isValidExpiry(EXPIRY)).willReturn(true);
+        given(store.get(fungible)).willReturn(merkleToken);
+        given(store.resolve(op.getToken())).willReturn(op.getToken());
+        Assertions.assertThrows(
+                InvalidTransactionException.class, () -> subject.updateTokenExpiryInfo(op));
+    }
+
     private void givenContextForSuccessFullCalls() {
         given(merkleToken.hasAdminKey()).willReturn(true);
         given(merkleToken.hasAutoRenewAccount()).willReturn(true);
