@@ -44,7 +44,9 @@ import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.contracts.execution.CreateEvmTxProcessor;
 import com.hedera.services.contracts.execution.TransactionProcessingResult;
 import com.hedera.services.exceptions.InvalidTransactionException;
+import com.hedera.services.exceptions.ValidationUtils;
 import com.hedera.services.files.HederaFs;
+import com.hedera.services.files.TieredHederaFs;
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.accounts.ContractCustomizer;
 import com.hedera.services.legacy.core.jproto.JContractIDKey;
@@ -326,8 +328,13 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
             return Bytes.wrap(ByteStringUtils.unwrapUnsafelyIfPossible(op.getInitcode()));
         } else {
             var bytecodeSrc = op.getFileID();
-            validateTrue(hfs.exists(bytecodeSrc), INVALID_FILE_ID);
-            byte[] bytecode = hfs.cat(bytecodeSrc);
+            byte[] bytecode;
+            try {
+                bytecode = hfs.cat(bytecodeSrc);
+            } catch (IllegalArgumentException e) {
+                final var failureReason = TieredHederaFs.IllegalArgumentType.valueOf(e.getMessage()).suggestedStatus();
+                throw new InvalidTransactionException(failureReason);
+            }
             validateFalse(bytecode.length == 0, CONTRACT_FILE_EMPTY);
 
             var contractByteCodeString = new String(bytecode);

@@ -19,19 +19,8 @@ import static com.google.protobuf.ByteString.copyFromUtf8;
 import static com.hedera.services.context.BasicTransactionContext.EMPTY_KEY;
 import static com.hedera.services.ledger.properties.AccountProperty.MAX_AUTOMATIC_ASSOCIATIONS;
 import static com.hedera.services.sigs.utils.ImmutableKeyUtils.IMMUTABILITY_SENTINEL_KEY;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_NEGATIVE_GAS;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_NEGATIVE_VALUE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RENEWAL_PERIOD;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_STAKING_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_GAS_LIMIT_EXCEEDED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MEMO_TOO_LONG;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PROXY_ACCOUNT_ID_FIELD_IS_DEPRECATED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SERIALIZATION_FAILED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.STAKING_NOT_ENABLED;
+import static com.hedera.test.utils.TxnUtils.assertFailsWith;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -54,6 +43,7 @@ import com.hedera.services.contracts.execution.CreateEvmTxProcessor;
 import com.hedera.services.contracts.execution.TransactionProcessingResult;
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.files.HederaFs;
+import com.hedera.services.files.TieredHederaFs;
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.accounts.ContractCustomizer;
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
@@ -74,6 +64,7 @@ import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.SidecarUtils;
 import com.hedera.services.utils.accessors.SignedTxnAccessor;
 import com.hedera.test.utils.IdUtils;
+import com.hedera.test.utils.TxnUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -371,7 +362,6 @@ class ContractCreateTransitionLogicTest {
         final var contractByteCodeString = new String(bytecode) + constructorParamsHexString;
         final var expiry = consensusTime.getEpochSecond() + customAutoRenewPeriod;
         given(accountStore.loadAccount(senderAccount.getId())).willReturn(senderAccount);
-        given(hfs.exists(bytecodeSrc)).willReturn(true);
         given(hfs.cat(bytecodeSrc)).willReturn(bytecode);
         given(accessor.getTxn()).willReturn(contractCreateTxn);
         given(txnCtx.activePayer()).willReturn(ourAccount());
@@ -434,7 +424,6 @@ class ContractCreateTransitionLogicTest {
         final var contractByteCodeString = new String(bytecode) + constructorParamsHexString;
         final var expiry = consensusTime.getEpochSecond() + customAutoRenewPeriod;
         given(accountStore.loadAccount(senderAccount.getId())).willReturn(senderAccount);
-        given(hfs.exists(bytecodeSrc)).willReturn(true);
         given(hfs.cat(bytecodeSrc)).willReturn(bytecode);
         given(accessor.getTxn()).willReturn(contractCreateTxn);
         given(txnCtx.activePayer()).willReturn(ourAccount());
@@ -509,7 +498,6 @@ class ContractCreateTransitionLogicTest {
                                 Duration.newBuilder().setSeconds(customAutoRenewPeriod).build())
                         .getSeconds();
         given(accountStore.loadAccount(senderAccount.getId())).willReturn(senderAccount);
-        given(hfs.exists(bytecodeSrc)).willReturn(true);
         given(hfs.cat(bytecodeSrc)).willReturn(bytecode);
         given(accessor.getTxn()).willReturn(contractCreateTxn);
         given(txnCtx.activePayer()).willReturn(ourAccount());
@@ -563,7 +551,6 @@ class ContractCreateTransitionLogicTest {
         given(worldState.newContractAddress(senderAccount.getId().asEvmAddress()))
                 .willReturn(contractAccount.getId().asEvmAddress());
         given(worldState.getCreatedContractIds()).willReturn(expectedCreatedContracts);
-        given(hfs.exists(bytecodeSrc)).willReturn(true);
         given(hfs.cat(bytecodeSrc)).willReturn(bytecode);
         given(accessor.getTxn()).willReturn(contractCreateTxn);
         given(txnCtx.activePayer()).willReturn(ourAccount());
@@ -614,7 +601,6 @@ class ContractCreateTransitionLogicTest {
         given(worldState.newContractAddress(senderAccount.getId().asEvmAddress()))
                 .willReturn(contractAccount.getId().asEvmAddress());
         given(worldState.getCreatedContractIds()).willReturn(expectedCreatedContracts);
-        given(hfs.exists(bytecodeSrc)).willReturn(true);
         given(hfs.cat(bytecodeSrc)).willReturn(bytecode);
         given(accessor.getTxn()).willReturn(contractCreateTxn);
         given(txnCtx.activePayer()).willReturn(ourAccount());
@@ -731,7 +717,6 @@ class ContractCreateTransitionLogicTest {
         final var secondaryCreations = List.of(IdUtils.asContract("0.0.849321"));
         // and:
         given(accountStore.loadAccount(senderAccount.getId())).willReturn(senderAccount);
-        given(hfs.exists(bytecodeSrc)).willReturn(true);
         given(hfs.cat(bytecodeSrc)).willReturn(bytecode);
         given(accessor.getTxn()).willReturn(contractCreateTxn);
         given(txnCtx.activePayer()).willReturn(ourAccount());
@@ -804,7 +789,6 @@ class ContractCreateTransitionLogicTest {
         final var secondaryCreations = List.of(IdUtils.asContract("0.0.849321"));
         // and:
         given(accountStore.loadAccount(senderAccount.getId())).willReturn(senderAccount);
-        given(hfs.exists(bytecodeSrc)).willReturn(true);
         given(hfs.cat(bytecodeSrc)).willReturn(bytecode);
         given(accessor.getTxn()).willReturn(contractCreateTxn);
         given(txnCtx.activePayer()).willReturn(ourAccount());
@@ -985,7 +969,6 @@ class ContractCreateTransitionLogicTest {
         // and:
         given(accountStore.loadAccount(senderAccount.getId())).willReturn(senderAccount);
         given(accountStore.loadAccount(relayerAccount.getId())).willReturn(relayerAccount);
-        given(hfs.exists(bytecodeSrc)).willReturn(true);
         given(hfs.cat(bytecodeSrc)).willReturn(bytecode);
         given(worldState.getCreatedContractIds()).willReturn(secondaryCreations);
         given(
@@ -1066,7 +1049,6 @@ class ContractCreateTransitionLogicTest {
         // and:
         given(accountStore.loadAccount(senderAccount.getId())).willReturn(senderAccount);
         given(accountStore.loadAccount(relayerAccount.getId())).willReturn(relayerAccount);
-        given(hfs.exists(bytecodeSrc)).willReturn(true);
         given(hfs.cat(bytecodeSrc)).willReturn(bytecode);
         given(worldState.getCreatedContractIds()).willReturn(secondaryCreations);
         given(
@@ -1186,8 +1168,8 @@ class ContractCreateTransitionLogicTest {
         given(accessor.getTxn()).willReturn(contractCreateTxn);
         given(txnCtx.activePayer()).willReturn(ourAccount());
         given(txnCtx.accessor()).willReturn(accessor);
+        given(hfs.cat(any())).willThrow(new IllegalArgumentException(TieredHederaFs.IllegalArgumentType.UNKNOWN_FILE.toString()));
         given(accountStore.loadAccount(senderAccount.getId())).willReturn(senderAccount);
-        given(hfs.exists(bytecodeSrc)).willReturn(false);
         // when:
         Exception exception =
                 assertThrows(InvalidTransactionException.class, () -> subject.doStateTransition());
@@ -1203,7 +1185,6 @@ class ContractCreateTransitionLogicTest {
         given(txnCtx.activePayer()).willReturn(ourAccount());
         given(txnCtx.accessor()).willReturn(accessor);
         given(accountStore.loadAccount(senderAccount.getId())).willReturn(senderAccount);
-        given(hfs.exists(bytecodeSrc)).willReturn(true);
         given(hfs.cat(bytecodeSrc)).willReturn(new byte[0]);
 
         // when:
@@ -1241,7 +1222,6 @@ class ContractCreateTransitionLogicTest {
 
     @Test
     void throwsErrorOnInvalidBytecode() {
-        given(hfs.exists(any())).willReturn(true);
         given(hfs.cat(any())).willReturn(new byte[] {1, 2, 3, '\n'});
         given(transactionBody.getConstructorParameters()).willReturn(ByteString.EMPTY);
         // when:
@@ -1251,6 +1231,12 @@ class ContractCreateTransitionLogicTest {
                         () -> subject.prepareCodeWithConstructorArguments(transactionBody));
         // then:
         assertEquals("ERROR_DECODING_BYTESTRING", exception.getMessage());
+    }
+
+    @Test
+    void throwsErrorOnUnfetchableBytecode() {
+        given(hfs.cat(any())).willThrow(new IllegalArgumentException(TieredHederaFs.IllegalArgumentType.DELETED_FILE.toString()));
+        assertFailsWith(() -> subject.prepareCodeWithConstructorArguments(transactionBody), FILE_DELETED);
     }
 
     private void givenValidTxnCtx() {
