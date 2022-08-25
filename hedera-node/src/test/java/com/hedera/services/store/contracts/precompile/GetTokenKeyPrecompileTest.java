@@ -309,12 +309,8 @@ class GetTokenKeyPrecompileTest {
         givenMinimalFrameContext();
         givenMinimalContextForCall();
         wrapper = new GetTokenKeyWrapper(fungible, 200L);
-        given(tokens.get(fungible, TokenProperty.KYC_KEY)).willReturn(key);
-        given(key.getECDSASecp256k1Key()).willReturn(new byte[0]);
-        given(key.getEd25519()).willReturn(ed25519Key);
         given(wrappedLedgers.tokens()).willReturn(tokens);
         given(decoder.decodeGetTokenKey(input)).willReturn(wrapper);
-        given(encoder.encodeGetTokenKey(any())).willReturn(successResult);
         given(tokens.exists(any())).willReturn(true);
         // when
         subject.prepareFields(frame);

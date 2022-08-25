@@ -25,6 +25,7 @@ import static com.hedera.services.contracts.ParsingConstants.getFungibleTokenInf
 import static com.hedera.services.contracts.ParsingConstants.getNonFungibleTokenInfoType;
 import static com.hedera.services.contracts.ParsingConstants.getTokenCustomFeesType;
 import static com.hedera.services.contracts.ParsingConstants.getTokenInfoType;
+import static com.hedera.services.contracts.ParsingConstants.getTokenKeyType;
 import static com.hedera.services.contracts.ParsingConstants.hapiAllowanceOfType;
 import static com.hedera.services.contracts.ParsingConstants.intAddressTuple;
 import static com.hedera.services.contracts.ParsingConstants.intBoolTuple;
@@ -427,6 +428,7 @@ public class EncodingFacade {
                         case HAPI_GET_FUNGIBLE_TOKEN_INFO -> getFungibleTokenInfoType;
                         case HAPI_GET_NON_FUNGIBLE_TOKEN_INFO -> getNonFungibleTokenInfoType;
                         case HAPI_GET_TOKEN_CUSTOM_FEES -> getTokenCustomFeesType;
+                        case HAPI_GET_TOKEN_KEY -> getTokenKeyType;
                         case HAPI_GET_TOKEN_TYPE -> intPairTuple;
                         default -> notSpecifiedType;
                     };
