@@ -23,9 +23,11 @@ import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_GET_TOKEN_DEFAULT_KYC_STATUS;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_GET_TOKEN_INFO;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_GET_TOKEN_KEY;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_GET_TOKEN_TYPE;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_IS_FROZEN;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_IS_KYC;
 import static com.hedera.services.store.contracts.precompile.utils.PrecompileUtils.buildKeyValueWrapper;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_IS_TOKEN;
 import static com.hedera.services.utils.MiscUtils.asSecondsTimestamp;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 
@@ -35,6 +37,7 @@ import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.store.contracts.WorldLedgers;
 import com.hedera.services.store.contracts.precompile.codec.DecodingFacade;
 import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
+import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.NftID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import org.apache.commons.lang3.tuple.Pair;
@@ -153,6 +156,19 @@ public class ViewExecutor {
                         ResponseCodeEnum.INVALID_TOKEN_ID);
                 final var customFees = stateView.tokenCustomFees(wrapper.tokenID());
                 return encoder.encodeTokenGetCustomFees(customFees);
+            }
+            case ABI_ID_IS_TOKEN -> {
+                final var wrapper = decoder.decodeIsToken(input);
+                final var isToken = stateView.tokenExists(wrapper.tokenID());
+                return encoder.encodeIsToken(isToken);
+            }
+            case ABI_ID_GET_TOKEN_TYPE -> {
+                final var wrapper = decoder.decodeGetTokenType(input);
+                validateTrueOrRevert(
+                        stateView.tokenExists(wrapper.tokenID()),
+                        ResponseCodeEnum.INVALID_TOKEN_ID);
+                final var token = stateView.tokens().get(EntityNum.fromTokenId(wrapper.tokenID()));
+                return encoder.encodeGetTokenType(token.tokenType().ordinal());
             }
             case ABI_ID_GET_TOKEN_KEY -> {
                 final var wrapper = decoder.decodeGetTokenKey(input);

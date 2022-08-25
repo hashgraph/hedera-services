@@ -15,6 +15,14 @@
  */
 package com.hedera.services.config;
 
+import static com.hedera.services.context.properties.PropertyNames.FILES_ADDRESS_BOOK;
+import static com.hedera.services.context.properties.PropertyNames.FILES_EXCHANGE_RATES;
+import static com.hedera.services.context.properties.PropertyNames.FILES_FEE_SCHEDULES;
+import static com.hedera.services.context.properties.PropertyNames.FILES_HAPI_PERMISSIONS;
+import static com.hedera.services.context.properties.PropertyNames.FILES_NETWORK_PROPERTIES;
+import static com.hedera.services.context.properties.PropertyNames.FILES_NODE_DETAILS;
+import static com.hedera.services.context.properties.PropertyNames.FILES_SOFTWARE_UPDATE_RANGE;
+import static com.hedera.services.context.properties.PropertyNames.FILES_THROTTLE_DEFINITIONS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -28,6 +36,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 class FileNumbersTest {
+    private static final String FILES_SOFTWARE_UPDATE_ZIP = "files.softwareUpdateZip";
     PropertySource properties;
     HederaNumbers hederaNumbers;
 
@@ -41,15 +50,15 @@ class FileNumbersTest {
         given(hederaNumbers.realm()).willReturn(24L);
         given(hederaNumbers.shard()).willReturn(42L);
 
-        given(properties.getLongProperty("files.addressBook")).willReturn(101L);
-        given(properties.getLongProperty("files.nodeDetails")).willReturn(102L);
-        given(properties.getLongProperty("files.networkProperties")).willReturn(121L);
-        given(properties.getLongProperty("files.hapiPermissions")).willReturn(122L);
-        given(properties.getLongProperty("files.feeSchedules")).willReturn(111L);
-        given(properties.getLongProperty("files.exchangeRates")).willReturn(112L);
-        given(properties.getLongProperty("files.softwareUpdateZip")).willReturn(150L);
-        given(properties.getLongProperty("files.throttleDefinitions")).willReturn(123L);
-        given(properties.getEntityNumRange("files.softwareUpdateRange"))
+        given(properties.getLongProperty(FILES_ADDRESS_BOOK)).willReturn(101L);
+        given(properties.getLongProperty(FILES_NODE_DETAILS)).willReturn(102L);
+        given(properties.getLongProperty(FILES_NETWORK_PROPERTIES)).willReturn(121L);
+        given(properties.getLongProperty(FILES_HAPI_PERMISSIONS)).willReturn(122L);
+        given(properties.getLongProperty(FILES_FEE_SCHEDULES)).willReturn(111L);
+        given(properties.getLongProperty(FILES_EXCHANGE_RATES)).willReturn(112L);
+        given(properties.getLongProperty(FILES_SOFTWARE_UPDATE_ZIP)).willReturn(150L);
+        given(properties.getLongProperty(FILES_THROTTLE_DEFINITIONS)).willReturn(123L);
+        given(properties.getEntityNumRange(FILES_SOFTWARE_UPDATE_RANGE))
                 .willReturn(Pair.of(150L, 159L));
 
         subject = new FileNumbers(hederaNumbers, properties);

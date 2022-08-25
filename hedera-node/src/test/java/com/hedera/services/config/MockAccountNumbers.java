@@ -64,4 +64,14 @@ public class MockAccountNumbers extends AccountNumbers {
     public boolean isSuperuser(long num) {
         return (num == 2) || (num == 50);
     }
+
+    @Override
+    public long stakingRewardAccount() {
+        return 800L;
+    }
+
+    @Override
+    public long nodeRewardAccount() {
+        return 801L;
+    }
 }

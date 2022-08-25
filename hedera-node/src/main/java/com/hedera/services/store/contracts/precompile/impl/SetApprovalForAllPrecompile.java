@@ -99,8 +99,7 @@ public class SetApprovalForAllPrecompile extends AbstractWritePrecompile {
         setApprovalForAllWrapper =
                 decoder.decodeSetApprovalForAll(nestedInput, tokenId, aliasResolver);
         transactionBody =
-                syntheticTxnFactory.createApproveAllowanceForAllNFT(
-                        setApprovalForAllWrapper, tokenId);
+                syntheticTxnFactory.createApproveAllowanceForAllNFT(setApprovalForAllWrapper);
         return transactionBody;
     }
 

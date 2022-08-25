@@ -117,11 +117,13 @@ contract TokenCreateContract is FeeHelper {
         address feeCollectorAndTreasury,
         address existingTokenAddress,
         address autoRenewAccount,
-        uint32 autoRenewPeriod
+        uint32 autoRenewPeriod,
+        bytes memory ed25519
     )
     public payable returns (address createdTokenAddress) {
-        IHederaTokenService.TokenKey[] memory keys = new IHederaTokenService.TokenKey[](1);
+        IHederaTokenService.TokenKey[] memory keys = new IHederaTokenService.TokenKey[](2);
         keys[0] = getSingleKey(0, 2, contractIdKey);
+        keys[1] = getSingleKey(4, 3, ed25519);
 
         IHederaTokenService.HederaToken memory token =
         createTokenWithExpiry(feeCollectorAndTreasury, 0, autoRenewAccount, autoRenewPeriod, keys);
@@ -336,11 +338,13 @@ contract TokenCreateContract is FeeHelper {
         address feeCollectorAndTreasury,
         address existingTokenAddress,
         address autoRenewAccount,
-        uint32 autoRenewPeriod
+        uint32 autoRenewPeriod,
+        bytes memory ed25519
     )
     public payable returns (address createdTokenAddress) {
-        IHederaTokenService.TokenKey[] memory keys = new IHederaTokenService.TokenKey[](1);
+        IHederaTokenService.TokenKey[] memory keys = new IHederaTokenService.TokenKey[](2);
         keys[0] = getSingleKey(0, 2, contractIdKey);
+        keys[1] = getSingleKey(4, 3, ed25519);
 
         IHederaTokenService.HederaToken memory token =
         createTokenWithExpiry(feeCollectorAndTreasury, 0, autoRenewAccount, autoRenewPeriod, keys);

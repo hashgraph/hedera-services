@@ -45,9 +45,12 @@ import static org.mockito.Mockito.verify;
 
 import com.google.protobuf.BoolValue;
 import com.google.protobuf.ByteString;
+import com.hedera.services.config.HederaNumbers;
+import com.hedera.services.context.properties.BootstrapProperties;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ethereum.EthTxData;
 import com.hedera.services.ledger.accounts.ContractCustomizer;
+import com.hedera.services.state.submerkle.CurrencyAdjustments;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.store.contracts.precompile.codec.ApproveWrapper;
 import com.hedera.services.store.contracts.precompile.codec.Association;
@@ -72,12 +75,14 @@ import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
+import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.NodeStake;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import com.hederahashgraph.api.proto.java.TokenType;
+import com.hederahashgraph.api.proto.java.TransferList;
 import java.math.BigInteger;
 import java.time.Instant;
 import java.util.Collections;
@@ -94,13 +99,37 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class SyntheticTxnFactoryTest {
     @Mock private EthTxData ethTxData;
     @Mock private ContractCustomizer customizer;
-    @Mock private GlobalDynamicProperties dynamicProperties;
+    private GlobalDynamicProperties dynamicProperties;
+    private BootstrapProperties propertySource;
 
     private SyntheticTxnFactory subject;
 
     @BeforeEach
     void setUp() {
+        propertySource = new BootstrapProperties();
+        propertySource.ensureProps();
+        dynamicProperties =
+                new GlobalDynamicProperties(new HederaNumbers(propertySource), propertySource);
+
         subject = new SyntheticTxnFactory(dynamicProperties);
+    }
+
+    @Test
+    void synthesizesExpectedCryptoTransfer() {
+        final var adjustments = new CurrencyAdjustments(new long[] {-123, 123}, new long[] {2, 98});
+        final var expected =
+                CryptoTransferTransactionBody.newBuilder()
+                        .setTransfers(
+                                TransferList.newBuilder()
+                                        .addAccountAmounts(aaWith(2, -123))
+                                        .addAccountAmounts(aaWith(98, +123))
+                                        .build())
+                        .build();
+
+        final var txn = subject.synthCryptoTransfer(adjustments).build();
+        final var op = txn.getCryptoTransfer();
+
+        assertEquals(op, expected);
     }
 
     @Test
@@ -181,7 +210,6 @@ class SyntheticTxnFactoryTest {
         given(ethTxData.callData()).willReturn(callData);
         given(ethTxData.gasLimit()).willReturn(gasLimit);
         given(ethTxData.value()).willReturn(value);
-        given(dynamicProperties.typedMinAutoRenewDuration()).willReturn(autoRenewPeriod);
 
         final var optSynthBody = subject.synthContractOpFromEth(ethTxData);
 
@@ -202,7 +230,6 @@ class SyntheticTxnFactoryTest {
         given(ethTxData.callData()).willReturn(callData);
         given(ethTxData.gasLimit()).willReturn(gasLimit);
         given(ethTxData.value()).willReturn(value);
-        given(dynamicProperties.typedMinAutoRenewDuration()).willReturn(autoRenewPeriod);
 
         final var synthBody = subject.synthPrecheckContractOpFromEth(ethTxData);
 
@@ -218,7 +245,6 @@ class SyntheticTxnFactoryTest {
     void synthesizesPrecheckCreateFromEthDataWithoutInitcode() {
         given(ethTxData.gasLimit()).willReturn(gasLimit);
         given(ethTxData.value()).willReturn(value);
-        given(dynamicProperties.typedMinAutoRenewDuration()).willReturn(autoRenewPeriod);
         given(ethTxData.replaceCallData(MOCK_INITCODE)).willReturn(ethTxData);
         given(ethTxData.callData()).willReturn(MOCK_INITCODE);
 
@@ -344,7 +370,6 @@ class SyntheticTxnFactoryTest {
     @Test
     void createsExpectedNodeStakeUpdate() {
         final var now = Instant.now();
-        final var rewardRate = 10_000_000L;
         final var timestamp =
                 Timestamp.newBuilder()
                         .setSeconds(now.getEpochSecond())
@@ -360,8 +385,12 @@ class SyntheticTxnFactoryTest {
                                 .setStake(987_654_321L)
                                 .setStakeRewarded(54_321L)
                                 .build());
+        propertySource.ensureProps();
+        dynamicProperties =
+                new GlobalDynamicProperties(new HederaNumbers(propertySource), propertySource);
+        subject = new SyntheticTxnFactory(dynamicProperties);
 
-        final var txnBody = subject.nodeStakeUpdate(timestamp, nodeStakes);
+        final var txnBody = subject.nodeStakeUpdate(timestamp, nodeStakes, propertySource);
 
         assertTrue(txnBody.hasNodeStakeUpdate());
         assertEquals(timestamp, txnBody.getNodeStakeUpdate().getEndOfStakingPeriod());
@@ -369,6 +398,19 @@ class SyntheticTxnFactoryTest {
         assertEquals(1_234_567L, txnBody.getNodeStakeUpdate().getNodeStake(0).getStakeRewarded());
         assertEquals(987_654_321L, txnBody.getNodeStakeUpdate().getNodeStake(1).getStake());
         assertEquals(54_321L, txnBody.getNodeStakeUpdate().getNodeStake(1).getStakeRewarded());
+        assertEquals(17_808L, txnBody.getNodeStakeUpdate().getMaxStakingRewardRatePerHbar());
+        assertEquals(0L, txnBody.getNodeStakeUpdate().getNodeRewardFeeFraction().getNumerator());
+        assertEquals(
+                100L, txnBody.getNodeStakeUpdate().getNodeRewardFeeFraction().getDenominator());
+        assertEquals(365, txnBody.getNodeStakeUpdate().getStakingPeriodsStored());
+        assertEquals(1L, txnBody.getNodeStakeUpdate().getStakingPeriod());
+        assertEquals(
+                100L, txnBody.getNodeStakeUpdate().getStakingRewardFeeFraction().getNumerator());
+        assertEquals(
+                100L, txnBody.getNodeStakeUpdate().getStakingRewardFeeFraction().getDenominator());
+        assertEquals(
+                25_000_000_000_000_000L, txnBody.getNodeStakeUpdate().getStakingStartThreshold());
+        assertEquals(0L, txnBody.getNodeStakeUpdate().getStakingRewardRate());
     }
 
     @Test
@@ -500,12 +542,13 @@ class SyntheticTxnFactoryTest {
     void createsAdjustAllowanceForAllNFT() {
         var allowances = new SetApprovalForAllWrapper(nonFungible, receiver, true);
 
-        final var result = subject.createApproveAllowanceForAllNFT(allowances, token);
+        final var result = subject.createApproveAllowanceForAllNFT(allowances);
         final var txnBody = result.build();
 
         assertEquals(
                 receiver, txnBody.getCryptoApproveAllowance().getNftAllowances(0).getSpender());
-        assertEquals(token, txnBody.getCryptoApproveAllowance().getNftAllowances(0).getTokenId());
+        assertEquals(
+                nonFungible, txnBody.getCryptoApproveAllowance().getNftAllowances(0).getTokenId());
         assertEquals(
                 BoolValue.of(true),
                 txnBody.getCryptoApproveAllowance().getNftAllowances(0).getApprovedForAll());
@@ -763,10 +806,6 @@ class SyntheticTxnFactoryTest {
 
         // then
 
-        assertEquals("NFT", txnBody.getName());
-        assertEquals("NFT", txnBody.getSymbol());
-        assertEquals(account, txnBody.getTreasury());
-        assertEquals("NFT token memo", txnBody.getMemo().getValue());
         assertEquals(0, txnBody.getExpiry().getSeconds());
         assertEquals(0, txnBody.getAutoRenewPeriod().getSeconds());
         assertFalse(txnBody.hasAutoRenewAccount());
@@ -1074,6 +1113,13 @@ class SyntheticTxnFactoryTest {
         assertEquals(targetSerialNos, txnBody.getTokenWipe().getSerialNumbersList());
     }
 
+    private AccountAmount aaWith(final long num, final long amount) {
+        return AccountAmount.newBuilder()
+                .setAccountID(AccountID.newBuilder().setAccountNum(num).build())
+                .setAmount(amount)
+                .build();
+    }
+
     private AccountAmount aaWith(final AccountID account, final long amount) {
         return AccountAmount.newBuilder().setAccountID(account).setAmount(amount).build();
     }
@@ -1102,5 +1148,5 @@ class SyntheticTxnFactoryTest {
     private static final byte[] callData = "Between the idea and the reality".getBytes();
     private static final byte[] addressTo = unhex("abcdefabcdefabcdefbabcdefabcdefabcdefbbb");
     private static final Duration autoRenewPeriod =
-            Duration.newBuilder().setSeconds(1_234_567).build();
+            Duration.newBuilder().setSeconds(6_999_999).build();
 }

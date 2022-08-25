@@ -298,6 +298,14 @@ class DecodingFacadeTest {
             Bytes.fromHexString(
                     "0x3c4dd32e00000000000000000000000000000000000000000000000000000000000010650000000000000000000000000000000000000000000000000000000000000001");
 
+    private static final Bytes IS_TOKEN_INPUT =
+        Bytes.fromHexString(
+            "0x19f373610000000000000000000000000000000000000000000000000000000000000b03");
+
+    private static final Bytes GET_TOKEN_TYPE_INPUT =
+        Bytes.fromHexString(
+            "0x93272baf0000000000000000000000000000000000000000000000000000000000000b0d");
+
     @Mock private WorldLedgers ledgers;
 
     @Test
@@ -1042,6 +1050,20 @@ class DecodingFacadeTest {
                 subject.decodeTokenGetCustomFees(GET_NON_FUNGIBLE_TOKEN_CUSTOM_FEES_INPUT);
 
         assertTrue(decodedInput.tokenID().getTokenNum() > 0);
+    }
+
+    @Test
+    void decodeIsTokenAsExpected() {
+        final var decodedInput = subject.decodeIsToken(IS_TOKEN_INPUT);
+        assertEquals(TokenID.newBuilder().setTokenNum(2819).build(), decodedInput.tokenID());
+        assertEquals(-1, decodedInput.serialNumber());
+    }
+
+    @Test
+    void decodeGetTokenTypeAsExpected() {
+        final var decodedInput = subject.decodeGetTokenType(GET_TOKEN_TYPE_INPUT);
+        assertEquals(TokenID.newBuilder().setTokenNum(2829).build(), decodedInput.tokenID());
+        assertEquals(-1, decodedInput.serialNumber());
     }
 
     @Test

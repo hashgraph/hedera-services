@@ -22,8 +22,10 @@ import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_GET_TOKEN_DEFAULT_KYC_STATUS;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_GET_TOKEN_INFO;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_GET_TOKEN_KEY;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_GET_TOKEN_TYPE;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_IS_FROZEN;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_IS_KYC;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_IS_TOKEN;
 import static com.hedera.services.store.contracts.precompile.proxy.RedirectViewExecutor.MINIMUM_TINYBARS_COST;
 import static com.hedera.test.factories.fees.CustomFeeBuilder.fixedHbar;
 import static com.hedera.test.factories.fees.CustomFeeBuilder.fixedHts;
@@ -39,6 +41,8 @@ import static org.mockito.Mockito.verify;
 import com.esaulpaugh.headlong.util.Integers;
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.primitives.StateView;
+import com.hedera.services.state.enums.TokenType;
+import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.properties.TokenProperty;
 import com.hedera.services.legacy.core.jproto.JKey;
@@ -55,6 +59,7 @@ import com.hedera.services.store.contracts.precompile.codec.TokenGetCustomFeesWr
 import com.hedera.services.store.contracts.precompile.codec.TokenInfoWrapper;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.utils.EntityIdUtils;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.test.factories.fees.CustomFeeBuilder;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -64,6 +69,7 @@ import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenInfo;
 import com.hederahashgraph.api.proto.java.TokenNftInfo;
+import com.swirlds.merkle.map.MerkleMap;
 import java.util.ArrayList;
 import java.util.Optional;
 import org.apache.commons.lang3.tuple.Pair;
@@ -89,6 +95,8 @@ class ViewExecutorTest {
     @Mock private WorldLedgers ledgers;
     @Mock private TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokens;
     @Mock private JKey key;
+    @Mock private MerkleMap<EntityNum, MerkleToken> tokens;
+    @Mock private MerkleToken token;
 
     public static final AccountID account = IdUtils.asAccount("0.0.777");
     public static final AccountID spender = IdUtils.asAccount("0.0.888");
@@ -291,6 +299,30 @@ class ViewExecutorTest {
                 .willReturn(new TokenGetCustomFeesWrapper(fungible));
         assertEquals(Pair.of(gas, null), subject.computeCosted());
         verify(frame).setState(MessageFrame.State.REVERT);
+    }
+
+    @Test
+    void computeIsToken() {
+        final var input = prerequisites(ABI_ID_IS_TOKEN, fungibleTokenAddress);
+        final var isTokenWrapper = TokenInfoWrapper.forToken(fungible);
+        given(decodingFacade.decodeIsToken(input)).willReturn(isTokenWrapper);
+        given(stateView.tokenExists(fungible)).willReturn(true);
+        given(encodingFacade.encodeIsToken(true)).willReturn(RETURN_SUCCESS_TRUE);
+        assertEquals(Pair.of(gas, RETURN_SUCCESS_TRUE), subject.computeCosted());
+    }
+
+    @Test
+    void computeGetTokenType() {
+        final var input = prerequisites(ABI_ID_GET_TOKEN_TYPE, fungibleTokenAddress);
+        final var wrapper = TokenInfoWrapper.forToken(fungible);
+        given(decodingFacade.decodeGetTokenType(input)).willReturn(wrapper);
+        given(stateView.tokenExists(fungible)).willReturn(true);
+        given(stateView.tokens()).willReturn(tokens);
+        given(tokens.get(EntityNum.fromTokenId(wrapper.tokenID()))).willReturn(token);
+        given(token.tokenType()).willReturn(TokenType.FUNGIBLE_COMMON);
+        given(encodingFacade.encodeGetTokenType(TokenType.FUNGIBLE_COMMON.ordinal()))
+                .willReturn(RETURN_SUCCESS_TRUE);
+        assertEquals(Pair.of(gas, RETURN_SUCCESS_TRUE), subject.computeCosted());
     }
 
     @Test

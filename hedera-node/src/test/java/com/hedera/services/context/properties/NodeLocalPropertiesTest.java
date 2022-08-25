@@ -18,6 +18,44 @@ package com.hedera.services.context.properties;
 import static com.hedera.services.context.properties.Profile.DEV;
 import static com.hedera.services.context.properties.Profile.PROD;
 import static com.hedera.services.context.properties.Profile.TEST;
+import static com.hedera.services.context.properties.PropertyNames.DEV_DEFAULT_LISTENING_NODE_ACCOUNT;
+import static com.hedera.services.context.properties.PropertyNames.DEV_ONLY_DEFAULT_NODE_LISTENS;
+import static com.hedera.services.context.properties.PropertyNames.GRPC_PORT;
+import static com.hedera.services.context.properties.PropertyNames.GRPC_TLS_PORT;
+import static com.hedera.services.context.properties.PropertyNames.HEDERA_ACCOUNTS_EXPORT_PATH;
+import static com.hedera.services.context.properties.PropertyNames.HEDERA_EXPORT_ACCOUNTS_ON_STARTUP;
+import static com.hedera.services.context.properties.PropertyNames.HEDERA_PREFETCH_CODE_CACHE_TTL_SECS;
+import static com.hedera.services.context.properties.PropertyNames.HEDERA_PREFETCH_QUEUE_CAPACITY;
+import static com.hedera.services.context.properties.PropertyNames.HEDERA_PREFETCH_THREAD_POOL_SIZE;
+import static com.hedera.services.context.properties.PropertyNames.HEDERA_PROFILES_ACTIVE;
+import static com.hedera.services.context.properties.PropertyNames.HEDERA_RECORD_STREAM_IS_ENABLED;
+import static com.hedera.services.context.properties.PropertyNames.HEDERA_RECORD_STREAM_LOG_DIR;
+import static com.hedera.services.context.properties.PropertyNames.HEDERA_RECORD_STREAM_LOG_PERIOD;
+import static com.hedera.services.context.properties.PropertyNames.HEDERA_RECORD_STREAM_QUEUE_CAPACITY;
+import static com.hedera.services.context.properties.PropertyNames.HEDERA_RECORD_STREAM_SIDE_CAR_DIR;
+import static com.hedera.services.context.properties.PropertyNames.ISS_RESET_PERIOD;
+import static com.hedera.services.context.properties.PropertyNames.ISS_ROUNDS_TO_LOG;
+import static com.hedera.services.context.properties.PropertyNames.NETTY_MODE;
+import static com.hedera.services.context.properties.PropertyNames.NETTY_PROD_FLOW_CONTROL_WINDOW;
+import static com.hedera.services.context.properties.PropertyNames.NETTY_PROD_KEEP_ALIVE_TIME;
+import static com.hedera.services.context.properties.PropertyNames.NETTY_PROD_KEEP_ALIVE_TIMEOUT;
+import static com.hedera.services.context.properties.PropertyNames.NETTY_PROD_MAX_CONCURRENT_CALLS;
+import static com.hedera.services.context.properties.PropertyNames.NETTY_PROD_MAX_CONNECTION_AGE;
+import static com.hedera.services.context.properties.PropertyNames.NETTY_PROD_MAX_CONNECTION_AGE_GRACE;
+import static com.hedera.services.context.properties.PropertyNames.NETTY_PROD_MAX_CONNECTION_IDLE;
+import static com.hedera.services.context.properties.PropertyNames.NETTY_START_RETRIES;
+import static com.hedera.services.context.properties.PropertyNames.NETTY_START_RETRY_INTERVAL_MS;
+import static com.hedera.services.context.properties.PropertyNames.NETTY_TLS_CERT_PATH;
+import static com.hedera.services.context.properties.PropertyNames.NETTY_TLS_KEY_PATH;
+import static com.hedera.services.context.properties.PropertyNames.QUERIES_BLOB_LOOK_UP_RETRIES;
+import static com.hedera.services.context.properties.PropertyNames.STATS_CONS_THROTTLES_TO_SAMPLE;
+import static com.hedera.services.context.properties.PropertyNames.STATS_ENTITY_UTILS_GAUGE_UPDATE_INTERVAL_MS;
+import static com.hedera.services.context.properties.PropertyNames.STATS_EXECUTION_TIMES_TO_TRACK;
+import static com.hedera.services.context.properties.PropertyNames.STATS_HAPI_OPS_SPEEDOMETER_UPDATE_INTERVAL_MS;
+import static com.hedera.services.context.properties.PropertyNames.STATS_HAPI_THROTTLES_TO_SAMPLE;
+import static com.hedera.services.context.properties.PropertyNames.STATS_RUNNING_AVG_HALF_LIFE_SECS;
+import static com.hedera.services.context.properties.PropertyNames.STATS_SPEEDOMETER_HALF_LIFE_SECS;
+import static com.hedera.services.context.properties.PropertyNames.STATS_THROTTLE_UTILS_GAUGE_UPDATE_INTERVAL_MS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -150,59 +188,58 @@ class NodeLocalPropertiesTest {
     }
 
     private void givenPropsWithSeed(int i) {
-        given(properties.getIntProperty("grpc.port")).willReturn(i);
-        given(properties.getIntProperty("grpc.tlsPort")).willReturn(i + 1);
+        given(properties.getIntProperty(GRPC_PORT)).willReturn(i);
+        given(properties.getIntProperty(GRPC_TLS_PORT)).willReturn(i + 1);
         given(properties.getIntProperty("precheck.account.maxLookupRetries")).willReturn(i + 2);
         given(properties.getIntProperty("precheck.account.lookupRetryBackoffIncrementMs"))
                 .willReturn(i + 3);
-        given(properties.getProfileProperty("hedera.profiles.active"))
+        given(properties.getProfileProperty(HEDERA_PROFILES_ACTIVE))
                 .willReturn(LEGACY_ENV_ORDER[(i + 4) % 3]);
-        given(properties.getLongProperty("stats.hapiOps.speedometerUpdateIntervalMs"))
+        given(properties.getLongProperty(STATS_HAPI_OPS_SPEEDOMETER_UPDATE_INTERVAL_MS))
                 .willReturn(i + 5L);
-        given(properties.getDoubleProperty("stats.speedometerHalfLifeSecs")).willReturn(i + 6.0);
-        given(properties.getDoubleProperty("stats.runningAvgHalfLifeSecs")).willReturn(i + 7.0);
-        given(properties.getStringProperty("hedera.recordStream.logDir")).willReturn(logDir(i + 8));
-        given(properties.getLongProperty("hedera.recordStream.logPeriod")).willReturn(i + 9L);
-        given(properties.getBooleanProperty("hedera.recordStream.isEnabled"))
+        given(properties.getDoubleProperty(STATS_SPEEDOMETER_HALF_LIFE_SECS)).willReturn(i + 6.0);
+        given(properties.getDoubleProperty(STATS_RUNNING_AVG_HALF_LIFE_SECS)).willReturn(i + 7.0);
+        given(properties.getStringProperty(HEDERA_RECORD_STREAM_LOG_DIR)).willReturn(logDir(i + 8));
+        given(properties.getLongProperty(HEDERA_RECORD_STREAM_LOG_PERIOD)).willReturn(i + 9L);
+        given(properties.getBooleanProperty(HEDERA_RECORD_STREAM_IS_ENABLED))
                 .willReturn(i % 2 == 1);
-        given(properties.getIntProperty("hedera.recordStream.queueCapacity")).willReturn(i + 11);
-        given(properties.getIntProperty("queries.blob.lookupRetries")).willReturn(i + 12);
-        given(properties.getLongProperty("netty.prod.keepAliveTime")).willReturn(i + 13L);
-        given(properties.getStringProperty("netty.tlsCrt.path")).willReturn("hedera" + i + ".crt");
-        given(properties.getStringProperty("netty.tlsKey.path"))
+        given(properties.getIntProperty(HEDERA_RECORD_STREAM_QUEUE_CAPACITY)).willReturn(i + 11);
+        given(properties.getIntProperty(QUERIES_BLOB_LOOK_UP_RETRIES)).willReturn(i + 12);
+        given(properties.getLongProperty(NETTY_PROD_KEEP_ALIVE_TIME)).willReturn(i + 13L);
+        given(properties.getStringProperty(NETTY_TLS_CERT_PATH)).willReturn("hedera" + i + ".crt");
+        given(properties.getStringProperty(NETTY_TLS_KEY_PATH))
                 .willReturn("hedera" + (i + 1) + ".key");
-        given(properties.getLongProperty("netty.prod.keepAliveTimeout")).willReturn(i + 14L);
-        given(properties.getLongProperty("netty.prod.maxConnectionAge")).willReturn(i + 15L);
-        given(properties.getLongProperty("netty.prod.maxConnectionAgeGrace")).willReturn(i + 16L);
-        given(properties.getLongProperty("netty.prod.maxConnectionIdle")).willReturn(i + 17L);
-        given(properties.getIntProperty("netty.prod.maxConcurrentCalls")).willReturn(i + 18);
-        given(properties.getIntProperty("netty.prod.flowControlWindow")).willReturn(i + 19);
-        given(properties.getStringProperty("dev.defaultListeningNodeAccount"))
+        given(properties.getLongProperty(NETTY_PROD_KEEP_ALIVE_TIMEOUT)).willReturn(i + 14L);
+        given(properties.getLongProperty(NETTY_PROD_MAX_CONNECTION_AGE)).willReturn(i + 15L);
+        given(properties.getLongProperty(NETTY_PROD_MAX_CONNECTION_AGE_GRACE)).willReturn(i + 16L);
+        given(properties.getLongProperty(NETTY_PROD_MAX_CONNECTION_IDLE)).willReturn(i + 17L);
+        given(properties.getIntProperty(NETTY_PROD_MAX_CONCURRENT_CALLS)).willReturn(i + 18);
+        given(properties.getIntProperty(NETTY_PROD_FLOW_CONTROL_WINDOW)).willReturn(i + 19);
+        given(properties.getStringProperty(DEV_DEFAULT_LISTENING_NODE_ACCOUNT))
                 .willReturn(i % 2 == 0 ? "0.0.3" : "0.0.4");
-        given(properties.getBooleanProperty("dev.onlyDefaultNodeListens")).willReturn(i % 2 == 0);
-        given(properties.getStringProperty("hedera.accountsExportPath"))
+        given(properties.getBooleanProperty(DEV_ONLY_DEFAULT_NODE_LISTENS)).willReturn(i % 2 == 0);
+        given(properties.getStringProperty(HEDERA_ACCOUNTS_EXPORT_PATH))
                 .willReturn(i % 2 == 0 ? "A" : "B");
-        given(properties.getBooleanProperty("hedera.exportAccountsOnStartup"))
+        given(properties.getBooleanProperty(HEDERA_EXPORT_ACCOUNTS_ON_STARTUP))
                 .willReturn(i % 2 == 0);
-        given(properties.getProfileProperty("netty.mode"))
-                .willReturn(LEGACY_ENV_ORDER[(i + 21) % 3]);
-        given(properties.getIntProperty("netty.startRetries")).willReturn(i + 22);
-        given(properties.getLongProperty("netty.startRetryIntervalMs")).willReturn(i + 23L);
-        given(properties.getIntProperty("stats.executionTimesToTrack")).willReturn(i + 24);
-        given(properties.getIntProperty("iss.resetPeriod")).willReturn(i + 25);
-        given(properties.getIntProperty("iss.roundsToLog")).willReturn(i + 26);
-        given(properties.getIntProperty("hedera.prefetch.queueCapacity")).willReturn(i + 27);
-        given(properties.getIntProperty("hedera.prefetch.threadPoolSize")).willReturn(i + 28);
-        given(properties.getIntProperty("hedera.prefetch.codeCacheTtlSecs")).willReturn(i + 29);
-        given(properties.getStringsProperty("stats.consThrottlesToSample"))
+        given(properties.getProfileProperty(NETTY_MODE)).willReturn(LEGACY_ENV_ORDER[(i + 21) % 3]);
+        given(properties.getIntProperty(NETTY_START_RETRIES)).willReturn(i + 22);
+        given(properties.getLongProperty(NETTY_START_RETRY_INTERVAL_MS)).willReturn(i + 23L);
+        given(properties.getIntProperty(STATS_EXECUTION_TIMES_TO_TRACK)).willReturn(i + 24);
+        given(properties.getIntProperty(ISS_RESET_PERIOD)).willReturn(i + 25);
+        given(properties.getIntProperty(ISS_ROUNDS_TO_LOG)).willReturn(i + 26);
+        given(properties.getIntProperty(HEDERA_PREFETCH_QUEUE_CAPACITY)).willReturn(i + 27);
+        given(properties.getIntProperty(HEDERA_PREFETCH_THREAD_POOL_SIZE)).willReturn(i + 28);
+        given(properties.getIntProperty(HEDERA_PREFETCH_CODE_CACHE_TTL_SECS)).willReturn(i + 29);
+        given(properties.getStringsProperty(STATS_CONS_THROTTLES_TO_SAMPLE))
                 .willReturn(List.of("" + (i + 79)));
-        given(properties.getStringsProperty("stats.hapiThrottlesToSample"))
+        given(properties.getStringsProperty(STATS_HAPI_THROTTLES_TO_SAMPLE))
                 .willReturn(List.of("" + (i + 80)));
-        given(properties.getLongProperty("stats.entityUtils.gaugeUpdateIntervalMs"))
+        given(properties.getLongProperty(STATS_ENTITY_UTILS_GAUGE_UPDATE_INTERVAL_MS))
                 .willReturn(i + 81L);
-        given(properties.getLongProperty("stats.throttleUtils.gaugeUpdateIntervalMs"))
+        given(properties.getLongProperty(STATS_THROTTLE_UTILS_GAUGE_UPDATE_INTERVAL_MS))
                 .willReturn(i + 82L);
-        given(properties.getStringProperty("hedera.recordStream.sidecarDir"))
+        given(properties.getStringProperty(HEDERA_RECORD_STREAM_SIDE_CAR_DIR))
                 .willReturn(logDir(i + 30));
     }
 

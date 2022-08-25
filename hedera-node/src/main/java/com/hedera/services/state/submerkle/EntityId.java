@@ -22,6 +22,7 @@ import static com.hedera.services.utils.EntityIdUtils.asEvmAddress;
 import com.google.common.base.MoreObjects;
 import com.google.common.primitives.Ints;
 import com.google.common.primitives.Longs;
+import com.hedera.services.context.properties.StaticPropertiesHolder;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -91,6 +92,21 @@ public class EntityId implements SelfSerializable {
     @Override
     public long getClassId() {
         return RUNTIME_CONSTRUCTABLE_ID;
+    }
+
+    /**
+     * Builds an entity id from just the entity number.
+     *
+     * <p>The shard and realm numbers are set to the default values configured in properties.
+     *
+     * @param num the number of the entity id.
+     * @return the equivalent entity id using the node's shard and realm.
+     */
+    public static EntityId fromNum(long num) {
+        return new EntityId(
+                StaticPropertiesHolder.STATIC_PROPERTIES.getShard(),
+                StaticPropertiesHolder.STATIC_PROPERTIES.getRealm(),
+                num);
     }
 
     @Override

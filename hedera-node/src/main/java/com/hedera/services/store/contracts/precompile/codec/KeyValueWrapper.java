@@ -50,12 +50,19 @@ public final class KeyValueWrapper {
             final byte[] ed25519,
             final byte[] ecdsaSecp256k1,
             final ContractID delegatableContractID) {
+        var isKeyValid =
+                keyValidityCheck(
+                        shouldInheritAccountKey,
+                        contractID,
+                        ed25519,
+                        ecdsaSecp256k1,
+                        delegatableContractID);
         this.shouldInheritAccountKey = shouldInheritAccountKey;
         this.contractID = contractID;
         this.ed25519 = ed25519;
         this.ecdsaSecp256k1 = ecdsaSecp256k1;
         this.delegatableContractID = delegatableContractID;
-        this.keyValueType = this.setKeyValueType();
+        this.keyValueType = isKeyValid ? this.setKeyValueType() : KeyValueType.INVALID_KEY;
     }
 
     private boolean isContractIDSet() {
@@ -80,6 +87,22 @@ public final class KeyValueWrapper {
 
     public void setInheritedKey(final Key key) {
         this.inheritedKey = key;
+    }
+
+    private boolean keyValidityCheck(
+            boolean shouldInheritAccountKey,
+            ContractID contractID,
+            byte[] ed25519,
+            byte[] ecdsaSecp256k1,
+            ContractID delegatableContractID) {
+        var keyCount = 0;
+        if (contractID != null) keyCount++;
+        if (delegatableContractID != null) keyCount++;
+        if (shouldInheritAccountKey) keyCount++;
+        if (ed25519.length == JEd25519Key.ED25519_BYTE_LENGTH) keyCount++;
+        if (ecdsaSecp256k1.length == JECDSASecp256k1Key.ECDSA_SECP256K1_COMPRESSED_KEY_LENGTH)
+            keyCount++;
+        return keyCount == 1;
     }
 
     private KeyValueType setKeyValueType() {

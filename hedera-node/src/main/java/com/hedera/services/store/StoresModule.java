@@ -15,6 +15,8 @@
  */
 package com.hedera.services.store;
 
+import static com.hedera.services.context.properties.PropertyNames.TOKENS_NFTS_USE_TREASURY_WILD_CARDS;
+
 import com.hedera.services.config.AccountNumbers;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.TransactionContext;
@@ -31,7 +33,6 @@ import com.hedera.services.ledger.backing.BackingStore;
 import com.hedera.services.ledger.backing.BackingTokenRels;
 import com.hedera.services.ledger.backing.BackingTokens;
 import com.hedera.services.ledger.interceptors.LinkAwareTokenRelsCommitInterceptor;
-import com.hedera.services.ledger.interceptors.LinkAwareUniqueTokensCommitInterceptor;
 import com.hedera.services.ledger.interceptors.StakingAccountsCommitInterceptor;
 import com.hedera.services.ledger.interceptors.TokenRelsLinkManager;
 import com.hedera.services.ledger.interceptors.TokensCommitInterceptor;
@@ -86,16 +87,11 @@ public interface StoresModule {
             final UsageLimits usageLimits,
             final UniqueTokensLinkManager uniqueTokensLinkManager,
             final Supplier<MerkleMap<EntityNumPair, MerkleUniqueToken>> uniqueTokens) {
-        final var uniqueTokensLedger =
-                new TransactionalLedger<>(
-                        NftProperty.class,
-                        MerkleUniqueToken::new,
-                        new BackingNfts(uniqueTokens),
-                        new ChangeSummaryManager<>());
-        final var interceptor =
-                new LinkAwareUniqueTokensCommitInterceptor(usageLimits, uniqueTokensLinkManager);
-        uniqueTokensLedger.setCommitInterceptor(interceptor);
-        return uniqueTokensLedger;
+        return new TransactionalLedger<>(
+                NftProperty.class,
+                MerkleUniqueToken::new,
+                new BackingNfts(uniqueTokens),
+                new ChangeSummaryManager<>());
     }
 
     @Provides
@@ -189,6 +185,6 @@ public interface StoresModule {
     @AreTreasuryWildcardsEnabled
     static boolean provideAreTreasuryWildcardsEnabled(
             final @CompositeProps PropertySource properties) {
-        return properties.getBooleanProperty("tokens.nfts.useTreasuryWildcards");
+        return properties.getBooleanProperty(TOKENS_NFTS_USE_TREASURY_WILD_CARDS);
     }
 }

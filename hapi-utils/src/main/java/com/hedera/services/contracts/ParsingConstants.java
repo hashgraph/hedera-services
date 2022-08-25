@@ -29,7 +29,10 @@ public final class ParsingConstants {
     public static final String BOOL = "(bool)";
     public static final String INT_BOOL_PAIR = "(int,bool)";
     public static final String BYTES32 = "(bytes32)";
-    public static final String BYTES32_PAIR_RAW_TYPE = "(bytes32,bytes32)";
+    public static final String ADDRESS_PAIR_RAW_TYPE = "(bytes32,bytes32)";
+    public static final String ADDRESS_TRIO_RAW_TYPE = "(bytes32,bytes32,bytes32)";
+    public static final String ADDRESS_UINT256_RAW_TYPE = "(bytes32,uint256)";
+    public static final String ADDRESS_ADDRESS_UINT256_RAW_TYPE = "(bytes32,bytes32,uint256)";
     public static final String INT = "(int)";
     public static final String INT32 = "(int32)";
     public static final String STRING = "(string)";
@@ -73,24 +76,18 @@ public final class ParsingConstants {
             "(" + TOKEN_INFO + ",int64,address,int64,bytes,address" + ")";
 
     // tuple types
-    private static final TupleType addressTuple = TupleType.parse(ADDRESS);
-    private static final TupleType booleanTuple = TupleType.parse(BOOL);
-    private static final TupleType stringTuple = TupleType.parse(STRING);
-    private static final TupleType bigIntegerTuple = TupleType.parse(UINT256);
+    public static final TupleType addressTuple = TupleType.parse(ADDRESS);
+    public static final TupleType booleanTuple = TupleType.parse(BOOL);
+    public static final TupleType stringTuple = TupleType.parse(STRING);
+    public static final TupleType bigIntegerTuple = TupleType.parse(UINT256);
+    public static final TupleType intTuple = TupleType.parse(INT32);
+    public static final TupleType decimalsType = TupleType.parse(UINT8);
+    public static final TupleType intBoolTuple = TupleType.parse(INT_BOOL_PAIR_RETURN_TYPE);
 
-    public static final TupleType allowanceOfType = bigIntegerTuple;
-    public static final TupleType approveOfType = booleanTuple;
-    public static final TupleType balanceOfType = bigIntegerTuple;
+    public static final TupleType intAddressTuple = TupleType.parse("(int32,address)");
+    public static final TupleType intPairTuple = TupleType.parse("(int32,int32)");
     public static final TupleType burnReturnType = TupleType.parse("(int32,uint64)");
     public static final TupleType mintReturnType = TupleType.parse("(int32,uint64,int64[])");
-    public static final TupleType createReturnType = TupleType.parse("(int32,address)");
-    public static final TupleType decimalsType = TupleType.parse(UINT8);
-    public static final TupleType nameType = stringTuple;
-    public static final TupleType ownerOfType = addressTuple;
-    public static final TupleType symbolType = stringTuple;
-    public static final TupleType tokenUriType = stringTuple;
-    public static final TupleType totalSupplyType = bigIntegerTuple;
-    public static final TupleType getApprovedType = addressTuple;
     public static final TupleType getFungibleTokenInfoType =
             TupleType.parse(RESPONSE_STATUS_AT_BEGINNING + FUNGIBLE_TOKEN_INFO + ")");
     public static final TupleType getTokenInfoType =
@@ -109,9 +106,6 @@ public final class ParsingConstants {
                             + ROYALTY_FEE
                             + ARRAY_BRACKETS
                             + ")");
-    public static final TupleType isApprovedForAllType = booleanTuple;
-    public static final TupleType isFrozenType = TupleType.parse(INT_BOOL_PAIR_RETURN_TYPE);
-    public static final TupleType ercTransferType = booleanTuple;
     public static final TupleType hapiAllowanceOfType = TupleType.parse("(int32,uint256)");
     public static final TupleType hapiGetApprovedType = TupleType.parse("(int32,bytes32)");
     public static final TupleType hapiIsApprovedForAllType =
@@ -153,6 +147,8 @@ public final class ParsingConstants {
         GET_TOKEN_DEFAULT_KYC_STATUS,
         HAPI_IS_FROZEN,
         HAPI_GET_TOKEN_CUSTOM_FEES,
+        HAPI_IS_TOKEN,
+        HAPI_GET_TOKEN_TYPE,
         HAPI_GET_TOKEN_KEY,
         NOT_SPECIFIED
     }

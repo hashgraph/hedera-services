@@ -139,7 +139,8 @@ class ContractCallTransitionLogicTest {
                         124L,
                         Bytes.EMPTY,
                         contractAccount.getId().asEvmAddress(),
-                        Map.of());
+                        Map.of(),
+                        List.of());
         given(
                         evmTxProcessor.execute(
                                 senderAccount,
@@ -184,7 +185,8 @@ class ContractCallTransitionLogicTest {
                         124L,
                         Bytes.EMPTY,
                         contractAccount.getId().asEvmAddress(),
-                        Map.of());
+                        Map.of(),
+                        List.of());
         given(
                         evmTxProcessor.executeEth(
                                 senderAccount,
@@ -233,7 +235,8 @@ class ContractCallTransitionLogicTest {
                         124L,
                         Bytes.EMPTY,
                         contractAccount.getId().asEvmAddress(),
-                        Map.of());
+                        Map.of(),
+                        List.of());
         given(
                         evmTxProcessor.execute(
                                 senderAccount,
@@ -295,7 +298,8 @@ class ContractCallTransitionLogicTest {
                         124L,
                         Bytes.EMPTY,
                         contractAccount.getId().asEvmAddress(),
-                        Map.of());
+                        Map.of(),
+                        List.of());
         given(
                         evmTxProcessor.execute(
                                 senderAccount,
