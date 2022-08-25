@@ -42,6 +42,7 @@ import com.hedera.services.sigs.SigsModule;
 import com.hedera.services.sigs.order.SigReqsManager;
 import com.hedera.services.state.DualStateAccessor;
 import com.hedera.services.state.StateModule;
+import com.hedera.services.state.expiry.ExpiryModule;
 import com.hedera.services.state.exports.AccountsExporter;
 import com.hedera.services.state.exports.BalancesExporter;
 import com.hedera.services.state.forensics.HashLogger;
@@ -103,7 +104,8 @@ import javax.inject.Singleton;
             PropertiesModule.class,
             ThrottlingModule.class,
             SubmissionModule.class,
-            TransactionsModule.class
+            TransactionsModule.class,
+            ExpiryModule.class
         })
 public interface ServicesApp {
     /* Needed by ServicesState */

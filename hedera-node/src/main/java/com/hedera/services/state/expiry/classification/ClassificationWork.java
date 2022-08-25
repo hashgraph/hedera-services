@@ -13,59 +13,49 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.hedera.services.state.expiry.renewal;
+package com.hedera.services.state.expiry.classification;
 
-import static com.hedera.services.state.expiry.renewal.RenewableEntityType.DETACHED_ACCOUNT;
-import static com.hedera.services.state.expiry.renewal.RenewableEntityType.DETACHED_ACCOUNT_GRACE_PERIOD_OVER;
-import static com.hedera.services.state.expiry.renewal.RenewableEntityType.DETACHED_CONTRACT;
-import static com.hedera.services.state.expiry.renewal.RenewableEntityType.DETACHED_CONTRACT_GRACE_PERIOD_OVER;
-import static com.hedera.services.state.expiry.renewal.RenewableEntityType.DETACHED_TREASURY_GRACE_PERIOD_OVER_BEFORE_TOKEN;
-import static com.hedera.services.state.expiry.renewal.RenewableEntityType.EXPIRED_ACCOUNT_READY_TO_RENEW;
-import static com.hedera.services.state.expiry.renewal.RenewableEntityType.EXPIRED_CONTRACT_READY_TO_RENEW;
-import static com.hedera.services.state.expiry.renewal.RenewableEntityType.OTHER;
-import static com.hedera.services.utils.EntityNum.fromAccountId;
+import static com.hedera.services.state.expiry.classification.ClassificationResult.DETACHED_ACCOUNT;
+import static com.hedera.services.state.expiry.classification.ClassificationResult.DETACHED_ACCOUNT_GRACE_PERIOD_OVER;
+import static com.hedera.services.state.expiry.classification.ClassificationResult.DETACHED_CONTRACT;
+import static com.hedera.services.state.expiry.classification.ClassificationResult.DETACHED_CONTRACT_GRACE_PERIOD_OVER;
+import static com.hedera.services.state.expiry.classification.ClassificationResult.DETACHED_TREASURY_GRACE_PERIOD_OVER_BEFORE_TOKEN;
+import static com.hedera.services.state.expiry.classification.ClassificationResult.EXPIRED_ACCOUNT_READY_TO_RENEW;
+import static com.hedera.services.state.expiry.classification.ClassificationResult.EXPIRED_CONTRACT_READY_TO_RENEW;
+import static com.hedera.services.state.expiry.classification.ClassificationResult.OTHER;
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.utils.EntityNum;
-import com.swirlds.merkle.map.MerkleMap;
-import java.util.function.Supplier;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 /**
  * Helper for renewing and removing expired entities. Only crypto accounts are supported in this
  * implementation.
  */
 @Singleton
-public class RenewableEntityClassifier {
-    private static final Logger log = LogManager.getLogger(RenewableEntityClassifier.class);
-
+public class ClassificationWork {
     private final GlobalDynamicProperties dynamicProperties;
-    private final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts;
-
+    private final EntityLookup lookup;
     private EntityNum lastClassifiedNum;
     private MerkleAccount lastClassified = null;
     private EntityNum payerForAutoRenewNum;
     private MerkleAccount payerAccountForAutoRenew = null;
 
     @Inject
-    public RenewableEntityClassifier(
-            final GlobalDynamicProperties dynamicProperties,
-            final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts) {
-        this.accounts = accounts;
+    public ClassificationWork(
+            final GlobalDynamicProperties dynamicProperties, final EntityLookup lookup) {
         this.dynamicProperties = dynamicProperties;
+        this.lookup = lookup;
     }
 
-    public RenewableEntityType classify(final EntityNum candidateNum, final long now) {
+    public ClassificationResult classify(final EntityNum candidateNum, final long now) {
         lastClassifiedNum = candidateNum;
-        final var curAccounts = accounts.get();
-        if (!curAccounts.containsKey(lastClassifiedNum)) {
+        if (!lookup.accountsContainsKey(lastClassifiedNum)) {
             return OTHER;
         } else {
-            lastClassified = curAccounts.get(lastClassifiedNum);
+            lastClassified = lookup.getImmutableAccount(lastClassifiedNum);
             final long expiry = lastClassified.getExpiry();
             if (expiry > now) {
                 return OTHER;
@@ -98,31 +88,16 @@ public class RenewableEntityClassifier {
         return lastClassified;
     }
 
-    public EntityNum getPayerForAutoRenew() {
+    public EntityNum getLastClassifiedNum() {
+        return lastClassifiedNum;
+    }
+
+    public EntityNum getPayerNumForAutoRenew() {
         return payerForAutoRenewNum;
     }
 
-    // --- Internal helpers ---
-    void renewLastClassifiedWith(long fee, long renewalPeriod) {
-        assertHasLastClassifiedAccount();
-        assertPayerAccountForRenewalCanAfford(fee);
-
-        final var currentAccounts = accounts.get();
-
-        final var mutableLastClassified = currentAccounts.getForModify(lastClassifiedNum);
-        final long newExpiry = mutableLastClassified.getExpiry() + renewalPeriod;
-        mutableLastClassified.setExpiry(newExpiry);
-
-        final var mutablePayerForRenew = currentAccounts.getForModify(payerForAutoRenewNum);
-        final long newBalance = mutablePayerForRenew.getBalance() - fee;
-        mutablePayerForRenew.setBalanceUnchecked(newBalance);
-
-        final var fundingId = fromAccountId(dynamicProperties.fundingAccount());
-        final var mutableFundingAccount = currentAccounts.getForModify(fundingId);
-        final long newFundingBalance = mutableFundingAccount.getBalance() + fee;
-        mutableFundingAccount.setBalanceUnchecked(newFundingBalance);
-
-        log.debug("Renewed {} at a price of {}tb", lastClassifiedNum, fee);
+    public MerkleAccount getPayerAccountForAutoRenew() {
+        return payerAccountForAutoRenew;
     }
 
     /**
@@ -131,10 +106,10 @@ public class RenewableEntityClassifier {
      *
      * @return resolved payer for renewal
      */
-    MerkleAccount resolvePayerForAutoRenew() {
+    public MerkleAccount resolvePayerForAutoRenew() {
         if (lastClassified.isSmartContract() && lastClassified.hasAutoRenewAccount()) {
             payerForAutoRenewNum = lastClassified.getAutoRenewAccount().asNum();
-            payerAccountForAutoRenew = accounts.get().get(payerForAutoRenewNum);
+            payerAccountForAutoRenew = lookup.getImmutableAccount(payerForAutoRenewNum);
             if (isValid(payerAccountForAutoRenew)) {
                 return payerAccountForAutoRenew;
             }
@@ -152,19 +127,5 @@ public class RenewableEntityClassifier {
      */
     boolean isValid(final MerkleAccount payer) {
         return payer != null && !payer.isDeleted() && payer.getBalance() > 0;
-    }
-
-    private void assertHasLastClassifiedAccount() {
-        if (lastClassified == null) {
-            throw new IllegalStateException(
-                    "Cannot remove a last classified account; none is present!");
-        }
-    }
-
-    private void assertPayerAccountForRenewalCanAfford(long fee) {
-        if (payerAccountForAutoRenew.getBalance() < fee) {
-            var msg = "Cannot charge " + fee + " to account number " + payerForAutoRenewNum + "!";
-            throw new IllegalStateException(msg);
-        }
     }
 }

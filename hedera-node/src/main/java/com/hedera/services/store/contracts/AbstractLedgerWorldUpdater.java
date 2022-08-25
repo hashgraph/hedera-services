@@ -350,7 +350,7 @@ public abstract class AbstractLedgerWorldUpdater<W extends WorldView, A extends 
         return updatedAccounts.values();
     }
 
-    protected TransactionalLedger<AccountID, AccountProperty, MerkleAccount> trackingAccounts() {
+    public TransactionalLedger<AccountID, AccountProperty, MerkleAccount> trackingAccounts() {
         return trackingLedgers.accounts();
     }
 

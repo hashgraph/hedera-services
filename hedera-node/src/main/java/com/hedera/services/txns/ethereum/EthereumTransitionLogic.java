@@ -54,9 +54,12 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 @Singleton
 public class EthereumTransitionLogic implements PreFetchableTransition {
+    private static final Logger log = LogManager.getLogger(EthereumTransitionLogic.class);
     private static final TransactionBody INVALID_SYNTH_BODY = TransactionBody.getDefaultInstance();
 
     private final AliasManager aliasManager;
@@ -167,7 +170,11 @@ public class EthereumTransitionLogic implements PreFetchableTransition {
 
     @Override
     public void preFetch(final TxnAccessor accessor) {
-        spanMapManager.expandEthereumSpan(accessor);
+        try {
+            spanMapManager.expandEthereumSpan(accessor);
+        } catch (Exception e) {
+            log.warn("Pre-fetch failed for {}", accessor.getSignedTxnWrapper(), e);
+        }
     }
 
     @Override

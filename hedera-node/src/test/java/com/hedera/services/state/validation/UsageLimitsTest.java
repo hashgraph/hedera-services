@@ -15,7 +15,7 @@
  */
 package com.hedera.services.state.validation;
 
-import static com.hedera.test.utils.TxnUtils.assertFailsWith;
+import static com.hedera.test.utils.TxnUtils.assertExhaustsResourceLimit;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_CONTRACT_STORAGE_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_NFTS_IN_PRICE_REGIME_HAVE_BEEN_MINTED;
@@ -153,7 +153,7 @@ class UsageLimitsTest {
         assertDoesNotThrow(() -> subject.assertCreatableAccounts(3));
         assertTrue(subject.areCreatableAccounts(3));
         assertEquals(2L, subject.getNumAccounts());
-        assertFailsWith(
+        assertExhaustsResourceLimit(
                 () -> subject.assertCreatableAccounts(4),
                 MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED);
         assertFalse(subject.areCreatableAccounts(4));
@@ -166,7 +166,7 @@ class UsageLimitsTest {
 
         assertDoesNotThrow(() -> subject.assertCreatableContracts(3));
         assertEquals(2L, subject.getNumContracts());
-        assertFailsWith(
+        assertExhaustsResourceLimit(
                 () -> subject.assertCreatableContracts(4),
                 MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED);
     }
@@ -198,7 +198,7 @@ class UsageLimitsTest {
 
         assertDoesNotThrow(() -> subject.assertCreatableTokens(3));
         assertEquals(3L, subject.getNumTokens());
-        assertFailsWith(
+        assertExhaustsResourceLimit(
                 () -> subject.assertCreatableTokens(4),
                 MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED);
     }
@@ -211,7 +211,7 @@ class UsageLimitsTest {
         assertTrue(subject.areCreatableTokenRels(3));
         assertDoesNotThrow(() -> subject.assertCreatableTokenRels(3));
         assertEquals(3L, subject.getNumTokenRels());
-        assertFailsWith(
+        assertExhaustsResourceLimit(
                 () -> subject.assertCreatableTokenRels(4),
                 MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED);
         assertFalse(subject.areCreatableTokenRels(4));
@@ -224,7 +224,7 @@ class UsageLimitsTest {
 
         assertDoesNotThrow(() -> subject.assertCreatableTopics(3));
         assertEquals(3L, subject.getNumTopics());
-        assertFailsWith(
+        assertExhaustsResourceLimit(
                 () -> subject.assertCreatableTopics(4),
                 MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED);
     }
@@ -236,7 +236,7 @@ class UsageLimitsTest {
 
         assertDoesNotThrow(() -> subject.assertMintableNfts(3));
         assertEquals(3L, subject.getNumNfts());
-        assertFailsWith(
+        assertExhaustsResourceLimit(
                 () -> subject.assertMintableNfts(4), MAX_NFTS_IN_PRICE_REGIME_HAVE_BEEN_MINTED);
     }
 
@@ -245,7 +245,7 @@ class UsageLimitsTest {
         given(dynamicProperties.maxAggregateContractKvPairs()).willReturn(6L);
 
         assertDoesNotThrow(() -> subject.assertUsableTotalSlots(6L));
-        assertFailsWith(
+        assertExhaustsResourceLimit(
                 () -> subject.assertUsableTotalSlots(7L),
                 MAX_STORAGE_IN_PRICE_REGIME_HAS_BEEN_USED);
     }
@@ -255,6 +255,7 @@ class UsageLimitsTest {
         given(dynamicProperties.maxIndividualContractKvPairs()).willReturn(6);
 
         assertDoesNotThrow(() -> subject.assertUsableContractSlots(6));
-        assertFailsWith(() -> subject.assertUsableContractSlots(7L), MAX_CONTRACT_STORAGE_EXCEEDED);
+        assertExhaustsResourceLimit(
+                () -> subject.assertUsableContractSlots(7L), MAX_CONTRACT_STORAGE_EXCEEDED);
     }
 }
