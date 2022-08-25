@@ -112,7 +112,7 @@ public final class AbiConstants {
     public static final int ABI_ID_UNFREEZE = 0x52f91387;
     // updateTokenInfo(address token, HederaToken tokenInfo)
     public static final int ABI_ID_UPDATE_TOKEN_INFO = 0x2cccc36f;
-    // updateTokenKeys(address token , TokenKey [])
+    // updateTokenKeys(address token, TokenKey [])
     public static final int ABI_ID_UPDATE_TOKEN_KEYS = 0x6fc3cbaf;
     // getTokenKey(address token, uint tokenType)
     public static final int ABI_ID_GET_TOKEN_KEY = 0x3c4dd32e;

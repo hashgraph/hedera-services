@@ -95,11 +95,11 @@ class GetTokenKeyPrecompileTest {
 
     private HTSPrecompiledContract subject;
     private GetTokenKeyWrapper wrapper = new GetTokenKeyWrapper(fungible, 1L);
-    private final byte[] ed25519Key = new byte[] {
-        -98, 65, 115, 52, -46, -22, 107, -28, 89, 98, 64, 96, -29, -17, -36, 27,
-        69, -102, -120, 75, -58, -87, -62, 50, 52, -102, -13, 94, -112, 96, -19,
-        98
-    };
+    private final byte[] ed25519Key =
+            new byte[] {
+                -98, 65, 115, 52, -46, -22, 107, -28, 89, 98, 64, 96, -29, -17, -36, 27, 69, -102,
+                -120, 75, -58, -87, -62, 50, 52, -102, -13, 94, -112, 96, -19, 98
+            };
 
     @BeforeEach
     void setUp() throws IOException {

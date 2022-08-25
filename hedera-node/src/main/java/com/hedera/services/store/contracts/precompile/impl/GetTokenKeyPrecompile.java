@@ -29,6 +29,7 @@ import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUti
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import java.util.Objects;
 import java.util.function.UnaryOperator;
 import org.apache.tuweni.bytes.Bytes;
 
@@ -56,6 +57,7 @@ public class GetTokenKeyPrecompile extends AbstractReadOnlyPrecompile {
     @Override
     public Bytes getSuccessResultFor(ExpirableTxnRecord.Builder childRecord) {
         validateTrue(ledgers.tokens().exists(tokenId), ResponseCodeEnum.INVALID_TOKEN_ID);
+        Objects.requireNonNull(keyType);
         JKey key = (JKey) ledgers.tokens().get(tokenId, keyType);
         return encoder.encodeGetTokenKey(buildKeyValueWrapper(key));
     }
