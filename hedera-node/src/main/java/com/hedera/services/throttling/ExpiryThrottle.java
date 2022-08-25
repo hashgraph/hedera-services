@@ -1,4 +1,22 @@
+/*
+ * Copyright (C) 2022 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package com.hedera.services.throttling;
+
+import static com.hedera.services.utils.MiscUtils.safeResetThrottles;
+import static java.util.stream.Collectors.toMap;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -6,21 +24,16 @@ import com.google.common.annotations.VisibleForTesting;
 import com.hedera.services.files.HybridResouceLoader;
 import com.hedera.services.sysfiles.domain.throttling.ThrottleBucket;
 import com.hedera.services.throttles.DeterministicThrottle;
-import com.hedera.services.utils.MiscUtils;
-import org.apache.commons.lang3.tuple.Pair;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
-import javax.annotation.Nullable;
-import javax.inject.Inject;
-import javax.inject.Singleton;
 import java.time.Instant;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
-
-import static com.hedera.services.utils.MiscUtils.safeResetThrottles;
-import static java.util.stream.Collectors.toMap;
+import javax.annotation.Nullable;
+import javax.inject.Inject;
+import javax.inject.Singleton;
+import org.apache.commons.lang3.tuple.Pair;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 @Singleton
 public class ExpiryThrottle {
@@ -52,7 +65,9 @@ public class ExpiryThrottle {
             try {
                 resetInternalsFrom(FALLBACK_RESOURCE_LOC);
             } catch (Exception unrecoverable) {
-                log.error("Unable to load default expiry throttle, will reject all expiry work", unrecoverable);
+                log.error(
+                        "Unable to load default expiry throttle, will reject all expiry work",
+                        unrecoverable);
             }
         }
     }
@@ -61,7 +76,10 @@ public class ExpiryThrottle {
         if (throttle == null) {
             log.error("Attempt to reset expiry throttle to {} before initialization", snapshot);
         } else {
-            safeResetThrottles(List.of(throttle), new DeterministicThrottle.UsageSnapshot[] { snapshot }, "expiry");
+            safeResetThrottles(
+                    List.of(throttle),
+                    new DeterministicThrottle.UsageSnapshot[] {snapshot},
+                    "expiry");
         }
     }
 
@@ -79,14 +97,18 @@ public class ExpiryThrottle {
         final var bucket = loadBucket(loc);
         final var mapping = bucket.asThrottleMapping(1);
         throttle = mapping.getKey();
-        accessReqs = mapping.getValue().stream().collect(toMap(
-                Pair::getKey,
-                Pair::getValue,
-                (a, b) -> a,
-                () -> new EnumMap<>(MapAccessType.class)));
+        accessReqs =
+                mapping.getValue().stream()
+                        .collect(
+                                toMap(
+                                        Pair::getKey,
+                                        Pair::getValue,
+                                        (a, b) -> a,
+                                        () -> new EnumMap<>(MapAccessType.class)));
     }
 
-    private ThrottleBucket<MapAccessType> loadBucket(final String at) throws JsonProcessingException {
+    private ThrottleBucket<MapAccessType> loadBucket(final String at)
+            throws JsonProcessingException {
         var bytes = resourceLoader.readAllBytesIfPresent(at);
         if (bytes == null) {
             throw new IllegalArgumentException("Cannot load throttle from '" + at + "'");

@@ -30,7 +30,6 @@ import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.BDDMockito.*;
 import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.fees.FeeMultiplierSource;
@@ -90,7 +89,8 @@ class MerkleNetworkContextTest {
 
     private GasLimitDeterministicThrottle gasLimitDeterministicThrottle;
     private DeterministicThrottle.UsageSnapshot gasLimitUsageSnapshot;
-    private DeterministicThrottle.UsageSnapshot expiryUsageSnapshot = new DeterministicThrottle.UsageSnapshot(666L, Instant.MAX);
+    private DeterministicThrottle.UsageSnapshot expiryUsageSnapshot =
+            new DeterministicThrottle.UsageSnapshot(666L, Instant.MAX);
 
     @LoggingTarget private LogCaptor logCaptor;
     @LoggingSubject private MerkleNetworkContext subject;
@@ -794,14 +794,14 @@ class MerkleNetworkContextTest {
         final var throttle = mock(ExpiryThrottle.class);
         subject.resetExpiryThrottleFromSavedSnapshot(throttle);
         verify(throttle).resetToSnapshot(expiryUsageSnapshot);
-      }
+    }
 
     @Test
     void canSyncExpiryThrottling() {
         final var throttle = mock(ExpiryThrottle.class);
         subject.syncExpiryThrottle(throttle);
         assertSame(throttle, subject.getExpiryThrottle());
-      }
+    }
 
     @Test
     void warnsIfSavedUsageNotCompatibleWithActiveThrottles() {

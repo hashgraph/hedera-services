@@ -91,7 +91,8 @@ public class ConfigCallbacks {
             hapiThrottling.applyGasConfig();
             handleThrottling.applyGasConfig();
             scheduleThrottling.applyGasConfig();
-            expiryThrottle.rebuildFromResource(properties.getStringProperty(EXPIRY_THROTTLE_RESOURCE));
+            expiryThrottle.rebuildFromResource(
+                    properties.getStringProperty(EXPIRY_THROTTLE_RESOURCE));
             networkCtx.get().renumberBlocksToMatch(dynamicProps.knownBlockValues());
             updateMinAndMaxStakesWith(
                     properties.getLongProperty(LEDGER_TOTAL_TINY_BAR_FLOAT),

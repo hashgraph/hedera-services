@@ -15,7 +15,6 @@
  */
 package com.hedera.services.sysfiles.domain.throttling;
 
-import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import java.util.ArrayList;
 import java.util.List;
 

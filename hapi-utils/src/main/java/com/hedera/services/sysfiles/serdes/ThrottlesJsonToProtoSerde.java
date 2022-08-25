@@ -16,7 +16,6 @@
 package com.hedera.services.sysfiles.serdes;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.hedera.services.sysfiles.domain.throttling.ThrottleBucket;
 import com.hederahashgraph.api.proto.java.ThrottleDefinitions;
 import java.io.IOException;
 import java.io.InputStream;

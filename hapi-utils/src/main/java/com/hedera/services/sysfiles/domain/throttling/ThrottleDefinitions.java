@@ -16,7 +16,6 @@
 package com.hedera.services.sysfiles.domain.throttling;
 
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
-
 import java.util.ArrayList;
 import java.util.List;
 
@@ -35,13 +34,16 @@ public class ThrottleDefinitions {
             com.hederahashgraph.api.proto.java.ThrottleDefinitions defs) {
         var pojo = new ThrottleDefinitions();
         pojo.buckets.addAll(
-                defs.getThrottleBucketsList().stream().map(HapiThrottleUtils::hapiBucketFromProto).toList());
+                defs.getThrottleBucketsList().stream()
+                        .map(HapiThrottleUtils::hapiBucketFromProto)
+                        .toList());
         return pojo;
     }
 
     public com.hederahashgraph.api.proto.java.ThrottleDefinitions toProto() {
         return com.hederahashgraph.api.proto.java.ThrottleDefinitions.newBuilder()
-                .addAllThrottleBuckets(buckets.stream().map(HapiThrottleUtils::hapiBucketToProto).toList())
+                .addAllThrottleBuckets(
+                        buckets.stream().map(HapiThrottleUtils::hapiBucketToProto).toList())
                 .build();
     }
 }

@@ -162,7 +162,6 @@ import com.hedera.services.ethereum.EthTxData;
 import com.hedera.services.exceptions.UnknownHederaFunctionality;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.throttles.DeterministicThrottle;
@@ -948,8 +947,8 @@ public final class MiscUtils {
                 log.info("Reset {} with saved usage snapshot", throttle);
             } catch (Exception e) {
                 log.warn(
-                        "Saved {} usage snapshot #{} was not compatible with the corresponding active"
-                                + " throttle ({}) not performing a reset !",
+                        "Saved {} usage snapshot #{} was not compatible with the corresponding"
+                                + " active throttle ({}) not performing a reset !",
                         source,
                         (i + 1),
                         e.getMessage());

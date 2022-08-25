@@ -52,8 +52,7 @@ class ConfigCallbacksTest {
             "c9e37a7a454638ca62662bd1a06de49ef40b3444203fe329bbc81363604ea7f8@666";
     private static final KnownBlockValues blockValues = KnownBlockValues.from(literalBlockValues);
 
-    @Mock
-    private ExpiryThrottle expiryThrottle;
+    @Mock private ExpiryThrottle expiryThrottle;
     @Mock private AddressBook addressBook;
     @Mock private GlobalDynamicProperties dynamicProps;
     @Mock private PropertySources propertySources;

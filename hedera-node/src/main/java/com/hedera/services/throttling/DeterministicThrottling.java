@@ -525,7 +525,9 @@ public class DeterministicThrottling implements TimedFunctionalityThrottling {
         }
 
         // dedup the min tps groups
-        final IdentityHashMap<ThrottleGroup<HederaFunctionality>, ThrottleBucket<HederaFunctionality>> groups = new IdentityHashMap<>();
+        final IdentityHashMap<
+                        ThrottleGroup<HederaFunctionality>, ThrottleBucket<HederaFunctionality>>
+                groups = new IdentityHashMap<>();
         for (var grp : minMtps.values()) {
             groups.put(grp, null);
         }

@@ -652,7 +652,8 @@ public class MerkleNetworkContext extends PartialMerkleLeaf implements MerkleLea
 
     void updateExpirySnapshotFrom(@Nullable final ExpiryThrottle expiryThrottle) {
         throwIfImmutable("Cannot update expiry usage snapshots on an immutable context");
-        expiryUsageSnapshot = (expiryThrottle != null) ? expiryThrottle.getThrottleSnapshot() : null;
+        expiryUsageSnapshot =
+                (expiryThrottle != null) ? expiryThrottle.getThrottleSnapshot() : null;
     }
 
     void updateCongestionStartsFrom(FeeMultiplierSource feeMultiplierSource) {
@@ -923,7 +924,8 @@ public class MerkleNetworkContext extends PartialMerkleLeaf implements MerkleLea
     }
 
     @VisibleForTesting
-    public void setExpiryUsageSnapshot(final DeterministicThrottle.UsageSnapshot expiryUsageSnapshot) {
+    public void setExpiryUsageSnapshot(
+            final DeterministicThrottle.UsageSnapshot expiryUsageSnapshot) {
         this.expiryUsageSnapshot = expiryUsageSnapshot;
     }
 }

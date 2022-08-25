@@ -133,7 +133,8 @@ class ThrottleBucketTest {
         helper.assertTolerableTps(expectedXferTps, 1.00, opsForXfer);
     }
 
-    private static ThrottleBucket<HederaFunctionality> bucketFrom(final String path) throws IOException {
+    private static ThrottleBucket<HederaFunctionality> bucketFrom(final String path)
+            throws IOException {
         final var defs = TestUtils.pojoDefs(path);
         return defs.getBuckets().get(0);
     }
