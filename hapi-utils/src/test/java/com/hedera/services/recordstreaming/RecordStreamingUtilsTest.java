@@ -27,7 +27,7 @@ class RecordStreamingUtilsTest {
 
     private static final String V6_RECORD_FILE = "2022-06-14T14_49_22.456975294Z.rcd";
     private static final String V6_RECORD_SIGNATURE_FILE = "2022-06-14T14_49_22.456975294Z.rcd_sig";
-    private static final String V6_SIDECAR_FILE = "2022-06-30T09_07_20.147156221Z_03.rcd";
+    private static final String V6_SIDECAR_FILE = "2022-08-25T11_12_30.412637774Z_01.rcd";
     private static final String V5_RECORD_FILE = "V5_2022-05-27T08_27_14.157194938Z.rcd";
     private static final String V5_RECORD_SIGNATURE_FILE =
             "V5_2022-05-27T08_27_14.157194938Z.rcd_sig";

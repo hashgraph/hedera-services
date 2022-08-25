@@ -59,6 +59,7 @@ import com.hederahashgraph.api.proto.java.KeyList;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
+import java.math.BigInteger;
 import java.time.Instant;
 import java.util.List;
 import java.util.function.Supplier;
@@ -370,10 +371,20 @@ public class MigrationRecordsManager {
         IterableContractValue iterableValue;
         while (maxNumberOfKvPairsToIterate > 0 && contractStorageKey != null) {
             iterableValue = contractStorageMap.get(contractStorageKey);
+            final var keyAsBigInteger = contractStorageKey.getKeyAsBigInteger();
             contractStateChangeBuilder.addStorageChanges(
                     StorageChange.newBuilder()
-                            .setSlot(ByteStringUtils.wrapUnsafely(slotAsBytes(contractStorageKey)))
-                            .setValueRead(ByteStringUtils.wrapUnsafely(iterableValue.getValue()))
+                            .setSlot(
+                                    ByteStringUtils.wrapUnsafely(
+                                            keyAsBigInteger.equals(BigInteger.ZERO)
+                                                    ? new byte[0]
+                                                    : keyAsBigInteger.toByteArray()))
+                            .setValueRead(
+                                    ByteStringUtils.wrapUnsafely(
+                                            iterableValue
+                                                    .asUInt256()
+                                                    .trimLeadingZeros()
+                                                    .toArrayUnsafe()))
                             .build());
             contractStorageKey =
                     iterableValue.getNextKeyScopedTo(contractStorageKey.getContractId());
@@ -395,16 +406,6 @@ public class MigrationRecordsManager {
                                 .addContractStateChanges(contractStateChangeBuilder)
                                 .build())
                 .setMigration(true);
-    }
-
-    private byte[] slotAsBytes(final ContractKey contractStorageKey) {
-        final var contractKeyBytes = new byte[32];
-        for (int i = contractStorageKey.getUint256KeyNonZeroBytes() - 1, j = 31 - i;
-                i >= 0;
-                i--, j++) {
-            contractKeyBytes[j] = contractStorageKey.getUint256Byte(i);
-        }
-        return contractKeyBytes;
     }
 
     @VisibleForTesting
