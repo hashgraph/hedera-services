@@ -28,7 +28,7 @@ import com.hedera.services.context.properties.PropertySources;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.merkle.MerkleStakingInfo;
 import com.hedera.services.sysfiles.domain.KnownBlockValues;
-import com.hedera.services.throttling.ExpiryThrottling;
+import com.hedera.services.throttling.ExpiryThrottle;
 import com.hedera.services.throttling.FunctionalityThrottling;
 import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.ServicesConfigurationList;
@@ -53,7 +53,7 @@ class ConfigCallbacksTest {
     private static final KnownBlockValues blockValues = KnownBlockValues.from(literalBlockValues);
 
     @Mock
-    private ExpiryThrottling expiryThrottling;
+    private ExpiryThrottle expiryThrottle;
     @Mock private AddressBook addressBook;
     @Mock private GlobalDynamicProperties dynamicProps;
     @Mock private PropertySources propertySources;
@@ -72,7 +72,7 @@ class ConfigCallbacksTest {
                         hapiOpPermissions,
                         dynamicProps,
                         propertySources,
-                        expiryThrottling,
+                        expiryThrottle,
                         functionalityThrottling,
                         functionalityThrottling,
                         functionalityThrottling,
@@ -101,7 +101,7 @@ class ConfigCallbacksTest {
 
         // then:
         verify(propertySources).reloadFrom(config);
-        verify(expiryThrottling).rebuildFromResource(expiryResourceLoc);
+        verify(expiryThrottle).rebuildFromResource(expiryResourceLoc);
         verify(dynamicProps).reload();
         verify(functionalityThrottling, times(3)).applyGasConfig();
         verify(networkCtx).renumberBlocksToMatch(blockValues);
