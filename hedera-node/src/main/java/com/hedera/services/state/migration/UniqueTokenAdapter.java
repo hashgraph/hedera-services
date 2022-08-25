@@ -21,6 +21,7 @@ import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.state.virtual.UniqueTokenValue;
 import com.hedera.services.utils.NftNumPair;
 import com.swirlds.common.FastCopyable;
+
 import javax.annotation.Nullable;
 
 /**
@@ -49,6 +50,10 @@ public class UniqueTokenAdapter implements FastCopyable {
 
     public static UniqueTokenAdapter newEmptyMerkleToken() {
         return wrap(new MerkleUniqueToken());
+    }
+
+    public static UniqueTokenAdapter newEmptyVirtualToken() {
+        return wrap(new UniqueTokenValue());
     }
 
     UniqueTokenAdapter(final UniqueTokenValue token) {
@@ -184,7 +189,7 @@ public class UniqueTokenAdapter implements FastCopyable {
         }
     }
 
-    public void setPrev(NftNumPair prev) {
+    public void setPrev(final NftNumPair prev) {
         if (isVirtual) {
             uniqueTokenValue.setPrev(prev);
         } else {
@@ -192,7 +197,7 @@ public class UniqueTokenAdapter implements FastCopyable {
         }
     }
 
-    public void setNext(NftNumPair next) {
+    public void setNext(final NftNumPair next) {
         if (isVirtual) {
             uniqueTokenValue.setNext(next);
         } else {
