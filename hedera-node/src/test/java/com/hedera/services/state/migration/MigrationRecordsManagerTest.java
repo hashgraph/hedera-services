@@ -401,9 +401,7 @@ class MigrationRecordsManagerTest {
                                 StorageChange.newBuilder()
                                         .setSlot(
                                                 ByteStringUtils.wrapUnsafely(
-                                                        slot1
-                                                                .trimLeadingZeros()
-                                                                .toArrayUnsafe()))
+                                                        slot1.trimLeadingZeros().toArrayUnsafe()))
                                         .setValueRead(ByteStringUtils.wrapUnsafely(value1))
                                         .build())
                         .addStorageChanges(
@@ -420,14 +418,13 @@ class MigrationRecordsManagerTest {
                                         .setValueRead(ByteStringUtils.wrapUnsafely(value3))
                                         .build())
                         .addStorageChanges(
-                                // as per HIP-260 - zero value read will not set the valueRead field of a
+                                // as per HIP-260 - zero value read will not set the valueRead field
+                                // of a
                                 // storage change
                                 StorageChange.newBuilder()
                                         .setSlot(
                                                 ByteStringUtils.wrapUnsafely(
-                                                        slot999
-                                                                .trimLeadingZeros()
-                                                                .toArrayUnsafe()))
+                                                        slot999.trimLeadingZeros().toArrayUnsafe()))
                                         .build())
                         .build();
         final var expectedStateChangesContract1 =
