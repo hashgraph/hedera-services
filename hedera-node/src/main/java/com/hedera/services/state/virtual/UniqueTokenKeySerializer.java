@@ -47,15 +47,17 @@ public class UniqueTokenKeySerializer implements KeySerializer<UniqueTokenKey> {
     }
 
     @Override
-    public UniqueTokenKey deserialize(ByteBuffer buffer, long dataVersion) throws IOException {
+    public UniqueTokenKey deserialize(final ByteBuffer buffer, final long dataVersion)
+            throws IOException {
         Objects.requireNonNull(buffer);
-        UniqueTokenKey tokenKey = new UniqueTokenKey();
+        final UniqueTokenKey tokenKey = new UniqueTokenKey();
         tokenKey.deserialize(buffer, (int) dataVersion);
         return tokenKey;
     }
 
     @Override
-    public int serialize(UniqueTokenKey tokenKey, SerializableDataOutputStream outputStream)
+    public int serialize(
+            final UniqueTokenKey tokenKey, final SerializableDataOutputStream outputStream)
             throws IOException {
         Objects.requireNonNull(tokenKey);
         Objects.requireNonNull(outputStream);
@@ -63,12 +65,13 @@ public class UniqueTokenKeySerializer implements KeySerializer<UniqueTokenKey> {
     }
 
     @Override
-    public int deserializeKeySize(ByteBuffer byteBuffer) {
+    public int deserializeKeySize(final ByteBuffer byteBuffer) {
         return UniqueTokenKey.deserializeKeySize(byteBuffer);
     }
 
     @Override
-    public boolean equals(ByteBuffer byteBuffer, int dataVersion, UniqueTokenKey uniqueTokenKey)
+    public boolean equals(
+            final ByteBuffer byteBuffer, final int dataVersion, final UniqueTokenKey uniqueTokenKey)
             throws IOException {
         final var key = new UniqueTokenKey();
         key.deserialize(byteBuffer, dataVersion);
@@ -81,13 +84,14 @@ public class UniqueTokenKeySerializer implements KeySerializer<UniqueTokenKey> {
     }
 
     @Override
-    public void deserialize(SerializableDataInputStream serializableDataInputStream, int i)
+    public void deserialize(
+            final SerializableDataInputStream serializableDataInputStream, final int i)
             throws IOException {
         /* no state to load, so no-op */
     }
 
     @Override
-    public void serialize(SerializableDataOutputStream serializableDataOutputStream)
+    public void serialize(final SerializableDataOutputStream serializableDataOutputStream)
             throws IOException {
         /* no state to save, so no-op */
     }

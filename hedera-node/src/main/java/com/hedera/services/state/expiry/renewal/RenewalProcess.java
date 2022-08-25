@@ -15,16 +15,12 @@
  */
 package com.hedera.services.state.expiry.renewal;
 
-import static com.hedera.services.state.expiry.EntityProcessResult.DONE;
 import static com.hedera.services.state.expiry.EntityProcessResult.NOTHING_TO_DO;
-import static com.hedera.services.state.expiry.EntityProcessResult.STILL_MORE_TO_DO;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.state.expiry.EntityProcessResult;
-import com.hedera.services.state.expiry.removal.AccountGC;
-import com.hedera.services.state.expiry.removal.ContractGC;
+import com.hedera.services.state.expiry.classification.ClassificationWork;
+import com.hedera.services.state.expiry.removal.RemovalWork;
 import com.hedera.services.utils.EntityNum;
 import java.time.Instant;
 import javax.inject.Inject;
@@ -32,29 +28,22 @@ import javax.inject.Singleton;
 
 @Singleton
 public class RenewalProcess {
-    private final AccountGC accountGC;
-    private final ContractGC contractGC;
-    private final FeeCalculator fees;
     private final RenewalRecordsHelper recordsHelper;
-    private final GlobalDynamicProperties dynamicProperties;
-    private final RenewableEntityClassifier helper;
-
+    private final RenewalWork renewalWork;
+    private final RemovalWork removalWork;
+    private final ClassificationWork classifier;
     private Instant cycleTime = null;
 
     @Inject
     public RenewalProcess(
-            final AccountGC accountGC,
-            final ContractGC contractGC,
-            final FeeCalculator fees,
-            final RenewableEntityClassifier helper,
-            final GlobalDynamicProperties dynamicProperties,
-            final RenewalRecordsHelper recordsHelper) {
-        this.fees = fees;
-        this.helper = helper;
-        this.accountGC = accountGC;
-        this.contractGC = contractGC;
+            final ClassificationWork classifier,
+            final RenewalRecordsHelper recordsHelper,
+            final RenewalWork renewalWork,
+            final RemovalWork removalWork) {
         this.recordsHelper = recordsHelper;
-        this.dynamicProperties = dynamicProperties;
+        this.renewalWork = renewalWork;
+        this.removalWork = removalWork;
+        this.classifier = classifier;
     }
 
     public void beginRenewalCycle(final Instant currentConsTime) {
@@ -74,59 +63,18 @@ public class RenewalProcess {
 
         final var longNow = cycleTime.getEpochSecond();
         final var entityNum = EntityNum.fromLong(literalNum);
-        final var classification = helper.classify(entityNum, longNow);
+        // ClassificationWork
+        final var classification = classifier.classify(entityNum, longNow);
+
         return switch (classification) {
-            case DETACHED_ACCOUNT_GRACE_PERIOD_OVER -> removeIfTargeted(entityNum, false);
-            case DETACHED_CONTRACT_GRACE_PERIOD_OVER -> removeIfTargeted(entityNum, true);
-            case EXPIRED_ACCOUNT_READY_TO_RENEW -> renewIfTargeted(entityNum, false);
-            case EXPIRED_CONTRACT_READY_TO_RENEW -> renewIfTargeted(entityNum, true);
+            case DETACHED_ACCOUNT_GRACE_PERIOD_OVER -> removalWork.tryToRemoveAccount(entityNum);
+            case DETACHED_CONTRACT_GRACE_PERIOD_OVER -> removalWork.tryToRemoveContract(entityNum);
+            case EXPIRED_ACCOUNT_READY_TO_RENEW -> renewalWork.tryToRenewAccount(
+                    entityNum, cycleTime);
+            case EXPIRED_CONTRACT_READY_TO_RENEW -> renewalWork.tryToRenewContract(
+                    entityNum, cycleTime);
             default -> NOTHING_TO_DO;
         };
-    }
-
-    private EntityProcessResult renewIfTargeted(
-            final EntityNum entityNum, final boolean isContract) {
-        if (isNotTargeted(isContract)) {
-            return NOTHING_TO_DO;
-        }
-        final var lastClassified = helper.getLastClassified();
-        final var payer = helper.resolvePayerForAutoRenew();
-
-        final long reqPeriod = lastClassified.getAutoRenewSecs();
-        final var assessment =
-                fees.assessCryptoAutoRenewal(lastClassified, reqPeriod, cycleTime, payer);
-        final long renewalPeriod = assessment.renewalPeriod();
-        final long renewalFee = assessment.fee();
-        helper.renewLastClassifiedWith(renewalFee, renewalPeriod);
-
-        recordsHelper.streamCryptoRenewal(
-                entityNum,
-                renewalFee,
-                lastClassified.getExpiry() + renewalPeriod,
-                isContract,
-                EntityNum.fromLong(payer.state().number()));
-        return DONE;
-    }
-
-    private EntityProcessResult removeIfTargeted(
-            final EntityNum contractNum, final boolean isContract) {
-        if (isNotTargeted(isContract)) {
-            return NOTHING_TO_DO;
-        }
-        final var lastClassified = helper.getLastClassified();
-        if (isContract && !contractGC.expireBestEffort(contractNum, lastClassified)) {
-            return STILL_MORE_TO_DO;
-        }
-        final var treasuryReturns = accountGC.expireBestEffort(contractNum, lastClassified);
-        recordsHelper.streamCryptoRemoval(
-                contractNum, treasuryReturns.tokenTypes(), treasuryReturns.transfers());
-        return treasuryReturns.finished() ? DONE : STILL_MORE_TO_DO;
-    }
-
-    private boolean isNotTargeted(final boolean isContract) {
-        return isContract
-                ? !dynamicProperties.shouldAutoRenewContracts()
-                : !dynamicProperties.shouldAutoRenewAccounts();
     }
 
     private void assertInCycle() {

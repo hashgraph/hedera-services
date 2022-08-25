@@ -112,9 +112,9 @@ class MutableEntityAccessTest {
 
     @Test
     void flushesAsExpected() {
-        subject.flushStorage();
+        subject.flushStorage(accountsLedger);
 
-        verify(storage).validateAndCommit();
+        verify(storage).validateAndCommit(accountsLedger);
     }
 
     @Test
