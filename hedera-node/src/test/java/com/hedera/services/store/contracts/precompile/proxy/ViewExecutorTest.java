@@ -41,11 +41,10 @@ import static org.mockito.Mockito.verify;
 import com.esaulpaugh.headlong.util.Integers;
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.primitives.StateView;
-import com.hedera.services.state.enums.TokenType;
-import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.properties.TokenProperty;
 import com.hedera.services.legacy.core.jproto.JKey;
+import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.store.contracts.WorldLedgers;
 import com.hedera.services.store.contracts.precompile.codec.DecodingFacade;
@@ -95,7 +94,7 @@ class ViewExecutorTest {
     @Mock private WorldLedgers ledgers;
     @Mock private TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokens;
     @Mock private JKey key;
-    @Mock private MerkleMap<EntityNum, MerkleToken> tokens;
+    @Mock private MerkleMap<EntityNum, MerkleToken> merkleTokens;
     @Mock private MerkleToken token;
 
     public static final AccountID account = IdUtils.asAccount("0.0.777");
@@ -286,6 +285,13 @@ class ViewExecutorTest {
         given(ledgers.tokens()).willReturn(tokens);
         given(tokens.get(fungible, TokenProperty.ADMIN_KEY)).willReturn(key);
         given(key.getECDSASecp256k1Key()).willReturn(new byte[0]);
+        given(key.getEd25519())
+                .willReturn(
+                        new byte[] {
+                            -98, 65, 115, 52, -46, -22, 107, -28, 89, 98, 64, 96, -29, -17, -36, 27,
+                            69, -102, -120, 75, -58, -87, -62, 50, 52, -102, -13, 94, -112, 96, -19,
+                            98
+                        });
         given(encodingFacade.encodeGetTokenKey(any())).willReturn(getTokenKeyEncoded);
 
         assertEquals(Pair.of(gas, getTokenKeyEncoded), subject.computeCosted());
@@ -317,8 +323,8 @@ class ViewExecutorTest {
         final var wrapper = TokenInfoWrapper.forToken(fungible);
         given(decodingFacade.decodeGetTokenType(input)).willReturn(wrapper);
         given(stateView.tokenExists(fungible)).willReturn(true);
-        given(stateView.tokens()).willReturn(tokens);
-        given(tokens.get(EntityNum.fromTokenId(wrapper.tokenID()))).willReturn(token);
+        given(stateView.tokens()).willReturn(merkleTokens);
+        given(merkleTokens.get(EntityNum.fromTokenId(wrapper.tokenID()))).willReturn(token);
         given(token.tokenType()).willReturn(TokenType.FUNGIBLE_COMMON);
         given(encodingFacade.encodeGetTokenType(TokenType.FUNGIBLE_COMMON.ordinal()))
                 .willReturn(RETURN_SUCCESS_TRUE);

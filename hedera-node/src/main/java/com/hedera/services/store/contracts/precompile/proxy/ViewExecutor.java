@@ -26,8 +26,8 @@ import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_GET_TOKEN_TYPE;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_IS_FROZEN;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_IS_KYC;
-import static com.hedera.services.store.contracts.precompile.utils.PrecompileUtils.buildKeyValueWrapper;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_IS_TOKEN;
+import static com.hedera.services.store.contracts.precompile.utils.PrecompileUtils.buildKeyValueWrapper;
 import static com.hedera.services.utils.MiscUtils.asSecondsTimestamp;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 

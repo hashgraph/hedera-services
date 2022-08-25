@@ -360,7 +360,7 @@ class TokenUpdateLogicTest {
     void updateTokenKeysHappyPathForNonFungible() {
         // given
         givenTokenUpdateLogic(true);
-        givenValidTransactionBody(false);
+        givenValidTransactionBody(false, true);
         given(merkleToken.hasAdminKey()).willReturn(true);
         given(store.get(nonFungible)).willReturn(merkleToken);
         given(store.update(op, CONSENSUS_TIME)).willReturn(OK);
@@ -377,7 +377,7 @@ class TokenUpdateLogicTest {
     void updateTokenKeysForNonFungibleFails() {
         // given
         givenTokenUpdateLogic(true);
-        givenValidTransactionBody(false);
+        givenValidTransactionBody(false, true);
         givenMinimalLedgers();
         given(ledgers.nfts()).willReturn(nfts);
         given(merkleToken.hasAdminKey()).willReturn(true);

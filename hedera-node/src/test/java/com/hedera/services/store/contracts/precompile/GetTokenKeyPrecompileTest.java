@@ -46,6 +46,7 @@ import com.hedera.services.store.contracts.precompile.codec.DecodingFacade;
 import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
 import com.hedera.services.store.contracts.precompile.codec.GetTokenKeyWrapper;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
+import com.hedera.services.utils.accessors.AccessorFactory;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.SubType;
@@ -90,9 +91,15 @@ class GetTokenKeyPrecompileTest {
     @Mock private JKey key;
     @Mock private JContractIDKey jContractIDKey;
     @Mock private JDelegatableContractIDKey jDelegatableContractIDKey;
+    @Mock private AccessorFactory accessorFactory;
 
     private HTSPrecompiledContract subject;
     private GetTokenKeyWrapper wrapper = new GetTokenKeyWrapper(fungible, 1L);
+    private final byte[] ed25519Key = new byte[] {
+        -98, 65, 115, 52, -46, -22, 107, -28, 89, 98, 64, 96, -29, -17, -36, 27,
+        69, -102, -120, 75, -58, -87, -62, 50, 52, -102, -13, 94, -112, 96, -19,
+        98
+    };
 
     @BeforeEach
     void setUp() throws IOException {
@@ -102,7 +109,12 @@ class GetTokenKeyPrecompileTest {
         given(assetLoader.loadCanonicalPrices()).willReturn(canonicalPrices);
         PrecompilePricingUtils precompilePricingUtils =
                 new PrecompilePricingUtils(
-                        assetLoader, exchange, () -> feeCalculator, resourceCosts, stateView);
+                        assetLoader,
+                        exchange,
+                        () -> feeCalculator,
+                        resourceCosts,
+                        stateView,
+                        accessorFactory);
         subject =
                 new HTSPrecompiledContract(
                         dynamicProperties,
@@ -130,6 +142,7 @@ class GetTokenKeyPrecompileTest {
         givenMinimalContextForCall();
         given(tokens.get(fungible, TokenProperty.ADMIN_KEY)).willReturn(key);
         given(key.getECDSASecp256k1Key()).willReturn(new byte[0]);
+        given(key.getEd25519()).willReturn(ed25519Key);
         given(wrappedLedgers.tokens()).willReturn(tokens);
         given(decoder.decodeGetTokenKey(input)).willReturn(wrapper);
         given(encoder.encodeGetTokenKey(any())).willReturn(successResult);
@@ -154,6 +167,7 @@ class GetTokenKeyPrecompileTest {
         wrapper = new GetTokenKeyWrapper(fungible, 16L);
         given(tokens.get(fungible, TokenProperty.SUPPLY_KEY)).willReturn(key);
         given(key.getECDSASecp256k1Key()).willReturn(new byte[0]);
+        given(key.getEd25519()).willReturn(ed25519Key);
         given(wrappedLedgers.tokens()).willReturn(tokens);
         given(decoder.decodeGetTokenKey(input)).willReturn(wrapper);
         given(encoder.encodeGetTokenKey(any())).willReturn(successResult);
@@ -177,6 +191,7 @@ class GetTokenKeyPrecompileTest {
         wrapper = new GetTokenKeyWrapper(fungible, 4L);
         given(tokens.get(fungible, TokenProperty.FREEZE_KEY)).willReturn(key);
         given(key.getECDSASecp256k1Key()).willReturn(new byte[0]);
+        given(key.getEd25519()).willReturn(ed25519Key);
         given(wrappedLedgers.tokens()).willReturn(tokens);
         given(decoder.decodeGetTokenKey(input)).willReturn(wrapper);
         given(encoder.encodeGetTokenKey(any())).willReturn(successResult);
@@ -200,6 +215,7 @@ class GetTokenKeyPrecompileTest {
         wrapper = new GetTokenKeyWrapper(fungible, 8L);
         given(tokens.get(fungible, TokenProperty.WIPE_KEY)).willReturn(key);
         given(key.getECDSASecp256k1Key()).willReturn(new byte[0]);
+        given(key.getEd25519()).willReturn(ed25519Key);
         given(wrappedLedgers.tokens()).willReturn(tokens);
         given(decoder.decodeGetTokenKey(input)).willReturn(wrapper);
         given(encoder.encodeGetTokenKey(any())).willReturn(successResult);
@@ -223,6 +239,7 @@ class GetTokenKeyPrecompileTest {
         wrapper = new GetTokenKeyWrapper(fungible, 64L);
         given(tokens.get(fungible, TokenProperty.PAUSE_KEY)).willReturn(key);
         given(key.getECDSASecp256k1Key()).willReturn(new byte[0]);
+        given(key.getEd25519()).willReturn(ed25519Key);
         given(wrappedLedgers.tokens()).willReturn(tokens);
         given(decoder.decodeGetTokenKey(input)).willReturn(wrapper);
         given(encoder.encodeGetTokenKey(any())).willReturn(successResult);
@@ -246,6 +263,7 @@ class GetTokenKeyPrecompileTest {
         wrapper = new GetTokenKeyWrapper(fungible, 32L);
         given(tokens.get(fungible, TokenProperty.FEE_SCHEDULE_KEY)).willReturn(key);
         given(key.getECDSASecp256k1Key()).willReturn(new byte[0]);
+        given(key.getEd25519()).willReturn(ed25519Key);
         given(wrappedLedgers.tokens()).willReturn(tokens);
         given(decoder.decodeGetTokenKey(input)).willReturn(wrapper);
         given(encoder.encodeGetTokenKey(any())).willReturn(successResult);
@@ -269,6 +287,7 @@ class GetTokenKeyPrecompileTest {
         wrapper = new GetTokenKeyWrapper(fungible, 2L);
         given(tokens.get(fungible, TokenProperty.KYC_KEY)).willReturn(key);
         given(key.getECDSASecp256k1Key()).willReturn(new byte[0]);
+        given(key.getEd25519()).willReturn(ed25519Key);
         given(wrappedLedgers.tokens()).willReturn(tokens);
         given(decoder.decodeGetTokenKey(input)).willReturn(wrapper);
         given(encoder.encodeGetTokenKey(any())).willReturn(successResult);
@@ -292,6 +311,7 @@ class GetTokenKeyPrecompileTest {
         wrapper = new GetTokenKeyWrapper(fungible, 200L);
         given(tokens.get(fungible, TokenProperty.KYC_KEY)).willReturn(key);
         given(key.getECDSASecp256k1Key()).willReturn(new byte[0]);
+        given(key.getEd25519()).willReturn(ed25519Key);
         given(wrappedLedgers.tokens()).willReturn(tokens);
         given(decoder.decodeGetTokenKey(input)).willReturn(wrapper);
         given(encoder.encodeGetTokenKey(any())).willReturn(successResult);

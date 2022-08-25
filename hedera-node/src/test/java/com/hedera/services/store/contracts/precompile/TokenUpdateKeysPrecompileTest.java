@@ -67,6 +67,7 @@ import com.hedera.services.store.contracts.precompile.utils.PrecompileUtils;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.tokens.HederaTokenStore;
 import com.hedera.services.utils.EntityIdUtils;
+import com.hedera.services.utils.accessors.AccessorFactory;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ExchangeRate;
 import com.hederahashgraph.api.proto.java.Timestamp;
@@ -123,6 +124,7 @@ class TokenUpdateKeysPrecompileTest {
     @Mock private AssetsLoader assetLoader;
     @Mock private HbarCentExchange exchange;
     @Mock private ExchangeRate exchangeRate;
+    @Mock private AccessorFactory accessorFactory;
     private final TokenUpdateKeysWrapper updateWrapper = getUpdateWrapper();
     private static final int CENTS_RATE = 12;
     private static final int HBAR_RATE = 1;
@@ -133,7 +135,12 @@ class TokenUpdateKeysPrecompileTest {
     void setUp() {
         PrecompilePricingUtils precompilePricingUtils =
                 new PrecompilePricingUtils(
-                        assetLoader, exchange, () -> feeCalculator, resourceCosts, stateView);
+                        assetLoader,
+                        exchange,
+                        () -> feeCalculator,
+                        resourceCosts,
+                        stateView,
+                        accessorFactory);
         subject =
                 new HTSPrecompiledContract(
                         dynamicProperties,
