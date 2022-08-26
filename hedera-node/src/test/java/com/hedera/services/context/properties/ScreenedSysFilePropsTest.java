@@ -116,7 +116,7 @@ class ScreenedSysFilePropsTest {
         "CryptoCreate;CryptoTransfer;CryptoGetAccountBalance, scheduling.whitelist, true,",
         (MerkleToken.UPPER_BOUND_TOKEN_NAME_UTF8_BYTES + 1)
                 + ", tokens.maxTokenNameUtf8Bytes, true,",
-        "1, ledger.exchanges.maxLen, true,",
+        "1, ledger.transfers.maxLen, true,",
         "1, ledger.tokenTransfers.maxLen, true,",
         (MerkleToken.UPPER_BOUND_SYMBOL_UTF8_BYTES + 1) + ", tokens.maxSymbolUtf8Bytes, true,",
         "-1, rates.intradayChangeLimitPercent, true,",

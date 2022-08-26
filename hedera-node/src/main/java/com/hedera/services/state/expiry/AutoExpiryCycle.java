@@ -52,29 +52,29 @@ public class AutoExpiryCycle {
         cycleTime = currentConsTime;
     }
 
-    public void endCycle() {
-        warnIfNotInCycle();
-        cycleTime = null;
-    }
-
     public EntityProcessResult process(final long literalNum) {
         warnIfNotInCycle();
 
         final var entityNum = EntityNum.fromLong(literalNum);
-        final var classification = classifier.classify(entityNum, cycleTime);
-
-        return switch (classification) {
+        final var result = classifier.classify(entityNum, cycleTime);
+        return switch (result) {
             case COME_BACK_LATER -> STILL_MORE_TO_DO;
-                // Removal work
-            case DETACHED_ACCOUNT_GRACE_PERIOD_OVER -> removalWork.tryToRemoveAccount(entityNum);
-            case DETACHED_CONTRACT_GRACE_PERIOD_OVER -> removalWork.tryToRemoveContract(entityNum);
-                // Renewal work
+
             case EXPIRED_ACCOUNT_READY_TO_RENEW -> renewalWork.tryToRenewAccount(
                     entityNum, cycleTime);
+            case DETACHED_ACCOUNT_GRACE_PERIOD_OVER -> removalWork.tryToRemoveAccount(entityNum);
+
             case EXPIRED_CONTRACT_READY_TO_RENEW -> renewalWork.tryToRenewContract(
                     entityNum, cycleTime);
+            case DETACHED_CONTRACT_GRACE_PERIOD_OVER -> removalWork.tryToRemoveContract(entityNum);
+
             default -> NOTHING_TO_DO;
         };
+    }
+
+    public void endCycle() {
+        warnIfNotInCycle();
+        cycleTime = null;
     }
 
     private void warnIfNotInCycle() {

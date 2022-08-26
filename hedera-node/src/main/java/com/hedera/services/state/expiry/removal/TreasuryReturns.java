@@ -32,6 +32,7 @@ import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.submerkle.CurrencyAdjustments;
 import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.state.submerkle.NftAdjustments;
 import com.hedera.services.throttling.ExpiryThrottle;
 import com.hedera.services.throttling.MapAccessType;
 import com.hedera.services.utils.EntityNum;
@@ -47,11 +48,18 @@ import javax.inject.Singleton;
 
 @Singleton
 public class TreasuryReturns {
-    static final List<MapAccessType> TOKEN_TYPE_CHECK = List.of(TOKENS_GET);
-    static final List<MapAccessType> ONLY_REL_REMOVAL_WORK = List.of(TOKEN_ASSOCIATIONS_REMOVE);
+    private static final MerkleToken STANDIN_DELETED_TOKEN = new MerkleToken();
+    static {
+        STANDIN_DELETED_TOKEN.setDeleted(true);
+    }
+
+    static final List<MapAccessType> TOKEN_DELETION_CHECK = List.of(TOKENS_GET);
+    static final List<MapAccessType> ONLY_REL_REMOVAL_WORK = List.of(TOKENS_GET, TOKEN_ASSOCIATIONS_REMOVE);
     static final List<MapAccessType> NEXT_REL_REMOVAL_WORK =
-            List.of(TOKEN_ASSOCIATIONS_REMOVE, TOKEN_ASSOCIATIONS_GET_FOR_MODIFY);
-    static final List<MapAccessType> ROOT_REL_UPDATE_WORK = List.of(ACCOUNTS_GET_FOR_MODIFY);
+            List.of(TOKENS_GET, TOKEN_ASSOCIATIONS_REMOVE, TOKEN_ASSOCIATIONS_GET_FOR_MODIFY);
+    static final List<MapAccessType> NFT_BURN_WORK = List.of(NFTS_GET, NFTS_REMOVE);
+    static final List<MapAccessType> NFT_RETURN_WORK = List.of(NFTS_GET_FOR_MODIFY);
+    static final List<MapAccessType> ROOT_META_UPDATE_WORK = List.of(ACCOUNTS_GET_FOR_MODIFY);
     static final List<MapAccessType> TREASURY_BALANCE_INCREMENT =
             List.of(ACCOUNTS_GET, TOKEN_ASSOCIATIONS_GET_FOR_MODIFY);
 
@@ -63,7 +71,7 @@ public class TreasuryReturns {
     private final ExpiryThrottle expiryThrottle;
     private final TreasuryReturnHelper returnHelper;
 
-    private RemovalFacilitation relRemovalFacilitation =
+    private RelRemovalFacilitation relRemovalFacilitation =
             MapValueListUtils::removeInPlaceFromMapValueList;
 
     @Inject
@@ -114,11 +122,10 @@ public class TreasuryReturns {
             final var outcome = tryNftReturns(expiredNum, expired);
             final var mutableExpired = entityLookup.getMutableAccount(expiredNum);
             mutableExpired.setNftsOwned(outcome.remainingNfts());
-            final var newLatestNft = outcome.newRoot();
-            if (newLatestNft != null) {
-                //                mutableExpired.setHeadNftId();
-                //                mutableExpired.setHeadNftSerialNum();
-                throw new AssertionError("Not implemented");
+            final var newNftKey = outcome.newRoot();
+            if (newNftKey != null) {
+                mutableExpired.setHeadNftId(newNftKey.getHiOrderAsLong());
+                mutableExpired.setHeadNftSerialNum(newNftKey.getLowOrderAsLong());
             }
             return outcome.nftReturns();
         }
@@ -126,64 +133,93 @@ public class TreasuryReturns {
 
     private NftReturnOutcome tryNftReturns(
             final EntityNum expiredNum, final MerkleAccount expired) {
-        throw new AssertionError("Not implemented");
+        final var curNfts = nfts.get();
+        final var expectedNfts = expired.getNftsOwned();
+
+        var n = 0;
+        var i = expectedNfts;
+        var nftKey = expired.getHeadNftKey();
+        final List<EntityId> tokenTypes = new ArrayList<>();
+        final List<NftAdjustments> returnExchanges = new ArrayList<>();
+
+        while (nftKey != null && expiryThrottle.allow(TOKEN_DELETION_CHECK) && i-- > 0) {
+            final var tokenNum = nftKey.getHiOrderAsNum();
+            var token = tokens.get().get(tokenNum);
+            if (token == null) {
+                token = STANDIN_DELETED_TOKEN;
+            }
+            final var expectedBurn = token.isDeleted();
+            if (!hasCapacityForNftReturn(expectedBurn)) {
+                break;
+            }
+            final var returned = returnHelper.updateNftReturns(
+                    expiredNum, tokenNum, token, nftKey.getLowOrderAsLong(), tokenTypes, returnExchanges);
+            nftKey = returnHelper.finishNft(!returned, nftKey, curNfts);
+            n++;
+        }
+
+        final var numLeft = (nftKey == null) ? 0 : (expectedNfts - n);
+        return new NftReturnOutcome(
+                new NonFungibleTreasuryReturns(tokenTypes, returnExchanges, numLeft == 0),
+                nftKey,
+                numLeft);
     }
 
-    @SuppressWarnings("java:S135")
+    @SuppressWarnings("java:S3776")
     private FungibleReturnOutcome tryFungibleReturns(
             final EntityNum expiredNum, final MerkleAccount expired) {
         final var curRels = tokenRels.get();
         final var listRemoval = new TokenRelsListMutation(expiredNum.longValue(), curRels);
         final var expectedRels = expired.getNumAssociations();
 
+        var n = 0;
         var i = expectedRels;
         var relKey = expired.getLatestAssociation();
         final List<EntityId> tokenTypes = new ArrayList<>();
         final List<CurrencyAdjustments> returnTransfers = new ArrayList<>();
-        while (relKey != null && hasCapacityForRemovalAt(i) && i-- > 0) {
-            if (!expiryThrottle.allow(TOKEN_TYPE_CHECK)) {
-                i++;
-                break;
-            }
-
+        while (relKey != null && hasCapacityForRelRemovalAt(i) && i-- > 0) {
             final var tokenNum = relKey.getLowOrderAsNum();
             final var token = tokens.get().get(tokenNum);
             if (token != null && token.tokenType() == TokenType.FUNGIBLE_COMMON) {
                 final var rel = curRels.get(relKey);
                 final var tokenBalance = rel.getBalance();
                 if (tokenBalance > 0) {
-                    if (!expiryThrottle.allow(TREASURY_BALANCE_INCREMENT)) {
-                        i++;
+                    if (!token.isDeleted() && !expiryThrottle.allow(TREASURY_BALANCE_INCREMENT)) {
                         break;
                     }
                     tokenTypes.add(tokenNum.toEntityId());
                     returnHelper.updateFungibleReturns(
-                            expiredNum, tokenNum, token, tokenBalance, returnTransfers);
+                            expiredNum, tokenNum, token, tokenBalance, returnTransfers, curRels);
                 }
             }
 
             // We are always removing the root, hence receiving the new root
             relKey = relRemovalFacilitation.removeNext(relKey, relKey, listRemoval);
+            n++;
         }
-        final var numLeft = (relKey == null) ? 0 : (expectedRels - i);
+        final var numLeft = (relKey == null) ? 0 : (expectedRels - n);
         return new FungibleReturnOutcome(
                 new FungibleTreasuryReturns(tokenTypes, returnTransfers, numLeft == 0),
                 relKey,
                 numLeft);
     }
 
-    private boolean hasCapacityForRemovalAt(final int n) {
+    private boolean hasCapacityForRelRemovalAt(final int n) {
         return expiryThrottle.allow(n == 1 ? ONLY_REL_REMOVAL_WORK : NEXT_REL_REMOVAL_WORK);
     }
 
+    private boolean hasCapacityForNftReturn(final boolean burn) {
+        return expiryThrottle.allow(burn ? NFT_BURN_WORK : NFT_RETURN_WORK);
+    }
+
     @FunctionalInterface
-    interface RemovalFacilitation {
+    interface RelRemovalFacilitation {
         EntityNumPair removeNext(
                 EntityNumPair key, EntityNumPair root, TokenRelsListMutation listRemoval);
     }
 
     @VisibleForTesting
-    void setRelRemovalFacilitation(final RemovalFacilitation relRemovalFacilitation) {
+    void setRelRemovalFacilitation(final RelRemovalFacilitation relRemovalFacilitation) {
         this.relRemovalFacilitation = relRemovalFacilitation;
     }
 }

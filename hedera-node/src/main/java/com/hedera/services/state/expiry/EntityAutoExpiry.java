@@ -67,8 +67,8 @@ public class EntityAutoExpiry {
     }
 
     public void execute(final Instant currentConsTime) {
-        // This may use capacity from the expiry throttle
         executeInternal(currentConsTime);
+        // Ensure we capture any capacity used in the expiry throttle
         networkCtx.get().syncExpiryThrottle(expiryThrottle);
     }
 

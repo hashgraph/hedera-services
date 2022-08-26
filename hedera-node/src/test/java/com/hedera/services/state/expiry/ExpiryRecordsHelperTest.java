@@ -18,10 +18,8 @@ package com.hedera.services.state.expiry;
 import static com.hedera.services.state.submerkle.ExpirableTxnRecordTestHelper.fromGprc;
 import static com.hedera.services.utils.EntityIdUtils.asLiteralString;
 import static com.hedera.services.utils.MiscUtils.*;
-import static com.hedera.test.utils.TxnUtils.exchangeOf;
-import static com.hedera.test.utils.TxnUtils.ttlOf;
+import static com.hedera.test.utils.TxnUtils.*;
 import static java.util.stream.Collectors.toList;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
@@ -31,9 +29,7 @@ import com.hedera.services.state.expiry.removal.CryptoGcOutcome;
 import com.hedera.services.state.expiry.removal.FungibleTreasuryReturns;
 import com.hedera.services.state.expiry.removal.NonFungibleTreasuryReturns;
 import com.hedera.services.state.logic.RecordStreaming;
-import com.hedera.services.state.submerkle.CurrencyAdjustments;
 import com.hedera.services.state.submerkle.EntityId;
-import com.hedera.services.state.submerkle.NftAdjustments;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.stream.RecordStreamObject;
 import com.hedera.services.utils.EntityNum;
@@ -41,7 +37,7 @@ import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.*;
 import java.time.Instant;
 import java.util.List;
-import java.util.stream.Collectors;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -76,13 +72,6 @@ class ExpiryRecordsHelperTest {
                         syntheticTxnFactory,
                         new MockGlobalDynamicProps(),
                         consensusTimeTracker);
-    }
-
-    @Test
-    void mustBeInCycleToStream() {
-        assertThrows(
-                IllegalStateException.class,
-                () -> subject.streamCryptoRenewal(expiredNum, 1L, 2L, false, expiredNum));
     }
 
     @Test
@@ -225,45 +214,6 @@ class ExpiryRecordsHelperTest {
                 .map(TokenTransferList::getToken)
                 .map(EntityId::fromGrpcTokenId)
                 .collect(toList());
-    }
-
-    static List<CurrencyAdjustments> adjustmentsFrom(final List<TokenTransferList> ttls) {
-        return ttls.stream()
-                .map(
-                        ttl ->
-                                new CurrencyAdjustments(
-                                        ttl.getTransfersList().stream()
-                                                .mapToLong(AccountAmount::getAmount)
-                                                .toArray(),
-                                        ttl.getTransfersList().stream()
-                                                .map(AccountAmount::getAccountID)
-                                                .mapToLong(AccountID::getAccountNum)
-                                                .toArray()))
-                .collect(Collectors.toList());
-    }
-
-    static List<NftAdjustments> exchangesFrom(final List<TokenTransferList> ttls) {
-        return ttls.stream()
-                .map(
-                        ttl ->
-                                new NftAdjustments(
-                                        ttl.getNftTransfersList().stream()
-                                                .mapToLong(NftTransfer::getSerialNumber)
-                                                .toArray(),
-                                        ttl.getNftTransfersList().stream()
-                                                .map(
-                                                        xfer ->
-                                                                EntityId.fromGrpcAccountId(
-                                                                        xfer.getSenderAccountID()))
-                                                .toList(),
-                                        ttl.getNftTransfersList().stream()
-                                                .map(
-                                                        xfer ->
-                                                                EntityId.fromGrpcAccountId(
-                                                                        xfer
-                                                                                .getReceiverAccountID()))
-                                                .toList()))
-                .collect(Collectors.toList());
     }
 
     private RecordStreamObject expectedRso(final TransactionRecord record, final int nanosOffset) {

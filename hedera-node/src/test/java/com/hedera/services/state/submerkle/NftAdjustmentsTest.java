@@ -26,6 +26,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
+import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.NftTransfer;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
@@ -119,12 +120,29 @@ class NftAdjustmentsTest {
     }
 
     @Test
-    void namecanAddToBuilder() {
+    void canAddToBuilder() {
         givenCanonicalSubject();
         final var builder = TokenTransferList.newBuilder();
         subject.addToGrpc(builder);
         final var result = builder.build();
         assertEquals(subject.toGrpc(), result);
+    }
+
+    @Test
+    void canAppend() {
+        givenCanonicalSubject();
+        final var senderNum = EntityNum.fromLong(1234L);
+        final var receiverNum = EntityNum.fromLong(5678L);
+        subject.appendAdjust(senderNum.toEntityId(), receiverNum.toEntityId(), 666L);
+
+        var grpc = subject.toGrpc();
+        var exchanges = grpc.getNftTransfersList();
+        assertEquals(1, exchanges.get(0).getSerialNumber());
+        assertEquals(sender, exchanges.get(0).getSenderAccountID());
+        assertEquals(recipient, exchanges.get(0).getReceiverAccountID());
+        assertEquals(666, exchanges.get(1).getSerialNumber());
+        assertEquals(senderNum.toGrpcAccountId(), exchanges.get(1).getSenderAccountID());
+        assertEquals(receiverNum.toGrpcAccountId(), exchanges.get(1).getReceiverAccountID());
     }
 
     @Test

@@ -46,7 +46,6 @@ public class ContractGC {
             List.of(STORAGE_REMOVE, STORAGE_GET, STORAGE_PUT);
 
     private final ExpiryThrottle expiryThrottle;
-    private final GlobalDynamicProperties dynamicProperties;
     private final Supplier<MerkleMap<EntityNum, MerkleAccount>> contracts;
     private final Supplier<VirtualMap<ContractKey, IterableContractValue>> storage;
     private final Supplier<VirtualMap<VirtualBlobKey, VirtualBlobValue>> bytecode;
@@ -57,7 +56,6 @@ public class ContractGC {
     @Inject
     public ContractGC(
             final ExpiryThrottle expiryThrottle,
-            final GlobalDynamicProperties dynamicProperties,
             final Supplier<MerkleMap<EntityNum, MerkleAccount>> contracts,
             final Supplier<VirtualMap<ContractKey, IterableContractValue>> storage,
             final Supplier<VirtualMap<VirtualBlobKey, VirtualBlobValue>> bytecode) {
@@ -65,9 +63,9 @@ public class ContractGC {
         this.contracts = contracts;
         this.storage = storage;
         this.bytecode = bytecode;
-        this.dynamicProperties = dynamicProperties;
     }
 
+    // TODO - abort immediately if not ROOT_KEY_UPDATE_WORK
     public boolean expireBestEffort(
             final EntityNum expiredContractNum, final MerkleAccount contract) {
         final var numKvPairs = contract.getNumContractKvPairs();

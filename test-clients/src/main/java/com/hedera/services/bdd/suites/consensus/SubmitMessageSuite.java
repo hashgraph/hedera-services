@@ -77,8 +77,7 @@ public class SubmitMessageSuite extends HapiApiSuite {
                 messageSubmissionMultiple(),
                 messageSubmissionOverSize(),
                 messageSubmissionCorrectlyUpdatesRunningHash(),
-                feeAsExpected(),
-                messageSubmissionSizeChange());
+                feeAsExpected());
     }
 
     private HapiApiSpec topicIdIsValidated() {
@@ -254,41 +253,6 @@ public class SubmitMessageSuite extends HapiApiSuite {
                                 .hasRetryPrecheckFrom(BUSY)
                                 .via("submitMessage3"),
                         getTxnRecord("submitMessage3").hasCorrectRunningHash(topic, message3));
-    }
-
-    private HapiApiSpec messageSubmissionSizeChange() {
-        final var defaultMaxBytesAllowed = 1024;
-        final var longMessage = TxnUtils.randomUtf8Bytes(defaultMaxBytesAllowed);
-
-        return defaultHapiSpec("messageSubmissionSizeChange")
-                .given(
-                        newKeyNamed("submitKey"),
-                        createTopic("testTopic").submitKeyName("submitKey"))
-                .when(
-                        cryptoCreate("civilian"),
-                        submitMessageTo("testTopic")
-                                .message("testmessage")
-                                .payingWith("civilian")
-                                .hasRetryPrecheckFrom(BUSY)
-                                .hasKnownStatus(SUCCESS),
-                        fileUpdate(APP_PROPERTIES)
-                                .payingWith(GENESIS)
-                                .overridingProps(
-                                        Map.of(
-                                                "consensus.message.maxBytesAllowed",
-                                                String.valueOf(defaultMaxBytesAllowed - 1))))
-                .then(
-                        submitMessageTo("testTopic")
-                                .message(longMessage)
-                                .payingWith("civilian")
-                                .hasRetryPrecheckFrom(BUSY)
-                                .hasKnownStatus(MESSAGE_SIZE_TOO_LARGE),
-                        fileUpdate(APP_PROPERTIES)
-                                .payingWith(GENESIS)
-                                .overridingProps(
-                                        Map.of(
-                                                "consensus.message.maxBytesAllowed",
-                                                String.valueOf(defaultMaxBytesAllowed))));
     }
 
     @Override

@@ -60,7 +60,6 @@ class ContractGCTest {
         subject =
                 new ContractGC(
                         expiryThrottle,
-                        dynamicProperties,
                         () -> contracts,
                         () -> storage,
                         () -> bytecode);
@@ -117,10 +116,6 @@ class ContractGCTest {
 
     private static ContractKey asKey(final int[] uint256Key) {
         return new ContractKey(BitPackUtils.numFromCode(contractNum.intValue()), uint256Key);
-    }
-
-    private void givenMutableContract(final MerkleAccount contract) {
-        given(contracts.getForModify(contractNum)).willReturn(contract);
     }
 
     private static final EntityNum contractNum = EntityNum.fromLong(666);

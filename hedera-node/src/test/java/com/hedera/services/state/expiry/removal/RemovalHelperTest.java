@@ -67,11 +67,11 @@ class RemovalHelperTest {
 
     @BeforeEach
     void setUp() {
-        lookup = new EntityLookup(() -> accounts);
-        classifier = new ClassificationWork(properties, lookup, expiryThrottle);
         accounts = new MerkleMap<>();
         accounts.put(EntityNum.fromLong(expiredDeletedAccountNum), expiredDeletedAccount);
         accounts.put(EntityNum.fromLong(expiredDeletedContractNum), expiredDeletedContract);
+        lookup = new EntityLookup(() -> accounts);
+        classifier = new ClassificationWork(properties, lookup, expiryThrottle);
 
         subject = new RemovalHelper(classifier, properties, contractGC, accountGC, recordsHelper);
     }
@@ -131,7 +131,7 @@ class RemovalHelperTest {
                 .willReturn(finishedReturns);
         given(expiryThrottle.allow(eq(CLASSIFICATION_WORK), any(Instant.class))).willReturn(true);
         final var autoRenewId = EntityId.fromNum(12345);
-        expiredDeletedAccount.setAutoRenewAccount(autoRenewId);
+        expiredDeletedContract.setAutoRenewAccount(autoRenewId);
 
         classifier.classify(expiredNum, now);
 

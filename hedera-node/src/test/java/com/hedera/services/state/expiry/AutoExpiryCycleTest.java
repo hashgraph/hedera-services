@@ -322,6 +322,7 @@ class AutoExpiryCycleTest {
 
         given(classifier.getPayerForLastClassified()).willReturn(mockAccount);
         given(classifier.getPayerNumForLastClassified()).willReturn(key);
+        given(expiryThrottle.allow(any())).willReturn(true);
 
         given(lookup.getMutableAccount(key)).willReturn(mockAccount);
         given(lookup.getMutableAccount(EntityNum.fromLong(fundingAccountNum)))
@@ -333,7 +334,6 @@ class AutoExpiryCycleTest {
 
         given(fees.assessCryptoAutoRenewal(mockAccount, requestedRenewalPeriod, now, mockAccount))
                 .willReturn(new RenewAssessment(fee, actualRenewalPeriod));
-        dynamicProperties.enableContractAutoRenew();
 
         subject.beginCycle(now);
         final var result = subject.process(fundedExpiredAccountNum);
@@ -359,14 +359,12 @@ class AutoExpiryCycleTest {
                 .willReturn(EntityNum.fromLong(fundedExpiredContractNum));
         given(fees.assessCryptoAutoRenewal(mockContract, requestedRenewalPeriod, now, mockContract))
                 .willReturn(new RenewAssessment(fee, actualRenewalPeriod));
-        dynamicProperties.shouldAutoRenewContracts();
 
         given(accounts.getForModify(EntityNum.fromLong(fundedExpiredContractNum)))
                 .willReturn(mockContract);
         given(accounts.getForModify(EntityNum.fromLong(fundingAccountNum)))
                 .willReturn(fundingAccount);
 
-        //        given(classifier.resolvePayerForAutoRenew()).willReturn(mockContract);
         given(classifier.getPayerNumForLastClassified())
                 .willReturn(EntityNum.fromLong(fundedExpiredContractNum));
         given(classifier.getPayerForLastClassified()).willReturn(mockContract);

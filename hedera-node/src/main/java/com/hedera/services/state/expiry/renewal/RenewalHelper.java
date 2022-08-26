@@ -15,8 +15,7 @@
  */
 package com.hedera.services.state.expiry.renewal;
 
-import static com.hedera.services.state.expiry.EntityProcessResult.NOTHING_TO_DO;
-import static com.hedera.services.state.expiry.EntityProcessResult.STILL_MORE_TO_DO;
+import static com.hedera.services.state.expiry.EntityProcessResult.*;
 import static com.hedera.services.throttling.MapAccessType.ACCOUNTS_GET_FOR_MODIFY;
 import static com.hedera.services.utils.EntityNum.fromAccountId;
 
@@ -101,15 +100,16 @@ public class RenewalHelper implements RenewalWork {
 
         final long renewalPeriod = assessment.renewalPeriod();
         final long renewalFee = assessment.fee();
-        final var result = renewWith(renewalFee, renewalPeriod);
+        final var oldExpiry = expired.getExpiry();
+        renewWith(renewalFee, renewalPeriod);
 
         recordsHelper.streamCryptoRenewal(
                 account,
                 renewalFee,
-                expired.getExpiry() + renewalPeriod,
+                oldExpiry + renewalPeriod,
                 isContract,
                 payer.getKey());
-        return result;
+        return DONE;
     }
 
     private List<MapAccessType> workFor(final MerkleAccount payer, final MerkleAccount expired) {
@@ -117,7 +117,7 @@ public class RenewalHelper implements RenewalWork {
     }
 
     @VisibleForTesting
-    EntityProcessResult renewWith(long fee, long renewalPeriod) {
+    void renewWith(long fee, long renewalPeriod) {
         assertPayerAccountForRenewalCanAfford(fee);
 
         final var mutableAccount = lookup.getMutableAccount(classifier.getLastClassifiedNum());
@@ -136,7 +136,6 @@ public class RenewalHelper implements RenewalWork {
         mutableFundingAccount.setBalanceUnchecked(newFundingBalance);
 
         log.debug("Renewed {} at a price of {}tb", classifier.getLastClassifiedNum(), fee);
-        return EntityProcessResult.DONE;
     }
 
     private void assertHasLastClassifiedAccount() {

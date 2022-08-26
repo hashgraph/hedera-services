@@ -15,66 +15,123 @@
  */
 package com.hedera.services.state.expiry.removal;
 
-import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
-
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
+import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.submerkle.CurrencyAdjustments;
+import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.state.submerkle.NftAdjustments;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
+import com.hedera.services.utils.NftNumPair;
 import com.swirlds.merkle.map.MerkleMap;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import java.util.List;
-import java.util.function.Supplier;
+import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
+import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
+import static com.hedera.services.utils.NftNumPair.MISSING_NFT_NUM_PAIR;
+
 @Singleton
 public class TreasuryReturnHelper {
-    private final Supplier<MerkleMap<EntityNumPair, MerkleTokenRelStatus>> tokenRels;
+    private static final Logger log = LogManager.getLogger(TreasuryReturnHelper.class);
 
     @Inject
-    public TreasuryReturnHelper(
-            final Supplier<MerkleMap<EntityNumPair, MerkleTokenRelStatus>> tokenRels) {
-        this.tokenRels = tokenRels;
+    public TreasuryReturnHelper() {
+        // Dagger2
     }
 
+    boolean updateNftReturns(
+            final EntityNum expiredNum,
+            final EntityNum tokenNum,
+            final MerkleToken token,
+            final long serialNo,
+            final List<EntityId> tokenTypes,
+            final List<NftAdjustments> returnExchanges) {
+        final var tokenId = tokenNum.toEntityId();
+        var typeI = tokenTypes.indexOf(tokenId);
+        if (typeI == -1) {
+            tokenTypes.add(tokenId);
+            returnExchanges.add(new NftAdjustments());
+            typeI = tokenTypes.size() - 1;
+        }
+        if (token.isDeleted()) {
+            returnExchanges.get(typeI).appendAdjust(expiredNum.toEntityId(), MISSING_ENTITY_ID, serialNo);
+            return false;
+        } else {
+            returnExchanges.get(typeI).appendAdjust(expiredNum.toEntityId(), token.treasury(), serialNo);
+            return true;
+        }
+    }
+
+    EntityNumPair finishNft(
+            final boolean burn,
+            final EntityNumPair rootKey,
+            final MerkleMap<EntityNumPair, MerkleUniqueToken> nfts
+    ) {
+        final NftNumPair nextKey;
+        if (burn) {
+            final var burnedNft = nfts.get(rootKey);
+            nextKey = burnedNft.getNext();
+            nfts.remove(rootKey);
+        } else {
+            final var returnedNft = nfts.getForModify(rootKey);
+            nextKey = returnedNft.getNext();
+            returnedNft.setOwner(MISSING_ENTITY_ID);
+        }
+        return effective(nextKey);
+    }
+
+
     void updateFungibleReturns(
-            final EntityNum expiredAccountNum,
+            final EntityNum expiredNum,
             final EntityNum tokenNum,
             final MerkleToken token,
             final long balance,
-            final List<CurrencyAdjustments> returnTransfers) {
-        var treasury = MISSING_ENTITY_ID;
-        if (!token.isDeleted()) {
-            treasury = token.treasury();
-        }
-
-        if (treasury == MISSING_ENTITY_ID) {
-            final var returnTransfer =
+            final List<CurrencyAdjustments> returnTransfers,
+            final MerkleMap<EntityNumPair, MerkleTokenRelStatus> curRels) {
+        if (token.isDeleted() || !incrementTreasuryBalance(token, tokenNum, balance, curRels)) {
+            final var burnTransfer =
                     new CurrencyAdjustments(
-                            new long[] {-balance}, new long[] {expiredAccountNum.longValue()});
-            returnTransfers.add(returnTransfer);
+                            new long[] {-balance}, new long[] {expiredNum.longValue()});
+            returnTransfers.add(burnTransfer);
         } else {
-            final var treasuryNum = treasury.asNum();
-            addProperReturn(expiredAccountNum, treasuryNum, balance, returnTransfers);
-            incrementBalance(treasuryNum, tokenNum, balance);
+            addProperReturn(expiredNum, token, balance, returnTransfers);
         }
     }
 
-    private void incrementBalance(
-            final EntityNum treasuryNum, final EntityNum tokenNum, final long balance) {
-        final var curTokenRels = tokenRels.get();
-        final var treasuryRelKey = EntityNumPair.fromNums(treasuryNum, tokenNum);
-        final var treasuryRel = curTokenRels.getForModify(treasuryRelKey);
-        final long newTreasuryBalance = treasuryRel.getBalance() + balance;
-        treasuryRel.setBalance(newTreasuryBalance);
+    private boolean incrementTreasuryBalance(
+            final MerkleToken token,
+            final EntityNum tokenNum,
+            final long balance,
+            final MerkleMap<EntityNumPair, MerkleTokenRelStatus> curRels) {
+        try {
+            final var treasuryNum = token.treasury().asNum();
+            final var treasuryRelKey = EntityNumPair.fromNums(treasuryNum, tokenNum);
+            final var treasuryRel = curRels.getForModify(treasuryRelKey);
+            final long newTreasuryBalance = treasuryRel.getBalance() + balance;
+            treasuryRel.setBalance(newTreasuryBalance);
+            return true;
+        } catch (final Exception internal) {
+            log.warn("Undeleted token {} treasury {} should be valid, but",
+                    tokenNum.toIdString(),
+                    token.treasury(),
+                    internal);
+            return false;
+        }
     }
 
     private void addProperReturn(
             final EntityNum expiredAccountNum,
-            final EntityNum treasuryNum,
+            final MerkleToken token,
             final long balance,
             final List<CurrencyAdjustments> returnTransfers) {
+
+        final var treasuryNum = token.treasury().asNum();
         final boolean listDebitFirst = expiredAccountNum.compareTo(treasuryNum) < 0;
         // For consistency, order the transfer list by increasing account number
         returnTransfers.add(
@@ -89,5 +146,13 @@ public class TreasuryReturnHelper {
                                 : new long[] {
                                     treasuryNum.longValue(), expiredAccountNum.longValue()
                                 }));
+    }
+
+    private EntityNumPair effective(@Nullable final NftNumPair nextKey) {
+        if (nextKey == null) {
+            return null;
+        } else {
+            return nextKey == MISSING_NFT_NUM_PAIR ? null : nextKey.asEntityNumPair();
+        }
     }
 }

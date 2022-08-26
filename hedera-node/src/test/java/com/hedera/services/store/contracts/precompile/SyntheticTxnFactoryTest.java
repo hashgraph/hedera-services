@@ -1059,5 +1059,5 @@ class SyntheticTxnFactoryTest {
     private static final byte[] callData = "Between the idea and the reality".getBytes();
     private static final byte[] addressTo = unhex("abcdefabcdefabcdefbabcdefabcdefabcdefbbb");
     private static final Duration autoRenewPeriod =
-            Duration.newBuilder().setSeconds(6_999_999).build();
+            Duration.newBuilder().setSeconds(2592000).build();
 }
