@@ -145,8 +145,7 @@ public class TokenUpdatePrecompileSuite extends HapiApiSuite {
                 updateTokenWithKeysHappyPath(),
                 updateNftTreasuryWithAndWithoutAdminKey(),
                 updateOnlyTokenKeysAndGetTheUpdatedValues(),
-                updateOnlyKeysForNonFungibleToken()
-        );
+                updateOnlyKeysForNonFungibleToken());
     }
 
     List<HapiApiSpec> negativeCases() {
@@ -155,8 +154,7 @@ public class TokenUpdatePrecompileSuite extends HapiApiSuite {
                 updateTokenWithKeysNegative(),
                 updateTokenWithInvalidKeyValues(),
                 updateNftTokenKeysWithWrongTokenIdAndMissingAdmin(),
-                getTokenKeyForNonFungibleNegative()
-        );
+                getTokenKeyForNonFungibleNegative());
     }
 
     private HapiApiSpec updateTokenWithKeysHappyPath() {

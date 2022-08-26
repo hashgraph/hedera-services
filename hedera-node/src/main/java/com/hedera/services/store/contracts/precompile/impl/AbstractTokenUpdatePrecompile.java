@@ -93,7 +93,8 @@ public abstract class AbstractTokenUpdatePrecompile extends AbstractWritePrecomp
                     transactionBody.getTokenUpdate(), frame.getBlockValues().getTimestamp());
             case UPDATE_TOKEN_KEYS -> updateLogic.updateTokenKeys(
                     transactionBody.getTokenUpdate(), frame.getBlockValues().getTimestamp());
-            case UPDATE_TOKEN_EXPIRY -> updateLogic.updateTokenExpiryInfo(transactionBody.getTokenUpdate());
+            case UPDATE_TOKEN_EXPIRY -> updateLogic.updateTokenExpiryInfo(
+                    transactionBody.getTokenUpdate());
         }
     }
 
