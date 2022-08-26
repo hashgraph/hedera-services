@@ -30,9 +30,7 @@ import com.hedera.services.store.contracts.WorldLedgers;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.store.contracts.precompile.codec.TokenCreateWrapper.FixedFeeWrapper;
 import com.hedera.services.store.contracts.precompile.codec.TokenCreateWrapper.FractionalFeeWrapper;
-import com.hedera.services.store.contracts.precompile.codec.TokenCreateWrapper.KeyValueWrapper;
 import com.hedera.services.store.contracts.precompile.codec.TokenCreateWrapper.RoyaltyFeeWrapper;
-import com.hedera.services.store.contracts.precompile.codec.TokenCreateWrapper.TokenKeyWrapper;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -258,14 +256,14 @@ public class DecodingFacade {
     private static final String FRACTIONAL_FEE_DECODER = "(int64,int64,int64,int64,bool,bytes32)";
     private static final String ROYALTY_FEE_DECODER = "(int64,int64,int64,bytes32,bool,bytes32)";
 
-    private static final String TOKEN_CREATE_STRUCT =
+    private static final String HEDERA_TOKEN_STRUCT =
             "(string,string,address,string,bool,uint32,bool,"
                     + TOKEN_KEY
                     + ARRAY_BRACKETS
                     + ","
                     + EXPIRY
                     + ")";
-    private static final String TOKEN_CREATE_STRUCT_DECODER =
+    private static final String HEDERA_TOKEN_STRUCT_DECODER =
             "(string,string,bytes32,string,bool,int64,bool,"
                     + TOKEN_KEY_DECODER
                     + ARRAY_BRACKETS
@@ -274,23 +272,23 @@ public class DecodingFacade {
                     + ")";
 
     private static final Function TOKEN_CREATE_FUNGIBLE_FUNCTION =
-            new Function("createFungibleToken(" + TOKEN_CREATE_STRUCT + ",uint256,uint256)");
+            new Function("createFungibleToken(" + HEDERA_TOKEN_STRUCT + ",uint256,uint256)");
     private static final Bytes TOKEN_CREATE_FUNGIBLE_SELECTOR =
             Bytes.wrap(TOKEN_CREATE_FUNGIBLE_FUNCTION.selector());
     private static final ABIType<Tuple> TOKEN_CREATE_FUNGIBLE_DECODER =
-            TypeFactory.create("(" + TOKEN_CREATE_STRUCT_DECODER + ",uint256,uint256)");
+            TypeFactory.create("(" + HEDERA_TOKEN_STRUCT_DECODER + ",uint256,uint256)");
 
     private static final Function TOKEN_CREATE_NON_FUNGIBLE_FUNCTION =
-            new Function("createNonFungibleToken(" + TOKEN_CREATE_STRUCT + ")");
+            new Function("createNonFungibleToken(" + HEDERA_TOKEN_STRUCT + ")");
     private static final Bytes TOKEN_CREATE_NON_FUNGIBLE_SELECTOR =
             Bytes.wrap(TOKEN_CREATE_NON_FUNGIBLE_FUNCTION.selector());
     private static final ABIType<Tuple> TOKEN_CREATE_NON_FUNGIBLE_DECODER =
-            TypeFactory.create("(" + TOKEN_CREATE_STRUCT_DECODER + ")");
+            TypeFactory.create("(" + HEDERA_TOKEN_STRUCT_DECODER + ")");
 
     private static final Function TOKEN_CREATE_FUNGIBLE_WITH_FEES_FUNCTION =
             new Function(
                     "createFungibleTokenWithCustomFees("
-                            + TOKEN_CREATE_STRUCT
+                            + HEDERA_TOKEN_STRUCT
                             + ",uint256,uint256,"
                             + FIXED_FEE
                             + ARRAY_BRACKETS
@@ -303,7 +301,7 @@ public class DecodingFacade {
     private static final ABIType<Tuple> TOKEN_CREATE_FUNGIBLE_WITH_FEES_DECODER =
             TypeFactory.create(
                     "("
-                            + TOKEN_CREATE_STRUCT_DECODER
+                            + HEDERA_TOKEN_STRUCT_DECODER
                             + ",uint256,uint256,"
                             + FIXED_FEE_DECODER
                             + ARRAY_BRACKETS
@@ -315,7 +313,7 @@ public class DecodingFacade {
     private static final Function TOKEN_CREATE_NON_FUNGIBLE_WITH_FEES_FUNCTION =
             new Function(
                     "createNonFungibleTokenWithCustomFees("
-                            + TOKEN_CREATE_STRUCT
+                            + HEDERA_TOKEN_STRUCT
                             + ","
                             + FIXED_FEE
                             + ARRAY_BRACKETS
@@ -328,7 +326,7 @@ public class DecodingFacade {
     private static final ABIType<Tuple> TOKEN_CREATE_NON_FUNGIBLE_WITH_FEES_DECODER =
             TypeFactory.create(
                     "("
-                            + TOKEN_CREATE_STRUCT_DECODER
+                            + HEDERA_TOKEN_STRUCT_DECODER
                             + ","
                             + FIXED_FEE_DECODER
                             + ARRAY_BRACKETS
@@ -450,6 +448,26 @@ public class DecodingFacade {
     private static final Bytes GET_TOKEN_TYPE_SELECTOR =
             Bytes.wrap(GET_TOKEN_TYPE_FUNCTION.selector());
     private static final ABIType<Tuple> GET_TOKEN_TYPE_DECODER = TypeFactory.create(BYTES32);
+
+    private static final Function TOKEN_UPDATE_INFO_FUNCTION =
+            new Function("updateTokenInfo(address," + HEDERA_TOKEN_STRUCT + ")");
+    private static final Bytes TOKEN_UPDATE_INFO_SELECTOR =
+            Bytes.wrap(TOKEN_UPDATE_INFO_FUNCTION.selector());
+    private static final ABIType<Tuple> TOKEN_UPDATE_INFO_DECODER =
+            TypeFactory.create("(bytes32," + HEDERA_TOKEN_STRUCT_DECODER + ")");
+
+    private static final Function GET_TOKEN_EXPIRY_INFO_FUNCTION =
+            new Function("getTokenExpiryInfo(address)");
+    private static final Bytes GET_TOKEN_EXPIRY_INFO_SELECTOR =
+            Bytes.wrap(GET_TOKEN_EXPIRY_INFO_FUNCTION.selector());
+    private static final ABIType<Tuple> GET_TOKEN_EXPIRY_INFO_DECODER = TypeFactory.create(BYTES32);
+
+    private static final Function TOKEN_UPDATE_EXPIRY_INFO_FUNCTION =
+            new Function("updateTokenExpiryInfo(address," + EXPIRY + ")");
+    private static final Bytes TOKEN_UPDATE_EXPIRY_INFO_SELECTOR =
+            Bytes.wrap(TOKEN_UPDATE_EXPIRY_INFO_FUNCTION.selector());
+    private static final ABIType<Tuple> TOKEN_UPDATE_EXPIRY_INFO_DECODER =
+            TypeFactory.create("(bytes32," + EXPIRY_DECODER + ")");
 
     @Inject
     public DecodingFacade() {
@@ -1080,6 +1098,27 @@ public class DecodingFacade {
         return TokenInfoWrapper.forToken(tokenID);
     }
 
+    public GetTokenExpiryInfoWrapper decodeGetTokenExpiryInfo(final Bytes input) {
+        final Tuple decodedArguments =
+                decodeFunctionCall(
+                        input, GET_TOKEN_EXPIRY_INFO_SELECTOR, GET_TOKEN_EXPIRY_INFO_DECODER);
+
+        final var tokenID = convertAddressBytesToTokenID(decodedArguments.get(0));
+        return new GetTokenExpiryInfoWrapper(tokenID);
+    }
+
+    public TokenUpdateExpiryInfoWrapper decodeUpdateTokenExpiryInfo(
+            final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
+        final Tuple decodedArguments =
+                decodeFunctionCall(
+                        input, TOKEN_UPDATE_EXPIRY_INFO_SELECTOR, TOKEN_UPDATE_EXPIRY_INFO_DECODER);
+
+        final var tokenID = convertAddressBytesToTokenID(decodedArguments.get(0));
+        final Tuple tokenExpiryStruct = decodedArguments.get(1);
+        final var tokenExpiry = decodeTokenExpiry(tokenExpiryStruct, aliasResolver);
+        return new TokenUpdateExpiryInfoWrapper(tokenID, tokenExpiry);
+    }
+
     private TokenCreateWrapper decodeTokenCreateWithoutFees(
             @NotNull final Tuple tokenCreateStruct,
             final boolean isFungible,
@@ -1353,6 +1392,24 @@ public class DecodingFacade {
             accountIDs.add(convertAddressBytesToTokenID(account));
         }
         return accountIDs;
+    }
+
+    public TokenUpdateWrapper decodeUpdateTokenInfo(
+            Bytes input, UnaryOperator<byte[]> aliasResolver) {
+        final Tuple decodedArguments =
+                decodeFunctionCall(input, TOKEN_UPDATE_INFO_SELECTOR, TOKEN_UPDATE_INFO_DECODER);
+        final var tokenID = convertAddressBytesToTokenID(decodedArguments.get(0));
+
+        final Tuple hederaTokenStruct = decodedArguments.get(1);
+        final var tokenName = (String) hederaTokenStruct.get(0);
+        final var tokenSymbol = (String) hederaTokenStruct.get(1);
+        final var tokenTreasury =
+                convertLeftPaddedAddressToAccountId(hederaTokenStruct.get(2), aliasResolver);
+        final var tokenMemo = (String) hederaTokenStruct.get(3);
+        final var tokenKeys = decodeTokenKeys(hederaTokenStruct.get(7), aliasResolver);
+        final var tokenExpiry = decodeTokenExpiry(hederaTokenStruct.get(8), aliasResolver);
+        return new TokenUpdateWrapper(
+                tokenID, tokenName, tokenSymbol, tokenTreasury, tokenMemo, tokenKeys, tokenExpiry);
     }
 
     private static AccountID convertLeftPaddedAddressToAccountId(
