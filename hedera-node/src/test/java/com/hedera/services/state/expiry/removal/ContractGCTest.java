@@ -15,6 +15,7 @@
  */
 package com.hedera.services.state.expiry.removal;
 
+import static com.hedera.services.state.expiry.removal.ContractGC.*;
 import static com.hedera.services.state.virtual.VirtualBlobKey.Type.CONTRACT_BYTECODE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -22,7 +23,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.*;
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.state.merkle.MerkleAccount;
@@ -32,6 +33,7 @@ import com.hedera.services.state.virtual.ContractStorageListMutation;
 import com.hedera.services.state.virtual.IterableContractValue;
 import com.hedera.services.state.virtual.VirtualBlobKey;
 import com.hedera.services.state.virtual.VirtualBlobValue;
+import com.hedera.services.throttling.ExpiryThrottle;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.test.factories.accounts.MerkleAccountFactory;
 import com.swirlds.merkle.map.MerkleMap;
@@ -42,8 +44,12 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.time.Instant;
+
 @ExtendWith(MockitoExtension.class)
 class ContractGCTest {
+    @Mock
+    private ExpiryThrottle expiryThrottle;
     @Mock private GlobalDynamicProperties dynamicProperties;
     @Mock private MerkleMap<EntityNum, MerkleAccount> contracts;
     @Mock private VirtualMap<ContractKey, IterableContractValue> storage;
@@ -54,21 +60,29 @@ class ContractGCTest {
 
     @BeforeEach
     void setUp() {
-        subject = new ContractGC(dynamicProperties, () -> contracts, () -> storage, () -> bytecode);
+        subject = new ContractGC(expiryThrottle, dynamicProperties, () -> contracts, () -> storage, () -> bytecode);
         subject.setRemovalFacilitation(removalFacilitation);
     }
 
     @Test
     void removesBytecodeIfPresent() {
-        given(bytecode.containsKey(bytecodeKey)).willReturn(true);
-
-        subject.expireBestEffort(contractNum, contractNoKvPairs);
-
+        given(expiryThrottle.allow(BYTECODE_REMOVAL_WORK)).willReturn(true);
+        assertTrue(subject.expireBestEffort(contractNum, contractNoKvPairs));
         verify(bytecode).remove(bytecodeKey);
     }
 
     @Test
+    void doesntRemovesBytecodeIfNoCapacity() {
+        assertFalse(subject.expireBestEffort(contractNum, contractNoKvPairs));
+        verifyNoInteractions(bytecode);
+    }
+
+    @Test
     void justRemovesAllKvPairsIfWithinMaxToPurge() {
+        given(expiryThrottle.allow(ROOT_KEY_UPDATE_WORK)).willReturn(true);
+        given(expiryThrottle.allow(BYTECODE_REMOVAL_WORK)).willReturn(true);
+        given(expiryThrottle.allow(NEXT_SLOT_REMOVAL_WORK)).willReturn(true);
+        given(expiryThrottle.allow(ONLY_SLOT_REMOVAL_WORK)).willReturn(true);
         given(dynamicProperties.getMaxPurgedKvPairsPerTouch()).willReturn(10);
         given(
                         removalFacilitation.removeNext(
@@ -90,6 +104,9 @@ class ContractGCTest {
 
     @Test
     void removesNoMoreThanAllowedKvPairs() {
+        given(expiryThrottle.allow(ROOT_KEY_UPDATE_WORK)).willReturn(true);
+        given(expiryThrottle.allow(NEXT_SLOT_REMOVAL_WORK)).willReturn(true);
+        given(expiryThrottle.allow(ONLY_SLOT_REMOVAL_WORK)).willReturn(true);
         given(dynamicProperties.getMaxPurgedKvPairsPerTouch()).willReturn(1);
         givenMutableContract(contractSomeKvPairs);
         given(
@@ -102,6 +119,18 @@ class ContractGCTest {
         assertFalse(done);
         assertEquals(2, contractSomeKvPairs.getNumContractKvPairs());
         assertEquals(interKey, contractSomeKvPairs.getFirstContractStorageKey());
+    }
+
+    @Test
+    void reclaimsThrottleCapacityIfNoSlotsCanBeRemoved() {
+        given(expiryThrottle.allow(ROOT_KEY_UPDATE_WORK)).willReturn(true);
+        given(dynamicProperties.getMaxPurgedKvPairsPerTouch()).willReturn(1);
+
+        final var done = subject.expireBestEffort(contractNum, contractSomeKvPairs);
+
+        assertFalse(done);
+        assertEquals(3, contractSomeKvPairs.getNumContractKvPairs());
+        verify(expiryThrottle).reclaimLastAllowedUse();
     }
 
     private static ContractKey asKey(final int[] uint256Key) {

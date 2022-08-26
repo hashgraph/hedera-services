@@ -29,19 +29,16 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import com.hedera.services.config.MockGlobalDynamicProps;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.fees.calculation.RenewAssessment;
+import com.hedera.services.state.expiry.ExpiryRecordsHelper;
 import com.hedera.services.state.expiry.classification.ClassificationWork;
 import com.hedera.services.state.expiry.classification.EntityLookup;
-import com.hedera.services.state.expiry.removal.AccountGC;
-import com.hedera.services.state.expiry.removal.ContractGC;
-import com.hedera.services.state.expiry.removal.RemovalHelper;
-import com.hedera.services.state.expiry.removal.RemovalWork;
-import com.hedera.services.state.expiry.removal.TreasuryReturns;
+import com.hedera.services.state.expiry.removal.*;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.test.factories.accounts.MerkleAccountFactory;
 import com.swirlds.merkle.map.MerkleMap;
 import java.time.Instant;
-import java.util.Collections;
+
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -78,11 +75,22 @@ class RenewalProcessTest {
                     .expirationTime(now.getEpochSecond() + 100L)
                     .get();
 
+    private final CryptoGcOutcome finishedReturns =
+            new CryptoGcOutcome(
+                    FungibleTreasuryReturns.FINISHED_NOOP_FUNGIBLE_RETURNS,
+                    NonFungibleTreasuryReturns.FINISHED_NOOP_NON_FUNGIBLE_RETURNS,
+                    true);
+    private final CryptoGcOutcome unfinishedReturns =
+            new CryptoGcOutcome(
+                    FungibleTreasuryReturns.UNFINISHED_NOOP_FUNGIBLE_RETURNS,
+                    NonFungibleTreasuryReturns.UNFINISHED_NOOP_NON_FUNGIBLE_RETURNS,
+                    false);
+
     @Mock private FeeCalculator fees;
     @Mock private ClassificationWork classifier;
     @Mock private AccountGC accountGC;
     @Mock private ContractGC contractGC;
-    @Mock private RenewalRecordsHelper recordsHelper;
+    @Mock private ExpiryRecordsHelper recordsHelper;
     @Mock private MerkleMap<EntityNum, MerkleAccount> accounts;
     private EntityLookup lookup;
     private MockGlobalDynamicProps dynamicProperties = new MockGlobalDynamicProps();
@@ -227,7 +235,10 @@ class RenewalProcessTest {
     @Test
     void removesExpiredBrokeAccount() {
         final var treasuryReturns =
-                new TreasuryReturns(Collections.emptyList(), Collections.emptyList(), true);
+                new CryptoGcOutcome(
+                        FungibleTreasuryReturns.FINISHED_NOOP_FUNGIBLE_RETURNS,
+                        NonFungibleTreasuryReturns.FINISHED_NOOP_NON_FUNGIBLE_RETURNS,
+                        true);
 
         long brokeExpiredAccountNum = 1003L;
         final var expiredNum = EntityNum.fromLong(brokeExpiredAccountNum);
@@ -243,22 +254,19 @@ class RenewalProcessTest {
 
         verify(accountGC).expireBestEffort(expiredNum, mockAccount);
         verify(recordsHelper)
-                .streamCryptoRemoval(expiredNum, Collections.emptyList(), Collections.emptyList());
+                .streamCryptoRemovalStep(false, expiredNum, treasuryReturns);
     }
 
     @Test
     void removesExpiredBrokeContractImmediatelyIfStoragePurged() {
         dynamicProperties.enableContractAutoRenew();
 
-        final var treasuryReturns =
-                new TreasuryReturns(Collections.emptyList(), Collections.emptyList(), true);
-
         long brokeExpiredContractNum = 1003L;
         final var expiredNum = EntityNum.fromLong(brokeExpiredContractNum);
         given(classifier.classify(expiredNum, now)).willReturn(DETACHED_CONTRACT_GRACE_PERIOD_OVER);
         given(classifier.getLastClassified()).willReturn(mockContract);
         given(contractGC.expireBestEffort(expiredNum, mockContract)).willReturn(true);
-        given(accountGC.expireBestEffort(expiredNum, mockContract)).willReturn(treasuryReturns);
+        given(accountGC.expireBestEffort(expiredNum, mockContract)).willReturn(finishedReturns);
 
         subject.beginRenewalCycle(now);
         final var result = subject.process(brokeExpiredContractNum);
@@ -266,7 +274,7 @@ class RenewalProcessTest {
         assertEquals(DONE, result);
         verify(accountGC).expireBestEffort(expiredNum, mockContract);
         verify(recordsHelper)
-                .streamCryptoRemoval(expiredNum, Collections.emptyList(), Collections.emptyList());
+                .streamCryptoRemovalStep(true, expiredNum, finishedReturns);
     }
 
     @Test
@@ -287,14 +295,11 @@ class RenewalProcessTest {
 
     @Test
     void alertsIfNotAllExpirationWorkCanBeDone() {
-        final var treasuryReturns =
-                new TreasuryReturns(Collections.emptyList(), Collections.emptyList(), false);
-
         long brokeExpiredAccountNum = 1003L;
         final var expiredNum = EntityNum.fromLong(brokeExpiredAccountNum);
         given(classifier.classify(expiredNum, now)).willReturn(DETACHED_ACCOUNT_GRACE_PERIOD_OVER);
         given(classifier.getLastClassified()).willReturn(mockAccount);
-        given(accountGC.expireBestEffort(expiredNum, mockAccount)).willReturn(treasuryReturns);
+        given(accountGC.expireBestEffort(expiredNum, mockAccount)).willReturn(unfinishedReturns);
         dynamicProperties.enableAutoRenew();
 
         subject.beginRenewalCycle(now);
@@ -303,7 +308,7 @@ class RenewalProcessTest {
         assertEquals(STILL_MORE_TO_DO, result);
         verify(accountGC).expireBestEffort(expiredNum, mockAccount);
         verify(recordsHelper)
-                .streamCryptoRemoval(expiredNum, Collections.emptyList(), Collections.emptyList());
+                .streamCryptoRemovalStep(false, expiredNum, unfinishedReturns);
     }
 
     @Test

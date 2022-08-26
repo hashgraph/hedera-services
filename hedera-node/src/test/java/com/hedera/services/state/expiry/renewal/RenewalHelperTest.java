@@ -31,6 +31,7 @@ import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.fees.calculation.RenewAssessment;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.state.expiry.EntityProcessResult;
+import com.hedera.services.state.expiry.ExpiryRecordsHelper;
 import com.hedera.services.state.expiry.classification.ClassificationWork;
 import com.hedera.services.state.expiry.classification.EntityLookup;
 import com.hedera.services.state.merkle.MerkleAccount;
@@ -52,7 +53,7 @@ class RenewalHelperTest {
     @Mock private AliasManager aliasManager;
     private final MockGlobalDynamicProps properties = new MockGlobalDynamicProps();
     @Mock private FeeCalculator fees;
-    @Mock private RenewalRecordsHelper recordsHelper;
+    @Mock private ExpiryRecordsHelper recordsHelper;
     @Mock private ExpiryThrottle expiryThrottle;
 
     private EntityLookup lookup;

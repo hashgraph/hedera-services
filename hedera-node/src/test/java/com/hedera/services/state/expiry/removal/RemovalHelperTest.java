@@ -27,14 +27,14 @@ import com.hedera.services.config.MockGlobalDynamicProps;
 import com.hedera.services.state.expiry.EntityProcessResult;
 import com.hedera.services.state.expiry.classification.ClassificationWork;
 import com.hedera.services.state.expiry.classification.EntityLookup;
-import com.hedera.services.state.expiry.renewal.RenewalRecordsHelper;
+import com.hedera.services.state.expiry.ExpiryRecordsHelper;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.throttling.ExpiryThrottle;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.test.factories.accounts.MerkleAccountFactory;
 import com.swirlds.merkle.map.MerkleMap;
 import java.time.Instant;
-import java.util.Collections;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -43,11 +43,21 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class RemovalHelperTest {
+    private final CryptoGcOutcome finishedReturns =
+            new CryptoGcOutcome(
+                    FungibleTreasuryReturns.FINISHED_NOOP_FUNGIBLE_RETURNS,
+                    NonFungibleTreasuryReturns.FINISHED_NOOP_NON_FUNGIBLE_RETURNS,
+                    true);
+    private final CryptoGcOutcome unfinishedReturns =
+            new CryptoGcOutcome(
+                    FungibleTreasuryReturns.UNFINISHED_NOOP_FUNGIBLE_RETURNS,
+                    NonFungibleTreasuryReturns.UNFINISHED_NOOP_NON_FUNGIBLE_RETURNS,
+                    false);
     private MerkleMap<EntityNum, MerkleAccount> accounts;
     private final MockGlobalDynamicProps properties = new MockGlobalDynamicProps();
     @Mock private ContractGC contractGC;
     @Mock private AccountGC accountGC;
-    @Mock private RenewalRecordsHelper recordsHelper;
+    @Mock private ExpiryRecordsHelper recordsHelper;
     @Mock private ExpiryThrottle expiryThrottle;
 
     private EntityLookup lookup;
@@ -81,10 +91,8 @@ class RemovalHelperTest {
         properties.enableAutoRenew();
         final var expiredNum = EntityNum.fromLong(expiredDeletedAccountNum);
 
-        final var expectedReturns =
-                new TreasuryReturns(Collections.emptyList(), Collections.emptyList(), true);
         given(accountGC.expireBestEffort(expiredNum, expiredDeletedAccount))
-                .willReturn(expectedReturns);
+                .willReturn(finishedReturns);
         given(expiryThrottle.allow(eq(CLASSIFICATION_WORK), any(Instant.class))).willReturn(true);
 
         classifier.classify(expiredNum, now);
@@ -93,7 +101,7 @@ class RemovalHelperTest {
         var result = subject.tryToRemoveAccount(expiredNum);
 
         verify(recordsHelper)
-                .streamCryptoRemoval(expiredNum, Collections.emptyList(), Collections.emptyList());
+                .streamCryptoRemovalStep(false, expiredNum, finishedReturns);
         assertEquals(EntityProcessResult.DONE, result);
     }
 
@@ -103,10 +111,8 @@ class RemovalHelperTest {
         final var expiredNum = EntityNum.fromLong(expiredDeletedContractNum);
 
         given(contractGC.expireBestEffort(expiredNum, expiredDeletedContract)).willReturn(true);
-        final var expectedReturns =
-                new TreasuryReturns(Collections.emptyList(), Collections.emptyList(), true);
         given(accountGC.expireBestEffort(expiredNum, expiredDeletedContract))
-                .willReturn(expectedReturns);
+                .willReturn(finishedReturns);
         given(expiryThrottle.allow(eq(CLASSIFICATION_WORK), any(Instant.class))).willReturn(true);
 
         classifier.classify(expiredNum, now);
@@ -115,7 +121,7 @@ class RemovalHelperTest {
         var result = subject.tryToRemoveContract(expiredNum);
 
         verify(recordsHelper)
-                .streamCryptoRemoval(expiredNum, Collections.emptyList(), Collections.emptyList());
+                .streamCryptoRemovalStep(true, expiredNum,finishedReturns);
         assertEquals(EntityProcessResult.DONE, result);
     }
 

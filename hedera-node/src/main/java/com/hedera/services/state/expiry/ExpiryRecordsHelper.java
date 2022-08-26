@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.hedera.services.state.expiry.renewal;
+package com.hedera.services.state.expiry;
 
 import static com.hedera.services.state.submerkle.RichInstant.MISSING_INSTANT;
 import static com.hedera.services.state.submerkle.TxnId.USER_TRANSACTION_NONCE;
@@ -22,24 +22,20 @@ import static com.hedera.services.utils.MiscUtils.synthFromBody;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.legacy.core.jproto.TxnReceipt;
 import com.hedera.services.records.ConsensusTimeTracker;
+import com.hedera.services.state.expiry.removal.CryptoGcOutcome;
 import com.hedera.services.state.logic.RecordStreaming;
-import com.hedera.services.state.submerkle.CurrencyAdjustments;
-import com.hedera.services.state.submerkle.EntityId;
-import com.hedera.services.state.submerkle.ExpirableTxnRecord;
-import com.hedera.services.state.submerkle.RichInstant;
-import com.hedera.services.state.submerkle.TxnId;
+import com.hedera.services.state.submerkle.*;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.stream.RecordStreamObject;
 import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.time.Instant;
-import java.util.List;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
 @Singleton
-public class RenewalRecordsHelper {
+public class ExpiryRecordsHelper {
     private final RecordStreaming recordStreaming;
     private final SyntheticTxnFactory syntheticTxnFactory;
     private final GlobalDynamicProperties dynamicProperties;
@@ -49,7 +45,7 @@ public class RenewalRecordsHelper {
     private AccountID funding = null;
 
     @Inject
-    public RenewalRecordsHelper(
+    public ExpiryRecordsHelper(
             final RecordStreaming recordStreaming,
             final SyntheticTxnFactory syntheticTxnFactory,
             final GlobalDynamicProperties dynamicProperties,
@@ -65,21 +61,30 @@ public class RenewalRecordsHelper {
         funding = dynamicProperties.fundingAccount();
     }
 
-    public void streamCryptoRemoval(
+    public void streamCryptoRemovalStep(
+            final boolean isContract,
             final EntityNum entityNum,
-            final List<EntityId> tokens,
-            final List<CurrencyAdjustments> tokenAdjustments) {
+            final CryptoGcOutcome cryptoGcOutcome
+    ) {
         assertInCycle();
+
+
         final var eventTime = consensusTimeTracker.nextStandaloneRecordTime();
         final var grpcId = entityNum.toGrpcAccountId();
-        final var memo = "Account " + entityNum.toIdString() + " was automatically deleted.";
+        final var memo = (isContract ? "Contract " : "Account ")
+                + entityNum.toIdString()
+                + (cryptoGcOutcome.finished() ? " was automatically deleted" : " returned treasury assets");
+
         final var expirableTxnRecord =
                 forTouchedAccount(grpcId, eventTime)
                         .setMemo(memo)
-                        .setTokens(tokens)
-                        .setTokenAdjustments(tokenAdjustments)
+                        .setTokens(cryptoGcOutcome.allReturnedTokens())
+                        .setTokenAdjustments(cryptoGcOutcome.parallelAdjustments())
+                        .setNftTokenAdjustments(cryptoGcOutcome.parallelExchanges())
                         .build();
-        final var synthBody = syntheticTxnFactory.synthAccountAutoRemove(entityNum);
+        final var synthBody = cryptoGcOutcome.finished()
+                ? syntheticTxnFactory.synthAccountAutoRemove(entityNum)
+                : syntheticTxnFactory.synthTokenTransfer(cryptoGcOutcome);
         stream(expirableTxnRecord, synthBody, eventTime);
     }
 

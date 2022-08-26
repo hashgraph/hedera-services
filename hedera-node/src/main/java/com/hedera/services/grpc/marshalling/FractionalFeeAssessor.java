@@ -55,7 +55,7 @@ public class FractionalFeeAssessor {
         final var denom = change.getToken();
         final var creditsToReclaimFrom = changeManager.creditsInCurrentLevel(denom);
         /* These accounts receiving the reclaimed credits are the
-        effective payers unless the net-of-transfers flag is set. */
+        effective payers unless the net-of-exchanges flag is set. */
         final var effPayerAccountNums = effPayerAccountNumsOf(creditsToReclaimFrom);
         for (var fee : feesWithFractional) {
             final var collector = fee.getFeeCollectorAsId();

@@ -25,7 +25,7 @@ public record TokenTransferWrapper(
     public TokenTransferList.Builder asGrpcBuilder() {
         final var builder = TokenTransferList.newBuilder();
 
-        /* The same token type cannot meaningfully have both NFT exchanges and fungible transfers,
+        /* The same token type cannot meaningfully have both NFT exchanges and fungible exchanges,
          * so we arbitrarily give priority to the non-fungible exchange type, and let error codes be
          * assigned downstream. */
         if (!fungibleTransfers.isEmpty()) {

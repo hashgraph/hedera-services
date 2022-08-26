@@ -55,7 +55,7 @@ import org.apache.commons.lang3.builder.HashCodeBuilder;
  * <p>A <i>fractional fee</i> always has the same units as the token type defining the custom fee.
  * It specifies the fraction of the units moved that should go to the fee collection account, along
  * with an optional minimum and maximum number of units to be charged. (Unless the
- * "net-of-transfers" flag is set, this fee is deducted from the receiving account(s); when the flag
+ * "net-of-exchanges" flag is set, this fee is deducted from the receiving account(s); when the flag
  * is set, an <b>additional</b> fee is levied to the sending account---the receiving account(s) get
  * the amounts in the original transfer list.)
  *

@@ -28,6 +28,7 @@ import static org.mockito.Mockito.verify;
 
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.NftTransfer;
+import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import java.io.IOException;
@@ -116,6 +117,15 @@ class NftAdjustmentsTest {
         assertEquals(sender, transferList.get(0).getSenderAccountID());
         assertEquals(recipient, transferList.get(0).getReceiverAccountID());
     }
+
+    @Test
+    void namecanAddToBuilder() {
+        givenCanonicalSubject();
+        final var builder = TokenTransferList.newBuilder();
+        subject.addToGrpc(builder);
+        final var result = builder.build();
+        assertEquals(subject.toGrpc(), result);
+      }
 
     @Test
     void fromGrpc() {

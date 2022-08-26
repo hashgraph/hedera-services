@@ -21,6 +21,7 @@ import static com.hedera.services.utils.EntityNum.fromAccountId;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.state.expiry.EntityProcessResult;
+import com.hedera.services.state.expiry.ExpiryRecordsHelper;
 import com.hedera.services.state.expiry.classification.ClassificationWork;
 import com.hedera.services.state.expiry.classification.EntityLookup;
 import com.hedera.services.state.merkle.MerkleAccount;
@@ -38,7 +39,7 @@ public class RenewalHelper implements RenewalWork {
     private final ClassificationWork classifier;
     private final GlobalDynamicProperties properties;
     private final FeeCalculator fees;
-    private final RenewalRecordsHelper recordsHelper;
+    private final ExpiryRecordsHelper recordsHelper;
     private final EntityLookup lookup;
 
     @Inject
@@ -47,7 +48,7 @@ public class RenewalHelper implements RenewalWork {
             final ClassificationWork classifier,
             final GlobalDynamicProperties properties,
             final FeeCalculator fees,
-            final RenewalRecordsHelper recordsHelper) {
+            final ExpiryRecordsHelper recordsHelper) {
         this.lookup = lookup;
         this.classifier = classifier;
         this.properties = properties;

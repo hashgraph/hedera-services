@@ -20,6 +20,7 @@ import static com.hedera.services.state.expiry.EntityProcessResult.STILL_MORE_TO
 
 import com.google.common.annotations.VisibleForTesting;
 import com.hedera.services.state.expiry.EntityProcessResult;
+import com.hedera.services.state.expiry.ExpiryRecordsHelper;
 import com.hedera.services.state.expiry.classification.ClassificationWork;
 import com.hedera.services.state.expiry.removal.RemovalWork;
 import com.hedera.services.utils.EntityNum;
@@ -29,7 +30,7 @@ import javax.inject.Singleton;
 
 @Singleton
 public class RenewalProcess {
-    private final RenewalRecordsHelper recordsHelper;
+    private final ExpiryRecordsHelper recordsHelper;
     private final RenewalWork renewalWork;
     private final RemovalWork removalWork;
     private final ClassificationWork classifier;
@@ -38,7 +39,7 @@ public class RenewalProcess {
     @Inject
     public RenewalProcess(
             final ClassificationWork classifier,
-            final RenewalRecordsHelper recordsHelper,
+            final ExpiryRecordsHelper recordsHelper,
             final RenewalWork renewalWork,
             final RemovalWork removalWork) {
         this.recordsHelper = recordsHelper;

@@ -22,7 +22,7 @@ import static com.hedera.services.state.expiry.EntityProcessResult.STILL_MORE_TO
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.state.expiry.EntityProcessResult;
 import com.hedera.services.state.expiry.classification.ClassificationWork;
-import com.hedera.services.state.expiry.renewal.RenewalRecordsHelper;
+import com.hedera.services.state.expiry.ExpiryRecordsHelper;
 import com.hedera.services.utils.EntityNum;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -33,7 +33,7 @@ public class RemovalHelper implements RemovalWork {
     private final GlobalDynamicProperties properties;
     private final ContractGC contractGC;
     private final AccountGC accountGC;
-    private final RenewalRecordsHelper recordsHelper;
+    private final ExpiryRecordsHelper recordsHelper;
 
     @Inject
     public RemovalHelper(
@@ -41,7 +41,7 @@ public class RemovalHelper implements RemovalWork {
             final GlobalDynamicProperties properties,
             final ContractGC contractGC,
             final AccountGC accountGC,
-            final RenewalRecordsHelper recordsHelper) {
+            final ExpiryRecordsHelper recordsHelper) {
         this.classifier = classifier;
         this.properties = properties;
         this.contractGC = contractGC;
@@ -65,14 +65,13 @@ public class RemovalHelper implements RemovalWork {
         return remove(contract, true);
     }
 
-    private EntityProcessResult remove(final EntityNum contractNum, final boolean isContract) {
+    private EntityProcessResult remove(final EntityNum num, final boolean isContract) {
         final var lastClassified = classifier.getLastClassified();
-        if (isContract && !contractGC.expireBestEffort(contractNum, lastClassified)) {
+        if (isContract && !contractGC.expireBestEffort(num, lastClassified)) {
             return STILL_MORE_TO_DO;
         }
-        final var treasuryReturns = accountGC.expireBestEffort(contractNum, lastClassified);
-        recordsHelper.streamCryptoRemoval(
-                contractNum, treasuryReturns.tokenTypes(), treasuryReturns.transfers());
+        final var treasuryReturns = accountGC.expireBestEffort(num, lastClassified);
+        recordsHelper.streamCryptoRemovalStep(isContract, num, treasuryReturns);
         return treasuryReturns.finished() ? DONE : STILL_MORE_TO_DO;
     }
 }

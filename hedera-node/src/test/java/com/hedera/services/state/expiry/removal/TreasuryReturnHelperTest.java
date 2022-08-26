@@ -29,6 +29,7 @@ import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.submerkle.CurrencyAdjustments;
 import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.throttling.ExpiryThrottle;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
 import com.hederahashgraph.api.proto.java.AccountAmount;
@@ -50,14 +51,16 @@ class TreasuryReturnHelperTest {
     @Mock private MerkleMap<EntityNum, MerkleToken> tokens;
     @Mock private MerkleMap<EntityNumPair, MerkleUniqueToken> uniqueTokens;
     @Mock private MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenRels;
+    @Mock
+    private ExpiryThrottle expiryThrottle;
 
-    private List<CurrencyAdjustments> returnTransfers = new ArrayList<>();
+    private final List<CurrencyAdjustments> returnTransfers = new ArrayList<>();
 
     private TreasuryReturnHelper subject;
 
     @BeforeEach
     void setUp() {
-        subject = new TreasuryReturnHelper(() -> tokens, () -> tokenRels);
+        subject = new TreasuryReturnHelper(expiryThrottle, () -> tokens, () -> tokenRels);
     }
 
     @Test
@@ -115,8 +118,8 @@ class TreasuryReturnHelperTest {
     }
 
     @Test
-    void justReportsDebitIfTokenIsGoneSomehow() {
-        subject.updateReturns(expiredAccountNum, missingTokenNum, tokenBalance, returnTransfers);
+    void justReportsDebitAndReclaimsLastUsageIfTokenIsGoneSomehow() {
+        subject.updateFungibleReturns(expiredAccountNum, missingTokenNum, tokenBalance, returnTransfers);
 
         final var ttls =
                 List.of(
@@ -125,13 +128,14 @@ class TreasuryReturnHelperTest {
                                 expiredAccountNum.toGrpcAccountId(),
                                 tokenBalance));
         assertEquals(adjustmentsFrom(ttls), returnTransfers);
+        verify(expiryThrottle).reclaimLastAllowedUse();
     }
 
     @Test
     void justReportsDebitIfTokenIsNonfungible() {
         givenTokenPresent(nonFungibleTokenNum, nonFungibleToken);
 
-        subject.updateReturns(
+        subject.updateFungibleReturns(
                 expiredAccountNum, nonFungibleTokenNum, tokenBalance, returnTransfers);
 
         final var ttls =
@@ -147,7 +151,7 @@ class TreasuryReturnHelperTest {
     void justReportsDebitIfTokenIsDeleted() {
         givenTokenPresent(deletedTokenNum, deletedToken);
 
-        subject.updateReturns(expiredAccountNum, deletedTokenNum, tokenBalance, returnTransfers);
+        subject.updateFungibleReturns(expiredAccountNum, deletedTokenNum, tokenBalance, returnTransfers);
 
         final var ttls =
                 List.of(
@@ -164,7 +168,7 @@ class TreasuryReturnHelperTest {
         final var treasuryRel = mutableRel(treasuryNum, fungibleTokenNum, tokenBalance);
         givenModifiableRelPresent(treasuryNum, fungibleTokenNum, treasuryRel);
 
-        subject.updateReturns(expiredAccountNum, fungibleTokenNum, tokenBalance, returnTransfers);
+        subject.updateFungibleReturns(expiredAccountNum, fungibleTokenNum, tokenBalance, returnTransfers);
 
         final var ttls =
                 List.of(
@@ -183,7 +187,7 @@ class TreasuryReturnHelperTest {
         final var treasuryRel = mutableRel(treasuryNum, fungibleTokenNum, tokenBalance);
         givenModifiableRelPresent(treasuryNum, fungibleTokenNum, treasuryRel);
 
-        subject.updateReturns(
+        subject.updateFungibleReturns(
                 olderExpiredAccountNum, fungibleTokenNum, tokenBalance, returnTransfers);
 
         final var ttls =

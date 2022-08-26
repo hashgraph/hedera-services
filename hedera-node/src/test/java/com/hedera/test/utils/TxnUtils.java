@@ -414,6 +414,14 @@ public class TxnUtils {
                 .build();
     }
 
+    public static TokenTransferList exchangeOf(
+            TokenID scope, AccountID src, AccountID dest, long serial) {
+        return TokenTransferList.newBuilder()
+                .setToken(scope)
+                .addNftTransfers(serialFromTo(serial, src, dest))
+                .build();
+    }
+
     public static TokenTransferList asymmetricTtlOf(TokenID scope, AccountID src, long amount) {
         return TokenTransferList.newBuilder()
                 .setToken(scope)
@@ -423,5 +431,13 @@ public class TxnUtils {
 
     public static AccountAmount aaOf(AccountID id, long amount) {
         return AccountAmount.newBuilder().setAccountID(id).setAmount(amount).build();
+    }
+
+    public static NftTransfer serialFromTo(final long num, final AccountID sender, final AccountID receiver) {
+        return NftTransfer.newBuilder()
+                .setSerialNumber(num)
+                .setSenderAccountID(sender)
+                .setReceiverAccountID(receiver)
+                .build();
     }
 }
