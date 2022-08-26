@@ -15,6 +15,7 @@
  */
 package com.hedera.services.state.expiry.removal;
 
+import static com.hedera.services.state.expiry.removal.ContractGC.*;
 import static com.hedera.services.state.virtual.VirtualBlobKey.Type.CONTRACT_BYTECODE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -22,9 +23,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.*;
 
-import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.internals.BitPackUtils;
 import com.hedera.services.state.virtual.ContractKey;
@@ -32,6 +32,7 @@ import com.hedera.services.state.virtual.ContractStorageListMutation;
 import com.hedera.services.state.virtual.IterableContractValue;
 import com.hedera.services.state.virtual.VirtualBlobKey;
 import com.hedera.services.state.virtual.VirtualBlobValue;
+import com.hedera.services.throttling.ExpiryThrottle;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.test.factories.accounts.MerkleAccountFactory;
 import com.swirlds.merkle.map.MerkleMap;
@@ -44,7 +45,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class ContractGCTest {
-    @Mock private GlobalDynamicProperties dynamicProperties;
+    @Mock private ExpiryThrottle expiryThrottle;
     @Mock private MerkleMap<EntityNum, MerkleAccount> contracts;
     @Mock private VirtualMap<ContractKey, IterableContractValue> storage;
     @Mock private VirtualMap<VirtualBlobKey, VirtualBlobValue> bytecode;
@@ -54,22 +55,30 @@ class ContractGCTest {
 
     @BeforeEach
     void setUp() {
-        subject = new ContractGC(dynamicProperties, () -> contracts, () -> storage, () -> bytecode);
+        subject = new ContractGC(expiryThrottle, () -> contracts, () -> storage, () -> bytecode);
         subject.setRemovalFacilitation(removalFacilitation);
     }
 
     @Test
     void removesBytecodeIfPresent() {
-        given(bytecode.containsKey(bytecodeKey)).willReturn(true);
-
-        subject.expireBestEffort(contractNum, contractNoKvPairs);
-
+        given(expiryThrottle.allow(BYTECODE_REMOVAL_WORK)).willReturn(true);
+        assertTrue(subject.expireBestEffort(contractNum, contractNoKvPairs));
         verify(bytecode).remove(bytecodeKey);
     }
 
     @Test
+    void doesntRemovesBytecodeIfNoCapacity() {
+        assertFalse(subject.expireBestEffort(contractNum, contractSomeKvPairs));
+        verify(expiryThrottle, never()).allow(BYTECODE_REMOVAL_WORK);
+        verifyNoInteractions(bytecode);
+    }
+
+    @Test
     void justRemovesAllKvPairsIfWithinMaxToPurge() {
-        given(dynamicProperties.getMaxPurgedKvPairsPerTouch()).willReturn(10);
+        given(expiryThrottle.allow(ROOT_KEY_UPDATE_WORK)).willReturn(true);
+        given(expiryThrottle.allow(BYTECODE_REMOVAL_WORK)).willReturn(true);
+        given(expiryThrottle.allow(NEXT_SLOT_REMOVAL_WORK)).willReturn(true);
+        given(expiryThrottle.allow(ONLY_SLOT_REMOVAL_WORK)).willReturn(true);
         given(
                         removalFacilitation.removeNext(
                                 eq(rootKey), eq(rootKey), any(ContractStorageListMutation.class)))
@@ -89,27 +98,18 @@ class ContractGCTest {
     }
 
     @Test
-    void removesNoMoreThanAllowedKvPairs() {
-        given(dynamicProperties.getMaxPurgedKvPairsPerTouch()).willReturn(1);
-        givenMutableContract(contractSomeKvPairs);
-        given(
-                        removalFacilitation.removeNext(
-                                eq(rootKey), eq(rootKey), any(ContractStorageListMutation.class)))
-                .willReturn(interKey);
+    void reclaimsThrottleCapacityIfNoSlotsCanBeRemoved() {
+        given(expiryThrottle.allow(ROOT_KEY_UPDATE_WORK)).willReturn(true);
 
         final var done = subject.expireBestEffort(contractNum, contractSomeKvPairs);
 
         assertFalse(done);
-        assertEquals(2, contractSomeKvPairs.getNumContractKvPairs());
-        assertEquals(interKey, contractSomeKvPairs.getFirstContractStorageKey());
+        assertEquals(3, contractSomeKvPairs.getNumContractKvPairs());
+        verify(expiryThrottle).reclaimLastAllowedUse();
     }
 
     private static ContractKey asKey(final int[] uint256Key) {
         return new ContractKey(BitPackUtils.numFromCode(contractNum.intValue()), uint256Key);
-    }
-
-    private void givenMutableContract(final MerkleAccount contract) {
-        given(contracts.getForModify(contractNum)).willReturn(contract);
     }
 
     private static final EntityNum contractNum = EntityNum.fromLong(666);

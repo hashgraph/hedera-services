@@ -164,6 +164,7 @@ import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.state.submerkle.RichInstant;
+import com.hedera.services.throttles.DeterministicThrottle;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
@@ -200,9 +201,12 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import javax.annotation.Nullable;
 import org.apache.commons.codec.DecoderException;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 public final class MiscUtils {
     private static final long ONE_SEC_IN_NANOS = 1_000_000_000;
+    private static final Logger log = LogManager.getLogger(MiscUtils.class);
 
     private MiscUtils() {
         throw new UnsupportedOperationException("Utility Class");
@@ -927,5 +931,38 @@ public final class MiscUtils {
         final var signedTxn =
                 SignedTransaction.newBuilder().setBodyBytes(txnBody.toByteString()).build();
         return Transaction.newBuilder().setSignedTransactionBytes(signedTxn.toByteString()).build();
+    }
+
+    public static void safeResetThrottles(
+            final List<DeterministicThrottle> throttles,
+            final DeterministicThrottle.UsageSnapshot[] snapshots,
+            final String source) {
+        var currUsageSnapshots =
+                throttles.stream().map(DeterministicThrottle::usageSnapshot).toList();
+        for (int i = 0, n = snapshots.length; i < n; i++) {
+            var savedUsageSnapshot = snapshots[i];
+            var throttle = throttles.get(i);
+            try {
+                throttle.resetUsageTo(savedUsageSnapshot);
+                log.info("Reset {} with saved usage snapshot", throttle);
+            } catch (Exception e) {
+                log.warn(
+                        "Saved {} usage snapshot #{} was not compatible with the corresponding"
+                                + " active throttle ({}) not performing a reset !",
+                        source,
+                        (i + 1),
+                        e.getMessage());
+                resetUnconditionally(throttles, currUsageSnapshots);
+                break;
+            }
+        }
+    }
+
+    private static void resetUnconditionally(
+            List<DeterministicThrottle> throttles,
+            List<DeterministicThrottle.UsageSnapshot> knownCompatible) {
+        for (int i = 0, n = knownCompatible.size(); i < n; i++) {
+            throttles.get(i).resetUsageTo(knownCompatible.get(i));
+        }
     }
 }

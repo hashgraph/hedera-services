@@ -20,7 +20,7 @@ import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.records.ConsensusTimeTracker;
-import com.hedera.services.state.expiry.EntityAutoRenewal;
+import com.hedera.services.state.expiry.EntityAutoExpiry;
 import com.hedera.services.state.expiry.ExpiryManager;
 import com.hedera.services.stats.ExecutionTimeTracker;
 import com.hedera.services.txns.ProcessLogic;
@@ -42,7 +42,7 @@ public class StandardProcessLogic implements ProcessLogic {
     private final InvariantChecks invariantChecks;
     private final ConsensusTimeTracker consensusTimeTracker;
     private final ExpandHandleSpan expandHandleSpan;
-    private final EntityAutoRenewal autoRenewal;
+    private final EntityAutoExpiry autoRenewal;
     private final ServicesTxnManager txnManager;
     private final SigImpactHistorian sigImpactHistorian;
     private final TransactionContext txnCtx;
@@ -57,7 +57,7 @@ public class StandardProcessLogic implements ProcessLogic {
             final InvariantChecks invariantChecks,
             final ExpandHandleSpan expandHandleSpan,
             final ConsensusTimeTracker consensusTimeTracker,
-            final EntityAutoRenewal autoRenewal,
+            final EntityAutoExpiry autoRenewal,
             final ServicesTxnManager txnManager,
             final SigImpactHistorian sigImpactHistorian,
             final TransactionContext txnCtx,

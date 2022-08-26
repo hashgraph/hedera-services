@@ -364,7 +364,7 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
         final var updatedToNumPositiveBalances =
                 toThisNftsOwned == 0 ? toNumPositiveBalances + 1 : toNumPositiveBalances;
 
-        // Note correctness here depends on rejecting self-transfers
+        // Note correctness here depends on rejecting self-exchanges
         accountsLedger.set(from, NUM_NFTS_OWNED, fromNftsOwned - 1);
         accountsLedger.set(to, NUM_NFTS_OWNED, toNftsOwned + 1);
         accountsLedger.set(from, NUM_POSITIVE_BALANCES, updatedFromPositiveBalances);

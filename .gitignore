@@ -63,6 +63,7 @@ hedera-node/swirlds-tmp
 !hedera-node/src/test/resources/legacyAccounts.json
 !hedera-node/src/test/resources/bootstrap/*.json
 !hedera-node/src/main/resources/*.json
+!hedera-node/src/test/resources/testfiles/expiry-throttle.json
 !hedera-node/configuration/**/*.json
 !test-clients/src/main/resource/FeeSchedule.json
 !test-clients/src/main/resource/testSystemFiles/*.json
@@ -70,6 +71,7 @@ hedera-node/swirlds-tmp
 .circleci/*.yml-excerpt
 hedera-node/data/jasperdb/
 hedera-node/temp/
+hedera-node/swirlds-tmp/
 hedera-node/*.csv
 hedera-node/swirlds.jar
 hedera-node/build.sh

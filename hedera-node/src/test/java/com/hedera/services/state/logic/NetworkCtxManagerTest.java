@@ -15,6 +15,7 @@
  */
 package com.hedera.services.state.logic;
 
+import static com.hedera.services.context.properties.PropertyNames.STAKING_PERIOD_MINS;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenMint;
@@ -42,6 +43,7 @@ import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.submerkle.ExchangeRates;
 import com.hedera.services.stats.HapiOpCounters;
 import com.hedera.services.stats.MiscRunningAvgs;
+import com.hedera.services.throttling.ExpiryThrottle;
 import com.hedera.services.throttling.FunctionalityThrottling;
 import com.hedera.services.utils.accessors.SignedTxnAccessor;
 import java.time.Instant;
@@ -76,17 +78,19 @@ class NetworkCtxManagerTest {
     @Mock private MiscRunningAvgs runningAvgs;
     @Mock private EndOfStakingPeriodCalculator endOfStakingPeriodCalculator;
     @Mock private PropertySource propertySource;
+    @Mock private ExpiryThrottle expiryThrottle;
 
     private NetworkCtxManager subject;
 
     @BeforeEach
     void setUp() {
-        given(propertySource.getLongProperty("staking.periodMins")).willReturn(1440L);
+        given(propertySource.getLongProperty(STAKING_PERIOD_MINS)).willReturn(1440L);
         given(nodeLocalProperties.issResetPeriod()).willReturn(issResetPeriod);
 
         subject =
                 new NetworkCtxManager(
                         issInfo,
+                        expiryThrottle,
                         nodeLocalProperties,
                         opCounters,
                         exchange,
@@ -147,6 +151,7 @@ class NetworkCtxManagerTest {
         // then:
         verify(systemFilesManager).loadObservableSystemFiles();
         verify(networkCtx).resetThrottlingFromSavedSnapshots(handleThrottling);
+        verify(networkCtx).resetExpiryThrottleFromSavedSnapshot(expiryThrottle);
         verify(networkCtx).resetMultiplierSourceFromSavedCongestionStarts(feeMultiplierSource);
         verify(feeMultiplierSource).resetExpectations();
     }
@@ -453,12 +458,13 @@ class NetworkCtxManagerTest {
         final var now = Instant.parse("2021-06-07T23:59:58.369613Z");
         final var thenSameMinute = now.plusSeconds(1);
         final var thenNextMinute = now.plusSeconds(61);
-        given(propertySource.getLongProperty("staking.periodMins")).willReturn(1L);
+        given(propertySource.getLongProperty(STAKING_PERIOD_MINS)).willReturn(1L);
         given(nodeLocalProperties.issResetPeriod()).willReturn(issResetPeriod);
 
         subject =
                 new NetworkCtxManager(
                         issInfo,
+                        expiryThrottle,
                         nodeLocalProperties,
                         opCounters,
                         exchange,

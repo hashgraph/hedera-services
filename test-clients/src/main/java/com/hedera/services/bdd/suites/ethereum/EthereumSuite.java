@@ -45,12 +45,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.contract.HapiEthereumCall.ETH_HASH_KEY;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromAccountToAlias;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.balanceSnapshot;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.uploadDefaultFeeSchedules;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.*;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hedera.services.bdd.suites.contract.Utils.eventSignatureOf;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
@@ -59,7 +54,7 @@ import static com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPreco
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ETHEREUM_TRANSACTION;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -99,6 +94,7 @@ public class EthereumSuite extends HapiApiSuite {
     public static final String EMIT_SENDER_ORIGIN_CONTRACT = "EmitSenderOrigin";
 
     private static final String FUNGIBLE_TOKEN = "fungibleToken";
+    private static final String CHAIN_ID_PROP = "contracts.chainId";
 
     public static void main(String... args) {
         new EthereumSuite().runSuiteSync();
@@ -107,22 +103,24 @@ public class EthereumSuite extends HapiApiSuite {
     @Override
     public List<HapiApiSpec> getSpecsInSuite() {
         return Stream.concat(
-                        feePaymentMatrix().stream(),
-                        Stream.of(
-                                invalidTxData(),
-                                ETX_007_fungibleTokenCreateWithFeesHappyPath(),
-                                ETX_008_contractCreateExecutesWithExpectedRecord(),
-                                ETX_009_callsToTokenAddresses(),
-                                ETX_010_transferToCryptoAccountSucceeds(),
-                                ETX_012_precompileCallSucceedsWhenNeededSignatureInEthTxn(),
-                                ETX_013_precompileCallSucceedsWhenNeededSignatureInHederaTxn(),
-                                ETX_013_precompileCallFailsWhenSignatureMissingFromBothEthereumAndHederaTxn(),
-                                ETX_014_contractCreateInheritsSignerProperties(),
-                                ETX_026_accountWithoutAliasCannotMakeEthTxns(),
-                                ETX_009_callsToTokenAddresses(),
-                                originAndSenderAreEthereumSigner(),
-                                ETX_031_invalidNonceEthereumTxFailsAndChargesRelayer(),
-                                ETX_SVC_003_contractGetBytecodeQueryReturnsDeployedCode()))
+                        Stream.of(setChainId()),
+                        Stream.concat(
+                                feePaymentMatrix().stream(),
+                                Stream.of(
+                                        invalidTxData(),
+                                        ETX_007_fungibleTokenCreateWithFeesHappyPath(),
+                                        ETX_008_contractCreateExecutesWithExpectedRecord(),
+                                        ETX_009_callsToTokenAddresses(),
+                                        ETX_010_transferToCryptoAccountSucceeds(),
+                                        ETX_012_precompileCallSucceedsWhenNeededSignatureInEthTxn(),
+                                        ETX_013_precompileCallSucceedsWhenNeededSignatureInHederaTxn(),
+                                        ETX_013_precompileCallFailsWhenSignatureMissingFromBothEthereumAndHederaTxn(),
+                                        ETX_014_contractCreateInheritsSignerProperties(),
+                                        ETX_026_accountWithoutAliasCannotMakeEthTxns(),
+                                        ETX_009_callsToTokenAddresses(),
+                                        originAndSenderAreEthereumSigner(),
+                                        ETX_031_invalidNonceEthereumTxFailsAndChargesRelayer(),
+                                        ETX_SVC_003_contractGetBytecodeQueryReturnsDeployedCode())))
                 .toList();
     }
 
@@ -187,7 +185,7 @@ public class EthereumSuite extends HapiApiSuite {
     }
 
     List<HapiApiSpec> feePaymentMatrix() {
-        final long gasPrice = 47;
+        final long gasPrice = 71;
         final long chargedGasLimit = GAS_LIMIT * 4 / 5;
 
         final long noPayment = 0L;
@@ -196,48 +194,34 @@ public class EthereumSuite extends HapiApiSuite {
         final long thirdOfLimit = thirdOfFee * GAS_LIMIT;
         final long fullAllowance = gasPrice * chargedGasLimit * 5 / 4;
         final long fullPayment = gasPrice * chargedGasLimit;
-        final long ninteyPercentFee = gasPrice * 9 / 10;
+        final long ninetyPercentFee = gasPrice * 9 / 10;
 
         return Stream.of(
-                        new Object[] {false, noPayment, noPayment, noPayment, noPayment},
-                        new Object[] {false, noPayment, thirdOfPayment, noPayment, noPayment},
-                        new Object[] {true, noPayment, fullAllowance, noPayment, fullPayment},
-                        new Object[] {false, thirdOfFee, noPayment, noPayment, noPayment},
-                        new Object[] {false, thirdOfFee, thirdOfPayment, noPayment, noPayment},
-                        new Object[] {
-                            true,
-                            thirdOfFee,
-                            fullAllowance,
-                            thirdOfLimit,
-                            fullPayment - thirdOfLimit
-                        },
-                        new Object[] {
-                            true,
-                            thirdOfFee,
-                            fullAllowance * 9 / 10,
-                            thirdOfLimit,
-                            fullPayment - thirdOfLimit
-                        },
-                        new Object[] {false, ninteyPercentFee, noPayment, noPayment, noPayment},
-                        new Object[] {
-                            true, ninteyPercentFee, thirdOfPayment, fullPayment, noPayment
-                        },
-                        new Object[] {true, gasPrice, noPayment, fullPayment, noPayment},
-                        new Object[] {true, gasPrice, thirdOfPayment, fullPayment, noPayment},
-                        new Object[] {true, gasPrice, fullAllowance, fullPayment, noPayment})
+                        new Object[] {false, noPayment, noPayment, noPayment},
+                        new Object[] {false, noPayment, thirdOfPayment, noPayment},
+                        new Object[] {true, noPayment, fullAllowance, noPayment},
+                        new Object[] {false, thirdOfFee, noPayment, noPayment},
+                        new Object[] {false, thirdOfFee, thirdOfPayment, noPayment},
+                        new Object[] {true, thirdOfFee, fullAllowance, thirdOfLimit},
+                        new Object[] {true, thirdOfFee, fullAllowance * 9 / 10, thirdOfLimit},
+                        new Object[] {false, ninetyPercentFee, noPayment, noPayment},
+                        new Object[] {true, ninetyPercentFee, thirdOfPayment, fullPayment},
+                        new Object[] {true, gasPrice, noPayment, fullPayment},
+                        new Object[] {true, gasPrice, thirdOfPayment, fullPayment},
+                        new Object[] {true, gasPrice, fullAllowance, fullPayment})
                 .map(
                         params ->
                                 // [0] - success
                                 // [1] - sender gas price
                                 // [2] - relayer offered
                                 // [3] - sender charged amount
-                                // [4] - relayer charged amount
+                                // relayer charged amount can easily be calculated via
+                                // wholeTransactionFee - senderChargedAmount
                                 matrixedPayerRelayerTest(
                                         (boolean) params[0],
                                         (long) params[1],
                                         (long) params[2],
-                                        (long) params[3],
-                                        (long) params[4]))
+                                        (long) params[3]))
                 .toList();
     }
 
@@ -245,8 +229,7 @@ public class EthereumSuite extends HapiApiSuite {
             final boolean success,
             final long senderGasPrice,
             final long relayerOffered,
-            final long senderCharged,
-            final long relayerCharged) {
+            final long senderCharged) {
         return defaultHapiSpec(
                         "feePaymentMatrix "
                                 + (success ? "Success/" : "Failure/")
@@ -263,10 +246,7 @@ public class EthereumSuite extends HapiApiSuite {
                         getTxnRecord("autoAccount").andAllChildRecords(),
                         uploadInitCode(PAY_RECEIVABLE_CONTRACT),
                         contractCreate(PAY_RECEIVABLE_CONTRACT).adminKey(THRESHOLD))
-                .when(
-                        // Network and Node fees in the schedule for Ethereum transactions are 0,
-                        // so everything charged will be from the gas consumed in the EVM execution
-                        uploadDefaultFeeSchedules(GENESIS))
+                .when()
                 .then(
                         withOpContext(
                                 (spec, ignore) -> {
@@ -300,6 +280,10 @@ public class EthereumSuite extends HapiApiSuite {
                                             getTxnRecord("payTxn").logged();
                                     allRunFor(spec, subop1, subop2, subop3, hapiGetTxnRecord);
 
+                                    final long wholeTransactionFee =
+                                            hapiGetTxnRecord
+                                                    .getResponseRecord()
+                                                    .getTransactionFee();
                                     final var subop4 =
                                             getAutoCreatedAccountBalance(SECP_256K1_SOURCE_KEY)
                                                     .hasTinyBars(
@@ -314,14 +298,22 @@ public class EthereumSuite extends HapiApiSuite {
                                                     .hasTinyBars(
                                                             changeFromSnapshot(
                                                                     payerBalance,
-                                                                    success ? -relayerCharged : 0));
+                                                                    success
+                                                                            ? -(wholeTransactionFee
+                                                                                    - senderCharged)
+                                                                            : -wholeTransactionFee));
                                     allRunFor(spec, subop4, subop5);
                                 }));
+    }
+
+    HapiApiSpec setChainId() {
+        return defaultHapiSpec("SetChainId").given().when().then(overriding(CHAIN_ID_PROP, "298"));
     }
 
     HapiApiSpec invalidTxData() {
         return defaultHapiSpec("InvalidTxData")
                 .given(
+                        overriding(CHAIN_ID_PROP, "298"),
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS),
                         cryptoTransfer(
@@ -366,7 +358,6 @@ public class EthereumSuite extends HapiApiSuite {
                         cryptoUpdateAliased(SECP_256K1_SOURCE_KEY)
                                 .autoRenewPeriod(AUTO_RENEW_PERIOD)
                                 .entityMemo(MEMO)
-                                .newProxy(PROXY)
                                 .payingWith(GENESIS)
                                 .signedBy(SECP_256K1_SOURCE_KEY, GENESIS),
                         ethereumContractCreate(PAY_RECEIVABLE_CONTRACT)
@@ -467,6 +458,7 @@ public class EthereumSuite extends HapiApiSuite {
                                 .type(EthTxData.EthTransactionType.EIP1559)
                                 .signingWith(SECP_256K1_SOURCE_KEY)
                                 .payingWith(ACCOUNT)
+                                .maxGasAllowance(FIVE_HBARS)
                                 .nonce(0)
                                 .gasLimit(GAS_LIMIT)
                                 .hasKnownStatus(INVALID_ACCOUNT_ID))
@@ -666,7 +658,7 @@ public class EthereumSuite extends HapiApiSuite {
                         childRecordsCheck(
                                 mintTxn,
                                 CONTRACT_REVERT_EXECUTED,
-                                recordWith().status(INVALID_SIGNATURE)));
+                                recordWith().status(INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE)));
     }
 
     HapiApiSpec ETX_009_callsToTokenAddresses() {

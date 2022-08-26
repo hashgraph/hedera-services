@@ -47,7 +47,7 @@ import javax.inject.Singleton;
 
 /**
  * Given a maximum number of ℏ and token unit balance changes in a CryptoTransfer, validates the
- * actual transfers requested in such a transaction.
+ * actual exchanges requested in such a transaction.
  *
  * <p>Since in the normal transaction lifecycle, this logic will be performed during {@link
  * com.hedera.services.txns.span.SpanMapManager#expandSpan(TxnAccessor)}, we can accept some
@@ -81,7 +81,7 @@ public class PureTransferSemanticChecks {
         if (!isAcceptableSize(hbarAdjusts, maxHbarAdjusts)) {
             return TRANSFER_LIST_SIZE_LIMIT_EXCEEDED;
         }
-        // allowance transfers feature toggle flag
+        // allowance exchanges feature toggle flag
         if (!areAllowanceEnabled && hasAllowanceTransfers(hbarAdjusts)) {
             return NOT_SUPPORTED;
         }
@@ -133,7 +133,7 @@ public class PureTransferSemanticChecks {
                 if (!areNftsEnabled) {
                     return NOT_SUPPORTED;
                 }
-                /* Makes no sense to specify both fungible and non-fungible transfers for a single token type */
+                /* Makes no sense to specify both fungible and non-fungible exchanges for a single token type */
                 if (transferCounts > 0) {
                     return INVALID_ACCOUNT_AMOUNTS;
                 }
@@ -144,7 +144,7 @@ public class PureTransferSemanticChecks {
                 }
                 count += transferCounts;
             }
-            // allowance transfers feature toggle flag
+            // allowance exchanges feature toggle flag
             if (!areAllowanceEnabled
                     && (hasAllowanceTransfers(scopedTransfers.getTransfersList())
                             || hasAllowanceNftTransfers(scopedTransfers.getNftTransfersList()))) {

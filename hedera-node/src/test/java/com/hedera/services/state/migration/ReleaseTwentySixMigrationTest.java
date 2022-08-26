@@ -98,9 +98,9 @@ class ReleaseTwentySixMigrationTest {
 
         buildAccountNftsOwnedLinkedList(accounts, uniqueTokens);
         // keySet() returns values in the order 2,5,4,1,3
-        assertEquals(nftId3.getHiOrderAsLong(), accounts.get(accountNum1).getHeadNftId());
+        assertEquals(nftId3.getHiOrderAsLong(), accounts.get(accountNum1).getHeadNftTokenNum());
         assertEquals(nftId3.getLowOrderAsLong(), accounts.get(accountNum1).getHeadNftSerialNum());
-        assertEquals(nftId4.getHiOrderAsLong(), accounts.get(accountNum2).getHeadNftId());
+        assertEquals(nftId4.getHiOrderAsLong(), accounts.get(accountNum2).getHeadNftTokenNum());
         assertEquals(nftId4.getLowOrderAsLong(), accounts.get(accountNum2).getHeadNftSerialNum());
         assertEquals(MISSING_NFT_NUM_PAIR, uniqueTokens.get(nftId5).getNext());
         assertEquals(nftId1.asNftNumPair(), uniqueTokens.get(nftId5).getPrev());

@@ -69,6 +69,7 @@ import org.apache.logging.log4j.Logger;
  */
 @Singleton
 public class CryptoCreateTransitionLogic implements TransitionLogic {
+    static final int MAX_CHARGEABLE_AUTO_ASSOCIATIONS = 5000;
     private static final Logger log = LogManager.getLogger(CryptoCreateTransitionLogic.class);
 
     private final UsageLimits usageLimits;
@@ -160,6 +161,7 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
         return this::validate;
     }
 
+    @SuppressWarnings("java:S1874")
     public ResponseCodeEnum validate(TransactionBody cryptoCreateTxn) {
         CryptoCreateTransactionBody op = cryptoCreateTxn.getCryptoCreateAccount();
 
@@ -195,9 +197,7 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
         if (op.getReceiveRecordThreshold() < 0L) {
             return INVALID_RECEIVE_RECORD_THRESHOLD;
         }
-        if (dynamicProperties.areTokenAssociationsLimited()
-                && op.getMaxAutomaticTokenAssociations()
-                        > dynamicProperties.maxTokensPerAccount()) {
+        if (tooManyAutoAssociations(op.getMaxAutomaticTokenAssociations())) {
             return REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT;
         }
         if (op.hasProxyAccountID()
@@ -219,5 +219,11 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
             return INVALID_STAKING_ID;
         }
         return OK;
+    }
+
+    private boolean tooManyAutoAssociations(final int n) {
+        return n > MAX_CHARGEABLE_AUTO_ASSOCIATIONS
+                || (dynamicProperties.areTokenAssociationsLimited()
+                        && n > dynamicProperties.maxTokensPerAccount());
     }
 }

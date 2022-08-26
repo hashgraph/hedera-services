@@ -16,6 +16,7 @@
 package com.hedera.services.state.exports;
 
 import static com.hedera.services.context.primitives.StateView.doBoundedIteration;
+import static com.hedera.services.context.properties.PropertyNames.LEDGER_TOTAL_TINY_BAR_FLOAT;
 import static com.hedera.services.ledger.HederaLedger.ACCOUNT_ID_COMPARATOR;
 import static com.hedera.services.utils.EntityIdUtils.readableId;
 
@@ -102,7 +103,7 @@ public class SignedStateBalancesExporter implements BalancesExporter {
             final GlobalDynamicProperties dynamicProperties) {
         this.signer = signer;
         this.systemExits = systemExits;
-        this.expectedFloat = properties.getLongProperty("ledger.totalTinyBarFloat");
+        this.expectedFloat = properties.getLongProperty(LEDGER_TOTAL_TINY_BAR_FLOAT);
         this.dynamicProperties = dynamicProperties;
         exportPeriod = dynamicProperties.balancesExportPeriodSecs();
     }

@@ -15,6 +15,8 @@
  */
 package com.hedera.services.state.migration;
 
+import static com.hedera.services.context.properties.PropertyNames.LEDGER_TOTAL_TINY_BAR_FLOAT;
+
 import com.hedera.services.context.properties.BootstrapProperties;
 import com.hedera.services.state.merkle.MerkleStakingInfo;
 import com.hedera.services.utils.EntityNum;
@@ -32,7 +34,7 @@ public final class ReleaseTwentySevenMigration {
 
         final var numberOfNodes = addressBook.getSize();
         long maxStakePerNode =
-                bootstrapProperties.getLongProperty("ledger.totalTinyBarFloat") / numberOfNodes;
+                bootstrapProperties.getLongProperty(LEDGER_TOTAL_TINY_BAR_FLOAT) / numberOfNodes;
         long minStakePerNode = maxStakePerNode / 2;
         for (int i = 0; i < numberOfNodes; i++) {
             final var nodeNum = EntityNum.fromLong(addressBook.getAddress(i).getId());

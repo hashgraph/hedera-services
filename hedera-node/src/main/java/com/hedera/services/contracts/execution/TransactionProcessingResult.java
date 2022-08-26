@@ -15,28 +15,7 @@
  */
 package com.hedera.services.contracts.execution;
 
-/*
- * -
- * ‌
- * Hedera Services Node
- * ​
- * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
- * ​
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *       http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- * ‍
- *
- */
-
+import com.hedera.services.contracts.execution.traceability.SolidityAction;
 import com.hedera.services.state.submerkle.EvmFnResult;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -74,6 +53,7 @@ public class TransactionProcessingResult {
     private final Optional<Address> recipient;
     private final Optional<ExceptionalHaltReason> haltReason;
     private final Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> stateChanges;
+    private final List<SolidityAction> actions;
 
     private List<ContractID> createdContracts = Collections.emptyList();
 
@@ -83,7 +63,8 @@ public class TransactionProcessingResult {
             final long gasPrice,
             final Optional<Bytes> revertReason,
             final Optional<ExceptionalHaltReason> haltReason,
-            final Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> stateChanges) {
+            final Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> stateChanges,
+            final List<SolidityAction> actions) {
         return new TransactionProcessingResult(
                 Status.FAILED,
                 Collections.emptyList(),
@@ -94,7 +75,8 @@ public class TransactionProcessingResult {
                 Optional.empty(),
                 revertReason,
                 haltReason,
-                stateChanges);
+                stateChanges,
+                actions);
     }
 
     public static TransactionProcessingResult successful(
@@ -104,7 +86,8 @@ public class TransactionProcessingResult {
             final long gasPrice,
             final Bytes output,
             final Address recipient,
-            final Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> stateChanges) {
+            final Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> stateChanges,
+            final List<SolidityAction> actions) {
         return new TransactionProcessingResult(
                 Status.SUCCESSFUL,
                 logs,
@@ -115,7 +98,8 @@ public class TransactionProcessingResult {
                 Optional.of(recipient),
                 Optional.empty(),
                 Optional.empty(),
-                stateChanges);
+                stateChanges,
+                actions);
     }
 
     private TransactionProcessingResult(
@@ -128,7 +112,8 @@ public class TransactionProcessingResult {
             final Optional<Address> recipient,
             final Optional<Bytes> revertReason,
             final Optional<ExceptionalHaltReason> haltReason,
-            final Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> stateChanges) {
+            final Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> stateChanges,
+            final List<SolidityAction> actions) {
         this.logs = logs;
         this.output = output;
         this.status = status;
@@ -139,6 +124,7 @@ public class TransactionProcessingResult {
         this.haltReason = haltReason;
         this.revertReason = revertReason;
         this.stateChanges = stateChanges;
+        this.actions = actions;
     }
 
     /**
@@ -199,6 +185,10 @@ public class TransactionProcessingResult {
      */
     public Optional<ExceptionalHaltReason> getHaltReason() {
         return haltReason;
+    }
+
+    public List<SolidityAction> getActions() {
+        return actions;
     }
 
     public Optional<Bytes> getRevertReason() {
