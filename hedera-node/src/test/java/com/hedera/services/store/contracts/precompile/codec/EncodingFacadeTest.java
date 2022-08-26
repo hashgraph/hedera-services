@@ -29,6 +29,7 @@ import com.esaulpaugh.headlong.abi.Tuple;
 import com.esaulpaugh.headlong.abi.TupleType;
 import com.google.protobuf.ByteString;
 import com.hedera.services.utils.EntityIdUtils;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.CustomFee;
 import com.hederahashgraph.api.proto.java.Duration;
@@ -178,6 +179,10 @@ class EncodingFacadeTest {
     private static final Bytes RETURN_IS_TOKEN =
             Bytes.fromHexString(
                     "0x00000000000000000000000000000000000000000000000000000000000000160000000000000000000000000000000000000000000000000000000000000001");
+
+    private static final Bytes RETURN_GET_EXPIRY_INFO_FOR_TOKEN =
+            Bytes.fromHexString(
+                    "0x0000000000000000000000000000000000000000000000000000000000000016000000000000000000000000000000000000000000000000000000006368e20c00000000000000000000000000000000000000000000000000000000000008b4000000000000000000000000000000000000000000000000000000000076a700");
 
     private static final Bytes RETURN_GET_TOKEN_KEY =
             Bytes.fromHexString(
@@ -914,6 +919,17 @@ class EncodingFacadeTest {
         assertEquals(
                 BURN_FAILURE_FROM_TREASURY_NOT_OWNER,
                 subject.encodeBurnFailure(TREASURY_MUST_OWN_BURNED_NFT));
+    }
+
+    @Test
+    void decodeReturnResultForGetExpiryInfoForTokenSuccess() {
+        final var expiry = 1667817996L;
+        final var accountID =
+                AccountID.newBuilder().setShardNum(0).setRealmNum(0).setAccountNum(2228).build();
+        final var autoRenewPeriod = 7776000L;
+        final var expiryTokenWrapper = new TokenExpiryWrapper(expiry, accountID, autoRenewPeriod);
+        final var decodedResult = subject.encodeGetTokenExpiryInfo(expiryTokenWrapper);
+        assertEquals(RETURN_GET_EXPIRY_INFO_FOR_TOKEN, decodedResult);
     }
 
     private Key initializeKey(final byte[] ed25519KeyValue) {

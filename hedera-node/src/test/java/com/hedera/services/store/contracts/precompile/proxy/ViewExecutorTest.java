@@ -20,6 +20,7 @@ import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_GET_TOKEN_CUSTOM_FEES;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_GET_TOKEN_DEFAULT_FREEZE_STATUS;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_GET_TOKEN_DEFAULT_KYC_STATUS;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_GET_TOKEN_EXPIRY_INFO;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_GET_TOKEN_INFO;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_GET_TOKEN_KEY;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_GET_TOKEN_TYPE;
@@ -51,6 +52,7 @@ import com.hedera.services.store.contracts.precompile.codec.DecodingFacade;
 import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
 import com.hedera.services.store.contracts.precompile.codec.GetTokenDefaultFreezeStatusWrapper;
 import com.hedera.services.store.contracts.precompile.codec.GetTokenDefaultKycStatusWrapper;
+import com.hedera.services.store.contracts.precompile.codec.GetTokenExpiryInfoWrapper;
 import com.hedera.services.store.contracts.precompile.codec.GetTokenKeyWrapper;
 import com.hedera.services.store.contracts.precompile.codec.GrantRevokeKycWrapper;
 import com.hedera.services.store.contracts.precompile.codec.TokenFreezeUnfreezeWrapper;
@@ -387,6 +389,35 @@ class ViewExecutorTest {
 
         given(stateView.infoForToken(any())).willReturn(Optional.of(tokenInfo));
         given(stateView.infoForNft(any())).willReturn(Optional.empty());
+
+        assertEquals(Pair.of(gas, null), subject.computeCosted());
+        verify(frame).setState(MessageFrame.State.REVERT);
+    }
+
+    @Test
+    void computeGetTokenExpiryInfo() {
+        final var input = prerequisites(ABI_ID_GET_TOKEN_EXPIRY_INFO, fungibleTokenAddress);
+        final var tokenExpiryInfoEncoded =
+                Bytes.fromHexString(
+                        "0x0000000000000000000000000000000000000000000000000000000000000016000000000000000000000000000000000000000000000000000000006370f6ca00000000000000000000000000000000000000000000000000000000000004c2000000000000000000000000000000000000000000000000000000000076a700");
+
+        given(decodingFacade.decodeGetTokenExpiryInfo(input))
+                .willReturn(new GetTokenExpiryInfoWrapper(fungible));
+        given(stateView.infoForToken(fungible)).willReturn(Optional.of(tokenInfo));
+        given(stateView.tokenExists(fungible)).willReturn(true);
+        given(encodingFacade.encodeGetTokenExpiryInfo(any())).willReturn(tokenExpiryInfoEncoded);
+
+        assertEquals(Pair.of(gas, tokenExpiryInfoEncoded), subject.computeCosted());
+    }
+
+    @Test
+    void computeGetTokenExpiryInfoFailsAsExpected() {
+        final var input = prerequisites(ABI_ID_GET_TOKEN_EXPIRY_INFO, fungibleTokenAddress);
+
+        given(decodingFacade.decodeGetTokenExpiryInfo(input))
+                .willReturn(new GetTokenExpiryInfoWrapper(fungible));
+        given(stateView.infoForToken(fungible)).willReturn(Optional.empty());
+        given(stateView.tokenExists(fungible)).willReturn(true);
 
         assertEquals(Pair.of(gas, null), subject.computeCosted());
         verify(frame).setState(MessageFrame.State.REVERT);

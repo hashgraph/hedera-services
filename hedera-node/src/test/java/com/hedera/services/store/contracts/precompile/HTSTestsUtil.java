@@ -15,6 +15,8 @@
  */
 package com.hedera.services.store.contracts.precompile;
 
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT_VALUE;
+
 import com.google.protobuf.ByteString;
 import com.hedera.services.ledger.BalanceChange;
 import com.hedera.services.legacy.core.jproto.TxnReceipt;
@@ -26,6 +28,7 @@ import com.hedera.services.store.contracts.precompile.codec.DeleteWrapper;
 import com.hedera.services.store.contracts.precompile.codec.Dissociation;
 import com.hedera.services.store.contracts.precompile.codec.GetTokenDefaultFreezeStatusWrapper;
 import com.hedera.services.store.contracts.precompile.codec.GetTokenDefaultKycStatusWrapper;
+import com.hedera.services.store.contracts.precompile.codec.GetTokenExpiryInfoWrapper;
 import com.hedera.services.store.contracts.precompile.codec.GrantRevokeKycWrapper;
 import com.hedera.services.store.contracts.precompile.codec.MintWrapper;
 import com.hedera.services.store.contracts.precompile.codec.OwnerOfAndTokenURIWrapper;
@@ -37,6 +40,7 @@ import com.hedera.services.store.contracts.precompile.codec.TokenGetCustomFeesWr
 import com.hedera.services.store.contracts.precompile.codec.TokenInfoWrapper;
 import com.hedera.services.store.contracts.precompile.codec.TokenKeyWrapper;
 import com.hedera.services.store.contracts.precompile.codec.TokenTransferWrapper;
+import com.hedera.services.store.contracts.precompile.codec.TokenUpdateExpiryInfoWrapper;
 import com.hedera.services.store.contracts.precompile.codec.TokenUpdateWrapper;
 import com.hedera.services.store.contracts.precompile.codec.UnpauseWrapper;
 import com.hedera.services.store.contracts.precompile.codec.WipeWrapper;
@@ -104,6 +108,8 @@ public class HTSTestsUtil {
             Timestamp.newBuilder().setSeconds(TEST_CONSENSUS_TIME).build();
     public static final Bytes successResult = UInt256.valueOf(ResponseCodeEnum.SUCCESS_VALUE);
     public static final Bytes failResult = UInt256.valueOf(ResponseCodeEnum.FAIL_INVALID_VALUE);
+    public static final Bytes invalidAutoRenewAccountResult =
+            UInt256.valueOf(INVALID_AUTORENEW_ACCOUNT_VALUE);
     public static final Bytes invalidTokenIdResult =
             UInt256.valueOf(ResponseCodeEnum.INVALID_TOKEN_ID_VALUE);
     public static final Bytes invalidSerialNumberResult =
@@ -206,6 +212,14 @@ public class HTSTestsUtil {
             "Invalid operation for ERC-721 token!";
     public static final TokenGetCustomFeesWrapper customFeesWrapper =
             new TokenGetCustomFeesWrapper(token);
+    public static final GetTokenExpiryInfoWrapper getTokenExpiryInfoWrapper =
+            new GetTokenExpiryInfoWrapper(token);
+    public static final TokenUpdateExpiryInfoWrapper tokenUpdateExpiryInfoWrapper =
+            new TokenUpdateExpiryInfoWrapper(token, new TokenExpiryWrapper(442L, payer, 555L));
+    public static final TokenUpdateExpiryInfoWrapper
+            tokenUpdateExpiryInfoWrapperWithInvalidTokenID =
+                    new TokenUpdateExpiryInfoWrapper(
+                            null, new TokenExpiryWrapper(442L, payer, 555L));
 
     public static final Bytes ercTransferSuccessResult =
             Bytes.fromHexString(

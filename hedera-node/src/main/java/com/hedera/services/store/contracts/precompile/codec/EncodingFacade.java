@@ -371,6 +371,14 @@ public class EncodingFacade {
                 .build();
     }
 
+    public Bytes encodeGetTokenExpiryInfo(final TokenExpiryWrapper tokenExpiryWrapper) {
+        return functionResultBuilder()
+                .forFunction(FunctionType.HAPI_GET_TOKEN_EXPIRY_INFO)
+                .withStatus(SUCCESS.getNumber())
+                .withExpiry(tokenExpiryWrapper)
+                .build();
+    }
+
     private FunctionResultBuilder functionResultBuilder() {
         return new FunctionResultBuilder();
     }
@@ -402,6 +410,7 @@ public class EncodingFacade {
         private List<CustomFee> customFees;
         private boolean isToken;
         private int tokenType;
+        private Tuple tokenExpiryInfo;
         private Tuple keyValue;
 
         private FunctionResultBuilder forFunction(final FunctionType functionType) {
@@ -430,6 +439,7 @@ public class EncodingFacade {
                         case HAPI_GET_TOKEN_CUSTOM_FEES -> getTokenCustomFeesType;
                         case HAPI_GET_TOKEN_KEY -> getTokenKeyType;
                         case HAPI_GET_TOKEN_TYPE -> intPairTuple;
+                        case HAPI_GET_TOKEN_EXPIRY_INFO -> getTokenExpiryInfoType;
                         default -> notSpecifiedType;
                     };
 
@@ -561,6 +571,17 @@ public class EncodingFacade {
             return this;
         }
 
+        private FunctionResultBuilder withExpiry(final TokenExpiryWrapper tokenExpiryInfo) {
+            this.tokenExpiryInfo =
+                    Tuple.of(
+                            tokenExpiryInfo.second(),
+                            convertBesuAddressToHeadlongAddress(
+                                    EntityIdUtils.asTypedEvmAddress(
+                                            tokenExpiryInfo.autoRenewAccount())),
+                            tokenExpiryInfo.autoRenewPeriod());
+            return this;
+        }
+
         private FunctionResultBuilder withKey(KeyValueWrapper wrapper) {
             this.keyValue =
                     Tuple.of(
@@ -614,6 +635,7 @@ public class EncodingFacade {
                         case HAPI_GET_TOKEN_CUSTOM_FEES -> getTupleForTokenGetCustomFees();
                         case HAPI_IS_TOKEN -> Tuple.of(status, isToken);
                         case HAPI_GET_TOKEN_TYPE -> Tuple.of(status, tokenType);
+                        case HAPI_GET_TOKEN_EXPIRY_INFO -> getTupleForGetTokenExpiryInfo();
                         case HAPI_GET_TOKEN_KEY -> Tuple.of(status, keyValue);
                         default -> Tuple.of(status);
                     };
@@ -627,6 +649,10 @@ public class EncodingFacade {
 
         private Tuple getTupleForTokenGetCustomFees() {
             return getTupleForTokenCustomFees(status);
+        }
+
+        private Tuple getTupleForGetTokenExpiryInfo() {
+            return getTupleForTokenExpiryInfo(status);
         }
 
         private Tuple getTupleForGetFungibleTokenInfo() {
@@ -682,6 +708,10 @@ public class EncodingFacade {
                     fixedFees.toArray(new Tuple[fixedFees.size()]),
                     fractionalFees.toArray(new Tuple[fractionalFees.size()]),
                     royaltyFees.toArray(new Tuple[royaltyFees.size()]));
+        }
+
+        private Tuple getTupleForTokenExpiryInfo(final int responseCode) {
+            return Tuple.of(responseCode, tokenExpiryInfo);
         }
 
         private void extractAllFees(

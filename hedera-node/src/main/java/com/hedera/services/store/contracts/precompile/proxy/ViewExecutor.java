@@ -21,6 +21,7 @@ import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_GET_TOKEN_CUSTOM_FEES;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_GET_TOKEN_DEFAULT_FREEZE_STATUS;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_GET_TOKEN_DEFAULT_KYC_STATUS;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_GET_TOKEN_EXPIRY_INFO;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_GET_TOKEN_INFO;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_GET_TOKEN_KEY;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_GET_TOKEN_TYPE;
@@ -37,6 +38,7 @@ import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.store.contracts.WorldLedgers;
 import com.hedera.services.store.contracts.precompile.codec.DecodingFacade;
 import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
+import com.hedera.services.store.contracts.precompile.codec.TokenExpiryWrapper;
 import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.NftID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -169,6 +171,25 @@ public class ViewExecutor {
                         ResponseCodeEnum.INVALID_TOKEN_ID);
                 final var token = stateView.tokens().get(EntityNum.fromTokenId(wrapper.tokenID()));
                 return encoder.encodeGetTokenType(token.tokenType().ordinal());
+            }
+            case ABI_ID_GET_TOKEN_EXPIRY_INFO -> {
+                final var wrapper = decoder.decodeGetTokenExpiryInfo(input);
+                validateTrueOrRevert(
+                        stateView.tokenExists(wrapper.tokenID()),
+                        ResponseCodeEnum.INVALID_TOKEN_ID);
+                final var tokenInfo = stateView.infoForToken(wrapper.tokenID()).orElse(null);
+
+                if (tokenInfo == null) {
+                    throw new InvalidTransactionException(ResponseCodeEnum.INVALID_TOKEN_ID, true);
+                }
+
+                final var expiryInfo =
+                        new TokenExpiryWrapper(
+                                tokenInfo.getExpiry().getSeconds(),
+                                tokenInfo.getAutoRenewAccount(),
+                                tokenInfo.getAutoRenewPeriod().getSeconds());
+
+                return encoder.encodeGetTokenExpiryInfo(expiryInfo);
             }
             case ABI_ID_GET_TOKEN_KEY -> {
                 final var wrapper = decoder.decodeGetTokenKey(input);

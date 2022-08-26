@@ -62,9 +62,11 @@ import com.hedera.services.store.contracts.precompile.codec.KeyValueWrapper;
 import com.hedera.services.store.contracts.precompile.codec.MintWrapper;
 import com.hedera.services.store.contracts.precompile.codec.PauseWrapper;
 import com.hedera.services.store.contracts.precompile.codec.SetApprovalForAllWrapper;
+import com.hedera.services.store.contracts.precompile.codec.TokenExpiryWrapper;
 import com.hedera.services.store.contracts.precompile.codec.TokenFreezeUnfreezeWrapper;
 import com.hedera.services.store.contracts.precompile.codec.TokenKeyWrapper;
 import com.hedera.services.store.contracts.precompile.codec.TokenTransferWrapper;
+import com.hedera.services.store.contracts.precompile.codec.TokenUpdateExpiryInfoWrapper;
 import com.hedera.services.store.contracts.precompile.codec.TokenUpdateKeysWrapper;
 import com.hedera.services.store.contracts.precompile.codec.UnpauseWrapper;
 import com.hedera.services.store.contracts.precompile.codec.WipeWrapper;
@@ -1118,6 +1120,62 @@ class SyntheticTxnFactoryTest {
                 .setAccountID(AccountID.newBuilder().setAccountNum(num).build())
                 .setAmount(amount)
                 .build();
+    }
+
+    @Test
+    void createsExpectedUpdateTokenExpiryInfo() {
+        final var updateExpiryInfo =
+                new TokenUpdateExpiryInfoWrapper(token, new TokenExpiryWrapper(442L, payer, 555L));
+
+        final var result = subject.createTokenUpdateExpiryInfo(updateExpiryInfo);
+        final var txnBody = result.build();
+
+        assertEquals(token, txnBody.getTokenUpdate().getToken());
+        assertEquals(442L, txnBody.getTokenUpdate().getExpiry().getSeconds());
+        assertEquals(payer, txnBody.getTokenUpdate().getAutoRenewAccount());
+        assertEquals(555L, txnBody.getTokenUpdate().getAutoRenewPeriod().getSeconds());
+    }
+
+    @Test
+    void createsExpectedUpdateTokenExpiryInfoWithZeroExpiry() {
+        final var updateExpiryInfo =
+                new TokenUpdateExpiryInfoWrapper(token, new TokenExpiryWrapper(0L, payer, 555L));
+
+        final var result = subject.createTokenUpdateExpiryInfo(updateExpiryInfo);
+        final var txnBody = result.build();
+
+        assertEquals(token, txnBody.getTokenUpdate().getToken());
+        assertEquals(0L, txnBody.getTokenUpdate().getExpiry().getSeconds());
+        assertEquals(payer, txnBody.getTokenUpdate().getAutoRenewAccount());
+        assertEquals(555L, txnBody.getTokenUpdate().getAutoRenewPeriod().getSeconds());
+    }
+
+    @Test
+    void createsExpectedUpdateTokenExpiryInfoWithZeroAutoRenewPeriod() {
+        final var updateExpiryInfo =
+                new TokenUpdateExpiryInfoWrapper(token, new TokenExpiryWrapper(442L, payer, 0L));
+
+        final var result = subject.createTokenUpdateExpiryInfo(updateExpiryInfo);
+        final var txnBody = result.build();
+
+        assertEquals(token, txnBody.getTokenUpdate().getToken());
+        assertEquals(442L, txnBody.getTokenUpdate().getExpiry().getSeconds());
+        assertEquals(payer, txnBody.getTokenUpdate().getAutoRenewAccount());
+        assertEquals(0L, txnBody.getTokenUpdate().getAutoRenewPeriod().getSeconds());
+    }
+
+    @Test
+    void createsExpectedUpdateTokenExpiryInfoWithNoAutoRenewAccount() {
+        final var updateExpiryInfo =
+                new TokenUpdateExpiryInfoWrapper(token, new TokenExpiryWrapper(442L, null, 555L));
+
+        final var result = subject.createTokenUpdateExpiryInfo(updateExpiryInfo);
+        final var txnBody = result.build();
+
+        assertEquals(token, txnBody.getTokenUpdate().getToken());
+        assertEquals(442L, txnBody.getTokenUpdate().getExpiry().getSeconds());
+        assertTrue(txnBody.getTokenUpdate().getAutoRenewAccount().toString().isEmpty());
+        assertEquals(555L, txnBody.getTokenUpdate().getAutoRenewPeriod().getSeconds());
     }
 
     private AccountAmount aaWith(final AccountID account, final long amount) {

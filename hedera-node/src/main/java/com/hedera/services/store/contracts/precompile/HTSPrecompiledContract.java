@@ -60,6 +60,7 @@ import com.hedera.services.store.contracts.precompile.impl.GetApprovedPrecompile
 import com.hedera.services.store.contracts.precompile.impl.GetTokenDefaultFreezeStatus;
 import com.hedera.services.store.contracts.precompile.impl.GetTokenDefaultKycStatus;
 import com.hedera.services.store.contracts.precompile.impl.GetTokenKeyPrecompile;
+import com.hedera.services.store.contracts.precompile.impl.GetTokenExpiryInfoPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.GetTokenTypePrecompile;
 import com.hedera.services.store.contracts.precompile.impl.GrantKycPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.IsApprovedForAllPrecompile;
@@ -86,6 +87,7 @@ import com.hedera.services.store.contracts.precompile.impl.TotalSupplyPrecompile
 import com.hedera.services.store.contracts.precompile.impl.TransferPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.UnfreezeTokenPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.UnpausePrecompile;
+import com.hedera.services.store.contracts.precompile.impl.UpdateTokenExpiryInfoPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.WipeFungiblePrecompile;
 import com.hedera.services.store.contracts.precompile.impl.WipeNonFungiblePrecompile;
 import com.hedera.services.store.contracts.precompile.utils.DescriptorUtils;
@@ -779,6 +781,25 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
                             decoder,
                             precompilePricingUtils,
                             currentView);
+                    case AbiConstants
+                            .ABI_ID_GET_TOKEN_EXPIRY_INFO -> new GetTokenExpiryInfoPrecompile(
+                            null,
+                            syntheticTxnFactory,
+                            ledgers,
+                            encoder,
+                            decoder,
+                            precompilePricingUtils,
+                            currentView);
+                    case AbiConstants
+                            .ABI_ID_UPDATE_TOKEN_EXPIRY_INFO -> new UpdateTokenExpiryInfoPrecompile(
+                            ledgers,
+                            updater.aliases(),
+                            decoder,
+                            sigsVerifier,
+                            sideEffectsTracker,
+                            syntheticTxnFactory,
+                            infrastructureFactory,
+                            precompilePricingUtils);
                     default -> null;
                 };
         if (precompile != null) {

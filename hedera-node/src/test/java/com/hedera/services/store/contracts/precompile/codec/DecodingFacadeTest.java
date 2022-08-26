@@ -306,6 +306,14 @@ class DecodingFacadeTest {
             Bytes.fromHexString(
                     "0x93272baf0000000000000000000000000000000000000000000000000000000000000b0d");
 
+    public static final Bytes GET_EXPIRY_INFO_FOR_TOKEN_INPUT =
+            Bytes.fromHexString(
+                    "0xd614cdb800000000000000000000000000000000000000000000000000000000000008c1");
+
+    public static final Bytes UPDATE_EXPIRY_INFO_FOR_TOKEN_INPUT =
+            Bytes.fromHexString(
+                    "0x593d6e8200000000000000000000000000000000000000000000000000000000000008d300000000000000000000000000000000000000000000000000000000bbf7edc700000000000000000000000000000000000000000000000000000000000008d000000000000000000000000000000000000000000000000000000000002820a8");
+
     @Mock private WorldLedgers ledgers;
 
     @Test
@@ -1072,6 +1080,24 @@ class DecodingFacadeTest {
                 subject.decodeUpdateTokenInfo(UPDATE_FUNGIBLE_TOKEN_INPUT, identity());
 
         assertExpectedFungibleTokenUpdateStruct(decodedInput);
+    }
+
+    @Test
+    void decodeGetExpiryInfoForTokenInput() {
+        final var decodedInput = subject.decodeGetTokenExpiryInfo(GET_EXPIRY_INFO_FOR_TOKEN_INPUT);
+
+        assertTrue(decodedInput.tokenID().getTokenNum() > 0);
+    }
+
+    @Test
+    void decodeUpdateExpiryInfoForTokenInput() {
+        final var decodedInput =
+                subject.decodeUpdateTokenExpiryInfo(UPDATE_EXPIRY_INFO_FOR_TOKEN_INPUT, a -> a);
+
+        assertTrue(decodedInput.tokenID().getTokenNum() > 0);
+        assertTrue(decodedInput.expiry().second() > 0);
+        assertTrue(decodedInput.expiry().autoRenewAccount().getAccountNum() > 0);
+        assertTrue(decodedInput.expiry().autoRenewPeriod() > 0);
     }
 
     @Test

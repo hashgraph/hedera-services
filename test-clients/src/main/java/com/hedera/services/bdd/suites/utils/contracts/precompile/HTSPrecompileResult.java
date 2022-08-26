@@ -15,7 +15,27 @@
  */
 package com.hedera.services.bdd.suites.utils.contracts.precompile;
 
-import static com.hedera.services.contracts.ParsingConstants.*;
+import static com.hedera.services.contracts.ParsingConstants.ADDRESS;
+import static com.hedera.services.contracts.ParsingConstants.ARRAY_BRACKETS;
+import static com.hedera.services.contracts.ParsingConstants.BYTES32;
+import static com.hedera.services.contracts.ParsingConstants.EXPIRY;
+import static com.hedera.services.contracts.ParsingConstants.FIXED_FEE;
+import static com.hedera.services.contracts.ParsingConstants.FRACTIONAL_FEE;
+import static com.hedera.services.contracts.ParsingConstants.HEDERA_TOKEN;
+import static com.hedera.services.contracts.ParsingConstants.RESPONSE_STATUS_AT_BEGINNING;
+import static com.hedera.services.contracts.ParsingConstants.ROYALTY_FEE;
+import static com.hedera.services.contracts.ParsingConstants.addressTuple;
+import static com.hedera.services.contracts.ParsingConstants.bigIntegerTuple;
+import static com.hedera.services.contracts.ParsingConstants.booleanTuple;
+import static com.hedera.services.contracts.ParsingConstants.burnReturnType;
+import static com.hedera.services.contracts.ParsingConstants.decimalsType;
+import static com.hedera.services.contracts.ParsingConstants.hapiAllowanceOfType;
+import static com.hedera.services.contracts.ParsingConstants.hapiGetApprovedType;
+import static com.hedera.services.contracts.ParsingConstants.intBoolTuple;
+import static com.hedera.services.contracts.ParsingConstants.intPairTuple;
+import static com.hedera.services.contracts.ParsingConstants.mintReturnType;
+import static com.hedera.services.contracts.ParsingConstants.notSpecifiedType;
+import static com.hedera.services.contracts.ParsingConstants.stringTuple;
 
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.esaulpaugh.headlong.abi.TupleType;
@@ -23,7 +43,15 @@ import com.hedera.services.bdd.suites.contract.Utils;
 import com.hedera.services.bdd.suites.utils.contracts.ContractCallResult;
 import com.hedera.services.contracts.ParsingConstants;
 import com.hedera.services.contracts.ParsingConstants.FunctionType;
-import com.hederahashgraph.api.proto.java.*;
+import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.CustomFee;
+import com.hederahashgraph.api.proto.java.FixedFee;
+import com.hederahashgraph.api.proto.java.FractionalFee;
+import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.RoyaltyFee;
+import com.hederahashgraph.api.proto.java.TokenInfo;
+import com.hederahashgraph.api.proto.java.TokenNftInfo;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
@@ -40,6 +68,8 @@ public class HTSPrecompileResult implements ContractCallResult {
             FRACTIONAL_FEE.replace(ADDRESS_TYPE, BYTES_32_TYPE);
     public static final String ROYALTY_FEE_REPLACED_ADDRESS =
             ROYALTY_FEE.replace(ADDRESS_TYPE, BYTES_32_TYPE);
+    public static final String EXPIRY_REPLACED_ADDRESS =
+            EXPIRY.replace(ADDRESS_TYPE, BYTES_32_TYPE);
     public static final String TOKEN_INFO_REPLACED_ADDRESS =
             "("
                     + HEDERA_TOKEN.replace(removeBrackets(ADDRESS), removeBrackets(BYTES32))
@@ -82,6 +112,8 @@ public class HTSPrecompileResult implements ContractCallResult {
                             + ROYALTY_FEE_REPLACED_ADDRESS
                             + ARRAY_BRACKETS
                             + ")");
+    public static final TupleType getTokenExpiryInfoTypeReplacedAddress =
+            TupleType.parse(RESPONSE_STATUS_AT_BEGINNING + EXPIRY_REPLACED_ADDRESS + ")");
 
     public static final TupleType getTokenKeyReplacedAddress =
             TupleType.parse(RESPONSE_STATUS_AT_BEGINNING + KEY_VALUE_REPLACED_ADDRESS + ")");
@@ -115,6 +147,9 @@ public class HTSPrecompileResult implements ContractCallResult {
     private boolean isToken;
     private int tokenType;
     private Key key;
+    private long expiry;
+    private long autoRenewPeriod;
+    private AccountID autoRenewAccount;
 
     public HTSPrecompileResult forFunction(final FunctionType functionType) {
         tupleType =
@@ -140,6 +175,7 @@ public class HTSPrecompileResult implements ContractCallResult {
                     case HAPI_GET_TOKEN_CUSTOM_FEES -> tokenGetCustomFeesReplacedAddress;
                     case HAPI_GET_TOKEN_KEY -> getTokenKeyReplacedAddress;
                     case HAPI_GET_TOKEN_TYPE -> intPairTuple;
+                    case HAPI_GET_TOKEN_EXPIRY_INFO -> getTokenExpiryInfoTypeReplacedAddress;
                     default -> notSpecifiedType;
                 };
 
@@ -246,6 +282,14 @@ public class HTSPrecompileResult implements ContractCallResult {
         return this;
     }
 
+    public HTSPrecompileResult withExpiry(
+            final long expiry, final AccountID autoRenewAccount, final long autoRenewPeriod) {
+        this.expiry = expiry;
+        this.autoRenewAccount = autoRenewAccount;
+        this.autoRenewPeriod = autoRenewPeriod;
+        return this;
+    }
+
     public HTSPrecompileResult withTokenDefaultFreezeStatus(
             final boolean tokenDefaultFreezeStatus) {
         this.tokenDefaultFreezeStatus = tokenDefaultFreezeStatus;
@@ -317,6 +361,7 @@ public class HTSPrecompileResult implements ContractCallResult {
                     case HAPI_GET_TOKEN_CUSTOM_FEES -> getTupleForTokenGetCustomFees();
                     case HAPI_IS_TOKEN -> Tuple.of(status.getNumber(), isToken);
                     case HAPI_GET_TOKEN_TYPE -> Tuple.of(status.getNumber(), tokenType);
+                    case HAPI_GET_TOKEN_EXPIRY_INFO -> getTupleForTokenGetExpiryInfo();
                     case HAPI_GET_TOKEN_KEY -> getKeyValueTupleWithResponseCode(
                             status.getNumber(), key);
                     default -> Tuple.of(status.getNumber());
@@ -351,6 +396,10 @@ public class HTSPrecompileResult implements ContractCallResult {
         return getTupleForTokenCustomFees(status.getNumber());
     }
 
+    private Tuple getTupleForTokenGetExpiryInfo() {
+        return getTupleForTokenExpiryInfo(status.getNumber());
+    }
+
     private Tuple getTupleForTokenCustomFees(final int responseCode) {
         final var fixedFees = new ArrayList<Tuple>();
         final var fractionalFees = new ArrayList<Tuple>();
@@ -364,6 +413,15 @@ public class HTSPrecompileResult implements ContractCallResult {
                 fixedFees.toArray(new Tuple[fixedFees.size()]),
                 fractionalFees.toArray(new Tuple[fractionalFees.size()]),
                 royaltyFees.toArray(new Tuple[royaltyFees.size()]));
+    }
+
+    private Tuple getTupleForTokenExpiryInfo(final int responseCode) {
+        return Tuple.of(
+                responseCode,
+                Tuple.of(
+                        expiry,
+                        expandByteArrayTo32Length(Utils.asAddress(autoRenewAccount)),
+                        autoRenewPeriod));
     }
 
     private void extractFees(
@@ -434,8 +492,8 @@ public class HTSPrecompileResult implements ContractCallResult {
     }
 
     private Tuple getHederaTokenTuple() {
-        final var expiry = tokenInfo.getExpiry().getSeconds();
-        final var autoRenewPeriod = tokenInfo.getAutoRenewPeriod().getSeconds();
+        expiry = tokenInfo.getExpiry().getSeconds();
+        autoRenewPeriod = tokenInfo.getAutoRenewPeriod().getSeconds();
         final var expiryTuple =
                 Tuple.of(
                         expiry,

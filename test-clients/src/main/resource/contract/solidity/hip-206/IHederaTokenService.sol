@@ -735,6 +735,14 @@ interface IHederaTokenService {
         external
         returns (int64 responseCode);
 
+    /// Query token expiry info
+    /// @param token The token address to check
+    /// @return responseCode The response code for the status of the request. SUCCESS is 22.
+    /// @return expiry Expiry info for `token`
+    function getTokenExpiryInfo(address token)
+    external
+    returns (int64 responseCode, Expiry memory expiry);
+
     /// Operation to update token keys
     /// @param token The token address
     /// @param keys The token keys
