@@ -2,7 +2,7 @@
 
 ## Purpose
 Account aliases allow an account to be referenced via a different id than the `<shard>.<realm>.<num>` accountId format which is native to the Hedera ledger.
-As part of [HIP 32](https://github.com/hashgraph/hedera-improvement-proposal/blob/master/HIP/hip-32.md) the functionality was made available via teh auto-create flow in which an ED25519 or ECDSA public key was provided and used as the alias.
+As part of [HIP 32](https://github.com/hashgraph/hedera-improvement-proposal/blob/master/HIP/hip-32.md) the functionality was made available via the auto-create flow in which an ED25519 or ECDSA public key was provided and used as the alias.
 
 To support greater scenario especially smart contract related scenarios for ECDSA based key the ledger needs to support additional ways of setting the alias at creation.
 
