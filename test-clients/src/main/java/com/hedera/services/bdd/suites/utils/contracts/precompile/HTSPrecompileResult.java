@@ -15,7 +15,27 @@
  */
 package com.hedera.services.bdd.suites.utils.contracts.precompile;
 
-import static com.hedera.services.contracts.ParsingConstants.*;
+import static com.hedera.services.contracts.ParsingConstants.ADDRESS;
+import static com.hedera.services.contracts.ParsingConstants.ARRAY_BRACKETS;
+import static com.hedera.services.contracts.ParsingConstants.BYTES32;
+import static com.hedera.services.contracts.ParsingConstants.EXPIRY;
+import static com.hedera.services.contracts.ParsingConstants.FIXED_FEE;
+import static com.hedera.services.contracts.ParsingConstants.FRACTIONAL_FEE;
+import static com.hedera.services.contracts.ParsingConstants.HEDERA_TOKEN;
+import static com.hedera.services.contracts.ParsingConstants.RESPONSE_STATUS_AT_BEGINNING;
+import static com.hedera.services.contracts.ParsingConstants.ROYALTY_FEE;
+import static com.hedera.services.contracts.ParsingConstants.addressTuple;
+import static com.hedera.services.contracts.ParsingConstants.bigIntegerTuple;
+import static com.hedera.services.contracts.ParsingConstants.booleanTuple;
+import static com.hedera.services.contracts.ParsingConstants.burnReturnType;
+import static com.hedera.services.contracts.ParsingConstants.decimalsType;
+import static com.hedera.services.contracts.ParsingConstants.hapiAllowanceOfType;
+import static com.hedera.services.contracts.ParsingConstants.hapiGetApprovedType;
+import static com.hedera.services.contracts.ParsingConstants.intBoolTuple;
+import static com.hedera.services.contracts.ParsingConstants.intPairTuple;
+import static com.hedera.services.contracts.ParsingConstants.mintReturnType;
+import static com.hedera.services.contracts.ParsingConstants.notSpecifiedType;
+import static com.hedera.services.contracts.ParsingConstants.stringTuple;
 
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.esaulpaugh.headlong.abi.TupleType;
@@ -23,7 +43,15 @@ import com.hedera.services.bdd.suites.contract.Utils;
 import com.hedera.services.bdd.suites.utils.contracts.ContractCallResult;
 import com.hedera.services.contracts.ParsingConstants;
 import com.hedera.services.contracts.ParsingConstants.FunctionType;
-import com.hederahashgraph.api.proto.java.*;
+import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.CustomFee;
+import com.hederahashgraph.api.proto.java.FixedFee;
+import com.hederahashgraph.api.proto.java.FractionalFee;
+import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.RoyaltyFee;
+import com.hederahashgraph.api.proto.java.TokenInfo;
+import com.hederahashgraph.api.proto.java.TokenNftInfo;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
@@ -449,13 +477,13 @@ public class HTSPrecompileResult implements ContractCallResult {
     }
 
     private Tuple getHederaTokenTuple() {
-        final var expiry = tokenInfo.getExpiry().getSeconds();
-        final var autoRenewPeriod = tokenInfo.getAutoRenewPeriod().getSeconds();
+        final var tokenInfoExpiry = tokenInfo.getExpiry().getSeconds();
+        final var tokenInfoAutoRenewPeriod = tokenInfo.getAutoRenewPeriod().getSeconds();
         final var expiryTuple =
                 Tuple.of(
-                        expiry,
+                    tokenInfoExpiry,
                         expandByteArrayTo32Length(Utils.asAddress(tokenInfo.getAutoRenewAccount())),
-                        autoRenewPeriod);
+                    tokenInfoAutoRenewPeriod);
 
         return Tuple.of(
                 tokenInfo.getName(),
