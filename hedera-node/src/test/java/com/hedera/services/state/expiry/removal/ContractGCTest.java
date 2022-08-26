@@ -86,7 +86,6 @@ class ContractGCTest {
         given(expiryThrottle.allow(BYTECODE_REMOVAL_WORK)).willReturn(true);
         given(expiryThrottle.allow(NEXT_SLOT_REMOVAL_WORK)).willReturn(true);
         given(expiryThrottle.allow(ONLY_SLOT_REMOVAL_WORK)).willReturn(true);
-        given(dynamicProperties.getMaxPurgedKvPairsPerTouch()).willReturn(10);
         given(
                         removalFacilitation.removeNext(
                                 eq(rootKey), eq(rootKey), any(ContractStorageListMutation.class)))
@@ -106,28 +105,8 @@ class ContractGCTest {
     }
 
     @Test
-    void removesNoMoreThanAllowedKvPairs() {
-        given(expiryThrottle.allow(ROOT_KEY_UPDATE_WORK)).willReturn(true);
-        given(expiryThrottle.allow(NEXT_SLOT_REMOVAL_WORK)).willReturn(true);
-        given(expiryThrottle.allow(ONLY_SLOT_REMOVAL_WORK)).willReturn(true);
-        given(dynamicProperties.getMaxPurgedKvPairsPerTouch()).willReturn(1);
-        givenMutableContract(contractSomeKvPairs);
-        given(
-                        removalFacilitation.removeNext(
-                                eq(rootKey), eq(rootKey), any(ContractStorageListMutation.class)))
-                .willReturn(interKey);
-
-        final var done = subject.expireBestEffort(contractNum, contractSomeKvPairs);
-
-        assertFalse(done);
-        assertEquals(2, contractSomeKvPairs.getNumContractKvPairs());
-        assertEquals(interKey, contractSomeKvPairs.getFirstContractStorageKey());
-    }
-
-    @Test
     void reclaimsThrottleCapacityIfNoSlotsCanBeRemoved() {
         given(expiryThrottle.allow(ROOT_KEY_UPDATE_WORK)).willReturn(true);
-        given(dynamicProperties.getMaxPurgedKvPairsPerTouch()).willReturn(1);
 
         final var done = subject.expireBestEffort(contractNum, contractSomeKvPairs);
 

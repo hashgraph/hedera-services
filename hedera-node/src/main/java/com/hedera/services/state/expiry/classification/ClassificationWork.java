@@ -93,7 +93,9 @@ public class ClassificationWork {
             }
 
             if (payer.getBalance() > 0) {
-               return isContract ? EXPIRED_CONTRACT_READY_TO_RENEW : EXPIRED_ACCOUNT_READY_TO_RENEW;
+                return isContract
+                        ? EXPIRED_CONTRACT_READY_TO_RENEW
+                        : EXPIRED_ACCOUNT_READY_TO_RENEW;
             }
 
             // The effective payer for the expired crypto account has zero balance
@@ -110,7 +112,6 @@ public class ClassificationWork {
         }
     }
 
-
     public EntityNum getLastClassifiedNum() {
         return lastClassifiedNum;
     }
@@ -118,6 +119,7 @@ public class ClassificationWork {
     public MerkleAccount getLastClassified() {
         return lastClassified;
     }
+
     public EntityNum getPayerNumForLastClassified() {
         return payerNum;
     }

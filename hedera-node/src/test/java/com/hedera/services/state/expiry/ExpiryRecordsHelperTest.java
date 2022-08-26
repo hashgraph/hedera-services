@@ -21,7 +21,6 @@ import static com.hedera.services.utils.MiscUtils.*;
 import static com.hedera.test.utils.TxnUtils.exchangeOf;
 import static com.hedera.test.utils.TxnUtils.ttlOf;
 import static java.util.stream.Collectors.toList;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;

@@ -15,19 +15,6 @@
  */
 package com.hedera.services.state.expiry;
 
-import com.google.common.annotations.VisibleForTesting;
-import com.hedera.services.state.expiry.classification.ClassificationWork;
-import com.hedera.services.state.expiry.removal.RemovalWork;
-import com.hedera.services.state.expiry.renewal.RenewalWork;
-import com.hedera.services.utils.EntityNum;
-
-import javax.inject.Inject;
-import javax.inject.Singleton;
-import java.time.Instant;
-
-import static com.hedera.services.state.expiry.EntityProcessResult.NOTHING_TO_DO;
-import static com.hedera.services.state.expiry.EntityProcessResult.STILL_MORE_TO_DO;
-
 /** Expiry event with the id and expiration time */
 public record ExpiryEvent<K>(K id, long expiry) {
     boolean isExpiredAt(long now) {

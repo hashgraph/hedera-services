@@ -24,7 +24,6 @@ import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.submerkle.CurrencyAdjustments;
-import com.hedera.services.throttling.ExpiryThrottle;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
 import com.swirlds.merkle.map.MerkleMap;
@@ -35,29 +34,22 @@ import javax.inject.Singleton;
 
 @Singleton
 public class TreasuryReturnHelper {
-    private final ExpiryThrottle expiryThrottle;
-    private final Supplier<MerkleMap<EntityNum, MerkleToken>> tokens;
     private final Supplier<MerkleMap<EntityNumPair, MerkleTokenRelStatus>> tokenRels;
 
     @Inject
     public TreasuryReturnHelper(
-            final ExpiryThrottle expiryThrottle,
-            final Supplier<MerkleMap<EntityNum, MerkleToken>> tokens,
             final Supplier<MerkleMap<EntityNumPair, MerkleTokenRelStatus>> tokenRels) {
-        this.tokens = tokens;
         this.tokenRels = tokenRels;
-        this.expiryThrottle = expiryThrottle;
     }
 
     void updateFungibleReturns(
             final EntityNum expiredAccountNum,
             final EntityNum tokenNum,
+            final MerkleToken token,
             final long balance,
             final List<CurrencyAdjustments> returnTransfers) {
         var treasury = MISSING_ENTITY_ID;
-        final var curTokens = tokens.get();
-        final var token = curTokens.get(tokenNum);
-        if (token != null && token.tokenType() == FUNGIBLE_COMMON && !token.isDeleted()) {
+        if (!token.isDeleted()) {
             treasury = token.treasury();
         }
 
@@ -66,32 +58,11 @@ public class TreasuryReturnHelper {
                     new CurrencyAdjustments(
                             new long[] {-balance}, new long[] {expiredAccountNum.longValue()});
             returnTransfers.add(returnTransfer);
-            // We didn't actually have to do the treasury balance update
-            expiryThrottle.reclaimLastAllowedUse();
         } else {
             final var treasuryNum = treasury.asNum();
             addProperReturn(expiredAccountNum, treasuryNum, balance, returnTransfers);
             incrementBalance(treasuryNum, tokenNum, balance);
         }
-    }
-
-    EntityNumPair updateNftReturns(
-            final EntityNumPair nftKey,
-            final MerkleMap<EntityNumPair, MerkleUniqueToken> currUniqueTokens) {
-        final var curTokens = tokens.get();
-        final var tokenNum = nftKey.getHiOrderAsNum();
-        final var token = curTokens.get(tokenNum);
-        final var uniqueToken = currUniqueTokens.getForModify(nftKey);
-        if (token != null && token.tokenType() == NON_FUNGIBLE_UNIQUE && uniqueToken != null) {
-            if (token.isDeleted()) {
-                currUniqueTokens.remove(nftKey);
-            } else {
-                uniqueToken.setOwner(MISSING_ENTITY_ID);
-            }
-            final var nextKey = uniqueToken.getNext();
-            return nextKey == MISSING_NFT_NUM_PAIR ? null : nextKey.asEntityNumPair();
-        }
-        return null;
     }
 
     private void incrementBalance(

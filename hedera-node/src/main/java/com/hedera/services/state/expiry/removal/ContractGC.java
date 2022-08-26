@@ -72,11 +72,9 @@ public class ContractGC {
             final EntityNum expiredContractNum, final MerkleAccount contract) {
         final var numKvPairs = contract.getNumContractKvPairs();
         if (numKvPairs > 0 && expiryThrottle.allow(ROOT_KEY_UPDATE_WORK)) {
-            final var maxPairs =
-                    Math.min(numKvPairs, dynamicProperties.getMaxPurgedKvPairsPerTouch());
             final var slotRemovals =
                     removeKvPairs(
-                            maxPairs,
+                            numKvPairs,
                             expiredContractNum,
                             contract.getFirstContractStorageKey(),
                             storage.get());

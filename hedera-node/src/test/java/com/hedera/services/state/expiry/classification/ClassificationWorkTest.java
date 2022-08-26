@@ -61,8 +61,7 @@ class ClassificationWorkTest {
 
     @Test
     void classifiesNoCapacityToCheck() {
-        assertEquals(
-                COME_BACK_LATER, subject.classify(EntityNum.fromLong(4L), now));
+        assertEquals(COME_BACK_LATER, subject.classify(EntityNum.fromLong(4L), now));
     }
 
     @Test
@@ -170,8 +169,7 @@ class ClassificationWorkTest {
 
     @Test
     void abandonsClassifyingContractIfNoCapacity() {
-        given(expiryThrottle.allow(eq(CLASSIFICATION_WORK), any(Instant.class)))
-                .willReturn(true);
+        given(expiryThrottle.allow(eq(CLASSIFICATION_WORK), any(Instant.class))).willReturn(true);
         given(expiryThrottle.allow(eq(CLASSIFICATION_WORK))).willReturn(false);
         givenPresent(brokeExpiredNum, expiredContractZeroBalance);
 
@@ -225,7 +223,9 @@ class ClassificationWorkTest {
         assertEquals(
                 EXPIRED_ACCOUNT_READY_TO_RENEW,
                 subject.classify(EntityNum.fromLong(fundedExpiredAccountNum), now));
-        assertEquals(EntityNum.fromLong(fundedExpiredAccountNum), subject.getPayerNumForLastClassified());
+        assertEquals(
+                EntityNum.fromLong(fundedExpiredAccountNum),
+                subject.getPayerNumForLastClassified());
         // and:
         assertEquals(expiredAccountNonZeroBalance, subject.getLastClassified());
     }

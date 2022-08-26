@@ -41,7 +41,6 @@ import com.hedera.test.factories.accounts.MerkleAccountFactory;
 import com.swirlds.merkle.map.MerkleMap;
 import java.time.Instant;
 import java.util.List;
-
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -112,7 +111,9 @@ class AutoExpiryCycleTest {
 
     private void setUpPreRequisites() {
         lookup = new EntityLookup(() -> accounts);
-        renewalWork = new RenewalHelper(lookup, expiryThrottle, classifier, dynamicProperties, fees, recordsHelper);
+        renewalWork =
+                new RenewalHelper(
+                        lookup, expiryThrottle, classifier, dynamicProperties, fees, recordsHelper);
         removalWork =
                 new RemovalHelper(
                         classifier, dynamicProperties, contractGC, accountGC, recordsHelper);
@@ -294,7 +295,8 @@ class AutoExpiryCycleTest {
         final var expiredNum = EntityNum.fromLong(brokeExpiredAccountNum);
         given(classifier.classify(expiredNum, now)).willReturn(DETACHED_ACCOUNT_GRACE_PERIOD_OVER);
         given(classifier.getLastClassified()).willReturn(mockAccount);
-        given(accountGC.expireBestEffort(expiredNum, mockAccount)).willReturn(partiallyFinishedReturns);
+        given(accountGC.expireBestEffort(expiredNum, mockAccount))
+                .willReturn(partiallyFinishedReturns);
         dynamicProperties.enableAutoRenew();
 
         subject.beginCycle(now);
@@ -302,7 +304,8 @@ class AutoExpiryCycleTest {
 
         assertEquals(STILL_MORE_TO_DO, result);
         verify(accountGC).expireBestEffort(expiredNum, mockAccount);
-        verify(recordsHelper).streamCryptoRemovalStep(false, expiredNum, null, partiallyFinishedReturns);
+        verify(recordsHelper)
+                .streamCryptoRemovalStep(false, expiredNum, null, partiallyFinishedReturns);
     }
 
     @Test

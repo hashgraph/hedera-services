@@ -43,7 +43,8 @@ public class RenewalHelper implements RenewalWork {
     private static final Logger log = LogManager.getLogger(RenewalHelper.class);
 
     static final List<MapAccessType> SELF_RENEWAL_WORK = List.of(ACCOUNTS_GET_FOR_MODIFY);
-    static final List<MapAccessType> SUPPORTED_RENEWAL_WORK = List.of(ACCOUNTS_GET_FOR_MODIFY, ACCOUNTS_GET_FOR_MODIFY);
+    static final List<MapAccessType> SUPPORTED_RENEWAL_WORK =
+            List.of(ACCOUNTS_GET_FOR_MODIFY, ACCOUNTS_GET_FOR_MODIFY);
 
     private final ClassificationWork classifier;
     private final GlobalDynamicProperties dynamicProperties;
@@ -92,12 +93,11 @@ public class RenewalHelper implements RenewalWork {
         final var payer = classifier.getPayerForLastClassified();
         final var expired = classifier.getLastClassified();
         if (!expiryThrottle.allow(workFor(payer, expired))) {
-           return STILL_MORE_TO_DO;
+            return STILL_MORE_TO_DO;
         }
 
         final long reqPeriod = expired.getAutoRenewSecs();
-        final var assessment =
-                fees.assessCryptoAutoRenewal(expired, reqPeriod, cycleTime, payer);
+        final var assessment = fees.assessCryptoAutoRenewal(expired, reqPeriod, cycleTime, payer);
 
         final long renewalPeriod = assessment.renewalPeriod();
         final long renewalFee = assessment.fee();
@@ -124,7 +124,8 @@ public class RenewalHelper implements RenewalWork {
         final long newExpiry = mutableAccount.getExpiry() + renewalPeriod;
         mutableAccount.setExpiry(newExpiry);
 
-        final var mutablePayerForRenew = lookup.getMutableAccount(classifier.getPayerNumForLastClassified());
+        final var mutablePayerForRenew =
+                lookup.getMutableAccount(classifier.getPayerNumForLastClassified());
         final long newBalance = mutablePayerForRenew.getBalance() - fee;
         mutablePayerForRenew.setBalanceUnchecked(newBalance);
 

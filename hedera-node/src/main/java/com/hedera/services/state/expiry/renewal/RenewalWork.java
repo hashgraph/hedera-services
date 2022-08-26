@@ -16,10 +16,8 @@
 package com.hedera.services.state.expiry.renewal;
 
 import com.hedera.services.state.expiry.EntityProcessResult;
-import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.utils.EntityNum;
 import java.time.Instant;
-import javax.annotation.Nullable;
 
 /** Provides the logic needed for the account and contract auto-renewal cycle */
 public interface RenewalWork {

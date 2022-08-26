@@ -48,10 +48,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class TreasuryReturnHelperTest {
-    @Mock private MerkleMap<EntityNum, MerkleToken> tokens;
-    @Mock private MerkleMap<EntityNumPair, MerkleUniqueToken> uniqueTokens;
     @Mock private MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenRels;
-    @Mock private ExpiryThrottle expiryThrottle;
 
     private final List<CurrencyAdjustments> returnTransfers = new ArrayList<>();
 
@@ -59,100 +56,13 @@ class TreasuryReturnHelperTest {
 
     @BeforeEach
     void setUp() {
-        subject = new TreasuryReturnHelper(expiryThrottle, () -> tokens, () -> tokenRels);
-    }
-
-    @Test
-    void returnsNullIfMissingEntity() {
-        final var key = EntityNumPair.fromLongs(missingTokenNum.longValue(), 1L);
-        final var token = mock(MerkleToken.class);
-        given(tokens.get(missingTokenNum)).willReturn(null);
-
-        assertNull(subject.updateNftReturns(key, uniqueTokens));
-
-        given(tokens.get(missingTokenNum)).willReturn(token);
-        given(token.tokenType()).willReturn(TokenType.FUNGIBLE_COMMON);
-
-        assertNull(subject.updateNftReturns(key, uniqueTokens));
-
-        given(tokens.get(missingTokenNum)).willReturn(token);
-        given(token.tokenType()).willReturn(TokenType.NON_FUNGIBLE_UNIQUE);
-        given(uniqueTokens.getForModify(key)).willReturn(null);
-
-        assertNull(subject.updateNftReturns(key, uniqueTokens));
-    }
-
-    @Test
-    void removesNftIfTokenIsDeleted() {
-        final var key = EntityNumPair.fromLongs(missingTokenNum.longValue(), 1L);
-        final var nextKey = EntityNumPair.fromLongs(nonFungibleTokenNum.longValue(), 2L);
-        final var nft = mock(MerkleUniqueToken.class);
-        final var token = mock(MerkleToken.class);
-
-        given(tokens.get(missingTokenNum)).willReturn(token);
-        given(token.tokenType()).willReturn(TokenType.NON_FUNGIBLE_UNIQUE);
-        given(token.isDeleted()).willReturn(true);
-        given(uniqueTokens.getForModify(key)).willReturn(nft);
-        given(nft.getNext()).willReturn(nextKey.asNftNumPair());
-
-        assertEquals(nextKey, subject.updateNftReturns(key, uniqueTokens));
-        verify(uniqueTokens).remove(key);
-    }
-
-    @Test
-    void changesNftOwnerToTreasuryIfTokenIsNotDeleted() {
-        final var key = EntityNumPair.fromLongs(missingTokenNum.longValue(), 1L);
-        final var nextKey = EntityNumPair.fromLongs(nonFungibleTokenNum.longValue(), 2L);
-        final var nft = mock(MerkleUniqueToken.class);
-        final var token = mock(MerkleToken.class);
-
-        given(tokens.get(missingTokenNum)).willReturn(token);
-        given(token.tokenType()).willReturn(TokenType.NON_FUNGIBLE_UNIQUE);
-        given(token.isDeleted()).willReturn(false);
-        given(uniqueTokens.getForModify(key)).willReturn(nft);
-        given(nft.getNext()).willReturn(nextKey.asNftNumPair());
-
-        assertEquals(nextKey, subject.updateNftReturns(key, uniqueTokens));
-        verify(nft).setOwner(EntityId.MISSING_ENTITY_ID);
-    }
-
-    @Test
-    void justReportsDebitAndReclaimsLastUsageIfTokenIsGoneSomehow() {
-        subject.updateFungibleReturns(
-                expiredAccountNum, missingTokenNum, tokenBalance, returnTransfers);
-
-        final var ttls =
-                List.of(
-                        asymmetricTtlOf(
-                                missingTokenNum.toGrpcTokenId(),
-                                expiredAccountNum.toGrpcAccountId(),
-                                tokenBalance));
-        assertEquals(adjustmentsFrom(ttls), returnTransfers);
-        verify(expiryThrottle).reclaimLastAllowedUse();
-    }
-
-    @Test
-    void justReportsDebitIfTokenIsNonfungible() {
-        givenTokenPresent(nonFungibleTokenNum, nonFungibleToken);
-
-        subject.updateFungibleReturns(
-                expiredAccountNum, nonFungibleTokenNum, tokenBalance, returnTransfers);
-
-        final var ttls =
-                List.of(
-                        asymmetricTtlOf(
-                                nonFungibleTokenNum.toGrpcTokenId(),
-                                expiredAccountNum.toGrpcAccountId(),
-                                tokenBalance));
-        assertEquals(adjustmentsFrom(ttls), returnTransfers);
+        subject = new TreasuryReturnHelper(() -> tokenRels);
     }
 
     @Test
     void justReportsDebitIfTokenIsDeleted() {
-        givenTokenPresent(deletedTokenNum, deletedToken);
-
         subject.updateFungibleReturns(
-                expiredAccountNum, deletedTokenNum, tokenBalance, returnTransfers);
+                expiredAccountNum, deletedTokenNum, deletedToken, tokenBalance, returnTransfers);
 
         final var ttls =
                 List.of(
@@ -165,12 +75,11 @@ class TreasuryReturnHelperTest {
 
     @Test
     void doesTreasuryReturnForNonzeroFungibleBalance() {
-        givenTokenPresent(fungibleTokenNum, fungibleToken);
-        final var treasuryRel = mutableRel(treasuryNum, fungibleTokenNum, tokenBalance);
+        final var treasuryRel = mutableRel(tokenBalance);
         givenModifiableRelPresent(treasuryNum, fungibleTokenNum, treasuryRel);
 
         subject.updateFungibleReturns(
-                expiredAccountNum, fungibleTokenNum, tokenBalance, returnTransfers);
+                expiredAccountNum, fungibleTokenNum, fungibleToken, tokenBalance, returnTransfers);
 
         final var ttls =
                 List.of(
@@ -185,12 +94,11 @@ class TreasuryReturnHelperTest {
 
     @Test
     void ordersTreasuryReturnsByAccountNumber() {
-        givenTokenPresent(fungibleTokenNum, fungibleToken);
-        final var treasuryRel = mutableRel(treasuryNum, fungibleTokenNum, tokenBalance);
+        final var treasuryRel = mutableRel(tokenBalance);
         givenModifiableRelPresent(treasuryNum, fungibleTokenNum, treasuryRel);
 
         subject.updateFungibleReturns(
-                olderExpiredAccountNum, fungibleTokenNum, tokenBalance, returnTransfers);
+                olderExpiredAccountNum, fungibleTokenNum, fungibleToken, tokenBalance, returnTransfers);
 
         final var ttls =
                 List.of(
@@ -204,7 +112,6 @@ class TreasuryReturnHelperTest {
     }
 
     private void givenTokenPresent(EntityNum id, MerkleToken token) {
-        given(tokens.get(id)).willReturn(token);
     }
 
     private void givenModifiableRelPresent(
@@ -213,7 +120,7 @@ class TreasuryReturnHelperTest {
         given(tokenRels.getForModify(rel)).willReturn(mutableRel);
     }
 
-    private MerkleTokenRelStatus mutableRel(EntityNum account, EntityNum token, long balance) {
+    private MerkleTokenRelStatus mutableRel(long balance) {
         return new MerkleTokenRelStatus(balance, false, false, true);
     }
 
