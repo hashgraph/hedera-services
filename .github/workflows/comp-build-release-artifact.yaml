@@ -139,7 +139,7 @@ jobs:
           BRANCH_NAME="${{ github.head_ref || github.ref_name }}"
           BRANCH_NAME="${BRANCH_NAME##origin/}"
           BRANCH_NAME_LOWER="$(echo "${BRANCH_NAME}" | tr '[:upper:]' '[:lower:]')"
-          BRANCH_NAME_SAFE="$(echo "${BRANCH_NAME_LOWER}" | tr '/' '-')"
+          BRANCH_NAME_SAFE="$(echo "${BRANCH_NAME_LOWER}" | tr '/' '-' | tr '_' '.')"
 
           COMMIT_PREFIX="adhoc"
           [[ "${{ inputs.version-policy }}" == "branch-commit" ]] && COMMIT_PREFIX="${BRANCH_NAME_SAFE}"
