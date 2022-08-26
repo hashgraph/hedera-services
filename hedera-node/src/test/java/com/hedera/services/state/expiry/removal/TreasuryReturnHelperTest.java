@@ -18,18 +18,13 @@ package com.hedera.services.state.expiry.removal;
 import static com.hedera.test.utils.TxnUtils.asymmetricTtlOf;
 import static com.hedera.test.utils.TxnUtils.ttlOf;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
 
 import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
-import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.submerkle.CurrencyAdjustments;
 import com.hedera.services.state.submerkle.EntityId;
-import com.hedera.services.throttling.ExpiryThrottle;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
 import com.hederahashgraph.api.proto.java.AccountAmount;
@@ -98,7 +93,11 @@ class TreasuryReturnHelperTest {
         givenModifiableRelPresent(treasuryNum, fungibleTokenNum, treasuryRel);
 
         subject.updateFungibleReturns(
-                olderExpiredAccountNum, fungibleTokenNum, fungibleToken, tokenBalance, returnTransfers);
+                olderExpiredAccountNum,
+                fungibleTokenNum,
+                fungibleToken,
+                tokenBalance,
+                returnTransfers);
 
         final var ttls =
                 List.of(
@@ -111,8 +110,7 @@ class TreasuryReturnHelperTest {
         assertEquals(2 * tokenBalance, treasuryRel.getBalance());
     }
 
-    private void givenTokenPresent(EntityNum id, MerkleToken token) {
-    }
+    private void givenTokenPresent(EntityNum id, MerkleToken token) {}
 
     private void givenModifiableRelPresent(
             EntityNum account, EntityNum token, MerkleTokenRelStatus mutableRel) {

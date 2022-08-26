@@ -15,6 +15,14 @@
  */
 package com.hedera.services.state.expiry.removal;
 
+import static com.hedera.services.state.expiry.removal.TreasuryReturns.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
+
 import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.state.expiry.TokenRelsListMutation;
 import com.hedera.services.state.expiry.classification.EntityLookup;
@@ -28,48 +36,41 @@ import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
 import com.hedera.test.factories.accounts.MerkleAccountFactory;
 import com.swirlds.merkle.map.MerkleMap;
+import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.util.List;
-
-import static com.hedera.services.state.expiry.removal.TreasuryReturns.*;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
-
 @ExtendWith(MockitoExtension.class)
 class TreasuryReturnsTest {
     @Mock private ExpiryThrottle expiryThrottle;
     @Mock private TreasuryReturnHelper returnHelper;
 
-    @Mock
-    private EntityLookup entityLookup;
-    @Mock
-    private TreasuryReturns.RemovalFacilitation removalFacilitation;
-    @Mock
-    private MerkleMap<EntityNum, MerkleToken> tokens;
-    @Mock
-    private MerkleMap<EntityNumPair, MerkleUniqueToken> nfts;
-    @Mock
-    private MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenRels;
+    @Mock private EntityLookup entityLookup;
+    @Mock private TreasuryReturns.RemovalFacilitation removalFacilitation;
+    @Mock private MerkleMap<EntityNum, MerkleToken> tokens;
+    @Mock private MerkleMap<EntityNumPair, MerkleUniqueToken> nfts;
+    @Mock private MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenRels;
 
     private TreasuryReturns subject;
 
     @BeforeEach
     void setUp() {
-        subject = new TreasuryReturns(entityLookup, () -> tokens, () -> nfts, () -> tokenRels, expiryThrottle, returnHelper);
+        subject =
+                new TreasuryReturns(
+                        entityLookup,
+                        () -> tokens,
+                        () -> nfts,
+                        () -> tokenRels,
+                        expiryThrottle,
+                        returnHelper);
     }
 
     @Test
     void finishedIfNoNfts() {
-        final var expected= NonFungibleTreasuryReturns.FINISHED_NOOP_NON_FUNGIBLE_RETURNS;
+        final var expected = NonFungibleTreasuryReturns.FINISHED_NOOP_NON_FUNGIBLE_RETURNS;
 
         final var actual = subject.returnNftsFrom(new MerkleAccount());
 
@@ -78,7 +79,7 @@ class TreasuryReturnsTest {
 
     @Test
     void finishedIfNoRels() {
-        final var expected= FungibleTreasuryReturns.FINISHED_NOOP_FUNGIBLE_RETURNS;
+        final var expected = FungibleTreasuryReturns.FINISHED_NOOP_FUNGIBLE_RETURNS;
 
         final var actual = subject.returnFungibleUnitsFrom(new MerkleAccount());
 
@@ -87,12 +88,12 @@ class TreasuryReturnsTest {
 
     @Test
     void doesNothingIfCannotReturnUnits() {
-       final var expected= FungibleTreasuryReturns.UNFINISHED_NOOP_FUNGIBLE_RETURNS;
+        final var expected = FungibleTreasuryReturns.UNFINISHED_NOOP_FUNGIBLE_RETURNS;
 
-       final var actual = subject.returnFungibleUnitsFrom(accountWithRels);
+        final var actual = subject.returnFungibleUnitsFrom(accountWithRels);
 
         assertEquals(expected, actual);
-     }
+    }
 
     @Test
     void returnsAllGivenCapacity() {
@@ -100,14 +101,14 @@ class TreasuryReturnsTest {
         given(expiryThrottle.allow(any())).willReturn(true);
         given(entityLookup.getMutableAccount(num)).willReturn(accountWithRels);
 
-        final var expected= new FungibleTreasuryReturns(
-                List.of(bTokenId), List.of(), true);
+        final var expected = new FungibleTreasuryReturns(List.of(bTokenId), List.of(), true);
 
         final var actual = subject.returnFungibleUnitsFrom(accountWithRels);
 
         assertEquals(expected, actual);
-        verify(returnHelper).updateFungibleReturns(
-                eq(num), eq(bTokenId.asNum()), eq(fungibleToken), eq(1L), any(List.class));
+        verify(returnHelper)
+                .updateFungibleReturns(
+                        eq(num), eq(bTokenId.asNum()), eq(fungibleToken), eq(1L), any(List.class));
         assertEquals(0, accountWithRels.getNumAssociations());
     }
 
@@ -118,7 +119,7 @@ class TreasuryReturnsTest {
         given(expiryThrottle.allow(any())).willReturn(true);
         given(entityLookup.getMutableAccount(num)).willReturn(accountWithRels);
 
-        final var expected= FungibleTreasuryReturns.FINISHED_NOOP_FUNGIBLE_RETURNS;
+        final var expected = FungibleTreasuryReturns.FINISHED_NOOP_FUNGIBLE_RETURNS;
 
         final var actual = subject.returnFungibleUnitsFrom(accountWithRels);
 
@@ -134,7 +135,7 @@ class TreasuryReturnsTest {
         given(expiryThrottle.allow(any())).willReturn(true);
         given(entityLookup.getMutableAccount(num)).willReturn(accountWithRels);
 
-        final var expected= FungibleTreasuryReturns.FINISHED_NOOP_FUNGIBLE_RETURNS;
+        final var expected = FungibleTreasuryReturns.FINISHED_NOOP_FUNGIBLE_RETURNS;
 
         final var actual = subject.returnFungibleUnitsFrom(accountWithRels);
 
@@ -153,8 +154,7 @@ class TreasuryReturnsTest {
         given(expiryThrottle.allow(ONLY_REL_REMOVAL_WORK)).willReturn(true);
         given(entityLookup.getMutableAccount(num)).willReturn(accountWithRels);
 
-        final var expected= new FungibleTreasuryReturns(
-                List.of(), List.of(), false);
+        final var expected = new FungibleTreasuryReturns(List.of(), List.of(), false);
 
         final var actual = subject.returnFungibleUnitsFrom(accountWithRels);
 
@@ -172,8 +172,7 @@ class TreasuryReturnsTest {
         given(expiryThrottle.allow(ONLY_REL_REMOVAL_WORK)).willReturn(true);
         given(entityLookup.getMutableAccount(num)).willReturn(accountWithRels);
 
-        final var expected= new FungibleTreasuryReturns(
-                List.of(), List.of(), false);
+        final var expected = new FungibleTreasuryReturns(List.of(), List.of(), false);
 
         final var actual = subject.returnFungibleUnitsFrom(accountWithRels);
 
@@ -191,7 +190,7 @@ class TreasuryReturnsTest {
         given(expiryThrottle.allow(ONLY_REL_REMOVAL_WORK)).willReturn(false);
         given(entityLookup.getMutableAccount(num)).willReturn(accountWithRels);
 
-        final var expected= new FungibleTreasuryReturns(List.of(), List.of(), false);
+        final var expected = new FungibleTreasuryReturns(List.of(), List.of(), false);
 
         final var actual = subject.returnFungibleUnitsFrom(accountWithRels);
 
@@ -210,36 +209,46 @@ class TreasuryReturnsTest {
             given(tokens.get(bRelKey.getLowOrderAsNum())).willReturn(fungibleToken);
         }
 
-        given(removalFacilitation.removeNext(eq(aRelKey), eq(aRelKey), any(TokenRelsListMutation.class)))
+        given(
+                        removalFacilitation.removeNext(
+                                eq(aRelKey), eq(aRelKey), any(TokenRelsListMutation.class)))
                 .willReturn(bRelKey);
         if (includeBRemoval) {
-            given(removalFacilitation.removeNext(eq(bRelKey), eq(bRelKey), any(TokenRelsListMutation.class)))
+            given(
+                            removalFacilitation.removeNext(
+                                    eq(bRelKey), eq(bRelKey), any(TokenRelsListMutation.class)))
                     .willReturn(null);
         }
-     }
+    }
 
     private final EntityNum num = EntityNum.fromLong(123L);
     private final EntityId aTokenId = EntityId.fromNum(666L);
     private final EntityId bTokenId = EntityId.fromNum(777L);
     private final EntityNumPair aRelKey = EntityNumPair.fromNums(num, aTokenId.asNum());
     private final EntityNumPair bRelKey = EntityNumPair.fromNums(num, bTokenId.asNum());
-    private final MerkleTokenRelStatus aRelStatus = new MerkleTokenRelStatus(0L, false, false, true);
-    private final MerkleTokenRelStatus bRelStatus = new MerkleTokenRelStatus(1L, false, false, true);
+    private final MerkleTokenRelStatus aRelStatus =
+            new MerkleTokenRelStatus(0L, false, false, true);
+    private final MerkleTokenRelStatus bRelStatus =
+            new MerkleTokenRelStatus(1L, false, false, true);
 
     private final MerkleAccount accountWithRels =
             MerkleAccountFactory.newAccount()
                     .lastAssociatedToken(aTokenId.num())
                     .associatedTokensCount(2)
                     .get();
+
     {
         accountWithRels.setKey(num);
     }
 
     private final MerkleToken fungibleToken = new MerkleToken();
+
     {
         fungibleToken.setTokenType(TokenType.FUNGIBLE_COMMON);
     }
+
     private final MerkleToken nfToken = new MerkleToken();
+
     {
         nfToken.setTokenType(TokenType.NON_FUNGIBLE_UNIQUE);
     }

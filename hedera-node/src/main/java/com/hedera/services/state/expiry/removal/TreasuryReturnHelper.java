@@ -15,14 +15,10 @@
  */
 package com.hedera.services.state.expiry.removal;
 
-import static com.hedera.services.state.enums.TokenType.FUNGIBLE_COMMON;
-import static com.hedera.services.state.enums.TokenType.NON_FUNGIBLE_UNIQUE;
 import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
-import static com.hedera.services.utils.NftNumPair.MISSING_NFT_NUM_PAIR;
 
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
-import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.submerkle.CurrencyAdjustments;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
