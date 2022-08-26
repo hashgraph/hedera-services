@@ -64,30 +64,33 @@ public class ContractGC {
         this.bytecode = bytecode;
     }
 
-    // TODO - abort immediately if not ROOT_KEY_UPDATE_WORK
     public boolean expireBestEffort(
             final EntityNum expiredContractNum, final MerkleAccount contract) {
         final var numKvPairs = contract.getNumContractKvPairs();
-        if (numKvPairs > 0 && expiryThrottle.allow(ROOT_KEY_UPDATE_WORK)) {
-            final var slotRemovals =
-                    removeKvPairs(
-                            numKvPairs,
-                            expiredContractNum,
-                            contract.getFirstContractStorageKey(),
-                            storage.get());
-            final var numRemoved = slotRemovals.numRemoved();
-            if (numRemoved < numKvPairs) {
-                if (numRemoved == 0) {
-                    expiryThrottle.reclaimLastAllowedUse();
-                } else {
-                    final var mutableContract = contracts.get().getForModify(expiredContractNum);
-                    mutableContract.setNumContractKvPairs(numKvPairs - numRemoved);
-                    mutableContract.setFirstUint256StorageKey(slotRemovals.newRoot().getKey());
+        boolean rootUpdateThrottled = false;
+        if (numKvPairs > 0) {
+            rootUpdateThrottled = !expiryThrottle.allow(ROOT_KEY_UPDATE_WORK);
+            if (!rootUpdateThrottled) {
+                final var slotRemovals =
+                        removeKvPairs(
+                                numKvPairs,
+                                expiredContractNum,
+                                contract.getFirstContractStorageKey(),
+                                storage.get());
+                final var numRemoved = slotRemovals.numRemoved();
+                if (numRemoved < numKvPairs) {
+                    if (numRemoved == 0) {
+                        expiryThrottle.reclaimLastAllowedUse();
+                    } else {
+                        final var mutableContract = contracts.get().getForModify(expiredContractNum);
+                        mutableContract.setNumContractKvPairs(numKvPairs - numRemoved);
+                        mutableContract.setFirstUint256StorageKey(slotRemovals.newRoot().getKey());
+                    }
+                    return false;
                 }
-                return false;
             }
         }
-        return tryToRemoveBytecode(expiredContractNum);
+        return !rootUpdateThrottled && tryToRemoveBytecode(expiredContractNum);
     }
 
     private SlotRemovalOutcome removeKvPairs(

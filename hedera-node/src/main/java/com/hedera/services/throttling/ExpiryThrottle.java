@@ -56,12 +56,16 @@ public class ExpiryThrottle {
     }
 
     public boolean allow(final List<MapAccessType> accessTypes) {
-        return allow(accessTypes, null);
+        final var ans = allow(accessTypes, null);
+        if (!ans) {
+            log.info("Throttled {}", accessTypes);
+        }
+        return ans;
     }
 
     public boolean allow(final List<MapAccessType> accessTypes, @Nullable final Instant now) {
         if (throttle != null && accessReqs != null) {
-            final var effectiveNow = (now != null) ? null : throttle.lastDecisionTime();
+            final var effectiveNow = (now != null) ? now : throttle.lastDecisionTime();
             throttle.resetLastAllowedUse();
             return throttle.allow(requiredOps(accessTypes), effectiveNow);
         }

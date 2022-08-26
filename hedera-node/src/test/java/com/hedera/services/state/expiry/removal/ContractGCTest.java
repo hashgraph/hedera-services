@@ -47,7 +47,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class ContractGCTest {
     @Mock private ExpiryThrottle expiryThrottle;
-    @Mock private GlobalDynamicProperties dynamicProperties;
     @Mock private MerkleMap<EntityNum, MerkleAccount> contracts;
     @Mock private VirtualMap<ContractKey, IterableContractValue> storage;
     @Mock private VirtualMap<VirtualBlobKey, VirtualBlobValue> bytecode;
@@ -70,7 +69,8 @@ class ContractGCTest {
 
     @Test
     void doesntRemovesBytecodeIfNoCapacity() {
-        assertFalse(subject.expireBestEffort(contractNum, contractNoKvPairs));
+        assertFalse(subject.expireBestEffort(contractNum, contractSomeKvPairs));
+        verify(expiryThrottle, never()).allow(BYTECODE_REMOVAL_WORK);
         verifyNoInteractions(bytecode);
     }
 

@@ -76,7 +76,7 @@ class ClassificationWorkTest {
     @Test
     void classifiesNonExpiredContract() {
         given(expiryThrottle.allow(eq(CLASSIFICATION_WORK), any(Instant.class))).willReturn(true);
-        given(expiryThrottle.allow(eq(CLASSIFICATION_WORK))).willReturn(true);
+        given(expiryThrottle.allow(CLASSIFICATION_WORK)).willReturn(true);
         givenPresent(nonExpiredAccountNum, contractAccount);
 
         // expect:
@@ -122,7 +122,7 @@ class ClassificationWorkTest {
     @Test
     void classifiesDetachedContractAfterGracePeriod() {
         given(expiryThrottle.allow(eq(CLASSIFICATION_WORK), any(Instant.class))).willReturn(true);
-        given(expiryThrottle.allow(eq(CLASSIFICATION_WORK))).willReturn(true);
+        given(expiryThrottle.allow(CLASSIFICATION_WORK)).willReturn(true);
         givenPresent(brokeExpiredNum, expiredContractZeroBalance);
 
         // expect:
@@ -136,7 +136,7 @@ class ClassificationWorkTest {
     @Test
     void classifiesContractWithAutoRenewReadyForRenew() {
         given(expiryThrottle.allow(eq(CLASSIFICATION_WORK), any(Instant.class))).willReturn(true);
-        given(expiryThrottle.allow(eq(CLASSIFICATION_WORK))).willReturn(true);
+        given(expiryThrottle.allow(CLASSIFICATION_WORK)).willReturn(true);
         givenPresent(brokeExpiredNum, expiredContractWithAutoRenew);
         givenPresent(autoRenewNum, solventAutoRenewAccount);
 
@@ -153,7 +153,7 @@ class ClassificationWorkTest {
     @Test
     void classifiesContractWithInvalidAutoRenewReadyForRenew() {
         given(expiryThrottle.allow(eq(CLASSIFICATION_WORK), any(Instant.class))).willReturn(true);
-        given(expiryThrottle.allow(eq(CLASSIFICATION_WORK))).willReturn(true);
+        given(expiryThrottle.allow(CLASSIFICATION_WORK)).willReturn(true);
         givenPresent(brokeExpiredNum, expiredContractWithAutoRenew);
         givenPresent(autoRenewNum, insolventAutoRenewAccount);
 
@@ -170,7 +170,7 @@ class ClassificationWorkTest {
     @Test
     void abandonsClassifyingContractIfNoCapacity() {
         given(expiryThrottle.allow(eq(CLASSIFICATION_WORK), any(Instant.class))).willReturn(true);
-        given(expiryThrottle.allow(eq(CLASSIFICATION_WORK))).willReturn(false);
+        given(expiryThrottle.allow(CLASSIFICATION_WORK)).willReturn(false);
         givenPresent(brokeExpiredNum, expiredContractZeroBalance);
 
         // expect:
@@ -207,7 +207,7 @@ class ClassificationWorkTest {
     @Test
     void classifiesDetachedContract() {
         given(expiryThrottle.allow(eq(CLASSIFICATION_WORK), any(Instant.class))).willReturn(true);
-        given(expiryThrottle.allow(eq(CLASSIFICATION_WORK))).willReturn(true);
+        given(expiryThrottle.allow(CLASSIFICATION_WORK)).willReturn(true);
         givenPresent(brokeExpiredNum, expiredContractZeroBalance);
 
         // expect:

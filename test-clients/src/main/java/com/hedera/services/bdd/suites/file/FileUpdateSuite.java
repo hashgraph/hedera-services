@@ -120,6 +120,8 @@ public class FileUpdateSuite extends HapiApiSuite {
 
     private static final String STORAGE_PRICE_TIERS_PROP = "contract.storageSlotPriceTiers";
     private static final String FREE_PRICE_TIER_PROP = "contracts.freeStorageTierLimit";
+    public static final String CIVILIAN = "civilian";
+    public static final String TEST_TOPIC = "testTopic";
 
     public static void main(String... args) {
         new FileUpdateSuite().runSuiteSync();
@@ -257,7 +259,7 @@ public class FileUpdateSuite extends HapiApiSuite {
     }
 
     private HapiApiSpec apiPermissionsChangeDynamically() {
-        final var civilian = "civilian";
+        final var civilian = CIVILIAN;
         return defaultHapiSpec("ApiPermissionsChangeDynamically")
                 .given(
                         cryptoCreate(civilian).balance(ONE_HUNDRED_HBARS),
@@ -738,12 +740,12 @@ public class FileUpdateSuite extends HapiApiSuite {
         return defaultHapiSpec("messageSubmissionSizeChange")
                 .given(
                         newKeyNamed("submitKey"),
-                        createTopic("testTopic").submitKeyName("submitKey"))
+                        createTopic(TEST_TOPIC).submitKeyName("submitKey"))
                 .when(
-                        cryptoCreate("civilian"),
-                        submitMessageTo("testTopic")
+                        cryptoCreate(CIVILIAN),
+                        submitMessageTo(TEST_TOPIC)
                                 .message("testmessage")
-                                .payingWith("civilian")
+                                .payingWith(CIVILIAN)
                                 .hasRetryPrecheckFrom(BUSY)
                                 .hasKnownStatus(SUCCESS),
                         fileUpdate(APP_PROPERTIES)
@@ -753,9 +755,9 @@ public class FileUpdateSuite extends HapiApiSuite {
                                                 "consensus.message.maxBytesAllowed",
                                                 String.valueOf(defaultMaxBytesAllowed - 1))))
                 .then(
-                        submitMessageTo("testTopic")
+                        submitMessageTo(TEST_TOPIC)
                                 .message(longMessage)
-                                .payingWith("civilian")
+                                .payingWith(CIVILIAN)
                                 .hasRetryPrecheckFrom(BUSY)
                                 .hasKnownStatus(MESSAGE_SIZE_TOO_LARGE),
                         fileUpdate(APP_PROPERTIES)
