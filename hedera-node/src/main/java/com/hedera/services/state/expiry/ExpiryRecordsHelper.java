@@ -42,9 +42,6 @@ public class ExpiryRecordsHelper {
     private final GlobalDynamicProperties dynamicProperties;
     private final ConsensusTimeTracker consensusTimeTracker;
 
-    private boolean inCycle;
-    private AccountID funding = null;
-
     @Inject
     public ExpiryRecordsHelper(
             final RecordStreaming recordStreaming,
@@ -57,18 +54,11 @@ public class ExpiryRecordsHelper {
         this.consensusTimeTracker = consensusTimeTracker;
     }
 
-    public void beginRenewalCycle() {
-        inCycle = true;
-        funding = dynamicProperties.fundingAccount();
-    }
-
     public void streamCryptoRemovalStep(
             final boolean isContract,
             final EntityNum entityNum,
             @Nullable final EntityId autoRenewId,
             final CryptoGcOutcome cryptoGcOutcome) {
-        assertInCycle();
-
         final var eventTime = consensusTimeTracker.nextStandaloneRecordTime();
         final var grpcId = entityNum.toGrpcAccountId();
         final var memo =
@@ -98,8 +88,6 @@ public class ExpiryRecordsHelper {
             final long newExpiry,
             final boolean isContract,
             final EntityNum payerForAutoRenew) {
-        assertInCycle();
-
         final var eventTime = consensusTimeTracker.nextStandaloneRecordTime();
         final var grpcId = entityNum.toGrpcAccountId();
         final var payerId = payerForAutoRenew.toGrpcAccountId();
@@ -131,11 +119,8 @@ public class ExpiryRecordsHelper {
         recordStreaming.streamSystemRecord(rso);
     }
 
-    public void endRenewalCycle() {
-        inCycle = false;
-    }
-
     private CurrencyAdjustments feeXfers(final long amount, final AccountID payer) {
+        final var funding = dynamicProperties.fundingAccount();
         return new CurrencyAdjustments(
                 new long[] {amount, -amount},
                 new long[] {funding.getAccountNum(), payer.getAccountNum()});
@@ -158,15 +143,5 @@ public class ExpiryRecordsHelper {
                 .setTxnId(txnId)
                 .setReceipt(receipt)
                 .setConsensusTime(at);
-    }
-
-    boolean isInCycle() {
-        return inCycle;
-    }
-
-    private void assertInCycle() {
-        if (!inCycle) {
-            throw new IllegalStateException("Cannot stream records if not in a renewal cycle!");
-        }
     }
 }

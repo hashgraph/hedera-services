@@ -113,7 +113,6 @@ class ExpiryRecordsHelperTest {
         given(syntheticTxnFactory.synthAccountAutoRemove(expiredNum)).willReturn(mockBody);
         given(consensusTimeTracker.nextStandaloneRecordTime()).willReturn(instantNow);
 
-        subject.beginRenewalCycle();
         final var returns =
                 new CryptoGcOutcome(
                         new FungibleTreasuryReturns(
@@ -130,9 +129,6 @@ class ExpiryRecordsHelperTest {
         // then:
         verify(recordStreaming).streamSystemRecord(rso);
         verify(consensusTimeTracker).nextStandaloneRecordTime();
-
-        subject.endRenewalCycle();
-        assertFalse(subject.isInCycle());
     }
 
     @Test
@@ -166,7 +162,6 @@ class ExpiryRecordsHelperTest {
 
         given(consensusTimeTracker.nextStandaloneRecordTime()).willReturn(instantNow);
 
-        subject.beginRenewalCycle();
         final var returns =
                 new CryptoGcOutcome(
                         new FungibleTreasuryReturns(
@@ -184,9 +179,6 @@ class ExpiryRecordsHelperTest {
         // then:
         verify(recordStreaming).streamSystemRecord(rso);
         verify(consensusTimeTracker).nextStandaloneRecordTime();
-
-        subject.endRenewalCycle();
-        assertFalse(subject.isInCycle());
     }
 
     @Test
@@ -201,15 +193,11 @@ class ExpiryRecordsHelperTest {
                 .willReturn(mockBody);
         given(consensusTimeTracker.nextStandaloneRecordTime()).willReturn(rso.getTimestamp());
 
-        subject.beginRenewalCycle();
         subject.streamCryptoRenewal(expiredNum, fee, newExpiry, false, expiredNum);
 
         // then:
         verify(consensusTimeTracker).nextStandaloneRecordTime();
         verify(recordStreaming).streamSystemRecord(rso);
-
-        subject.endRenewalCycle();
-        assertFalse(subject.isInCycle());
     }
 
     @Test
@@ -226,15 +214,11 @@ class ExpiryRecordsHelperTest {
                 .willReturn(mockBody);
         given(consensusTimeTracker.nextStandaloneRecordTime()).willReturn(rso.getTimestamp());
 
-        subject.beginRenewalCycle();
         subject.streamCryptoRenewal(expiredNum, fee, newExpiry, true, expiredNum);
 
         // then:
         verify(consensusTimeTracker).nextStandaloneRecordTime();
         verify(recordStreaming).streamSystemRecord(rso);
-
-        subject.endRenewalCycle();
-        assertFalse(subject.isInCycle());
     }
 
     static List<EntityId> tokensFrom(final List<TokenTransferList> ttls) {

@@ -97,7 +97,6 @@ class RemovalHelperTest {
         given(expiryThrottle.allow(eq(CLASSIFICATION_WORK), any(Instant.class))).willReturn(true);
 
         classifier.classify(expiredNum, now);
-        classifier.resolvePayerForAutoRenew();
 
         var result = subject.tryToRemoveAccount(expiredNum);
 
@@ -115,7 +114,6 @@ class RemovalHelperTest {
         given(expiryThrottle.allow(eq(CLASSIFICATION_WORK), any(Instant.class))).willReturn(true);
 
         classifier.classify(expiredNum, now);
-        classifier.resolvePayerForAutoRenew();
 
         var result = subject.tryToRemoveAccount(expiredNum);
 
@@ -136,7 +134,6 @@ class RemovalHelperTest {
         expiredDeletedAccount.setAutoRenewAccount(autoRenewId);
 
         classifier.classify(expiredNum, now);
-        classifier.resolvePayerForAutoRenew();
 
         var result = subject.tryToRemoveContract(expiredNum);
 

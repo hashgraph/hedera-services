@@ -16,14 +16,14 @@
 package com.hedera.services.state.expiry.renewal;
 
 import static com.hedera.services.state.expiry.classification.ClassificationWork.CLASSIFICATION_WORK;
+import static com.hedera.services.state.expiry.renewal.RenewalHelper.SELF_RENEWAL_WORK;
+import static com.hedera.services.state.expiry.renewal.RenewalHelper.SUPPORTED_RENEWAL_WORK;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.*;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.config.MockGlobalDynamicProps;
@@ -49,9 +49,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class RenewalHelperTest {
-    @Mock private MerkleMap<EntityNum, MerkleAccount> accounts;
-    @Mock private AliasManager aliasManager;
     private final MockGlobalDynamicProps properties = new MockGlobalDynamicProps();
+    @Mock private MerkleMap<EntityNum, MerkleAccount> accounts;
     @Mock private FeeCalculator fees;
     @Mock private ExpiryRecordsHelper recordsHelper;
     @Mock private ExpiryThrottle expiryThrottle;
@@ -64,7 +63,7 @@ class RenewalHelperTest {
     void setUp() {
         lookup = new EntityLookup(() -> accounts);
         classificationWork = new ClassificationWork(properties, lookup, expiryThrottle);
-        subject = new RenewalHelper(lookup, classificationWork, properties, fees, recordsHelper);
+        subject = new RenewalHelper(lookup, expiryThrottle, classificationWork, properties, fees, recordsHelper);
     }
 
     @Test
@@ -75,11 +74,11 @@ class RenewalHelperTest {
 
         givenPresent(fundedExpiredAccountNum, expiredAccountNonZeroBalance, true);
         givenPresent(98, fundingAccount, true);
-        given(expiryThrottle.allow(eq(CLASSIFICATION_WORK), any(Instant.class))).willReturn(true);
+        given(expiryThrottle.allow(any(), any(Instant.class))).willReturn(true);
+        given(expiryThrottle.allow(any())).willReturn(true);
 
         // when:
         classificationWork.classify(EntityNum.fromLong(fundedExpiredAccountNum), now);
-        classificationWork.resolvePayerForAutoRenew();
         given(
                         fees.assessCryptoAutoRenewal(
                                 expiredAccountNonZeroBalance,
@@ -94,43 +93,32 @@ class RenewalHelperTest {
         // then:
         verify(accounts, times(2)).getForModify(key);
         verify(accounts).getForModify(fundingKey);
-        verify(aliasManager, never()).forgetAlias(any());
-        assertEquals(key, classificationWork.getPayerNumForAutoRenew());
+        assertEquals(key, classificationWork.getPayerNumForLastClassified());
     }
 
     @Test
-    void renewsLastClassifiedWithAutoRenewAccountAsPayer() {
-        // setup:
-        var key = EntityNum.fromLong(nonExpiredAccountNum);
-        var autoRenewAccount = EntityNum.fromLong(10L);
-        var fundingKey = EntityNum.fromInt(98);
-
-        givenPresent(nonExpiredAccountNum, nonExpiredAccount, true);
-
-        given(accounts.getForModify(autoRenewAccount)).willReturn(nonExpiredAccountWithAutoRenew);
-        given(accounts.get(key)).willReturn(nonExpiredAccountWithAutoRenew);
-        given(accounts.get(autoRenewAccount)).willReturn(nonExpiredAccount);
-        givenPresent(98, fundingAccount, true);
+    void doesNotRenewIfNoSelfCapacityAvailable() {
+        givenPresent(fundedExpiredAccountNum, expiredAccountNonZeroBalance, false);
         given(expiryThrottle.allow(eq(CLASSIFICATION_WORK), any(Instant.class))).willReturn(true);
+        given(expiryThrottle.allow(SELF_RENEWAL_WORK)).willReturn(false);
 
-        // when:
-        classificationWork.classify(EntityNum.fromLong(nonExpiredAccountNum), now);
-        classificationWork.resolvePayerForAutoRenew();
+        classificationWork.classify(EntityNum.fromLong(fundedExpiredAccountNum), now);
 
-        // and:
-        given(
-                        fees.assessCryptoAutoRenewal(
-                                nonExpiredAccountWithAutoRenew, 0L, now, autoRenewMerkleAccount))
-                .willReturn(new RenewAssessment(nonZeroBalance, 3600L));
+        final var result = subject.tryToRenewAccount(EntityNum.fromLong(fundedExpiredAccountNum), now);
+        assertEquals(EntityProcessResult.STILL_MORE_TO_DO, result);
+    }
 
-        // and:
-        subject.tryToRenewAccount(EntityNum.fromLong(fundedExpiredAccountNum), now);
+    @Test
+    void doesNotRenewIfNoSupportedCapacityAvailable() {
+        given(expiryThrottle.allow(SUPPORTED_RENEWAL_WORK)).willReturn(false);
+        classificationWork = mock(ClassificationWork.class);
+        given(classificationWork.getLastClassified()).willReturn(new MerkleAccount());
+        given(classificationWork.getPayerForLastClassified()).willReturn(new MerkleAccount());
 
-        // then:
-        verify(accounts, times(1)).getForModify(autoRenewAccount);
-        verify(accounts).getForModify(fundingKey);
-        verify(aliasManager, never()).forgetAlias(any());
-        assertEquals(autoRenewAccount, classificationWork.getPayerNumForAutoRenew());
+        subject = new RenewalHelper(lookup, expiryThrottle, classificationWork, properties, fees, recordsHelper);
+
+        final var result = subject.tryToRenewAccount(EntityNum.fromLong(fundedExpiredAccountNum), now);
+        assertEquals(EntityProcessResult.STILL_MORE_TO_DO, result);
     }
 
     @Test
@@ -145,19 +133,12 @@ class RenewalHelperTest {
     }
 
     @Test
-    void cannotRenewIfNoLastClassified() {
-        // expect:
-        assertThrows(IllegalStateException.class, () -> subject.renewWith(nonZeroBalance, 3600L));
-    }
-
-    @Test
     void rejectsAsIseIfFeeIsUnaffordable() {
         givenPresent(brokeExpiredNum, expiredAccountZeroBalance);
         given(expiryThrottle.allow(eq(CLASSIFICATION_WORK), any(Instant.class))).willReturn(true);
 
         // when:
         classificationWork.classify(EntityNum.fromLong(brokeExpiredNum), now);
-        classificationWork.resolvePayerForAutoRenew();
         // expect:
         assertThrows(IllegalStateException.class, () -> subject.renewWith(nonZeroBalance, 3600L));
     }
@@ -169,7 +150,6 @@ class RenewalHelperTest {
     private void givenPresent(long num, MerkleAccount account, boolean modifiable) {
         var key = EntityNum.fromLong(num);
         if (num != 98) {
-            given(accounts.containsKey(key)).willReturn(true);
             given(accounts.get(key)).willReturn(account);
         }
         if (modifiable) {

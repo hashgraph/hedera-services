@@ -38,8 +38,4 @@ public class EntityLookup {
     public MerkleAccount getMutableAccount(final EntityNum account) {
         return accounts.get().getForModify(account);
     }
-
-    public boolean accountsContainsKey(final EntityNum account) {
-        return accounts.get().containsKey(account);
-    }
 }
