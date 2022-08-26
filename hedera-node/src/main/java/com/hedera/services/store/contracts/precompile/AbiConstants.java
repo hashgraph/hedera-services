@@ -165,4 +165,8 @@ public final class AbiConstants {
     public static final int ABI_ID_IS_TOKEN = 0x19f37361;
     // getTokenType(address token)
     public static final int ABI_ID_GET_TOKEN_TYPE = 0x93272baf;
+    // getTokenExpiryInfo(address token)
+    public static final int ABI_ID_GET_TOKEN_EXPIRY_INFO = 0xd614cdb8;
+    // updateTokenExpiryInfo(address token, Expiry expiryInfoStruct)
+    public static final int ABI_ID_UPDATE_TOKEN_EXPIRY_INFO = 0x593d6e82;
 }

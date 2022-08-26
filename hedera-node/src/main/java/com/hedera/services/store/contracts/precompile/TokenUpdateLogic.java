@@ -151,6 +151,25 @@ public class TokenUpdateLogic {
         sigImpactHistorian.markEntityChanged(tokenID.getTokenNum());
     }
 
+    public void updateTokenExpiryInfo(TokenUpdateTransactionBody op) {
+        final var tokenID = tokenStore.resolve(op.getToken());
+        validateTrueOrRevert(!tokenID.equals(MISSING_TOKEN), INVALID_TOKEN_ID);
+        if (op.hasExpiry()) {
+            validateTrueOrRevert(validator.isValidExpiry(op.getExpiry()), INVALID_EXPIRATION_TIME);
+        }
+        MerkleToken token = tokenStore.get(tokenID);
+        checkTokenPreconditions(token, op);
+
+        ResponseCodeEnum outcome = autoRenewAttachmentCheck(op, token);
+        validateTrueOrRevert(outcome == OK, outcome);
+
+        outcome = tokenStore.updateExpiryInfo(op);
+        if (outcome != OK) {
+            abortWith(outcome);
+        }
+        sigImpactHistorian.markEntityChanged(tokenID.getTokenNum());
+    }
+
     private void checkTokenPreconditions(MerkleToken token, TokenUpdateTransactionBody op) {
         if (!token.hasAdminKey())
             validateTrueOrRevert((affectsExpiryAtMost(op)), TOKEN_IS_IMMUTABLE);

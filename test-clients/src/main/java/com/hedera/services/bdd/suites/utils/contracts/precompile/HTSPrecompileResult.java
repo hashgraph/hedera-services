@@ -40,6 +40,8 @@ public class HTSPrecompileResult implements ContractCallResult {
             FRACTIONAL_FEE.replace(ADDRESS_TYPE, BYTES_32_TYPE);
     public static final String ROYALTY_FEE_REPLACED_ADDRESS =
             ROYALTY_FEE.replace(ADDRESS_TYPE, BYTES_32_TYPE);
+    public static final String EXPIRY_REPLACED_ADDRESS =
+            EXPIRY.replace(ADDRESS_TYPE, BYTES_32_TYPE);
     public static final String TOKEN_INFO_REPLACED_ADDRESS =
             "("
                     + HEDERA_TOKEN.replace(removeBrackets(ADDRESS), removeBrackets(BYTES32))
@@ -79,6 +81,8 @@ public class HTSPrecompileResult implements ContractCallResult {
                             + ROYALTY_FEE_REPLACED_ADDRESS
                             + ARRAY_BRACKETS
                             + ")");
+    public static final TupleType getTokenExpiryInfoTypeReplacedAddress =
+            TupleType.parse(RESPONSE_STATUS_AT_BEGINNING + EXPIRY_REPLACED_ADDRESS + ")");
 
     public static HTSPrecompileResult htsPrecompileResult() {
         return new HTSPrecompileResult();
@@ -108,6 +112,9 @@ public class HTSPrecompileResult implements ContractCallResult {
     private List<CustomFee> customFees;
     private boolean isToken;
     private int tokenType;
+    private long expiry;
+    private long autoRenewPeriod;
+    private AccountID autoRenewAccount;
 
     public HTSPrecompileResult forFunction(final FunctionType functionType) {
         tupleType =
@@ -132,6 +139,7 @@ public class HTSPrecompileResult implements ContractCallResult {
                     case HAPI_GET_NON_FUNGIBLE_TOKEN_INFO -> getNonFungibleTokenInfoTypeReplacedAddress;
                     case HAPI_GET_TOKEN_CUSTOM_FEES -> tokenGetCustomFeesReplacedAddress;
                     case HAPI_GET_TOKEN_TYPE -> intPairTuple;
+                    case HAPI_GET_TOKEN_EXPIRY_INFO -> getTokenExpiryInfoTypeReplacedAddress;
                     default -> notSpecifiedType;
                 };
 
@@ -238,6 +246,14 @@ public class HTSPrecompileResult implements ContractCallResult {
         return this;
     }
 
+    public HTSPrecompileResult withExpiry(
+            final long expiry, final AccountID autoRenewAccount, final long autoRenewPeriod) {
+        this.expiry = expiry;
+        this.autoRenewAccount = autoRenewAccount;
+        this.autoRenewPeriod = autoRenewPeriod;
+        return this;
+    }
+
     public HTSPrecompileResult withTokenDefaultFreezeStatus(
             final boolean tokenDefaultFreezeStatus) {
         this.tokenDefaultFreezeStatus = tokenDefaultFreezeStatus;
@@ -304,6 +320,7 @@ public class HTSPrecompileResult implements ContractCallResult {
                     case HAPI_GET_TOKEN_CUSTOM_FEES -> getTupleForTokenGetCustomFees();
                     case HAPI_IS_TOKEN -> Tuple.of(status.getNumber(), isToken);
                     case HAPI_GET_TOKEN_TYPE -> Tuple.of(status.getNumber(), tokenType);
+                    case HAPI_GET_TOKEN_EXPIRY_INFO -> getTupleForTokenGetExpiryInfo();
                     default -> Tuple.of(status.getNumber());
                 };
 
@@ -336,6 +353,10 @@ public class HTSPrecompileResult implements ContractCallResult {
         return getTupleForTokenCustomFees(status.getNumber());
     }
 
+    private Tuple getTupleForTokenGetExpiryInfo() {
+        return getTupleForTokenExpiryInfo(status.getNumber());
+    }
+
     private Tuple getTupleForTokenCustomFees(final int responseCode) {
         final var fixedFees = new ArrayList<Tuple>();
         final var fractionalFees = new ArrayList<Tuple>();
@@ -349,6 +370,15 @@ public class HTSPrecompileResult implements ContractCallResult {
                 fixedFees.toArray(new Tuple[fixedFees.size()]),
                 fractionalFees.toArray(new Tuple[fractionalFees.size()]),
                 royaltyFees.toArray(new Tuple[royaltyFees.size()]));
+    }
+
+    private Tuple getTupleForTokenExpiryInfo(final int responseCode) {
+        return Tuple.of(
+                responseCode,
+                Tuple.of(
+                        expiry,
+                        expandByteArrayTo32Length(Utils.asAddress(autoRenewAccount)),
+                        autoRenewPeriod));
     }
 
     private void extractFees(

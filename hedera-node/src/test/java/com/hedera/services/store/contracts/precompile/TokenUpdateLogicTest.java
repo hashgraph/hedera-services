@@ -24,6 +24,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRE
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CURRENT_TREASURY_STILL_OWNS_NFTS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 import static org.mockito.ArgumentMatchers.any;
@@ -408,6 +409,142 @@ class TokenUpdateLogicTest {
                 InvalidTransactionException.class,
                 () -> subject.updateToken(op, CONSENSUS_TIME),
                 FAIL_INVALID.name());
+    }
+
+    @Test
+    void updateTokenExpiryInfoHappyPath() {
+        // given
+        givenTokenUpdateLogic(true);
+        givenValidTransactionBody(true, false);
+        givenContextForSuccessFullCalls();
+        given(ledgers.accounts()).willReturn(accounts);
+        given(store.get(fungible)).willReturn(merkleToken);
+        given(store.resolve(op.getToken())).willReturn(op.getToken());
+        given(store.updateExpiryInfo(op)).willReturn(OK);
+        // when
+        subject.updateTokenExpiryInfo(op);
+        // then
+        verify(store).updateExpiryInfo(op);
+        verify(sigImpactHistorian).markEntityChanged(fungible.getTokenNum());
+    }
+
+    @Test
+    void updateTokenExpiryInfoFailsForInvalidExpirationTime() {
+        // given
+        givenTokenUpdateLogic(true);
+        givenValidTransactionBody(true, false);
+        givenContextForSuccessFullCalls();
+        given(ledgers.accounts()).willReturn(accounts);
+        given(store.get(fungible)).willReturn(merkleToken);
+        given(store.resolve(op.getToken())).willReturn(op.getToken());
+        given(store.updateExpiryInfo(op)).willReturn(INVALID_EXPIRATION_TIME);
+        given(ledgers.accounts()).willReturn(accounts);
+        given(ledgers.tokenRels()).willReturn(tokenRels);
+        given(ledgers.nfts()).willReturn(nfts);
+
+        Assertions.assertThrows(
+                InvalidTransactionException.class, () -> subject.updateTokenExpiryInfo(op));
+    }
+
+    @Test
+    void updateTokenExpiryInfoFailsForExpiredAccount() {
+        // given
+        givenTokenUpdateLogic(true);
+        givenValidTransactionBody(true, false);
+        given(merkleToken.hasAdminKey()).willReturn(true);
+        given(validator.isValidExpiry(EXPIRY)).willReturn(true);
+        given(validator.expiryStatusGiven(accounts, account))
+                .willReturn(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
+        given(ledgers.accounts()).willReturn(accounts);
+        given(store.get(fungible)).willReturn(merkleToken);
+        given(store.resolve(op.getToken())).willReturn(op.getToken());
+        given(ledgers.accounts()).willReturn(accounts);
+
+        Assertions.assertThrows(
+                InvalidTransactionException.class, () -> subject.updateTokenExpiryInfo(op));
+    }
+
+    @Test
+    void updateTokenExpiryInfoForEmptyExpiry() {
+        // given
+        final var txnBodyWithEmptyExpiry =
+                TokenUpdateTransactionBody.newBuilder()
+                        .setToken(fungible)
+                        .setName("name")
+                        .setMemo(StringValue.of("memo"))
+                        .setSymbol("symbol")
+                        .setTreasury(account)
+                        .setAutoRenewAccount(account)
+                        .setAutoRenewPeriod(Duration.newBuilder().setSeconds(2L))
+                        .build();
+        givenTokenUpdateLogic(true);
+        given(merkleToken.hasAdminKey()).willReturn(true);
+        given(merkleToken.hasAutoRenewAccount()).willReturn(true);
+        given(merkleToken.autoRenewAccount()).willReturn(treasuryId);
+        given(validator.expiryStatusGiven(accounts, account)).willReturn(OK);
+        given(validator.expiryStatusGiven(accounts, treasury)).willReturn(OK);
+        given(ledgers.accounts()).willReturn(accounts);
+        given(store.get(fungible)).willReturn(merkleToken);
+        given(store.resolve(txnBodyWithEmptyExpiry.getToken()))
+                .willReturn(txnBodyWithEmptyExpiry.getToken());
+        given(store.updateExpiryInfo(txnBodyWithEmptyExpiry)).willReturn(OK);
+        given(ledgers.accounts()).willReturn(accounts);
+
+        // when
+        subject.updateTokenExpiryInfo(txnBodyWithEmptyExpiry);
+        // then
+        verify(store).updateExpiryInfo(txnBodyWithEmptyExpiry);
+        verify(sigImpactHistorian).markEntityChanged(fungible.getTokenNum());
+    }
+
+    @Test
+    void updateTokenExpiryInfoFailsForMissingToken() {
+        // given
+        givenTokenUpdateLogic(true);
+        givenValidTransactionBody(true, false);
+        given(store.resolve(op.getToken())).willReturn(MISSING_TOKEN);
+
+        Assertions.assertThrows(
+                InvalidTransactionException.class, () -> subject.updateTokenExpiryInfo(op));
+    }
+
+    @Test
+    void updateTokenExpiryInfoFailsForDeletedToken() {
+        givenTokenUpdateLogic(true);
+        givenValidTransactionBody(true, false);
+        given(merkleToken.hasAdminKey()).willReturn(true);
+        given(validator.isValidExpiry(EXPIRY)).willReturn(true);
+        given(store.get(fungible)).willReturn(merkleToken);
+        given(store.resolve(op.getToken())).willReturn(op.getToken());
+        given(merkleToken.isDeleted()).willReturn(true);
+        Assertions.assertThrows(
+                InvalidTransactionException.class, () -> subject.updateTokenExpiryInfo(op));
+    }
+
+    @Test
+    void updateTokenExpiryInfoFailsForPausedToken() {
+        givenTokenUpdateLogic(true);
+        givenValidTransactionBody(true, false);
+        given(merkleToken.hasAdminKey()).willReturn(true);
+        given(validator.isValidExpiry(EXPIRY)).willReturn(true);
+        given(store.get(fungible)).willReturn(merkleToken);
+        given(store.resolve(op.getToken())).willReturn(op.getToken());
+        given(merkleToken.isDeleted()).willReturn(false);
+        given(merkleToken.isPaused()).willReturn(true);
+        Assertions.assertThrows(
+                InvalidTransactionException.class, () -> subject.updateTokenExpiryInfo(op));
+    }
+
+    @Test
+    void updateTokenExpiryInfoFailsForMissingAdminKey() {
+        givenTokenUpdateLogic(true);
+        givenValidTransactionBody(true, false);
+        given(merkleToken.hasAdminKey()).willReturn(false);
+        given(validator.isValidExpiry(EXPIRY)).willReturn(true);
+        given(store.get(fungible)).willReturn(merkleToken);
+        given(store.resolve(op.getToken())).willReturn(op.getToken());
+        Assertions.assertThrows(
+                InvalidTransactionException.class, () -> subject.updateTokenExpiryInfo(op));
     }
 
     private void givenContextForSuccessFullCalls() {
