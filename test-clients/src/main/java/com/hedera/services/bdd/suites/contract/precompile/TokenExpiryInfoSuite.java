@@ -83,10 +83,7 @@ public class TokenExpiryInfoSuite extends HapiApiSuite {
 
     @Override
     public List<HapiApiSpec> getSpecsInSuite() {
-        return List.of(
-            getExpiryInfoForToken(),
-            updateExpiryInfoForToken()
-        );
+        return List.of(getExpiryInfoForToken(), updateExpiryInfoForToken());
     }
 
     private HapiApiSpec getExpiryInfoForToken() {
