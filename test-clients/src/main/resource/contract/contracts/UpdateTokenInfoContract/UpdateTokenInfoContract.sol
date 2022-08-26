@@ -63,7 +63,7 @@ contract UpdateTokenInfoContract is HederaTokenService, FeeHelper {
     }
 
     // TEST-003
-    function checkNameAndSymbolLenght(
+    function checkNameAndSymbolLength(
         address tokenID,
         address treasury,
         string memory _name,
@@ -140,7 +140,7 @@ contract UpdateTokenInfoContract is HederaTokenService, FeeHelper {
 
     // TEST-006
     function tokenUpdateKeys(
-        address tokenID,
+        address token,
         bytes memory ed25519,
         bytes memory ecdsa,
         address contractID) public payable {
@@ -152,10 +152,10 @@ contract UpdateTokenInfoContract is HederaTokenService, FeeHelper {
         keys[3] = getSingleKey(6, 2, contractID);
         keys[4] = getSingleKey(5, 5, contractID);
 
-        int responseCode = HederaTokenService.updateTokenKeys(tokenID, keys);
+        int responseCode = super.updateTokenKeys(token, keys);
 
         if (responseCode != HederaResponseCodes.SUCCESS) {
-            revert ("Update of tokenInfo failed!");
+            revert ("Update of token keys failed!");
         }
     }
 

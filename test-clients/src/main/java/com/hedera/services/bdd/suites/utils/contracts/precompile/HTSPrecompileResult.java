@@ -115,7 +115,6 @@ public class HTSPrecompileResult implements ContractCallResult {
                             + ")");
     public static final TupleType getTokenExpiryInfoTypeReplacedAddress =
             TupleType.parse(RESPONSE_STATUS_AT_BEGINNING + EXPIRY_REPLACED_ADDRESS + ")");
-
     public static final TupleType getTokenKeyReplacedAddress =
             TupleType.parse(RESPONSE_STATUS_AT_BEGINNING + KEY_VALUE_REPLACED_ADDRESS + ")");
 

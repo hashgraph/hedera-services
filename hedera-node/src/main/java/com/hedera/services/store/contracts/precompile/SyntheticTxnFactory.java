@@ -576,6 +576,7 @@ public class SyntheticTxnFactory {
             builder.setAutoRenewPeriod(
                     Duration.newBuilder().setSeconds(updateWrapper.expiry().autoRenewPeriod()));
         }
+
         return checkTokenKeysTypeAndBuild(updateWrapper.tokenKeys(), builder);
     }
 
@@ -603,6 +604,7 @@ public class SyntheticTxnFactory {
                     if (tokenKeyWrapper.isUsedForFeeScheduleKey()) builder.setFeeScheduleKey(key);
                     if (tokenKeyWrapper.isUsedForPauseKey()) builder.setPauseKey(key);
                 });
+
         return TransactionBody.newBuilder().setTokenUpdate(builder);
     }
 
@@ -621,6 +623,7 @@ public class SyntheticTxnFactory {
             builder.setAutoRenewPeriod(
                     Duration.newBuilder().setSeconds(expiryInfoWrapper.expiry().autoRenewPeriod()));
         }
+
         return TransactionBody.newBuilder().setTokenUpdate(builder);
     }
 
