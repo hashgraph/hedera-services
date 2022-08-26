@@ -477,13 +477,13 @@ public class HTSPrecompileResult implements ContractCallResult {
     }
 
     private Tuple getHederaTokenTuple() {
-        final var tokenInfoExpiry = tokenInfo.getExpiry().getSeconds();
-        final var tokenInfoAutoRenewPeriod = tokenInfo.getAutoRenewPeriod().getSeconds();
+        expiry = tokenInfo.getExpiry().getSeconds();
+        autoRenewPeriod = tokenInfo.getAutoRenewPeriod().getSeconds();
         final var expiryTuple =
                 Tuple.of(
-                    tokenInfoExpiry,
+                    expiry,
                         expandByteArrayTo32Length(Utils.asAddress(tokenInfo.getAutoRenewAccount())),
-                    tokenInfoAutoRenewPeriod);
+                    autoRenewPeriod);
 
         return Tuple.of(
                 tokenInfo.getName(),
