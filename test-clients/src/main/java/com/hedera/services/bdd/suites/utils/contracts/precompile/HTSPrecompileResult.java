@@ -22,6 +22,7 @@ import static com.hedera.services.contracts.ParsingConstants.EXPIRY;
 import static com.hedera.services.contracts.ParsingConstants.FIXED_FEE;
 import static com.hedera.services.contracts.ParsingConstants.FRACTIONAL_FEE;
 import static com.hedera.services.contracts.ParsingConstants.HEDERA_TOKEN;
+import static com.hedera.services.contracts.ParsingConstants.KEY_VALUE;
 import static com.hedera.services.contracts.ParsingConstants.RESPONSE_STATUS_AT_BEGINNING;
 import static com.hedera.services.contracts.ParsingConstants.ROYALTY_FEE;
 import static com.hedera.services.contracts.ParsingConstants.addressTuple;

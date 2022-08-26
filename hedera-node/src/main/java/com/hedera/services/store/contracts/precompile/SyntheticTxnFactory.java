@@ -607,19 +607,19 @@ public class SyntheticTxnFactory {
     }
 
     public TransactionBody.Builder createTokenUpdateExpiryInfo(
-        TokenUpdateExpiryInfoWrapper expiryInfoWrapper) {
+            TokenUpdateExpiryInfoWrapper expiryInfoWrapper) {
         final var builder = TokenUpdateTransactionBody.newBuilder();
         builder.setToken(expiryInfoWrapper.tokenID());
 
         if (expiryInfoWrapper.expiry().second() != 0) {
             builder.setExpiry(
-                Timestamp.newBuilder().setSeconds(expiryInfoWrapper.expiry().second()).build());
+                    Timestamp.newBuilder().setSeconds(expiryInfoWrapper.expiry().second()).build());
         }
         if (expiryInfoWrapper.expiry().autoRenewAccount() != null)
             builder.setAutoRenewAccount(expiryInfoWrapper.expiry().autoRenewAccount());
         if (expiryInfoWrapper.expiry().autoRenewPeriod() != 0) {
             builder.setAutoRenewPeriod(
-                Duration.newBuilder().setSeconds(expiryInfoWrapper.expiry().autoRenewPeriod()));
+                    Duration.newBuilder().setSeconds(expiryInfoWrapper.expiry().autoRenewPeriod()));
         }
         return TransactionBody.newBuilder().setTokenUpdate(builder);
     }

@@ -24,6 +24,7 @@ import static com.hedera.services.contracts.ParsingConstants.decimalsType;
 import static com.hedera.services.contracts.ParsingConstants.getFungibleTokenInfoType;
 import static com.hedera.services.contracts.ParsingConstants.getNonFungibleTokenInfoType;
 import static com.hedera.services.contracts.ParsingConstants.getTokenCustomFeesType;
+import static com.hedera.services.contracts.ParsingConstants.getTokenExpiryInfoType;
 import static com.hedera.services.contracts.ParsingConstants.getTokenInfoType;
 import static com.hedera.services.contracts.ParsingConstants.getTokenKeyType;
 import static com.hedera.services.contracts.ParsingConstants.hapiAllowanceOfType;
