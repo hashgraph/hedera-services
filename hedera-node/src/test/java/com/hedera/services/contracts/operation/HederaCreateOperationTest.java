@@ -41,7 +41,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.BDDMockito.given;
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.contracts.gascalculator.StorageGasCalculator;
 import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.state.EntityCreator;
 import com.hedera.services.store.contracts.HederaWorldUpdater;
@@ -59,7 +58,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class HederaCreateOperationTest {
     private static final long baseGas = 100L;
-    private static final long extraGas = 101L;
 
     private final Address recipientAddr =
             Address.fromHexString("0x0102030405060708090a0b0c0d0e0f1011121314");
@@ -70,7 +68,6 @@ class HederaCreateOperationTest {
     @Mock private SyntheticTxnFactory syntheticTxnFactory;
     @Mock private EntityCreator creator;
     @Mock private RecordsHistorian recordsHistorian;
-    @Mock private StorageGasCalculator storageGasCalculator;
     @Mock private GlobalDynamicProperties dynamicProperties;
 
     private HederaCreateOperation subject;
@@ -83,7 +80,6 @@ class HederaCreateOperationTest {
                         creator,
                         syntheticTxnFactory,
                         recordsHistorian,
-                        storageGasCalculator,
                         dynamicProperties);
     }
 
@@ -95,11 +91,10 @@ class HederaCreateOperationTest {
     @Test
     void computesExpectedCost() {
         given(gasCalculator.createOperationGasCost(frame)).willReturn(baseGas);
-        given(storageGasCalculator.creationGasCost(frame, gasCalculator)).willReturn(extraGas);
 
         var actualGas = subject.cost(frame);
 
-        assertEquals(baseGas + extraGas, actualGas);
+        assertEquals(baseGas, actualGas);
     }
 
     @Test

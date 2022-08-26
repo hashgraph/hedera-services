@@ -23,6 +23,7 @@ import static org.apache.tuweni.units.bigints.UInt256.ZERO;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.fees.charging.StorageFeeCharging;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.state.merkle.MerkleAccount;
@@ -37,7 +38,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.TreeSet;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import javax.inject.Inject;
@@ -57,15 +57,19 @@ import org.apache.tuweni.units.bigints.UInt256;
  */
 @Singleton
 public class SizeLimitedStorage {
+
     private static final Logger log = LogManager.getLogger(SizeLimitedStorage.class);
     public static final IterableContractValue ZERO_VALUE = IterableContractValue.from(ZERO);
 
     private final ContractStorageLimits usageLimits;
 
+    // Used to charge storage fees before committing changes
+    private final StorageFeeCharging storageFeeCharging;
     // Used to upsert to a contract's doubly-linked list of storage mappings
     private final IterableStorageUpserter storageUpserter;
     // Used to remove from a contract's doubly-linked list of storage mappings
     private final IterableStorageRemover storageRemover;
+    private final Function<Long, KvUsageInfo> usageInfoLookup;
 
     // Used to look up the initial key/value counts for the contracts involved in a change set
     private final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts;
@@ -73,7 +77,7 @@ public class SizeLimitedStorage {
     private final Supplier<VirtualMap<ContractKey, IterableContractValue>> storage;
 
     private final Map<Long, ContractKey> newFirstKeys = new HashMap<>();
-    private final Map<Long, AtomicInteger> newUsages = new TreeMap<>();
+    private final Map<Long, KvUsageInfo> usageChanges = new TreeMap<>();
     private final Map<Long, TreeSet<ContractKey>> updatedKeys = new TreeMap<>();
     private final Map<Long, TreeSet<ContractKey>> removedKeys = new TreeMap<>();
     private final Map<ContractKey, IterableContractValue> newMappings = new HashMap<>();
@@ -82,6 +86,7 @@ public class SizeLimitedStorage {
 
     @Inject
     public SizeLimitedStorage(
+            final StorageFeeCharging storageFeeCharging,
             final ContractStorageLimits usageLimits,
             final IterableStorageUpserter storageUpserter,
             final IterableStorageRemover storageRemover,
@@ -89,14 +94,16 @@ public class SizeLimitedStorage {
             final Supplier<VirtualMap<ContractKey, IterableContractValue>> storage) {
         this.storageRemover = storageRemover;
         this.storageUpserter = storageUpserter;
+        this.storageFeeCharging = storageFeeCharging;
         this.usageLimits = usageLimits;
         this.accounts = accounts;
         this.storage = storage;
+        this.usageInfoLookup = num -> new KvUsageInfo(kvPairsLookup(num));
     }
 
     /** Clears all buffers and prepares for a new change-set of key/value pairs. */
     public void beginSession() {
-        newUsages.clear();
+        usageChanges.clear();
         updatedKeys.clear();
         removedKeys.clear();
         newMappings.clear();
@@ -112,13 +119,16 @@ public class SizeLimitedStorage {
      * @throws com.hedera.services.exceptions.InvalidTransactionException if a storage limit is
      *     exceeded
      */
-    public void validateAndCommit() {
+    public void validateAndCommit(
+            final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger) {
         validatePendingSizeChanges();
+        // If fees cannot be paid, throws an ITE,  rolling back this EVM transaction
+        storageFeeCharging.chargeStorageRent(totalKvPairs, usageChanges, accountsLedger);
 
         commitPendingRemovals();
         commitPendingUpdates();
 
-        if (!newUsages.isEmpty()) {
+        if (!usageChanges.isEmpty()) {
             usageLimits.refreshStorageSlots();
         }
     }
@@ -131,13 +141,13 @@ public class SizeLimitedStorage {
      */
     public void recordNewKvUsageTo(
             final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger) {
-        if (newUsages.isEmpty()) {
+        if (usageChanges.isEmpty()) {
             return;
         }
-        newUsages.forEach(
-                (contractNum, kvPairs) -> {
+        usageChanges.forEach(
+                (contractNum, kvUsageInfo) -> {
                     final var id = STATIC_PROPERTIES.scopedAccountWith(contractNum);
-                    accountsLedger.set(id, NUM_CONTRACT_KV_PAIRS, kvPairs.get());
+                    accountsLedger.set(id, NUM_CONTRACT_KV_PAIRS, kvUsageInfo.pendingUsage());
                     final var newFirstKey = newFirstKeys.get(contractNum);
                     accountsLedger.set(
                             id,
@@ -189,15 +199,16 @@ public class SizeLimitedStorage {
                         newMappings,
                         storage.get());
         if (kvCountImpact != 0) {
-            newUsages
-                    .computeIfAbsent(id.getAccountNum(), this::kvPairsLookup)
-                    .getAndAdd(kvCountImpact);
+            usageChanges
+                    .computeIfAbsent(id.getAccountNum(), usageInfoLookup)
+                    .updatePendingBy(kvCountImpact);
             totalKvPairs += kvCountImpact;
         }
     }
 
     @FunctionalInterface
     public interface IterableStorageUpserter {
+
         ContractKey upsertMapping(
                 ContractKey key,
                 IterableContractValue value,
@@ -208,18 +219,19 @@ public class SizeLimitedStorage {
 
     @FunctionalInterface
     public interface IterableStorageRemover {
+
         ContractKey removeMapping(
                 ContractKey key,
                 ContractKey rootKey,
                 VirtualMap<ContractKey, IterableContractValue> storage);
     }
 
-    private AtomicInteger kvPairsLookup(final Long num) {
+    private int kvPairsLookup(final Long num) {
         final var account = accounts.get().get(fromLong(num));
         if (account == null) {
-            return new AtomicInteger(0);
+            return 0;
         }
-        return new AtomicInteger(account.getNumContractKvPairs());
+        return account.getNumContractKvPairs();
     }
 
     private ContractKey firstKeyLookup(final Long num) {
@@ -239,7 +251,7 @@ public class SizeLimitedStorage {
      *   <li>A new {@code key}/{@code value} mapping;
      * </ul>
      *
-     * this method incorporates the new key/value mapping into the dynamic data structures, and
+     * <p>this method incorporates the new key/value mapping into the dynamic data structures, and
      * returns the impact that this change had on the total count of key/value pairs; <i>taking into
      * account</i> all changes buffered so far in the session.
      *
@@ -334,8 +346,9 @@ public class SizeLimitedStorage {
 
     private void validatePendingSizeChanges() {
         usageLimits.assertUsableTotalSlots(totalKvPairs);
-        newUsages.forEach(
-                (id, newKvPairs) -> usageLimits.assertUsableContractSlots(newKvPairs.get()));
+        usageChanges.forEach(
+                (id, kvUsageInfo) ->
+                        usageLimits.assertUsableContractSlots(kvUsageInfo.pendingUsage()));
     }
 
     private void commitPendingUpdates() {
@@ -347,11 +360,11 @@ public class SizeLimitedStorage {
                 (id, changeSet) -> {
                     IterableContractValue firstValue = null;
                     // We can't use newFirstKeys.computeIfAbsent() below, since that method treats
-                    // an id->null mapping as
-                    // ABSENT(!)---but if newFirstKeys contains an id->null mapping, it means that
-                    // all the existing key/value
-                    // pairs were removed for that contract, and we must ignore any existing first
-                    // key in the accounts map
+                    // an id->null mapping as ABSENT(!); but if newFirstKeys contains an id->null
+                    // mapping,
+                    // it means that all the existing key/value pairs were removed for that
+                    // contract, and
+                    // we must ignore any existing first key in the accounts map
                     var firstKey =
                             newFirstKeys.containsKey(id)
                                     ? newFirstKeys.get(id)
@@ -372,8 +385,7 @@ public class SizeLimitedStorage {
                                     irreparable);
                         }
                         // If newValue was just added to the map, it is the mutable root value; but
-                        // if we only
-                        // updated the existing root value, then newValue is NOT the mutable root
+                        // if we only updated the existing root, newValue is NOT the mutable root
                         // value
                         firstValue =
                                 (changedKey.equals(firstKey) && curStorage.size() > preInsertSize)
@@ -417,12 +429,12 @@ public class SizeLimitedStorage {
     // --- Only used by unit tests ---
     @VisibleForTesting
     int usageSoFar(final AccountID id) {
-        return newUsages.computeIfAbsent(id.getAccountNum(), this::kvPairsLookup).get();
+        return usageChanges.computeIfAbsent(id.getAccountNum(), usageInfoLookup).pendingUsage();
     }
 
     @VisibleForTesting
-    Map<Long, AtomicInteger> getNewUsages() {
-        return newUsages;
+    Map<Long, KvUsageInfo> getUsageChanges() {
+        return usageChanges;
     }
 
     @VisibleForTesting

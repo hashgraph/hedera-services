@@ -35,6 +35,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenDissociate
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
+import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.log;
 import static com.hedera.services.bdd.suites.HapiApiSuite.ADDRESS_BOOK_CONTROL;
 import static com.hedera.services.bdd.suites.HapiApiSuite.APP_PROPERTIES;
 import static com.hedera.services.bdd.suites.HapiApiSuite.EXCHANGE_RATE_CONTROL;
@@ -129,15 +130,7 @@ import java.nio.file.Paths;
 import java.text.ParseException;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.AbstractMap;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.OptionalLong;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -351,11 +344,15 @@ public class UtilVerbs {
 
     public static HapiSpecOperation resetToDefault(String... properties) {
         var defaultNodeProps = HapiSpecSetup.getDefaultNodeProps();
+        final Map<String, String> defaultValues = new HashMap<>();
+        for (final var prop : properties) {
+            final var defaultValue = defaultNodeProps.get(prop);
+            log.info("Resetting {} to default value {}", prop, defaultValue);
+            defaultValues.put(prop, defaultValue);
+        }
         return fileUpdate(APP_PROPERTIES)
                 .payingWith(ADDRESS_BOOK_CONTROL)
-                .overridingProps(
-                        Arrays.stream(properties)
-                                .collect(Collectors.toMap(v -> v, defaultNodeProps::get)));
+                .overridingProps(defaultValues);
     }
 
     public static HapiSpecOperation overridingTwo(

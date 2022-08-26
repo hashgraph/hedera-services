@@ -21,8 +21,10 @@ import static com.hedera.services.files.EntityExpiryMapFactory.entityExpiryMapFr
 import static com.hedera.services.store.contracts.precompile.ExchangeRatePrecompiledContract.EXCHANGE_RATE_SYSTEM_CONTRACT_ADDRESS;
 import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.HTS_PRECOMPILED_CONTRACT_ADDRESS;
 import static com.hedera.services.store.contracts.precompile.PrngSystemPrecompiledContract.PRNG_PRECOMPILE_ADDRESS;
+import static org.hyperledger.besu.evm.operation.SStoreOperation.FRONTIER_MINIMUM;
 
 import com.hedera.services.context.TransactionContext;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.contracts.annotations.BytecodeSource;
 import com.hedera.services.contracts.annotations.StorageSource;
 import com.hedera.services.contracts.gascalculator.GasCalculatorHederaV22;
@@ -223,10 +225,13 @@ public interface ContractsModule {
     @IntoSet
     Operation bindSelfDestructOperation(HederaSelfDestructOperation selfDestruct);
 
-    @Binds
+    @Provides
     @Singleton
     @IntoSet
-    Operation bindSStoreOperation(HederaSStoreOperation sstore);
+    static Operation provideSStoreOperation(
+            final GasCalculator gasCalculator, final GlobalDynamicProperties dynamicProperties) {
+        return new HederaSStoreOperation(FRONTIER_MINIMUM, gasCalculator, dynamicProperties);
+    }
 
     @Binds
     @Singleton

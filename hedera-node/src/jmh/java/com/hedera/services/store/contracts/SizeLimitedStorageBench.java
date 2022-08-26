@@ -24,6 +24,7 @@ import static com.hedera.services.setup.InfrastructureType.CONTRACT_STORAGE_VM;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.mocks.MockStorageLimits;
+import com.hedera.services.mocks.NoopStorageFeeCharging;
 import com.hedera.services.setup.Constructables;
 import com.hedera.services.setup.EvmKeyValueSource;
 import com.hedera.services.setup.InfrastructureBundle;
@@ -87,6 +88,7 @@ public class SizeLimitedStorageBench {
         bundle = loadOrCreateBundle(activeConfig(), requiredInfra());
         subject =
                 new SizeLimitedStorage(
+                        new NoopStorageFeeCharging(),
                         new MockStorageLimits(),
                         IterableStorageUtils::overwritingUpsertMapping,
                         IterableStorageUtils::removeMapping,
@@ -124,7 +126,7 @@ public class SizeLimitedStorageBench {
             subject.putStorage(
                     contractId, mutationBatch.keys()[batchI], mutationBatch.values()[batchI]);
         }
-        subject.validateAndCommit();
+        subject.validateAndCommit(ledger);
         subject.recordNewKvUsageTo(ledger);
 
         ledger.commit();
