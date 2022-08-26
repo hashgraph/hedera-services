@@ -106,7 +106,7 @@ tasks.assemble {
 
 // Create the "run" task for running a Hedera consensus node
 tasks.register<JavaExec>("run") {
-    dependsOn(tasks.findByName("copyApp"), tasks.findByName("copyLib"))
+    dependsOn(tasks.assemble)
     classpath("data/apps/HederaNode.jar")
 }
 
