@@ -19,7 +19,6 @@ import static com.hedera.services.utils.MiscUtils.readableNftTransferList;
 
 import com.google.common.base.MoreObjects;
 import com.hedera.services.utils.EntityIdUtils;
-import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.NftTransfer;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.swirlds.common.io.SelfSerializable;
@@ -56,16 +55,17 @@ public class NftAdjustments implements SelfSerializable {
         this.receiverAccIds = receiverAccIds;
     }
 
-    public void appendAdjust(final EntityId senderId, final EntityId receiverId, final long serialNo) {
-       final var newSerialNums = new long[serialNums.length + 1];
-       System.arraycopy(serialNums, 0, newSerialNums, 0, serialNums.length);
-       newSerialNums[serialNums.length] = serialNo;
-       serialNums = newSerialNums;
+    public void appendAdjust(
+            final EntityId senderId, final EntityId receiverId, final long serialNo) {
+        final var newSerialNums = new long[serialNums.length + 1];
+        System.arraycopy(serialNums, 0, newSerialNums, 0, serialNums.length);
+        newSerialNums[serialNums.length] = serialNo;
+        serialNums = newSerialNums;
 
-       senderAccIds = new ArrayList<>(senderAccIds);
-       senderAccIds.add(senderId);
-       receiverAccIds = new ArrayList<>(receiverAccIds);
-       receiverAccIds.add(receiverId);
+        senderAccIds = new ArrayList<>(senderAccIds);
+        senderAccIds.add(senderId);
+        receiverAccIds = new ArrayList<>(receiverAccIds);
+        receiverAccIds.add(receiverId);
     }
 
     @Override

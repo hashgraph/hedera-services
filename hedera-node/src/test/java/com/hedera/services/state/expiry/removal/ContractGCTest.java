@@ -57,12 +57,7 @@ class ContractGCTest {
 
     @BeforeEach
     void setUp() {
-        subject =
-                new ContractGC(
-                        expiryThrottle,
-                        () -> contracts,
-                        () -> storage,
-                        () -> bytecode);
+        subject = new ContractGC(expiryThrottle, () -> contracts, () -> storage, () -> bytecode);
         subject.setRemovalFacilitation(removalFacilitation);
     }
 

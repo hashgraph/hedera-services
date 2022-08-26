@@ -15,6 +15,9 @@
  */
 package com.hedera.services.state.expiry.removal;
 
+import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
+import static com.hedera.services.utils.NftNumPair.MISSING_NFT_NUM_PAIR;
+
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
@@ -25,16 +28,12 @@ import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
 import com.hedera.services.utils.NftNumPair;
 import com.swirlds.merkle.map.MerkleMap;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
 import java.util.List;
 import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-
-import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
-import static com.hedera.services.utils.NftNumPair.MISSING_NFT_NUM_PAIR;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 @Singleton
 public class TreasuryReturnHelper {
@@ -60,10 +59,14 @@ public class TreasuryReturnHelper {
             typeI = tokenTypes.size() - 1;
         }
         if (token.isDeleted()) {
-            returnExchanges.get(typeI).appendAdjust(expiredNum.toEntityId(), MISSING_ENTITY_ID, serialNo);
+            returnExchanges
+                    .get(typeI)
+                    .appendAdjust(expiredNum.toEntityId(), MISSING_ENTITY_ID, serialNo);
             return false;
         } else {
-            returnExchanges.get(typeI).appendAdjust(expiredNum.toEntityId(), token.treasury(), serialNo);
+            returnExchanges
+                    .get(typeI)
+                    .appendAdjust(expiredNum.toEntityId(), token.treasury(), serialNo);
             return true;
         }
     }
@@ -71,8 +74,7 @@ public class TreasuryReturnHelper {
     EntityNumPair finishNft(
             final boolean burn,
             final EntityNumPair rootKey,
-            final MerkleMap<EntityNumPair, MerkleUniqueToken> nfts
-    ) {
+            final MerkleMap<EntityNumPair, MerkleUniqueToken> nfts) {
         final NftNumPair nextKey;
         if (burn) {
             final var burnedNft = nfts.get(rootKey);
@@ -85,7 +87,6 @@ public class TreasuryReturnHelper {
         }
         return effective(nextKey);
     }
-
 
     void updateFungibleReturns(
             final EntityNum expiredNum,
@@ -117,7 +118,8 @@ public class TreasuryReturnHelper {
             treasuryRel.setBalance(newTreasuryBalance);
             return true;
         } catch (final Exception internal) {
-            log.warn("Undeleted token {} treasury {} should be valid, but",
+            log.warn(
+                    "Undeleted token {} treasury {} should be valid, but",
                     tokenNum.toIdString(),
                     token.treasury(),
                     internal);

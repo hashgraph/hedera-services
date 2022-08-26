@@ -104,11 +104,7 @@ public class RenewalHelper implements RenewalWork {
         renewWith(renewalFee, renewalPeriod);
 
         recordsHelper.streamCryptoRenewal(
-                account,
-                renewalFee,
-                oldExpiry + renewalPeriod,
-                isContract,
-                payer.getKey());
+                account, renewalFee, oldExpiry + renewalPeriod, isContract, payer.getKey());
         return DONE;
     }
 

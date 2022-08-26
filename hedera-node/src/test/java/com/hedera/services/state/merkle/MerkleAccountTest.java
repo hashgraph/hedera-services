@@ -177,7 +177,7 @@ class MerkleAccountTest {
     void namecanGetHeadNftKey() {
         final var expected = EntityNumPair.fromLongs(lastAssociatedNftNum, lastAssociatedNftSerial);
         assertEquals(expected, subject.getHeadNftKey());
-      }
+    }
 
     @Test
     void returnsExpectedNumPayerRecords() {

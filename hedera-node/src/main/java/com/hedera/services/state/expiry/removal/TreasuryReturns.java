@@ -49,12 +49,14 @@ import javax.inject.Singleton;
 @Singleton
 public class TreasuryReturns {
     private static final MerkleToken STANDIN_DELETED_TOKEN = new MerkleToken();
+
     static {
         STANDIN_DELETED_TOKEN.setDeleted(true);
     }
 
     static final List<MapAccessType> TOKEN_DELETION_CHECK = List.of(TOKENS_GET);
-    static final List<MapAccessType> ONLY_REL_REMOVAL_WORK = List.of(TOKENS_GET, TOKEN_ASSOCIATIONS_REMOVE);
+    static final List<MapAccessType> ONLY_REL_REMOVAL_WORK =
+            List.of(TOKENS_GET, TOKEN_ASSOCIATIONS_REMOVE);
     static final List<MapAccessType> NEXT_REL_REMOVAL_WORK =
             List.of(TOKENS_GET, TOKEN_ASSOCIATIONS_REMOVE, TOKEN_ASSOCIATIONS_GET_FOR_MODIFY);
     static final List<MapAccessType> NFT_BURN_WORK = List.of(NFTS_GET, NFTS_REMOVE);
@@ -152,8 +154,14 @@ public class TreasuryReturns {
             if (!hasCapacityForNftReturn(expectedBurn)) {
                 break;
             }
-            final var returned = returnHelper.updateNftReturns(
-                    expiredNum, tokenNum, token, nftKey.getLowOrderAsLong(), tokenTypes, returnExchanges);
+            final var returned =
+                    returnHelper.updateNftReturns(
+                            expiredNum,
+                            tokenNum,
+                            token,
+                            nftKey.getLowOrderAsLong(),
+                            tokenTypes,
+                            returnExchanges);
             nftKey = returnHelper.finishNft(!returned, nftKey, curNfts);
             n++;
         }

@@ -19,7 +19,6 @@ import static com.hedera.services.state.virtual.VirtualBlobKey.Type.CONTRACT_BYT
 import static com.hedera.services.throttling.MapAccessType.*;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.virtual.ContractKey;
 import com.hedera.services.state.virtual.ContractStorageListMutation;

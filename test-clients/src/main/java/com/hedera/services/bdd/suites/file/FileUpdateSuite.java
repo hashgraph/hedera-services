@@ -146,7 +146,7 @@ public class FileUpdateSuite extends HapiApiSuite {
                     chainIdChangesDynamically(),
                     entitiesNotCreatableAfterUsageLimitsReached(),
                     rentItemizedAsExpectedWithOverridePriceTiers(),
-                        messageSubmissionSizeChange()
+                    messageSubmissionSizeChange()
                 });
     }
 
@@ -765,7 +765,6 @@ public class FileUpdateSuite extends HapiApiSuite {
                                                 "consensus.message.maxBytesAllowed",
                                                 String.valueOf(defaultMaxBytesAllowed))));
     }
-
 
     @Override
     protected Logger getResultsLogger() {

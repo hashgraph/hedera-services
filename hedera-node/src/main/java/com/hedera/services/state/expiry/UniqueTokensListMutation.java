@@ -28,7 +28,8 @@ public class UniqueTokensListMutation
 
     final MerkleMap<EntityNumPair, MerkleUniqueToken> uniqueTokens;
 
-    public UniqueTokensListMutation(final MerkleMap<EntityNumPair, MerkleUniqueToken> uniqueTokens) {
+    public UniqueTokensListMutation(
+            final MerkleMap<EntityNumPair, MerkleUniqueToken> uniqueTokens) {
         this.uniqueTokens = uniqueTokens;
     }
 

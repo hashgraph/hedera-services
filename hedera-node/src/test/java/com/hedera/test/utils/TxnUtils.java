@@ -53,7 +53,6 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Random;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 public class TxnUtils {
     public static TransferList withAdjustments(
@@ -430,11 +429,13 @@ public class TxnUtils {
     public static TokenTransferList burnExchangeOf(TokenID scope, AccountID src, long serialNo) {
         return TokenTransferList.newBuilder()
                 .setToken(scope)
-                .addNftTransfers(serialFromTo(serialNo, src, EntityNum.fromLong(0).toGrpcAccountId()))
+                .addNftTransfers(
+                        serialFromTo(serialNo, src, EntityNum.fromLong(0).toGrpcAccountId()))
                 .build();
     }
 
-    public static TokenTransferList returnExchangeOf(TokenID scope, AccountID src, AccountID dst, long serialNo) {
+    public static TokenTransferList returnExchangeOf(
+            TokenID scope, AccountID src, AccountID dst, long serialNo) {
         return TokenTransferList.newBuilder()
                 .setToken(scope)
                 .addNftTransfers(serialFromTo(serialNo, src, dst))

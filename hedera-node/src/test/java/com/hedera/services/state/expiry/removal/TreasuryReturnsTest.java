@@ -118,7 +118,12 @@ class TreasuryReturnsTest {
         assertEquals(expected, actual);
         verify(returnHelper)
                 .updateFungibleReturns(
-                        eq(num), eq(bTokenId.asNum()), eq(fungibleToken), eq(1L), any(List.class), eq(tokenRels));
+                        eq(num),
+                        eq(bTokenId.asNum()),
+                        eq(fungibleToken),
+                        eq(1L),
+                        any(List.class),
+                        eq(tokenRels));
         assertEquals(0, accountWithRels.getNumAssociations());
     }
 
@@ -200,7 +205,12 @@ class TreasuryReturnsTest {
         assertEquals(expected, actual);
         verify(returnHelper)
                 .updateFungibleReturns(
-                        eq(num), eq(bTokenId.asNum()), eq(deletedFungibleToken), eq(1L), any(List.class), eq(tokenRels));
+                        eq(num),
+                        eq(bTokenId.asNum()),
+                        eq(deletedFungibleToken),
+                        eq(1L),
+                        any(List.class),
+                        eq(tokenRels));
         verify(expiryThrottle, never()).allow(TREASURY_BALANCE_INCREMENT);
         assertEquals(0, accountWithRels.getNumAssociations());
     }
@@ -300,14 +310,26 @@ class TreasuryReturnsTest {
             given(tokens.get(bNftKey.getHiOrderAsNum())).willReturn(deletedNfToken);
         }
 
-        given(returnHelper.updateNftReturns(
-                eq(num), eq(aNftKey.getHiOrderAsNum()), eq(nfToken), eq(aNftKey.getLowOrderAsLong()),
-                any(List.class), any(List.class))).willReturn(true);
+        given(
+                        returnHelper.updateNftReturns(
+                                eq(num),
+                                eq(aNftKey.getHiOrderAsNum()),
+                                eq(nfToken),
+                                eq(aNftKey.getLowOrderAsLong()),
+                                any(List.class),
+                                any(List.class)))
+                .willReturn(true);
         given(returnHelper.finishNft(false, aNftKey, nfts)).willReturn(bNftKey);
         if (includeBRemoval) {
-            given(returnHelper.updateNftReturns(
-                    eq(num), eq(bNftKey.getHiOrderAsNum()), any(), eq(bNftKey.getLowOrderAsLong()),
-                    any(List.class), any(List.class))).willReturn(false);
+            given(
+                            returnHelper.updateNftReturns(
+                                    eq(num),
+                                    eq(bNftKey.getHiOrderAsNum()),
+                                    any(),
+                                    eq(bNftKey.getLowOrderAsLong()),
+                                    any(List.class),
+                                    any(List.class)))
+                    .willReturn(false);
             given(returnHelper.finishNft(true, bNftKey, nfts)).willReturn(null);
         }
     }
@@ -318,16 +340,18 @@ class TreasuryReturnsTest {
     private final EntityId aTokenId = EntityId.fromNum(666L);
     private final EntityId bTokenId = EntityId.fromNum(777L);
     private final EntityNumPair aRelKey = EntityNumPair.fromNums(num, aTokenId.asNum());
-    private final EntityNumPair aNftKey = new NftNumPair(aTokenId.num(), aSerialNo).asEntityNumPair();
-    private final EntityNumPair bNftKey = new NftNumPair(bTokenId.num(), bSerialNo).asEntityNumPair();
+    private final EntityNumPair aNftKey =
+            new NftNumPair(aTokenId.num(), aSerialNo).asEntityNumPair();
+    private final EntityNumPair bNftKey =
+            new NftNumPair(bTokenId.num(), bSerialNo).asEntityNumPair();
     private final EntityNumPair bRelKey = EntityNumPair.fromNums(num, bTokenId.asNum());
     private final MerkleTokenRelStatus aRelStatus =
             new MerkleTokenRelStatus(0L, false, false, true);
     private final MerkleTokenRelStatus bRelStatus =
             new MerkleTokenRelStatus(1L, false, false, true);
 
-    private final MerkleUniqueToken someNft = new MerkleUniqueToken(
-            num.toEntityId(), "A".getBytes(), RichInstant.MISSING_INSTANT);
+    private final MerkleUniqueToken someNft =
+            new MerkleUniqueToken(num.toEntityId(), "A".getBytes(), RichInstant.MISSING_INSTANT);
 
     private final MerkleAccount accountWithRels =
             MerkleAccountFactory.newAccount()
