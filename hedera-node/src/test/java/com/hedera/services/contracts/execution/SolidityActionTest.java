@@ -17,6 +17,7 @@ package com.hedera.services.contracts.execution;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import com.hedera.services.contracts.execution.traceability.CallOperationType;
 import com.hedera.services.contracts.execution.traceability.ContractActionType;
 import com.hedera.services.contracts.execution.traceability.SolidityAction;
 import com.hedera.services.legacy.proto.utils.ByteStringUtils;
@@ -50,7 +51,8 @@ class SolidityActionTest {
                         recipient,
                         null,
                         value,
-                        0);
+                        0,
+                        CallOperationType.OP_CALL);
         actual.setGasUsed(gasUsed);
         actual.setOutput(output);
 
@@ -65,6 +67,8 @@ class SolidityActionTest {
                         .setGasUsed(gasUsed)
                         .setOutput(ByteStringUtils.wrapUnsafely(output))
                         .setCallDepth(0)
+                        .setCallOperationType(
+                                com.hedera.services.stream.proto.CallOperationType.OP_CALL)
                         .build();
 
         assertEquals(expected, actual.toGrpc());
@@ -82,7 +86,8 @@ class SolidityActionTest {
                         null,
                         recipient,
                         value,
-                        0);
+                        0,
+                        CallOperationType.OP_CALL);
         actual.setGasUsed(gasUsed);
         actual.setRevertReason(output);
 
@@ -99,6 +104,8 @@ class SolidityActionTest {
                         .setGasUsed(gasUsed)
                         .setRevertReason(ByteStringUtils.wrapUnsafely(output))
                         .setCallDepth(0)
+                        .setCallOperationType(
+                                com.hedera.services.stream.proto.CallOperationType.OP_CALL)
                         .build();
 
         assertEquals(expected, actual.toGrpc());
@@ -108,7 +115,16 @@ class SolidityActionTest {
     void toGrpcWhenInvalidRecipientAndErrorAreSet() {
         final var actual =
                 new SolidityAction(
-                        ContractActionType.CALL, null, sender, gas, input, null, null, value, 0);
+                        ContractActionType.CALL,
+                        null,
+                        sender,
+                        gas,
+                        input,
+                        null,
+                        null,
+                        value,
+                        0,
+                        CallOperationType.OP_CALL);
         actual.setGasUsed(gasUsed);
         actual.setError(output);
         actual.setInvalidSolidityAddress(recipient.toEvmAddress().toArrayUnsafe());
@@ -127,6 +143,8 @@ class SolidityActionTest {
                         .setGasUsed(gasUsed)
                         .setError(ByteStringUtils.wrapUnsafely(output))
                         .setCallDepth(0)
+                        .setCallOperationType(
+                                com.hedera.services.stream.proto.CallOperationType.OP_CALL)
                         .build();
 
         assertEquals(expected, actual.toGrpc());
