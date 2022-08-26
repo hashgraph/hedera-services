@@ -13,18 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.hedera.services.state.expiry.renewal;
+package com.hedera.services.state.expiry.classification;
 
-public enum RenewableEntityType {
+public enum ClassificationResult {
     DETACHED_ACCOUNT,
     EXPIRED_ACCOUNT_READY_TO_RENEW,
     DETACHED_ACCOUNT_GRACE_PERIOD_OVER,
-
     DETACHED_CONTRACT,
     EXPIRED_CONTRACT_READY_TO_RENEW,
     DETACHED_CONTRACT_GRACE_PERIOD_OVER,
-
     DETACHED_TREASURY_GRACE_PERIOD_OVER_BEFORE_TOKEN,
-
-    OTHER
+    OTHER,
+    NO_CAPACITY_AVAILABLE_TO_CHECK
 }
