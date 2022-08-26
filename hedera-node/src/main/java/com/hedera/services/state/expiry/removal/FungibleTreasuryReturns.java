@@ -17,7 +17,6 @@ package com.hedera.services.state.expiry.removal;
 
 import com.hedera.services.state.submerkle.CurrencyAdjustments;
 import com.hedera.services.state.submerkle.EntityId;
-
 import java.util.Collections;
 import java.util.List;
 
@@ -26,7 +25,7 @@ public record FungibleTreasuryReturns(
     public static final FungibleTreasuryReturns FINISHED_NOOP_FUNGIBLE_RETURNS =
             new FungibleTreasuryReturns(Collections.emptyList(), Collections.emptyList(), true);
     public static final FungibleTreasuryReturns UNFINISHED_NOOP_FUNGIBLE_RETURNS =
-            new FungibleTreasuryReturns(Collections.emptyList(), Collections.emptyList(),false);
+            new FungibleTreasuryReturns(Collections.emptyList(), Collections.emptyList(), false);
 
     public int numReturns() {
         return tokenTypes.size();

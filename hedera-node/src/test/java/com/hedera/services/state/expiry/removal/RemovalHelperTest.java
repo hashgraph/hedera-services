@@ -21,20 +21,21 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.config.MockGlobalDynamicProps;
 import com.hedera.services.state.expiry.EntityProcessResult;
+import com.hedera.services.state.expiry.ExpiryRecordsHelper;
 import com.hedera.services.state.expiry.classification.ClassificationWork;
 import com.hedera.services.state.expiry.classification.EntityLookup;
-import com.hedera.services.state.expiry.ExpiryRecordsHelper;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.throttling.ExpiryThrottle;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.test.factories.accounts.MerkleAccountFactory;
 import com.swirlds.merkle.map.MerkleMap;
 import java.time.Instant;
-
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -100,9 +101,26 @@ class RemovalHelperTest {
 
         var result = subject.tryToRemoveAccount(expiredNum);
 
-        verify(recordsHelper)
-                .streamCryptoRemovalStep(false, expiredNum, finishedReturns);
+        verify(recordsHelper).streamCryptoRemovalStep(false, expiredNum, null, finishedReturns);
         assertEquals(EntityProcessResult.DONE, result);
+    }
+
+    @Test
+    void doesntExternalizeNoopGc() {
+        properties.enableAutoRenew();
+        final var expiredNum = EntityNum.fromLong(expiredDeletedAccountNum);
+
+        given(accountGC.expireBestEffort(expiredNum, expiredDeletedAccount))
+                .willReturn(unfinishedReturns);
+        given(expiryThrottle.allow(eq(CLASSIFICATION_WORK), any(Instant.class))).willReturn(true);
+
+        classifier.classify(expiredNum, now);
+        classifier.resolvePayerForAutoRenew();
+
+        var result = subject.tryToRemoveAccount(expiredNum);
+
+        verifyNoInteractions(recordsHelper);
+        assertEquals(EntityProcessResult.STILL_MORE_TO_DO, result);
     }
 
     @Test
@@ -114,6 +132,8 @@ class RemovalHelperTest {
         given(accountGC.expireBestEffort(expiredNum, expiredDeletedContract))
                 .willReturn(finishedReturns);
         given(expiryThrottle.allow(eq(CLASSIFICATION_WORK), any(Instant.class))).willReturn(true);
+        final var autoRenewId = EntityId.fromNum(12345);
+        expiredDeletedAccount.setAutoRenewAccount(autoRenewId);
 
         classifier.classify(expiredNum, now);
         classifier.resolvePayerForAutoRenew();
@@ -121,7 +141,7 @@ class RemovalHelperTest {
         var result = subject.tryToRemoveContract(expiredNum);
 
         verify(recordsHelper)
-                .streamCryptoRemovalStep(true, expiredNum,finishedReturns);
+                .streamCryptoRemovalStep(true, expiredNum, autoRenewId, finishedReturns);
         assertEquals(EntityProcessResult.DONE, result);
     }
 

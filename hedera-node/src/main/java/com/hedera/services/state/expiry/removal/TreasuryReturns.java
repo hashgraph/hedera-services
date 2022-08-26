@@ -1,56 +1,72 @@
+/*
+ * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package com.hedera.services.state.expiry.removal;
 
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.throttling.ExpiryThrottle;
-
 import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
 @Singleton
 public class TreasuryReturns {
-//    static final List<MapAccessType> ONLY__REMOVAL_WORK = List.of(STORAGE_REMOVE);
-//    static final List<MapAccessType> NEXT_SLOT_REMOVAL_WORK = List.of(STORAGE_REMOVE, STORAGE_GET, STORAGE_PUT);
+    //    static final List<MapAccessType> ONLY__REMOVAL_WORK = List.of(STORAGE_REMOVE);
+    //    static final List<MapAccessType> NEXT_SLOT_REMOVAL_WORK = List.of(STORAGE_REMOVE,
+    // STORAGE_GET, STORAGE_PUT);
     /*
-        List<CurrencyAdjustments> returnTransfers = Collections.emptyList();
-        var expectedRels = account.getNumAssociations();
-        var done = account.getNftsOwned() == 0;
-        if (expectedRels > 0) {
-            tokenTypes = new ArrayList<>();
-            returnTransfers = new ArrayList<>();
-            doFungibleTreasuryReturnsWith(
-                    expectedRels,
-                    expiredAccountNum,
-                    account.getLatestAssociation(),
-                    tokenTypes,
-                    returnTransfers,
-                    tokenRels.get());
-            account.setNumAssociations(0);
-        }
+       List<CurrencyAdjustments> returnTransfers = Collections.emptyList();
+       var expectedRels = account.getNumAssociations();
+       var done = account.getNftsOwned() == 0;
+       if (expectedRels > 0) {
+           tokenTypes = new ArrayList<>();
+           returnTransfers = new ArrayList<>();
+           doFungibleTreasuryReturnsWith(
+                   expectedRels,
+                   expiredAccountNum,
+                   account.getLatestAssociation(),
+                   tokenTypes,
+                   returnTransfers,
+                   tokenRels.get());
+           account.setNumAssociations(0);
+       }
 
-        if (!done) {
-            final var nftsOwned = account.getNftsOwned();
-            returnNftsToTreasury(
-                    nftsOwned,
-                    account.getHeadNftId(),
-                    account.getHeadNftSerialNum(),
-                    uniqueTokens.get());
+       if (!done) {
+           final var nftsOwned = account.getNftsOwned();
+           returnNftsToTreasury(
+                   nftsOwned,
+                   account.getHeadNftId(),
+                   account.getHeadNftSerialNum(),
+                   uniqueTokens.get());
 
-            final var remainingNfts =
-                    nftsOwned < dynamicProperties.getMaxReturnedNftsPerTouch()
-                            ? 0
-                            : nftsOwned - dynamicProperties.getMaxReturnedNftsPerTouch();
-            account.setNftsOwned(remainingNfts);
-            done = remainingNfts == 0;
-        }
+           final var remainingNfts =
+                   nftsOwned < dynamicProperties.getMaxReturnedNftsPerTouch()
+                           ? 0
+                           : nftsOwned - dynamicProperties.getMaxReturnedNftsPerTouch();
+           account.setNftsOwned(remainingNfts);
+           done = remainingNfts == 0;
+       }
 
-     */
+    */
 
-   private final ExpiryThrottle expiryThrottle;
-   private final TreasuryReturnHelper returnHelper;
+    private final ExpiryThrottle expiryThrottle;
+    private final TreasuryReturnHelper returnHelper;
 
-   @Inject
-    public TreasuryReturns(final ExpiryThrottle expiryThrottle, final TreasuryReturnHelper returnHelper) {
+    @Inject
+    public TreasuryReturns(
+            final ExpiryThrottle expiryThrottle, final TreasuryReturnHelper returnHelper) {
         this.expiryThrottle = expiryThrottle;
         this.returnHelper = returnHelper;
     }

@@ -136,17 +136,25 @@ public class SyntheticTxnFactory {
         final var fungibleReturns = cryptoGcOutcome.fungibleTreasuryReturns();
         for (int i = 0, n = fungibleReturns.numReturns(); i < n; i++) {
             final var unitReturn = fungibleReturns.transfers().get(i);
-            opBuilder.addTokenTransfers(TokenTransferList.newBuilder()
+            opBuilder.addTokenTransfers(
+                    TokenTransferList.newBuilder()
                             .setToken(fungibleReturns.tokenTypes().get(i).toGrpcTokenId())
-                            .addTransfers(aaWith(unitReturn.getAccountNums()[0], unitReturn.getHbars()[0]))
-                            .addTransfers(aaWith(unitReturn.getAccountNums()[1], unitReturn.getHbars()[1]))
-                    .build());
+                            .addTransfers(
+                                    aaWith(
+                                            unitReturn.getAccountNums()[0],
+                                            unitReturn.getHbars()[0]))
+                            .addTransfers(
+                                    aaWith(
+                                            unitReturn.getAccountNums()[1],
+                                            unitReturn.getHbars()[1]))
+                            .build());
         }
 
         final var nonFungibleReturns = cryptoGcOutcome.nonFungibleTreasuryReturns();
         for (int i = 0, n = nonFungibleReturns.numReturns(); i < n; i++) {
-            final var listBuilder = TokenTransferList.newBuilder()
-                    .setToken(nonFungibleReturns.tokenTypes().get(i).toGrpcTokenId());
+            final var listBuilder =
+                    TokenTransferList.newBuilder()
+                            .setToken(nonFungibleReturns.tokenTypes().get(i).toGrpcTokenId());
             nonFungibleReturns.exchanges().get(i).addToGrpc(listBuilder);
             opBuilder.addTokenTransfers(listBuilder);
         }
@@ -797,5 +805,4 @@ public class SyntheticTxnFactory {
                 .setAmount(amount)
                 .build();
     }
-
 }

@@ -56,7 +56,7 @@ public class ExpiryThrottle {
     }
 
     public boolean allow(final List<MapAccessType> accessTypes) {
-       return allow(accessTypes, null);
+        return allow(accessTypes, null);
     }
 
     public boolean allow(final List<MapAccessType> accessTypes, @Nullable final Instant now) {

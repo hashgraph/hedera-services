@@ -38,7 +38,6 @@ import com.hedera.services.utils.EntityNum;
 import com.hedera.test.factories.accounts.MerkleAccountFactory;
 import com.swirlds.merkle.map.MerkleMap;
 import java.time.Instant;
-
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -253,8 +252,7 @@ class RenewalProcessTest {
         assertEquals(DONE, result);
 
         verify(accountGC).expireBestEffort(expiredNum, mockAccount);
-        verify(recordsHelper)
-                .streamCryptoRemovalStep(false, expiredNum, treasuryReturns);
+        verify(recordsHelper).streamCryptoRemovalStep(false, expiredNum, null, treasuryReturns);
     }
 
     @Test
@@ -273,8 +271,7 @@ class RenewalProcessTest {
 
         assertEquals(DONE, result);
         verify(accountGC).expireBestEffort(expiredNum, mockContract);
-        verify(recordsHelper)
-                .streamCryptoRemovalStep(true, expiredNum, finishedReturns);
+        verify(recordsHelper).streamCryptoRemovalStep(true, expiredNum, null, finishedReturns);
     }
 
     @Test
@@ -307,8 +304,7 @@ class RenewalProcessTest {
 
         assertEquals(STILL_MORE_TO_DO, result);
         verify(accountGC).expireBestEffort(expiredNum, mockAccount);
-        verify(recordsHelper)
-                .streamCryptoRemovalStep(false, expiredNum, unfinishedReturns);
+        verify(recordsHelper).streamCryptoRemovalStep(false, expiredNum, null, unfinishedReturns);
     }
 
     @Test

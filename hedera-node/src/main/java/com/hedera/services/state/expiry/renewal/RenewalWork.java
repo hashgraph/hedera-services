@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -59,7 +59,8 @@ public interface RenewalWork {
 
     /**
      * Tries to renew an account and returns {@code EntityProcessResult.DONE} if it is successful.
-     * If the auto-renewal for accounts is not enabled, returns {@code EntityProcessResult.NOTHING_TO_DO}
+     * If the auto-renewal for accounts is not enabled, returns {@code
+     * EntityProcessResult.NOTHING_TO_DO}
      *
      * @param account to be renewed account
      * @param cycleTime consensus time for the current renewal cycle
@@ -69,7 +70,8 @@ public interface RenewalWork {
 
     /**
      * Tries to renew a contract and returns {@code EntityProcessResult.DONE} if it is successful.
-     * If the auto-renewal for contracts is not enabled, returns {@code EntityProcessResult.NOTHING_TO_DO}
+     * If the auto-renewal for contracts is not enabled, returns {@code
+     * EntityProcessResult.NOTHING_TO_DO}
      *
      * @param contract to be renewed contract
      * @param cycleTime consensus time for the current renewal cycle

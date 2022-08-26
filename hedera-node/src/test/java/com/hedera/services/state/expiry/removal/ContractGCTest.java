@@ -44,12 +44,9 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.time.Instant;
-
 @ExtendWith(MockitoExtension.class)
 class ContractGCTest {
-    @Mock
-    private ExpiryThrottle expiryThrottle;
+    @Mock private ExpiryThrottle expiryThrottle;
     @Mock private GlobalDynamicProperties dynamicProperties;
     @Mock private MerkleMap<EntityNum, MerkleAccount> contracts;
     @Mock private VirtualMap<ContractKey, IterableContractValue> storage;
@@ -60,7 +57,13 @@ class ContractGCTest {
 
     @BeforeEach
     void setUp() {
-        subject = new ContractGC(expiryThrottle, dynamicProperties, () -> contracts, () -> storage, () -> bytecode);
+        subject =
+                new ContractGC(
+                        expiryThrottle,
+                        dynamicProperties,
+                        () -> contracts,
+                        () -> storage,
+                        () -> bytecode);
         subject.setRemovalFacilitation(removalFacilitation);
     }
 

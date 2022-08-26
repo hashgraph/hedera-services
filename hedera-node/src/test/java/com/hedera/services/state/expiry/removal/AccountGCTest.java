@@ -16,29 +16,18 @@
 package com.hedera.services.state.expiry.removal;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 
 import com.google.protobuf.ByteString;
-import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.ledger.backing.BackingStore;
-import com.hedera.services.state.expiry.TokenRelsListMutation;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.merkle.MerkleTokenRelStatus;
-import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.throttling.ExpiryThrottle;
 import com.hedera.services.utils.EntityNum;
-import com.hedera.services.utils.EntityNumPair;
-import com.hedera.test.factories.accounts.MerkleAccountFactory;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.swirlds.merkle.map.MerkleMap;
-import java.util.Collections;
-import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -51,14 +40,14 @@ class AccountGCTest {
     @Mock private SigImpactHistorian sigImpactHistorian;
     @Mock private TreasuryReturns treasuryReturns;
     @Mock private BackingStore<AccountID, MerkleAccount> backingAccounts;
-    @Mock
-    private ExpiryThrottle expiryThrottle;
+    @Mock private ExpiryThrottle expiryThrottle;
 
     private AccountGC subject;
 
     @BeforeEach
     void setUp() {
-        subject = new AccountGC(
+        subject =
+                new AccountGC(
                         aliasManager,
                         expiryThrottle,
                         sigImpactHistorian,
@@ -69,25 +58,89 @@ class AccountGCTest {
     @Test
     void happyPathWithEverythingFinishedAndAvailable() {
         given(expiryThrottle.allow(AccountGC.ACCOUNT_REMOVAL_WORK)).willReturn(true);
-        given(treasuryReturns.returnNftsFrom(expiredAccount)).willReturn(NonFungibleTreasuryReturns.FINISHED_NOOP_NON_FUNGIBLE_RETURNS);
-        given(treasuryReturns.returnFungibleUnitsFrom(expiredAccount)).willReturn(FungibleTreasuryReturns.FINISHED_NOOP_FUNGIBLE_RETURNS);
+        given(treasuryReturns.returnNftsFrom(expiredAccount))
+                .willReturn(NonFungibleTreasuryReturns.FINISHED_NOOP_NON_FUNGIBLE_RETURNS);
+        given(treasuryReturns.returnFungibleUnitsFrom(expiredAccount))
+                .willReturn(FungibleTreasuryReturns.FINISHED_NOOP_FUNGIBLE_RETURNS);
         given(aliasManager.forgetAlias(expiredAccount.getAlias())).willReturn(true);
 
-        final var expectedOutcome = new CryptoGcOutcome(FungibleTreasuryReturns.FINISHED_NOOP_FUNGIBLE_RETURNS,
-                NonFungibleTreasuryReturns.FINISHED_NOOP_NON_FUNGIBLE_RETURNS, true);
+        final var expectedOutcome =
+                new CryptoGcOutcome(
+                        FungibleTreasuryReturns.FINISHED_NOOP_FUNGIBLE_RETURNS,
+                        NonFungibleTreasuryReturns.FINISHED_NOOP_NON_FUNGIBLE_RETURNS,
+                        true);
 
         final var outcome = subject.expireBestEffort(num, expiredAccount);
 
-            verify(backingAccounts).remove(num.toGrpcAccountId());
-            verify(sigImpactHistorian).markEntityChanged(num.longValue());
-                verify(aliasManager).forgetEvmAddress(expiredAccount.getAlias());
-                verify(sigImpactHistorian).markAliasChanged(expiredAccount.getAlias());
+        verify(backingAccounts).remove(num.toGrpcAccountId());
+        verify(sigImpactHistorian).markEntityChanged(num.longValue());
+        verify(aliasManager).forgetEvmAddress(expiredAccount.getAlias());
+        verify(sigImpactHistorian).markAliasChanged(expiredAccount.getAlias());
 
-                assertEquals(expectedOutcome,  outcome);
-      }
+        assertEquals(expectedOutcome, outcome);
+    }
+
+    @Test
+    void pathWithEverythingFinishedButNotAvailable() {
+        given(treasuryReturns.returnNftsFrom(expiredAccount))
+                .willReturn(NonFungibleTreasuryReturns.FINISHED_NOOP_NON_FUNGIBLE_RETURNS);
+        given(treasuryReturns.returnFungibleUnitsFrom(expiredAccount))
+                .willReturn(FungibleTreasuryReturns.FINISHED_NOOP_FUNGIBLE_RETURNS);
+
+        final var expectedOutcome =
+                new CryptoGcOutcome(
+                        FungibleTreasuryReturns.FINISHED_NOOP_FUNGIBLE_RETURNS,
+                        NonFungibleTreasuryReturns.FINISHED_NOOP_NON_FUNGIBLE_RETURNS,
+                        false);
+
+        final var outcome = subject.expireBestEffort(num, expiredAccount);
+
+        verifyNoInteractions(backingAccounts, sigImpactHistorian, aliasManager);
+
+        assertEquals(expectedOutcome, outcome);
+    }
+
+    @Test
+    void pathWithEverythingNftsFinishedButNotUnits() {
+        given(treasuryReturns.returnNftsFrom(expiredAccount))
+                .willReturn(NonFungibleTreasuryReturns.FINISHED_NOOP_NON_FUNGIBLE_RETURNS);
+        given(treasuryReturns.returnFungibleUnitsFrom(expiredAccount))
+                .willReturn(FungibleTreasuryReturns.UNFINISHED_NOOP_FUNGIBLE_RETURNS);
+
+        final var expectedOutcome =
+                new CryptoGcOutcome(
+                        FungibleTreasuryReturns.UNFINISHED_NOOP_FUNGIBLE_RETURNS,
+                        NonFungibleTreasuryReturns.FINISHED_NOOP_NON_FUNGIBLE_RETURNS,
+                        false);
+
+        final var outcome = subject.expireBestEffort(num, expiredAccount);
+
+        verifyNoInteractions(backingAccounts, sigImpactHistorian, aliasManager);
+
+        assertEquals(expectedOutcome, outcome);
+    }
+
+    @Test
+    void pathWithNftsNotFinished() {
+        given(treasuryReturns.returnNftsFrom(expiredAccount))
+                .willReturn(NonFungibleTreasuryReturns.UNFINISHED_NOOP_NON_FUNGIBLE_RETURNS);
+
+        final var expectedOutcome =
+                new CryptoGcOutcome(
+                        FungibleTreasuryReturns.UNFINISHED_NOOP_FUNGIBLE_RETURNS,
+                        NonFungibleTreasuryReturns.UNFINISHED_NOOP_NON_FUNGIBLE_RETURNS,
+                        false);
+
+        final var outcome = subject.expireBestEffort(num, expiredAccount);
+
+        verifyNoInteractions(backingAccounts, sigImpactHistorian, aliasManager);
+
+        assertEquals(expectedOutcome, outcome);
+    }
 
     private final EntityNum num = EntityNum.fromLong(1234);
-      private final MerkleAccount expiredAccount = new MerkleAccount();
+    private final MerkleAccount expiredAccount = new MerkleAccount();
+
     {
         expiredAccount.setAlias(ByteString.copyFromUtf8("SOMETHING"));
     }

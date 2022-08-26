@@ -15,29 +15,20 @@
  */
 package com.hedera.services.state.expiry.removal;
 
-import com.google.common.annotations.VisibleForTesting;
-import com.hedera.services.context.properties.GlobalDynamicProperties;
+import static com.hedera.services.state.expiry.removal.FungibleTreasuryReturns.UNFINISHED_NOOP_FUNGIBLE_RETURNS;
+import static com.hedera.services.throttling.MapAccessType.ACCOUNTS_REMOVE;
+
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.ledger.backing.BackingStore;
-import com.hedera.services.state.expiry.TokenRelsListMutation;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.merkle.MerkleTokenRelStatus;
-import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.throttling.ExpiryThrottle;
 import com.hedera.services.throttling.MapAccessType;
 import com.hedera.services.utils.EntityNum;
-import com.hedera.services.utils.EntityNumPair;
-import com.hedera.services.utils.MapValueListUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.swirlds.merkle.map.MerkleMap;
-
 import java.util.List;
-import java.util.function.Supplier;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-
-import static com.hedera.services.throttling.MapAccessType.ACCOUNTS_REMOVE;
 
 /**
  * Responsible for "garbage collection" of an expired account whose grace period has ended; such an
@@ -62,7 +53,6 @@ public class AccountGC {
     private final SigImpactHistorian sigImpactHistorian;
     private final BackingStore<AccountID, MerkleAccount> backingAccounts;
 
-
     @Inject
     public AccountGC(
             final AliasManager aliasManager,
@@ -82,25 +72,23 @@ public class AccountGC {
         final var nftReturns = treasuryReturns.returnNftsFrom(expiredAccount);
         if (nftReturns.finished()) {
             final var unitReturns = treasuryReturns.returnFungibleUnitsFrom(expiredAccount);
-            if (unitReturns.finished()) {
-               if (expiryThrottle.allow(ACCOUNT_REMOVAL_WORK)) {
-
-            backingAccounts.remove(num.toGrpcAccountId());
-            sigImpactHistorian.markEntityChanged(num.longValue());
-
-            if (aliasManager.forgetAlias(expiredAccount.getAlias())) {
-                aliasManager.forgetEvmAddress(expiredAccount.getAlias());
-                sigImpactHistorian.markAliasChanged(expiredAccount.getAlias());
-            }
-                   return new CryptoGcOutcome( unitReturns, nftReturns, true);
-               } else {
-                   throw new AssertionError("Not implemented");
-               }
+            if (unitReturns.finished() && expiryThrottle.allow(ACCOUNT_REMOVAL_WORK)) {
+                completeRemoval(num, expiredAccount);
+                return new CryptoGcOutcome(unitReturns, nftReturns, true);
             } else {
-                throw new AssertionError("Not implemented");
+                return new CryptoGcOutcome(unitReturns, nftReturns, false);
             }
         } else {
-            throw new AssertionError("Not implemented");
+            return new CryptoGcOutcome(UNFINISHED_NOOP_FUNGIBLE_RETURNS, nftReturns, false);
+        }
+    }
+
+    private void completeRemoval(final EntityNum num, final MerkleAccount expiredAccount) {
+        backingAccounts.remove(num.toGrpcAccountId());
+        sigImpactHistorian.markEntityChanged(num.longValue());
+        if (aliasManager.forgetAlias(expiredAccount.getAlias())) {
+            aliasManager.forgetEvmAddress(expiredAccount.getAlias());
+            sigImpactHistorian.markAliasChanged(expiredAccount.getAlias());
         }
     }
 }

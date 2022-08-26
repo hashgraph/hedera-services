@@ -433,7 +433,8 @@ public class TxnUtils {
         return AccountAmount.newBuilder().setAccountID(id).setAmount(amount).build();
     }
 
-    public static NftTransfer serialFromTo(final long num, final AccountID sender, final AccountID receiver) {
+    public static NftTransfer serialFromTo(
+            final long num, final AccountID sender, final AccountID receiver) {
         return NftTransfer.newBuilder()
                 .setSerialNumber(num)
                 .setSenderAccountID(sender)

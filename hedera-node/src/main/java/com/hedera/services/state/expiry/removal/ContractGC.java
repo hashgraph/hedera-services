@@ -32,7 +32,6 @@ import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.MapValueListUtils;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
-
 import java.util.List;
 import java.util.function.Supplier;
 import javax.inject.Inject;
@@ -43,7 +42,8 @@ public class ContractGC {
     static final List<MapAccessType> BYTECODE_REMOVAL_WORK = List.of(BLOBS_REMOVE);
     static final List<MapAccessType> ROOT_KEY_UPDATE_WORK = List.of(ACCOUNTS_GET_FOR_MODIFY);
     static final List<MapAccessType> ONLY_SLOT_REMOVAL_WORK = List.of(STORAGE_REMOVE);
-    static final List<MapAccessType> NEXT_SLOT_REMOVAL_WORK = List.of(STORAGE_REMOVE, STORAGE_GET, STORAGE_PUT);
+    static final List<MapAccessType> NEXT_SLOT_REMOVAL_WORK =
+            List.of(STORAGE_REMOVE, STORAGE_GET, STORAGE_PUT);
 
     private final ExpiryThrottle expiryThrottle;
     private final GlobalDynamicProperties dynamicProperties;
@@ -123,8 +123,8 @@ public class ContractGC {
         final var bytecodeKey =
                 new VirtualBlobKey(CONTRACT_BYTECODE, expiredContractNum.intValue());
         final var curBytecode = bytecode.get();
-            curBytecode.remove(bytecodeKey);
-            return true;
+        curBytecode.remove(bytecodeKey);
+        return true;
     }
 
     @FunctionalInterface

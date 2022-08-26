@@ -51,8 +51,7 @@ class TreasuryReturnHelperTest {
     @Mock private MerkleMap<EntityNum, MerkleToken> tokens;
     @Mock private MerkleMap<EntityNumPair, MerkleUniqueToken> uniqueTokens;
     @Mock private MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenRels;
-    @Mock
-    private ExpiryThrottle expiryThrottle;
+    @Mock private ExpiryThrottle expiryThrottle;
 
     private final List<CurrencyAdjustments> returnTransfers = new ArrayList<>();
 
@@ -119,7 +118,8 @@ class TreasuryReturnHelperTest {
 
     @Test
     void justReportsDebitAndReclaimsLastUsageIfTokenIsGoneSomehow() {
-        subject.updateFungibleReturns(expiredAccountNum, missingTokenNum, tokenBalance, returnTransfers);
+        subject.updateFungibleReturns(
+                expiredAccountNum, missingTokenNum, tokenBalance, returnTransfers);
 
         final var ttls =
                 List.of(
@@ -151,7 +151,8 @@ class TreasuryReturnHelperTest {
     void justReportsDebitIfTokenIsDeleted() {
         givenTokenPresent(deletedTokenNum, deletedToken);
 
-        subject.updateFungibleReturns(expiredAccountNum, deletedTokenNum, tokenBalance, returnTransfers);
+        subject.updateFungibleReturns(
+                expiredAccountNum, deletedTokenNum, tokenBalance, returnTransfers);
 
         final var ttls =
                 List.of(
@@ -168,7 +169,8 @@ class TreasuryReturnHelperTest {
         final var treasuryRel = mutableRel(treasuryNum, fungibleTokenNum, tokenBalance);
         givenModifiableRelPresent(treasuryNum, fungibleTokenNum, treasuryRel);
 
-        subject.updateFungibleReturns(expiredAccountNum, fungibleTokenNum, tokenBalance, returnTransfers);
+        subject.updateFungibleReturns(
+                expiredAccountNum, fungibleTokenNum, tokenBalance, returnTransfers);
 
         final var ttls =
                 List.of(

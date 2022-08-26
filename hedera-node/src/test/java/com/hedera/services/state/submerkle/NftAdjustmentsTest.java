@@ -125,7 +125,7 @@ class NftAdjustmentsTest {
         subject.addToGrpc(builder);
         final var result = builder.build();
         assertEquals(subject.toGrpc(), result);
-      }
+    }
 
     @Test
     void fromGrpc() {

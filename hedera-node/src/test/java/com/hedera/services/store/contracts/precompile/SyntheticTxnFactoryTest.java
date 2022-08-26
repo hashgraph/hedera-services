@@ -48,9 +48,9 @@ import com.hedera.services.context.properties.BootstrapProperties;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ethereum.EthTxData;
 import com.hedera.services.ledger.accounts.ContractCustomizer;
+import com.hedera.services.state.expiry.removal.CryptoGcOutcome;
 import com.hedera.services.state.expiry.removal.FungibleTreasuryReturns;
 import com.hedera.services.state.expiry.removal.NonFungibleTreasuryReturns;
-import com.hedera.services.state.expiry.removal.CryptoGcOutcome;
 import com.hedera.services.state.submerkle.CurrencyAdjustments;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.NftAdjustments;
@@ -73,7 +73,6 @@ import com.hedera.services.utils.EntityNum;
 import com.hedera.test.factories.keys.KeyFactory;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.*;
-
 import java.math.BigInteger;
 import java.time.Instant;
 import java.util.Collections;
@@ -109,10 +108,17 @@ class SyntheticTxnFactoryTest {
     void synthesizesExpectedTreasuryReturns() {
         final var ftId = EntityId.fromIdentityCode(666);
         final var nftId = EntityId.fromIdentityCode(777);
-        final var nftAdjusts = new NftAdjustments(new long[] {1}, List.of(EntityId.fromIdentityCode(2)), List.of(EntityId.fromIdentityCode(98)));
-        final var fungibleAdjusts = new CurrencyAdjustments(new long[] {-123, 123}, new long[] {2, 98});
-        final var fungibleReturns = new FungibleTreasuryReturns(List.of(ftId), List.of(fungibleAdjusts), true);
-        final var nonFungibleReturns = new NonFungibleTreasuryReturns(List.of(nftId), List.of(nftAdjusts), true);
+        final var nftAdjusts =
+                new NftAdjustments(
+                        new long[] {1},
+                        List.of(EntityId.fromIdentityCode(2)),
+                        List.of(EntityId.fromIdentityCode(98)));
+        final var fungibleAdjusts =
+                new CurrencyAdjustments(new long[] {-123, 123}, new long[] {2, 98});
+        final var fungibleReturns =
+                new FungibleTreasuryReturns(List.of(ftId), List.of(fungibleAdjusts), true);
+        final var nonFungibleReturns =
+                new NonFungibleTreasuryReturns(List.of(nftId), List.of(nftAdjusts), true);
         final var returns = new CryptoGcOutcome(fungibleReturns, nonFungibleReturns, false);
 
         final var expected =

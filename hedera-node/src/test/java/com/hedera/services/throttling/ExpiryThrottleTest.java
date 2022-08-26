@@ -168,7 +168,7 @@ class ExpiryThrottleTest {
         subject.reclaimLastAllowedUse();
         final var used = Objects.requireNonNull(subject.getThrottleSnapshot()).used();
         assertEquals(0, used);
-      }
+    }
 
     @Test
     void snapshotNullIfThrottleNull() {

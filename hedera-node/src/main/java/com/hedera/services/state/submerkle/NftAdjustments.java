@@ -146,10 +146,7 @@ public class NftAdjustments implements SelfSerializable {
     private NftTransfer.Builder transferBuilderFor(final int i) {
         return NftTransfer.newBuilder()
                 .setSerialNumber(serialNums[i])
-                .setSenderAccountID(
-                        EntityIdUtils.asAccount(senderAccIds.get(i)))
-                .setReceiverAccountID(
-                        EntityIdUtils.asAccount(receiverAccIds.get(i)));
+                .setSenderAccountID(EntityIdUtils.asAccount(senderAccIds.get(i)))
+                .setReceiverAccountID(EntityIdUtils.asAccount(receiverAccIds.get(i)));
     }
-
 }

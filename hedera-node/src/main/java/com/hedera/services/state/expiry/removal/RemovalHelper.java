@@ -21,8 +21,8 @@ import static com.hedera.services.state.expiry.EntityProcessResult.STILL_MORE_TO
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.state.expiry.EntityProcessResult;
-import com.hedera.services.state.expiry.classification.ClassificationWork;
 import com.hedera.services.state.expiry.ExpiryRecordsHelper;
+import com.hedera.services.state.expiry.classification.ClassificationWork;
 import com.hedera.services.utils.EntityNum;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -70,8 +70,11 @@ public class RemovalHelper implements RemovalWork {
         if (isContract && !contractGC.expireBestEffort(num, lastClassified)) {
             return STILL_MORE_TO_DO;
         }
-        final var treasuryReturns = accountGC.expireBestEffort(num, lastClassified);
-        recordsHelper.streamCryptoRemovalStep(isContract, num, treasuryReturns);
-        return treasuryReturns.finished() ? DONE : STILL_MORE_TO_DO;
+        final var gcOutcome = accountGC.expireBestEffort(num, lastClassified);
+        if (gcOutcome.needsExternalizing()) {
+            final var autoRenewId = isContract ? lastClassified.getAutoRenewAccount() : null;
+            recordsHelper.streamCryptoRemovalStep(isContract, num, autoRenewId, gcOutcome);
+        }
+        return gcOutcome.finished() ? DONE : STILL_MORE_TO_DO;
     }
 }
