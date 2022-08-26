@@ -738,9 +738,7 @@ public class FileUpdateSuite extends HapiApiSuite {
         final var longMessage = TxnUtils.randomUtf8Bytes(defaultMaxBytesAllowed);
 
         return defaultHapiSpec("messageSubmissionSizeChange")
-                .given(
-                        newKeyNamed("submitKey"),
-                        createTopic(TEST_TOPIC).submitKeyName("submitKey"))
+                .given(newKeyNamed("submitKey"), createTopic(TEST_TOPIC).submitKeyName("submitKey"))
                 .when(
                         cryptoCreate(CIVILIAN),
                         submitMessageTo(TEST_TOPIC)

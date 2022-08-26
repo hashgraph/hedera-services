@@ -82,7 +82,8 @@ public class ContractGC {
                     if (numRemoved == 0) {
                         expiryThrottle.reclaimLastAllowedUse();
                     } else {
-                        final var mutableContract = contracts.get().getForModify(expiredContractNum);
+                        final var mutableContract =
+                                contracts.get().getForModify(expiredContractNum);
                         mutableContract.setNumContractKvPairs(numKvPairs - numRemoved);
                         mutableContract.setFirstUint256StorageKey(slotRemovals.newRoot().getKey());
                     }
