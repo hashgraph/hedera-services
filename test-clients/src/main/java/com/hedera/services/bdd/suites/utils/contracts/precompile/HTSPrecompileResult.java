@@ -481,9 +481,9 @@ public class HTSPrecompileResult implements ContractCallResult {
         autoRenewPeriod = tokenInfo.getAutoRenewPeriod().getSeconds();
         final var expiryTuple =
                 Tuple.of(
-                    expiry,
+                        expiry,
                         expandByteArrayTo32Length(Utils.asAddress(tokenInfo.getAutoRenewAccount())),
-                    autoRenewPeriod);
+                        autoRenewPeriod);
 
         return Tuple.of(
                 tokenInfo.getName(),
