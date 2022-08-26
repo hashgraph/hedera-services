@@ -56,11 +56,7 @@ public class ExpiryThrottle {
     }
 
     public boolean allow(final List<MapAccessType> accessTypes) {
-        final var ans = allow(accessTypes, null);
-        if (!ans) {
-            log.info("Throttled {}", accessTypes);
-        }
-        return ans;
+        return allow(accessTypes, null);
     }
 
     public boolean allow(final List<MapAccessType> accessTypes, @Nullable final Instant now) {
