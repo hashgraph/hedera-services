@@ -67,7 +67,7 @@ public class TokenExpiryInfoSuite extends HapiApiSuite {
     private static final String INVALID_ADDRESS = "0x0000000000000000000000000000000000123456";
     private static final long DEFAULT_MAX_LIFETIME =
             Long.parseLong(HapiSpecSetup.getDefaultNodeProps().get("entities.maxLifetime"));
-    public static final long MONTH_IN_SECONDS = 2629800L;
+    public static final long MONTH_IN_SECONDS = 7_000_000L;
     private static final String ADMIN_KEY = TokenKeyType.ADMIN_KEY.name();
     public static final String UPDATE_EXPIRY_INFO_FOR_TOKEN = "updateExpiryInfoForToken";
     public static final String GET_EXPIRY_INFO_FOR_TOKEN = "getExpiryInfoForToken";
@@ -83,7 +83,10 @@ public class TokenExpiryInfoSuite extends HapiApiSuite {
 
     @Override
     public List<HapiApiSpec> getSpecsInSuite() {
-        return List.of(getExpiryInfoForToken(), updateExpiryInfoForToken());
+        return List.of(
+            getExpiryInfoForToken(),
+            updateExpiryInfoForToken()
+        );
     }
 
     private HapiApiSpec getExpiryInfoForToken() {
