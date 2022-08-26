@@ -49,38 +49,41 @@ import org.jetbrains.annotations.NotNull;
 public class EncodingFacade {
     public static final Bytes SUCCESS_RESULT = resultFrom(SUCCESS);
     private static final long[] NO_MINTED_SERIAL_NUMBERS = new long[0];
-//    private static final String STRING_RETURN_TYPE = "(string)";
-//    public static final String UINT256_RETURN_TYPE = "(uint256)";
-//    public static final String BOOL_RETURN_TYPE = "(bool)";
-//    private static final TupleType mintReturnType = TupleType.parse("(int32,uint64,int64[])");
-//    private static final TupleType burnReturnType = TupleType.parse("(int32,uint64)");
-//    private static final TupleType createReturnType = TupleType.parse("(int32,address)");
-//    private static final TupleType totalSupplyType = TupleType.parse(UINT256_RETURN_TYPE);
-//    private static final TupleType balanceOfType = TupleType.parse(UINT256_RETURN_TYPE);
-//    private static final TupleType allowanceOfType = TupleType.parse(UINT256_RETURN_TYPE);
-//    private static final TupleType hapiAllowanceOfType = TupleType.parse("(int32,uint256)");
-//    private static final TupleType approveOfType = TupleType.parse(BOOL_RETURN_TYPE);
-//    private static final TupleType hapiApproveOfType = TupleType.parse(INT_BOOL_PAIR_RETURN_TYPE);
-//    private static final TupleType hapiApproveNftType = TupleType.parse("(int32)");
-//    private static final TupleType decimalsType = TupleType.parse("(uint8)");
-//    private static final TupleType ownerOfType = TupleType.parse("(address)");
-//    private static final TupleType getApprovedType = TupleType.parse("(address)");
-//    private static final TupleType hapiGetApprovedType = TupleType.parse("(int32,address)");
-//    private static final TupleType nameType = TupleType.parse(STRING_RETURN_TYPE);
-//    private static final TupleType symbolType = TupleType.parse(STRING_RETURN_TYPE);
-//    private static final TupleType tokenUriType = TupleType.parse(STRING_RETURN_TYPE);
-//    private static final TupleType ercTransferType = TupleType.parse(BOOL_RETURN_TYPE);
-//    private static final TupleType isApprovedForAllType = TupleType.parse(BOOL_RETURN_TYPE);
-//    private static final TupleType isTokenKycType = TupleType.parse(INT_BOOL_PAIR_RETURN_TYPE);
-//    private static final TupleType hapiIsApprovedForAllType =
-//            TupleType.parse(INT_BOOL_PAIR_RETURN_TYPE);
-//    private static final TupleType getTokenDefaultFreezeStatusType =
-//            TupleType.parse(INT_BOOL_PAIR_RETURN_TYPE);
-//    private static final TupleType getTokenDefaultKycStatusType =
-//            TupleType.parse(INT_BOOL_PAIR_RETURN_TYPE);
-//    private static final TupleType isTokenFrozenType = TupleType.parse(INT_BOOL_PAIR_RETURN_TYPE);
-//    private static final TupleType isTokenType = TupleType.parse(INT_BOOL_PAIR_RETURN_TYPE);
-//    private static final TupleType getTokenType = TupleType.parse("(int32,int32)");
+    //    private static final String STRING_RETURN_TYPE = "(string)";
+    //    public static final String UINT256_RETURN_TYPE = "(uint256)";
+    //    public static final String BOOL_RETURN_TYPE = "(bool)";
+    //    private static final TupleType mintReturnType = TupleType.parse("(int32,uint64,int64[])");
+    //    private static final TupleType burnReturnType = TupleType.parse("(int32,uint64)");
+    //    private static final TupleType createReturnType = TupleType.parse("(int32,address)");
+    //    private static final TupleType totalSupplyType = TupleType.parse(UINT256_RETURN_TYPE);
+    //    private static final TupleType balanceOfType = TupleType.parse(UINT256_RETURN_TYPE);
+    //    private static final TupleType allowanceOfType = TupleType.parse(UINT256_RETURN_TYPE);
+    //    private static final TupleType hapiAllowanceOfType = TupleType.parse("(int32,uint256)");
+    //    private static final TupleType approveOfType = TupleType.parse(BOOL_RETURN_TYPE);
+    //    private static final TupleType hapiApproveOfType =
+    // TupleType.parse(INT_BOOL_PAIR_RETURN_TYPE);
+    //    private static final TupleType hapiApproveNftType = TupleType.parse("(int32)");
+    //    private static final TupleType decimalsType = TupleType.parse("(uint8)");
+    //    private static final TupleType ownerOfType = TupleType.parse("(address)");
+    //    private static final TupleType getApprovedType = TupleType.parse("(address)");
+    //    private static final TupleType hapiGetApprovedType = TupleType.parse("(int32,address)");
+    //    private static final TupleType nameType = TupleType.parse(STRING_RETURN_TYPE);
+    //    private static final TupleType symbolType = TupleType.parse(STRING_RETURN_TYPE);
+    //    private static final TupleType tokenUriType = TupleType.parse(STRING_RETURN_TYPE);
+    //    private static final TupleType ercTransferType = TupleType.parse(BOOL_RETURN_TYPE);
+    //    private static final TupleType isApprovedForAllType = TupleType.parse(BOOL_RETURN_TYPE);
+    //    private static final TupleType isTokenKycType =
+    // TupleType.parse(INT_BOOL_PAIR_RETURN_TYPE);
+    //    private static final TupleType hapiIsApprovedForAllType =
+    //            TupleType.parse(INT_BOOL_PAIR_RETURN_TYPE);
+    //    private static final TupleType getTokenDefaultFreezeStatusType =
+    //            TupleType.parse(INT_BOOL_PAIR_RETURN_TYPE);
+    //    private static final TupleType getTokenDefaultKycStatusType =
+    //            TupleType.parse(INT_BOOL_PAIR_RETURN_TYPE);
+    //    private static final TupleType isTokenFrozenType =
+    // TupleType.parse(INT_BOOL_PAIR_RETURN_TYPE);
+    //    private static final TupleType isTokenType = TupleType.parse(INT_BOOL_PAIR_RETURN_TYPE);
+    //    private static final TupleType getTokenType = TupleType.parse("(int32,int32)");
 
     @Inject
     public EncodingFacade() {
@@ -343,6 +346,14 @@ public class EncodingFacade {
                 .build();
     }
 
+    public Bytes encodeGetTokenExpiryInfo(final TokenExpiryWrapper tokenExpiryWrapper) {
+        return functionResultBuilder()
+                .forFunction(FunctionType.HAPI_GET_TOKEN_EXPIRY_INFO)
+                .withStatus(SUCCESS.getNumber())
+                .withExpiry(tokenExpiryWrapper)
+                .build();
+    }
+
     private FunctionResultBuilder functionResultBuilder() {
         return new FunctionResultBuilder();
     }
@@ -374,6 +385,7 @@ public class EncodingFacade {
         private List<CustomFee> customFees;
         private boolean isToken;
         private int tokenType;
+        private Tuple tokenExpiryInfo;
 
         private FunctionResultBuilder forFunction(final FunctionType functionType) {
             this.tupleType =
@@ -400,6 +412,7 @@ public class EncodingFacade {
                         case HAPI_GET_NON_FUNGIBLE_TOKEN_INFO -> getNonFungibleTokenInfoType;
                         case HAPI_GET_TOKEN_CUSTOM_FEES -> getTokenCustomFeesType;
                         case HAPI_GET_TOKEN_TYPE -> intPairTuple;
+                        case HAPI_GET_TOKEN_EXPIRY_INFO -> getTokenExpiryInfoType;
                         default -> notSpecifiedType;
                     };
 
@@ -531,6 +544,17 @@ public class EncodingFacade {
             return this;
         }
 
+        private FunctionResultBuilder withExpiry(final TokenExpiryWrapper tokenExpiryInfo) {
+            this.tokenExpiryInfo =
+                    Tuple.of(
+                            tokenExpiryInfo.second(),
+                            convertBesuAddressToHeadlongAddress(
+                                    EntityIdUtils.asTypedEvmAddress(
+                                            tokenExpiryInfo.autoRenewAccount())),
+                            tokenExpiryInfo.autoRenewPeriod());
+            return this;
+        }
+
         private Bytes build() {
             final var result =
                     switch (functionType) {
@@ -570,6 +594,7 @@ public class EncodingFacade {
                         case HAPI_GET_TOKEN_CUSTOM_FEES -> getTupleForTokenGetCustomFees();
                         case HAPI_IS_TOKEN -> Tuple.of(status, isToken);
                         case HAPI_GET_TOKEN_TYPE -> Tuple.of(status, tokenType);
+                        case HAPI_GET_TOKEN_EXPIRY_INFO -> getTupleForGetTokenExpiryInfo();
                         default -> Tuple.of(status);
                     };
 
@@ -582,6 +607,10 @@ public class EncodingFacade {
 
         private Tuple getTupleForTokenGetCustomFees() {
             return getTupleForTokenCustomFees(status);
+        }
+
+        private Tuple getTupleForGetTokenExpiryInfo() {
+            return getTupleForTokenExpiryInfo(status);
         }
 
         private Tuple getTupleForGetFungibleTokenInfo() {
@@ -637,6 +666,10 @@ public class EncodingFacade {
                     fixedFees.toArray(new Tuple[fixedFees.size()]),
                     fractionalFees.toArray(new Tuple[fractionalFees.size()]),
                     royaltyFees.toArray(new Tuple[royaltyFees.size()]));
+        }
+
+        private Tuple getTupleForTokenExpiryInfo(final int responseCode) {
+            return Tuple.of(responseCode, tokenExpiryInfo);
         }
 
         private void extractAllFees(
