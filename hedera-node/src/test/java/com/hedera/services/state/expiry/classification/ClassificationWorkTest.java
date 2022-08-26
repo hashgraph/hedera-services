@@ -13,30 +13,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.hedera.services.state.expiry.renewal;
+package com.hedera.services.state.expiry.classification;
 
-import static com.hedera.services.state.expiry.renewal.RenewableEntityType.DETACHED_ACCOUNT;
-import static com.hedera.services.state.expiry.renewal.RenewableEntityType.DETACHED_ACCOUNT_GRACE_PERIOD_OVER;
-import static com.hedera.services.state.expiry.renewal.RenewableEntityType.DETACHED_CONTRACT;
-import static com.hedera.services.state.expiry.renewal.RenewableEntityType.DETACHED_CONTRACT_GRACE_PERIOD_OVER;
-import static com.hedera.services.state.expiry.renewal.RenewableEntityType.DETACHED_TREASURY_GRACE_PERIOD_OVER_BEFORE_TOKEN;
-import static com.hedera.services.state.expiry.renewal.RenewableEntityType.EXPIRED_ACCOUNT_READY_TO_RENEW;
-import static com.hedera.services.state.expiry.renewal.RenewableEntityType.EXPIRED_CONTRACT_READY_TO_RENEW;
-import static com.hedera.services.state.expiry.renewal.RenewableEntityType.OTHER;
+import static com.hedera.services.state.expiry.classification.ClassificationResult.DETACHED_ACCOUNT;
+import static com.hedera.services.state.expiry.classification.ClassificationResult.DETACHED_ACCOUNT_GRACE_PERIOD_OVER;
+import static com.hedera.services.state.expiry.classification.ClassificationResult.DETACHED_CONTRACT;
+import static com.hedera.services.state.expiry.classification.ClassificationResult.DETACHED_CONTRACT_GRACE_PERIOD_OVER;
+import static com.hedera.services.state.expiry.classification.ClassificationResult.DETACHED_TREASURY_GRACE_PERIOD_OVER_BEFORE_TOKEN;
+import static com.hedera.services.state.expiry.classification.ClassificationResult.EXPIRED_ACCOUNT_READY_TO_RENEW;
+import static com.hedera.services.state.expiry.classification.ClassificationResult.EXPIRED_CONTRACT_READY_TO_RENEW;
+import static com.hedera.services.state.expiry.classification.ClassificationResult.OTHER;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.config.MockGlobalDynamicProps;
 import com.hedera.services.exceptions.NegativeAccountBalanceException;
-import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.utils.EntityNum;
@@ -49,15 +43,16 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class RenewableEntityClassifierTest {
+class ClassificationWorkTest {
     @Mock private MerkleMap<EntityNum, MerkleAccount> accounts;
-    @Mock private AliasManager aliasManager;
 
-    private RenewableEntityClassifier subject;
+    private EntityLookup lookup;
+    private ClassificationWork subject;
 
     @BeforeEach
     void setUp() {
-        subject = new RenewableEntityClassifier(dynamicProps, () -> accounts);
+        lookup = new EntityLookup(() -> accounts);
+        subject = new ClassificationWork(dynamicProps, lookup);
     }
 
     @Test
@@ -169,55 +164,6 @@ class RenewableEntityClassifierTest {
     }
 
     @Test
-    void renewsLastClassifiedAsRequested() {
-        // setup:
-        var key = EntityNum.fromLong(fundedExpiredAccountNum);
-        var fundingKey = EntityNum.fromInt(98);
-
-        givenPresent(fundedExpiredAccountNum, expiredAccountNonZeroBalance, true);
-        givenPresent(98, fundingAccount, true);
-
-        // when:
-        subject.classify(EntityNum.fromLong(fundedExpiredAccountNum), now);
-        subject.resolvePayerForAutoRenew();
-        // and:
-        subject.renewLastClassifiedWith(nonZeroBalance, 3600L);
-
-        // then:
-        verify(accounts, times(2)).getForModify(key);
-        verify(accounts).getForModify(fundingKey);
-        verify(aliasManager, never()).forgetAlias(any());
-        assertEquals(key, subject.getPayerForAutoRenew());
-    }
-
-    @Test
-    void renewsLastClassifiedWithAutoRenewAccountAsPayer() {
-        // setup:
-        var key = EntityNum.fromLong(nonExpiredAccountNum);
-        var autoRenewAccount = EntityNum.fromLong(10L);
-        var fundingKey = EntityNum.fromInt(98);
-
-        givenPresent(nonExpiredAccountNum, nonExpiredAccount, true);
-
-        given(accounts.getForModify(autoRenewAccount)).willReturn(nonExpiredAccountWithAutoRenew);
-        given(accounts.get(key)).willReturn(nonExpiredAccountWithAutoRenew);
-        given(accounts.get(autoRenewAccount)).willReturn(nonExpiredAccount);
-        givenPresent(98, fundingAccount, true);
-
-        // when:
-        subject.classify(EntityNum.fromLong(nonExpiredAccountNum), now);
-        subject.resolvePayerForAutoRenew();
-        // and:
-        subject.renewLastClassifiedWith(nonZeroBalance, 3600L);
-
-        // then:
-        verify(accounts, times(1)).getForModify(autoRenewAccount);
-        verify(accounts).getForModify(fundingKey);
-        verify(aliasManager, never()).forgetAlias(any());
-        assertEquals(autoRenewAccount, subject.getPayerForAutoRenew());
-    }
-
-    @Test
     void fallsBackToContractIfAutoRenewAccountIsInvalid() {
         var key = EntityNum.fromLong(nonExpiredAccountNum);
         var autoRenewAccount = EntityNum.fromLong(10L);
@@ -250,27 +196,6 @@ class RenewableEntityClassifierTest {
         autoRenewMerkleAccount.setDeleted(false);
         autoRenewMerkleAccount.setBalance(200L);
         assertTrue(subject.isValid(autoRenewMerkleAccount));
-    }
-
-    @Test
-    void cannotRenewIfNoLastClassified() {
-        // expect:
-        assertThrows(
-                IllegalStateException.class,
-                () -> subject.renewLastClassifiedWith(nonZeroBalance, 3600L));
-    }
-
-    @Test
-    void rejectsAsIseIfFeeIsUnaffordable() {
-        givenPresent(brokeExpiredNum, expiredAccountZeroBalance);
-
-        // when:
-        subject.classify(EntityNum.fromLong(brokeExpiredNum), now);
-        subject.resolvePayerForAutoRenew();
-        // expect:
-        assertThrows(
-                IllegalStateException.class,
-                () -> subject.renewLastClassifiedWith(nonZeroBalance, 3600L));
     }
 
     private void givenPresent(final long num, final MerkleAccount account) {

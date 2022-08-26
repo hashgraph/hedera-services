@@ -283,6 +283,10 @@ public class FeesAndRatesProvider {
                 .doubleValue();
     }
 
+    public long toTbWithActiveRates(long tc) {
+        return tc * activeRates().getHbarEquiv() / activeRates().getCentEquiv();
+    }
+
     public static String rateSetAsString(ExchangeRateSet set) {
         return "[Current hbar/cent equiv "
                 + set.getCurrentRate().getHbarEquiv()

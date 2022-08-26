@@ -35,23 +35,23 @@ class StaticPropertiesHolderTest {
     void updatesShardAndRealmAsExpected() {
         // setup:
         final var pretendNumbers = mock(HederaNumbers.class);
-        final var expectedAccount = IdUtils.asAccount("1.2.3");
-        final var expectedToken = IdUtils.asToken("1.2.3");
-        final var expectedSchedule = IdUtils.asSchedule("1.2.3");
+        final var expectedAccount = IdUtils.asAccount("0.0.3");
+        final var expectedToken = IdUtils.asToken("0.0.3");
+        final var expectedSchedule = IdUtils.asSchedule("0.0.3");
 
-        given(pretendNumbers.shard()).willReturn(1L);
-        given(pretendNumbers.realm()).willReturn(2L);
+        given(pretendNumbers.shard()).willReturn(0L);
+        given(pretendNumbers.realm()).willReturn(0L);
 
         // when:
         STATIC_PROPERTIES.setNumbersFrom(pretendNumbers);
 
         // then:
-        assertEquals(1L, STATIC_PROPERTIES.getShard());
-        assertEquals(2L, STATIC_PROPERTIES.getRealm());
+        assertEquals(0L, STATIC_PROPERTIES.getShard());
+        assertEquals(0L, STATIC_PROPERTIES.getRealm());
         assertEquals(expectedAccount, STATIC_PROPERTIES.scopedAccountWith(3L));
         assertEquals(expectedToken, STATIC_PROPERTIES.scopedTokenWith(3L));
         assertEquals(expectedSchedule, STATIC_PROPERTIES.scopedScheduleWith(3L));
-        assertEquals("1.2.3", STATIC_PROPERTIES.scopedIdLiteralWith(3L));
+        assertEquals("0.0.3", STATIC_PROPERTIES.scopedIdLiteralWith(3L));
         final var key = STATIC_PROPERTIES.scopedContractKeyWith(4L);
         assertInstanceOf(JContractIDKey.class, key);
         assertEquals(4L, key.getContractID().getContractNum());

@@ -18,6 +18,7 @@ package com.hedera.services.bdd.spec.assertions;
 import static com.hedera.services.bdd.spec.assertions.EqualityAssertsProviderFactory.shouldBe;
 import static com.hedera.services.bdd.spec.assertions.EqualityAssertsProviderFactory.shouldNotBe;
 import static java.util.Collections.EMPTY_LIST;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
@@ -93,22 +94,6 @@ public class TransactionRecordAsserts extends BaseErroringAssertsProvider<Transa
                             try {
                                 Assertions.assertNotNull(prngBytes, "Null prngBytes!");
                                 Assertions.assertEquals(32, prngBytes.size(), "Wrong prngBytes!");
-                            } catch (Throwable t) {
-                                return List.of(t);
-                            }
-                            return EMPTY_LIST;
-                        });
-        return this;
-    }
-
-    public TransactionRecordAsserts pseudoRandomNumber(final int range) {
-        this.<Integer>registerTypedProvider(
-                "prngNumber",
-                spec ->
-                        prngNumber -> {
-                            try {
-                                Assertions.assertTrue(
-                                        prngNumber >= 0 && prngNumber < range, "Wrong prngNumber!");
                             } catch (Throwable t) {
                                 return List.of(t);
                             }
@@ -281,6 +266,23 @@ public class TransactionRecordAsserts extends BaseErroringAssertsProvider<Transa
 
     public TransactionRecordAsserts fee(Long amount) {
         registerTypedProvider("transactionFee", shouldBe(amount));
+        return this;
+    }
+
+    public TransactionRecordAsserts feeGreaterThan(final long amount) {
+        this.<Long>registerTypedProvider(
+                "transactionFee",
+                spec ->
+                        fee -> {
+                            try {
+                                assertTrue(
+                                        fee > amount,
+                                        "Fee should have exceeded " + amount + " but was " + fee);
+                            } catch (Throwable t) {
+                                return List.of(t);
+                            }
+                            return EMPTY_LIST;
+                        });
         return this;
     }
 
