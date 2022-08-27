@@ -142,12 +142,15 @@ public class SidecarWatcher {
         final var expectedSidecar = expectedSidecars.poll();
         final var expectedSidecarRecord = expectedSidecar.expectedSidecarRecord();
 
-        if ((actualSidecar.hasBytecode() || actualSidecar.hasStateChanges())
+        if ((actualSidecar.hasBytecode()
+                        || actualSidecar.hasStateChanges()
+                        || actualSidecar.hasActions())
                 && !actualSidecar.equals(expectedSidecarRecord)) {
             final var spec = expectedSidecar.spec();
             failedSidecars.put(spec, new MismatchedSidecar(expectedSidecarRecord, actualSidecar));
         } else if (actualSidecar.hasActions()) {
             // FUTURE WORK to be completed with actions assertions
+
         }
     }
 
