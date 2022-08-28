@@ -16,7 +16,7 @@
 package com.hedera.services.store.contracts.precompile.impl;
 
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
-import static com.hedera.services.store.contracts.precompile.impl.AbstractTokenUpdatePrecompile.UpdateType.UPDATE_TOKEN_EXPIRY;
+import static com.hedera.services.store.contracts.precompile.impl.AbstractTokenUpdatePrecompile.UpdateType.UPDATE_TOKEN_KEYS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 
 import com.hedera.services.context.SideEffectsTracker;
@@ -26,19 +26,19 @@ import com.hedera.services.store.contracts.WorldLedgers;
 import com.hedera.services.store.contracts.precompile.InfrastructureFactory;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.store.contracts.precompile.codec.DecodingFacade;
-import com.hedera.services.store.contracts.precompile.codec.TokenUpdateExpiryInfoWrapper;
+import com.hedera.services.store.contracts.precompile.codec.TokenUpdateKeysWrapper;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.services.store.models.Id;
-import com.hederahashgraph.api.proto.java.TransactionBody.Builder;
+import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.util.Objects;
 import java.util.function.UnaryOperator;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 
-public class UpdateTokenExpiryInfoPrecompile extends AbstractTokenUpdatePrecompile {
-    private TokenUpdateExpiryInfoWrapper updateExpiryInfoOp;
+public class TokenUpdateKeysPrecompile extends AbstractTokenUpdatePrecompile {
+    TokenUpdateKeysWrapper updateOp;
 
-    public UpdateTokenExpiryInfoPrecompile(
+    public TokenUpdateKeysPrecompile(
             WorldLedgers ledgers,
             ContractAliases aliases,
             DecodingFacade decoder,
@@ -46,7 +46,7 @@ public class UpdateTokenExpiryInfoPrecompile extends AbstractTokenUpdatePrecompi
             SideEffectsTracker sideEffectsTracker,
             SyntheticTxnFactory syntheticTxnFactory,
             InfrastructureFactory infrastructureFactory,
-            PrecompilePricingUtils precompilePricingUtils) {
+            PrecompilePricingUtils pricingUtils) {
         super(
                 ledgers,
                 aliases,
@@ -55,22 +55,22 @@ public class UpdateTokenExpiryInfoPrecompile extends AbstractTokenUpdatePrecompi
                 sideEffectsTracker,
                 syntheticTxnFactory,
                 infrastructureFactory,
-                precompilePricingUtils);
+                pricingUtils);
     }
 
     @Override
-    public Builder body(Bytes input, UnaryOperator<byte[]> aliasResolver) {
-        updateExpiryInfoOp = decoder.decodeUpdateTokenExpiryInfo(input, aliasResolver);
-        transactionBody = syntheticTxnFactory.createTokenUpdateExpiryInfo(updateExpiryInfoOp);
+    public TransactionBody.Builder body(Bytes input, UnaryOperator<byte[]> aliasResolver) {
+        updateOp = decoder.decodeUpdateTokenKeys(input, aliasResolver);
+        transactionBody = syntheticTxnFactory.createTokenUpdateKeys(updateOp);
         return transactionBody;
     }
 
     @Override
     public void run(MessageFrame frame) {
-        Objects.requireNonNull(updateExpiryInfoOp);
-        validateTrue(updateExpiryInfoOp.tokenID() != null, INVALID_TOKEN_ID);
-        tokenId = Id.fromGrpcToken(updateExpiryInfoOp.tokenID());
-        type = UPDATE_TOKEN_EXPIRY;
+        Objects.requireNonNull(updateOp);
+        validateTrue(updateOp.tokenID() != null, INVALID_TOKEN_ID);
+        tokenId = Id.fromGrpcToken(updateOp.tokenID());
+        type = UPDATE_TOKEN_KEYS;
         super.run(frame);
     }
 }

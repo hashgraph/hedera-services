@@ -22,6 +22,7 @@ import static com.hedera.services.contracts.ParsingConstants.EXPIRY;
 import static com.hedera.services.contracts.ParsingConstants.FIXED_FEE;
 import static com.hedera.services.contracts.ParsingConstants.FRACTIONAL_FEE;
 import static com.hedera.services.contracts.ParsingConstants.HEDERA_TOKEN;
+import static com.hedera.services.contracts.ParsingConstants.KEY_VALUE;
 import static com.hedera.services.contracts.ParsingConstants.RESPONSE_STATUS_AT_BEGINNING;
 import static com.hedera.services.contracts.ParsingConstants.ROYALTY_FEE;
 import static com.hedera.services.contracts.ParsingConstants.addressTuple;
@@ -89,6 +90,9 @@ public class HTSPrecompileResult implements ContractCallResult {
     public static final String NON_FUNGIBLE_TOKEN_INFO_REPLACED_ADDRESS =
             "(" + TOKEN_INFO_REPLACED_ADDRESS + ",int64,bytes32,int64,bytes,bytes32" + ")";
 
+    public static final String KEY_VALUE_REPLACED_ADDRESS =
+            KEY_VALUE.replace(ADDRESS_TYPE, BYTES_32_TYPE);
+
     public static final TupleType getTokenInfoTypeReplacedAddress =
             TupleType.parse(RESPONSE_STATUS_AT_BEGINNING + TOKEN_INFO_REPLACED_ADDRESS + ")");
     public static final TupleType getFungibleTokenInfoTypeReplacedAddress =
@@ -111,6 +115,8 @@ public class HTSPrecompileResult implements ContractCallResult {
                             + ")");
     public static final TupleType getTokenExpiryInfoTypeReplacedAddress =
             TupleType.parse(RESPONSE_STATUS_AT_BEGINNING + EXPIRY_REPLACED_ADDRESS + ")");
+    public static final TupleType getTokenKeyReplacedAddress =
+            TupleType.parse(RESPONSE_STATUS_AT_BEGINNING + KEY_VALUE_REPLACED_ADDRESS + ")");
 
     public static HTSPrecompileResult htsPrecompileResult() {
         return new HTSPrecompileResult();
@@ -140,6 +146,7 @@ public class HTSPrecompileResult implements ContractCallResult {
     private List<CustomFee> customFees;
     private boolean isToken;
     private int tokenType;
+    private Key key;
     private long expiry;
     private long autoRenewPeriod;
     private AccountID autoRenewAccount;
@@ -166,6 +173,7 @@ public class HTSPrecompileResult implements ContractCallResult {
                     case HAPI_GET_FUNGIBLE_TOKEN_INFO -> getFungibleTokenInfoTypeReplacedAddress;
                     case HAPI_GET_NON_FUNGIBLE_TOKEN_INFO -> getNonFungibleTokenInfoTypeReplacedAddress;
                     case HAPI_GET_TOKEN_CUSTOM_FEES -> tokenGetCustomFeesReplacedAddress;
+                    case HAPI_GET_TOKEN_KEY -> getTokenKeyReplacedAddress;
                     case HAPI_GET_TOKEN_TYPE -> intPairTuple;
                     case HAPI_GET_TOKEN_EXPIRY_INFO -> getTokenExpiryInfoTypeReplacedAddress;
                     default -> notSpecifiedType;
@@ -298,6 +306,11 @@ public class HTSPrecompileResult implements ContractCallResult {
         return this;
     }
 
+    public HTSPrecompileResult withTokenKeyValue(final Key key) {
+        this.key = key;
+        return this;
+    }
+
     public HTSPrecompileResult withIsToken(final boolean isToken) {
         this.isToken = isToken;
         return this;
@@ -349,6 +362,8 @@ public class HTSPrecompileResult implements ContractCallResult {
                     case HAPI_IS_TOKEN -> Tuple.of(status.getNumber(), isToken);
                     case HAPI_GET_TOKEN_TYPE -> Tuple.of(status.getNumber(), tokenType);
                     case HAPI_GET_TOKEN_EXPIRY_INFO -> getTupleForTokenGetExpiryInfo();
+                    case HAPI_GET_TOKEN_KEY -> getKeyValueTupleWithResponseCode(
+                            status.getNumber(), key);
                     default -> Tuple.of(status.getNumber());
                 };
 
@@ -530,19 +545,24 @@ public class HTSPrecompileResult implements ContractCallResult {
     }
 
     private static Tuple getKeyTuple(final BigInteger keyType, final Key key) {
+        return Tuple.of(keyType, getKeyValueTuple(key));
+    }
+
+    private static Tuple getKeyValueTupleWithResponseCode(final int responseCode, final Key key) {
+        return Tuple.of(responseCode, getKeyValueTuple(key));
+    }
+
+    private static Tuple getKeyValueTuple(final Key key) {
         return Tuple.of(
-                keyType,
-                Tuple.of(
-                        false,
-                        key.getContractID().getContractNum() > 0
-                                ? expandByteArrayTo32Length(Utils.asAddress(key.getContractID()))
-                                : new byte[32],
-                        key.getEd25519().toByteArray(),
-                        key.getECDSASecp256K1().toByteArray(),
-                        key.getDelegatableContractId().getContractNum() > 0
-                                ? expandByteArrayTo32Length(
-                                        Utils.asAddress(key.getDelegatableContractId()))
-                                : new byte[32]));
+                false,
+                key.getContractID().getContractNum() > 0
+                        ? expandByteArrayTo32Length(Utils.asAddress(key.getContractID()))
+                        : new byte[32],
+                key.getEd25519().toByteArray(),
+                key.getECDSASecp256K1().toByteArray(),
+                key.getDelegatableContractId().getContractNum() > 0
+                        ? expandByteArrayTo32Length(Utils.asAddress(key.getDelegatableContractId()))
+                        : new byte[32]);
     }
 
     private static String removeBrackets(final String type) {

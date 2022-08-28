@@ -67,6 +67,7 @@ import com.hedera.services.store.contracts.precompile.codec.TokenFreezeUnfreezeW
 import com.hedera.services.store.contracts.precompile.codec.TokenKeyWrapper;
 import com.hedera.services.store.contracts.precompile.codec.TokenTransferWrapper;
 import com.hedera.services.store.contracts.precompile.codec.TokenUpdateExpiryInfoWrapper;
+import com.hedera.services.store.contracts.precompile.codec.TokenUpdateKeysWrapper;
 import com.hedera.services.store.contracts.precompile.codec.UnpauseWrapper;
 import com.hedera.services.store.contracts.precompile.codec.WipeWrapper;
 import com.hedera.services.utils.EntityIdUtils;
@@ -810,6 +811,43 @@ class SyntheticTxnFactoryTest {
         assertEquals(0, txnBody.getExpiry().getSeconds());
         assertEquals(0, txnBody.getAutoRenewPeriod().getSeconds());
         assertFalse(txnBody.hasAutoRenewAccount());
+
+        // keys assertions
+        assertTrue(txnBody.hasSupplyKey());
+        assertEquals(multiKey.asGrpc(), txnBody.getSupplyKey());
+        assertTrue(txnBody.hasFeeScheduleKey());
+        assertEquals(multiKey.asGrpc(), txnBody.getFeeScheduleKey());
+        assertTrue(txnBody.hasPauseKey());
+        assertEquals(multiKey.asGrpc(), txnBody.getPauseKey());
+    }
+
+    @Test
+    void createsExpectedTokenUpdateKeysCallForFungible() {
+        // given
+        final var adminKey =
+                new KeyValueWrapper(
+                        false,
+                        null,
+                        new byte[] {},
+                        new byte[] {},
+                        EntityIdUtils.contractIdFromEvmAddress(contractAddress));
+        final var multiKey =
+                new KeyValueWrapper(
+                        false,
+                        EntityIdUtils.contractIdFromEvmAddress(contractAddress),
+                        new byte[] {},
+                        new byte[] {},
+                        null);
+        final var tokenUpdateKeysWrapper =
+                new TokenUpdateKeysWrapper(
+                        fungible,
+                        List.of(
+                                new TokenKeyWrapper(112, multiKey),
+                                new TokenKeyWrapper(1, adminKey)));
+        final var result = subject.createTokenUpdateKeys(tokenUpdateKeysWrapper);
+        final var txnBody = result.build().getTokenUpdate();
+
+        assertEquals(fungible, txnBody.getToken());
 
         // keys assertions
         assertTrue(txnBody.hasSupplyKey());

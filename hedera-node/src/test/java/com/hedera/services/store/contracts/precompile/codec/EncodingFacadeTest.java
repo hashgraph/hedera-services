@@ -30,6 +30,7 @@ import com.esaulpaugh.headlong.abi.TupleType;
 import com.google.protobuf.ByteString;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.CustomFee;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.FixedFee;
@@ -182,6 +183,10 @@ class EncodingFacadeTest {
     private static final Bytes RETURN_GET_EXPIRY_INFO_FOR_TOKEN =
             Bytes.fromHexString(
                     "0x0000000000000000000000000000000000000000000000000000000000000016000000000000000000000000000000000000000000000000000000006368e20c00000000000000000000000000000000000000000000000000000000000008b4000000000000000000000000000000000000000000000000000000000076a700");
+
+    private static final Bytes RETURN_GET_TOKEN_KEY =
+            Bytes.fromHexString(
+                    "0x000000000000000000000000000000000000000000000000000000000000001600000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000a000000000000000000000000000000000000000000000000000000000000000e0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000209e417334d2ea6be459624060e3efdc1b459a884bc6a9c232349af35e9060ed620000000000000000000000000000000000000000000000000000000000000000");
 
     final Address logger = Address.fromHexString(HTS_PRECOMPILED_CONTRACT_ADDRESS);
 
@@ -785,6 +790,23 @@ class EncodingFacadeTest {
     void decodeReturnResultForGetTokenType() {
         final var decodedResult = subject.encodeGetTokenType(1);
         assertEquals(RETURN_GET_TOKEN_TYPE, decodedResult);
+    }
+
+    @Test
+    void decodeGetTokenKey() {
+        KeyValueWrapper wrapper =
+                new KeyValueWrapper(
+                        false,
+                        ContractID.getDefaultInstance(),
+                        new byte[] {
+                            -98, 65, 115, 52, -46, -22, 107, -28, 89, 98, 64, 96, -29, -17, -36, 27,
+                            69, -102, -120, 75, -58, -87, -62, 50, 52, -102, -13, 94, -112, 96, -19,
+                            98
+                        },
+                        new byte[0],
+                        ContractID.getDefaultInstance());
+        final var decodedResult = subject.encodeGetTokenKey(wrapper);
+        assertEquals(RETURN_GET_TOKEN_KEY, decodedResult);
     }
 
     @Test
