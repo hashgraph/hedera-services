@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2022 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -62,6 +62,7 @@ import com.hedera.services.store.tokens.HederaTokenStore;
 import com.hedera.services.utils.accessors.AccessorFactory;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ExchangeRate;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
@@ -179,16 +180,11 @@ class UpdateTokenExpiryInfoPrecompileTest {
         given(frame.getRemainingGas()).willReturn(300L);
         given(frame.getValue()).willReturn(Wei.ZERO);
         given(worldUpdater.wrappedTrackingLedgers(any())).willReturn(wrappedLedgers);
-        given(wrappedLedgers.tokenRels()).willReturn(tokenRels);
-        given(wrappedLedgers.nfts()).willReturn(nfts);
-        given(wrappedLedgers.tokens()).willReturn(tokens);
         Optional<WorldUpdater> parent = Optional.of(worldUpdater);
         given(worldUpdater.parentUpdater()).willReturn(parent);
         given(worldUpdater.aliases()).willReturn(aliases);
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
-        given(infrastructureFactory.newHederaTokenStore(sideEffects, tokens, nfts, tokenRels))
-                .willReturn(hederaTokenStore);
         given(decoder.decodeUpdateTokenExpiryInfo(any(), any()))
                 .willReturn(tokenUpdateExpiryInfoWrapperWithInvalidTokenID);
         givenPricingUtilsContext();
@@ -229,6 +225,7 @@ class UpdateTokenExpiryInfoPrecompileTest {
                         infrastructureFactory.newTokenUpdateLogic(
                                 hederaTokenStore, wrappedLedgers, sideEffects))
                 .willReturn(updateLogic);
+        given(updateLogic.validate(any())).willReturn(ResponseCodeEnum.OK);
         given(decoder.decodeUpdateTokenExpiryInfo(any(), any()))
                 .willReturn(tokenUpdateExpiryInfoWrapper);
         given(syntheticTxnFactory.createTokenUpdateExpiryInfo(tokenUpdateExpiryInfoWrapper))

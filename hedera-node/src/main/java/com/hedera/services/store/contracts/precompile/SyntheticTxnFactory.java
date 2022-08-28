@@ -44,8 +44,10 @@ import com.hedera.services.store.contracts.precompile.codec.PauseWrapper;
 import com.hedera.services.store.contracts.precompile.codec.SetApprovalForAllWrapper;
 import com.hedera.services.store.contracts.precompile.codec.TokenCreateWrapper;
 import com.hedera.services.store.contracts.precompile.codec.TokenFreezeUnfreezeWrapper;
+import com.hedera.services.store.contracts.precompile.codec.TokenKeyWrapper;
 import com.hedera.services.store.contracts.precompile.codec.TokenTransferWrapper;
 import com.hedera.services.store.contracts.precompile.codec.TokenUpdateExpiryInfoWrapper;
+import com.hedera.services.store.contracts.precompile.codec.TokenUpdateKeysWrapper;
 import com.hedera.services.store.contracts.precompile.codec.TokenUpdateWrapper;
 import com.hedera.services.store.contracts.precompile.codec.UnpauseWrapper;
 import com.hedera.services.store.contracts.precompile.codec.WipeWrapper;
@@ -574,20 +576,34 @@ public class SyntheticTxnFactory {
             builder.setAutoRenewPeriod(
                     Duration.newBuilder().setSeconds(updateWrapper.expiry().autoRenewPeriod()));
         }
-        updateWrapper
-                .tokenKeys()
-                .forEach(
-                        tokenKeyWrapper -> {
-                            final var key = tokenKeyWrapper.key().asGrpc();
-                            if (tokenKeyWrapper.isUsedForAdminKey()) builder.setAdminKey(key);
-                            if (tokenKeyWrapper.isUsedForKycKey()) builder.setKycKey(key);
-                            if (tokenKeyWrapper.isUsedForFreezeKey()) builder.setFreezeKey(key);
-                            if (tokenKeyWrapper.isUsedForWipeKey()) builder.setWipeKey(key);
-                            if (tokenKeyWrapper.isUsedForSupplyKey()) builder.setSupplyKey(key);
-                            if (tokenKeyWrapper.isUsedForFeeScheduleKey())
-                                builder.setFeeScheduleKey(key);
-                            if (tokenKeyWrapper.isUsedForPauseKey()) builder.setPauseKey(key);
-                        });
+
+        return checkTokenKeysTypeAndBuild(updateWrapper.tokenKeys(), builder);
+    }
+
+    public TransactionBody.Builder createTokenUpdateKeys(TokenUpdateKeysWrapper updateWrapper) {
+        final var builder = constructUpdateTokenBuilder(updateWrapper.tokenID());
+        return checkTokenKeysTypeAndBuild(updateWrapper.tokenKeys(), builder);
+    }
+
+    private TokenUpdateTransactionBody.Builder constructUpdateTokenBuilder(TokenID tokenID) {
+        final var builder = TokenUpdateTransactionBody.newBuilder();
+        builder.setToken(tokenID);
+        return builder;
+    }
+
+    private TransactionBody.Builder checkTokenKeysTypeAndBuild(
+            List<TokenKeyWrapper> tokenKeys, TokenUpdateTransactionBody.Builder builder) {
+        tokenKeys.forEach(
+                tokenKeyWrapper -> {
+                    final var key = tokenKeyWrapper.key().asGrpc();
+                    if (tokenKeyWrapper.isUsedForAdminKey()) builder.setAdminKey(key);
+                    if (tokenKeyWrapper.isUsedForKycKey()) builder.setKycKey(key);
+                    if (tokenKeyWrapper.isUsedForFreezeKey()) builder.setFreezeKey(key);
+                    if (tokenKeyWrapper.isUsedForWipeKey()) builder.setWipeKey(key);
+                    if (tokenKeyWrapper.isUsedForSupplyKey()) builder.setSupplyKey(key);
+                    if (tokenKeyWrapper.isUsedForFeeScheduleKey()) builder.setFeeScheduleKey(key);
+                    if (tokenKeyWrapper.isUsedForPauseKey()) builder.setPauseKey(key);
+                });
 
         return TransactionBody.newBuilder().setTokenUpdate(builder);
     }

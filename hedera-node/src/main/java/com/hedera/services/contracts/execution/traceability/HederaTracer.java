@@ -37,6 +37,7 @@ import org.hyperledger.besu.evm.Code;
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.frame.MessageFrame.State;
+import org.hyperledger.besu.evm.frame.MessageFrame.Type;
 
 public class HederaTracer implements HederaOperationTracer {
 
@@ -61,7 +62,7 @@ public class HederaTracer implements HederaOperationTracer {
     public void init(final MessageFrame initialFrame) {
         if (areActionSidecarsEnabled) {
             // since this is the initial frame, call depth is always 0
-            trackActionFor(initialFrame, 0);
+            trackActionFor(initialFrame, 0, null);
         }
     }
 
@@ -74,7 +75,7 @@ public class HederaTracer implements HederaOperationTracer {
             if (frameState != State.CODE_EXECUTING) {
                 if (frameState == State.CODE_SUSPENDED) {
                     final var nextFrame = frame.getMessageFrameStack().peek();
-                    trackActionFor(nextFrame, nextFrame.getMessageFrameStack().size() - 1);
+                    trackActionFor(nextFrame, nextFrame.getMessageFrameStack().size() - 1, frame);
                 } else {
                     finalizeActionFor(currentActionsStack.pop(), frame, frameState);
                 }
@@ -82,27 +83,37 @@ public class HederaTracer implements HederaOperationTracer {
         }
     }
 
-    private void trackActionFor(final MessageFrame frame, final int callDepth) {
+    private void trackActionFor(
+            final MessageFrame nextFrame, final int callDepth, final MessageFrame parentFrame) {
         // code can be empty when calling precompiles too, but we handle
         // that in tracePrecompileCall, after precompile execution is completed
-        final var isCallToAccount = Code.EMPTY.equals(frame.getCode());
+        final var isCallToAccount = Code.EMPTY.equals(nextFrame.getCode());
         final var isTopLevelEVMTransaction = callDepth == 0;
         final var action =
                 new SolidityAction(
-                        toContractActionType(frame.getType()),
+                        toContractActionType(nextFrame.getType()),
                         isTopLevelEVMTransaction
-                                ? EntityId.fromAddress(frame.getOriginatorAddress())
+                                ? EntityId.fromAddress(nextFrame.getOriginatorAddress())
                                 : null,
                         !isTopLevelEVMTransaction
-                                ? EntityId.fromAddress(frame.getSenderAddress())
+                                ? EntityId.fromAddress(nextFrame.getSenderAddress())
                                 : null,
-                        frame.getRemainingGas(),
-                        frame.getInputData().toArray(),
-                        isCallToAccount ? EntityId.fromAddress(frame.getContractAddress()) : null,
-                        !isCallToAccount ? EntityId.fromAddress(frame.getContractAddress()) : null,
-                        frame.getValue().toLong(),
+                        nextFrame.getRemainingGas(),
+                        nextFrame.getInputData().toArray(),
+                        isCallToAccount
+                                ? EntityId.fromAddress(nextFrame.getContractAddress())
+                                : null,
+                        !isCallToAccount
+                                ? EntityId.fromAddress(nextFrame.getContractAddress())
+                                : null,
+                        nextFrame.getValue().toLong(),
                         callDepth,
-                        toCallOperationType(frame.getCurrentOperation().getOpcode()));
+                        callDepth == 0
+                                ? (nextFrame.getType() == Type.CONTRACT_CREATION)
+                                        ? OP_CREATE
+                                        : OP_CALL
+                                : toCallOperationType(
+                                        parentFrame.getCurrentOperation().getOpcode()));
         allActions.add(action);
         currentActionsStack.push(action);
     }

@@ -24,11 +24,11 @@ contract UpdateTokenInfoContract is HederaTokenService, FeeHelper {
         string memory _symbol,
         string memory _memo) public payable {
         IHederaTokenService.TokenKey[] memory keys = new IHederaTokenService.TokenKey[](5);
-        keys[0] = getSingleKey(0, 1, 3, ed25519);
-        keys[1] = getSingleKey(2, 3, 4, ecdsa);
-        keys[2] = getSingleKey(4, 2, contractID);
-        keys[3] = getSingleKey(6, 2, contractID);
-        keys[4] = getSingleKey(5, 5, contractID);
+        keys[0] = getSingleKey(0, 1, 3, ed25519); //admin 3
+        keys[1] = getSingleKey(2, 3, 4, ecdsa); //freeze 12
+        keys[2] = getSingleKey(4, 2, contractID); //supply 16
+        keys[3] = getSingleKey(6, 2, contractID); //pause 64
+        keys[4] = getSingleKey(5, 5, contractID); //schedule 32
 
         name = _name;
         symbol = _symbol;
@@ -63,7 +63,7 @@ contract UpdateTokenInfoContract is HederaTokenService, FeeHelper {
     }
 
     // TEST-003
-    function checkNameAndSymbolLenght(
+    function checkNameAndSymbolLength(
         address tokenID,
         address treasury,
         string memory _name,
@@ -136,6 +136,41 @@ contract UpdateTokenInfoContract is HederaTokenService, FeeHelper {
         if (responseCode != HederaResponseCodes.SUCCESS) {
             revert ();
         }
+    }
+
+    // TEST-006
+    function tokenUpdateKeys(
+        address token,
+        bytes memory ed25519,
+        bytes memory ecdsa,
+        address contractID) public payable {
+
+        IHederaTokenService.TokenKey[] memory keys = new IHederaTokenService.TokenKey[](5);
+        keys[0] = getSingleKey(0, 1, 3, ed25519);
+        keys[1] = getSingleKey(2, 3, 4, ecdsa);
+        keys[2] = getSingleKey(4, 2, contractID);
+        keys[3] = getSingleKey(6, 2, contractID);
+        keys[4] = getSingleKey(5, 5, contractID);
+
+        int responseCode = super.updateTokenKeys(token, keys);
+
+        if (responseCode != HederaResponseCodes.SUCCESS) {
+            revert ("Update of token keys failed!");
+        }
+    }
+
+
+    //TEST-007
+    function getKeyFromToken(address token, uint keyType) external
+    returns(IHederaTokenService.KeyValue memory){
+        (int responseCode,IHederaTokenService.KeyValue memory
+        key) = HederaTokenService.getTokenKey(token, keyType);
+
+        if (responseCode != HederaResponseCodes.SUCCESS) {
+            revert ();
+        }
+
+        return key;
     }
 
     /** --- HELPERS --- */

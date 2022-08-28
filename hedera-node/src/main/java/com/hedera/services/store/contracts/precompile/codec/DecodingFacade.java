@@ -15,7 +15,22 @@
  */
 package com.hedera.services.store.contracts.precompile.codec;
 
-import static com.hedera.services.contracts.ParsingConstants.*;
+import static com.hedera.services.contracts.ParsingConstants.ADDRESS_ADDRESS_UINT256_RAW_TYPE;
+import static com.hedera.services.contracts.ParsingConstants.ADDRESS_PAIR_RAW_TYPE;
+import static com.hedera.services.contracts.ParsingConstants.ADDRESS_TRIO_RAW_TYPE;
+import static com.hedera.services.contracts.ParsingConstants.ADDRESS_UINT256_RAW_TYPE;
+import static com.hedera.services.contracts.ParsingConstants.ARRAY_BRACKETS;
+import static com.hedera.services.contracts.ParsingConstants.BOOL;
+import static com.hedera.services.contracts.ParsingConstants.BYTES32;
+import static com.hedera.services.contracts.ParsingConstants.EXPIRY;
+import static com.hedera.services.contracts.ParsingConstants.FIXED_FEE;
+import static com.hedera.services.contracts.ParsingConstants.FRACTIONAL_FEE;
+import static com.hedera.services.contracts.ParsingConstants.INT;
+import static com.hedera.services.contracts.ParsingConstants.INT_BOOL_PAIR;
+import static com.hedera.services.contracts.ParsingConstants.ROYALTY_FEE;
+import static com.hedera.services.contracts.ParsingConstants.STRING;
+import static com.hedera.services.contracts.ParsingConstants.TOKEN_KEY;
+import static com.hedera.services.contracts.ParsingConstants.UINT256;
 import static com.hedera.services.utils.EntityIdUtils.accountIdFromEvmAddress;
 
 import com.esaulpaugh.headlong.abi.ABIType;
@@ -454,7 +469,8 @@ public class DecodingFacade {
     private static final Bytes TOKEN_UPDATE_INFO_SELECTOR =
             Bytes.wrap(TOKEN_UPDATE_INFO_FUNCTION.selector());
     private static final ABIType<Tuple> TOKEN_UPDATE_INFO_DECODER =
-            TypeFactory.create("(bytes32," + HEDERA_TOKEN_STRUCT_DECODER + ")");
+            TypeFactory.create(
+                    "(" + removeBrackets(BYTES32) + "," + HEDERA_TOKEN_STRUCT_DECODER + ")");
 
     private static final Function GET_TOKEN_EXPIRY_INFO_FUNCTION =
             new Function("getTokenExpiryInfo(address)");
@@ -467,7 +483,22 @@ public class DecodingFacade {
     private static final Bytes TOKEN_UPDATE_EXPIRY_INFO_SELECTOR =
             Bytes.wrap(TOKEN_UPDATE_EXPIRY_INFO_FUNCTION.selector());
     private static final ABIType<Tuple> TOKEN_UPDATE_EXPIRY_INFO_DECODER =
-            TypeFactory.create("(bytes32," + EXPIRY_DECODER + ")");
+            TypeFactory.create("(" + removeBrackets(BYTES32) + "," + EXPIRY_DECODER + ")");
+
+    private static final Function TOKEN_UPDATE_KEYS_FUNCTION =
+            new Function("updateTokenKeys(address," + TOKEN_KEY + ARRAY_BRACKETS + ")");
+    private static final Bytes TOKEN_UPDATE_KEYS_SELECTOR =
+            Bytes.wrap(TOKEN_UPDATE_KEYS_FUNCTION.selector());
+    private static final ABIType<Tuple> TOKEN_UPDATE_KEYS_DECODER =
+            TypeFactory.create(
+                    "(" + removeBrackets(BYTES32) + "," + TOKEN_KEY_DECODER + ARRAY_BRACKETS + ")");
+
+    private static final Function GET_TOKEN_KEYS_FUNCTION =
+            new Function("getTokenKey(address,uint256)");
+    private static final Bytes GET_TOKEN_KEYS_SELECTOR =
+            Bytes.wrap(GET_TOKEN_KEYS_FUNCTION.selector());
+    private static final ABIType<Tuple> GET_TOKEN_KEYS_DECODER =
+            TypeFactory.create(ADDRESS_UINT256_RAW_TYPE);
 
     @Inject
     public DecodingFacade() {
@@ -1412,6 +1443,23 @@ public class DecodingFacade {
                 tokenID, tokenName, tokenSymbol, tokenTreasury, tokenMemo, tokenKeys, tokenExpiry);
     }
 
+    public TokenUpdateKeysWrapper decodeUpdateTokenKeys(
+            Bytes input, UnaryOperator<byte[]> aliasResolver) {
+        final Tuple decodedArguments =
+                decodeFunctionCall(input, TOKEN_UPDATE_KEYS_SELECTOR, TOKEN_UPDATE_KEYS_DECODER);
+        final var tokenID = convertAddressBytesToTokenID(decodedArguments.get(0));
+        final var tokenKeys = decodeTokenKeys(decodedArguments.get(1), aliasResolver);
+        return new TokenUpdateKeysWrapper(tokenID, tokenKeys);
+    }
+
+    public GetTokenKeyWrapper decodeGetTokenKey(Bytes input) {
+        final Tuple decodedArguments =
+                decodeFunctionCall(input, GET_TOKEN_KEYS_SELECTOR, GET_TOKEN_KEYS_DECODER);
+        final var tokenID = convertAddressBytesToTokenID(decodedArguments.get(0));
+        final var tokenType = ((BigInteger) decodedArguments.get(1)).longValue();
+        return new GetTokenKeyWrapper(tokenID, tokenType);
+    }
+
     private static AccountID convertLeftPaddedAddressToAccountId(
             final byte[] leftPaddedAddress, @NotNull final UnaryOperator<byte[]> aliasResolver) {
         final var addressOrAlias =
@@ -1481,5 +1529,10 @@ public class DecodingFacade {
                     new SyntheticTxnFactory.FungibleTokenTransfer(
                             -amount, false, tokenType, accountID, null));
         }
+    }
+
+    private static String removeBrackets(final String type) {
+        final var typeWithRemovedOpenBracket = type.replace("(", "");
+        return typeWithRemovedOpenBracket.replace(")", "");
     }
 }
