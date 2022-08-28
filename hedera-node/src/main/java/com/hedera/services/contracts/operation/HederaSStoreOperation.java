@@ -81,7 +81,7 @@ public class HederaSStoreOperation extends AbstractOperation {
         } else if (remainingGas < minumumGasRemaining) {
             return insufficientMinimumGasRemainingResult;
         } else {
-            if (dynamicProperties.enabledSidecars().contains(CONTRACT_STATE_CHANGE)) {
+            if (!frame.isStatic() && dynamicProperties.enabledSidecars().contains(CONTRACT_STATE_CHANGE)) {
                 cacheExistingValue(frame, address, key, account.getStorageValue(key));
             }
             frame.incrementGasRefund(calculator.calculateStorageRefundAmount(account, key, value));
