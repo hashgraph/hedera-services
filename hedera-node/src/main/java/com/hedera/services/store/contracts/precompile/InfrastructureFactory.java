@@ -267,4 +267,17 @@ public class InfrastructureFactory {
     public DeleteAllowanceChecks newDeleteAllowanceChecks() {
         return new DeleteAllowanceChecks(dynamicProperties, validator);
     }
+
+    public TokenUpdateLogic newTokenUpdateLogic(
+            HederaTokenStore hederaTokenStore,
+            WorldLedgers ledgers,
+            SideEffectsTracker sideEffects) {
+        return new TokenUpdateLogic(
+                dynamicProperties.treasuryNftAllowance(),
+                validator,
+                hederaTokenStore,
+                ledgers,
+                sideEffects,
+                sigImpactHistorian);
+    }
 }
