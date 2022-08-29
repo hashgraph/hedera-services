@@ -140,8 +140,6 @@ public class NewTraceabilitySuite extends HapiApiSuite {
                                                                 formattedAssertionValue(2))))),
                         withOpContext(
                                 (spec, opLog) -> {
-                                    final var txnRecord = getTxnRecord(FIRST_CREATE_TXN);
-                                    allRunFor(spec, txnRecord);
                                     allRunFor(
                                             spec,
                                             expectContractActionSidecarFor(
@@ -158,10 +156,9 @@ public class NewTraceabilitySuite extends HapiApiSuite {
                                                                                     GENESIS, spec))
                                                                     .setGas(197000)
                                                                     .setRecipientContract(
-                                                                            txnRecord
-                                                                                    .getResponseRecord()
-                                                                                    .getContractCreateResult()
-                                                                                    .getContractID())
+                                                                            spec.registry()
+                                                                                    .getContractId(
+                                                                                            TRACEABILITY))
                                                                     .setGasUsed(68492)
                                                                     .setOutput(EMPTY)
                                                                     .build())));
@@ -188,8 +185,6 @@ public class NewTraceabilitySuite extends HapiApiSuite {
                                                                 formattedAssertionValue(12))))),
                         withOpContext(
                                 (spec, opLog) -> {
-                                    final var txnRecord = getTxnRecord(SECOND_CREATE_TXN);
-                                    allRunFor(spec, txnRecord);
                                     allRunFor(
                                             spec,
                                             expectContractActionSidecarFor(
@@ -206,10 +201,10 @@ public class NewTraceabilitySuite extends HapiApiSuite {
                                                                                     GENESIS, spec))
                                                                     .setGas(197000)
                                                                     .setRecipientContract(
-                                                                            txnRecord
-                                                                                    .getResponseRecord()
-                                                                                    .getContractCreateResult()
-                                                                                    .getContractID())
+                                                                            spec.registry()
+                                                                                    .getContractId(
+                                                                                            TRACEABILITY
+                                                                                                    + SECOND))
                                                                     .setGasUsed(28692)
                                                                     .setOutput(EMPTY)
                                                                     .build())));
@@ -236,8 +231,6 @@ public class NewTraceabilitySuite extends HapiApiSuite {
                                                                 formattedAssertionValue(0))))),
                         withOpContext(
                                 (spec, opLog) -> {
-                                    final var txnRecord = getTxnRecord(THIRD_CREATE_TXN);
-                                    allRunFor(spec, txnRecord);
                                     allRunFor(
                                             spec,
                                             expectContractActionSidecarFor(
@@ -254,10 +247,10 @@ public class NewTraceabilitySuite extends HapiApiSuite {
                                                                                     GENESIS, spec))
                                                                     .setGas(197000)
                                                                     .setRecipientContract(
-                                                                            txnRecord
-                                                                                    .getResponseRecord()
-                                                                                    .getContractCreateResult()
-                                                                                    .getContractID())
+                                                                            spec.registry()
+                                                                                    .getContractId(
+                                                                                            TRACEABILITY
+                                                                                                    + THIRD))
                                                                     .setGasUsed(28692)
                                                                     .setOutput(EMPTY)
                                                                     .build())));
