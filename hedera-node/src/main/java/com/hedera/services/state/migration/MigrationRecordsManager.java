@@ -59,7 +59,6 @@ import com.hederahashgraph.api.proto.java.KeyList;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
-import java.math.BigInteger;
 import java.time.Instant;
 import java.util.List;
 import java.util.function.Supplier;
@@ -371,14 +370,9 @@ public class MigrationRecordsManager {
         IterableContractValue iterableValue;
         while (maxNumberOfKvPairsToIterate > 0 && contractStorageKey != null) {
             iterableValue = contractStorageMap.get(contractStorageKey);
-            final var keyAsBigInteger = contractStorageKey.getKeyAsBigInteger();
             contractStateChangeBuilder.addStorageChanges(
                     StorageChange.newBuilder()
-                            .setSlot(
-                                    ByteStringUtils.wrapUnsafely(
-                                            keyAsBigInteger.equals(BigInteger.ZERO)
-                                                    ? new byte[0]
-                                                    : keyAsBigInteger.toByteArray()))
+                            .setSlot(ByteStringUtils.wrapUnsafely(slotAsBytes(contractStorageKey)))
                             .setValueRead(
                                     ByteStringUtils.wrapUnsafely(
                                             iterableValue
@@ -406,6 +400,21 @@ public class MigrationRecordsManager {
                                 .addContractStateChanges(contractStateChangeBuilder)
                                 .build())
                 .setMigration(true);
+    }
+
+    private byte[] slotAsBytes(final ContractKey contractStorageKey) {
+        final var numOfNonZeroBytes = contractStorageKey.getUint256KeyNonZeroBytes();
+        // getUint256KeyNonZeroBytes() returns 1 even if slot is 0, so
+        // check the least significant int in the int[] representation
+        // of the key to make sure we are in the edge case
+        if (numOfNonZeroBytes == 1 && contractStorageKey.getKey()[7] == 0) {
+            return new byte[0];
+        }
+        final var contractKeyBytes = new byte[numOfNonZeroBytes];
+        for (int i = numOfNonZeroBytes - 1, j = numOfNonZeroBytes - i - 1; i >= 0; i--, j++) {
+            contractKeyBytes[j] = contractStorageKey.getUint256Byte(i);
+        }
+        return contractKeyBytes;
     }
 
     @VisibleForTesting
