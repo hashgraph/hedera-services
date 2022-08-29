@@ -86,7 +86,9 @@ import com.hedera.services.store.contracts.UpdateTrackingLedgerAccount;
 import com.hedera.services.store.contracts.WorldLedgers;
 import com.hedera.services.store.contracts.precompile.codec.DecodingFacade;
 import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
+import com.hedera.services.store.contracts.precompile.codec.KeyValueWrapper;
 import com.hedera.services.store.contracts.precompile.codec.TokenCreateWrapper;
+import com.hedera.services.store.contracts.precompile.codec.TokenKeyWrapper;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.NftId;
@@ -294,18 +296,18 @@ class CreatePrecompileTest {
         final var tokenCreateWrapper =
                 createTokenCreateWrapperWithKeys(
                         List.of(
-                                new TokenCreateWrapper.TokenKeyWrapper(
+                                new TokenKeyWrapper(
                                         1,
-                                        new TokenCreateWrapper.KeyValueWrapper(
+                                        new KeyValueWrapper(
                                                 false,
                                                 EntityIdUtils.contractIdFromEvmAddress(
                                                         contractAddress),
                                                 new byte[] {},
                                                 new byte[] {},
                                                 null)),
-                                new TokenCreateWrapper.TokenKeyWrapper(
+                                new TokenKeyWrapper(
                                         8,
-                                        new TokenCreateWrapper.KeyValueWrapper(
+                                        new KeyValueWrapper(
                                                 false,
                                                 null,
                                                 new byte[] {},
@@ -325,9 +327,9 @@ class CreatePrecompileTest {
         final var tokenCreateWrapper =
                 createNonFungibleTokenCreateWrapperWithKeys(
                         List.of(
-                                new TokenCreateWrapper.TokenKeyWrapper(
+                                new TokenKeyWrapper(
                                         1,
-                                        new TokenCreateWrapper.KeyValueWrapper(
+                                        new KeyValueWrapper(
                                                 false,
                                                 null,
                                                 new byte[] {},
@@ -352,9 +354,9 @@ class CreatePrecompileTest {
         final var tokenCreateWrapper =
                 createTokenCreateWrapperWithKeys(
                         List.of(
-                                new TokenCreateWrapper.TokenKeyWrapper(
+                                new TokenKeyWrapper(
                                         1,
-                                        new TokenCreateWrapper.KeyValueWrapper(
+                                        new KeyValueWrapper(
                                                 false,
                                                 null,
                                                 new byte[] {},
@@ -376,9 +378,9 @@ class CreatePrecompileTest {
         final var tokenCreateWrapper =
                 createNonFungibleTokenCreateWrapperWithKeys(
                         List.of(
-                                new TokenCreateWrapper.TokenKeyWrapper(
+                                new TokenKeyWrapper(
                                         1,
-                                        new TokenCreateWrapper.KeyValueWrapper(
+                                        new KeyValueWrapper(
                                                 true, null, new byte[] {}, new byte[] {}, null))));
         tokenCreateWrapper.setFixedFees(List.of(fixedFee));
         tokenCreateWrapper.setRoyaltyFees(List.of(HTSTestsUtil.royaltyFee));
@@ -410,9 +412,9 @@ class CreatePrecompileTest {
         final var tokenCreateWrapper =
                 createTokenCreateWrapperWithKeys(
                         List.of(
-                                new TokenCreateWrapper.TokenKeyWrapper(
+                                new TokenKeyWrapper(
                                         1,
-                                        new TokenCreateWrapper.KeyValueWrapper(
+                                        new KeyValueWrapper(
                                                 false,
                                                 null,
                                                 new byte[JEd25519Key.ED25519_BYTE_LENGTH],
@@ -474,9 +476,9 @@ class CreatePrecompileTest {
         final var tokenCreateWrapper =
                 createTokenCreateWrapperWithKeys(
                         List.of(
-                                new TokenCreateWrapper.TokenKeyWrapper(
+                                new TokenKeyWrapper(
                                         1,
-                                        new TokenCreateWrapper.KeyValueWrapper(
+                                        new KeyValueWrapper(
                                                 false,
                                                 null,
                                                 new byte[JEd25519Key.ED25519_BYTE_LENGTH],
@@ -532,13 +534,12 @@ class CreatePrecompileTest {
         given(worldUpdater.wrappedTrackingLedgers(any())).willReturn(wrappedLedgers);
         given(wrappedLedgers.accounts()).willReturn(accounts);
         Bytes pretendArguments = Bytes.of(Integers.toBytes(ABI_ID_CREATE_FUNGIBLE_TOKEN));
-        final var keyValueMock = Mockito.mock(TokenCreateWrapper.KeyValueWrapper.class);
+        final var keyValueMock = Mockito.mock(KeyValueWrapper.class);
         when(keyValueMock.getKeyValueType())
-                .thenReturn(TokenCreateWrapper.KeyValueWrapper.KeyValueType.CONTRACT_ID)
-                .thenReturn(TokenCreateWrapper.KeyValueWrapper.KeyValueType.INVALID_KEY);
+                .thenReturn(KeyValueWrapper.KeyValueType.CONTRACT_ID)
+                .thenReturn(KeyValueWrapper.KeyValueType.INVALID_KEY);
         final var tokenCreateWrapper =
-                createTokenCreateWrapperWithKeys(
-                        List.of(new TokenCreateWrapper.TokenKeyWrapper(1, keyValueMock)));
+                createTokenCreateWrapperWithKeys(List.of(new TokenKeyWrapper(1, keyValueMock)));
         given(decoder.decodeFungibleCreate(eq(pretendArguments), any()))
                 .willReturn(tokenCreateWrapper);
         given(mockSynthBodyBuilder.build())
@@ -591,9 +592,9 @@ class CreatePrecompileTest {
         final var tokenCreateWrapper =
                 createTokenCreateWrapperWithKeys(
                         List.of(
-                                new TokenCreateWrapper.TokenKeyWrapper(
+                                new TokenKeyWrapper(
                                         1,
-                                        new TokenCreateWrapper.KeyValueWrapper(
+                                        new KeyValueWrapper(
                                                 false,
                                                 EntityIdUtils.contractIdFromEvmAddress(
                                                         contractAddress),
@@ -610,18 +611,18 @@ class CreatePrecompileTest {
         final var tokenCreateWrapper =
                 createTokenCreateWrapperWithKeys(
                         List.of(
-                                new TokenCreateWrapper.TokenKeyWrapper(
+                                new TokenKeyWrapper(
                                         0,
-                                        new TokenCreateWrapper.KeyValueWrapper(
+                                        new KeyValueWrapper(
                                                 false,
                                                 EntityIdUtils.contractIdFromEvmAddress(
                                                         contractAddress),
                                                 new byte[] {},
                                                 new byte[] {},
                                                 null)),
-                                new TokenCreateWrapper.TokenKeyWrapper(
+                                new TokenKeyWrapper(
                                         1,
-                                        new TokenCreateWrapper.KeyValueWrapper(
+                                        new KeyValueWrapper(
                                                 false,
                                                 null,
                                                 new byte[JEd25519Key.ED25519_BYTE_LENGTH],
@@ -637,18 +638,18 @@ class CreatePrecompileTest {
         final var tokenCreateWrapper =
                 createTokenCreateWrapperWithKeys(
                         List.of(
-                                new TokenCreateWrapper.TokenKeyWrapper(
+                                new TokenKeyWrapper(
                                         1,
-                                        new TokenCreateWrapper.KeyValueWrapper(
+                                        new KeyValueWrapper(
                                                 false,
                                                 EntityIdUtils.contractIdFromEvmAddress(
                                                         contractAddress),
                                                 new byte[] {},
                                                 new byte[] {},
                                                 null)),
-                                new TokenCreateWrapper.TokenKeyWrapper(
+                                new TokenKeyWrapper(
                                         1,
-                                        new TokenCreateWrapper.KeyValueWrapper(
+                                        new KeyValueWrapper(
                                                 false,
                                                 null,
                                                 new byte[] {},
@@ -665,9 +666,9 @@ class CreatePrecompileTest {
         final var tokenCreateWrapper =
                 createTokenCreateWrapperWithKeys(
                         List.of(
-                                new TokenCreateWrapper.TokenKeyWrapper(
+                                new TokenKeyWrapper(
                                         128,
-                                        new TokenCreateWrapper.KeyValueWrapper(
+                                        new KeyValueWrapper(
                                                 false,
                                                 null,
                                                 new byte[] {},

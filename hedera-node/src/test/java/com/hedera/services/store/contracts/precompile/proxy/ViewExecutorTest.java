@@ -20,7 +20,9 @@ import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_GET_TOKEN_CUSTOM_FEES;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_GET_TOKEN_DEFAULT_FREEZE_STATUS;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_GET_TOKEN_DEFAULT_KYC_STATUS;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_GET_TOKEN_EXPIRY_INFO;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_GET_TOKEN_INFO;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_GET_TOKEN_KEY;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_GET_TOKEN_TYPE;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_IS_FROZEN;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_IS_KYC;
@@ -40,6 +42,9 @@ import static org.mockito.Mockito.verify;
 import com.esaulpaugh.headlong.util.Integers;
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.primitives.StateView;
+import com.hedera.services.ledger.TransactionalLedger;
+import com.hedera.services.ledger.properties.TokenProperty;
+import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.store.contracts.WorldLedgers;
@@ -47,6 +52,8 @@ import com.hedera.services.store.contracts.precompile.codec.DecodingFacade;
 import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
 import com.hedera.services.store.contracts.precompile.codec.GetTokenDefaultFreezeStatusWrapper;
 import com.hedera.services.store.contracts.precompile.codec.GetTokenDefaultKycStatusWrapper;
+import com.hedera.services.store.contracts.precompile.codec.GetTokenExpiryInfoWrapper;
+import com.hedera.services.store.contracts.precompile.codec.GetTokenKeyWrapper;
 import com.hedera.services.store.contracts.precompile.codec.GrantRevokeKycWrapper;
 import com.hedera.services.store.contracts.precompile.codec.TokenFreezeUnfreezeWrapper;
 import com.hedera.services.store.contracts.precompile.codec.TokenGetCustomFeesWrapper;
@@ -87,7 +94,9 @@ class ViewExecutorTest {
     @Mock private BlockValues blockValues;
     @Mock private StateView stateView;
     @Mock private WorldLedgers ledgers;
-    @Mock private MerkleMap<EntityNum, MerkleToken> tokens;
+    @Mock private TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokens;
+    @Mock private JKey key;
+    @Mock private MerkleMap<EntityNum, MerkleToken> merkleTokens;
     @Mock private MerkleToken token;
 
     public static final AccountID account = IdUtils.asAccount("0.0.777");
@@ -267,6 +276,30 @@ class ViewExecutorTest {
     }
 
     @Test
+    void computeGetTokenKey() {
+        final var input = prerequisites(ABI_ID_GET_TOKEN_KEY, fungibleTokenAddress);
+        final var getTokenKeyEncoded =
+                Bytes.fromHexString(
+                        "0x000000000000000000000000000000000000000000000000000000000000001600000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000a000000000000000000000000000000000000000000000000000000000000000e0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000209e417334d2ea6be459624060e3efdc1b459a884bc6a9c232349af35e9060ed620000000000000000000000000000000000000000000000000000000000000000");
+        given(decodingFacade.decodeGetTokenKey(input))
+                .willReturn(new GetTokenKeyWrapper(fungible, 1));
+        given(stateView.tokenExists(fungible)).willReturn(true);
+        given(ledgers.tokens()).willReturn(tokens);
+        given(tokens.get(fungible, TokenProperty.ADMIN_KEY)).willReturn(key);
+        given(key.getECDSASecp256k1Key()).willReturn(new byte[0]);
+        given(key.getEd25519())
+                .willReturn(
+                        new byte[] {
+                            -98, 65, 115, 52, -46, -22, 107, -28, 89, 98, 64, 96, -29, -17, -36, 27,
+                            69, -102, -120, 75, -58, -87, -62, 50, 52, -102, -13, 94, -112, 96, -19,
+                            98
+                        });
+        given(encodingFacade.encodeGetTokenKey(any())).willReturn(getTokenKeyEncoded);
+
+        assertEquals(Pair.of(gas, getTokenKeyEncoded), subject.computeCosted());
+    }
+
+    @Test
     void computeGetTokenCustomFeesThrowsWhenTokenDoesNotExists() {
         final var input = prerequisites(ABI_ID_GET_TOKEN_CUSTOM_FEES, fungibleTokenAddress);
 
@@ -292,8 +325,8 @@ class ViewExecutorTest {
         final var wrapper = TokenInfoWrapper.forToken(fungible);
         given(decodingFacade.decodeGetTokenType(input)).willReturn(wrapper);
         given(stateView.tokenExists(fungible)).willReturn(true);
-        given(stateView.tokens()).willReturn(tokens);
-        given(tokens.get(EntityNum.fromTokenId(wrapper.tokenID()))).willReturn(token);
+        given(stateView.tokens()).willReturn(merkleTokens);
+        given(merkleTokens.get(EntityNum.fromTokenId(wrapper.tokenID()))).willReturn(token);
         given(token.tokenType()).willReturn(TokenType.FUNGIBLE_COMMON);
         given(encodingFacade.encodeGetTokenType(TokenType.FUNGIBLE_COMMON.ordinal()))
                 .willReturn(RETURN_SUCCESS_TRUE);
@@ -356,6 +389,35 @@ class ViewExecutorTest {
 
         given(stateView.infoForToken(any())).willReturn(Optional.of(tokenInfo));
         given(stateView.infoForNft(any())).willReturn(Optional.empty());
+
+        assertEquals(Pair.of(gas, null), subject.computeCosted());
+        verify(frame).setState(MessageFrame.State.REVERT);
+    }
+
+    @Test
+    void computeGetTokenExpiryInfo() {
+        final var input = prerequisites(ABI_ID_GET_TOKEN_EXPIRY_INFO, fungibleTokenAddress);
+        final var tokenExpiryInfoEncoded =
+                Bytes.fromHexString(
+                        "0x0000000000000000000000000000000000000000000000000000000000000016000000000000000000000000000000000000000000000000000000006370f6ca00000000000000000000000000000000000000000000000000000000000004c2000000000000000000000000000000000000000000000000000000000076a700");
+
+        given(decodingFacade.decodeGetTokenExpiryInfo(input))
+                .willReturn(new GetTokenExpiryInfoWrapper(fungible));
+        given(stateView.infoForToken(fungible)).willReturn(Optional.of(tokenInfo));
+        given(stateView.tokenExists(fungible)).willReturn(true);
+        given(encodingFacade.encodeGetTokenExpiryInfo(any())).willReturn(tokenExpiryInfoEncoded);
+
+        assertEquals(Pair.of(gas, tokenExpiryInfoEncoded), subject.computeCosted());
+    }
+
+    @Test
+    void computeGetTokenExpiryInfoFailsAsExpected() {
+        final var input = prerequisites(ABI_ID_GET_TOKEN_EXPIRY_INFO, fungibleTokenAddress);
+
+        given(decodingFacade.decodeGetTokenExpiryInfo(input))
+                .willReturn(new GetTokenExpiryInfoWrapper(fungible));
+        given(stateView.infoForToken(fungible)).willReturn(Optional.empty());
+        given(stateView.tokenExists(fungible)).willReturn(true);
 
         assertEquals(Pair.of(gas, null), subject.computeCosted());
         verify(frame).setState(MessageFrame.State.REVERT);

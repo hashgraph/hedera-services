@@ -63,4 +63,10 @@ public final class ValidationUtils {
             throw new InvalidTransactionException(failureMsg, code);
         }
     }
+
+    public static void validateFalseOrRevert(final boolean flag, final ResponseCodeEnum code) {
+        if (flag) {
+            throw new InvalidTransactionException(code, true);
+        }
+    }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,18 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.hedera.services.state.expiry.renewal;
+package com.hedera.services.bdd.spec.verification.traceability;
 
-public enum RenewableEntityType {
-    DETACHED_ACCOUNT,
-    EXPIRED_ACCOUNT_READY_TO_RENEW,
-    DETACHED_ACCOUNT_GRACE_PERIOD_OVER,
+import com.hedera.services.stream.proto.TransactionSidecarRecord;
 
-    DETACHED_CONTRACT,
-    EXPIRED_CONTRACT_READY_TO_RENEW,
-    DETACHED_CONTRACT_GRACE_PERIOD_OVER,
-
-    DETACHED_TREASURY_GRACE_PERIOD_OVER_BEFORE_TOKEN,
-
-    OTHER
-}
+record MismatchedSidecar(
+        TransactionSidecarRecord expectedSidecarRecord,
+        TransactionSidecarRecord actualSidecarRecord) {}
