@@ -24,6 +24,12 @@ import static org.mockito.internal.verification.VerificationModeFactory.times;
 import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.stream.NonBlockingHandoff;
 import com.hedera.services.stream.RecordStreamObject;
+import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.Timestamp;
+import com.hederahashgraph.api.proto.java.TransactionID;
+import com.hederahashgraph.api.proto.java.TransactionReceipt;
+import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.swirlds.common.crypto.RunningHash;
 import java.time.Instant;
 import java.util.List;
@@ -43,6 +49,10 @@ class RecordStreamingTest {
     @Mock private BlockManager blockManager;
     @Mock private RecordsHistorian recordsHistorian;
     @Mock private NonBlockingHandoff nonBlockingHandoff;
+    @Mock private TransactionRecord transactionRecord;
+    @Mock private TransactionID transactionID;
+    @Mock private AccountID accountID;
+    @Mock private TransactionReceipt transactionReceipt;
 
     private RecordStreaming subject;
 
@@ -128,6 +138,17 @@ class RecordStreamingTest {
     private void givenAlignable(final RecordStreamObject... mockRsos) {
         for (final var mockRso : mockRsos) {
             given(mockRso.withBlockNumber(someBlockNo)).willReturn(mockRso);
+            given(mockRso.getTimestamp()).willReturn(aTime);
+            given(mockRso.getTransactionRecord()).willReturn(transactionRecord);
+            given(transactionRecord.getReceipt()).willReturn(transactionReceipt);
+            given(transactionReceipt.getStatus()).willReturn(ResponseCodeEnum.SUCCESS);
+            given(transactionRecord.getTransactionID()).willReturn(transactionID);
+            given(transactionID.getTransactionValidStart())
+                    .willReturn(Timestamp.newBuilder().getDefaultInstanceForType());
+            given(transactionID.getAccountID()).willReturn(accountID);
+            given(accountID.getAccountNum()).willReturn(1L);
+            given(accountID.getShardNum()).willReturn(0L);
+            given(accountID.getRealmNum()).willReturn(0L);
         }
     }
 

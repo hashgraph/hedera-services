@@ -121,7 +121,7 @@ public class RecordStreaming {
         }
     }
 
-    private void logTransaction(RecordStreamObject rso) {
+    private void logTransaction(final RecordStreamObject rso) {
         var consTimestamp = rso.getTimestamp().toString();
         var blockNumber = rso.getStreamAlignment();
         var txId = rso.getTransactionRecord().getTransactionID();
@@ -147,11 +147,12 @@ public class RecordStreaming {
             }
         }
 
-        log.info(
+        var logString =
                 String.format(
                         "Consensus timestamp: %s, Block number: %d, Transaction ID: %s, Transaction"
                                 + " call type: %s, Status: %s",
-                        consTimestamp, blockNumber, txIdString, type, status));
+                        consTimestamp, blockNumber, txIdString, type, status);
+        log.info(logString);
     }
 
     @VisibleForTesting
