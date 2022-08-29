@@ -109,9 +109,7 @@ public class HederaTracer implements HederaOperationTracer {
                         nextFrame.getValue().toLong(),
                         callDepth,
                         callDepth == 0
-                                ? (nextFrame.getType() == Type.CONTRACT_CREATION)
-                                        ? OP_CREATE
-                                        : OP_CALL
+                                ? toCallOperationType(nextFrame.getType())
                                 : toCallOperationType(
                                         parentFrame.getCurrentOperation().getOpcode()));
         allActions.add(action);
@@ -194,6 +192,10 @@ public class HederaTracer implements HederaOperationTracer {
             case OP_CODE_STATICCALL -> OP_STATICCALL;
             default -> OP_UNKNOWN;
         };
+    }
+
+    private CallOperationType toCallOperationType(final Type type) {
+        return type == Type.CONTRACT_CREATION ? OP_CREATE : OP_CALL;
     }
 
     public List<SolidityAction> getActions() {

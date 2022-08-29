@@ -85,7 +85,7 @@ public class NewTraceabilitySuite extends HapiApiSuite {
     private static final String THIRD_CREATE_TXN = "ThirdCreateTxn";
     private static final String SECOND = "B";
     private static final String THIRD = "C";
-    private static final String traceabilityTxn = "nestedtxn";
+    private static final String TRACEABILITY_TXN = "nestedtxn";
 
     public static void main(String... args) {
         new NewTraceabilitySuite().runSuiteSync();
@@ -277,10 +277,10 @@ public class NewTraceabilitySuite extends HapiApiSuite {
                                                                 getNestedContractAddress(
                                                                         TRACEABILITY + "C", spec))
                                                         .gas(1_000_000)
-                                                        .via(traceabilityTxn))))
+                                                        .via(TRACEABILITY_TXN))))
                 .then(
                         expectContractStateChangesSidecarFor(
-                                traceabilityTxn,
+                                TRACEABILITY_TXN,
                                 List.of(
                                         StateChange.stateChangeFor(TRACEABILITY)
                                                 .withStorageChanges(
@@ -312,7 +312,7 @@ public class NewTraceabilitySuite extends HapiApiSuite {
                                         allRunFor(
                                                 spec,
                                                 expectContractActionSidecarFor(
-                                                        traceabilityTxn,
+                                                        TRACEABILITY_TXN,
                                                         List.of(
                                                                 ContractAction.newBuilder()
                                                                         .setCallType(CALL)
