@@ -127,7 +127,9 @@ public class RecordStreaming {
         var txId = rso.getTransactionRecord().getTransactionID();
         var txIdString =
                 String.format(
-                        "%d-%d-%d",
+                        "%d.%d.%d-%d-%d",
+                        txId.getAccountID().getShardNum(),
+                        txId.getAccountID().getRealmNum(),
                         txId.getAccountID().getAccountNum(),
                         txId.getTransactionValidStart().getSeconds(),
                         txId.getTransactionValidStart().getNanos());
