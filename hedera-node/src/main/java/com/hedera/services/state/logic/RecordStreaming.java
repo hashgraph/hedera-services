@@ -21,6 +21,8 @@ import com.hedera.services.stream.NonBlockingHandoff;
 import com.hedera.services.stream.RecordStreamObject;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * Publishes records to the Platform-managed record stream, using the {@link
@@ -38,6 +40,7 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class RecordStreaming {
+    private static final Logger log = LogManager.getLogger(RecordStreaming.class);
     public static final long PENDING_USER_TXN_BLOCK_NO = -1;
 
     private final BlockManager blockManager;
@@ -112,9 +115,44 @@ public class RecordStreaming {
     }
 
     private void stream(final RecordStreamObject rso) {
+        //        System.out.println("txid " + rso.getTransactionRecord().getTransactionID() +
+        // "\ntrans rec: " + rso.getTransactionRecord());
+        //        System.out.println("\n\nnew line " + rso.getSidecars());
+        logTransaction(rso);
         while (!nonBlockingHandoff.offer(rso)) {
             // Cannot proceed until we have handed off the record.
         }
+    }
+
+    private void logTransaction(RecordStreamObject rso) {
+        var consTimestamp = rso.getTimestamp().toString();
+        var blockNumber = rso.getStreamAlignment();
+        var txId = rso.getTransactionRecord().getTransactionID();
+        var txIdString =
+                String.format(
+                        "%d-%d-%d",
+                        txId.getAccountID().getAccountNum(),
+                        txId.getTransactionValidStart().getSeconds(),
+                        txId.getTransactionValidStart().getNanos());
+        var type = "UNRECOGNIZED";
+        var status = rso.getTransactionRecord().getReceipt().getStatus().toString();
+
+        if (!rso.getSidecars().isEmpty()) {
+            for (var sidecarRecord : rso.getSidecars()) {
+                if (sidecarRecord.hasActions()
+                        && sidecarRecord.getActions().getContractActionsCount() == 1) {
+                    var contractAction = sidecarRecord.getActions().getContractActions(0);
+                    type = contractAction.getCallType().toString();
+                    break;
+                }
+            }
+        }
+
+        log.info(
+                String.format(
+                        "Consensus timestamp: %s, Block number: %d, Transaction ID: %s, Transaction"
+                                + " type: %s, Status: %s",
+                        consTimestamp, blockNumber, txIdString, type, status));
     }
 
     @VisibleForTesting
