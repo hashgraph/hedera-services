@@ -579,11 +579,10 @@ class RecordStreamFileWriterTest {
                     sidecarMetadata.getTypesList());
             final var pathToSidecarFile =
                     subject.generateSidecarFilePath(firstTxnInstant, sidecarId);
-            final var sidecarFileOptional = RecordStreamingUtils.readSidecarFile(pathToSidecarFile);
-            assertTrue(sidecarFileOptional.isPresent());
+            final var sidecarFileProto = RecordStreamingUtils.readSidecarFile(pathToSidecarFile);
             assertAllSidecarsAreInFile(
                     sidecarIdToExpectedSidecars.get(sidecarId),
-                    sidecarFileOptional.get().getSidecarRecordsList());
+                    sidecarFileProto.getSidecarRecordsList());
             final var sidecarFile = new File(pathToSidecarFile);
             assertFalse(sidecarFile.length() > maxSidecarFileSize);
             final var expectedSidecarHash =
