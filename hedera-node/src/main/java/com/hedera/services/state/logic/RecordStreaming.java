@@ -115,9 +115,6 @@ public class RecordStreaming {
     }
 
     private void stream(final RecordStreamObject rso) {
-        //        System.out.println("txid " + rso.getTransactionRecord().getTransactionID() +
-        // "\ntrans rec: " + rso.getTransactionRecord());
-        //        System.out.println("\n\nnew line " + rso.getSidecars());
         logTransaction(rso);
         while (!nonBlockingHandoff.offer(rso)) {
             // Cannot proceed until we have handed off the record.
@@ -151,7 +148,7 @@ public class RecordStreaming {
         log.info(
                 String.format(
                         "Consensus timestamp: %s, Block number: %d, Transaction ID: %s, Transaction"
-                                + " type: %s, Status: %s",
+                                + " call type: %s, Status: %s",
                         consTimestamp, blockNumber, txIdString, type, status));
     }
 
