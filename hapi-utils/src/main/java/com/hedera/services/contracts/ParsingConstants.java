@@ -108,7 +108,10 @@ public final class ParsingConstants {
                             + ")");
     public static final TupleType hapiAllowanceOfType = TupleType.parse("(int32,uint256)");
     public static final TupleType hapiGetApprovedType = TupleType.parse("(int32,bytes32)");
-
+    public static final TupleType getTokenExpiryInfoType =
+            TupleType.parse(RESPONSE_STATUS_AT_BEGINNING + EXPIRY + ")");
+    public static final TupleType getTokenKeyType =
+            TupleType.parse(RESPONSE_STATUS_AT_BEGINNING + KEY_VALUE + ")");
     public static final TupleType notSpecifiedType = TupleType.parse(INT32);
 
     public enum FunctionType {
@@ -142,6 +145,8 @@ public final class ParsingConstants {
         HAPI_GET_TOKEN_CUSTOM_FEES,
         HAPI_IS_TOKEN,
         HAPI_GET_TOKEN_TYPE,
+        HAPI_GET_TOKEN_EXPIRY_INFO,
+        HAPI_GET_TOKEN_KEY,
         NOT_SPECIFIED
     }
 }

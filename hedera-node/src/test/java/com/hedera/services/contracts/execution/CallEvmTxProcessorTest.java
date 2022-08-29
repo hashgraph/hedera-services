@@ -26,11 +26,17 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.BDDMockito.*;
-import static org.mockito.Mockito.*;
+import static org.mockito.BDDMockito.doCallRealMethod;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.mock;
+import static org.mockito.BDDMockito.never;
+import static org.mockito.BDDMockito.verify;
+import static org.mockito.BDDMockito.willThrow;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.internal.verification.VerificationModeFactory.times;
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.contracts.execution.traceability.CallOperationType;
 import com.hedera.services.contracts.execution.traceability.ContractActionType;
 import com.hedera.services.contracts.execution.traceability.HederaTracer;
 import com.hedera.services.contracts.execution.traceability.SolidityAction;
@@ -332,7 +338,8 @@ class CallEvmTxProcessorTest {
                         EntityId.fromAddress(Address.BLAKE2B_F_COMPRESSION),
                         null,
                         0L,
-                        0);
+                        0,
+                        CallOperationType.OP_CALL);
         final var action2 =
                 new SolidityAction(
                         ContractActionType.CREATE,
@@ -343,7 +350,8 @@ class CallEvmTxProcessorTest {
                         null,
                         EntityId.fromAddress(Address.BLAKE2B_F_COMPRESSION),
                         666L,
-                        1);
+                        1,
+                        CallOperationType.OP_CREATE);
         try (MockedConstruction<HederaTracer> ignored =
                 Mockito.mockConstruction(
                         HederaTracer.class,
