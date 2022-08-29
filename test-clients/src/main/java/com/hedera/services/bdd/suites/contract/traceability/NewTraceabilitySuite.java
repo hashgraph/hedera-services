@@ -139,27 +139,29 @@ public class NewTraceabilitySuite extends HapiApiSuite {
                                                                 formattedAssertionValue(0),
                                                                 formattedAssertionValue(2))))),
                         withOpContext(
-                                (spec, opLog) -> allRunFor(
-                                        spec,
-                                        expectContractActionSidecarFor(
-                                                FIRST_CREATE_TXN,
-                                                List.of(
-                                                        ContractAction.newBuilder()
-                                                                .setCallType(CREATE)
-                                                                .setCallOperationType(
-                                                                        CallOperationType
-                                                                                .OP_CREATE)
-                                                                .setCallingAccount(
-                                                                        TxnUtils.asId(
-                                                                                GENESIS, spec))
-                                                                .setGas(197000)
-                                                                .setRecipientContract(
-                                                                        spec.registry()
-                                                                                .getContractId(
-                                                                                        TRACEABILITY))
-                                                                .setGasUsed(68492)
-                                                                .setOutput(EMPTY)
-                                                                .build())))),
+                                (spec, opLog) ->
+                                        allRunFor(
+                                                spec,
+                                                expectContractActionSidecarFor(
+                                                        FIRST_CREATE_TXN,
+                                                        List.of(
+                                                                ContractAction.newBuilder()
+                                                                        .setCallType(CREATE)
+                                                                        .setCallOperationType(
+                                                                                CallOperationType
+                                                                                        .OP_CREATE)
+                                                                        .setCallingAccount(
+                                                                                TxnUtils.asId(
+                                                                                        GENESIS,
+                                                                                        spec))
+                                                                        .setGas(197000)
+                                                                        .setRecipientContract(
+                                                                                spec.registry()
+                                                                                        .getContractId(
+                                                                                                TRACEABILITY))
+                                                                        .setGasUsed(68492)
+                                                                        .setOutput(EMPTY)
+                                                                        .build())))),
                         expectContractBytecodeSidecarFor(
                                 FIRST_CREATE_TXN, TRACEABILITY, TRACEABILITY, 55, 2, 2),
                         contractCustomCreate(TRACEABILITY, SECOND, 0, 0, 12).via(SECOND_CREATE_TXN),
@@ -181,28 +183,30 @@ public class NewTraceabilitySuite extends HapiApiSuite {
                                                                 formattedAssertionValue(0),
                                                                 formattedAssertionValue(12))))),
                         withOpContext(
-                                (spec, opLog) -> allRunFor(
-                                        spec,
-                                        expectContractActionSidecarFor(
-                                                SECOND_CREATE_TXN,
-                                                List.of(
-                                                        ContractAction.newBuilder()
-                                                                .setCallType(CREATE)
-                                                                .setCallOperationType(
-                                                                        CallOperationType
-                                                                                .OP_CREATE)
-                                                                .setCallingAccount(
-                                                                        TxnUtils.asId(
-                                                                                GENESIS, spec))
-                                                                .setGas(197000)
-                                                                .setRecipientContract(
-                                                                        spec.registry()
-                                                                                .getContractId(
-                                                                                        TRACEABILITY
-                                                                                                + SECOND))
-                                                                .setGasUsed(28692)
-                                                                .setOutput(EMPTY)
-                                                                .build())))),
+                                (spec, opLog) ->
+                                        allRunFor(
+                                                spec,
+                                                expectContractActionSidecarFor(
+                                                        SECOND_CREATE_TXN,
+                                                        List.of(
+                                                                ContractAction.newBuilder()
+                                                                        .setCallType(CREATE)
+                                                                        .setCallOperationType(
+                                                                                CallOperationType
+                                                                                        .OP_CREATE)
+                                                                        .setCallingAccount(
+                                                                                TxnUtils.asId(
+                                                                                        GENESIS,
+                                                                                        spec))
+                                                                        .setGas(197000)
+                                                                        .setRecipientContract(
+                                                                                spec.registry()
+                                                                                        .getContractId(
+                                                                                                TRACEABILITY
+                                                                                                        + SECOND))
+                                                                        .setGasUsed(28692)
+                                                                        .setOutput(EMPTY)
+                                                                        .build())))),
                         expectContractBytecodeSidecarFor(
                                 SECOND_CREATE_TXN, TRACEABILITY + SECOND, TRACEABILITY, 0, 0, 12),
                         contractCustomCreate(TRACEABILITY, THIRD, 0, 11, 0).via(THIRD_CREATE_TXN),
@@ -224,28 +228,30 @@ public class NewTraceabilitySuite extends HapiApiSuite {
                                                                 formattedAssertionValue(0),
                                                                 formattedAssertionValue(0))))),
                         withOpContext(
-                                (spec, opLog) -> allRunFor(
-                                        spec,
-                                        expectContractActionSidecarFor(
-                                                THIRD_CREATE_TXN,
-                                                List.of(
-                                                        ContractAction.newBuilder()
-                                                                .setCallType(CREATE)
-                                                                .setCallOperationType(
-                                                                        CallOperationType
-                                                                                .OP_CREATE)
-                                                                .setCallingAccount(
-                                                                        TxnUtils.asId(
-                                                                                GENESIS, spec))
-                                                                .setGas(197000)
-                                                                .setRecipientContract(
-                                                                        spec.registry()
-                                                                                .getContractId(
-                                                                                        TRACEABILITY
-                                                                                                + THIRD))
-                                                                .setGasUsed(28692)
-                                                                .setOutput(EMPTY)
-                                                                .build())))),
+                                (spec, opLog) ->
+                                        allRunFor(
+                                                spec,
+                                                expectContractActionSidecarFor(
+                                                        THIRD_CREATE_TXN,
+                                                        List.of(
+                                                                ContractAction.newBuilder()
+                                                                        .setCallType(CREATE)
+                                                                        .setCallOperationType(
+                                                                                CallOperationType
+                                                                                        .OP_CREATE)
+                                                                        .setCallingAccount(
+                                                                                TxnUtils.asId(
+                                                                                        GENESIS,
+                                                                                        spec))
+                                                                        .setGas(197000)
+                                                                        .setRecipientContract(
+                                                                                spec.registry()
+                                                                                        .getContractId(
+                                                                                                TRACEABILITY
+                                                                                                        + THIRD))
+                                                                        .setGasUsed(28692)
+                                                                        .setOutput(EMPTY)
+                                                                        .build())))),
                         expectContractBytecodeSidecarFor(
                                 THIRD_CREATE_TXN, TRACEABILITY + THIRD, TRACEABILITY, 0, 11, 0))
                 .when(
