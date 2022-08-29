@@ -22,6 +22,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
@@ -125,6 +126,35 @@ class HederaSLoadOperationTest {
         assertEquals(
                 UInt256.fromBytes(valueBytesMock),
                 slotMap.get(UInt256.fromBytes(keyBytesMock)).getLeft());
+    }
+
+    @Test
+    void doesNotTrackStateChangesIfFrameIsStatic() {
+        givenAdditionalContext(keyBytesMock, valueBytesMock);
+        given(messageFrame.warmUpStorage(any(), any())).willReturn(true);
+        given(messageFrame.getRemainingGas()).willReturn(300L);
+        given(messageFrame.isStatic()).willReturn(true);
+        lenient().when(dynamicProperties.enabledSidecars())
+            .thenReturn(EnumSet.of(SidecarType.CONTRACT_STATE_CHANGE));
+        final var frameStack = new ArrayDeque<MessageFrame>();
+        frameStack.add(messageFrame);
+        lenient().when(messageFrame.getMessageFrameStack()).thenReturn(frameStack);
+        lenient().when(evmAccount.getStorageValue(UInt256.fromBytes(UInt256.fromBytes(keyBytesMock))))
+            .thenReturn(UInt256.fromBytes(valueBytesMock));
+        lenient().when(messageFrame.getWorldUpdater()).thenReturn(worldUpdater);
+        final var parentUpdater = mock(HederaWorldState.Updater.class);
+        lenient().when(worldUpdater.parentUpdater()).thenReturn(Optional.of(parentUpdater));
+        final var stateChanges = new TreeMap<Address, Map<Bytes, Pair<Bytes, Bytes>>>();
+        lenient().when(parentUpdater.getStateChanges()).thenReturn(stateChanges);
+
+        final var warmResult = subject.execute(messageFrame, evm);
+
+        final var expectedWarmResult =
+            new Operation.OperationResult(OptionalLong.of(30L), Optional.empty());
+        assertEquals(expectedWarmResult.getGasCost(), warmResult.getGasCost());
+        assertEquals(expectedWarmResult.getHaltReason(), warmResult.getHaltReason());
+        assertEquals(expectedWarmResult.getPcIncrement(), warmResult.getPcIncrement());
+        assertTrue(stateChanges.isEmpty());
     }
 
     @Test
