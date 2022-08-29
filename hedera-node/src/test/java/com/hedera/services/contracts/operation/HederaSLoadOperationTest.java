@@ -134,13 +134,17 @@ class HederaSLoadOperationTest {
         given(messageFrame.warmUpStorage(any(), any())).willReturn(true);
         given(messageFrame.getRemainingGas()).willReturn(300L);
         given(messageFrame.isStatic()).willReturn(true);
-        lenient().when(dynamicProperties.enabledSidecars())
-            .thenReturn(EnumSet.of(SidecarType.CONTRACT_STATE_CHANGE));
+        lenient()
+                .when(dynamicProperties.enabledSidecars())
+                .thenReturn(EnumSet.of(SidecarType.CONTRACT_STATE_CHANGE));
         final var frameStack = new ArrayDeque<MessageFrame>();
         frameStack.add(messageFrame);
         lenient().when(messageFrame.getMessageFrameStack()).thenReturn(frameStack);
-        lenient().when(evmAccount.getStorageValue(UInt256.fromBytes(UInt256.fromBytes(keyBytesMock))))
-            .thenReturn(UInt256.fromBytes(valueBytesMock));
+        lenient()
+                .when(
+                        evmAccount.getStorageValue(
+                                UInt256.fromBytes(UInt256.fromBytes(keyBytesMock))))
+                .thenReturn(UInt256.fromBytes(valueBytesMock));
         lenient().when(messageFrame.getWorldUpdater()).thenReturn(worldUpdater);
         final var parentUpdater = mock(HederaWorldState.Updater.class);
         lenient().when(worldUpdater.parentUpdater()).thenReturn(Optional.of(parentUpdater));
@@ -150,7 +154,7 @@ class HederaSLoadOperationTest {
         final var warmResult = subject.execute(messageFrame, evm);
 
         final var expectedWarmResult =
-            new Operation.OperationResult(OptionalLong.of(30L), Optional.empty());
+                new Operation.OperationResult(OptionalLong.of(30L), Optional.empty());
         assertEquals(expectedWarmResult.getGasCost(), warmResult.getGasCost());
         assertEquals(expectedWarmResult.getHaltReason(), warmResult.getHaltReason());
         assertEquals(expectedWarmResult.getPcIncrement(), warmResult.getPcIncrement());

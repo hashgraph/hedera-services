@@ -231,8 +231,11 @@ abstract class EvmTxProcessor {
         if (isStatic) {
             hederaTracer = new HederaTracer(false);
         } else {
-            hederaTracer = new HederaTracer(
-                dynamicProperties.enabledSidecars().contains(SidecarType.CONTRACT_ACTION));
+            hederaTracer =
+                    new HederaTracer(
+                            dynamicProperties
+                                    .enabledSidecars()
+                                    .contains(SidecarType.CONTRACT_ACTION));
             hederaTracer.init(initialFrame);
         }
         while (!messageFrameStack.isEmpty()) {
