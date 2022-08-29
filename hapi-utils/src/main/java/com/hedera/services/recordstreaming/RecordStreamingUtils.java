@@ -46,10 +46,9 @@ public class RecordStreamingUtils {
         }
     }
 
-    public static Optional<SidecarFile> readSidecarFile(final String fileLoc) throws IOException {
+    public static SidecarFile readSidecarFile(final String fileLoc) throws IOException {
         try (final var fin = new FileInputStream(fileLoc)) {
-            final var recordStreamSidecarFile = SidecarFile.parseFrom(fin);
-            return Optional.ofNullable(recordStreamSidecarFile);
+            return SidecarFile.parseFrom(fin);
         }
     }
 }
