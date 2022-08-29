@@ -30,10 +30,10 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.extractBytecodeUnhexed;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
 import static com.hedera.services.bdd.suites.contract.Utils.getResourcePath;
+import static com.hedera.services.bdd.suites.contract.precompile.AssociatePrecompileSuite.getNestedContractAddress;
 import static com.hedera.services.stream.proto.ContractActionType.CALL;
 import static com.hedera.services.stream.proto.ContractActionType.CREATE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
-import static org.apache.commons.lang3.StringUtils.EMPTY;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
@@ -46,14 +46,15 @@ import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.assertions.StateChange;
 import com.hedera.services.bdd.spec.assertions.StorageChange;
+import com.hedera.services.bdd.spec.queries.meta.HapiGetTxnRecord;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.spec.utilops.CustomSpecAssert;
 import com.hedera.services.bdd.spec.verification.traceability.ExpectedSidecar;
 import com.hedera.services.bdd.spec.verification.traceability.SidecarWatcher;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hedera.services.bdd.suites.contract.Utils.FunctionType;
-import com.hedera.services.bdd.suites.contract.precompile.AssociatePrecompileSuite;
 import com.hedera.services.legacy.proto.utils.ByteStringUtils;
+import com.hedera.services.stream.proto.CallOperationType;
 import com.hedera.services.stream.proto.ContractAction;
 import com.hedera.services.stream.proto.ContractActions;
 import com.hedera.services.stream.proto.ContractBytecode;
@@ -64,6 +65,7 @@ import java.math.BigInteger;
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes;
@@ -74,10 +76,16 @@ public class NewTraceabilitySuite extends HapiApiSuite {
     private static final Logger log = LogManager.getLogger(NewTraceabilitySuite.class);
     private static final String RECORD_STREAM_FOLDER_PATH_PROPERTY_KEY = "recordStream.path";
 
-    public static final int INTRINSIC_GAS = 21_000;
-
     private static SidecarWatcher sidecarWatcher;
     private static CompletableFuture<Void> sidecarWatcherTask;
+    private static final ByteString EMPTY = ByteStringUtils.wrapUnsafely(new byte[0]);
+    private static final String TRACEABILITY = "Traceability";
+    private static final String FIRST_CREATE_TXN = "FirstCreateTxn";
+    private static final String SECOND_CREATE_TXN = "SecondCreateTxn";
+    private static final String THIRD_CREATE_TXN = "ThirdCreateTxn";
+    private static final String SECOND = "B";
+    private static final String THIRD = "C";
+    private static final String traceabilityTxn = "nestedtxn";
 
     public static void main(String... args) {
         new NewTraceabilitySuite().runSuiteSync();
@@ -88,7 +96,11 @@ public class NewTraceabilitySuite extends HapiApiSuite {
     public List<HapiApiSpec> getSpecsInSuite() {
         try {
             initialize();
-            return List.of(traceabilityE2EScenario1(), assertSidecars());
+            return List.of(
+                    traceabilityE2EScenario1(),
+                    vanillaBytecodeSidecar(),
+                    vanillaBytecodeSidecar2(),
+                    assertSidecars());
         } catch (IOException e) {
             log.warn("An exception occurred initializing watch service", e);
             return List.of(
@@ -104,22 +116,10 @@ public class NewTraceabilitySuite extends HapiApiSuite {
         }
     }
 
-    private static final String TRACEABILITY = "Traceability";
-    public static final String FIRST_CREATE_TXN = "FirstCreateTxn";
-    public static final String SECOND_CREATE_TXN = "SecondCreateTxn";
-    public static final String THIRD_CREATE_TXN = "ThirdCreateTxn";
-    private static final String FIRST = EMPTY;
-    private static final String SECOND = "B";
-    private static final String THIRD = "C";
-    private final String traceabilityTxn = "nestedtxn";
-
     private HapiApiSpec traceabilityE2EScenario1() {
-        final var initialGas = 1_000_000;
         return defaultHapiSpec("traceabilityE2EScenario1")
                 .given(
                         uploadInitCode(TRACEABILITY),
-                        // TODO: for each we would have bytecode + state changes sidecar (eventually
-                        // actions, but eventually)
                         contractCreate(TRACEABILITY, 55, 2, 2).via(FIRST_CREATE_TXN),
                         expectContractStateChangesSidecarFor(
                                 FIRST_CREATE_TXN,
@@ -150,6 +150,9 @@ public class NewTraceabilitySuite extends HapiApiSuite {
                                                             com.hedera.services.stream.proto
                                                                     .ContractAction.newBuilder()
                                                                     .setCallType(CREATE)
+                                                                    .setCallOperationType(
+                                                                            CallOperationType
+                                                                                    .OP_CREATE)
                                                                     .setCallingAccount(
                                                                             TxnUtils.asId(
                                                                                     GENESIS, spec))
@@ -160,11 +163,7 @@ public class NewTraceabilitySuite extends HapiApiSuite {
                                                                                     .getContractCreateResult()
                                                                                     .getContractID())
                                                                     .setGasUsed(68492)
-                                                                    .setOutput(
-                                                                            ByteStringUtils
-                                                                                    .wrapUnsafely(
-                                                                                            new byte
-                                                                                                    [0]))
+                                                                    .setOutput(EMPTY)
                                                                     .build())));
                                 }),
                         expectContractBytecodeSidecarFor(
@@ -199,6 +198,9 @@ public class NewTraceabilitySuite extends HapiApiSuite {
                                                             com.hedera.services.stream.proto
                                                                     .ContractAction.newBuilder()
                                                                     .setCallType(CREATE)
+                                                                    .setCallOperationType(
+                                                                            CallOperationType
+                                                                                    .OP_CREATE)
                                                                     .setCallingAccount(
                                                                             TxnUtils.asId(
                                                                                     GENESIS, spec))
@@ -209,11 +211,7 @@ public class NewTraceabilitySuite extends HapiApiSuite {
                                                                                     .getContractCreateResult()
                                                                                     .getContractID())
                                                                     .setGasUsed(28692)
-                                                                    .setOutput(
-                                                                            ByteStringUtils
-                                                                                    .wrapUnsafely(
-                                                                                            new byte
-                                                                                                    [0]))
+                                                                    .setOutput(EMPTY)
                                                                     .build())));
                                 }),
                         expectContractBytecodeSidecarFor(
@@ -248,6 +246,9 @@ public class NewTraceabilitySuite extends HapiApiSuite {
                                                             com.hedera.services.stream.proto
                                                                     .ContractAction.newBuilder()
                                                                     .setCallType(CREATE)
+                                                                    .setCallOperationType(
+                                                                            CallOperationType
+                                                                                    .OP_CREATE)
                                                                     .setCallingAccount(
                                                                             TxnUtils.asId(
                                                                                     GENESIS, spec))
@@ -258,11 +259,7 @@ public class NewTraceabilitySuite extends HapiApiSuite {
                                                                                     .getContractCreateResult()
                                                                                     .getContractID())
                                                                     .setGasUsed(28692)
-                                                                    .setOutput(
-                                                                            ByteStringUtils
-                                                                                    .wrapUnsafely(
-                                                                                            new byte
-                                                                                                    [0]))
+                                                                    .setOutput(EMPTY)
                                                                     .build())));
                                 }),
                         expectContractBytecodeSidecarFor(
@@ -275,15 +272,11 @@ public class NewTraceabilitySuite extends HapiApiSuite {
                                                 contractCall(
                                                                 TRACEABILITY,
                                                                 "eetScenario1",
-                                                                AssociatePrecompileSuite
-                                                                        .getNestedContractAddress(
-                                                                                TRACEABILITY + "B",
-                                                                                spec),
-                                                                AssociatePrecompileSuite
-                                                                        .getNestedContractAddress(
-                                                                                TRACEABILITY + "C",
-                                                                                spec))
-                                                        .gas(initialGas)
+                                                                getNestedContractAddress(
+                                                                        TRACEABILITY + "B", spec),
+                                                                getNestedContractAddress(
+                                                                        TRACEABILITY + "C", spec))
+                                                        .gas(1_000_000)
                                                         .via(traceabilityTxn))))
                 .then(
                         expectContractStateChangesSidecarFor(
@@ -315,247 +308,375 @@ public class NewTraceabilitySuite extends HapiApiSuite {
                                                                 formattedAssertionValue(11),
                                                                 formattedAssertionValue(0))))),
                         withOpContext(
-                                (spec, opLog) -> {
-                                    allRunFor(
-                                            spec,
-                                            expectContractActionSidecarFor(
-                                                    traceabilityTxn,
-                                                    List.of(
-                                                            ContractAction.newBuilder()
-                                                                    .setCallType(CALL)
-                                                                    .setCallingAccount(
-                                                                            TxnUtils.asId(
-                                                                                    GENESIS, spec))
-                                                                    .setGas(
-                                                                            initialGas
-                                                                                    - INTRINSIC_GAS)
-                                                                    .setGasUsed(33979)
-                                                                    .setRecipientContract(
-                                                                            spec.registry()
-                                                                                    .getContractId(
-                                                                                            TRACEABILITY))
-                                                                    .setOutput(
-                                                                            ByteStringUtils
-                                                                                    .wrapUnsafely(
-                                                                                            new byte
-                                                                                                    [0]))
-                                                                    .setInput(
-                                                                            ByteStringUtils
-                                                                                    .wrapUnsafely(
-                                                                                            Function
-                                                                                                    .fromJson(
-                                                                                                            getABIFor(
-                                                                                                                    FunctionType
-                                                                                                                            .FUNCTION,
-                                                                                                                    "eetScenario1",
-                                                                                                                    TRACEABILITY))
-                                                                                                    .encodeCallWithArgs(
-                                                                                                            wrapHexedSolidityAddress(
-                                                                                                                    AssociatePrecompileSuite
-                                                                                                                            .getNestedContractAddress(
-                                                                                                                                    TRACEABILITY
-                                                                                                                                            + "B",
-                                                                                                                                    spec)),
-                                                                                                            wrapHexedSolidityAddress(
-                                                                                                                    AssociatePrecompileSuite
-                                                                                                                            .getNestedContractAddress(
-                                                                                                                                    TRACEABILITY
-                                                                                                                                            + "C",
-                                                                                                                                    spec)))
-                                                                                                    .array()))
-                                                                    .build(),
-                                                            ContractAction.newBuilder()
-                                                                    .setCallType(CALL)
-                                                                    .setCallingContract(
-                                                                            spec.registry()
-                                                                                    .getContractId(
-                                                                                            TRACEABILITY))
-                                                                    .setGas(963018)
-                                                                    .setGasUsed(2347)
-                                                                    .setCallDepth(1)
-                                                                    .setRecipientContract(
-                                                                            spec.registry()
-                                                                                    .getContractId(
-                                                                                            TRACEABILITY))
-                                                                    .setOutput(
-                                                                            ByteStringUtils
-                                                                                    .wrapUnsafely(
-                                                                                            TupleType
-                                                                                                    .parse(
-                                                                                                            "(uint256)")
-                                                                                                    .encode(
-                                                                                                            Tuple
-                                                                                                                    .of(
-                                                                                                                            BigInteger
-                                                                                                                                    .valueOf(
-                                                                                                                                            55)))
-                                                                                                    .array()))
-                                                                    .setInput(
-                                                                            ByteStringUtils
-                                                                                    .wrapUnsafely(
-                                                                                            Function
-                                                                                                    .fromJson(
-                                                                                                            getABIFor(
-                                                                                                                    FunctionType
-                                                                                                                            .FUNCTION,
-                                                                                                                    "getSlot0",
-                                                                                                                    TRACEABILITY))
-                                                                                                    .encodeCall(
-                                                                                                            Tuple
-                                                                                                                    .EMPTY)
-                                                                                                    .array()))
-                                                                    .build(),
-                                                            ContractAction.newBuilder()
-                                                                    .setCallType(CALL)
-                                                                    .setCallingContract(
-                                                                            spec.registry()
-                                                                                    .getContractId(
-                                                                                            TRACEABILITY))
-                                                                    .setCallDepth(1)
-                                                                    .setGas(960236)
-                                                                    .setGasUsed(5324)
-                                                                    .setRecipientContract(
-                                                                            spec.registry()
-                                                                                    .getContractId(
-                                                                                            TRACEABILITY))
-                                                                    .setOutput(
-                                                                            ByteStringUtils
-                                                                                    .wrapUnsafely(
-                                                                                            new byte
-                                                                                                    [0]))
-                                                                    .setInput(
-                                                                            ByteStringUtils
-                                                                                    .wrapUnsafely(
-                                                                                            Function
-                                                                                                    .fromJson(
-                                                                                                            getABIFor(
-                                                                                                                    FunctionType
-                                                                                                                            .FUNCTION,
-                                                                                                                    "setSlot1",
-                                                                                                                    TRACEABILITY))
-                                                                                                    .encodeCall(
-                                                                                                            Tuple
-                                                                                                                    .of(
-                                                                                                                            BigInteger
-                                                                                                                                    .valueOf(
-                                                                                                                                            55)))
-                                                                                                    .array()))
-                                                                    .build(),
-                                                        ContractAction.newBuilder()
-                                                            .setCallType(CALL)
-                                                            .setCallingContract(
-                                                                spec.registry()
-                                                                    .getContractId(
-                                                                        TRACEABILITY))
-                                                            .setGas(952309)
-                                                            .setGasUsed(2315)
-                                                            .setCallDepth(1)
-                                                            .setRecipientContract(
-                                                                spec.registry()
-                                                                    .getContractId(
-                                                                        TRACEABILITY + SECOND))
-                                                            .setOutput(
-                                                                ByteStringUtils
-                                                                    .wrapUnsafely(
-                                                                        TupleType
-                                                                            .parse(
-                                                                                "(uint256)")
-                                                                            .encode(
-                                                                                Tuple
-                                                                                    .of(
+                                (spec, opLog) ->
+                                        allRunFor(
+                                                spec,
+                                                expectContractActionSidecarFor(
+                                                        traceabilityTxn,
+                                                        List.of(
+                                                                ContractAction.newBuilder()
+                                                                        .setCallType(CALL)
+                                                                        .setCallingAccount(
+                                                                                TxnUtils.asId(
+                                                                                        GENESIS,
+                                                                                        spec))
+                                                                        .setCallOperationType(
+                                                                                CallOperationType
+                                                                                        .OP_CALL)
+                                                                        .setGas(979000)
+                                                                        .setGasUsed(33979)
+                                                                        .setRecipientContract(
+                                                                                spec.registry()
+                                                                                        .getContractId(
+                                                                                                TRACEABILITY))
+                                                                        .setOutput(EMPTY)
+                                                                        .setInput(
+                                                                                encodeFunctionCall(
+                                                                                        TRACEABILITY,
+                                                                                        "eetScenario1",
+                                                                                        hexedSolidityAddressToHeadlongAddress(
+                                                                                                getNestedContractAddress(
+                                                                                                        TRACEABILITY
+                                                                                                                + "B",
+                                                                                                        spec)),
+                                                                                        hexedSolidityAddressToHeadlongAddress(
+                                                                                                getNestedContractAddress(
+                                                                                                        TRACEABILITY
+                                                                                                                + "C",
+                                                                                                        spec))))
+                                                                        .build(),
+                                                                ContractAction.newBuilder()
+                                                                        .setCallType(CALL)
+                                                                        .setCallOperationType(
+                                                                                CallOperationType
+                                                                                        .OP_CALL)
+                                                                        .setCallingContract(
+                                                                                spec.registry()
+                                                                                        .getContractId(
+                                                                                                TRACEABILITY))
+                                                                        .setGas(963018)
+                                                                        .setGasUsed(2347)
+                                                                        .setCallDepth(1)
+                                                                        .setRecipientContract(
+                                                                                spec.registry()
+                                                                                        .getContractId(
+                                                                                                TRACEABILITY))
+                                                                        .setOutput(
+                                                                                uint256ReturnWithValue(
                                                                                         BigInteger
-                                                                                            .valueOf(
-                                                                                                12)))
-                                                                            .array()))
-                                                            .setInput(
-                                                                ByteStringUtils
-                                                                    .wrapUnsafely(
-                                                                        Function
-                                                                            .fromJson(
-                                                                                getABIFor(
-                                                                                    FunctionType
-                                                                                        .FUNCTION,
-                                                                                    "getSlot2",
-                                                                                    TRACEABILITY))
-                                                                            .encodeCall(
-                                                                                Tuple
-                                                                                    .EMPTY)
-                                                                            .array()))
-                                                            .build(),
-                                                        ContractAction.newBuilder()
-                                                            .setCallType(CALL)
-                                                            .setCallingContract(
-                                                                spec.registry()
-                                                                    .getContractId(
-                                                                        TRACEABILITY))
-                                                            .setGas(949543)
-                                                            .setGasUsed(3180)
-                                                            .setCallDepth(1)
-                                                            .setRecipientContract(
-                                                                spec.registry()
-                                                                    .getContractId(
-                                                                        TRACEABILITY + SECOND))
-                                                            .setOutput(
-                                                                ByteStringUtils
-                                                                    .wrapUnsafely(
-new byte[0]))
-                                                            .setInput(
-                                                                ByteStringUtils
-                                                                    .wrapUnsafely(
-                                                                        Function
-                                                                            .fromJson(
-                                                                                getABIFor(
-                                                                                    FunctionType
-                                                                                        .FUNCTION,
-                                                                                    "setSlot2",
-                                                                                    TRACEABILITY))
-                                                                            .encodeCall(
-                                                                                Tuple
-                                                                                    .of(BigInteger.valueOf(143)))
-                                                                            .array()))
-                                                            .build()
-,                                                        ContractAction.newBuilder()
-                                                            .setCallType(CALL)
-                                                            .setCallingContract(
-                                                                spec.registry()
-                                                                    .getContractId(
-                                                                        TRACEABILITY))
-                                                            .setGas(946053)
-                                                            .setGasUsed(1121)
-                                                            .setCallDepth(1)
-                                                            .setRecipientContract(
-                                                                spec.registry()
-                                                                    .getContractId(
-                                                                        TRACEABILITY + SECOND))
-                                                            .setOutput(
-                                                                ByteStringUtils
-                                                                    .wrapUnsafely(
-                                                                        new byte[0]))
-                                                            .setInput(
-                                                                ByteStringUtils
-                                                                    .wrapUnsafely(
-                                                                        Function
-                                                                            .fromJson(
-                                                                                getABIFor(
-                                                                                    FunctionType
-                                                                                        .FUNCTION,
-                                                                                    "callAddressGetSlot0",
-                                                                                    TRACEABILITY))
-                                                                            .encodeCallWithArgs(wrapHexedSolidityAddress(AssociatePrecompileSuite.getNestedContractAddress(TRACEABILITY + THIRD, spec)))
-                                                                            .array()))
-                                                            .build()
-
-                                                    )));
-                                }));
-    }
-
-    private Address wrapHexedSolidityAddress(String hexedSolidityAddress) {
-        return Address.wrap(Address.toChecksumAddress("0x" + hexedSolidityAddress));
-    }
-
-    private ByteString formattedAssertionValue(long value) {
-        return ByteString.copyFrom(
-                Bytes.wrap(UInt256.valueOf(value)).trimLeadingZeros().toArrayUnsafe());
+                                                                                                .valueOf(
+                                                                                                        55)))
+                                                                        .setInput(
+                                                                                encodeFunctionCall(
+                                                                                        TRACEABILITY,
+                                                                                        "getSlot0"))
+                                                                        .build(),
+                                                                ContractAction.newBuilder()
+                                                                        .setCallType(CALL)
+                                                                        .setCallOperationType(
+                                                                                CallOperationType
+                                                                                        .OP_CALL)
+                                                                        .setCallingContract(
+                                                                                spec.registry()
+                                                                                        .getContractId(
+                                                                                                TRACEABILITY))
+                                                                        .setCallDepth(1)
+                                                                        .setGas(960236)
+                                                                        .setGasUsed(5324)
+                                                                        .setRecipientContract(
+                                                                                spec.registry()
+                                                                                        .getContractId(
+                                                                                                TRACEABILITY))
+                                                                        .setOutput(EMPTY)
+                                                                        .setInput(
+                                                                                encodeFunctionCall(
+                                                                                        TRACEABILITY,
+                                                                                        "setSlot1",
+                                                                                        BigInteger
+                                                                                                .valueOf(
+                                                                                                        55)))
+                                                                        .build(),
+                                                                ContractAction.newBuilder()
+                                                                        .setCallType(CALL)
+                                                                        .setCallOperationType(
+                                                                                CallOperationType
+                                                                                        .OP_CALL)
+                                                                        .setCallingContract(
+                                                                                spec.registry()
+                                                                                        .getContractId(
+                                                                                                TRACEABILITY))
+                                                                        .setGas(952309)
+                                                                        .setGasUsed(2315)
+                                                                        .setCallDepth(1)
+                                                                        .setRecipientContract(
+                                                                                spec.registry()
+                                                                                        .getContractId(
+                                                                                                TRACEABILITY
+                                                                                                        + SECOND))
+                                                                        .setOutput(
+                                                                                uint256ReturnWithValue(
+                                                                                        BigInteger
+                                                                                                .valueOf(
+                                                                                                        12)))
+                                                                        .setInput(
+                                                                                encodeFunctionCall(
+                                                                                        TRACEABILITY,
+                                                                                        "getSlot2"))
+                                                                        .build(),
+                                                                ContractAction.newBuilder()
+                                                                        .setCallType(CALL)
+                                                                        .setCallOperationType(
+                                                                                CallOperationType
+                                                                                        .OP_CALL)
+                                                                        .setCallingContract(
+                                                                                spec.registry()
+                                                                                        .getContractId(
+                                                                                                TRACEABILITY))
+                                                                        .setGas(949543)
+                                                                        .setGasUsed(3180)
+                                                                        .setCallDepth(1)
+                                                                        .setRecipientContract(
+                                                                                spec.registry()
+                                                                                        .getContractId(
+                                                                                                TRACEABILITY
+                                                                                                        + SECOND))
+                                                                        .setOutput(EMPTY)
+                                                                        .setInput(
+                                                                                encodeFunctionCall(
+                                                                                        TRACEABILITY,
+                                                                                        "setSlot2",
+                                                                                        BigInteger
+                                                                                                .valueOf(
+                                                                                                        143)))
+                                                                        .build(),
+                                                                ContractAction.newBuilder()
+                                                                        .setCallType(CALL)
+                                                                        .setCallOperationType(
+                                                                                CallOperationType
+                                                                                        .OP_CALL)
+                                                                        .setCallingContract(
+                                                                                spec.registry()
+                                                                                        .getContractId(
+                                                                                                TRACEABILITY))
+                                                                        .setGas(946053)
+                                                                        .setGasUsed(5778)
+                                                                        .setCallDepth(1)
+                                                                        .setRecipientContract(
+                                                                                spec.registry()
+                                                                                        .getContractId(
+                                                                                                TRACEABILITY
+                                                                                                        + SECOND))
+                                                                        .setOutput(EMPTY)
+                                                                        .setInput(
+                                                                                encodeFunctionCall(
+                                                                                        TRACEABILITY,
+                                                                                        "callAddressGetSlot0",
+                                                                                        hexedSolidityAddressToHeadlongAddress(
+                                                                                                getNestedContractAddress(
+                                                                                                        TRACEABILITY
+                                                                                                                + THIRD,
+                                                                                                        spec))))
+                                                                        .build(),
+                                                                ContractAction.newBuilder()
+                                                                        .setCallType(CALL)
+                                                                        .setCallOperationType(
+                                                                                CallOperationType
+                                                                                        .OP_CALL)
+                                                                        .setCallingContract(
+                                                                                spec.registry()
+                                                                                        .getContractId(
+                                                                                                TRACEABILITY
+                                                                                                        + SECOND))
+                                                                        .setGas(928026)
+                                                                        .setGasUsed(2347)
+                                                                        .setCallDepth(2)
+                                                                        .setRecipientContract(
+                                                                                spec.registry()
+                                                                                        .getContractId(
+                                                                                                TRACEABILITY
+                                                                                                        + THIRD))
+                                                                        .setOutput(
+                                                                                uint256ReturnWithValue(
+                                                                                        BigInteger
+                                                                                                .valueOf(
+                                                                                                        0)))
+                                                                        .setInput(
+                                                                                encodeFunctionCall(
+                                                                                        TRACEABILITY,
+                                                                                        "getSlot0"))
+                                                                        .build(),
+                                                                ContractAction.newBuilder()
+                                                                        .setCallType(CALL)
+                                                                        .setCallOperationType(
+                                                                                CallOperationType
+                                                                                        .OP_CALL)
+                                                                        .setCallingContract(
+                                                                                spec.registry()
+                                                                                        .getContractId(
+                                                                                                TRACEABILITY))
+                                                                        .setGas(939987)
+                                                                        .setGasUsed(1501)
+                                                                        .setCallDepth(1)
+                                                                        .setRecipientContract(
+                                                                                spec.registry()
+                                                                                        .getContractId(
+                                                                                                TRACEABILITY
+                                                                                                        + SECOND))
+                                                                        .setOutput(EMPTY)
+                                                                        .setInput(
+                                                                                encodeFunctionCall(
+                                                                                        TRACEABILITY,
+                                                                                        "callAddressSetSlot0",
+                                                                                        hexedSolidityAddressToHeadlongAddress(
+                                                                                                getNestedContractAddress(
+                                                                                                        TRACEABILITY
+                                                                                                                + THIRD,
+                                                                                                        spec)),
+                                                                                        BigInteger
+                                                                                                .valueOf(
+                                                                                                        0)))
+                                                                        .build(),
+                                                                ContractAction.newBuilder()
+                                                                        .setCallType(CALL)
+                                                                        .setCallOperationType(
+                                                                                CallOperationType
+                                                                                        .OP_CALL)
+                                                                        .setCallingContract(
+                                                                                spec.registry()
+                                                                                        .getContractId(
+                                                                                                TRACEABILITY
+                                                                                                        + SECOND))
+                                                                        .setGas(924301)
+                                                                        .setGasUsed(423)
+                                                                        .setCallDepth(2)
+                                                                        .setRecipientContract(
+                                                                                spec.registry()
+                                                                                        .getContractId(
+                                                                                                TRACEABILITY
+                                                                                                        + THIRD))
+                                                                        .setOutput(EMPTY)
+                                                                        .setInput(
+                                                                                encodeFunctionCall(
+                                                                                        TRACEABILITY,
+                                                                                        "setSlot0",
+                                                                                        BigInteger
+                                                                                                .valueOf(
+                                                                                                        0)))
+                                                                        .build(),
+                                                                ContractAction.newBuilder()
+                                                                        .setCallType(CALL)
+                                                                        .setCallOperationType(
+                                                                                CallOperationType
+                                                                                        .OP_CALL)
+                                                                        .setCallingContract(
+                                                                                spec.registry()
+                                                                                        .getContractId(
+                                                                                                TRACEABILITY))
+                                                                        .setGas(938149)
+                                                                        .setGasUsed(3345)
+                                                                        .setCallDepth(1)
+                                                                        .setRecipientContract(
+                                                                                spec.registry()
+                                                                                        .getContractId(
+                                                                                                TRACEABILITY
+                                                                                                        + SECOND))
+                                                                        .setOutput(EMPTY)
+                                                                        .setInput(
+                                                                                encodeFunctionCall(
+                                                                                        TRACEABILITY,
+                                                                                        "callAddressGetSlot1",
+                                                                                        hexedSolidityAddressToHeadlongAddress(
+                                                                                                getNestedContractAddress(
+                                                                                                        TRACEABILITY
+                                                                                                                + THIRD,
+                                                                                                        spec))))
+                                                                        .build(),
+                                                                ContractAction.newBuilder()
+                                                                        .setCallType(CALL)
+                                                                        .setCallOperationType(
+                                                                                CallOperationType
+                                                                                        .OP_CALL)
+                                                                        .setCallingContract(
+                                                                                spec.registry()
+                                                                                        .getContractId(
+                                                                                                TRACEABILITY
+                                                                                                        + SECOND))
+                                                                        .setGas(922684)
+                                                                        .setGasUsed(2391)
+                                                                        .setCallDepth(2)
+                                                                        .setRecipientContract(
+                                                                                spec.registry()
+                                                                                        .getContractId(
+                                                                                                TRACEABILITY
+                                                                                                        + THIRD))
+                                                                        .setOutput(
+                                                                                uint256ReturnWithValue(
+                                                                                        BigInteger
+                                                                                                .valueOf(
+                                                                                                        11)))
+                                                                        .setInput(
+                                                                                encodeFunctionCall(
+                                                                                        TRACEABILITY,
+                                                                                        "getSlot1"))
+                                                                        .build(),
+                                                                ContractAction.newBuilder()
+                                                                        .setCallType(CALL)
+                                                                        .setCallOperationType(
+                                                                                CallOperationType
+                                                                                        .OP_CALL)
+                                                                        .setCallingContract(
+                                                                                spec.registry()
+                                                                                        .getContractId(
+                                                                                                TRACEABILITY))
+                                                                        .setGas(934470)
+                                                                        .setGasUsed(4235)
+                                                                        .setCallDepth(1)
+                                                                        .setRecipientContract(
+                                                                                spec.registry()
+                                                                                        .getContractId(
+                                                                                                TRACEABILITY
+                                                                                                        + SECOND))
+                                                                        .setOutput(EMPTY)
+                                                                        .setInput(
+                                                                                encodeFunctionCall(
+                                                                                        TRACEABILITY,
+                                                                                        "callAddressSetSlot1",
+                                                                                        hexedSolidityAddressToHeadlongAddress(
+                                                                                                getNestedContractAddress(
+                                                                                                        TRACEABILITY
+                                                                                                                + THIRD,
+                                                                                                        spec)),
+                                                                                        BigInteger
+                                                                                                .valueOf(
+                                                                                                        0)))
+                                                                        .build(),
+                                                                ContractAction.newBuilder()
+                                                                        .setCallType(CALL)
+                                                                        .setCallOperationType(
+                                                                                CallOperationType
+                                                                                        .OP_CALL)
+                                                                        .setCallingContract(
+                                                                                spec.registry()
+                                                                                        .getContractId(
+                                                                                                TRACEABILITY
+                                                                                                        + SECOND))
+                                                                        .setGas(918936)
+                                                                        .setGasUsed(3224)
+                                                                        .setCallDepth(2)
+                                                                        .setRecipientContract(
+                                                                                spec.registry()
+                                                                                        .getContractId(
+                                                                                                TRACEABILITY
+                                                                                                        + THIRD))
+                                                                        .setOutput(EMPTY)
+                                                                        .setInput(
+                                                                                encodeFunctionCall(
+                                                                                        TRACEABILITY,
+                                                                                        "setSlot1",
+                                                                                        BigInteger
+                                                                                                .valueOf(
+                                                                                                        0)))
+                                                                        .build())))));
     }
 
     private HapiApiSpec vanillaBytecodeSidecar() {
@@ -569,6 +690,33 @@ new byte[0]))
                                 .hasKnownStatus(SUCCESS)
                                 .via(firstTxn))
                 .then(
+                        withOpContext(
+                                (spec, opLog) -> {
+                                    final HapiGetTxnRecord txnRecord = getTxnRecord(firstTxn);
+                                    allRunFor(
+                                            spec,
+                                            txnRecord,
+                                            expectContractActionSidecarFor(
+                                                    firstTxn,
+                                                    List.of(
+                                                            ContractAction.newBuilder()
+                                                                    .setCallType(CREATE)
+                                                                    .setCallOperationType(
+                                                                            CallOperationType
+                                                                                    .OP_CREATE)
+                                                                    .setCallingAccount(
+                                                                            spec.registry()
+                                                                                    .getAccountID(
+                                                                                            GENESIS))
+                                                                    .setRecipientContract(
+                                                                            spec.registry()
+                                                                                    .getContractId(
+                                                                                            EMPTY_CONSTRUCTOR_CONTRACT))
+                                                                    .setGas(197000)
+                                                                    .setGasUsed(66)
+                                                                    .setOutput(EMPTY)
+                                                                    .build())));
+                                }),
                         expectContractBytecodeSidecarFor(
                                 firstTxn, EMPTY_CONSTRUCTOR_CONTRACT, EMPTY_CONSTRUCTOR_CONTRACT));
     }
@@ -580,7 +728,35 @@ new byte[0]))
         return defaultHapiSpec(trivialCreate)
                 .given(uploadInitCode(contract))
                 .when(contractCreate(contract).via(firstTxn))
-                .then(expectContractBytecodeSidecarFor(firstTxn, contract, contract));
+                .then(
+                        withOpContext(
+                                (spec, opLog) -> {
+                                    final HapiGetTxnRecord txnRecord = getTxnRecord(firstTxn);
+                                    allRunFor(
+                                            spec,
+                                            txnRecord,
+                                            expectContractActionSidecarFor(
+                                                    firstTxn,
+                                                    List.of(
+                                                            ContractAction.newBuilder()
+                                                                    .setCallType(CREATE)
+                                                                    .setCallOperationType(
+                                                                            CallOperationType
+                                                                                    .OP_CREATE)
+                                                                    .setCallingAccount(
+                                                                            spec.registry()
+                                                                                    .getAccountID(
+                                                                                            GENESIS))
+                                                                    .setRecipientContract(
+                                                                            spec.registry()
+                                                                                    .getContractId(
+                                                                                            contract))
+                                                                    .setGas(197000)
+                                                                    .setGasUsed(214)
+                                                                    .setOutput(EMPTY)
+                                                                    .build())));
+                                }),
+                        expectContractBytecodeSidecarFor(firstTxn, contract, contract));
     }
 
     @SuppressWarnings("java:S5960")
@@ -615,7 +791,7 @@ new byte[0]))
     }
 
     private CustomSpecAssert expectContractActionSidecarFor(
-            String txnName, List<com.hedera.services.stream.proto.ContractAction> actions) {
+            String txnName, List<ContractAction> actions) {
         return withOpContext(
                 (spec, opLog) -> {
                     final var txnRecord = getTxnRecord(txnName);
@@ -680,7 +856,7 @@ new byte[0]))
                                     : CallTransaction.Function.fromJsonInterface(
                                                     getABIFor(
                                                             FunctionType.CONSTRUCTOR,
-                                                            EMPTY,
+                                                            StringUtils.EMPTY,
                                                             binFileName))
                                             .encodeArguments(constructorArgs);
                     sidecarWatcher.addExpectedSidecar(
@@ -731,5 +907,30 @@ new byte[0]))
                             }
                             sidecarWatcher.tearDown();
                         });
+    }
+
+    private ByteString encodeFunctionCall(
+            final String contractName, final String functionName, final Object... args) {
+        return ByteStringUtils.wrapUnsafely(
+                Function.fromJson(getABIFor(FunctionType.FUNCTION, functionName, contractName))
+                        .encodeCallWithArgs(args)
+                        .array());
+    }
+
+    private byte[] encodeTuple(final String argumentsSignature, final Object... actualArguments) {
+        return TupleType.parse(argumentsSignature).encode(Tuple.of(actualArguments)).array();
+    }
+
+    private ByteString uint256ReturnWithValue(final BigInteger value) {
+        return ByteStringUtils.wrapUnsafely(encodeTuple("(uint256)", value));
+    }
+
+    private Address hexedSolidityAddressToHeadlongAddress(final String hexedSolidityAddress) {
+        return Address.wrap(Address.toChecksumAddress("0x" + hexedSolidityAddress));
+    }
+
+    private ByteString formattedAssertionValue(final long value) {
+        return ByteString.copyFrom(
+                Bytes.wrap(UInt256.valueOf(value)).trimLeadingZeros().toArrayUnsafe());
     }
 }
