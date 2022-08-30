@@ -18,13 +18,13 @@ package com.hedera.services.state.expiry.renewal;
 import static com.hedera.services.state.expiry.EntityProcessResult.DONE;
 import static com.hedera.services.state.expiry.EntityProcessResult.NOTHING_TO_DO;
 import static com.hedera.services.state.expiry.EntityProcessResult.STILL_MORE_TO_DO;
-import static com.hedera.services.state.expiry.renewal.RenewableEntityType.DETACHED_ACCOUNT;
-import static com.hedera.services.state.expiry.renewal.RenewableEntityType.DETACHED_ACCOUNT_GRACE_PERIOD_OVER;
-import static com.hedera.services.state.expiry.renewal.RenewableEntityType.DETACHED_CONTRACT_GRACE_PERIOD_OVER;
-import static com.hedera.services.state.expiry.renewal.RenewableEntityType.DETACHED_TREASURY_GRACE_PERIOD_OVER_BEFORE_TOKEN;
-import static com.hedera.services.state.expiry.renewal.RenewableEntityType.EXPIRED_ACCOUNT_READY_TO_RENEW;
-import static com.hedera.services.state.expiry.renewal.RenewableEntityType.EXPIRED_CONTRACT_READY_TO_RENEW;
-import static com.hedera.services.state.expiry.renewal.RenewableEntityType.OTHER;
+import static com.hedera.services.state.expiry.classification.ClassificationResult.DETACHED_ACCOUNT;
+import static com.hedera.services.state.expiry.classification.ClassificationResult.DETACHED_ACCOUNT_GRACE_PERIOD_OVER;
+import static com.hedera.services.state.expiry.classification.ClassificationResult.DETACHED_CONTRACT_GRACE_PERIOD_OVER;
+import static com.hedera.services.state.expiry.classification.ClassificationResult.DETACHED_TREASURY_GRACE_PERIOD_OVER_BEFORE_TOKEN;
+import static com.hedera.services.state.expiry.classification.ClassificationResult.EXPIRED_ACCOUNT_READY_TO_RENEW;
+import static com.hedera.services.state.expiry.classification.ClassificationResult.EXPIRED_CONTRACT_READY_TO_RENEW;
+import static com.hedera.services.state.expiry.classification.ClassificationResult.OTHER;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -32,15 +32,20 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
-import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.config.MockGlobalDynamicProps;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.fees.calculation.RenewAssessment;
+import com.hedera.services.state.expiry.classification.ClassificationWork;
+import com.hedera.services.state.expiry.classification.EntityLookup;
 import com.hedera.services.state.expiry.removal.AccountGC;
 import com.hedera.services.state.expiry.removal.ContractGC;
+import com.hedera.services.state.expiry.removal.RemovalHelper;
+import com.hedera.services.state.expiry.removal.RemovalWork;
 import com.hedera.services.state.expiry.removal.TreasuryReturns;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.test.factories.accounts.MerkleAccountFactory;
+import com.swirlds.merkle.map.MerkleMap;
 import java.time.Instant;
 import java.util.Collections;
 import org.junit.jupiter.api.Assertions;
@@ -58,7 +63,9 @@ class RenewalProcessTest {
     private final long fee = 1L;
     private final long actualRenewalPeriod = 3600L;
     private final Instant instantNow = Instant.ofEpochSecond(now);
-
+    private final long fundingAccountNum = 98L;
+    private final long nonExpiredAccountNum = 1002L;
+    private final long fundedExpiredContractNum = 1004L;
     private final MerkleAccount mockAccount =
             MerkleAccountFactory.newAccount()
                     .autoRenewPeriod(requestedRenewalPeriod)
@@ -71,22 +78,37 @@ class RenewalProcessTest {
                     .balance(nonZeroBalance)
                     .expirationTime(now - 1)
                     .get();
-    private final long nonExpiredAccountNum = 1002L;
+    private final MerkleAccount fundingAccount =
+            MerkleAccountFactory.newAccount()
+                    .number(EntityNum.fromLong(fundingAccountNum))
+                    .balance(nonZeroBalance)
+                    .expirationTime(now + 100L)
+                    .get();
 
     @Mock private FeeCalculator fees;
-    @Mock private RenewableEntityClassifier helper;
+    @Mock private ClassificationWork classifier;
     @Mock private AccountGC accountGC;
     @Mock private ContractGC contractGC;
     @Mock private RenewalRecordsHelper recordsHelper;
-    @Mock private GlobalDynamicProperties dynamicProperties;
-
+    @Mock private MerkleMap<EntityNum, MerkleAccount> accounts;
+    private EntityLookup lookup;
+    private MockGlobalDynamicProps dynamicProperties = new MockGlobalDynamicProps();
+    private RenewalWork renewalWork;
+    private RemovalWork removalWork;
     private RenewalProcess subject;
 
     @BeforeEach
     void setUp() {
-        subject =
-                new RenewalProcess(
-                        accountGC, contractGC, fees, helper, dynamicProperties, recordsHelper);
+        setUpPreRequisites();
+        subject = new RenewalProcess(classifier, recordsHelper, renewalWork, removalWork);
+    }
+
+    private void setUpPreRequisites() {
+        lookup = new EntityLookup(() -> accounts);
+        renewalWork = new RenewalHelper(lookup, classifier, dynamicProperties, fees, recordsHelper);
+        removalWork =
+                new RemovalHelper(
+                        classifier, dynamicProperties, contractGC, accountGC, recordsHelper);
     }
 
     @Test
@@ -135,18 +157,18 @@ class RenewalProcessTest {
 
     @Test
     void doesNothingOnNonExpiredAccount() {
-        given(helper.classify(EntityNum.fromLong(nonExpiredAccountNum), now)).willReturn(OTHER);
+        given(classifier.classify(EntityNum.fromLong(nonExpiredAccountNum), now)).willReturn(OTHER);
 
         subject.beginRenewalCycle(instantNow);
         var result = subject.process(nonExpiredAccountNum);
 
         assertEquals(NOTHING_TO_DO, result);
-        verifyNoMoreInteractions(helper);
+        verifyNoMoreInteractions(classifier);
     }
 
     @Test
     void doesNothingDuringGracePeriod() {
-        given(helper.classify(EntityNum.fromLong(nonExpiredAccountNum), now))
+        given(classifier.classify(EntityNum.fromLong(nonExpiredAccountNum), now))
                 .willReturn(DETACHED_ACCOUNT);
 
         subject.beginRenewalCycle(instantNow);
@@ -154,26 +176,28 @@ class RenewalProcessTest {
 
         // then:
         assertEquals(NOTHING_TO_DO, result);
-        verifyNoMoreInteractions(helper);
+        verifyNoMoreInteractions(classifier);
     }
 
     @Test
     void doesNothingForTreasuryWithTokenStillLive() {
-        given(helper.classify(EntityNum.fromLong(nonExpiredAccountNum), now))
+        given(classifier.classify(EntityNum.fromLong(nonExpiredAccountNum), now))
                 .willReturn(DETACHED_TREASURY_GRACE_PERIOD_OVER_BEFORE_TOKEN);
 
         subject.beginRenewalCycle(instantNow);
         final var result = subject.process(nonExpiredAccountNum);
 
         assertEquals(NOTHING_TO_DO, result);
-        verifyNoMoreInteractions(helper);
+        verifyNoMoreInteractions(classifier);
     }
 
     @Test
     void ignoresExpiredBrokeAccountIfNotTargetType() {
+        dynamicProperties.disableContractAutoRenew();
         long brokeExpiredAccountNum = 1003L;
         final var expiredNum = EntityNum.fromLong(brokeExpiredAccountNum);
-        given(helper.classify(expiredNum, now)).willReturn(DETACHED_ACCOUNT_GRACE_PERIOD_OVER);
+
+        given(classifier.classify(expiredNum, now)).willReturn(DETACHED_CONTRACT_GRACE_PERIOD_OVER);
 
         subject.beginRenewalCycle(instantNow);
         final var result = subject.process(brokeExpiredAccountNum);
@@ -185,7 +209,10 @@ class RenewalProcessTest {
     void ignoresExpiredBrokeContractIfNotTargetType() {
         long brokeExpiredAccountNum = 1003L;
         final var expiredNum = EntityNum.fromLong(brokeExpiredAccountNum);
-        given(helper.classify(expiredNum, now)).willReturn(EXPIRED_CONTRACT_READY_TO_RENEW);
+        given(classifier.classify(expiredNum, now)).willReturn(EXPIRED_CONTRACT_READY_TO_RENEW);
+
+        dynamicProperties.disableAutoRenew();
+        dynamicProperties.disableContractAutoRenew();
 
         subject.beginRenewalCycle(instantNow);
         final var result = subject.process(brokeExpiredAccountNum);
@@ -200,15 +227,16 @@ class RenewalProcessTest {
 
         long brokeExpiredAccountNum = 1003L;
         final var expiredNum = EntityNum.fromLong(brokeExpiredAccountNum);
-        given(helper.classify(expiredNum, now)).willReturn(DETACHED_ACCOUNT_GRACE_PERIOD_OVER);
-        given(helper.getLastClassified()).willReturn(mockAccount);
+        given(classifier.classify(expiredNum, now)).willReturn(DETACHED_ACCOUNT_GRACE_PERIOD_OVER);
+        given(classifier.getLastClassified()).willReturn(mockAccount);
         given(accountGC.expireBestEffort(expiredNum, mockAccount)).willReturn(treasuryReturns);
-        given(dynamicProperties.shouldAutoRenewAccounts()).willReturn(true);
+        dynamicProperties.enableAutoRenew();
 
         subject.beginRenewalCycle(instantNow);
         final var result = subject.process(brokeExpiredAccountNum);
 
         assertEquals(DONE, result);
+
         verify(accountGC).expireBestEffort(expiredNum, mockAccount);
         verify(recordsHelper)
                 .streamCryptoRemoval(expiredNum, Collections.emptyList(), Collections.emptyList());
@@ -216,16 +244,17 @@ class RenewalProcessTest {
 
     @Test
     void removesExpiredBrokeContractImmediatelyIfStoragePurged() {
+        dynamicProperties.enableContractAutoRenew();
+
         final var treasuryReturns =
                 new TreasuryReturns(Collections.emptyList(), Collections.emptyList(), true);
 
         long brokeExpiredContractNum = 1003L;
         final var expiredNum = EntityNum.fromLong(brokeExpiredContractNum);
-        given(helper.classify(expiredNum, now)).willReturn(DETACHED_CONTRACT_GRACE_PERIOD_OVER);
-        given(helper.getLastClassified()).willReturn(mockContract);
+        given(classifier.classify(expiredNum, now)).willReturn(DETACHED_CONTRACT_GRACE_PERIOD_OVER);
+        given(classifier.getLastClassified()).willReturn(mockContract);
         given(contractGC.expireBestEffort(expiredNum, mockContract)).willReturn(true);
         given(accountGC.expireBestEffort(expiredNum, mockContract)).willReturn(treasuryReturns);
-        given(dynamicProperties.shouldAutoRenewContracts()).willReturn(true);
 
         subject.beginRenewalCycle(instantNow);
         final var result = subject.process(brokeExpiredContractNum);
@@ -240,9 +269,9 @@ class RenewalProcessTest {
     void doesntExpireBrokeContractUntilStoragePurged() {
         long brokeExpiredContractNum = 1003L;
         final var expiredNum = EntityNum.fromLong(brokeExpiredContractNum);
-        given(helper.classify(expiredNum, now)).willReturn(DETACHED_CONTRACT_GRACE_PERIOD_OVER);
-        given(helper.getLastClassified()).willReturn(mockContract);
-        given(dynamicProperties.shouldAutoRenewContracts()).willReturn(true);
+        given(classifier.classify(expiredNum, now)).willReturn(DETACHED_CONTRACT_GRACE_PERIOD_OVER);
+        given(classifier.getLastClassified()).willReturn(mockContract);
+        dynamicProperties.enableContractAutoRenew();
 
         subject.beginRenewalCycle(instantNow);
         final var result = subject.process(brokeExpiredContractNum);
@@ -259,10 +288,10 @@ class RenewalProcessTest {
 
         long brokeExpiredAccountNum = 1003L;
         final var expiredNum = EntityNum.fromLong(brokeExpiredAccountNum);
-        given(helper.classify(expiredNum, now)).willReturn(DETACHED_ACCOUNT_GRACE_PERIOD_OVER);
-        given(helper.getLastClassified()).willReturn(mockAccount);
+        given(classifier.classify(expiredNum, now)).willReturn(DETACHED_ACCOUNT_GRACE_PERIOD_OVER);
+        given(classifier.getLastClassified()).willReturn(mockAccount);
         given(accountGC.expireBestEffort(expiredNum, mockAccount)).willReturn(treasuryReturns);
-        given(dynamicProperties.shouldAutoRenewAccounts()).willReturn(true);
+        dynamicProperties.enableAutoRenew();
 
         subject.beginRenewalCycle(instantNow);
         final var result = subject.process(brokeExpiredAccountNum);
@@ -280,58 +309,82 @@ class RenewalProcessTest {
         var key = EntityNum.fromLong(fundedExpiredAccountNum);
         mockAccount.setKey(key);
 
-        given(helper.classify(EntityNum.fromLong(fundedExpiredAccountNum), now))
+        given(classifier.classify(EntityNum.fromLong(fundedExpiredAccountNum), now))
                 .willReturn(EXPIRED_ACCOUNT_READY_TO_RENEW);
-        given(helper.getLastClassified()).willReturn(mockAccount);
+        given(classifier.getLastClassified()).willReturn(mockAccount);
+        given(classifier.getLastClassifiedNum()).willReturn(key);
+
+        given(classifier.getPayerAccountForAutoRenew()).willReturn(mockAccount);
+        given(classifier.getPayerNumForAutoRenew()).willReturn(key);
+
+        given(lookup.getMutableAccount(key)).willReturn(mockAccount);
+        given(lookup.getMutableAccount(EntityNum.fromLong(fundingAccountNum)))
+                .willReturn(fundingAccount);
+        given(accounts.getForModify(EntityNum.fromLong(fundingAccountNum)))
+                .willReturn(fundingAccount);
+        given(accounts.getForModify(EntityNum.fromLong(fundedExpiredAccountNum)))
+                .willReturn(mockAccount);
+
         given(
                         fees.assessCryptoAutoRenewal(
                                 mockAccount, requestedRenewalPeriod, instantNow, mockAccount))
                 .willReturn(new RenewAssessment(fee, actualRenewalPeriod));
-        given(dynamicProperties.shouldAutoRenewAccounts()).willReturn(true);
-        given(helper.resolvePayerForAutoRenew()).willReturn(mockAccount);
+        dynamicProperties.enableContractAutoRenew();
 
         subject.beginRenewalCycle(instantNow);
         final var result = subject.process(fundedExpiredAccountNum);
 
         assertEquals(DONE, result);
-        verify(helper).renewLastClassifiedWith(fee, actualRenewalPeriod);
+
         verify(recordsHelper)
                 .streamCryptoRenewal(key, fee, now - 1 + actualRenewalPeriod, false, key);
     }
 
     @Test
     void renewsContractAtExpectedFee() {
-        // setup:
-        long fundedExpiredContractNum = 1004L;
+        // setup: 1241766
         var key = EntityNum.fromLong(fundedExpiredContractNum);
         mockContract.setKey(key);
 
-        given(helper.classify(EntityNum.fromLong(fundedExpiredContractNum), now))
+        given(classifier.classify(EntityNum.fromLong(fundedExpiredContractNum), now))
                 .willReturn(EXPIRED_CONTRACT_READY_TO_RENEW);
-        given(helper.getLastClassified()).willReturn(mockContract);
+        given(classifier.getLastClassified()).willReturn(mockContract);
+        given(classifier.getLastClassifiedNum())
+                .willReturn(EntityNum.fromLong(fundedExpiredContractNum));
         given(
                         fees.assessCryptoAutoRenewal(
                                 mockContract, requestedRenewalPeriod, instantNow, mockContract))
                 .willReturn(new RenewAssessment(fee, actualRenewalPeriod));
-        given(dynamicProperties.shouldAutoRenewContracts()).willReturn(true);
-        given(helper.resolvePayerForAutoRenew()).willReturn(mockContract);
+        dynamicProperties.shouldAutoRenewContracts();
+
+        given(accounts.getForModify(EntityNum.fromLong(fundedExpiredContractNum)))
+                .willReturn(mockContract);
+        given(accounts.getForModify(EntityNum.fromLong(fundingAccountNum)))
+                .willReturn(fundingAccount);
+
+        //        given(classifier.resolvePayerForAutoRenew()).willReturn(mockContract);
+        given(classifier.getPayerNumForAutoRenew())
+                .willReturn(EntityNum.fromLong(fundedExpiredContractNum));
+        given(classifier.getPayerAccountForAutoRenew()).willReturn(mockContract);
 
         subject.beginRenewalCycle(instantNow);
         final var result = subject.process(fundedExpiredContractNum);
 
         assertEquals(DONE, result);
-        verify(helper).renewLastClassifiedWith(fee, actualRenewalPeriod);
+
         verify(recordsHelper)
                 .streamCryptoRenewal(key, fee, now - 1 + actualRenewalPeriod, true, key);
     }
 
     @Test
-    void skipsAccountRenewalIfNotTargeted() {
+    void skipsAccountRenewalIfNotEnabled() {
         // setup:
         long fundedExpiredAccountNum = 1004L;
 
-        given(helper.classify(EntityNum.fromLong(fundedExpiredAccountNum), now))
+        given(classifier.classify(EntityNum.fromLong(fundedExpiredAccountNum), now))
                 .willReturn(EXPIRED_ACCOUNT_READY_TO_RENEW);
+        dynamicProperties.disableAutoRenew();
+        dynamicProperties.enableContractAutoRenew();
 
         subject.beginRenewalCycle(instantNow);
         final var result = subject.process(fundedExpiredAccountNum);

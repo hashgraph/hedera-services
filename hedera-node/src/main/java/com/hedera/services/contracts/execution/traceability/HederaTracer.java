@@ -15,6 +15,13 @@
  */
 package com.hedera.services.contracts.execution.traceability;
 
+import static com.hedera.services.contracts.execution.traceability.CallOperationType.OP_CALL;
+import static com.hedera.services.contracts.execution.traceability.CallOperationType.OP_CALLCODE;
+import static com.hedera.services.contracts.execution.traceability.CallOperationType.OP_CREATE;
+import static com.hedera.services.contracts.execution.traceability.CallOperationType.OP_CREATE2;
+import static com.hedera.services.contracts.execution.traceability.CallOperationType.OP_DELEGATECALL;
+import static com.hedera.services.contracts.execution.traceability.CallOperationType.OP_STATICCALL;
+import static com.hedera.services.contracts.execution.traceability.CallOperationType.OP_UNKNOWN;
 import static com.hedera.services.contracts.execution.traceability.ContractActionType.CALL;
 import static com.hedera.services.contracts.execution.traceability.ContractActionType.CREATE;
 import static com.hedera.services.contracts.operation.HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS;
@@ -36,6 +43,13 @@ public class HederaTracer implements HederaOperationTracer {
     private final List<SolidityAction> allActions;
     private final Deque<SolidityAction> currentActionsStack;
     private final boolean areActionSidecarsEnabled;
+
+    private static final int OP_CODE_CREATE = 0xF0;
+    private static final int OP_CODE_CALL = 0xF1;
+    private static final int OP_CODE_CALLCODE = 0xF2;
+    private static final int OP_CODE_DELEGATECALL = 0xF4;
+    private static final int OP_CODE_CREATE2 = 0xF5;
+    private static final int OP_CODE_STATICCALL = 0xFA;
 
     public HederaTracer(final boolean areActionSidecarsEnabled) {
         this.currentActionsStack = new ArrayDeque<>();
@@ -87,7 +101,8 @@ public class HederaTracer implements HederaOperationTracer {
                         isCallToAccount ? EntityId.fromAddress(frame.getContractAddress()) : null,
                         !isCallToAccount ? EntityId.fromAddress(frame.getContractAddress()) : null,
                         frame.getValue().toLong(),
-                        callDepth);
+                        callDepth,
+                        toCallOperationType(frame.getCurrentOperation().getOpcode()));
         allActions.add(action);
         currentActionsStack.push(action);
     }
@@ -155,6 +170,18 @@ public class HederaTracer implements HederaOperationTracer {
         return switch (type) {
             case CONTRACT_CREATION -> CREATE;
             case MESSAGE_CALL -> CALL;
+        };
+    }
+
+    private CallOperationType toCallOperationType(final int opCode) {
+        return switch (opCode) {
+            case OP_CODE_CREATE -> OP_CREATE;
+            case OP_CODE_CALL -> OP_CALL;
+            case OP_CODE_CALLCODE -> OP_CALLCODE;
+            case OP_CODE_DELEGATECALL -> OP_DELEGATECALL;
+            case OP_CODE_CREATE2 -> OP_CREATE2;
+            case OP_CODE_STATICCALL -> OP_STATICCALL;
+            default -> OP_UNKNOWN;
         };
     }
 
