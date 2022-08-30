@@ -1,3 +1,5 @@
+import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
+
 /*
  * Copyright (C) 2022 Hedera Hashgraph, LLC
  *
@@ -82,8 +84,10 @@ tasks.eet {
     systemProperty("networkWorkspaceDir", File(project.buildDir, "network/eet"))
 }
 
+val sjJar: String by project
+val sjMainClass: String by project
 tasks.shadowJar {
-    archiveFileName.set("SuiteRunner.jar")
+    archiveFileName.set(sjJar)
     isReproducibleFileOrder = true
     isPreserveFileTimestamps = false
     fileMode = 664
@@ -91,7 +95,7 @@ tasks.shadowJar {
 
     manifest {
         attributes(
-            "Main-Class" to "com.hedera.services.bdd.suites.SuiteRunner"
+            "Main-Class" to sjMainClass
         )
     }
 }
