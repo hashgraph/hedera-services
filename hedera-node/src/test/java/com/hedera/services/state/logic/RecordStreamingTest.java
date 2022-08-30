@@ -24,9 +24,11 @@ import static org.mockito.internal.verification.VerificationModeFactory.times;
 import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.stream.NonBlockingHandoff;
 import com.hedera.services.stream.RecordStreamObject;
+import com.hedera.services.stream.proto.TransactionSidecarRecord;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Timestamp;
+import com.hederahashgraph.api.proto.java.TokenBurnTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
@@ -53,6 +55,7 @@ class RecordStreamingTest {
     @Mock private TransactionID transactionID;
     @Mock private AccountID accountID;
     @Mock private TransactionReceipt transactionReceipt;
+    @Mock private List<TransactionSidecarRecord.Builder> sidecars;
 
     private RecordStreaming subject;
 
@@ -139,6 +142,8 @@ class RecordStreamingTest {
         for (final var mockRso : mockRsos) {
             given(mockRso.withBlockNumber(someBlockNo)).willReturn(mockRso);
             given(mockRso.getTimestamp()).willReturn(aTime);
+            given(mockRso.getSidecars()).willReturn(sidecars);
+//            given(sidecars.has)
             given(mockRso.getTransactionRecord()).willReturn(transactionRecord);
             given(transactionRecord.getReceipt()).willReturn(transactionReceipt);
             given(transactionReceipt.getStatus()).willReturn(ResponseCodeEnum.SUCCESS);

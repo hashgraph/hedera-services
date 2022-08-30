@@ -15,7 +15,10 @@
  */
 package com.hedera.services.state.logic;
 
+import static com.hedera.services.legacy.proto.utils.CommonUtils.extractTransactionBody;
+
 import com.google.common.annotations.VisibleForTesting;
+import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.stream.NonBlockingHandoff;
 import com.hedera.services.stream.RecordStreamObject;
@@ -115,17 +118,19 @@ public class RecordStreaming {
     }
 
     private void stream(final RecordStreamObject rso) {
-        logTransaction(rso);
+        if (blockManager.shouldLogEveryTransaction()) {
+            logTransaction(rso);
+        }
         while (!nonBlockingHandoff.offer(rso)) {
             // Cannot proceed until we have handed off the record.
         }
     }
 
     private void logTransaction(final RecordStreamObject rso) {
-        var consTimestamp = rso.getTimestamp().toString();
-        var blockNumber = rso.getStreamAlignment();
-        var txId = rso.getTransactionRecord().getTransactionID();
-        var txIdString =
+        final var consTimestamp = rso.getTimestamp().toString();
+        final var blockNumber = rso.getStreamAlignment();
+        final var txId = rso.getTransactionRecord().getTransactionID();
+        final var txIdString =
                 String.format(
                         "%d.%d.%d-%d-%d",
                         txId.getAccountID().getShardNum(),
@@ -133,24 +138,20 @@ public class RecordStreaming {
                         txId.getAccountID().getAccountNum(),
                         txId.getTransactionValidStart().getSeconds(),
                         txId.getTransactionValidStart().getNanos());
+        final var status = rso.getTransactionRecord().getReceipt().getStatus().toString();
         var type = "UNRECOGNIZED";
-        var status = rso.getTransactionRecord().getReceipt().getStatus().toString();
 
-        if (!rso.getSidecars().isEmpty()) {
-            for (var sidecarRecord : rso.getSidecars()) {
-                if (sidecarRecord.hasActions()
-                        && sidecarRecord.getActions().getContractActionsCount() == 1) {
-                    var contractAction = sidecarRecord.getActions().getContractActions(0);
-                    type = contractAction.getCallType().toString();
-                    break;
-                }
-            }
+        try {
+            final var txBody = extractTransactionBody(rso.getTransaction());
+            type = txBody.getDataCase().toString();
+        } catch (InvalidProtocolBufferException e) {
+            log.error("Couldn't get transaction body", e);
         }
 
-        var logString =
+        final var logString =
                 String.format(
                         "Consensus timestamp: %s, Block number: %d, Transaction ID: %s, Transaction"
-                                + " call type: %s, Status: %s",
+                                + " type: %s, Status: %s",
                         consTimestamp, blockNumber, txIdString, type, status);
         log.info(logString);
     }
