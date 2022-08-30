@@ -117,8 +117,8 @@ class UniqueTokensMigratorTest {
     @Test
     void givenDataAlreadyMigrated_noMigration() {
         UniqueTokensMigrator.migrateFromUniqueTokenMerkleMap(state);
-        final var virtualMap = new VirtualMapFactory(JasperDbBuilder::new)
-                .newVirtualizedUniqueTokenStorage();
+        final var virtualMap =
+                new VirtualMapFactory(JasperDbBuilder::new).newVirtualizedUniqueTokenStorage();
         state.setChild(UNIQUE_TOKENS, virtualMap);
 
         UniqueTokensMigrator.migrateFromUniqueTokenMerkleMap(state);
