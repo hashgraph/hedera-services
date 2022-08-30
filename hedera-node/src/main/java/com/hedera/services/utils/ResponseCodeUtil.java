@@ -37,12 +37,34 @@ package com.hedera.services.utils;
  *
  */
 
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
+import static java.util.stream.Collectors.toMap;
+
 import com.hedera.services.contracts.execution.TransactionProcessingResult;
 import com.hedera.services.contracts.operation.HederaExceptionalHaltReason;
+import com.hedera.services.exceptions.ResourceLimitException;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import java.util.Map;
+import java.util.stream.Stream;
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 
 public final class ResponseCodeUtil {
+    static final Map<BytesKey, ResponseCodeEnum> RESOURCE_EXHAUSTION_REVERSIONS =
+            Stream.of(
+                            MAX_CHILD_RECORDS_EXCEEDED,
+                            MAX_CONTRACT_STORAGE_EXCEEDED,
+                            MAX_STORAGE_IN_PRICE_REGIME_HAS_BEEN_USED,
+                            MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED,
+                            INSUFFICIENT_BALANCES_FOR_STORAGE_RENT)
+                    .collect(
+                            toMap(
+                                    status ->
+                                            new BytesKey(
+                                                    new ResourceLimitException(status)
+                                                            .messageBytes()
+                                                            .toArrayUnsafe()),
+                                    status -> status));
+
     private ResponseCodeUtil() {
         throw new UnsupportedOperationException("Utility Class");
     }
@@ -67,10 +89,13 @@ public final class ResponseCodeUtil {
                 return ResponseCodeEnum.LOCAL_CALL_MODIFICATION_EXCEPTION;
             }
         }
-        if (result.getRevertReason().isPresent()) {
-            return ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
-        } else {
-            return ResponseCodeEnum.CONTRACT_EXECUTION_EXCEPTION;
-        }
+        return result.getRevertReason()
+                .map(
+                        status ->
+                                RESOURCE_EXHAUSTION_REVERSIONS.getOrDefault(
+                                        new BytesKey(
+                                                result.getRevertReason().get().toArrayUnsafe()),
+                                        CONTRACT_REVERT_EXECUTED))
+                .orElse(CONTRACT_EXECUTION_EXCEPTION);
     }
 }

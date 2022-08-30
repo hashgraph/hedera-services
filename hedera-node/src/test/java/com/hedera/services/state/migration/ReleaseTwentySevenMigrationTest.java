@@ -15,6 +15,7 @@
  */
 package com.hedera.services.state.migration;
 
+import static com.hedera.services.context.properties.PropertyNames.LEDGER_TOTAL_TINY_BAR_FLOAT;
 import static com.hedera.services.state.migration.ReleaseTwentySevenMigration.buildStakingInfoMap;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -57,7 +58,7 @@ class ReleaseTwentySevenMigrationTest {
         given(address4.getId()).willReturn(3L);
         given(addressBook.getAddress(4)).willReturn(address5);
         given(address5.getId()).willReturn(4L);
-        given(bootstrapProperties.getLongProperty("ledger.totalTinyBarFloat"))
+        given(bootstrapProperties.getLongProperty(LEDGER_TOTAL_TINY_BAR_FLOAT))
                 .willReturn(totalHbar);
 
         var stakingInfoMap = buildStakingInfoMap(addressBook, bootstrapProperties);

@@ -106,6 +106,10 @@ public class HederaStackedWorldStateUpdater
         return (long) trackingAccounts().get(accountId, NUM_NFTS_OWNED) > 0L;
     }
 
+    public boolean isTokenAddress(final Address address) {
+        return trackingLedgers().isTokenAddress(address);
+    }
+
     /**
      * Returns the mirror form of the given EVM address if it exists; or 20 bytes of binary zeros if
      * the given address is the mirror address of an account with an EIP-1014 address.

@@ -293,7 +293,7 @@ class ContractCallLocalAnswerTest {
         given(accountStore.loadAccount(any())).willReturn(new Account(Id.fromGrpcContract(target)));
         given(accountStore.loadContract(any()))
                 .willReturn(new Account(Id.fromGrpcContract(target)));
-        given(evmTxProcessor.execute(any(), any(), anyLong(), anyLong(), any(), any()))
+        given(evmTxProcessor.execute(any(), any(), anyLong(), anyLong(), any()))
                 .willReturn(transactionProcessingResult);
         given(blockMetaProvider.getSource()).willReturn(Optional.of(blockMetaSource));
 

@@ -64,7 +64,6 @@ import com.hedera.services.bdd.suites.contract.precompile.ContractMintHTSSuite;
 import com.hedera.services.bdd.suites.contract.precompile.CryptoTransferHTSSuite;
 import com.hedera.services.bdd.suites.contract.precompile.DelegatePrecompileSuite;
 import com.hedera.services.bdd.suites.contract.precompile.DissociatePrecompileSuite;
-import com.hedera.services.bdd.suites.contract.precompile.DynamicGasCostSuite;
 import com.hedera.services.bdd.suites.contract.precompile.MixedHTSPrecompileTestsSuite;
 import com.hedera.services.bdd.suites.contract.records.LogsSuite;
 import com.hedera.services.bdd.suites.contract.records.RecordsSuite;
@@ -473,7 +472,6 @@ public class SuiteRunner {
                     put("CryptoTransferHTSSuite", aof(CryptoTransferHTSSuite::new));
                     put("DelegatePrecompileSuite", aof(DelegatePrecompileSuite::new));
                     put("DissociatePrecompileSuite", aof(DissociatePrecompileSuite::new));
-                    put("DynamicGasCostSuite", aof(DynamicGasCostSuite::new));
                     put("MixedHTSPrecompileTestsSuite", aof(MixedHTSPrecompileTestsSuite::new));
                     /* Functional tests - AUTORENEW */
                     put("AccountAutoRenewalSuite", aof(AccountAutoRenewalSuite::new));

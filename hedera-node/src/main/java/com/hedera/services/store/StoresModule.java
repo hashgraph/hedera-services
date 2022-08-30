@@ -15,6 +15,8 @@
  */
 package com.hedera.services.store;
 
+import static com.hedera.services.context.properties.PropertyNames.TOKENS_NFTS_USE_TREASURY_WILD_CARDS;
+
 import com.hedera.services.config.AccountNumbers;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.TransactionContext;
@@ -183,6 +185,6 @@ public interface StoresModule {
     @AreTreasuryWildcardsEnabled
     static boolean provideAreTreasuryWildcardsEnabled(
             final @CompositeProps PropertySource properties) {
-        return properties.getBooleanProperty("tokens.nfts.useTreasuryWildcards");
+        return properties.getBooleanProperty(TOKENS_NFTS_USE_TREASURY_WILD_CARDS);
     }
 }

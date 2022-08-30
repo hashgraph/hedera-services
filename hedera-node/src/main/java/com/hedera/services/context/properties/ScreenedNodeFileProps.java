@@ -21,6 +21,22 @@ import static com.hedera.services.context.properties.Profile.DEV;
 import static com.hedera.services.context.properties.Profile.PROD;
 import static com.hedera.services.context.properties.Profile.TEST;
 import static com.hedera.services.context.properties.PropUtils.loadOverride;
+import static com.hedera.services.context.properties.PropertyNames.DEV_DEFAULT_LISTENING_NODE_ACCOUNT;
+import static com.hedera.services.context.properties.PropertyNames.DEV_ONLY_DEFAULT_NODE_LISTENS;
+import static com.hedera.services.context.properties.PropertyNames.GRPC_PORT;
+import static com.hedera.services.context.properties.PropertyNames.GRPC_TLS_PORT;
+import static com.hedera.services.context.properties.PropertyNames.HEDERA_PROFILES_ACTIVE;
+import static com.hedera.services.context.properties.PropertyNames.HEDERA_RECORD_STREAM_IS_ENABLED;
+import static com.hedera.services.context.properties.PropertyNames.HEDERA_RECORD_STREAM_LOG_DIR;
+import static com.hedera.services.context.properties.PropertyNames.HEDERA_RECORD_STREAM_LOG_PERIOD;
+import static com.hedera.services.context.properties.PropertyNames.HEDERA_RECORD_STREAM_QUEUE_CAPACITY;
+import static com.hedera.services.context.properties.PropertyNames.NETTY_PROD_FLOW_CONTROL_WINDOW;
+import static com.hedera.services.context.properties.PropertyNames.NETTY_PROD_KEEP_ALIVE_TIME;
+import static com.hedera.services.context.properties.PropertyNames.NETTY_PROD_KEEP_ALIVE_TIMEOUT;
+import static com.hedera.services.context.properties.PropertyNames.NETTY_PROD_MAX_CONCURRENT_CALLS;
+import static com.hedera.services.context.properties.PropertyNames.NETTY_PROD_MAX_CONNECTION_AGE;
+import static com.hedera.services.context.properties.PropertyNames.NETTY_PROD_MAX_CONNECTION_AGE_GRACE;
+import static com.hedera.services.context.properties.PropertyNames.NETTY_PROD_MAX_CONNECTION_IDLE;
 import static java.util.Map.entry;
 
 import java.nio.file.Files;
@@ -44,22 +60,22 @@ public class ScreenedNodeFileProps implements PropertySource {
 
     private static final Map<String, String> STANDARDIZED_NAMES =
             Map.ofEntries(
-                    entry("nettyFlowControlWindow", "netty.prod.flowControlWindow"),
-                    entry("nettyMaxConnectionAge", "netty.prod.maxConnectionAge"),
-                    entry("nettyMaxConnectionAgeGrace", "netty.prod.maxConnectionAgeGrace"),
-                    entry("nettyMaxConnectionIdle", "netty.prod.maxConnectionIdle"),
-                    entry("nettyMaxConcurrentCalls", "netty.prod.maxConcurrentCalls"),
-                    entry("nettyKeepAliveTime", "netty.prod.keepAliveTime"),
-                    entry("nettyKeepAliveTimeOut", "netty.prod.keepAliveTimeout"),
-                    entry("port", "grpc.port"),
-                    entry("recordStreamQueueCapacity", "hedera.recordStream.queueCapacity"),
-                    entry("enableRecordStreaming", "hedera.recordStream.isEnabled"),
-                    entry("recordLogDir", "hedera.recordStream.logDir"),
-                    entry("recordLogPeriod", "hedera.recordStream.logPeriod"),
-                    entry("tlsPort", "grpc.tlsPort"),
-                    entry("environment", "hedera.profiles.active"),
-                    entry("defaultListeningNodeAccount", "dev.defaultListeningNodeAccount"),
-                    entry("uniqueListeningPortFlag", "dev.onlyDefaultNodeListens"));
+                    entry("nettyFlowControlWindow", NETTY_PROD_FLOW_CONTROL_WINDOW),
+                    entry("nettyMaxConnectionAge", NETTY_PROD_MAX_CONNECTION_AGE),
+                    entry("nettyMaxConnectionAgeGrace", NETTY_PROD_MAX_CONNECTION_AGE_GRACE),
+                    entry("nettyMaxConnectionIdle", NETTY_PROD_MAX_CONNECTION_IDLE),
+                    entry("nettyMaxConcurrentCalls", NETTY_PROD_MAX_CONCURRENT_CALLS),
+                    entry("nettyKeepAliveTime", NETTY_PROD_KEEP_ALIVE_TIME),
+                    entry("nettyKeepAliveTimeOut", NETTY_PROD_KEEP_ALIVE_TIMEOUT),
+                    entry("port", GRPC_PORT),
+                    entry("recordStreamQueueCapacity", HEDERA_RECORD_STREAM_QUEUE_CAPACITY),
+                    entry("enableRecordStreaming", HEDERA_RECORD_STREAM_IS_ENABLED),
+                    entry("recordLogDir", HEDERA_RECORD_STREAM_LOG_DIR),
+                    entry("recordLogPeriod", HEDERA_RECORD_STREAM_LOG_PERIOD),
+                    entry("tlsPort", GRPC_TLS_PORT),
+                    entry("environment", HEDERA_PROFILES_ACTIVE),
+                    entry("defaultListeningNodeAccount", DEV_DEFAULT_LISTENING_NODE_ACCOUNT),
+                    entry("uniqueListeningPortFlag", DEV_ONLY_DEFAULT_NODE_LISTENS));
     private static final Map<String, UnaryOperator<String>> STANDARDIZED_FORMATS =
             Map.ofEntries(
                     entry(

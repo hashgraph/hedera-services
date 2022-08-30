@@ -36,6 +36,7 @@ public class SolidityAction {
     private byte[] revertReason;
     private byte[] error;
     private final int callDepth;
+    private final CallOperationType callOperationType;
 
     public SolidityAction(
             final ContractActionType callType,
@@ -46,7 +47,8 @@ public class SolidityAction {
             final EntityId recipientAccount,
             final EntityId recipientContract,
             final long value,
-            final int callDepth) {
+            final int callDepth,
+            final CallOperationType callOperationType) {
         this.callType = callType;
         this.callingAccount = callingAccount;
         this.callingContract = callingContract;
@@ -56,6 +58,7 @@ public class SolidityAction {
         this.recipientContract = recipientContract;
         this.value = value;
         this.callDepth = callDepth;
+        this.callOperationType = callOperationType;
     }
 
     public ContractActionType getCallType() {
@@ -146,6 +149,10 @@ public class SolidityAction {
         return callDepth;
     }
 
+    public CallOperationType getCallOperationType() {
+        return callOperationType;
+    }
+
     public ContractAction toGrpc() {
         final var grpc = ContractAction.newBuilder();
         grpc.setCallType(
@@ -174,6 +181,9 @@ public class SolidityAction {
             grpc.setError(ByteStringUtils.wrapUnsafely(error));
         }
         grpc.setCallDepth(callDepth);
+        grpc.setCallOperationType(
+                com.hedera.services.stream.proto.CallOperationType.forNumber(
+                        callOperationType.ordinal()));
         return grpc.build();
     }
 }

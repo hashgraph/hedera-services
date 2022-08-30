@@ -15,6 +15,8 @@
  */
 package com.hedera.services.state.validation;
 
+import static com.hedera.services.context.properties.PropertyNames.LEDGER_TOTAL_TINY_BAR_FLOAT;
+
 import com.hedera.services.context.annotations.CompositeProps;
 import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.state.merkle.MerkleAccount;
@@ -32,7 +34,7 @@ public class BasedLedgerValidator implements LedgerValidator {
 
     @Inject
     public BasedLedgerValidator(final @CompositeProps PropertySource properties) {
-        this.expectedFloat = properties.getLongProperty("ledger.totalTinyBarFloat");
+        this.expectedFloat = properties.getLongProperty(LEDGER_TOTAL_TINY_BAR_FLOAT);
     }
 
     @Override

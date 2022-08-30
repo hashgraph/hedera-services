@@ -232,4 +232,14 @@ class EntityIdTest {
         assertFalse(subject.matches(diffRealm));
         assertFalse(subject.matches(diffNum));
     }
+
+    @Test
+    void fromNumWorks() {
+        EntityId entityId = EntityId.fromNum(123L);
+        assertEquals(123L, entityId.num());
+        // NOTE: These values will change if the default static properties ever gets changed for the
+        // test.
+        assertEquals(0, entityId.realm());
+        assertEquals(0, entityId.shard());
+    }
 }

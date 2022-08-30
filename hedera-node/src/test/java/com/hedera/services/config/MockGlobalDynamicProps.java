@@ -35,6 +35,7 @@ public class MockGlobalDynamicProps extends GlobalDynamicProperties {
     private boolean exportBalances = true;
     private CongestionMultipliers currentMultipliers = defaultMultipliers;
     private boolean throttleByGas;
+    private boolean overwriteFundingAccount = false;
 
     public MockGlobalDynamicProps() {
         super(null, null);
@@ -188,6 +189,10 @@ public class MockGlobalDynamicProps extends GlobalDynamicProperties {
 
     public void enableAutoRenew() {
         useAutoRenew = true;
+    }
+
+    public void enableContractAutoRenew() {
+        useContractAutoRenew = true;
     }
 
     @Override

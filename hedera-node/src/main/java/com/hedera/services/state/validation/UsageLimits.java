@@ -15,7 +15,7 @@
  */
 package com.hedera.services.state.validation;
 
-import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
+import static com.hedera.services.exceptions.ValidationUtils.validateResourceLimit;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_CONTRACT_STORAGE_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_NFTS_IN_PRICE_REGIME_HAVE_BEEN_MINTED;
@@ -147,19 +147,19 @@ public class UsageLimits implements ContractStorageLimits, AccountUsageTracking 
 
     public void assertMintableNfts(final int n) {
         final var candidateNum = updatedNumNfts() + n;
-        validateTrue(
+        validateResourceLimit(
                 candidateNum <= dynamicProperties.maxNftMints(),
                 MAX_NFTS_IN_PRICE_REGIME_HAVE_BEEN_MINTED);
     }
 
     public void assertUsableTotalSlots(final long n) {
-        validateTrue(
+        validateResourceLimit(
                 n <= dynamicProperties.maxAggregateContractKvPairs(),
                 MAX_STORAGE_IN_PRICE_REGIME_HAS_BEEN_USED);
     }
 
     public void assertUsableContractSlots(final long n) {
-        validateTrue(
+        validateResourceLimit(
                 n <= dynamicProperties.maxIndividualContractKvPairs(),
                 MAX_CONTRACT_STORAGE_EXCEEDED);
     }
@@ -279,6 +279,6 @@ public class UsageLimits implements ContractStorageLimits, AccountUsageTracking 
     }
 
     private void ensure(final boolean test) {
-        validateTrue(test, MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED);
+        validateResourceLimit(test, MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED);
     }
 }

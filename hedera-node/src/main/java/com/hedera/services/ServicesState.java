@@ -16,6 +16,7 @@
 package com.hedera.services;
 
 import static com.hedera.services.context.AppsManager.APPS;
+import static com.hedera.services.context.properties.PropertyNames.HEDERA_FIRST_USER_ENTITY;
 import static com.hedera.services.context.properties.SemanticVersions.SEMANTIC_VERSIONS;
 import static com.hedera.services.state.migration.StateChildIndices.NUM_025X_CHILDREN;
 import static com.hedera.services.state.migration.StateVersions.CURRENT_VERSION;
@@ -258,7 +259,7 @@ public class ServicesState extends PartialNaryMerkleInternal
 
         // Create the top-level children in the Merkle tree
         final var bootstrapProps = new BootstrapProperties();
-        final var seqStart = bootstrapProps.getLongProperty("hedera.firstUserEntity");
+        final var seqStart = bootstrapProps.getLongProperty(HEDERA_FIRST_USER_ENTITY);
         createGenesisChildren(addressBook, seqStart, bootstrapProps);
 
         internalInit(platform, bootstrapProps, dualState, GENESIS, null);

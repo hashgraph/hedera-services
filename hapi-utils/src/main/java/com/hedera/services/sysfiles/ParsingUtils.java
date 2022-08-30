@@ -32,8 +32,9 @@ public class ParsingUtils {
             throw new IllegalArgumentException(
                     "Missing '" + delimiter + "' in literal '" + literal + "'");
         }
+        final var delimLen = delimiter.length();
         final var a = aParser.apply(literal.substring(0, splitIndex));
-        final var b = bParser.apply(literal.substring(splitIndex + 1));
+        final var b = bParser.apply(literal.substring(splitIndex + delimLen));
         validator.accept(a, b);
         return finisher.apply(a, b);
     }

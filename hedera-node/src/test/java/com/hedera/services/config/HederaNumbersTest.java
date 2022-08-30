@@ -15,6 +15,8 @@
  */
 package com.hedera.services.config;
 
+import static com.hedera.services.context.properties.PropertyNames.HEDERA_REALM;
+import static com.hedera.services.context.properties.PropertyNames.HEDERA_SHARD;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
@@ -30,8 +32,8 @@ class HederaNumbersTest {
     @BeforeEach
     private void setup() {
         properties = mock(PropertySource.class);
-        given(properties.getLongProperty("hedera.shard")).willReturn(1L);
-        given(properties.getLongProperty("hedera.realm")).willReturn(2L);
+        given(properties.getLongProperty(HEDERA_SHARD)).willReturn(1L);
+        given(properties.getLongProperty(HEDERA_REALM)).willReturn(2L);
 
         subject = new HederaNumbers(properties);
     }
