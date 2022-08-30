@@ -142,7 +142,8 @@ public class RecordStreaming {
         var type = "UNRECOGNIZED";
 
         try {
-            final var txBody = extractTransactionBody(rso.getTransaction());
+            final var transaction = rso.getTransaction();
+            final var txBody = extractTransactionBody(transaction);
             type = txBody.getDataCase().toString();
         } catch (InvalidProtocolBufferException e) {
             log.error("Couldn't get transaction body", e);

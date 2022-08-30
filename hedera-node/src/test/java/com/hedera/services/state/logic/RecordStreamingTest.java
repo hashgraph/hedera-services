@@ -18,23 +18,27 @@ package com.hedera.services.state.logic;
 import static com.hedera.services.state.logic.RecordStreaming.PENDING_USER_TXN_BLOCK_NO;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.verify;
 import static org.mockito.internal.verification.VerificationModeFactory.times;
 
+import com.google.protobuf.InvalidProtocolBufferException;
+import com.hedera.services.legacy.proto.utils.CommonUtils;
 import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.stream.NonBlockingHandoff;
 import com.hedera.services.stream.RecordStreamObject;
-import com.hedera.services.stream.proto.TransactionSidecarRecord;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Timestamp;
-import com.hederahashgraph.api.proto.java.TokenBurnTransactionBody;
+import com.hederahashgraph.api.proto.java.Transaction;
+import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.swirlds.common.crypto.RunningHash;
 import java.time.Instant;
 import java.util.List;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -55,9 +59,15 @@ class RecordStreamingTest {
     @Mock private TransactionID transactionID;
     @Mock private AccountID accountID;
     @Mock private TransactionReceipt transactionReceipt;
-    @Mock private List<TransactionSidecarRecord.Builder> sidecars;
+    @Mock private Transaction transaction;
+    @Mock private TransactionBody transactionBody;
 
     private RecordStreaming subject;
+
+    @BeforeAll
+    static void staticMock() {
+        mockStatic(CommonUtils.class);
+    }
 
     @BeforeEach
     void setUp() {
@@ -140,10 +150,16 @@ class RecordStreamingTest {
 
     private void givenAlignable(final RecordStreamObject... mockRsos) {
         for (final var mockRso : mockRsos) {
+            given(blockManager.shouldLogEveryTransaction()).willReturn(true);
+            given(mockRso.getTransaction()).willReturn(transaction);
+            try {
+                given(CommonUtils.extractTransactionBody(transaction)).willReturn(transactionBody);
+            } catch (InvalidProtocolBufferException e) {
+                throw new RuntimeException(e);
+            }
+            given(transactionBody.getDataCase()).willReturn(TransactionBody.DataCase.CONTRACTCALL);
             given(mockRso.withBlockNumber(someBlockNo)).willReturn(mockRso);
             given(mockRso.getTimestamp()).willReturn(aTime);
-            given(mockRso.getSidecars()).willReturn(sidecars);
-//            given(sidecars.has)
             given(mockRso.getTransactionRecord()).willReturn(transactionRecord);
             given(transactionRecord.getReceipt()).willReturn(transactionReceipt);
             given(transactionReceipt.getStatus()).willReturn(ResponseCodeEnum.SUCCESS);

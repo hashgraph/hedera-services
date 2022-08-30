@@ -69,7 +69,8 @@ public class BlockManager {
         this.blockPeriodMs =
                 bootstrapProperties.getLongProperty(HEDERA_RECORD_STREAM_LOG_PERIOD)
                         * Units.SECONDS_TO_MILLISECONDS;
-        this.logEveryTransaction = bootstrapProperties.getBooleanProperty(HEDERA_RECORD_STREAM_LOG_EVERY_TRANSACTION);
+        this.logEveryTransaction =
+                bootstrapProperties.getBooleanProperty(HEDERA_RECORD_STREAM_LOG_EVERY_TRANSACTION);
     }
 
     /** Clears all provisional block metadata for the current transaction. */
