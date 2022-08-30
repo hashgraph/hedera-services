@@ -24,8 +24,10 @@ import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.state.virtual.UniqueTokenKey;
 import com.hedera.services.state.virtual.UniqueTokenValue;
+import com.hedera.services.state.virtual.VirtualMapFactory;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.utils.EntityNumPair;
+import com.swirlds.jasperdb.JasperDbBuilder;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
 import java.time.Instant;
@@ -110,5 +112,19 @@ class UniqueTokensMigratorTest {
                 .isEqualTo(RichInstant.fromJava(Instant.ofEpochSecond(4444L, 4L)));
         assertThat(token3.getCreationTime())
                 .isEqualTo(RichInstant.fromJava(Instant.ofEpochSecond(5555L, 5L)));
+    }
+
+    @Test
+    void givenDataAlreadyMigrated_noMigration() {
+        UniqueTokensMigrator.migrateFromUniqueTokenMerkleMap(state);
+        final var virtualMap = new VirtualMapFactory(JasperDbBuilder::new)
+                .newVirtualizedUniqueTokenStorage();
+        state.setChild(UNIQUE_TOKENS, virtualMap);
+
+        UniqueTokensMigrator.migrateFromUniqueTokenMerkleMap(state);
+        VirtualMap<UniqueTokenKey, UniqueTokenValue> result = state.getChild(UNIQUE_TOKENS);
+        assertThat(result.isEmpty()).isTrue();
+        assertThat(result).isSameInstanceAs(virtualMap);
+        virtualMap.release();
     }
 }
