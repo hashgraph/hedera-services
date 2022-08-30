@@ -97,9 +97,7 @@ public class NewTraceabilitySuite extends HapiApiSuite {
         try {
             initialize();
             return List.of(
-                    traceabilityE2EScenario1(),
-                    vanillaBytecodeSidecar(),
-                    vanillaBytecodeSidecar2(),
+                    traceabilityE2EScenario2(),
                     assertSidecars());
         } catch (IOException e) {
             log.warn("An exception occurred initializing watch service", e);
@@ -668,6 +666,191 @@ public class NewTraceabilitySuite extends HapiApiSuite {
                                                                                                         0)))
                                                                         .build())))));
     }
+
+    private HapiApiSpec traceabilityE2EScenario2() {
+        return defaultHapiSpec("traceabilityE2EScenario2")
+                .given(
+                        uploadInitCode(TRACEABILITY),
+                        contractCreate(TRACEABILITY, 0, 0, 0).via(FIRST_CREATE_TXN),
+                        expectContractStateChangesSidecarFor(
+                                FIRST_CREATE_TXN,
+                                List.of(
+                                        StateChange.stateChangeFor(TRACEABILITY)
+                                                .withStorageChanges(
+                                                        StorageChange.readAndWritten(
+                                                                formattedAssertionValue(0),
+                                                                formattedAssertionValue(0),
+                                                                formattedAssertionValue(0)),
+                                                        StorageChange.readAndWritten(
+                                                                formattedAssertionValue(1),
+                                                                formattedAssertionValue(0),
+                                                                formattedAssertionValue(0)),
+                                                        StorageChange.readAndWritten(
+                                                                formattedAssertionValue(2),
+                                                                formattedAssertionValue(0),
+                                                                formattedAssertionValue(0))))),
+                        withOpContext(
+                                (spec, opLog) ->
+                                        allRunFor(
+                                                spec,
+                                                expectContractActionSidecarFor(
+                                                        FIRST_CREATE_TXN,
+                                                        List.of(
+                                                                ContractAction.newBuilder()
+                                                                        .setCallType(CREATE)
+                                                                        .setCallOperationType(
+                                                                                CallOperationType
+                                                                                        .OP_CREATE)
+                                                                        .setCallingAccount(
+                                                                                TxnUtils.asId(
+                                                                                        GENESIS,
+                                                                                        spec))
+                                                                        .setGas(197000)
+                                                                        .setRecipientContract(
+                                                                                spec.registry()
+                                                                                        .getContractId(
+                                                                                                TRACEABILITY))
+                                                                        .setGasUsed(8792)
+                                                                        .setOutput(EMPTY)
+                                                                        .build())))),
+                        expectContractBytecodeSidecarFor(
+                                FIRST_CREATE_TXN, TRACEABILITY, TRACEABILITY, 0, 0, 0),
+                        contractCustomCreate(TRACEABILITY, SECOND, 0, 0, 99).via(SECOND_CREATE_TXN),
+                        expectContractStateChangesSidecarFor(
+                                SECOND_CREATE_TXN,
+                                List.of(
+                                        StateChange.stateChangeFor(TRACEABILITY + SECOND)
+                                                .withStorageChanges(
+                                                        StorageChange.readAndWritten(
+                                                                formattedAssertionValue(0),
+                                                                formattedAssertionValue(0),
+                                                                formattedAssertionValue(0)),
+                                                        StorageChange.readAndWritten(
+                                                                formattedAssertionValue(1),
+                                                                formattedAssertionValue(0),
+                                                                formattedAssertionValue(0)),
+                                                        StorageChange.readAndWritten(
+                                                                formattedAssertionValue(2),
+                                                                formattedAssertionValue(0),
+                                                                formattedAssertionValue(99))))),
+                        withOpContext(
+                                (spec, opLog) ->
+                                        allRunFor(
+                                                spec,
+                                                expectContractActionSidecarFor(
+                                                        SECOND_CREATE_TXN,
+                                                        List.of(
+                                                                ContractAction.newBuilder()
+                                                                        .setCallType(CREATE)
+                                                                        .setCallOperationType(
+                                                                                CallOperationType
+                                                                                        .OP_CREATE)
+                                                                        .setCallingAccount(
+                                                                                TxnUtils.asId(
+                                                                                        GENESIS,
+                                                                                        spec))
+                                                                        .setGas(197000)
+                                                                        .setRecipientContract(
+                                                                                spec.registry()
+                                                                                        .getContractId(
+                                                                                                TRACEABILITY
+                                                                                                        + SECOND))
+                                                                        .setGasUsed(28692)
+                                                                        .setOutput(EMPTY)
+                                                                        .build())))),
+                        expectContractBytecodeSidecarFor(
+                                SECOND_CREATE_TXN, TRACEABILITY + SECOND, TRACEABILITY, 0, 0, 99),
+                        contractCustomCreate(TRACEABILITY, THIRD, 0, 88, 0).via(THIRD_CREATE_TXN),
+                        expectContractStateChangesSidecarFor(
+                                THIRD_CREATE_TXN,
+                                List.of(
+                                        StateChange.stateChangeFor(TRACEABILITY + THIRD)
+                                                .withStorageChanges(
+                                                        StorageChange.readAndWritten(
+                                                                formattedAssertionValue(0),
+                                                                formattedAssertionValue(0),
+                                                                formattedAssertionValue(0)),
+                                                        StorageChange.readAndWritten(
+                                                                formattedAssertionValue(1),
+                                                                formattedAssertionValue(0),
+                                                                formattedAssertionValue(88)),
+                                                        StorageChange.readAndWritten(
+                                                                formattedAssertionValue(2),
+                                                                formattedAssertionValue(0),
+                                                                formattedAssertionValue(0))))),
+                        withOpContext(
+                                (spec, opLog) ->
+                                        allRunFor(
+                                                spec,
+                                                expectContractActionSidecarFor(
+                                                        THIRD_CREATE_TXN,
+                                                        List.of(
+                                                                ContractAction.newBuilder()
+                                                                        .setCallType(CREATE)
+                                                                        .setCallOperationType(
+                                                                                CallOperationType
+                                                                                        .OP_CREATE)
+                                                                        .setCallingAccount(
+                                                                                TxnUtils.asId(
+                                                                                        GENESIS,
+                                                                                        spec))
+                                                                        .setGas(197000)
+                                                                        .setRecipientContract(
+                                                                                spec.registry()
+                                                                                        .getContractId(
+                                                                                                TRACEABILITY
+                                                                                                        + THIRD))
+                                                                        .setGasUsed(28692)
+                                                                        .setOutput(EMPTY)
+                                                                        .build())))),
+                        expectContractBytecodeSidecarFor(
+                                THIRD_CREATE_TXN, TRACEABILITY + THIRD, TRACEABILITY, 0, 88, 0)
+                )
+                .when(
+                        withOpContext(
+                                (spec, opLog) ->
+                                        allRunFor(
+                                                spec,
+                                                contractCall(
+                                                        TRACEABILITY,
+                                                        "eetScenario2",
+                                                        getNestedContractAddress(
+                                                                TRACEABILITY + "B", spec),
+                                                        getNestedContractAddress(
+                                                                TRACEABILITY + "C", spec))
+                                                        .gas(1_000_000)
+                                                        .via(TRACEABILITY_TXN)))
+                )
+                .then(
+//                        expectContractStateChangesSidecarFor(
+//                                TRACEABILITY_TXN,
+//                                List.of(
+//                                        StateChange.stateChangeFor(TRACEABILITY)
+//                                                .withStorageChanges(
+//                                                        StorageChange.onlyRead(
+//                                                                formattedAssertionValue(0),
+//                                                                formattedAssertionValue(0)),
+//                                                        StorageChange.readAndWritten(
+//                                                                formattedAssertionValue(1),
+//                                                                formattedAssertionValue(0),
+//                                                                formattedAssertionValue(55))),
+//                                        StateChange.stateChangeFor(TRACEABILITY + SECOND)
+//                                                .withStorageChanges(
+//                                                        StorageChange.readAndWritten(
+//                                                                formattedAssertionValue(0),
+//                                                                formattedAssertionValue(0),
+//                                                                formattedAssertionValue(100)),
+//                                                        StorageChange.readAndWritten(
+//                                                                formattedAssertionValue(1),
+//                                                                formattedAssertionValue(0),
+//                                                                formattedAssertionValue(0)),
+//                                                        StorageChange.readAndWritten(
+//                                                                formattedAssertionValue(2),
+//                                                                formattedAssertionValue(99),
+//                                                                formattedAssertionValue(143)))))
+                );
+    }
+
 
     private HapiApiSpec vanillaBytecodeSidecar() {
         final var EMPTY_CONSTRUCTOR_CONTRACT = "EmptyConstructor";
