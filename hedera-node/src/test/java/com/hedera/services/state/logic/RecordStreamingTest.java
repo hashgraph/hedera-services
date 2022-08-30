@@ -38,11 +38,14 @@ import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.swirlds.common.crypto.RunningHash;
 import java.time.Instant;
 import java.util.List;
+
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
+import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
@@ -63,10 +66,16 @@ class RecordStreamingTest {
     @Mock private TransactionBody transactionBody;
 
     private RecordStreaming subject;
+    private static MockedStatic<CommonUtils> commonUtilsMockedStatic;
 
     @BeforeAll
-    static void staticMock() {
-        mockStatic(CommonUtils.class);
+    static void mockCommonUtils() {
+        commonUtilsMockedStatic = mockStatic(CommonUtils.class);
+    }
+
+    @AfterAll
+    static void closeStaticMock() {
+        commonUtilsMockedStatic.close();
     }
 
     @BeforeEach
