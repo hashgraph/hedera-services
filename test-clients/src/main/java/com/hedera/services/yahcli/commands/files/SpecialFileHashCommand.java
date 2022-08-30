@@ -31,9 +31,7 @@ import picocli.CommandLine.ParentCommand;
 public class SpecialFileHashCommand implements Callable<Integer> {
     @ParentCommand private SysFilesCommand sysFilesCommand;
 
-    @Parameters(
-            paramLabel = "<special-file>",
-            description = "{ software-zip, telemetry-zip }")
+    @Parameters(paramLabel = "<special-file>", description = "{ software-zip, telemetry-zip }")
     private String specialFile;
 
     @Override

@@ -15,21 +15,13 @@
  */
 package com.hedera.services.yahcli.suites;
 
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileContents;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileInfo;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
-import static com.hedera.services.bdd.suites.utils.sysfiles.serdes.StandardSerdes.SYS_FILE_SERDES;
 import static com.hedera.services.yahcli.output.CommonMessages.COMMON_MESSAGES;
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.spec.HapiSpecOperation;
-import com.hedera.services.bdd.spec.queries.file.HapiGetFileContents;
-import com.hedera.services.bdd.spec.utilops.CustomSpecAssert;
 import com.hedera.services.bdd.suites.HapiApiSuite;
-import com.hedera.services.bdd.suites.utils.sysfiles.serdes.SysFileSerde;
-import java.io.File;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import org.apache.logging.log4j.LogManager;
@@ -50,7 +42,7 @@ public class SpecialFileHashSuite extends HapiApiSuite {
     public List<HapiApiSpec> getSpecsInSuite() {
         return List.of(
                 new HapiApiSpec[] {
-                        getSpecialFileHash(),
+                    getSpecialFileHash(),
                 });
     }
 
@@ -62,13 +54,21 @@ public class SpecialFileHashSuite extends HapiApiSuite {
                 .given()
                 .when()
                 .then(
-                        withOpContext((spec, opLog) -> {
-                            final var lookup = getFileInfo("0.0." + target);
-                            allRunFor(spec, lookup);
-                            final var synthMemo = lookup.getResponse().getFileGetInfo().getFileInfo().getMemo();
-                            COMMON_MESSAGES.info("The SHA-384 hash of the " + specialFile + " is:\n" + synthMemo);
-                        })
-                );
+                        withOpContext(
+                                (spec, opLog) -> {
+                                    final var lookup = getFileInfo("0.0." + target);
+                                    allRunFor(spec, lookup);
+                                    final var synthMemo =
+                                            lookup.getResponse()
+                                                    .getFileGetInfo()
+                                                    .getFileInfo()
+                                                    .getMemo();
+                                    COMMON_MESSAGES.info(
+                                            "The SHA-384 hash of the "
+                                                    + specialFile
+                                                    + " is:\n"
+                                                    + synthMemo);
+                                }));
     }
 
     @Override
