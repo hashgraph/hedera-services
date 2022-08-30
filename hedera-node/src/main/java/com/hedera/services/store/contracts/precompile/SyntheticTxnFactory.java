@@ -222,13 +222,13 @@ public class SyntheticTxnFactory {
     }
 
     public TransactionBody.Builder synthContractAutoRenew(
-            final EntityNum contractNum, final long newExpiry, final AccountID payerForAutoRenew) {
+            final EntityNum contractNum, final long newExpiry, final AccountID payerForExpiry) {
         final var op =
                 ContractUpdateTransactionBody.newBuilder()
                         .setContractID(contractNum.toGrpcContractID())
                         .setExpirationTime(MiscUtils.asSecondsTimestamp(newExpiry));
         return TransactionBody.newBuilder()
-                .setTransactionID(TransactionID.newBuilder().setAccountID(payerForAutoRenew))
+                .setTransactionID(TransactionID.newBuilder().setAccountID(payerForExpiry))
                 .setContractUpdateInstance(op);
     }
 
