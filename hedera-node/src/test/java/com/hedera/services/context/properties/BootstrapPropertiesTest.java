@@ -268,7 +268,8 @@ class BootstrapPropertiesTest {
                     entry(UTIL_PRNG_IS_ENABLED, true),
                     entry(CONTRACTS_SIDECARS, EnumSet.noneOf(SidecarType.class)),
                     entry(HEDERA_RECORD_STREAM_SIDECAR_MAX_SIZE_MB, 256),
-                    entry(HEDERA_RECORD_STREAM_ENABLE_TRACEABILITY_MIGRATION, true));
+                    entry(HEDERA_RECORD_STREAM_ENABLE_TRACEABILITY_MIGRATION, true),
+                    entry(HEDERA_RECORD_STREAM_LOG_EVERY_TRANSACTION, false));
 
     @Test
     void containsProperty() {
