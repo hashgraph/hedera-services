@@ -62,14 +62,13 @@ class UniqueTokensLinkManagerTest {
 
     @BeforeEach
     void setUp() {
+        final BootstrapProperties bootstrapProperties = Mockito.mock(BootstrapProperties.class);
+        when(bootstrapProperties.getBooleanProperty(PropertyNames.TOKENS_NFTS_USE_VIRTUAL_MERKLE))
+                .thenReturn(false);
         subject =
                 new UniqueTokensLinkManager(
-                        () -> accounts,
-                        () -> tokens,
-                        () -> uniqueTokens,
-                        new BootstrapProperties());
+                        () -> accounts, () -> tokens, () -> uniqueTokens, bootstrapProperties);
 
-        final BootstrapProperties bootstrapProperties = Mockito.mock(BootstrapProperties.class);
         when(bootstrapProperties.getBooleanProperty(PropertyNames.TOKENS_NFTS_USE_VIRTUAL_MERKLE))
                 .thenReturn(true);
         subjectForVm =
@@ -194,6 +193,27 @@ class UniqueTokensLinkManagerTest {
         assertEquals(nftNumPair2, updatedNft1.getPrev());
         final var updatedNft2 = uniqueTokens.get(nftKey2);
         assertSame(updatedNft2.merkleUniqueToken(), mintedNft.merkleUniqueToken());
+        assertEquals(nftNumPair1, updatedNft2.getNext());
+        final var updatedOwner = accounts.get(newOwner);
+        assertEquals(tokenNum, updatedOwner.getHeadNftId());
+        assertEquals(serialNum2, updatedOwner.getHeadNftSerialNum());
+    }
+
+    @Test
+    void multiStageNonTreasuryMapMintAlsoCreatesLinksForVirtualMap() {
+        nftToken.setTreasury(treasury.toEntityId());
+        tokens.put(token, nftToken);
+        accounts.put(newOwner, newOwnerAccount);
+        newOwnerAccount.setHeadNftId(tokenNum);
+        newOwnerAccount.setHeadNftSerialNum(serialNum1);
+        virtualUniqueTokens.put(nftKey1, vNft1);
+
+        final var mintedNft = subjectForVm.updateLinks(null, newOwner, nftKey2);
+
+        final var updatedNft1 = virtualUniqueTokens.get(nftKey1);
+        assertEquals(nftNumPair2, updatedNft1.getPrev());
+        final var updatedNft2 = virtualUniqueTokens.get(nftKey2);
+        assertEquals(updatedNft2.uniqueTokenValue(), mintedNft.uniqueTokenValue());
         assertEquals(nftNumPair1, updatedNft2.getNext());
         final var updatedOwner = accounts.get(newOwner);
         assertEquals(tokenNum, updatedOwner.getHeadNftId());
