@@ -32,7 +32,9 @@ import com.hederahashgraph.api.proto.java.ScheduleGetInfoQuery;
 import com.hederahashgraph.api.proto.java.ScheduleGetInfoResponse;
 import com.hederahashgraph.api.proto.java.ScheduleInfo;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
+import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -59,7 +61,7 @@ public class GetScheduleInfoAnswer implements AnswerService {
 
     @Override
     public Response responseGiven(
-            Query query, StateView view, ResponseCodeEnum validity, long cost) {
+            Query query, @Nullable StateView view, ResponseCodeEnum validity, long cost) {
         return responseFor(query, view, validity, cost, NO_QUERY_CTX);
     }
 
@@ -112,7 +114,7 @@ public class GetScheduleInfoAnswer implements AnswerService {
             if (type == COST_ANSWER) {
                 response.setHeader(costAnswerHeader(OK, cost));
             } else {
-                setAnswerOnly(response, view, op, cost, queryCtx);
+                setAnswerOnly(response, Objects.requireNonNull(view), op, cost, queryCtx);
             }
         }
 

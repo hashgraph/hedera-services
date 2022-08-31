@@ -40,7 +40,9 @@ import com.hederahashgraph.api.proto.java.Response;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenBalance;
 import com.swirlds.merkle.map.MerkleMap;
+import java.util.Objects;
 import java.util.Optional;
+import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -79,8 +81,7 @@ public class GetAccountBalanceAnswer implements AnswerService {
 
     @Override
     public Response responseGiven(
-            Query query, StateView view, ResponseCodeEnum validity, long cost) {
-        MerkleMap<EntityNum, MerkleAccount> accounts = view.accounts();
+            Query query, @Nullable StateView view, ResponseCodeEnum validity, long cost) {
         CryptoGetAccountBalanceQuery op = query.getCryptogetAccountBalance();
 
         final var id = targetOf(op);
@@ -90,6 +91,7 @@ public class GetAccountBalanceAnswer implements AnswerService {
                         .setAccountID(id);
 
         if (validity == OK) {
+            final var accounts = Objects.requireNonNull(view).accounts();
             final var key = EntityNum.fromAccountId(id);
             final var account = accounts.get(key);
             opAnswer.setBalance(account.getBalance());

@@ -66,7 +66,6 @@ import com.hedera.services.store.contracts.precompile.AbiConstants;
 import com.hedera.services.store.contracts.precompile.utils.DescriptorUtils;
 import com.hedera.services.store.contracts.precompile.utils.PrecompileUtils;
 import com.hedera.services.store.models.TopicConversion;
-import com.hedera.services.sysfiles.domain.throttling.HapiThrottleUtils;
 import com.hedera.services.throttling.ThrottlingModule;
 import com.hedera.services.txns.consensus.ConsensusLogicModule;
 import com.hedera.services.txns.contract.ContractLogicModule;
@@ -96,7 +95,6 @@ class UtilsConstructorTest {
     private static final Set<Class<?>> toBeTested =
             new HashSet<>(
                     Arrays.asList(
-                            HapiThrottleUtils.class,
                             AbiConstants.class,
                             Units.class,
                             AbiConstants.class,
