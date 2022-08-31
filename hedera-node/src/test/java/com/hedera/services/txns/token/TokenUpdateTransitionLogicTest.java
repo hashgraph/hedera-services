@@ -238,7 +238,7 @@ class TokenUpdateTransitionLogicTest {
     void abortsOnDetachedNewTreasury() {
         givenValidTxnCtx(true);
         givenToken(true, true);
-        given(ledger.isDetached(newTreasury)).willReturn(true);
+        given(ledger.usabilityOf(newTreasury)).willReturn(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
 
         subject.doStateTransition();
 
@@ -264,6 +264,7 @@ class TokenUpdateTransitionLogicTest {
     void abortsOnDetachedOldAutoRenew() {
         givenValidTxnCtx(true);
         givenToken(true, true);
+        given(ledger.usabilityOf(newAutoRenew)).willReturn(OK);
         given(ledger.isDetached(oldAutoRenew)).willReturn(true);
 
         subject.doStateTransition();
@@ -277,7 +278,7 @@ class TokenUpdateTransitionLogicTest {
     void abortsOnDetachedNewAutoRenew() {
         givenValidTxnCtx(true);
         givenToken(true, true);
-        given(ledger.isDetached(newAutoRenew)).willReturn(true);
+        given(ledger.usabilityOf(newAutoRenew)).willReturn(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
 
         subject.doStateTransition();
 
@@ -601,12 +602,13 @@ class TokenUpdateTransitionLogicTest {
         given(accessor.getTxn()).willReturn(tokenUpdateTxn);
         given(txnCtx.accessor()).willReturn(accessor);
         given(txnCtx.consensusTime()).willReturn(now);
-        given(ledger.exists(newTreasury)).willReturn(true);
-        given(ledger.exists(newAutoRenew)).willReturn(true);
-        given(ledger.isDeleted(newTreasury)).willReturn(false);
-        given(ledger.exists(oldTreasury)).willReturn(true);
+        if (useDuplicateTreasury) {
+            given(ledger.usabilityOf(oldTreasury)).willReturn(OK);
+        } else {
+            given(ledger.usabilityOf(newTreasury)).willReturn(OK);
+        }
+        given(ledger.usabilityOf(newAutoRenew)).willReturn(OK);
         given(ledger.isDeleted(oldTreasury)).willReturn(false);
-        given(ledger.isDetached(newTreasury)).willReturn(false);
     }
 
     private void givenMissingToken() {
