@@ -74,16 +74,16 @@ class ContractGCTest {
         given(expiryThrottle.allow(NEXT_SLOT_REMOVAL_WORK)).willReturn(true);
         given(expiryThrottle.allow(ONLY_SLOT_REMOVAL_WORK)).willReturn(true);
         given(
-                removalFacilitation.removeNext(
-                        eq(rootKey), eq(rootKey), any(ContractStorageListMutation.class)))
+                        removalFacilitation.removeNext(
+                                eq(rootKey), eq(rootKey), any(ContractStorageListMutation.class)))
                 .willReturn(interKey);
         given(
-                removalFacilitation.removeNext(
-                        eq(interKey), eq(interKey), any(ContractStorageListMutation.class)))
+                        removalFacilitation.removeNext(
+                                eq(interKey), eq(interKey), any(ContractStorageListMutation.class)))
                 .willReturn(tailKey);
         given(
-                removalFacilitation.removeNext(
-                        eq(tailKey), eq(tailKey), any(ContractStorageListMutation.class)))
+                        removalFacilitation.removeNext(
+                                eq(tailKey), eq(tailKey), any(ContractStorageListMutation.class)))
                 .willReturn(null);
 
         final var done = subject.expireBestEffort(contractNum, contractSomeKvPairs);
@@ -125,12 +125,12 @@ class ContractGCTest {
         given(expiryThrottle.allow(NEXT_SLOT_REMOVAL_WORK)).willReturn(true);
         given(expiryThrottle.allow(ONLY_SLOT_REMOVAL_WORK)).willReturn(false);
         given(
-                removalFacilitation.removeNext(
-                        eq(rootKey), eq(rootKey), any(ContractStorageListMutation.class)))
+                        removalFacilitation.removeNext(
+                                eq(rootKey), eq(rootKey), any(ContractStorageListMutation.class)))
                 .willReturn(interKey);
         given(
-                removalFacilitation.removeNext(
-                        eq(interKey), eq(interKey), any(ContractStorageListMutation.class)))
+                        removalFacilitation.removeNext(
+                                eq(interKey), eq(interKey), any(ContractStorageListMutation.class)))
                 .willReturn(tailKey);
 
         final var done = subject.expireBestEffort(contractNum, contractSomeKvPairs);

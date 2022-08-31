@@ -31,7 +31,6 @@ import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.MapValueListUtils;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
-
 import java.util.List;
 import java.util.function.Supplier;
 import javax.inject.Inject;
@@ -83,8 +82,7 @@ public class ContractGC {
                 expiryThrottle.reclaimLastAllowedUse();
                 return false;
             } else {
-                final var mutableContract =
-                        contracts.get().getForModify(expiredContractNum);
+                final var mutableContract = contracts.get().getForModify(expiredContractNum);
                 mutableContract.setNumContractKvPairs(numKvPairs - numRemoved);
                 if (slotRemovals.newRoot() != null) {
                     mutableContract.setFirstUint256StorageKey(slotRemovals.newRoot().getKey());
