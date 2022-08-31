@@ -15,6 +15,13 @@
  */
 package com.hedera.services.contracts.execution.traceability;
 
+import static com.hedera.services.contracts.execution.traceability.CallOperationType.OP_CALL;
+import static com.hedera.services.contracts.execution.traceability.CallOperationType.OP_CALLCODE;
+import static com.hedera.services.contracts.execution.traceability.CallOperationType.OP_CREATE;
+import static com.hedera.services.contracts.execution.traceability.CallOperationType.OP_CREATE2;
+import static com.hedera.services.contracts.execution.traceability.CallOperationType.OP_DELEGATECALL;
+import static com.hedera.services.contracts.execution.traceability.CallOperationType.OP_STATICCALL;
+import static com.hedera.services.contracts.execution.traceability.CallOperationType.OP_UNKNOWN;
 import static com.hedera.services.contracts.execution.traceability.ContractActionType.CALL;
 import static com.hedera.services.contracts.execution.traceability.ContractActionType.CREATE;
 import static com.hedera.services.contracts.operation.HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS;
@@ -26,16 +33,25 @@ import java.util.ArrayList;
 import java.util.Deque;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Consumer;
 import org.hyperledger.besu.evm.Code;
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.frame.MessageFrame.State;
+import org.hyperledger.besu.evm.frame.MessageFrame.Type;
 
 public class HederaTracer implements HederaOperationTracer {
 
     private final List<SolidityAction> allActions;
     private final Deque<SolidityAction> currentActionsStack;
     private final boolean areActionSidecarsEnabled;
+
+    private static final int OP_CODE_CREATE = 0xF0;
+    private static final int OP_CODE_CALL = 0xF1;
+    private static final int OP_CODE_CALLCODE = 0xF2;
+    private static final int OP_CODE_DELEGATECALL = 0xF4;
+    private static final int OP_CODE_CREATE2 = 0xF5;
+    private static final int OP_CODE_STATICCALL = 0xFA;
 
     public HederaTracer(final boolean areActionSidecarsEnabled) {
         this.currentActionsStack = new ArrayDeque<>();
@@ -46,48 +62,65 @@ public class HederaTracer implements HederaOperationTracer {
     @Override
     public void init(final MessageFrame initialFrame) {
         if (areActionSidecarsEnabled) {
-            // since this is the initial frame, call depth is always 0
-            trackActionFor(initialFrame, 0);
+            trackTopLevelActionFor(initialFrame);
         }
     }
 
     @Override
-    public void traceExecution(MessageFrame frame, ExecuteOperation executeOperation) {
+    public void traceExecution(MessageFrame currentFrame, ExecuteOperation executeOperation) {
         executeOperation.execute();
 
         if (areActionSidecarsEnabled) {
-            final var frameState = frame.getState();
+            final var frameState = currentFrame.getState();
             if (frameState != State.CODE_EXECUTING) {
                 if (frameState == State.CODE_SUSPENDED) {
-                    final var nextFrame = frame.getMessageFrameStack().peek();
-                    trackActionFor(nextFrame, nextFrame.getMessageFrameStack().size() - 1);
+                    final var nextFrame = currentFrame.getMessageFrameStack().peek();
+                    trackInnerActionFor(nextFrame, currentFrame);
                 } else {
-                    finalizeActionFor(currentActionsStack.pop(), frame, frameState);
+                    finalizeActionFor(currentActionsStack.pop(), currentFrame, frameState);
                 }
             }
         }
     }
 
-    private void trackActionFor(final MessageFrame frame, final int callDepth) {
-        // code can be empty when calling precompiles too, but we handle
-        // that in tracePrecompileCall, after precompile execution is completed
-        final var isCallToAccount = Code.EMPTY.equals(frame.getCode());
-        final var isTopLevelEVMTransaction = callDepth == 0;
+    private void trackTopLevelActionFor(final MessageFrame initialFrame) {
+        trackNewAction(
+                initialFrame,
+                action -> {
+                    action.setCallOperationType(toCallOperationType(initialFrame.getType()));
+                    action.setCallingAccount(
+                            EntityId.fromAddress(initialFrame.getOriginatorAddress()));
+                });
+    }
+
+    private void trackInnerActionFor(final MessageFrame nextFrame, final MessageFrame parentFrame) {
+        trackNewAction(
+                nextFrame,
+                action -> {
+                    action.setCallOperationType(
+                            toCallOperationType(parentFrame.getCurrentOperation().getOpcode()));
+                    action.setCallingContract(EntityId.fromAddress(nextFrame.getSenderAddress()));
+                });
+    }
+
+    private void trackNewAction(
+            final MessageFrame messageFrame, final Consumer<SolidityAction> actionConfig) {
         final var action =
                 new SolidityAction(
-                        toContractActionType(frame.getType()),
-                        isTopLevelEVMTransaction
-                                ? EntityId.fromAddress(frame.getOriginatorAddress())
-                                : null,
-                        !isTopLevelEVMTransaction
-                                ? EntityId.fromAddress(frame.getSenderAddress())
-                                : null,
-                        frame.getRemainingGas(),
-                        frame.getInputData().toArray(),
-                        isCallToAccount ? EntityId.fromAddress(frame.getContractAddress()) : null,
-                        !isCallToAccount ? EntityId.fromAddress(frame.getContractAddress()) : null,
-                        frame.getValue().toLong(),
-                        callDepth);
+                        toContractActionType(messageFrame.getType()),
+                        messageFrame.getRemainingGas(),
+                        messageFrame.getInputData().toArray(),
+                        messageFrame.getValue().toLong(),
+                        messageFrame.getMessageStackDepth());
+        // code can be empty when calling precompiles too, but we handle
+        // that in tracePrecompileCall, after precompile execution is completed
+        if (Code.EMPTY.equals(messageFrame.getCode())) {
+            action.setRecipientAccount(EntityId.fromAddress(messageFrame.getContractAddress()));
+        } else {
+            action.setRecipientContract(EntityId.fromAddress(messageFrame.getContractAddress()));
+        }
+        actionConfig.accept(action);
+
         allActions.add(action);
         currentActionsStack.push(action);
     }
@@ -156,6 +189,22 @@ public class HederaTracer implements HederaOperationTracer {
             case CONTRACT_CREATION -> CREATE;
             case MESSAGE_CALL -> CALL;
         };
+    }
+
+    private CallOperationType toCallOperationType(final int opCode) {
+        return switch (opCode) {
+            case OP_CODE_CREATE -> OP_CREATE;
+            case OP_CODE_CALL -> OP_CALL;
+            case OP_CODE_CALLCODE -> OP_CALLCODE;
+            case OP_CODE_DELEGATECALL -> OP_DELEGATECALL;
+            case OP_CODE_CREATE2 -> OP_CREATE2;
+            case OP_CODE_STATICCALL -> OP_STATICCALL;
+            default -> OP_UNKNOWN;
+        };
+    }
+
+    private CallOperationType toCallOperationType(final Type type) {
+        return type == Type.CONTRACT_CREATION ? OP_CREATE : OP_CALL;
     }
 
     public List<SolidityAction> getActions() {

@@ -59,7 +59,10 @@ import com.hedera.services.bdd.suites.contract.precompile.GrantRevokeKycSuite;
 import com.hedera.services.bdd.suites.contract.precompile.MixedHTSPrecompileTestsSuite;
 import com.hedera.services.bdd.suites.contract.precompile.PauseUnpauseTokenAccountPrecompileSuite;
 import com.hedera.services.bdd.suites.contract.precompile.PrngPrecompileSuite;
+import com.hedera.services.bdd.suites.contract.precompile.TokenAndTypeCheckSuite;
+import com.hedera.services.bdd.suites.contract.precompile.TokenExpiryInfoSuite;
 import com.hedera.services.bdd.suites.contract.precompile.TokenInfoHTSSuite;
+import com.hedera.services.bdd.suites.contract.precompile.TokenUpdatePrecompileSuite;
 import com.hedera.services.bdd.suites.contract.precompile.WipeTokenAccountPrecompileSuite;
 import com.hedera.services.bdd.suites.contract.records.LogsSuite;
 import com.hedera.services.bdd.suites.contract.records.RecordsSuite;
@@ -165,7 +168,10 @@ public class ParallelIntegrationTests extends IntegrationTestBase {
                 extractSpecsFromSuite(MixedHTSPrecompileTestsSuite::new),
                 extractSpecsFromSuite(PauseUnpauseTokenAccountPrecompileSuite::new),
                 extractSpecsFromSuite(PrngPrecompileSuite::new),
+                extractSpecsFromSuite(TokenAndTypeCheckSuite::new),
+                extractSpecsFromSuite(TokenExpiryInfoSuite::new),
                 extractSpecsFromSuite(TokenInfoHTSSuite::new),
+                extractSpecsFromSuite(TokenUpdatePrecompileSuite::new),
                 extractSpecsFromSuite(WipeTokenAccountPrecompileSuite::new),
                 // contract.records
                 extractSpecsFromSuite(LogsSuite::new),

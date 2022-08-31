@@ -364,4 +364,16 @@ class InfrastructureFactoryTest {
                         accountStore, subject.newSideEffects(), tokens, uniqueTokens, tokenRels);
         assertInstanceOf(UnfreezeLogic.class, subject.newUnfreezeLogic(accountStore, tokenStore));
     }
+
+    @Test
+    void canCreateNewUpdateLogic() {
+        final var sideEffects = subject.newSideEffects();
+        assertInstanceOf(
+                TokenUpdateLogic.class,
+                subject.newTokenUpdateLogic(
+                        subject.newHederaTokenStore(
+                                sideEffects, tokens, nftsLedger, tokenRelsLedger),
+                        ledgers,
+                        sideEffects));
+    }
 }

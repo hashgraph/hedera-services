@@ -18,6 +18,7 @@ package com.hedera.services.bdd.junit;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 import java.io.File;
+import java.nio.file.Path;
 import java.time.Duration;
 import java.util.concurrent.TimeoutException;
 import org.testcontainers.containers.BindMode;
@@ -34,6 +35,7 @@ public class HederaContainer extends GenericContainer<HederaContainer> {
     public static final int GRPC_PORT = 50211;
 
     private final int id;
+    private Path recordPath;
 
     public HederaContainer(DockerImageName dockerImageName, int id) {
         super(dockerImageName);
@@ -111,6 +113,28 @@ public class HederaContainer extends GenericContainer<HederaContainer> {
                         savedPath.getAbsolutePath(),
                         "/opt/hedera/services/data/saved",
                         BindMode.READ_WRITE);
+    }
+
+    public HederaContainer withRecordStreamFolderBinding(
+            final File workspace, final String recordStreamFolderName) {
+        recordPath = Path.of(workspace.getAbsolutePath(), "records", "node_" + id).toAbsolutePath();
+        final var recordStreamFolder = new File(recordPath.toString());
+        recordStreamFolder.mkdirs();
+        return this.withFileSystemBind(
+                recordPath.toString(),
+                Path.of(
+                                File.separator,
+                                "opt",
+                                "hedera",
+                                "services",
+                                recordStreamFolderName,
+                                "record0.0.3")
+                        .toString(),
+                BindMode.READ_WRITE);
+    }
+
+    public String getRecordPath() {
+        return recordPath.toString();
     }
 
     public boolean isActive() {

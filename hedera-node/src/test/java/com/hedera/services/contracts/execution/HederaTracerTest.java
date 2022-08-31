@@ -15,6 +15,13 @@
  */
 package com.hedera.services.contracts.execution;
 
+import static com.hedera.services.contracts.execution.traceability.CallOperationType.OP_CALL;
+import static com.hedera.services.contracts.execution.traceability.CallOperationType.OP_CALLCODE;
+import static com.hedera.services.contracts.execution.traceability.CallOperationType.OP_CREATE;
+import static com.hedera.services.contracts.execution.traceability.CallOperationType.OP_CREATE2;
+import static com.hedera.services.contracts.execution.traceability.CallOperationType.OP_DELEGATECALL;
+import static com.hedera.services.contracts.execution.traceability.CallOperationType.OP_STATICCALL;
+import static com.hedera.services.contracts.execution.traceability.CallOperationType.OP_UNKNOWN;
 import static com.hedera.services.contracts.execution.traceability.ContractActionType.CALL;
 import static com.hedera.services.contracts.execution.traceability.ContractActionType.CREATE;
 import static com.hedera.services.contracts.operation.HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS;
@@ -23,9 +30,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.*;
 
 import com.hedera.services.contracts.execution.traceability.ContractActionType;
 import com.hedera.services.contracts.execution.traceability.HederaTracer;
@@ -43,6 +48,7 @@ import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.frame.MessageFrame.State;
 import org.hyperledger.besu.evm.frame.MessageFrame.Type;
+import org.hyperledger.besu.evm.operation.Operation;
 import org.hyperledger.besu.evm.tracing.OperationTracer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -75,6 +81,8 @@ class HederaTracerTest {
 
     @Test
     void initializesActionsAsExpectedOnNewFrames() {
+        Operation mockOperation = mock(Operation.class);
+
         // mock out top level frame
         final var topLevelMessageFrame = mock(MessageFrame.class);
         given(topLevelMessageFrame.getState()).willReturn(State.CODE_EXECUTING);
@@ -100,6 +108,7 @@ class HederaTracerTest {
         assertNull(topLevelAction.getRecipientAccount());
         assertEquals(value.toLong(), topLevelAction.getValue());
         assertEquals(0, topLevelAction.getCallDepth());
+        assertEquals(OP_CALL, topLevelAction.getCallOperationType());
 
         // we execute some operations
         subject.traceExecution(topLevelMessageFrame, eo);
@@ -116,10 +125,12 @@ class HederaTracerTest {
         given(firstChildFrame.getRemainingGas()).willReturn(initialGasChild);
         given(firstChildFrame.getInputData()).willReturn(Bytes.EMPTY);
         given(firstChildFrame.getValue()).willReturn(Wei.ZERO);
+        given(firstChildFrame.getMessageStackDepth()).willReturn(1);
         dequeMock.addFirst(firstChildFrame);
         given(topLevelMessageFrame.getMessageFrameStack()).willReturn(dequeMock);
-        given(firstChildFrame.getMessageFrameStack()).willReturn(dequeMock);
         given(topLevelMessageFrame.getState()).willReturn(State.CODE_SUSPENDED);
+        given(topLevelMessageFrame.getCurrentOperation()).willReturn(mockOperation);
+        given(topLevelMessageFrame.getCurrentOperation().getOpcode()).willReturn(0xF0);
         // trace child frame
         subject.traceExecution(topLevelMessageFrame, eo);
         // assert child frame action is initialized as expected
@@ -133,6 +144,7 @@ class HederaTracerTest {
         assertEquals(EntityId.fromAddress(accountReceiver), childFrame1.getRecipientAccount());
         assertEquals(Wei.ZERO.toLong(), childFrame1.getValue());
         assertEquals(1, childFrame1.getCallDepth());
+        assertEquals(OP_CREATE, childFrame1.getCallOperationType());
         // child frame executes operations
         given(firstChildFrame.getState()).willReturn(State.CODE_EXECUTING);
         subject.traceExecution(firstChildFrame, eo);
@@ -143,8 +155,9 @@ class HederaTracerTest {
         // parent frame continues executing
         given(topLevelMessageFrame.getState()).willReturn(State.CODE_EXECUTING);
         subject.traceExecution(topLevelMessageFrame, eo);
-        // parent frame spawns another child
         given(topLevelMessageFrame.getState()).willReturn(State.CODE_SUSPENDED);
+        given(topLevelMessageFrame.getCurrentOperation()).willReturn(mockOperation);
+        given(topLevelMessageFrame.getCurrentOperation().getOpcode()).willReturn(0xF2);
         final var childFrame2 = mock(MessageFrame.class);
         given(childFrame2.getCode()).willReturn(Code.EMPTY);
         given(childFrame2.getType()).willReturn(Type.MESSAGE_CALL);
@@ -153,8 +166,8 @@ class HederaTracerTest {
         given(childFrame2.getRemainingGas()).willReturn(500L);
         given(childFrame2.getInputData()).willReturn(Bytes.EMPTY);
         given(childFrame2.getValue()).willReturn(Wei.of(543L));
+        given(childFrame2.getMessageStackDepth()).willReturn(1);
         dequeMock.addFirst(childFrame2);
-        given(childFrame2.getMessageFrameStack()).willReturn(dequeMock);
         // trace second child
         subject.traceExecution(topLevelMessageFrame, eo);
         verify(eo, times(6)).execute();
@@ -179,12 +192,14 @@ class HederaTracerTest {
         final var solidityAction = actions.get(0);
         assertEquals(initialGas - remainingGasAfterExecution, solidityAction.getGasUsed());
         assertEquals(output.toArrayUnsafe(), solidityAction.getOutput());
+        assertEquals(OP_CALL, solidityAction.getCallOperationType());
     }
 
     @Test
     void finalizesCodeSuccessfulCreateMessageFrameAsExpected() {
         // given
         givenTracedExecutingFrame(Type.CONTRACT_CREATION);
+
         subject.init(messageFrame);
         // when
         given(messageFrame.getState()).willReturn(State.CODE_SUCCESS);
@@ -196,6 +211,7 @@ class HederaTracerTest {
         final var solidityAction = actions.get(0);
         assertEquals(initialGas - remainingGasAfterExecution, solidityAction.getGasUsed());
         assertArrayEquals(new byte[0], solidityAction.getOutput());
+        assertEquals(OP_CREATE, solidityAction.getCallOperationType());
     }
 
     @Test
@@ -395,9 +411,167 @@ class HederaTracerTest {
     void actionsAreNotTrackedWhenNotEnabled() {
         subject = new HederaTracer(false);
 
+        subject.init(messageFrame);
         subject.traceExecution(messageFrame, eo);
 
         assertTrue(subject.getActions().isEmpty());
+    }
+
+    @Test
+    void topLevelCreationFrameHasCreateOperationType() {
+        given(messageFrame.getType()).willReturn(Type.CONTRACT_CREATION);
+        given(messageFrame.getCode()).willReturn(code);
+        given(messageFrame.getOriginatorAddress()).willReturn(originator);
+        given(messageFrame.getContractAddress()).willReturn(contract);
+        given(messageFrame.getRemainingGas()).willReturn(initialGas);
+        given(messageFrame.getInputData()).willReturn(input);
+        given(messageFrame.getValue()).willReturn(value);
+
+        subject.init(messageFrame);
+
+        assertEquals(1, subject.getActions().size());
+        var action = subject.getActions().get(0);
+        assertEquals(OP_CREATE, action.getCallOperationType());
+    }
+
+    @Test
+    void topLevelCallFrameHasCallOperationType() {
+        given(messageFrame.getType()).willReturn(Type.MESSAGE_CALL);
+        given(messageFrame.getCode()).willReturn(code);
+        given(messageFrame.getOriginatorAddress()).willReturn(originator);
+        given(messageFrame.getContractAddress()).willReturn(contract);
+        given(messageFrame.getRemainingGas()).willReturn(initialGas);
+        given(messageFrame.getInputData()).willReturn(input);
+        given(messageFrame.getValue()).willReturn(value);
+
+        subject.init(messageFrame);
+
+        assertEquals(1, subject.getActions().size());
+        var action = subject.getActions().get(0);
+        assertEquals(OP_CALL, action.getCallOperationType());
+    }
+
+    @Test
+    void callChildFrameHasCorrectOperationType() {
+        prepareSpawnOfChildFrame();
+        final var mockOperation = mock(Operation.class);
+        given(messageFrame.getCurrentOperation()).willReturn(mockOperation);
+        given(mockOperation.getOpcode()).willReturn(0xF1);
+        // trace child frame
+        subject.traceExecution(messageFrame, eo);
+        // assert child frame action is initialized as expected
+        assertEquals(2, subject.getActions().size());
+        final var childFrame1 = subject.getActions().get(1);
+        assertEquals(OP_CALL, childFrame1.getCallOperationType());
+    }
+
+    @Test
+    void createChildFrameHasCorrectOperationType() {
+        prepareSpawnOfChildFrame();
+        final var mockOperation = mock(Operation.class);
+        given(messageFrame.getCurrentOperation()).willReturn(mockOperation);
+        given(mockOperation.getOpcode()).willReturn(0xF0);
+        // trace child frame
+        subject.traceExecution(messageFrame, eo);
+        // assert child frame action is initialized as expected
+        assertEquals(2, subject.getActions().size());
+        final var childFrame1 = subject.getActions().get(1);
+        assertEquals(OP_CREATE, childFrame1.getCallOperationType());
+    }
+
+    @Test
+    void callCodeChildFrameHasCorrectOperationType() {
+        prepareSpawnOfChildFrame();
+        final var mockOperation = mock(Operation.class);
+        given(messageFrame.getCurrentOperation()).willReturn(mockOperation);
+        given(mockOperation.getOpcode()).willReturn(0xF2);
+        // trace child frame
+        subject.traceExecution(messageFrame, eo);
+        // assert child frame action is initialized as expected
+        assertEquals(2, subject.getActions().size());
+        final var childFrame1 = subject.getActions().get(1);
+        assertEquals(OP_CALLCODE, childFrame1.getCallOperationType());
+    }
+
+    @Test
+    void delegateCallChildFrameHasCorrectOperationType() {
+        prepareSpawnOfChildFrame();
+        final var mockOperation = mock(Operation.class);
+        given(messageFrame.getCurrentOperation()).willReturn(mockOperation);
+        given(mockOperation.getOpcode()).willReturn(0xF4);
+        // trace child frame
+        subject.traceExecution(messageFrame, eo);
+        // assert child frame action is initialized as expected
+        assertEquals(2, subject.getActions().size());
+        final var childFrame1 = subject.getActions().get(1);
+        assertEquals(OP_DELEGATECALL, childFrame1.getCallOperationType());
+    }
+
+    @Test
+    void create2ChildFrameHasCorrectOperationType() {
+        prepareSpawnOfChildFrame();
+        final var mockOperation = mock(Operation.class);
+        given(messageFrame.getCurrentOperation()).willReturn(mockOperation);
+        given(mockOperation.getOpcode()).willReturn(0xF5);
+        // trace child frame
+        subject.traceExecution(messageFrame, eo);
+        // assert child frame action is initialized as expected
+        assertEquals(2, subject.getActions().size());
+        final var childFrame1 = subject.getActions().get(1);
+        assertEquals(OP_CREATE2, childFrame1.getCallOperationType());
+    }
+
+    @Test
+    void staticCallChildFrameHasCorrectOperationType() {
+        prepareSpawnOfChildFrame();
+        final var mockOperation = mock(Operation.class);
+        given(messageFrame.getCurrentOperation()).willReturn(mockOperation);
+        given(mockOperation.getOpcode()).willReturn(0xFA);
+        // trace child frame
+        subject.traceExecution(messageFrame, eo);
+        // assert child frame action is initialized as expected
+        assertEquals(2, subject.getActions().size());
+        final var childFrame1 = subject.getActions().get(1);
+        assertEquals(OP_STATICCALL, childFrame1.getCallOperationType());
+    }
+
+    @Test
+    void unknownCallChildFrameHasCorrectOperationType() {
+        prepareSpawnOfChildFrame();
+        final var mockOperation = mock(Operation.class);
+        given(messageFrame.getCurrentOperation()).willReturn(mockOperation);
+        given(mockOperation.getOpcode()).willReturn(0xAA);
+        // trace child frame
+        subject.traceExecution(messageFrame, eo);
+        // assert child frame action is initialized as expected
+        assertEquals(2, subject.getActions().size());
+        final var childFrame1 = subject.getActions().get(1);
+        assertEquals(OP_UNKNOWN, childFrame1.getCallOperationType());
+    }
+
+    private void prepareSpawnOfChildFrame() {
+        given(messageFrame.getType()).willReturn(Type.CONTRACT_CREATION);
+        given(messageFrame.getCode()).willReturn(code);
+        given(messageFrame.getOriginatorAddress()).willReturn(originator);
+        given(messageFrame.getContractAddress()).willReturn(contract);
+        given(messageFrame.getRemainingGas()).willReturn(initialGas);
+        given(messageFrame.getInputData()).willReturn(input);
+        given(messageFrame.getValue()).willReturn(value);
+        subject.init(messageFrame);
+        // after some operations, the top level message frame spawns a child
+        final Deque<MessageFrame> dequeMock = new ArrayDeque<>();
+        dequeMock.addFirst(messageFrame);
+        final var firstChildFrame = mock(MessageFrame.class);
+        given(firstChildFrame.getType()).willReturn(Type.CONTRACT_CREATION);
+        given(firstChildFrame.getCode()).willReturn(Code.EMPTY);
+        given(firstChildFrame.getSenderAddress()).willReturn(contract);
+        given(firstChildFrame.getContractAddress()).willReturn(accountReceiver);
+        given(firstChildFrame.getRemainingGas()).willReturn(initialGas);
+        given(firstChildFrame.getInputData()).willReturn(Bytes.EMPTY);
+        given(firstChildFrame.getValue()).willReturn(Wei.ZERO);
+        dequeMock.addFirst(firstChildFrame);
+        given(messageFrame.getMessageFrameStack()).willReturn(dequeMock);
+        given(messageFrame.getState()).willReturn(State.CODE_SUSPENDED);
     }
 
     private void givenTracedExecutingFrame(final Type frameType) {
@@ -409,6 +583,7 @@ class HederaTracerTest {
         given(messageFrame.getInputData()).willReturn(input);
         given(messageFrame.getValue()).willReturn(value);
         given(messageFrame.getState()).willReturn(State.CODE_EXECUTING);
+
         subject.traceExecution(messageFrame, eo);
     }
 }

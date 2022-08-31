@@ -17,6 +17,7 @@ package com.hedera.services.contracts.execution;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import com.hedera.services.contracts.execution.traceability.CallOperationType;
 import com.hedera.services.contracts.execution.traceability.ContractActionType;
 import com.hedera.services.contracts.execution.traceability.SolidityAction;
 import com.hedera.services.legacy.proto.utils.ByteStringUtils;
@@ -40,19 +41,12 @@ class SolidityActionTest {
 
     @Test
     void toGrpcWhenCallingAccountAndRecipientAccountAndOutputAreSet() {
-        final var actual =
-                new SolidityAction(
-                        ContractActionType.CALL,
-                        sender,
-                        null,
-                        gas,
-                        input,
-                        recipient,
-                        null,
-                        value,
-                        0);
+        final var actual = new SolidityAction(ContractActionType.CALL, gas, input, value, 0);
+        actual.setCallingAccount(sender);
+        actual.setRecipientAccount(recipient);
         actual.setGasUsed(gasUsed);
         actual.setOutput(output);
+        actual.setCallOperationType(CallOperationType.OP_CALL);
 
         final var expected =
                 ContractAction.newBuilder()
@@ -65,6 +59,8 @@ class SolidityActionTest {
                         .setGasUsed(gasUsed)
                         .setOutput(ByteStringUtils.wrapUnsafely(output))
                         .setCallDepth(0)
+                        .setCallOperationType(
+                                com.hedera.services.stream.proto.CallOperationType.OP_CALL)
                         .build();
 
         assertEquals(expected, actual.toGrpc());
@@ -72,19 +68,12 @@ class SolidityActionTest {
 
     @Test
     void toGrpcWhenCallingContractAndRecipientContractAndRevertReasonAreSet() {
-        final var actual =
-                new SolidityAction(
-                        ContractActionType.CALL,
-                        null,
-                        sender,
-                        gas,
-                        input,
-                        null,
-                        recipient,
-                        value,
-                        0);
+        final var actual = new SolidityAction(ContractActionType.CALL, gas, input, value, 0);
+        actual.setCallingContract(sender);
+        actual.setRecipientContract(recipient);
         actual.setGasUsed(gasUsed);
         actual.setRevertReason(output);
+        actual.setCallOperationType(CallOperationType.OP_CALL);
 
         final var expected =
                 ContractAction.newBuilder()
@@ -99,6 +88,8 @@ class SolidityActionTest {
                         .setGasUsed(gasUsed)
                         .setRevertReason(ByteStringUtils.wrapUnsafely(output))
                         .setCallDepth(0)
+                        .setCallOperationType(
+                                com.hedera.services.stream.proto.CallOperationType.OP_CALL)
                         .build();
 
         assertEquals(expected, actual.toGrpc());
@@ -106,12 +97,12 @@ class SolidityActionTest {
 
     @Test
     void toGrpcWhenInvalidRecipientAndErrorAreSet() {
-        final var actual =
-                new SolidityAction(
-                        ContractActionType.CALL, null, sender, gas, input, null, null, value, 0);
+        final var actual = new SolidityAction(ContractActionType.CALL, gas, input, value, 0);
         actual.setGasUsed(gasUsed);
         actual.setError(output);
         actual.setInvalidSolidityAddress(recipient.toEvmAddress().toArrayUnsafe());
+        actual.setCallingContract(sender);
+        actual.setCallOperationType(CallOperationType.OP_CALL);
 
         final var expected =
                 ContractAction.newBuilder()
@@ -127,6 +118,8 @@ class SolidityActionTest {
                         .setGasUsed(gasUsed)
                         .setError(ByteStringUtils.wrapUnsafely(output))
                         .setCallDepth(0)
+                        .setCallOperationType(
+                                com.hedera.services.stream.proto.CallOperationType.OP_CALL)
                         .build();
 
         assertEquals(expected, actual.toGrpc());

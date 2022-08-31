@@ -15,11 +15,15 @@
  */
 package com.hedera.services.store.contracts.precompile.utils;
 
+import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.HTS_PRECOMPILE_MIRROR_ENTITY_ID;
 
+import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.EvmFnResult;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
+import com.hedera.services.store.contracts.precompile.codec.KeyValueWrapper;
+import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.util.Collections;
 import java.util.Optional;
@@ -57,6 +61,25 @@ public class PrecompileUtils {
                             EntityId.fromAddress(senderAddress));
             childRecord.setContractCallResult(evmFnResult);
         }
+    }
+
+    public static KeyValueWrapper buildKeyValueWrapper(JKey key) {
+        validateTrue(key != null, ResponseCodeEnum.KEY_NOT_PROVIDED);
+        ContractID contractID =
+                key.hasContractID()
+                        ? key.getContractIDKey().getContractID()
+                        : ContractID.getDefaultInstance();
+        ContractID delegatableContractID =
+                key.hasDelegatableContractId()
+                        ? key.getDelegatableContractIdKey().getContractID()
+                        : ContractID.getDefaultInstance();
+
+        return new KeyValueWrapper(
+                false,
+                contractID,
+                key.getEd25519(),
+                key.getECDSASecp256k1Key(),
+                delegatableContractID);
     }
 
     private PrecompileUtils() {
