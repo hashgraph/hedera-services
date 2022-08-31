@@ -86,16 +86,14 @@ public class SysFileUploadSuite extends HapiApiSuite {
     @Override
     public List<HapiApiSpec> getSpecsInSuite() {
         uploadData = appropriateContents(sysFileId);
-        return isDryRun
-                ? Collections.emptyList()
-                : List.of(uploadSysFiles());
+        return isDryRun ? Collections.emptyList() : List.of(uploadSysFiles());
     }
 
     private HapiApiSpec uploadSysFiles() {
         final var name = String.format("UploadSystemFile-%s", sysFileId);
         final var fileId = String.format("0.0.%d", sysFileId);
         final var uploadProgress = new UploadProgress();
-        final var isSpecial =  isSpecialFile(sysFileId);
+        final var isSpecial = isSpecialFile(sysFileId);
 
         if (isSpecial) {
             final var bytesToAppend = uploadData.size();

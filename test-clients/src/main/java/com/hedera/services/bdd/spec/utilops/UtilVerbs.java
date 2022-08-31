@@ -74,10 +74,10 @@ import com.hedera.services.bdd.spec.transactions.consensus.HapiMessageSubmit;
 import com.hedera.services.bdd.spec.transactions.contract.HapiContractCall;
 import com.hedera.services.bdd.spec.transactions.contract.HapiEthereumCall;
 import com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer;
-import com.hedera.services.bdd.spec.transactions.file.UploadProgress;
 import com.hedera.services.bdd.spec.transactions.file.HapiFileAppend;
 import com.hedera.services.bdd.spec.transactions.file.HapiFileCreate;
 import com.hedera.services.bdd.spec.transactions.file.HapiFileUpdate;
+import com.hedera.services.bdd.spec.transactions.file.UploadProgress;
 import com.hedera.services.bdd.spec.transactions.system.HapiFreeze;
 import com.hedera.services.bdd.spec.utilops.checks.VerifyGetAccountNftInfosNotSupported;
 import com.hedera.services.bdd.spec.utilops.checks.VerifyGetBySolidityIdNotSupported;
@@ -142,7 +142,6 @@ import java.util.function.ObjIntConsumer;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
 import org.apache.logging.log4j.Logger;
 import org.bouncycastle.jcajce.provider.asymmetric.ec.BCECPrivateKey;
 import org.junit.jupiter.api.Assertions;
@@ -731,7 +730,8 @@ public class UtilVerbs {
             final ByteString contents,
             final int bytesPerOp,
             final int appendsPerBurst) {
-        return updateSpecialFile(payer, fileName, contents, bytesPerOp, appendsPerBurst, new UploadProgress());
+        return updateSpecialFile(
+                payer, fileName, contents, bytesPerOp, appendsPerBurst, new UploadProgress());
     }
 
     public static HapiSpecOperation updateSpecialFile(
@@ -740,8 +740,7 @@ public class UtilVerbs {
             final ByteString contents,
             final int bytesPerOp,
             final int appendsPerBurst,
-            final UploadProgress uploadProgressIn
-    ) {
+            final UploadProgress uploadProgressIn) {
         return withOpContext(
                 (spec, opLog) -> {
                     var uploadProgress = uploadProgressIn;
@@ -774,7 +773,9 @@ public class UtilVerbs {
                         COMMON_MESSAGES.info(
                                 "Continuing upload for "
                                         + fileName
-                                        + " with " + appendsToSkip + " appends already finished (out of "
+                                        + " with "
+                                        + appendsToSkip
+                                        + " appends already finished (out of "
                                         + (appendsRequired + appendsToSkip)
                                         + " appends required)");
                     }
@@ -782,9 +783,10 @@ public class UtilVerbs {
                             appendsRequired / appendsPerBurst
                                     + Math.min(1, appendsRequired % appendsPerBurst);
 
-                    int position = (appendsToSkip == 0)
-                            ? Math.min(bytesPerOp, bytesToUpload)
-                            : bytesPerOp * (1 + appendsToSkip);
+                    int position =
+                            (appendsToSkip == 0)
+                                    ? Math.min(bytesPerOp, bytesToUpload)
+                                    : bytesPerOp * (1 + appendsToSkip);
                     if (appendsToSkip == 0) {
                         final var updateSubOp =
                                 fileUpdate(fileName)
@@ -799,7 +801,8 @@ public class UtilVerbs {
                                         .alertingPost(
                                                 code ->
                                                         COMMON_MESSAGES.info(
-                                                                "Finished initial update with " + code))
+                                                                "Finished initial update with "
+                                                                        + code))
                                         .noLogging()
                                         .payingWith(payer)
                                         .signedBy(payer);
@@ -807,20 +810,32 @@ public class UtilVerbs {
                     }
 
                     try {
-                       finishAppendsFor(
-                               contents, position, bytesPerOp, appendsPerBurst,
-                               numBursts, fileName, payer, spec, uploadProgress, appendsToSkip, opLog);
+                        finishAppendsFor(
+                                contents,
+                                position,
+                                bytesPerOp,
+                                appendsPerBurst,
+                                numBursts,
+                                fileName,
+                                payer,
+                                spec,
+                                uploadProgress,
+                                appendsToSkip,
+                                opLog);
                     } catch (Exception e) {
                         if (e instanceof InterruptedException) {
                             Thread.currentThread().interrupt();
                         }
                         final var finished = uploadProgress.finishedAppendPrefixLength();
                         if (finished != -1) {
-                            log.error("Upload failed, but some appends finished; " +
-                                            "please re-run with --skip-appends {}",
-                                    finished, e);
+                            log.error(
+                                    "Upload failed, but some appends finished; "
+                                            + "please re-run with --skip-appends {}",
+                                    finished,
+                                    e);
                         } else {
-                            log.error("Upload failed without any reusable work; please try again", e);
+                            log.error(
+                                    "Upload failed without any reusable work; please try again", e);
                         }
                         throw new IllegalStateException(e);
                     }
@@ -838,17 +853,16 @@ public class UtilVerbs {
             final HapiApiSpec spec,
             final UploadProgress uploadProgress,
             final int appendsSkipped,
-            final Logger opLog) throws InterruptedException {
-       final var bytesToUpload = contents.size();
+            final Logger opLog)
+            throws InterruptedException {
+        final var bytesToUpload = contents.size();
         final AtomicInteger burstNo = new AtomicInteger(1);
         final AtomicInteger nextAppendNo = new AtomicInteger(appendsSkipped);
         while (position < bytesToUpload) {
             final var totalBytesLeft = bytesToUpload - position;
             final var appendsLeft =
-                    totalBytesLeft / bytesPerOp
-                            + Math.min(1, totalBytesLeft % bytesPerOp);
-            final var appendsHere =
-                    new AtomicInteger(Math.min(appendsPerBurst, appendsLeft));
+                    totalBytesLeft / bytesPerOp + Math.min(1, totalBytesLeft % bytesPerOp);
+            final var appendsHere = new AtomicInteger(Math.min(appendsPerBurst, appendsLeft));
             boolean isFirstAppend = true;
             final List<HapiSpecOperation> theBurst = new ArrayList<>();
             final CountDownLatch burstLatch = new CountDownLatch(1);
@@ -861,9 +875,7 @@ public class UtilVerbs {
                 opLog.info("Constructing append #{} ({} bytes)", appendNoToTrack, bytesThisAppend);
                 final var appendSubOp =
                         fileAppend(fileName)
-                                .content(
-                                        contents.substring(position, newPosition)
-                                                .toByteArray())
+                                .content(contents.substring(position, newPosition).toByteArray())
                                 .fee(ONE_HUNDRED_HBARS)
                                 .noLogging()
                                 .payingWith(payer)
@@ -892,8 +904,7 @@ public class UtilVerbs {
                     appendSubOp.alertingPost(
                             code -> {
                                 final var burstSecs =
-                                        Duration.between(
-                                                        burstStart.get(), Instant.now())
+                                        Duration.between(burstStart.get(), Instant.now())
                                                 .getSeconds();
                                 COMMON_MESSAGES.info(
                                         "Completed burst #"

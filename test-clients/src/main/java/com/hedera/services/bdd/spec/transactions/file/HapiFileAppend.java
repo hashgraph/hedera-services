@@ -40,14 +40,13 @@ import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
 import com.hederahashgraph.fee.SigValueObj;
-
-import javax.annotation.Nullable;
 import java.io.File;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import javax.annotation.Nullable;
 
 public class HapiFileAppend extends HapiTxnOp<HapiFileAppend> {
     private final String file;
@@ -57,15 +56,15 @@ public class HapiFileAppend extends HapiTxnOp<HapiFileAppend> {
 
     private Optional<Consumer<FileID>> preAppendCb = Optional.empty();
     private Optional<Consumer<ResponseCodeEnum>> postAppendCb = Optional.empty();
-    @Nullable
-    private UploadProgress uploadProgress;
+    @Nullable private UploadProgress uploadProgress;
     private int appendNum;
 
     public HapiFileAppend(String file) {
         this.file = file;
     }
 
-    public HapiFileAppend trackingProgressIn(final UploadProgress uploadProgress, final int appendNum) {
+    public HapiFileAppend trackingProgressIn(
+            final UploadProgress uploadProgress, final int appendNum) {
         this.uploadProgress = uploadProgress;
         this.appendNum = appendNum;
         return this;

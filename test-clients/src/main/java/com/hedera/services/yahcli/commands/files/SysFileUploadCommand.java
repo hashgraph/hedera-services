@@ -70,7 +70,8 @@ public class SysFileUploadCommand implements Callable<Integer> {
     @CommandLine.Option(
             names = {"--skip-appends"},
             description =
-                    "number of already-complete appends to skip when uploading a special file (default 0)")
+                    "number of already-complete appends to skip when uploading a special file"
+                            + " (default 0)")
     private Integer appendsToSkip;
 
     @CommandLine.Parameters(

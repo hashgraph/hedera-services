@@ -29,7 +29,6 @@ import com.hedera.services.bdd.spec.utilops.CustomSpecAssert;
 import com.hedera.services.bdd.suites.meta.VersionInfoSpec;
 import com.hedera.services.yahcli.Yahcli;
 import com.hedera.services.yahcli.suites.*;
-
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
