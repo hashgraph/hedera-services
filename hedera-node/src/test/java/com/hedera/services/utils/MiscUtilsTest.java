@@ -72,6 +72,7 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractGet
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractGetRecords;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractUpdate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoAddLiveHash;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoApproveAllowance;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoDelete;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoDeleteLiveHash;
@@ -169,6 +170,7 @@ import com.hederahashgraph.api.proto.java.ContractGetInfoQuery;
 import com.hederahashgraph.api.proto.java.ContractGetRecordsQuery;
 import com.hederahashgraph.api.proto.java.ContractUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoAddLiveHashTransactionBody;
+import com.hederahashgraph.api.proto.java.CryptoApproveAllowanceTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoDeleteLiveHashTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoDeleteTransactionBody;
@@ -606,6 +608,10 @@ class MiscUtilsTest {
                                         "ScheduleDelete",
                                         new BodySetter<>(ScheduleDeleteTransactionBody.class));
                                 put("UtilPrng", new BodySetter<>(UtilPrngTransactionBody.class));
+                                put(
+                                        "CryptoApproveAllowance",
+                                        new BodySetter<>(
+                                                CryptoApproveAllowanceTransactionBody.class));
                             }
                         };
 
@@ -1023,6 +1029,10 @@ class MiscUtilsTest {
                                         new BodySetter<>(
                                                 TokenFeeScheduleUpdateTransactionBody.class));
                                 put(UtilPrng, new BodySetter<>(UtilPrngTransactionBody.class));
+                                put(
+                                        CryptoApproveAllowance,
+                                        new BodySetter<>(
+                                                CryptoApproveAllowanceTransactionBody.class));
                             }
                         };
 
