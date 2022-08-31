@@ -15,6 +15,8 @@
  */
 package com.hedera.services.records;
 
+import static com.hedera.services.contracts.execution.traceability.CallOperationType.OP_CALL;
+import static com.hedera.services.contracts.execution.traceability.CallOperationType.OP_CREATE2;
 import static com.hedera.services.contracts.operation.HederaExceptionalHaltReason.*;
 import static com.hedera.services.contracts.operation.HederaExceptionalHaltReason.INVALID_SIGNATURE;
 import static com.hedera.services.contracts.operation.HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS;
@@ -67,18 +69,7 @@ class TransactionRecordServiceTest {
                             Address.fromHexString("0x9"),
                             Map.of(Bytes.of(10), Pair.of(Bytes.of(11), Bytes.of(12)))));
     private static final List<SolidityAction> actions =
-            List.of(
-                    new SolidityAction(
-                            ContractActionType.CALL,
-                            EntityId.fromAddress(Address.ALTBN128_ADD),
-                            null,
-                            100,
-                            null,
-                            null,
-                            EntityId.fromAddress(Address.BLS12_PAIRING),
-                            55,
-                            0,
-                            CallOperationType.OP_CALL));
+            List.of(createAction(OP_CALL), createAction(OP_CREATE2));
 
     @Mock private TransactionContext txnCtx;
     @Mock private TransactionProcessingResult processingResult;
@@ -354,5 +345,12 @@ class TransactionRecordServiceTest {
         if (haltReason != null) {
             given(processingResult.getHaltReason()).willReturn(Optional.of(haltReason));
         }
+    }
+
+    private static SolidityAction createAction(CallOperationType opCall) {
+        final SolidityAction solidityAction =
+                new SolidityAction(ContractActionType.CALL, 100, null, 55, 0);
+        solidityAction.setCallOperationType(opCall);
+        return solidityAction;
     }
 }
