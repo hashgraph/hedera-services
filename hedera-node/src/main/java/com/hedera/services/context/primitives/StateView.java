@@ -450,13 +450,13 @@ public class StateView {
         if (!attr.getWacl().isEmpty()) {
             info.setKeys(MiscUtils.asKeyUnchecked(attr.getWacl()).getKeyList());
         }
-        // The "memo" of a special upgrade file is its hexed SHA-384 hash for DevOps convenience
         if (!stateChildren.specialFiles().contains(id)) {
             info.setMemo(attr.getMemo());
         } else {
-            final var syntheticMemo =
+            // The "memo" of a special upgrade file is its hexed SHA-384 hash for DevOps convenience
+            final var upgradeHash =
                     CommonUtils.hex(CryptoFactory.getInstance().digestSync(contents).getValue());
-            info.setMemo(syntheticMemo);
+            info.setMemo(upgradeHash);
         }
         return Optional.of(info.build());
     }
