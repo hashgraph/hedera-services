@@ -40,10 +40,7 @@ public class SpecialFileHashSuite extends HapiApiSuite {
 
     @Override
     public List<HapiApiSpec> getSpecsInSuite() {
-        return List.of(
-                new HapiApiSpec[] {
-                    getSpecialFileHash(),
-                });
+        return List.of(getSpecialFileHash());
     }
 
     private HapiApiSpec getSpecialFileHash() {

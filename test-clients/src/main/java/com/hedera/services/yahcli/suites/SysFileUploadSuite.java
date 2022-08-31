@@ -93,7 +93,6 @@ public class SysFileUploadSuite extends HapiApiSuite {
     private HapiApiSpec uploadSysFiles() {
         final var name = String.format("UploadSystemFile-%s", sysFileId);
         final var fileId = String.format("0.0.%d", sysFileId);
-        final var uploadProgress = new UploadProgress();
         final var isSpecial = isSpecialFile(sysFileId);
         final AtomicInteger wrappedAppendsToSkip = new AtomicInteger();
 
