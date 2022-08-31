@@ -611,18 +611,17 @@ class RecordStreamFileWriterTest {
                     sidecarMetadata.getTypesList());
             final var pathToSidecarFile =
                     subject.generateSidecarFilePath(firstTxnInstant, sidecarId);
-            final var sidecarFileOptional =
+            final var sidecarFileProto =
                     isCompressed
                             ? RecordStreamingUtils.readSidecarFile(pathToSidecarFile)
                             : RecordStreamingUtils.readUncompressedSidecarFile(pathToSidecarFile);
-            assertTrue(sidecarFileOptional.isPresent());
             assertAllSidecarsAreInFile(
                     sidecarIdToExpectedSidecars.get(sidecarId),
-                    sidecarFileOptional.get().getSidecarRecordsList());
+                    sidecarFileProto.getSidecarRecordsList());
             final var sidecarFile = new File(pathToSidecarFile);
             assertFalse(sidecarFile.length() > maxSidecarFileSize);
             final var messageDigest = MessageDigest.getInstance(DigestType.SHA_384.algorithmName());
-            messageDigest.update(sidecarFileOptional.get().toByteArray());
+            messageDigest.update(sidecarFileProto.toByteArray());
             final var actualSidecarHash = sidecarMetadata.getHash();
             assertEquals(HashAlgorithm.SHA_384, actualSidecarHash.getAlgorithm());
             assertEquals(messageDigest.getDigestLength(), actualSidecarHash.getLength());

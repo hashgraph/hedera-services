@@ -59,18 +59,14 @@ public class RecordStreamingUtils {
         }
     }
 
-    public static Optional<SidecarFile> readUncompressedSidecarFile(final String fileLoc)
-            throws IOException {
+    public static SidecarFile readUncompressedSidecarFile(final String fileLoc) throws IOException {
         try (final var fin = new FileInputStream(fileLoc)) {
-            final var recordStreamSidecarFile = SidecarFile.parseFrom(fin);
-            return Optional.ofNullable(recordStreamSidecarFile);
+            return SidecarFile.parseFrom(fin);
         }
     }
 
-    public static Optional<SidecarFile> readSidecarFile(final String fileLoc) throws IOException {
-        final var recordStreamSidecarFile =
-                SidecarFile.parseFrom(getUncompressedStreamFileBytes(fileLoc));
-        return Optional.ofNullable(recordStreamSidecarFile);
+    public static SidecarFile readSidecarFile(final String fileLoc) throws IOException {
+        return (SidecarFile.parseFrom(getUncompressedStreamFileBytes(fileLoc)));
     }
 
     private static byte[] getUncompressedStreamFileBytes(final String fileLoc) throws IOException {

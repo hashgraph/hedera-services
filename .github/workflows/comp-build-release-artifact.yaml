@@ -96,7 +96,7 @@ jobs:
       - name: Install Deterministic Zip Tooling
         run: |
           echo "::group::Download Binary"
-          sudo curl -L -o /usr/local/bin/deterministic-zip https://github.com/timo-reymann/deterministic-zip/releases/download/1.1.0/deterministic-zip_linux-amd64
+          sudo curl -L -o /usr/local/bin/deterministic-zip https://github.com/timo-reymann/deterministic-zip/releases/download/1.2.0/deterministic-zip_linux-amd64
           echo "::endgroup::"
           echo "::group::Change Binary Permissions"
           sudo chmod -v +x /usr/local/bin/deterministic-zip
@@ -139,7 +139,7 @@ jobs:
           BRANCH_NAME="${{ github.head_ref || github.ref_name }}"
           BRANCH_NAME="${BRANCH_NAME##origin/}"
           BRANCH_NAME_LOWER="$(echo "${BRANCH_NAME}" | tr '[:upper:]' '[:lower:]')"
-          BRANCH_NAME_SAFE="$(echo "${BRANCH_NAME_LOWER}" | tr '/' '-')"
+          BRANCH_NAME_SAFE="$(echo "${BRANCH_NAME_LOWER}" | tr '/' '-' | tr '_' '.')"
 
           COMMIT_PREFIX="adhoc"
           [[ "${{ inputs.version-policy }}" == "branch-commit" ]] && COMMIT_PREFIX="${BRANCH_NAME_SAFE}"
@@ -257,7 +257,7 @@ jobs:
           fi
 
           ARTIFACT_FILE="${ARTIFACT_BASE_DIR}/${ARTIFACT_NAME}.zip"
-          deterministic-zip -vr "${ARTIFACT_FILE}" *
+          deterministic-zip -D -vr "${ARTIFACT_FILE}" *
 
           echo "::set-output name=folder::${ARTIFACT_BASE_DIR}"
           echo "::set-output name=name::${ARTIFACT_NAME}"
