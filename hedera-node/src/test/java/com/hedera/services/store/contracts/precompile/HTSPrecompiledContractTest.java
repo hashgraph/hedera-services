@@ -28,6 +28,7 @@ import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_DISSOCIATE_TOKENS;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_ERC_NAME;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_GET_TOKEN_CUSTOM_FEES;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_GET_TOKEN_EXPIRY_INFO;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_GET_TOKEN_INFO;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_MINT_TOKEN;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_PAUSE_TOKEN;
@@ -37,6 +38,7 @@ import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_TRANSFER_TOKEN;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_TRANSFER_TOKENS;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_UNPAUSE_TOKEN;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_UPDATE_TOKEN_EXPIRY_INFO;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_WIPE_TOKEN_ACCOUNT_FUNGIBLE;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_WIPE_TOKEN_ACCOUNT_NFT;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.TEST_CONSENSUS_TIME;
@@ -52,11 +54,13 @@ import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.fungib
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.fungiblePause;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.fungibleUnpause;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.fungibleWipe;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.getTokenExpiryInfoWrapper;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.multiDissociateOp;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.nonFungiblePause;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.nonFungibleUnpause;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.nonFungibleWipe;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.timestamp;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.tokenUpdateExpiryInfoWrapper;
 import static org.hyperledger.besu.evm.frame.MessageFrame.State.REVERT;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -98,6 +102,7 @@ import com.hedera.services.store.contracts.precompile.codec.TokenInfoWrapper;
 import com.hedera.services.store.contracts.precompile.impl.AssociatePrecompile;
 import com.hedera.services.store.contracts.precompile.impl.BurnPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.DissociatePrecompile;
+import com.hedera.services.store.contracts.precompile.impl.GetTokenExpiryInfoPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.MintPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.MultiAssociatePrecompile;
 import com.hedera.services.store.contracts.precompile.impl.MultiDissociatePrecompile;
@@ -106,6 +111,7 @@ import com.hedera.services.store.contracts.precompile.impl.TokenCreatePrecompile
 import com.hedera.services.store.contracts.precompile.impl.TokenGetCustomFeesPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.TransferPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.UnpausePrecompile;
+import com.hedera.services.store.contracts.precompile.impl.UpdateTokenExpiryInfoPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.WipeFungiblePrecompile;
 import com.hedera.services.store.contracts.precompile.impl.WipeNonFungiblePrecompile;
 import com.hedera.services.store.contracts.precompile.proxy.RedirectViewExecutor;
@@ -888,6 +894,41 @@ class HTSPrecompiledContractTest {
 
         // then
         assertTrue(subject.getPrecompile() instanceof TokenGetCustomFeesPrecompile);
+    }
+
+    @Test
+    void computeCallsCorrectImplementationForGetExpiryInfoForToken() {
+        // given
+        givenFrameContext();
+        Bytes input = Bytes.of(Integers.toBytes(ABI_ID_GET_TOKEN_EXPIRY_INFO));
+        given(decoder.decodeGetTokenExpiryInfo(any())).willReturn(getTokenExpiryInfoWrapper);
+        given(worldUpdater.permissivelyUnaliased(any()))
+                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+
+        // when
+        subject.prepareFields(messageFrame);
+        subject.prepareComputation(input, a -> a);
+
+        // then
+        assertTrue(subject.getPrecompile() instanceof GetTokenExpiryInfoPrecompile);
+    }
+
+    @Test
+    void computeCallsCorrectImplementationForUpdateExpiryInfoForToken() {
+        // given
+        givenFrameContext();
+        Bytes input = Bytes.of(Integers.toBytes(ABI_ID_UPDATE_TOKEN_EXPIRY_INFO));
+        given(decoder.decodeUpdateTokenExpiryInfo(any(), any()))
+                .willReturn(tokenUpdateExpiryInfoWrapper);
+        given(worldUpdater.permissivelyUnaliased(any()))
+                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+
+        // when
+        subject.prepareFields(messageFrame);
+        subject.prepareComputation(input, a -> a);
+
+        // then
+        assertTrue(subject.getPrecompile() instanceof UpdateTokenExpiryInfoPrecompile);
     }
 
     private void givenFrameContext() {

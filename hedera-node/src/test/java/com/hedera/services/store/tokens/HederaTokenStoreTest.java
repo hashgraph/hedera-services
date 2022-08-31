@@ -1495,6 +1495,64 @@ class HederaTokenStoreTest {
         assertFalse(subject.matchesTokenDecimals(misc, 4));
     }
 
+    @Test
+    void updateExpiryInfoRejectsInvalidExpiry() {
+        final var op =
+                updateWith(NO_KEYS, misc, true, true, false).toBuilder()
+                        .setExpiry(Timestamp.newBuilder().setSeconds(expiry - 1))
+                        .build();
+
+        final var outcome = subject.updateExpiryInfo(op);
+
+        assertEquals(INVALID_EXPIRATION_TIME, outcome);
+    }
+
+    @Test
+    void updateExpiryInfoCanExtendImmutableExpiry() {
+        given(token.hasAdminKey()).willReturn(false);
+        final var op =
+                updateWith(NO_KEYS, misc, false, false, false).toBuilder()
+                        .setExpiry(Timestamp.newBuilder().setSeconds(expiry + 1_234))
+                        .build();
+
+        final var outcome = subject.updateExpiryInfo(op);
+
+        assertEquals(OK, outcome);
+    }
+
+    @Test
+    void updateExpiryInfoRejectsInvalidNewAutoRenew() {
+        given(accountsLedger.exists(newAutoRenewAccount)).willReturn(false);
+        final var op = updateWith(NO_KEYS, misc, true, true, false, true, false);
+
+        final var outcome = subject.updateExpiryInfo(op);
+
+        assertEquals(INVALID_AUTORENEW_ACCOUNT, outcome);
+    }
+
+    @Test
+    void updateExpiryInfoRejectsInvalidNewAutoRenewPeriod() {
+        final var op =
+                updateWith(NO_KEYS, misc, true, true, false, false, false).toBuilder()
+                        .setAutoRenewPeriod(enduring(-1L))
+                        .build();
+
+        final var outcome = subject.updateExpiryInfo(op);
+
+        assertEquals(INVALID_RENEWAL_PERIOD, outcome);
+    }
+
+    @Test
+    void updateExpiryInfoRejectsMissingToken() {
+        given(backingTokens.contains(misc)).willReturn(false);
+        givenUpdateTarget(ALL_KEYS, token);
+        final var op = updateWith(ALL_KEYS, misc, true, true, true);
+
+        final var outcome = subject.updateExpiryInfo(op);
+
+        assertEquals(INVALID_TOKEN_ID, outcome);
+    }
+
     TokenCreateTransactionBody.Builder fullyValidTokenCreateAttempt() {
         return TokenCreateTransactionBody.newBuilder()
                 .setExpiry(Timestamp.newBuilder().setSeconds(expiry))

@@ -167,7 +167,7 @@ interface IHederaTokenService {
         /// The royalty fees collected when transferring the token
         RoyaltyFee[] royaltyFees;
 
-        /// Specifies whether the token kyc was defaulted with KycNotApplicable (true) or Revoked (false) 
+        /// Specifies whether the token kyc was defaulted with KycNotApplicable (true) or Revoked (false)
         bool defaultKycStatus;
 
         /// Specifies whether the token is deleted or not
@@ -604,7 +604,7 @@ interface IHederaTokenService {
     function getTokenDefaultFreezeStatus(address token)
         external
         returns (int64 responseCode, bool defaultFreezeStatus);
-    
+
     /// Query token default kyc status
     /// @param token The token address to check
     /// @return responseCode The response code for the status of the request. SUCCESS is 22.
@@ -735,7 +735,15 @@ interface IHederaTokenService {
         external
         returns (int64 responseCode);
 
-    /// Operation to update token expiry info
+    /// Query token expiry info
+    /// @param token The token address to check
+    /// @return responseCode The response code for the status of the request. SUCCESS is 22.
+    /// @return expiry Expiry info for `token`
+    function getTokenExpiryInfo(address token)
+    external
+    returns (int64 responseCode, Expiry memory expiry);
+
+    /// Operation to update token keys
     /// @param token The token address
     /// @param keys The token keys
     /// @return responseCode The response code for the status of the request. SUCCESS is 22.
@@ -745,17 +753,17 @@ interface IHederaTokenService {
 
     /// Query if valid token found for the given address
     /// @param token The token address
-    /// @return responseCode The response code for the status of the request. SUCCESS is 22.    
-    /// @return isToken True if valid token found for the given address     
-    function isToken(address token) 
-        external returns 
+    /// @return responseCode The response code for the status of the request. SUCCESS is 22.
+    /// @return isToken True if valid token found for the given address
+    function isToken(address token)
+        external returns
         (int64 responseCode, bool isToken);
 
     /// Query to return the token type for a given address
     /// @param token The token address
-    /// @return responseCode The response code for the status of the request. SUCCESS is 22.    
-    /// @return tokenType the token type. 0 is FUNGIBLE_COMMON, 1 is NON_FUNGIBLE_UNIQUE, -1 is UNRECOGNIZED   
+    /// @return responseCode The response code for the status of the request. SUCCESS is 22.
+    /// @return tokenType the token type. 0 is FUNGIBLE_COMMON, 1 is NON_FUNGIBLE_UNIQUE, -1 is UNRECOGNIZED
     function getTokenType(address token)
-        external returns 
+        external returns
         (int64 responseCode, int32 tokenType);
 }
