@@ -17,6 +17,7 @@ package com.hedera.services.bdd.spec.transactions.file;
 
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.currExpiry;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.suFrom;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.google.common.base.MoreObjects;
 import com.google.common.io.Files;
@@ -39,6 +40,8 @@ import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
 import com.hederahashgraph.fee.SigValueObj;
+
+import javax.annotation.Nullable;
 import java.io.File;
 import java.util.List;
 import java.util.Optional;
@@ -54,9 +57,18 @@ public class HapiFileAppend extends HapiTxnOp<HapiFileAppend> {
 
     private Optional<Consumer<FileID>> preAppendCb = Optional.empty();
     private Optional<Consumer<ResponseCodeEnum>> postAppendCb = Optional.empty();
+    @Nullable
+    private UploadProgress uploadProgress;
+    private int appendNum;
 
     public HapiFileAppend(String file) {
         this.file = file;
+    }
+
+    public HapiFileAppend trackingProgressIn(final UploadProgress uploadProgress, final int appendNum) {
+        this.uploadProgress = uploadProgress;
+        this.appendNum = appendNum;
+        return this;
     }
 
     public HapiFileAppend alertingPre(Consumer<FileID> preCb) {
@@ -142,6 +154,9 @@ public class HapiFileAppend extends HapiTxnOp<HapiFileAppend> {
     @Override
     protected void updateStateOf(HapiApiSpec spec) throws Throwable {
         postAppendCb.ifPresent(cb -> cb.accept(actualStatus));
+        if (actualStatus == SUCCESS && uploadProgress != null) {
+            uploadProgress.markFinished(appendNum);
+        }
     }
 
     @Override

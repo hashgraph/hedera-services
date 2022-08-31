@@ -24,6 +24,7 @@ import static com.hedera.services.yahcli.suites.Utils.isSpecialFile;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.transactions.file.UploadProgress;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hedera.services.bdd.suites.utils.sysfiles.serdes.SysFileSerde;
 import java.io.File;
@@ -44,6 +45,7 @@ public class SysFileUploadSuite extends HapiApiSuite {
 
     private final int bytesPerOp;
     private final int appendsPerBurst;
+    private final int appendsToSkip;
     private final long sysFileId;
     private final String srcDir;
     private final boolean isDryRun;
@@ -56,18 +58,20 @@ public class SysFileUploadSuite extends HapiApiSuite {
             final Map<String, String> specConfig,
             final String sysFile,
             final boolean isDryRun) {
-        this(NOT_APPLICABLE, NOT_APPLICABLE, srcDir, specConfig, sysFile, isDryRun);
+        this(NOT_APPLICABLE, NOT_APPLICABLE, NOT_APPLICABLE, srcDir, specConfig, sysFile, isDryRun);
     }
 
     public SysFileUploadSuite(
             final int bytesPerOp,
             final int appendsPerBurst,
+            final int appendsToSkip,
             final String srcDir,
             final Map<String, String> specConfig,
             final String sysFile,
             final boolean isDryRun) {
         this.bytesPerOp = bytesPerOp;
         this.appendsPerBurst = appendsPerBurst;
+        this.appendsToSkip = appendsToSkip;
         this.srcDir = srcDir;
         this.isDryRun = isDryRun;
         this.specConfig = specConfig;
@@ -84,28 +88,40 @@ public class SysFileUploadSuite extends HapiApiSuite {
         uploadData = appropriateContents(sysFileId);
         return isDryRun
                 ? Collections.emptyList()
-                : List.of(
-                        new HapiApiSpec[] {
-                            uploadSysFiles(),
-                        });
+                : List.of(uploadSysFiles());
     }
 
     private HapiApiSpec uploadSysFiles() {
         final var name = String.format("UploadSystemFile-%s", sysFileId);
         final var fileId = String.format("0.0.%d", sysFileId);
+        final var uploadProgress = new UploadProgress();
+        final var isSpecial =  isSpecialFile(sysFileId);
+
+        if (isSpecial) {
+            final var bytesToAppend = uploadData.size();
+            if (appendsToSkip > 0) {
+                final var appendsRequired =
+                        bytesToAppend / bytesPerOp + Math.min(1, bytesToAppend % bytesPerOp);
+                uploadProgress.initializeFor(appendsRequired);
+                for (int i = 0; i < appendsToSkip; i++) {
+                    uploadProgress.markFinished(i);
+                }
+            }
+        }
 
         return customHapiSpec(name)
                 .withProperties(specConfig)
                 .given()
                 .when()
                 .then(
-                        isSpecialFile(sysFileId)
+                        isSpecial
                                 ? updateSpecialFile(
                                         DEFAULT_PAYER,
                                         fileId,
                                         uploadData,
                                         bytesPerOp,
-                                        appendsPerBurst)
+                                        appendsPerBurst,
+                                        uploadProgress)
                                 : updateLargeFile(
                                         DEFAULT_PAYER,
                                         fileId,

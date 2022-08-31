@@ -67,6 +67,12 @@ public class SysFileUploadCommand implements Callable<Integer> {
                             + ")")
     private Integer appendsPerBurst;
 
+    @CommandLine.Option(
+            names = {"--skip-appends"},
+            description =
+                    "number of already-complete appends to skip when uploading a special file (default 0)")
+    private Integer appendsToSkip;
+
     @CommandLine.Parameters(
             arity = "1",
             paramLabel = "<sysfile>",
@@ -90,6 +96,9 @@ public class SysFileUploadCommand implements Callable<Integer> {
             if (appendsPerBurst == null) {
                 appendsPerBurst = DEFAULT_APPENDS_PER_BURST;
             }
+            if (appendsToSkip == null) {
+                appendsToSkip = 0;
+            }
         } else {
             if (bytesPerAppend != null) {
                 throw new CommandLine.ParameterException(
@@ -101,6 +110,11 @@ public class SysFileUploadCommand implements Callable<Integer> {
                         sysFilesCommand.getYahcli().getSpec().commandLine(),
                         "Option 'appendsPerBurst' only makes sense for a special file");
             }
+            if (appendsToSkip != null) {
+                throw new CommandLine.ParameterException(
+                        sysFilesCommand.getYahcli().getSpec().commandLine(),
+                        "Option 'appendsToSkip' only makes sense for a special file");
+            }
         }
 
         var delegate =
@@ -108,6 +122,7 @@ public class SysFileUploadCommand implements Callable<Integer> {
                         ? new SysFileUploadSuite(
                                 bytesPerAppend,
                                 appendsPerBurst,
+                                appendsToSkip,
                                 srcDir,
                                 config.asSpecConfig(),
                                 sysFile,
