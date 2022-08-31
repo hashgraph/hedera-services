@@ -43,6 +43,7 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
+import com.hedera.services.state.migration.UniqueTokenAdapter;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.store.contracts.WorldLedgers;
 import com.hedera.services.store.models.NftId;
@@ -90,7 +91,7 @@ class TokenUpdateLogicTest {
     private TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus>
             tokenRels;
 
-    @Mock private TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nfts;
+    @Mock private TransactionalLedger<NftId, NftProperty, UniqueTokenAdapter> nfts;
 
     private TokenUpdateLogic subject;
     private TokenUpdateTransactionBody op;
