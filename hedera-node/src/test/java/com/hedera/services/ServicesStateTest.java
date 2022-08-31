@@ -545,7 +545,7 @@ class ServicesStateTest {
         assertNotNull(subject.specialFiles());
         // and:
         verify(dualStateAccessor).setDualState(dualState);
-        verify(initFlow).runWith(subject, any());
+        verify(initFlow).runWith(eq(subject), any());
         verify(appBuilder).bootstrapProps(any());
         verify(appBuilder).initialHash(EMPTY_HASH);
         verify(appBuilder).platform(platform);
