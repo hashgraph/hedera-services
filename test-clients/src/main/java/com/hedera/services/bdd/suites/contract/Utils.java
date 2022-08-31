@@ -48,8 +48,11 @@ import java.nio.file.Path;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.IntStream;
 import org.apache.commons.io.FileUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
+import org.bouncycastle.util.encoders.Hex;
 import org.hyperledger.besu.crypto.Hash;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -57,6 +60,7 @@ import org.json.JSONTokener;
 
 public class Utils {
     public static final String RESOURCE_PATH = "src/main/resource/contract/contracts/%1$s/%1$s";
+    private static final Logger log = LogManager.getLogger(Utils.class);
 
     public static ByteString eventSignatureOf(String event) {
         return ByteString.copyFrom(Hash.keccak256(Bytes.wrap(event.getBytes())).toArray());
@@ -107,7 +111,17 @@ public class Utils {
             final var bytes = Files.readAllBytes(Path.of(path));
             return ByteString.copyFrom(bytes);
         } catch (IOException e) {
-            e.printStackTrace();
+            log.warn("An error occurred while reading file", e);
+            return ByteString.EMPTY;
+        }
+    }
+
+    public static ByteString extractBytecodeUnhexed(final String path) {
+        try {
+            final var bytes = Files.readAllBytes(Path.of(path));
+            return ByteString.copyFrom(Hex.decode(bytes));
+        } catch (IOException e) {
+            log.warn("An error occurred while reading file", e);
             return ByteString.EMPTY;
         }
     }
