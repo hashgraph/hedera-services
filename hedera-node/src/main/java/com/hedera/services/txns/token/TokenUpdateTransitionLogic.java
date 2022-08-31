@@ -135,8 +135,9 @@ public class TokenUpdateTransitionLogic implements TransitionLogic {
         Optional<AccountID> replacedTreasury = Optional.empty();
         if (op.hasTreasury()) {
             var newTreasury = op.getTreasury();
-            if (ledger.isDetached(newTreasury)) {
-                txnCtx.setStatus(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
+            final var newTreasuryStatus = ledger.usabilityOf(newTreasury);
+            if (newTreasuryStatus != OK) {
+                txnCtx.setStatus(newTreasuryStatus);
                 return;
             }
             if (!store.associationExists(newTreasury, id)) {
@@ -217,8 +218,9 @@ public class TokenUpdateTransitionLogic implements TransitionLogic {
             TokenUpdateTransactionBody op, MerkleToken token) {
         if (op.hasAutoRenewAccount()) {
             final var newAutoRenew = op.getAutoRenewAccount();
-            if (ledger.isDetached(newAutoRenew)) {
-                return ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
+            final var newAutoRenewStatus = ledger.usabilityOf(newAutoRenew);
+            if (newAutoRenewStatus != OK) {
+                return newAutoRenewStatus;
             }
             if (token.hasAutoRenewAccount()) {
                 final var existingAutoRenew = token.autoRenewAccount().toGrpcAccountId();

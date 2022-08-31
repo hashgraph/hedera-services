@@ -25,14 +25,7 @@ import static com.hedera.services.ledger.properties.TokenRelProperty.TOKEN_BALAN
 import static com.hedera.services.state.enums.TokenType.NON_FUNGIBLE_UNIQUE;
 import static com.hedera.services.store.tokens.HederaTokenStore.affectsExpiryAtMost;
 import static com.hedera.services.store.tokens.TokenStore.MISSING_TOKEN;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CURRENT_TREASURY_STILL_OWNS_NFTS;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_IS_IMMUTABLE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_IS_PAUSED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELETED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.exceptions.InvalidTransactionException;
@@ -86,10 +79,9 @@ public class TokenUpdateLogic {
         MerkleToken token = tokenStore.get(tokenID);
         checkTokenPreconditions(token, op);
 
-        ResponseCodeEnum outcome = autoRenewAttachmentCheck(op, token);
-        validateTrueOrRevert(outcome == OK, outcome);
-
+        assertAutoRenewValidity(op, token);
         Optional<AccountID> replacedTreasury = Optional.empty();
+        ResponseCodeEnum outcome;
         if (op.hasTreasury()) {
             var newTreasury = op.getTreasury();
             validateFalseOrRevert(isDetached(newTreasury), ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
@@ -158,11 +150,9 @@ public class TokenUpdateLogic {
         }
         MerkleToken token = tokenStore.get(tokenID);
         checkTokenPreconditions(token, op);
+        assertAutoRenewValidity(op, token);
 
-        ResponseCodeEnum outcome = autoRenewAttachmentCheck(op, token);
-        validateTrueOrRevert(outcome == OK, outcome);
-
-        outcome = tokenStore.updateExpiryInfo(op);
+        var outcome = tokenStore.updateExpiryInfo(op);
         if (outcome != OK) {
             abortWith(outcome);
         }
@@ -198,10 +188,11 @@ public class TokenUpdateLogic {
         return TokenUpdateValidator.validate(txnBody, validator);
     }
 
-    private ResponseCodeEnum autoRenewAttachmentCheck(
-            TokenUpdateTransactionBody op, MerkleToken token) {
+    private void assertAutoRenewValidity(TokenUpdateTransactionBody op, MerkleToken token) {
         if (op.hasAutoRenewAccount()) {
             final var newAutoRenew = op.getAutoRenewAccount();
+            validateTrueOrRevert(
+                    worldLedgers.accounts().contains(newAutoRenew), INVALID_AUTORENEW_ACCOUNT);
             validateFalseOrRevert(isDetached(newAutoRenew), ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
 
             if (token.hasAutoRenewAccount()) {
@@ -210,7 +201,6 @@ public class TokenUpdateLogic {
                         isDetached(existingAutoRenew), ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
             }
         }
-        return OK;
     }
 
     private boolean isDetached(AccountID accountID) {

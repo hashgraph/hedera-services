@@ -45,11 +45,9 @@ public interface EntityAccess {
 
     long getBalance(AccountID id);
 
-    boolean isDeleted(AccountID id);
-
-    boolean isDetached(AccountID id);
-
     boolean isExtant(AccountID id);
+
+    boolean isUsable(AccountID id);
 
     boolean isTokenAccount(Address address);
 
