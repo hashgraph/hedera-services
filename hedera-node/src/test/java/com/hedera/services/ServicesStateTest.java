@@ -866,6 +866,22 @@ class ServicesStateTest {
                                 null));
     }
 
+    @Test
+    void testUniqueTokensWhenVirtual() {
+        final var vmap = new VirtualMap<>();
+        subject.setChild(StateChildIndices.UNIQUE_TOKENS, vmap);
+        assertTrue(subject.uniqueTokens().isVirtual());
+        assertSame(vmap, subject.uniqueTokens().virtualMap());
+    }
+
+    @Test
+    void testUniqueTokensWhenMerkleMap() {
+        final var mmap = new MerkleMap<>();
+        subject.setChild(StateChildIndices.UNIQUE_TOKENS, mmap);
+        assertFalse(subject.uniqueTokens().isVirtual());
+        assertSame(mmap, subject.uniqueTokens().merkleMap());
+    }
+
     private AddressBook createPretendBookFrom(
             final Platform platform, final boolean withKeyDetails) {
         final var pubKey = mock(PublicKey.class);
