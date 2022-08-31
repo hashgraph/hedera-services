@@ -25,7 +25,6 @@ import static com.hedera.services.yahcli.suites.Utils.isSpecialFile;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.spec.transactions.file.UploadProgress;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hedera.services.bdd.suites.utils.sysfiles.serdes.SysFileSerde;
 import com.hedera.services.legacy.proto.utils.ByteStringUtils;
