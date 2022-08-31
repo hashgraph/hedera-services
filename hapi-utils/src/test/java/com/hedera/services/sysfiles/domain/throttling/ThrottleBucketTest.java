@@ -35,7 +35,7 @@ import org.junit.jupiter.params.provider.CsvSource;
 class ThrottleBucketTest {
     @Test
     void beanMethodsWork() {
-        final var subject = new ThrottleBucket();
+        final var subject = new ThrottleBucket<HederaFunctionality>();
 
         subject.setBurstPeriod(123);
         subject.setBurstPeriodMs(123L);
@@ -44,15 +44,6 @@ class ThrottleBucketTest {
         assertEquals(123, subject.getBurstPeriod());
         assertEquals(123L, subject.getBurstPeriodMs());
         assertEquals("Thom", subject.getName());
-    }
-
-    @Test
-    void factoryWorks() throws IOException {
-        final var proto = TestUtils.protoDefs("bootstrap/throttles.json");
-
-        final var bucketA = proto.getThrottleBuckets(0);
-
-        assertEquals(bucketA, ThrottleBucket.fromProto(bucketA).toProto());
     }
 
     @Test
@@ -142,12 +133,13 @@ class ThrottleBucketTest {
         helper.assertTolerableTps(expectedXferTps, 1.00, opsForXfer);
     }
 
-    private static final ThrottleBucket bucketFrom(final String path) throws IOException {
+    private static ThrottleBucket<HederaFunctionality> bucketFrom(final String path)
+            throws IOException {
         final var defs = TestUtils.pojoDefs(path);
         return defs.getBuckets().get(0);
     }
 
-    private static final int opsForFunction(
+    private static int opsForFunction(
             final List<Pair<HederaFunctionality, Integer>> source,
             final HederaFunctionality function) {
         for (final var pair : source) {

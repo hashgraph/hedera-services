@@ -242,6 +242,7 @@ public final class BootstrapProperties implements PropertySource {
                     FILES_MAX_NUM,
                     FILES_MAX_SIZE_KB,
                     HEDERA_RECORD_STREAM_SIDECAR_MAX_SIZE_MB,
+                    EXPIRY_THROTTLE_RESOURCE,
                     FEES_MIN_CONGESTION_PERIOD,
                     FEES_PERCENT_CONGESTION_MULTIPLIERS,
                     FEES_TOKEN_TRANSFER_USAGE_MULTIPLIER,
