@@ -87,24 +87,22 @@ class RecordedStorageFeeChargingTest {
     @Mock private TransactionContext txnCtx;
     @Mock private GlobalDynamicProperties dynamicProperties;
     @Mock private TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
+    @Mock private NonHapiFeeCharging nonHapiFeeCharging;
 
     private RecordedStorageFeeCharging subject;
-
-    private final AccountNumbers numbers = new MockAccountNumbers();
 
     @BeforeEach
     void setUp() {
         final var syntheticTxnFactory = new SyntheticTxnFactory(dynamicProperties);
-        final var feeDistribution = new FeeDistribution(numbers, dynamicProperties);
         subject =
                 new RecordedStorageFeeCharging(
                         creator,
-                        feeDistribution,
                         exchange,
                         recordsHistorian,
                         txnCtx,
                         syntheticTxnFactory,
-                        dynamicProperties);
+                        dynamicProperties,
+                        nonHapiFeeCharging);
     }
 
     @Test
