@@ -38,7 +38,6 @@ import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.swirlds.common.crypto.RunningHash;
 import java.time.Instant;
 import java.util.List;
-
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -92,6 +91,13 @@ class RecordStreamingTest {
                 firstFollowingChildRso,
                 secondFollowingChildRso,
                 systemRso);
+        givenForTxLogging(
+                false,
+                firstPrecedingChildRso,
+                topLevelRso,
+                firstFollowingChildRso,
+                secondFollowingChildRso,
+                systemRso);
         given(systemRso.getRunningHash()).willReturn(mockSystemHash);
 
         given(recordsHistorian.hasPrecedingChildRecords()).willReturn(true);
@@ -123,6 +129,7 @@ class RecordStreamingTest {
     void streamsJustTopLevelWithNoChildrenAvail() {
         givenCollabSetup();
         givenAlignable(topLevelRso);
+        givenForTxLogging(false, topLevelRso);
 
         given(recordsHistorian.getTopLevelRecord()).willReturn(topLevelRso);
         given(nonBlockingHandoff.offer(topLevelRso)).willReturn(false).willReturn(true);
@@ -141,7 +148,36 @@ class RecordStreamingTest {
     void usesCurrentBlockNumberIfNoUserRecordsCouldBeStreamed() {
         given(blockManager.getAlignmentBlockNumber()).willReturn(someBlockNo);
         givenAlignable(systemRso);
+        givenForTxLogging(false, systemRso);
         given(systemRso.getRunningHash()).willReturn(mockSystemHash);
+        given(nonBlockingHandoff.offer(systemRso)).willReturn(true);
+
+        subject.streamSystemRecord(systemRso);
+
+        verify(nonBlockingHandoff).offer(systemRso);
+        verify(blockManager).updateCurrentBlockHash(mockSystemHash);
+    }
+
+    @Test
+    void streamProceedsWhenTransactionLoggingThrows() {
+        given(blockManager.getAlignmentBlockNumber()).willReturn(someBlockNo);
+        given(systemRso.getRunningHash()).willReturn(mockSystemHash);
+        givenAlignable(systemRso);
+        givenForTxLogging(true, systemRso);
+        given(nonBlockingHandoff.offer(systemRso)).willReturn(true);
+
+        subject.streamSystemRecord(systemRso);
+
+        verify(nonBlockingHandoff).offer(systemRso);
+        verify(blockManager).updateCurrentBlockHash(mockSystemHash);
+    }
+
+    @Test
+    void streamProceedsWhenTransactionLoggingOff() {
+        given(blockManager.getAlignmentBlockNumber()).willReturn(someBlockNo);
+        given(systemRso.getRunningHash()).willReturn(mockSystemHash);
+        givenAlignable(systemRso);
+        given(blockManager.shouldLogEveryTransaction()).willReturn(false);
         given(nonBlockingHandoff.offer(systemRso)).willReturn(true);
 
         subject.streamSystemRecord(systemRso);
@@ -159,15 +195,28 @@ class RecordStreamingTest {
 
     private void givenAlignable(final RecordStreamObject... mockRsos) {
         for (final var mockRso : mockRsos) {
+            given(mockRso.withBlockNumber(someBlockNo)).willReturn(mockRso);
+        }
+    }
+
+    private void givenForTxLogging(
+            final boolean shouldThrow, final RecordStreamObject... mockRsos) {
+        for (final var mockRso : mockRsos) {
             given(blockManager.shouldLogEveryTransaction()).willReturn(true);
             given(mockRso.getTransaction()).willReturn(transaction);
             try {
-                given(CommonUtils.extractTransactionBody(transaction)).willReturn(transactionBody);
+                if (shouldThrow) {
+                    given(CommonUtils.extractTransactionBody(transaction))
+                            .willThrow(InvalidProtocolBufferException.class);
+                } else {
+                    given(CommonUtils.extractTransactionBody(transaction))
+                            .willReturn(transactionBody);
+                    given(transactionBody.getDataCase())
+                            .willReturn(TransactionBody.DataCase.CONTRACTCALL);
+                }
             } catch (InvalidProtocolBufferException e) {
                 throw new RuntimeException(e);
             }
-            given(transactionBody.getDataCase()).willReturn(TransactionBody.DataCase.CONTRACTCALL);
-            given(mockRso.withBlockNumber(someBlockNo)).willReturn(mockRso);
             given(mockRso.getTimestamp()).willReturn(aTime);
             given(mockRso.getTransactionRecord()).willReturn(transactionRecord);
             given(transactionRecord.getReceipt()).willReturn(transactionReceipt);
