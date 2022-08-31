@@ -57,7 +57,7 @@ public class OwnerOfPrecompile extends AbstractReadOnlyPrecompile {
     @Override
     public TransactionBody.Builder body(
             final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
-        final var wrapper = decode(input.slice(24), aliasResolver);
+        final var wrapper = decodeOwnerOf(input.slice(24));
         nftId =
                 new NftId(
                         tokenId.getShardNum(),
@@ -79,9 +79,7 @@ public class OwnerOfPrecompile extends AbstractReadOnlyPrecompile {
         return encoder.encodeOwner(priorityAddress);
     }
 
-    @Override
-    public OwnerOfAndTokenURIWrapper decode(
-            final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
+    public static OwnerOfAndTokenURIWrapper decodeOwnerOf(final Bytes input) {
         final Tuple decodedArguments =
                 decodeFunctionCall(input, OWNER_OF_NFT_SELECTOR, OWNER_OF_NFT_DECODER);
 

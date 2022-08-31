@@ -486,7 +486,6 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
                     case AbiConstants.ABI_ID_UPDATE_TOKEN_INFO -> new TokenUpdatePrecompile(
                             ledgers,
                             updater.aliases(),
-                            decoder,
                             sigsVerifier,
                             sideEffectsTracker,
                             syntheticTxnFactory,
@@ -495,19 +494,13 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
                     case AbiConstants.ABI_ID_UPDATE_TOKEN_KEYS -> new TokenUpdateKeysPrecompile(
                             ledgers,
                             updater.aliases(),
-                            decoder,
                             sigsVerifier,
                             sideEffectsTracker,
                             syntheticTxnFactory,
                             infrastructureFactory,
                             precompilePricingUtils);
                     case AbiConstants.ABI_ID_GET_TOKEN_KEY -> new GetTokenKeyPrecompile(
-                            null,
-                            syntheticTxnFactory,
-                            ledgers,
-                            encoder,
-                            decoder,
-                            precompilePricingUtils);
+                            null, syntheticTxnFactory, ledgers, encoder, precompilePricingUtils);
                     case AbiConstants.ABI_ID_REDIRECT_FOR_TOKEN -> {
                         final var target = DescriptorUtils.getRedirectTarget(input);
                         final var tokenId = target.tokenId();
@@ -707,7 +700,6 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
                             syntheticTxnFactory,
                             ledgers,
                             encoder,
-                            decoder,
                             precompilePricingUtils,
                             currentView);
                     case AbiConstants.ABI_ID_GET_TOKEN_TYPE -> new GetTokenTypePrecompile(
@@ -715,7 +707,6 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
                             syntheticTxnFactory,
                             ledgers,
                             encoder,
-                            decoder,
                             precompilePricingUtils,
                             currentView);
                     case AbiConstants
@@ -732,14 +723,12 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
                             syntheticTxnFactory,
                             ledgers,
                             encoder,
-                            decoder,
                             precompilePricingUtils,
                             currentView);
                     case AbiConstants
                             .ABI_ID_UPDATE_TOKEN_EXPIRY_INFO -> new UpdateTokenExpiryInfoPrecompile(
                             ledgers,
                             updater.aliases(),
-                            decoder,
                             sigsVerifier,
                             sideEffectsTracker,
                             syntheticTxnFactory,

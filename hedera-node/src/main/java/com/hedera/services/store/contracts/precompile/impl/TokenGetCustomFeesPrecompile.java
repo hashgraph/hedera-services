@@ -59,7 +59,7 @@ public class TokenGetCustomFeesPrecompile extends AbstractReadOnlyPrecompile {
 
     @Override
     public Builder body(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
-        final var tokenGetCustomFeesWrapper = decode(input, aliasResolver);
+        final var tokenGetCustomFeesWrapper = decodeTokenGetCustomFees(input);
         tokenId = tokenGetCustomFeesWrapper.tokenID();
         return super.body(input, aliasResolver);
     }
@@ -72,9 +72,7 @@ public class TokenGetCustomFeesPrecompile extends AbstractReadOnlyPrecompile {
         return encoder.encodeTokenGetCustomFees(customFees);
     }
 
-    @Override
-    public TokenGetCustomFeesWrapper decode(
-            final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
+    public static TokenGetCustomFeesWrapper decodeTokenGetCustomFees(final Bytes input) {
         final Tuple decodedArguments =
                 decodeFunctionCall(
                         input, TOKEN_GET_CUSTOM_FEES_SELECTOR, TOKEN_GET_CUSTOM_FEES_DECODER);

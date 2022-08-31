@@ -58,7 +58,7 @@ public class NonFungibleTokenInfoPrecompile extends AbstractTokenInfoPrecompile 
 
     @Override
     public Builder body(Bytes input, UnaryOperator<byte[]> aliasResolver) {
-        final var tokenInfoWrapper = decode(input, aliasResolver);
+        final var tokenInfoWrapper = decodeGetNonFungibleTokenInfo(input);
         tokenId = tokenInfoWrapper.tokenID();
         serialNumber = tokenInfoWrapper.serialNumber();
         return super.body(input, aliasResolver);
@@ -79,8 +79,7 @@ public class NonFungibleTokenInfoPrecompile extends AbstractTokenInfoPrecompile 
         return encoder.encodeGetNonFungibleTokenInfo(tokenInfo, nonFungibleTokenInfo);
     }
 
-    @Override
-    public TokenInfoWrapper decode(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
+    public static TokenInfoWrapper decodeGetNonFungibleTokenInfo(final Bytes input) {
         final Tuple decodedArguments =
                 decodeFunctionCall(
                         input,

@@ -21,7 +21,6 @@ import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hederahashgraph.api.proto.java.TokenID;
-import java.util.function.UnaryOperator;
 import org.apache.tuweni.bytes.Bytes;
 
 public class NamePrecompile extends AbstractReadOnlyPrecompile {
@@ -32,12 +31,6 @@ public class NamePrecompile extends AbstractReadOnlyPrecompile {
             final EncodingFacade encoder,
             final PrecompilePricingUtils pricingUtils) {
         super(tokenId, syntheticTxnFactory, ledgers, encoder, pricingUtils);
-    }
-
-    @Override
-    public Record decode(Bytes input, UnaryOperator<byte[]> aliasResolver) {
-        // No need to decode input parameters
-        return null;
     }
 
     @Override

@@ -141,8 +141,20 @@ public class TransferPrecompile extends AbstractWritePrecompile {
     @Override
     public TransactionBody.Builder body(
             final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
-        transferOp = decode(input, aliasResolver);
-
+        transferOp =
+                switch (functionId) {
+                    case AbiConstants.ABI_ID_CRYPTO_TRANSFER -> decodeCryptoTransfer(
+                            input, aliasResolver);
+                    case AbiConstants.ABI_ID_TRANSFER_TOKENS -> decodeTransferTokens(
+                            input, aliasResolver);
+                    case AbiConstants.ABI_ID_TRANSFER_TOKEN -> decodeTransferToken(
+                            input, aliasResolver);
+                    case AbiConstants.ABI_ID_TRANSFER_NFTS -> decodeTransferNFTs(
+                            input, aliasResolver);
+                    case AbiConstants.ABI_ID_TRANSFER_NFT -> decodeTransferNFT(
+                            input, aliasResolver);
+                    default -> null;
+                };
         transactionBody = syntheticTxnFactory.createCryptoTransfer(transferOp);
         extrapolateDetailsFromSyntheticTxn();
 
@@ -282,19 +294,6 @@ public class TransferPrecompile extends AbstractWritePrecompile {
             accumulatedCost += transfer.nftExchanges().size() * nonFungibleTxCost;
         }
         return accumulatedCost;
-    }
-
-    @Override
-    public List<TokenTransferWrapper> decode(
-            final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
-        return switch (functionId) {
-            case AbiConstants.ABI_ID_CRYPTO_TRANSFER -> decodeCryptoTransfer(input, aliasResolver);
-            case AbiConstants.ABI_ID_TRANSFER_TOKENS -> decodeTransferTokens(input, aliasResolver);
-            case AbiConstants.ABI_ID_TRANSFER_TOKEN -> decodeTransferToken(input, aliasResolver);
-            case AbiConstants.ABI_ID_TRANSFER_NFTS -> decodeTransferNFTs(input, aliasResolver);
-            case AbiConstants.ABI_ID_TRANSFER_NFT -> decodeTransferNFT(input, aliasResolver);
-            default -> null;
-        };
     }
 
     private List<TokenTransferWrapper> decodeCryptoTransfer(

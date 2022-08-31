@@ -68,7 +68,7 @@ public class PausePrecompile extends AbstractWritePrecompile {
 
     @Override
     public TransactionBody.Builder body(Bytes input, UnaryOperator<byte[]> aliasResolver) {
-        pauseOp = decode(input, aliasResolver);
+        pauseOp = decodePause(input);
         transactionBody = syntheticTxnFactory.createPause(pauseOp);
         return transactionBody;
     }
@@ -112,8 +112,7 @@ public class PausePrecompile extends AbstractWritePrecompile {
         pauseLogic.pause(tokenId);
     }
 
-    @Override
-    public PauseWrapper decode(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
+    private PauseWrapper decodePause(final Bytes input) {
         final Tuple decodedArguments =
                 decodeFunctionCall(input, PAUSE_TOKEN_SELECTOR, PAUSE_TOKEN_DECODER);
 

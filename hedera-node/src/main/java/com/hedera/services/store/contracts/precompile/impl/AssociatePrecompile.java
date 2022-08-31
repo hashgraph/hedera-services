@@ -15,7 +15,7 @@
  */
 package com.hedera.services.store.contracts.precompile.impl;
 
-import static com.hedera.services.contracts.ParsingConstants.BYTES32_PAIR_RAW_TYPE;
+import static com.hedera.services.contracts.ParsingConstants.ADDRESS_PAIR_RAW_TYPE;
 import static com.hedera.services.contracts.ParsingConstants.INT;
 import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.convertAddressBytesToTokenID;
 import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.convertLeftPaddedAddressToAccountId;
@@ -46,7 +46,7 @@ public class AssociatePrecompile extends AbstractAssociatePrecompile {
     private static final Bytes ASSOCIATE_TOKEN_SELECTOR =
             Bytes.wrap(ASSOCIATE_TOKEN_FUNCTION.selector());
     private static final ABIType<Tuple> ASSOCIATE_TOKEN_DECODER =
-            TypeFactory.create(BYTES32_PAIR_RAW_TYPE);
+            TypeFactory.create(ADDRESS_PAIR_RAW_TYPE);
 
     public AssociatePrecompile(
             final WorldLedgers ledgers,
@@ -73,7 +73,7 @@ public class AssociatePrecompile extends AbstractAssociatePrecompile {
     @Override
     public TransactionBody.Builder body(
             final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
-        associateOp = decode(input, aliasResolver);
+        associateOp = decodeAssociation(input, aliasResolver);
         transactionBody = syntheticTxnFactory.createAssociate(associateOp);
         return transactionBody;
     }
@@ -83,8 +83,8 @@ public class AssociatePrecompile extends AbstractAssociatePrecompile {
         return pricingUtils.computeGasRequirement(blockTimestamp, this, transactionBody);
     }
 
-    @Override
-    public Association decode(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
+    private Association decodeAssociation(
+            final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
         final Tuple decodedArguments =
                 decodeFunctionCall(input, ASSOCIATE_TOKEN_SELECTOR, ASSOCIATE_TOKEN_DECODER);
 

@@ -15,8 +15,8 @@
  */
 package com.hedera.services.store.contracts.precompile.impl;
 
+import static com.hedera.services.contracts.ParsingConstants.ADDRESS_PAIR_RAW_TYPE;
 import static com.hedera.services.contracts.ParsingConstants.INT;
-import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.ADDRESS_PAIR_RAW_TYPE;
 import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.convertAddressBytesToTokenID;
 import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.convertLeftPaddedAddressToAccountId;
 import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.decodeFunctionCall;
@@ -70,7 +70,7 @@ public class FreezeTokenPrecompile extends AbstractFreezeUnfreezePrecompile {
 
     @Override
     public TransactionBody.Builder body(Bytes input, UnaryOperator<byte[]> aliasResolver) {
-        freezeUnfreezeOp = decode(input, aliasResolver);
+        freezeUnfreezeOp = decodeFreeze(input, aliasResolver);
         transactionBody = syntheticTxnFactory.createFreeze(freezeUnfreezeOp);
         return transactionBody;
     }
@@ -83,8 +83,7 @@ public class FreezeTokenPrecompile extends AbstractFreezeUnfreezePrecompile {
         return pricingUtils.getMinimumPriceInTinybars(FREEZE, consensusTime);
     }
 
-    @Override
-    public TokenFreezeUnfreezeWrapper decode(
+    private TokenFreezeUnfreezeWrapper decodeFreeze(
             final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
         final Tuple decodedArguments =
                 decodeFunctionCall(

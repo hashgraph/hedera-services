@@ -91,7 +91,7 @@ public class MintPrecompile extends AbstractWritePrecompile {
     public TransactionBody.Builder body(
             final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
         this.transactionBody = null;
-        mintOp = decode(input, aliasResolver);
+        mintOp = decodeMint(input);
         transactionBody = syntheticTxnFactory.createMint(mintOp);
         return transactionBody;
     }
@@ -156,8 +156,7 @@ public class MintPrecompile extends AbstractWritePrecompile {
         return encoder.encodeMintFailure(status);
     }
 
-    @Override
-    public MintWrapper decode(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
+    private MintWrapper decodeMint(final Bytes input) {
         final Tuple decodedArguments =
                 decodeFunctionCall(input, MINT_TOKEN_SELECTOR, MINT_TOKEN_DECODER);
 

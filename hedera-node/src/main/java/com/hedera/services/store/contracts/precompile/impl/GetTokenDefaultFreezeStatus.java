@@ -55,7 +55,7 @@ public class GetTokenDefaultFreezeStatus extends AbstractReadOnlyPrecompile {
     @Override
     public TransactionBody.Builder body(
             final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
-        defaultFreezeStatusWrapper = decode(input, aliasResolver);
+        defaultFreezeStatusWrapper = decodeTokenDefaultFreezeStatus(input);
         return super.body(input, aliasResolver);
     }
 
@@ -70,9 +70,8 @@ public class GetTokenDefaultFreezeStatus extends AbstractReadOnlyPrecompile {
         return encoder.encodeGetTokenDefaultFreezeStatus(defaultFreezeStatus);
     }
 
-    @Override
-    public GetTokenDefaultFreezeStatusWrapper decode(
-            final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
+    public static GetTokenDefaultFreezeStatusWrapper decodeTokenDefaultFreezeStatus(
+            final Bytes input) {
         final Tuple decodedArguments =
                 decodeFunctionCall(
                         input,

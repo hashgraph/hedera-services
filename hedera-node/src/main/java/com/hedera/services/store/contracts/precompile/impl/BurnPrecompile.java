@@ -82,7 +82,7 @@ public class BurnPrecompile extends AbstractWritePrecompile {
     @Override
     public TransactionBody.Builder body(
             final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
-        burnOp = decode(input, aliasResolver);
+        burnOp = decodeBurn(input);
         transactionBody = syntheticTxnFactory.createBurn(burnOp);
         return transactionBody;
     }
@@ -144,8 +144,7 @@ public class BurnPrecompile extends AbstractWritePrecompile {
         return encoder.encodeBurnFailure(status);
     }
 
-    @Override
-    public BurnWrapper decode(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
+    private BurnWrapper decodeBurn(final Bytes input) {
         final Tuple decodedArguments =
                 decodeFunctionCall(input, BURN_TOKEN_SELECTOR, BURN_TOKEN_DECODER);
 

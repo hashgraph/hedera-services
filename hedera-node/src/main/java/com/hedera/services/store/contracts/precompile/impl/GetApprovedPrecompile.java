@@ -15,11 +15,11 @@
  */
 package com.hedera.services.store.contracts.precompile.impl;
 
+import static com.hedera.services.contracts.ParsingConstants.ADDRESS_UINT256_RAW_TYPE;
 import static com.hedera.services.contracts.ParsingConstants.INT;
+import static com.hedera.services.contracts.ParsingConstants.UINT256;
 import static com.hedera.services.exceptions.ValidationUtils.validateTrueOrRevert;
 import static com.hedera.services.ledger.properties.NftProperty.SPENDER;
-import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.ADDRESS_UINT256_RAW_TYPE;
-import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.UINT256_RAW_TYPE;
 import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.convertAddressBytesToTokenID;
 import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.decodeFunctionCall;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER;
@@ -50,7 +50,7 @@ public class GetApprovedPrecompile extends AbstractReadOnlyPrecompile {
     private static final Bytes ERC_GET_APPROVED_FUNCTION_SELECTOR =
             Bytes.wrap(ERC_GET_APPROVED_FUNCTION.selector());
     private static final ABIType<Tuple> ERC_GET_APPROVED_FUNCTION_DECODER =
-            TypeFactory.create(UINT256_RAW_TYPE);
+            TypeFactory.create(UINT256);
     private static final Function HAPI_GET_APPROVED_FUNCTION =
             new Function("getApproved(address,uint256)", "(int,int)");
     private static final Bytes HAPI_GET_APPROVED_FUNCTION_SELECTOR =
@@ -80,7 +80,7 @@ public class GetApprovedPrecompile extends AbstractReadOnlyPrecompile {
     public TransactionBody.Builder body(
             final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
         final var nestedInput = tokenId == null ? input : input.slice(24);
-        getApprovedWrapper = decode(nestedInput, aliasResolver);
+        getApprovedWrapper = decodeGetApproved(nestedInput, tokenId);
         return super.body(input, aliasResolver);
     }
 
@@ -100,9 +100,9 @@ public class GetApprovedPrecompile extends AbstractReadOnlyPrecompile {
                 : encoder.encodeGetApproved(canonicalSpender);
     }
 
-    @Override
-    public GetApprovedWrapper decode(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
-        final var offset = tokenId == null ? 1 : 0;
+    public static GetApprovedWrapper decodeGetApproved(
+            final Bytes input, final TokenID impliedTokenId) {
+        final var offset = impliedTokenId == null ? 1 : 0;
 
         final Tuple decodedArguments =
                 decodeFunctionCall(
@@ -115,7 +115,9 @@ public class GetApprovedPrecompile extends AbstractReadOnlyPrecompile {
                                 : HAPI_GET_APPROVED_FUNCTION_DECODER);
 
         final var tId =
-                offset == 0 ? tokenId : convertAddressBytesToTokenID(decodedArguments.get(0));
+                offset == 0
+                        ? impliedTokenId
+                        : convertAddressBytesToTokenID(decodedArguments.get(0));
 
         final var serialNo = (BigInteger) decodedArguments.get(offset);
         return new GetApprovedWrapper(tId, serialNo.longValue());

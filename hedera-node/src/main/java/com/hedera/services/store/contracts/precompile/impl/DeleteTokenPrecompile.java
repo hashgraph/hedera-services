@@ -73,7 +73,7 @@ public class DeleteTokenPrecompile extends AbstractWritePrecompile {
 
     @Override
     public TransactionBody.Builder body(Bytes input, UnaryOperator<byte[]> aliasResolver) {
-        deleteOp = decode(input, aliasResolver);
+        deleteOp = decodeDelete(input);
         transactionBody = syntheticTxnFactory.createDelete(deleteOp);
         return transactionBody;
     }
@@ -118,8 +118,7 @@ public class DeleteTokenPrecompile extends AbstractWritePrecompile {
         deleteLogic.delete(deleteOp.tokenID());
     }
 
-    @Override
-    public DeleteWrapper decode(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
+    private DeleteWrapper decodeDelete(final Bytes input) {
         final Tuple decodedArguments =
                 decodeFunctionCall(input, DELETE_TOKEN_SELECTOR, DELETE_TOKEN_DECODER);
         final var tokenID = convertAddressBytesToTokenID(decodedArguments.get(0));

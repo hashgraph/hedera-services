@@ -15,8 +15,8 @@
  */
 package com.hedera.services.store.contracts.precompile.impl;
 
+import static com.hedera.services.contracts.ParsingConstants.ADDRESS_PAIR_RAW_TYPE;
 import static com.hedera.services.contracts.ParsingConstants.INT_BOOL_PAIR;
-import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.ADDRESS_PAIR_RAW_TYPE;
 import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.convertAddressBytesToTokenID;
 import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.convertLeftPaddedAddressToAccountId;
 import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.decodeFunctionCall;
@@ -57,7 +57,7 @@ public class IsKycPrecompile extends AbstractReadOnlyPrecompile {
 
     @Override
     public TransactionBody.Builder body(Bytes input, UnaryOperator<byte[]> aliasResolver) {
-        final var tokenIsKycWrapper = decode(input, aliasResolver);
+        final var tokenIsKycWrapper = decodeIsKyc(input, aliasResolver);
         tokenId = tokenIsKycWrapper.token();
         accountId = tokenIsKycWrapper.account();
         return super.body(input, aliasResolver);
@@ -69,8 +69,7 @@ public class IsKycPrecompile extends AbstractReadOnlyPrecompile {
         return encoder.encodeIsKyc(isKyc);
     }
 
-    @Override
-    public GrantRevokeKycWrapper decode(
+    public static GrantRevokeKycWrapper decodeIsKyc(
             final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
         final Tuple decodedArguments =
                 decodeFunctionCall(

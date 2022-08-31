@@ -72,7 +72,7 @@ public class MultiDissociatePrecompile extends AbstractDissociatePrecompile {
     @Override
     public TransactionBody.Builder body(
             final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
-        dissociateOp = decode(input, aliasResolver);
+        dissociateOp = decodeMultipleDissociations(input, aliasResolver);
         transactionBody = syntheticTxnFactory.createDissociate(dissociateOp);
         return transactionBody;
     }
@@ -82,8 +82,8 @@ public class MultiDissociatePrecompile extends AbstractDissociatePrecompile {
         return pricingUtils.computeGasRequirement(blockTimestamp, this, transactionBody);
     }
 
-    @Override
-    public Dissociation decode(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
+    private Dissociation decodeMultipleDissociations(
+            final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
         final Tuple decodedArguments =
                 decodeFunctionCall(input, DISSOCIATE_TOKENS_SELECTOR, DISSOCIATE_TOKENS_DECODER);
 

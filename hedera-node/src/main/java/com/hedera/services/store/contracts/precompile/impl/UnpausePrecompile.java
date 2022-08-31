@@ -70,7 +70,7 @@ public class UnpausePrecompile extends AbstractWritePrecompile {
 
     @Override
     public TransactionBody.Builder body(Bytes input, UnaryOperator<byte[]> aliasResolver) {
-        unpauseOp = decode(input, aliasResolver);
+        unpauseOp = decodeUnpause(input);
         transactionBody = syntheticTxnFactory.createUnpause(unpauseOp);
         return transactionBody;
     }
@@ -114,8 +114,7 @@ public class UnpausePrecompile extends AbstractWritePrecompile {
         unpauseLogic.unpause(tokenId);
     }
 
-    @Override
-    public UnpauseWrapper decode(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
+    private UnpauseWrapper decodeUnpause(final Bytes input) {
         final Tuple decodedArguments =
                 decodeFunctionCall(input, UNPAUSE_TOKEN_SELECTOR, UNPAUSE_TOKEN_DECODER);
 

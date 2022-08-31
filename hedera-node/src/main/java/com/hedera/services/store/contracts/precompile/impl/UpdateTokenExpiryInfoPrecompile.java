@@ -15,17 +15,27 @@
  */
 package com.hedera.services.store.contracts.precompile.impl;
 
+import static com.hedera.services.contracts.ParsingConstants.BYTES32;
+import static com.hedera.services.contracts.ParsingConstants.EXPIRY;
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
+import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.EXPIRY_DECODER;
+import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.convertAddressBytesToTokenID;
+import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.decodeFunctionCall;
+import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.decodeTokenExpiry;
+import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.removeBrackets;
 import static com.hedera.services.store.contracts.precompile.impl.AbstractTokenUpdatePrecompile.UpdateType.UPDATE_TOKEN_EXPIRY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 
+import com.esaulpaugh.headlong.abi.ABIType;
+import com.esaulpaugh.headlong.abi.Function;
+import com.esaulpaugh.headlong.abi.Tuple;
+import com.esaulpaugh.headlong.abi.TypeFactory;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.contracts.sources.EvmSigsVerifier;
 import com.hedera.services.ledger.accounts.ContractAliases;
 import com.hedera.services.store.contracts.WorldLedgers;
 import com.hedera.services.store.contracts.precompile.InfrastructureFactory;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
-import com.hedera.services.store.contracts.precompile.codec.DecodingFacade;
 import com.hedera.services.store.contracts.precompile.codec.TokenUpdateExpiryInfoWrapper;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.services.store.models.Id;
@@ -36,12 +46,17 @@ import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 
 public class UpdateTokenExpiryInfoPrecompile extends AbstractTokenUpdatePrecompile {
+    private static final Function TOKEN_UPDATE_EXPIRY_INFO_FUNCTION =
+            new Function("updateTokenExpiryInfo(address," + EXPIRY + ")");
+    private static final Bytes TOKEN_UPDATE_EXPIRY_INFO_SELECTOR =
+            Bytes.wrap(TOKEN_UPDATE_EXPIRY_INFO_FUNCTION.selector());
+    private static final ABIType<Tuple> TOKEN_UPDATE_EXPIRY_INFO_DECODER =
+            TypeFactory.create("(" + removeBrackets(BYTES32) + "," + EXPIRY_DECODER + ")");
     private TokenUpdateExpiryInfoWrapper updateExpiryInfoOp;
 
     public UpdateTokenExpiryInfoPrecompile(
             WorldLedgers ledgers,
             ContractAliases aliases,
-            DecodingFacade decoder,
             EvmSigsVerifier sigsVerifier,
             SideEffectsTracker sideEffectsTracker,
             SyntheticTxnFactory syntheticTxnFactory,
@@ -50,7 +65,6 @@ public class UpdateTokenExpiryInfoPrecompile extends AbstractTokenUpdatePrecompi
         super(
                 ledgers,
                 aliases,
-                decoder,
                 sigsVerifier,
                 sideEffectsTracker,
                 syntheticTxnFactory,
@@ -60,7 +74,7 @@ public class UpdateTokenExpiryInfoPrecompile extends AbstractTokenUpdatePrecompi
 
     @Override
     public Builder body(Bytes input, UnaryOperator<byte[]> aliasResolver) {
-        updateExpiryInfoOp = decoder.decodeUpdateTokenExpiryInfo(input, aliasResolver);
+        updateExpiryInfoOp = decodeUpdateTokenExpiryInfo(input, aliasResolver);
         transactionBody = syntheticTxnFactory.createTokenUpdateExpiryInfo(updateExpiryInfoOp);
         return transactionBody;
     }
@@ -72,5 +86,17 @@ public class UpdateTokenExpiryInfoPrecompile extends AbstractTokenUpdatePrecompi
         tokenId = Id.fromGrpcToken(updateExpiryInfoOp.tokenID());
         type = UPDATE_TOKEN_EXPIRY;
         super.run(frame);
+    }
+
+    private TokenUpdateExpiryInfoWrapper decodeUpdateTokenExpiryInfo(
+            final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
+        final Tuple decodedArguments =
+                decodeFunctionCall(
+                        input, TOKEN_UPDATE_EXPIRY_INFO_SELECTOR, TOKEN_UPDATE_EXPIRY_INFO_DECODER);
+
+        final var tokenID = convertAddressBytesToTokenID(decodedArguments.get(0));
+        final Tuple tokenExpiryStruct = decodedArguments.get(1);
+        final var tokenExpiry = decodeTokenExpiry(tokenExpiryStruct, aliasResolver);
+        return new TokenUpdateExpiryInfoWrapper(tokenID, tokenExpiry);
     }
 }

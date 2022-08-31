@@ -15,7 +15,7 @@
  */
 package com.hedera.services.store.contracts.precompile.impl;
 
-import static com.hedera.services.contracts.ParsingConstants.BYTES32_PAIR_RAW_TYPE;
+import static com.hedera.services.contracts.ParsingConstants.ADDRESS_PAIR_RAW_TYPE;
 import static com.hedera.services.contracts.ParsingConstants.INT;
 import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.convertAddressBytesToTokenID;
 import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.convertLeftPaddedAddressToAccountId;
@@ -46,7 +46,7 @@ public class DissociatePrecompile extends AbstractDissociatePrecompile {
     private static final Bytes DISSOCIATE_TOKEN_SELECTOR =
             Bytes.wrap(DISSOCIATE_TOKEN_FUNCTION.selector());
     private static final ABIType<Tuple> DISSOCIATE_TOKEN_DECODER =
-            TypeFactory.create(BYTES32_PAIR_RAW_TYPE);
+            TypeFactory.create(ADDRESS_PAIR_RAW_TYPE);
 
     public DissociatePrecompile(
             final WorldLedgers ledgers,
@@ -73,7 +73,7 @@ public class DissociatePrecompile extends AbstractDissociatePrecompile {
     @Override
     public TransactionBody.Builder body(
             final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
-        dissociateOp = decode(input, aliasResolver);
+        dissociateOp = decodeDissociate(input, aliasResolver);
         transactionBody = syntheticTxnFactory.createDissociate(dissociateOp);
         return transactionBody;
     }
@@ -83,8 +83,8 @@ public class DissociatePrecompile extends AbstractDissociatePrecompile {
         return pricingUtils.computeGasRequirement(blockTimestamp, this, transactionBody);
     }
 
-    @Override
-    public Dissociation decode(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
+    private Dissociation decodeDissociate(
+            final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
         final Tuple decodedArguments =
                 decodeFunctionCall(input, DISSOCIATE_TOKEN_SELECTOR, DISSOCIATE_TOKEN_DECODER);
 

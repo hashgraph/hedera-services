@@ -106,7 +106,7 @@ public class SetApprovalForAllPrecompile extends AbstractWritePrecompile {
     public TransactionBody.Builder body(
             final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
         final var nestedInput = tokenId == null ? input : input.slice(24);
-        setApprovalForAllWrapper = decode(nestedInput, aliasResolver);
+        setApprovalForAllWrapper = decodeSetApprovalForAll(nestedInput, aliasResolver);
         transactionBody =
                 syntheticTxnFactory.createApproveAllowanceForAllNFT(setApprovalForAllWrapper);
         return transactionBody;
@@ -169,8 +169,7 @@ public class SetApprovalForAllPrecompile extends AbstractWritePrecompile {
                 .build();
     }
 
-    @Override
-    public SetApprovalForAllWrapper decode(
+    private SetApprovalForAllWrapper decodeSetApprovalForAll(
             final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
         final var offset = tokenId == null ? 1 : 0;
         final Tuple decodedArguments =

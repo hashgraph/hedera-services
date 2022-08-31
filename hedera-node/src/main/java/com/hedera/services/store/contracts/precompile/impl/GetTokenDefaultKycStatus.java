@@ -55,7 +55,7 @@ public class GetTokenDefaultKycStatus extends AbstractReadOnlyPrecompile {
     @Override
     public TransactionBody.Builder body(
             final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
-        defaultKycStatusWrapper = decode(input, aliasResolver);
+        defaultKycStatusWrapper = decodeTokenDefaultKycStatus(input);
         return super.body(input, aliasResolver);
     }
 
@@ -69,9 +69,7 @@ public class GetTokenDefaultKycStatus extends AbstractReadOnlyPrecompile {
         return encoder.encodeGetTokenDefaultKycStatus(defaultKycStatus);
     }
 
-    @Override
-    public GetTokenDefaultKycStatusWrapper decode(
-            final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
+    public static GetTokenDefaultKycStatusWrapper decodeTokenDefaultKycStatus(final Bytes input) {
         final Tuple decodedArguments =
                 decodeFunctionCall(
                         input,

@@ -15,10 +15,10 @@
  */
 package com.hedera.services.store.contracts.precompile.impl;
 
+import static com.hedera.services.contracts.ParsingConstants.ADDRESS_ADDRESS_UINT256_RAW_TYPE;
+import static com.hedera.services.contracts.ParsingConstants.ADDRESS_UINT256_RAW_TYPE;
 import static com.hedera.services.contracts.ParsingConstants.BOOL;
 import static com.hedera.services.exceptions.ValidationUtils.validateTrueOrRevert;
-import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.ADDRESS_ADDRESS_UINT256_RAW_TYPE;
-import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.ADDRESS_UINT256_RAW_TYPE;
 import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.NO_FUNGIBLE_TRANSFERS;
 import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.NO_NFT_EXCHANGES;
 import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.addApprovedAdjustment;
@@ -115,7 +115,15 @@ public class ERCTransferPrecompile extends TransferPrecompile {
             final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
         initializeHederaTokenStore();
 
-        transferOp = decode(input, aliasResolver);
+        final var nestedInput = input.slice(24);
+        transferOp =
+                switch (nestedInput.getInt(0)) {
+                    case AbiConstants.ABI_ID_ERC_TRANSFER -> decodeERCTransfer(
+                            nestedInput, aliasResolver);
+                    case AbiConstants.ABI_ID_ERC_TRANSFER_FROM -> decodeERCTransferFrom(
+                            nestedInput, aliasResolver);
+                    default -> null;
+                };
 
         transactionBody = syntheticTxnFactory.createCryptoTransfer(transferOp);
         extrapolateDetailsFromSyntheticTxn();
@@ -142,18 +150,6 @@ public class ERCTransferPrecompile extends TransferPrecompile {
         } else {
             frame.addLog(getLogForNftExchange(asTypedEvmAddress(tokenID)));
         }
-    }
-
-    @Override
-    public List<TokenTransferWrapper> decode(
-            final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
-        final var nestedInput = input.slice(24);
-        return switch (nestedInput.getInt(0)) {
-            case AbiConstants.ABI_ID_ERC_TRANSFER -> decodeERCTransfer(nestedInput, aliasResolver);
-            case AbiConstants.ABI_ID_ERC_TRANSFER_FROM -> decodeERCTransferFrom(
-                    nestedInput, aliasResolver);
-            default -> null;
-        };
     }
 
     private List<TokenTransferWrapper> decodeERCTransfer(

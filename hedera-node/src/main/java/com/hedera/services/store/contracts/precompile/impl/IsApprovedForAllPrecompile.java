@@ -15,11 +15,11 @@
  */
 package com.hedera.services.store.contracts.precompile.impl;
 
+import static com.hedera.services.contracts.ParsingConstants.ADDRESS_PAIR_RAW_TYPE;
+import static com.hedera.services.contracts.ParsingConstants.ADDRESS_TRIO_RAW_TYPE;
 import static com.hedera.services.contracts.ParsingConstants.BOOL;
 import static com.hedera.services.contracts.ParsingConstants.INT_BOOL_PAIR;
 import static com.hedera.services.ledger.properties.AccountProperty.APPROVE_FOR_ALL_NFTS_ALLOWANCES;
-import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.ADDRESS_PAIR_RAW_TYPE;
-import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.ADDRESS_TRIPLE_RAW_TYPE;
 import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.convertAddressBytesToTokenID;
 import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.convertLeftPaddedAddressToAccountId;
 import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.decodeFunctionCall;
@@ -55,7 +55,7 @@ public class IsApprovedForAllPrecompile extends AbstractReadOnlyPrecompile {
     private static final Bytes HAPI_IS_APPROVED_FOR_ALL_SELECTOR =
             Bytes.wrap(HAPI_IS_APPROVED_FOR_ALL.selector());
     private static final ABIType<Tuple> HAPI_IS_APPROVED_FOR_ALL_DECODER =
-            TypeFactory.create(ADDRESS_TRIPLE_RAW_TYPE);
+            TypeFactory.create(ADDRESS_TRIO_RAW_TYPE);
     private IsApproveForAllWrapper isApproveForAllWrapper;
 
     public IsApprovedForAllPrecompile(
@@ -79,7 +79,7 @@ public class IsApprovedForAllPrecompile extends AbstractReadOnlyPrecompile {
     public TransactionBody.Builder body(
             final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
         final var nestedInput = tokenId == null ? input : input.slice(24);
-        isApproveForAllWrapper = decode(nestedInput, aliasResolver);
+        isApproveForAllWrapper = decodeIsApprovedForAll(nestedInput, tokenId, aliasResolver);
         return super.body(input, aliasResolver);
     }
 
@@ -109,10 +109,11 @@ public class IsApprovedForAllPrecompile extends AbstractReadOnlyPrecompile {
                 : encoder.encodeIsApprovedForAll(answer);
     }
 
-    @Override
-    public IsApproveForAllWrapper decode(
-            final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
-        final var offset = tokenId == null ? 1 : 0;
+    public static IsApproveForAllWrapper decodeIsApprovedForAll(
+            final Bytes input,
+            final TokenID impliedTokenId,
+            final UnaryOperator<byte[]> aliasResolver) {
+        final var offset = impliedTokenId == null ? 1 : 0;
 
         final Tuple decodedArguments =
                 decodeFunctionCall(
@@ -125,7 +126,9 @@ public class IsApprovedForAllPrecompile extends AbstractReadOnlyPrecompile {
                                 : HAPI_IS_APPROVED_FOR_ALL_DECODER);
 
         final var tId =
-                offset == 0 ? tokenId : convertAddressBytesToTokenID(decodedArguments.get(0));
+                offset == 0
+                        ? impliedTokenId
+                        : convertAddressBytesToTokenID(decodedArguments.get(0));
 
         final var owner =
                 convertLeftPaddedAddressToAccountId(decodedArguments.get(offset), aliasResolver);

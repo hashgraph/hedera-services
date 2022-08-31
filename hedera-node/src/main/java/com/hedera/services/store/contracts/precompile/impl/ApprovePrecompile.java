@@ -15,14 +15,14 @@
  */
 package com.hedera.services.store.contracts.precompile.impl;
 
+import static com.hedera.services.contracts.ParsingConstants.ADDRESS_ADDRESS_UINT256_RAW_TYPE;
+import static com.hedera.services.contracts.ParsingConstants.ADDRESS_UINT256_RAW_TYPE;
 import static com.hedera.services.contracts.ParsingConstants.BOOL;
 import static com.hedera.services.contracts.ParsingConstants.INT;
 import static com.hedera.services.contracts.ParsingConstants.INT_BOOL_PAIR;
 import static com.hedera.services.exceptions.ValidationUtils.validateTrueOrRevert;
 import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
 import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.HTS_PRECOMPILED_CONTRACT_ADDRESS;
-import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.ADDRESS_ADDRESS_UINT256_RAW_TYPE;
-import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.ADDRESS_UINT256_RAW_TYPE;
 import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.convertAddressBytesToTokenID;
 import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.convertLeftPaddedAddressToAccountId;
 import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.decodeFunctionCall;
@@ -138,7 +138,7 @@ public class ApprovePrecompile extends AbstractWritePrecompile {
             final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
         final var nestedInput = tokenId == null ? input : input.slice(24);
         operatorId = EntityId.fromAddress(senderAddress);
-        approveOp = decode(nestedInput, aliasResolver);
+        approveOp = decodeTokenApprove(nestedInput, aliasResolver);
         if (approveOp.isFungible()) {
             transactionBody = syntheticTxnFactory.createFungibleApproval(approveOp);
             return transactionBody;
@@ -251,8 +251,8 @@ public class ApprovePrecompile extends AbstractWritePrecompile {
         }
     }
 
-    @Override
-    public ApproveWrapper decode(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
+    private ApproveWrapper decodeTokenApprove(
+            final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
 
         final var offset = tokenId == null ? 1 : 0;
         final Tuple decodedArguments;

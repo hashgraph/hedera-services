@@ -55,7 +55,7 @@ public class TokenInfoPrecompile extends AbstractTokenInfoPrecompile {
 
     @Override
     public Builder body(Bytes input, UnaryOperator<byte[]> aliasResolver) {
-        final var tokenInfoWrapper = decode(input, aliasResolver);
+        final var tokenInfoWrapper = decodeGetTokenInfo(input);
         tokenId = tokenInfoWrapper.tokenID();
         return super.body(input, aliasResolver);
     }
@@ -68,8 +68,7 @@ public class TokenInfoPrecompile extends AbstractTokenInfoPrecompile {
         return encoder.encodeGetTokenInfo(tokenInfo);
     }
 
-    @Override
-    public TokenInfoWrapper decode(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
+    public static TokenInfoWrapper decodeGetTokenInfo(final Bytes input) {
         final Tuple decodedArguments =
                 decodeFunctionCall(input, GET_TOKEN_INFO_SELECTOR, GET_TOKEN_INFO_DECODER);
 

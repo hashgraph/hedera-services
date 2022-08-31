@@ -15,11 +15,11 @@
  */
 package com.hedera.services.store.contracts.precompile.impl;
 
+import static com.hedera.services.contracts.ParsingConstants.ADDRESS_PAIR_RAW_TYPE;
+import static com.hedera.services.contracts.ParsingConstants.ADDRESS_TRIO_RAW_TYPE;
 import static com.hedera.services.contracts.ParsingConstants.INT;
 import static com.hedera.services.exceptions.ValidationUtils.validateTrueOrRevert;
 import static com.hedera.services.ledger.properties.AccountProperty.FUNGIBLE_TOKEN_ALLOWANCES;
-import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.ADDRESS_PAIR_RAW_TYPE;
-import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.ADDRESS_TRIPLE_RAW_TYPE;
 import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.convertAddressBytesToTokenID;
 import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.convertLeftPaddedAddressToAccountId;
 import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.decodeFunctionCall;
@@ -60,7 +60,7 @@ public class AllowancePrecompile extends AbstractReadOnlyPrecompile {
     private static final Bytes HAPI_ALLOWANCE_SELECTOR =
             Bytes.wrap(HAPI_ALLOWANCE_FUNCTION.selector());
     private static final ABIType<Tuple> HAPI_ALLOWANCE_DECODER =
-            TypeFactory.create(ADDRESS_TRIPLE_RAW_TYPE);
+            TypeFactory.create(ADDRESS_TRIO_RAW_TYPE);
     private TokenAllowanceWrapper allowanceWrapper;
 
     public AllowancePrecompile(
@@ -84,7 +84,7 @@ public class AllowancePrecompile extends AbstractReadOnlyPrecompile {
     public TransactionBody.Builder body(
             final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
         final var nestedInput = tokenId == null ? input : input.slice(24);
-        allowanceWrapper = decode(nestedInput, aliasResolver);
+        allowanceWrapper = decodeTokenAllowance(nestedInput, tokenId, aliasResolver);
 
         return super.body(input, aliasResolver);
     }
@@ -110,10 +110,11 @@ public class AllowancePrecompile extends AbstractReadOnlyPrecompile {
                 : encoder.encodeAllowance(value);
     }
 
-    @Override
-    public TokenAllowanceWrapper decode(
-            final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
-        final var offset = tokenId == null ? 1 : 0;
+    public static TokenAllowanceWrapper decodeTokenAllowance(
+            final Bytes input,
+            final TokenID impliedTokenId,
+            final UnaryOperator<byte[]> aliasResolver) {
+        final var offset = impliedTokenId == null ? 1 : 0;
 
         final Tuple decodedArguments =
                 decodeFunctionCall(
@@ -121,14 +122,16 @@ public class AllowancePrecompile extends AbstractReadOnlyPrecompile {
                         offset == 0 ? ERC_ALLOWANCE_SELECTOR : HAPI_ALLOWANCE_SELECTOR,
                         offset == 0 ? ERC_ALLOWANCE_DECODER : HAPI_ALLOWANCE_DECODER);
 
-        final var tId =
-                offset == 0 ? tokenId : convertAddressBytesToTokenID(decodedArguments.get(0));
+        final var tokenId =
+                offset == 0
+                        ? impliedTokenId
+                        : convertAddressBytesToTokenID(decodedArguments.get(0));
         final var owner =
                 convertLeftPaddedAddressToAccountId(decodedArguments.get(offset), aliasResolver);
         final var spender =
                 convertLeftPaddedAddressToAccountId(
                         decodedArguments.get(offset + 1), aliasResolver);
 
-        return new TokenAllowanceWrapper(tId, owner, spender);
+        return new TokenAllowanceWrapper(tokenId, owner, spender);
     }
 }

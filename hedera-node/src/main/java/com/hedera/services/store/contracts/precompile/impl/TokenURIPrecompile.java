@@ -57,7 +57,7 @@ public class TokenURIPrecompile extends AbstractReadOnlyPrecompile {
     @Override
     public TransactionBody.Builder body(
             final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
-        final var wrapper = decode(input.slice(24), aliasResolver);
+        final var wrapper = decodeTokenUriNFT(input.slice(24));
         nftId =
                 new NftId(
                         tokenId.getShardNum(),
@@ -76,9 +76,7 @@ public class TokenURIPrecompile extends AbstractReadOnlyPrecompile {
         return encoder.encodeTokenUri(metadata);
     }
 
-    @Override
-    public OwnerOfAndTokenURIWrapper decode(
-            final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
+    public static OwnerOfAndTokenURIWrapper decodeTokenUriNFT(final Bytes input) {
         final Tuple decodedArguments =
                 decodeFunctionCall(input, TOKEN_URI_NFT_SELECTOR, TOKEN_URI_NFT_DECODER);
 

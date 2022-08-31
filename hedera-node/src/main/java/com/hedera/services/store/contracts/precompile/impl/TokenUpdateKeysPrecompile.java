@@ -15,17 +15,28 @@
  */
 package com.hedera.services.store.contracts.precompile.impl;
 
+import static com.hedera.services.contracts.ParsingConstants.ARRAY_BRACKETS;
+import static com.hedera.services.contracts.ParsingConstants.BYTES32;
+import static com.hedera.services.contracts.ParsingConstants.TOKEN_KEY;
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
+import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.TOKEN_KEY_DECODER;
+import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.convertAddressBytesToTokenID;
+import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.decodeFunctionCall;
+import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.decodeTokenKeys;
+import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.removeBrackets;
 import static com.hedera.services.store.contracts.precompile.impl.AbstractTokenUpdatePrecompile.UpdateType.UPDATE_TOKEN_KEYS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 
+import com.esaulpaugh.headlong.abi.ABIType;
+import com.esaulpaugh.headlong.abi.Function;
+import com.esaulpaugh.headlong.abi.Tuple;
+import com.esaulpaugh.headlong.abi.TypeFactory;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.contracts.sources.EvmSigsVerifier;
 import com.hedera.services.ledger.accounts.ContractAliases;
 import com.hedera.services.store.contracts.WorldLedgers;
 import com.hedera.services.store.contracts.precompile.InfrastructureFactory;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
-import com.hedera.services.store.contracts.precompile.codec.DecodingFacade;
 import com.hedera.services.store.contracts.precompile.codec.TokenUpdateKeysWrapper;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.services.store.models.Id;
@@ -36,12 +47,18 @@ import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 
 public class TokenUpdateKeysPrecompile extends AbstractTokenUpdatePrecompile {
+    private static final Function TOKEN_UPDATE_KEYS_FUNCTION =
+            new Function("updateTokenKeys(address," + TOKEN_KEY + ARRAY_BRACKETS + ")");
+    private static final Bytes TOKEN_UPDATE_KEYS_SELECTOR =
+            Bytes.wrap(TOKEN_UPDATE_KEYS_FUNCTION.selector());
+    private static final ABIType<Tuple> TOKEN_UPDATE_KEYS_DECODER =
+            TypeFactory.create(
+                    "(" + removeBrackets(BYTES32) + "," + TOKEN_KEY_DECODER + ARRAY_BRACKETS + ")");
     TokenUpdateKeysWrapper updateOp;
 
     public TokenUpdateKeysPrecompile(
             WorldLedgers ledgers,
             ContractAliases aliases,
-            DecodingFacade decoder,
             EvmSigsVerifier sigsVerifier,
             SideEffectsTracker sideEffectsTracker,
             SyntheticTxnFactory syntheticTxnFactory,
@@ -50,7 +67,6 @@ public class TokenUpdateKeysPrecompile extends AbstractTokenUpdatePrecompile {
         super(
                 ledgers,
                 aliases,
-                decoder,
                 sigsVerifier,
                 sideEffectsTracker,
                 syntheticTxnFactory,
@@ -60,7 +76,7 @@ public class TokenUpdateKeysPrecompile extends AbstractTokenUpdatePrecompile {
 
     @Override
     public TransactionBody.Builder body(Bytes input, UnaryOperator<byte[]> aliasResolver) {
-        updateOp = decoder.decodeUpdateTokenKeys(input, aliasResolver);
+        updateOp = decodeUpdateTokenKeys(input, aliasResolver);
         transactionBody = syntheticTxnFactory.createTokenUpdateKeys(updateOp);
         return transactionBody;
     }
@@ -72,5 +88,14 @@ public class TokenUpdateKeysPrecompile extends AbstractTokenUpdatePrecompile {
         tokenId = Id.fromGrpcToken(updateOp.tokenID());
         type = UPDATE_TOKEN_KEYS;
         super.run(frame);
+    }
+
+    private TokenUpdateKeysWrapper decodeUpdateTokenKeys(
+            Bytes input, UnaryOperator<byte[]> aliasResolver) {
+        final Tuple decodedArguments =
+                decodeFunctionCall(input, TOKEN_UPDATE_KEYS_SELECTOR, TOKEN_UPDATE_KEYS_DECODER);
+        final var tokenID = convertAddressBytesToTokenID(decodedArguments.get(0));
+        final var tokenKeys = decodeTokenKeys(decodedArguments.get(1), aliasResolver);
+        return new TokenUpdateKeysWrapper(tokenID, tokenKeys);
     }
 }

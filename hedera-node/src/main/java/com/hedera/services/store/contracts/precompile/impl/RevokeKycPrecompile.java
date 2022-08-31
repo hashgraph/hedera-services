@@ -15,9 +15,9 @@
  */
 package com.hedera.services.store.contracts.precompile.impl;
 
+import static com.hedera.services.contracts.ParsingConstants.ADDRESS_PAIR_RAW_TYPE;
 import static com.hedera.services.contracts.ParsingConstants.INT;
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
-import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.ADDRESS_PAIR_RAW_TYPE;
 import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.convertAddressBytesToTokenID;
 import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.convertLeftPaddedAddressToAccountId;
 import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.decodeFunctionCall;
@@ -83,7 +83,7 @@ public class RevokeKycPrecompile extends AbstractGrantRevokeKycPrecompile {
 
     @Override
     public TransactionBody.Builder body(Bytes input, UnaryOperator<byte[]> aliasResolver) {
-        grantRevokeOp = decode(input, aliasResolver);
+        grantRevokeOp = decodeRevokeTokenKyc(input, aliasResolver);
         transactionBody = syntheticTxnFactory.createRevokeKyc(grantRevokeOp);
         return transactionBody;
     }
@@ -94,8 +94,7 @@ public class RevokeKycPrecompile extends AbstractGrantRevokeKycPrecompile {
         return pricingUtils.getMinimumPriceInTinybars(REVOKE_KYC, consensusTime);
     }
 
-    @Override
-    public GrantRevokeKycWrapper decode(
+    private GrantRevokeKycWrapper decodeRevokeTokenKyc(
             final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
         final Tuple decodedArguments =
                 decodeFunctionCall(

@@ -72,7 +72,7 @@ public class MultiAssociatePrecompile extends AbstractAssociatePrecompile {
     @Override
     public TransactionBody.Builder body(
             final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
-        associateOp = decode(input, aliasResolver);
+        associateOp = decodeMultipleAssociations(input, aliasResolver);
         transactionBody = syntheticTxnFactory.createAssociate(associateOp);
         return transactionBody;
     }
@@ -82,8 +82,8 @@ public class MultiAssociatePrecompile extends AbstractAssociatePrecompile {
         return pricingUtils.computeGasRequirement(blockTimestamp, this, transactionBody);
     }
 
-    @Override
-    public Association decode(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
+    private Association decodeMultipleAssociations(
+            final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
         final Tuple decodedArguments =
                 decodeFunctionCall(input, ASSOCIATE_TOKENS_SELECTOR, ASSOCIATE_TOKENS_DECODER);
 

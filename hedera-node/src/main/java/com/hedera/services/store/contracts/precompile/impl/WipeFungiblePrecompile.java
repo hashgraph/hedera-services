@@ -67,7 +67,7 @@ public class WipeFungiblePrecompile extends AbstractWipePrecompile {
 
     @Override
     public TransactionBody.Builder body(Bytes input, UnaryOperator<byte[]> aliasResolver) {
-        wipeOp = decode(input, aliasResolver);
+        wipeOp = decodeWipe(input, aliasResolver);
         transactionBody = syntheticTxnFactory.createWipe(wipeOp);
         return transactionBody;
     }
@@ -79,8 +79,7 @@ public class WipeFungiblePrecompile extends AbstractWipePrecompile {
         return pricingUtils.getMinimumPriceInTinybars(WIPE_FUNGIBLE, consensusTime);
     }
 
-    @Override
-    public WipeWrapper decode(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
+    private WipeWrapper decodeWipe(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
         final Tuple decodedArguments =
                 decodeFunctionCall(input, WIPE_TOKEN_ACCOUNT_SELECTOR, WIPE_TOKEN_ACCOUNT_DECODER);
 
