@@ -731,7 +731,7 @@ public class UtilVerbs {
             final int bytesPerOp,
             final int appendsPerBurst) {
         return updateSpecialFile(
-                payer, fileName, contents, bytesPerOp, appendsPerBurst, new UploadProgress());
+                payer, fileName, contents, bytesPerOp, appendsPerBurst, 0);
     }
 
     public static HapiSpecOperation updateSpecialFile(
@@ -740,28 +740,16 @@ public class UtilVerbs {
             final ByteString contents,
             final int bytesPerOp,
             final int appendsPerBurst,
-            final UploadProgress uploadProgressIn) {
+            final int appendsToSkip) {
         return withOpContext(
                 (spec, opLog) -> {
-                    var uploadProgress = uploadProgressIn;
                     final var bytesToUpload = contents.size();
                     final var bytesToAppend = bytesToUpload - Math.min(bytesToUpload, bytesPerOp);
                     var appendsRequired =
                             bytesToAppend / bytesPerOp + Math.min(1, bytesToAppend % bytesPerOp);
+                    final var uploadProgress = new UploadProgress();
+                    uploadProgress.initializeFor(appendsRequired);
 
-                    var appendsToSkip = 0;
-                    if (uploadProgress.isInitialized()) {
-                        final var finishedPrefixLen = uploadProgress.finishedAppendPrefixLength();
-                        if (finishedPrefixLen != -1) {
-                            appendsToSkip = finishedPrefixLen;
-                            appendsRequired -= appendsToSkip;
-                        } else {
-                            uploadProgress = new UploadProgress();
-                        }
-                    }
-                    if (!uploadProgress.isInitialized()) {
-                        uploadProgress.initializeFor(appendsRequired);
-                    }
                     if (appendsToSkip == 0) {
                         COMMON_MESSAGES.info(
                                 "Beginning upload for "
@@ -829,8 +817,8 @@ public class UtilVerbs {
                         final var finished = uploadProgress.finishedAppendPrefixLength();
                         if (finished != -1) {
                             log.error(
-                                    "Upload failed, but some appends finished; "
-                                            + "please re-run with --skip-appends {}",
+                                    "Upload failed, but at least {} appends appear to have finished; "
+                                            + "please re-run with --restart-from-failure",
                                     finished,
                                     e);
                         } else {

@@ -68,11 +68,9 @@ public class SysFileUploadCommand implements Callable<Integer> {
     private Integer appendsPerBurst;
 
     @CommandLine.Option(
-            names = {"--skip-appends"},
-            description =
-                    "number of already-complete appends to skip when uploading a special file"
-                            + " (default 0)")
-    private Integer appendsToSkip;
+            names = {"--restart-from-failure"},
+            description = "try to only append missing content")
+    private Boolean restartFromFailure;
 
     @CommandLine.Parameters(
             arity = "1",
@@ -97,8 +95,8 @@ public class SysFileUploadCommand implements Callable<Integer> {
             if (appendsPerBurst == null) {
                 appendsPerBurst = DEFAULT_APPENDS_PER_BURST;
             }
-            if (appendsToSkip == null) {
-                appendsToSkip = 0;
+            if (restartFromFailure == null) {
+                restartFromFailure = Boolean.FALSE;
             }
         } else {
             if (bytesPerAppend != null) {
@@ -111,10 +109,10 @@ public class SysFileUploadCommand implements Callable<Integer> {
                         sysFilesCommand.getYahcli().getSpec().commandLine(),
                         "Option 'appendsPerBurst' only makes sense for a special file");
             }
-            if (appendsToSkip != null) {
+            if (restartFromFailure != null) {
                 throw new CommandLine.ParameterException(
                         sysFilesCommand.getYahcli().getSpec().commandLine(),
-                        "Option 'appendsToSkip' only makes sense for a special file");
+                        "Option 'restartFromFailure' only makes sense for a special file");
             }
         }
 
@@ -123,7 +121,7 @@ public class SysFileUploadCommand implements Callable<Integer> {
                         ? new SysFileUploadSuite(
                                 bytesPerAppend,
                                 appendsPerBurst,
-                                appendsToSkip,
+                                restartFromFailure,
                                 srcDir,
                                 config.asSpecConfig(),
                                 sysFile,

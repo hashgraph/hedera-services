@@ -15,6 +15,7 @@
  */
 package com.hedera.services.utils.accessors;
 
+import static com.hedera.services.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
 import static com.hedera.services.legacy.proto.utils.ByteStringUtils.unwrapUnsafelyIfPossible;
 import static com.hedera.services.legacy.proto.utils.CommonUtils.noThrowSha384HashOf;
 import static com.hedera.services.usage.token.TokenOpsUsageUtils.TOKEN_OPS_USAGE_UTILS;
@@ -44,6 +45,7 @@ import com.google.common.base.MoreObjects;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.primitives.StateView;
+import com.hedera.services.context.properties.StaticPropertiesHolder;
 import com.hedera.services.ethereum.EthTxData;
 import com.hedera.services.grpc.marshalling.AliasResolver;
 import com.hedera.services.ledger.accounts.AliasManager;
@@ -85,7 +87,6 @@ import org.bouncycastle.util.Arrays;
 
 /** Encapsulates access to several commonly referenced parts of a gRPC {@link Transaction}. */
 public class SignedTxnAccessor implements TxnAccessor {
-    public static final LongPredicate IS_THROTTLE_EXEMPT = num -> num >= 1 && num <= 100L;
     private static final Logger log = LogManager.getLogger(SignedTxnAccessor.class);
 
     private static final int UNKNOWN_NUM_AUTO_CREATIONS = -1;
@@ -305,7 +306,7 @@ public class SignedTxnAccessor implements TxnAccessor {
         }
         var p = getPayer();
         if (p != null) {
-            return IS_THROTTLE_EXEMPT.test(p.getAccountNum());
+            return STATIC_PROPERTIES.isThrottleExempt(p.getAccountNum());
         }
         return false;
     }
