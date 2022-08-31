@@ -822,6 +822,8 @@ public final class MiscUtils {
             ordinary.setTokenUnpause(scheduledTxn.getTokenUnpause());
         } else if (scheduledTxn.hasUtilPrng()) {
             ordinary.setUtilPrng(scheduledTxn.getUtilPrng());
+        } else if (scheduledTxn.hasCryptoApproveAllowance()) {
+            ordinary.setCryptoApproveAllowance(scheduledTxn.getCryptoApproveAllowance());
         }
         return ordinary.build();
     }

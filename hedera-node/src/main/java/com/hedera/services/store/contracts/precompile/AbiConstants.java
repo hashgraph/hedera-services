@@ -110,6 +110,12 @@ public final class AbiConstants {
     public static final int ABI_ID_FREEZE = 0x5b8f8584;
     // unfreezeToken(address token, address account)
     public static final int ABI_ID_UNFREEZE = 0x52f91387;
+    // updateTokenInfo(address token, HederaToken tokenInfo)
+    public static final int ABI_ID_UPDATE_TOKEN_INFO = 0x2cccc36f;
+    // updateTokenKeys(address token, TokenKey [])
+    public static final int ABI_ID_UPDATE_TOKEN_KEYS = 0x6fc3cbaf;
+    // getTokenKey(address token, uint tokenType)
+    public static final int ABI_ID_GET_TOKEN_KEY = 0x3c4dd32e;
     // Transfer(address indexed from, address indexed to, uint256 indexed tokenId)
     // Transfer(address indexed from, address indexed to, uint256 value)
     public static final Bytes TRANSFER_EVENT =
@@ -163,4 +169,8 @@ public final class AbiConstants {
     public static final int ABI_ID_IS_TOKEN = 0x19f37361;
     // getTokenType(address token)
     public static final int ABI_ID_GET_TOKEN_TYPE = 0x93272baf;
+    // getTokenExpiryInfo(address token)
+    public static final int ABI_ID_GET_TOKEN_EXPIRY_INFO = 0xd614cdb8;
+    // updateTokenExpiryInfo(address token, Expiry expiryInfoStruct)
+    public static final int ABI_ID_UPDATE_TOKEN_EXPIRY_INFO = 0x593d6e82;
 }

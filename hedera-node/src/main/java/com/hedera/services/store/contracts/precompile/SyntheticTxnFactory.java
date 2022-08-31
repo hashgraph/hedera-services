@@ -25,6 +25,7 @@ import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
 import com.google.protobuf.BoolValue;
 import com.google.protobuf.ByteString;
+import com.google.protobuf.StringValue;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.ethereum.EthTxData;
@@ -44,7 +45,11 @@ import com.hedera.services.store.contracts.precompile.codec.PauseWrapper;
 import com.hedera.services.store.contracts.precompile.codec.SetApprovalForAllWrapper;
 import com.hedera.services.store.contracts.precompile.codec.TokenCreateWrapper;
 import com.hedera.services.store.contracts.precompile.codec.TokenFreezeUnfreezeWrapper;
+import com.hedera.services.store.contracts.precompile.codec.TokenKeyWrapper;
 import com.hedera.services.store.contracts.precompile.codec.TokenTransferWrapper;
+import com.hedera.services.store.contracts.precompile.codec.TokenUpdateExpiryInfoWrapper;
+import com.hedera.services.store.contracts.precompile.codec.TokenUpdateKeysWrapper;
+import com.hedera.services.store.contracts.precompile.codec.TokenUpdateWrapper;
 import com.hedera.services.store.contracts.precompile.codec.UnpauseWrapper;
 import com.hedera.services.store.contracts.precompile.codec.WipeWrapper;
 import com.hedera.services.utils.EntityNum;
@@ -88,6 +93,7 @@ import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TokenType;
 import com.hederahashgraph.api.proto.java.TokenUnfreezeAccountTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenUnpauseTransactionBody;
+import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenWipeAccountTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
@@ -582,6 +588,76 @@ public class SyntheticTxnFactory {
         builder.setToken(unFreezeWrapper.token());
         builder.setAccount(unFreezeWrapper.account());
         return TransactionBody.newBuilder().setTokenUnfreeze(builder);
+    }
+
+    public TransactionBody.Builder createTokenUpdate(TokenUpdateWrapper updateWrapper) {
+        final var builder = TokenUpdateTransactionBody.newBuilder();
+        builder.setToken(updateWrapper.tokenID());
+
+        if (updateWrapper.name() != null) builder.setName(updateWrapper.name());
+        if (updateWrapper.symbol() != null) builder.setSymbol(updateWrapper.symbol());
+        if (updateWrapper.memo() != null) builder.setMemo(StringValue.of(updateWrapper.memo()));
+        if (updateWrapper.treasury() != null) builder.setTreasury(updateWrapper.treasury());
+
+        if (updateWrapper.expiry().second() != 0) {
+            builder.setExpiry(
+                    Timestamp.newBuilder().setSeconds(updateWrapper.expiry().second()).build());
+        }
+        if (updateWrapper.expiry().autoRenewAccount() != null)
+            builder.setAutoRenewAccount(updateWrapper.expiry().autoRenewAccount());
+        if (updateWrapper.expiry().autoRenewPeriod() != 0) {
+            builder.setAutoRenewPeriod(
+                    Duration.newBuilder().setSeconds(updateWrapper.expiry().autoRenewPeriod()));
+        }
+
+        return checkTokenKeysTypeAndBuild(updateWrapper.tokenKeys(), builder);
+    }
+
+    public TransactionBody.Builder createTokenUpdateKeys(TokenUpdateKeysWrapper updateWrapper) {
+        final var builder = constructUpdateTokenBuilder(updateWrapper.tokenID());
+        return checkTokenKeysTypeAndBuild(updateWrapper.tokenKeys(), builder);
+    }
+
+    private TokenUpdateTransactionBody.Builder constructUpdateTokenBuilder(TokenID tokenID) {
+        final var builder = TokenUpdateTransactionBody.newBuilder();
+        builder.setToken(tokenID);
+        return builder;
+    }
+
+    private TransactionBody.Builder checkTokenKeysTypeAndBuild(
+            List<TokenKeyWrapper> tokenKeys, TokenUpdateTransactionBody.Builder builder) {
+        tokenKeys.forEach(
+                tokenKeyWrapper -> {
+                    final var key = tokenKeyWrapper.key().asGrpc();
+                    if (tokenKeyWrapper.isUsedForAdminKey()) builder.setAdminKey(key);
+                    if (tokenKeyWrapper.isUsedForKycKey()) builder.setKycKey(key);
+                    if (tokenKeyWrapper.isUsedForFreezeKey()) builder.setFreezeKey(key);
+                    if (tokenKeyWrapper.isUsedForWipeKey()) builder.setWipeKey(key);
+                    if (tokenKeyWrapper.isUsedForSupplyKey()) builder.setSupplyKey(key);
+                    if (tokenKeyWrapper.isUsedForFeeScheduleKey()) builder.setFeeScheduleKey(key);
+                    if (tokenKeyWrapper.isUsedForPauseKey()) builder.setPauseKey(key);
+                });
+
+        return TransactionBody.newBuilder().setTokenUpdate(builder);
+    }
+
+    public TransactionBody.Builder createTokenUpdateExpiryInfo(
+            TokenUpdateExpiryInfoWrapper expiryInfoWrapper) {
+        final var builder = TokenUpdateTransactionBody.newBuilder();
+        builder.setToken(expiryInfoWrapper.tokenID());
+
+        if (expiryInfoWrapper.expiry().second() != 0) {
+            builder.setExpiry(
+                    Timestamp.newBuilder().setSeconds(expiryInfoWrapper.expiry().second()).build());
+        }
+        if (expiryInfoWrapper.expiry().autoRenewAccount() != null)
+            builder.setAutoRenewAccount(expiryInfoWrapper.expiry().autoRenewAccount());
+        if (expiryInfoWrapper.expiry().autoRenewPeriod() != 0) {
+            builder.setAutoRenewPeriod(
+                    Duration.newBuilder().setSeconds(expiryInfoWrapper.expiry().autoRenewPeriod()));
+        }
+
+        return TransactionBody.newBuilder().setTokenUpdate(builder);
     }
 
     public static class HbarTransfer {

@@ -589,6 +589,36 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
         return appliedValidity.get();
     }
 
+    public ResponseCodeEnum updateExpiryInfo(final TokenUpdateTransactionBody changes) {
+        final var tId = resolve(changes.getToken());
+        if (tId == MISSING_TOKEN) {
+            return INVALID_TOKEN_ID;
+        }
+        ResponseCodeEnum validity;
+
+        validity = checkAutoRenewAccount(changes);
+        if (validity != OK) {
+            return validity;
+        }
+
+        var appliedValidity = new AtomicReference<>(OK);
+        apply(
+                tId,
+                token -> {
+                    processExpiry(appliedValidity, changes, token);
+                    processAutoRenewAccount(appliedValidity, changes, token);
+
+                    if (OK != appliedValidity.get()) {
+                        return;
+                    }
+
+                    updateAutoRenewAccountIfAppropriate(token, changes);
+                    updateAutoRenewPeriodIfAppropriate(token, changes);
+                    updateExpiryIfAppropriate(token, changes);
+                });
+        return appliedValidity.get();
+    }
+
     private ResponseCodeEnum checkAutoRenewAccount(final TokenUpdateTransactionBody changes) {
         ResponseCodeEnum validity = OK;
         if (changes.hasAutoRenewAccount()) {

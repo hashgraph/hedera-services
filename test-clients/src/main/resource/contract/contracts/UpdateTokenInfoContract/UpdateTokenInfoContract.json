@@ -1,0 +1,438 @@
+[
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "tokenID",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "treasury",
+        "type": "address"
+      },
+      {
+        "internalType": "string",
+        "name": "_name",
+        "type": "string"
+      },
+      {
+        "internalType": "string",
+        "name": "_symbol",
+        "type": "string"
+      }
+    ],
+    "name": "checkNameAndSymbolLength",
+    "outputs": [],
+    "stateMutability": "payable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "token",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "keyType",
+        "type": "uint256"
+      }
+    ],
+    "name": "getKeyFromToken",
+    "outputs": [
+      {
+        "components": [
+          {
+            "internalType": "bool",
+            "name": "inheritAccountKey",
+            "type": "bool"
+          },
+          {
+            "internalType": "address",
+            "name": "contractId",
+            "type": "address"
+          },
+          {
+            "internalType": "bytes",
+            "name": "ed25519",
+            "type": "bytes"
+          },
+          {
+            "internalType": "bytes",
+            "name": "ECDSA_secp256k1",
+            "type": "bytes"
+          },
+          {
+            "internalType": "address",
+            "name": "delegatableContractId",
+            "type": "address"
+          }
+        ],
+        "internalType": "struct IHederaTokenService.KeyValue",
+        "name": "",
+        "type": "tuple"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "token",
+        "type": "address"
+      }
+    ],
+    "name": "getTokenExpiryInfo",
+    "outputs": [
+      {
+        "internalType": "int256",
+        "name": "responseCode",
+        "type": "int256"
+      },
+      {
+        "components": [
+          {
+            "internalType": "uint32",
+            "name": "second",
+            "type": "uint32"
+          },
+          {
+            "internalType": "address",
+            "name": "autoRenewAccount",
+            "type": "address"
+          },
+          {
+            "internalType": "uint32",
+            "name": "autoRenewPeriod",
+            "type": "uint32"
+          }
+        ],
+        "internalType": "struct IHederaTokenService.Expiry",
+        "name": "expiryInfo",
+        "type": "tuple"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "token",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "account",
+        "type": "address"
+      }
+    ],
+    "name": "grantTokenKyc",
+    "outputs": [
+      {
+        "internalType": "int64",
+        "name": "responseCode",
+        "type": "int64"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "token",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "account",
+        "type": "address"
+      }
+    ],
+    "name": "isKyc",
+    "outputs": [
+      {
+        "internalType": "int64",
+        "name": "responseCode",
+        "type": "int64"
+      },
+      {
+        "internalType": "bool",
+        "name": "kycGranted",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "token",
+        "type": "address"
+      }
+    ],
+    "name": "pauseToken",
+    "outputs": [
+      {
+        "internalType": "int256",
+        "name": "responseCode",
+        "type": "int256"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "token",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "account",
+        "type": "address"
+      }
+    ],
+    "name": "revokeTokenKyc",
+    "outputs": [
+      {
+        "internalType": "int64",
+        "name": "responseCode",
+        "type": "int64"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "token",
+        "type": "address"
+      },
+      {
+        "internalType": "bytes",
+        "name": "ed25519",
+        "type": "bytes"
+      },
+      {
+        "internalType": "bytes",
+        "name": "ecdsa",
+        "type": "bytes"
+      },
+      {
+        "internalType": "address",
+        "name": "contractID",
+        "type": "address"
+      }
+    ],
+    "name": "tokenUpdateKeys",
+    "outputs": [],
+    "stateMutability": "payable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "token",
+        "type": "address"
+      }
+    ],
+    "name": "unpauseToken",
+    "outputs": [
+      {
+        "internalType": "int256",
+        "name": "responseCode",
+        "type": "int256"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "token",
+        "type": "address"
+      },
+      {
+        "components": [
+          {
+            "internalType": "uint32",
+            "name": "second",
+            "type": "uint32"
+          },
+          {
+            "internalType": "address",
+            "name": "autoRenewAccount",
+            "type": "address"
+          },
+          {
+            "internalType": "uint32",
+            "name": "autoRenewPeriod",
+            "type": "uint32"
+          }
+        ],
+        "internalType": "struct IHederaTokenService.Expiry",
+        "name": "expiryInfo",
+        "type": "tuple"
+      }
+    ],
+    "name": "updateTokenExpiryInfo",
+    "outputs": [
+      {
+        "internalType": "int256",
+        "name": "responseCode",
+        "type": "int256"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "tokenID",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "treasury",
+        "type": "address"
+      }
+    ],
+    "name": "updateTokenTreasury",
+    "outputs": [],
+    "stateMutability": "payable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "tokenID",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "treasury",
+        "type": "address"
+      },
+      {
+        "internalType": "bytes",
+        "name": "ed25519",
+        "type": "bytes"
+      },
+      {
+        "internalType": "bytes",
+        "name": "ecdsa",
+        "type": "bytes"
+      },
+      {
+        "internalType": "address",
+        "name": "contractID",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "autoRenewAccount",
+        "type": "address"
+      },
+      {
+        "internalType": "uint32",
+        "name": "autoRenewPeriod",
+        "type": "uint32"
+      },
+      {
+        "internalType": "string",
+        "name": "_name",
+        "type": "string"
+      },
+      {
+        "internalType": "string",
+        "name": "_symbol",
+        "type": "string"
+      },
+      {
+        "internalType": "string",
+        "name": "_memo",
+        "type": "string"
+      }
+    ],
+    "name": "updateTokenWithAllFields",
+    "outputs": [],
+    "stateMutability": "payable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "tokenID",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "autoRenewAccount",
+        "type": "address"
+      },
+      {
+        "internalType": "uint32",
+        "name": "autoRenewPeriod",
+        "type": "uint32"
+      }
+    ],
+    "name": "updateTokenWithInvalidKeyValues",
+    "outputs": [],
+    "stateMutability": "payable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "tokenID",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "treasury",
+        "type": "address"
+      },
+      {
+        "internalType": "bytes",
+        "name": "ed25519",
+        "type": "bytes"
+      },
+      {
+        "internalType": "bytes",
+        "name": "ecdsa",
+        "type": "bytes"
+      },
+      {
+        "internalType": "address",
+        "name": "contractID",
+        "type": "address"
+      }
+    ],
+    "name": "updateTokenWithKeys",
+    "outputs": [],
+    "stateMutability": "payable",
+    "type": "function"
+  }
+]
