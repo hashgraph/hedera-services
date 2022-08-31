@@ -33,6 +33,7 @@ import java.util.ArrayList;
 import java.util.Deque;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Consumer;
 import org.hyperledger.besu.evm.Code;
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 import org.hyperledger.besu.evm.frame.MessageFrame;
@@ -61,57 +62,65 @@ public class HederaTracer implements HederaOperationTracer {
     @Override
     public void init(final MessageFrame initialFrame) {
         if (areActionSidecarsEnabled) {
-            // since this is the initial frame, call depth is always 0
-            trackActionFor(initialFrame, 0, null);
+            trackTopLevelActionFor(initialFrame);
         }
     }
 
     @Override
-    public void traceExecution(MessageFrame frame, ExecuteOperation executeOperation) {
+    public void traceExecution(MessageFrame currentFrame, ExecuteOperation executeOperation) {
         executeOperation.execute();
 
         if (areActionSidecarsEnabled) {
-            final var frameState = frame.getState();
+            final var frameState = currentFrame.getState();
             if (frameState != State.CODE_EXECUTING) {
                 if (frameState == State.CODE_SUSPENDED) {
-                    final var nextFrame = frame.getMessageFrameStack().peek();
-                    trackActionFor(nextFrame, nextFrame.getMessageFrameStack().size() - 1, frame);
+                    final var nextFrame = currentFrame.getMessageFrameStack().peek();
+                    trackInnerActionFor(nextFrame, currentFrame);
                 } else {
-                    finalizeActionFor(currentActionsStack.pop(), frame, frameState);
+                    finalizeActionFor(currentActionsStack.pop(), currentFrame, frameState);
                 }
             }
         }
     }
 
-    private void trackActionFor(
-            final MessageFrame nextFrame, final int callDepth, final MessageFrame parentFrame) {
-        // code can be empty when calling precompiles too, but we handle
-        // that in tracePrecompileCall, after precompile execution is completed
-        final var isCallToAccount = Code.EMPTY.equals(nextFrame.getCode());
-        final var isTopLevelEVMTransaction = callDepth == 0;
+    private void trackTopLevelActionFor(final MessageFrame initialFrame) {
+        trackNewAction(
+                initialFrame,
+                action -> {
+                    action.setCallOperationType(toCallOperationType(initialFrame.getType()));
+                    action.setCallingAccount(
+                            EntityId.fromAddress(initialFrame.getOriginatorAddress()));
+                });
+    }
+
+    private void trackInnerActionFor(final MessageFrame nextFrame, final MessageFrame parentFrame) {
+        trackNewAction(
+                nextFrame,
+                action -> {
+                    action.setCallOperationType(
+                            toCallOperationType(parentFrame.getCurrentOperation().getOpcode()));
+                    action.setCallingContract(EntityId.fromAddress(nextFrame.getSenderAddress()));
+                });
+    }
+
+    private void trackNewAction(
+            final MessageFrame messageFrame, final Consumer<SolidityAction> actionConfig) {
         final var action =
                 new SolidityAction(
-                        toContractActionType(nextFrame.getType()),
-                        isTopLevelEVMTransaction
-                                ? EntityId.fromAddress(nextFrame.getOriginatorAddress())
-                                : null,
-                        !isTopLevelEVMTransaction
-                                ? EntityId.fromAddress(nextFrame.getSenderAddress())
-                                : null,
-                        nextFrame.getRemainingGas(),
-                        nextFrame.getInputData().toArray(),
-                        isCallToAccount
-                                ? EntityId.fromAddress(nextFrame.getContractAddress())
-                                : null,
-                        !isCallToAccount
-                                ? EntityId.fromAddress(nextFrame.getContractAddress())
-                                : null,
-                        nextFrame.getValue().toLong(),
-                        callDepth,
-                        callDepth == 0
-                                ? toCallOperationType(nextFrame.getType())
-                                : toCallOperationType(
-                                        parentFrame.getCurrentOperation().getOpcode()));
+                        toContractActionType(messageFrame.getType()),
+                        messageFrame.getRemainingGas(),
+                        messageFrame.getInputData().toArray(),
+                        messageFrame.getValue().toLong(),
+                        messageFrame.getMessageStackDepth());
+        // code can be empty when calling precompiles too, but we handle
+        // that in tracePrecompileCall, after precompile execution is completed
+        if (Code.EMPTY.equals(messageFrame.getCode())) {
+            action.setRecipientAccount(EntityId.fromAddress(messageFrame.getContractAddress()));
+        } else {
+            action.setRecipientContract(EntityId.fromAddress(messageFrame.getContractAddress()));
+        }
+        actionConfig.accept(action);
+
         allActions.add(action);
         currentActionsStack.push(action);
     }
