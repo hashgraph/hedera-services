@@ -49,7 +49,7 @@ public class StaticPropertiesHolder {
         return realm;
     }
 
-    public boolean isThrottleExempt(final long num)  {
+    public boolean isThrottleExempt(final long num) {
         return 1L <= num && num <= maxThrottleExemptNum;
     }
 

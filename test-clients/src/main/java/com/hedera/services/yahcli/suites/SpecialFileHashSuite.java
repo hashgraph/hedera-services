@@ -68,8 +68,7 @@ public class SpecialFileHashSuite extends HapiApiSuite {
                                                     + specialFile
                                                     + " is:\n"
                                                     + synthMemo);
-                                })
-                );
+                                }));
     }
 
     @Override

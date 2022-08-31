@@ -28,15 +28,14 @@ import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.transactions.file.UploadProgress;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hedera.services.bdd.suites.utils.sysfiles.serdes.SysFileSerde;
+import com.hedera.services.legacy.proto.utils.ByteStringUtils;
+import com.swirlds.common.utility.CommonUtils;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
-
-import com.hedera.services.legacy.proto.utils.ByteStringUtils;
-import com.swirlds.common.utility.CommonUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -114,41 +113,42 @@ public class SysFileUploadSuite extends HapiApiSuite {
                                                     .getFileInfo()
                                                     .getMemo();
                                     wrappedAppendsToSkip.set(skippedAppendsFor(currentHash));
-                                })
-                )
+                                }))
                 .when()
                 .then(
-                        sourcing(() ->
+                        sourcing(
+                                () ->
                                         isSpecial
                                                 ? updateSpecialFile(
-                                                DEFAULT_PAYER,
-                                                fileId,
-                                                uploadData,
-                                                bytesPerOp,
-                                                appendsPerBurst,
-                                                wrappedAppendsToSkip.get())
+                                                        DEFAULT_PAYER,
+                                                        fileId,
+                                                        uploadData,
+                                                        bytesPerOp,
+                                                        appendsPerBurst,
+                                                        wrappedAppendsToSkip.get())
                                                 : updateLargeFile(
-                                                DEFAULT_PAYER,
-                                                fileId,
-                                                uploadData,
-                                                true,
-                                                OptionalLong.of(10_000_000_000L),
-                                                updateOp ->
-                                                        updateOp.alertingPre(
-                                                                        COMMON_MESSAGES::uploadBeginning)
-                                                                .alertingPost(
-                                                                        COMMON_MESSAGES::uploadEnding),
-                                                (appendOp, appendsLeft) ->
-                                                        appendOp.alertingPre(
-                                                                        COMMON_MESSAGES::appendBeginning)
-                                                                .alertingPost(
-                                                                        code ->
+                                                        DEFAULT_PAYER,
+                                                        fileId,
+                                                        uploadData,
+                                                        true,
+                                                        OptionalLong.of(10_000_000_000L),
+                                                        updateOp ->
+                                                                updateOp.alertingPre(
                                                                                 COMMON_MESSAGES
-                                                                                        .appendEnding(
-                                                                                                code,
-                                                                                                appendsLeft)))
-                                )
-                );
+                                                                                        ::uploadBeginning)
+                                                                        .alertingPost(
+                                                                                COMMON_MESSAGES
+                                                                                        ::uploadEnding),
+                                                        (appendOp, appendsLeft) ->
+                                                                appendOp.alertingPre(
+                                                                                COMMON_MESSAGES
+                                                                                        ::appendBeginning)
+                                                                        .alertingPost(
+                                                                                code ->
+                                                                                        COMMON_MESSAGES
+                                                                                                .appendEnding(
+                                                                                                        code,
+                                                                                                        appendsLeft)))));
     }
 
     private ByteString appropriateContents(final Long fileNum) {
@@ -191,8 +191,10 @@ public class SysFileUploadSuite extends HapiApiSuite {
     }
 
     private String hexedPrefixHash(final int prefixLen) {
-        byte[] hashSoFar = com.hedera.services.legacy.proto.utils.CommonUtils.noThrowSha384HashOf(
-                ByteStringUtils.unwrapUnsafelyIfPossible(uploadData.substring(0, prefixLen)));
+        byte[] hashSoFar =
+                com.hedera.services.legacy.proto.utils.CommonUtils.noThrowSha384HashOf(
+                        ByteStringUtils.unwrapUnsafelyIfPossible(
+                                uploadData.substring(0, prefixLen)));
         return CommonUtils.hex(hashSoFar);
     }
 

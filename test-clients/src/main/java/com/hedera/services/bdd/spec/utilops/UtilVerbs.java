@@ -730,8 +730,7 @@ public class UtilVerbs {
             final ByteString contents,
             final int bytesPerOp,
             final int appendsPerBurst) {
-        return updateSpecialFile(
-                payer, fileName, contents, bytesPerOp, appendsPerBurst, 0);
+        return updateSpecialFile(payer, fileName, contents, bytesPerOp, appendsPerBurst, 0);
     }
 
     public static HapiSpecOperation updateSpecialFile(
@@ -764,11 +763,11 @@ public class UtilVerbs {
                                         + " with "
                                         + appendsToSkip
                                         + " appends already finished (out of "
-                                        + (appendsRequired + appendsToSkip)
+                                        + appendsRequired
                                         + " appends required)");
                     }
                     final var numBursts =
-                            appendsRequired / appendsPerBurst
+                            (appendsRequired - appendsToSkip) / appendsPerBurst
                                     + Math.min(1, appendsRequired % appendsPerBurst);
 
                     int position =
@@ -817,8 +816,8 @@ public class UtilVerbs {
                         final var finished = uploadProgress.finishedAppendPrefixLength();
                         if (finished != -1) {
                             log.error(
-                                    "Upload failed, but at least {} appends appear to have finished; "
-                                            + "please re-run with --restart-from-failure",
+                                    "Upload failed, but at least {} appends appear to have"
+                                        + " finished; please re-run with --restart-from-failure",
                                     finished,
                                     e);
                         } else {

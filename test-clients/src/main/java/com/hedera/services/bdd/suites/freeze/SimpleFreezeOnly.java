@@ -54,8 +54,11 @@ public class SimpleFreezeOnly extends HapiApiSuite {
         return defaultHapiSpec("SimpleFreezeWithTimeStamp")
                 .given(
                         cryptoCreate("civilian"),
-//                        freezeOnly().payingWith(GENESIS).startingAt(Instant.now().plusSeconds(10)))
-                        freezeOnly().payingWith("civilian").startingAt(Instant.now().plusSeconds(10)))
+                        //
+                        // freezeOnly().payingWith(GENESIS).startingAt(Instant.now().plusSeconds(10)))
+                        freezeOnly()
+                                .payingWith("civilian")
+                                .startingAt(Instant.now().plusSeconds(10)))
                 .when(sleepFor(11000))
                 .then(
                         cryptoCreate("not_going_to_happen")

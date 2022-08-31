@@ -23,7 +23,6 @@ import com.hedera.services.ServicesState;
 import com.hedera.services.config.HederaNumbers;
 import com.hedera.services.context.MutableStateChildren;
 import com.hedera.services.context.properties.BootstrapProperties;
-import com.hedera.services.context.properties.PropertyNames;
 import com.hedera.services.files.FileUpdateInterceptor;
 import com.hedera.services.files.HederaFs;
 import com.hedera.services.stream.RecordStreamManager;
@@ -57,8 +56,10 @@ public class StateInitializationFlow {
         this.fileUpdateInterceptors = fileUpdateInterceptors;
     }
 
-    public void runWith(final ServicesState activeState, final BootstrapProperties bootstrapProperties) {
-        final var lastThrottleExempt = bootstrapProperties.getLongProperty(ACCOUNTS_LAST_THROTTLE_EXEMPT);
+    public void runWith(
+            final ServicesState activeState, final BootstrapProperties bootstrapProperties) {
+        final var lastThrottleExempt =
+                bootstrapProperties.getLongProperty(ACCOUNTS_LAST_THROTTLE_EXEMPT);
         numberConfigurer.configureNumbers(hederaNums, lastThrottleExempt);
 
         workingState.updateFrom(activeState);

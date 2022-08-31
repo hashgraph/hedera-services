@@ -17,7 +17,6 @@ package com.hedera.services.context.init;
 
 import com.hedera.services.ServicesState;
 import com.hedera.services.context.properties.BootstrapProperties;
-
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
