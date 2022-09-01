@@ -65,7 +65,7 @@ public record ContractStoragePriceTiers(
      *
      * <p>There is one exception to the above, that applies to contracts with only a few storage
      * slots, where "few" is set by the {@code freeTierLimit} parameter. Contracts with fewer than
-     * {@code freeTierLimit} key/value pairs do not chargeFee any rent.
+     * {@code freeTierLimit} key/value pairs do not pay any rent.
      *
      * @param spec a comma-separated list of price tiers as described above
      * @param freeTierLimit the number of key/value pairs at which a contract starts paying rent

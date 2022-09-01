@@ -8,6 +8,7 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hederahashgraph.api.proto.java.AccountID;
 
+import javax.annotation.Nullable;
 import javax.inject.Inject;
 
 import static com.hedera.services.exceptions.ValidationUtils.validateResourceLimit;
@@ -19,12 +20,12 @@ import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_BALANCES_FOR_STORAGE_RENT;
 
 /**
- * Responsible for charging the auto-renewal fee from the payer or auto-renew account if present on
- * contracts and accounts. Distributes the charged fee between 0.0.800, 0.0.801 and the funding
- * account
+ * Responsible for charging the auto-renewal fee and storage rent from the payer or auto-renew
+ * account if present on contracts and accounts. Distributes the charged fee between 0.0.800,
+ * 0.0.801 and the funding account
  */
 public class NonHapiFeeCharging {
-    // Used to distribute charged rent to collection accounts in correct percentages
+    // Used to distribute charged fee to collection accounts in correct percentages
     final FeeDistribution feeDistribution;
 
     @Inject
@@ -33,28 +34,30 @@ public class NonHapiFeeCharging {
     }
 
     public void chargeNonHapiFee(
-            final AccountID payer,
+            final EntityId preferredPayer,
+            final AccountID finalPayer,
             final long amount,
             TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accounts) {
-        chargeFee(payer, amount, accounts);
+        chargeFee(preferredPayer, finalPayer, amount, accounts);
     }
 
     private void chargeFee(
-            final AccountID payer,
+            final EntityId preferredPayer,
+            final AccountID finalPayer,
             final long fee,
             final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accounts) {
         var leftToPay = fee;
-        final var autoRenewId = (EntityId) accounts.get(payer, AUTO_RENEW_ACCOUNT_ID);
-        if (autoRenewId != null && !MISSING_ENTITY_ID.equals(autoRenewId)) {
-            final var grpcId = autoRenewId.toGrpcAccountId();
+
+        if (preferredPayer != null && !MISSING_ENTITY_ID.equals(preferredPayer)) {
+            final var grpcId = preferredPayer.toGrpcAccountId();
             if (accounts.contains(grpcId) && !(boolean) accounts.get(grpcId, IS_DELETED)) {
                 final var debited =
-                        charge(autoRenewId.toGrpcAccountId(), leftToPay, false, accounts);
+                        charge(preferredPayer.toGrpcAccountId(), leftToPay, false, accounts);
                 leftToPay -= debited;
             }
         }
         if (leftToPay > 0) {
-            charge(payer, leftToPay, true, accounts);
+            charge(finalPayer, leftToPay, true, accounts);
         }
     }
 

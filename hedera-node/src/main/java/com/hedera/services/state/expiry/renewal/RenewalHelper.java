@@ -21,15 +21,18 @@ import static com.hedera.services.state.expiry.EntityProcessResult.*;
 import static com.hedera.services.throttling.MapAccessType.ACCOUNTS_GET_FOR_MODIFY;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.fees.charging.NonHapiFeeCharging;
 import com.hedera.services.ledger.TransactionalLedger;
+import com.hedera.services.ledger.interceptors.AccountsCommitInterceptor;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.state.expiry.EntityProcessResult;
 import com.hedera.services.state.expiry.ExpiryRecordsHelper;
 import com.hedera.services.state.expiry.classification.ClassificationWork;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.throttling.ExpiryThrottle;
 import com.hedera.services.throttling.MapAccessType;
 import com.hedera.services.utils.EntityNum;
@@ -125,13 +128,24 @@ public class RenewalHelper implements RenewalWork {
         assertPayerAccountForRenewalCanAfford(fee);
 
         final var lastClassifiedAccount = classifier.getLastClassifiedNum().toGrpcAccountId();
-        final var payerForLastClassified = classifier.getPayerNumForLastClassified().toGrpcAccountId();
+        final var payerForLastClassified =
+                classifier.getPayerNumForLastClassified().toGrpcAccountId();
 
         final var wrappedAccounts = activeLedgerWrapping(accountsLedger);
-        final long newExpiry = ((long) wrappedAccounts.get(lastClassifiedAccount, EXPIRY)) + renewalPeriod;
+        final var sideEffects = new SideEffectsTracker();
+        final var accountsCommitInterceptor = new AccountsCommitInterceptor(sideEffects);
+        wrappedAccounts.setCommitInterceptor(accountsCommitInterceptor);
 
-        nonHapiFeeCharging.chargeNonHapiFee(payerForLastClassified, fee, accountsLedger);
+        final long newExpiry =
+                ((long) wrappedAccounts.get(lastClassifiedAccount, EXPIRY)) + renewalPeriod;
         wrappedAccounts.set(lastClassifiedAccount, EXPIRY, newExpiry);
+
+        nonHapiFeeCharging.chargeNonHapiFee(
+                EntityId.fromGrpcAccountId(payerForLastClassified),
+                lastClassifiedAccount,
+                fee,
+                accountsLedger);
+
         wrappedAccounts.commit();
 
         log.debug("Renewed {} at a price of {}tb", classifier.getLastClassifiedNum(), fee);

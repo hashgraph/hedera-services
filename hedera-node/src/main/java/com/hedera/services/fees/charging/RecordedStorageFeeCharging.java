@@ -142,7 +142,8 @@ public class RecordedStorageFeeCharging implements StorageFeeCharging {
                                     storagePriceTiers.priceOfPendingUsage(
                                             rate, totalKvPairs, lifetime, usageInfo);
                             if (fee > 0) {
-                                nonHapiFeeCharging.chargeNonHapiFee(id, fee, accounts);
+                                final var autoRenewId = (EntityId) accounts.get(id, AUTO_RENEW_ACCOUNT_ID);
+                                nonHapiFeeCharging.chargeNonHapiFee(autoRenewId,id, fee, accounts);
                             }
                         }
                     });
