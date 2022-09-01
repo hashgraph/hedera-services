@@ -807,19 +807,19 @@ public class NewTraceabilitySuite extends HapiApiSuite {
                                 THIRD_CREATE_TXN, TRACEABILITY + THIRD, TRACEABILITY, 0, 88, 0)
                 )
                 .when(
-                        withOpContext(
-                                (spec, opLog) ->
-                                        allRunFor(
-                                                spec,
-                                                contractCall(
-                                                        TRACEABILITY,
-                                                        "eetScenario2",
-                                                        getNestedContractAddress(
-                                                                TRACEABILITY + "B", spec),
-                                                        getNestedContractAddress(
-                                                                TRACEABILITY + "C", spec))
-                                                        .gas(1_000_000)
-                                                        .via(TRACEABILITY_TXN)))
+//                        withOpContext(
+//                                (spec, opLog) ->
+//                                        allRunFor(
+//                                                spec,
+//                                                contractCall(
+//                                                        TRACEABILITY,
+//                                                        "eetScenario2",
+//                                                        getNestedContractAddress(
+//                                                                TRACEABILITY + "B", spec),
+//                                                        getNestedContractAddress(
+//                                                                TRACEABILITY + "C", spec))
+//                                                        .gas(1_000_000)
+//                                                        .via(TRACEABILITY_TXN)))
                 )
                 .then(
 //                        expectContractStateChangesSidecarFor(
@@ -1071,7 +1071,7 @@ public class NewTraceabilitySuite extends HapiApiSuite {
                 CompletableFuture.runAsync(
                         () -> {
                             try {
-                                sidecarWatcher.watch();
+                                sidecarWatcher.watch(9);
                             } catch (IOException e) {
                                 log.fatal(
                                         "An invalid sidecar file was generated from the consensus"

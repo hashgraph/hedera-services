@@ -37,6 +37,7 @@ public class SidecarWatcher {
 
     private final Path recordStreamFolderPath;
     private WatchService watchService;
+    private int howMany;
 
     public SidecarWatcher(final Path recordStreamFolderPath) {
         this.recordStreamFolderPath = recordStreamFolderPath;
@@ -57,7 +58,8 @@ public class SidecarWatcher {
         recordStreamFolderPath.register(watchService, StandardWatchEventKinds.ENTRY_CREATE);
     }
 
-    public void watch() throws IOException {
+    public void watch(int howMany) throws IOException {
+        this.howMany = howMany;
         for (; ; ) {
             // wait for key to be signaled
             WatchKey key;
@@ -88,7 +90,7 @@ public class SidecarWatcher {
                     log.info("We have a new sidecar.");
                     final var sidecarFile = RecordStreamingUtils.readSidecarFile(newFilePath);
                     onNewSidecarFile(sidecarFile);
-                    if (shouldTerminateAfterNextSidecar) {
+                    if (this.howMany == 0) {
                         return;
                     }
                 }
@@ -139,6 +141,7 @@ public class SidecarWatcher {
         // there should always be an expected sidecar at this point;
         // if a NPE is thrown here, the specs have missed a sidecar
         // and must be updated to account for it
+        this.howMany--;
         final var expectedSidecar = expectedSidecars.poll();
         final var expectedSidecarRecord = expectedSidecar.expectedSidecarRecord();
 
