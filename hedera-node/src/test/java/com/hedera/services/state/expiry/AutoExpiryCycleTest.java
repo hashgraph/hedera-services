@@ -28,10 +28,6 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import com.hedera.services.config.MockGlobalDynamicProps;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.fees.calculation.RenewAssessment;
-import com.hedera.services.fees.charging.FeeDistribution;
-import com.hedera.services.fees.charging.NonHapiFeeCharging;
-import com.hedera.services.ledger.TransactionalLedger;
-import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.state.expiry.classification.ClassificationWork;
 import com.hedera.services.state.expiry.classification.EntityLookup;
 import com.hedera.services.state.expiry.removal.*;
@@ -42,7 +38,6 @@ import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.throttling.ExpiryThrottle;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.test.factories.accounts.MerkleAccountFactory;
-import com.hederahashgraph.api.proto.java.AccountID;
 import com.swirlds.merkle.map.MerkleMap;
 import java.time.Instant;
 import java.util.List;
@@ -102,8 +97,6 @@ class AutoExpiryCycleTest {
     @Mock private ExpiryRecordsHelper recordsHelper;
     @Mock private MerkleMap<EntityNum, MerkleAccount> accounts;
     @Mock private ExpiryThrottle expiryThrottle;
-    @Mock private NonHapiFeeCharging nonHapiFeeCharging;
-    @Mock private TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
     private EntityLookup lookup;
     private MockGlobalDynamicProps dynamicProperties = new MockGlobalDynamicProps();
     private RenewalWork renewalWork;
@@ -119,7 +112,8 @@ class AutoExpiryCycleTest {
     private void setUpPreRequisites() {
         lookup = new EntityLookup(() -> accounts);
         renewalWork =
-                new RenewalHelper(expiryThrottle, classifier, dynamicProperties, fees, recordsHelper, nonHapiFeeCharging, accountsLedger);
+                new RenewalHelper(
+                        lookup, expiryThrottle, classifier, dynamicProperties, fees, recordsHelper);
         removalWork =
                 new RemovalHelper(
                         classifier, dynamicProperties, contractGC, accountGC, recordsHelper);

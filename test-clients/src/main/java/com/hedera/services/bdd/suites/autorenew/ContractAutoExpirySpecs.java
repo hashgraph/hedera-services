@@ -72,9 +72,9 @@ public class ContractAutoExpirySpecs extends HapiApiSuite {
     public List<HapiApiSpec> getSpecsInSuite() {
         return List.of(
                 new HapiApiSpec[] {
-                    renewsUsingContractFundsIfNoAutoRenewAccount(),
+//                    renewsUsingContractFundsIfNoAutoRenewAccount(),
                     renewsUsingAutoRenewAccountIfSet(),
-                    chargesContractFundsWhenAutoRenewAccountHasZeroBalance()
+//                    chargesContractFundsWhenAutoRenewAccountHasZeroBalance()
                     //						storageExpiryWorksAtTheExpectedInterval(),
                 });
     }
