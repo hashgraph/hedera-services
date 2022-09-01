@@ -31,6 +31,7 @@ import static org.mockito.Mockito.times;
 import com.hedera.test.utils.IdUtils;
 import com.hedera.test.utils.TxnUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TransferList;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
@@ -115,6 +116,19 @@ class CurrencyAdjustmentsTest {
         final TransferList grpcAdjustments =
                 TxnUtils.withAdjustments(a, aAmount, b, bAmount, c, cAmount);
         assertEquals(grpcAdjustments, subject.toGrpc());
+    }
+
+    @Test
+    void canAddToGrpc() {
+        final var builder = TokenTransferList.newBuilder();
+        subject.addToGrpc(builder);
+
+        final TransferList grpcAdjustments =
+                TxnUtils.withAdjustments(a, aAmount, b, bAmount, c, cAmount);
+        final var expected = grpcAdjustments.getAccountAmountsList();
+        final var actual = builder.build().getTransfersList();
+
+        assertEquals(expected, actual);
     }
 
     @Test

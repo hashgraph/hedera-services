@@ -95,8 +95,8 @@ public class ReleaseTwentySixMigration {
             if (!owner.equals(EntityId.MISSING_ENTITY_ID)) {
                 var merkleAccount = accounts.getForModify(owner.asNum());
 
-                if (merkleAccount.getHeadNftId() != MISSING_ID.num()) {
-                    var currHeadNftNum = merkleAccount.getHeadNftId();
+                if (merkleAccount.getHeadNftTokenNum() != MISSING_ID.num()) {
+                    var currHeadNftNum = merkleAccount.getHeadNftTokenNum();
                     var currHeadNftSerialNum = merkleAccount.getHeadNftSerialNum();
                     var currHeadNftId =
                             EntityNumPair.fromLongs(currHeadNftNum, currHeadNftSerialNum);

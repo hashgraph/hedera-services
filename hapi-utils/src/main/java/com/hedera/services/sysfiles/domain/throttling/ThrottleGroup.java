@@ -27,7 +27,7 @@ public class ThrottleGroup<E extends Enum<E>> {
         // Needed by Jackson
     }
 
-    public ThrottleGroup(long milliOpsPerSec, List<E> operations) {
+    public ThrottleGroup(final long milliOpsPerSec, final List<E> operations) {
         this.milliOpsPerSec = milliOpsPerSec;
         this.operations = operations;
     }

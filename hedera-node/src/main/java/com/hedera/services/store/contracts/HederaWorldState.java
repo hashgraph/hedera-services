@@ -171,9 +171,7 @@ public class HederaWorldState implements HederaMutableWorldState {
     }
 
     private boolean isGettable(final AccountID id) {
-        return entityAccess.isExtant(id)
-                && !entityAccess.isDeleted(id)
-                && !entityAccess.isDetached(id);
+        return entityAccess.isUsable(id);
     }
 
     public static class Updater extends AbstractLedgerWorldUpdater<HederaMutableWorldState, Account>
