@@ -29,6 +29,7 @@ import com.hederahashgraph.api.proto.java.ResponseHeader;
 import com.hederahashgraph.api.proto.java.ResponseType;
 import java.util.Map;
 import java.util.Optional;
+import javax.annotation.Nullable;
 
 public interface AnswerService {
     Optional<Map<String, Object>> NO_QUERY_CTX = Optional.empty();
@@ -37,7 +38,22 @@ public interface AnswerService {
 
     boolean requiresNodePayment(Query query);
 
-    Response responseGiven(Query query, StateView view, ResponseCodeEnum validity, long cost);
+    /**
+     * Returns the {@link Response} appropriate to this {@link AnswerService}'s query semantics,
+     * given an input query, the validity of that query, and its cost.
+     *
+     * <p>For any validity other than {@link ResponseCodeEnum#OK}, the {@code StateView} parameter
+     * <i>may</i> be null, since rejecting an invalid query should not require any interaction with
+     * the state.
+     *
+     * @param query the query to build a response for
+     * @param view the (possibly) missing view of the state to use when responding
+     * @param validity the validity of the query
+     * @param cost the cost of the query
+     * @return an appropriate response
+     */
+    Response responseGiven(
+            Query query, @Nullable StateView view, ResponseCodeEnum validity, long cost);
 
     default Response responseGiven(
             Query query,

@@ -35,7 +35,9 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ResponseType;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.swirlds.merkle.map.MerkleMap;
+import java.util.Objects;
 import java.util.Optional;
+import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -83,7 +85,7 @@ public class GetTopicInfoAnswer implements AnswerService {
 
     @Override
     public Response responseGiven(
-            Query query, StateView view, ResponseCodeEnum validity, long cost) {
+            Query query, @Nullable StateView view, ResponseCodeEnum validity, long cost) {
         ConsensusGetTopicInfoQuery op = query.getConsensusGetTopicInfo();
         ConsensusGetTopicInfoResponse.Builder response = ConsensusGetTopicInfoResponse.newBuilder();
         response.setTopicID(op.getTopicID());
@@ -95,7 +97,7 @@ public class GetTopicInfoAnswer implements AnswerService {
             if (type == COST_ANSWER) {
                 response.setHeader(costAnswerHeader(OK, cost));
             } else {
-                var optionalInfo = view.infoForTopic(op.getTopicID());
+                var optionalInfo = Objects.requireNonNull(view).infoForTopic(op.getTopicID());
                 if (optionalInfo.isPresent()) {
                     response.setHeader(answerOnlyHeader(OK));
                     response.setTopicInfo(optionalInfo.get());

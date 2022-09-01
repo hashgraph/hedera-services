@@ -50,11 +50,7 @@ import com.hedera.services.sigs.utils.PrecheckUtils;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.internals.BitPackUtils;
 import com.hedera.services.state.merkle.internals.ByteUtils;
-import com.hedera.services.state.migration.LegacyStateChildIndices;
-import com.hedera.services.state.migration.ReleaseTwentySevenMigration;
-import com.hedera.services.state.migration.ReleaseTwentySixMigration;
-import com.hedera.services.state.migration.StateChildIndices;
-import com.hedera.services.state.migration.StateVersions;
+import com.hedera.services.state.migration.*;
 import com.hedera.services.state.serdes.IoUtils;
 import com.hedera.services.state.virtual.IterableStorageUtils;
 import com.hedera.services.state.virtual.KeyPackingUtils;
@@ -66,7 +62,6 @@ import com.hedera.services.store.contracts.precompile.AbiConstants;
 import com.hedera.services.store.contracts.precompile.utils.DescriptorUtils;
 import com.hedera.services.store.contracts.precompile.utils.PrecompileUtils;
 import com.hedera.services.store.models.TopicConversion;
-import com.hedera.services.sysfiles.domain.throttling.HapiThrottleUtils;
 import com.hedera.services.throttling.ThrottlingModule;
 import com.hedera.services.txns.consensus.ConsensusLogicModule;
 import com.hedera.services.txns.contract.ContractLogicModule;
@@ -96,7 +91,6 @@ class UtilsConstructorTest {
     private static final Set<Class<?>> toBeTested =
             new HashSet<>(
                     Arrays.asList(
-                            HapiThrottleUtils.class,
                             AbiConstants.class,
                             Units.class,
                             AbiConstants.class,
@@ -125,6 +119,7 @@ class UtilsConstructorTest {
                             MerkleAccount.ChildIndices.class,
                             BitPackUtils.class,
                             LegacyStateChildIndices.class,
+                            ReleaseThirtyMigration.class,
                             ReleaseTwentySixMigration.class,
                             StateChildIndices.class,
                             StateVersions.class,
