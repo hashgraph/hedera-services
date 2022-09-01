@@ -77,7 +77,6 @@ public class SequentialIntegrationTests extends IntegrationTestBase {
                 extractSpecsFromSuite(CryptoCreateSuite::new),
                 extractSpecsFromSuite(UmbrellaRedux::new),
                 extractSpecsFromSuite(ScheduleCreateSpecs::new),
-                extractSpecsFromSuite(ScheduleSignSpecs::new),
-                extractSpecsFromSuite(NewTraceabilitySuite::new));
+                extractSpecsFromSuite(ScheduleSignSpecs::new));
     }
 }
