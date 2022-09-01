@@ -191,8 +191,4 @@ public class SidecarWatcher {
     public boolean thereAreNoPendingSidecars() {
         return expectedSidecars.isEmpty();
     }
-
-    public Queue<ExpectedSidecar> getExpectedSidecars() {
-        return expectedSidecars;
-    }
 }
