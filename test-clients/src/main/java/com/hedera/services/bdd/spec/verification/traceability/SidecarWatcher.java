@@ -83,10 +83,9 @@ public class SidecarWatcher {
                 final var ev = (WatchEvent<Path>) event;
                 final var filename = ev.context();
                 final var child = recordStreamFolderPath.resolve(filename);
-                log.debug("Record stream file created -> {} ", child.getFileName());
                 final var newFilePath = child.toAbsolutePath().toString();
                 if (SIDECAR_FILE_REGEX.matcher(newFilePath).find()) {
-                    log.info("We have a new sidecar.");
+                    log.info("New sidecar file: {}", child.getFileName());
                     final var sidecarFile = RecordStreamingUtils.readSidecarFile(newFilePath);
                     onNewSidecarFile(sidecarFile);
                     if (shouldTerminateAfterNextSidecar && howMany == 0) {
