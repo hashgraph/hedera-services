@@ -123,16 +123,15 @@ public class ContractGC {
     }
 
     private boolean tryToRemoveBytecode(
-            final EntityNum expiredContractNum,
-            final boolean alreadyDeleted) {
+            final EntityNum expiredContractNum, final boolean alreadyDeleted) {
         if (!alreadyDeleted) {
-           if (!expiryThrottle.allow(ROOT_KEY_UPDATE_WORK)) {
-               return false;
-           } else {
-               final var mutableContract = contracts.get().getForModify(expiredContractNum);
-               // Make sure the contract is deleted before potentially removing its bytecode below
-               mutableContract.setDeleted(true);
-           }
+            if (!expiryThrottle.allow(ROOT_KEY_UPDATE_WORK)) {
+                return false;
+            } else {
+                final var mutableContract = contracts.get().getForModify(expiredContractNum);
+                // Make sure the contract is deleted before potentially removing its bytecode below
+                mutableContract.setDeleted(true);
+            }
         }
         if (!expiryThrottle.allow(BYTECODE_REMOVAL_WORK)) {
             return false;

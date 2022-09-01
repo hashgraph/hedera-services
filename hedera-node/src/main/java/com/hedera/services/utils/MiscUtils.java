@@ -870,7 +870,8 @@ public final class MiscUtils {
         return x;
     }
 
-    public static void withLoggedDuration(final Runnable blockingTask, final Logger logger, final String desc) {
+    public static void withLoggedDuration(
+            final Runnable blockingTask, final Logger logger, final String desc) {
         logger.info("Starting {}", desc);
         final var watch = StopWatch.createStarted();
         blockingTask.run();

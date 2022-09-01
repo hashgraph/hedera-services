@@ -28,7 +28,6 @@ import com.hedera.services.utils.EntityNum;
 import com.swirlds.common.threading.interrupt.InterruptableConsumer;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
-
 import java.util.concurrent.TimeUnit;
 import org.apache.commons.lang3.time.StopWatch;
 import org.apache.commons.lang3.tuple.Pair;

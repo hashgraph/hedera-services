@@ -265,7 +265,7 @@ class MiscUtilsTest {
     void canRunWithLoggedDuration() {
         final var mockLogger = mock(Logger.class);
         final var desc = "nothing";
-        MiscUtils.withLoggedDuration(() -> { }, mockLogger, desc);
+        MiscUtils.withLoggedDuration(() -> {}, mockLogger, desc);
         verify(mockLogger).info("Starting {}", desc);
         verify(mockLogger).info("Done with {} in {}ms", desc, 0L);
     }

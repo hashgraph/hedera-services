@@ -924,8 +924,7 @@ class ServicesStateTest {
     private void unmockMigrators() {
         ServicesState.setAutoRenewalMigrator(ReleaseThirtyMigration::grantFreeAutoRenew);
         ServicesState.setIterableStorageMigrator(ReleaseTwentySixMigration::makeStorageIterable);
-        ServicesState.setOwnedNftsLinkMigrator(
-                ReleaseThirtyMigration::rebuildNftOwners);
+        ServicesState.setOwnedNftsLinkMigrator(ReleaseThirtyMigration::rebuildNftOwners);
         ServicesState.setVmFactory(VirtualMapFactory::new);
         ServicesState.setScheduledTransactionsMigrator(
                 LongTermScheduledTransactionsMigration::migrateScheduledTransactions);

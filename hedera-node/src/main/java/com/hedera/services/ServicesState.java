@@ -516,8 +516,7 @@ public class ServicesState extends PartialNaryMerkleInternal
                 null, new SequenceNumber(seqStart), seqStart - 1, new ExchangeRates());
     }
 
-    private static NftLinksRepair nftLinksRepair =
-            ReleaseThirtyMigration::rebuildNftOwners;
+    private static NftLinksRepair nftLinksRepair = ReleaseThirtyMigration::rebuildNftOwners;
     private static IterableStorageMigrator iterableStorageMigrator =
             ReleaseTwentySixMigration::makeStorageIterable;
     private static ContractAutoRenewalMigrator autoRenewalMigrator =

@@ -295,14 +295,10 @@ class TreasuryReturnsTest {
             given(tokens.get(bRelKey.getLowOrderAsNum())).willReturn(fungibleToken);
         }
 
-        given(
-                        relRemover.removeNext(
-                                eq(aRelKey), eq(aRelKey), any(TokenRelsListMutation.class)))
+        given(relRemover.removeNext(eq(aRelKey), eq(aRelKey), any(TokenRelsListMutation.class)))
                 .willReturn(bRelKey);
         if (includeBRemoval) {
-            given(
-                            relRemover.removeNext(
-                                    eq(bRelKey), eq(bRelKey), any(TokenRelsListMutation.class)))
+            given(relRemover.removeNext(eq(bRelKey), eq(bRelKey), any(TokenRelsListMutation.class)))
                     .willReturn(null);
         }
     }

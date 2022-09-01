@@ -18,7 +18,6 @@ package com.hedera.services.state.migration;
 import static com.hedera.services.state.migration.ReleaseTwentySixMigration.INSERTIONS_PER_COPY;
 import static com.hedera.services.state.migration.ReleaseTwentySixMigration.THREAD_COUNT;
 import static com.hedera.services.state.migration.ReleaseTwentySixMigration.makeStorageIterable;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
@@ -50,7 +49,6 @@ class ReleaseTwentySixMigrationTest {
     @Mock private KvPairIterationMigrator migrator;
     @Mock private ReleaseTwentySixMigration.MigratorFactory migratorFactory;
     @Mock private ReleaseTwentySixMigration.MigrationUtility migrationUtility;
-
 
     @Test
     void migratesToIterableStorageAsExpected() throws InterruptedException {

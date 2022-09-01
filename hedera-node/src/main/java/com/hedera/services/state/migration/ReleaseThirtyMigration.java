@@ -1,4 +1,23 @@
+/*
+ * Copyright (C) 2022 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package com.hedera.services.state.migration;
+
+import static com.hedera.services.store.models.Id.MISSING_ID;
+import static com.hedera.services.txns.crypto.AutoCreationLogic.THREE_MONTHS_IN_SECONDS;
+import static com.hedera.services.utils.MiscUtils.withLoggedDuration;
 
 import com.hedera.services.ServicesState;
 import com.hedera.services.state.merkle.MerkleAccount;
@@ -9,14 +28,9 @@ import com.hedera.services.utils.EntityNumPair;
 import com.hedera.services.utils.NftNumPair;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.platform.RandomExtended;
+import java.time.Instant;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-
-import java.time.Instant;
-
-import static com.hedera.services.store.models.Id.MISSING_ID;
-import static com.hedera.services.txns.crypto.AutoCreationLogic.THREE_MONTHS_IN_SECONDS;
-import static com.hedera.services.utils.MiscUtils.withLoggedDuration;
 
 public class ReleaseThirtyMigration {
     private static final Logger log = LogManager.getLogger(ReleaseThirtyMigration.class);
@@ -28,31 +42,36 @@ public class ReleaseThirtyMigration {
             final MerkleMap<EntityNum, MerkleAccount> accounts,
             final MerkleMap<EntityNumPair, MerkleUniqueToken> uniqueTokens) {
 
-        withLoggedDuration(() -> {
-            for (final var nftId : uniqueTokens.keySet()) {
-                var nft = uniqueTokens.getForModify(nftId);
-                final var owner = nft.getOwner();
-                final var tokenNum = nftId.getHiOrderAsLong();
-                final var serialNum = nftId.getLowOrderAsLong();
+        withLoggedDuration(
+                () -> {
+                    for (final var nftId : uniqueTokens.keySet()) {
+                        var nft = uniqueTokens.getForModify(nftId);
+                        final var owner = nft.getOwner();
+                        final var tokenNum = nftId.getHiOrderAsLong();
+                        final var serialNum = nftId.getLowOrderAsLong();
 
-                if (!owner.equals(EntityId.MISSING_ENTITY_ID)) {
-                    var merkleAccount = accounts.getForModify(owner.asNum());
+                        if (!owner.equals(EntityId.MISSING_ENTITY_ID)) {
+                            var merkleAccount = accounts.getForModify(owner.asNum());
 
-                    if (merkleAccount.getHeadNftTokenNum() != MISSING_ID.num()) {
-                        var currHeadNftNum = merkleAccount.getHeadNftTokenNum();
-                        var currHeadNftSerialNum = merkleAccount.getHeadNftSerialNum();
-                        var currHeadNftId =
-                                EntityNumPair.fromLongs(currHeadNftNum, currHeadNftSerialNum);
-                        var currHeadNft = uniqueTokens.getForModify(currHeadNftId);
+                            if (merkleAccount.getHeadNftTokenNum() != MISSING_ID.num()) {
+                                var currHeadNftNum = merkleAccount.getHeadNftTokenNum();
+                                var currHeadNftSerialNum = merkleAccount.getHeadNftSerialNum();
+                                var currHeadNftId =
+                                        EntityNumPair.fromLongs(
+                                                currHeadNftNum, currHeadNftSerialNum);
+                                var currHeadNft = uniqueTokens.getForModify(currHeadNftId);
 
-                        currHeadNft.setPrev(NftNumPair.fromLongs(tokenNum, serialNum));
-                        nft.setNext(NftNumPair.fromLongs(currHeadNftNum, currHeadNftSerialNum));
+                                currHeadNft.setPrev(NftNumPair.fromLongs(tokenNum, serialNum));
+                                nft.setNext(
+                                        NftNumPair.fromLongs(currHeadNftNum, currHeadNftSerialNum));
+                            }
+                            merkleAccount.setHeadNftId(tokenNum);
+                            merkleAccount.setHeadNftSerialNum(serialNum);
+                        }
                     }
-                    merkleAccount.setHeadNftId(tokenNum);
-                    merkleAccount.setHeadNftSerialNum(serialNum);
-                }
-            }
-        }, log, "NFT owner list rebuild");
+                },
+                log,
+                "NFT owner list rebuild");
     }
 
     public static void grantFreeAutoRenew(
@@ -60,14 +79,17 @@ public class ReleaseThirtyMigration {
         final var contracts = initializingState.accounts();
         final var lastKnownConsensusSecond = lastKnownConsensusTime.getEpochSecond();
 
-        withLoggedDuration(() -> {
-            contracts.forEach(
-                    (id, account) -> {
-                        if (account.isSmartContract()) {
-                            setNewExpiry(lastKnownConsensusSecond, contracts, id);
-                        }
-                    });
-        }, log, "free contract auto-renewals");
+        withLoggedDuration(
+                () -> {
+                    contracts.forEach(
+                            (id, account) -> {
+                                if (account.isSmartContract()) {
+                                    setNewExpiry(lastKnownConsensusSecond, contracts, id);
+                                }
+                            });
+                },
+                log,
+                "free contract auto-renewals");
     }
 
     private static void setNewExpiry(
@@ -82,9 +104,7 @@ public class ReleaseThirtyMigration {
         final var newExpiry =
                 Math.max(
                         currentExpiry,
-                        lastKnownConsensusSecond
-                                + THREE_MONTHS_IN_SECONDS
-                                + wobble());
+                        lastKnownConsensusSecond + THREE_MONTHS_IN_SECONDS + wobble());
         account.setExpiry(newExpiry);
     }
 

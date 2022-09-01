@@ -73,8 +73,7 @@ public class TreasuryReturns {
     private final ExpiryThrottle expiryThrottle;
     private final TreasuryReturnHelper returnHelper;
 
-    private RelRemover relRemover =
-            MapValueListUtils::removeInPlaceFromMapValueList;
+    private RelRemover relRemover = MapValueListUtils::removeInPlaceFromMapValueList;
 
     @Inject
     public TreasuryReturns(
