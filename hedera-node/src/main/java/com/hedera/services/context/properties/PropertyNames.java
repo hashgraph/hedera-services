@@ -221,6 +221,8 @@ public class PropertyNames {
     public static final String UTIL_PRNG_IS_ENABLED = "utilPrng.isEnabled";
     public static final String HEDERA_RECORD_STREAM_ENABLE_TRACEABILITY_MIGRATION =
             "hedera.recordStream.enableTraceabilityMigration";
+    public static final String HEDERA_RECORD_STREAM_COMPRESS_FILES_ON_CREATION =
+            "hedera.recordStream.compressFilesOnCreation";
 
     /* ---- Node properties ----- */
     public static final String DEV_ONLY_DEFAULT_NODE_LISTENS = "dev.onlyDefaultNodeListens";

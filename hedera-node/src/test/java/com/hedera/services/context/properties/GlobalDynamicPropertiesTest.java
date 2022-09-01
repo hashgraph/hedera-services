@@ -96,6 +96,7 @@ class GlobalDynamicPropertiesTest {
         assertFalse(subject.isUtilPrngEnabled());
         assertTrue(subject.requireMinStakeToReward());
         assertTrue(subject.isTraceabilityMigrationEnabled());
+        assertFalse(subject.shouldCompressRecordFilesOnCreation());
     }
 
     @Test
@@ -243,6 +244,7 @@ class GlobalDynamicPropertiesTest {
         assertTrue(subject.isUtilPrngEnabled());
         assertFalse(subject.isTraceabilityMigrationEnabled());
         assertTrue(subject.shouldItemizeStorageFees());
+        assertTrue(subject.shouldCompressRecordFilesOnCreation());
     }
 
     @Test
@@ -488,13 +490,14 @@ class GlobalDynamicPropertiesTest {
                 .willReturn((i + 88));
         given(properties.getBooleanProperty(HEDERA_RECORD_STREAM_ENABLE_TRACEABILITY_MIGRATION))
                 .willReturn((i + 81) % 2 == 0);
-
         given(properties.getBooleanProperty(CONTRACTS_ITEMIZE_STORAGE_FEES))
                 .willReturn((i + 79) % 2 == 1);
         given(properties.getLongProperty(CONTRACTS_REFERENCE_SLOT_LIFETIME)).willReturn(i + 86L);
         given(properties.getIntProperty(CONTRACTS_FREE_STORAGE_TIER_LIMIT)).willReturn(i + 87);
         given(properties.getStringProperty(CONTRACTS_STORAGE_SLOT_PRICE_TIERS))
                 .willReturn("0til100M,2000til450M");
+        given(properties.getBooleanProperty(HEDERA_RECORD_STREAM_COMPRESS_FILES_ON_CREATION))
+                .willReturn((i + 82) % 2 == 0);
     }
 
     private Set<EntityType> typesFor(final int i) {
