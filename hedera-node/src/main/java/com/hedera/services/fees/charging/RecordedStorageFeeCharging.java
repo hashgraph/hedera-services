@@ -16,16 +16,11 @@
 package com.hedera.services.fees.charging;
 
 import static com.hedera.services.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
-import static com.hedera.services.exceptions.ValidationUtils.validateResourceLimit;
 import static com.hedera.services.ledger.TransactionalLedger.activeLedgerWrapping;
 import static com.hedera.services.ledger.properties.AccountProperty.AUTO_RENEW_ACCOUNT_ID;
-import static com.hedera.services.ledger.properties.AccountProperty.BALANCE;
 import static com.hedera.services.ledger.properties.AccountProperty.EXPIRY;
-import static com.hedera.services.ledger.properties.AccountProperty.IS_DELETED;
 import static com.hedera.services.records.TxnAwareRecordsHistorian.DEFAULT_SOURCE_ID;
 import static com.hedera.services.state.EntityCreator.NO_CUSTOM_FEES;
-import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_BALANCES_FOR_STORAGE_RENT;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.hedera.services.context.SideEffectsTracker;
@@ -108,7 +103,9 @@ public class RecordedStorageFeeCharging implements StorageFeeCharging {
             final var sideEffects = new SideEffectsTracker();
             final var accountsCommitInterceptor = new AccountsCommitInterceptor(sideEffects);
             wrappedAccounts.setCommitInterceptor(accountsCommitInterceptor);
-            chargeStorageFeesInternal(totalKvPairs, newUsageInfos, storagePriceTiers, accounts);
+
+            chargeStorageFeesInternal(
+                    totalKvPairs, newUsageInfos, storagePriceTiers, wrappedAccounts);
             wrappedAccounts.commit();
 
             final var charges = sideEffects.getNetTrackedHbarChanges();
@@ -142,8 +139,9 @@ public class RecordedStorageFeeCharging implements StorageFeeCharging {
                                     storagePriceTiers.priceOfPendingUsage(
                                             rate, totalKvPairs, lifetime, usageInfo);
                             if (fee > 0) {
-                                final var autoRenewId = (EntityId) accounts.get(id, AUTO_RENEW_ACCOUNT_ID);
-                                nonHapiFeeCharging.chargeNonHapiFee(autoRenewId,id, fee, accounts);
+                                final var autoRenewId =
+                                        (EntityId) accounts.get(id, AUTO_RENEW_ACCOUNT_ID);
+                                nonHapiFeeCharging.chargeNonHapiFee(autoRenewId, id, fee, accounts);
                             }
                         }
                     });

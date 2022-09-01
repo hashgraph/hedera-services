@@ -29,10 +29,6 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.config.MockGlobalDynamicProps;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.fees.calculation.RenewAssessment;
-import com.hedera.services.fees.charging.FeeDistribution;
-import com.hedera.services.fees.charging.NonHapiFeeCharging;
-import com.hedera.services.ledger.TransactionalLedger;
-import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.state.expiry.EntityProcessResult;
 import com.hedera.services.state.expiry.ExpiryRecordsHelper;
 import com.hedera.services.state.expiry.classification.ClassificationWork;
@@ -41,7 +37,6 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.throttling.ExpiryThrottle;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.test.factories.accounts.MerkleAccountFactory;
-import com.hederahashgraph.api.proto.java.AccountID;
 import com.swirlds.merkle.map.MerkleMap;
 import java.time.Instant;
 import org.junit.jupiter.api.BeforeEach;
@@ -57,10 +52,7 @@ class RenewalHelperTest {
     @Mock private FeeCalculator fees;
     @Mock private ExpiryRecordsHelper recordsHelper;
     @Mock private ExpiryThrottle expiryThrottle;
-    @Mock private FeeDistribution feeDistribution;
-    @Mock private TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
 
-    private NonHapiFeeCharging nonHapiFeeCharging;
     private EntityLookup lookup;
     private ClassificationWork classificationWork;
     private RenewalHelper subject;
@@ -69,16 +61,14 @@ class RenewalHelperTest {
     void setUp() {
         lookup = new EntityLookup(() -> accounts);
         classificationWork = new ClassificationWork(properties, lookup, expiryThrottle);
-        nonHapiFeeCharging = new NonHapiFeeCharging(feeDistribution);
         subject =
                 new RenewalHelper(
+                        lookup,
                         expiryThrottle,
                         classificationWork,
                         properties,
                         fees,
-                        recordsHelper,
-                        nonHapiFeeCharging,
-                        accountsLedger);
+                        recordsHelper);
     }
 
     @Test
@@ -133,13 +123,12 @@ class RenewalHelperTest {
 
         subject =
                 new RenewalHelper(
+                        lookup,
                         expiryThrottle,
                         classificationWork,
                         properties,
                         fees,
-                        recordsHelper,
-                        nonHapiFeeCharging,
-                        accountsLedger);
+                        recordsHelper);
 
         final var result =
                 subject.tryToRenewAccount(EntityNum.fromLong(fundedExpiredAccountNum), now);
