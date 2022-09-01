@@ -80,14 +80,13 @@ public class ReleaseThirtyMigration {
         final var lastKnownConsensusSecond = lastKnownConsensusTime.getEpochSecond();
 
         withLoggedDuration(
-                () -> {
-                    contracts.forEach(
-                            (id, account) -> {
-                                if (account.isSmartContract()) {
-                                    setNewExpiry(lastKnownConsensusSecond, contracts, id);
-                                }
-                            });
-                },
+                () ->
+                        contracts.forEach(
+                                (id, account) -> {
+                                    if (account.isSmartContract()) {
+                                        setNewExpiry(lastKnownConsensusSecond, contracts, id);
+                                    }
+                                }),
                 log,
                 "free contract auto-renewals");
     }
