@@ -97,8 +97,8 @@ public class HederaSLoadOperation extends AbstractOperation {
             } else {
                 UInt256 storageValue = account.getStorageValue(UInt256.fromBytes(key));
                 if (dynamicProperties
-                                .enabledSidecars()
-                                .contains(SidecarType.CONTRACT_STATE_CHANGE)) {
+                        .enabledSidecars()
+                        .contains(SidecarType.CONTRACT_STATE_CHANGE)) {
                     HederaOperationUtil.cacheExistingValue(frame, address, key, storageValue);
                 }
 
