@@ -1316,7 +1316,7 @@ public class NewTraceabilitySuite extends HapiApiSuite {
                                 firstTxn, EMPTY_CONSTRUCTOR_CONTRACT, EMPTY_CONSTRUCTOR_CONTRACT));
     }
 
-    HapiApiSpec vanillaBytecodeSidecar2() {
+    private HapiApiSpec vanillaBytecodeSidecar2() {
         final var contract = "CreateTrivial";
         final String trivialCreate = "vanillaBytecodeSidecar2";
         final var firstTxn = "firstTxn";
