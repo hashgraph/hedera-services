@@ -20,6 +20,7 @@ import com.google.common.collect.Multimap;
 import com.hedera.services.recordstreaming.RecordStreamingUtils;
 import com.hedera.services.stream.proto.SidecarFile;
 import com.hedera.services.stream.proto.TransactionSidecarRecord;
+import com.sun.nio.file.SensitivityWatchEventModifier;
 import java.io.IOException;
 import java.nio.file.FileSystems;
 import java.nio.file.Path;
@@ -55,7 +56,10 @@ public class SidecarWatcher {
 
     public void prepareInfrastructure() throws IOException {
         watchService = FileSystems.getDefault().newWatchService();
-        recordStreamFolderPath.register(watchService, StandardWatchEventKinds.ENTRY_MODIFY);
+        recordStreamFolderPath.register(
+                watchService,
+                new WatchEvent.Kind[] {StandardWatchEventKinds.ENTRY_MODIFY},
+                SensitivityWatchEventModifier.HIGH);
     }
 
     public void watch() throws IOException {
