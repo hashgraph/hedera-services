@@ -1,6 +1,6 @@
-FROM ubuntu:21.10 AS base-runtime
+FROM ubuntu:22.04 AS base-runtime
 # JDK
-RUN apt-get update && \
+RUN apt-get -y update && \
     apt-get upgrade -y && \
     apt-get install -y software-properties-common && \
     add-apt-repository -y ppa:openjdk-r/ppa && \

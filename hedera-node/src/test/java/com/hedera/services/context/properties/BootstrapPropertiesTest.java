@@ -93,6 +93,7 @@ class BootstrapPropertiesTest {
                     entry(ACCOUNTS_NODE_REWARD_ACCOUNT, 801L),
                     entry(ACCOUNTS_STAKING_REWARD_ACCOUNT, 800L),
                     entry(ACCOUNTS_FREEZE_ADMIN, 58L),
+                    entry(ACCOUNTS_LAST_THROTTLE_EXEMPT, 100L),
                     entry(ACCOUNTS_SYSTEM_ADMIN, 50L),
                     entry(ACCOUNTS_SYSTEM_DELETE_ADMIN, 59L),
                     entry(ACCOUNTS_SYSTEM_UNDELETE_ADMIN, 60L),

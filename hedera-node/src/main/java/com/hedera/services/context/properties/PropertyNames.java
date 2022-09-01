@@ -44,6 +44,7 @@ public class PropertyNames {
     public static final String ACCOUNTS_EXCHANGE_RATES_ADMIN = "accounts.exchangeRatesAdmin";
     public static final String ACCOUNTS_FEE_SCHEDULE_ADMIN = "accounts.feeSchedulesAdmin";
     public static final String ACCOUNTS_FREEZE_ADMIN = "accounts.freezeAdmin";
+    public static final String ACCOUNTS_LAST_THROTTLE_EXEMPT = "accounts.lastThrottleExempt";
     public static final String ACCOUNTS_NODE_REWARD_ACCOUNT = "accounts.nodeRewardAccount";
     public static final String ACCOUNTS_STAKING_REWARD_ACCOUNT = "accounts.stakingRewardAccount";
     public static final String ACCOUNTS_SYSTEM_ADMIN = "accounts.systemAdmin";
