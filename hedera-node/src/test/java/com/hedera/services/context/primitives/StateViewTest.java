@@ -116,6 +116,7 @@ import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenKycStatus;
 import com.hederahashgraph.api.proto.java.TokenRelationship;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.swirlds.common.crypto.CryptoFactory;
 import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
@@ -1159,6 +1160,23 @@ class StateViewTest {
         final var stuff = subject.contentsOf(file150);
 
         assertTrue(Arrays.equals(data, stuff.get()));
+    }
+
+    @Test
+    void specialFileMemoIsHexedHash() {
+        FileID file150 = asFile("0.0.150");
+        final var expectedMemo =
+                CommonUtils.hex(CryptoFactory.getInstance().digestSync(data).getValue());
+
+        given(specialFiles.get(file150)).willReturn(data);
+        given(specialFiles.contains(file150)).willReturn(true);
+        given(attrs.get(file150)).willReturn(metadata);
+        given(networkInfo.ledgerId()).willReturn(ledgerId);
+
+        final var info = subject.infoForFile(file150);
+        assertTrue(info.isPresent());
+        final var details = info.get();
+        assertEquals(expectedMemo, details.getMemo());
     }
 
     @Test

@@ -312,7 +312,7 @@ public class ServicesState extends PartialNaryMerkleInternal
             // Log state before migration.
             logStateChildrenSizes();
             // This updates the working state accessor with our children
-            app.initializationFlow().runWith(this);
+            app.initializationFlow().runWith(this, bootstrapProps);
 
             // Ensure the prefetch queue is created and thread pool is active instead of waiting
             // for lazy-initialization to take place

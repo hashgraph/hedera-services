@@ -77,6 +77,7 @@ import com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer;
 import com.hedera.services.bdd.spec.transactions.file.HapiFileAppend;
 import com.hedera.services.bdd.spec.transactions.file.HapiFileCreate;
 import com.hedera.services.bdd.spec.transactions.file.HapiFileUpdate;
+import com.hedera.services.bdd.spec.transactions.file.UploadProgress;
 import com.hedera.services.bdd.spec.transactions.system.HapiFreeze;
 import com.hedera.services.bdd.spec.utilops.checks.VerifyGetAccountNftInfosNotSupported;
 import com.hedera.services.bdd.spec.utilops.checks.VerifyGetBySolidityIdNotSupported;
@@ -141,6 +142,7 @@ import java.util.function.ObjIntConsumer;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import org.apache.logging.log4j.Logger;
 import org.bouncycastle.jcajce.provider.asymmetric.ec.BCECPrivateKey;
 import org.junit.jupiter.api.Assertions;
 
@@ -728,113 +730,188 @@ public class UtilVerbs {
             final ByteString contents,
             final int bytesPerOp,
             final int appendsPerBurst) {
+        return updateSpecialFile(payer, fileName, contents, bytesPerOp, appendsPerBurst, 0);
+    }
+
+    public static HapiSpecOperation updateSpecialFile(
+            final String payer,
+            final String fileName,
+            final ByteString contents,
+            final int bytesPerOp,
+            final int appendsPerBurst,
+            final int appendsToSkip) {
         return withOpContext(
                 (spec, opLog) -> {
                     final var bytesToUpload = contents.size();
-                    final var bytesToAppend = bytesToUpload - bytesPerOp;
-                    final var appendsRequired =
+                    final var bytesToAppend = bytesToUpload - Math.min(bytesToUpload, bytesPerOp);
+                    var appendsRequired =
                             bytesToAppend / bytesPerOp + Math.min(1, bytesToAppend % bytesPerOp);
-                    COMMON_MESSAGES.info(
-                            "Beginning update for "
-                                    + fileName
-                                    + " ("
-                                    + appendsRequired
-                                    + " appends required)");
+                    final var uploadProgress = new UploadProgress();
+                    uploadProgress.initializeFor(appendsRequired);
+
+                    if (appendsToSkip == 0) {
+                        COMMON_MESSAGES.info(
+                                "Beginning upload for "
+                                        + fileName
+                                        + " ("
+                                        + appendsRequired
+                                        + " appends required)");
+                    } else {
+                        COMMON_MESSAGES.info(
+                                "Continuing upload for "
+                                        + fileName
+                                        + " with "
+                                        + appendsToSkip
+                                        + " appends already finished (out of "
+                                        + appendsRequired
+                                        + " appends required)");
+                    }
                     final var numBursts =
-                            appendsRequired / appendsPerBurst
+                            (appendsRequired - appendsToSkip) / appendsPerBurst
                                     + Math.min(1, appendsRequired % appendsPerBurst);
 
-                    int position = Math.min(bytesPerOp, bytesToUpload);
-                    final var updateSubOp =
-                            fileUpdate(fileName)
-                                    .fee(ONE_HUNDRED_HBARS)
-                                    .contents(contents.substring(0, position))
-                                    .alertingPre(
-                                            fid ->
-                                                    COMMON_MESSAGES.info(
-                                                            "Submitting initial update for file"
-                                                                    + " 0.0."
-                                                                    + fid.getFileNum()))
-                                    .alertingPost(
-                                            code ->
-                                                    COMMON_MESSAGES.info(
-                                                            "Finished initial update with " + code))
-                                    .noLogging()
-                                    .payingWith(payer)
-                                    .signedBy(payer);
-                    allRunFor(spec, updateSubOp);
+                    int position =
+                            (appendsToSkip == 0)
+                                    ? Math.min(bytesPerOp, bytesToUpload)
+                                    : bytesPerOp * (1 + appendsToSkip);
+                    if (appendsToSkip == 0) {
+                        final var updateSubOp =
+                                fileUpdate(fileName)
+                                        .fee(ONE_HUNDRED_HBARS)
+                                        .contents(contents.substring(0, position))
+                                        .alertingPre(
+                                                fid ->
+                                                        COMMON_MESSAGES.info(
+                                                                "Submitting initial update for file"
+                                                                        + " 0.0."
+                                                                        + fid.getFileNum()))
+                                        .alertingPost(
+                                                code ->
+                                                        COMMON_MESSAGES.info(
+                                                                "Finished initial update with "
+                                                                        + code))
+                                        .noLogging()
+                                        .payingWith(payer)
+                                        .signedBy(payer);
+                        allRunFor(spec, updateSubOp);
+                    }
 
-                    final AtomicInteger burstNo = new AtomicInteger(1);
-                    while (position < bytesToUpload) {
-                        final var totalBytesLeft = bytesToUpload - position;
-                        final var appendsLeft =
-                                totalBytesLeft / bytesPerOp
-                                        + Math.min(1, totalBytesLeft % bytesPerOp);
-                        final var appendsHere =
-                                new AtomicInteger(Math.min(appendsPerBurst, appendsLeft));
-                        boolean isFirstAppend = true;
-                        final List<HapiSpecOperation> theBurst = new ArrayList<>();
-                        final CountDownLatch burstLatch = new CountDownLatch(1);
-                        final AtomicReference<Instant> burstStart = new AtomicReference<>();
-                        while (appendsHere.getAndDecrement() >= 0) {
-                            final var bytesLeft = bytesToUpload - position;
-                            final var bytesThisAppend = Math.min(bytesLeft, bytesPerOp);
-                            final var newPosition = position + bytesThisAppend;
-                            final var appendSubOp =
-                                    fileAppend(fileName)
-                                            .content(
-                                                    contents.substring(position, newPosition)
-                                                            .toByteArray())
-                                            .fee(ONE_HUNDRED_HBARS)
-                                            .noLogging()
-                                            .payingWith(payer)
-                                            .signedBy(payer)
-                                            .deferStatusResolution();
-                            if (isFirstAppend) {
-                                final var fixedBurstNo = burstNo.get();
-                                final var fixedAppendsHere = appendsHere.get() + 1;
-                                appendSubOp.alertingPre(
-                                        fid -> {
-                                            burstStart.set(Instant.now());
-                                            COMMON_MESSAGES.info(
-                                                    "Starting burst "
-                                                            + fixedBurstNo
-                                                            + "/"
-                                                            + numBursts
-                                                            + " ("
-                                                            + fixedAppendsHere
-                                                            + " ops)");
-                                        });
-                                isFirstAppend = false;
-                            }
-                            if (appendsHere.get() < 0) {
-                                final var fixedBurstNo = burstNo.get();
-                                appendSubOp.alertingPost(
-                                        code -> {
-                                            final var burstSecs =
-                                                    Duration.between(
-                                                                    burstStart.get(), Instant.now())
-                                                            .getSeconds();
-                                            COMMON_MESSAGES.info(
-                                                    "Completed burst #"
-                                                            + fixedBurstNo
-                                                            + "/"
-                                                            + numBursts
-                                                            + " in "
-                                                            + burstSecs
-                                                            + "s with "
-                                                            + code);
-                                            burstLatch.countDown();
-                                        });
-                            }
-                            theBurst.add(appendSubOp);
-                            position = newPosition;
+                    try {
+                        finishAppendsFor(
+                                contents,
+                                position,
+                                bytesPerOp,
+                                appendsPerBurst,
+                                numBursts,
+                                fileName,
+                                payer,
+                                spec,
+                                uploadProgress,
+                                appendsToSkip,
+                                opLog);
+                    } catch (Exception e) {
+                        if (e instanceof InterruptedException) {
+                            Thread.currentThread().interrupt();
                         }
-                        allRunFor(spec, theBurst);
-                        burstLatch.await();
-                        burstNo.getAndIncrement();
+                        final var finished = uploadProgress.finishedAppendPrefixLength();
+                        if (finished != -1) {
+                            log.error(
+                                    "Upload failed, but at least {} appends appear to have"
+                                        + " finished; please re-run with --restart-from-failure",
+                                    finished,
+                                    e);
+                        } else {
+                            log.error(
+                                    "Upload failed without any reusable work; please try again", e);
+                        }
+                        throw new IllegalStateException(e);
                     }
                 });
+    }
+
+    private static void finishAppendsFor(
+            final ByteString contents,
+            int position,
+            final int bytesPerOp,
+            final int appendsPerBurst,
+            final int numBursts,
+            final String fileName,
+            final String payer,
+            final HapiApiSpec spec,
+            final UploadProgress uploadProgress,
+            final int appendsSkipped,
+            final Logger opLog)
+            throws InterruptedException {
+        final var bytesToUpload = contents.size();
+        final AtomicInteger burstNo = new AtomicInteger(1);
+        final AtomicInteger nextAppendNo = new AtomicInteger(appendsSkipped);
+        while (position < bytesToUpload) {
+            final var totalBytesLeft = bytesToUpload - position;
+            final var appendsLeft =
+                    totalBytesLeft / bytesPerOp + Math.min(1, totalBytesLeft % bytesPerOp);
+            final var appendsHere = new AtomicInteger(Math.min(appendsPerBurst, appendsLeft));
+            boolean isFirstAppend = true;
+            final List<HapiSpecOperation> theBurst = new ArrayList<>();
+            final CountDownLatch burstLatch = new CountDownLatch(1);
+            final AtomicReference<Instant> burstStart = new AtomicReference<>();
+            while (appendsHere.getAndDecrement() > 0) {
+                final var bytesLeft = bytesToUpload - position;
+                final var bytesThisAppend = Math.min(bytesLeft, bytesPerOp);
+                final var newPosition = position + bytesThisAppend;
+                final var appendNoToTrack = nextAppendNo.getAndIncrement();
+                opLog.info("Constructing append #{} ({} bytes)", appendNoToTrack, bytesThisAppend);
+                final var appendSubOp =
+                        fileAppend(fileName)
+                                .content(contents.substring(position, newPosition).toByteArray())
+                                .fee(ONE_HUNDRED_HBARS)
+                                .noLogging()
+                                .payingWith(payer)
+                                .signedBy(payer)
+                                .deferStatusResolution()
+                                .trackingProgressIn(uploadProgress, appendNoToTrack);
+                if (isFirstAppend) {
+                    final var fixedBurstNo = burstNo.get();
+                    final var fixedAppendsHere = appendsHere.get() + 1;
+                    appendSubOp.alertingPre(
+                            fid -> {
+                                burstStart.set(Instant.now());
+                                COMMON_MESSAGES.info(
+                                        "Starting burst "
+                                                + fixedBurstNo
+                                                + "/"
+                                                + numBursts
+                                                + " ("
+                                                + fixedAppendsHere
+                                                + " ops)");
+                            });
+                    isFirstAppend = false;
+                }
+                if (appendsHere.get() == 0) {
+                    final var fixedBurstNo = burstNo.get();
+                    appendSubOp.alertingPost(
+                            code -> {
+                                final var burstSecs =
+                                        Duration.between(burstStart.get(), Instant.now())
+                                                .getSeconds();
+                                COMMON_MESSAGES.info(
+                                        "Completed burst #"
+                                                + fixedBurstNo
+                                                + "/"
+                                                + numBursts
+                                                + " in "
+                                                + burstSecs
+                                                + "s with "
+                                                + code);
+                                burstLatch.countDown();
+                            });
+                }
+                theBurst.add(appendSubOp);
+                position = newPosition;
+            }
+            allRunFor(spec, theBurst);
+            burstLatch.await();
+            burstNo.getAndIncrement();
+        }
     }
 
     public static HapiSpecOperation updateLargeFile(

@@ -97,6 +97,7 @@ import com.hederahashgraph.api.proto.java.TokenPauseStatus;
 import com.hederahashgraph.api.proto.java.TokenRelationship;
 import com.hederahashgraph.api.proto.java.TokenType;
 import com.hederahashgraph.api.proto.java.TopicID;
+import com.swirlds.common.crypto.CryptoFactory;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
 import java.util.ArrayList;
@@ -411,19 +412,24 @@ public class StateView {
         if (attr == null) {
             return Optional.empty();
         }
+        final var contents = contentsOf(id).orElse(EMPTY_BYTES);
         final var info =
                 FileGetInfoResponse.FileInfo.newBuilder()
                         .setLedgerId(networkInfo.ledgerId())
                         .setFileID(id)
-                        .setMemo(attr.getMemo())
                         .setDeleted(attr.isDeleted())
                         .setExpirationTime(Timestamp.newBuilder().setSeconds(attr.getExpiry()))
-                        .setSize(
-                                Optional.ofNullable(fileContents.get(id))
-                                        .orElse(EMPTY_BYTES)
-                                        .length);
+                        .setSize(contents.length);
         if (!attr.getWacl().isEmpty()) {
             info.setKeys(MiscUtils.asKeyUnchecked(attr.getWacl()).getKeyList());
+        }
+        if (!stateChildren.specialFiles().contains(id)) {
+            info.setMemo(attr.getMemo());
+        } else {
+            // The "memo" of a special upgrade file is its hexed SHA-384 hash for DevOps convenience
+            final var upgradeHash =
+                    CommonUtils.hex(CryptoFactory.getInstance().digestSync(contents).getValue());
+            info.setMemo(upgradeHash);
         }
         return Optional.of(info.build());
     }

@@ -499,7 +499,7 @@ class ServicesStateTest {
         assertNotNull(subject.specialFiles());
         // and:
         verify(dualStateAccessor).setDualState(dualState);
-        verify(initFlow).runWith(subject);
+        verify(initFlow).runWith(eq(subject), any());
         verify(appBuilder).bootstrapProps(any());
         verify(appBuilder).initialHash(EMPTY_HASH);
         verify(appBuilder).platform(platform);
@@ -532,7 +532,7 @@ class ServicesStateTest {
         assertSame(addressBook, subject.addressBook());
         assertSame(app, subject.getMetadata().app());
         // and:
-        verify(initFlow).runWith(subject);
+        verify(initFlow).runWith(eq(subject), any());
         verify(hashLogger).logHashesFor(subject);
     }
 

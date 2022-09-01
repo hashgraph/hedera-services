@@ -7,4 +7,5 @@ cd ../..
 cd -
 run/refresh-jar.sh
 
-docker build -t yahcli:$TAG .
+docker buildx create --use --name multiarch
+docker buildx build --push --platform linux/amd64,linux/arm64 -t gcr.io/hedera-registry/yahcli:$TAG .
