@@ -60,10 +60,18 @@ class ContractGCTest {
     }
 
     @Test
-    void removesBytecodeIfPresent() {
-        given(expiryThrottle.allow(BYTECODE_REMOVAL_WORK)).willReturn(true);
-        assertTrue(subject.expireBestEffort(contractNum, contractNoKvPairs));
-        verify(bytecode).remove(bytecodeKey);
+    void forUndeletedContractNeedsRootKeyUpdateCapacityToo() {
+        assertFalse(subject.expireBestEffort(contractNum, contractNoKvPairs));
+        verify(bytecode, never()).remove(bytecodeKey);
+    }
+
+    @Test
+    void forUndeletedContractFirstMarksDeleted() {
+        given(expiryThrottle.allow(ROOT_KEY_UPDATE_WORK)).willReturn(true);
+        given(contracts.getForModify(contractNum)).willReturn(contractNoKvPairs);
+        assertFalse(subject.expireBestEffort(contractNum, contractNoKvPairs));
+        verify(bytecode, never()).remove(bytecodeKey);
+        assertTrue(contractNoKvPairs.isDeleted());
     }
 
     @Test
@@ -89,6 +97,7 @@ class ContractGCTest {
         final var done = subject.expireBestEffort(contractNum, contractSomeKvPairs);
 
         assertFalse(done);
+        assertTrue(contractSomeKvPairs.isDeleted());
         assertEquals(0, contractSomeKvPairs.getNumContractKvPairs());
     }
 

@@ -67,6 +67,7 @@ public class ContractGC {
     public boolean expireBestEffort(
             final EntityNum expiredContractNum, final MerkleAccount contract) {
         final var numKvPairs = contract.getNumContractKvPairs();
+        var isDeleted = contract.isDeleted();
         if (numKvPairs > 0) {
             if (!expiryThrottle.allow(ROOT_KEY_UPDATE_WORK)) {
                 return false;
@@ -84,13 +85,16 @@ public class ContractGC {
             } else {
                 final var mutableContract = contracts.get().getForModify(expiredContractNum);
                 mutableContract.setNumContractKvPairs(numKvPairs - numRemoved);
+                // Once we've done any auto-removal work, we make sure the contract is deleted
+                mutableContract.setDeleted(true);
+                isDeleted = true;
                 if (slotRemovals.newRoot() != null) {
                     mutableContract.setFirstUint256StorageKey(slotRemovals.newRoot().getKey());
                     return false;
                 }
             }
         }
-        return tryToRemoveBytecode(expiredContractNum);
+        return tryToRemoveBytecode(expiredContractNum, isDeleted);
     }
 
     private SlotRemovalOutcome removeKvPairs(
@@ -118,7 +122,18 @@ public class ContractGC {
         return remainingPairs == 1 ? ONLY_SLOT_REMOVAL_WORK : NEXT_SLOT_REMOVAL_WORK;
     }
 
-    private boolean tryToRemoveBytecode(final EntityNum expiredContractNum) {
+    private boolean tryToRemoveBytecode(
+            final EntityNum expiredContractNum,
+            final boolean alreadyDeleted) {
+        if (!alreadyDeleted) {
+           if (!expiryThrottle.allow(ROOT_KEY_UPDATE_WORK)) {
+               return false;
+           } else {
+               final var mutableContract = contracts.get().getForModify(expiredContractNum);
+               // Make sure the contract is deleted before potentially removing its bytecode below
+               mutableContract.setDeleted(true);
+           }
+        }
         if (!expiryThrottle.allow(BYTECODE_REMOVAL_WORK)) {
             return false;
         }
