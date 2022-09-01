@@ -73,7 +73,7 @@ public class TreasuryReturns {
     private final ExpiryThrottle expiryThrottle;
     private final TreasuryReturnHelper returnHelper;
 
-    private RelRemovalFacilitation relRemovalFacilitation =
+    private RelRemover relRemover =
             MapValueListUtils::removeInPlaceFromMapValueList;
 
     @Inject
@@ -108,6 +108,8 @@ public class TreasuryReturns {
             if (newLatestAssociation != null) {
                 mutableExpired.setHeadTokenId(newLatestAssociation.getLowOrderAsLong());
             }
+            // Once we've done any auto-removal work, we make sure the account is deleted
+            mutableExpired.setDeleted(true);
             return outcome.fungibleReturns();
         }
     }
@@ -129,6 +131,8 @@ public class TreasuryReturns {
                 mutableExpired.setHeadNftId(newNftKey.getHiOrderAsLong());
                 mutableExpired.setHeadNftSerialNum(newNftKey.getLowOrderAsLong());
             }
+            // Once we've done any auto-removal work, we make sure the account is deleted
+            mutableExpired.setDeleted(true);
             return outcome.nftReturns();
         }
     }
@@ -202,7 +206,7 @@ public class TreasuryReturns {
             }
 
             // We are always removing the root, hence receiving the new root
-            relKey = relRemovalFacilitation.removeNext(relKey, relKey, listRemoval);
+            relKey = relRemover.removeNext(relKey, relKey, listRemoval);
             n++;
         }
         final var numLeft = (relKey == null) ? 0 : (expectedRels - n);
@@ -221,13 +225,13 @@ public class TreasuryReturns {
     }
 
     @FunctionalInterface
-    interface RelRemovalFacilitation {
+    interface RelRemover {
         EntityNumPair removeNext(
                 EntityNumPair key, EntityNumPair root, TokenRelsListMutation listRemoval);
     }
 
     @VisibleForTesting
-    void setRelRemovalFacilitation(final RelRemovalFacilitation relRemovalFacilitation) {
-        this.relRemovalFacilitation = relRemovalFacilitation;
+    void setRelRemovalFacilitation(final RelRemover relRemover) {
+        this.relRemover = relRemover;
     }
 }
