@@ -1430,35 +1430,6 @@ workflows:
             - attach_workspace:
                 at: /
 
-  continuous-integration-gcp:
-      jobs:
-#        - build-artifact:
-#            name: "artifact-build"
-#            context: SonarCloud
-#            filters:
-#              branches:
-#                ignore:
-#                  - NONE
-#            workflow-name: "Continuous-integration"
-        - build-platform-and-services:
-            context: SonarCloud
-            workflow-name: "Continuous-integration-GCP"
-        - jrs-regression:
-            context: Slack
-            regression_path: /swirlds-platform/regression/assets
-            result_path: assets/results/4N_1C/CI
-            config_type: "ci"
-            workflow-name: "GCP-Commit-Services-Comp-Basic-4N-1C"
-            name: "run-continuous-integration-gcp"
-            continuous_integration: true
-            slack_results_channel: "hedera-cicd"
-            slack_summary_channel: "hedera-cicd"
-            requires:
-              - build-platform-and-services
-            pre-steps:
-              - install-tools
-              - attach_workspace:
-                  at: /
 jobs:
 #  build-artifact:
 #    parameters:

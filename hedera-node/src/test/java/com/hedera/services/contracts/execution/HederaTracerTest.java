@@ -125,9 +125,9 @@ class HederaTracerTest {
         given(firstChildFrame.getRemainingGas()).willReturn(initialGasChild);
         given(firstChildFrame.getInputData()).willReturn(Bytes.EMPTY);
         given(firstChildFrame.getValue()).willReturn(Wei.ZERO);
+        given(firstChildFrame.getMessageStackDepth()).willReturn(1);
         dequeMock.addFirst(firstChildFrame);
         given(topLevelMessageFrame.getMessageFrameStack()).willReturn(dequeMock);
-        given(firstChildFrame.getMessageFrameStack()).willReturn(dequeMock);
         given(topLevelMessageFrame.getState()).willReturn(State.CODE_SUSPENDED);
         given(topLevelMessageFrame.getCurrentOperation()).willReturn(mockOperation);
         given(topLevelMessageFrame.getCurrentOperation().getOpcode()).willReturn(0xF0);
@@ -166,8 +166,8 @@ class HederaTracerTest {
         given(childFrame2.getRemainingGas()).willReturn(500L);
         given(childFrame2.getInputData()).willReturn(Bytes.EMPTY);
         given(childFrame2.getValue()).willReturn(Wei.of(543L));
+        given(childFrame2.getMessageStackDepth()).willReturn(1);
         dequeMock.addFirst(childFrame2);
-        given(childFrame2.getMessageFrameStack()).willReturn(dequeMock);
         // trace second child
         subject.traceExecution(topLevelMessageFrame, eo);
         verify(eo, times(6)).execute();
@@ -571,7 +571,6 @@ class HederaTracerTest {
         given(firstChildFrame.getValue()).willReturn(Wei.ZERO);
         dequeMock.addFirst(firstChildFrame);
         given(messageFrame.getMessageFrameStack()).willReturn(dequeMock);
-        given(firstChildFrame.getMessageFrameStack()).willReturn(dequeMock);
         given(messageFrame.getState()).willReturn(State.CODE_SUSPENDED);
     }
 

@@ -15,14 +15,22 @@
  */
 package com.hedera.services.sysfiles.domain.throttling;
 
-import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import java.util.ArrayList;
 import java.util.List;
 
-public class ThrottleGroup {
+public class ThrottleGroup<E extends Enum<E>> {
     int opsPerSec;
     long milliOpsPerSec;
-    List<HederaFunctionality> operations = new ArrayList<>();
+    List<E> operations = new ArrayList<>();
+
+    public ThrottleGroup() {
+        // Needed by Jackson
+    }
+
+    public ThrottleGroup(long milliOpsPerSec, List<E> operations) {
+        this.milliOpsPerSec = milliOpsPerSec;
+        this.operations = operations;
+    }
 
     public void setMilliOpsPerSec(long milliOpsPerSec) {
         this.milliOpsPerSec = milliOpsPerSec;
@@ -36,27 +44,12 @@ public class ThrottleGroup {
         this.opsPerSec = opsPerSec;
     }
 
-    public List<HederaFunctionality> getOperations() {
+    public List<E> getOperations() {
         return operations;
     }
 
-    public void setOperations(List<HederaFunctionality> operations) {
+    public void setOperations(List<E> operations) {
         this.operations = operations;
-    }
-
-    public static ThrottleGroup fromProto(com.hederahashgraph.api.proto.java.ThrottleGroup group) {
-        var pojo = new ThrottleGroup();
-        pojo.setMilliOpsPerSec(group.getMilliOpsPerSec());
-        pojo.setOpsPerSec((int) (group.getMilliOpsPerSec() / 1_000));
-        pojo.operations.addAll(group.getOperationsList());
-        return pojo;
-    }
-
-    public com.hederahashgraph.api.proto.java.ThrottleGroup toProto() {
-        return com.hederahashgraph.api.proto.java.ThrottleGroup.newBuilder()
-                .setMilliOpsPerSec(impliedMilliOpsPerSec())
-                .addAllOperations(operations)
-                .build();
     }
 
     public long getMilliOpsPerSec() {
