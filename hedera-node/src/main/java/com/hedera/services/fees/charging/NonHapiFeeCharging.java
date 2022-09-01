@@ -26,6 +26,8 @@ import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hederahashgraph.api.proto.java.AccountID;
+
+import javax.annotation.Nullable;
 import javax.inject.Inject;
 
 /**
@@ -43,7 +45,7 @@ public class NonHapiFeeCharging {
     }
 
     public void chargeNonHapiFee(
-            final EntityId preferredPayer,
+            @Nullable final EntityId preferredPayer,
             final AccountID finalPayer,
             final long amount,
             TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accounts) {
@@ -51,7 +53,7 @@ public class NonHapiFeeCharging {
     }
 
     private void chargeFee(
-            final EntityId preferredPayer,
+            @Nullable final EntityId preferredPayer,
             final AccountID finalPayer,
             final long fee,
             final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accounts) {
