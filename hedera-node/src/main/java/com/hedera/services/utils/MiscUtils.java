@@ -194,6 +194,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -201,6 +202,7 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import javax.annotation.Nullable;
 import org.apache.commons.codec.DecoderException;
+import org.apache.commons.lang3.time.StopWatch;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -866,6 +868,13 @@ public final class MiscUtils {
         x ^= x >>> 24;
         x += x << 30;
         return x;
+    }
+
+    public static void withLoggedDuration(final Runnable blockingTask, final Logger logger, final String desc) {
+        logger.info("Starting {}", desc);
+        final var watch = StopWatch.createStarted();
+        blockingTask.run();
+        logger.info("Done with {} in {}ms", desc, watch.getTime(TimeUnit.MILLISECONDS));
     }
 
     public static <K, V extends MerkleNode & Keyed<K>> void forEach(
