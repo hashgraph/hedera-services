@@ -33,8 +33,11 @@ import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.platform.RandomExtended;
 import java.time.Instant;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
+@ExtendWith(MockitoExtension.class)
 class ReleaseThirtyMigrationTest {
     @Mock private ServicesState initializingState;
     @Mock private MerkleAccount merkleAccount;

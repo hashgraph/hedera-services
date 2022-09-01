@@ -249,6 +249,9 @@ public class StateView {
 
     public Optional<ConsensusTopicInfo> infoForTopic(final TopicID topicID) {
         final var merkleTopic = topics().get(EntityNum.fromTopicId(topicID));
+        if (merkleTopic == null) {
+            return Optional.empty();
+        }
 
         final var info = ConsensusTopicInfo.newBuilder();
         if (merkleTopic.hasMemo()) {
