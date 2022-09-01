@@ -96,8 +96,7 @@ public class HederaSLoadOperation extends AbstractOperation {
                         optionalCost, Optional.of(ExceptionalHaltReason.INSUFFICIENT_GAS));
             } else {
                 UInt256 storageValue = account.getStorageValue(UInt256.fromBytes(key));
-                if (!frame.isStatic()
-                        && dynamicProperties
+                if (dynamicProperties
                                 .enabledSidecars()
                                 .contains(SidecarType.CONTRACT_STATE_CHANGE)) {
                     HederaOperationUtil.cacheExistingValue(frame, address, key, storageValue);
