@@ -85,6 +85,12 @@ class UniqueTokenAdapterTest {
     }
 
     @Test
+    void testNullValuesPassedToStaticConstructors() {
+        assertNull(UniqueTokenAdapter.wrap((MerkleUniqueToken) null));
+        assertNull(UniqueTokenAdapter.wrap((UniqueTokenValue) null));
+    }
+
+    @Test
     void testSettersUpdateValues() {
         virtualSubject.setOwner(EntityId.fromNum(987L));
         assertEquals(987L, virtualSubject.getOwner().num());
