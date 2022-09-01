@@ -227,17 +227,14 @@ abstract class EvmTxProcessor {
                 buildInitialFrame(commonInitialFrame, receiver, payload, value);
         messageFrameStack.addFirst(initialFrame);
 
-        HederaTracer hederaTracer;
-        if (isStatic) {
-            hederaTracer = new HederaTracer(false);
-        } else {
-            hederaTracer =
-                    new HederaTracer(
-                            dynamicProperties
-                                    .enabledSidecars()
-                                    .contains(SidecarType.CONTRACT_ACTION));
-            hederaTracer.init(initialFrame);
-        }
+        HederaTracer hederaTracer =
+                new HederaTracer(
+                        !isStatic
+                                && dynamicProperties
+                                        .enabledSidecars()
+                                        .contains(SidecarType.CONTRACT_ACTION));
+        hederaTracer.init(initialFrame);
+
         while (!messageFrameStack.isEmpty()) {
             process(messageFrameStack.peekFirst(), hederaTracer);
         }
