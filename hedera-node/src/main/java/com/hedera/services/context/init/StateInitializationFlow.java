@@ -60,6 +60,8 @@ public class StateInitializationFlow {
             final ServicesState activeState, final BootstrapProperties bootstrapProperties) {
         final var lastThrottleExempt =
                 bootstrapProperties.getLongProperty(ACCOUNTS_LAST_THROTTLE_EXEMPT);
+        // The last throttle-exempt account is configurable to make it easy to start dev networks
+        // without throttling
         numberConfigurer.configureNumbers(hederaNums, lastThrottleExempt);
 
         workingState.updateFrom(activeState);
