@@ -1,0 +1,32 @@
+{
+  "bucket": {
+    "burstPeriodMs": 1000,
+    "name": "ExpiryWorkLimits",
+    "throttleGroups": [
+      {
+        "opsPerSec": 10000,
+        "operations": [
+          "ACCOUNTS_GET", "NFTS_GET", "TOKENS_GET", "TOKEN_ASSOCIATIONS_GET"
+        ]
+      },
+      {
+        "opsPerSec": 1000,
+        "operations": [
+          "ACCOUNTS_GET_FOR_MODIFY", "NFTS_GET_FOR_MODIFY", "TOKEN_ASSOCIATIONS_GET_FOR_MODIFY", "ACCOUNTS_REMOVE", "NFTS_REMOVE", "TOKEN_ASSOCIATIONS_REMOVE"
+        ]
+      },
+      {
+        "opsPerSec": 500,
+        "operations": [
+          "STORAGE_GET"
+        ]
+      },
+      {
+        "opsPerSec": 50,
+        "operations": [
+          "BLOBS_REMOVE", "STORAGE_PUT", "STORAGE_REMOVE"
+        ]
+      }
+    ]
+  }
+}

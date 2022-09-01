@@ -118,6 +118,7 @@ class BootstrapPropertiesTest {
                     entry(DEV_DEFAULT_LISTENING_NODE_ACCOUNT, "0.0.3"),
                     entry(ENTITIES_MAX_LIFETIME, 3153600000L),
                     entry(ENTITIES_SYSTEM_DELETABLE, EnumSet.of(EntityType.FILE)),
+                    entry(EXPIRY_THROTTLE_RESOURCE, "expiry-throttle.json"),
                     entry(
                             FEES_PERCENT_CONGESTION_MULTIPLIERS,
                             CongestionMultipliers.from("90,10x,95,25x,99,100x")),
