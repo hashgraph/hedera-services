@@ -15,14 +15,10 @@
  */
 package com.hedera.services.state.migration;
 
-import static com.hedera.services.state.migration.ReleaseThirtyMigration.SEVEN_DAYS_IN_SECONDS;
 import static com.hedera.services.state.migration.ReleaseThirtyMigration.rebuildNftOwners;
-import static com.hedera.services.txns.crypto.AutoCreationLogic.THREE_MONTHS_IN_SECONDS;
 import static com.hedera.services.utils.NftNumPair.MISSING_NFT_NUM_PAIR;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
 
 import com.hedera.services.ServicesState;
 import com.hedera.services.state.merkle.MerkleAccount;
@@ -30,7 +26,6 @@ import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
 import com.swirlds.merkle.map.MerkleMap;
-import com.swirlds.platform.RandomExtended;
 import java.time.Instant;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -44,25 +39,23 @@ class ReleaseThirtyMigrationTest {
 
     @Test
     void grantsAutoRenewToContracts() {
+        final var a = new MerkleAccount();
+        a.setExpiry(1234L);
+        a.setSmartContract(true);
+        final var b = new MerkleAccount();
+        b.setExpiry(2345L);
+        b.setSmartContract(true);
         final var accountsMap = new MerkleMap<EntityNum, MerkleAccount>();
-        accountsMap.put(EntityNum.fromLong(1L), merkleAccount);
-        accountsMap.put(EntityNum.fromLong(2L), merkleAccount);
+        accountsMap.put(EntityNum.fromLong(1L), a);
+        accountsMap.put(EntityNum.fromLong(2L), b);
         final var instant = Instant.ofEpochSecond(123456789L);
 
-        final var rand = new RandomExtended(8682588012L);
-
         given(initializingState.accounts()).willReturn(accountsMap);
-        given(merkleAccount.isSmartContract()).willReturn(true);
-        given(merkleAccount.getExpiry()).willReturn(1234L).willReturn(2345L);
 
         ReleaseThirtyMigration.grantFreeAutoRenew(initializingState, instant);
 
-        final var expectedExpiry1 = getExpectedExpiry(1234L, instant.getEpochSecond(), rand);
-        final var expectedExpiry2 = getExpectedExpiry(2345L, instant.getEpochSecond(), rand);
-
-        verify(merkleAccount, times(2)).isSmartContract();
-        verify(merkleAccount).setExpiry(expectedExpiry1);
-        verify(merkleAccount).setExpiry(expectedExpiry2);
+        assertTrue(a.getExpiry() > 1234L);
+        assertTrue(b.getExpiry() > 2345L);
     }
 
     @Test
@@ -115,12 +108,5 @@ class ReleaseThirtyMigrationTest {
         assertEquals(nftId4.asNftNumPair(), uniqueTokens.get(nftId2).getPrev());
         assertEquals(MISSING_NFT_NUM_PAIR, uniqueTokens.get(nftId4).getPrev());
         assertEquals(nftId2.asNftNumPair(), uniqueTokens.get(nftId4).getNext());
-    }
-
-    private long getExpectedExpiry(
-            final long currentExpiry, final long instant, final RandomExtended rand) {
-        return Math.max(
-                currentExpiry,
-                instant + THREE_MONTHS_IN_SECONDS + rand.nextLong(0, SEVEN_DAYS_IN_SECONDS));
     }
 }
